@@ -1,0 +1,18 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>icons/open.xpm</file>
+        <file>icons/add.xpm</file>
+        <file>icons/axial.xpm</file>
+        <file>icons/ball.xpm</file>
+        <file>icons/coronal.xpm</file>
+        <file>icons/cubic.xpm</file>
+        <file>icons/delete.xpm</file>
+        <file>icons/new.xpm</file>
+        <file>icons/poly.xpm</file>
+        <file>icons/rec.xpm</file>
+        <file>icons/run.xpm</file>
+        <file>icons/sag.xpm</file>
+        <file>icons/save.xpm</file>
+        <file>icons/curves.xpm</file>
+    </qresource>
+</RCC>
