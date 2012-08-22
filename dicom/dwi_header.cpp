@@ -338,7 +338,7 @@ void correct_t2(boost::ptr_vector<DwiHeader>& dwi_files)
     }
 }
 
-bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi_files,bool upsampling)
+bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi_files,bool upsampling,bool topdown)
 {
     sort_dwi(dwi_files);
     unsigned int slice_pile = get_slice_pile(dwi_files);
@@ -380,6 +380,8 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
         name << "image" << id;
         if (slice_pile == 1) // Siemens Mosaic
         {
+            if(topdown)
+                image::flip_z(dwi_files[index].image);
             ptr = (const unsigned short*)dwi_files[index].begin();
             if(upsampling)
             {
@@ -397,6 +399,8 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
                 std::copy(dwi_files[index+z].begin(),
                           dwi_files[index+z].begin() + dwi_files[index+z].size(),
                           buffer.begin() + z * dwi_files[index+z].size());
+            if(topdown)
+                image::flip_z(buffer);
             if(upsampling)
                 image::upsampling(buffer);
             ptr = (const unsigned short*)&*buffer.begin();

@@ -337,7 +337,10 @@ void dicom_parser::on_buttonBox_accepted()
                     ui->tableWidget->item(index,4)->text().toDouble());
     }
 
-    DwiHeader::output_src(ui->SrcName->text().toLocal8Bit().begin(),dwi_files,ui->upsampling->currentIndex() == 1);
+    DwiHeader::output_src(ui->SrcName->text().toLocal8Bit().begin(),
+                          dwi_files,
+                          ui->upsampling->currentIndex() == 1,
+                          ui->topdown->checkState() == Qt::Checked);
 
     dwi_files.clear();
     if(QFileInfo(ui->SrcName->text()).suffix() != "gz")

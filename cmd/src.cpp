@@ -129,6 +129,6 @@ int src(int ac, char *av[])
         return 1;
     }
     out << "Output src" << std::endl;
-    DwiHeader::output_src(vm["output"].as<std::string>().c_str(),dwi_files,false);
+    DwiHeader::output_src(vm["output"].as<std::string>().c_str(),dwi_files,false,false);
     return 0;
 }

@@ -198,6 +198,13 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="topdown">
+         <property name="text">
+          <string>top-down slices</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QLabel" name="label">
          <property name="frameShape">
           <enum>QFrame::NoFrame</enum>
