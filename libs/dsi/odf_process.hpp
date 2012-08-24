@@ -109,7 +109,7 @@ public:
     virtual void run(Voxel& voxel,VoxelData& data)
     {
 
-        if (voxel.need_odf)
+        if (voxel.need_odf && data.fa[0] + 1.0 != 1.0)
         {
             unsigned int odf_index = odf_index_map[data.voxel_index];
             std::copy(data.odf.begin(),data.odf.end(),
