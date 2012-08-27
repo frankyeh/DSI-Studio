@@ -726,7 +726,7 @@ void GLWidget::add_odf(int x,int y,int z)
             if(f3 >= half_odf)
                 f3 -= half_odf;
             float sum = new_odf_buffer[f1]+new_odf_buffer[f2]+new_odf_buffer[f3];
-            sum *= 0.01;
+            sum *= 0.03;
             new_odf_buffer[f1] += sum;
             new_odf_buffer[f2] += sum;
             new_odf_buffer[f3] += sum;

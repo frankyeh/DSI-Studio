@@ -11,7 +11,7 @@
 
 void slice_view_scene::show_fiber(QPainter& painter,float* dir, unsigned int x, unsigned int y)
 {
-    float r = display_ratio / 2.5;
+    float r = display_ratio / 3;
     float dx, dy;
     QPen pen(QColor(std::abs(dir[0]) * 255.0,std::abs(dir[1]) * 255.0, std::abs(dir[2]) * 255.0));
     pen.setWidthF(display_ratio/5.0);
@@ -76,11 +76,14 @@ void slice_view_scene::show_slice(void)
 
         }
 
-        int x_pos,y_pos;
-        cur_tracking_window.slice.get_other_slice_pos(x_pos, y_pos);
-        painter.setPen(QColor(255,0,0));
-        painter.drawLine(((double)x_pos + 0.5)*display_ratio, 0,((double)x_pos + 0.5)*display_ratio,view_image.height());
-        painter.drawLine(0, ((double)y_pos + 0.5)*display_ratio,view_image.width(),((double)y_pos + 0.5)*display_ratio);
+        if(cur_tracking_window.ui->show_pos->checkState() == Qt::Checked)
+        {
+            int x_pos,y_pos;
+            cur_tracking_window.slice.get_other_slice_pos(x_pos, y_pos);
+            painter.setPen(QColor(255,0,0));
+            painter.drawLine(((double)x_pos + 0.5)*display_ratio, 0,((double)x_pos + 0.5)*display_ratio,view_image.height());
+            painter.drawLine(0, ((double)y_pos + 0.5)*display_ratio,view_image.width(),((double)y_pos + 0.5)*display_ratio);
+        }
     }
     else
     {
