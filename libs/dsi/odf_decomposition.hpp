@@ -19,8 +19,7 @@ protected:
     std::vector<float> fiber_ratio;
     float max_iso;
 protected:
-    std::vector<float> Rt;
-    std::vector<float> oRt;
+    std::vector<float> Rt,oRt;
     unsigned int half_odf_size;
 
     double inner_angle(double cos_value)
@@ -195,6 +194,7 @@ protected:
         for(int fib_index = 0;fib_index < max_iter;++fib_index)
         {
             // calculate the correlation with each SFO
+
             math::matrix_vector_product(&*x.begin(),&*residual.begin(),&*tmp.begin(),
                                             math::dyndim(y_dim,y_dim));
             // get the most correlated orientation
@@ -248,6 +248,7 @@ public:
         std::for_each(voxel.free_water_diffusion.begin(),voxel.free_water_diffusion.end(),(boost::lambda::_1 /= voxel.reponse_function_scaling));
 
         estimate_Rt(voxel);
+
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
@@ -260,6 +261,10 @@ public:
         lasso2(data.odf,Rt,w,voxel.max_fiber_number << 1);
         //lasso(data.odf,Rt,w,voxel.max_fiber_number << 1);
 
+
+        //std::fill(data.odf.begin(),data.odf.end(),1.0f);
+        //image::add(data.odf.begin(),data.odf.end(),w.begin());
+        //return;
         std::vector<int> dir_list;
 
         for(unsigned int index = 0;index < half_odf_size;++index)
@@ -324,7 +329,6 @@ public:
     {
         if (!voxel.odf_decomposition)
             return;
-
         if(max_iso + 1.0 != 1.0)
             std::for_each(fiber_ratio.begin(),fiber_ratio.end(),boost::lambda::_1 /= max_iso);
         mat_writer.add_matrix("fiber_ratio",&*fiber_ratio.begin(),1,fiber_ratio.size());

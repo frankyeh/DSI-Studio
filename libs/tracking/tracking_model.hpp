@@ -281,6 +281,19 @@ public:
         }
     }
 
+    void get_voxel_info2(unsigned int x,unsigned int y,unsigned int z,std::vector<float>& buf) const
+    {
+        unsigned int index = (z*fib_data.dim[1]+y)*fib_data.dim[0] + x;
+        if (index >= fib_data.total_size)
+            return;
+        for(unsigned int i = 0;i < fib_data.fib.findex.size();++i)
+        {
+            short dir_index = fib_data.fib.findex[i][index];
+            buf.push_back(fib_data.fib.odf_table[dir_index][0]);
+            buf.push_back(fib_data.fib.odf_table[dir_index][1]);
+            buf.push_back(fib_data.fib.odf_table[dir_index][2]);
+        }
+    }
     void get_voxel_information(unsigned int x,unsigned int y,unsigned int z,std::vector<float>& buf) const
     {
         unsigned int index = (z*fib_data.dim[1]+y)*fib_data.dim[0] + x;
@@ -288,7 +301,7 @@ public:
             return;
         for(unsigned int i = 0;i < fib_data.view_item.size();++i)
             if(fib_data.view_item[i].name != "color")
-                buf.push_back(fib_data.view_item[i].image_data[index]);
+                buf.push_back(fib_data.view_item[i].image_data.empty() ? 0.0 : fib_data.view_item[i].image_data[index]);
     }
 public:
     bool load_from_file(const char* file_name)

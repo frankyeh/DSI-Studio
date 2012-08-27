@@ -288,6 +288,9 @@ void RegionTableWidget::save_region_info(void)
 
     std::ofstream out(filename.toLocal8Bit().begin());
     out << "x\ty\tz";
+    for(unsigned int index = 0;index < cur_tracking_window.handle->fib_data.fib.findex.size();++index)
+            out << "\tdx" << index << "\tdy" << index << "\tdz" << index;
+
     for(unsigned int index = 0;index < cur_tracking_window.view_name.size();++index)
         if(cur_tracking_window.view_name[index] != "color")
             out << "\t" << cur_tracking_window.view_name[index];
@@ -297,11 +300,10 @@ void RegionTableWidget::save_region_info(void)
     {
         std::vector<float> data;
         image::vector<3,short> point(regions[currentRow()].get()[index]);
+        cur_tracking_window.handle->get_voxel_info2(point[0],point[1],point[2],data);
         cur_tracking_window.handle->get_voxel_information(point[0],point[1],point[2],data);
-        std::copy(point.begin(),point.end(),
-                  std::ostream_iterator<float>(out,"\t"));
-        std::copy(data.begin(),data.begin()+cur_tracking_window.view_name.size(),
-                  std::ostream_iterator<float>(out,"\t"));
+        std::copy(point.begin(),point.end(),std::ostream_iterator<float>(out,"\t"));
+        std::copy(data.begin(),data.end(),std::ostream_iterator<float>(out,"\t"));
         out << std::endl;
     }
 }
