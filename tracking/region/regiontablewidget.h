@@ -37,6 +37,7 @@ protected:
     void contextMenuEvent ( QContextMenuEvent * event );
 private:
     tracking_window& cur_tracking_window;
+    QTimer *timer;
     unsigned char regions_index;
     void do_action(int id);
     void whole_brain_points(std::vector<image::vector<3,short> >& points);
@@ -53,6 +54,7 @@ public:
     void add_region(QString name,unsigned char type);
     void setROIs(ThreadData* data);
 public slots:
+    void check_update(void);
     void draw_region(QImage& image);
     void draw_mosaic_region(QImage& image,unsigned int mosaic_size);
     void updateRegions(QTableWidgetItem* item);

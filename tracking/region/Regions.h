@@ -26,6 +26,8 @@ private:
         std::auto_ptr<boost::thread> back_thread;
         std::auto_ptr<RegionModel> back_region;
         void updateMesh(bool smooth);
+public:
+        bool has_background_thread(void) const{return back_thread.get();}
 public: // rendering options
         RegionModel show_region;
         unsigned char regions_feature;
