@@ -11,7 +11,7 @@ class slice_view_scene : public QGraphicsScene
     Q_OBJECT
 public:
     slice_view_scene(tracking_window& cur_tracking_window_,ODFModel* handle_):
-            display_ratio(8.0),sel_mode(0),
+        display_ratio(8.0),sel_mode(0),mid_down(false),
             cur_tracking_window(cur_tracking_window_),
             handle(handle_),statusbar(0)
     {
