@@ -30,6 +30,7 @@ private:
     // record the mouse press points
     std::vector<image::vector<3,short> >sel_coord;
     std::vector<image::vector<2,short> >sel_point;
+    int cur_region;
     bool mouse_down;
     bool mid_down;
     int cX, cY;

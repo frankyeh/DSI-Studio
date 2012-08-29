@@ -151,7 +151,7 @@ int trk(int ac, char *av[])
         std::string file_name = vm["end2"].as<std::string>();
         if(!end.LoadFromFile(file_name.c_str()))
         {
-            out << "cannot find the end file" << std::endl;
+            out << "cannot find the end2 file" << std::endl;
             return 0;
         }
         thread_handle->setRegions(end.get(),2);

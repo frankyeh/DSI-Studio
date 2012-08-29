@@ -180,7 +180,18 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     }
     cur_tracking_window.copy_target = 1;
     if(cur_tracking_window.regionWidget->regions.empty())
+    {
         cur_tracking_window.regionWidget->new_region();
+        cur_region = -1;
+    }
+
+    if(cur_tracking_window.regionWidget->currentRow() != cur_region)
+    {
+        cur_region = cur_tracking_window.regionWidget->currentRow();
+        sel_point.clear();
+        sel_coord.clear();
+    }
+
     float Y = mouseEvent->scenePos().y();
     float X = mouseEvent->scenePos().x();
 
