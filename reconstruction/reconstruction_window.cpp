@@ -172,6 +172,11 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
         params[2] = ui->SharpeningParam->value();
         settings.setValue("rec_deconvolution_param",params[2]);
     }
+    if (ui->Decomposition->currentIndex() > 0 && method_id != 1) // not DTI
+    {
+        params[3] = ui->decompose_fraction->value();
+        settings.setValue("rec_decomposition_param",params[3]);
+    }
 
 
 

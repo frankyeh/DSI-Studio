@@ -15,6 +15,7 @@ struct ODFDecomposition : public BaseProcess
 {
     SearchLocalMaximum lm;
     boost::mutex mutex;
+    float decomposition_fraction;
 protected:
     std::vector<float> fiber_ratio;
     float max_iso;
@@ -188,7 +189,7 @@ protected:
         std::vector<char> fib_map(y_dim);
         w.resize(y_dim);
 
-        float step_size = 0.05;
+        float step_size = decomposition_fraction;
         unsigned int max_iter = ((float)max_fiber/step_size);
         unsigned char total_fiber = 0;
         for(int fib_index = 0;fib_index < max_iter;++fib_index)
@@ -240,6 +241,7 @@ public:
     {
         if (!voxel.odf_decomposition)
             return;
+        decomposition_fraction = voxel.param[3];
         lm.init(voxel);
         fiber_ratio.resize(voxel.total_size);
         max_iso = 0.0;

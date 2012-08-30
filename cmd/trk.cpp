@@ -1,3 +1,4 @@
+#include <QFileInfo>
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -137,9 +138,14 @@ int trk(int ac, char *av[])
     {
         ROIRegion end(geometry, voxel_size);
         std::string file_name = vm["end"].as<std::string>();
+        if(!QFileInfo(file_name.c_str()).exists())
+        {
+            out << file_name.c_str() << " does not exist. terminating..." << std::endl;
+            return 0;
+        }
         if(!end.LoadFromFile(file_name.c_str()))
         {
-            out << "cannot find the end file" << std::endl;
+            out << "Invalid file format: " << file_name.c_str() << std::endl;
             return 0;
         }
         thread_handle->setRegions(end.get(),2);
@@ -149,9 +155,14 @@ int trk(int ac, char *av[])
     {
         ROIRegion end(geometry, voxel_size);
         std::string file_name = vm["end2"].as<std::string>();
+        if(!QFileInfo(file_name.c_str()).exists())
+        {
+            out << file_name.c_str() << " does not exist. terminating..." << std::endl;
+            return 0;
+        }
         if(!end.LoadFromFile(file_name.c_str()))
         {
-            out << "cannot find the end2 file" << std::endl;
+            out << "Invalid file format: " << file_name.c_str() << std::endl;
             return 0;
         }
         thread_handle->setRegions(end.get(),2);

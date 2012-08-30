@@ -725,11 +725,14 @@ void GLWidget::add_odf(int x,int y,int z)
                 f2 -= half_odf;
             if(f3 >= half_odf)
                 f3 -= half_odf;
-            float sum = new_odf_buffer[f1]+new_odf_buffer[f2]+new_odf_buffer[f3];
-            sum *= 0.03;
-            new_odf_buffer[f1] += sum;
-            new_odf_buffer[f2] += sum;
-            new_odf_buffer[f3] += sum;
+            float sum = odf_buffer[f1]+odf_buffer[f2]+odf_buffer[f3];
+            sum *= 0.1;
+            if(odf_buffer[f1] == 0.0)
+                new_odf_buffer[f1] = std::max(sum,new_odf_buffer[f1]);
+            if(odf_buffer[f2] == 0.0)
+                new_odf_buffer[f2] = std::max(sum,new_odf_buffer[f2]);
+            if(odf_buffer[f3] == 0.0)
+                new_odf_buffer[f3] = std::max(sum,new_odf_buffer[f3]);
         }
         odf_buffer = &new_odf_buffer[0];
     }

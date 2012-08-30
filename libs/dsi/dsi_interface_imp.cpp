@@ -229,7 +229,7 @@ extern "C"
         if (image_model->voxel.odf_deconvolusion)
             out << ".de" << param_values[2];
         if (image_model->voxel.odf_decomposition)
-            out << ".dec";
+            out << ".dec" << param_values[3];
         switch (method_id)
         {
         case 0: //DSI local max
