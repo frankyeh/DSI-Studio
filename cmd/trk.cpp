@@ -60,15 +60,21 @@ int trk(int ac, char *av[])
     po::store(po::command_line_parser(ac, av).options(trk_desc).allow_unregistered().run(), vm);
     po::notify(vm);
 
-    std::string file_name = vm["source"].as<std::string>();
-    out << "loading " << file_name.c_str() << "..." <<std::endl;
     std::auto_ptr<ODFModel> handle(new ODFModel);
-    if (!handle->load_from_file(file_name.c_str()))
     {
-        out << "Cannot open file " << file_name.c_str() <<std::endl;
-        return 0;
+        std::string file_name = vm["source"].as<std::string>();
+        out << "loading " << file_name.c_str() << "..." <<std::endl;
+        if(!QFileInfo(file_name.c_str()).exists())
+        {
+            out << file_name.c_str() << " does not exist. terminating..." << std::endl;
+            return 0;
+        }
+        if (!handle->load_from_file(file_name.c_str()))
+        {
+            out << "Cannot open file " << file_name.c_str() <<std::endl;
+            return 0;
+        }
     }
-
     image::geometry<3> geometry = handle->fib_data.dim;
     image::vector<3> voxel_size = handle->fib_data.vs;
     const float *fa0 = handle->fib_data.fib.fa[0];
@@ -113,9 +119,14 @@ int trk(int ac, char *av[])
     {
         ROIRegion roi(geometry, voxel_size);
         std::string file_name = vm[rois[index]].as<std::string>();
+        if(!QFileInfo(file_name.c_str()).exists())
+        {
+            out << file_name.c_str() << " does not exist. terminating..." << std::endl;
+            return 0;
+        }
         if(!roi.LoadFromFile(file_name.c_str()))
         {
-            out << "cannot find the roi file:" << file_name << std::endl;
+            out << "Invalid file format:" << file_name << std::endl;
             return 0;
         }
         thread_handle->setRegions(roi.get(),0);
@@ -126,9 +137,14 @@ int trk(int ac, char *av[])
     {
         ROIRegion roa(geometry, voxel_size);
         std::string file_name = vm["roa"].as<std::string>();
+        if(!QFileInfo(file_name.c_str()).exists())
+        {
+            out << file_name.c_str() << " does not exist. terminating..." << std::endl;
+            return 0;
+        }
         if(!roa.LoadFromFile(file_name.c_str()))
         {
-            out << "cannot find the roa file" << std::endl;
+            out << "Invalid file format:" << file_name.c_str() << std::endl;
             return 0;
         }
         thread_handle->setRegions(roa.get(),1);
@@ -145,7 +161,7 @@ int trk(int ac, char *av[])
         }
         if(!end.LoadFromFile(file_name.c_str()))
         {
-            out << "Invalid file format: " << file_name.c_str() << std::endl;
+            out << "Invalid file format:" << file_name.c_str() << std::endl;
             return 0;
         }
         thread_handle->setRegions(end.get(),2);
@@ -162,7 +178,7 @@ int trk(int ac, char *av[])
         }
         if(!end.LoadFromFile(file_name.c_str()))
         {
-            out << "Invalid file format: " << file_name.c_str() << std::endl;
+            out << "Invalid file format:" << file_name.c_str() << std::endl;
             return 0;
         }
         thread_handle->setRegions(end.get(),2);
@@ -172,9 +188,14 @@ int trk(int ac, char *av[])
     {
         ROIRegion seed(geometry, voxel_size);
         std::string file_name = vm["seed"].as<std::string>();
+        if(!QFileInfo(file_name.c_str()).exists())
+        {
+            out << file_name.c_str() << " does not exist. terminating..." << std::endl;
+            return 0;
+        }
         if(!seed.LoadFromFile(file_name.c_str()))
         {
-            out << "cannot find the end file" << std::endl;
+            out << "Invalid file format:" << file_name.c_str() << std::endl;
             return 0;
         }
         thread_handle->setRegions(seed.get(),3);
@@ -190,6 +211,7 @@ int trk(int ac, char *av[])
         thread_handle->setRegions(seed,3);
     }
 
+    std::string file_name;
     if (vm.count("output"))
         file_name = vm["output"].as<std::string>();
     else
