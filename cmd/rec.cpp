@@ -29,7 +29,10 @@ int rec(int ac, char *av[])
     ("record_odf", po::value<int>()->default_value(0), "set record odf to on using --record_odf=1")
     ("thread", po::value<int>()->default_value(2), "set the multi-thread count --thread=2")
     ("num_fiber", po::value<int>()->default_value(3), "maximum fibers resolved per voxel, default=3")
-    ("decomposition", po::value<int>(), "set the decomposition")
+    ("half_sphere", po::value<int>()->default_value(0), "specific whether half sphere is used")
+    ("deconvolution", po::value<int>()->default_value(0), "apply deconvolution")
+    ("decomposition", po::value<int>()->default_value(0), "apply decomposition")
+    ("r2_weighted", po::value<int>()->default_value(0), "set the r2 weighted in GQI")
     ("param0", po::value<float>(), "set parameters")
     ("param1", po::value<float>(), "set parameters")
     ("param2", po::value<float>(), "set parameters")
@@ -62,7 +65,7 @@ int rec(int ac, char *av[])
 
 
     method_index = vm["method"].as<int>();
-    if(method_index == 0)
+    if(method_index == 0) // DSI
         param[0] = 17.0;
     if(method_index == 2)
     {
@@ -98,18 +101,27 @@ int rec(int ac, char *av[])
 
     handle->thread_count = vm["thread"].as<int>(); //thread count
     handle->voxel.ti.init(vm["odf_order"].as<int>());
-    handle->voxel.need_odf = vm.count("record_odf");
-    handle->voxel.odf_deconvolusion = 0;
-    handle->voxel.odf_decomposition = vm.count("decomposition") ? 1:0;
-    handle->voxel.half_sphere = vm.count("half_sphere") ? 1:0;
+    handle->voxel.need_odf = vm["record_odf"].as<int>();
+    handle->voxel.odf_deconvolusion = vm["deconvolution"].as<int>();
+    handle->voxel.odf_decomposition = vm["decomposition"].as<int>();
+    handle->voxel.half_sphere = vm["half_sphere"].as<int>();
     handle->voxel.max_fiber_number = vm["num_fiber"].as<int>();
-    handle->voxel.r2_weighted = false;
+    handle->voxel.r2_weighted = vm["r2_weighted"].as<int>();
 
     {
         out << "method=" << method_index << std::endl;
         out << "odf_order=" << vm["odf_order"].as<int>() << std::endl;
         out << "num_fiber=" << vm["num_fiber"].as<int>() << std::endl;
-        out << "record_odf=" << (vm.count("record_odf") ? "true":"false") << std::endl;
+        if(handle->voxel.need_odf)
+            out << "record ODF in the fib file" << std::endl;
+        if(handle->voxel.odf_deconvolusion)
+            out << "apply deconvolution" << std::endl;
+        if(handle->voxel.odf_decomposition)
+            out << "apply decomposition" << std::endl;
+        if(handle->voxel.half_sphere)
+            out << "half sphere is used" << std::endl;
+        if(handle->voxel.r2_weighted && method_index == 4)
+            out << "r2 weighted is used for GQI" << std::endl;
     }
 
     {
