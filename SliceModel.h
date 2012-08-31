@@ -110,7 +110,11 @@ public:
 public:
     void get_slice(image::color_image& image,float contrast,float offset) const;
     image::basic_image<float, 3,image::const_pointer_memory<float> > get_source(void) const{return source_images;}
-    void get_mosaic(image::color_image& image,unsigned int mosaic_size,float contrast,float offset) const;
+    void get_mosaic(image::color_image& image,
+                    unsigned int mosaic_size,
+                    float contrast,
+                    float offset,
+                    unsigned int skip) const;
 };
 
 class CustomSliceModel : public SliceModel{

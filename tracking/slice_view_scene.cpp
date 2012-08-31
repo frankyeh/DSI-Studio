@@ -87,10 +87,11 @@ void slice_view_scene::show_slice(void)
     }
     else
     {
-        mosaic_size = std::ceil(std::sqrt((float)cur_tracking_window.slice.geometry[2]));
-        cur_tracking_window.slice.get_mosaic(mosaic_image,mosaic_size,contrast,offset);
+        unsigned int skip = cur_tracking_window.ui->view_style->currentIndex()-1;
+        mosaic_size = std::max((int)1,(int)std::ceil(std::sqrt((float)(cur_tracking_window.slice.geometry[2] >> skip))));
+        cur_tracking_window.slice.get_mosaic(mosaic_image,mosaic_size,contrast,offset,skip);
         QImage qimage((unsigned char*)&*mosaic_image.begin(),mosaic_image.width(),mosaic_image.height(),QImage::Format_RGB32);
-        cur_tracking_window.regionWidget->draw_mosaic_region(qimage,mosaic_size);
+        cur_tracking_window.regionWidget->draw_mosaic_region(qimage,mosaic_size,skip);
         view_image = qimage.scaled(mosaic_image.width()*display_ratio/(float)mosaic_size,mosaic_image.height()*display_ratio/(float)mosaic_size);
     }
     setSceneRect(0, 0, view_image.width(),view_image.height());

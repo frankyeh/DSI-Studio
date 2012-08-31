@@ -207,12 +207,13 @@ void RegionTableWidget::draw_region(QImage& qimage)
         }
     }
 }
-void RegionTableWidget::draw_mosaic_region(QImage& qimage,unsigned int mosaic_size)
+void RegionTableWidget::draw_mosaic_region(QImage& qimage,unsigned int mosaic_size,unsigned int skip)
 {
     int X, Y, Z;
     image::geometry<3> geo = cur_tracking_window.slice.geometry;
-    std::vector<int> shift_x(geo[2]),shift_y(geo[2]);
-    for(unsigned int z = 0;z < geo[2];++z)
+    unsigned int slice_number = geo[2] >> skip;
+    std::vector<int> shift_x(slice_number),shift_y(slice_number);
+    for(unsigned int z = 0;z < slice_number;++z)
     {
         shift_x[z] = geo[0]*(z%mosaic_size);
         shift_y[z] = geo[1]*(z/mosaic_size);
@@ -226,10 +227,10 @@ void RegionTableWidget::draw_mosaic_region(QImage& qimage,unsigned int mosaic_si
         for (unsigned int index = 0;index < regions[roi_index].size();++index)
         {
             regions[roi_index].getSlicePosition(&cur_tracking_window.slice, index, X, Y, Z);
-            if(Z >= geo[2])
+            if(Z != ((Z >> skip) << skip))
                 continue;
-            X += shift_x[Z];
-            Y += shift_y[Z];
+            X += shift_x[Z >> skip];
+            Y += shift_y[Z >> skip];
             if(X >= qimage.width() || Y >= qimage.height())
                 continue;
             qimage.setPixel(X,Y,(unsigned int)qimage.pixel(X,Y) | cur_color);

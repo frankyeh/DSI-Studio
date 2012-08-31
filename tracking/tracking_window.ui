@@ -1209,6 +1209,16 @@
            <string>Mosaic</string>
           </property>
          </item>
+         <item>
+          <property name="text">
+           <string>Mosaic2</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Mosaic4</string>
+          </property>
+         </item>
         </widget>
        </item>
        <item>
