@@ -696,7 +696,7 @@ void GLWidget::add_odf(int x,int y,int z)
 
     if(!odf_buffer)
         return;
-    static float size_set[] = {0.5,1.0,2.0,4.0,8.0,16.0,32.0};
+    static float size_set[] = {0.5,1.0,1.5,2.0,4.0,8.0,16.0,32.0};
     float scaling = size_set[get_param("odf_size")]*2.0/max_fa;
     unsigned int odf_size = cur_tracking_window.odf_size;
     unsigned int half_odf = odf_size >> 1;
