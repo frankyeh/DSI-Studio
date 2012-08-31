@@ -99,6 +99,9 @@ void slice_view_scene::show_slice(void)
     setItemIndexMethod(QGraphicsScene::NoIndex);
     addRect(0, 0, view_image.width(),view_image.height(),QPen(),
             (cur_tracking_window.slice.cur_dim == 2 || cur_tracking_window.ui->view_style->currentIndex() != 0) ? view_image : view_image.mirrored());
+    // clear point buffer
+    sel_point.clear();
+    sel_coord.clear();
 }
 
 void slice_view_scene::save_slice_as()
