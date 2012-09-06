@@ -158,6 +158,20 @@ int main(int ac, char *av[])
     header.save_to_file("c:/warp.nii");
     return 0;
     */
+    {
+        int pos = 0;
+        for(int index = 0;av[0][index];++index)
+            if(av[0][index] == '\\' || av[0][index] == '/')
+                pos = index;
+        std::string fa_template_path(&(av[0][0]),&(av[0][0])+pos+1);
+        fa_template_path += "FMRIB58_FA_1mm.nii";
+        if(!fa_template_imp.load_from_file(fa_template_path.c_str()))
+        {
+            QMessageBox::information(0,"Error","Cannot find the fa template file",0);
+            return 0;
+        }
+    }
+
     program_base = av[0];
     if(ac > 2)
     {
@@ -221,19 +235,7 @@ int main(int ac, char *av[])
     font.setFamily(QString::fromUtf8("Arial"));
     a.setFont(font);
 
-    {
-        int pos = 0;
-        for(int index = 0;av[0][index];++index)
-            if(av[0][index] == '\\' || av[0][index] == '/')
-                pos = index;
-        std::string fa_template_path(&(av[0][0]),&(av[0][0])+pos+1);
-        fa_template_path += "FMRIB58_FA_1mm.nii";
-        if(!fa_template_imp.load_from_file(fa_template_path.c_str()))
-        {
-            QMessageBox::information(0,"Error","Cannot find the fa template file",0);
-            return 0;
-        }
-    }
+
     MainWindow w;
     w.setFont(font);
     w.showMaximized();
