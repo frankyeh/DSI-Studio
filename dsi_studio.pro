@@ -9,8 +9,8 @@ TARGET = dsi_studio
 TEMPLATE = app
 
 # Need to be modified if not built under windows version
-#LIBS += -L. -lboost_thread-mgw45-mt-1_45.dll \
-#      -L. -lboost_program_options-mgw45-mt-1_45.dll
+LIBS += -L. -lboost_thread-mgw45-mt-1_45.dll \
+      -L. -lboost_program_options-mgw45-mt-1_45.dll
 
 
 INCLUDEPATH += c:/frank/myprog/include \

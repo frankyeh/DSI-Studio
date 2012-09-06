@@ -16,6 +16,7 @@ void init_mask(const image::basic_image<unsigned char, 3>& image,
 /**
  perform reconstruction
  */
+bool load_fa_template(char *av[]);
 int rec(int ac, char *av[])
 {
     po::options_description rec_desc("reconstruction options");
@@ -78,7 +79,7 @@ int rec(int ac, char *av[])
         param[0] = 1.2;
     if(method_index == 7)
     {
-        if(!fa_template_imp.load_from_file("FMRIB58_FA_1mm.nii"))
+        if(!load_fa_template(av))
         {
             out << "Cannot find FA template" << std::endl;
             free_reconstruction(handle);
