@@ -20,14 +20,14 @@
 #include "libs/vbc/vbc.hpp"
 
 std::vector<atlas> atlas_list;
-
+extern std::string program_base;
 extern std::auto_ptr<QProgressDialog> progressDialog;
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
         ui(new Ui::MainWindow)
 {
 
-    QDir dir = QDir::currentPath()+"/atlas";
+    QDir dir = QString(program_base.c_str())+ "/atlas";
     QStringList atlas_name_list= dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
     for(int index = 0;index < atlas_name_list.size();++index)
     {

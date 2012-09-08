@@ -92,7 +92,7 @@ void ROIRegion::SaveToFile(const char* FileName) {
 				mask[image::pixel_index<3>(region[index][0], region[index][1],
 				region[index][2], geo).index()] = 255;
 		}
-                std::string out_temp = program_base + ".nii";
+                std::string out_temp = program_base + "tmp.nii";
 		image::io::nifti header;
                 header.set_voxel_size(vs.begin());
                 // from +x = Left  +y = Posterior +z = Superior
@@ -165,7 +165,7 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
         gzFile id = gzopen(FileName,"rb");
         std::vector<char> buf(1000);
         unsigned int size = 0;
-        std::string out_temp = program_base + ".nii";
+        std::string out_temp = program_base + "tmp.nii";
         std::ofstream out(out_temp.c_str(),std::ios::binary);
         while(size = gzread(id,&*buf.begin(),1000))
             out.write(&*buf.begin(),size);

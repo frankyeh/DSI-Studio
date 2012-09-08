@@ -108,13 +108,9 @@ void q4pugss_EndCallBackSlot(QObject*, int)
 #include <iostream>
 #include <iterator>
 std::string program_base;
-bool load_fa_template(char *av[])
+bool load_fa_template(void)
 {
-    int pos = 0;
-    for(int index = 0;av[0][index];++index)
-        if(av[0][index] == '\\' || av[0][index] == '/')
-            pos = index;
-    std::string fa_template_path(&(av[0][0]),&(av[0][0])+pos+1);
+    std::string fa_template_path = program_base;
     fa_template_path += "FMRIB58_FA_1mm.nii";
     if(!fa_template_imp.load_from_file(fa_template_path.c_str()))
     {
@@ -176,7 +172,14 @@ int main(int ac, char *av[])
     */
 
 
-    program_base = av[0];
+    {
+        int pos = 0;
+        for(int index = 0;av[0][index];++index)
+            if(av[0][index] == '\\' || av[0][index] == '/')
+                pos = index;
+        program_base = std::string(&(av[0][0]),&(av[0][0])+pos+1);
+    }
+
     if(ac > 2)
     {
         {
@@ -239,7 +242,7 @@ int main(int ac, char *av[])
     font.setFamily(QString::fromUtf8("Arial"));
     a.setFont(font);
 
-    if(!load_fa_template(av))
+    if(!load_fa_template())
         return -1;
 
     MainWindow w;
