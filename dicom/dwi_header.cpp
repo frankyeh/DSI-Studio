@@ -354,6 +354,7 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
         geo[2] = slice_pile;
 
     //store dimension
+    unsigned int output_size = 0;
     {
         short dimension[3];
         std::copy(geo.begin(),geo.end(),dimension);
@@ -361,6 +362,7 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
             std::for_each(dimension,dimension+3,boost::lambda::_1 <<= 1);
         if(upsampling == 2)
             std::for_each(dimension,dimension+3,boost::lambda::_1 >>= 1);
+        output_size = dimension[0]*dimension[1]*dimension[2];
         write_mat.add_matrix("dimension",dimension,1,3);
     }
     //store dimension
@@ -415,7 +417,7 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
                 image::downsampling(buffer);
             ptr = (const unsigned short*)&*buffer.begin();
         }
-        write_mat.add_matrix(name.str().c_str(),ptr,1,(upsampling) ? geo.size()*8: geo.size());
+        write_mat.add_matrix(name.str().c_str(),ptr,1,output_size);
 
     }
     // store bvec file
