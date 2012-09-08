@@ -220,7 +220,7 @@ public:
         for(int index = 1;index < index_data.size();++index)
         {
             for(int j = 0;j < index_data[index].size();++j)
-                if(!index_data[index][j])
+                if(!index_data[index][j] || index_data[index].size() != dir.size())
                 {
                     index_data.erase(index_data.begin()+index);
                     index_name.erase(index_name.begin()+index);
