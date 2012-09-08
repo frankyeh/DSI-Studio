@@ -339,7 +339,7 @@ void dicom_parser::on_buttonBox_accepted()
 
     DwiHeader::output_src(ui->SrcName->text().toLocal8Bit().begin(),
                           dwi_files,
-                          ui->upsampling->currentIndex() == 1,
+                          ui->upsampling->currentIndex(),
                           ui->topdown->checkState() == Qt::Checked);
 
     dwi_files.clear();

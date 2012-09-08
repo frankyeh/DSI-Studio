@@ -64,7 +64,7 @@ public:
 			   bvalue == rhs.bvalue;
 	}
     public:
-        static bool output_src(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files,bool upsampling,bool topdown);
+        static bool output_src(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files,int upsampling,bool topdown);
 };
 
 #endif//DWI_HEADER_HPP

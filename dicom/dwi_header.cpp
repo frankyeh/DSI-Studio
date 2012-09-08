@@ -337,8 +337,8 @@ void correct_t2(boost::ptr_vector<DwiHeader>& dwi_files)
             ++index;
     }
 }
-
-bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi_files,bool upsampling,bool topdown)
+// upsampling 1: upsampling 2: downsampling
+bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi_files,int upsampling,bool topdown)
 {
     sort_dwi(dwi_files);
     unsigned int slice_pile = get_slice_pile(dwi_files);
@@ -357,16 +357,20 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
     {
         short dimension[3];
         std::copy(geo.begin(),geo.end(),dimension);
-        if(upsampling)
+        if(upsampling == 1)
             std::for_each(dimension,dimension+3,boost::lambda::_1 <<= 1);
+        if(upsampling == 2)
+            std::for_each(dimension,dimension+3,boost::lambda::_1 >>= 1);
         write_mat.add_matrix("dimension",dimension,1,3);
     }
     //store dimension
     {
         float voxel_size[3];
         std::copy(dwi_files.front().voxel_size,dwi_files.front().voxel_size+3,voxel_size);
-        if(upsampling)
+        if(upsampling == 1)
             std::for_each(voxel_size,voxel_size+3,boost::lambda::_1 /= 2.0);
+        if(upsampling == 2)
+            std::for_each(voxel_size,voxel_size+3,boost::lambda::_1 *= 2.0);
         write_mat.add_matrix("voxel_size",voxel_size,1,3);
     }
 
@@ -387,9 +391,13 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
             {
                 buffer.resize(geo);
                 std::copy(ptr,ptr+geo.size(),buffer.begin());
-                image::upsampling(buffer);
+                if(upsampling == 1)
+                    image::upsampling(buffer);
+                else
+                    image::downsampling(buffer);
                 ptr = (const unsigned short*)&*buffer.begin();
             }
+
         }
         else
         {
@@ -401,8 +409,10 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
                           buffer.begin() + z * dwi_files[index+z].size());
             if(topdown)
                 image::flip_z(buffer);
-            if(upsampling)
+            if(upsampling == 1)
                 image::upsampling(buffer);
+            if(upsampling == 2)
+                image::downsampling(buffer);
             ptr = (const unsigned short*)&*buffer.begin();
         }
         write_mat.add_matrix(name.str().c_str(),ptr,1,(upsampling) ? geo.size()*8: geo.size());
