@@ -814,6 +814,10 @@ void tracking_window::on_atlasListBox_currentIndexChanged(int atlas_index)
 
 void tracking_window::on_refresh_report_clicked()
 {
+    if(tractWidget->tract_models.size() > 1 &&
+       tractWidget->tract_models[0]->get_tract_color(0) ==
+       tractWidget->tract_models[1]->get_tract_color(0))
+        tractWidget->assign_colors();
     ui->dockWidget_report->show();
     ui->report_widget->clearGraphs();
 
@@ -830,6 +834,14 @@ void tracking_window::on_refresh_report_clicked()
     unsigned int profile_width = (slice.geometry[profile_dir]+1)*detail;
     double max_y = 0.0;
     double min_x = slice.geometry[profile_dir],max_x = 0;
+
+    float band_width = ui->report_bandwidth->value();
+    std::vector<float> weighting((int)(1.0+band_width*3.0));
+    for(int index = 0;index < weighting.size();++index)
+    {
+        float x = index;
+        weighting[index] = std::exp(-x*x/2.0/band_width/band_width);
+    }
     for(unsigned int index = 0;index < tractWidget->tract_models.size();++index)
     {
         if(tractWidget->item(index,0)->checkState() != Qt::Checked)
@@ -845,7 +857,8 @@ void tracking_window::on_refresh_report_clicked()
         if(profile_on_length == 2)
             profile_width = tracts.size();
 
-        std::vector<std::vector<float> > data_profile(profile_width);
+        std::vector<float> data_profile(profile_width);
+        std::vector<float> data_profile_w(profile_width);
         {
             std::vector<std::vector<float> > data;
             if(ui->report_index->currentIndex())
@@ -853,8 +866,16 @@ void tracking_window::on_refresh_report_clicked()
             else
                 handle->get_tracts_fa(tracts,threshold,cull_angle_cos,data);
 
-            if(profile_on_length == 2)
-                data_profile.swap(data);
+            if(profile_on_length == 2)// list the mean fa value of each tract
+            {
+                data_profile.resize(data.size());
+                data_profile_w.resize(data.size());
+                for(unsigned int index = 0;index < data_profile.size();++index)
+                {
+                    data_profile[index] = image::mean(data[index].begin(),data[index].end());
+                    data_profile_w[index] = 1.0;
+                }
+            }
             else
                 for(int i = 0;i < data.size();++i)
                     for(int j = 0;j < data[i].size();++j)
@@ -866,17 +887,21 @@ void tracking_window::on_refresh_report_clicked()
                             pos = 0;
                         if(pos >= profile_width)
                             pos = profile_width-1;
-                        data_profile[pos].push_back(data[i][j]);
 
-                        // create smoothing effect
-                        if(profile_on_length == 1)
+                        data_profile[pos] += data[i][j]*weighting[0];
+                        data_profile_w[pos] += weighting[0];
+                        for(int k = 1;k < weighting.size();++k)
                         {
-                            data_profile[pos].push_back(data[i][j]);
-                            if(pos > 0)
-                                data_profile[pos-1].push_back(data[i][j]);
-                            if(pos < profile_width-1)
-                                data_profile[pos+1].push_back(data[i][j]);
-
+                            if(pos > k)
+                            {
+                                data_profile[pos-k] += data[i][j]*weighting[k];
+                                data_profile_w[pos-k] += weighting[k];
+                            }
+                            if(pos+k < data_profile.size())
+                            {
+                                data_profile[pos+k] += data[i][j]*weighting[k];
+                                data_profile_w[pos+k] += weighting[k];
+                            }
                         }
                     }
         }
@@ -885,7 +910,10 @@ void tracking_window::on_refresh_report_clicked()
         for(unsigned int j = 0;j < profile_width;++j)
         {
             x[j] = (double)j/detail;
-            y[j] = image::mean(data_profile[j].begin(),data_profile[j].end());
+            if(data_profile_w[j] + 1.0 != 1.0)
+                y[j] = data_profile[j]/data_profile_w[j];
+            else
+                y[j]= 0.0;
             if(y[j] > max_y)
                 max_y = y[j];
             if(y[j] > 0.0)

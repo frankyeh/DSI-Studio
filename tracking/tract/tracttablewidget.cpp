@@ -217,6 +217,14 @@ void TractTableWidget::set_color(void)
     emit need_update();
 }
 extern QColor ROIColor[15];
+void TractTableWidget::assign_colors(void)
+{
+    for(unsigned int index = 0;index < tract_models.size();++index)
+        tract_models.back()->set_color(ROIColor[index%16].rgb());
+    cur_tracking_window.renderWidget->setData("tract_color_style",1);//manual assigned
+    emit need_update();
+}
+
 void TractTableWidget::clustering(int method_id)
 {
     if(tract_models.empty())
@@ -258,12 +266,10 @@ void TractTableWidget::clustering(int method_id)
         for(int i = 0;i < cluster_size;++i)
             add_tracts[i].swap(tracts[data[i]]);
         tract_models.back()->add_tracts(add_tracts);
-        tract_models.back()->set_color(ROIColor[index%16].rgb());
         item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     }
     tract_cluster_free(handle);
-    cur_tracking_window.renderWidget->setData("tract_color_style",1);//manual assigned
-    emit need_update();
+    assign_colors();
 }
 
 void TractTableWidget::save_tracts_as(void)
