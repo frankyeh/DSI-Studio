@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1272</width>
+    <width>1279</width>
     <height>493</height>
    </rect>
   </property>
@@ -653,7 +653,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1272</width>
+     <width>1279</width>
      <height>21</height>
     </rect>
    </property>
@@ -768,6 +768,7 @@
     <addaction name="actionCut"/>
     <addaction name="actionPaint"/>
     <addaction name="separator"/>
+    <addaction name="actionMove_Object"/>
    </widget>
    <widget class="QMenu" name="menu_View">
     <property name="title">
@@ -1510,7 +1511,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>445</width>
+     <width>452</width>
      <height>138</height>
     </size>
    </property>
@@ -3012,6 +3013,14 @@
    </property>
    <property name="text">
     <string>Save Endpoints in Current Mapping...</string>
+   </property>
+  </action>
+  <action name="actionMove_Object">
+   <property name="text">
+    <string>Move Region</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+M</string>
    </property>
   </action>
  </widget>

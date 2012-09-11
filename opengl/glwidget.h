@@ -21,9 +21,14 @@ class RenderingTableWidget;
      ~GLWidget();
  public:// editing
      unsigned char editing_option;
+     float mat[16];
      image::vector<3,float> pos,dir1,dir2;
      void set_view(unsigned char view_option);
-
+ private:
+     image::vector<3,float> accumulated_dis;
+     unsigned char moving_at_slice_index;
+     float slice_dx,slice_dy;
+     void get_view_dir(QPoint p,image::vector<3,float>& dir);
  public:// other slices
      boost::ptr_vector<CustomSliceModel> other_slices;
      boost::ptr_vector<LinearMapping<image::basic_image<float,3,image::const_pointer_memory<float> >,image::rigid_scaling_transform<3> > > mi3s;
@@ -58,11 +63,11 @@ class RenderingTableWidget;
      void copyToClipboard(void);
  signals:
      void edited(void);
+     void region_edited(void);
  protected:
      void initializeGL();
      void paintGL();
      void resizeGL(int width, int height);
-
      void mousePressEvent(QMouseEvent *event);
      void mouseReleaseEvent(QMouseEvent *event);
      void mouseMoveEvent(QMouseEvent *event);

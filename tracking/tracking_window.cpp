@@ -273,7 +273,8 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
         connect(tractWidget,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
 
         connect(glWidget,SIGNAL(edited()),tractWidget,SLOT(edit_tracts()));
-
+        connect(glWidget,SIGNAL(region_edited()),glWidget,SLOT(updateGL()));
+        connect(glWidget,SIGNAL(region_edited()),&scene,SLOT(show_slice()));
 
         connect(ui->actionOpenTract,SIGNAL(triggered()),tractWidget,SLOT(load_tracts()));
         connect(ui->actionMerge_All,SIGNAL(triggered()),tractWidget,SLOT(merge_all()));
@@ -560,6 +561,12 @@ void tracking_window::on_actionPaint_triggered()
     glWidget->setCursor(Qt::CrossCursor);
     glWidget->editing_option = 1;
     tractWidget->edit_option = 4;
+}
+
+void tracking_window::on_actionMove_Object_triggered()
+{
+    glWidget->setCursor(Qt::CrossCursor);
+    glWidget->editing_option = 2;
 }
 
 
@@ -1134,4 +1141,5 @@ void tracking_window::on_deleteSlice_clicked()
     glWidget->delete_slice(index-1);
     ui->SliceModality->removeItem(index);
 }
+
 

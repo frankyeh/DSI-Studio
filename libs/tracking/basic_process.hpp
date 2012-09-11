@@ -506,11 +506,8 @@ struct StepperDopr853
     }
     void derivs(float x,const image::vector<3,float>& pos,image::vector<3,float>& result)
     {
-        float fa;
         if (!info.evaluate_dir(pos,info.dir,result))
             result = image::vector<3,float>();
-        //else
-        //    result*= fa;
     }
     bool step(const float htry)
     {

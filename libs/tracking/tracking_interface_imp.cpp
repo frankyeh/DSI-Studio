@@ -64,14 +64,6 @@ extern "C"
 }
 
 extern "C"
-    void set_voxel_information(ODFModel* odf_model,unsigned int x,unsigned int y,unsigned int z,float* data)
-{
-//    odf_model->setVoxelInformation(x,y,z,data);
-}
-
-
-
-extern "C"
     const short* select_bundle(ODFModel* odf_model,short* position,
                                float angle,float fa_threshold,unsigned int& count)
 {

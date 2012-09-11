@@ -1117,9 +1117,139 @@ void GLWidget::wheelEvent ( QWheelEvent * event )
     event->ignore();
 }
 
+void GLWidget::get_view_dir(QPoint p,image::vector<3,float>& dir)
+{
+    float m[16],v[3];
+    glGetFloatv(GL_PROJECTION_MATRIX,m);
+    // Compute the vector of the pick ray in screen space
+    v[0] = (( 2.0f * ((float)p.x())/((float)width)) - 1 ) / m[0];
+    v[1] = -(( 2.0f * ((float)p.y())/((float)height)) - 1 ) / m[5];
+    v[2] = -1.0f;
+    // Transform the screen space pick ray into 3D space
+    dir[0] = v[0]*mat[0] + v[1]*mat[4] + v[2]*mat[8];
+    dir[1] = v[0]*mat[1] + v[1]*mat[5] + v[2]*mat[9];
+    dir[2] = v[0]*mat[2] + v[1]*mat[6] + v[2]*mat[10];
+}
+
+bool get_slice_projection_point(const std::vector<image::vector<3,float> >& slice_points,
+                                const image::vector<3,float>& pos,
+                                const image::vector<3,float>& dir,
+                                float& dx,float& dy)
+{
+    image::vector<3,float> pos_offset(pos),v1(slice_points[1]),v2(slice_points[2]),v3(dir);
+    pos_offset -= slice_points[0];
+    v1 -= slice_points[0];
+    v2 -= slice_points[0];
+    float m[9],result[3];
+    m[0] = v1[0];
+    m[1] = v2[0];
+    m[2] = -v3[0];
+    m[3] = v1[1];
+    m[4] = v2[1];
+    m[5] = -v3[1];
+    m[6] = v1[2];
+    m[7] = v2[2];
+    m[8] = -v3[2];
+
+    if(!math::matrix_inverse(m,math::dim<3,3>()))
+        return false;
+    math::matrix_vector_product(m,pos_offset.begin(),result,math::dim<3,3>());
+    dx = result[0];
+    dy = result[1];
+    return true;
+}
+
 void GLWidget::mousePressEvent(QMouseEvent *event)
 {
+    makeCurrent();
     lastPos = event->pos();
+    if(editing_option)
+    {
+        float view[16];
+        //glMultMatrixf(transformation_matrix);
+        glGetFloatv(GL_MODELVIEW_MATRIX,mat);
+        math::matrix_product(transformation_matrix,mat,view,math::dim<4,4>(),math::dim<4,4>());
+        math::matrix_inverse(view,mat,math::dim<4,4>());
+    }
+
+    if(editing_option == 2) // move object
+    {
+        get_view_dir(lastPos,dir1);
+        pos[0] = mat[12];
+        pos[1] = mat[13];
+        pos[2] = mat[14];
+        dir1.normalize();
+        image::geometry<3> geo = cur_tracking_window.slice.geometry;
+        bool selected = false;
+        for(int d = 0;d < 500;++d)
+        {
+            image::vector<3,float> cur_pos(dir1);
+            cur_pos *= d;
+            cur_pos += pos;
+            image::vector<3,short> voxel(cur_pos);
+            if(!geo.is_valid(voxel))
+                continue;
+            for(int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
+                if(cur_tracking_window.regionWidget->regions[index].has_point(voxel))
+                {
+                    cur_tracking_window.regionWidget->selectRow(index);
+                    selected = true;
+                    d = 10000;
+                    break;
+                }
+        }
+        if(!selected)
+        {
+            editing_option = 0;
+            setCursor(Qt::ArrowCursor);
+            return;
+        }
+        std::vector<image::vector<3,float> > points(4);
+        SliceModel* active_slice = current_visible_slide ?
+                                   (SliceModel*)&other_slices[current_visible_slide-1] :
+                                   (SliceModel*)&cur_tracking_window.slice;
+        bool has_slice = false;
+        bool show_slice[3];
+        show_slice[0] = cur_tracking_window.ui->glSagCheck->checkState();
+        show_slice[1] = cur_tracking_window.ui->glCorCheck->checkState();
+        show_slice[2] = cur_tracking_window.ui->glAxiCheck->checkState();
+        float angle[3] = {0,0,0};
+        for(unsigned char dim = 0;dim < 3;++dim)
+        {
+            if(!show_slice[dim])
+                continue;
+            active_slice->get_slice_positions(dim,points);
+            if(current_visible_slide)
+            for(unsigned int index = 0;index < 4;++index)
+            {
+                image::vector<3,float> tmp;
+                image::vector_transformation(points[index].begin(), tmp.begin(),
+                    transform[current_visible_slide-1].begin(), image::vdim<3>());
+                points[index] = tmp;
+            }
+            image::vector<3,float> v1(points[1]),v2(points[2]),norm;
+            v1 -= points[0];
+            v2 -= points[0];
+            norm = v1.cross_product(v2);
+            norm.normalize();
+            angle[dim] = std::fabs(dir1*norm);
+            has_slice = true;
+        }
+        if(!has_slice)
+        {
+            editing_option = 0;
+            setCursor(Qt::ArrowCursor);
+            return;
+        }
+        moving_at_slice_index = std::max_element(angle,angle+3)-angle;
+        if(!get_slice_projection_point(points,pos,dir1,slice_dx,slice_dy))
+        {
+            editing_option = 0;
+            setCursor(Qt::ArrowCursor);
+            return;
+        }
+        accumulated_dis = math::zero<float>();
+    }
 }
 void GLWidget::mouseReleaseEvent(QMouseEvent *event)
 {
@@ -1128,44 +1258,62 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
     makeCurrent();
     if(!editing_option)
         return;
-
-        float mat[16],view[16],v1[3],v2[3];
-            glGetFloatv(GL_PROJECTION_MATRIX,mat);
-            // Compute the vector of the pick ray in screen space
-            v1[0] = (  ( 2.0f * ((float)lastPos.x())/((float)width)) - 1 ) / mat[0];
-            v1[1] = -(  ( 2.0f * ((float)lastPos.y())/((float)height)) - 1 ) / mat[5];
-            v1[2] = -1.0f;
-            v2[0] = (  ( 2.0f * ((float)event->x())/((float)width)) - 1 ) / mat[0];
-            v2[1] = -(  ( 2.0f * ((float)event->y())/((float)height)) - 1 ) / mat[5];
-            v2[2] = -1.0f;
-
-            //glMultMatrixf(transformation_matrix);
-            glGetFloatv(GL_MODELVIEW_MATRIX,mat);
-            math::matrix_product(transformation_matrix,mat,view,math::dim<4,4>(),math::dim<4,4>());
-            math::matrix_inverse(view,mat,math::dim<4,4>());
-
-            // Transform the screen space pick ray into 3D space
-            dir1[0] = v1[0]*mat[0] + v1[1]*mat[4] + v1[2]*mat[8];
-            dir1[1] = v1[0]*mat[1] + v1[1]*mat[5] + v1[2]*mat[9];
-            dir1[2] = v1[0]*mat[2] + v1[1]*mat[6] + v1[2]*mat[10];
-            dir2[0] = v2[0]*mat[0] + v2[1]*mat[4] + v2[2]*mat[8];
-            dir2[1] = v2[0]*mat[1] + v2[1]*mat[5] + v2[2]*mat[9];
-            dir2[2] = v2[0]*mat[2] + v2[1]*mat[6] + v2[2]*mat[10];
-            pos[0] = mat[12];
-            pos[1] = mat[13];
-            pos[2] = mat[14];
-            dir1.normalize();
-            dir2.normalize();
-            editing_option = 0;
-            setCursor(Qt::ArrowCursor);
-            emit edited();
-
+    setCursor(Qt::ArrowCursor);
+    if(editing_option == 2)
+    {
+        editing_option = 0;
+        return;
+    }
+    get_view_dir(lastPos,dir1);
+    get_view_dir(QPoint(event->x(),event->y()),dir2);
+    pos[0] = mat[12];
+    pos[1] = mat[13];
+    pos[2] = mat[14];
+    dir1.normalize();
+    dir2.normalize();
+    editing_option = 0;
+    emit edited();
 }
 
 void GLWidget::mouseMoveEvent(QMouseEvent *event)
 {
     makeCurrent();
-    // go editing
+    // move object
+    if(editing_option == 2)
+    {
+
+        std::vector<image::vector<3,float> > points(4);
+        SliceModel* active_slice = current_visible_slide ?
+                                   (SliceModel*)&other_slices[current_visible_slide-1] :
+                                   (SliceModel*)&cur_tracking_window.slice;
+        active_slice->get_slice_positions(moving_at_slice_index,points);
+        if(current_visible_slide)
+            for(unsigned int index = 0;index < 4;++index)
+            {
+                image::vector<3,float> tmp;
+                image::vector_transformation(points[index].begin(), tmp.begin(),
+                    transform[current_visible_slide-1].begin(), image::vdim<3>());
+                points[index] = tmp;
+            }
+        get_view_dir(QPoint(event->x(),event->y()),dir2);
+        float dx,dy;
+        if(!get_slice_projection_point(points,pos,dir2,dx,dy))
+            return;
+        image::vector<3,float> v1(points[1]),v2(points[2]),dis;
+        v1 -= points[0];
+        v2 -= points[0];
+        dis = v1*(dx-slice_dx)+v2*(dy-slice_dy);
+        dis -= accumulated_dis;
+        image::vector<3,short> apply_dis(dis);
+        if(apply_dis[0] != 0 || apply_dis[1] != 0 || apply_dis[2] != 0)
+        {
+            cur_tracking_window.regionWidget->regions[cur_tracking_window.regionWidget->currentRow()].shift(apply_dis);
+            accumulated_dis += apply_dis;
+            emit region_edited();
+        }
+        return;
+    }
+    // go tract editing
     if(editing_option)
         return;
 
