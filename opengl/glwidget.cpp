@@ -599,17 +599,8 @@ void GLWidget::paintGL()
 
             glBegin(GL_QUADS);
             glColor4f(1.0,1.0,1.0,std::min(alpha+0.2,1.0));
-            active_slice->get_slice_positions(dim,points);
 
-            // if present the T1 or T2 slices, then we need to apply transformation
-            if(current_visible_slide)
-            for(unsigned int index = 0;index < 4;++index)
-            {
-                image::vector<3,float> tmp;
-                image::vector_transformation(points[index].begin(), tmp.begin(),
-                    transform[current_visible_slide-1].begin(), image::vdim<3>());
-                points[index] = tmp;
-            }
+            slice_location(dim,points);
             glTexCoord2f(0.0f, 1.0f);
             glVertex3f(points[0][0],points[0][1],points[0][2]);
             glTexCoord2f(1.0f, 1.0f);
@@ -1116,6 +1107,21 @@ void GLWidget::wheelEvent ( QWheelEvent * event )
     updateGL();
     event->ignore();
 }
+void GLWidget::slice_location(unsigned char dim,std::vector<image::vector<3,float> >& points)
+{
+    SliceModel* active_slice = current_visible_slide ?
+                               (SliceModel*)&other_slices[current_visible_slide-1] :
+                               (SliceModel*)&cur_tracking_window.slice;
+    active_slice->get_slice_positions(dim,points);
+    if(current_visible_slide)
+    for(unsigned int index = 0;index < 4;++index)
+    {
+        image::vector<3,float> tmp;
+        image::vector_transformation(points[index].begin(), tmp.begin(),
+            transform[current_visible_slide-1].begin(), image::vdim<3>());
+        points[index] = tmp;
+    }
+}
 
 void GLWidget::get_view_dir(QPoint p,image::vector<3,float>& dir)
 {
@@ -1181,7 +1187,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
         dir1.normalize();
         image::geometry<3> geo = cur_tracking_window.slice.geometry;
         bool selected = false;
-        for(int d = 0;d < 500;++d)
+        for(int d = 0;d < 5000;++d)
         {
             image::vector<3,float> cur_pos(dir1);
             cur_pos *= d;
@@ -1205,9 +1211,6 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
             return;
         }
         std::vector<image::vector<3,float> > points(4);
-        SliceModel* active_slice = current_visible_slide ?
-                                   (SliceModel*)&other_slices[current_visible_slide-1] :
-                                   (SliceModel*)&cur_tracking_window.slice;
         bool has_slice = false;
         bool show_slice[3];
         show_slice[0] = cur_tracking_window.ui->glSagCheck->checkState();
@@ -1218,15 +1221,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
         {
             if(!show_slice[dim])
                 continue;
-            active_slice->get_slice_positions(dim,points);
-            if(current_visible_slide)
-            for(unsigned int index = 0;index < 4;++index)
-            {
-                image::vector<3,float> tmp;
-                image::vector_transformation(points[index].begin(), tmp.begin(),
-                    transform[current_visible_slide-1].begin(), image::vdim<3>());
-                points[index] = tmp;
-            }
+            slice_location(dim,points);
             image::vector<3,float> v1(points[1]),v2(points[2]),norm;
             v1 -= points[0];
             v2 -= points[0];
@@ -1242,6 +1237,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
             return;
         }
         moving_at_slice_index = std::max_element(angle,angle+3)-angle;
+        slice_location(moving_at_slice_index,points);
         if(!get_slice_projection_point(points,pos,dir1,slice_dx,slice_dy))
         {
             editing_option = 0;
@@ -1283,18 +1279,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     {
 
         std::vector<image::vector<3,float> > points(4);
-        SliceModel* active_slice = current_visible_slide ?
-                                   (SliceModel*)&other_slices[current_visible_slide-1] :
-                                   (SliceModel*)&cur_tracking_window.slice;
-        active_slice->get_slice_positions(moving_at_slice_index,points);
-        if(current_visible_slide)
-            for(unsigned int index = 0;index < 4;++index)
-            {
-                image::vector<3,float> tmp;
-                image::vector_transformation(points[index].begin(), tmp.begin(),
-                    transform[current_visible_slide-1].begin(), image::vdim<3>());
-                points[index] = tmp;
-            }
+        slice_location(moving_at_slice_index,points);
         get_view_dir(QPoint(event->x(),event->y()),dir2);
         float dx,dy;
         if(!get_slice_projection_point(points,pos,dir2,dx,dy))
