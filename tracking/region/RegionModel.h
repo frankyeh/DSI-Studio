@@ -28,6 +28,8 @@ public:
         mesh_type* get(void) {return object.get();}
         const std::vector<unsigned int>& getSortedIndex(unsigned char view) const
         {return sorted_index[view];}
+
+        void move_object(const image::vector<3,float>& shift);
 };
 
 #endif

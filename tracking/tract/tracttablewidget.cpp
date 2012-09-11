@@ -220,7 +220,7 @@ extern QColor ROIColor[15];
 void TractTableWidget::assign_colors(void)
 {
     for(unsigned int index = 0;index < tract_models.size();++index)
-        tract_models.back()->set_color(ROIColor[index%16].rgb());
+        tract_models[index]->set_color(ROIColor[index%16].rgb());
     cur_tracking_window.renderWidget->setData("tract_color_style",1);//manual assigned
     emit need_update();
 }

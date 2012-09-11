@@ -176,6 +176,8 @@ void TractCluster::add_tract(const float* points,unsigned int count)
 
     // get the eligible fibers for merging, and also register the ending points
     std::vector<unsigned int> passing_tracts;
+    if(passed_points.empty() || ranged_points.empty())
+        goto end;
     {
 
                 const std::vector<unsigned int>* connection_set = add_connection(passed_points.front(),tract_index);
@@ -212,7 +214,7 @@ void TractCluster::add_tract(const float* points,unsigned int count)
                 merge_tract(tract_index,cur_index);
         }
     }
-
+    end:
     tract_passed_voxels.push_back(std::vector<unsigned short>());
     tract_passed_voxels.back().swap(passed_points);
     tract_ranged_voxels.push_back(std::vector<unsigned short>());

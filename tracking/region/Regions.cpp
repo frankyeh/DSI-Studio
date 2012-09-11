@@ -274,7 +274,8 @@ void ROIRegion::Flip(unsigned int dimension) {
 
 // ---------------------------------------------------------------------------
 void ROIRegion::shift(const image::vector<3,short>& dx) {
-	modified = true;
-        for (unsigned int index = 0; index < region.size(); ++index)
+    image::vector<3,float> shift(dx);
+    show_region.move_object(shift);
+    for (unsigned int index = 0; index < region.size(); ++index)
 		region[index] += dx;
 }
