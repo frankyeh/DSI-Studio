@@ -5,6 +5,7 @@
 #include <QPainter>
 #include <QFileDialog>
 #include <QClipboard>
+#include <QMessageBox>
 #include "tracking_window.h"
 #include "ui_tracking_window.h"
 #include "region/regiontablewidget.h"
@@ -100,8 +101,11 @@ void slice_view_scene::show_slice(void)
     addRect(0, 0, view_image.width(),view_image.height(),QPen(),
             (cur_tracking_window.slice.cur_dim == 2 || cur_tracking_window.ui->view_style->currentIndex() != 0) ? view_image : view_image.mirrored());
     // clear point buffer
-    sel_point.clear();
-    sel_coord.clear();
+    if(sel_mode != 5) // move object need the selection record
+    {
+        sel_point.clear();
+        sel_coord.clear();
+    }
 }
 
 void slice_view_scene::save_slice_as()
@@ -206,6 +210,21 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 
     cur_tracking_window.slice.get3dPosition(((float)X) / display_ratio,
                                             ((float)Y) / display_ratio, x, y, z);
+    if(sel_mode == 5)// move object
+    {
+        bool find_region = false;
+        image::vector<3,short> cur_point(x, y, z);
+        for(unsigned int index = 0;index <
+            cur_tracking_window.regionWidget->regions.size();++index)
+            if(cur_tracking_window.regionWidget->regions[index].has_point(cur_point))
+            {
+                find_region = true;
+                cur_tracking_window.regionWidget->selectRow(index);
+                break;
+            }
+        if(!find_region)
+            return;
+    }
 
     if(sel_mode != 4)
     {
@@ -253,6 +272,20 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         !cur_tracking_window.slice.get3dPosition(((float)cX) / display_ratio,
                             ((float)cY) / display_ratio, x, y, z))
         return;
+
+    if(sel_mode == 5 && !cur_tracking_window.regionWidget->regions.empty()) // move object
+    {
+        image::vector<3,short> cur_point(x, y, z);
+        if(!sel_coord.empty() && cur_point != sel_coord.back())
+        {
+            cur_point -= sel_coord.back();
+            cur_tracking_window.regionWidget->regions[cur_tracking_window.regionWidget->currentRow()].shift(cur_point);
+            sel_coord.back() += cur_point;
+            emit need_update();
+        }
+        return;
+    }
+
     QImage annotated_image = view_image;
     QPainter paint(&annotated_image);
 
@@ -310,7 +343,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
 
     if (!mouse_down && !mid_down)
         return;
-    if(mid_down)
+    if(mid_down || sel_mode == 5)
     {
         mid_down = false;
         return;
@@ -442,6 +475,17 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
                 (cur_tracking_window.slice.cur_dim == 2) ? annotated_image : annotated_image.mirrored());
         return;
     }
+    }
+    if(mouseEvent->button() != Qt::RightButton &&
+       !cur_tracking_window.regionWidget->regions.empty() &&
+       !cur_tracking_window.regionWidget->regions[cur_tracking_window.regionWidget->currentRow()].empty() &&
+       !cur_tracking_window.regionWidget->regions[cur_tracking_window.regionWidget->currentRow()].has_points(points))
+    {
+        int result = QMessageBox::information(0,"DSI Studio","Draw a new region?",QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+        if(result == QMessageBox::Cancel)
+            return;
+        if(result == QMessageBox::Yes)
+            cur_tracking_window.regionWidget->new_region();
     }
     cur_tracking_window.regionWidget->add_points(points,mouseEvent->button() == Qt::RightButton);
     need_update();

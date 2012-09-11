@@ -1,0 +1,21 @@
+/* XPM */
+static char * C:\frank\myprog\my program\image projects\DSI Studio\src\icons\move_xpm[] = {
+"16 16 2 1",
+" 	c None",
+".	c #000000",
+"                ",
+"        .       ",
+"       ...      ",
+"      . . .     ",
+"        .       ",
+"        .       ",
+"   .    .    .  ",
+"  .     .     . ",
+" ...............",
+"  .     .     . ",
+"   .    .    .  ",
+"        .       ",
+"        .       ",
+"      . . .     ",
+"       ...      ",
+"        .       "};

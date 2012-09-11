@@ -100,6 +100,7 @@ private slots:
     void on_tracking_index_currentIndexChanged(int index);
     void on_actionSave_Endpoints_in_Current_Mapping_triggered();
     void on_deleteSlice_clicked();
+    void on_tool5_pressed();
 };
 
 #endif // TRACKING_WINDOW_H

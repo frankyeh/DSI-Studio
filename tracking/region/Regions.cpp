@@ -263,7 +263,19 @@ void ROIRegion::getSlicePosition(SliceModel* slice, unsigned int pindex, int& x,
 	slice->getSlicePosition(region[pindex].x(), region[pindex].y(),
 		region[pindex].z(), x, y, z);
 }
-
+// ---------------------------------------------------------------------------
+bool ROIRegion::has_point(const image::vector<3,short>& point)
+{
+    return std::find(region.begin(),region.end(),point) != region.end();
+}
+// ---------------------------------------------------------------------------
+bool ROIRegion::has_points(const std::vector<image::vector<3,short> >& points)
+{
+    for(unsigned int index = 0;index < points.size();++index)
+        if(std::binary_search(region.begin(),region.end(),points[index]))
+            return true;
+    return false;
+}
 // ---------------------------------------------------------------------------
 void ROIRegion::Flip(unsigned int dimension) {
 	modified = true;

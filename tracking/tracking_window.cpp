@@ -517,6 +517,10 @@ void tracking_window::on_tool4_clicked()
     scene.sel_mode = 4;
 }
 
+void tracking_window::on_tool5_pressed()
+{
+    scene.sel_mode = 5;
+}
 
 void tracking_window::on_sliceViewBox_currentIndexChanged(int index)
 {
@@ -1130,3 +1134,4 @@ void tracking_window::on_deleteSlice_clicked()
     glWidget->delete_slice(index-1);
     ui->SliceModality->removeItem(index);
 }
+

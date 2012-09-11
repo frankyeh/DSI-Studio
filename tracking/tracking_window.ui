@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1237</width>
+    <width>1272</width>
     <height>493</height>
    </rect>
   </property>
@@ -653,7 +653,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1237</width>
+     <width>1272</width>
      <height>21</height>
     </rect>
    </property>
@@ -933,7 +933,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>400</width>
+     <width>423</width>
      <height>162</height>
     </size>
    </property>
@@ -1169,6 +1169,32 @@
            <width>16</width>
            <height>16</height>
           </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="autoExclusive">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="tool5">
+         <property name="maximumSize">
+          <size>
+           <width>23</width>
+           <height>22</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>move object</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../icons.qrc">
+           <normaloff>:/icons/icons/move.xpm</normaloff>:/icons/icons/move.xpm</iconset>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -1743,12 +1769,12 @@
          </property>
          <item>
           <property name="text">
-           <string>Main Direction</string>
+           <string>Primary Orientation</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>Random Direction</string>
+           <string>All Orientations</string>
           </property>
          </item>
         </widget>

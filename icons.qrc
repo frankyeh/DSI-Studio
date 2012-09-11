@@ -14,5 +14,6 @@
         <file>icons/sag.xpm</file>
         <file>icons/save.xpm</file>
         <file>icons/curves.xpm</file>
+        <file>icons/move.xpm</file>
     </qresource>
 </RCC>
