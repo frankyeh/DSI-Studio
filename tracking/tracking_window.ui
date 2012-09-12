@@ -3017,10 +3017,10 @@
   </action>
   <action name="actionMove_Object">
    <property name="text">
-    <string>Move Region</string>
+    <string>Move Onject</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+M</string>
+    <string>Ctrl+A</string>
    </property>
   </action>
  </widget>

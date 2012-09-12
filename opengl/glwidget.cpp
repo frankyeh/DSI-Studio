@@ -1135,12 +1135,13 @@ void GLWidget::get_view_dir(QPoint p,image::vector<3,float>& dir)
     dir[0] = v[0]*mat[0] + v[1]*mat[4] + v[2]*mat[8];
     dir[1] = v[0]*mat[1] + v[1]*mat[5] + v[2]*mat[9];
     dir[2] = v[0]*mat[2] + v[1]*mat[6] + v[2]*mat[10];
+    dir.normalize();
 }
 
 bool get_slice_projection_point(const std::vector<image::vector<3,float> >& slice_points,
                                 const image::vector<3,float>& pos,
                                 const image::vector<3,float>& dir,
-                                float& dx,float& dy)
+                                float& dx,float& dy,float& dis)
 {
     image::vector<3,float> pos_offset(pos),v1(slice_points[1]),v2(slice_points[2]),v3(dir);
     pos_offset -= slice_points[0];
@@ -1162,7 +1163,126 @@ bool get_slice_projection_point(const std::vector<image::vector<3,float> >& slic
     math::matrix_vector_product(m,pos_offset.begin(),result,math::dim<3,3>());
     dx = result[0];
     dy = result[1];
+    dis = result[2];
     return true;
+}
+bool get_slice_projection_point(const std::vector<image::vector<3,float> >& slice_points,
+                                const image::vector<3,float>& pos,
+                                const image::vector<3,float>& dir,
+                                float& dx,float& dy)
+{
+    float dis;
+    return get_slice_projection_point(slice_points,pos,dir,dx,dy,dis);
+}
+
+image::vector<3,float> get_norm(const std::vector<image::vector<3,float> >& slice_points)
+{
+    image::vector<3,float> v1(slice_points[1]),v2(slice_points[2]),norm;
+    v1 -= slice_points[0];
+    v2 -= slice_points[0];
+    norm = v1.cross_product(v2);
+    norm.normalize();
+    return norm;
+}
+void GLWidget::select_object(void)
+{
+    object_selected = false;
+    if(cur_tracking_window.regionWidget->regions.empty())
+        return;
+    // select object
+    for(object_distance = 0;object_distance < 5000 && !object_selected;object_distance += 1.0)
+    {
+    image::vector<3,float> cur_pos(dir1);
+    cur_pos *= object_distance;
+    cur_pos += pos;
+    image::vector<3,short> voxel(cur_pos);
+    if(!cur_tracking_window.slice.geometry.is_valid(voxel))
+        continue;
+    for(int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
+        if(cur_tracking_window.regionWidget->regions[index].has_point(voxel) &&
+           cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked)
+        {
+            selected_index = index;
+            object_selected = true;
+            break;
+        }
+    }
+}
+
+void GLWidget::select_slice(void)
+{
+    bool show_slice[3];
+    show_slice[0] = cur_tracking_window.ui->glSagCheck->checkState();
+    show_slice[1] = cur_tracking_window.ui->glCorCheck->checkState();
+    show_slice[2] = cur_tracking_window.ui->glAxiCheck->checkState();
+    std::vector<image::vector<3,float> > points(4);
+
+    // select slice
+    slice_selected = false;
+    {
+        // now check whether the slices are selected
+        slice_distance = std::numeric_limits<float>::max();
+        for(unsigned char dim = 0;dim < 3;++dim)
+        {
+            if(!show_slice[dim])
+                continue;
+            slice_location(dim,points);
+            float d;
+            if(!get_slice_projection_point(points,pos,dir1,slice_dx,slice_dy,d))
+                continue;
+            if(slice_dx > 0.0 && slice_dy > 0.0 &&
+               slice_dx < 1.0 && slice_dy < 1.0 &&
+                    d > 0 && slice_distance > d)
+            {
+                moving_at_slice_index = dim;
+                slice_distance = d;
+                slice_selected = true;
+            }
+        }
+    }
+}
+void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    makeCurrent();
+    {
+        float view[16];
+        //glMultMatrixf(transformation_matrix);
+        glGetFloatv(GL_MODELVIEW_MATRIX,mat);
+        math::matrix_product(transformation_matrix,mat,view,math::dim<4,4>(),math::dim<4,4>());
+        math::matrix_inverse(view,mat,math::dim<4,4>());
+        pos[0] = mat[12];
+        pos[1] = mat[13];
+        pos[2] = mat[14];
+    }
+    get_view_dir(event->pos(),dir1);
+    // nothing selected
+    select_object();
+    select_slice();
+    if(!object_selected && !slice_selected)
+        return;
+    // if only slice is selected or slice is at the front, then move slice
+    if(!object_selected || object_distance > slice_distance)
+    {
+        switch(moving_at_slice_index)
+        {
+        case 0:
+            cur_tracking_window.ui->glSagCheck->setChecked(false);
+            break;
+        case 1:
+            cur_tracking_window.ui->glCorCheck->setChecked(false);
+            break;
+        case 2:
+            cur_tracking_window.ui->glAxiCheck->setChecked(false);
+            break;
+        }
+        return;
+    }
+
+    if(object_selected)
+    {
+        cur_tracking_window.regionWidget->item(selected_index,0)->setCheckState(Qt::CheckState());
+        emit region_edited();
+    }
 }
 
 void GLWidget::mousePressEvent(QMouseEvent *event)
@@ -1176,65 +1296,45 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
         glGetFloatv(GL_MODELVIEW_MATRIX,mat);
         math::matrix_product(transformation_matrix,mat,view,math::dim<4,4>(),math::dim<4,4>());
         math::matrix_inverse(view,mat,math::dim<4,4>());
+        pos[0] = mat[12];
+        pos[1] = mat[13];
+        pos[2] = mat[14];
     }
 
     if(editing_option == 2) // move object
     {
         get_view_dir(lastPos,dir1);
-        pos[0] = mat[12];
-        pos[1] = mat[13];
-        pos[2] = mat[14];
         dir1.normalize();
-        image::geometry<3> geo = cur_tracking_window.slice.geometry;
-        bool selected = false;
-        for(int d = 0;d < 5000;++d)
-        {
-            image::vector<3,float> cur_pos(dir1);
-            cur_pos *= d;
-            cur_pos += pos;
-            image::vector<3,short> voxel(cur_pos);
-            if(!geo.is_valid(voxel))
-                continue;
-            for(int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
-                if(cur_tracking_window.regionWidget->regions[index].has_point(voxel))
-                {
-                    cur_tracking_window.regionWidget->selectRow(index);
-                    selected = true;
-                    d = 10000;
-                    break;
-                }
-        }
-        if(!selected)
+
+        // nothing selected
+        select_object();
+        select_slice();
+
+        if(!object_selected && !slice_selected)
         {
             editing_option = 0;
             setCursor(Qt::ArrowCursor);
             return;
         }
-        std::vector<image::vector<3,float> > points(4);
-        bool has_slice = false;
+        // if only slice is selected or slice is at the front, then move slice
+        if(!object_selected || object_distance > slice_distance)
+        {
+            editing_option = 3;
+            return;
+        }
+        cur_tracking_window.regionWidget->selectRow(selected_index);
+        // determine the moving direction of the region
+        float angle[3] = {0,0,0};
         bool show_slice[3];
         show_slice[0] = cur_tracking_window.ui->glSagCheck->checkState();
         show_slice[1] = cur_tracking_window.ui->glCorCheck->checkState();
         show_slice[2] = cur_tracking_window.ui->glAxiCheck->checkState();
-        float angle[3] = {0,0,0};
+        std::vector<image::vector<3,float> > points(4);
+
         for(unsigned char dim = 0;dim < 3;++dim)
         {
-            if(!show_slice[dim])
-                continue;
             slice_location(dim,points);
-            image::vector<3,float> v1(points[1]),v2(points[2]),norm;
-            v1 -= points[0];
-            v2 -= points[0];
-            norm = v1.cross_product(v2);
-            norm.normalize();
-            angle[dim] = std::fabs(dir1*norm);
-            has_slice = true;
-        }
-        if(!has_slice)
-        {
-            editing_option = 0;
-            setCursor(Qt::ArrowCursor);
-            return;
+            angle[dim] = std::fabs(dir1*get_norm(points)) + (show_slice[dim] ? 1:0);
         }
         moving_at_slice_index = std::max_element(angle,angle+3)-angle;
         slice_location(moving_at_slice_index,points);
@@ -1255,18 +1355,13 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
     if(!editing_option)
         return;
     setCursor(Qt::ArrowCursor);
-    if(editing_option == 2)
+    if(editing_option >= 2)
     {
         editing_option = 0;
         return;
     }
     get_view_dir(lastPos,dir1);
     get_view_dir(QPoint(event->x(),event->y()),dir2);
-    pos[0] = mat[12];
-    pos[1] = mat[13];
-    pos[2] = mat[14];
-    dir1.normalize();
-    dir2.normalize();
     editing_option = 0;
     emit edited();
 }
@@ -1280,7 +1375,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 
         std::vector<image::vector<3,float> > points(4);
         slice_location(moving_at_slice_index,points);
-        get_view_dir(QPoint(event->x(),event->y()),dir2);
+        get_view_dir(event->pos(),dir2);
         float dx,dy;
         if(!get_slice_projection_point(points,pos,dir2,dx,dy))
             return;
@@ -1296,6 +1391,33 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
             accumulated_dis += apply_dis;
             emit region_edited();
         }
+        return;
+    }
+    // move slice
+    if(editing_option == 3)
+    {
+
+        std::vector<image::vector<3,float> > points(4);
+        slice_location(moving_at_slice_index,points);
+        get_view_dir(event->pos(),dir2);
+        float move_dis = (dir2-dir1)*get_norm(points);
+        move_dis *= slice_distance;
+        if(std::fabs(move_dis) < 1.0)
+            return;
+        move_dis = std::floor(move_dis+0.5);
+        switch(moving_at_slice_index)
+        {
+        case 0:
+            cur_tracking_window.ui->glSagBox->setValue(cur_tracking_window.ui->glSagBox->value()+move_dis);
+            break;
+        case 1:
+            cur_tracking_window.ui->glCorBox->setValue(cur_tracking_window.ui->glCorBox->value()-move_dis);
+            break;
+        case 2:
+            cur_tracking_window.ui->glAxiBox->setValue(cur_tracking_window.ui->glAxiBox->value()+move_dis);
+            break;
+        }
+        dir1 = dir2;
         return;
     }
     // go tract editing

@@ -25,11 +25,18 @@ class RenderingTableWidget;
      image::vector<3,float> pos,dir1,dir2;
      void set_view(unsigned char view_option);
  private:
+     bool object_selected,slice_selected;
      image::vector<3,float> accumulated_dis;
+     float slice_distance;
      unsigned char moving_at_slice_index;
      float slice_dx,slice_dy;
      void slice_location(unsigned char dim,std::vector<image::vector<3,float> >& points);
      void get_view_dir(QPoint p,image::vector<3,float>& dir);
+     void select_slice(void);
+ private:
+     int selected_index;
+     float object_distance;
+     void select_object(void);
  public:// other slices
      boost::ptr_vector<CustomSliceModel> other_slices;
      boost::ptr_vector<LinearMapping<image::basic_image<float,3,image::const_pointer_memory<float> >,image::rigid_scaling_transform<3> > > mi3s;
@@ -72,6 +79,7 @@ class RenderingTableWidget;
      void mousePressEvent(QMouseEvent *event);
      void mouseReleaseEvent(QMouseEvent *event);
      void mouseMoveEvent(QMouseEvent *event);
+     void mouseDoubleClickEvent(QMouseEvent *event);
      void wheelEvent ( QWheelEvent * event );
  private:
      tracking_window& cur_tracking_window;
