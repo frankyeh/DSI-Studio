@@ -1111,9 +1111,9 @@ void tracking_window::on_save_report_clicked()
                 out << iterators[index]->key << "\t" << iterators[index]->value << "\t";
                 ++iterators[index];
                 has_output = true;
-                continue;
             }
-
+            else
+                out << "\t\t";
         }
         out << std::endl;
         if(!has_output)
