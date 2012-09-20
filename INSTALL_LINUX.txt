@@ -1,0 +1,149 @@
+#
+# DSI Studio, linux version
+# by: Max Novelli
+#     2012/09/19
+#
+
+DSI Studio, linux version
+
+Installation instructions
+
+DISCLAIMER: 
+this how-to was written while installing DSI Studio on an Ubuntu 12.04 64bit 
+system with nVidia drivers downloaded directly from nvidia site. 
+Hopefully soon, we will have the time to test it on other linux distributions.
+
+Thank you for your patience.
+Max
+
+
+
+
+1) If you are using standard nVidia drivers that comes with your Ubuntu 
+   distribution, you can use standard qmake and qt libraries coming with 
+   ubuntu.
+
+ 1.1) install qmake, qt tools and libraries
+
+> sudo apt-get install qt4-make qt4-dev-tools
+
+      This should install all the needed dependencies
+
+ 1.2) skip to step 3
+
+2) If you are using custom installed nvidia drivers downloaded directly 
+   from nvidia website, we need to custom compile qt and link it to the 
+   nvidia libraries that are installed by the nvidia package. If you use 
+   the standard qt package, qt will be linked to the standard libraries 
+   and dsi studio will through an error, most likely at compilation time, 
+   because version of the open-gl libraries that it expects and the one 
+   available are different.
+ 2.1) Prepare system to install qt libraries. We need to install some 
+      dependencies for qt to be able to compile (please refer to the 
+      following URL for more info: 
+- http://www.qtforum.org/article/27401/debian-xlib-test-failed-after-configure.html)
+
+> sudo apt-get build-dep qt4-qmake
+
+ 2.2) visit qt page to figure out the latest version of qt 
+      (version 4.8.2 at the time of this writing):
+
+- http://qt.nokia.com/downloads/linux-x11-cpp
+
+ 2.3) download tar file:
+
+> wget http://releases.qt-project.org/qt4/source/qt-everywhere-opensource-src-4.8.2.tar.gz
+
+ 2.4) expand and get ready to compile
+
+> tar xvzf qt-everywhere-opensource-src-4.8.2.tar.gz
+> cd qt-everywhere-opensource-src-4.8.2
+
+ 2.5) configure step. We place all our custom compiled package under 
+      /usr/local/pkg. You can change the location anyway you like, 
+      as long as you change the qmake alias path accordingly. 
+      Webkit has been excluded because, apparently, does not play well
+      with Ubuntu 12.04 and the version of gcc coming with it.
+
+> ./configure --prefix=/usr/local/pkg/qt/4.8.2 -no-webkit
+
+ 2.6) compile
+
+> make
+
+ 2.7) install 
+
+> sudo make install
+
+ 2.8) create qmake alias
+
+> alias qmake=”/usr/local/pkg/qt/4.8.2/bin/qmake”
+
+3) install dependencies for dsi-studio
+
+> sudo apt-get install git
+> sudo apt-get install libboost*
+> sudo apt-get install zlib*
+
+4) create working folder
+
+> mkdir dsistudio
+> cd dsistudio
+
+5) download source code from git
+
+> git clone -b linux_dev git://github.com/frankyeh/DSI-Studio.git src
+
+6) there is no need to download additional libraries as stated in the original 
+   readme.txt file. They have been included in the linux version after being 
+   revised to work with gcc on 64 bits platform. The author approved it.
+   If you are looking to use them in other project, please download them from 
+   the main repositories. Be aware that they have been modified to be able to 
+   work within dsi studio.
+   Here are the links to their main repositories
+
+   - Image: http://tipl.labsolver.org/d/image.zip?attredirects=0&d=1
+   - Matrix: http://gmo.labsolver.org/download/matrix_op.hpp?attredirects=0&d=1
+   - TMLL: https://github.com/frankyeh/TMLL/zipball/master
+
+7) create build folder
+
+> mkdir build
+> cd build
+
+8) configure step
+
+> qmake ../src
+
+9) compile step
+
+> make
+
+10) install step
+
+> sudo mkdir /usr/local/pkg/dsistudio/20120919
+> sudo cp dsi_studio /usr/local/pkg/dsistudio/20120919/dsi_studio
+
+11) FA file. DSI Studio needs a template image file called FMRIB58_FA_1mm.nii. 
+    If you do not make it available, DSI Studio will not open with the error 
+    “FA template file not found”. 
+    It still unclear where you can download this file from. We have many copies 
+    on our servers, so I have not spent any time to track it down as of now.
+
+ 11.1) create repository for the file
+
+> sudo mkdir /usr/local/pkg/dsistudio/templates
+
+ 11.2) move the file in there
+
+ 11.3) define environmental variable to provide path:
+
+> export DSI_STUDIO_FA_TEMPLATE=/usr/local/pkg/dsi_studio/20120516/FMRIB58_FA_1mm.nii
+
+12) Create alias to run dsi studio
+
+> alias dsistudio=”/usr/local/pkg/dsistudio/20120919/dsi_studio”
+
+
+Feedback is appreciated.
+Max
