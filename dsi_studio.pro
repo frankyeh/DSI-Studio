@@ -13,7 +13,8 @@ TEMPLATE = app
 #     -L. -lboost_program_options-mgw45-mt-1_45.dll
 
 
-INCLUDEPATH += \
+# you may need to change the include directory of boost library
+INCLUDEPATH += C:\frank\myprog\boost_include \
     libs \
     libs/dsi \
     libs/tracking \
@@ -118,21 +119,21 @@ SOURCES += main.cpp \
     cmd/trk.cpp \
     cmd/rec.cpp \
     simulation.cpp \
-    ../../../../include/gzlib/zutil.c \
-    ../../../../include/gzlib/uncompr.c \
-    ../../../../include/gzlib/trees.c \
-    ../../../../include/gzlib/inftrees.c \
-    ../../../../include/gzlib/inflate.c \
-    ../../../../include/gzlib/inffast.c \
-    ../../../../include/gzlib/infback.c \
-    ../../../../include/gzlib/gzwrite.c \
-    ../../../../include/gzlib/gzread.c \
-    ../../../../include/gzlib/gzlib.c \
-    ../../../../include/gzlib/gzclose.c \
-    ../../../../include/gzlib/deflate.c \
-    ../../../../include/gzlib/crc32.c \
-    ../../../../include/gzlib/compress.c \
-    ../../../../include/gzlib/adler32.c \
+    gzlib/zutil.c \
+    gzlib/uncompr.c \
+    gzlib/trees.c \
+    gzlib/inftrees.c \
+    gzlib/inflate.c \
+    gzlib/inffast.c \
+    gzlib/infback.c \
+    gzlib/gzwrite.c \
+    gzlib/gzread.c \
+    gzlib/gzlib.c \
+    gzlib/gzclose.c \
+    gzlib/deflate.c \
+    gzlib/crc32.c \
+    gzlib/compress.c \
+    gzlib/adler32.c \
     reconstruction/vbcdialog.cpp \
     cmd/src.cpp \
     libs/mapping/atlas.cpp \
