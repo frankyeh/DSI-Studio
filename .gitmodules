@@ -1,6 +1,3 @@
-[submodule "image"]
-	path = image
-	url = https://github.com/frankyeh/TIPL.git
 [submodule "math"]
 	path = math
 	url = https://github.com/frankyeh/GMOL.git
