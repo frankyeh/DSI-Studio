@@ -4,3 +4,6 @@
 [submodule "ml"]
 	path = ml
 	url = https://github.com/frankyeh/TMLL.git
+[submodule "image"]
+	path = image
+	url = https://github.com/frankyeh/TIPL.git
