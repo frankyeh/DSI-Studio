@@ -13,7 +13,7 @@ TEMPLATE = app
 #     -L. -lboost_program_options-mgw45-mt-1_45.dll
 
 
-INCLUDEPATH += c:/frank/myprog/include \
+INCLUDEPATH += \
     libs \
     libs/dsi \
     libs/tracking \
