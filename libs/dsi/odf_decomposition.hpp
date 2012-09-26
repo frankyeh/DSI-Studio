@@ -201,6 +201,8 @@ protected:
             // get the most correlated orientation
             int dir = std::max_element(tmp.begin(),tmp.end())-tmp.begin();
             float corr = tmp[dir];
+            if(corr < 0.0)
+                break;
             if(!fib_map[dir])
             {
                 total_fiber++;

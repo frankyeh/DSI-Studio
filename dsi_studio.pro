@@ -31,7 +31,6 @@ HEADERS += mainwindow.h \
     libs/dsi/sh_process.hpp \
     libs/dsi/sample_model.hpp \
     libs/dsi/racian_noise.hpp \
-    libs/dsi/qbi_voxel.hpp \
     libs/dsi/qbi_process.hpp \
     libs/dsi/odf_process.hpp \
     libs/dsi/odf_deconvolusion.hpp \
