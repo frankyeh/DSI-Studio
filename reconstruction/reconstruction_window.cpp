@@ -98,7 +98,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->ODFSharpening->setCurrentIndex(settings.value("rec_odf_sharpening",0).toInt());
     ui->Decomposition->setCurrentIndex(settings.value("rec_odf_decomposition",0).toInt());
     ui->HalfSphere->setChecked(settings.value("rec_half_sphere",0).toInt());
-    ui->NumOfFibers->setCurrentIndex(settings.value("rec_num_fibers",2).toInt());
+    ui->NumOfFibers->setValue(settings.value("rec_num_fiber",5).toInt());
     ui->ODFDef->setCurrentIndex(settings.value("rec_gqi_def",0).toInt());
 
     ui->diffusion_sampling->setValue(settings.value("rec_gqi_sampling",1.25).toDouble());
@@ -129,6 +129,9 @@ void reconstruction_window::load_src(int index)
     init_mask(image, mask);
     ui->SlicePos->setRange(0,dim[2]-1);
     ui->SlicePos->setValue((dim[2]-1) >> 1);
+    ui->x->setMaximum(dim[0]-1);
+    ui->y->setMaximum(dim[1]-1);
+    ui->z->setMaximum(dim[2]-1);
 }
 
 void reconstruction_window::resizeEvent ( QResizeEvent * event )
@@ -186,7 +189,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     settings.setValue("rec_odf_sharpening",ui->ODFSharpening->currentIndex());
     settings.setValue("rec_odf_decomposition",ui->Decomposition->currentIndex());
     settings.setValue("rec_half_sphere",ui->HalfSphere->isChecked() ? 1 : 0);
-    settings.setValue("rec_num_fibers",ui->NumOfFibers->currentIndex());
+    settings.setValue("rec_num_fiber",ui->NumOfFibers->value());
     settings.setValue("rec_gqi_def",ui->ODFDef->currentIndex());
 
 
@@ -197,8 +200,11 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.need_odf = ui->RecordODF->isChecked() ? 1 : 0;
     handle->voxel.odf_deconvolusion = ui->ODFSharpening->currentIndex() >= 1 ? 1 : 0;
     handle->voxel.odf_decomposition = ui->Decomposition->currentIndex() >= 1 ? 1 : 0;
+    handle->voxel.odf_xyz[0] = ui->x->value();
+    handle->voxel.odf_xyz[1] = ui->y->value();
+    handle->voxel.odf_xyz[2] = ui->z->value();
     handle->voxel.half_sphere = ui->HalfSphere->isChecked() ? 1 : 0;
-    handle->voxel.max_fiber_number = ui->NumOfFibers->currentIndex() + 3;
+    handle->voxel.max_fiber_number = ui->NumOfFibers->value();
     handle->voxel.r2_weighted = ui->ODFDef->currentIndex();
 
     std::copy(mask.begin(), mask.end(), get_mask_image((ImageModel*)handle));
@@ -422,4 +428,21 @@ void reconstruction_window::on_QSDRT_toggled(bool checked)
     ui->DSIOption_2->setVisible(!checked);
     ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(checked);
+}
+
+void reconstruction_window::on_ODFSharpening_currentIndexChanged(int index)
+{
+    if(ui->ODFSharpening->currentIndex() == 1 && ui->Decomposition->currentIndex() == 1)
+        ui->Decomposition->setCurrentIndex(0);
+    ui->xyz_widget->setVisible(ui->ODFSharpening->currentIndex() ||
+                               ui->Decomposition->currentIndex());
+}
+
+void reconstruction_window::on_Decomposition_currentIndexChanged(int index)
+{
+    if(ui->ODFSharpening->currentIndex() == 1 && ui->Decomposition->currentIndex() == 1)
+        ui->ODFSharpening->setCurrentIndex(0);
+    ui->xyz_widget->setVisible(ui->ODFSharpening->currentIndex() ||
+                               ui->Decomposition->currentIndex());
+
 }

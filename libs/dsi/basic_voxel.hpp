@@ -66,6 +66,7 @@ public:// parameters;
     bool need_odf;
     bool odf_deconvolusion;
     bool odf_decomposition;
+    image::vector<3,short> odf_xyz;
     bool half_sphere;
     bool r2_weighted;// used in GQI only
     unsigned int max_fiber_number;

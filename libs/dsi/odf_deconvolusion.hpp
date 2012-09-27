@@ -46,10 +46,22 @@ struct EstimateResponseFunction : public BaseProcess
 {
     float max_value;
     boost::mutex mutex;
+    bool has_assigned_odf;
+    unsigned int assigned_index;
 public:
     virtual void init(Voxel& voxel)
     {
-
+        if(voxel.odf_xyz[0] != 0 ||
+           voxel.odf_xyz[1] != 0 ||
+           voxel.odf_xyz[2] != 0)
+        {
+            has_assigned_odf = true;
+            assigned_index = voxel.odf_xyz[0] +
+                             voxel.odf_xyz[1]*voxel.matrix_width +
+                             voxel.odf_xyz[2]*voxel.matrix_width*voxel.matrix_height;
+        }
+        else
+            has_assigned_odf = false;
         voxel.response_function.resize(voxel.ti.half_vertices_count);
         voxel.reponse_function_scaling = 0;
         max_value = 0;
@@ -65,7 +77,10 @@ public:
 			voxel.reponse_function_scaling = max_diffusion_value;
 			voxel.free_water_diffusion = data.odf;
         }
-		float cur_value = data.fa[0]-data.fa[1]-data.fa[2];
+
+        if(has_assigned_odf && data.voxel_index != assigned_index)
+            return;
+        float cur_value = data.fa[0]-data.fa[1]-data.fa[2];
         if (cur_value < max_value)
             return;
         voxel.response_function = data.odf;

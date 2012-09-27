@@ -222,14 +222,30 @@ extern "C"
         std::ostringstream out;
         out << ".odf" << image_model->voxel.ti.fold;// odf_order
         out << ".f" << image_model->voxel.max_fiber_number;
-        if (image_model->voxel.need_odf)
+        if (image_model->voxel.need_odf && method_id != 1)
             out << "rec";
-        if (image_model->voxel.half_sphere)
+        if (image_model->voxel.half_sphere && method_id != 1)
             out << ".hs";
-        if (image_model->voxel.odf_deconvolusion)
+        if (image_model->voxel.odf_deconvolusion && method_id != 1)
+        {
             out << ".de" << param_values[2];
-        if (image_model->voxel.odf_decomposition)
+            if(image_model->voxel.odf_xyz[0] != 0 ||
+               image_model->voxel.odf_xyz[1] != 0 ||
+               image_model->voxel.odf_xyz[2] != 0)
+                out << ".at_" << image_model->voxel.odf_xyz[0]
+                    << "_" << image_model->voxel.odf_xyz[1]
+                    << "_" << image_model->voxel.odf_xyz[2];
+        }
+        if (image_model->voxel.odf_decomposition && method_id != 1)
+        {
             out << ".dec" << param_values[3];
+            if(image_model->voxel.odf_xyz[0] != 0 ||
+               image_model->voxel.odf_xyz[1] != 0 ||
+               image_model->voxel.odf_xyz[2] != 0)
+                out << ".at_" << image_model->voxel.odf_xyz[0]
+                    << "_" << image_model->voxel.odf_xyz[1]
+                    << "_" << image_model->voxel.odf_xyz[2];
+        }
         switch (method_id)
         {
         case 0: //DSI local max

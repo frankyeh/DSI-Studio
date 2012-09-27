@@ -53,6 +53,8 @@ private slots:
     void on_SlicePos_sliderMoved(int position);
 
     void on_QSDRT_toggled(bool checked);
+    void on_ODFSharpening_currentIndexChanged(int index);
+    void on_Decomposition_currentIndexChanged(int index);
 };
 
 #endif // RECONSTRUCTION_WINDOW_H
