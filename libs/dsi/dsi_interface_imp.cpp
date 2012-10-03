@@ -190,11 +190,6 @@ extern "C"
     return image_model->voxel.voxel_size;
 }
 
-extern "C"
-    unsigned char* get_mask_image(ImageModel* image_model)
-{
-    return &*image_model->mask.begin();
-}
 
 extern "C"
     char* check_reconstruction(ImageModel* image_model)

@@ -262,7 +262,7 @@ public:
         std::vector<float> old_odf(data.odf);
         normalize_vector(data.odf.begin(),data.odf.end());
         std::vector<float> w;
-        lasso2(data.odf,Rt,w,voxel.max_fiber_number << 1);
+        lasso2(data.odf,Rt,w,voxel.max_fiber_number << 4);
         //lasso(data.odf,Rt,w,voxel.max_fiber_number << 1);
 
 
@@ -325,8 +325,8 @@ public:
         for(int index = 0;index < dir_list.size();++index)
             data.odf[dir_list[index]] += results[index+has_isotropic];
 
-        if(has_isotropic && results[0] > max_iso)
-            max_iso = results[0];
+        if(data.min_odf > max_iso)
+            max_iso = data.min_odf;
         fiber_ratio[data.voxel_index] = fiber_sum;
     }
     virtual void end(Voxel& voxel,MatFile& mat_writer)

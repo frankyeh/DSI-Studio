@@ -8,14 +8,24 @@ QT += core \
 TARGET = dsi_studio
 TEMPLATE = app
 
-# Need to be modified if not built under windows version
-#LIBS += -L. -lboost_thread-mgw45-mt-1_45.dll \
-#     -L. -lboost_program_options-mgw45-mt-1_45.dll
+win32 {
+INCLUDEPATH += C:\frank\myprog\boost_include
+}
 
+win32-g++ {
+LIBS += -L. -lboost_thread-mgw45-mt-1_45.dll \
+     -L. -lboost_program_options-mgw45-mt-1_45.dll
+}
 
+linux {
+QMAKE_CXXFLAGS += -fpermissive
+LIBS += -lboost_thread \
+        -lboost_program_options \
+        -lGLU \
+        -lz
+}
 # you may need to change the include directory of boost library
-INCLUDEPATH += C:\frank\myprog\boost_include \
-    libs \
+INCLUDEPATH += libs \
     libs/dsi \
     libs/tracking \
     libs/mapping

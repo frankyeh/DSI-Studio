@@ -14,39 +14,7 @@
 #include "libs/dsi/image_model.hpp"
 
 
-// ---------------------------------------------------------------------------
-void init_mask(const image::basic_image<unsigned char, 3>& image,
-               image::basic_image<unsigned char, 3>& mask)
-{
-    /*
-    image::basic_image<unsigned char, 3>classification(image.geometry());
-    k_means<float, unsigned char>(3)(image.begin(), image.end(),
-            classification.begin());
 
-    unsigned int count[3] = {0};
-    for (unsigned int index = 0; index < image.width(); ++index) {
-            ++count[classification[index]];
-            ++count[classification[classification.size() - 1 - index]];
-    }
-    unsigned int background_index = std::max_element(count, count + 3) - count;
-    mask.resize(image.geometry());
-    for (unsigned int index = 0; index < image.size(); ++index)
-            mask[index] = classification[index] != background_index ? 1 : 0;
-    */
-    image::segmentation::otsu(image,mask);
-
-    image::morphology::erosion(mask);
-    image::morphology::smoothing(mask);
-    image::morphology::smoothing(mask);
-    image::morphology::smoothing(mask);
-    image::morphology::defragment(mask);
-    image::morphology::dilation(mask);
-    image::morphology::dilation(mask);
-    image::morphology::smoothing(mask);
-    image::morphology::smoothing(mask);
-    image::morphology::smoothing(mask);
-    //image::morphology::erosion(mask);
-}
 
 reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *parent) :
         QMainWindow(parent),filenames(filenames_),
@@ -123,10 +91,19 @@ void reconstruction_window::load_src(int index)
     }
     const unsigned short* dim = get_dimension((ImageModel*)handle);
     image.resize(image::geometry<3>(dim[0], dim[1], dim[2]));
-    mask.resize(image.geometry());
-    std::copy(get_mask_image((ImageModel*)handle), get_mask_image((ImageModel*)handle) + image.size(),
-              image.begin());
-    init_mask(image, mask);
+    std::copy(handle->mask.begin(),handle->mask.end(),image.begin());
+    image::segmentation::otsu(image,handle->mask);
+    image::morphology::erosion(handle->mask);
+    image::morphology::smoothing(handle->mask);
+    image::morphology::smoothing(handle->mask);
+    image::morphology::smoothing(handle->mask);
+    image::morphology::defragment(handle->mask);
+    image::morphology::dilation(handle->mask);
+    image::morphology::dilation(handle->mask);
+    image::morphology::smoothing(handle->mask);
+    image::morphology::smoothing(handle->mask);
+    image::morphology::smoothing(handle->mask);
+
     ui->SlicePos->setRange(0,dim[2]-1);
     ui->SlicePos->setValue((dim[2]-1) >> 1);
     ui->x->setMaximum(dim[0]-1);
@@ -164,7 +141,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
 {
     if(!handle)
         return;
-    if (*std::max_element(mask.begin(),mask.end()) == 0)
+    if (*std::max_element(handle->mask.begin(),handle->mask.end()) == 0)
     {
         QMessageBox::information(this,"error","Please select mask for reconstruction",0);
         return;
@@ -207,7 +184,6 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.max_fiber_number = ui->NumOfFibers->value();
     handle->voxel.r2_weighted = ui->ODFDef->currentIndex();
 
-    std::copy(mask.begin(), mask.end(), get_mask_image((ImageModel*)handle));
     const char* msg = (const char*)reconstruction(handle, method_id, params);
     if (!QFileInfo(msg).exists())
     {
@@ -230,7 +206,7 @@ void reconstruction_window::on_SlicePos_sliderMoved(int position)
     std::copy(image.begin() + offset,image.begin()+ offset + buffer.size(),buffer.begin());
 
     unsigned char* slice_image_ptr = &*image.begin() + buffer.size()* position;
-    unsigned char* slice_mask = &*mask.begin() + buffer.size()* position;
+    unsigned char* slice_mask = &*handle->mask.begin() + buffer.size()* position;
     for (unsigned int index = 0; index < buffer.size(); ++index)
     {
         unsigned char value = slice_image_ptr[index];
@@ -252,25 +228,25 @@ void reconstruction_window::on_SlicePos_sliderMoved(int position)
 
 void reconstruction_window::on_erosion_clicked()
 {
-    image::morphology::erosion(mask);
+    image::morphology::erosion(handle->mask);
     on_SlicePos_sliderMoved(ui->SlicePos->value());
 }
 
 void reconstruction_window::on_dilation_clicked()
 {
-    image::morphology::dilation(mask);
+    image::morphology::dilation(handle->mask);
     on_SlicePos_sliderMoved(ui->SlicePos->value());
 }
 
 void reconstruction_window::on_defragment_clicked()
 {
-    image::morphology::defragment(mask);
+    image::morphology::defragment(handle->mask);
     on_SlicePos_sliderMoved(ui->SlicePos->value());
 }
 
 void reconstruction_window::on_smoothing_clicked()
 {
-    image::morphology::smoothing(mask);
+    image::morphology::smoothing(handle->mask);
     on_SlicePos_sliderMoved(ui->SlicePos->value());
 }
 
@@ -283,7 +259,7 @@ void reconstruction_window::on_thresholding_clicked()
                                          (int)*std::max_element(image.begin(),image.end()),1,&ok);
     if (!ok)
         return;
-    image::threshold(image,mask,threshold);
+    image::threshold(image,handle->mask,threshold);
     on_SlicePos_sliderMoved(ui->SlicePos->value());
 }
 
@@ -298,7 +274,7 @@ void reconstruction_window::on_load_mask_clicked()
         return;
     ROIRegion region(image.geometry(),image::vector<3>(get_voxel_size((ImageModel*)handle)));
     region.LoadFromFile(filename.toLocal8Bit().begin());
-    region.SaveToBuffer(mask);
+    region.SaveToBuffer(handle->mask);
     on_SlicePos_sliderMoved(ui->SlicePos->value());
 }
 
@@ -313,7 +289,7 @@ void reconstruction_window::on_save_mask_clicked()
     if(filename.isEmpty())
         return;
     ROIRegion region(image.geometry(),image::vector<3>(get_voxel_size((ImageModel*)handle)));
-    region.LoadFromBuffer(mask);
+    region.LoadFromBuffer(handle->mask);
     region.SaveToFile(filename.toLocal8Bit().begin());
 }
 
@@ -445,4 +421,20 @@ void reconstruction_window::on_Decomposition_currentIndexChanged(int index)
     ui->xyz_widget->setVisible(ui->ODFSharpening->currentIndex() ||
                                ui->Decomposition->currentIndex());
 
+}
+
+void reconstruction_window::on_remove_background_clicked()
+{
+    for(int index = 0;index < handle->mask.size();++index)
+        if(handle->mask[index] == 0)
+            image[index] = 0;
+
+    for(int index = 0;index < handle->dwi_data.size();++index)
+    {
+        unsigned short* buf = (unsigned short*)handle->dwi_data[index];
+        for(int i = 0;i < handle->mask.size();++i)
+            if(handle->mask[i] == 0)
+                buf[i] = 0;
+    }
+    on_SlicePos_sliderMoved(ui->SlicePos->value());
 }

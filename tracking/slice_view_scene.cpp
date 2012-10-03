@@ -476,6 +476,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         return;
     }
     }
+    /*
     if(mouseEvent->button() != Qt::RightButton &&
        !cur_tracking_window.regionWidget->regions.empty() &&
        !cur_tracking_window.regionWidget->regions[cur_tracking_window.regionWidget->currentRow()].empty() &&
@@ -487,6 +488,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         if(result == QMessageBox::Yes)
             cur_tracking_window.regionWidget->new_region();
     }
+    */
     cur_tracking_window.regionWidget->add_points(points,mouseEvent->button() == Qt::RightButton);
     need_update();
 }

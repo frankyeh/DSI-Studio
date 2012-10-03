@@ -55,6 +55,7 @@ private slots:
     void on_QSDRT_toggled(bool checked);
     void on_ODFSharpening_currentIndexChanged(int index);
     void on_Decomposition_currentIndexChanged(int index);
+    void on_remove_background_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

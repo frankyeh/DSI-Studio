@@ -10,9 +10,6 @@ extern fa_template fa_template_imp;
 namespace po = boost::program_options;
 
 
-void init_mask(const image::basic_image<unsigned char, 3>& image,
-               image::basic_image<unsigned char, 3>& mask);
-
 /**
  perform reconstruction
  */
@@ -138,19 +135,17 @@ int rec(int ac, char *av[])
                 out << "fail reading the mask...using default mask" << std::endl;
                 goto no_mask;
             }
-            image::basic_image<unsigned char,3> mask;
-            header >> mask;
+            header >> handle->mask;
             if(header.nif_header.srow_x[0] < 0 || !header.is_nii)
-                image::flip_y(mask);
+                image::flip_y(handle->mask);
             else
-                image::flip_xy(mask);
+                image::flip_xy(handle->mask);
 
-            if(mask.geometry() != geometry)
+            if(handle->mask.geometry() != geometry)
             {
                 out << "In consistent the mask dimension...using default mask" << std::endl;
                 goto no_mask;
             }
-            std::copy(mask.begin(),mask.end(),get_mask_image(handle));
         }
         else
             if(method_index != 7) //QSDR does not need mask
@@ -158,10 +153,18 @@ int rec(int ac, char *av[])
             no_mask:
             out << "init mask..." <<std::endl;
             image::basic_image<unsigned char,3> image(geometry);
-            image::basic_image<unsigned char,3> mask(geometry);
-            std::copy(get_mask_image(handle),get_mask_image(handle)+image.size(),image.begin());
-            init_mask(image,mask);
-            std::copy(mask.begin(),mask.end(),get_mask_image(handle));
+            std::copy(handle->mask.begin(),handle->mask.end(),image.begin());
+            image::segmentation::otsu(image,handle->mask);
+            image::morphology::erosion(handle->mask);
+            image::morphology::smoothing(handle->mask);
+            image::morphology::smoothing(handle->mask);
+            image::morphology::smoothing(handle->mask);
+            image::morphology::defragment(handle->mask);
+            image::morphology::dilation(handle->mask);
+            image::morphology::dilation(handle->mask);
+            image::morphology::smoothing(handle->mask);
+            image::morphology::smoothing(handle->mask);
+            image::morphology::smoothing(handle->mask);
         }
         }
     out << "start reconstruction..." <<std::endl;
