@@ -260,7 +260,9 @@ void VBCDialog::on_load_subject_data_clicked()
         ui->cluster_group->hide();
         return;
     }
-
+    vbc_instance->calculate_mapping(ui->mapping->text().toLocal8Bit().begin(),
+                                    ui->p_value_threshold->value());
+    return;
     vbc_instance->calculate_permutation(ui->thread_count->value(),
                                         ui->permutation_num->value(),
                                         ui->p_value_threshold->value());

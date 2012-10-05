@@ -195,7 +195,7 @@ const char* vbc::load_subject_data(const std::vector<std::string>& file_names,
             error_msg += file_names[subject_index];
             return error_msg.c_str();
         }
-
+        float max_qa = 0.0;
         for(int odf_block_index = 0;odf_block_index < subject_odfs.size();++odf_block_index)
         {
             std::ostringstream out;
@@ -215,9 +215,23 @@ const char* vbc::load_subject_data(const std::vector<std::string>& file_names,
                 {
                     if(subject_odfs[odf_block_index][voxel_index][dir_index].empty())
                         continue;
-                    subject_odfs[odf_block_index][voxel_index][dir_index][subject_index] =
-                            odf_buf[findex[dir_index][findex_location]]-min_value;
+                    float qa = odf_buf[findex[dir_index][findex_location]]-min_value;
+                    if(qa > max_qa)
+                        max_qa = qa;
+                    subject_odfs[odf_block_index][voxel_index][dir_index][subject_index] = qa;
                 }
+            }
+        }
+
+        // normalization
+        if(max_qa + 1.0 != 1.0)
+        for(int odf_block_index = 0;odf_block_index < subject_odfs.size();++odf_block_index)
+        {
+            for(int voxel_index = 0;voxel_index < subject_odfs[odf_block_index].size();++voxel_index)
+            {
+                for(int dir_index = 0;dir_index < subject_odfs[odf_block_index][voxel_index].size();++dir_index)
+                    if(!subject_odfs[odf_block_index][voxel_index][dir_index].empty())
+                        subject_odfs[odf_block_index][voxel_index][dir_index][subject_index] /= max_qa;
             }
         }
     }
@@ -347,162 +361,52 @@ void vbc::calculate_mapping(const char* file_name,float p_value_threshold)
 {
     {
         thread_data.resize(1);
-
-        //std::vector<unsigned short> mapping(total_num_subjects);
-        //for(unsigned int index = 0;index < total_num_subjects;++index)
-        //    mapping[index] = index;
-
         calculate_statistics(p_value_threshold,thread_data[0],false);
     }
     std::vector<std::vector<float> >& dif = thread_data[0].dif;
     std::vector<std::vector<float> >& pv = thread_data[0].t;
 
-    std::vector<unsigned int> group_voxel_index_list;
-    std::vector<unsigned int> group_id_map;
-    calculate_cluster(thread_data[0],group_voxel_index_list,group_id_map);
-
-
-    // regularize the cluster table
-    {
-        std::multiset<unsigned int> sorted_size;
-        for(unsigned int index = 0;index < group_voxel_index_list.size();++index)
-            if(group_voxel_index_list[index])
-                sorted_size.insert(group_voxel_index_list[index]);
-        std::vector<unsigned int> sorted_size_table(sorted_size.begin(),sorted_size.end());
-        for(unsigned int index = 0;index < sorted_size_table.size();++index)
-        {
-            unsigned int cluster_id =
-                std::find(group_voxel_index_list.begin(),group_voxel_index_list.end(),
-                          sorted_size_table[index])-group_voxel_index_list.begin()+1;
-            std::replace(group_id_map.begin(),group_id_map.end(),cluster_id,index+1);
-            group_voxel_index_list[cluster_id-1] = 0;
-        }
-        sorted_size_table.swap(group_voxel_index_list);
-    }
 
     MatFile& matfile = fib_file->fib_data.mat_reader;
     matfile.write_to_file(file_name);
+    std::vector<std::vector<short> > index_backup(num_fiber);
+    for(unsigned int fib = 0;fib < num_fiber;++fib)
+    {
+        index_backup[fib].resize(dim.size());
+        std::copy(findex[fib],findex[fib]+dim.size(),index_backup[fib].begin());
+    }
+    for(unsigned int index = 0;index < dim.size();++index)
+    {
+        std::map<float,short,std::greater<float> > fmap;
+        for(unsigned int fib = 0;fib < num_fiber;++fib)
+        {
+            ((float*)fa[fib])[index] = 0;
+            ((short*)findex[fib])[index] = 0;
+            if(dif[fib][index] < 0)
+                fmap[-dif[fib][index]] = index_backup[fib][index];
+
+            dif[fib][index] = -dif[fib][index];
+
+        }
+        std::map<float,short,std::greater<float> >::const_iterator iter = fmap.begin();
+        std::map<float,short,std::greater<float> >::const_iterator end = fmap.end();
+        for(unsigned int fib = 0;iter != end;++iter,++fib)
+        {
+            ((float*)fa[fib])[index] = iter->first;
+            ((short*)findex[fib])[index] = iter->second;
+        }
+
+    }
+
     for(unsigned int fib = 0;fib < num_fiber;++fib)
     {
         std::string name1 = "cluster0",name2 = "t0",name3 = "dif0";
         name1[7] += fib;
         name2[1] += fib;
         name3[3] += fib;
-        matfile.add_matrix(name1.c_str(),&*group_id_map.begin()+fib*dim.size(),1,dim.size());
+        //matfile.add_matrix(name1.c_str(),&*group_id_map.begin()+fib*dim.size(),1,dim.size());
         matfile.add_matrix(name2.c_str(),&*pv[fib].begin(),1,pv[fib].size());
         matfile.add_matrix(name3.c_str(),&*dif[fib].begin(),1,dif[fib].size());
-    }
-
-    // single threshold
-    /*
-    {
-        std::sort(max_statistics.begin(),max_statistics.end(),std::greater<float>());
-        float critical_statistics = max_statistics[p_value_threshold*max_statistics.size()];
-
-        for(unsigned int fib = 0;fib < num_fiber;++fib)
-        {
-            std::string name2 = "t_st0",name3 = "dif_st0";
-            name2[4] += fib;
-            name3[6] += fib;
-            matfile.add_matrix(name2.c_str(),&*pv_t[fib].begin(),1,pv_t[fib].size());
-            matfile.add_matrix(name3.c_str(),&*dif_t[fib].begin(),1,dif_t[fib].size());
-        }
-        matfile.add_matrix("critical_statistics",&critical_statistics,1,1);
-        matfile.add_matrix("max_statistics",&*max_statistics.begin(),1,max_statistics.size());
-
-    }
-    */
-    // supratheshold clustering
-    {
-        std::sort(max_cluster_size.begin(),max_cluster_size.end(),std::greater<float>());
-        //float critical_cluster_size = max_cluster_size[p_value_threshold*max_cluster_size.size()/group_voxel_index_list.size()];
-
-        std::vector<float> cluster_pv(group_voxel_index_list.size());
-        for(int index = 0;index < cluster_pv.size();++index)
-        {
-            int rank = 0;
-            for(;rank < max_cluster_size.size();++rank)
-                if(max_cluster_size[rank] < group_voxel_index_list[index])
-                    break;
-            cluster_pv[index] = (float)(rank)/(float)(max_cluster_size.size());
-            cluster_pv[index] *= (float)group_voxel_index_list.size();
-        }
-        std::vector<float> sum_dif(group_voxel_index_list.size());
-        {
-            std::vector<float> sum_mean(group_voxel_index_list.size());
-            for(unsigned int fib = 0;fib < num_fiber;++fib)
-            {
-                unsigned int shift = fib*dim.size();
-                for(unsigned int index = 0;index < dim.size();++index)
-                    if(group_id_map[index+shift] == 0)
-                        continue;
-                    else
-                    {
-                        sum_dif[group_id_map[index+shift]-1] += dif[fib][index];
-                        sum_mean[group_id_map[index+shift]-1] += fa[fib][index];
-                    }
-            }
-            for(int index = 0;index < sum_dif.size();++index)
-                if(sum_mean[index] == 0)
-                    sum_dif[index] = 0;
-            else
-                    sum_dif[index] *= 100.0/sum_mean[index];
-
-        }
-
-
-        if(cluster_pv.back() < p_value_threshold)
-        {
-
-            std::vector<std::vector<float> > greater(num_fiber),lesser(num_fiber);
-
-
-            for(unsigned int fib = 0;fib < num_fiber;++fib)
-            {
-                greater[fib].resize(dif[fib].size());
-                lesser[fib].resize(dif[fib].size());
-                unsigned int shift = fib*dim.size();
-                for(unsigned int index = 0;index < dim.size();++index)
-                    if(group_id_map[index+shift] == 0)
-                        continue;
-                    else
-                    {
-                        int group_id = group_id_map[index+shift]-1;
-                        if(cluster_pv[group_id] > p_value_threshold)
-                        {
-                            dif[fib][index] = 0;
-                            pv[fib][index] = 0;
-                        }
-                        else
-                        {
-                            pv[fib][index] = 1.0/std::max<float>(cluster_pv[group_id],0.0001);
-                            dif[fib][index] = sum_dif[group_id];
-                            if(dif[fib][index] > 0)
-                                greater[fib][index] = dif[fib][index];
-                            else
-                                lesser[fib][index] = -dif[fib][index];
-                        }
-                    }
-            }
-
-
-            for(unsigned int fib = 0;fib < num_fiber;++fib)
-            {
-                std::string name2 = "pv_sc0",name3 = "dif_sc0",name4 = "greater0",name5 = "lesser0";
-                name2[5] += fib;
-                name3[6] += fib;
-                name4[7] += fib;
-                name5[6] += fib;
-                matfile.add_matrix(name2.c_str(),&*pv[fib].begin(),1,pv[fib].size());
-                matfile.add_matrix(name3.c_str(),&*dif[fib].begin(),1,dif[fib].size());
-                matfile.add_matrix(name4.c_str(),&*greater[fib].begin(),1,greater[fib].size());
-                matfile.add_matrix(name5.c_str(),&*lesser[fib].begin(),1,lesser[fib].size());
-
-            }
-        }
-        matfile.add_matrix("cluster_size",&*group_voxel_index_list.begin(),1,group_voxel_index_list.size());
-        matfile.add_matrix("max_cluster_size",&*max_cluster_size.begin(),1,max_cluster_size.size());
-
     }
     matfile.close_file();
 }
