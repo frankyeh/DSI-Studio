@@ -102,6 +102,7 @@ private slots:
     void on_deleteSlice_clicked();
     void on_tool5_pressed();
     void on_actionMove_Object_triggered();
+    void on_actionSave_Report_as_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

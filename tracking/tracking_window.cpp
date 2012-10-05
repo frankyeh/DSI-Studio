@@ -1,5 +1,6 @@
 #include <QFileDialog>
 #include <QSettings>
+#include <QClipboard>
 #include "tracking_window.h"
 #include "ui_tracking_window.h"
 #include "tracking_static_link.h"
@@ -434,6 +435,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
               ++data_index;
           }
       ui->statusbar->showMessage(status);
+      copy_target = 1;
   }
   return false;
 }
@@ -812,6 +814,11 @@ void tracking_window::on_actionCopy_to_clipboard_triggered()
         scene.copyClipBoard();
         return;
     case 2:
+        {
+            QImage image;
+            ui->report_widget->saveImage(image);
+            QApplication::clipboard()->setImage(image);
+        }
         return;
     }
 }
@@ -939,6 +946,7 @@ void tracking_window::on_refresh_report_clicked()
         QPen pen;
         image::rgb_color color = tractWidget->tract_models[index]->get_tract_color(0);
         pen.setColor(QColor(color.r,color.g,color.b,200));
+        pen.setWidth(ui->linewidth->value());
         ui->report_widget->graph()->setLineStyle(QCPGraph::lsLine);
         ui->report_widget->graph()->setPen(pen);
         ui->report_widget->graph()->setData(x, y);
@@ -965,7 +973,7 @@ void tracking_window::on_refresh_report_clicked()
         ui->report_widget->legend->setVisible(false);
 
     ui->report_widget->replot();
-
+    copy_target = 2;
 }
 
 void tracking_window::on_actionRestore_window_layout_triggered()
@@ -1143,3 +1151,21 @@ void tracking_window::on_deleteSlice_clicked()
 }
 
 
+
+void tracking_window::on_actionSave_Report_as_triggered()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                this,
+                "Save report as",
+                absolute_path + "/report.jpg",
+                "JPEC file (*.jpg);;BMP file (*.bmp);;PDF file (*.pdf);;PNG file (*.png);;All files (*.*)");
+    if(QFileInfo(filename).completeSuffix().toLower() == "jpg")
+        ui->report_widget->saveJpg(filename);
+    if(QFileInfo(filename).completeSuffix().toLower() == "bmp")
+        ui->report_widget->saveBmp(filename);
+    if(QFileInfo(filename).completeSuffix().toLower() == "png")
+        ui->report_widget->savePng(filename);
+    if(QFileInfo(filename).completeSuffix().toLower() == "pdf")
+        ui->report_widget->savePdf(filename);
+
+}

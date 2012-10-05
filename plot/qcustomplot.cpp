@@ -8142,6 +8142,14 @@ bool QCustomPlot::selectTestTitle(const QPointF &pos) const
   
   \see saveBmp, saveJpg, savePng
 */
+void QCustomPlot::saveImage(QImage &image)
+{
+    image = QImage(width(),height(),QImage::Format_RGB32);
+    image.fill(mColor);
+    QCPPainter painter(&image);
+    draw(&painter);
+}
+
 bool QCustomPlot::saveRastered(const QString &fileName, int width, int height, double scale, const char *format, int quality)
 {
   int newWidth, newHeight;

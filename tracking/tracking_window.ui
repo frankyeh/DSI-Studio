@@ -788,6 +788,7 @@
     <addaction name="actionSave_ROI_Screen"/>
     <addaction name="actionSave_Rotation_Images"/>
     <addaction name="actionSave_Anisotrpy_Map_as"/>
+    <addaction name="actionSave_Report_as"/>
     <addaction name="actionCopy_to_clipboard"/>
     <addaction name="separator"/>
     <addaction name="actionRestore_window_layout"/>
@@ -2028,8 +2029,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>461</width>
-     <height>56</height>
+     <width>492</width>
+     <height>90</height>
     </size>
    </property>
    <property name="windowTitle">
@@ -2123,25 +2124,6 @@
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="report_legend">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Legend</string>
-         </property>
-        </widget>
-       </item>
-       <item>
         <widget class="QPushButton" name="refresh_report">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -2156,7 +2138,7 @@
           </size>
          </property>
          <property name="text">
-          <string>Generate Report</string>
+          <string>Update</string>
          </property>
         </widget>
        </item>
@@ -2179,6 +2161,62 @@
        </item>
        <item>
         <spacer name="horizontalSpacer_3">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_18">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QLabel" name="label_12">
+         <property name="text">
+          <string>Line Width</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSpinBox" name="linewidth">
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="maximum">
+          <number>10</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="report_legend">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>22</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Legend</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_6">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -3021,6 +3059,15 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+A</string>
+   </property>
+  </action>
+  <action name="actionSave_Report_as">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save Report as...</string>
    </property>
   </action>
  </widget>
