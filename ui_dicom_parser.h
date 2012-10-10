@@ -1,8 +1,8 @@
 /********************************************************************************
 ** Form generated from reading UI file 'dicom_parser.ui'
 **
-** Created: Tue Apr 24 10:53:07 2012
-**      by: Qt User Interface Compiler version 4.7.1
+** Created: Wed Oct 10 17:10:22 2012
+**      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -14,6 +14,8 @@
 #include <QtGui/QAction>
 #include <QtGui/QApplication>
 #include <QtGui/QButtonGroup>
+#include <QtGui/QCheckBox>
+#include <QtGui/QComboBox>
 #include <QtGui/QDialog>
 #include <QtGui/QDialogButtonBox>
 #include <QtGui/QHBoxLayout>
@@ -37,6 +39,7 @@ public:
     QToolButton *loadImage;
     QToolButton *toolButton_2;
     QToolButton *toolButton_8;
+    QToolButton *apply_slice_orientation;
     QSpacerItem *horizontalSpacer_2;
     QHBoxLayout *horizontalLayout_4;
     QToolButton *toolButton;
@@ -48,6 +51,8 @@ public:
     QSpacerItem *horizontalSpacer;
     QTableWidget *tableWidget;
     QHBoxLayout *horizontalLayout_2;
+    QComboBox *upsampling;
+    QCheckBox *topdown;
     QLabel *label;
     QLineEdit *SrcName;
     QPushButton *upperDir;
@@ -86,6 +91,11 @@ public:
         toolButton_8->setObjectName(QString::fromUtf8("toolButton_8"));
 
         horizontalLayout_3->addWidget(toolButton_8);
+
+        apply_slice_orientation = new QToolButton(dicom_parser);
+        apply_slice_orientation->setObjectName(QString::fromUtf8("apply_slice_orientation"));
+
+        horizontalLayout_3->addWidget(apply_slice_orientation);
 
         horizontalSpacer_2 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
@@ -157,6 +167,16 @@ public:
 
         horizontalLayout_2 = new QHBoxLayout();
         horizontalLayout_2->setObjectName(QString::fromUtf8("horizontalLayout_2"));
+        upsampling = new QComboBox(dicom_parser);
+        upsampling->setObjectName(QString::fromUtf8("upsampling"));
+
+        horizontalLayout_2->addWidget(upsampling);
+
+        topdown = new QCheckBox(dicom_parser);
+        topdown->setObjectName(QString::fromUtf8("topdown"));
+
+        horizontalLayout_2->addWidget(topdown);
+
         label = new QLabel(dicom_parser);
         label->setObjectName(QString::fromUtf8("label"));
         label->setFrameShape(QFrame::NoFrame);
@@ -206,6 +226,7 @@ public:
         loadImage->setText(QApplication::translate("dicom_parser", "Load Images...", 0, QApplication::UnicodeUTF8));
         toolButton_2->setText(QApplication::translate("dicom_parser", "Load b-table...", 0, QApplication::UnicodeUTF8));
         toolButton_8->setText(QApplication::translate("dicom_parser", "Save b-table...", 0, QApplication::UnicodeUTF8));
+        apply_slice_orientation->setText(QApplication::translate("dicom_parser", "Apply slice orientation", 0, QApplication::UnicodeUTF8));
         toolButton->setText(QApplication::translate("dicom_parser", "Flip bx", 0, QApplication::UnicodeUTF8));
         toolButton_3->setText(QApplication::translate("dicom_parser", "Flip by", 0, QApplication::UnicodeUTF8));
         toolButton_4->setText(QApplication::translate("dicom_parser", "Flip bz", 0, QApplication::UnicodeUTF8));
@@ -222,6 +243,13 @@ public:
         ___qtablewidgetitem3->setText(QApplication::translate("dicom_parser", "by", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem4 = tableWidget->horizontalHeaderItem(4);
         ___qtablewidgetitem4->setText(QApplication::translate("dicom_parser", "bz", 0, QApplication::UnicodeUTF8));
+        upsampling->clear();
+        upsampling->insertItems(0, QStringList()
+         << QApplication::translate("dicom_parser", "No upsampling", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("dicom_parser", "upsampling 2", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("dicom_parser", "downsampling 2", 0, QApplication::UnicodeUTF8)
+        );
+        topdown->setText(QApplication::translate("dicom_parser", "top-down slices", 0, QApplication::UnicodeUTF8));
         label->setText(QApplication::translate("dicom_parser", "Output file:", 0, QApplication::UnicodeUTF8));
         upperDir->setText(QApplication::translate("dicom_parser", "Upper Directory", 0, QApplication::UnicodeUTF8));
         pushButton->setText(QApplication::translate("dicom_parser", "&Browse...", 0, QApplication::UnicodeUTF8));

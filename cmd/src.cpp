@@ -8,10 +8,7 @@
 
 namespace po = boost::program_options;
 
-bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files);
-bool load_dicom_multi_frame(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files);
-bool load_4d_2dseq(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files);
-bool load_multiple_slice_dicom(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files);
+bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files);
 int src(int ac, char *av[])
 {
     po::options_description rec_desc("dicom parsing options");
@@ -19,6 +16,7 @@ int src(int ac, char *av[])
     ("help", "help message")
     ("action", po::value<std::string>(), "src:dicom parsing")
     ("source", po::value<std::string>(), "assign the directory for the dicom files")
+    ("recursive", po::value<std::string>(), "search subdirectories")
     ("b_table", po::value<std::string>(), "assign the b-table")
     ("output", po::value<std::string>(), "assign the output filename")
     ;
@@ -39,59 +37,55 @@ int src(int ac, char *av[])
         ext = std::string(source.end()-4,source.end());
 
     boost::ptr_vector<DwiHeader> dwi_files;
-    if(ext ==".nii")
+    QStringList file_list;
+    if(ext ==".nii" || ext == ".dcm" || ext == "dseq")
         // load nii file
     {
-        if(!load_4d_nii(source.c_str(),dwi_files))
-        {
-            out << "Invalid file format" << std::endl;
-            return -1;
-        }
+        file_list << source.c_str();
     }
-    else
-        if(ext == ".dcm")
-        {
-            if(!load_dicom_multi_frame(source.c_str(),dwi_files))
-            {
-                out << "Invalid file format" << std::endl;
-                return -1;
-            }
-        }
-    else
-        if(ext == "dseq")
-        {
-            if(!load_4d_2dseq(source.c_str(),dwi_files))
-            {
-                out << "Invalid file format" << std::endl;
-                return -1;
-            }
-        }
     else
         // load directory
     {
         QDir directory = QString(source.c_str());
-        QStringList file_list = directory.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
-        out << "A total of " << file_list.size() <<" files found" << std::endl;
-        if(!load_multiple_slice_dicom(file_list,dwi_files))
+        if(vm.count("recursive"))
         {
-            for (unsigned int index = 0;index < file_list.size();++index)
+            out << "search recursively in the subdir" << std::endl;
+            QStringList dir_list;
+            dir_list << QString(source.c_str());;
+            while(!dir_list.empty())
             {
-                std::string file_name = source;
-                file_name += "/";
-                file_name += file_list[index].toLocal8Bit().begin();
-                out << "Reading " << file_list[index].toLocal8Bit().begin() << std::endl;
-                std::auto_ptr<DwiHeader> new_file(new DwiHeader);
-                if (!new_file->open(file_name.c_str()))
-                {
-                    out << "Failed" << std::endl;
-                    continue;
-                }
-                new_file->file_name = file_list[index].toLocal8Bit().begin();
-                dwi_files.push_back(new_file.release());
+                out << "searching in directory " << dir_list.back().toLocal8Bit().begin() << std::endl;
+                QDir cur_dir = dir_list.back();
+                dir_list.pop_back();
+                QStringList new_list = cur_dir.entryList(QStringList(""),QDir::AllDirs|QDir::NoDotAndDotDot);
+                for(unsigned int index = 0;index < new_list.size();++index)
+                    dir_list << cur_dir.absolutePath() + "/" + new_list[index];
+                new_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
+                for (unsigned int index = 0;index < new_list.size();++index)
+                    file_list << cur_dir.absolutePath() + "/" + new_list[index];
             }
+
         }
+        else
+        {
+            file_list = directory.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
+            for (unsigned int index = 0;index < file_list.size();++index)
+                file_list[index] = QString(source.c_str()) + "/" + file_list[index];
+        }
+        out << "A total of " << file_list.size() <<" files found in the directory" << std::endl;
     }
 
+    if(file_list.empty())
+    {
+        out << "No file found for creating src" << std::endl;
+        return -1;
+    }
+
+    if(!load_all_files(file_list,dwi_files))
+    {
+        out << "Invalid file format" << std::endl;
+        return -1;
+    }
     if(vm.count("b_table"))
     {
         std::string table_file_name = vm["b_table"].as<std::string>();

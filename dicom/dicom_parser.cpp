@@ -271,7 +271,7 @@ bool load_multiple_slice_dicom(QStringList file_list,boost::ptr_vector<DwiHeader
     return true;
 }
 
-void dicom_parser::load_files(QStringList file_list)
+bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files)
 {
     begin_prog("loading");
     if (file_list.size() == 1) // 4d image
@@ -279,10 +279,7 @@ void dicom_parser::load_files(QStringList file_list)
         if(!load_dicom_multi_frame(file_list[0].toLocal8Bit().begin(),dwi_files) &&
            !load_4d_nii(file_list[0].toLocal8Bit().begin(),dwi_files) &&
            !load_4d_2dseq(file_list[0].toLocal8Bit().begin(),dwi_files))
-        {
-            QMessageBox::information(this,"Error","Invalid file format",0);
-            return;
-        }
+            return false;
     }
     else
         if(!load_multiple_slice_dicom(file_list,dwi_files))
@@ -296,7 +293,17 @@ void dicom_parser::load_files(QStringList file_list)
                 dwi_files.push_back(new_file.release());
             }
         }
+    return !dwi_files.empty();
+}
 
+void dicom_parser::load_files(QStringList file_list)
+{
+    if(!load_all_files(file_list,dwi_files))
+    {
+        QMessageBox::information(this,"Error","Invalid file format",0);
+        close();
+        return;
+    }
     if(prog_aborted())
     {
         close();

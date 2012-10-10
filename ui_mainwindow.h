@@ -1,8 +1,8 @@
 /********************************************************************************
 ** Form generated from reading UI file 'mainwindow.ui'
 **
-** Created: Tue Apr 24 10:58:53 2012
-**      by: Qt User Interface Compiler version 4.7.1
+** Created: Wed Oct 10 17:26:09 2012
+**      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -53,12 +53,12 @@ public:
     QVBoxLayout *verticalLayout_5;
     QCommandLinkButton *averagefib;
     QCommandLinkButton *vbc;
-    QCommandLinkButton *suprathreshold;
     QDockWidget *dockWidget_2;
     QWidget *dockWidgetContents_2;
     QVBoxLayout *verticalLayout;
     QCommandLinkButton *RenameDICOM;
     QCommandLinkButton *RenameDICOMDir;
+    QCommandLinkButton *batch_src;
     QCommandLinkButton *simulateMRI;
 
     void setupUi(QMainWindow *MainWindow)
@@ -195,6 +195,10 @@ public:
         MainWindow->addDockWidget(static_cast<Qt::DockWidgetArea>(1), dockWidget);
         dockWidget_3 = new QDockWidget(MainWindow);
         dockWidget_3->setObjectName(QString::fromUtf8("dockWidget_3"));
+        dockWidget_3->setEnabled(true);
+        sizePolicy3.setHeightForWidth(dockWidget_3->sizePolicy().hasHeightForWidth());
+        dockWidget_3->setSizePolicy(sizePolicy3);
+        dockWidget_3->setFloating(true);
         dockWidgetContents_3 = new QWidget();
         dockWidgetContents_3->setObjectName(QString::fromUtf8("dockWidgetContents_3"));
         verticalLayout_5 = new QVBoxLayout(dockWidgetContents_3);
@@ -211,15 +215,12 @@ public:
 
         verticalLayout_5->addWidget(vbc);
 
-        suprathreshold = new QCommandLinkButton(dockWidgetContents_3);
-        suprathreshold->setObjectName(QString::fromUtf8("suprathreshold"));
-
-        verticalLayout_5->addWidget(suprathreshold);
-
         dockWidget_3->setWidget(dockWidgetContents_3);
         MainWindow->addDockWidget(static_cast<Qt::DockWidgetArea>(1), dockWidget_3);
         dockWidget_2 = new QDockWidget(MainWindow);
         dockWidget_2->setObjectName(QString::fromUtf8("dockWidget_2"));
+        sizePolicy3.setHeightForWidth(dockWidget_2->sizePolicy().hasHeightForWidth());
+        dockWidget_2->setSizePolicy(sizePolicy3);
         dockWidgetContents_2 = new QWidget();
         dockWidgetContents_2->setObjectName(QString::fromUtf8("dockWidgetContents_2"));
         verticalLayout = new QVBoxLayout(dockWidgetContents_2);
@@ -235,6 +236,11 @@ public:
         RenameDICOMDir->setObjectName(QString::fromUtf8("RenameDICOMDir"));
 
         verticalLayout->addWidget(RenameDICOMDir);
+
+        batch_src = new QCommandLinkButton(dockWidgetContents_2);
+        batch_src->setObjectName(QString::fromUtf8("batch_src"));
+
+        verticalLayout->addWidget(batch_src);
 
         simulateMRI = new QCommandLinkButton(dockWidgetContents_2);
         simulateMRI->setObjectName(QString::fromUtf8("simulateMRI"));
@@ -276,13 +282,13 @@ public:
         averagefib->setDescription(QApplication::translate("MainWindow", "Average the ODFs to create an atlas.", 0, QApplication::UnicodeUTF8));
         vbc->setText(QApplication::translate("MainWindow", "STEP2: Permutation Tests", 0, QApplication::UnicodeUTF8));
         vbc->setDescription(QApplication::translate("MainWindow", "Perform permutation to obtain statistical mapping", 0, QApplication::UnicodeUTF8));
-        suprathreshold->setText(QApplication::translate("MainWindow", "STEP3: Suprathreshold Clustering", 0, QApplication::UnicodeUTF8));
-        suprathreshold->setDescription(QApplication::translate("MainWindow", "Analyze the cluster size and obtain FDR result", 0, QApplication::UnicodeUTF8));
         dockWidget_2->setWindowTitle(QApplication::translate("MainWindow", "Tools", 0, QApplication::UnicodeUTF8));
         RenameDICOM->setText(QApplication::translate("MainWindow", "Rename DICOM Files", 0, QApplication::UnicodeUTF8));
         RenameDICOM->setDescription(QApplication::translate("MainWindow", "Separate files according to their acquisition sequences", 0, QApplication::UnicodeUTF8));
         RenameDICOMDir->setText(QApplication::translate("MainWindow", "Rename DICOM Files", 0, QApplication::UnicodeUTF8));
-        RenameDICOMDir->setDescription(QApplication::translate("MainWindow", "Select the containing folder", 0, QApplication::UnicodeUTF8));
+        RenameDICOMDir->setDescription(QApplication::translate("MainWindow", "Apply to all subdirectoires", 0, QApplication::UnicodeUTF8));
+        batch_src->setText(QApplication::translate("MainWindow", "Batch Create SRC Files", 0, QApplication::UnicodeUTF8));
+        batch_src->setDescription(QApplication::translate("MainWindow", "Generate src files for each subdirectoires", 0, QApplication::UnicodeUTF8));
         simulateMRI->setText(QApplication::translate("MainWindow", "Diffusion MRI Simulation", 0, QApplication::UnicodeUTF8));
         simulateMRI->setDescription(QApplication::translate("MainWindow", "Simulate diffusion images using the given b-table", 0, QApplication::UnicodeUTF8));
     } // retranslateUi

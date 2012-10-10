@@ -247,16 +247,6 @@
        </property>
       </widget>
      </item>
-     <item>
-      <widget class="QCommandLinkButton" name="suprathreshold">
-       <property name="text">
-        <string>STEP3: Suprathreshold Clustering</string>
-       </property>
-       <property name="description">
-        <string>Analyze the cluster size and obtain FDR result</string>
-       </property>
-      </widget>
-     </item>
     </layout>
    </widget>
   </widget>
@@ -297,7 +287,17 @@
         <string>Rename DICOM Files</string>
        </property>
        <property name="description">
-        <string>Select the containing folder</string>
+        <string>Apply to all subdirectoires</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCommandLinkButton" name="batch_src">
+       <property name="text">
+        <string>Batch Create SRC Files</string>
+       </property>
+       <property name="description">
+        <string>Generate src files for each subdirectories</string>
        </property>
       </widget>
      </item>
