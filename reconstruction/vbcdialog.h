@@ -46,6 +46,8 @@ private slots:
     void on_vbc_single_toggled(bool checked);
     void on_vbc_trend_toggled(bool checked);
     void on_close_clicked();
+    void on_open_dir1_clicked();
+    void on_open_dir2_clicked();
 };
 
 #endif // VBCDIALOG_H

@@ -351,3 +351,27 @@ void VBCDialog::on_open_mapping_clicked()
         return;
     ui->mapping->setText(filename);
 }
+QStringList search_files(QString dir,QString filter);
+void VBCDialog::on_open_dir1_clicked()
+{
+    QString dir = QFileDialog::getExistingDirectory(
+                                this,
+                                "Open directory",
+                                ui->mapping->text());
+    if(dir.isEmpty())
+        return;
+    group1 << search_files(dir,"*.fib.gz");
+    update_list();
+}
+
+void VBCDialog::on_open_dir2_clicked()
+{
+    QString dir = QFileDialog::getExistingDirectory(
+                                this,
+                                "Open directory",
+                                ui->mapping->text());
+    if(dir.isEmpty())
+        return;
+    group2 << search_files(dir,"*.fib.gz");
+    update_list();
+}

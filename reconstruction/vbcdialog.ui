@@ -214,6 +214,19 @@
            </widget>
           </item>
           <item>
+           <widget class="QToolButton" name="open_dir1">
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>26</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Open Directory...</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QToolButton" name="save_list1">
             <property name="maximumSize">
              <size>
@@ -322,6 +335,19 @@
                </property>
                <property name="text">
                 <string>Open List</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="open_dir2">
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>26</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Open Directory...</string>
                </property>
               </widget>
              </item>

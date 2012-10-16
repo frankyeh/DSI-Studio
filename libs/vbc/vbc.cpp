@@ -86,7 +86,8 @@ float permutation_test(std::vector<float>& data,
 vbc::~vbc(void)
 {
     terminated = true;
-    threads->join_all();
+    if(threads.get())
+        threads->join_all();
 }
 
 bool vbc::load_fiber_template(const char* filename)
