@@ -294,10 +294,20 @@
      <item>
       <widget class="QCommandLinkButton" name="batch_src">
        <property name="text">
-        <string>Batch Create SRC Files</string>
+        <string>Batch SRC Files Creation</string>
        </property>
        <property name="description">
-        <string>Generate src files for each subdirectories</string>
+        <string>Generate src file for each subdirectory</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCommandLinkButton" name="batch_reconstruction">
+       <property name="text">
+        <string>Batch Reconstruction</string>
+       </property>
+       <property name="description">
+        <string>Select a directory that contains src file in the subdirectories</string>
        </property>
       </widget>
      </item>

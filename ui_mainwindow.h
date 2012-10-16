@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'mainwindow.ui'
 **
-** Created: Wed Oct 10 17:26:09 2012
+** Created: Wed Oct 10 18:07:01 2012
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -59,6 +59,7 @@ public:
     QCommandLinkButton *RenameDICOM;
     QCommandLinkButton *RenameDICOMDir;
     QCommandLinkButton *batch_src;
+    QCommandLinkButton *batch_reconstruction;
     QCommandLinkButton *simulateMRI;
 
     void setupUi(QMainWindow *MainWindow)
@@ -242,6 +243,11 @@ public:
 
         verticalLayout->addWidget(batch_src);
 
+        batch_reconstruction = new QCommandLinkButton(dockWidgetContents_2);
+        batch_reconstruction->setObjectName(QString::fromUtf8("batch_reconstruction"));
+
+        verticalLayout->addWidget(batch_reconstruction);
+
         simulateMRI = new QCommandLinkButton(dockWidgetContents_2);
         simulateMRI->setObjectName(QString::fromUtf8("simulateMRI"));
 
@@ -287,8 +293,10 @@ public:
         RenameDICOM->setDescription(QApplication::translate("MainWindow", "Separate files according to their acquisition sequences", 0, QApplication::UnicodeUTF8));
         RenameDICOMDir->setText(QApplication::translate("MainWindow", "Rename DICOM Files", 0, QApplication::UnicodeUTF8));
         RenameDICOMDir->setDescription(QApplication::translate("MainWindow", "Apply to all subdirectoires", 0, QApplication::UnicodeUTF8));
-        batch_src->setText(QApplication::translate("MainWindow", "Batch Create SRC Files", 0, QApplication::UnicodeUTF8));
-        batch_src->setDescription(QApplication::translate("MainWindow", "Generate src files for each subdirectoires", 0, QApplication::UnicodeUTF8));
+        batch_src->setText(QApplication::translate("MainWindow", "Batch SRC Files Creation", 0, QApplication::UnicodeUTF8));
+        batch_src->setDescription(QApplication::translate("MainWindow", "Generate src file for each subdirectory", 0, QApplication::UnicodeUTF8));
+        batch_reconstruction->setText(QApplication::translate("MainWindow", "Batch Reconstruction", 0, QApplication::UnicodeUTF8));
+        batch_reconstruction->setDescription(QApplication::translate("MainWindow", "Select a directory that contains src file in the subdirectories", 0, QApplication::UnicodeUTF8));
         simulateMRI->setText(QApplication::translate("MainWindow", "Diffusion MRI Simulation", 0, QApplication::UnicodeUTF8));
         simulateMRI->setDescription(QApplication::translate("MainWindow", "Simulate diffusion images using the given b-table", 0, QApplication::UnicodeUTF8));
     } // retranslateUi

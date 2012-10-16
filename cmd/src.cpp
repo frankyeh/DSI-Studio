@@ -7,7 +7,7 @@
 #include "dicom/dwi_header.hpp"
 
 namespace po = boost::program_options;
-
+QStringList search_files(QString dir,QString filter);
 bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files);
 int src(int ac, char *av[])
 {
@@ -50,21 +50,7 @@ int src(int ac, char *av[])
         if(vm.count("recursive"))
         {
             out << "search recursively in the subdir" << std::endl;
-            QStringList dir_list;
-            dir_list << QString(source.c_str());;
-            while(!dir_list.empty())
-            {
-                out << "searching in directory " << dir_list.back().toLocal8Bit().begin() << std::endl;
-                QDir cur_dir = dir_list.back();
-                dir_list.pop_back();
-                QStringList new_list = cur_dir.entryList(QStringList(""),QDir::AllDirs|QDir::NoDotAndDotDot);
-                for(unsigned int index = 0;index < new_list.size();++index)
-                    dir_list << cur_dir.absolutePath() + "/" + new_list[index];
-                new_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
-                for (unsigned int index = 0;index < new_list.size();++index)
-                    file_list << cur_dir.absolutePath() + "/" + new_list[index];
-            }
-
+            file_list = search_files(source.c_str(),"*.dcm");
         }
         else
         {

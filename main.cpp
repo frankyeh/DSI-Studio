@@ -6,6 +6,7 @@
 #include <QMetaObject>
 #include <QMetaMethod>
 #include <QMessageBox>
+#include <QDir>
 #include "mainwindow.h"
 #include "mat_file.hpp"
 #include "boost/program_options.hpp"
@@ -23,6 +24,24 @@ void prog_debug(const char* file,const char* fun)
 {
 
 }
+
+QStringList search_files(QString dir,QString filter)
+{
+    QStringList dir_list,src_list;
+    dir_list << dir;
+    for(unsigned int i = 0;i < dir_list.size();++i)
+    {
+        QDir cur_dir = dir_list[i];
+        QStringList new_list = cur_dir.entryList(QStringList(""),QDir::AllDirs|QDir::NoDotAndDotDot);
+        for(unsigned int index = 0;index < new_list.size();++index)
+            dir_list << cur_dir.absolutePath() + "/" + new_list[index];
+        QStringList file_list = cur_dir.entryList(QStringList(filter),QDir::Files|QDir::NoSymLinks);
+        for (unsigned int index = 0;index < file_list.size();++index)
+            src_list << dir_list[i] + "/" + file_list[index];
+    }
+    return src_list;
+}
+
 struct QSignalSpyCallbackSet
 {
     typedef void (*BeginCallback)(QObject *caller, int method_index, void **argv);

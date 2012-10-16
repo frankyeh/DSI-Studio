@@ -39,6 +39,7 @@ private slots:
     void open_fib_at(int,int);
     void open_src_at(int,int);
     void on_batch_src_clicked();
+    void on_batch_reconstruction_clicked();
 };
 
 #endif // MAINWINDOW_H

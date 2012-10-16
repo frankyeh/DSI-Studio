@@ -536,3 +536,16 @@ void MainWindow::on_batch_src_clicked()
         }
     }
 }
+
+QStringList search_files(QString dir,QString filter);
+void MainWindow::on_batch_reconstruction_clicked()
+{
+    QString dir = QFileDialog::getExistingDirectory(
+                                this,
+                                "Open directory",
+                                ui->workDir->currentText());
+    if(dir.isEmpty())
+        return;
+
+    loadSrc(search_files(dir,"*.src.gz"));
+}
