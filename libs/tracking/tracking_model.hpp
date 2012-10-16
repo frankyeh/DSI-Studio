@@ -309,21 +309,45 @@ public:
         return fib_data.load_from_file(file_name);
     }
 
-
-    void get_quantitative_info(
-            const std::vector<std::vector<float> >& tracts,
-            float threshold,
-            float cull_angle_cos,
-            std::string& result)
+    void get_quantitative_title(std::vector<std::string>& titles)
     {
+        titles.push_back("number of tracts");
+        titles.push_back("tract length mean(mm)");
+        titles.push_back("tract length sd(mm)");
+        titles.push_back("tracts volume (mm^3)");
+
+
+        if (fib_data.view_item[0].name[0] == 'f')// is dti
+        {
+            titles.push_back("FA mean");
+            titles.push_back("FA sd");
+        }
+        else
+        {
+            titles.push_back("total spin quantity");
+            titles.push_back("QA mean");
+            titles.push_back("QA sd");
+        }
+        for(int data_index = fib_data.other_mapping_index;
+            data_index < fib_data.view_item.size();++data_index)
+        {
+            titles.push_back(fib_data.view_item[data_index].name+" mean");
+            titles.push_back(fib_data.view_item[data_index].name+" sd");
+        }
+    }
+    void get_quantitative_data(const std::vector<std::vector<float> >& tracts,
+                               float threshold,
+                               float cull_angle_cos,
+                               std::vector<float>& data)
+    {
+        if(tracts.empty())
+            return;
         image::vector<3> voxel_size = fib_data.vs;
         float voxel_volume = voxel_size[0]*voxel_size[1]*voxel_size[2];
-        std::ostringstream out;
-        out << "number of tracts\t"
-            << tracts.size()
-            << std::endl;
+
+        data.push_back(tracts.size());
+
         // mean length
-        if(voxel_volume > 0.0)
         {
             float sum_length = 0.0;
             float sum_length2 = 0.0;
@@ -341,18 +365,13 @@ public:
                 sum_length += length;
                 sum_length2 += length*length;
             }
-            out << "tract length mean(mm)\t"
-                << sum_length/((float)tracts.size())
-                << std::endl;
-            out << "tract length sd(mm)\t"
-                << std::sqrt(sum_length2/(double)tracts.size()-sum_length*sum_length/(double)tracts.size()/(double)tracts.size())
-                << std::endl;
+            data.push_back(sum_length/((float)tracts.size()));
+            data.push_back(std::sqrt(sum_length2/(double)tracts.size()-
+                                     sum_length*sum_length/(double)tracts.size()/(double)tracts.size()));
         }
 
 
         // tract volume
-
-        if(voxel_volume > 0.0)
         {
 
             std::set<image::vector<3,int> > pass_map;
@@ -362,11 +381,10 @@ public:
                                                   std::floor(tracts[i][j+1]+0.5),
                                                   std::floor(tracts[i][j+2]+0.5)));
 
-            out << "tracts volume (mm^3)\t" << pass_map.size()*voxel_volume <<std::endl;
+            data.push_back(pass_map.size()*voxel_volume);
         }
 
         // output mean FA
-
         {
             float sum_fa = 0.0;
             float sum_fa2 = 0.0;
@@ -385,20 +403,14 @@ public:
             }
             if (fib_data.view_item[0].name[0] == 'f')// is dti
             {
-                out << "FA mean\t" << sum_fa/((double)total) << std::endl;
-                out << "FA sd\t"
-                    << std::sqrt(sum_fa2/(double)total-sum_fa*sum_fa/(double)total/(double)total)
-                    << std::endl;
+                data.push_back(sum_fa/((double)total));
+                data.push_back(std::sqrt(sum_fa2/(double)total-sum_fa*sum_fa/(double)total/(double)total));
             }
             else
             {
-                out << "total spin quantity\t" <<
-                    get_spin_volume(tracts,threshold,cull_angle_cos)
-                    << std::endl;
-                out << "QA mean\t" << sum_fa/((double)total) << std::endl;
-                out << "QA sd\t"
-                    << std::sqrt(sum_fa2/(double)total-sum_fa*sum_fa/(double)total/(double)total)
-                    << std::endl;
+                data.push_back(get_spin_volume(tracts,threshold,cull_angle_cos));
+                data.push_back(sum_fa/((double)total));
+                data.push_back(std::sqrt(sum_fa2/(double)total-sum_fa*sum_fa/(double)total/(double)total));
             }
         }
         // output other data
@@ -422,19 +434,27 @@ public:
                 }
             }
 
-            out << fib_data.view_item[data_index].name.c_str() << " mean\t"
-                    << sum_data/((double)total) << std::endl;
-            out << fib_data.view_item[data_index].name.c_str() << " sd\t"
-                << std::sqrt(sum_data2/(double)total-sum_data*sum_data/(double)total/(double)total)
-                << std::endl;;
+            data.push_back(sum_data/((double)total));
+            data.push_back(std::sqrt(sum_data2/(double)total-sum_data*sum_data/(double)total/(double)total));
         }
+    }
 
-        {
-            //case 2:// cross_spin
-            //return odf_model->get_spin_volume(tracts,num_tracts,tract_length,threshold,cull_angle_cos)*voxel_volume*
-            //   ((double)num_tracts)/(std::accumulate(tract_length,tract_length+num_tracts,0.0)/3.0*odf_model->fib_data.vs[0]);
-        }
 
+    void get_quantitative_info(
+            const std::vector<std::vector<float> >& tracts,
+            float threshold,
+            float cull_angle_cos,
+            std::string& result)
+    {
+        if(tracts.empty())
+            return;
+        std::ostringstream out;
+        std::vector<std::string> titles;
+        std::vector<float> data;
+        get_quantitative_title(titles);
+        get_quantitative_data(tracts,threshold,cull_angle_cos,data);
+        for(unsigned int index = 0;index < data.size() && index < titles.size();++index)
+            out << titles[index] << "\t" << data[index] << std::endl;
         result = out.str();
     }
 

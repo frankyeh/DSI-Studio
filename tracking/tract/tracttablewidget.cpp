@@ -358,9 +358,34 @@ void TractTableWidget::showCurTractStatistics(float threshold,float cull_angle_c
     if(currentRow() >= tract_models.size())
         return;
     std::string result;
-    cur_tracking_window.handle->
-        get_quantitative_info(tract_models[currentRow()]->get_tracts(),
-                              threshold,cull_angle_cos,result);
+    {
+        std::vector<std::string> titles;
+        cur_tracking_window.handle->get_quantitative_title(titles);
+        std::vector<std::vector<float> > data(tract_models.size());
+        begin_prog("calculating");
+        for(unsigned int index = 0;check_prog(index,tract_models.size());++index)
+            cur_tracking_window.handle->get_quantitative_data(tract_models[index]->get_tracts(),
+                                                          threshold,cull_angle_cos,data[index]);
+        if(prog_aborted())
+            return;
+        std::ostringstream out;
+        out << "Tract Name\t";
+        for(unsigned int index = 0;index < tract_models.size();++index)
+            out << item(index,0)->text().toLocal8Bit().begin() << "\t";
+        out << std::endl;
+        for(unsigned int i = 0;i < titles.size();++i)
+        {
+            out << titles[i] << "\t";
+            for(unsigned int j = 0;j < tract_models.size();++j)
+            {
+                if(i < data[j].size())
+                    out << data[j][i];
+                out << "\t";
+            }
+            out << std::endl;
+        }
+        result = out.str();
+    }
     QMessageBox msgBox;
     msgBox.setText("Tract Statistics");
     msgBox.setInformativeText(result.c_str());
