@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'vbcdialog.ui'
 **
-** Created: Wed Oct 10 17:10:22 2012
+** Created: Wed Oct 17 16:41:40 2012
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -58,6 +58,7 @@ public:
     QToolButton *moveup;
     QToolButton *movedown;
     QToolButton *open_list1;
+    QToolButton *open_dir1;
     QToolButton *save_list1;
     QSpacerItem *horizontalSpacer;
     QVBoxLayout *verticalLayout_6;
@@ -69,6 +70,7 @@ public:
     QPushButton *group2open;
     QPushButton *group2delete;
     QToolButton *open_list2;
+    QToolButton *open_dir2;
     QToolButton *save_list2;
     QSpacerItem *horizontalSpacer_2;
     QHBoxLayout *horizontalLayout_9;
@@ -213,6 +215,12 @@ public:
 
         horizontalLayout_2->addWidget(open_list1);
 
+        open_dir1 = new QToolButton(subject_data_group);
+        open_dir1->setObjectName(QString::fromUtf8("open_dir1"));
+        open_dir1->setMaximumSize(QSize(16777215, 26));
+
+        horizontalLayout_2->addWidget(open_dir1);
+
         save_list1 = new QToolButton(subject_data_group);
         save_list1->setObjectName(QString::fromUtf8("save_list1"));
         save_list1->setMaximumSize(QSize(16777215, 26));
@@ -271,6 +279,12 @@ public:
         open_list2->setMaximumSize(QSize(16777215, 26));
 
         horizontalLayout_3->addWidget(open_list2);
+
+        open_dir2 = new QToolButton(group2_widget);
+        open_dir2->setObjectName(QString::fromUtf8("open_dir2"));
+        open_dir2->setMaximumSize(QSize(16777215, 26));
+
+        horizontalLayout_3->addWidget(open_dir2);
 
         save_list2 = new QToolButton(group2_widget);
         save_list2->setObjectName(QString::fromUtf8("save_list2"));
@@ -426,11 +440,13 @@ public:
         moveup->setText(QApplication::translate("VBCDialog", "Up", 0, QApplication::UnicodeUTF8));
         movedown->setText(QApplication::translate("VBCDialog", "Down", 0, QApplication::UnicodeUTF8));
         open_list1->setText(QApplication::translate("VBCDialog", "Open List", 0, QApplication::UnicodeUTF8));
+        open_dir1->setText(QApplication::translate("VBCDialog", "Open Directory...", 0, QApplication::UnicodeUTF8));
         save_list1->setText(QApplication::translate("VBCDialog", "Save List", 0, QApplication::UnicodeUTF8));
         group2_label->setText(QApplication::translate("VBCDialog", "Group2", 0, QApplication::UnicodeUTF8));
         group2open->setText(QApplication::translate("VBCDialog", "Add", 0, QApplication::UnicodeUTF8));
         group2delete->setText(QString());
         open_list2->setText(QApplication::translate("VBCDialog", "Open List", 0, QApplication::UnicodeUTF8));
+        open_dir2->setText(QApplication::translate("VBCDialog", "Open Directory...", 0, QApplication::UnicodeUTF8));
         save_list2->setText(QApplication::translate("VBCDialog", "Save List", 0, QApplication::UnicodeUTF8));
         label_6->setText(QApplication::translate("VBCDialog", "QA threshold", 0, QApplication::UnicodeUTF8));
         label_5->setText(QApplication::translate("VBCDialog", "p-value threshold", 0, QApplication::UnicodeUTF8));
