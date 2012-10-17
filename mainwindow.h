@@ -24,7 +24,6 @@ private:
     void loadFib(QString Filename);
     void loadSrc(QStringList filenames);
 private slots:
-    void on_suprathreshold_clicked();
     void on_averagefib_clicked();
     void on_vbc_clicked();
     void on_RenameDICOMDir_clicked();

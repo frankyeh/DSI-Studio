@@ -426,16 +426,7 @@ void MainWindow::on_averagefib_clicked()
                 filenames.count());
 }
 
-void MainWindow::on_suprathreshold_clicked()
-{
-    QString dir = QFileDialog::getExistingDirectory(
-                                this,
-                                "Open directory",
-                                ".");
-    if (dir.isEmpty())
-        return;
-    //cluster_statistics(dir.toLocal8Bit().begin());
-}
+
 /*
 #include "mapping/mni_norm.hpp"
 void MainWindow::on_warpImage_clicked()
