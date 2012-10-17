@@ -64,7 +64,7 @@ public:
 	std::vector<float>& get_reverse_buffer(void){return reverse_buffer;}
 
 	template<typename ProcessList>
-        bool start_tracking(const image::vector<3,float>& seed_pos)
+        bool start_tracking(const image::vector<3,float>& seed_pos,bool smoothing)
 	{
 		buffer_front_pos = info->param.max_points_count3;
 		buffer_back_pos = info->param.max_points_count3;
@@ -107,6 +107,30 @@ public:
 		}
 		while(1);
 
+        if(smoothing)
+        {
+            std::vector<float> smoothed(track_buffer.size());
+            float w[5] = {1.0,2.0,4.0,2.0,1.0};
+            int dis[5] = {-6, -3, 0, 3, 6};
+            for(int index = buffer_front_pos;index < buffer_back_pos;++index)
+            {
+                float sum_w = 0.0;
+                float sum = 0.0;
+                for(char i = 0;i < 5;++i)
+                {
+                    int cur_index = index + dis[i];
+                    if(cur_index < buffer_front_pos || cur_index >= buffer_back_pos)
+                        continue;
+                    sum += w[i]*track_buffer[cur_index];
+                    sum_w += w[i];
+                }
+                if(sum_w != 0.0)
+                    smoothed[index] = sum/sum_w;
+            }
+            smoothed.swap(track_buffer);
+        }
+
+
                 return !info->failed &&
                        get_buffer_size() > 0 &&
                        get_buffer_size() >= info->param.min_points_count3 &&
@@ -132,15 +156,15 @@ public:
             switch (param.method_id)
             {
             case 0:
-                if (!start_tracking<streamline_method_process>(position))
+                if (!start_tracking<streamline_method_process>(position,false))
                     return 0;
                 break;
             case 1:
-                if (!start_tracking<streamline_runge_kutta_4_method_process>(position))
+                if (!start_tracking<streamline_runge_kutta_4_method_process>(position,false))
                     return 0;
                 break;
             case 2:
-                if (!start_tracking<streamline_method_process_with_relocation>(position))
+                if (!start_tracking<voxel_tracking>(position,true))
                     return 0;
                 break;
 

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1279</width>
-    <height>493</height>
+    <width>1310</width>
+    <height>527</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -653,7 +653,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1279</width>
+     <width>1310</width>
      <height>21</height>
     </rect>
    </property>
@@ -1846,7 +1846,7 @@
          </item>
          <item>
           <property name="text">
-           <string>Streamline relocation</string>
+           <string>Voxel Tracking</string>
           </property>
          </item>
         </widget>
