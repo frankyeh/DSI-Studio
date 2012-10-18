@@ -196,7 +196,7 @@ const char* vbc::load_subject_data(const std::vector<std::string>& file_names,
             error_msg += file_names[subject_index];
             return error_msg.c_str();
         }
-        float max_qa = 0.0;
+        float max_iso = 0.0;
         for(int odf_block_index = 0;odf_block_index < subject_odfs.size();++odf_block_index)
         {
             std::ostringstream out;
@@ -210,29 +210,28 @@ const char* vbc::load_subject_data(const std::vector<std::string>& file_names,
                                                 ++voxel_index,odf_buf += half_vertex_count)
             {
                 float min_value = *std::min_element(odf_buf, odf_buf + half_vertex_count);
-                //unsigned int findex_location = index_mapping[odf_index+odf_block_index][voxel_index];
+                if(min_value > max_iso)
+                    max_iso = min_value;
                 unsigned int findex_location = index_mapping[odf_block_index][voxel_index];
                 for(int dir_index = 0;dir_index < num_fiber;++dir_index)
                 {
                     if(subject_odfs[odf_block_index][voxel_index][dir_index].empty())
                         continue;
-                    float qa = odf_buf[findex[dir_index][findex_location]]-min_value;
-                    if(qa > max_qa)
-                        max_qa = qa;
-                    subject_odfs[odf_block_index][voxel_index][dir_index][subject_index] = qa;
+                    subject_odfs[odf_block_index][voxel_index][dir_index][subject_index] =
+                        odf_buf[findex[dir_index][findex_location]]-min_value;
                 }
             }
         }
 
         // normalization
-        if(max_qa + 1.0 != 1.0)
+        if(max_iso + 1.0 != 1.0)
         for(int odf_block_index = 0;odf_block_index < subject_odfs.size();++odf_block_index)
         {
             for(int voxel_index = 0;voxel_index < subject_odfs[odf_block_index].size();++voxel_index)
             {
                 for(int dir_index = 0;dir_index < subject_odfs[odf_block_index][voxel_index].size();++dir_index)
                     if(!subject_odfs[odf_block_index][voxel_index][dir_index].empty())
-                        subject_odfs[odf_block_index][voxel_index][dir_index][subject_index] /= max_qa;
+                        subject_odfs[odf_block_index][voxel_index][dir_index][subject_index] /= max_iso;
             }
         }
     }
@@ -369,13 +368,17 @@ void vbc::calculate_mapping(const char* file_name,float p_value_threshold)
 
 
     MatFile& matfile = fib_file->fib_data.mat_reader;
-    matfile.write_to_file(file_name);
     std::vector<std::vector<short> > index_backup(num_fiber);
+    std::vector<std::vector<float> > fa_backup(num_fiber);
+
     for(unsigned int fib = 0;fib < num_fiber;++fib)
     {
         index_backup[fib].resize(dim.size());
         std::copy(findex[fib],findex[fib]+dim.size(),index_backup[fib].begin());
+        fa_backup[fib].resize(dim.size());
+        std::copy(fa[fib],fa[fib]+dim.size(),fa_backup[fib].begin());
     }
+
     for(unsigned int index = 0;index < dim.size();++index)
     {
         std::map<float,short,std::greater<float> > fmap;
@@ -383,11 +386,8 @@ void vbc::calculate_mapping(const char* file_name,float p_value_threshold)
         {
             ((float*)fa[fib])[index] = 0;
             ((short*)findex[fib])[index] = 0;
-            if(dif[fib][index] < 0)
-                fmap[-dif[fib][index]] = index_backup[fib][index];
-
-            dif[fib][index] = -dif[fib][index];
-
+            if(dif[fib][index] > 0)
+                fmap[pv[fib][index]] = index_backup[fib][index];
         }
         std::map<float,short,std::greater<float> >::const_iterator iter = fmap.begin();
         std::map<float,short,std::greater<float> >::const_iterator end = fmap.end();
@@ -399,13 +399,47 @@ void vbc::calculate_mapping(const char* file_name,float p_value_threshold)
 
     }
 
+    matfile.write_to_file((std::string(file_name)+".greater.fib.gz").c_str());
+
     for(unsigned int fib = 0;fib < num_fiber;++fib)
     {
-        std::string name1 = "cluster0",name2 = "t0",name3 = "dif0";
-        name1[7] += fib;
+        std::string name2 = "t0",name3 = "dif0";
         name2[1] += fib;
         name3[3] += fib;
-        //matfile.add_matrix(name1.c_str(),&*group_id_map.begin()+fib*dim.size(),1,dim.size());
+        matfile.add_matrix(name2.c_str(),&*pv[fib].begin(),1,pv[fib].size());
+        matfile.add_matrix(name3.c_str(),&*dif[fib].begin(),1,dif[fib].size());
+    }
+    matfile.close_file();
+
+
+
+    for(unsigned int index = 0;index < dim.size();++index)
+    {
+        std::map<float,short,std::greater<float> > fmap;
+        for(unsigned int fib = 0;fib < num_fiber;++fib)
+        {
+            ((float*)fa[fib])[index] = 0;
+            ((short*)findex[fib])[index] = 0;
+            if(dif[fib][index] < 0)
+                fmap[-pv[fib][index]] = index_backup[fib][index];
+        }
+        std::map<float,short,std::greater<float> >::const_iterator iter = fmap.begin();
+        std::map<float,short,std::greater<float> >::const_iterator end = fmap.end();
+        for(unsigned int fib = 0;iter != end;++iter,++fib)
+        {
+            ((float*)fa[fib])[index] = iter->first;
+            ((short*)findex[fib])[index] = iter->second;
+        }
+
+    }
+
+    matfile.write_to_file((std::string(file_name)+".lesser.fib.gz").c_str());
+
+    for(unsigned int fib = 0;fib < num_fiber;++fib)
+    {
+        std::string name2 = "t0",name3 = "dif0";
+        name2[1] += fib;
+        name3[3] += fib;
         matfile.add_matrix(name2.c_str(),&*pv[fib].begin(),1,pv[fib].size());
         matfile.add_matrix(name3.c_str(),&*dif[fib].begin(),1,dif[fib].size());
     }

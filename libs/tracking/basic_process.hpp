@@ -21,9 +21,8 @@ public:
         std::vector<unsigned int> next_voxels_index;
         std::vector<float> voxel_angle;
         // assume isotropic
-        int radius = std::max<int>(std::floor(info.param.step_size_in_voxel[0]+0.5),1);
-        int radius2 = std::max<int>(std::floor(info.param.step_size_in_voxel[0]*
-                                               info.param.step_size_in_voxel[0]+0.5),1);
+        int radius = 2;
+        int radius2 = 6;
         for(char z = -radius;z <= radius;++z)
             for(char y = -radius;y <= radius;++y)
                 for(char x = -radius;x <= radius;++x)

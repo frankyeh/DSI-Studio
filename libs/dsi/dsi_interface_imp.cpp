@@ -538,17 +538,7 @@ extern "C"
             }
         }
         for(unsigned int i = 0;i < odf_bufs.size();++i)
-        {
             image::add(odfs[i].begin(),odfs[i].end(),odf_bufs[i]);
-            for(unsigned int j = 0;j < odf_bufs_size[i];)
-            {
-                unsigned int next_j = j + half_vertex_count;
-                image::minus_constant(odfs[i].begin() + j,
-                                      odfs[i].begin() + next_j,
-                    *std::min_element(odf_bufs[i]+j,odf_bufs[i]+next_j));
-                j = next_j;
-            }
-        }
     }
     if (prog_aborted())
         return false;
