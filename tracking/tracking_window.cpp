@@ -1134,7 +1134,7 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
     handle->fib_data.fib.set_tracking_index(index);
     float max_value = *std::max_element(handle->fib_data.fib.fa[0],handle->fib_data.fib.fa[0]+handle->fib_data.fib.dim.size());
     ui->fa_threshold->setRange(0.0,max_value*1.1);
-    ui->fa_threshold->setValue(0.8*image::segmentation::otsu_threshold(
+    ui->fa_threshold->setValue(0.6*image::segmentation::otsu_threshold(
         image::basic_image<float, 3,image::const_pointer_memory<float> >(handle->fib_data.fib.fa[0],handle->fib_data.fib.dim)));
     ui->fa_threshold->setSingleStep(max_value/50.0);
 }
