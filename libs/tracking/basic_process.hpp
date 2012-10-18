@@ -6,69 +6,30 @@
 #include "math/matrix_op.hpp"
 #include "tracking_info.hpp"
 
-struct RandomDirection
-{
-
-    void operator()(TrackingInfo& info)
-    {
-        for (unsigned int index = 0;index < 10;++index)
-        {
-            float txy = info.gen();
-            float tz = info.gen()/2.0;
-            float x = std::sin(txy)*std::sin(tz);
-            float y = std::cos(txy)*std::sin(tz);
-            float z = std::cos(tz);
-            if (info.evaluate_dir(info.position,image::vector<3,float>(x,y,z),info.dir))
-                return;
-        }
-        info.terminated = true;
-    }
-};
-
-struct MainFiberDirection
-{
-private:
-    static int nearest(float value)
-    {
-        return std::floor(value+0.5);
-    }
-public:
-
-    void operator()(TrackingInfo& info)
-    {
-        image::pixel_index<3> index(nearest(info.position[0]),nearest(info.position[1]),
-                                    nearest(info.position[2]),info.fib_data.dim);
-        if (!info.fib_data.dim.is_valid(index) || info.fib_data.fib.getFA(index.index(),0) < info.param.threshold)
-        {
-            info.terminated = true;
-            return;
-        }
-        info.dir = info.fib_data.fib.getDir(index.index(),0);
-    }
-};
-
 struct LocateVoxel{
 
 public:
 
     void operator()(TrackingInfo& info)
     {
-        image::vector<3,short> cur_pos;
+        image::vector<3,short> cur_pos(info.position);
         unsigned int cur_pos_index;
-        cur_pos[0] = std::floor(info.position[0]+0.5);
-        cur_pos[1] = std::floor(info.position[1]+0.5);
-        cur_pos[2] = std::floor(info.position[2]+0.5);
         cur_pos_index = image::pixel_index<3>(cur_pos[0],cur_pos[1],cur_pos[2],info.fib_data.dim).index();
 
         std::vector<image::vector<3,float> > next_voxels_dir;
         std::vector<image::vector<3,short> > next_voxels_pos;
         std::vector<unsigned int> next_voxels_index;
         std::vector<float> voxel_angle;
-        for(char z = -1;z <= 1;++z)
-            for(char y = -1;y <= 1;++y)
-                for(char x = -1;x <= 1;++x)
+        // assume isotropic
+        int radius = std::max<int>(std::floor(info.param.step_size_in_voxel[0]+0.5),1);
+        int radius2 = std::max<int>(std::floor(info.param.step_size_in_voxel[0]*
+                                               info.param.step_size_in_voxel[0]+0.5),1);
+        for(char z = -radius;z <= radius;++z)
+            for(char y = -radius;y <= radius;++y)
+                for(char x = -radius;x <= radius;++x)
                 {
-                    if(x == 0 && y == 0 && z == 0)
+                    if((x == 0 && y == 0 && z == 0) ||
+                            x*x+y*y+z*z > radius2)
                         continue;
                     image::vector<3,float> dis(x,y,z);
                     image::vector<3,short> pos(cur_pos);

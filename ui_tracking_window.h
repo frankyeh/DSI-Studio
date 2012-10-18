@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Wed Oct 17 16:41:40 2012
+** Created: Wed Oct 17 20:26:07 2012
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -286,7 +286,7 @@ public:
     {
         if (tracking_window->objectName().isEmpty())
             tracking_window->setObjectName(QString::fromUtf8("tracking_window"));
-        tracking_window->resize(1279, 493);
+        tracking_window->resize(1310, 527);
         QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         sizePolicy.setHorizontalStretch(0);
         sizePolicy.setVerticalStretch(0);
@@ -787,7 +787,7 @@ public:
         tracking_window->addDockWidget(static_cast<Qt::DockWidgetArea>(2), renderingWidgetHolder);
         menuBar = new QMenuBar(tracking_window);
         menuBar->setObjectName(QString::fromUtf8("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 1279, 21));
+        menuBar->setGeometry(QRect(0, 0, 1310, 21));
         QSizePolicy sizePolicy5(QSizePolicy::Preferred, QSizePolicy::Minimum);
         sizePolicy5.setHorizontalStretch(0);
         sizePolicy5.setVerticalStretch(0);
@@ -1936,6 +1936,7 @@ public:
         initial_direction->clear();
         initial_direction->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Primary Orientation", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("tracking_window", "Random Orientation", 0, QApplication::UnicodeUTF8)
          << QApplication::translate("tracking_window", "All Orientations", 0, QApplication::UnicodeUTF8)
         );
         seed_plan->clear();
@@ -1953,7 +1954,7 @@ public:
         tracking_method->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Streamline", 0, QApplication::UnicodeUTF8)
          << QApplication::translate("tracking_window", "RK4", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("tracking_window", "Streamline relocation", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("tracking_window", "Voxel Tracking", 0, QApplication::UnicodeUTF8)
         );
         tracking_plan->clear();
         tracking_plan->insertItems(0, QStringList()

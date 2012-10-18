@@ -46,12 +46,6 @@ public:
     {
         Process()(*info.get());
     }
-	template<typename Process>
-    bool set_seeding()
-    {
-        boost::mpl::for_each<Process>(boost::ref(*this));
-		return !info->terminated;
-    }
 	template<typename ProcessList>
     void tracking(ProcessList)
     {
@@ -145,14 +139,57 @@ public:
             info->init(position);
             switch (param.seed_id)
             {
-            case 0:
-                if (!set_seeding<main_fiber_direction_seeding>())
-                    return 0;
+            case 0:// main direction
+                {
+                    image::pixel_index<3> index(std::floor(info->position[0]+0.5),
+                                            std::floor(info->position[1]+0.5),
+                                            std::floor(info->position[2]+0.5),info->fib_data.dim);
+
+                    if (!info->fib_data.dim.is_valid(index) ||
+                         info->fib_data.fib.getFA(index.index(),0) < info->param.threshold)
+                        info->terminated = true;
+                    else
+                        info->dir = info->fib_data.fib.getDir(index.index(),0);
+                }
                 break;
-            case 1:
-                if (!set_seeding<random_direction_seeding>())
-                    return 0;
+            case 1:// random direction
+                info->terminated = true;
+                for (unsigned int index = 0;index < 10;++index)
+                {
+                    float txy = info->gen();
+                    float tz = info->gen()/2.0;
+                    float x = std::sin(txy)*std::sin(tz);
+                    float y = std::cos(txy)*std::sin(tz);
+                    float z = std::cos(tz);
+                    if (info->evaluate_dir(info->position,image::vector<3,float>(x,y,z),info->dir))
+                    {
+                        info->terminated = false;
+                        break;
+                    }
+                }
+                break;
+            case 2:// all direction
+                {
+                    static unsigned int fib_index = 0;
+                    image::pixel_index<3> index(std::floor(info->position[0]+0.5),
+                                        std::floor(info->position[1]+0.5),
+                                        std::floor(info->position[2]+0.5),info->fib_data.dim);
+
+                    if (!info->fib_data.dim.is_valid(index) ||
+                         info->fib_data.fib.getFA(index.index(),fib_index) < info->param.threshold)
+                        info->terminated = true;
+                    else
+                        info->dir = info->fib_data.fib.getDir(index.index(),fib_index);
+                    ++fib_index;
+                    if(fib_index > info->fib_data.fib.cur_odf_record)
+                        fib_index = 0;
+                }
+                break;
             }
+
+            if(info->terminated)
+                return 0;
+
             switch (param.method_id)
             {
             case 0:
@@ -164,22 +201,14 @@ public:
                     return 0;
                 break;
             case 2:
+                info->position[0] = std::floor(info->position[0]+0.5);
+                info->position[1] = std::floor(info->position[1]+0.5);
+                info->position[2] = std::floor(info->position[2]+0.5);
                 if (!start_tracking<voxel_tracking>(position,true))
                     return 0;
                 break;
-
-                /*
-                case 2:
-                    //method[thread_id].start_tracking<second_order_streamline_method_process>();
-                    cur_method.info->dummy1 = (fib_data.voxel_size[0]+fib_data.voxel_size[1]+fib_data.voxel_size[2])/6.0;
-                    cur_method.info->dummy2 = cur_method.info->dummy1/10.0;
-                    if (!cur_method.start_tracking<streamline_adpative_method_process>(position))
-                        return 0;
-
-                    break;
-                */
-                    default:
-                            return 0;
+            default:
+                return 0;
             }
             point_count = get_point_count();
             return get_result();

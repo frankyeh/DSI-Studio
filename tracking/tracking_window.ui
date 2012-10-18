@@ -1776,6 +1776,11 @@
          </item>
          <item>
           <property name="text">
+           <string>Random Orientation</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
            <string>All Orientations</string>
           </property>
          </item>

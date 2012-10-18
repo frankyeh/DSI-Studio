@@ -25,14 +25,5 @@ typedef boost::mpl::vector<
 
 
 
-typedef boost::mpl::vector<
-		    RandomDirection
-> random_direction_seeding;
-
-typedef boost::mpl::vector<
-		    MainFiberDirection
-> main_fiber_direction_seeding;
-
-
 
 #endif//TRACKING_METHOD_HPP
