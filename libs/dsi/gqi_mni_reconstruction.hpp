@@ -301,9 +301,9 @@ private:
 public:
     virtual void init(Voxel& voxel)
     {
+        GQI_MNI::init(voxel);
         gqi.init(voxel);
         decomposition.init(voxel);
-        GQI_MNI::init(voxel);
     }
 
     virtual void run(Voxel& voxel, VoxelData& data)
