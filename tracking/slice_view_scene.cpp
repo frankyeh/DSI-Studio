@@ -9,6 +9,9 @@
 #include "tracking_window.h"
 #include "ui_tracking_window.h"
 #include "region/regiontablewidget.h"
+#include "mapping/fa_template.hpp"
+
+extern fa_template fa_template_imp;
 
 void slice_view_scene::show_fiber(QPainter& painter,float* dir, unsigned int x, unsigned int y)
 {
@@ -132,6 +135,18 @@ void slice_view_scene::save_slice_as()
         file.set_voxel_size(cur_tracking_window.slice.voxel_size.begin());
         image::basic_image<float,3> I(cur_tracking_window.handle->fib_data.view_item[index].image_data);
         image::flip_xy(I);
+        if(!cur_tracking_window.trans_to_mni.empty())
+            file.set_image_transformation(cur_tracking_window.trans_to_mni.begin());
+        else
+            if(cur_tracking_window.mi3.get())
+            {
+                std::vector<float> t(16);
+                image::create_affine_transformation_matrix(
+                            cur_tracking_window.mi3->get(),
+                            cur_tracking_window.mi3->get()+9,t.begin(),image::vdim<3>());
+                fa_template_imp.to_mni(t);
+                file.set_image_transformation(t.begin());
+            }
         file << I;
         file.save_to_file(filename.toLocal8Bit().begin());
     }
