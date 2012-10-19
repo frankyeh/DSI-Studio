@@ -46,16 +46,15 @@ const long interval = 500;
 
                 long expected_sec = 0;
                 if(now != 0 && now_time != zero_time)
-                    expected_sec = (now_time-zero_time)*(total-now)/now/CLOCKS_PER_SEC;
-
+                    expected_sec = ((double)(now_time-zero_time)*(double)(total-now)/(double)now/(double)CLOCKS_PER_SEC);
                 if(progressDialog->wasCanceled())
                     return false;
                 progressDialog->setRange(0, total);
                 progressDialog->setValue(now);
 
                 if(expected_sec > 60)
-                    progressDialog->setLabelText(QString("%1 of %2, estimated time: %4 min").
-                                                     arg(now).arg(total).arg(expected_sec/60));
+                    progressDialog->setLabelText(QString("%1 of %2, estimated time: %3 min %4 sec").
+                                                     arg(now).arg(total).arg(expected_sec/60).arg(expected_sec%60));
                 else
                     progressDialog->setLabelText(QString("%1 of %2...").arg(now).arg(total));
 
