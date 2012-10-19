@@ -22,6 +22,7 @@ protected:
 protected:
     std::vector<float> Rt,oRt;
     unsigned int half_odf_size;
+    unsigned char m;
 
     double inner_angle(double cos_value)
     {
@@ -244,6 +245,7 @@ public:
         if (!voxel.odf_decomposition)
             return;
         decomposition_fraction = voxel.param[3];
+        m = std::max<int>(voxel.param[4],voxel.max_fiber_number);
         lm.init(voxel);
         fiber_ratio.resize(voxel.total_size);
         max_iso = 0.0;
@@ -262,7 +264,7 @@ public:
         std::vector<float> old_odf(data.odf);
         normalize_vector(data.odf.begin(),data.odf.end());
         std::vector<float> w;
-        lasso2(data.odf,Rt,w,voxel.max_fiber_number << 4);
+        lasso2(data.odf,Rt,w,m);
         //lasso(data.odf,Rt,w,voxel.max_fiber_number << 1);
 
 

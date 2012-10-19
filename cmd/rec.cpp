@@ -87,6 +87,15 @@ int rec(int ac, char *av[])
     }
     param[3] = 0.0002;
 
+    if(vm["deconvolution"].as<int>())
+    {
+        param[2] = 0.5;
+    }
+    if(vm["decomposition"].as<int>())
+    {
+        param[3] = 0.05;
+        param[4] = 10;
+    }
     if (vm.count("param0"))
         param[0] = vm["param0"].as<float>();
     if (vm.count("param1"))
@@ -95,6 +104,8 @@ int rec(int ac, char *av[])
         param[2] = vm["param2"].as<float>();
     if (vm.count("param3"))
         param[3] = vm["param3"].as<float>();
+    if (vm.count("param4"))
+        param[4] = vm["param4"].as<float>();
 
 
     handle->thread_count = vm["thread"].as<int>(); //thread count

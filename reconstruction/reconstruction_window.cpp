@@ -65,6 +65,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->RecordODF->setChecked(settings.value("rec_record_odf",0).toInt());
     ui->ODFSharpening->setCurrentIndex(settings.value("rec_odf_sharpening",0).toInt());
     ui->Decomposition->setCurrentIndex(settings.value("rec_odf_decomposition",0).toInt());
+    ui->decom_m->setValue(settings.value("rec_decom_m",10).toInt());
     ui->HalfSphere->setChecked(settings.value("rec_half_sphere",0).toInt());
     ui->NumOfFibers->setValue(settings.value("rec_num_fiber",5).toInt());
     ui->ODFDef->setCurrentIndex(settings.value("rec_gqi_def",0).toInt());
@@ -75,7 +76,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->SharpeningParam->setValue(settings.value("rec_deconvolution_param",3.0).toDouble());
 
     ui->mni_resolution->setValue(settings.value("rec_mni_resolution",2.0).toDouble());
-
 
 }
 
@@ -155,7 +155,9 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     if (ui->Decomposition->currentIndex() > 0 && method_id != 1) // not DTI
     {
         params[3] = ui->decompose_fraction->value();
+        params[4] = ui->decom_m->value();
         settings.setValue("rec_decomposition_param",params[3]);
+        settings.setValue("rec_decom_m",params[4]);
     }
 
 

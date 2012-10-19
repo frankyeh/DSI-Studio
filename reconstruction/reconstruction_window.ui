@@ -41,7 +41,7 @@
     <item>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -486,16 +486,28 @@
                  <height>0</height>
                 </size>
                </property>
+               <property name="maximumSize">
+                <size>
+                 <width>80</width>
+                 <height>16777215</height>
+                </size>
+               </property>
                <property name="text">
-                <string>ODF Decomposition</string>
+                <string>Decomposition</string>
                </property>
               </widget>
              </item>
              <item>
               <widget class="QComboBox" name="Decomposition">
+               <property name="minimumSize">
+                <size>
+                 <width>50</width>
+                 <height>0</height>
+                </size>
+               </property>
                <property name="maximumSize">
                 <size>
-                 <width>75</width>
+                 <width>50</width>
                  <height>16777215</height>
                 </size>
                </property>
@@ -509,6 +521,13 @@
                  <string>On</string>
                 </property>
                </item>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_12">
+               <property name="text">
+                <string>ϵ</string>
+               </property>
               </widget>
              </item>
              <item>
@@ -530,6 +549,32 @@
                </property>
                <property name="value">
                 <double>0.050000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_11">
+               <property name="maximumSize">
+                <size>
+                 <width>10</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>m</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="decom_m">
+               <property name="minimum">
+                <number>3</number>
+               </property>
+               <property name="maximum">
+                <number>20</number>
+               </property>
+               <property name="value">
+                <number>10</number>
                </property>
               </widget>
              </item>
@@ -699,16 +744,28 @@
                  <height>0</height>
                 </size>
                </property>
+               <property name="maximumSize">
+                <size>
+                 <width>80</width>
+                 <height>16777215</height>
+                </size>
+               </property>
                <property name="text">
-                <string>ODF Deconvolution</string>
+                <string>Deconvolution</string>
                </property>
               </widget>
              </item>
              <item>
               <widget class="QComboBox" name="ODFSharpening">
+               <property name="minimumSize">
+                <size>
+                 <width>50</width>
+                 <height>0</height>
+                </size>
+               </property>
                <property name="maximumSize">
                 <size>
-                 <width>75</width>
+                 <width>50</width>
                  <height>16777215</height>
                 </size>
                </property>
@@ -728,7 +785,7 @@
               <widget class="QDoubleSpinBox" name="SharpeningParam">
                <property name="maximumSize">
                 <size>
-                 <width>75</width>
+                 <width>16777215</width>
                  <height>16777215</height>
                 </size>
                </property>

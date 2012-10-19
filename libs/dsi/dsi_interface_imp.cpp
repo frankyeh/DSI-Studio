@@ -240,7 +240,7 @@ extern "C"
         }
         if (image_model->voxel.odf_decomposition && method_id != 1)
         {
-            out << ".dec" << param_values[3];
+            out << ".dec" << param_values[3] << "m" << (int)param_values[4];
             if(image_model->voxel.odf_xyz[0] != 0 ||
                image_model->voxel.odf_xyz[1] != 0 ||
                image_model->voxel.odf_xyz[2] != 0)

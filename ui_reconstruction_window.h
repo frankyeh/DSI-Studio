@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Wed Oct 17 16:41:40 2012
+** Created: Fri Oct 19 11:11:27 2012
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -95,7 +95,10 @@ public:
     QHBoxLayout *horizontalLayout_5;
     QLabel *label_9;
     QComboBox *Decomposition;
+    QLabel *label_12;
     QDoubleSpinBox *decompose_fraction;
+    QLabel *label_11;
+    QSpinBox *decom_m;
     QHBoxLayout *xyz;
     QWidget *xyz_widget;
     QHBoxLayout *horizontalLayout_4;
@@ -399,14 +402,21 @@ public:
         label_9 = new QLabel(OptionGroupBox);
         label_9->setObjectName(QString::fromUtf8("label_9"));
         label_9->setMinimumSize(QSize(100, 0));
+        label_9->setMaximumSize(QSize(80, 16777215));
 
         horizontalLayout_5->addWidget(label_9);
 
         Decomposition = new QComboBox(OptionGroupBox);
         Decomposition->setObjectName(QString::fromUtf8("Decomposition"));
-        Decomposition->setMaximumSize(QSize(75, 16777215));
+        Decomposition->setMinimumSize(QSize(50, 0));
+        Decomposition->setMaximumSize(QSize(50, 16777215));
 
         horizontalLayout_5->addWidget(Decomposition);
+
+        label_12 = new QLabel(OptionGroupBox);
+        label_12->setObjectName(QString::fromUtf8("label_12"));
+
+        horizontalLayout_5->addWidget(label_12);
 
         decompose_fraction = new QDoubleSpinBox(OptionGroupBox);
         decompose_fraction->setObjectName(QString::fromUtf8("decompose_fraction"));
@@ -417,6 +427,20 @@ public:
         decompose_fraction->setValue(0.05);
 
         horizontalLayout_5->addWidget(decompose_fraction);
+
+        label_11 = new QLabel(OptionGroupBox);
+        label_11->setObjectName(QString::fromUtf8("label_11"));
+        label_11->setMaximumSize(QSize(10, 16777215));
+
+        horizontalLayout_5->addWidget(label_11);
+
+        decom_m = new QSpinBox(OptionGroupBox);
+        decom_m->setObjectName(QString::fromUtf8("decom_m"));
+        decom_m->setMinimum(3);
+        decom_m->setMaximum(20);
+        decom_m->setValue(10);
+
+        horizontalLayout_5->addWidget(decom_m);
 
 
         gridLayout->addLayout(horizontalLayout_5, 2, 1, 1, 1);
@@ -500,18 +524,20 @@ public:
         label_4 = new QLabel(OptionGroupBox);
         label_4->setObjectName(QString::fromUtf8("label_4"));
         label_4->setMinimumSize(QSize(100, 0));
+        label_4->setMaximumSize(QSize(80, 16777215));
 
         horizontalLayout_9->addWidget(label_4);
 
         ODFSharpening = new QComboBox(OptionGroupBox);
         ODFSharpening->setObjectName(QString::fromUtf8("ODFSharpening"));
-        ODFSharpening->setMaximumSize(QSize(75, 16777215));
+        ODFSharpening->setMinimumSize(QSize(50, 0));
+        ODFSharpening->setMaximumSize(QSize(50, 16777215));
 
         horizontalLayout_9->addWidget(ODFSharpening);
 
         SharpeningParam = new QDoubleSpinBox(OptionGroupBox);
         SharpeningParam->setObjectName(QString::fromUtf8("SharpeningParam"));
-        SharpeningParam->setMaximumSize(QSize(75, 16777215));
+        SharpeningParam->setMaximumSize(QSize(16777215, 16777215));
         SharpeningParam->setMinimum(0.01);
         SharpeningParam->setMaximum(20);
         SharpeningParam->setSingleStep(0.5);
@@ -548,7 +574,7 @@ public:
 
         retranslateUi(reconstruction_window);
 
-        toolBox->setCurrentIndex(0);
+        toolBox->setCurrentIndex(1);
         toolBox->layout()->setSpacing(0);
         ODFDim->setCurrentIndex(3);
         ThreadCount->setCurrentIndex(3);
@@ -597,12 +623,14 @@ public:
         );
         RecordODF->setText(QApplication::translate("reconstruction_window", "Record ODF in the output file", 0, QApplication::UnicodeUTF8));
         HalfSphere->setText(QApplication::translate("reconstruction_window", "Half-sphere scheme", 0, QApplication::UnicodeUTF8));
-        label_9->setText(QApplication::translate("reconstruction_window", "ODF Decomposition", 0, QApplication::UnicodeUTF8));
+        label_9->setText(QApplication::translate("reconstruction_window", "Decomposition", 0, QApplication::UnicodeUTF8));
         Decomposition->clear();
         Decomposition->insertItems(0, QStringList()
          << QApplication::translate("reconstruction_window", "Off", 0, QApplication::UnicodeUTF8)
          << QApplication::translate("reconstruction_window", "On", 0, QApplication::UnicodeUTF8)
         );
+        label_12->setText(QApplication::translate("reconstruction_window", "\317\265", 0, QApplication::UnicodeUTF8));
+        label_11->setText(QApplication::translate("reconstruction_window", "m", 0, QApplication::UnicodeUTF8));
         label_10->setText(QApplication::translate("reconstruction_window", "ODF (x,y,z)=", 0, QApplication::UnicodeUTF8));
         label->setText(QApplication::translate("reconstruction_window", "Multithread reconstruction", 0, QApplication::UnicodeUTF8));
         ThreadCount->clear();
@@ -619,7 +647,7 @@ public:
          << QApplication::translate("reconstruction_window", "10 threads", 0, QApplication::UnicodeUTF8)
         );
         label_3->setText(QApplication::translate("reconstruction_window", "Number of fibers resolved", 0, QApplication::UnicodeUTF8));
-        label_4->setText(QApplication::translate("reconstruction_window", "ODF Deconvolution", 0, QApplication::UnicodeUTF8));
+        label_4->setText(QApplication::translate("reconstruction_window", "Deconvolution", 0, QApplication::UnicodeUTF8));
         ODFSharpening->clear();
         ODFSharpening->insertItems(0, QStringList()
          << QApplication::translate("reconstruction_window", "Off", 0, QApplication::UnicodeUTF8)
