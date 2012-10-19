@@ -629,6 +629,7 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
             image::flip_xy(tdi);
             nii_header << tdi;
             nii_header.set_voxel_size(vs.begin());
+            cur_tracking_window.set_nifti_trans(nii_header);
             nii_header.save_to_file(filename.toLocal8Bit().begin());
         }
         else

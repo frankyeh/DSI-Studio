@@ -60,6 +60,7 @@ public:
     std::vector<float> trans_to_mni;
     bool slice_no_update;
     bool eventFilter(QObject *obj, QEvent *event);
+    void set_nifti_trans(image::io::nifti& header);
 private slots:
     void on_tract_color_index_currentIndexChanged(int index);
     void on_actionRestore_window_layout_triggered();

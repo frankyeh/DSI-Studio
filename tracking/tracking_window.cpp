@@ -373,6 +373,21 @@ tracking_window::~tracking_window()
     handle = 0;
     //std::cout << __FUNCTION__ << " " << __FILE__ << std::endl;
 }
+void tracking_window::set_nifti_trans(image::io::nifti& header)
+{
+    if(!trans_to_mni.empty())
+        header.set_image_transformation(trans_to_mni.begin());
+    else
+        if(mi3.get())
+        {
+            std::vector<float> t(16);
+            image::create_affine_transformation_matrix(
+                        mi3->get(),
+                        mi3->get()+9,t.begin(),image::vdim<3>());
+            fa_template_imp.to_mni(t);
+            header.set_image_transformation(t.begin());
+        }
+}
 
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 {

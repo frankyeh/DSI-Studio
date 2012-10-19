@@ -98,7 +98,7 @@ void ROIRegion::SaveToFile(const char* FileName) {
                 // from +x = Left  +y = Posterior +z = Superior
                 // to +x = Right  +y = Anterior +z = Superior
                 image::flip_xy(mask);
-		header << mask;
+            header << mask;
                 if(ext == std::string(".nii"))
                 {
                     header.save_to_file(FileName);
