@@ -112,13 +112,20 @@ typedef boost::mpl::vector<
 
 typedef boost::mpl::vector<
     GQI_MNI,
-    //GQI_phantom,
-    ODFDecomposition,
     DetermineFiberDirections,
     SaveFA,
     SaveDirIndex,
     OutputODF
 > gqi_mni_process;
+
+typedef boost::mpl::vector<
+    QSDR_Decomposition,
+    DetermineFiberDirections,
+    SaveFA,
+    SaveDirIndex,
+    OutputODF
+> qsdr_decomposition_process;
+
 
 typedef boost::mpl::vector<
     GQI_MNI,
@@ -311,6 +318,12 @@ extern "C"
             out << (image_model->voxel.r2_weighted ? ".qsdr2.":".qsdr.");
             out << param_values[0] << "." << param_values[1] << "mm.fib";
             begin_prog("deforming");
+            if(image_model->voxel.odf_decomposition)
+            {
+                if (!image_model->reconstruct<qsdr_decomposition_process>(out.str()))
+                    return "reconstruction canceled";
+            }
+            else
             if (!image_model->reconstruct<gqi_mni_process>(out.str()))
                 return "reconstruction canceled";
             break;

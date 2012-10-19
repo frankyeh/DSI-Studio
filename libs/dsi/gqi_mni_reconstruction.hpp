@@ -5,6 +5,8 @@
 #include "mapping/normalization.hpp"
 #include "basic_voxel.hpp"
 #include "basic_process.hpp"
+#include "odf_decomposition.hpp"
+#include "gqi_process.hpp"
 
 class GQI_phantom  : public BaseProcess
 {
@@ -124,7 +126,7 @@ extern fa_template fa_template_imp;
 class GQI_MNI  : public BaseProcess
 {
 public:
-private:
+protected:
     normalization<image::basic_image<float,3> > mni;
     image::geometry<3> src_geo;
     image::geometry<3> des_geo;
@@ -134,14 +136,14 @@ private:
     std::vector<float> max_odf;
     std::vector<double> jdet;
     int b0_index;
-private:
+protected:
     double r2_base_function(double theta)
     {
             if(std::abs(theta) < 0.000001)
                     return 1.0/3.0;
             return (2*std::cos(theta)+(theta-2.0/theta)*std::sin(theta))/theta/theta;
     }
-private:
+protected:
     typedef image::basic_image<unsigned short,3,image::const_pointer_memory<unsigned short> > point_image_type;
     std::vector<point_image_type> ptr_images;
 
@@ -290,6 +292,78 @@ public:
         mat_writer.add_matrix("mni",&*mni.trans_to_mni,4,3);
     }
 
+};
+
+class QSDR_Decomposition : public GQI_MNI{
+private:
+    ODFDecomposition decomposition;
+    QSpace2Odf gqi;
+public:
+    virtual void init(Voxel& voxel)
+    {
+        gqi.init(voxel);
+        decomposition.init(voxel);
+        GQI_MNI::init(voxel);
+    }
+
+    virtual void run(Voxel& voxel, VoxelData& data)
+    {
+        image::pixel_index<3> pos(data.voxel_index,des_geo);
+        image::vector<3,double> b;
+        float jacobian[9];
+        mni.warp_coordinate(pos,b);
+        mni.get_jacobian(pos,jacobian);
+        // resample the images
+        {
+
+            image::interpolation<image::linear_weighting,3> trilinear_interpolation;
+            if (!trilinear_interpolation.get_location(src_geo,b))
+                std::fill(data.odf.begin(),data.odf.end(),0);
+            else
+            {
+                for (unsigned int i = 0; i < data.space.size(); ++i)
+                    trilinear_interpolation.estimate(ptr_images[i],b,data.space[i]);
+
+                if(b0_index >= 0)
+                    data.space[b0_index] /= 2.0;
+
+                gqi.run(voxel,data);
+                decomposition.run(voxel,data);
+                std::vector<float> new_odf(data.odf.size());
+                std::fill(new_odf.begin(),new_odf.end(),data.min_odf);
+                for(unsigned int i = 0;i < data.odf.size();++i)
+                    if(data.odf[i] > data.min_odf)
+                    {
+                        image::vector<3,double> dir(voxel.ti.vertices[i]),from;
+                        math::matrix_product(jacobian,dir.begin(),from.begin(),math::dim<3,3>(),math::dim<3,1>());
+                        from.normalize();
+                        float max_cos = 0.0;
+                        unsigned int max_j = 0;
+                        for(unsigned int j = 0;j < data.odf.size();++j)
+                        {
+                            float cos = std::abs(voxel.ti.vertices[j]*from);
+                            if(cos > max_cos)
+                            {
+                                max_cos = cos;
+                                max_j = j;
+                            }
+                        }
+                        new_odf[max_j] += data.odf[i]-data.min_odf;
+                    }
+                data.odf.swap(new_odf);
+                float Jdet = std::abs(math::matrix_determinant(jacobian,math::dim<3,3>())*voxel_volume_scale);
+                std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 *= Jdet);
+                jdet[data.voxel_index] = Jdet;
+            }
+        }
+    }
+
+    virtual void end(Voxel& voxel,MatFile& mat_writer)
+    {
+        mat_writer.add_matrix("free_water_quantity",&voxel.qa_scaling,1,1);
+        mat_writer.add_matrix("jdet",&*jdet.begin(),1,jdet.size());
+        mat_writer.add_matrix("mni",&*mni.trans_to_mni,4,3);
+    }
 };
 
 #endif//MNI_RECONSTRUCTION_HPP
