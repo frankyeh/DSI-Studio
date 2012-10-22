@@ -17,6 +17,7 @@ namespace po = boost::program_options;
 int rec(int ac, char *av[]);
 int trk(int ac, char *av[]);
 int src(int ac, char *av[]);
+int ana(int ac, char *av[]);
 
 fa_template fa_template_imp;
 
@@ -239,6 +240,8 @@ int main(int ac, char *av[])
                 return trk(ac,av);
             if(vm["action"].as<std::string>() == std::string("src"))
                 return src(ac,av);
+            if(vm["action"].as<std::string>() == std::string("ana"))
+                return ana(ac,av);
         }
         return 1;
     }
