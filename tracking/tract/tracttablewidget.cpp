@@ -626,7 +626,7 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
         if(QFileInfo(filename).completeSuffix().toLower() == "nii")
         {
             image::io::nifti nii_header;
-            image::flip_xy(tdi);
+            //image::flip_xy(tdi);
             nii_header << tdi;
             nii_header.set_voxel_size(vs.begin());
             cur_tracking_window.set_nifti_trans(nii_header);

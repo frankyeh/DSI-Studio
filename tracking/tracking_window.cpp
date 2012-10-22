@@ -52,6 +52,18 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
         trans_to_mni[3] = std::accumulate(trans_to_mni.begin(),trans_to_mni.begin()+3,trans_to_mni[3])-1.0;
         trans_to_mni[7] = std::accumulate(trans_to_mni.begin()+4,trans_to_mni.begin()+4+3,trans_to_mni[7])-1.0;
         trans_to_mni[11] = std::accumulate(trans_to_mni.begin()+8,trans_to_mni.begin()+8+3,trans_to_mni[11])-1.0;
+        // flip xy
+        trans_to_mni[3] += odf_model->fib_data.dim[0]*trans_to_mni[0]+odf_model->fib_data.dim[1]*trans_to_mni[1];
+        trans_to_mni[7] += odf_model->fib_data.dim[0]*trans_to_mni[4]+odf_model->fib_data.dim[1]*trans_to_mni[5];
+        trans_to_mni[11] += odf_model->fib_data.dim[0]*trans_to_mni[8]+odf_model->fib_data.dim[1]*trans_to_mni[9];
+        trans_to_mni[0] = -trans_to_mni[0];
+        trans_to_mni[1] = -trans_to_mni[1];
+        trans_to_mni[4] = -trans_to_mni[4];
+        trans_to_mni[5] = -trans_to_mni[5];
+        trans_to_mni[8] = -trans_to_mni[8];
+        trans_to_mni[9] = -trans_to_mni[9];
+
+
     }
     for (unsigned int index = 0;index < fib_data.view_item.size();++index)
         view_name.push_back(fib_data.view_item[index].name);
@@ -421,14 +433,14 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
       if(mi3.get() || !trans_to_mni.empty())
       {
           image::vector<3,float> cur_coordinate(x, y, z),mni_coordinate;
-          if(mi3.get())
+          if(!trans_to_mni.empty())
+              image::vector_transformation(cur_coordinate.begin(),mni_coordinate.begin(), trans_to_mni,image::vdim<3>());
+          else
           {
               const float* m = mi3->get();
               image::vector_transformation(cur_coordinate.begin(),mni_coordinate.begin(), m,m + 9, image::vdim<3>());
               fa_template_imp.to_mni(mni_coordinate);
           }
-          else
-              image::vector_transformation(cur_coordinate.begin(),mni_coordinate.begin(), trans_to_mni,image::vdim<3>());
 
           status += QString("MNI(%1,%2,%3) ").
                     arg(mni_coordinate[0]).
@@ -1183,4 +1195,19 @@ void tracking_window::on_actionSave_Report_as_triggered()
     if(QFileInfo(filename).completeSuffix().toLower() == "pdf")
         ui->report_widget->savePdf(filename);
 
+}
+
+void tracking_window::on_actionSave_Tracts_in_MNI_space_triggered()
+{
+    if(!trans_to_mni.empty())
+        tractWidget->saveTransformedTracts(&*trans_to_mni.begin());
+    else
+    {
+        std::vector<float> t(16);
+        image::create_affine_transformation_matrix(
+                    mi3->get(),
+                    mi3->get()+9,t.begin(),image::vdim<3>());
+        fa_template_imp.to_mni(t);
+        tractWidget->saveTransformedTracts(&*t.begin());
+    }
 }

@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Wed Oct 17 20:26:07 2012
+** Created: Sun Oct 21 23:06:29 2012
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -113,6 +113,7 @@ public:
     QAction *actionSave_Endpoints_in_Current_Mapping;
     QAction *actionMove_Object;
     QAction *actionSave_Report_as;
+    QAction *actionSave_Tracts_in_MNI_space;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QHBoxLayout *horizontalLayout_13;
@@ -486,6 +487,9 @@ public:
         actionSave_Report_as = new QAction(tracking_window);
         actionSave_Report_as->setObjectName(QString::fromUtf8("actionSave_Report_as"));
         actionSave_Report_as->setIcon(icon2);
+        actionSave_Tracts_in_MNI_space = new QAction(tracking_window);
+        actionSave_Tracts_in_MNI_space->setObjectName(QString::fromUtf8("actionSave_Tracts_in_MNI_space"));
+        actionSave_Tracts_in_MNI_space->setIcon(icon2);
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -1650,9 +1654,12 @@ public:
         menuTracts->addSeparator();
         menuTracts->addAction(actionSet_Color);
         menuTracts->addAction(actionOpen_Colors);
-        menuTracts->addAction(actionSave_Tracts_Colors_As);
         menuTracts->addAction(menuClustering->menuAction());
         menuTracts->addSeparator();
+        menuTracts->addAction(actionSave_Tracts_Colors_As);
+        menuTracts->addAction(actionSave_Tracts_in_Current_Mapping);
+        menuTracts->addAction(actionSave_Tracts_in_MNI_space);
+        menuTracts->addAction(actionSave_Endpoints_in_Current_Mapping);
         menuTracts->addAction(actionStatistics);
         menuSave->addAction(actionQuantitative_anisotropy_QA);
         menuClustering->addAction(actionK_means);
@@ -1695,8 +1702,6 @@ public:
         menu_Slices->addAction(actionSave_mapping);
         menu_Slices->addAction(actionLoad_mapping);
         menu_Slices->addSeparator();
-        menu_Slices->addAction(actionSave_Tracts_in_Current_Mapping);
-        menu_Slices->addAction(actionSave_Endpoints_in_Current_Mapping);
 
         retranslateUi(tracking_window);
         QObject::connect(tbNewRegion, SIGNAL(clicked()), actionNewRegion, SLOT(trigger()));
@@ -1809,7 +1814,7 @@ public:
         actionTDI_Diffusion_Space->setText(QApplication::translate("tracking_window", "Diffusion Space...", 0, QApplication::UnicodeUTF8));
         actionTDI_Import_Slice_Space->setText(QApplication::translate("tracking_window", "Current Slice Space...", 0, QApplication::UnicodeUTF8));
         actionTDI_Subvoxel_Diffusion_Space->setText(QApplication::translate("tracking_window", "Subvoxel Diffusion Space...", 0, QApplication::UnicodeUTF8));
-        actionSave_Tracts_in_Current_Mapping->setText(QApplication::translate("tracking_window", "Save Tracts in Current Mapping...", 0, QApplication::UnicodeUTF8));
+        actionSave_Tracts_in_Current_Mapping->setText(QApplication::translate("tracking_window", "Save Tracts in T1/T2 space...", 0, QApplication::UnicodeUTF8));
         actionThreshold->setText(QApplication::translate("tracking_window", "Threshold", 0, QApplication::UnicodeUTF8));
         actionRedo->setText(QApplication::translate("tracking_window", "Redo", 0, QApplication::UnicodeUTF8));
         actionRedo->setShortcut(QApplication::translate("tracking_window", "Ctrl+Y", 0, QApplication::UnicodeUTF8));
@@ -1817,10 +1822,11 @@ public:
         actionCopy_to_clipboard->setShortcut(QApplication::translate("tracking_window", "Ctrl+C", 0, QApplication::UnicodeUTF8));
         actionSave_Anisotrpy_Map_as->setText(QApplication::translate("tracking_window", "Save anisotrpy map as...", 0, QApplication::UnicodeUTF8));
         actionRestore_window_layout->setText(QApplication::translate("tracking_window", "Restore window layout", 0, QApplication::UnicodeUTF8));
-        actionSave_Endpoints_in_Current_Mapping->setText(QApplication::translate("tracking_window", "Save Endpoints in Current Mapping...", 0, QApplication::UnicodeUTF8));
+        actionSave_Endpoints_in_Current_Mapping->setText(QApplication::translate("tracking_window", "Save Endpoints inT1/T2 space...", 0, QApplication::UnicodeUTF8));
         actionMove_Object->setText(QApplication::translate("tracking_window", "Move Onject", 0, QApplication::UnicodeUTF8));
         actionMove_Object->setShortcut(QApplication::translate("tracking_window", "Ctrl+A", 0, QApplication::UnicodeUTF8));
         actionSave_Report_as->setText(QApplication::translate("tracking_window", "Save Report as...", 0, QApplication::UnicodeUTF8));
+        actionSave_Tracts_in_MNI_space->setText(QApplication::translate("tracking_window", "Save Tracts in MNI space...", 0, QApplication::UnicodeUTF8));
         label_3->setText(QApplication::translate("tracking_window", "Current Slice:", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()

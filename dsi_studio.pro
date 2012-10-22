@@ -148,4 +148,5 @@ SOURCES += main.cpp \
     libs/mapping/atlas.cpp \
     libs/mapping/fa_template.cpp \
     plot/qcustomplot.cpp \
-    libs/vbc/vbc.cpp
+    libs/vbc/vbc.cpp \
+    cmd/ana.cpp

@@ -750,9 +750,12 @@
     <addaction name="separator"/>
     <addaction name="actionSet_Color"/>
     <addaction name="actionOpen_Colors"/>
-    <addaction name="actionSave_Tracts_Colors_As"/>
     <addaction name="menuClustering"/>
     <addaction name="separator"/>
+    <addaction name="actionSave_Tracts_Colors_As"/>
+    <addaction name="actionSave_Tracts_in_Current_Mapping"/>
+    <addaction name="actionSave_Tracts_in_MNI_space"/>
+    <addaction name="actionSave_Endpoints_in_Current_Mapping"/>
     <addaction name="actionStatistics"/>
    </widget>
    <widget class="QMenu" name="menu_Edit">
@@ -803,8 +806,6 @@
     <addaction name="actionSave_mapping"/>
     <addaction name="actionLoad_mapping"/>
     <addaction name="separator"/>
-    <addaction name="actionSave_Tracts_in_Current_Mapping"/>
-    <addaction name="actionSave_Endpoints_in_Current_Mapping"/>
    </widget>
    <addaction name="menu_Edit"/>
    <addaction name="menuRegions"/>
@@ -3011,7 +3012,7 @@
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Tracts in Current Mapping...</string>
+    <string>Save Tracts in T1/T2 space...</string>
    </property>
   </action>
   <action name="actionThreshold">
@@ -3055,7 +3056,7 @@
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Endpoints in Current Mapping...</string>
+    <string>Save Endpoints inT1/T2 space...</string>
    </property>
   </action>
   <action name="actionMove_Object">
@@ -3073,6 +3074,15 @@
    </property>
    <property name="text">
     <string>Save Report as...</string>
+   </property>
+  </action>
+  <action name="actionSave_Tracts_in_MNI_space">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save Tracts in MNI space...</string>
    </property>
   </action>
  </widget>
