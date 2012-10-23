@@ -93,8 +93,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     std::vector<std::vector<float> > loaded_tract_data;
     if (file_name.find(".txt") != std::string::npos)
     {
-        // use binary otherwise the output is wrong
-        std::ifstream in(file_name_,std::ios::binary);
+        std::ifstream in(file_name_);
         if (!in)
             return false;
         std::string line;
