@@ -378,21 +378,7 @@ void MainWindow::on_RenameDICOMDir_clicked()
 
 void MainWindow::on_vbc_clicked()
 {
-    QString filename = QFileDialog::getOpenFileName(
-                                 this,
-                                 "Open template file",
-                                 ui->workDir->currentText(),
-                                 "Fib files (*.fib.gz);;All files (*.*)" );
-    if(filename.isEmpty())
-        return;
-    std::auto_ptr<vbc> vbc_instance(new vbc);
-    if(!vbc_instance->load_fiber_template(filename.toLocal8Bit().begin()))
-    {
-        QMessageBox::information(this,"Error","Cannot open template file",0);
-        return;
-    }
-
-    VBCDialog* new_mdi = new VBCDialog(this,ui->workDir->currentText(),vbc_instance.release());
+    VBCDialog* new_mdi = new VBCDialog(this,ui->workDir->currentText());
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
     new_mdi->show();
 }

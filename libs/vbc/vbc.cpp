@@ -7,7 +7,7 @@
 
 float permutation_test(std::vector<float>& data,
                        unsigned int num1,unsigned num2,
-                       unsigned int num_trial,float p_value_threshold,
+                       unsigned int num_trial,
                        float& dif,
                        bool& greater)
 {
@@ -43,7 +43,7 @@ float permutation_test(std::vector<float>& data,
     }
     else
     {
-        unsigned int critical_num = p_value_threshold*num_trial;
+        unsigned int critical_num = 0.5*num_trial;
         float mean1 = std::accumulate(g1,g1_end,0.0f)/(float)num1;
         float mean2 = std::accumulate(g2,g2_end,0.0f)/(float)num2;
         dif = mean1-mean2;
@@ -96,12 +96,22 @@ bool vbc::load_fiber_template(const char* filename)
     if(!fib_file->load_from_file(filename))
         return false;
 
-    num_fiber = fib_file->fib_data.fib.fa.size();
-    findex = fib_file->fib_data.fib.findex;
-    fa = fib_file->fib_data.fib.fa;
-    vertices = fib_file->fib_data.fib.odf_table;
     dim = image::geometry<3>(fib_file->fib_data.dim);
-
+    num_fiber = fib_file->fib_data.fib.fa.size();
+    findex.resize(num_fiber);
+    fa.resize(num_fiber);
+    for(unsigned int index = 0;index < num_fiber;++index)
+    {
+        findex[index].resize(dim.size());
+        fa[index].resize(dim.size());
+        std::copy(fib_file->fib_data.fib.findex[index],
+                  fib_file->fib_data.fib.findex[index]+dim.size(),
+                  findex[index].begin());
+        std::copy(fib_file->fib_data.fib.fa[index],
+                  fib_file->fib_data.fib.fa[index]+dim.size(),
+                  fa[index].begin());
+    }
+    vertices = fib_file->fib_data.fib.odf_table;
     vertices_cos.resize(vertices.size());
     for (unsigned int i = 0; i < vertices.size(); ++i)
     {
@@ -113,7 +123,7 @@ bool vbc::load_fiber_template(const char* filename)
 }
 
 const char* vbc::load_subject_data(const std::vector<std::string>& file_names,
-                            unsigned int num_files1_,float qa_threshold)
+                                   unsigned int num_files1_)
 {
     static std::string error_msg;
     // initialize all ODF sapces
@@ -174,7 +184,7 @@ const char* vbc::load_subject_data(const std::vector<std::string>& file_names,
                 unsigned int findex_location = index_mapping[odf_block_index][voxel_index];
                 for(int dir_index = 0;dir_index < num_fiber;++dir_index)
                 {
-                    if(fa[dir_index][findex_location] <= qa_threshold)
+                    if(fa[dir_index][findex_location] == 0.0)
                         break;
                     subject_odfs[odf_block_index][voxel_index][dir_index].resize(total_num_subjects);
                 }
@@ -241,7 +251,7 @@ const char* vbc::load_subject_data(const std::vector<std::string>& file_names,
 }
 
 
-void vbc::calculate_statistics(float alpha,vbc_clustering& vbc,bool is_null) const
+void vbc::calculate_statistics(float qa_threshold,vbc_clustering& vbc,unsigned int is_null) const
 {
     vbc.dif.resize(num_fiber);
     vbc.t.resize(num_fiber);
@@ -254,9 +264,19 @@ void vbc::calculate_statistics(float alpha,vbc_clustering& vbc,bool is_null) con
     }
 
     std::vector<float> permu(total_num_subjects);
+    std::vector<unsigned short> mapping(total_num_subjects);
     float n = total_num_subjects;
     float sqrt_var_S = std::sqrt(n*(n-1)*(2.0*n+5.0)/18.0);
-    boost::math::normal gaussian;
+    //boost::math::normal gaussian;
+    if(is_null)
+    {
+        for(unsigned int index = 0;index < n;++index)
+            mapping[index] = index;
+        if(num_files1 == 1)
+            std::swap(mapping[0],mapping[is_null]);
+        else
+            std::random_shuffle(mapping.begin(),mapping.end());
+    }
 
     for(int odf_block_index = 0;odf_block_index < subject_odfs.size();++odf_block_index)
     for(int voxel_index = 0;voxel_index < subject_odfs[odf_block_index].size();++voxel_index)
@@ -267,15 +287,13 @@ void vbc::calculate_statistics(float alpha,vbc_clustering& vbc,bool is_null) con
         for(unsigned char dir_index = 0;dir_index < subject_odf_voxel.size() && !terminated;++dir_index)
             if(subject_odf_voxel[dir_index].size() == total_num_subjects)
             {
-
-
+                if(fa[dir_index][findex_location] < qa_threshold)
+                    break;
                 const std::vector<float>& subject_odf_voxel_dir = subject_odf_voxel[dir_index];
                 permu = subject_odf_voxel_dir;
                 if(is_null)
-                    std::random_shuffle(permu.begin(),permu.end());
-
-                //for(unsigned int p_index = 0;p_index < permu.size();++p_index)
-                //    permu[p_index] = subject_odf_voxel_dir[mapping[p_index]];
+                    for(unsigned int p_index = 0;p_index < permu.size();++p_index)
+                        permu[p_index] = subject_odf_voxel_dir[mapping[p_index]];
 
                 if(num_files1 == 1)// single subject test
                 {
@@ -283,9 +301,7 @@ void vbc::calculate_statistics(float alpha,vbc_clustering& vbc,bool is_null) con
                     bool greater;
                     float cur_dif = 0;
                     float p_value = ::permutation_test(permu,
-                        num_files1,num_files2,1000,alpha,cur_dif,greater);
-                    if(p_value >= alpha)
-                        continue;
+                        num_files1,num_files2,1000,cur_dif,greater);
                     vbc.dif[dir_index][findex_location] = greater ? cur_dif:-cur_dif;
                     vbc.t[dir_index][findex_location] = greater ?
                                 -std::log(std::max(p_value,0.00000001f)):
@@ -303,12 +319,11 @@ void vbc::calculate_statistics(float alpha,vbc_clustering& vbc,bool is_null) con
                             if(permu[j] < permu[i])
                                 --S;
                     float Z = ((S > 0) ? (float)(S-1):(float)(S+1))/sqrt_var_S;
-                    float p_value = Z < 0.0 ? boost::math::cdf(gaussian,Z):
-                                        boost::math::cdf(boost::math::complement(gaussian, Z));
-                    if(p_value >= alpha)
-                        continue;
+                    //float p_value = Z < 0.0 ? boost::math::cdf(gaussian,Z):
+                    //                    boost::math::cdf(boost::math::complement(gaussian, Z));
                     vbc.dif[dir_index][findex_location] = Z;
                     vbc.t[dir_index][findex_location] = Z;
+
                 }
                 else
                     //t-test
@@ -336,6 +351,7 @@ void vbc::calculate_statistics(float alpha,vbc_clustering& vbc,bool is_null) con
                     // t-statistic:
                     double t_stat = (Sm1 - Sm2) / sqrt(Sd1 * Sd1 / Sn1 + Sd2 * Sd2 / Sn2);
                     //cout << setw(55) << left << "T Statistic" << "=  " << t_stat << "\n";
+                    /*
                     boost::math::students_t dist(v);
                     double p_value;
                     if(Sm1 > Sm2)
@@ -348,113 +364,89 @@ void vbc::calculate_statistics(float alpha,vbc_clustering& vbc,bool is_null) con
                         if((p_value = boost::math::cdf(dist, t_stat)) > alpha)
                             continue;
                     }
+                    */
                     vbc.dif[dir_index][findex_location] = Sm1-Sm2;
                     vbc.t[dir_index][findex_location] = t_stat;
                 }
-
-
-            }
+        }
     }
 }
-
-void vbc::calculate_mapping(const char* file_name,float p_value_threshold)
+void vbc::set_fib(bool greater,const std::vector<std::vector<float> >& t)
 {
-    {
-        thread_data.resize(1);
-        calculate_statistics(p_value_threshold,thread_data[0],false);
-    }
-    std::vector<std::vector<float> >& dif = thread_data[0].dif;
-    std::vector<std::vector<float> >& pv = thread_data[0].t;
 
+    std::vector<short*> fib_index(num_fiber);
+    std::vector<float*> fib_fa(num_fiber);
+
+
+    for(unsigned int fib = 0;fib < num_fiber;++fib)
+    {
+        fib_fa[fib] = (float*)fib_file->fib_data.fib.fa[fib];
+        fib_index[fib] = (short*)fib_file->fib_data.fib.findex[fib];
+    }
+
+    for(unsigned int index = 0;index < dim.size();++index)
+    {
+        std::map<float,short,std::greater<float> > fmap;
+        for(unsigned int fib = 0;fib < num_fiber;++fib)
+        {
+            fib_fa[fib][index] = 0;
+            fib_index[fib][index] = 0;
+            if(greater && t[fib][index] > 0)
+                fmap[t[fib][index]] = findex[fib][index];
+            if(!greater && t[fib][index] < 0)
+                fmap[-t[fib][index]] = findex[fib][index];
+        }
+        std::map<float,short,std::greater<float> >::const_iterator iter = fmap.begin();
+        std::map<float,short,std::greater<float> >::const_iterator end = fmap.end();
+        for(unsigned int fib = 0;iter != end;++iter,++fib)
+        {
+            fib_fa[fib][index] = iter->first;
+            fib_index[fib][index] = iter->second;
+        }
+
+    }
+
+}
+
+void vbc::output_greater_lesser_mapping(const char* file_name,float qa_threshold)
+{
 
     MatFile& matfile = fib_file->fib_data.mat_reader;
-    std::vector<std::vector<short> > index_backup(num_fiber);
-    std::vector<std::vector<float> > fa_backup(num_fiber);
+    vbc_clustering data;
+    terminated = false;
+    calculate_statistics(qa_threshold,data,0);
 
-    for(unsigned int fib = 0;fib < num_fiber;++fib)
-    {
-        index_backup[fib].resize(dim.size());
-        std::copy(findex[fib],findex[fib]+dim.size(),index_backup[fib].begin());
-        fa_backup[fib].resize(dim.size());
-        std::copy(fa[fib],fa[fib]+dim.size(),fa_backup[fib].begin());
-    }
-
-    for(unsigned int index = 0;index < dim.size();++index)
-    {
-        std::map<float,short,std::greater<float> > fmap;
-        for(unsigned int fib = 0;fib < num_fiber;++fib)
-        {
-            ((float*)fa[fib])[index] = 0;
-            ((short*)findex[fib])[index] = 0;
-            if(dif[fib][index] > 0)
-                fmap[pv[fib][index]] = index_backup[fib][index];
-        }
-        std::map<float,short,std::greater<float> >::const_iterator iter = fmap.begin();
-        std::map<float,short,std::greater<float> >::const_iterator end = fmap.end();
-        for(unsigned int fib = 0;iter != end;++iter,++fib)
-        {
-            ((float*)fa[fib])[index] = iter->first;
-            ((short*)findex[fib])[index] = iter->second;
-        }
-
-    }
-
+    // set greater mapping
+    set_fib(true,data.t);
     matfile.write_to_file((std::string(file_name)+".greater.fib.gz").c_str());
-
-    for(unsigned int fib = 0;fib < num_fiber;++fib)
-    {
-        std::string name2 = "t0",name3 = "dif0";
-        name2[1] += fib;
-        name3[3] += fib;
-        matfile.add_matrix(name2.c_str(),&*pv[fib].begin(),1,pv[fib].size());
-        matfile.add_matrix(name3.c_str(),&*dif[fib].begin(),1,dif[fib].size());
-    }
     matfile.close_file();
 
-
-
-    for(unsigned int index = 0;index < dim.size();++index)
-    {
-        std::map<float,short,std::greater<float> > fmap;
-        for(unsigned int fib = 0;fib < num_fiber;++fib)
-        {
-            ((float*)fa[fib])[index] = 0;
-            ((short*)findex[fib])[index] = 0;
-            if(dif[fib][index] < 0)
-                fmap[-pv[fib][index]] = index_backup[fib][index];
-        }
-        std::map<float,short,std::greater<float> >::const_iterator iter = fmap.begin();
-        std::map<float,short,std::greater<float> >::const_iterator end = fmap.end();
-        for(unsigned int fib = 0;iter != end;++iter,++fib)
-        {
-            ((float*)fa[fib])[index] = iter->first;
-            ((short*)findex[fib])[index] = iter->second;
-        }
-
-    }
-
-    matfile.write_to_file((std::string(file_name)+".lesser.fib.gz").c_str());
-
+    /*
     for(unsigned int fib = 0;fib < num_fiber;++fib)
     {
         std::string name2 = "t0",name3 = "dif0";
         name2[1] += fib;
         name3[3] += fib;
-        matfile.add_matrix(name2.c_str(),&*pv[fib].begin(),1,pv[fib].size());
-        matfile.add_matrix(name3.c_str(),&*dif[fib].begin(),1,dif[fib].size());
+        matfile.add_matrix(name2.c_str(),&*data.t[fib].begin(),1,data.t[fib].size());
+        matfile.add_matrix(name3.c_str(),&*data.dif[fib].begin(),1,data.dif[fib].size());
     }
+    */
+
+    // set lesser mapping
+    set_fib(false,data.t);
+    matfile.write_to_file((std::string(file_name)+".lesser.fib.gz").c_str());
     matfile.close_file();
 }
 
-/*
-void vbc::run_tracking(void)
+
+void vbc::run_tracking(float t_threshold,std::vector<std::vector<float> > &tracts)
 {
     float param[8] = {1,60,60,0.03,0.0,10.0,500.0};
     param[0] = fib_file->fib_data.vs[0]/2.0; //step size
     param[2] = param[1] = 60.0; // turning angle
     param[1] *= 3.1415926/180.0;
     param[2] *= 3.1415926/180.0;
-    param[3] = 0.00001; //vm["fa_threshold"].as<float>();
+    param[3] = t_threshold; //vm["fa_threshold"].as<float>();
     param[4] = 0.0; // vm["smoothing"].as<float>();
     param[5] = 0.0; // vm["min_length"].as<float>();
     param[6] = 300.0;//vm["max_length"].as<float>();
@@ -463,7 +455,7 @@ void vbc::run_tracking(void)
     methods[0] = 0;//vm["method"].as<int>();
     methods[1] = 0;//vm["initial_dir"].as<int>();
     methods[2] = 0;//vm["interpolation"].as<int>();
-    methods[3] = 1;//stop_by_track;
+    methods[3] = 0;//stop_by_seed;
     methods[4] = 0;//vm["seed_plan"].as<int>();
     std::auto_ptr<ThreadData> thread_handle(
             ThreadData::new_thread(fib_file.get(),param,methods,termination_count));
@@ -476,136 +468,117 @@ void vbc::run_tracking(void)
         thread_handle->setRegions(seed,3);
     }
     thread_handle->run_until_terminate(1);// no multi-thread
-    tract_model.reset(new TractModel(fib_file.get(),dim,fib_file->fib_data.vs));
-    thread_handle->fetchTracks(tract_model.get());
-}
-*/
-
-/**
-  group_voxel_index_list records the voxel index of each group
-  group_id_map the mapping of the group id
-  */
-void vbc::calculate_cluster(
-        const vbc_clustering& data,
-        std::vector<unsigned int>& group_voxel_index_list,
-        std::vector<unsigned int>& group_id_map)
-{
-    std::vector<unsigned int> shift(num_fiber);
-    for(unsigned int index = 1;index < num_fiber;++index)
-        shift[index] = dim.size()*index;
-
-    image::disjoint_set dset;
-    dset.label.resize(num_fiber*dim.size());
-    dset.rank.resize(num_fiber*dim.size());
-    for(unsigned int index = 0;index < dim.size();++index)
-    {
-        for(unsigned char fib = 0;fib < num_fiber;++fib)
-            if(data.dif[fib][index] != 0.0)
-                dset.label[index+shift[fib]] = index+shift[fib];
-    }
-
-    std::vector<image::pixel_index<3> > neighbour;
-    for(unsigned char fib = 0;fib < num_fiber;++fib)
-    {
-        for(image::pixel_index<3> index;dim.is_valid(index);index.next(dim))
-        {
-            float cur_dif = data.dif[fib][index.index()];
-            if(cur_dif == 0.0)
-                continue;
-            image::get_neighbors(index,dim,neighbour);
-            neighbour.push_back(index);
-            unsigned int cur_set_pos = index.index()+shift[fib];
-            short main_dir = findex[fib][index.index()];
-
-            for(unsigned int i = 0;i < neighbour.size();++i)
-            {
-                for(unsigned char j = 0;j < num_fiber;++j)
-                    if(((cur_dif > 0.0 && data.dif[j][neighbour[i].index()] > 0.0) ||
-                        (cur_dif < 0.0 && data.dif[j][neighbour[i].index()] < 0.0)) &&
-                        vertices_cos[main_dir][findex[j][neighbour[i].index()]] > angle_threshold_cos)
-                            dset.join_set(dset.find_set(cur_set_pos),
-                                          dset.find_set(neighbour[i].index()+shift[j]));
-            }
-        }
-    }
-
-    for(unsigned int index = 0;index < dset.label.size();++index)
-    {
-        if(!dset.label[index])
-            continue;
-        unsigned int set = dset.find_set(index);
-        if(set > group_voxel_index_list.size())
-            group_voxel_index_list.resize(set);
-        ++group_voxel_index_list[set-1];
-    }
-    group_id_map.swap(dset.label);
+    thread_handle->track_buffer.swap(tracts);
 }
 
-void vbc::run_thread(unsigned int thread_count,unsigned int thread_id,unsigned int permutation_num,float alpha)
+void vbc::run_thread(unsigned int thread_count,unsigned int thread_id,unsigned int permutation_num,
+                     float qa_threshold,float t_threshold)
 {
-    //std::vector<unsigned short> mapping(total_num_subjects);
-    //for(unsigned int index = 0;index < total_num_subjects;++index)
-    //    mapping[index] = index;
 
-    for(unsigned int per_index = thread_id;per_index < permutation_num;per_index += thread_count,++cur_prog)
+    for(unsigned int per_index = thread_id+1;!terminated &&
+            per_index <= permutation_num;per_index += thread_count,++cur_prog)
     {
-        // if single subject
-        /*
-        if(num_files1 == 1)
-        {
-            for(unsigned int index = 0;index < total_num_subjects;++index)
-                mapping[index] = index;
-            std::swap(mapping[0],mapping[per_index]);
-        }
-        else
-            std::random_shuffle(mapping.begin(),mapping.end());
-            */
+        vbc_clustering data;
+        calculate_statistics(qa_threshold,data,per_index);
 
-        calculate_statistics(alpha,thread_data[thread_id],true);
-
-
-        // supra-threshod
-        std::vector<unsigned int> group_voxel_index_list;
-        std::vector<unsigned int> group_id_map;
-
-        calculate_cluster(thread_data[thread_id],group_voxel_index_list,group_id_map);
-        //calculate the size of each cluster
+        // do tracking
         {
             boost::mutex::scoped_lock lock(lock_function);
-            // single threshold
-            max_statistics.push_back(
-                    *std::max_element(thread_data[thread_id].t[0].begin(),thread_data[thread_id].t[0].end()));
-            max_statistics.push_back(
-                    -*std::min_element(thread_data[thread_id].t[0].begin(),thread_data[thread_id].t[0].end()));
+            std::vector<std::vector<float> > tracts;
+            set_fib(true,data.t);
+            run_tracking(t_threshold,tracts);
+            for(unsigned int index = 0;index < tracts.size();++index)
+                length_dist[std::min<unsigned int>(tracts[index].size()/3,max_length-1)]++;
+            set_fib(false,data.t);
+            run_tracking(t_threshold,tracts);
+            for(unsigned int index = 0;index < tracts.size();++index)
+                length_dist[std::min<unsigned int>(tracts[index].size()/3,max_length-1)]++;
 
-            /*
-            if(max_cluster_size.empty() ||
-               *std::max_element(max_cluster_size.begin(),max_cluster_size.end()) <
-               *std::max_element(group_voxel_index_list.begin(),group_voxel_index_list.end()))
-                max_mapping = mapping;
-                */
-
-            if(!group_voxel_index_list.empty())
-                max_cluster_size.push_back(*std::max_element(group_voxel_index_list.begin(),group_voxel_index_list.end()));
-            else
-                max_cluster_size.push_back(0);
         }
     }
+
 }
 
-void vbc::calculate_permutation(unsigned int thread_count,unsigned int permutation_num,float alpha)
+void vbc::calculate_null(unsigned int thread_count,
+                                unsigned int permutation_num,
+                                float qa_threshold,float t_threshold)
 {
-    terminated = false;
-    threads.reset(new boost::thread_group);
-    thread_data.clear();
-    thread_data.resize(thread_count);
+    length_dist.clear();
+    length_dist.resize(max_length);
     // if single subject
     if(num_files1 == 1)
         permutation_num = num_files2;
     total_prog = permutation_num;
     cur_prog = 0;
-    max_cluster_size.clear();
-    max_statistics.clear();
+    terminated = false;
+    threads.reset(new boost::thread_group);
     for (unsigned int thread_id = 0;thread_id < thread_count;++thread_id)
-        threads->add_thread(new boost::thread(&vbc::run_thread,this,thread_count,thread_id,permutation_num,alpha));
+        threads->add_thread(new boost::thread(
+            &vbc::run_thread,this,thread_count,thread_id,permutation_num,qa_threshold,t_threshold));
+}
+void vbc::fdr_select_tracts(float fdr,std::vector<std::vector<float> > &tracts)
+{
+    std::vector<double> p_value(length_dist.size());
+    {
+        double sum = std::accumulate(length_dist.begin(),length_dist.end(),0.0);
+        double cdf = 0.0;
+        if(sum == 0.0)
+        {
+            tracts.clear();
+            return;
+        }
+        for(unsigned int index = 0;index < p_value.size();++index)
+        {
+            p_value[index] = (sum-cdf)/sum;
+            cdf += length_dist[index];
+        }
+    }
+    std::vector<float> tract_p_values(tracts.size());
+    for(unsigned int index = 0;index < tracts.size();++index)
+        tract_p_values[index] = p_value[std::min<unsigned int>(tracts[index].size(),p_value.size()-1)];
+
+    std::sort(tract_p_values.begin(),tract_p_values.end(),std::greater<float>());
+    unsigned int k = 0;
+    float critical_p_value = 0.0;
+    for(;k < tract_p_values.size();++k)
+    {
+        std::cout << " k=" << k <<
+                     " p_value=" << tract_p_values[k] <<
+                     " fdr=" << fdr*(float)(tract_p_values.size()-k)/(float)tracts.size() << std::endl;
+        if(tract_p_values[k] < fdr*(float)(tract_p_values.size()-k)/(float)tracts.size())
+        {
+            critical_p_value = tract_p_values[k];
+            break;
+        }
+    }
+    if(critical_p_value == 0.0)
+    {
+        tracts.clear();
+        return;
+    }
+    std::vector<std::vector<float> > selected_tracts;
+    for(unsigned int index = 0;index < tracts.size();++index)
+        if(p_value[std::min<unsigned int>(tracts[index].size(),p_value.size()-1)] <= critical_p_value)
+        {
+            selected_tracts.push_back(std::vector<float>());
+            selected_tracts.back().swap(tracts[index]);
+        }
+    selected_tracts.swap(tracts);
+}
+
+bool vbc::fdr_tracking(const char* file_name,float qa_threshold,float t_threshold,float fdr,bool greater)
+{
+
+    vbc_clustering data;
+    calculate_statistics(qa_threshold,data,0);
+    std::vector<std::vector<float> > tracts;
+    set_fib(greater,data.t);
+    run_tracking(t_threshold,tracts);
+    fdr_select_tracts(0.05,tracts);
+    if(tracts.empty())
+        return false;
+    TractModel tract_model(fib_file.get(),fib_file->fib_data.dim,fib_file->fib_data.vs);
+    tract_model.add_tracts(tracts);
+    tract_model.save_tracts_to_file(file_name);
+    return true;
 }

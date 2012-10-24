@@ -20,8 +20,8 @@ struct vbc_clustering{
 class vbc{
 public:
     unsigned char num_fiber;
-    std::vector<const short*> findex;
-    std::vector<const float*> fa;
+    std::vector<std::vector<short> > findex;
+    std::vector<std::vector<float> > fa;
     std::vector<image::vector<3,float> > vertices;
     std::vector<std::vector<float> > vertices_cos;
 
@@ -36,57 +36,30 @@ public://odf
     // num_files1 = total_num : trend test
     // num_files1 = 1 : single subject test
     // num_files1 > 1 : group-wise test
-    const char* load_subject_data(const std::vector<std::string>& file_names,
-                           unsigned int num_files1,float qa_threshold);
+    const char* load_subject_data(const std::vector<std::string>& file_names,unsigned int num_files1);
 public:
     std::auto_ptr<ODFModel> fib_file;
-
+    void set_fib(bool greater,const std::vector<std::vector<float> >& dif);
 public:
 
-    void calculate_mapping(const char* file_name,
-                           float p_value_threshold);
-
-    void calculate_statistics(float p_value_threshold,
-                              vbc_clustering& vbc,bool is_null) const;
-public:
-    float angle_threshold_cos;
-    void calculate_cluster(
-            const vbc_clustering& data,
-            std::vector<unsigned int>& group_voxel_index_list,
-            std::vector<unsigned int>& group_id_map);
-
-private:
-    std::vector<unsigned short> max_mapping;
-    std::vector<unsigned int> max_cluster_size;
-    std::vector<float> max_statistics;
+    void output_greater_lesser_mapping(const char* file_name,float qa_threshold);
+    void calculate_statistics(float qa_threshold,vbc_clustering& vbc,unsigned int is_null) const;
+    void run_tracking(float t_threshold,std::vector<std::vector<float> > &tracts);
 public:
     std::auto_ptr<boost::thread_group> threads;
-    std::vector<vbc_clustering> thread_data;
     bool terminated;
     boost::mutex lock_function;
     unsigned int cur_prog,total_prog;
 public:
-    std::vector<unsigned int> get_max_cluster_size(void)
-    {
-        boost::mutex::scoped_lock lock(lock_function);
-        {
-            std::vector<unsigned int> max_cluster_size_(max_cluster_size);
-            return max_cluster_size_;
-        }
-    }
-    std::vector<float> get_max_statistics(void)
-    {
-        boost::mutex::scoped_lock lock(lock_function);
-        {
-            std::vector<float> max_statistics_(max_statistics);
-            return max_statistics_;
-        }
-    }
+    static const unsigned int max_length = 1000;
+    std::vector<unsigned int> length_dist;
+    void run_thread(unsigned int thread_count,unsigned int thread_id,
+                    unsigned int permutation_num,float qa_threshold,float t_threshold);
+    void calculate_null(unsigned int num_thread,unsigned int size,float qa_threshold,float t_threshold);
+    void fdr_select_tracts(float fdr,std::vector<std::vector<float> > &tracts);
+    bool fdr_tracking(const char* file_name,float qa_threshold,float t_threshold,float fdr,bool greater);
 public:
-    void run_thread(unsigned int thread_count,unsigned int thread_id,unsigned int permutation_num,float alpha);
-    void calculate_permutation(unsigned int num_thread,unsigned int size,float alpha);
-public:
-    vbc(void):angle_threshold_cos(0.866)
+    vbc(void)
     {
 
     }

@@ -411,7 +411,7 @@ public:
     {
         if(!out)
         {
-            std::auto_ptr<MatMatrix> matrix(new MatMatrix);
+            std::auto_ptr<MatMatrix> matrix(new MatMatrix(name));
             matrix->assign(data_ptr,rows,cols);
             dataset.push_back(matrix.release());
             return;

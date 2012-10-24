@@ -19,7 +19,7 @@ public:
     QString work_dir;
     QStringList group1,group2;
     bool data_loaded;
-    explicit VBCDialog(QWidget *parent,QString workDir,vbc* vbc_instance_);
+    explicit VBCDialog(QWidget *parent,QString workDir);
     ~VBCDialog();
     std::auto_ptr<vbc> vbc_instance;
 private:
@@ -30,7 +30,6 @@ private:
     std::auto_ptr<QTimer> timer;
 private slots:
     void show_distribution();
-    void on_open_mapping_clicked();
     void on_load_subject_data_clicked();
     void on_save_list2_clicked();
     void on_open_list2_clicked();
@@ -48,6 +47,9 @@ private slots:
     void on_close_clicked();
     void on_open_dir1_clicked();
     void on_open_dir2_clicked();
+    void on_open_template_clicked();
+    void on_save_mapping_clicked();
+    void on_run_null_clicked();
 };
 
 #endif // VBCDIALOG_H

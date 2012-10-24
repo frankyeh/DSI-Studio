@@ -8,21 +8,23 @@
 #include "prog_interface_static_link.h"
 
 
-VBCDialog::VBCDialog(QWidget *parent,QString workDir,vbc* vbc_instance_) :
+VBCDialog::VBCDialog(QWidget *parent,QString workDir) :
     QDialog(parent),
     ui(new Ui::VBCDialog),
     work_dir(workDir),
-    vbc_instance(vbc_instance_)
+    vbc_instance(new vbc())
 {
     ui->setupUi(this);
     ui->group1list->setModel(new QStringListModel);
     ui->group2list->setModel(new QStringListModel);
     ui->group1list->setSelectionModel(new QItemSelectionModel(ui->group1list->model()));
     ui->group2list->setSelectionModel(new QItemSelectionModel(ui->group2list->model()));
-    ui->mapping->setText(workDir + "/mapping.fib.gz");
-    ui->cluster_group->hide();
     timer.reset(new QTimer(this));
     connect(timer.get(), SIGNAL(timeout()), this, SLOT(show_distribution()));
+
+    ui->save_mapping->setEnabled(false);
+    ui->load_subject_data->setEnabled(false);
+    ui->run_null->setEnabled(false);
 }
 
 VBCDialog::~VBCDialog()
@@ -236,37 +238,28 @@ void VBCDialog::on_save_list2_clicked()
 void VBCDialog::on_load_subject_data_clicked()
 {
     //instance.permutation_test(output_dir,num_files1,p_value_threshold))
-    ui->subject_data_group->hide();
-    ui->method_group->hide();
-    ui->load_subject_data->hide();
-    ui->cluster_group->show();
-
     begin_prog("loading");
     QStringList all_list;
     all_list << group1 << group2;
+    if(all_list.empty())
+        return;
     std::vector<std::string> name_list(all_list.count());
     for (unsigned int index = 0;index < all_list.count();++index)
         name_list[index] = all_list[index].toLocal8Bit().begin();
 
     const char* msg =
-            vbc_instance->load_subject_data(name_list,group1.count(),ui->qa_threshold->value());
+            vbc_instance->load_subject_data(name_list,group1.count());
 
     if(msg)
     {
         QMessageBox::information(this,"error",msg,0);
-        ui->subject_data_group->show();
-        ui->method_group->show();
-        ui->load_subject_data->show();
-        ui->cluster_group->hide();
         return;
     }
-    vbc_instance->calculate_mapping(ui->mapping->text().toLocal8Bit().begin(),
-                                    ui->p_value_threshold->value());
+    ui->ODF_label->setText("subject data loaded");
+    ui->save_mapping->setEnabled(true);
+    ui->run_null->setEnabled(true);
     return;
-    vbc_instance->calculate_permutation(ui->thread_count->value(),
-                                        ui->permutation_num->value(),
-                                        ui->p_value_threshold->value());
-    timer->start(2000);
+
 }
 
 void VBCDialog::show_distribution(void)
@@ -274,90 +267,52 @@ void VBCDialog::show_distribution(void)
     static unsigned int cur_prog = 0;
     if(vbc_instance->cur_prog != cur_prog)
     {
-        unsigned int resolution = 20;
-        std::vector<unsigned int> hist1,hist2;
-        std::vector<unsigned int> max_cluster_size(vbc_instance->get_max_cluster_size());
-        std::vector<float> max_statistics(vbc_instance->get_max_statistics());
-        float min_x1 = 0;
-        float max_x1 = *std::max_element(max_cluster_size.begin(),max_cluster_size.end());
-        float min_x2 = *std::min_element(max_statistics.begin(),max_statistics.end());
-        float max_x2 = *std::max_element(max_statistics.begin(),max_statistics.end());
-
+        unsigned int max_x = 0;
+        for(unsigned int index = 0;index < vbc_instance->length_dist.size();++index)
+            if(vbc_instance->length_dist[index])
+                max_x = index;
+        if(max_x == 0)
+            return;
+        ui->report_widget->clearGraphs();
+        QVector<double> x(max_x),y(max_x);
+        double max_y = 0.0;
+        for(unsigned int j = 0;j < max_x;++j)
         {
-            if(max_cluster_size.empty() || max_statistics.empty())
-                return;
-            image::histogram(max_cluster_size,hist1,0,max_x1,resolution);
-            image::histogram(max_statistics,hist2,min_x2,max_x2,resolution);
-            if(hist1.size() != resolution || hist2.size() != resolution)
-                return;
+            x[j] = j;
+            y[j] = vbc_instance->length_dist[j];
+            max_y = std::max(max_y,y[j]);
         }
-        ui->report_widget1->clearGraphs();
-        QVector<double> x1(resolution),x2(resolution),y1(resolution),y2(resolution);
-        double max_y1 = 0.0,max_y2 = 0.0;
-        for(unsigned int j = 0;j < resolution;++j)
-        {
-            x1[j] = (max_x1-min_x1)*(float)j/(float)(resolution-1)+min_x1;
-            x2[j] = (max_x2-min_x2)*(float)j/(float)(resolution-1)+min_x2;
-            y1[j] = hist1[j];
-            y2[j] = hist2[j];
-            max_y1 = std::max(max_y1,y1[j]);
-            max_y2 = std::max(max_y2,y2[j]);
-        }
-        ui->report_widget1->addGraph();
-        ui->report_widget2->addGraph();
+        ui->report_widget->addGraph();
         QPen pen;
         pen.setColor(QColor(20,20,100,200));
-        ui->report_widget1->graph(0)->setLineStyle(QCPGraph::lsLine);
-        ui->report_widget1->graph(0)->setPen(pen);
-        ui->report_widget1->graph(0)->setData(x1, y1);
-        pen.setColor(QColor(20,100,20,200));
-        ui->report_widget2->graph(0)->setLineStyle(QCPGraph::lsLine);
-        ui->report_widget2->graph(0)->setPen(pen);
-        ui->report_widget2->graph(0)->setData(x2, y2);
+        ui->report_widget->graph(0)->setLineStyle(QCPGraph::lsLine);
+        ui->report_widget->graph(0)->setPen(pen);
+        ui->report_widget->graph(0)->setData(x, y);
 
-        ui->report_widget1->xAxis->setRange(min_x1,max_x1);
-        ui->report_widget1->yAxis->setRange(0,max_y1);
-        ui->report_widget1->replot();
-
-        ui->report_widget2->xAxis->setRange(min_x2,max_x2);
-        ui->report_widget2->yAxis->setRange(0,max_y2);
-        ui->report_widget2->replot();
+        ui->report_widget->xAxis->setRange(0,max_x);
+        ui->report_widget->yAxis->setRange(0,max_y);
+        ui->report_widget->replot();
 
         cur_prog = vbc_instance->cur_prog;
+
+        // calculate the cut-off tract_length
+
     }
 
     if(vbc_instance->cur_prog == vbc_instance->total_prog)
-    {
-        // saving mapping
-        vbc_instance->calculate_mapping(ui->mapping->text().toLocal8Bit().begin(),
-                                        ui->p_value_threshold->value());
         timer->stop();
-        QMessageBox::information(this,"Done","mapping saved",0);
-    }
     else
         ui->progress->setText(QString("Progress %1/%2").arg(vbc_instance->cur_prog).arg(vbc_instance->total_prog));
 
 }
 
-
-void VBCDialog::on_open_mapping_clicked()
-{
-    QString filename = QFileDialog::getSaveFileName(
-                                 this,
-                                 "Save file",
-                                 ui->mapping->text(),
-                                 "FIB file (*.fib);;All files (*.*)");
-    if(filename.isEmpty())
-        return;
-    ui->mapping->setText(filename);
-}
 QStringList search_files(QString dir,QString filter);
 void VBCDialog::on_open_dir1_clicked()
 {
     QString dir = QFileDialog::getExistingDirectory(
                                 this,
                                 "Open directory",
-                                ui->mapping->text());
+                                work_dir);
     if(dir.isEmpty())
         return;
     group1 << search_files(dir,"*.fib.gz");
@@ -369,9 +324,73 @@ void VBCDialog::on_open_dir2_clicked()
     QString dir = QFileDialog::getExistingDirectory(
                                 this,
                                 "Open directory",
-                                ui->mapping->text());
+                                work_dir);
     if(dir.isEmpty())
         return;
     group2 << search_files(dir,"*.fib.gz");
     update_list();
+}
+
+void VBCDialog::on_open_template_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(
+                                 this,
+                                 "Open template file",
+                                 work_dir,
+                                 "Fib files (*.fib.gz);;All files (*.*)" );
+    if(filename.isEmpty())
+        return;
+    if(!vbc_instance->load_fiber_template(filename.toLocal8Bit().begin()))
+    {
+        QMessageBox::information(this,"Error","Cannot open template file",0);
+        return;
+    }
+    else
+    {
+        ui->template_label->setText("template loaded");
+        ui->qa_threshold->setValue(0.6*image::segmentation::otsu_threshold(
+            image::basic_image<float, 3,image::const_pointer_memory<float> >(
+                                           &*(vbc_instance->fa[0].begin()),vbc_instance->dim)));
+        ui->load_subject_data->setEnabled(true);
+
+    }
+}
+
+void VBCDialog::on_save_mapping_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                                 this,
+                                 "Save file",
+                                 work_dir,
+                                 "FIB file (*.fib);;All files (*.*)");
+    if(filename.isEmpty())
+        return;
+    vbc_instance->output_greater_lesser_mapping(
+                filename.toLocal8Bit().begin(),ui->qa_threshold->value());
+    if(!timer->isActive() && !vbc_instance->length_dist.empty())
+    {
+        std::cout << "output tracts" << std::endl;
+        QString f1 = filename,f2 = filename;
+        f1 += ".greater.trk";
+        f2 += ".lesser.trk";
+        if(!vbc_instance->fdr_tracking(f1.toLocal8Bit().begin(),
+                                   ui->qa_threshold->value(),
+                                   ui->t_threshold->value(),0.05,true))
+            QMessageBox::information(this,"Notification","No tracts in greater mapping",0);
+        if(!vbc_instance->fdr_tracking(f2.toLocal8Bit().begin(),
+                                   ui->qa_threshold->value(),
+                                   ui->t_threshold->value(),0.05,false))
+            QMessageBox::information(this,"Notification","No tracts in lesser mapping",0);
+
+
+    }
+}
+
+void VBCDialog::on_run_null_clicked()
+{
+    vbc_instance->calculate_null(ui->thread_count->value(),
+                                        ui->permutation_num->value(),
+                                        ui->qa_threshold->value(),
+                                        ui->t_threshold->value());
+    timer->start(2000);
 }
