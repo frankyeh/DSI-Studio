@@ -86,8 +86,8 @@ public: // rendering options
 
 public:
         void add_points(std::vector<image::vector<3,short> >& points,bool del);
-        void SaveToFile(const char* FileName);
-        bool LoadFromFile(const char* FileName);
+        void SaveToFile(const char* FileName,const std::vector<float>& trans);
+        bool LoadFromFile(const char* FileName,const std::vector<float>& trans);
         void Flip(unsigned int dimension);
         void shift(const image::vector<3,short>& dx);
 

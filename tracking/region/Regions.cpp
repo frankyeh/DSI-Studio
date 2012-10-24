@@ -1,6 +1,7 @@
 // ---------------------------------------------------------------------------
 #include <fstream>
 #include <iterator>
+#include <math/matrix_op.hpp>
 #include "Regions.h"
 #include "SliceModel.h"
 #include "mat_file.hpp"
@@ -59,7 +60,7 @@ void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool de
 
 // ---------------------------------------------------------------------------
 extern std::string program_base;
-void ROIRegion::SaveToFile(const char* FileName) {
+void ROIRegion::SaveToFile(const char* FileName,const std::vector<float>& trans) {
     std::string file_name(FileName);
     std::string ext;
     if(file_name.length() > 4)
@@ -93,12 +94,13 @@ void ROIRegion::SaveToFile(const char* FileName) {
 				region[index][2], geo).index()] = 255;
 		}
                 std::string out_temp = program_base + "/tmp.nii";
-		image::io::nifti header;
+                image::io::nifti header;
                 header.set_voxel_size(vs.begin());
+                header.set_image_transformation(trans.begin());
                 // from +x = Left  +y = Posterior +z = Superior
                 // to +x = Right  +y = Anterior +z = Superior
                 image::flip_xy(mask);
-            header << mask;
+                header << mask;
                 if(ext == std::string(".nii"))
                 {
                     header.save_to_file(FileName);
@@ -118,7 +120,7 @@ void ROIRegion::SaveToFile(const char* FileName) {
 }
 
 // ---------------------------------------------------------------------------
-bool ROIRegion::LoadFromFile(const char* FileName) {
+bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& trans) {
 
     std::string file_name(FileName);
     std::string ext;
@@ -171,7 +173,7 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
             out.write(&*buf.begin(),size);
         gzclose(id);
         out.close();
-        return LoadFromFile(out_temp.c_str());
+        return LoadFromFile(out_temp.c_str(),trans);
     }
 
     if (ext == std::string(".nii") || ext == std::string(".hdr"))
@@ -181,8 +183,31 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
             return false;
         image::basic_image<short, 3>from;
         header >> from;
-        if(from.geometry() != geo)
-            return false;
+        if(from.geometry() != geo)// use transformation information
+        {
+            if(trans.empty())
+                return false;
+            std::vector<float> t(header.get_transformation(),
+                                 header.get_transformation()+12),inv_trans(16),convert(16);
+            t.resize(16);
+            t[15] = 1.0;
+            math::matrix_inverse(trans.begin(),inv_trans.begin(),math::dim<4,4>());
+            math::matrix_product(inv_trans.begin(),t.begin(),convert.begin(),math::dim<4,4>(),math::dim<4,4>());
+            std::vector<image::vector<3,short> > points;
+            for (image::pixel_index<3>index; index.valid(from.geometry());index.next(from.geometry()))
+            {
+                if (from[index.index()])
+                {
+                    image::vector<3> p(index.begin()),p2;
+                    image::vector_transformation(p.begin(),p2.begin(),convert.begin(),image::vdim<3>());
+                    points.push_back(image::vector<3,short>(std::floor(p2[0]+0.5),
+                                                            std::floor(p2[1]+0.5),
+                                                            std::floor(p2[2]+0.5)));
+                }
+            }
+            add_points(points,false);
+            return true;
+        }
         // from +x = Right  +y = Anterior +z = Superior
         // to +x = Left  +y = Posterior +z = Superior
         if(header.nif_header.srow_x[0] < 0 || !header.is_nii)

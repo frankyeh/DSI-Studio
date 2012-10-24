@@ -275,7 +275,8 @@ void reconstruction_window::on_load_mask_clicked()
     if(filename.isEmpty())
         return;
     ROIRegion region(image.geometry(),image::vector<3>(get_voxel_size((ImageModel*)handle)));
-    region.LoadFromFile(filename.toLocal8Bit().begin());
+    std::vector<float> trans;
+    region.LoadFromFile(filename.toLocal8Bit().begin(),trans);
     region.SaveToBuffer(handle->mask);
     on_SlicePos_sliderMoved(ui->SlicePos->value());
 }
@@ -292,7 +293,8 @@ void reconstruction_window::on_save_mask_clicked()
         return;
     ROIRegion region(image.geometry(),image::vector<3>(get_voxel_size((ImageModel*)handle)));
     region.LoadFromBuffer(handle->mask);
-    region.SaveToFile(filename.toLocal8Bit().begin());
+    std::vector<float> trans;
+    region.SaveToFile(filename.toLocal8Bit().begin(),trans);
 }
 
 void reconstruction_window::on_doDTI_clicked()

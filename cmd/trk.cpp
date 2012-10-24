@@ -113,6 +113,7 @@ int trk(int ac, char *av[])
     std::auto_ptr<ThreadData> thread_handle(
             ThreadData::new_thread(handle.get(),param,methods,termination_count));
 
+    std::vector<float> trans;
     char rois[5][5] = {"roi","roi2","roi3","roi4","roi5"};
     for(int index = 0;index < 5;++index)
     if (vm.count(rois[index]))
@@ -124,7 +125,7 @@ int trk(int ac, char *av[])
             out << file_name.c_str() << " does not exist. terminating..." << std::endl;
             return 0;
         }
-        if(!roi.LoadFromFile(file_name.c_str()))
+        if(!roi.LoadFromFile(file_name.c_str(),trans))
         {
             out << "Invalid file format:" << file_name << std::endl;
             return 0;
@@ -142,7 +143,7 @@ int trk(int ac, char *av[])
             out << file_name.c_str() << " does not exist. terminating..." << std::endl;
             return 0;
         }
-        if(!roa.LoadFromFile(file_name.c_str()))
+        if(!roa.LoadFromFile(file_name.c_str(),trans))
         {
             out << "Invalid file format:" << file_name.c_str() << std::endl;
             return 0;
@@ -159,7 +160,7 @@ int trk(int ac, char *av[])
             out << file_name.c_str() << " does not exist. terminating..." << std::endl;
             return 0;
         }
-        if(!end.LoadFromFile(file_name.c_str()))
+        if(!end.LoadFromFile(file_name.c_str(),trans))
         {
             out << "Invalid file format:" << file_name.c_str() << std::endl;
             return 0;
@@ -176,7 +177,7 @@ int trk(int ac, char *av[])
             out << file_name.c_str() << " does not exist. terminating..." << std::endl;
             return 0;
         }
-        if(!end.LoadFromFile(file_name.c_str()))
+        if(!end.LoadFromFile(file_name.c_str(),trans))
         {
             out << "Invalid file format:" << file_name.c_str() << std::endl;
             return 0;
@@ -193,7 +194,7 @@ int trk(int ac, char *av[])
             out << file_name.c_str() << " does not exist. terminating..." << std::endl;
             return 0;
         }
-        if(!seed.LoadFromFile(file_name.c_str()))
+        if(!seed.LoadFromFile(file_name.c_str(),trans))
         {
             out << "Invalid file format:" << file_name.c_str() << std::endl;
             return 0;

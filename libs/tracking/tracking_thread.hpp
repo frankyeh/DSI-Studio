@@ -59,7 +59,7 @@ public:
     unsigned int thread_count;
     bool joinning;
     boost::mutex lock_feed_function, lock_seed_function, lock_tract_function;
-private:
+public:
     std::vector<std::vector<float> > track_buffer;
     void push_tracts(std::vector<std::vector<float> >& local_tract_buffer)
     {

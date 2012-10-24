@@ -42,9 +42,11 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
     has_odfs = fib_data.fib.has_odfs() ? 1:0;
     if(fib_data.trans)
     {
-        trans_to_mni.resize(12);
+        trans_to_mni.resize(16);
+        trans_to_mni[15] = 1.0;
         std::copy(fib_data.trans,fib_data.trans+12,trans_to_mni.begin());
-        // change 1-based affine to 0-based
+        // this is 1-based transformation, need to change to 0-based and flip xy
+
         // spm_affine = [1 0 0 -1                   [1 0 0 1
         //               0 1 0 -1                    0 1 0 1
         //               0 0 1 -1   * my_affine *    0 0 1 1
@@ -52,16 +54,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
         trans_to_mni[3] = std::accumulate(trans_to_mni.begin(),trans_to_mni.begin()+3,trans_to_mni[3])-1.0;
         trans_to_mni[7] = std::accumulate(trans_to_mni.begin()+4,trans_to_mni.begin()+4+3,trans_to_mni[7])-1.0;
         trans_to_mni[11] = std::accumulate(trans_to_mni.begin()+8,trans_to_mni.begin()+8+3,trans_to_mni[11])-1.0;
-        // flip xy
-        trans_to_mni[3] += odf_model->fib_data.dim[0]*trans_to_mni[0]+odf_model->fib_data.dim[1]*trans_to_mni[1];
-        trans_to_mni[7] += odf_model->fib_data.dim[0]*trans_to_mni[4]+odf_model->fib_data.dim[1]*trans_to_mni[5];
-        trans_to_mni[11] += odf_model->fib_data.dim[0]*trans_to_mni[8]+odf_model->fib_data.dim[1]*trans_to_mni[9];
-        trans_to_mni[0] = -trans_to_mni[0];
-        trans_to_mni[1] = -trans_to_mni[1];
-        trans_to_mni[4] = -trans_to_mni[4];
-        trans_to_mni[5] = -trans_to_mni[5];
-        trans_to_mni[8] = -trans_to_mni[8];
-        trans_to_mni[9] = -trans_to_mni[9];
+
 
 
     }
@@ -385,20 +378,33 @@ tracking_window::~tracking_window()
     handle = 0;
     //std::cout << __FUNCTION__ << " " << __FILE__ << std::endl;
 }
-void tracking_window::set_nifti_trans(image::io::nifti& header)
+void tracking_window::get_nifti_trans(std::vector<float>& trans)
 {
     if(!trans_to_mni.empty())
-        header.set_image_transformation(trans_to_mni.begin());
+        trans = trans_to_mni;
     else
         if(mi3.get())
         {
-            std::vector<float> t(16);
+            trans.resize(16);
             image::create_affine_transformation_matrix(
                         mi3->get(),
-                        mi3->get()+9,t.begin(),image::vdim<3>());
-            fa_template_imp.to_mni(t);
-            header.set_image_transformation(t.begin());
+                        mi3->get()+9,trans.begin(),image::vdim<3>());
+            fa_template_imp.get_transformation(trans);
         }
+}
+void tracking_window::get_dicom_trans(std::vector<float>& trans)
+{
+    std::vector<float> flip_xy(16),t(16);
+    flip_xy[0] = -1;
+    flip_xy[3] = slice.geometry[0]-1;
+    flip_xy[5] = -1;
+    flip_xy[7] = slice.geometry[1]-1;
+    flip_xy[10] = 1;
+    flip_xy[15] = 1;
+    get_nifti_trans(t);
+    trans.resize(16);
+    trans[15] = 1.0;
+    math::matrix_product(t.begin(),flip_xy.begin(),trans.begin(),math::dim<3,4>(),math::dim<4,4>());
 }
 
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)
@@ -434,7 +440,12 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
       {
           image::vector<3,float> cur_coordinate(x, y, z),mni_coordinate;
           if(!trans_to_mni.empty())
+          {
+              // flip xy
+              mni_coordinate[0] = slice.geometry[0]-mni_coordinate[0]-1;
+              mni_coordinate[1] = slice.geometry[1]-mni_coordinate[1]-1;
               image::vector_transformation(cur_coordinate.begin(),mni_coordinate.begin(), trans_to_mni,image::vdim<3>());
+          }
           else
           {
               const float* m = mi3->get();
@@ -1199,15 +1210,7 @@ void tracking_window::on_actionSave_Report_as_triggered()
 
 void tracking_window::on_actionSave_Tracts_in_MNI_space_triggered()
 {
-    if(!trans_to_mni.empty())
-        tractWidget->saveTransformedTracts(&*trans_to_mni.begin());
-    else
-    {
-        std::vector<float> t(16);
-        image::create_affine_transformation_matrix(
-                    mi3->get(),
-                    mi3->get()+9,t.begin(),image::vdim<3>());
-        fa_template_imp.to_mni(t);
-        tractWidget->saveTransformedTracts(&*t.begin());
-    }
+    std::vector<float> t(16);
+    get_dicom_trans(t);
+    tractWidget->saveTransformedTracts(&*t.begin());
 }

@@ -131,8 +131,10 @@ void slice_view_scene::save_slice_as()
         image::io::nifti file;
         file.set_voxel_size(cur_tracking_window.slice.voxel_size.begin());
         image::basic_image<float,3> I(cur_tracking_window.handle->fib_data.view_item[index].image_data);
-        //image::flip_xy(I);
-        cur_tracking_window.set_nifti_trans(file);
+        image::flip_xy(I);
+        std::vector<float> trans;
+        cur_tracking_window.get_nifti_trans(trans);
+        file.set_image_transformation(trans.begin());
         file << I;
         file.save_to_file(filename.toLocal8Bit().begin());
     }

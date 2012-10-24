@@ -255,7 +255,9 @@ void RegionTableWidget::load_region(void)
     for (unsigned int index = 0;index < filenames.size();++index)
     {
         ROIRegion region(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size);
-        if(!region.LoadFromFile(filenames[index].toLocal8Bit().begin()))
+        std::vector<float> trans;
+        cur_tracking_window.get_dicom_trans(trans);
+        if(!region.LoadFromFile(filenames[index].toLocal8Bit().begin(),trans))
         {
             QMessageBox::information(this,"error","Inconsistent geometry",0);
             return;
@@ -278,7 +280,9 @@ void RegionTableWidget::save_region(void)
                            "Text files (*.txt);;Nifti file(*.nii;*.nii.gz);;Maylab file (*.mat)" );
     if (filename.isEmpty())
         return;
-    regions[currentRow()].SaveToFile(filename.toLocal8Bit().begin());
+    std::vector<float> trans;
+    cur_tracking_window.get_nifti_trans(trans);
+    regions[currentRow()].SaveToFile(filename.toLocal8Bit().begin(),trans);
     item(currentRow(),0)->setText(QFileInfo(filename).baseName());
 }
 void RegionTableWidget::save_region_info(void)
