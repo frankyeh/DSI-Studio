@@ -264,20 +264,39 @@ void MainWindow::on_FiberTracking_clicked()
     {
         image::io::nifti header;
         image::basic_image<float,3> I;
+        std::vector<float> trans(16);
+        trans[15] = 1.0;
         if(!header.load_from_file(filename.toLocal8Bit().begin()))
         {
             QMessageBox::information(this,"DSI Studio","Invalid file format",0);
             return;
         }
         header >> I;
+        header.get_image_transformation(trans.begin());
         if(header.nif_header.srow_x[0] < 0)
+        {
             image::flip_y(I);
+            for(unsigned int index = 4;index < 8;++index)
+                trans[index] = -trans[index];
+            trans[7] = I.height()-1-trans[7];
+        }
         else
+        {
             image::flip_xy(I);
+            for(unsigned int index = 0;index < 8;++index)
+                trans[index] = -trans[index];
+            trans[3] = I.width()-1-trans[3];
+            trans[7] = I.height()-1-trans[7];
+        }
+        // from 0-based to 1-based
+        trans[3] += 2.0;
+        trans[7] += 2.0;
+        trans[11] += 2.0;
         filename += ".mat";
         image::io::mat mat;
         mat << I;
         mat.add_matrix("voxel_size",header.nif_header.pixdim+1,3,1);
+        mat.add_matrix("mni",&*trans.begin(),4,4);
         mat.save_to_file(filename.toLocal8Bit().begin());
         loadFib(filename);
         return;
