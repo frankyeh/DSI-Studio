@@ -255,6 +255,25 @@ public:
     }
 };
 
+// for normalization
+class RecordQA  : public BaseProcess
+{
+public:
+    virtual void init(Voxel& voxel)
+    {
+        voxel.qa_map.resize(image::geometry<3>(voxel.matrix_width,voxel.matrix_height,voxel.slice_number));
+        std::fill(voxel.qa_map.begin(),voxel.qa_map.end(),0.0);
+    }
+    virtual void run(Voxel& voxel, VoxelData& data)
+    {
+        voxel.qa_map[data.voxel_index] = data.fa[0];
+    }
+    virtual void end(Voxel& voxel,MatFile& mat_writer)
+    {
+
+    }
+};
+
 struct SaveFA : public BaseProcess
 {
 protected:
@@ -300,9 +319,16 @@ public:
             std::for_each(iso.begin(),iso.end(),boost::lambda::_1 /= voxel.qa_scaling);
             mat_writer.add_matrix("iso",&*iso.begin(),1,iso.size());
 
-        if (voxel.qa_scaling != 0.0)
-            for (unsigned int i = 0;i < voxel.max_fiber_number;++i)
-                std::for_each(fa[i].begin(),fa[i].end(),boost::lambda::_1 /= voxel.qa_scaling);
+            if (voxel.qa_scaling != 0.0)
+                for (unsigned int i = 0;i < voxel.max_fiber_number;++i)
+                    std::for_each(fa[i].begin(),fa[i].end(),boost::lambda::_1 /= voxel.qa_scaling);
+
+            // cellularity
+            int max_fa_index = std::max_element(fa[0].begin(),fa[0].end())-fa[0].begin();
+            float ratio = iso[max_fa_index]/fa[0][max_fa_index];
+            for(unsigned int index = 0;index < iso.size();++index)
+                iso[index] -= fa[0][index]*ratio;
+            mat_writer.add_matrix("cell",&*iso.begin(),1,iso.size());
         }
 
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)

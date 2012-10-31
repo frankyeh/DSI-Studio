@@ -177,23 +177,6 @@ public:
 };
 
 
-// for normalization
-class RecordQA  : public BaseProcess
-{
-public:
-    virtual void init(Voxel& voxel)
-    {
-        voxel.qa_map.resize(image::geometry<3>(voxel.matrix_width,voxel.matrix_height,voxel.slice_number));
-        std::fill(voxel.qa_map.begin(),voxel.qa_map.end(),0.0);
-    }
-    virtual void run(Voxel& voxel, VoxelData& data)
-    {
-        voxel.qa_map[data.voxel_index] = data.fa[0];
-    }
-    virtual void end(Voxel& voxel,MatFile& mat_writer)
-    {
 
-    }
-};
 
 #endif//DDI_PROCESS_HPP
