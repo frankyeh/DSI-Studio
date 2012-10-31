@@ -20,32 +20,35 @@ public:
 struct ADCProfile: public BaseProcess
 {
     std::vector<float> S;
-
+    unsigned int b0_index;
 public:
     virtual void init(Voxel& voxel)
     {
         S.resize(voxel.q_count);
         std::fill(S.begin(),S.end(),0.0);
+        b0_index = std::min_element(voxel.bvalues.begin(),voxel.bvalues.end())-voxel.bvalues.begin();
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        if (data.space.front() == 0.0)
+        if (data.space[b0_index] == 0.0)
         {
             std::fill(data.space.begin(),data.space.end(),(float)1.0);
             return;
         }
-        float logs0 = std::log(data.space.front());
-        for (unsigned int i = 1; i < data.space.size(); ++i)
+        float logs0 = std::log(data.space[b0_index]);
+        for (unsigned int i = 0; i < data.space.size(); ++i)
         {
+            if(i == b0_index)
+                continue;
             if(data.space[i] <= 0.0)
-                data.space[i-1] = S[i];
+                data.space[i] = S[i];
             else
             {
                 float value = std::log(data.space[i]);
                 if (value < logs0)
-                    data.space[i-1] = S[i] = logs0-value;
+                    data.space[i] = S[i] = logs0-value;
                 else
-                    data.space[i-1] = S[i];
+                    data.space[i] = S[i];
             }
         }
     }
@@ -60,15 +63,19 @@ private:
     std::vector<unsigned int> iKtK_pivot;
     std::vector<float> Kt;
     unsigned int b_count;
+    unsigned int b0_index;
 public:
     virtual void init(Voxel& voxel)
     {
         b_count = voxel.q_count-1;
-        std::vector<image::vector<3,float> > b_data(b_count);
+        b0_index = std::min_element(voxel.bvalues.begin(),voxel.bvalues.end())-voxel.bvalues.begin();
+        std::vector<image::vector<3,float> > b_data;
+        b_data = voxel.bvectors;
+        for(unsigned int index = 0; index < b_data.size(); ++index)
+            b_data[index] *= std::sqrt(voxel.bvalues[index]);
+
         //skip null
-        std::copy(voxel.bvectors.begin()+1,voxel.bvectors.end(),b_data.begin());
-        for(unsigned int index = 0; index < b_count; ++index)
-            b_data[index] *= std::sqrt(voxel.bvalues[index+1]);
+        b_data.erase(b_data.begin()+b0_index);
 
         Kt.resize(6*b_count);
         {
@@ -102,7 +109,9 @@ public:
     {
         //  Kt S = Kt K D
         float KtS[6];
-        math::matrix_product(Kt.begin(),data.space.begin(),KtS,math::dyndim(6,b_count),math::dyndim(b_count,1));
+        std::vector<float> signal(data.space);
+        signal.erase(signal.begin()+b0_index);
+        math::matrix_product(Kt.begin(),signal.begin(),KtS,math::dyndim(6,b_count),math::dyndim(b_count,1));
         math::matrix_lu_solve(iKtK.begin(),iKtK_pivot.begin(),KtS,data.space.begin(),math::dyndim(6,6));
     }
 };
