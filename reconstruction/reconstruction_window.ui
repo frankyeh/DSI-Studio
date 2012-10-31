@@ -51,8 +51,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>550</width>
-         <height>386</height>
+         <width>534</width>
+         <height>146</height>
         </rect>
        </property>
        <attribute name="label">
@@ -364,7 +364,7 @@
               <number>2</number>
              </property>
              <property name="minimum">
-              <double>0.200000000000000</double>
+              <double>0.010000000000000</double>
              </property>
              <property name="maximum">
               <double>3.000000000000000</double>

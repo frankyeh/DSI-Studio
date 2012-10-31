@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Fri Oct 19 11:11:27 2012
+** Created: Thu Oct 25 23:39:13 2012
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -144,7 +144,7 @@ public:
         toolBox->setObjectName(QString::fromUtf8("toolBox"));
         page_3 = new QWidget();
         page_3->setObjectName(QString::fromUtf8("page_3"));
-        page_3->setGeometry(QRect(0, 0, 550, 386));
+        page_3->setGeometry(QRect(0, 0, 534, 146));
         gridLayout_2 = new QGridLayout(page_3);
         gridLayout_2->setObjectName(QString::fromUtf8("gridLayout_2"));
         verticalLayout_5 = new QVBoxLayout();
@@ -344,7 +344,7 @@ public:
         diffusion_sampling->setObjectName(QString::fromUtf8("diffusion_sampling"));
         diffusion_sampling->setMaximumSize(QSize(75, 16777215));
         diffusion_sampling->setDecimals(2);
-        diffusion_sampling->setMinimum(0.2);
+        diffusion_sampling->setMinimum(0.01);
         diffusion_sampling->setMaximum(3);
         diffusion_sampling->setSingleStep(0.05);
         diffusion_sampling->setValue(1.25);
