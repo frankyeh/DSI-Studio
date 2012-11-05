@@ -117,7 +117,7 @@ bool load_4d_2dseq(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files
     if(!bruker_header.load_from_file(file_name))
         return false;
     image::basic_image<float,4> buf_image;
-    float vs[4];
+    float vs[4]={0};
     image::io::bruker_info method_file;
     {
         bruker_header >> buf_image;
@@ -138,6 +138,7 @@ bool load_4d_2dseq(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files
                 std::copy(buf_image.geometry().begin(),
                           buf_image.geometry().begin()+4,dim);
                 dim[2] /= bvalues.size();
+                vs[2] *= bvalues.size();
                 dim[3] = bvalues.size();
                 buf_image.resize(image::geometry<4>(dim));
             }
