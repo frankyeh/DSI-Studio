@@ -112,7 +112,7 @@ public:
         std::vector<float> signal(data.space);
         signal.erase(signal.begin()+b0_index);
         math::matrix_product(Kt.begin(),signal.begin(),KtS,math::dyndim(6,b_count),math::dyndim(b_count,1));
-        math::matrix_lu_solve(iKtK.begin(),iKtK_pivot.begin(),KtS,data.space.begin(),math::dyndim(6,6));
+        math::matrix_lu_solve(iKtK.begin(),iKtK_pivot.begin(),KtS,data.odf.begin(),math::dyndim(6,6));
     }
 };
 
@@ -122,9 +122,9 @@ class TensorEigenAnalysis : public BaseProcess
     std::vector<float> d1;
     std::vector<float> d2;
     std::vector<float> md;
-    std::vector<float> fa;
+    std::vector<float> fa,fa_spin_density;
     std::vector<float> fdir;
-
+    unsigned int b0_index;
     float get_fa(float l1,float l2,float l3)
     {
         float ll = (l1+l2+l3)/3.0;
@@ -151,6 +151,8 @@ public:
     {
         fa.clear();
         fa.resize(voxel.total_size);
+        fa_spin_density.clear();
+        fa_spin_density.resize(voxel.total_size);
         fdir.clear();
         fdir.resize(voxel.total_size*3);
         md.clear();
@@ -161,6 +163,7 @@ public:
         d1.resize(voxel.total_size);
         d2.clear();
         d2.resize(voxel.total_size);
+        b0_index = std::min_element(voxel.bvalues.begin(),voxel.bvalues.end())-voxel.bvalues.begin();
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
@@ -169,7 +172,7 @@ public:
 
         unsigned int tensor_index[9] = {0,3,4,3,1,5,4,5,2};
         for (unsigned int index = 0; index < 9; ++index)
-            tensor[index] = data.space[tensor_index[index]];
+            tensor[index] = data.odf[tensor_index[index]];
 
         math::matrix_eigen_decomposition_sym(tensor,V,d,math::dim<3,3>());
         if (d[1] < 0.0)
@@ -188,6 +191,7 @@ public:
         d0[data.voxel_index] = d[0];
         d1[data.voxel_index] = d[1];
         d2[data.voxel_index] = d[2];
+        fa_spin_density[data.voxel_index] = fa[data.voxel_index]*data.space[b0_index];
 
         //if(!voxel.need_odf)
         //	return;
@@ -202,6 +206,8 @@ public:
     {
         set_title("fa");
         mat_writer.add_matrix("fa0",&*fa.begin(),1,fa.size());
+        set_title("fa_spin_density");
+        mat_writer.add_matrix("fa_spin_density0",&*fa_spin_density.begin(),1,fa_spin_density.size());
         set_title("dir0");
         mat_writer.add_matrix("dir0",&*fdir.begin(),1,fdir.size());
         set_title("adc");
