@@ -1,4 +1,5 @@
 #include "atlas.hpp"
+#include "math/matrix_op.hpp"
 #include <fstream>
 #include <sstream>
 
@@ -12,9 +13,11 @@ bool atlas::load_from_file(const char* file_name)
         if(!nii.load_from_file(file_name))
             return false;
         nii >> I;
+        transform.clear();
+        transform.resize(16);
+        transform[15] = 1.0;
         nii.get_image_transformation(transform.begin());
-        // I am using MNI coordinate to locate the voxel
-        // no need to flip the image
+        math::matrix_inverse(transform.begin(),math::dim<4,4>());
     }
     std::string file_name_str(file_name);
     std::string text_file_name(file_name_str.begin(),file_name_str.end()-3);
@@ -54,24 +57,29 @@ bool atlas::load_from_file(const char* file_name)
     }
     else
     {
+        std::vector<unsigned char> hist(1+*std::max_element(I.begin(),I.end()));
+        for(int index = 0;index < I.size();++index)
+            hist[I[index]] = 1;
+
         std::ifstream in(text_file_name.c_str());
         if(in)
         {
             std::string line,txt;
             while(std::getline(in,line))
             {
+                if(line.empty() || line[0] == '#')
+                    continue;
                 std::istringstream read_line(line);
                 int num = 0;
                 read_line >> num >> txt;
+                if(num < 0 || num >= hist.size() || !hist[num])
+                    continue;
                 label_num.push_back(num);
                 labels.push_back(txt);
             }
         }
         else
         {
-            std::vector<unsigned char> hist(1+*std::max_element(I.begin(),I.end()));
-            for(int index = 0;index < I.size();++index)
-                hist[I[index]] = 1;
             for(int index = 1;index < hist.size();++index)
                 if(hist[index])
                 {
@@ -99,11 +107,7 @@ void mni_to_tal(float& x,float &y, float &z)
 short atlas::get_label_at(const image::vector<3,float>& mni_space) const
 {
     image::vector<3,float> atlas_space(mni_space);
-    atlas_space[0] = (atlas_space[0]-transform[3])/transform[0];
-    atlas_space[1] = (atlas_space[1]-transform[7])/transform[5];
-    atlas_space[2] = (atlas_space[2]-transform[11])/transform[10];
-    //if(!index2label.empty())
-    //    mni_to_tal(atlas_space[0],atlas_space[1],atlas_space[2]);
+    image::vector_transformation(mni_space.begin(),atlas_space.begin(),transform.begin(),image::vdim<3>());
     atlas_space += 0.5;
     atlas_space.floor();
     if(!I.geometry().is_valid(atlas_space))

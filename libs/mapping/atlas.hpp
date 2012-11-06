@@ -16,7 +16,6 @@ private:// for talairach only
 
 public:
     std::string name;
-    atlas(void):transform(16){}
 public:
     bool load_from_file(const char* file_name);
     const std::vector<std::string>& get_list(void) const{return labels;}
