@@ -16,7 +16,6 @@
 #include "sample_model.hpp"
 #include "space_mapping.hpp"
 
-
 #include "dti_process.hpp"
 #include "dsi_process.hpp"
 #include "qbi_process.hpp"

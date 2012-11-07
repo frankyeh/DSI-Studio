@@ -997,12 +997,136 @@ public:
         result.swap(temp);
         }
     }
+    template<typename image_type>
+    image::vector<image_type::dimension,double> center_of_mass(const image_type& Im)
+    {
+        image::basic_image<unsigned char,image_type::dimension> mask;
+        image::segmentation::otsu(Im,mask);
+        image::morphology::smoothing(mask);
+        image::morphology::smoothing(mask);
+        image::morphology::defragment(mask);
+        image::vector<image_type::dimension,double> sum_mass;
+        double total_w = 0.0;
+        for(image::pixel_index<image_type::dimension> index;
+            mask.geometry().is_valid(index);
+            index.next(mask.geometry()))
+            if(mask[index.index()])
+            {
+                total_w += 1.0;
+                image::vector<3,double> pos(index);
+                sum_mass += pos;
+            }
+        sum_mass /= total_w;
+        for(unsigned char dim = 0;dim < image_type::dimension;++dim)
+            sum_mass[dim] -= (double)Im.geometry()[dim]/2.0;
+        return sum_mass;
+    }
+
+    template<typename image_type>
+    image::vector<3,double> orientation(const image_type& Im)
+    {
+        image::basic_image<unsigned char,image_type::dimension> mask;
+        image::segmentation::otsu(Im,mask);
+        image::morphology::smoothing(mask);
+        image::morphology::smoothing(mask);
+        image::morphology::defragment(mask);
+        double T[9];
+        double total_w = 0.0;
+        image::vector<3,double> center(Im.geometry());
+        center /= 2.0;
+        for(image::pixel_index<image_type::dimension> index;
+            mask.geometry().is_valid(index);
+            index.next(mask.geometry()))
+            if(mask[index.index()])
+            {
+                total_w += 1.0;
+                image::vector<3,double> pos(index);
+                pos -= center;
+                T[0] += pos[0]*pos[0];
+                T[1] += pos[1]*pos[0];
+                T[2] += pos[2]*pos[0];
+                T[4] += pos[1]*pos[1];
+                T[5] += pos[2]*pos[1];
+                T[8] += pos[2]*pos[2];
+            }
+        T[3] = T[1];
+        T[6] = T[2];
+        T[7] = T[5];
+        image::divide_constant(T,T+9,total_w);
+        double V[9],d[3];
+        math::matrix_eigen_decomposition_sym(T,V,d,math::dim<3,3>());
+        std::cout << V[0] << " " << V[1] << " " << V[2] << std::endl;
+        std::cout << V[3] << " " << V[4] << " " << V[5] << std::endl;
+        std::cout << V[6] << " " << V[7] << " " << V[8] << std::endl;
+        std::cout << d[0] << " " << d[1] << " " << d[2] << std::endl;
+        image::vector<3,double> dir(V[0],V[3],V[6]);
+        if(dir[0] + dir[1]+dir[2] < 0)
+            dir = -dir;
+        dir *= d[0];
+        return dir;
+    }
+    void show_trans(void)
+    {
+        std::cout << "tran:" << arg_min.translocation[0] << ","
+                             << arg_min.translocation[1] << ","
+                             << arg_min.translocation[2] << std::endl;
+        std::cout << "scale:"<< arg_min.scaling[0] << ","
+                             << arg_min.scaling[1] << ","
+                             << arg_min.scaling[2] << std::endl;
+        std::cout << "rotate:"<< arg_min.rotation[0] << ","
+                             << arg_min.rotation[1] << ","
+                             << arg_min.rotation[2] << std::endl;
+        std::cout << "affine:"<< arg_min.affine[0] << ","
+                             << arg_min.affine[1] << ","
+                             << arg_min.affine[2] << std::endl;
+        std::cout << "-----" << std::endl;
+    }
+    template<typename trans_type>
+    void save_trans_image(const char* file_name,const trans_type& trans)
+    {
+        image::transformation_matrix<dim,double> affine_buf(trans);
+        image::reg::linear_get_trans(VF.geometry(),VG.geometry(),affine_buf);
+        image::basic_image<float,3> VGG(VF.geometry());
+        image::resample(VG,VGG,affine_buf);
+        image::normalize(VGG,1.0);
+        image::io::nifti out;
+        out << VGG;
+        out.save_to_file(file_name);
+    }
 
     void normalize(void)
     {
+        // VG: FA TEMPLATE
+        // VF: SUBJECT QA
         arg_min.scaling[0] = std::fabs(VFvs[0]) / std::fabs(VGvs[0]);
         arg_min.scaling[1] = std::fabs(VFvs[1]) / std::fabs(VGvs[1]);
         arg_min.scaling[2] = std::fabs(VFvs[2]) / std::fabs(VGvs[2]);
+        // calculate center of mass
+        image::vector<3,double> mF = center_of_mass(VF);
+        image::vector<3,double> mG = center_of_mass(VG);
+
+        std::cout << "center of VF:" << mF << std::endl;
+        std::cout << "center of VG:" << mG << std::endl;
+        arg_min.translocation[0] = mG[0]-mF[0]*arg_min.scaling[0];
+        arg_min.translocation[1] = mG[1]-mF[1]*arg_min.scaling[1];
+        arg_min.translocation[2] = mG[2]-mF[2]*arg_min.scaling[2];
+        /*
+        std::cout << "VF:" << std::endl;
+        image::vector<3,double> vF = orientation(VF);
+        std::cout << "VG:" << std::endl;
+        image::vector<3,double> vG = orientation(VG);
+
+        vF[0] = vG[0] = 0.0;
+        vF.normalize();
+        vG.normalize();
+        float angle = std::acos(std::fabs(vF*vG));
+
+        arg_min.rotation[0] = vF[2] > vG[2] ? angle:-angle;
+        arg_min.rotation[1] = 0;
+        arg_min.rotation[2] = 0;*/
+//        float cos_y = std::sqrt(1.0-R[6]*R[6]);
+//        arg_min.rotation[0] = R[0]*R[0];
+//        arg_min.rotation[1] = std::acos(cos_y);
 
         bool terminated = false;
         set_title("linear registration (may take a long time)");
@@ -1019,18 +1143,20 @@ public:
         }
         #else
 
-        check_prog(0,4);
-        image::reg::linear(VF,VG,arg_min,image::reg::translocation,image::reg::square_error(),terminated,0.5);
-        check_prog(1,4);
-        image::reg::linear(VF,VG,arg_min,image::reg::rigid_body,image::reg::square_error(),terminated,0.5);
-        check_prog(2,4);
-        image::reg::linear(VF,VG,arg_min,image::reg::rigid_scaling,image::reg::square_error(),terminated,0.5);
-        check_prog(3,4);
-        image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::square_error(),terminated,0.5);
-        check_prog(4,4);
+        begin_prog("conducting registration");
+        check_prog(0,2);
+        image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::square_error(),terminated,0.25);
+        check_prog(2,2);
+
+        /* for debugging
+        image::io::nifti out;
+        out << VF;
+        out.save_to_file("t0.nii");
+        show_trans();
+        save_trans_image("t2.nii",arg_min);
+        */
 
         set_affine(arg_min);
-
         // need to change to 1-based affine (SPM style)
         // spm_affine = [1 0 0 1                   [1 0 0 -1
         //               0 1 0 1                    0 1 0 -1
