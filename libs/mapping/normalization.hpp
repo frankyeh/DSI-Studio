@@ -997,17 +997,17 @@ public:
         result.swap(temp);
         }
     }
-    template<typename image_type>
-    image::vector<image_type::dimension,double> center_of_mass(const image_type& Im)
+    template<typename I_type>
+    image::vector<image_type::dimension,double> center_of_mass(const I_type& Im)
     {
-        image::basic_image<unsigned char,image_type::dimension> mask;
+        image::basic_image<unsigned char,I_type::dimension> mask;
         image::segmentation::otsu(Im,mask);
         image::morphology::smoothing(mask);
         image::morphology::smoothing(mask);
         image::morphology::defragment(mask);
-        image::vector<image_type::dimension,double> sum_mass;
+        image::vector<I_type::dimension,double> sum_mass;
         double total_w = 0.0;
-        for(image::pixel_index<image_type::dimension> index;
+        for(image::pixel_index<I_type::dimension> index;
             mask.geometry().is_valid(index);
             index.next(mask.geometry()))
             if(mask[index.index()])
@@ -1017,15 +1017,15 @@ public:
                 sum_mass += pos;
             }
         sum_mass /= total_w;
-        for(unsigned char dim = 0;dim < image_type::dimension;++dim)
+        for(unsigned char dim = 0;dim < I_type::dimension;++dim)
             sum_mass[dim] -= (double)Im.geometry()[dim]/2.0;
         return sum_mass;
     }
 
-    template<typename image_type>
-    image::vector<3,double> orientation(const image_type& Im)
+    template<typename I_type>
+    image::vector<3,double> orientation(const I_type& Im)
     {
-        image::basic_image<unsigned char,image_type::dimension> mask;
+        image::basic_image<unsigned char,I_type::dimension> mask;
         image::segmentation::otsu(Im,mask);
         image::morphology::smoothing(mask);
         image::morphology::smoothing(mask);
@@ -1034,7 +1034,7 @@ public:
         double total_w = 0.0;
         image::vector<3,double> center(Im.geometry());
         center /= 2.0;
-        for(image::pixel_index<image_type::dimension> index;
+        for(image::pixel_index<I_type::dimension> index;
             mask.geometry().is_valid(index);
             index.next(mask.geometry()))
             if(mask[index.index()])
