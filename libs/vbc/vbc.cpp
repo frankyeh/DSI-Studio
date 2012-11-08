@@ -251,16 +251,13 @@ const char* vbc::load_subject_data(const std::vector<std::string>& file_names,
 }
 
 
-void vbc::calculate_statistics(float qa_threshold,vbc_clustering& vbc,unsigned int is_null) const
+void vbc::calculate_statistics(float qa_threshold,std::vector<std::vector<float> >& vbc,unsigned int is_null) const
 {
-    vbc.dif.resize(num_fiber);
-    vbc.t.resize(num_fiber);
+    vbc.resize(num_fiber);
     for(int index = 0;index < num_fiber;++index)
     {
-        vbc.dif[index].resize(dim.size());
-        std::fill(vbc.dif[index].begin(),vbc.dif[index].end(),0.0);
-        vbc.t[index].resize(dim.size());
-        std::fill(vbc.t[index].begin(),vbc.t[index].end(),0.0);
+        vbc[index].resize(dim.size());
+        std::fill(vbc[index].begin(),vbc[index].end(),0.0);
     }
 
     std::vector<float> permu(total_num_subjects);
@@ -297,15 +294,14 @@ void vbc::calculate_statistics(float qa_threshold,vbc_clustering& vbc,unsigned i
 
                 if(num_files1 == 1)// single subject test
                 {
-
-                    bool greater;
-                    float cur_dif = 0;
-                    float p_value = ::permutation_test(permu,
-                        num_files1,num_files2,1000,cur_dif,greater);
-                    vbc.dif[dir_index][findex_location] = greater ? cur_dif:-cur_dif;
-                    vbc.t[dir_index][findex_location] = greater ?
-                                -std::log(std::max(p_value,0.00000001f)):
-                                std::log(std::max(p_value,0.00000001f));
+                    if(permu[0] == 0.0)
+                        break;
+                    unsigned int rank = 1;
+                    for(unsigned int index = 1;index < permu.size();++index)
+                        if(permu[index] > permu[0])
+                            ++rank;
+                    double percentile = (double)rank/(double)(permu.size()+1);
+                    vbc[dir_index][findex_location] = 1.0/(percentile > 0.5 ? 1.0-percentile:-percentile);
                 }
                 else
                 if(num_files2 == 0)// trend test
@@ -321,8 +317,7 @@ void vbc::calculate_statistics(float qa_threshold,vbc_clustering& vbc,unsigned i
                     float Z = ((S > 0) ? (float)(S-1):(float)(S+1))/sqrt_var_S;
                     //float p_value = Z < 0.0 ? boost::math::cdf(gaussian,Z):
                     //                    boost::math::cdf(boost::math::complement(gaussian, Z));
-                    vbc.dif[dir_index][findex_location] = Z;
-                    vbc.t[dir_index][findex_location] = Z;
+                    vbc[dir_index][findex_location] = Z;
 
                 }
                 else
@@ -365,8 +360,7 @@ void vbc::calculate_statistics(float qa_threshold,vbc_clustering& vbc,unsigned i
                             continue;
                     }
                     */
-                    vbc.dif[dir_index][findex_location] = Sm1-Sm2;
-                    vbc.t[dir_index][findex_location] = t_stat;
+                    vbc[dir_index][findex_location] = t_stat;
                 }
         }
     }
@@ -412,30 +406,32 @@ void vbc::output_greater_lesser_mapping(const char* file_name,float qa_threshold
 {
 
     MatFile& matfile = fib_file->fib_data.mat_reader;
-    vbc_clustering data;
+    std::vector<std::vector<float> > data;
     terminated = false;
     calculate_statistics(qa_threshold,data,0);
 
     // set greater mapping
-    set_fib(true,data.t);
+    set_fib(true,data);
     matfile.write_to_file((std::string(file_name)+".greater.fib.gz").c_str());
     matfile.close_file();
 
-    /*
     for(unsigned int fib = 0;fib < num_fiber;++fib)
     {
-        std::string name2 = "t0",name3 = "dif0";
-        name2[1] += fib;
-        name3[3] += fib;
-        matfile.add_matrix(name2.c_str(),&*data.t[fib].begin(),1,data.t[fib].size());
-        matfile.add_matrix(name3.c_str(),&*data.dif[fib].begin(),1,data.dif[fib].size());
+        std::string name = "t0";
+        name[1] += fib;
+        matfile.add_matrix(name.c_str(),&*data[fib].begin(),1,data[fib].size());
     }
-    */
 
     // set lesser mapping
-    set_fib(false,data.t);
+    set_fib(false,data);
     matfile.write_to_file((std::string(file_name)+".lesser.fib.gz").c_str());
     matfile.close_file();
+    for(unsigned int fib = 0;fib < num_fiber;++fib)
+    {
+        std::string name = "t0";
+        name[1] += fib;
+        matfile.add_matrix(name.c_str(),&*data[fib].begin(),1,data[fib].size());
+    }
 }
 
 
@@ -478,18 +474,18 @@ void vbc::run_thread(unsigned int thread_count,unsigned int thread_id,unsigned i
     for(unsigned int per_index = thread_id+1;!terminated &&
             per_index <= permutation_num;per_index += thread_count,++cur_prog)
     {
-        vbc_clustering data;
+        std::vector<std::vector<float> > data;
         calculate_statistics(qa_threshold,data,per_index);
 
         // do tracking
         {
             boost::mutex::scoped_lock lock(lock_function);
             std::vector<std::vector<float> > tracts;
-            set_fib(true,data.t);
+            set_fib(true,data);
             run_tracking(t_threshold,tracts);
             for(unsigned int index = 0;index < tracts.size();++index)
                 length_dist[std::min<unsigned int>(tracts[index].size()/3,max_length-1)]++;
-            set_fib(false,data.t);
+            set_fib(false,data);
             run_tracking(t_threshold,tracts);
             for(unsigned int index = 0;index < tracts.size();++index)
                 length_dist[std::min<unsigned int>(tracts[index].size()/3,max_length-1)]++;
@@ -568,13 +564,12 @@ void vbc::fdr_select_tracts(float fdr,std::vector<std::vector<float> > &tracts)
 
 bool vbc::fdr_tracking(const char* file_name,float qa_threshold,float t_threshold,float fdr,bool greater)
 {
-
-    vbc_clustering data;
+    std::vector<std::vector<float> > data;
     calculate_statistics(qa_threshold,data,0);
     std::vector<std::vector<float> > tracts;
-    set_fib(greater,data.t);
+    set_fib(greater,data);
     run_tracking(t_threshold,tracts);
-    fdr_select_tracts(0.05,tracts);
+    fdr_select_tracts(fdr,tracts);
     if(tracts.empty())
         return false;
     TractModel tract_model(fib_file.get(),fib_file->fib_data.dim,fib_file->fib_data.vs);

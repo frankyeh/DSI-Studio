@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'vbcdialog.ui'
 **
-** Created: Tue Oct 23 15:21:05 2012
+** Created: Wed Nov 7 17:25:10 2012
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -81,6 +81,8 @@ public:
     QVBoxLayout *verticalLayout_5;
     QHBoxLayout *horizontalLayout_7;
     QSpacerItem *horizontalSpacer_5;
+    QLabel *label_4;
+    QDoubleSpinBox *fdr;
     QLabel *label_3;
     QDoubleSpinBox *t_threshold;
     QHBoxLayout *horizontalLayout_9;
@@ -352,6 +354,20 @@ public:
 
         horizontalLayout_7->addItem(horizontalSpacer_5);
 
+        label_4 = new QLabel(cluster_group);
+        label_4->setObjectName(QString::fromUtf8("label_4"));
+
+        horizontalLayout_7->addWidget(label_4);
+
+        fdr = new QDoubleSpinBox(cluster_group);
+        fdr->setObjectName(QString::fromUtf8("fdr"));
+        fdr->setMinimum(0);
+        fdr->setMaximum(0.2);
+        fdr->setSingleStep(0.01);
+        fdr->setValue(0.02);
+
+        horizontalLayout_7->addWidget(fdr);
+
         label_3 = new QLabel(cluster_group);
         label_3->setObjectName(QString::fromUtf8("label_3"));
 
@@ -387,7 +403,7 @@ public:
         permutation_num->setMinimum(50);
         permutation_num->setMaximum(100000);
         permutation_num->setSingleStep(100);
-        permutation_num->setValue(5000);
+        permutation_num->setValue(1000);
 
         horizontalLayout_9->addWidget(permutation_num);
 
@@ -400,6 +416,7 @@ public:
         thread_count->setObjectName(QString::fromUtf8("thread_count"));
         thread_count->setMinimum(1);
         thread_count->setMaximum(12);
+        thread_count->setValue(4);
 
         horizontalLayout_9->addWidget(thread_count);
 
@@ -480,6 +497,7 @@ public:
         ODF_label->setText(QApplication::translate("VBCDialog", "Load subject ODF information", 0, QApplication::UnicodeUTF8));
         load_subject_data->setText(QApplication::translate("VBCDialog", "Load data", 0, QApplication::UnicodeUTF8));
         cluster_group->setTitle(QApplication::translate("VBCDialog", "Step 3: Get null distribution of the maximum fiber length", 0, QApplication::UnicodeUTF8));
+        label_4->setText(QApplication::translate("VBCDialog", "False discorvery rate", 0, QApplication::UnicodeUTF8));
         label_3->setText(QApplication::translate("VBCDialog", "Significance threshold", 0, QApplication::UnicodeUTF8));
         progress->setText(QApplication::translate("VBCDialog", "Progress", 0, QApplication::UnicodeUTF8));
         label_2->setText(QApplication::translate("VBCDialog", "Permutation:", 0, QApplication::UnicodeUTF8));

@@ -375,11 +375,13 @@ void VBCDialog::on_save_mapping_clicked()
         f2 += ".lesser.trk";
         if(!vbc_instance->fdr_tracking(f1.toLocal8Bit().begin(),
                                    ui->qa_threshold->value(),
-                                   ui->t_threshold->value(),0.05,true))
+                                   ui->t_threshold->value(),
+                                   ui->fdr->value(),true))
             QMessageBox::information(this,"Notification","No tracts in greater mapping",0);
         if(!vbc_instance->fdr_tracking(f2.toLocal8Bit().begin(),
                                    ui->qa_threshold->value(),
-                                   ui->t_threshold->value(),0.05,false))
+                                   ui->t_threshold->value(),
+                                   ui->fdr->value(),false))
             QMessageBox::information(this,"Notification","No tracts in lesser mapping",0);
 
 

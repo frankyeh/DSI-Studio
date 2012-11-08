@@ -12,9 +12,6 @@
 class ODFModel;
 class TractModel;
 
-struct vbc_clustering{
-    std::vector<std::vector<float> > dif,t;
-};
 
 
 class vbc{
@@ -43,7 +40,7 @@ public:
 public:
 
     void output_greater_lesser_mapping(const char* file_name,float qa_threshold);
-    void calculate_statistics(float qa_threshold,vbc_clustering& vbc,unsigned int is_null) const;
+    void calculate_statistics(float qa_threshold,std::vector<std::vector<float> >& vbc,unsigned int is_null) const;
     void run_tracking(float t_threshold,std::vector<std::vector<float> > &tracts);
 public:
     std::auto_ptr<boost::thread_group> threads;
