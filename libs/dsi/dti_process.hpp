@@ -1,5 +1,5 @@
-#ifndef _PROCESS_HPP
-#define _PROCESS_HPP
+#ifndef DTI_PROCESS_HPP
+#define DTI_PROCESS_HPP
 #include <cmath>
 #include "basic_voxel.hpp"
 #include "math/matrix_op.hpp"
@@ -20,35 +20,32 @@ public:
 struct ADCProfile: public BaseProcess
 {
     std::vector<float> S;
-    unsigned int b0_index;
+
 public:
     virtual void init(Voxel& voxel)
     {
         S.resize(voxel.q_count);
         std::fill(S.begin(),S.end(),0.0);
-        b0_index = std::min_element(voxel.bvalues.begin(),voxel.bvalues.end())-voxel.bvalues.begin();
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        if (data.space[b0_index] == 0.0)
+        if (data.space.front() == 0.0)
         {
             std::fill(data.space.begin(),data.space.end(),(float)1.0);
             return;
         }
-        float logs0 = std::log(data.space[b0_index]);
-        for (unsigned int i = 0; i < data.space.size(); ++i)
+        float logs0 = std::log(data.space.front());
+        for (unsigned int i = 1; i < data.space.size(); ++i)
         {
-            if(i == b0_index)
-                continue;
             if(data.space[i] <= 0.0)
-                data.space[i] = S[i];
+                data.space[i-1] = S[i];
             else
             {
                 float value = std::log(data.space[i]);
                 if (value < logs0)
-                    data.space[i] = S[i] = logs0-value;
+                    data.space[i-1] = S[i] = logs0-value;
                 else
-                    data.space[i] = S[i];
+                    data.space[i-1] = S[i];
             }
         }
     }
@@ -63,19 +60,15 @@ private:
     std::vector<unsigned int> iKtK_pivot;
     std::vector<float> Kt;
     unsigned int b_count;
-    unsigned int b0_index;
 public:
     virtual void init(Voxel& voxel)
     {
         b_count = voxel.q_count-1;
-        b0_index = std::min_element(voxel.bvalues.begin(),voxel.bvalues.end())-voxel.bvalues.begin();
-        std::vector<image::vector<3,float> > b_data;
-        b_data = voxel.bvectors;
-        for(unsigned int index = 0; index < b_data.size(); ++index)
-            b_data[index] *= std::sqrt(voxel.bvalues[index]);
-
+        std::vector<image::vector<3> > b_data(b_count);
         //skip null
-        b_data.erase(b_data.begin()+b0_index);
+        std::copy(voxel.bvectors.begin()+1,voxel.bvectors.end(),b_data.begin());
+        for(unsigned int index = 0; index < b_count; ++index)
+            b_data[index] *= std::sqrt(voxel.bvalues[index+1]);
 
         Kt.resize(6*b_count);
         {
@@ -90,7 +83,7 @@ public:
                                                math::dyndim(3,1),math::dyndim(3,1));
 
                 /*
-                	  q11 q15 q19 2*q12 2*q13 2*q16
+                      q11 q15 q19 2*q12 2*q13 2*q16
                       q21 q25 q29 2*q22 2*q23 2*q26
                 K  = | ...                         |
                 */
@@ -109,10 +102,8 @@ public:
     {
         //  Kt S = Kt K D
         float KtS[6];
-        std::vector<float> signal(data.space);
-        signal.erase(signal.begin()+b0_index);
-        math::matrix_product(Kt.begin(),signal.begin(),KtS,math::dyndim(6,b_count),math::dyndim(b_count,1));
-        math::matrix_lu_solve(iKtK.begin(),iKtK_pivot.begin(),KtS,data.odf.begin(),math::dyndim(6,6));
+        math::matrix_product(Kt.begin(),data.space.begin(),KtS,math::dyndim(6,b_count),math::dyndim(b_count,1));
+        math::matrix_lu_solve(iKtK.begin(),iKtK_pivot.begin(),KtS,data.space.begin(),math::dyndim(6,6));
     }
 };
 
@@ -122,9 +113,9 @@ class TensorEigenAnalysis : public BaseProcess
     std::vector<float> d1;
     std::vector<float> d2;
     std::vector<float> md;
-    std::vector<float> fa,fa_spin_density;
+    std::vector<float> fa;
     std::vector<float> fdir;
-    unsigned int b0_index;
+
     float get_fa(float l1,float l2,float l3)
     {
         float ll = (l1+l2+l3)/3.0;
@@ -136,7 +127,7 @@ class TensorEigenAnalysis : public BaseProcess
         return std::sqrt(1.5*(ll1*ll1+ll2*ll2+ll3*ll3)/(l1*l1+l2*l2+l3*l3));
 
     }
-    float get_odf_value(const image::vector<3,float>& vec,float* V,float* d) const
+    float get_odf_value(const image::vector<3>& vec,float* V,float* d) const
     {
         float sum = 0.0;
         for (unsigned int index = 0; index < 3; ++index)
@@ -151,8 +142,6 @@ public:
     {
         fa.clear();
         fa.resize(voxel.total_size);
-        fa_spin_density.clear();
-        fa_spin_density.resize(voxel.total_size);
         fdir.clear();
         fdir.resize(voxel.total_size*3);
         md.clear();
@@ -163,7 +152,6 @@ public:
         d1.resize(voxel.total_size);
         d2.clear();
         d2.resize(voxel.total_size);
-        b0_index = std::min_element(voxel.bvalues.begin(),voxel.bvalues.end())-voxel.bvalues.begin();
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
@@ -172,7 +160,7 @@ public:
 
         unsigned int tensor_index[9] = {0,3,4,3,1,5,4,5,2};
         for (unsigned int index = 0; index < 9; ++index)
-            tensor[index] = data.odf[tensor_index[index]];
+            tensor[index] = data.space[tensor_index[index]];
 
         math::matrix_eigen_decomposition_sym(tensor,V,d,math::dim<3,3>());
         if (d[1] < 0.0)
@@ -185,18 +173,17 @@ public:
             d[1] = 0.0;
             d[2] = 0.0;
         }
-		std::copy(V,V+3,fdir.begin() + data.voxel_index * 3);
+        std::copy(V,V+3,fdir.begin() + data.voxel_index * 3);
         fa[data.voxel_index] = get_fa(d[0],d[1],d[2]);
         md[data.voxel_index] = (d[0]+d[1]+d[2])/3.0;
         d0[data.voxel_index] = d[0];
         d1[data.voxel_index] = d[1];
         d2[data.voxel_index] = d[2];
-        fa_spin_density[data.voxel_index] = fa[data.voxel_index]*data.space[b0_index];
 
         //if(!voxel.need_odf)
         //	return;
         //for (unsigned int index = 0;index < data.odf.size();++index)
-        //    data.odf[index] = get_odf_value(voxel.ti.vertices[index],V,d);
+        //    data.odf[index] = get_odf_value(ti_vertices(index),V,d);
         //float sum = Accumulator()(data.odf);
         //if (sum == 0.0)
         //    return;
@@ -206,8 +193,6 @@ public:
     {
         set_title("fa");
         mat_writer.add_matrix("fa0",&*fa.begin(),1,fa.size());
-        set_title("fa_spin_density");
-        mat_writer.add_matrix("fa_spin_density0",&*fa_spin_density.begin(),1,fa_spin_density.size());
         set_title("dir0");
         mat_writer.add_matrix("dir0",&*fdir.begin(),1,fdir.size());
         set_title("adc");
@@ -290,9 +275,9 @@ public:
             for (unsigned int index = 0;index < odf_size;++index)
             {
                 float value = 0.0;
-                value += voxel.ti.vertices[index][0]*vx;
-                value += voxel.ti.vertices[index][1]*vy;
-                value += voxel.ti.vertices[index][2]*vz;
+                value += ti_vertices(index)[0]*vx;
+                value += ti_vertices(index)[1]*vy;
+                value += ti_vertices(index)[2]*vz;
                 if (value > max_value)
                 {
                     max_value = value;
