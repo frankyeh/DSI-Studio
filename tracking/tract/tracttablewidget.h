@@ -44,6 +44,7 @@ public slots:
     void clustering_EM(void){clustering(2);}
     void clustering_kmeans(void){clustering(1);}
     void clustering_hie(void){clustering(0);}
+    void open_cluster_label(void);
     void set_color(void);
     void check_check_status(int,int);
     void start_tracking(void);

@@ -299,6 +299,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
         connect(ui->actionK_means,SIGNAL(triggered()),tractWidget,SLOT(clustering_kmeans()));
         connect(ui->actionEM,SIGNAL(triggered()),tractWidget,SLOT(clustering_EM()));
         connect(ui->actionHierarchical,SIGNAL(triggered()),tractWidget,SLOT(clustering_hie()));
+        connect(ui->actionOpen_Cluster_Labels,SIGNAL(triggered()),tractWidget,SLOT(open_cluster_label()));
 
         //setup menu
         connect(ui->actionSaveTractAs,SIGNAL(triggered()),tractWidget,SLOT(save_tracts_as()));

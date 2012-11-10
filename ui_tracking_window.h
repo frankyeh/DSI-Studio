@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Sun Oct 21 23:06:29 2012
+** Created: Sat Nov 10 01:31:04 2012
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -114,6 +114,9 @@ public:
     QAction *actionMove_Object;
     QAction *actionSave_Report_as;
     QAction *actionSave_Tracts_in_MNI_space;
+    QAction *actionOpen_Clusters;
+    QAction *actionSave_Clusters;
+    QAction *actionOpen_Cluster_Labels;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QHBoxLayout *horizontalLayout_13;
@@ -490,6 +493,15 @@ public:
         actionSave_Tracts_in_MNI_space = new QAction(tracking_window);
         actionSave_Tracts_in_MNI_space->setObjectName(QString::fromUtf8("actionSave_Tracts_in_MNI_space"));
         actionSave_Tracts_in_MNI_space->setIcon(icon2);
+        actionOpen_Clusters = new QAction(tracking_window);
+        actionOpen_Clusters->setObjectName(QString::fromUtf8("actionOpen_Clusters"));
+        actionOpen_Clusters->setIcon(icon1);
+        actionSave_Clusters = new QAction(tracking_window);
+        actionSave_Clusters->setObjectName(QString::fromUtf8("actionSave_Clusters"));
+        actionSave_Clusters->setIcon(icon2);
+        actionOpen_Cluster_Labels = new QAction(tracking_window);
+        actionOpen_Cluster_Labels->setObjectName(QString::fromUtf8("actionOpen_Cluster_Labels"));
+        actionOpen_Cluster_Labels->setIcon(icon1);
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -1654,6 +1666,8 @@ public:
         menuTracts->addSeparator();
         menuTracts->addAction(actionSet_Color);
         menuTracts->addAction(actionOpen_Colors);
+        menuTracts->addSeparator();
+        menuTracts->addAction(actionOpen_Cluster_Labels);
         menuTracts->addAction(menuClustering->menuAction());
         menuTracts->addSeparator();
         menuTracts->addAction(actionSave_Tracts_Colors_As);
@@ -1827,6 +1841,9 @@ public:
         actionMove_Object->setShortcut(QApplication::translate("tracking_window", "Ctrl+A", 0, QApplication::UnicodeUTF8));
         actionSave_Report_as->setText(QApplication::translate("tracking_window", "Save Report as...", 0, QApplication::UnicodeUTF8));
         actionSave_Tracts_in_MNI_space->setText(QApplication::translate("tracking_window", "Save Tracts in MNI space...", 0, QApplication::UnicodeUTF8));
+        actionOpen_Clusters->setText(QApplication::translate("tracking_window", "Open Clusters...", 0, QApplication::UnicodeUTF8));
+        actionSave_Clusters->setText(QApplication::translate("tracking_window", "Save Clusters...", 0, QApplication::UnicodeUTF8));
+        actionOpen_Cluster_Labels->setText(QApplication::translate("tracking_window", "Open Cluster Labels...", 0, QApplication::UnicodeUTF8));
         label_3->setText(QApplication::translate("tracking_window", "Current Slice:", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()

@@ -252,6 +252,8 @@ void RegionTableWidget::load_region(void)
                                 "Region files (*.txt *.nii *.hdr *.nii.gz *.mat);;All files (*.*)" );
     if (filenames.isEmpty())
         return;
+    cur_tracking_window.absolute_path = QFileInfo(filenames[0]).absolutePath();
+
     for (unsigned int index = 0;index < filenames.size();++index)
     {
         ROIRegion region(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size);
@@ -280,6 +282,8 @@ void RegionTableWidget::save_region(void)
                            "Text files (*.txt);;Nifti file(*.nii;*.nii.gz);;Maylab file (*.mat)" );
     if (filename.isEmpty())
         return;
+    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+
     std::vector<float> trans;
     cur_tracking_window.get_nifti_trans(trans);
     regions[currentRow()].SaveToFile(filename.toLocal8Bit().begin(),trans);
@@ -296,6 +300,7 @@ void RegionTableWidget::save_region_info(void)
                            "Text files (*.txt)" );
     if (filename.isEmpty())
         return;
+    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
 
     std::ofstream out(filename.toLocal8Bit().begin());
     out << "x\ty\tz";

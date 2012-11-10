@@ -186,6 +186,7 @@ void TractTableWidget::load_tracts(void)
             "Tract files (*.txt *.trk);;All files (*.*)");
     if(!filenames.size())
         return;
+    cur_tracking_window.absolute_path = QFileInfo(filenames[0]).absolutePath();
     for(unsigned int index = 0;index < filenames.size();++index)
     {
         QString filename = filenames[index];
@@ -223,6 +224,47 @@ void TractTableWidget::assign_colors(void)
         tract_models[index]->set_color(ROIColor[index%16].rgb());
     cur_tracking_window.renderWidget->setData("tract_color_style",1);//manual assigned
     emit need_update();
+}
+
+void TractTableWidget::open_cluster_label(void)
+{
+    if(tract_models.empty())
+        return;
+    QString filename = QFileDialog::getOpenFileName(
+            this,
+            "Load cluster label",
+            cur_tracking_window.absolute_path,
+            "Cluster label files (*.txt);;All files (*.*)");
+    if(!filename.size())
+        return;
+    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+
+    std::ifstream in(filename.toLocal8Bit().begin());
+    std::vector<int> labels(tract_models[currentRow()]->get_visible_track_count());
+    std::copy(std::istream_iterator<int>(in),
+              std::istream_iterator<int>(),labels.begin());
+
+    std::vector<std::vector<float> > tracts;
+    tract_models[currentRow()]->release_tracts(tracts);
+    delete_row(currentRow());
+    unsigned int cluster_num = *std::max_element(labels.begin(),labels.end());
+    for(unsigned int cluster_index = 0;cluster_index <= cluster_num;++cluster_index)
+    {
+        unsigned int fiber_num = std::count(labels.begin(),labels.end(),cluster_index);
+        if(!fiber_num)
+            continue;
+        std::vector<std::vector<float> > add_tracts(fiber_num);
+        for(unsigned int index = 0,i = 0;index < labels.size();++index)
+            if(labels[index] == cluster_index)
+            {
+                add_tracts[i].swap(tracts[index]);
+                ++i;
+            }
+        addNewTracts(QString("Cluster")+QString::number(cluster_index));
+        tract_models.back()->add_tracts(add_tracts);
+        item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
+    }
+    assign_colors();
 }
 
 void TractTableWidget::clustering(int method_id)
@@ -284,6 +326,7 @@ void TractTableWidget::save_tracts_as(void)
                 "Tract files (*.txt);; Travis file (*.trk);;All files (*.*)");
     if(filename.isEmpty())
         return;
+    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
     std::string sfilename = filename.toLocal8Bit().begin();
     tract_models[currentRow()]->save_tracts_to_file(&*sfilename.begin());
 }
@@ -299,6 +342,7 @@ void TractTableWidget::saveTransformedTracts(const float* transform)
                 "Tract files (*.txt);; Travis file (*.trk);;All files (*.*)");
     if(filename.isEmpty())
         return;
+    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
     std::string sfilename = filename.toLocal8Bit().begin();
     tract_models[currentRow()]->save_transformed_tracts_to_file(&*sfilename.begin(),transform,false);
 }
@@ -317,6 +361,7 @@ void TractTableWidget::saveTransformedEndpoints(const float* transform)
                 "Tract files (*.txt);;All files (*.*)");
     if(filename.isEmpty())
         return;
+    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
     std::string sfilename = filename.toLocal8Bit().begin();
     tract_models[currentRow()]->save_transformed_tracts_to_file(&*sfilename.begin(),transform,true);
 }
@@ -332,6 +377,7 @@ void TractTableWidget::load_tracts_color(void)
             "Color files (*.txt);;All files (*.*)");
     if(filename.isEmpty())
         return;
+    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
     std::string sfilename = filename.toLocal8Bit().begin();
     tract_models[currentRow()]->load_tracts_color_from_file(&*sfilename.begin());
     emit need_update();
@@ -349,6 +395,7 @@ void TractTableWidget::save_tracts_color_as(void)
                 "Color files (*.txt);;All files (*.*)");
     if(filename.isEmpty())
         return;
+    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
     std::string sfilename = filename.toLocal8Bit().begin();
     tract_models[currentRow()]->save_tracts_color_to_file(&*sfilename.begin());
 }
@@ -404,6 +451,7 @@ void TractTableWidget::showCurTractStatistics(float threshold,float cull_angle_c
                     "Text files (*.txt);;All files|(*.*)");
         if(filename.isEmpty())
             return;
+        cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
         std::ofstream out(filename.toLocal8Bit().begin());
         out << result.c_str();
     }
@@ -423,6 +471,7 @@ void TractTableWidget::save_fa_as(void)
                 "Text files (*.txt);;All files|(*.*)");
     if(filename.isEmpty())
         return;
+    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
     float threshold = cur_tracking_window.ui->fa_threshold->value();
     float cull_angle_cos = std::cos(cur_tracking_window.ui->turning_angle->value() * 3.1415926 / 180.0);
     if(!tract_models[currentRow()]->save_fa_to_file(
@@ -447,6 +496,7 @@ void TractTableWidget::save_tracts_data_as(void)
                 "Text files (*.txt);;All files (*.*)");
     if(filename.isEmpty())
         return;
+    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
     if(!tract_models[currentRow()]->save_data_to_file(
                     filename.toLocal8Bit().begin(),
                     action->data().toString().toLocal8Bit().begin()))
@@ -595,6 +645,7 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
                 "PNG files (*.png );;BMP files (*.bmp);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*.*)");
         if(filename.isEmpty())
             return;
+        cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
         image::basic_image<image::rgb_color,3> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
         {
@@ -615,7 +666,7 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
                     "NIFTI files (*.nii);;MAT File (*.mat);;");
         if(filename.isEmpty())
             return;
-
+        cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
         image::basic_image<unsigned int,3> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
         {
