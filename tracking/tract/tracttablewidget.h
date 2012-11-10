@@ -40,6 +40,7 @@ signals:
 private:
     void delete_row(int row);
     void clustering(int method_id);
+    void load_cluster_label(const std::vector<unsigned int>& labels,QString Name);
 public slots:
     void clustering_EM(void){clustering(2);}
     void clustering_kmeans(void){clustering(1);}

@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Sat Nov 10 01:31:04 2012
+** Created: Sat Nov 10 02:41:14 2012
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -117,6 +117,7 @@ public:
     QAction *actionOpen_Clusters;
     QAction *actionSave_Clusters;
     QAction *actionOpen_Cluster_Labels;
+    QAction *actionSave_All_Tracts_As;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QHBoxLayout *horizontalLayout_13;
@@ -502,6 +503,9 @@ public:
         actionOpen_Cluster_Labels = new QAction(tracking_window);
         actionOpen_Cluster_Labels->setObjectName(QString::fromUtf8("actionOpen_Cluster_Labels"));
         actionOpen_Cluster_Labels->setIcon(icon1);
+        actionSave_All_Tracts_As = new QAction(tracking_window);
+        actionSave_All_Tracts_As->setObjectName(QString::fromUtf8("actionSave_All_Tracts_As"));
+        actionSave_All_Tracts_As->setIcon(icon2);
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -1654,6 +1658,7 @@ public:
         menuModify->addAction(actionThreshold);
         menuTracts->addAction(actionOpenTract);
         menuTracts->addAction(actionSaveTractAs);
+        menuTracts->addAction(actionSave_All_Tracts_As);
         menuTracts->addAction(menuSave->menuAction());
         menuTracts->addAction(menuExport_Tract_Density->menuAction());
         menuTracts->addSeparator();
@@ -1729,7 +1734,7 @@ public:
         QObject::connect(glCorSlider, SIGNAL(valueChanged(int)), glCorBox, SLOT(setValue(int)));
         QObject::connect(glSagSlider, SIGNAL(valueChanged(int)), glSagBox, SLOT(setValue(int)));
         QObject::connect(isosurfaceButton, SIGNAL(clicked()), actionAdd_surface, SLOT(trigger()));
-        QObject::connect(tbSaveTract, SIGNAL(clicked()), actionSaveTractAs, SLOT(trigger()));
+        QObject::connect(tbSaveTract, SIGNAL(clicked()), actionSave_All_Tracts_As, SLOT(trigger()));
         QObject::connect(tbOpenTract, SIGNAL(clicked()), actionOpenTract, SLOT(trigger()));
         QObject::connect(tbDeleteTract, SIGNAL(clicked()), actionDeleteTract, SLOT(trigger()));
 
@@ -1844,6 +1849,7 @@ public:
         actionOpen_Clusters->setText(QApplication::translate("tracking_window", "Open Clusters...", 0, QApplication::UnicodeUTF8));
         actionSave_Clusters->setText(QApplication::translate("tracking_window", "Save Clusters...", 0, QApplication::UnicodeUTF8));
         actionOpen_Cluster_Labels->setText(QApplication::translate("tracking_window", "Open Cluster Labels...", 0, QApplication::UnicodeUTF8));
+        actionSave_All_Tracts_As->setText(QApplication::translate("tracking_window", "Save All Tracts As...", 0, QApplication::UnicodeUTF8));
         label_3->setText(QApplication::translate("tracking_window", "Current Slice:", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()

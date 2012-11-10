@@ -191,11 +191,20 @@ void TractTableWidget::load_tracts(void)
     {
         QString filename = filenames[index];
         if(!filename.size())
-        continue;
-        addNewTracts(QFileInfo(filename).baseName());
+            continue;
         std::string sfilename = filename.toLocal8Bit().begin();
+        addNewTracts(QFileInfo(filename).baseName());
         tract_models.back()->load_from_file(&*sfilename.begin(),false);
-        item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
+        if(tract_models.back()->get_cluster_info().empty()) // not multiple cluster file
+        {
+            item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
+        }
+        else
+        {
+            std::vector<unsigned int> labels;
+            labels.swap(tract_models.back()->get_cluster_info());
+            load_cluster_label(labels,QFileInfo(filename).baseName());
+        }
     }
     emit need_update();
 }
@@ -204,7 +213,17 @@ void TractTableWidget::save_all_tracts_as(void)
 {
     if(tract_models.empty())
         return;
-
+    QString filename;
+    filename = QFileDialog::getSaveFileName(
+                this,
+                "Save tracts as",
+                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + ".txt",
+                "Tract files (*.txt);; Travis file (*.trk);;All files (*.*)");
+    if(filename.isEmpty())
+        return;
+    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+    std::string sfilename = filename.toLocal8Bit().begin();
+    TractModel::save_all(&*sfilename.begin(),tract_models);
 }
 void TractTableWidget::set_color(void)
 {
@@ -225,25 +244,8 @@ void TractTableWidget::assign_colors(void)
     cur_tracking_window.renderWidget->setData("tract_color_style",1);//manual assigned
     emit need_update();
 }
-
-void TractTableWidget::open_cluster_label(void)
+void TractTableWidget::load_cluster_label(const std::vector<unsigned int>& labels,QString Name)
 {
-    if(tract_models.empty())
-        return;
-    QString filename = QFileDialog::getOpenFileName(
-            this,
-            "Load cluster label",
-            cur_tracking_window.absolute_path,
-            "Cluster label files (*.txt);;All files (*.*)");
-    if(!filename.size())
-        return;
-    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
-
-    std::ifstream in(filename.toLocal8Bit().begin());
-    std::vector<int> labels(tract_models[currentRow()]->get_visible_track_count());
-    std::copy(std::istream_iterator<int>(in),
-              std::istream_iterator<int>(),labels.begin());
-
     std::vector<std::vector<float> > tracts;
     tract_models[currentRow()]->release_tracts(tracts);
     delete_row(currentRow());
@@ -260,10 +262,31 @@ void TractTableWidget::open_cluster_label(void)
                 add_tracts[i].swap(tracts[index]);
                 ++i;
             }
-        addNewTracts(QString("Cluster")+QString::number(cluster_index));
+        addNewTracts(Name+QString::number(cluster_index));
         tract_models.back()->add_tracts(add_tracts);
         item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     }
+}
+
+void TractTableWidget::open_cluster_label(void)
+{
+    if(tract_models.empty())
+        return;
+    QString filename = QFileDialog::getOpenFileName(
+            this,
+            "Load cluster label",
+            cur_tracking_window.absolute_path,
+            "Cluster label files (*.txt);;All files (*.*)");
+    if(!filename.size())
+        return;
+    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+
+    std::ifstream in(filename.toLocal8Bit().begin());
+    std::vector<unsigned int> labels(tract_models[currentRow()]->get_visible_track_count());
+    std::copy(std::istream_iterator<unsigned int>(in),
+              std::istream_iterator<unsigned int>(),labels.begin());
+
+    load_cluster_label(labels,"cluster");
     assign_colors();
 }
 

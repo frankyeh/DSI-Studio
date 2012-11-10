@@ -7,6 +7,7 @@
 class ODFModel;
 class TractModel{
 
+
 private:
         image::geometry<3> geometry;
         image::vector<3> vs;
@@ -19,6 +20,13 @@ private:
         std::vector<unsigned int> deleted_count;
         std::vector<std::pair<unsigned int,unsigned int> > redo_size;
         // offset, size
+private:
+        // for loading multiple clusters
+        std::vector<unsigned int> tract_cluster;
+public:
+        static bool save_all(const char* file_name,const std::vector<TractModel*>& all);
+        const std::vector<unsigned int>& get_cluster_info(void) const{return tract_cluster;}
+        std::vector<unsigned int>& get_cluster_info(void) {return tract_cluster;}
 private:
         void select(const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
                   const image::vector<3,float>& from_pos,const image::vector<3,float>& to_pos,
