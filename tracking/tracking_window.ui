@@ -680,7 +680,7 @@
     </property>
     <widget class="QMenu" name="menuModify">
      <property name="title">
-      <string>Modify current region</string>
+      <string>Modify Current Region</string>
      </property>
      <addaction name="actionShift_X"/>
      <addaction name="actionShift_X_2"/>
@@ -792,9 +792,10 @@
     <addaction name="separator"/>
     <addaction name="actionSave_Screen"/>
     <addaction name="actionSave_ROI_Screen"/>
-    <addaction name="actionSave_Rotation_Images"/>
     <addaction name="actionSave_Anisotrpy_Map_as"/>
     <addaction name="actionSave_Report_as"/>
+    <addaction name="actionSave_Rotation_Images"/>
+    <addaction name="actionSave_Left_Right_3D_Image"/>
     <addaction name="actionCopy_to_clipboard"/>
     <addaction name="separator"/>
     <addaction name="actionRestore_window_layout"/>
@@ -2515,7 +2516,7 @@
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save &amp;as...</string>
+    <string>Save &amp;As...</string>
    </property>
   </action>
   <action name="actionDeleteRegion">
@@ -2734,7 +2735,7 @@
      <normaloff>:/icons/icons/axial.xpm</normaloff>:/icons/icons/axial.xpm</iconset>
    </property>
    <property name="text">
-    <string>Whole brain seeding</string>
+    <string>Whole Brain Seeding</string>
    </property>
   </action>
   <action name="actionSelect_Tracts">
@@ -2869,12 +2870,12 @@
   </action>
   <action name="actionEndpoints_to_seeding">
    <property name="text">
-    <string>Endpoints to ROI</string>
+    <string>Endpoints To ROI</string>
    </property>
   </action>
   <action name="actionTracts_to_seeds">
    <property name="text">
-    <string>Tracts to ROI</string>
+    <string>Tracts To ROI</string>
    </property>
   </action>
   <action name="actionSave_Rotation_Images">
@@ -2979,7 +2980,7 @@
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save &amp;voxel data as...</string>
+    <string>Save &amp;Region Data As...</string>
    </property>
   </action>
   <action name="actionTDI_Diffusion_Space">
@@ -3015,7 +3016,7 @@
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Tracts in T1/T2 space...</string>
+    <string>Save Tracts In T1/T2 Space...</string>
    </property>
   </action>
   <action name="actionThreshold">
@@ -3045,7 +3046,7 @@
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save anisotrpy map as...</string>
+    <string>Save anisotrpy map As...</string>
    </property>
   </action>
   <action name="actionRestore_window_layout">
@@ -3059,7 +3060,7 @@
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Endpoints inT1/T2 space...</string>
+    <string>Save Endpoints InT1/T2 space...</string>
    </property>
   </action>
   <action name="actionMove_Object">
@@ -3076,7 +3077,7 @@
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Report as...</string>
+    <string>Save Report As...</string>
    </property>
   </action>
   <action name="actionSave_Tracts_in_MNI_space">
@@ -3085,7 +3086,7 @@
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Tracts in MNI space...</string>
+    <string>Save Tracts In MNI Space...</string>
    </property>
   </action>
   <action name="actionOpen_Clusters">
@@ -3122,6 +3123,15 @@
    </property>
    <property name="text">
     <string>Save All Tracts As...</string>
+   </property>
+  </action>
+  <action name="actionSave_Left_Right_3D_Image">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save Left/Right 3D Image...</string>
    </property>
   </action>
  </widget>

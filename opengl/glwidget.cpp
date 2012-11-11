@@ -1685,7 +1685,43 @@ void GLWidget::catchScreen(void)
     updateGL();
     grabFrameBuffer().save(filename);
 }
+void GLWidget::saveLeftRight3DImage(void)
+{
+    QString filename = QFileDialog::getSaveFileName(
+            this,
+            "Assign image name",
+            cur_tracking_window.absolute_path,
+            "BMP files (*.bmp);;PNG files (*.png );;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*.*)");
+    if(filename.isEmpty())
+        return;
+    bool ok;
+    int angle = QInputDialog::getInteger(this,
+            "DSI Studio",
+            "Assign left angle difference in degrees (negative value for right/left view)):",5,-60,60,5,&ok);
+    if(!ok)
+        return;
+    makeCurrent();
+    glPushMatrix();
 
+    glLoadIdentity();
+    glRotated(angle/2.0, 0.0, 1.0, 0.0);
+    glMultMatrixf(transformation_matrix);
+    glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
+    updateGL();
+    QImage left = grabFrameBuffer();
+    glLoadIdentity();
+    glRotated(-angle, 0.0, 1.0, 0.0);
+    glMultMatrixf(transformation_matrix);
+    glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
+    updateGL();
+    QImage right = grabFrameBuffer();
+    glPopMatrix();
+    QImage all(left.width()*2,left.height(),QImage::Format_ARGB32);
+    QPainter painter(&all);
+    painter.drawImage(0,0,left);
+    painter.drawImage(left.width(),0,right);
+    all.save(filename);
+}
 void GLWidget::saveRotationSeries(void)
 {
     QString filename = QFileDialog::getSaveFileName(
@@ -1728,3 +1764,4 @@ void GLWidget::saveRotationSeries(void)
     std::copy(m.begin(),m.end(),transformation_matrix);
     updateGL();
 }
+

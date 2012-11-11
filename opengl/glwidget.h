@@ -66,6 +66,7 @@ class RenderingTableWidget;
      void saveCamera(void);
      void loadCamera(void);
      void saveRotationSeries(void);
+     void saveLeftRight3DImage(void);
      void saveMapping(void);
      void loadMapping(void);
      void copyToClipboard(void);
