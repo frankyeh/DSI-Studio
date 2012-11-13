@@ -7,7 +7,6 @@ QT += core \
 #CONFIG += console
 TARGET = dsi_studio
 TEMPLATE = app
-
 win32 {
 INCLUDEPATH += C:\frank\myprog\boost_include
 }
@@ -24,6 +23,14 @@ LIBS += -lboost_thread \
         -lGLU \
         -lz
 }
+
+mac{
+LIBS += -L/opt/local/lib -lboost_system \
+        -L/opt/local/lib -lboost_thread \
+        -L/opt/local/lib -lboost_program_options
+}
+
+
 # you may need to change the include directory of boost library
 INCLUDEPATH += libs \
     libs/dsi \
