@@ -1,3 +1,4 @@
+#include <QSplitter>
 #include "reconstruction_window.h"
 #include "ui_reconstruction_window.h"
 #include "dsi_interface_static_link.h"
@@ -14,19 +15,68 @@
 #include "libs/dsi/image_model.hpp"
 
 
-
+void reconstruction_window::load_src(int index)
+{
+    begin_prog("load src");
+    check_prog(index,filenames.size());
+    handle = (ImageModel*)init_reconstruction(filenames[index].toLocal8Bit().begin());
+    if (!handle)
+    {
+        QMessageBox::information(this,"error","Cannot load the .src file, please check the memory sufficiency",0);
+        throw;
+    }
+    dim[0] = handle->voxel.matrix_width;
+    dim[1] = handle->voxel.matrix_height;
+    dim[2] = handle->voxel.slice_number;
+    image.resize(dim);
+    std::copy(handle->mask.begin(),handle->mask.end(),image.begin());
+}
 
 reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *parent) :
         QMainWindow(parent),filenames(filenames_),
         ui(new Ui::reconstruction_window)
 {
+    load_src(0);
+    image::segmentation::otsu(image,handle->mask);
+    image::morphology::erosion(handle->mask);
+    image::morphology::smoothing(handle->mask);
+    image::morphology::smoothing(handle->mask);
+    image::morphology::smoothing(handle->mask);
+    image::morphology::defragment(handle->mask);
+    image::morphology::dilation(handle->mask);
+    image::morphology::dilation(handle->mask);
+    image::morphology::smoothing(handle->mask);
+    image::morphology::smoothing(handle->mask);
+    image::morphology::smoothing(handle->mask);
+    max_source_value = 0.0;
 
     ui->setupUi(this);
-    ui->toolBox->setCurrentIndex(0);
+    QSplitter *splitter = new QSplitter(ui->source_page);
+    ui->source_page_layout->addWidget(splitter);
+    splitter->addWidget(ui->b_table);
+    splitter->addWidget(ui->source_widget);
+    ui->toolBox->setCurrentIndex(1);
     ui->graphicsView->setScene(&scene);
+    ui->view_source->setScene(&source);
+    ui->b_table->setColumnWidth(0,40);
+    ui->b_table->setColumnWidth(1,60);
+    ui->b_table->setColumnWidth(2,60);
+    ui->b_table->setColumnWidth(3,60);
+    ui->b_table->setHorizontalHeaderLabels(QStringList() << "b value" << "bx" << "by" << "bz");
+
+    ui->SlicePos->setRange(0,dim[2]-1);
+    ui->SlicePos->setValue((dim[2]-1) >> 1);
+    ui->z_pos->setRange(0,dim[2]-1);
+    ui->z_pos->setValue((dim[2]-1) >> 1);
+
+    ui->x->setMaximum(dim[0]-1);
+    ui->y->setMaximum(dim[1]-1);
+    ui->z->setMaximum(dim[2]-1);
 
     absolute_path = QFileInfo(filenames[0]).absolutePath();
-    load_src(0);
+    source_ratio = std::max(1.0,500/(double)dim.height());
+
+    load_b_table();
 
     if(filenames.size() == 1)
         ui->QSDRT->hide();
@@ -77,39 +127,53 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     ui->mni_resolution->setValue(settings.value("rec_mni_resolution",2.0).toDouble());
 
-}
 
-void reconstruction_window::load_src(int index)
+    connect(ui->z_pos,SIGNAL(sliderMoved(int)),this,SLOT(on_b_table_itemSelectionChanged()));
+    connect(ui->contrast,SIGNAL(sliderMoved(int)),this,SLOT(on_b_table_itemSelectionChanged()));
+    connect(ui->brightness,SIGNAL(sliderMoved(int)),this,SLOT(on_b_table_itemSelectionChanged()));
+}
+void reconstruction_window::load_b_table(void)
 {
-    begin_prog("load src");
-    check_prog(index,filenames.size());
-    handle = (ImageModel*)init_reconstruction(filenames[index].toLocal8Bit().begin());
-    if (!handle)
+    ui->b_table->clear();
+    ui->b_table->setRowCount(handle->voxel.bvalues.size());
+    for(unsigned int index = 0;index < handle->voxel.bvalues.size();++index)
     {
-        QMessageBox::information(this,"error","Cannot load the .src file, please check the memory sufficiency",0);
-        throw;
+        ui->b_table->setItem(index,0, new QTableWidgetItem(QString::number(handle->voxel.bvalues[index])));
+        ui->b_table->setItem(index,1, new QTableWidgetItem(QString::number(handle->voxel.bvectors[index][0])));
+        ui->b_table->setItem(index,2, new QTableWidgetItem(QString::number(handle->voxel.bvectors[index][1])));
+        ui->b_table->setItem(index,3, new QTableWidgetItem(QString::number(handle->voxel.bvectors[index][2])));
     }
-    const unsigned short* dim = get_dimension((ImageModel*)handle);
-    image.resize(image::geometry<3>(dim[0], dim[1], dim[2]));
-    std::copy(handle->mask.begin(),handle->mask.end(),image.begin());
-    image::segmentation::otsu(image,handle->mask);
-    image::morphology::erosion(handle->mask);
-    image::morphology::smoothing(handle->mask);
-    image::morphology::smoothing(handle->mask);
-    image::morphology::smoothing(handle->mask);
-    image::morphology::defragment(handle->mask);
-    image::morphology::dilation(handle->mask);
-    image::morphology::dilation(handle->mask);
-    image::morphology::smoothing(handle->mask);
-    image::morphology::smoothing(handle->mask);
-    image::morphology::smoothing(handle->mask);
-
-    ui->SlicePos->setRange(0,dim[2]-1);
-    ui->SlicePos->setValue((dim[2]-1) >> 1);
-    ui->x->setMaximum(dim[0]-1);
-    ui->y->setMaximum(dim[1]-1);
-    ui->z->setMaximum(dim[2]-1);
+    ui->b_table->selectRow(0);
 }
+void reconstruction_window::on_b_table_itemSelectionChanged()
+{
+    image::basic_image<float,2> tmp(image::geometry<2>(dim[0],dim[1]));
+    unsigned int offset = ui->z_pos->value()*tmp.size();
+    unsigned int b_index = ui->b_table->currentRow();
+    std::copy(handle->dwi_data[b_index] + offset,
+              handle->dwi_data[b_index] + offset + tmp.size(),tmp.begin());
+    max_source_value = std::max<float>(max_source_value,*std::max_element(tmp.begin(),tmp.end()));
+    if(max_source_value + 1.0 != 1.0)
+        image::divide_constant(tmp.begin(),tmp.end(),max_source_value/255.0);
+
+    float mean_value = image::mean(tmp.begin(),tmp.end());
+    image::minus_constant(tmp.begin(),tmp.end(),mean_value);
+    image::multiply_constant(tmp.begin(),tmp.end(),ui->contrast->value());
+    image::add_constant(tmp.begin(),tmp.end(),mean_value+ui->brightness->value()*25.5);
+
+    image::upper_lower_threshold(tmp.begin(),tmp.end(),tmp.begin(),0.0f,255.0f);
+
+
+    buffer_source.resize(image::geometry<2>(dim[0],dim[1]));
+    std::copy(tmp.begin(),tmp.end(),buffer_source.begin());
+
+    source.setSceneRect(0, 0, dim.width()*source_ratio,dim.height()*source_ratio);
+    source_image = QImage((unsigned char*)&*buffer_source.begin(),dim.width(),dim.height(),QImage::Format_RGB32).
+                    scaled(dim.width()*source_ratio,dim.height()*source_ratio);
+    source.clear();
+    source.addRect(0, 0, dim.width()*source_ratio,dim.height()*source_ratio,QPen(),source_image);
+}
+
 
 void reconstruction_window::resizeEvent ( QResizeEvent * event )
 {
@@ -441,4 +505,17 @@ void reconstruction_window::on_remove_background_clicked()
                 buf[i] = 0;
     }
     on_SlicePos_sliderMoved(ui->SlicePos->value());
+}
+
+
+void reconstruction_window::on_zoom_in_clicked()
+{
+    source_ratio *= 1.1;
+    on_b_table_itemSelectionChanged();
+}
+
+void reconstruction_window::on_zoom_out_clicked()
+{
+    source_ratio *= 0.9;
+    on_b_table_itemSelectionChanged();
 }

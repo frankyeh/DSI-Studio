@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'mainwindow.ui'
 **
-** Created: Fri Oct 19 15:00:14 2012
+** Created: Wed Nov 14 15:34:46 2012
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -60,6 +60,7 @@ public:
     QCommandLinkButton *RenameDICOMDir;
     QCommandLinkButton *batch_src;
     QCommandLinkButton *batch_reconstruction;
+    QCommandLinkButton *view_image;
     QCommandLinkButton *simulateMRI;
 
     void setupUi(QMainWindow *MainWindow)
@@ -248,6 +249,11 @@ public:
 
         verticalLayout->addWidget(batch_reconstruction);
 
+        view_image = new QCommandLinkButton(dockWidgetContents_2);
+        view_image->setObjectName(QString::fromUtf8("view_image"));
+
+        verticalLayout->addWidget(view_image);
+
         simulateMRI = new QCommandLinkButton(dockWidgetContents_2);
         simulateMRI->setObjectName(QString::fromUtf8("simulateMRI"));
 
@@ -297,6 +303,7 @@ public:
         batch_src->setDescription(QApplication::translate("MainWindow", "Generate src file for each subdirectory", 0, QApplication::UnicodeUTF8));
         batch_reconstruction->setText(QApplication::translate("MainWindow", "Batch Reconstruction", 0, QApplication::UnicodeUTF8));
         batch_reconstruction->setDescription(QApplication::translate("MainWindow", "Select a directory that contains src file in the subdirectories", 0, QApplication::UnicodeUTF8));
+        view_image->setText(QApplication::translate("MainWindow", "View Images (NIFTI/DICOM/2dseq)", 0, QApplication::UnicodeUTF8));
         simulateMRI->setText(QApplication::translate("MainWindow", "Diffusion MRI Simulation", 0, QApplication::UnicodeUTF8));
         simulateMRI->setDescription(QApplication::translate("MainWindow", "Simulate diffusion images using the given b-table", 0, QApplication::UnicodeUTF8));
     } // retranslateUi

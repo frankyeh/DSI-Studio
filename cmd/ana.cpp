@@ -24,7 +24,7 @@ int ana(int ac, char *av[])
     ("action", po::value<std::string>(), "ana: analysis")
     ("source", po::value<std::string>(), "assign the .fib file name")
     ("tract", po::value<std::string>(), "assign the .trk file name")
-    ("export", po::value<std::string>(), "export additional information (e.g. --export=stat,tdi)")
+    ("export", po::value<std::string>(), "export additional information (e.g. --export=tdi)")
     ;
 
     if(!ac)
@@ -85,5 +85,9 @@ int ana(int ac, char *av[])
         nii_header << tdi;
         nii_header.set_voxel_size(voxel_size.begin());
         nii_header.save_to_file(file_name_stat.c_str());
+    }
+    if(vm.count("export") && vm["export"].as<std::string>().find("report")!=std::string::npos)
+    {
+
     }
 }

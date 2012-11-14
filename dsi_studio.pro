@@ -97,13 +97,15 @@ HEADERS += mainwindow.h \
     libs/mapping/atlas.hpp \
     libs/mapping/fa_template.hpp \
     libs/mapping/normalization.hpp \
-    plot/qcustomplot.h
+    plot/qcustomplot.h \
+    view_image.h
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
     reconstruction/reconstruction_window.ui \
     dicom/dicom_parser.ui \
     simulation.ui \
-    reconstruction/vbcdialog.ui
+    reconstruction/vbcdialog.ui \
+    view_image.ui
 RESOURCES += \
     icons.qrc
 SOURCES += main.cpp \
@@ -156,4 +158,5 @@ SOURCES += main.cpp \
     libs/mapping/fa_template.cpp \
     plot/qcustomplot.cpp \
     libs/vbc/vbc.cpp \
-    cmd/ana.cpp
+    cmd/ana.cpp \
+    view_image.cpp

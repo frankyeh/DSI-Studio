@@ -25,10 +25,20 @@ protected:
     void showEvent ( QShowEvent * event );
     void closeEvent(QCloseEvent *event);
 private:
-    Ui::reconstruction_window *ui;
+    QGraphicsScene source;
+    image::basic_image<image::rgb_color> buffer_source;
+    QImage source_image;
+    float max_source_value,source_ratio;
+
+    void load_b_table(void);
+private:
     QGraphicsScene scene;
     image::basic_image<image::rgb_color> buffer;
     QImage slice_image;
+private:
+    Ui::reconstruction_window *ui;
+    image::geometry<3> dim;
+
     ImageModel* handle;
     float params[5];
     image::basic_image<unsigned char, 3>image;
@@ -56,6 +66,9 @@ private slots:
     void on_ODFSharpening_currentIndexChanged(int index);
     void on_Decomposition_currentIndexChanged(int index);
     void on_remove_background_clicked();
+    void on_b_table_itemSelectionChanged();
+    void on_zoom_in_clicked();
+    void on_zoom_out_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

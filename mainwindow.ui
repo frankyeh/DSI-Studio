@@ -312,6 +312,13 @@
       </widget>
      </item>
      <item>
+      <widget class="QCommandLinkButton" name="view_image">
+       <property name="text">
+        <string>View Images (NIFTI/DICOM/2dseq)</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QCommandLinkButton" name="simulateMRI">
        <property name="text">
         <string>Diffusion MRI Simulation</string>

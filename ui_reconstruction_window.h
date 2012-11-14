@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Thu Oct 25 23:39:13 2012
+** Created: Wed Nov 14 12:05:17 2012
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -29,6 +29,7 @@
 #include <QtGui/QSlider>
 #include <QtGui/QSpacerItem>
 #include <QtGui/QSpinBox>
+#include <QtGui/QTableWidget>
 #include <QtGui/QToolBox>
 #include <QtGui/QToolButton>
 #include <QtGui/QVBoxLayout>
@@ -42,6 +43,20 @@ public:
     QWidget *centralwidget;
     QVBoxLayout *verticalLayout;
     QToolBox *toolBox;
+    QWidget *source_page;
+    QHBoxLayout *source_page_layout;
+    QTableWidget *b_table;
+    QWidget *source_widget;
+    QVBoxLayout *verticalLayout_4;
+    QHBoxLayout *horizontalLayout_11;
+    QToolButton *zoom_in;
+    QToolButton *zoom_out;
+    QLabel *label_14;
+    QSlider *contrast;
+    QLabel *label_13;
+    QSlider *brightness;
+    QGraphicsView *view_source;
+    QSlider *z_pos;
     QWidget *page_3;
     QGridLayout *gridLayout_2;
     QVBoxLayout *verticalLayout_5;
@@ -124,7 +139,7 @@ public:
     {
         if (reconstruction_window->objectName().isEmpty())
             reconstruction_window->setObjectName(QString::fromUtf8("reconstruction_window"));
-        reconstruction_window->resize(550, 430);
+        reconstruction_window->resize(608, 534);
         QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         sizePolicy.setHorizontalStretch(0);
         sizePolicy.setVerticalStretch(0);
@@ -142,9 +157,98 @@ public:
         verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
         toolBox = new QToolBox(centralwidget);
         toolBox->setObjectName(QString::fromUtf8("toolBox"));
+        source_page = new QWidget();
+        source_page->setObjectName(QString::fromUtf8("source_page"));
+        source_page->setGeometry(QRect(0, 0, 608, 450));
+        source_page_layout = new QHBoxLayout(source_page);
+        source_page_layout->setObjectName(QString::fromUtf8("source_page_layout"));
+        b_table = new QTableWidget(source_page);
+        if (b_table->columnCount() < 4)
+            b_table->setColumnCount(4);
+        QTableWidgetItem *__qtablewidgetitem = new QTableWidgetItem();
+        b_table->setHorizontalHeaderItem(0, __qtablewidgetitem);
+        QTableWidgetItem *__qtablewidgetitem1 = new QTableWidgetItem();
+        b_table->setHorizontalHeaderItem(1, __qtablewidgetitem1);
+        QTableWidgetItem *__qtablewidgetitem2 = new QTableWidgetItem();
+        b_table->setHorizontalHeaderItem(2, __qtablewidgetitem2);
+        QTableWidgetItem *__qtablewidgetitem3 = new QTableWidgetItem();
+        b_table->setHorizontalHeaderItem(3, __qtablewidgetitem3);
+        b_table->setObjectName(QString::fromUtf8("b_table"));
+        b_table->setSelectionMode(QAbstractItemView::SingleSelection);
+        b_table->setSelectionBehavior(QAbstractItemView::SelectRows);
+
+        source_page_layout->addWidget(b_table);
+
+        source_widget = new QWidget(source_page);
+        source_widget->setObjectName(QString::fromUtf8("source_widget"));
+        verticalLayout_4 = new QVBoxLayout(source_widget);
+        verticalLayout_4->setSpacing(0);
+        verticalLayout_4->setContentsMargins(0, 0, 0, 0);
+        verticalLayout_4->setObjectName(QString::fromUtf8("verticalLayout_4"));
+        horizontalLayout_11 = new QHBoxLayout();
+        horizontalLayout_11->setSpacing(0);
+        horizontalLayout_11->setObjectName(QString::fromUtf8("horizontalLayout_11"));
+        zoom_in = new QToolButton(source_widget);
+        zoom_in->setObjectName(QString::fromUtf8("zoom_in"));
+        zoom_in->setMinimumSize(QSize(24, 0));
+
+        horizontalLayout_11->addWidget(zoom_in);
+
+        zoom_out = new QToolButton(source_widget);
+        zoom_out->setObjectName(QString::fromUtf8("zoom_out"));
+        zoom_out->setMinimumSize(QSize(24, 0));
+
+        horizontalLayout_11->addWidget(zoom_out);
+
+        label_14 = new QLabel(source_widget);
+        label_14->setObjectName(QString::fromUtf8("label_14"));
+
+        horizontalLayout_11->addWidget(label_14);
+
+        contrast = new QSlider(source_widget);
+        contrast->setObjectName(QString::fromUtf8("contrast"));
+        contrast->setMinimum(1);
+        contrast->setMaximum(30);
+        contrast->setOrientation(Qt::Horizontal);
+
+        horizontalLayout_11->addWidget(contrast);
+
+        label_13 = new QLabel(source_widget);
+        label_13->setObjectName(QString::fromUtf8("label_13"));
+
+        horizontalLayout_11->addWidget(label_13);
+
+        brightness = new QSlider(source_widget);
+        brightness->setObjectName(QString::fromUtf8("brightness"));
+        brightness->setMinimum(-10);
+        brightness->setMaximum(10);
+        brightness->setOrientation(Qt::Horizontal);
+
+        horizontalLayout_11->addWidget(brightness);
+
+
+        verticalLayout_4->addLayout(horizontalLayout_11);
+
+        view_source = new QGraphicsView(source_widget);
+        view_source->setObjectName(QString::fromUtf8("view_source"));
+
+        verticalLayout_4->addWidget(view_source);
+
+        z_pos = new QSlider(source_widget);
+        z_pos->setObjectName(QString::fromUtf8("z_pos"));
+        z_pos->setOrientation(Qt::Horizontal);
+
+        verticalLayout_4->addWidget(z_pos);
+
+        view_source->raise();
+        z_pos->raise();
+
+        source_page_layout->addWidget(source_widget);
+
+        toolBox->addItem(source_page, QString::fromUtf8("Source Images"));
         page_3 = new QWidget();
         page_3->setObjectName(QString::fromUtf8("page_3"));
-        page_3->setGeometry(QRect(0, 0, 534, 146));
+        page_3->setGeometry(QRect(0, 0, 608, 450));
         gridLayout_2 = new QGridLayout(page_3);
         gridLayout_2->setObjectName(QString::fromUtf8("gridLayout_2"));
         verticalLayout_5 = new QVBoxLayout();
@@ -221,7 +325,7 @@ public:
         toolBox->addItem(page_3, QString::fromUtf8("Step 1: setup brain mask"));
         page = new QWidget();
         page->setObjectName(QString::fromUtf8("page"));
-        page->setGeometry(QRect(0, 0, 533, 444));
+        page->setGeometry(QRect(0, 0, 608, 450));
         page->setMinimumSize(QSize(0, 0));
         verticalLayout_2 = new QVBoxLayout(page);
         verticalLayout_2->setObjectName(QString::fromUtf8("verticalLayout_2"));
@@ -574,8 +678,8 @@ public:
 
         retranslateUi(reconstruction_window);
 
-        toolBox->setCurrentIndex(1);
-        toolBox->layout()->setSpacing(0);
+        toolBox->setCurrentIndex(0);
+        toolBox->layout()->setSpacing(6);
         ODFDim->setCurrentIndex(3);
         ThreadCount->setCurrentIndex(3);
 
@@ -586,6 +690,19 @@ public:
     void retranslateUi(QMainWindow *reconstruction_window)
     {
         reconstruction_window->setWindowTitle(QApplication::translate("reconstruction_window", "Reconstruction", 0, QApplication::UnicodeUTF8));
+        QTableWidgetItem *___qtablewidgetitem = b_table->horizontalHeaderItem(0);
+        ___qtablewidgetitem->setText(QApplication::translate("reconstruction_window", "b value", 0, QApplication::UnicodeUTF8));
+        QTableWidgetItem *___qtablewidgetitem1 = b_table->horizontalHeaderItem(1);
+        ___qtablewidgetitem1->setText(QApplication::translate("reconstruction_window", "bx", 0, QApplication::UnicodeUTF8));
+        QTableWidgetItem *___qtablewidgetitem2 = b_table->horizontalHeaderItem(2);
+        ___qtablewidgetitem2->setText(QApplication::translate("reconstruction_window", "by", 0, QApplication::UnicodeUTF8));
+        QTableWidgetItem *___qtablewidgetitem3 = b_table->horizontalHeaderItem(3);
+        ___qtablewidgetitem3->setText(QApplication::translate("reconstruction_window", "bz", 0, QApplication::UnicodeUTF8));
+        zoom_in->setText(QApplication::translate("reconstruction_window", "+", 0, QApplication::UnicodeUTF8));
+        zoom_out->setText(QApplication::translate("reconstruction_window", "-", 0, QApplication::UnicodeUTF8));
+        label_14->setText(QApplication::translate("reconstruction_window", "Contrast", 0, QApplication::UnicodeUTF8));
+        label_13->setText(QApplication::translate("reconstruction_window", "Brightness", 0, QApplication::UnicodeUTF8));
+        toolBox->setItemText(toolBox->indexOf(source_page), QApplication::translate("reconstruction_window", "Source Images", 0, QApplication::UnicodeUTF8));
         load_mask->setText(QApplication::translate("reconstruction_window", "Open...", 0, QApplication::UnicodeUTF8));
         save_mask->setText(QApplication::translate("reconstruction_window", "Save...", 0, QApplication::UnicodeUTF8));
         thresholding->setText(QApplication::translate("reconstruction_window", "Thresholding", 0, QApplication::UnicodeUTF8));

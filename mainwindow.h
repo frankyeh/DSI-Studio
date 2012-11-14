@@ -39,6 +39,7 @@ private slots:
     void open_src_at(int,int);
     void on_batch_src_clicked();
     void on_batch_reconstruction_clicked();
+    void on_view_image_clicked();
 };
 
 #endif // MAINWINDOW_H

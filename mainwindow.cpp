@@ -16,6 +16,7 @@
 #include "ui_mainwindow.h"
 #include "simulation.h"
 #include "reconstruction/vbcdialog.h"
+#include "view_image.h"
 #include "mapping/atlas.hpp"
 #include "libs/vbc/vbc.hpp"
 
@@ -544,4 +545,24 @@ void MainWindow::on_batch_reconstruction_clicked()
         return;
 
     loadSrc(search_files(dir,"*.src.gz"));
+}
+
+void MainWindow::on_view_image_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(
+                                this,
+                                "Open Image",
+                                ui->workDir->currentText(),
+                                "image files (*.nii *.dcm 2dseq)" );
+    if(filename.isEmpty())
+        return;
+    view_image* dialog = new view_image(this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    if(!dialog->open(filename))
+    {
+        delete dialog;
+        return;
+    }
+    dialog->show();
+
 }
