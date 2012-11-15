@@ -439,6 +439,8 @@ public:
                 if (!size_buf || row*col != 3)
                     return false;
                 vs = size_buf;
+                if(vs[0]*vs[1]*vs[2] == 0.0)
+                    vs[0] = vs[1] = vs[2] = 2.0;
                 continue;
             }
             if (matrix_name == "mni")
