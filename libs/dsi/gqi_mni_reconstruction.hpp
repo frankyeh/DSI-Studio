@@ -156,6 +156,11 @@ public:
         mni.VF.swap(voxel.qa_map);
         image::filter::gaussian(mni.VF);
         image::normalize(mni.VF,1.0);
+        /*
+        image::minus_constant(mni.VF.begin(),mni.VF.end(),0.2);
+        image::lower_threshold(mni.VF.begin(),mni.VF.end(),0.0);
+        image::normalize(mni.VF,1.0);
+        */
 
         mni.VFvs[0] = voxel.voxel_size[0];
         mni.VFvs[1] = voxel.voxel_size[1];
@@ -163,6 +168,15 @@ public:
 
         mni.VG = fa_template_imp.I;
         image::normalize(mni.VG,1.0);
+
+        /*
+        image::io::nifti nii;
+        nii << mni.VF;
+        nii.save_to_file("VF.nii");
+        nii << mni.VG;
+        nii.save_to_file("VG.nii");
+        */
+
         mni.VG_trans.resize(fa_template_imp.tran.size());
         std::copy(fa_template_imp.tran.begin(),fa_template_imp.tran.end(),mni.VG_trans.begin());
         mni.VGvs[0] = fa_template_imp.tran[0];
@@ -196,7 +210,7 @@ public:
                 mni_pos[2] /= mni.VGvs[2];
                 mni_pos += mni.BOffset;
                 voxel.image_model->mask[index.index()] =
-                        mni.VG.at(mni_pos[0],mni_pos[1],mni_pos[2]) > 0.0? 1: 0;
+                        fa_template_imp.I.at(mni_pos[0],mni_pos[1],mni_pos[2]) > 0.0? 1: 0;
             }
         }
 

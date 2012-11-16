@@ -1086,12 +1086,46 @@ public:
     {
         image::transformation_matrix<dim,double> affine_buf(trans);
         image::reg::linear_get_trans(VF.geometry(),VG.geometry(),affine_buf);
+        std::vector<float> T(16);
+        affine_buf.save_to_transform(T.begin());
+        T[15] = 1.0;
+        math::matrix_inverse(T.begin(),math::dim<4,4>());
+        affine_buf.load_from_transform(T.begin());
+
+        image::basic_image<float,3> VGG(VG.geometry());
+        image::resample(VF,VGG,affine_buf);
+
+        double sum = 0.0;
+        unsigned int num = 0;
+        for(unsigned int index = 0;index < VGG.size();++index)
+            if(VG[index] == 0.0 && VGG[index] != 0.0)
+            {
+                sum += VGG[index];
+                ++num;
+            }
+        image::minus_constant(VGG.begin(),VGG.end(),sum/(double)num);
+        image::lower_threshold(VGG.begin(),VGG.end(),VGG.begin(),0.0);
+        image::normalize(VGG,1.0);
+        image::normalize(VG,1.0);
+        image::io::nifti out;
+        image::flip_xy(VGG);
+        out << VGG;
+        out.save_to_file(file_name);
+        image::flip_xy(VG);
+        out << VG;
+        out.save_to_file("t1.nii");
+        //image::basic_image<image::vector<3>,3> d;
+        //image::reg::dmdm_t(VGG,VG,d)
+        /*
+        image::transformation_matrix<dim,double> affine_buf(trans);
+        image::reg::linear_get_trans(VF.geometry(),VG.geometry(),affine_buf);
         image::basic_image<float,3> VGG(VF.geometry());
         image::resample(VG,VGG,affine_buf);
         image::normalize(VGG,1.0);
         image::io::nifti out;
         out << VGG;
         out.save_to_file(file_name);
+        */
     }
 
     void normalize(void)

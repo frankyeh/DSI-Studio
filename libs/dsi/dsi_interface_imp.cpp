@@ -28,7 +28,6 @@
 #include "image_model.hpp"
 typedef boost::mpl::vector<
     ReadDWIData,
-    ADCProfile,
     Dwi2Tensor,
     TensorEigenAnalysis
 //OutputODF
@@ -107,6 +106,7 @@ typedef boost::mpl::vector<
     DetermineFiberDirections,
     RecordQA,
     EstimateResponseFunction
+
 > gqi_estimate_response_function;
 
 typedef boost::mpl::vector<

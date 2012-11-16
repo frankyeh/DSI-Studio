@@ -17,41 +17,6 @@ public:
     }
 };
 
-struct ADCProfile: public BaseProcess
-{
-    std::vector<float> S;
-
-public:
-    virtual void init(Voxel& voxel)
-    {
-        S.resize(voxel.q_count);
-        std::fill(S.begin(),S.end(),0.0);
-    }
-    virtual void run(Voxel& voxel, VoxelData& data)
-    {
-        if (data.space.front() == 0.0)
-        {
-            std::fill(data.space.begin(),data.space.end(),(float)1.0);
-            return;
-        }
-        float logs0 = std::log(data.space.front());
-        for (unsigned int i = 1; i < data.space.size(); ++i)
-        {
-            if(data.space[i] <= 0.0)
-                data.space[i-1] = S[i];
-            else
-            {
-                float value = std::log(data.space[i]);
-                if (value < logs0)
-                    data.space[i-1] = S[i] = logs0-value;
-                else
-                    data.space[i-1] = S[i];
-            }
-        }
-    }
-};
-
-
 class Dwi2Tensor : public BaseProcess
 {
 private:
@@ -100,6 +65,14 @@ public:
 public:
     virtual void run(Voxel& voxel, VoxelData& data)
     {
+        if (data.space.front() == 0.0)
+            std::fill(data.space.begin(),data.space.end(),(float)0.0);
+        else
+        {
+            float logs0 = std::log(std::max<float>(1.0,data.space.front()));
+            for (unsigned int i = 1; i < data.space.size(); ++i)
+                data.space[i-1] = std::max<float>(0.0,logs0-std::log(std::max<float>(1.0,data.space[i])));
+        }
         //  Kt S = Kt K D
         float KtS[6];
         math::matrix_product(Kt.begin(),data.space.begin(),KtS,math::dyndim(6,b_count),math::dyndim(b_count,1));
@@ -155,8 +128,8 @@ public:
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        float tensor[9];
-        float V[9],d[3];
+        double tensor[9];
+        double V[9],d[3];
 
         unsigned int tensor_index[9] = {0,3,4,3,1,5,4,5,2};
         for (unsigned int index = 0; index < 9; ++index)
@@ -164,9 +137,12 @@ public:
 
         math::matrix_eigen_decomposition_sym(tensor,V,d,math::dim<3,3>());
         if (d[1] < 0.0)
-            d[1] = -d[1];
+        {
+            d[1] = 0.0;
+            d[2] = 0.0;
+        }
         if (d[2] < 0.0)
-            d[2] = -d[2];
+            d[2] = 0.0;
         if (d[0] < 0.0)
         {
             d[0] = 0.0;
@@ -174,7 +150,7 @@ public:
             d[2] = 0.0;
         }
         std::copy(V,V+3,fdir.begin() + data.voxel_index * 3);
-        fa[data.voxel_index] = get_fa(d[0],d[1],d[2]);
+        data.fa[0] = fa[data.voxel_index] = get_fa(d[0],d[1],d[2]);
         md[data.voxel_index] = (d[0]+d[1]+d[2])/3.0;
         d0[data.voxel_index] = d[0];
         d1[data.voxel_index] = d[1];
