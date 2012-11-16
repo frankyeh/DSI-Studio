@@ -47,14 +47,6 @@ public:
     std::auto_ptr<vbc_database> vbc;
 public:
     bool has_vbc(void) const{return vbc.get();}
-    void get_vbc_data_at(unsigned int index,
-                         unsigned int fib,
-                         std::vector<float>& data) const
-    {
-        if(vbc.get())
-            vbc->get_data_at(index,fib,data);
-    }
-
 public:
 
     void get_tract_data(const std::vector<float>& tract,

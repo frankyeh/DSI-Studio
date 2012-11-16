@@ -34,6 +34,7 @@ public:
     bool load_template(const char* templat_name);
     bool load_template(ODFModel* fib_file_);
 private:// subject information
+    std::vector<std::string> subject_names;
     unsigned int num_subjects;
     // 0: subject index 1:findex 2.s_index (fa > 0)
     std::vector<std::vector<float> > subject_qa_buffer;
@@ -41,9 +42,13 @@ private:// subject information
     std::auto_ptr<ODFModel> single_subject;
     bool sample_odf(MatFile& mat_reader,std::vector<float>& data);
 public:
-    bool load_subject_files(const std::vector<std::string>& file_names);
+    unsigned int subject_count(void)const{return num_subjects;}
+    const std::string& subject_name(unsigned int index)const{return subject_names[index];}
+    bool load_subject_files(const std::vector<std::string>& file_names,
+                            const std::vector<std::string>& names);
     void save_subject_data(const char* output_name) const;
     void get_data_at(unsigned int index,unsigned int fib,std::vector<float>& data) const;
+    void get_subject_slice(unsigned int subject_index,unsigned int z_pos,image::basic_image<float,2>& slice) const;
 public:
     bool single_subject_analysis(const char* file_name);
 };

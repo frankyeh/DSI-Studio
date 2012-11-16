@@ -79,6 +79,27 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
         ui->color_bar_view->setScene(&color_bar);
         ui->graphicsView->setCursor(Qt::CrossCursor);
         scene.statusbar = ui->statusbar;
+        if(!handle->has_vbc())
+        {
+            ui->vbc_widget->setAttribute(Qt::WA_DeleteOnClose);
+            ui->vbc_widget->close();
+            ui->menuConnectometry->setAttribute(Qt::WA_DeleteOnClose);
+            ui->menuConnectometry->close();
+        }
+        else
+        {
+            ui->vbc_view->setScene(&vbc_scene);
+            ui->subject_list->setHorizontalHeaderLabels(
+                        QStringList() << "name" << "value");
+
+            ui->subject_list->setRowCount(handle->vbc->subject_count());
+            for(unsigned int index = 0;index < handle->vbc->subject_count();++index)
+            {
+                ui->subject_list->setItem(index,0, new QTableWidgetItem(QString(handle->vbc->subject_name(index).c_str())));
+                ui->subject_list->setItem(index,1, new QTableWidgetItem(QString::number(0)));
+            }
+            ui->subject_list->selectRow(0);
+        }
     }
 
 
@@ -496,12 +517,22 @@ void tracking_window::SliderValueChanged(void)
 
     if(handle->has_vbc())
     {
+        // show image
+        if(vbc_slice_pos != ui->AxiSlider->value())
+            on_subject_list_itemSelectionChanged();
+        // show data
         std::vector<float> vbc_data;
-        handle->get_vbc_data_at(
+        handle->vbc->get_data_at(
                 image::pixel_index<3>(ui->SagSlider->value(),
                                       ui->CorSlider->value(),
                                       ui->AxiSlider->value(),
                                       handle->fib_data.dim).index(),0,vbc_data);
+        if(vbc_data.empty())
+            return;
+        for(unsigned int index = 0;index < handle->vbc->subject_count();++index)
+            ui->subject_list->item(index,1)->setText(QString::number(vbc_data[index]));
+
+        vbc_data.erase(std::remove(vbc_data.begin(),vbc_data.end(),0.0),vbc_data.end());
         if(vbc_data.empty())
             return;
         float max_y = *std::max_element(vbc_data.begin(),vbc_data.end());
@@ -1264,4 +1295,21 @@ void tracking_window::on_actionOpen_Subject_Data_triggered()
     if (filename.isEmpty())
         return;
     handle->vbc->single_subject_analysis(filename.toLocal8Bit().begin());
+}
+
+
+void tracking_window::on_subject_list_itemSelectionChanged()
+{
+    image::basic_image<float,2> slice;
+    handle->vbc->get_subject_slice(ui->subject_list->currentRow(),ui->AxiSlider->value(),slice);
+    image::normalize(slice);
+    image::color_image color_slice(slice.geometry());
+    std::copy(slice.begin(),slice.end(),color_slice.begin());
+    QImage qimage((unsigned char*)&*color_slice.begin(),color_slice.width(),color_slice.height(),QImage::Format_RGB32);
+    vbc_slice_image = qimage.scaled(color_slice.width()*scene.display_ratio,color_slice.height()*scene.display_ratio);
+    vbc_scene.clear();
+    vbc_scene.setSceneRect(0, 0, vbc_slice_image.width(),vbc_slice_image.height());
+    vbc_scene.setItemIndexMethod(QGraphicsScene::NoIndex);
+    vbc_scene.addRect(0, 0, vbc_slice_image.width(),vbc_slice_image.height(),QPen(),vbc_slice_image);
+    vbc_slice_pos = ui->AxiSlider->value();
 }

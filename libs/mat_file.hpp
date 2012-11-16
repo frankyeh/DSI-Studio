@@ -50,6 +50,11 @@ struct mat_type_info<unsigned char>
 {
     static const unsigned int type = 50;
 };
+template<>
+struct mat_type_info<char>
+{
+    static const unsigned int type = 50;
+};
 const unsigned int element_size_array[10] = {8,4,4,2,2,1,0,0,0,0};
 
 

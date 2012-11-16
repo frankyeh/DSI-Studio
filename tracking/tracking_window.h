@@ -38,7 +38,10 @@ public:
 
     // For clipboard
     unsigned int copy_target;
-
+public://vbc
+    QGraphicsScene vbc_scene;
+    QImage vbc_slice_image;
+    unsigned int vbc_slice_pos;
 public:
 
     unsigned int odf_size;
@@ -107,6 +110,7 @@ private slots:
     void on_actionSave_Report_as_triggered();
     void on_actionSave_Tracts_in_MNI_space_triggered();
     void on_actionOpen_Subject_Data_triggered();
+    void on_subject_list_itemSelectionChanged();
 };
 
 #endif // TRACKING_WINDOW_H

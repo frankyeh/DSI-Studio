@@ -44,19 +44,47 @@ bool vbc_database::load_template(ODFModel* fib_file_)
     MatFile& matfile = fib_file->fib_data.mat_reader;
     subject_qa.clear();
     subject_qa_buffer.clear();
+    unsigned int row,col;
     for(unsigned int index = 0;1;++index)
     {
         std::ostringstream out;
         out << "subject" << index;
         const float* buf = 0;
-        unsigned int row,col;
         matfile.get_matrix(out.str().c_str(),row,col,buf);
         if (!buf)
             break;
         subject_qa.push_back(buf);
     }
     num_subjects = subject_qa.size();
+    subject_names.resize(num_subjects);
+    if(!subject_qa.empty())
+    {
+        const char* str = 0;
+        matfile.get_matrix("subject_names",row,col,str);
+        if(str)
+        {
+            std::istringstream in(str);
+            for(unsigned int index = 0;in && index < subject_names.size();++index)
+                in >> subject_names[index];
+        }
+    }
+
     return !subject_qa.empty();
+}
+void vbc_database::get_subject_slice(unsigned int subject_index,
+                                     unsigned int z_pos,
+                                     image::basic_image<float,2>& slice) const
+{
+    slice.clear();
+    slice.resize(image::geometry<2>(dim.width(),dim.height()));
+    unsigned int slice_offset = z_pos*dim.plane_size();
+    for(unsigned int index = 0;index < slice.size();++index)
+    {
+        unsigned int cur_index = index + slice_offset;
+        if(fa[0][cur_index] == 0.0)
+            continue;
+        slice[index] = subject_qa[subject_index][vi2si[cur_index]];
+    }
 }
 
 void vbc_database::get_data_at(unsigned int index,unsigned int fib,std::vector<float>& data) const
@@ -66,13 +94,9 @@ void vbc_database::get_data_at(unsigned int index,unsigned int fib,std::vector<f
         return;
     unsigned int s_index = vi2si[index];
     unsigned int fib_offset = fib*si2vi.size();
-    data.reserve(num_subjects);
+    data.resize(num_subjects);
     for(unsigned int index = 0;index < num_subjects;++index)
-    {
-        float value = subject_qa[index][s_index+fib_offset];
-        if(value != 0.0)
-            data.push_back(value);
-    }
+        data[index] = subject_qa[index][s_index+fib_offset];
 }
 bool vbc_database::is_consistent(MatFile& mat_reader) const
 {
@@ -115,7 +139,21 @@ bool vbc_database::sample_odf(MatFile& mat_reader,std::vector<float>& data)
             break;
         subject_odf.setODF(index,odf,row*col);
     }
-    subject_odf.initializeODF(dim,fa,half_odf_size);
+    std::vector<const float*> cur_fa(num_fiber);
+    for(unsigned int fib = 0;fib < num_fiber;++fib)
+    {
+        std::ostringstream out;
+        out << "fa" << fib;
+        unsigned int row,col;
+        mat_reader.get_matrix(out.str().c_str(),row,col,cur_fa[fib]);
+        if (!cur_fa[fib])
+        {
+            error_msg = "Inconsistent fa number in subject fib file";
+            return false;
+        }
+
+    }
+    subject_odf.initializeODF(dim,cur_fa,half_odf_size);
     if(!subject_odf.has_odfs())
     {
         error_msg = "No ODF data in the subject file:";
@@ -149,11 +187,12 @@ bool vbc_database::sample_odf(MatFile& mat_reader,std::vector<float>& data)
     return true;
 }
 
-bool vbc_database::load_subject_files(const std::vector<std::string>& file_names)
+bool vbc_database::load_subject_files(const std::vector<std::string>& file_names,
+                                      const std::vector<std::string>& subject_names_)
 {
     if(!fib_file)
         return false;
-    unsigned int num_subjects = file_names.size();
+    num_subjects = file_names.size();
     subject_qa.clear();
     subject_qa_buffer.clear();
     subject_qa.resize(num_subjects);
@@ -181,6 +220,7 @@ bool vbc_database::load_subject_files(const std::vector<std::string>& file_names
             return false;
         }
     }
+    subject_names = subject_names_;
     return true;
 }
 void vbc_database::save_subject_data(const char* output_name) const
@@ -196,6 +236,13 @@ void vbc_database::save_subject_data(const char* output_name) const
         out << "subject" << index;
         matfile.add_matrix(out.str().c_str(),subject_qa[index],num_fiber,si2vi.size());
     }
+    std::string name_string;
+    for(unsigned int index = 0;index < num_subjects;++index)
+    {
+        name_string += subject_names[index];
+        name_string += "\n";
+    }
+    matfile.add_matrix("subject_names",name_string.c_str(),1,name_string.size());
     begin_prog("output data");
     matfile.close_file();
 }

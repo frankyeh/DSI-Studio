@@ -195,10 +195,13 @@ void VBCDialog::on_create_data_base_clicked()
     begin_prog("loading");
     if(group.empty())
         return;
-    std::vector<std::string> name_list(group.count());
+    std::vector<std::string> name_list(group.count()),tag_list(group.count());
     for (unsigned int index = 0;index < group.count();++index)
+    {
         name_list[index] = group[index].toLocal8Bit().begin();
-    if(!data->load_subject_files(name_list))
+        tag_list[index] = QFileInfo(group[index]).baseName().toLocal8Bit().begin();
+    }
+    if(!data->load_subject_files(name_list,tag_list))
     {
         QMessageBox::information(this,"error",data->error_msg.c_str(),0);
         return;

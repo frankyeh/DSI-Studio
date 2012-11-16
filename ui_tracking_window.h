@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Fri Nov 16 00:38:49 2012
+** Created: Fri Nov 16 13:28:25 2012
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -33,6 +33,8 @@
 #include <QtGui/QSpacerItem>
 #include <QtGui/QSpinBox>
 #include <QtGui/QStatusBar>
+#include <QtGui/QTabWidget>
+#include <QtGui/QTableWidget>
 #include <QtGui/QToolButton>
 #include <QtGui/QVBoxLayout>
 #include <QtGui/QWidget>
@@ -292,18 +294,28 @@ public:
     QDockWidget *vbc_widget;
     QWidget *dockWidgetContents_8;
     QVBoxLayout *verticalLayout_5;
+    QTabWidget *tabWidget;
+    QWidget *tab_5;
+    QVBoxLayout *verticalLayout_8;
     QHBoxLayout *horizontalLayout_20;
     QToolButton *vbc_open_subject;
     QLabel *label_14;
     QDoubleSpinBox *doubleSpinBox;
     QSpacerItem *horizontalSpacer_7;
+    QSpacerItem *verticalSpacer;
+    QWidget *tab_3;
+    QHBoxLayout *horizontalLayout_21;
     QCustomPlot *vbc_report;
+    QWidget *tab_4;
+    QHBoxLayout *horizontalLayout_22;
+    QGraphicsView *vbc_view;
+    QTableWidget *subject_list;
 
     void setupUi(QMainWindow *tracking_window)
     {
         if (tracking_window->objectName().isEmpty())
             tracking_window->setObjectName(QString::fromUtf8("tracking_window"));
-        tracking_window->resize(1310, 527);
+        tracking_window->resize(1310, 584);
         QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         sizePolicy.setHorizontalStretch(0);
         sizePolicy.setVerticalStretch(0);
@@ -1652,21 +1664,28 @@ public:
         verticalLayout_5->setSpacing(0);
         verticalLayout_5->setContentsMargins(0, 0, 0, 0);
         verticalLayout_5->setObjectName(QString::fromUtf8("verticalLayout_5"));
+        tabWidget = new QTabWidget(dockWidgetContents_8);
+        tabWidget->setObjectName(QString::fromUtf8("tabWidget"));
+        tab_5 = new QWidget();
+        tab_5->setObjectName(QString::fromUtf8("tab_5"));
+        verticalLayout_8 = new QVBoxLayout(tab_5);
+        verticalLayout_8->setObjectName(QString::fromUtf8("verticalLayout_8"));
         horizontalLayout_20 = new QHBoxLayout();
         horizontalLayout_20->setSpacing(0);
         horizontalLayout_20->setObjectName(QString::fromUtf8("horizontalLayout_20"));
-        vbc_open_subject = new QToolButton(dockWidgetContents_8);
+        vbc_open_subject = new QToolButton(tab_5);
         vbc_open_subject->setObjectName(QString::fromUtf8("vbc_open_subject"));
+        vbc_open_subject->setMaximumSize(QSize(23, 22));
         vbc_open_subject->setIcon(icon1);
 
         horizontalLayout_20->addWidget(vbc_open_subject);
 
-        label_14 = new QLabel(dockWidgetContents_8);
+        label_14 = new QLabel(tab_5);
         label_14->setObjectName(QString::fromUtf8("label_14"));
 
         horizontalLayout_20->addWidget(label_14);
 
-        doubleSpinBox = new QDoubleSpinBox(dockWidgetContents_8);
+        doubleSpinBox = new QDoubleSpinBox(tab_5);
         doubleSpinBox->setObjectName(QString::fromUtf8("doubleSpinBox"));
         doubleSpinBox->setMaximum(0.5);
         doubleSpinBox->setSingleStep(0.01);
@@ -1679,12 +1698,53 @@ public:
         horizontalLayout_20->addItem(horizontalSpacer_7);
 
 
-        verticalLayout_5->addLayout(horizontalLayout_20);
+        verticalLayout_8->addLayout(horizontalLayout_20);
 
-        vbc_report = new QCustomPlot(dockWidgetContents_8);
+        verticalSpacer = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+        verticalLayout_8->addItem(verticalSpacer);
+
+        tabWidget->addTab(tab_5, QString());
+        tab_3 = new QWidget();
+        tab_3->setObjectName(QString::fromUtf8("tab_3"));
+        horizontalLayout_21 = new QHBoxLayout(tab_3);
+        horizontalLayout_21->setSpacing(0);
+        horizontalLayout_21->setContentsMargins(0, 0, 0, 0);
+        horizontalLayout_21->setObjectName(QString::fromUtf8("horizontalLayout_21"));
+        vbc_report = new QCustomPlot(tab_3);
         vbc_report->setObjectName(QString::fromUtf8("vbc_report"));
 
-        verticalLayout_5->addWidget(vbc_report);
+        horizontalLayout_21->addWidget(vbc_report);
+
+        tabWidget->addTab(tab_3, QString());
+        tab_4 = new QWidget();
+        tab_4->setObjectName(QString::fromUtf8("tab_4"));
+        horizontalLayout_22 = new QHBoxLayout(tab_4);
+        horizontalLayout_22->setObjectName(QString::fromUtf8("horizontalLayout_22"));
+        vbc_view = new QGraphicsView(tab_4);
+        vbc_view->setObjectName(QString::fromUtf8("vbc_view"));
+
+        horizontalLayout_22->addWidget(vbc_view);
+
+        subject_list = new QTableWidget(tab_4);
+        if (subject_list->columnCount() < 2)
+            subject_list->setColumnCount(2);
+        QTableWidgetItem *__qtablewidgetitem = new QTableWidgetItem();
+        subject_list->setHorizontalHeaderItem(0, __qtablewidgetitem);
+        QTableWidgetItem *__qtablewidgetitem1 = new QTableWidgetItem();
+        subject_list->setHorizontalHeaderItem(1, __qtablewidgetitem1);
+        subject_list->setObjectName(QString::fromUtf8("subject_list"));
+        QSizePolicy sizePolicy10(QSizePolicy::Minimum, QSizePolicy::Expanding);
+        sizePolicy10.setHorizontalStretch(0);
+        sizePolicy10.setVerticalStretch(0);
+        sizePolicy10.setHeightForWidth(subject_list->sizePolicy().hasHeightForWidth());
+        subject_list->setSizePolicy(sizePolicy10);
+
+        horizontalLayout_22->addWidget(subject_list);
+
+        tabWidget->addTab(tab_4, QString());
+
+        verticalLayout_5->addWidget(tabWidget);
 
         vbc_widget->setWidget(dockWidgetContents_8);
         tracking_window->addDockWidget(static_cast<Qt::DockWidgetArea>(2), vbc_widget);
@@ -1807,6 +1867,7 @@ public:
 
         initial_direction->setCurrentIndex(0);
         tracking_plan->setCurrentIndex(1);
+        tabWidget->setCurrentIndex(2);
 
 
         QMetaObject::connectSlotsByName(tracking_window);
@@ -2108,6 +2169,13 @@ public:
         vbc_widget->setWindowTitle(QApplication::translate("tracking_window", "Connectometry Analysis", 0, QApplication::UnicodeUTF8));
         vbc_open_subject->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
         label_14->setText(QApplication::translate("tracking_window", "FDR:", 0, QApplication::UnicodeUTF8));
+        tabWidget->setTabText(tabWidget->indexOf(tab_5), QApplication::translate("tracking_window", "Individual Analysis", 0, QApplication::UnicodeUTF8));
+        tabWidget->setTabText(tabWidget->indexOf(tab_3), QApplication::translate("tracking_window", "Distribution ", 0, QApplication::UnicodeUTF8));
+        QTableWidgetItem *___qtablewidgetitem = subject_list->horizontalHeaderItem(0);
+        ___qtablewidgetitem->setText(QApplication::translate("tracking_window", "Subject ID", 0, QApplication::UnicodeUTF8));
+        QTableWidgetItem *___qtablewidgetitem1 = subject_list->horizontalHeaderItem(1);
+        ___qtablewidgetitem1->setText(QApplication::translate("tracking_window", "Value", 0, QApplication::UnicodeUTF8));
+        tabWidget->setTabText(tabWidget->indexOf(tab_4), QApplication::translate("tracking_window", "Subject Data", 0, QApplication::UnicodeUTF8));
     } // retranslateUi
 
 };
