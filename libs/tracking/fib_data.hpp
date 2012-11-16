@@ -34,6 +34,117 @@ struct AngStatistics
 };
 
 
+struct ODFData{
+private:
+    const float* odfs;
+    unsigned int odfs_size;
+private:
+    image::basic_image<unsigned int,3> voxel_index_map;
+    std::vector<const float*> odf_blocks;
+    std::vector<unsigned int> odf_block_size;
+    image::basic_image<unsigned char,3> odf_block_map1;
+    image::basic_image<unsigned int,3> odf_block_map2;
+    unsigned int half_odf_size;
+public:
+    ODFData(void):odfs(0){}
+    void setODFs(const float* odfs_,unsigned int odfs_size_)
+    {
+        odfs = odfs_;
+        odfs_size = odfs_size_;
+    }
+    void setODF(unsigned int store_index,const float* odf,unsigned int size)
+    {
+        if(odf_blocks.size() <= store_index)
+        {
+            odf_blocks.resize(store_index+1);
+            odf_block_size.resize(store_index+1);
+        }
+        odf_blocks[store_index] = odf;
+        odf_block_size[store_index] = size;
+    }
+    void initializeODF(const image::geometry<3>& dim,const std::vector<const float*> fa,unsigned int half_odf_size_)
+    {
+        half_odf_size = half_odf_size_;
+        // handle the odf mappings
+        if (odfs)
+        {
+            voxel_index_map.resize(dim);
+            for (unsigned int index = 0,j = 0;index < voxel_index_map.size();++index)
+            {
+                if (fa[0][index] == 0.0)
+                {
+                    unsigned int from = j*(half_odf_size);
+                    unsigned int to = from + half_odf_size;
+                    if (to > odfs_size)
+                        break;
+                    bool odf_is_zero = true;
+                    for (;from < to;++from)
+                        if (odfs[from] != 0.0)
+                        {
+                            odf_is_zero = false;
+                            break;
+                        }
+                    if (!odf_is_zero)
+                        continue;
+                }
+                ++j;
+                voxel_index_map[index] = j;
+            }
+        }
+
+        if (!odf_blocks.empty())
+        {
+            odf_block_map1.resize(dim);
+            odf_block_map2.resize(dim);
+
+            int voxel_index = 0;
+            for(int i = 0;i < odf_block_size.size();++i)
+                for(int j = 0;j < odf_block_size[i];j += half_odf_size)
+                {
+                    int k_end = j + half_odf_size;
+                    bool is_odf_zero = true;
+                    for(int k = j;k < k_end;++k)
+                        if(odf_blocks[i][k] != 0.0)
+                        {
+                            is_odf_zero = false;
+                            break;
+                        }
+                    if(!is_odf_zero)
+                        for(;voxel_index < odf_block_map1.size();++voxel_index)
+                            if(fa[0][voxel_index] != 0.0)
+                                break;
+                    if(voxel_index >= odf_block_map1.size())
+                        break;
+                    odf_block_map1[voxel_index] = i;
+                    odf_block_map2[voxel_index] = j;
+                    ++voxel_index;
+                }
+        }
+    }
+    // odf functions
+    bool has_odfs(void) const
+    {
+        return odfs != 0 || !odf_blocks.empty();
+    }
+    const float* get_odf_data(unsigned int index) const
+    {
+        if (odfs != 0)
+        {
+            if (index >= voxel_index_map.size() || voxel_index_map[index] == 0)
+                return 0;
+            return odfs+(voxel_index_map[index]-1)*half_odf_size;
+        }
+
+        if (!odf_blocks.empty())
+        {
+            if (index >= odf_block_map2.size())
+                return 0;
+            return odf_blocks[odf_block_map1[index]] + odf_block_map2[index];
+        }
+        return 0;
+    }
+};
+
 class FiberDirection
 {
 public:
@@ -42,17 +153,11 @@ public:
 
     // for image loading use
     std::vector<short> findex_buf;
-
 private:
-    const float* odfs;
-    unsigned int odfs_size;
-    image::basic_image<unsigned int,3> voxel_index_map;
-
-
-    std::vector<const float*> odf_blocks;
-    std::vector<unsigned int> odf_block_size;
-    image::basic_image<unsigned char,3> odf_block_map1;
-    image::basic_image<unsigned int,3> odf_block_map2;
+    ODFData odf;
+public:
+    bool has_odfs(void) const{return odf.has_odfs();}
+    const float* get_odf_data(unsigned int index) const{return odf.get_odf_data(index);}
 public:
     std::vector<std::string> index_name;
     std::vector<std::vector<const float*> > index_data;
@@ -86,7 +191,6 @@ public:
         unsigned int row,col;
         use_dir = false;
         fa_threshold = 0;
-        odfs = 0;
         for (unsigned int index = 0;check_prog(index,mat_reader.get_matrix_count());++index)
         {
             std::string matrix_name = mat_reader.get_matrix_name(index);
@@ -138,8 +242,9 @@ public:
 
             if (matrix_name == "odfs")
             {
+                const float* odfs;
                 mat_reader.get_matrix(index,row,col,odfs);
-                odfs_size = row*col;
+                odf.setODFs(odfs,row*col);
                 continue;
             }
 
@@ -189,11 +294,9 @@ public:
             }
             if (prefix_name == "odf")
             {
-                odf_blocks.push_back(0);
-                mat_reader.get_matrix(index,row,col,odf_blocks.back());
-                if (store_index >= odf_block_size.size())
-                    odf_block_size.resize(store_index+1);
-                odf_block_size[store_index] = row*col;
+                const float* buf;
+                mat_reader.get_matrix(index,row,col,buf);
+                odf.setODF(store_index,buf,row*col);
                 continue;
             }
 
@@ -229,61 +332,7 @@ public:
                 }
         }
 
-        // handle the odf mappings
-        if (odfs)
-        {
-            voxel_index_map.resize(dim);
-            for (unsigned int index = 0,j = 0;index < voxel_index_map.size();++index)
-            {
-                if (getFA(index,0) == 0.0)
-                {
-                    unsigned int from = j*(half_odf_size);
-                    unsigned int to = from + half_odf_size;
-                    if (to > odfs_size)
-                        break;
-                    bool odf_is_zero = true;
-                    for (;from < to;++from)
-                        if (odfs[from] != 0.0)
-                        {
-                            odf_is_zero = false;
-                            break;
-                        }
-                    if (!odf_is_zero)
-                        continue;
-                }
-                ++j;
-                voxel_index_map[index] = j;
-            }
-        }
-
-        if (!odf_blocks.empty())
-        {
-            odf_block_map1.resize(dim);
-            odf_block_map2.resize(dim);
-
-            int voxel_index = 0;
-            for(int i = 0;i < odf_block_size.size();++i)
-                for(int j = 0;j < odf_block_size[i];j += half_odf_size)
-                {
-                    int k_end = j + half_odf_size;
-                    bool is_odf_zero = true;
-                    for(int k = j;k < k_end;++k)
-                        if(odf_blocks[i][k] != 0.0)
-                        {
-                            is_odf_zero = false;
-                            break;
-                        }
-                    if(!is_odf_zero)
-                        for(;voxel_index < odf_block_map1.size();++voxel_index)
-                            if(getFA(voxel_index,0) != 0.0)
-                                break;
-                    if(voxel_index >= odf_block_map1.size())
-                        break;
-                    odf_block_map1[voxel_index] = i;
-                    odf_block_map2[voxel_index] = j;
-                    ++voxel_index;
-                }
-        }
+        odf.initializeODF(dim,fa,half_odf_size);
         return cur_odf_record;
     }
 
@@ -334,29 +383,6 @@ public:
         }
         unsigned int odf_index = findex[order][index];
         return odf_index < half_odf_size ? odf_table[odf_index + half_odf_size] : odf_table[odf_index-half_odf_size];
-    }
-
-    // odf functions
-    bool has_odfs(void) const
-    {
-        return odfs != 0 || !odf_blocks.empty();
-    }
-    const float* get_odf_data(unsigned int index) const
-    {
-        if (odfs != 0)
-        {
-            if (index >= voxel_index_map.size() || voxel_index_map[index] == 0)
-                return 0;
-            return odfs+(voxel_index_map[index]-1)*half_odf_size;
-        }
-
-        if (!odf_blocks.empty())
-        {
-            if (index >= odf_block_map2.size())
-                return 0;
-            return odf_blocks[odf_block_map1[index]] + odf_block_map2[index];
-        }
-        return 0;
     }
 
 };
