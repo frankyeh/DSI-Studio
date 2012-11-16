@@ -106,6 +106,7 @@ private slots:
     void on_actionMove_Object_triggered();
     void on_actionSave_Report_as_triggered();
     void on_actionSave_Tracts_in_MNI_space_triggered();
+    void on_actionOpen_Subject_Data_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

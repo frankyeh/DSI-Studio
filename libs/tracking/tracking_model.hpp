@@ -8,6 +8,7 @@
 #include "tracking_method.hpp"
 #include "fib_data.hpp"
 #include "libs/prog_interface_static_link.h"
+#include "libs/vbc/vbc_database.h"
 
 template<typename input_iterator,typename output_iterator>
 void gradient(input_iterator from,input_iterator to,output_iterator out)
@@ -43,6 +44,17 @@ class ODFModel : public boost::noncopyable
 {
 public:
     FibData fib_data;
+    std::auto_ptr<vbc_database> vbc;
+public:
+    bool has_vbc(void) const{return vbc.get();}
+    void get_vbc_data_at(unsigned int index,
+                         unsigned int fib,
+                         std::vector<float>& data) const
+    {
+        if(vbc.get())
+            vbc->get_data_at(index,fib,data);
+    }
+
 public:
 
     void get_tract_data(const std::vector<float>& tract,
@@ -306,7 +318,12 @@ public:
 public:
     bool load_from_file(const char* file_name)
     {
-        return fib_data.load_from_file(file_name);
+        if(!fib_data.load_from_file(file_name))
+            return false;
+        vbc.reset(new vbc_database);
+        if(!vbc->load_template(this))
+            vbc.reset(0);
+        return true;
     }
 
     void get_quantitative_title(std::vector<std::string>& titles)

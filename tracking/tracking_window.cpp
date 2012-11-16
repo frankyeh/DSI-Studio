@@ -493,6 +493,41 @@ void tracking_window::SliderValueChanged(void)
         if(glWidget->current_visible_slide == 0)
             glWidget->updateGL();
     }
+
+    if(handle->has_vbc())
+    {
+        std::vector<float> vbc_data;
+        handle->get_vbc_data_at(
+                image::pixel_index<3>(ui->SagSlider->value(),
+                                      ui->CorSlider->value(),
+                                      ui->AxiSlider->value(),
+                                      handle->fib_data.dim).index(),0,vbc_data);
+        if(vbc_data.empty())
+            return;
+        float max_y = *std::max_element(vbc_data.begin(),vbc_data.end());
+        std::vector<unsigned int> hist;
+        image::histogram(vbc_data,hist,0,max_y,20);
+        QVector<double> x(hist.size()),y(hist.size());
+        unsigned int max_hist = 0;
+        for(unsigned int j = 0;j < hist.size();++j)
+        {
+            x[j] = max_y*(float)j/(float)hist.size();
+            y[j] = hist[j];
+            max_hist = std::max<unsigned int>(max_hist,hist[j]);
+        }
+        ui->vbc_report->clearGraphs();
+        ui->vbc_report->addGraph();
+        QPen pen;
+        pen.setColor(QColor(20,20,100,200));
+        ui->vbc_report->graph(0)->setLineStyle(QCPGraph::lsLine);
+        ui->vbc_report->graph(0)->setPen(pen);
+        ui->vbc_report->graph(0)->setData(x, y);
+
+        ui->vbc_report->xAxis->setRange(0,max_y);
+        ui->vbc_report->yAxis->setRange(0,max_hist);
+        ui->vbc_report->replot();
+    }
+
 }
 void tracking_window::glSliderValueChanged(void)
 {
@@ -1215,4 +1250,18 @@ void tracking_window::on_actionSave_Tracts_in_MNI_space_triggered()
     std::vector<float> t(16);
     get_dicom_trans(t);
     tractWidget->saveTransformedTracts(&*t.begin());
+}
+
+void tracking_window::on_actionOpen_Subject_Data_triggered()
+{
+    if(!handle->has_vbc())
+        return;
+    QString filename = QFileDialog::getOpenFileName(
+                                this,
+                                "Select subject fib file for analysis",
+                                absolute_path,
+                                "Fib files (*.fib.gz *.fib);;All files (*.*)" );
+    if (filename.isEmpty())
+        return;
+    handle->vbc->single_subject_analysis(filename.toLocal8Bit().begin());
 }

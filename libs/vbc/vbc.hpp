@@ -12,8 +12,6 @@
 class ODFModel;
 class TractModel;
 
-
-
 class vbc{
 public:
     unsigned char num_fiber;

@@ -18,7 +18,7 @@
 #include "reconstruction/vbcdialog.h"
 #include "view_image.h"
 #include "mapping/atlas.hpp"
-#include "libs/vbc/vbc.hpp"
+#include "libs/vbc/vbc_database.h"
 
 std::vector<atlas> atlas_list;
 extern std::string program_base;
@@ -398,7 +398,20 @@ void MainWindow::on_RenameDICOMDir_clicked()
 
 void MainWindow::on_vbc_clicked()
 {
-    VBCDialog* new_mdi = new VBCDialog(this,ui->workDir->currentText());
+    QString filename = QFileDialog::getOpenFileName(
+                                this,
+                                "Select a template file as the skeleton",
+                                ui->workDir->currentText(),
+                            "Fib files (*.fib.gz *.fib);;All files (*.*)" );
+    if (filename.isEmpty())
+        return;
+    std::auto_ptr<vbc_database> data(new vbc_database);
+    if(!data->load_template(filename.toLocal8Bit().begin()))
+    {
+        QMessageBox::information(this,"error","Invalid template file",0);
+        return;
+    }
+    VBCDialog* new_mdi = new VBCDialog(this,filename,data.release());
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
     new_mdi->show();
 }

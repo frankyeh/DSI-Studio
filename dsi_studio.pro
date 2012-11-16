@@ -98,7 +98,8 @@ HEADERS += mainwindow.h \
     libs/mapping/fa_template.hpp \
     libs/mapping/normalization.hpp \
     plot/qcustomplot.h \
-    view_image.h
+    view_image.h \
+    libs/vbc/vbc_database.h
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
     reconstruction/reconstruction_window.ui \
@@ -159,4 +160,5 @@ SOURCES += main.cpp \
     plot/qcustomplot.cpp \
     libs/vbc/vbc.cpp \
     cmd/ana.cpp \
-    view_image.cpp
+    view_image.cpp \
+    libs/vbc/vbc_database.cpp

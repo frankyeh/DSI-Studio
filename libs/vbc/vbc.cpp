@@ -90,6 +90,7 @@ vbc::~vbc(void)
         threads->join_all();
 }
 
+
 bool vbc::load_fiber_template(const char* filename)
 {
     fib_file.reset(new ODFModel);

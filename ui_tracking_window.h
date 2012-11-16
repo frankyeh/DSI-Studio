@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Mon Nov 12 12:05:24 2012
+** Created: Fri Nov 16 00:38:49 2012
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -119,6 +119,7 @@ public:
     QAction *actionOpen_Cluster_Labels;
     QAction *actionSave_All_Tracts_As;
     QAction *actionSave_Left_Right_3D_Image;
+    QAction *actionOpen_Subject_Data;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QHBoxLayout *horizontalLayout_13;
@@ -175,6 +176,7 @@ public:
     QMenu *menu_Edit;
     QMenu *menu_View;
     QMenu *menu_Slices;
+    QMenu *menuConnectometry;
     QDockWidget *TractWidgetHolder;
     QWidget *dockWidgetContents_5;
     QVBoxLayout *tractverticalLayout;
@@ -287,6 +289,15 @@ public:
     QDoubleSpinBox *tract_color_max_value;
     QPushButton *update_rendering;
     QGraphicsView *color_bar_view;
+    QDockWidget *vbc_widget;
+    QWidget *dockWidgetContents_8;
+    QVBoxLayout *verticalLayout_5;
+    QHBoxLayout *horizontalLayout_20;
+    QToolButton *vbc_open_subject;
+    QLabel *label_14;
+    QDoubleSpinBox *doubleSpinBox;
+    QSpacerItem *horizontalSpacer_7;
+    QCustomPlot *vbc_report;
 
     void setupUi(QMainWindow *tracking_window)
     {
@@ -510,6 +521,9 @@ public:
         actionSave_Left_Right_3D_Image = new QAction(tracking_window);
         actionSave_Left_Right_3D_Image->setObjectName(QString::fromUtf8("actionSave_Left_Right_3D_Image"));
         actionSave_Left_Right_3D_Image->setIcon(icon2);
+        actionOpen_Subject_Data = new QAction(tracking_window);
+        actionOpen_Subject_Data->setObjectName(QString::fromUtf8("actionOpen_Subject_Data"));
+        actionOpen_Subject_Data->setIcon(icon1);
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -838,6 +852,8 @@ public:
         menu_View->setObjectName(QString::fromUtf8("menu_View"));
         menu_Slices = new QMenu(menuBar);
         menu_Slices->setObjectName(QString::fromUtf8("menu_Slices"));
+        menuConnectometry = new QMenu(menuBar);
+        menuConnectometry->setObjectName(QString::fromUtf8("menuConnectometry"));
         tracking_window->setMenuBar(menuBar);
         TractWidgetHolder = new QDockWidget(tracking_window);
         TractWidgetHolder->setObjectName(QString::fromUtf8("TractWidgetHolder"));
@@ -1628,12 +1644,57 @@ public:
 
         color_bar->setWidget(dockWidgetContents_7);
         tracking_window->addDockWidget(static_cast<Qt::DockWidgetArea>(2), color_bar);
+        vbc_widget = new QDockWidget(tracking_window);
+        vbc_widget->setObjectName(QString::fromUtf8("vbc_widget"));
+        dockWidgetContents_8 = new QWidget();
+        dockWidgetContents_8->setObjectName(QString::fromUtf8("dockWidgetContents_8"));
+        verticalLayout_5 = new QVBoxLayout(dockWidgetContents_8);
+        verticalLayout_5->setSpacing(0);
+        verticalLayout_5->setContentsMargins(0, 0, 0, 0);
+        verticalLayout_5->setObjectName(QString::fromUtf8("verticalLayout_5"));
+        horizontalLayout_20 = new QHBoxLayout();
+        horizontalLayout_20->setSpacing(0);
+        horizontalLayout_20->setObjectName(QString::fromUtf8("horizontalLayout_20"));
+        vbc_open_subject = new QToolButton(dockWidgetContents_8);
+        vbc_open_subject->setObjectName(QString::fromUtf8("vbc_open_subject"));
+        vbc_open_subject->setIcon(icon1);
+
+        horizontalLayout_20->addWidget(vbc_open_subject);
+
+        label_14 = new QLabel(dockWidgetContents_8);
+        label_14->setObjectName(QString::fromUtf8("label_14"));
+
+        horizontalLayout_20->addWidget(label_14);
+
+        doubleSpinBox = new QDoubleSpinBox(dockWidgetContents_8);
+        doubleSpinBox->setObjectName(QString::fromUtf8("doubleSpinBox"));
+        doubleSpinBox->setMaximum(0.5);
+        doubleSpinBox->setSingleStep(0.01);
+        doubleSpinBox->setValue(0.02);
+
+        horizontalLayout_20->addWidget(doubleSpinBox);
+
+        horizontalSpacer_7 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+        horizontalLayout_20->addItem(horizontalSpacer_7);
+
+
+        verticalLayout_5->addLayout(horizontalLayout_20);
+
+        vbc_report = new QCustomPlot(dockWidgetContents_8);
+        vbc_report->setObjectName(QString::fromUtf8("vbc_report"));
+
+        verticalLayout_5->addWidget(vbc_report);
+
+        vbc_widget->setWidget(dockWidgetContents_8);
+        tracking_window->addDockWidget(static_cast<Qt::DockWidgetArea>(2), vbc_widget);
 
         menuBar->addAction(menu_Edit->menuAction());
         menuBar->addAction(menuRegions->menuAction());
         menuBar->addAction(menuTracts->menuAction());
         menuBar->addAction(menu_Slices->menuAction());
         menuBar->addAction(menu_View->menuAction());
+        menuBar->addAction(menuConnectometry->menuAction());
         menuRegions->addAction(actionNewRegion);
         menuRegions->addAction(actionOpenRegion);
         menuRegions->addAction(actionSaveRegionAs);
@@ -1726,6 +1787,7 @@ public:
         menu_Slices->addAction(actionSave_mapping);
         menu_Slices->addAction(actionLoad_mapping);
         menu_Slices->addSeparator();
+        menuConnectometry->addAction(actionOpen_Subject_Data);
 
         retranslateUi(tracking_window);
         QObject::connect(tbNewRegion, SIGNAL(clicked()), actionNewRegion, SLOT(trigger()));
@@ -1856,6 +1918,7 @@ public:
         actionOpen_Cluster_Labels->setText(QApplication::translate("tracking_window", "Open Cluster Labels...", 0, QApplication::UnicodeUTF8));
         actionSave_All_Tracts_As->setText(QApplication::translate("tracking_window", "Save All Tracts As...", 0, QApplication::UnicodeUTF8));
         actionSave_Left_Right_3D_Image->setText(QApplication::translate("tracking_window", "Save Left/Right 3D Image...", 0, QApplication::UnicodeUTF8));
+        actionOpen_Subject_Data->setText(QApplication::translate("tracking_window", "Open Subject Data...", 0, QApplication::UnicodeUTF8));
         label_3->setText(QApplication::translate("tracking_window", "Current Slice:", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
@@ -1907,6 +1970,7 @@ public:
         menu_Edit->setTitle(QApplication::translate("tracking_window", "&Edit", 0, QApplication::UnicodeUTF8));
         menu_View->setTitle(QApplication::translate("tracking_window", "&View", 0, QApplication::UnicodeUTF8));
         menu_Slices->setTitle(QApplication::translate("tracking_window", "&Slices", 0, QApplication::UnicodeUTF8));
+        menuConnectometry->setTitle(QApplication::translate("tracking_window", "Connectometry", 0, QApplication::UnicodeUTF8));
         TractWidgetHolder->setWindowTitle(QApplication::translate("tracking_window", "Fiber Tracts", 0, QApplication::UnicodeUTF8));
         tbOpenTract->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
         tbSaveTract->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
@@ -2041,6 +2105,9 @@ public:
         color_from->setText(QString());
         color_to->setText(QString());
         update_rendering->setText(QApplication::translate("tracking_window", "Update", 0, QApplication::UnicodeUTF8));
+        vbc_widget->setWindowTitle(QApplication::translate("tracking_window", "Connectometry Analysis", 0, QApplication::UnicodeUTF8));
+        vbc_open_subject->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
+        label_14->setText(QApplication::translate("tracking_window", "FDR:", 0, QApplication::UnicodeUTF8));
     } // retranslateUi
 
 };
