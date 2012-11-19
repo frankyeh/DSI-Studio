@@ -119,6 +119,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->HalfSphere->setChecked(settings.value("rec_half_sphere",0).toInt());
     ui->NumOfFibers->setValue(settings.value("rec_num_fiber",5).toInt());
     ui->ODFDef->setCurrentIndex(settings.value("rec_gqi_def",0).toInt());
+    ui->reg_method->setCurrentIndex(settings.value("rec_reg_method",0).toInt());
 
     ui->diffusion_sampling->setValue(settings.value("rec_gqi_sampling",1.25).toDouble());
     ui->regularization_param->setValue(settings.value("rec_qbi_reg",0.006).toDouble());
@@ -234,6 +235,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     settings.setValue("rec_half_sphere",ui->HalfSphere->isChecked() ? 1 : 0);
     settings.setValue("rec_num_fiber",ui->NumOfFibers->value());
     settings.setValue("rec_gqi_def",ui->ODFDef->currentIndex());
+    settings.setValue("rec_reg_method",ui->reg_method->currentIndex());
 
 
     begin_prog("reconstructing");
@@ -249,6 +251,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.half_sphere = ui->HalfSphere->isChecked() ? 1 : 0;
     handle->voxel.max_fiber_number = ui->NumOfFibers->value();
     handle->voxel.r2_weighted = ui->ODFDef->currentIndex();
+    handle->voxel.reg_method = ui->reg_method->currentIndex();
 
     const char* msg = (const char*)reconstruction(handle, method_id, params);
     if (!QFileInfo(msg).exists())
@@ -335,7 +338,7 @@ void reconstruction_window::on_load_mask_clicked()
             this,
             "Open region",
             absolute_path,
-            "Mask files (*.txt *.nii *.hdr);;All files (*.*)" );
+            "Mask files (*.txt *.nii *.nii.gz *.hdr);;All files (*.*)" );
     if(filename.isEmpty())
         return;
     ROIRegion region(image.geometry(),image::vector<3>(get_voxel_size((ImageModel*)handle)));
@@ -352,7 +355,7 @@ void reconstruction_window::on_save_mask_clicked()
             this,
             "Save region",
             absolute_path+"/mask.txt",
-            "Text files (*.txt);;Nifti file(*.nii)" );
+            "Text files (*.txt);;Nifti file(*.nii.gz *.nii)" );
     if(filename.isEmpty())
         return;
     ROIRegion region(image.geometry(),image::vector<3>(get_voxel_size((ImageModel*)handle)));

@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Wed Nov 14 16:08:12 2012
+** Created: Mon Nov 19 13:06:46 2012
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -84,9 +84,13 @@ public:
     QRadioButton *QDif;
     QRadioButton *QSDRT;
     QGroupBox *ResolutionBox;
+    QGridLayout *gridLayout_3;
     QHBoxLayout *horizontalLayout_8;
     QLabel *label_8;
     QDoubleSpinBox *mni_resolution;
+    QHBoxLayout *horizontalLayout_10;
+    QLabel *label_15;
+    QComboBox *reg_method;
     QGroupBox *DSIOption_2;
     QHBoxLayout *DSIOption;
     QLabel *label_5;
@@ -121,25 +125,24 @@ public:
     QSpinBox *x;
     QSpinBox *y;
     QSpinBox *z;
-    QHBoxLayout *horizontalLayout_12;
-    QLabel *label;
-    QComboBox *ThreadCount;
-    QHBoxLayout *horizontalLayout_6;
-    QLabel *label_3;
-    QSpinBox *NumOfFibers;
     QHBoxLayout *horizontalLayout_9;
     QLabel *label_4;
     QComboBox *ODFSharpening;
     QDoubleSpinBox *SharpeningParam;
+    QHBoxLayout *horizontalLayout_6;
+    QLabel *label_3;
+    QSpinBox *NumOfFibers;
+    QSpacerItem *verticalSpacer;
     QHBoxLayout *horizontalLayout_7;
     QSpacerItem *horizontalSpacer;
+    QComboBox *ThreadCount;
     QCommandLinkButton *doDTI;
 
     void setupUi(QMainWindow *reconstruction_window)
     {
         if (reconstruction_window->objectName().isEmpty())
             reconstruction_window->setObjectName(QString::fromUtf8("reconstruction_window"));
-        reconstruction_window->resize(608, 534);
+        reconstruction_window->resize(608, 537);
         QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         sizePolicy.setHorizontalStretch(0);
         sizePolicy.setVerticalStretch(0);
@@ -159,7 +162,7 @@ public:
         toolBox->setObjectName(QString::fromUtf8("toolBox"));
         source_page = new QWidget();
         source_page->setObjectName(QString::fromUtf8("source_page"));
-        source_page->setGeometry(QRect(0, 0, 608, 450));
+        source_page->setGeometry(QRect(0, 0, 608, 453));
         source_page_layout = new QHBoxLayout(source_page);
         source_page_layout->setObjectName(QString::fromUtf8("source_page_layout"));
         b_table = new QTableWidget(source_page);
@@ -248,7 +251,7 @@ public:
         toolBox->addItem(source_page, QString::fromUtf8("Source Images"));
         page_3 = new QWidget();
         page_3->setObjectName(QString::fromUtf8("page_3"));
-        page_3->setGeometry(QRect(0, 0, 608, 450));
+        page_3->setGeometry(QRect(0, 0, 608, 453));
         gridLayout_2 = new QGridLayout(page_3);
         gridLayout_2->setObjectName(QString::fromUtf8("gridLayout_2"));
         verticalLayout_5 = new QVBoxLayout();
@@ -325,7 +328,7 @@ public:
         toolBox->addItem(page_3, QString::fromUtf8("Step 1: setup brain mask"));
         page = new QWidget();
         page->setObjectName(QString::fromUtf8("page"));
-        page->setGeometry(QRect(0, 0, 608, 450));
+        page->setGeometry(QRect(0, -39, 591, 492));
         page->setMinimumSize(QSize(0, 0));
         verticalLayout_2 = new QVBoxLayout(page);
         verticalLayout_2->setObjectName(QString::fromUtf8("verticalLayout_2"));
@@ -371,7 +374,9 @@ public:
 
         ResolutionBox = new QGroupBox(page);
         ResolutionBox->setObjectName(QString::fromUtf8("ResolutionBox"));
-        horizontalLayout_8 = new QHBoxLayout(ResolutionBox);
+        gridLayout_3 = new QGridLayout(ResolutionBox);
+        gridLayout_3->setObjectName(QString::fromUtf8("gridLayout_3"));
+        horizontalLayout_8 = new QHBoxLayout();
         horizontalLayout_8->setObjectName(QString::fromUtf8("horizontalLayout_8"));
         label_8 = new QLabel(ResolutionBox);
         label_8->setObjectName(QString::fromUtf8("label_8"));
@@ -387,6 +392,24 @@ public:
         mni_resolution->setValue(2);
 
         horizontalLayout_8->addWidget(mni_resolution);
+
+
+        gridLayout_3->addLayout(horizontalLayout_8, 0, 1, 1, 1);
+
+        horizontalLayout_10 = new QHBoxLayout();
+        horizontalLayout_10->setObjectName(QString::fromUtf8("horizontalLayout_10"));
+        label_15 = new QLabel(ResolutionBox);
+        label_15->setObjectName(QString::fromUtf8("label_15"));
+
+        horizontalLayout_10->addWidget(label_15);
+
+        reg_method = new QComboBox(ResolutionBox);
+        reg_method->setObjectName(QString::fromUtf8("reg_method"));
+
+        horizontalLayout_10->addWidget(reg_method);
+
+
+        gridLayout_3->addLayout(horizontalLayout_10, 0, 0, 1, 1);
 
 
         verticalLayout_2->addWidget(ResolutionBox);
@@ -586,42 +609,6 @@ public:
 
         gridLayout->addLayout(xyz, 3, 1, 1, 1);
 
-        horizontalLayout_12 = new QHBoxLayout();
-        horizontalLayout_12->setObjectName(QString::fromUtf8("horizontalLayout_12"));
-        horizontalLayout_12->setContentsMargins(-1, 0, -1, -1);
-        label = new QLabel(OptionGroupBox);
-        label->setObjectName(QString::fromUtf8("label"));
-
-        horizontalLayout_12->addWidget(label);
-
-        ThreadCount = new QComboBox(OptionGroupBox);
-        ThreadCount->setObjectName(QString::fromUtf8("ThreadCount"));
-        ThreadCount->setMaximumSize(QSize(75, 16777215));
-
-        horizontalLayout_12->addWidget(ThreadCount);
-
-
-        gridLayout->addLayout(horizontalLayout_12, 2, 0, 1, 1);
-
-        horizontalLayout_6 = new QHBoxLayout();
-        horizontalLayout_6->setObjectName(QString::fromUtf8("horizontalLayout_6"));
-        label_3 = new QLabel(OptionGroupBox);
-        label_3->setObjectName(QString::fromUtf8("label_3"));
-
-        horizontalLayout_6->addWidget(label_3);
-
-        NumOfFibers = new QSpinBox(OptionGroupBox);
-        NumOfFibers->setObjectName(QString::fromUtf8("NumOfFibers"));
-        NumOfFibers->setMaximumSize(QSize(75, 16777215));
-        NumOfFibers->setMinimum(3);
-        NumOfFibers->setMaximum(20);
-        NumOfFibers->setValue(5);
-
-        horizontalLayout_6->addWidget(NumOfFibers);
-
-
-        gridLayout->addLayout(horizontalLayout_6, 3, 0, 1, 1);
-
         horizontalLayout_9 = new QHBoxLayout();
         horizontalLayout_9->setSpacing(0);
         horizontalLayout_9->setObjectName(QString::fromUtf8("horizontalLayout_9"));
@@ -652,14 +639,43 @@ public:
 
         gridLayout->addLayout(horizontalLayout_9, 1, 1, 1, 1);
 
+        horizontalLayout_6 = new QHBoxLayout();
+        horizontalLayout_6->setObjectName(QString::fromUtf8("horizontalLayout_6"));
+        label_3 = new QLabel(OptionGroupBox);
+        label_3->setObjectName(QString::fromUtf8("label_3"));
+
+        horizontalLayout_6->addWidget(label_3);
+
+        NumOfFibers = new QSpinBox(OptionGroupBox);
+        NumOfFibers->setObjectName(QString::fromUtf8("NumOfFibers"));
+        NumOfFibers->setMaximumSize(QSize(75, 16777215));
+        NumOfFibers->setMinimum(3);
+        NumOfFibers->setMaximum(20);
+        NumOfFibers->setValue(5);
+
+        horizontalLayout_6->addWidget(NumOfFibers);
+
+
+        gridLayout->addLayout(horizontalLayout_6, 2, 0, 1, 1);
+
 
         verticalLayout_2->addWidget(OptionGroupBox);
+
+        verticalSpacer = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+        verticalLayout_2->addItem(verticalSpacer);
 
         horizontalLayout_7 = new QHBoxLayout();
         horizontalLayout_7->setObjectName(QString::fromUtf8("horizontalLayout_7"));
         horizontalSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
         horizontalLayout_7->addItem(horizontalSpacer);
+
+        ThreadCount = new QComboBox(page);
+        ThreadCount->setObjectName(QString::fromUtf8("ThreadCount"));
+        ThreadCount->setMaximumSize(QSize(75, 16777215));
+
+        horizontalLayout_7->addWidget(ThreadCount);
 
         doDTI = new QCommandLinkButton(page);
         doDTI->setObjectName(QString::fromUtf8("doDTI"));
@@ -678,7 +694,7 @@ public:
 
         retranslateUi(reconstruction_window);
 
-        toolBox->setCurrentIndex(0);
+        toolBox->setCurrentIndex(2);
         toolBox->layout()->setSpacing(6);
         ODFDim->setCurrentIndex(3);
         ThreadCount->setCurrentIndex(3);
@@ -720,7 +736,13 @@ public:
         QDif->setText(QApplication::translate("reconstruction_window", "Q-Space Diffeomorphic", 0, QApplication::UnicodeUTF8));
         QSDRT->setText(QApplication::translate("reconstruction_window", "QSDR Template", 0, QApplication::UnicodeUTF8));
         ResolutionBox->setTitle(QString());
-        label_8->setText(QApplication::translate("reconstruction_window", "Output Resolution (high resolution requires large memory space)", 0, QApplication::UnicodeUTF8));
+        label_8->setText(QApplication::translate("reconstruction_window", "Output Resolution", 0, QApplication::UnicodeUTF8));
+        label_15->setText(QApplication::translate("reconstruction_window", "Registration method", 0, QApplication::UnicodeUTF8));
+        reg_method->clear();
+        reg_method->insertItems(0, QStringList()
+         << QApplication::translate("reconstruction_window", "SPM normalization", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("reconstruction_window", "Diffeomorphic Mapping", 0, QApplication::UnicodeUTF8)
+        );
         label_5->setText(QApplication::translate("reconstruction_window", "DSI Hamming filter", 0, QApplication::UnicodeUTF8));
         label_6->setText(QApplication::translate("reconstruction_window", "QBI Regularization", 0, QApplication::UnicodeUTF8));
         label_7->setText(QApplication::translate("reconstruction_window", "GQI Diffusion sampling ratio", 0, QApplication::UnicodeUTF8));
@@ -749,7 +771,13 @@ public:
         label_12->setText(QApplication::translate("reconstruction_window", "\317\265", 0, QApplication::UnicodeUTF8));
         label_11->setText(QApplication::translate("reconstruction_window", "m", 0, QApplication::UnicodeUTF8));
         label_10->setText(QApplication::translate("reconstruction_window", "ODF (x,y,z)=", 0, QApplication::UnicodeUTF8));
-        label->setText(QApplication::translate("reconstruction_window", "Multithread reconstruction", 0, QApplication::UnicodeUTF8));
+        label_4->setText(QApplication::translate("reconstruction_window", "Deconvolution", 0, QApplication::UnicodeUTF8));
+        ODFSharpening->clear();
+        ODFSharpening->insertItems(0, QStringList()
+         << QApplication::translate("reconstruction_window", "Off", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("reconstruction_window", "On", 0, QApplication::UnicodeUTF8)
+        );
+        label_3->setText(QApplication::translate("reconstruction_window", "Number of fibers resolved", 0, QApplication::UnicodeUTF8));
         ThreadCount->clear();
         ThreadCount->insertItems(0, QStringList()
          << QApplication::translate("reconstruction_window", "Off", 0, QApplication::UnicodeUTF8)
@@ -762,13 +790,6 @@ public:
          << QApplication::translate("reconstruction_window", "8 threads", 0, QApplication::UnicodeUTF8)
          << QApplication::translate("reconstruction_window", "9 threads", 0, QApplication::UnicodeUTF8)
          << QApplication::translate("reconstruction_window", "10 threads", 0, QApplication::UnicodeUTF8)
-        );
-        label_3->setText(QApplication::translate("reconstruction_window", "Number of fibers resolved", 0, QApplication::UnicodeUTF8));
-        label_4->setText(QApplication::translate("reconstruction_window", "Deconvolution", 0, QApplication::UnicodeUTF8));
-        ODFSharpening->clear();
-        ODFSharpening->insertItems(0, QStringList()
-         << QApplication::translate("reconstruction_window", "Off", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("reconstruction_window", "On", 0, QApplication::UnicodeUTF8)
         );
         doDTI->setText(QApplication::translate("reconstruction_window", "Run reconstruction", 0, QApplication::UnicodeUTF8));
         doDTI->setDescription(QString());

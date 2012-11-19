@@ -314,6 +314,7 @@ extern "C"
             std::fill(image_model->mask.begin(),image_model->mask.end(),1.0);
             if (!image_model->reconstruct<gqi_estimate_response_function>())
                 return "reconstruction calceled";
+            out << ".reg" << (int)image_model->voxel.reg_method;
             out << (image_model->voxel.r2_weighted ? ".qsdr2.":".qsdr.");
             out << param_values[0] << "." << param_values[1] << "mm.fib";
             begin_prog("deforming");

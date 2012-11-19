@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>608</width>
-    <height>534</height>
+    <height>537</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -41,7 +41,7 @@
     <item>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <property name="tabSpacing">
        <number>6</number>
@@ -52,7 +52,7 @@
          <x>0</x>
          <y>0</y>
          <width>608</width>
-         <height>450</height>
+         <height>453</height>
         </rect>
        </property>
        <attribute name="label">
@@ -183,7 +183,6 @@
            </item>
           </layout>
           <zorder></zorder>
-          <zorder></zorder>
           <zorder>view_source</zorder>
           <zorder>z_pos</zorder>
          </widget>
@@ -196,7 +195,7 @@
          <x>0</x>
          <y>0</y>
          <width>608</width>
-         <height>450</height>
+         <height>453</height>
         </rect>
        </property>
        <attribute name="label">
@@ -303,9 +302,9 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>0</y>
-         <width>608</width>
-         <height>450</height>
+         <y>-39</y>
+         <width>591</width>
+         <height>492</height>
         </rect>
        </property>
        <property name="minimumSize">
@@ -383,35 +382,64 @@
           <property name="title">
            <string/>
           </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_8">
-           <item>
-            <widget class="QLabel" name="label_8">
-             <property name="text">
-              <string>Output Resolution (high resolution requires large memory space)</string>
-             </property>
-            </widget>
+          <layout class="QGridLayout" name="gridLayout_3">
+           <item row="0" column="1">
+            <layout class="QHBoxLayout" name="horizontalLayout_8">
+             <item>
+              <widget class="QLabel" name="label_8">
+               <property name="text">
+                <string>Output Resolution</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QDoubleSpinBox" name="mni_resolution">
+               <property name="maximumSize">
+                <size>
+                 <width>75</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="minimum">
+                <double>0.500000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>3.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.100000000000000</double>
+               </property>
+               <property name="value">
+                <double>2.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </item>
-           <item>
-            <widget class="QDoubleSpinBox" name="mni_resolution">
-             <property name="maximumSize">
-              <size>
-               <width>75</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="minimum">
-              <double>0.500000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>3.000000000000000</double>
-             </property>
-             <property name="singleStep">
-              <double>0.100000000000000</double>
-             </property>
-             <property name="value">
-              <double>2.000000000000000</double>
-             </property>
-            </widget>
+           <item row="0" column="0">
+            <layout class="QHBoxLayout" name="horizontalLayout_10">
+             <item>
+              <widget class="QLabel" name="label_15">
+               <property name="text">
+                <string>Registration method</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="reg_method">
+               <item>
+                <property name="text">
+                 <string>SPM normalization</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Diffeomorphic Mapping</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+            </layout>
            </item>
           </layout>
          </widget>
@@ -768,113 +796,6 @@
              </item>
             </layout>
            </item>
-           <item row="2" column="0">
-            <layout class="QHBoxLayout" name="horizontalLayout_12">
-             <property name="topMargin">
-              <number>0</number>
-             </property>
-             <item>
-              <widget class="QLabel" name="label">
-               <property name="text">
-                <string>Multithread reconstruction</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="ThreadCount">
-               <property name="maximumSize">
-                <size>
-                 <width>75</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="currentIndex">
-                <number>3</number>
-               </property>
-               <item>
-                <property name="text">
-                 <string>Off</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>2 threads</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>3 threads</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>4 threads</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>5 threads</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>6 threads</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>7 threads</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>8 threads</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>9 threads</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>10 threads</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="3" column="0">
-            <layout class="QHBoxLayout" name="horizontalLayout_6">
-             <item>
-              <widget class="QLabel" name="label_3">
-               <property name="text">
-                <string>Number of fibers resolved</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QSpinBox" name="NumOfFibers">
-               <property name="maximumSize">
-                <size>
-                 <width>75</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="minimum">
-                <number>3</number>
-               </property>
-               <property name="maximum">
-                <number>20</number>
-               </property>
-               <property name="value">
-                <number>5</number>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
            <item row="1" column="1">
             <layout class="QHBoxLayout" name="horizontalLayout_9">
              <property name="spacing">
@@ -949,8 +870,51 @@
              </item>
             </layout>
            </item>
+           <item row="2" column="0">
+            <layout class="QHBoxLayout" name="horizontalLayout_6">
+             <item>
+              <widget class="QLabel" name="label_3">
+               <property name="text">
+                <string>Number of fibers resolved</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="NumOfFibers">
+               <property name="maximumSize">
+                <size>
+                 <width>75</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="minimum">
+                <number>3</number>
+               </property>
+               <property name="maximum">
+                <number>20</number>
+               </property>
+               <property name="value">
+                <number>5</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
           </layout>
          </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_7">
@@ -966,6 +930,69 @@
              </size>
             </property>
            </spacer>
+          </item>
+          <item>
+           <widget class="QComboBox" name="ThreadCount">
+            <property name="maximumSize">
+             <size>
+              <width>75</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="currentIndex">
+             <number>3</number>
+            </property>
+            <item>
+             <property name="text">
+              <string>Off</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>2 threads</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>3 threads</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>4 threads</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>5 threads</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>6 threads</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>7 threads</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>8 threads</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>9 threads</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>10 threads</string>
+             </property>
+            </item>
+           </widget>
           </item>
           <item>
            <widget class="QCommandLinkButton" name="doDTI">
