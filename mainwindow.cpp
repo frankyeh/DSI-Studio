@@ -19,6 +19,7 @@
 #include "view_image.h"
 #include "mapping/atlas.hpp"
 #include "libs/vbc/vbc_database.h"
+#include "libs/gzip_interface.hpp"
 
 std::vector<atlas> atlas_list;
 extern std::string program_base;
@@ -29,13 +30,14 @@ MainWindow::MainWindow(QWidget *parent) :
 {
 
     QDir dir = QString(program_base.c_str())+ "/atlas";
-    QStringList atlas_name_list= dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
+    QStringList atlas_name_list = dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
+    atlas_name_list << dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
     for(int index = 0;index < atlas_name_list.size();++index)
     {
         atlas_list.push_back(atlas());
         if(!atlas_list.back().load_from_file((dir.absolutePath() + "/" + atlas_name_list[index]).toLocal8Bit().begin()))
             atlas_list.pop_back();
-        atlas_list.back().name = atlas_name_list[index].toLocal8Bit().begin();
+        atlas_list.back().name = QFileInfo(atlas_name_list[index]).baseName().toLocal8Bit().begin();
     }
 
     progressDialog.reset(new QProgressDialog);
@@ -212,7 +214,7 @@ void MainWindow::on_OpenDICOM_clicked()
                                 this,
                                 "Open Images files",
                                 ui->workDir->currentText(),
-                                "Image files (*.dcm *.hdr *.nii 2dseq);;All files (*.*)" );
+                                "Image files (*.dcm *.hdr *.nii *.nii.gz 2dseq);;All files (*.*)" );
     if ( filenames.isEmpty() )
         return;
     if(QFileInfo(filenames[0]).baseName() != "2dseq")
@@ -258,12 +260,13 @@ void MainWindow::on_FiberTracking_clicked()
                            this,
                            "Open Fib files",
                            ui->workDir->currentText(),
-                           "Fib files (*.fib.gz *.fib);;All files (*.*)");
+                           "Fib files (*.fib.gz *.fib *.nii.gz *.nii);;All files (*.*)");
     if (filename.isEmpty())
         return;
-    if(QFileInfo(filename).suffix() == "nii")
+    if(QFileInfo(filename).completeSuffix() == "nii" ||
+            QFileInfo(filename).completeSuffix() == "nii.gz")
     {
-        image::io::nifti header;
+        gz_nifti header;
         image::basic_image<float,3> I;
         std::vector<float> trans(16);
         trans[15] = 1.0;
@@ -566,7 +569,7 @@ void MainWindow::on_view_image_clicked()
                                 this,
                                 "Open Image",
                                 ui->workDir->currentText(),
-                                "image files (*.nii *.dcm 2dseq)" );
+                                "image files (*.nii *.nii.gz *.dcm 2dseq)" );
     if(filename.isEmpty())
         return;
     view_image* dialog = new view_image(this);

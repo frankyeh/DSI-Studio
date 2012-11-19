@@ -1564,11 +1564,17 @@ bool GLWidget::addSlices(QStringList filenames)
     image::io::volume volume;
     if(!volume.load_from_files(files,files.size()))
     {
-        QMessageBox::information(&cur_tracking_window,"DSI Studio","Cannot parse the images",0);
-        return false;
+        gz_nifti nifti;
+        if(files.size() != 1 || !nifti.load_from_file(files[0]))
+        {
+            QMessageBox::information(&cur_tracking_window,"DSI Studio","Cannot parse the images",0);
+            return false;
+        }
+        else
+            other_slices.push_back(new CustomSliceModel(nifti,cur_tracking_window.slice.center_point));
     }
-
-    other_slices.push_back(new CustomSliceModel(volume,cur_tracking_window.slice.center_point));
+    else
+        other_slices.push_back(new CustomSliceModel(volume,cur_tracking_window.slice.center_point));
 
     mi3s.push_back(new LinearMapping<image::basic_image<float,3,image::const_pointer_memory<float> >,image::rigid_scaling_transform<3> >);
     mi3s.back().from = cur_tracking_window.slice.source_images;

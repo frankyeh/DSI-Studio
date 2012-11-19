@@ -7,6 +7,7 @@
 #include "image/image.hpp"
 #include "mainwindow.h"
 #include "prog_interface_static_link.h"
+#include "libs/gzip_interface.hpp"
 
 struct compare_qstring{
     bool operator()(const QString& lhs,const QString& rhs)
@@ -85,7 +86,7 @@ bool load_dicom_multi_frame(const char* file_name,boost::ptr_vector<DwiHeader>& 
 
 bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
 {
-    image::io::nifti analyze_header;
+    gz_nifti analyze_header;
     if(!analyze_header.load_from_file(file_name))
         return false;
     {
@@ -496,7 +497,7 @@ void dicom_parser::on_loadImage_clicked()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
             this,"Open Images files",cur_path,
-            "Images (*.dcm *.hdr *.nii 2dseq);;All files (*.*)" );
+            "Images (*.dcm *.hdr *.nii *.nii.gz 2dseq);;All files (*.*)" );
     if( filenames.isEmpty() )
         return;
     load_files(filenames);

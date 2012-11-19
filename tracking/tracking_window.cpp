@@ -793,7 +793,7 @@ void tracking_window::on_actionInsert_T1_T2_triggered()
     QStringList filenames = QFileDialog::getOpenFileNames(
         this,
         "Open Images files",absolute_path,
-        "Image files (*.dcm *.hdr *.nii);;All files (*.*)" );
+        "Image files (*.dcm *.hdr *.nii *.nii.gz);;All files (*.*)" );
     if( filenames.isEmpty() || !glWidget->addSlices(filenames))
         return;
     ui->SliceModality->addItem(QFileInfo(filenames[0]).baseName());

@@ -61,8 +61,21 @@ CustomSliceModel::CustomSliceModel(const image::io::volume& volume,
                                    const image::vector<3,float>& center_point_)
 {
     center_point = center_point_;
-    volume.get_voxel_size(voxel_size.begin());
-    volume >> source_images;
+    load(volume);
+}
+// ---------------------------------------------------------------------------
+CustomSliceModel::CustomSliceModel(const gz_nifti &volume,
+                                   const image::vector<3,float>& center_point_)
+{
+    center_point = center_point_;
+    load(volume);
+    if(volume.nif_header.srow_x[0] < 0 || !volume.is_nii)
+        image::flip_y(source_images);
+    else
+        image::flip_xy(source_images);
+}
+void CustomSliceModel::init(void)
+{
     geometry = source_images.geometry();
     slice_pos[0] = geometry.width() >> 1;
     slice_pos[1] = geometry.height() >> 1;
@@ -74,6 +87,7 @@ CustomSliceModel::CustomSliceModel(const image::io::volume& volume,
         scale = 255.0/scale;
     back_thread.reset(new boost::thread(&CustomSliceModel::load_smooth_image,this));
 }
+
 // ---------------------------------------------------------------------------
 void CustomSliceModel::load_smooth_image(void)
 {

@@ -279,7 +279,7 @@ void RegionTableWidget::save_region(void)
                            this,
                            "Save region",
                            cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + ".txt",
-                           "Text files (*.txt);;Nifti file(*.nii;*.nii.gz);;Maylab file (*.mat)" );
+                           "Nifti file(*.nii.gz *.nii);;Text files (*.txt);;Maylab file (*.mat)" );
     if (filename.isEmpty())
         return;
     cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();

@@ -2,6 +2,7 @@
 #include "math/matrix_op.hpp"
 #include <fstream>
 #include <sstream>
+#include "libs/gzip_interface.hpp"
 
 
 
@@ -9,7 +10,7 @@
 bool atlas::load_from_file(const char* file_name)
 {
     {
-        image::io::nifti nii;
+        gz_nifti nii;
         if(!nii.load_from_file(file_name))
             return false;
         nii >> I;
@@ -20,7 +21,15 @@ bool atlas::load_from_file(const char* file_name)
         math::matrix_inverse(transform.begin(),math::dim<4,4>());
     }
     std::string file_name_str(file_name);
-    std::string text_file_name(file_name_str.begin(),file_name_str.end()-3);
+    std::string text_file_name;
+
+    if (file_name_str.length() > 3 &&
+            file_name_str[file_name_str.length()-3] == '.' &&
+            file_name_str[file_name_str.length()-2] == 'g' &&
+            file_name_str[file_name_str.length()-1] == 'z')
+        text_file_name = std::string(file_name_str.begin(),file_name_str.end()-6);
+    else
+        text_file_name = std::string(file_name_str.begin(),file_name_str.end()-3);
     text_file_name += "txt";
     if(image::geometry<3>(141,172,110) == I.geometry())
     {

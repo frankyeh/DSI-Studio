@@ -5,6 +5,7 @@
 #include "Regions.h"
 #include "SliceModel.h"
 #include "mat_file.hpp"
+#include "libs/gzip_interface.hpp"
 typedef class ReadMatFile MatReader;
 typedef class WriteMatFile MatWriter;
 
@@ -93,29 +94,14 @@ void ROIRegion::SaveToFile(const char* FileName,const std::vector<float>& trans)
 				mask[image::pixel_index<3>(region[index][0], region[index][1],
 				region[index][2], geo).index()] = 255;
 		}
-                std::string out_temp = program_base + "/tmp.nii";
-                image::io::nifti header;
+                gz_nifti header;
                 header.set_voxel_size(vs.begin());
                 header.set_image_transformation(trans.begin());
                 // from +x = Left  +y = Posterior +z = Superior
                 // to +x = Right  +y = Anterior +z = Superior
                 image::flip_xy(mask);
                 header << mask;
-                if(ext == std::string(".nii"))
-                {
-                    header.save_to_file(FileName);
-                    return;
-                }
-                header.save_to_file(out_temp.c_str());
-                std::vector<char> buf(1000);
-                gzFile id = gzopen(FileName,"wb");
-                std::ifstream in(out_temp.c_str(),std::ios::binary);
-                while(in)
-                {
-                    in.read(&*buf.begin(),1000);
-                    ::gzwrite(id,&*buf.begin(),in.gcount());
-                }
-                gzclose(id);
+                header.save_to_file(FileName);
 	}
 }
 
@@ -162,23 +148,9 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
         return true;
     }
 
-    if (ext == std::string("i.gz"))
+    if (ext == std::string(".nii") || ext == std::string(".hdr") || ext == std::string("i.gz"))
     {
-        gzFile id = gzopen(FileName,"rb");
-        std::vector<char> buf(1000);
-        unsigned int size = 0;
-        std::string out_temp = program_base + "/tmp.nii";
-        std::ofstream out(out_temp.c_str(),std::ios::binary);
-        while(size = gzread(id,&*buf.begin(),1000))
-            out.write(&*buf.begin(),size);
-        gzclose(id);
-        out.close();
-        return LoadFromFile(out_temp.c_str(),trans);
-    }
-
-    if (ext == std::string(".nii") || ext == std::string(".hdr"))
-    {
-        image::io::nifti header;
+        gz_nifti header;
         if (!header.load_from_file(FileName))
             return false;
         image::basic_image<short, 3>from;

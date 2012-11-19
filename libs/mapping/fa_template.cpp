@@ -1,10 +1,10 @@
 #include "image/image.hpp"
 #include "math/matrix_op.hpp"
 #include "fa_template.hpp"
-
+#include "libs/gzip_interface.hpp"
 bool fa_template::load_from_file(const char* file_name)
 {
-    image::io::nifti read;
+    gz_nifti read;
     if(read.load_from_file(file_name))
     {
         read >> I;

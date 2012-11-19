@@ -9,6 +9,8 @@
 #include "libs/tracking/tract_model.hpp"
 #include "libs/tracking/tracking_thread.hpp"
 #include "libs/tracking/tracking_model.hpp"
+#include "libs/gzip_interface.hpp"
+
 namespace po = boost::program_options;
 
 // test example
@@ -80,7 +82,7 @@ int ana(int ac, char *av[])
         tr[0] = tr[5] = tr[10] = tr[15] = 1.0;
         tract_model->get_density_map(tdi,tr,false);
 
-        image::io::nifti nii_header;
+        gz_nifti nii_header;
         image::flip_xy(tdi);
         nii_header << tdi;
         nii_header.set_voxel_size(voxel_size.begin());

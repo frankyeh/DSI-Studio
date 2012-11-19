@@ -99,7 +99,8 @@ HEADERS += mainwindow.h \
     libs/mapping/normalization.hpp \
     plot/qcustomplot.h \
     view_image.h \
-    libs/vbc/vbc_database.h
+    libs/vbc/vbc_database.h \
+    libs/gzip_interface.hpp
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
     reconstruction/reconstruction_window.ui \

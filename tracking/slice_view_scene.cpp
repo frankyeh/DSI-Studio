@@ -9,6 +9,7 @@
 #include "tracking_window.h"
 #include "ui_tracking_window.h"
 #include "region/regiontablewidget.h"
+#include "libs/gzip_interface.hpp"
 
 void slice_view_scene::show_fiber(QPainter& painter,float* dir, unsigned int x, unsigned int y)
 {
@@ -117,7 +118,7 @@ void slice_view_scene::save_slice_as()
                 "Save as",
                 cur_tracking_window.absolute_path + "/" +
                 cur_tracking_window.view_name[cur_tracking_window.ui->sliceViewBox->currentIndex()].c_str()+".nii",
-                "NIFTI files (*.nii);;MAT File (*.mat);;");
+                "NIFTI files (*.nii.gz *.nii);;MAT File (*.mat);;");
     if(filename.isEmpty())
         return;
 
@@ -126,9 +127,10 @@ void slice_view_scene::save_slice_as()
     if(index >= cur_tracking_window.handle->fib_data.view_item.size())
         return;
 
-    if(QFileInfo(filename).completeSuffix().toLower() == "nii")
+    if(QFileInfo(filename).completeSuffix().toLower() == "nii" ||
+            QFileInfo(filename).completeSuffix().toLower() == "nii.gz")
     {
-        image::io::nifti file;
+        gz_nifti file;
         file.set_voxel_size(cur_tracking_window.slice.voxel_size.begin());
         image::basic_image<float,3> I(cur_tracking_window.handle->fib_data.view_item[index].image_data);
         image::flip_xy(I);

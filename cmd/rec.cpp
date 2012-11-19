@@ -6,6 +6,7 @@
 #include "boost/program_options.hpp"
 #include "dsi_interface_static_link.h"
 #include "mapping/fa_template.hpp"
+#include "libs/gzip_interface.hpp"
 extern fa_template fa_template_imp;
 namespace po = boost::program_options;
 
@@ -31,6 +32,7 @@ int rec(int ac, char *av[])
     ("deconvolution", po::value<int>()->default_value(0), "apply deconvolution")
     ("decomposition", po::value<int>()->default_value(0), "apply decomposition")
     ("r2_weighted", po::value<int>()->default_value(0), "set the r2 weighted in GQI")
+    ("reg_method", po::value<int>()->default_value(0), "set the registration method for QSDR")
     ("param0", po::value<float>(), "set parameters")
     ("param1", po::value<float>(), "set parameters")
     ("param2", po::value<float>(), "set parameters")
@@ -116,6 +118,7 @@ int rec(int ac, char *av[])
     handle->voxel.half_sphere = vm["half_sphere"].as<int>();
     handle->voxel.max_fiber_number = vm["num_fiber"].as<int>();
     handle->voxel.r2_weighted = vm["r2_weighted"].as<int>();
+    handle->voxel.reg_method = vm["reg_method"].as<int>();
 
     {
         out << "method=" << method_index << std::endl;
@@ -140,7 +143,7 @@ int rec(int ac, char *av[])
         {
             std::string mask_file = vm["mask"].as<std::string>();
             out << "reading mask..." << mask_file << std::endl;
-            image::io::nifti header;
+            gz_nifti header;
             if(!header.load_from_file(mask_file.c_str()))
             {
                 out << "fail reading the mask...using default mask" << std::endl;

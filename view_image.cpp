@@ -1,5 +1,7 @@
 #include "view_image.h"
 #include "ui_view_image.h"
+#include "libs/gzip_interface.hpp"
+#include <QPlainTextEdit>
 
 view_image::view_image(QWidget *parent) :
     QDialog(parent),
@@ -18,10 +20,10 @@ view_image::~view_image()
 {
     delete ui;
 }
-#include <QPlainTextEdit>
+
 bool view_image::open(QString file_name)
 {
-    image::io::nifti nifti;
+    gz_nifti nifti;
     image::io::dicom dicom;
     image::io::bruker_2dseq seq;
     data.clear();

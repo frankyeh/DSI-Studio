@@ -15,6 +15,7 @@
 #include "ui_tracking_window.h"
 #include "tracking_static_link.h"
 #include "opengl/renderingtablewidget.h"
+#include "libs/gzip_interface.hpp"
 
 
 TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget *parent) :
@@ -686,7 +687,7 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
                     this,
                     "Save as",
                     cur_tracking_window.absolute_path+"/" + item(currentRow(),0)->text() + ".nii",
-                    "NIFTI files (*.nii);;MAT File (*.mat);;");
+                    "NIFTI files (*.nii.gz *.nii);;MAT File (*.mat);;");
         if(filename.isEmpty())
             return;
         cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
@@ -697,9 +698,10 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
                 continue;
             tract_models[index]->get_density_map(tdi,transformation,end_point);
         }
-        if(QFileInfo(filename).completeSuffix().toLower() == "nii")
+        if(QFileInfo(filename).completeSuffix().toLower() == "nii" ||
+                QFileInfo(filename).completeSuffix().toLower() == "nii.gz")
         {
-            image::io::nifti nii_header;
+            gz_nifti nii_header;
             image::flip_xy(tdi);
             nii_header << tdi;
             nii_header.set_voxel_size(vs.begin());

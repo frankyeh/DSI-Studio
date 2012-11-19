@@ -4,7 +4,7 @@
 #define SliceModelH
 #include <boost/thread/thread.hpp>
 #include "image/image.hpp"
-
+#include "libs/gzip_interface.hpp"
 
 //#include "coreg_interface.h"
 
@@ -125,8 +125,17 @@ class CustomSliceModel : public SliceModel{
 public:
     image::basic_image<float, 3> source_images;
     float min_value,max_value,scale;
+    template<typename loader>
+    void load(const loader& io)
+    {
+        io.get_voxel_size(voxel_size.begin());
+        io >> source_images;
+        init();
+    }
+    void init(void);
 public:
     CustomSliceModel(const image::io::volume& volume,const image::vector<3,float>& center_point_);
+    CustomSliceModel(const gz_nifti& volume,const image::vector<3,float>& center_point_);
 public:
     void get_slice(image::color_image& image,float contrast,float offset) const;
     image::basic_image<float, 3,image::const_pointer_memory<float> > get_source(void) const

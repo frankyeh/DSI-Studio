@@ -131,7 +131,7 @@ std::string program_base;
 bool load_fa_template(void)
 {
     std::string fa_template_path = program_base;
-    fa_template_path += "FMRIB58_FA_1mm.nii";
+    fa_template_path += "FMRIB58_FA_1mm.nii.gz";
     if(!fa_template_imp.load_from_file(fa_template_path.c_str()))
     {
         QMessageBox::information(0,"Error","Cannot find the fa template file",0);
