@@ -29,17 +29,17 @@ private:// template information
     std::vector<unsigned int> si2vi;
     std::vector<image::vector<3,float> > vertices;
     unsigned int half_odf_size;
+    float fiber_threshold;
     bool is_consistent(MatFile& mat_reader) const;
 public:
     bool load_template(const char* templat_name);
     bool load_template(ODFModel* fib_file_);
-private:// subject information
+private:// database information
     std::vector<std::string> subject_names;
     unsigned int num_subjects;
     // 0: subject index 1:findex 2.s_index (fa > 0)
     std::vector<std::vector<float> > subject_qa_buffer;
     std::vector<const float*> subject_qa;
-    std::auto_ptr<ODFModel> single_subject;
     bool sample_odf(MatFile& mat_reader,std::vector<float>& data);
 public:
     unsigned int subject_count(void)const{return num_subjects;}
@@ -49,7 +49,14 @@ public:
     void save_subject_data(const char* output_name) const;
     void get_data_at(unsigned int index,unsigned int fib,std::vector<float>& data) const;
     void get_subject_slice(unsigned int subject_index,unsigned int z_pos,image::basic_image<float,2>& slice) const;
+private: // single subject analysis result
+    std::auto_ptr<MatFile> single_subject;
+    std::vector<std::vector<float> > greater,lesser;
+    std::vector<std::vector<short> > greater_dir,lesser_dir;
 public:
+    std::vector<const float*> greater_ptr,lesser_ptr;
+    std::vector<const short*> greater_dir_ptr,lesser_dir_ptr;
+    void single_subject_percentile(const std::vector<float>& cur_subject_data);
     bool single_subject_analysis(const char* file_name);
 };
 

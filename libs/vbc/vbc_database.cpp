@@ -28,6 +28,8 @@ bool vbc_database::load_template(ODFModel* fib_file_)
         findex[index] = fib_file->fib_data.fib.findex[index];
         fa[index] = fib_file->fib_data.fib.fa[index];
     }
+    fiber_threshold = 0.6*image::segmentation::otsu_threshold(
+        image::basic_image<float, 3,image::const_pointer_memory<float> >(fa[0],dim));
     vi2si.resize(dim.size());
     for(unsigned int index = 0;index < dim.size();++index)
     {
@@ -153,12 +155,12 @@ bool vbc_database::sample_odf(MatFile& mat_reader,std::vector<float>& data)
         }
 
     }
-    subject_odf.initializeODF(dim,cur_fa,half_odf_size);
     if(!subject_odf.has_odfs())
     {
         error_msg = "No ODF data in the subject file:";
         return false;
     }
+    subject_odf.initializeODF(dim,cur_fa,half_odf_size);
 
     set_title("load data");
     float max_iso = 0.0;
@@ -247,45 +249,105 @@ void vbc_database::save_subject_data(const char* output_name) const
     matfile.close_file();
 }
 
+void vbc_database::single_subject_percentile(const std::vector<float>& cur_subject_data)
+{
+    for(unsigned char fib = 0;fib < num_fiber;++fib)
+    {
+        std::fill(greater[fib].begin(),greater[fib].end(),0.0);
+        std::fill(lesser[fib].begin(),lesser[fib].end(),0.0);
+        std::fill(greater_dir[fib].begin(),greater_dir[fib].end(),0);
+        std::fill(lesser_dir[fib].begin(),lesser_dir[fib].end(),0);
+    }
+    std::vector<unsigned char> greater_fib_count(dim.size()),lesser_fib_count(dim.size());
+    std::vector<float> population;
+    for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
+    {
+        unsigned int cur_index = si2vi[s_index];
+        for(unsigned int fib = 0,fib_offset = 0;
+            fib < num_fiber && fa[fib][cur_index] > fiber_threshold;
+                ++fib,fib_offset+=si2vi.size())
+        {
+            unsigned int pos = s_index + fib_offset;
+            float cur_value = cur_subject_data[pos];
+            if(cur_value == 0.0)
+                continue;
+            population.clear();
+            for(unsigned int subject_id = 0;subject_id < subject_qa.size();++subject_id)
+            {
+                float value = subject_qa[subject_id][pos];
+                if(value != 0.0)
+                    population.push_back(value);
+            }
+            unsigned int greater_rank = 0;
+            unsigned int lesser_rank = 0;
+            for(unsigned int subject_id = 0;subject_id < population.size();++subject_id)
+            {
+                if(cur_value > population[subject_id])
+                    ++greater_rank;
+                if(cur_value < population[subject_id])
+                    ++lesser_rank;
+            }
+            if(greater_rank > (population.size() >> 1)) // greater
+            {
+                unsigned char fib_count = greater_fib_count[cur_index];
+                greater[fib_count][cur_index] = (double)greater_rank/(population.size()+1);
+                greater_dir[fib_count][cur_index] = findex[fib][cur_index];
+                ++greater_fib_count[cur_index];
+            }
+            if(lesser_rank > (population.size() >> 1)) // greater
+            {
+                unsigned char fib_count = lesser_fib_count[cur_index];
+                lesser[fib_count][cur_index] = (double)lesser_rank/(population.size()+1);
+                lesser_dir[fib_count][cur_index] = findex[fib][cur_index];
+                ++lesser_fib_count[cur_index];
+            }
+        }
+    }
+}
+
 bool vbc_database::single_subject_analysis(const char* file_name)
 {
-    single_subject.reset(new ODFModel);
+    single_subject.reset(new MatFile);
     if(!single_subject->load_from_file(file_name))
     {
         error_msg = "fail to load the fib file";
         return false;
     }
-    if(!is_consistent(fib_file->fib_data.mat_reader))
+    if(!is_consistent(*single_subject.get()))
     {
         error_msg = "Inconsistent ODF dimension";
         return false;
     }
     std::vector<float> cur_subject_data(num_fiber*si2vi.size());
-    if(!sample_odf(fib_file->fib_data.mat_reader,cur_subject_data))
+    if(!sample_odf(*single_subject.get(),cur_subject_data))
     {
         error_msg += file_name;
         return false;
     }
 
-    std::vector<std::vector<float> > vbc(num_fiber);
-    for(int index = 0;index < num_fiber;++index)
+    greater.resize(num_fiber);
+    lesser.resize(num_fiber);
+    greater_dir.resize(num_fiber);
+    lesser_dir.resize(num_fiber);
+    for(unsigned char fib = 0;fib < num_fiber;++fib)
     {
-        vbc[index].resize(dim.size());
-        std::fill(vbc[index].begin(),vbc[index].end(),0.0);
+        greater[fib].resize(dim.size());
+        lesser[fib].resize(dim.size());
+        greater_dir[fib].resize(dim.size());
+        lesser_dir[fib].resize(dim.size());
     }
-    std::vector<float> population;
-    for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
+    greater_ptr.resize(num_fiber);
+    lesser_ptr.resize(num_fiber);
+    greater_dir_ptr.resize(num_fiber);
+    lesser_dir_ptr.resize(num_fiber);
+    for(unsigned char fib = 0;fib < num_fiber;++fib)
     {
-        unsigned int cur_index = si2vi[s_index];
-        for(unsigned int fib = 0,fib_offset = 0;fib < num_fiber;++fib,fib_offset+=si2vi.size())
-        {
-            population.clear();
-            for(unsigned int i = 0;i < subject_qa.size();++i)
-            {
-                float value = subject_qa[i][s_index];
-                population.push_back(value);
-            }
-        }
+        greater_ptr[fib] = &greater[fib][0];
+        lesser_ptr[fib] = &lesser[fib][0];
+        greater_dir_ptr[fib] = &greater_dir[fib][0];
+        lesser_dir_ptr[fib] = &lesser_dir[fib][0];
     }
+
+    single_subject_percentile(cur_subject_data);
     return true;
 }

@@ -105,12 +105,13 @@ bool vbc::load_fiber_template(const char* filename)
     {
         findex[index].resize(dim.size());
         fa[index].resize(dim.size());
+        /*
         std::copy(fib_file->fib_data.fib.findex[index],
                   fib_file->fib_data.fib.findex[index]+dim.size(),
                   findex[index].begin());
         std::copy(fib_file->fib_data.fib.fa[index],
                   fib_file->fib_data.fib.fa[index]+dim.size(),
-                  fa[index].begin());
+                  fa[index].begin());*/
     }
     vertices = fib_file->fib_data.fib.odf_table;
     vertices_cos.resize(vertices.size());
@@ -375,8 +376,8 @@ void vbc::set_fib(bool greater,const std::vector<std::vector<float> >& t)
 
     for(unsigned int fib = 0;fib < num_fiber;++fib)
     {
-        fib_fa[fib] = (float*)fib_file->fib_data.fib.fa[fib];
-        fib_index[fib] = (short*)fib_file->fib_data.fib.findex[fib];
+        //fib_fa[fib] = (float*)fib_file->fib_data.fib.fa[fib];
+        //fib_index[fib] = (short*)fib_file->fib_data.fib.findex[fib];
     }
 
     for(unsigned int index = 0;index < dim.size();++index)

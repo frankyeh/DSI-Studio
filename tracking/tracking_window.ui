@@ -1524,8 +1524,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>452</width>
-     <height>138</height>
+     <width>623</width>
+     <height>150</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -1711,8 +1711,11 @@
       </layout>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout">
+      <layout class="QHBoxLayout" name="length_constraint_layout">
        <property name="spacing">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
         <number>0</number>
        </property>
        <item>
