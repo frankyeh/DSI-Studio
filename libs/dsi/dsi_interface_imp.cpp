@@ -562,6 +562,7 @@ extern "C"
 
     output_odfs(mask,out_name,".mean.odf.fib",odfs,ti,vs);
     output_odfs(mask,out_name,".mean.fib",odfs,ti,vs,false);
+    return true;
 }
 
 extern "C"

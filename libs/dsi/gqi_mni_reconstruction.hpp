@@ -85,12 +85,25 @@ public:
         VF.swap(voxel.qa_map);
         src_geo = VF.geometry();
         image::filter::gaussian(VF);
+
+        // make QA like FA by truncating the high value QA
         image::normalize(VF,1.0);
         image::upper_threshold(VF.begin(),VF.end(),0.50);
         image::normalize(VF,1.0);
 
+        // get rid of the gray matters
+        image::minus_constant(VF.begin(),VF.end(),0.3);
+        image::lower_threshold(VF.begin(),VF.end(),0.00);
+        image::normalize(VF,1.0);
+
         VG = fa_template_imp.I;
         image::normalize(VG,1.0);
+
+        // get rid of the gray matters
+        image::minus_constant(VG.begin(),VG.end(),0.3);
+        image::lower_threshold(VG.begin(),VG.end(),0.00);
+        image::normalize(VG,1.0);
+
 
         VGvs[0] = std::fabs(fa_template_imp.tran[0]);
         VGvs[1] = std::fabs(fa_template_imp.tran[5]);
@@ -135,23 +148,21 @@ public:
             affine_det = math::matrix_determinant(affine.scaling_rotation,math::dim<3,3>());
 
             image::resample(VF,VFF,affine);
-            double sum = 0.0;
-            unsigned int num = 0;
-            for(unsigned int index = 0;index < VFF.size();++index)
-                if(VG[index] == 0.0 && VFF[index] != 0.0)
-                {
-                    sum += VFF[index];
-                    ++num;
-                }
-            image::minus_constant(VFF.begin(),VFF.end(),sum/(double)num);
-            image::lower_threshold(VFF.begin(),VFF.end(),VFF.begin(),0.0);
-            image::normalize(VFF,1.0);
+
+            //VFF.save_to_file<image::io::nifti<> >("VFF.nii");
+            //VG.save_to_file<image::io::nifti<> >("VG.nii");
+
         }
 
         switch(voxel.reg_method)
         {
             case 0:// spm
                 mni.normalize(VG,VFF);
+                {
+                    image::basic_image<float,3> wVFF;
+                    mni.warp_image(VFF,wVFF);
+                    //wVFF.save_to_file<image::io::nifti<> >("wVFF.nii");
+                }
             break;
             case 1:// dmdm
                 image::reg::dmdm_pair(VG,VFF,dm,0.02,terminated);
