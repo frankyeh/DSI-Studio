@@ -68,11 +68,9 @@ HEADERS += mainwindow.h \
     reconstruction/reconstruction_window.h \
     tracking/slice_view_scene.h \
     opengl/glwidget.h \
-    libs/tracking/tracking_utility.hpp \
     libs/tracking/tracking_model.hpp \
     libs/tracking/tracking_method.hpp \
     libs/tracking/tracking_info.hpp \
-    libs/tracking/stream_line.hpp \
     libs/tracking/roi.hpp \
     libs/tracking/interpolation_process.hpp \
     libs/tracking/fib_data.hpp \
@@ -89,7 +87,6 @@ HEADERS += mainwindow.h \
     libs/coreg/lddmm.hpp \
     libs/coreg/coreg_interface.h \
     libs/tracking/tracking_thread.hpp \
-    libs/mapping/mni_norm.hpp \
     libs/prog_interface_static_link.h \
     simulation.h \
     reconstruction/vbcdialog.h \
@@ -115,7 +112,6 @@ SOURCES += main.cpp \
     dicom/dicom_parser.cpp \
     dicom/dwi_header.cpp \
     libs/utility/prog_interface.cpp \
-    libs/mapping/mni_norm.cpp \
     libs/dsi/common.cpp \
     libs/dsi/sample_model.cpp \
     libs/dsi/dsi_interface_imp.cpp \

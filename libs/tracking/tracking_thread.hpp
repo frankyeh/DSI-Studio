@@ -6,11 +6,11 @@
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/random.hpp>
 #include <boost/thread/thread.hpp>
-#include "stream_line.hpp"
 #include "roi.hpp"
 #include "tracking_method.hpp"
 #include "tracking_model.hpp"
 #include "tract_model.hpp"
+
 
 struct ThreadData
 {
@@ -29,10 +29,10 @@ public:
         new_thread->param.threshold = param[3];
         new_thread->param.smooth_fraction = param[4];
 
-        new_thread->param.min_points_count3 = 3*param[5]/param[0];
+        new_thread->param.min_points_count3 = 3.0*param[5]/param[0];
         if(new_thread->param.min_points_count3 < 6)
             new_thread->param.min_points_count3 = 6;
-        new_thread->param.max_points_count3 = 3*param[6]/param[0];
+        new_thread->param.max_points_count3 = std::max<unsigned int>(6,3.0*param[6]/param[0]);
 
         new_thread->param.method_id = methods[0];
         new_thread->param.seed_id = methods[1];
@@ -195,24 +195,22 @@ public:
     void setRegions(const std::vector<image::vector<3,short> >& points,
                        unsigned type)
     {
-
-            switch(type)
-            {
-            case 0: //ROI
-                roi_mgr.add_inclusive_roi(handle->fib_data.dim,points);
-                    break;
-            case 1: //ROA
-                roi_mgr.add_exclusive_roi(handle->fib_data.dim,points);
-                    break;
-            case 2: //End
-                roi_mgr.add_end_roi(handle->fib_data.dim,points);
-                    break;
-            case 3: //seed
-                for (unsigned int index = 0;index < points.size();++index)
-                    seeds.push_back(points[index]);
+        switch(type)
+        {
+        case 0: //ROI
+            roi_mgr.add_inclusive_roi(handle->fib_data.dim,points);
                 break;
-            }
-
+        case 1: //ROA
+            roi_mgr.add_exclusive_roi(handle->fib_data.dim,points);
+                break;
+        case 2: //End
+            roi_mgr.add_end_roi(handle->fib_data.dim,points);
+                break;
+        case 3: //seed
+            for (unsigned int index = 0;index < points.size();++index)
+                seeds.push_back(points[index]);
+            break;
+        }
     }
     void add_new_method(void)
     {
@@ -230,8 +228,7 @@ public:
             break;
 
         }
-        method.push_back(new TrackingMethod(
-            new TrackingInfo(handle->fib_data,param,interpo_method.release()),roi_mgr,param));
+        method.push_back(new TrackingMethod(handle->fib_data,interpo_method.release(),roi_mgr,param));
     }
 
     void run(unsigned int thread_count_)

@@ -50,7 +50,7 @@ public:
         float max_angle_cos = 0;
         for(char i = 0;i < next_voxels_index.size();++i)
         {
-            for (char j = 0;j < info.fib_data.fib.cur_odf_record;++j)
+            for (char j = 0;j < info.fib_data.fib.num_fiber;++j)
             {
                 if (info.fib_data.fib.getFA(next_voxels_index[i],j) <= info.param.threshold)
                     break;

@@ -147,12 +147,10 @@ public:
 
 class FiberDirection
 {
+    std::vector<std::vector<short> > findex_buf;
 public:
     std::vector<const short*> findex;
-    std::vector<const float*> dir;
-
-    // for image loading use
-    std::vector<short> findex_buf;
+public:
 private:
     ODFData odf;
 public:
@@ -161,6 +159,8 @@ public:
 public:
     std::vector<std::string> index_name;
     std::vector<std::vector<const float*> > index_data;
+    std::vector<std::vector<const short*> > index_data_dir;
+
 public:
     std::vector<const float*> fa;
     float fa_threshold;
@@ -169,9 +169,8 @@ public:
     std::vector<image::vector<3,float> > odf_table;
     std::vector<image::vector<3,unsigned short> > odf_faces;
 
-    unsigned char cur_odf_record;
+    unsigned int num_fiber;
     unsigned int half_odf_size;
-    bool use_dir;
 private:
     void check_index(unsigned int index)
     {
@@ -180,8 +179,7 @@ private:
             ++index;
             fa.resize(index);
             findex.resize(index);
-            dir.resize(index);
-            cur_odf_record = index;
+            num_fiber = index;
         }
     }
 public:
@@ -189,7 +187,6 @@ public:
     bool add_data(MatFile& mat_reader)
     {
         unsigned int row,col;
-        use_dir = false;
         fa_threshold = 0;
         for (unsigned int index = 0;check_prog(index,mat_reader.get_matrix_count());++index)
         {
@@ -252,8 +249,9 @@ public:
             {
                 check_index(0);
                 mat_reader.get_matrix(index,row,col,fa[0]);
-                findex_buf.resize(row*col);
-                findex[0] = &findex_buf[0];
+                findex_buf.resize(1);
+                findex_buf[0].resize(row*col);
+                findex[0] = &(findex_buf[0][0]);
                 odf_table.resize(2);
                 half_odf_size = 1;
                 odf_faces.clear();
@@ -280,9 +278,25 @@ public:
             }
             if (prefix_name == "dir")
             {
-                use_dir = true;
+                const float* dir;
+                mat_reader.get_matrix(index,row,col,dir);
                 check_index(store_index);
-                mat_reader.get_matrix(index,row,col,dir[store_index]);
+                if(findex_buf.size() <= store_index)
+                    findex_buf.resize(store_index+1);
+                findex_buf[store_index].resize(row*col/3);
+                for(unsigned int index = 0;index < findex_buf[store_index].size();++index)
+                {
+                    image::vector<3> d(dir+index+index+index);
+                    findex_buf[store_index][index] = 0;
+                    double cos = std::fabs(d*odf_table[0]);
+                    for(unsigned int i = 0;i < half_odf_size;++i)
+                        if(d*odf_table[i] > cos)
+                        {
+                            findex_buf[store_index][index] = i;
+                            cos = d*odf_table[i];
+                        }
+                }
+                findex[store_index] = &(findex_buf[store_index][0]);
                 continue;
             }
             if (prefix_name == "odf1" || prefix_name == "odf2" || prefix_name == "odf3" ||
@@ -308,6 +322,8 @@ public:
             {
                 index_name.push_back(prefix_name);
                 index_data.push_back(std::vector<const float*>());
+                index_data_dir.push_back(std::vector<const short*>());
+
             }
 
             if(index_data[prefix_name_index].size() <= store_index)
@@ -316,16 +332,20 @@ public:
 
         }
 
+        // adding the primary fiber index
         index_name.insert(index_name.begin(),fa.size() == 1 ? "fa":"qa");
         index_data.insert(index_data.begin(),fa);
+        index_data_dir.insert(index_data_dir.begin(),findex);
 
         // check index_data integrity
         for(int index = 1;index < index_data.size();++index)
         {
+            index_data_dir[index] = findex;
             for(int j = 0;j < index_data[index].size();++j)
-                if(!index_data[index][j] || index_data[index].size() != dir.size())
+                if(!index_data[index][j] || index_data[index].size() != num_fiber)
                 {
                     index_data.erase(index_data.begin()+index);
+                    index_data_dir.erase(index_data_dir.begin()+index);
                     index_name.erase(index_name.begin()+index);
                     --index;
                     break;
@@ -333,7 +353,7 @@ public:
         }
 
         odf.initializeODF(dim,fa,half_odf_size);
-        return cur_odf_record;
+        return num_fiber;
     }
 
     void set_tracking_index(int new_index)
@@ -341,11 +361,12 @@ public:
         if(new_index >= index_data.size())
             return;
         fa = index_data[new_index];
+        findex = index_data_dir[new_index];
     }
 
     float getFA(unsigned int index,unsigned char order) const
     {
-        if(order >= cur_odf_record)
+        if(order >= num_fiber)
             return 0.0;
         return fa[order][index];
     }
@@ -356,31 +377,21 @@ public:
 
     float estimateFA(const image::vector<3,float>& pos,unsigned char order) const
     {
-        if(order >= cur_odf_record)
+        if(order >= num_fiber)
             return 0.0;
         return
             image::linear_estimate(image::basic_image<float,3,image::pointer_memory<float> >((float*)(fa[order]),dim),pos);
     }
-    image::vector<3,float> getDir(unsigned int index,unsigned char order) const
+    image::vector<3,float> getDir(unsigned int index,unsigned int order) const
     {
-        if(order >= cur_odf_record)
+        if(order >= num_fiber)
             return odf_table[0];
-        if (use_dir)
-            return image::vector<3,float>(dir[order] + index + index + index);
         return odf_table[findex[order][index]];
     }
     image::vector<3,float> getReverseDir(unsigned int index,unsigned int order) const
     {
-        if(order >= cur_odf_record)
+        if(order >= num_fiber)
             return odf_table[0];
-        if (use_dir)
-        {
-            image::vector<3,float> result(dir[order] + index + index + index);
-            result[0] = -result[0];
-            result[1] = -result[1];
-            result[2] = -result[2];
-            return result;
-        }
         unsigned int odf_index = findex[order][index];
         return odf_index < half_odf_size ? odf_table[odf_index + half_odf_size] : odf_table[odf_index-half_odf_size];
     }
@@ -589,7 +600,7 @@ public:
         float max_value = cull_cos_angle;
         unsigned char fib_order;
         unsigned char reverse;
-        for (unsigned char index = 0;index < fib.cur_odf_record;++index)
+        for (unsigned char index = 0;index < fib.num_fiber;++index)
         {
             if (fib.getFA(space_index,index) <= threshold)
                 break;

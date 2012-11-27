@@ -304,7 +304,7 @@ void RegionTableWidget::save_region_info(void)
 
     std::ofstream out(filename.toLocal8Bit().begin());
     out << "x\ty\tz";
-    for(unsigned int index = 0;index < cur_tracking_window.handle->fib_data.fib.findex.size();++index)
+    for(unsigned int index = 0;index < cur_tracking_window.handle->fib_data.fib.num_fiber;++index)
             out << "\tdx" << index << "\tdy" << index << "\tdz" << index;
 
     for(unsigned int index = 0;index < cur_tracking_window.view_name.size();++index)

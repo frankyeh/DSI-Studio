@@ -5,34 +5,34 @@
 #include "interpolation_process.hpp"
 #include "fib_data.hpp"
 
+
 struct TrackingParam
 {
 
     float threshold;
     float allowed_cos_angle;
-	
-	float cull_cos_angle;
-    
-	float step_size;
-	float step_size_in_voxel[3];
+
+    float cull_cos_angle;
+
+    float step_size;
+    float step_size_in_voxel[3];
 
     float smooth_fraction;
-    
-        unsigned int min_points_count3;
+
+    unsigned int min_points_count3;
     unsigned int max_points_count3;
 
     unsigned int method_id;
     unsigned int seed_id;
-        unsigned int interpo_id;
+    unsigned int interpo_id;
 
-        void scaling_in_voxel(image::vector<3,float>& dir) const
-	{
-		dir[0] *= step_size_in_voxel[0];
-		dir[1] *= step_size_in_voxel[1];
-		dir[2] *= step_size_in_voxel[2];
-	}
+    void scaling_in_voxel(image::vector<3,float>& dir) const
+    {
+        dir[0] *= step_size_in_voxel[0];
+        dir[1] *= step_size_in_voxel[1];
+        dir[2] *= step_size_in_voxel[2];
+    }
 };
-
 
 struct TrackingInfo{
 private:
@@ -45,14 +45,12 @@ public:
 	const FibData& fib_data;
 	const TrackingParam& param;
 public:// Parameters
-        image::vector<3,float> position;
+    image::vector<3,float> position;
     image::vector<3,float> dir;
     image::vector<3,float> next_dir;
 	bool terminated;
 	bool forward;
 	bool failed;
-	float dummy1;
-	float dummy2;
 public:
 	TrackingInfo(const FibData& fib_data_,const TrackingParam& param_,
 				   basic_interpolation* interpolation_):

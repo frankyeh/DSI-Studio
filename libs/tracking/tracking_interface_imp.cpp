@@ -28,7 +28,7 @@ extern "C"
     image::pixel_index<3> pos(x,y,z,odf_model->fib_data.dim);
     if (pos.index() >= odf_model->fib_data.total_size || fib_data.fib.getFA(pos.index(),0) == 0.0)
         return false;
-    unsigned char limit = std::min((unsigned char)3,fib_data.fib.cur_odf_record);
+    unsigned int limit = std::min<unsigned int>(3,fib_data.fib.num_fiber);
     for (unsigned int index = 0;index < limit;++index)
     {
         fa[index] = fib_data.fib.getFA(pos.index(),index);

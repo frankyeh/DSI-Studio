@@ -4,7 +4,6 @@
 #include <boost/noncopyable.hpp>
 #include "image/image.hpp"
 #include "roi.hpp"
-#include "stream_line.hpp"
 #include "tracking_method.hpp"
 #include "fib_data.hpp"
 #include "libs/prog_interface_static_link.h"
@@ -290,12 +289,12 @@ public:
         unsigned int index = (z*fib_data.dim[1]+y)*fib_data.dim[0] + x;
         if (index >= fib_data.total_size)
             return;
-        for(unsigned int i = 0;i < fib_data.fib.findex.size();++i)
+        for(unsigned int fib = 0;fib < fib_data.fib.num_fiber;++fib)
         {
-            short dir_index = fib_data.fib.findex[i][index];
-            buf.push_back(fib_data.fib.odf_table[dir_index][0]);
-            buf.push_back(fib_data.fib.odf_table[dir_index][1]);
-            buf.push_back(fib_data.fib.odf_table[dir_index][2]);
+            image::vector<3,float> dir = fib_data.fib.getDir(index,fib);
+            buf.push_back(dir[0]);
+            buf.push_back(dir[1]);
+            buf.push_back(dir[2]);
         }
     }
     void get_voxel_information(unsigned int x,unsigned int y,unsigned int z,std::vector<float>& buf) const
