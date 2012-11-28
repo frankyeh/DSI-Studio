@@ -531,7 +531,7 @@ void mrqcof(const image_type& VG,
 
 
 
-template<typename image_type>
+template<typename image_type,int nx = 7,int ny = 9,int nz = 7>
 class normalization{
     static const int dim = image_type::dimension;
 public:
@@ -546,64 +546,64 @@ public:
     template<typename from_type,typename matrix_type>
     void get_jacobian(const from_type& from,matrix_type Jbet)
     {
-        double bx[7],by[9],bz[7];
-        double dbx[7],dby[9],dbz[7];
-        for(unsigned int k = 0,index = from[0];k < 7;++k,index += VGgeo[0])
+        double bx[nx],by[ny],bz[nz];
+        double dbx[nx],dby[ny],dbz[nz];
+        for(unsigned int k = 0,index = from[0];k < nx;++k,index += VGgeo[0])
         {
             bx[k] = bas[0][index];
             dbx[k] = dbas[0][index];
         }
-        for(unsigned int k = 0,index = from[1];k < 9;++k,index += VGgeo[1])
+        for(unsigned int k = 0,index = from[1];k < ny;++k,index += VGgeo[1])
         {
             by[k] = bas[1][index];
             dby[k] = dbas[1][index];
         }
-        for(unsigned int k = 0,index = from[2];k < 7;++k,index += VGgeo[2])
+        for(unsigned int k = 0,index = from[2];k < nz;++k,index += VGgeo[2])
         {
             bz[k] = bas[2][index];
             dbz[k] = dbas[2][index];
         }
-        double temp[63];
-        double temp2[7];
+        double temp[ny*nz];
+        double temp2[nz];
 
         // f(x)/dx
-        math::matrix_product(T.begin(),dbx,temp,math::dim<63,7>(),math::dim<7,1>());
-        math::matrix_product(temp,by,temp2,math::dim<7,9>(),math::dim<9,1>());
-        Jbet[0] = 1 + math::vector_op_dot(bz,bz+7,temp2);
+        math::matrix_product(T.begin(),dbx,temp,math::dim<ny*nz,nx>(),math::dim<nx,1>());
+        math::matrix_product(temp,by,temp2,math::dim<nz,ny>(),math::dim<ny,1>());
+        Jbet[0] = 1 + math::vector_op_dot(bz,bz+nz,temp2);
         // f(x)/dy
-        math::matrix_product(T.begin(),bx,temp,math::dim<63,7>(),math::dim<7,1>());
-        math::matrix_product(temp,dby,temp2,math::dim<7,9>(),math::dim<9,1>());
-        Jbet[1] = math::vector_op_dot(bz,bz+7,temp2);
+        math::matrix_product(T.begin(),bx,temp,math::dim<ny*nz,nx>(),math::dim<nx,1>());
+        math::matrix_product(temp,dby,temp2,math::dim<nz,ny>(),math::dim<ny,1>());
+        Jbet[1] = math::vector_op_dot(bz,bz+nz,temp2);
         // f(x)/dz
-        math::matrix_product(T.begin(),bx,temp,math::dim<63,7>(),math::dim<7,1>());
-        math::matrix_product(temp,by,temp2,math::dim<7,9>(),math::dim<9,1>());
-        Jbet[2] = math::vector_op_dot(dbz,dbz+7,temp2);
+        math::matrix_product(T.begin(),bx,temp,math::dim<ny*nz,nx>(),math::dim<nx,1>());
+        math::matrix_product(temp,by,temp2,math::dim<nz,ny>(),math::dim<ny,1>());
+        Jbet[2] = math::vector_op_dot(dbz,dbz+nz,temp2);
 
         // f(y)/dx
-        math::matrix_product(T.begin()+7*9*7,dbx,temp,math::dim<63,7>(),math::dim<7,1>());
-        math::matrix_product(temp,by,temp2,math::dim<7,9>(),math::dim<9,1>());
-        Jbet[3] = math::vector_op_dot(bz,bz+7,temp2);
+        math::matrix_product(T.begin()+nx*ny*nz,dbx,temp,math::dim<ny*nz,nx>(),math::dim<nx,1>());
+        math::matrix_product(temp,by,temp2,math::dim<nz,ny>(),math::dim<ny,1>());
+        Jbet[3] = math::vector_op_dot(bz,bz+nz,temp2);
         // f(y)/dy
-        math::matrix_product(T.begin()+7*9*7,bx,temp,math::dim<63,7>(),math::dim<7,1>());
-        math::matrix_product(temp,dby,temp2,math::dim<7,9>(),math::dim<9,1>());
-        Jbet[4] = 1 + math::vector_op_dot(bz,bz+7,temp2);
+        math::matrix_product(T.begin()+nx*ny*nz,bx,temp,math::dim<ny*nz,nx>(),math::dim<nx,1>());
+        math::matrix_product(temp,dby,temp2,math::dim<nz,ny>(),math::dim<ny,1>());
+        Jbet[4] = 1 + math::vector_op_dot(bz,bz+nz,temp2);
         // f(y)/dz
-        math::matrix_product(T.begin()+7*9*7,bx,temp,math::dim<63,7>(),math::dim<7,1>());
-        math::matrix_product(temp,by,temp2,math::dim<7,9>(),math::dim<9,1>());
-        Jbet[5] = math::vector_op_dot(dbz,dbz+7,temp2);
+        math::matrix_product(T.begin()+nx*ny*nz,bx,temp,math::dim<ny*nz,nx>(),math::dim<nx,1>());
+        math::matrix_product(temp,by,temp2,math::dim<nz,ny>(),math::dim<ny,1>());
+        Jbet[5] = math::vector_op_dot(dbz,dbz+nz,temp2);
 
         // f(z)/dx
-        math::matrix_product(T.begin()+7*9*7*2,dbx,temp,math::dim<63,7>(),math::dim<7,1>());
-        math::matrix_product(temp,by,temp2,math::dim<7,9>(),math::dim<9,1>());
-        Jbet[6] = math::vector_op_dot(bz,bz+7,temp2);
+        math::matrix_product(T.begin()+nx*ny*nz*2,dbx,temp,math::dim<ny*nz,nx>(),math::dim<nx,1>());
+        math::matrix_product(temp,by,temp2,math::dim<nz,ny>(),math::dim<ny,1>());
+        Jbet[6] = math::vector_op_dot(bz,bz+nz,temp2);
         // f(z)/dy
-        math::matrix_product(T.begin()+7*9*7*2,bx,temp,math::dim<63,7>(),math::dim<7,1>());
-        math::matrix_product(temp,dby,temp2,math::dim<7,9>(),math::dim<9,1>());
-        Jbet[7] = math::vector_op_dot(bz,bz+7,temp2);
+        math::matrix_product(T.begin()+nx*ny*nz*2,bx,temp,math::dim<ny*nz,nx>(),math::dim<nx,1>());
+        math::matrix_product(temp,dby,temp2,math::dim<nz,ny>(),math::dim<ny,1>());
+        Jbet[7] = math::vector_op_dot(bz,bz+nz,temp2);
         // f(z)/dz
-        math::matrix_product(T.begin()+7*9*7*2,bx,temp,math::dim<63,7>(),math::dim<7,1>());
-        math::matrix_product(temp,by,temp2,math::dim<7,9>(),math::dim<9,1>());
-        Jbet[8] = 1 + math::vector_op_dot(dbz,dbz+7,temp2);
+        math::matrix_product(T.begin()+nx*ny*nz*2,bx,temp,math::dim<ny*nz,nx>(),math::dim<nx,1>());
+        math::matrix_product(temp,by,temp2,math::dim<nz,ny>(),math::dim<ny,1>());
+        Jbet[8] = 1 + math::vector_op_dot(dbz,dbz+nz,temp2);
 
         //math::matrix_product(affine_rotation,Jbet,M,math::dim<3,3>(),math::dim<3,3>());
     }
@@ -614,28 +614,28 @@ public:
         if(!VGgeo.is_valid(from))
             return false;
 
-        double bx[7],by[9],bz[7];
-        for(unsigned int k = 0,index = from[0];k < 7;++k,index += VGgeo[0])
+        double bx[nx],by[ny],bz[nz];
+        for(unsigned int k = 0,index = from[0];k < nx;++k,index += VGgeo[0])
             bx[k] = bas[0][index];
-        for(unsigned int k = 0,index = from[1];k < 9;++k,index += VGgeo[1])
+        for(unsigned int k = 0,index = from[1];k < ny;++k,index += VGgeo[1])
             by[k] = bas[1][index];
-        for(unsigned int k = 0,index = from[2];k < 7;++k,index += VGgeo[2])
+        for(unsigned int k = 0,index = from[2];k < nz;++k,index += VGgeo[2])
             bz[k] = bas[2][index];
 
-        double temp[63];
-        double temp2[7];
+        double temp[ny*nz];
+        double temp2[nz];
 
-        math::matrix_product(T.begin(),bx,temp,math::dim<63,7>(),math::dim<7,1>());
-        math::matrix_product(temp,by,temp2,math::dim<7,9>(),math::dim<9,1>());
-        to[0] += math::vector_op_dot(bz,bz+7,temp2);
+        math::matrix_product(T.begin(),bx,temp,math::dim<ny*nz,nx>(),math::dim<nx,1>());
+        math::matrix_product(temp,by,temp2,math::dim<nz,ny>(),math::dim<ny,1>());
+        to[0] += math::vector_op_dot(bz,bz+nz,temp2);
 
-        math::matrix_product(T.begin()+7*9*7,bx,temp,math::dim<63,7>(),math::dim<7,1>());
-        math::matrix_product(temp,by,temp2,math::dim<7,9>(),math::dim<9,1>());
-        to[1] += math::vector_op_dot(bz,bz+7,temp2);
+        math::matrix_product(T.begin()+nx*ny*nz,bx,temp,math::dim<ny*nz,nx>(),math::dim<nx,1>());
+        math::matrix_product(temp,by,temp2,math::dim<nz,ny>(),math::dim<ny,1>());
+        to[1] += math::vector_op_dot(bz,bz+nz,temp2);
 
-        math::matrix_product(T.begin()+7*9*7*2,bx,temp,math::dim<63,7>(),math::dim<7,1>());
-        math::matrix_product(temp,by,temp2,math::dim<7,9>(),math::dim<9,1>());
-        to[2] += math::vector_op_dot(bz,bz+7,temp2);
+        math::matrix_product(T.begin()+nx*ny*nz*2,bx,temp,math::dim<ny*nz,nx>(),math::dim<nx,1>());
+        math::matrix_product(temp,by,temp2,math::dim<nz,ny>(),math::dim<ny,1>());
+        to[2] += math::vector_op_dot(bz,bz+nz,temp2);
         return true;
     }
 
@@ -660,7 +660,10 @@ public:
         VGgeo = VG.geometry();
 
         std::vector<std::vector<double> > kxyz(3);
-        int k[3] = {7,9,7};
+        int k[3];
+        k[0] = nx;
+        k[1] = ny;
+        k[2] = nz;
 
         //void initialize_basis_function(double stabilise) // bounding offset
         {
@@ -744,13 +747,12 @@ public:
 
             // solve T = (Alpha + IC0*scal)\(Alpha*T + Beta);
             {
-                std::vector<int> piv(T.size());
-                math::matrix_lu_decomposition(&*alpha.begin(),&*piv.begin(),math::dyndim(s2,s2));
-                math::matrix_lu_solve(&*alpha.begin(),&*piv.begin(),&*beta.begin(),&*T.begin(),math::dyndim(s2,s2));
-
+                std::vector<double> piv(T.size());
+                math::matrix_ll_decomposition(&*alpha.begin(),&*piv.begin(),math::dyndim(s2,s2));
+                math::matrix_ll_solve(&*alpha.begin(),&*piv.begin(),&*beta.begin(),&*T.begin(),math::dyndim(s2,s2));
             }
             fwhm[1] = std::min(fw,fwhm[1]);
-            std::cout << " FWHM = " << fw << " Var = " << var <<std::endl;
+            std::cout << "FWHM = " << fw << " Var = " << var <<std::endl;
 
         }
     }
