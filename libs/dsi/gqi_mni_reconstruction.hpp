@@ -13,7 +13,7 @@ class GQI_MNI  : public BaseProcess
 {
 public:
 protected:
-    normalization<image::basic_image<float,3> > mni;
+    normalization<image::basic_image<float,3>,7,9,7> mni;
     image::geometry<3> src_geo;
     image::geometry<3> des_geo;
     double max_accumulated_qa;
@@ -29,6 +29,7 @@ protected:
 protected:
     image::basic_image<float,3> VG,VF;
     double VGvs[3];
+    double R2;
 protected:
     image::vector<3,int> bounding_box_lower;
     image::vector<3,int> bounding_box_upper;
@@ -153,21 +154,43 @@ public:
             //VG.save_to_file<image::io::nifti<> >("VG.nii");
 
         }
-
-        switch(voxel.reg_method)
+        voxel.reg_method = 0;
         {
-            case 0:// spm
-                mni.normalize(VG,VFF);
+            switch(voxel.reg_method)
+            {
+                case 0:// spm
+                    mni.normalize(VG,VFF);
+                break;
+                case 1:// dmdm
+                    image::reg::dmdm_pair(VG,VFF,dm,0.02,terminated);
+                break;
+            }
+
+
+
+            std::vector<float> x,y;
+            x.reserve(VG.size());
+            y.reserve(VG.size());
+
+
+            image::interpolation<image::linear_weighting,3> trilinear_interpolation;
+            for(image::pixel_index<3> index;VG.geometry().is_valid(index);
+                    index.next(VG.geometry()))
+                if(VG[index.index()] != 0)
                 {
-                    image::basic_image<float,3> wVFF;
-                    mni.warp_image(VFF,wVFF);
-                    //wVFF.save_to_file<image::io::nifti<> >("wVFF.nii");
+                    image::vector<3,double> pos;
+                    mni.warp_coordinate(index,pos);
+                    double value = 0.0;
+                    if(!trilinear_interpolation.estimate(VFF,pos,value))
+                        continue;
+                    x.push_back(VG[index.index()]);
+                    y.push_back(value);
                 }
-            break;
-            case 1:// dmdm
-                image::reg::dmdm_pair(VG,VFF,dm,0.02,terminated);
-            break;
+            R2 = x.empty() ? 0.0 : image::correlation(x.begin(),x.end(),y.begin());
+            R2 *= R2;
+            std::cout << "R2 = " << R2 << std::endl;
         }
+
         check_prog(2,2);
 
 
@@ -369,6 +392,7 @@ public:
         trans_to_mni[7] = bounding_box_lower[1]-scale[1];
         trans_to_mni[11] = bounding_box_lower[2]-scale[2];
         mat_writer.add_matrix("mni",&*trans_to_mni,4,3);
+        mat_writer.add_matrix("R2",&R2,1,1);
     }
 
 };
