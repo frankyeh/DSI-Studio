@@ -51,10 +51,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     max_source_value = 0.0;
 
     ui->setupUi(this);
-    QSplitter *splitter = new QSplitter(ui->source_page);
-    ui->source_page_layout->addWidget(splitter);
-    splitter->addWidget(ui->b_table);
-    splitter->addWidget(ui->source_widget);
     ui->toolBox->setCurrentIndex(1);
     ui->graphicsView->setScene(&scene);
     ui->view_source->setScene(&source);

@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Mon Nov 19 13:06:46 2012
+** Created: Wed Nov 28 12:25:21 2012
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -29,6 +29,7 @@
 #include <QtGui/QSlider>
 #include <QtGui/QSpacerItem>
 #include <QtGui/QSpinBox>
+#include <QtGui/QSplitter>
 #include <QtGui/QTableWidget>
 #include <QtGui/QToolBox>
 #include <QtGui/QToolButton>
@@ -44,10 +45,11 @@ public:
     QVBoxLayout *verticalLayout;
     QToolBox *toolBox;
     QWidget *source_page;
-    QHBoxLayout *source_page_layout;
+    QVBoxLayout *verticalLayout_4;
+    QSplitter *splitter;
     QTableWidget *b_table;
     QWidget *source_widget;
-    QVBoxLayout *verticalLayout_4;
+    QVBoxLayout *verticalLayout_6;
     QHBoxLayout *horizontalLayout_11;
     QToolButton *zoom_in;
     QToolButton *zoom_out;
@@ -163,9 +165,12 @@ public:
         source_page = new QWidget();
         source_page->setObjectName(QString::fromUtf8("source_page"));
         source_page->setGeometry(QRect(0, 0, 608, 453));
-        source_page_layout = new QHBoxLayout(source_page);
-        source_page_layout->setObjectName(QString::fromUtf8("source_page_layout"));
-        b_table = new QTableWidget(source_page);
+        verticalLayout_4 = new QVBoxLayout(source_page);
+        verticalLayout_4->setObjectName(QString::fromUtf8("verticalLayout_4"));
+        splitter = new QSplitter(source_page);
+        splitter->setObjectName(QString::fromUtf8("splitter"));
+        splitter->setOrientation(Qt::Horizontal);
+        b_table = new QTableWidget(splitter);
         if (b_table->columnCount() < 4)
             b_table->setColumnCount(4);
         QTableWidgetItem *__qtablewidgetitem = new QTableWidgetItem();
@@ -179,15 +184,13 @@ public:
         b_table->setObjectName(QString::fromUtf8("b_table"));
         b_table->setSelectionMode(QAbstractItemView::SingleSelection);
         b_table->setSelectionBehavior(QAbstractItemView::SelectRows);
-
-        source_page_layout->addWidget(b_table);
-
-        source_widget = new QWidget(source_page);
+        splitter->addWidget(b_table);
+        source_widget = new QWidget(splitter);
         source_widget->setObjectName(QString::fromUtf8("source_widget"));
-        verticalLayout_4 = new QVBoxLayout(source_widget);
-        verticalLayout_4->setSpacing(0);
-        verticalLayout_4->setContentsMargins(0, 0, 0, 0);
-        verticalLayout_4->setObjectName(QString::fromUtf8("verticalLayout_4"));
+        verticalLayout_6 = new QVBoxLayout(source_widget);
+        verticalLayout_6->setSpacing(0);
+        verticalLayout_6->setContentsMargins(0, 0, 0, 0);
+        verticalLayout_6->setObjectName(QString::fromUtf8("verticalLayout_6"));
         horizontalLayout_11 = new QHBoxLayout();
         horizontalLayout_11->setSpacing(0);
         horizontalLayout_11->setObjectName(QString::fromUtf8("horizontalLayout_11"));
@@ -230,23 +233,24 @@ public:
         horizontalLayout_11->addWidget(brightness);
 
 
-        verticalLayout_4->addLayout(horizontalLayout_11);
+        verticalLayout_6->addLayout(horizontalLayout_11);
 
         view_source = new QGraphicsView(source_widget);
         view_source->setObjectName(QString::fromUtf8("view_source"));
 
-        verticalLayout_4->addWidget(view_source);
+        verticalLayout_6->addWidget(view_source);
 
         z_pos = new QSlider(source_widget);
         z_pos->setObjectName(QString::fromUtf8("z_pos"));
         z_pos->setOrientation(Qt::Horizontal);
 
-        verticalLayout_4->addWidget(z_pos);
+        verticalLayout_6->addWidget(z_pos);
 
+        splitter->addWidget(source_widget);
         view_source->raise();
         z_pos->raise();
 
-        source_page_layout->addWidget(source_widget);
+        verticalLayout_4->addWidget(splitter);
 
         toolBox->addItem(source_page, QString::fromUtf8("Source Images"));
         page_3 = new QWidget();
@@ -328,7 +332,7 @@ public:
         toolBox->addItem(page_3, QString::fromUtf8("Step 1: setup brain mask"));
         page = new QWidget();
         page->setObjectName(QString::fromUtf8("page"));
-        page->setGeometry(QRect(0, -39, 591, 492));
+        page->setGeometry(QRect(0, 0, 591, 492));
         page->setMinimumSize(QSize(0, 0));
         verticalLayout_2 = new QVBoxLayout(page);
         verticalLayout_2->setObjectName(QString::fromUtf8("verticalLayout_2"));
@@ -694,7 +698,7 @@ public:
 
         retranslateUi(reconstruction_window);
 
-        toolBox->setCurrentIndex(2);
+        toolBox->setCurrentIndex(0);
         toolBox->layout()->setSpacing(6);
         ODFDim->setCurrentIndex(3);
         ThreadCount->setCurrentIndex(3);
