@@ -40,10 +40,12 @@ private:// database information
     // 0: subject index 1:findex 2.s_index (fa > 0)
     std::vector<std::vector<float> > subject_qa_buffer;
     std::vector<const float*> subject_qa;
+    std::vector<float> R2;
     bool sample_odf(MatFile& mat_reader,std::vector<float>& data);
 public:
     unsigned int subject_count(void)const{return num_subjects;}
     const std::string& subject_name(unsigned int index)const{return subject_names[index];}
+    float subject_R2(unsigned int index)const{return R2[index];}
     bool load_subject_files(const std::vector<std::string>& file_names,
                             const std::vector<std::string>& names);
     void save_subject_data(const char* output_name) const;

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1310</width>
+    <width>1481</width>
     <height>667</height>
    </rect>
   </property>
@@ -653,7 +653,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1310</width>
+     <width>1481</width>
      <height>21</height>
     </rect>
    </property>
@@ -2266,7 +2266,7 @@
   <widget class="QDockWidget" name="color_bar">
    <property name="minimumSize">
     <size>
-     <width>222</width>
+     <width>266</width>
      <height>300</height>
     </size>
    </property>
@@ -2289,132 +2289,22 @@
     <number>2</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_7">
-    <layout class="QHBoxLayout" name="horizontalLayout_19">
-     <property name="spacing">
-      <number>0</number>
-     </property>
-     <property name="margin">
-      <number>0</number>
-     </property>
+    <layout class="QVBoxLayout" name="verticalLayout_7">
      <item>
-      <layout class="QFormLayout" name="formLayout">
-       <property name="fieldGrowthPolicy">
-        <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+      <widget class="QSplitter" name="splitter_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
        </property>
-       <property name="horizontalSpacing">
-        <number>1</number>
-       </property>
-       <property name="verticalSpacing">
-        <number>0</number>
-       </property>
-       <item row="0" column="0">
-        <widget class="QLabel" name="label_13">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>22</height>
-          </size>
+       <widget class="QWidget" name="widget" native="true">
+        <layout class="QFormLayout" name="formLayout">
+         <property name="leftMargin">
+          <number>9</number>
          </property>
-         <property name="text">
-          <string>Index</string>
+         <property name="rightMargin">
+          <number>9</number>
          </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QComboBox" name="tract_color_index">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>22</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="label_10">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Style</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="1">
-        <widget class="QComboBox" name="color_bar_style">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>22</height>
-          </size>
-         </property>
-         <item>
-          <property name="text">
-           <string>Two colors</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Color spectrum</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-       <item row="4" column="0">
-        <widget class="QLabel" name="label_9">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Max value</string>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="0">
-        <widget class="QLabel" name="label_15">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Min value</string>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="0">
-        <widget class="QLabel" name="label_11">
-         <property name="maximumSize">
-          <size>
-           <width>22</width>
-           <height>16777215</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Color</string>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="1">
-        <layout class="QHBoxLayout" name="horizontalLayout_17">
-         <property name="spacing">
-          <number>0</number>
-         </property>
-         <item>
-          <widget class="QColorToolButton" name="color_from">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_13">
            <property name="maximumSize">
             <size>
              <width>16777215</width>
@@ -2422,22 +2312,22 @@
             </size>
            </property>
            <property name="text">
-            <string/>
-           </property>
-           <property name="icon">
-            <iconset resource="../icons.qrc">
-             <normaloff>:/icons/icons/add.xpm</normaloff>:/icons/icons/add.xpm</iconset>
+            <string>Index</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QColorToolButton" name="color_to">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
+         <item row="0" column="1">
+          <widget class="QComboBox" name="tract_color_index">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>22</height>
+            </size>
            </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_10">
            <property name="maximumSize">
             <size>
              <width>16777215</width>
@@ -2445,59 +2335,177 @@
             </size>
            </property>
            <property name="text">
-            <string/>
+            <string>Style</string>
            </property>
-           <property name="icon">
-            <iconset resource="../icons.qrc">
-             <normaloff>:/icons/icons/add.xpm</normaloff>:/icons/icons/add.xpm</iconset>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QComboBox" name="color_bar_style">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>22</height>
+            </size>
+           </property>
+           <item>
+            <property name="text">
+             <string>Two colors</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Color spectrum</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_9">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>22</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Max value</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QDoubleSpinBox" name="tract_color_max_value">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>22</height>
+            </size>
+           </property>
+           <property name="decimals">
+            <number>4</number>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_15">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>22</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Min value</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QDoubleSpinBox" name="tract_color_min_value">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>22</height>
+            </size>
+           </property>
+           <property name="decimals">
+            <number>4</number>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="label_11">
+           <property name="maximumSize">
+            <size>
+             <width>22</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Color</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="1">
+          <layout class="QHBoxLayout" name="horizontalLayout_17">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QColorToolButton" name="color_from">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>22</height>
+              </size>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset resource="../icons.qrc">
+               <normaloff>:/icons/icons/add.xpm</normaloff>:/icons/icons/add.xpm</iconset>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QColorToolButton" name="color_to">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>22</height>
+              </size>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset resource="../icons.qrc">
+               <normaloff>:/icons/icons/add.xpm</normaloff>:/icons/icons/add.xpm</iconset>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="5" column="1">
+          <widget class="QPushButton" name="update_rendering">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>22</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Update</string>
            </property>
           </widget>
          </item>
         </layout>
-       </item>
-       <item row="5" column="1">
-        <widget class="QDoubleSpinBox" name="tract_color_min_value">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="decimals">
-          <number>4</number>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="1">
-        <widget class="QDoubleSpinBox" name="tract_color_max_value">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="decimals">
-          <number>4</number>
-         </property>
-        </widget>
-       </item>
-       <item row="7" column="1">
-        <widget class="QPushButton" name="update_rendering">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Update</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <widget class="QGraphicsView" name="color_bar_view"/>
+        <zorder>label_13</zorder>
+        <zorder>label_13</zorder>
+        <zorder>tract_color_index</zorder>
+        <zorder>label_10</zorder>
+        <zorder>color_bar_style</zorder>
+        <zorder>label_9</zorder>
+        <zorder>tract_color_max_value</zorder>
+        <zorder>label_15</zorder>
+        <zorder>tract_color_min_value</zorder>
+        <zorder>label_11</zorder>
+        <zorder></zorder>
+        <zorder>update_rendering</zorder>
+       </widget>
+       <widget class="QGraphicsView" name="color_bar_view"/>
+      </widget>
      </item>
     </layout>
    </widget>
@@ -2619,34 +2627,42 @@
         <attribute name="title">
          <string>Subject Data</string>
         </attribute>
-        <layout class="QHBoxLayout" name="horizontalLayout_22">
+        <layout class="QVBoxLayout" name="verticalLayout_6">
          <item>
-          <widget class="QGraphicsView" name="vbc_view"/>
-         </item>
-         <item>
-          <widget class="QTableWidget" name="subject_list">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
+          <widget class="QSplitter" name="splitter">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
            </property>
-           <property name="selectionMode">
-            <enum>QAbstractItemView::SingleSelection</enum>
-           </property>
-           <property name="selectionBehavior">
-            <enum>QAbstractItemView::SelectRows</enum>
-           </property>
-           <column>
-            <property name="text">
-             <string>Subject ID</string>
+           <widget class="QGraphicsView" name="vbc_view"/>
+           <widget class="QTableWidget" name="subject_list">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Value</string>
+            <property name="selectionMode">
+             <enum>QAbstractItemView::SingleSelection</enum>
             </property>
-           </column>
+            <property name="selectionBehavior">
+             <enum>QAbstractItemView::SelectRows</enum>
+            </property>
+            <column>
+             <property name="text">
+              <string>Subject ID</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>Value</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>R2</string>
+             </property>
+            </column>
+           </widget>
           </widget>
          </item>
         </layout>

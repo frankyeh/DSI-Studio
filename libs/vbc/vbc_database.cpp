@@ -59,16 +59,20 @@ bool vbc_database::load_template(ODFModel* fib_file_)
     }
     num_subjects = subject_qa.size();
     subject_names.resize(num_subjects);
-    if(!subject_qa.empty())
+    R2.resize(num_subjects);
+    if(num_subjects)
     {
         const char* str = 0;
         matfile.get_matrix("subject_names",row,col,str);
         if(str)
         {
             std::istringstream in(str);
-            for(unsigned int index = 0;in && index < subject_names.size();++index)
+            for(unsigned int index = 0;in && index < num_subjects;++index)
                 in >> subject_names[index];
         }
+        const float* r2_values = 0;
+        matfile.get_matrix("R2",row,col,r2_values);
+        std::copy(r2_values,r2_values+num_subjects,R2.begin());
     }
 
     return !subject_qa.empty();
@@ -199,6 +203,7 @@ bool vbc_database::load_subject_files(const std::vector<std::string>& file_names
     subject_qa_buffer.clear();
     subject_qa.resize(num_subjects);
     subject_qa_buffer.resize(num_subjects);
+    R2.resize(num_subjects);
     for(unsigned int index = 0;index < num_subjects;++index)
     {
         subject_qa_buffer[index].resize(num_fiber*si2vi.size());
@@ -221,6 +226,12 @@ bool vbc_database::load_subject_files(const std::vector<std::string>& file_names
             error_msg += file_names[subject_index];
             return false;
         }
+        // load R2
+        const float* value= 0;
+        unsigned int row,col;
+        mat_reader.get_matrix("R2",row,col,value);
+        if(value)
+            R2[subject_index] = *value;
     }
     subject_names = subject_names_;
     return true;
@@ -245,6 +256,7 @@ void vbc_database::save_subject_data(const char* output_name) const
         name_string += "\n";
     }
     matfile.add_matrix("subject_names",name_string.c_str(),1,name_string.size());
+    matfile.add_matrix("R2",&*R2.begin(),1,R2.size());
     begin_prog("output data");
     matfile.close_file();
 }

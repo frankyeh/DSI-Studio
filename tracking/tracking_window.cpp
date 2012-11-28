@@ -1,4 +1,5 @@
 #include <QFileDialog>
+#include <QSplitter>
 #include <QSettings>
 #include <QClipboard>
 #include "tracking_window.h"
@@ -89,14 +90,18 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
         else
         {
             ui->vbc_view->setScene(&vbc_scene);
+            ui->subject_list->setColumnCount(3);
+            ui->subject_list->setColumnWidth(0,300);
+            ui->subject_list->setColumnWidth(1,50);
+            ui->subject_list->setColumnWidth(2,50);
             ui->subject_list->setHorizontalHeaderLabels(
-                        QStringList() << "name" << "value");
-
+                        QStringList() << "name" << "value" << "R2");
             ui->subject_list->setRowCount(handle->vbc->subject_count());
             for(unsigned int index = 0;index < handle->vbc->subject_count();++index)
             {
                 ui->subject_list->setItem(index,0, new QTableWidgetItem(QString(handle->vbc->subject_name(index).c_str())));
                 ui->subject_list->setItem(index,1, new QTableWidgetItem(QString::number(0)));
+                ui->subject_list->setItem(index,2, new QTableWidgetItem(QString::number(handle->vbc->subject_R2(index))));
             }
             ui->subject_list->selectRow(0);
         }

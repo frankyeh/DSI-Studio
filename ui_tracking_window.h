@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Fri Nov 16 13:28:25 2012
+** Created: Wed Nov 28 12:31:49 2012
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -32,6 +32,7 @@
 #include <QtGui/QSlider>
 #include <QtGui/QSpacerItem>
 #include <QtGui/QSpinBox>
+#include <QtGui/QSplitter>
 #include <QtGui/QStatusBar>
 #include <QtGui/QTabWidget>
 #include <QtGui/QTableWidget>
@@ -241,7 +242,7 @@ public:
     QHBoxLayout *horizontalLayout_12;
     QLabel *label_4;
     QDoubleSpinBox *smoothing;
-    QHBoxLayout *horizontalLayout;
+    QHBoxLayout *length_constraint_layout;
     QLabel *label_7;
     QDoubleSpinBox *min_length;
     QDoubleSpinBox *max_length;
@@ -275,20 +276,22 @@ public:
     QCustomPlot *report_widget;
     QDockWidget *color_bar;
     QWidget *dockWidgetContents_7;
-    QHBoxLayout *horizontalLayout_19;
+    QVBoxLayout *verticalLayout_7;
+    QSplitter *splitter_2;
+    QWidget *widget;
     QFormLayout *formLayout;
     QLabel *label_13;
     QComboBox *tract_color_index;
     QLabel *label_10;
     QComboBox *color_bar_style;
     QLabel *label_9;
+    QDoubleSpinBox *tract_color_max_value;
     QLabel *label_15;
+    QDoubleSpinBox *tract_color_min_value;
     QLabel *label_11;
     QHBoxLayout *horizontalLayout_17;
     QColorToolButton *color_from;
     QColorToolButton *color_to;
-    QDoubleSpinBox *tract_color_min_value;
-    QDoubleSpinBox *tract_color_max_value;
     QPushButton *update_rendering;
     QGraphicsView *color_bar_view;
     QDockWidget *vbc_widget;
@@ -307,7 +310,8 @@ public:
     QHBoxLayout *horizontalLayout_21;
     QCustomPlot *vbc_report;
     QWidget *tab_4;
-    QHBoxLayout *horizontalLayout_22;
+    QVBoxLayout *verticalLayout_6;
+    QSplitter *splitter;
     QGraphicsView *vbc_view;
     QTableWidget *subject_list;
 
@@ -315,7 +319,7 @@ public:
     {
         if (tracking_window->objectName().isEmpty())
             tracking_window->setObjectName(QString::fromUtf8("tracking_window"));
-        tracking_window->resize(1310, 584);
+        tracking_window->resize(1481, 667);
         QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         sizePolicy.setHorizontalStretch(0);
         sizePolicy.setVerticalStretch(0);
@@ -837,7 +841,7 @@ public:
         tracking_window->addDockWidget(static_cast<Qt::DockWidgetArea>(2), renderingWidgetHolder);
         menuBar = new QMenuBar(tracking_window);
         menuBar->setObjectName(QString::fromUtf8("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 1310, 21));
+        menuBar->setGeometry(QRect(0, 0, 1481, 21));
         QSizePolicy sizePolicy5(QSizePolicy::Preferred, QSizePolicy::Minimum);
         sizePolicy5.setHorizontalStretch(0);
         sizePolicy5.setVerticalStretch(0);
@@ -1217,7 +1221,7 @@ public:
         dockWidget_3->setObjectName(QString::fromUtf8("dockWidget_3"));
         sizePolicy.setHeightForWidth(dockWidget_3->sizePolicy().hasHeightForWidth());
         dockWidget_3->setSizePolicy(sizePolicy);
-        dockWidget_3->setMinimumSize(QSize(452, 138));
+        dockWidget_3->setMinimumSize(QSize(623, 150));
         dockWidget_3->setMaximumSize(QSize(65535, 150));
         dockWidgetContents_3 = new QWidget();
         dockWidgetContents_3->setObjectName(QString::fromUtf8("dockWidgetContents_3"));
@@ -1321,13 +1325,14 @@ public:
 
         verticalLayout_2->addLayout(gridLayout);
 
-        horizontalLayout = new QHBoxLayout();
-        horizontalLayout->setSpacing(0);
-        horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
+        length_constraint_layout = new QHBoxLayout();
+        length_constraint_layout->setSpacing(0);
+        length_constraint_layout->setObjectName(QString::fromUtf8("length_constraint_layout"));
+        length_constraint_layout->setContentsMargins(-1, 0, -1, -1);
         label_7 = new QLabel(dockWidgetContents_3);
         label_7->setObjectName(QString::fromUtf8("label_7"));
 
-        horizontalLayout->addWidget(label_7);
+        length_constraint_layout->addWidget(label_7);
 
         min_length = new QDoubleSpinBox(dockWidgetContents_3);
         min_length->setObjectName(QString::fromUtf8("min_length"));
@@ -1337,7 +1342,7 @@ public:
         min_length->setSingleStep(5);
         min_length->setValue(0);
 
-        horizontalLayout->addWidget(min_length);
+        length_constraint_layout->addWidget(min_length);
 
         max_length = new QDoubleSpinBox(dockWidgetContents_3);
         max_length->setObjectName(QString::fromUtf8("max_length"));
@@ -1348,10 +1353,10 @@ public:
         max_length->setSingleStep(10);
         max_length->setValue(500);
 
-        horizontalLayout->addWidget(max_length);
+        length_constraint_layout->addWidget(max_length);
 
 
-        verticalLayout_2->addLayout(horizontalLayout);
+        verticalLayout_2->addLayout(length_constraint_layout);
 
         horizontalLayout_3 = new QHBoxLayout();
         horizontalLayout_3->setSpacing(0);
@@ -1545,67 +1550,82 @@ public:
         tracking_window->addDockWidget(static_cast<Qt::DockWidgetArea>(2), dockWidget_report);
         color_bar = new QDockWidget(tracking_window);
         color_bar->setObjectName(QString::fromUtf8("color_bar"));
-        color_bar->setMinimumSize(QSize(222, 300));
+        color_bar->setMinimumSize(QSize(266, 300));
         color_bar->setMaximumSize(QSize(65535, 65535));
         color_bar->setFloating(false);
         color_bar->setAllowedAreas(Qt::AllDockWidgetAreas);
         dockWidgetContents_7 = new QWidget();
         dockWidgetContents_7->setObjectName(QString::fromUtf8("dockWidgetContents_7"));
-        horizontalLayout_19 = new QHBoxLayout(dockWidgetContents_7);
-        horizontalLayout_19->setSpacing(0);
-        horizontalLayout_19->setContentsMargins(0, 0, 0, 0);
-        horizontalLayout_19->setObjectName(QString::fromUtf8("horizontalLayout_19"));
-        formLayout = new QFormLayout();
+        verticalLayout_7 = new QVBoxLayout(dockWidgetContents_7);
+        verticalLayout_7->setObjectName(QString::fromUtf8("verticalLayout_7"));
+        splitter_2 = new QSplitter(dockWidgetContents_7);
+        splitter_2->setObjectName(QString::fromUtf8("splitter_2"));
+        splitter_2->setOrientation(Qt::Horizontal);
+        widget = new QWidget(splitter_2);
+        widget->setObjectName(QString::fromUtf8("widget"));
+        formLayout = new QFormLayout(widget);
         formLayout->setObjectName(QString::fromUtf8("formLayout"));
-        formLayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
-        formLayout->setHorizontalSpacing(1);
-        formLayout->setVerticalSpacing(0);
-        label_13 = new QLabel(dockWidgetContents_7);
+        formLayout->setContentsMargins(9, -1, 9, -1);
+        label_13 = new QLabel(widget);
         label_13->setObjectName(QString::fromUtf8("label_13"));
         label_13->setMaximumSize(QSize(16777215, 22));
 
         formLayout->setWidget(0, QFormLayout::LabelRole, label_13);
 
-        tract_color_index = new QComboBox(dockWidgetContents_7);
+        tract_color_index = new QComboBox(widget);
         tract_color_index->setObjectName(QString::fromUtf8("tract_color_index"));
         tract_color_index->setMaximumSize(QSize(16777215, 22));
 
         formLayout->setWidget(0, QFormLayout::FieldRole, tract_color_index);
 
-        label_10 = new QLabel(dockWidgetContents_7);
+        label_10 = new QLabel(widget);
         label_10->setObjectName(QString::fromUtf8("label_10"));
         label_10->setMaximumSize(QSize(16777215, 22));
 
         formLayout->setWidget(1, QFormLayout::LabelRole, label_10);
 
-        color_bar_style = new QComboBox(dockWidgetContents_7);
+        color_bar_style = new QComboBox(widget);
         color_bar_style->setObjectName(QString::fromUtf8("color_bar_style"));
         color_bar_style->setMaximumSize(QSize(16777215, 22));
 
         formLayout->setWidget(1, QFormLayout::FieldRole, color_bar_style);
 
-        label_9 = new QLabel(dockWidgetContents_7);
+        label_9 = new QLabel(widget);
         label_9->setObjectName(QString::fromUtf8("label_9"));
         label_9->setMaximumSize(QSize(16777215, 22));
 
-        formLayout->setWidget(4, QFormLayout::LabelRole, label_9);
+        formLayout->setWidget(2, QFormLayout::LabelRole, label_9);
 
-        label_15 = new QLabel(dockWidgetContents_7);
+        tract_color_max_value = new QDoubleSpinBox(widget);
+        tract_color_max_value->setObjectName(QString::fromUtf8("tract_color_max_value"));
+        tract_color_max_value->setMaximumSize(QSize(16777215, 22));
+        tract_color_max_value->setDecimals(4);
+
+        formLayout->setWidget(2, QFormLayout::FieldRole, tract_color_max_value);
+
+        label_15 = new QLabel(widget);
         label_15->setObjectName(QString::fromUtf8("label_15"));
         label_15->setMaximumSize(QSize(16777215, 22));
 
-        formLayout->setWidget(5, QFormLayout::LabelRole, label_15);
+        formLayout->setWidget(3, QFormLayout::LabelRole, label_15);
 
-        label_11 = new QLabel(dockWidgetContents_7);
+        tract_color_min_value = new QDoubleSpinBox(widget);
+        tract_color_min_value->setObjectName(QString::fromUtf8("tract_color_min_value"));
+        tract_color_min_value->setMaximumSize(QSize(16777215, 22));
+        tract_color_min_value->setDecimals(4);
+
+        formLayout->setWidget(3, QFormLayout::FieldRole, tract_color_min_value);
+
+        label_11 = new QLabel(widget);
         label_11->setObjectName(QString::fromUtf8("label_11"));
         label_11->setMaximumSize(QSize(22, 16777215));
 
-        formLayout->setWidget(6, QFormLayout::LabelRole, label_11);
+        formLayout->setWidget(4, QFormLayout::LabelRole, label_11);
 
         horizontalLayout_17 = new QHBoxLayout();
         horizontalLayout_17->setSpacing(0);
         horizontalLayout_17->setObjectName(QString::fromUtf8("horizontalLayout_17"));
-        color_from = new QColorToolButton(dockWidgetContents_7);
+        color_from = new QColorToolButton(widget);
         color_from->setObjectName(QString::fromUtf8("color_from"));
         sizePolicy7.setHeightForWidth(color_from->sizePolicy().hasHeightForWidth());
         color_from->setSizePolicy(sizePolicy7);
@@ -1614,7 +1634,7 @@ public:
 
         horizontalLayout_17->addWidget(color_from);
 
-        color_to = new QColorToolButton(dockWidgetContents_7);
+        color_to = new QColorToolButton(widget);
         color_to->setObjectName(QString::fromUtf8("color_to"));
         sizePolicy7.setHeightForWidth(color_to->sizePolicy().hasHeightForWidth());
         color_to->setSizePolicy(sizePolicy7);
@@ -1624,35 +1644,31 @@ public:
         horizontalLayout_17->addWidget(color_to);
 
 
-        formLayout->setLayout(6, QFormLayout::FieldRole, horizontalLayout_17);
+        formLayout->setLayout(4, QFormLayout::FieldRole, horizontalLayout_17);
 
-        tract_color_min_value = new QDoubleSpinBox(dockWidgetContents_7);
-        tract_color_min_value->setObjectName(QString::fromUtf8("tract_color_min_value"));
-        tract_color_min_value->setMaximumSize(QSize(16777215, 22));
-        tract_color_min_value->setDecimals(4);
-
-        formLayout->setWidget(5, QFormLayout::FieldRole, tract_color_min_value);
-
-        tract_color_max_value = new QDoubleSpinBox(dockWidgetContents_7);
-        tract_color_max_value->setObjectName(QString::fromUtf8("tract_color_max_value"));
-        tract_color_max_value->setMaximumSize(QSize(16777215, 22));
-        tract_color_max_value->setDecimals(4);
-
-        formLayout->setWidget(4, QFormLayout::FieldRole, tract_color_max_value);
-
-        update_rendering = new QPushButton(dockWidgetContents_7);
+        update_rendering = new QPushButton(widget);
         update_rendering->setObjectName(QString::fromUtf8("update_rendering"));
         update_rendering->setMaximumSize(QSize(16777215, 22));
 
-        formLayout->setWidget(7, QFormLayout::FieldRole, update_rendering);
+        formLayout->setWidget(5, QFormLayout::FieldRole, update_rendering);
 
-
-        horizontalLayout_19->addLayout(formLayout);
-
-        color_bar_view = new QGraphicsView(dockWidgetContents_7);
+        splitter_2->addWidget(widget);
+        label_13->raise();
+        label_13->raise();
+        tract_color_index->raise();
+        label_10->raise();
+        color_bar_style->raise();
+        label_9->raise();
+        tract_color_max_value->raise();
+        label_15->raise();
+        tract_color_min_value->raise();
+        label_11->raise();
+        update_rendering->raise();
+        color_bar_view = new QGraphicsView(splitter_2);
         color_bar_view->setObjectName(QString::fromUtf8("color_bar_view"));
+        splitter_2->addWidget(color_bar_view);
 
-        horizontalLayout_19->addWidget(color_bar_view);
+        verticalLayout_7->addWidget(splitter_2);
 
         color_bar->setWidget(dockWidgetContents_7);
         tracking_window->addDockWidget(static_cast<Qt::DockWidgetArea>(2), color_bar);
@@ -1719,28 +1735,34 @@ public:
         tabWidget->addTab(tab_3, QString());
         tab_4 = new QWidget();
         tab_4->setObjectName(QString::fromUtf8("tab_4"));
-        horizontalLayout_22 = new QHBoxLayout(tab_4);
-        horizontalLayout_22->setObjectName(QString::fromUtf8("horizontalLayout_22"));
-        vbc_view = new QGraphicsView(tab_4);
+        verticalLayout_6 = new QVBoxLayout(tab_4);
+        verticalLayout_6->setObjectName(QString::fromUtf8("verticalLayout_6"));
+        splitter = new QSplitter(tab_4);
+        splitter->setObjectName(QString::fromUtf8("splitter"));
+        splitter->setOrientation(Qt::Horizontal);
+        vbc_view = new QGraphicsView(splitter);
         vbc_view->setObjectName(QString::fromUtf8("vbc_view"));
-
-        horizontalLayout_22->addWidget(vbc_view);
-
-        subject_list = new QTableWidget(tab_4);
-        if (subject_list->columnCount() < 2)
-            subject_list->setColumnCount(2);
+        splitter->addWidget(vbc_view);
+        subject_list = new QTableWidget(splitter);
+        if (subject_list->columnCount() < 3)
+            subject_list->setColumnCount(3);
         QTableWidgetItem *__qtablewidgetitem = new QTableWidgetItem();
         subject_list->setHorizontalHeaderItem(0, __qtablewidgetitem);
         QTableWidgetItem *__qtablewidgetitem1 = new QTableWidgetItem();
         subject_list->setHorizontalHeaderItem(1, __qtablewidgetitem1);
+        QTableWidgetItem *__qtablewidgetitem2 = new QTableWidgetItem();
+        subject_list->setHorizontalHeaderItem(2, __qtablewidgetitem2);
         subject_list->setObjectName(QString::fromUtf8("subject_list"));
         QSizePolicy sizePolicy10(QSizePolicy::Minimum, QSizePolicy::Expanding);
         sizePolicy10.setHorizontalStretch(0);
         sizePolicy10.setVerticalStretch(0);
         sizePolicy10.setHeightForWidth(subject_list->sizePolicy().hasHeightForWidth());
         subject_list->setSizePolicy(sizePolicy10);
+        subject_list->setSelectionMode(QAbstractItemView::SingleSelection);
+        subject_list->setSelectionBehavior(QAbstractItemView::SelectRows);
+        splitter->addWidget(subject_list);
 
-        horizontalLayout_22->addWidget(subject_list);
+        verticalLayout_6->addWidget(splitter);
 
         tabWidget->addTab(tab_4, QString());
 
@@ -2175,6 +2197,8 @@ public:
         ___qtablewidgetitem->setText(QApplication::translate("tracking_window", "Subject ID", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem1 = subject_list->horizontalHeaderItem(1);
         ___qtablewidgetitem1->setText(QApplication::translate("tracking_window", "Value", 0, QApplication::UnicodeUTF8));
+        QTableWidgetItem *___qtablewidgetitem2 = subject_list->horizontalHeaderItem(2);
+        ___qtablewidgetitem2->setText(QApplication::translate("tracking_window", "R2", 0, QApplication::UnicodeUTF8));
         tabWidget->setTabText(tabWidget->indexOf(tab_4), QApplication::translate("tracking_window", "Subject Data", 0, QApplication::UnicodeUTF8));
     } // retranslateUi
 
