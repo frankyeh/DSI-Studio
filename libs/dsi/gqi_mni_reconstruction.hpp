@@ -13,7 +13,7 @@ class GQI_MNI  : public BaseProcess
 {
 public:
 protected:
-    normalization<image::basic_image<float,3>,7,9,7> mni;
+    normalization<image::basic_image<float,3> > mni;
     image::geometry<3> src_geo;
     image::geometry<3> des_geo;
     double max_accumulated_qa;
@@ -22,10 +22,7 @@ protected:
     std::vector<float> jdet;
     int b0_index;
 protected:
-    double affine_det;
     image::transformation_matrix<3,double> affine;
-    image::basic_image<image::vector<3,double>,3> dm;
-    std::vector<image::vector<3,double> > dirs;
 protected:
     image::basic_image<float,3> VG,VF;
     double VGvs[3];
@@ -76,35 +73,42 @@ protected:
 public:
     virtual void init(Voxel& voxel)
     {
-        if(voxel.voxel_size[0] == 0.0 ||
-           voxel.voxel_size[1] == 0.0 ||
-           voxel.voxel_size[2] == 0.0)
+        if(voxel.vs[0] == 0.0 ||
+           voxel.vs[1] == 0.0 ||
+           voxel.vs[2] == 0.0)
             throw std::runtime_error("No spatial information found in src file. Recreate src file or contact developer for assistance");
 
         begin_prog("normalization");
 
-        VF.swap(voxel.qa_map);
-        src_geo = VF.geometry();
+        VG = fa_template_imp.I;
+        VF = voxel.fa_map;
+
+        image::filter::gaussian(voxel.fa_map);
+        image::filter::gaussian(voxel.fa_map);
+        image::filter::gaussian(voxel.qa_map);
+        image::filter::gaussian(voxel.qa_map);
+        image::normalize(voxel.fa_map,1.0);
+        image::normalize(voxel.qa_map,1.0);
+        for(unsigned int index = 0;index < voxel.qa_map.size();++index)
+            if(voxel.qa_map[index] == 0.0 || voxel.fa_map[index]/voxel.qa_map[index] > 2.5)
+                VF[index] = 0.0;
         image::filter::gaussian(VF);
 
-        // make QA like FA by truncating the high value QA
+        src_geo = VF.geometry();
+
         image::normalize(VF,1.0);
-        image::upper_threshold(VF.begin(),VF.end(),0.50);
-        image::normalize(VF,1.0);
+        //VF.save_to_file<image::io::nifti<> >("VF.nii");
+
+        image::normalize(VG,1.0);
 
         // get rid of the gray matters
         image::minus_constant(VF.begin(),VF.end(),0.3);
         image::lower_threshold(VF.begin(),VF.end(),0.00);
         image::normalize(VF,1.0);
 
-        VG = fa_template_imp.I;
-        image::normalize(VG,1.0);
-
-        // get rid of the gray matters
         image::minus_constant(VG.begin(),VG.end(),0.3);
         image::lower_threshold(VG.begin(),VG.end(),0.00);
         image::normalize(VG,1.0);
-
 
         VGvs[0] = std::fabs(fa_template_imp.tran[0]);
         VGvs[1] = std::fabs(fa_template_imp.tran[5]);
@@ -113,9 +117,9 @@ public:
         image::affine_transform<3,double> arg_min;
         // VG: FA TEMPLATE
         // VF: SUBJECT QA
-        arg_min.scaling[0] = voxel.voxel_size[0] / VGvs[0];
-        arg_min.scaling[1] = voxel.voxel_size[1] / VGvs[1];
-        arg_min.scaling[2] = voxel.voxel_size[2] / VGvs[2];
+        arg_min.scaling[0] = voxel.vs[0] / VGvs[0];
+        arg_min.scaling[1] = voxel.vs[1] / VGvs[1];
+        arg_min.scaling[2] = voxel.vs[2] / VGvs[2];
         voxel_volume_scale = arg_min.scaling[0]*arg_min.scaling[1]*arg_min.scaling[2];
         // calculate center of mass
         image::vector<3,double> mF = center_of_mass(VF);
@@ -146,7 +150,6 @@ public:
                 math::matrix_inverse(T.begin(),math::dim<4,4>());
                 affine.load_from_transform(T.begin());
             }
-            affine_det = math::matrix_determinant(affine.scaling_rotation,math::dim<3,3>());
 
             image::resample(VF,VFF,affine);
 
@@ -154,25 +157,21 @@ public:
             //VG.save_to_file<image::io::nifti<> >("VG.nii");
 
         }
-        voxel.reg_method = 0;
         {
             switch(voxel.reg_method)
             {
-                case 0:// spm
+                case 0:
                     mni.normalize(VG,VFF);
                 break;
-                case 1:// dmdm
-                    image::reg::dmdm_pair(VG,VFF,dm,0.02,terminated);
+                case 1:
+                    mni.normalize(VG,VFF,12,14,12,4,8);
                 break;
             }
 
-
-
+            //calculate the goodness of fit
             std::vector<float> x,y;
             x.reserve(VG.size());
             y.reserve(VG.size());
-
-
             image::interpolation<image::linear_weighting,3> trilinear_interpolation;
             for(image::pixel_index<3> index;VG.geometry().is_valid(index);
                     index.next(VG.geometry()))
@@ -256,38 +255,13 @@ public:
             ptr_images.push_back(point_image_type((const unsigned short*)voxel.image_model->dwi_data[index],src_geo));
 
 
-        voxel.qa_scaling = voxel.reponse_function_scaling/voxel.voxel_size[0]/voxel.voxel_size[1]/voxel.voxel_size[2];
+        voxel.qa_scaling = voxel.reponse_function_scaling/voxel.vs[0]/voxel.vs[1]/voxel.vs[2];
         max_accumulated_qa = 0;
 
-        std::fill(voxel.voxel_size,voxel.voxel_size+3,voxel.param[1]);
+        std::fill(voxel.vs.begin(),voxel.vs.end(),voxel.param[1]);
 
         jdet.resize(des_geo.size());
 
-        dirs.resize(voxel.ti.half_vertices_count);
-        for(unsigned int index = 0;index < dirs.size();++index)
-        {
-            dirs[index] = voxel.ti.vertices[index];
-            dirs[index] *= 0.1;
-        }
-    }
-
-    bool template2subject(Voxel& voxel, const image::vector<3,double>& pos,
-                          image::vector<3,double>& Jpos)
-    {
-        switch(voxel.reg_method)
-        {
-        case 0: //SPM
-            if(!mni.warp_coordinate(pos,Jpos))
-                return false;
-            break;
-        case 1:
-            if(!image::linear_estimate(dm,pos,Jpos))
-                return false;
-            Jpos += pos;
-            break;
-        }
-        affine(Jpos.begin());
-        return true;
     }
 
 
@@ -299,72 +273,38 @@ public:
         pos[1] *= scale[1];
         pos[2] *= scale[2];
         pos += des_offset;
-        if (!template2subject(voxel,pos,Jpos) ||
-            !trilinear_interpolation.get_location(src_geo,Jpos))
+        mni.warp_coordinate(pos,Jpos);
+        affine(Jpos.begin());
+        if(!trilinear_interpolation.get_location(src_geo,Jpos))
         {
             std::fill(data.odf.begin(),data.odf.end(),0);
             return;
         }
         for (unsigned int i = 0; i < data.space.size(); ++i)
             trilinear_interpolation.estimate(ptr_images[i],data.space[i]);
+
         if(voxel.half_sphere && b0_index != -1)
             data.space[b0_index] /= 2.0;
 
         std::vector<float> sinc_ql(data.odf.size()*voxel.q_count);
-        switch(voxel.reg_method)
         {
-        case 0: //SPM
+            float jacobian[9],M[9];
+            mni.get_jacobian(pos,M);
+            math::matrix_product(affine.scaling_rotation,M,jacobian,math::dim<3,3>(),math::dim<3,3>());
+            for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
             {
-                float jacobian[9],M[9];
-                mni.get_jacobian(pos,M);
-                math::matrix_product(affine.scaling_rotation,M,jacobian,math::dim<3,3>(),math::dim<3,3>());
-                for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
-                {
-                    image::vector<3,double> dir(voxel.ti.vertices[j]),from;
-                    math::matrix_product(jacobian,dir.begin(),from.begin(),math::dim<3,3>(),math::dim<3,1>());
-                    from.normalize();
-                    if(voxel.r2_weighted)
-                        for (unsigned int i = 0; i < voxel.q_count; ++i,++index)
-                            sinc_ql[index] = r2_base_function(q_vectors_time[i]*from);
-                    else
-                        for (unsigned int i = 0; i < voxel.q_count; ++i,++index)
-                            sinc_ql[index] = boost::math::sinc_pi(q_vectors_time[i]*from);
+                image::vector<3,double> dir(voxel.ti.vertices[j]),from;
+                math::matrix_product(jacobian,dir.begin(),from.begin(),math::dim<3,3>(),math::dim<3,1>());
+                from.normalize();
+                if(voxel.r2_weighted)
+                    for (unsigned int i = 0; i < voxel.q_count; ++i,++index)
+                        sinc_ql[index] = r2_base_function(q_vectors_time[i]*from);
+                else
+                    for (unsigned int i = 0; i < voxel.q_count; ++i,++index)
+                        sinc_ql[index] = boost::math::sinc_pi(q_vectors_time[i]*from);
 
-                }
-                jdet[data.voxel_index] = std::abs(math::matrix_determinant(jacobian,math::dim<3,3>())*voxel_volume_scale);
             }
-            break;
-        case 1:
-            {
-                for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
-                {
-                    image::vector<3,double> from(pos),to(pos),Jfrom,Jto;
-                    from -= dirs[j];
-                    to += dirs[j];
-
-                    image::linear_estimate(dm,from,Jfrom);
-                    image::linear_estimate(dm,to,Jto);
-                    from += Jfrom;
-                    to += Jto;
-
-                    affine(from.begin());
-                    affine(to.begin());
-                    to -= from;
-                    to.normalize();
-
-                    if(voxel.r2_weighted)
-                        for (unsigned int i = 0; i < voxel.q_count; ++i,++index)
-                            sinc_ql[index] = r2_base_function(q_vectors_time[i]*to);
-                    else
-                        for (unsigned int i = 0; i < voxel.q_count; ++i,++index)
-                            sinc_ql[index] = boost::math::sinc_pi(q_vectors_time[i]*to);
-
-                }
-                jdet[data.voxel_index] =
-                        image::jacobian_determinant_dis_at(dm,image::pixel_index<3>(pos[0],pos[1],pos[2],dm.geometry()))*
-                                                           voxel_volume_scale*affine_det;
-            }
-            break;
+            jdet[data.voxel_index] = std::abs(math::matrix_determinant(jacobian,math::dim<3,3>())*voxel_volume_scale);
         }
 
         math::matrix_vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
