@@ -51,12 +51,8 @@ class Voxel : public boost::noncopyable
 private:
     boost::ptr_vector<BaseProcess> process_list;
 public:
-    unsigned int matrix_width;
-    unsigned int matrix_height;
-    unsigned int slice_number;
-    unsigned int total_size;
-    float voxel_size[3];
-
+    image::geometry<3> dim;
+    image::vector<3> vs;
     unsigned int q_count;
     std::vector<image::vector<3,float> > bvectors;
     std::vector<float> bvalues;
@@ -76,7 +72,7 @@ public:
     float qa_scaling;
     // other information for second pass processing
     std::vector<float> response_function,free_water_diffusion;
-    image::basic_image<float,3> qa_map;
+    image::basic_image<float,3> qa_map,fa_map;
     float reponse_function_scaling;
 public:// for template creation
     std::vector<std::vector<float> > template_odfs;
@@ -115,13 +111,12 @@ public:
     }
 
     void thread_run(unsigned char thread_index,unsigned char thread_count,
-                    const std::vector<unsigned char>& mask,
-                    bool& terminated)
+                    const std::vector<unsigned char>& mask)
     {
         unsigned int sum_mask = std::accumulate(mask.begin(),mask.end(),(unsigned int)0)/thread_count;
         unsigned int cur = 0;
         for(unsigned int voxel_index = thread_index;
-            voxel_index < total_size && !terminated &&
+            voxel_index < dim.size() &&
             (thread_index != 0 || check_prog(cur,sum_mask));voxel_index += thread_count)
         {
             if (!mask[voxel_index])
@@ -131,9 +126,9 @@ public:
             voxel_data[thread_index].voxel_index = voxel_index;
             for (int index = 0; index < process_list.size(); ++index)
                 process_list[index].run(*this,voxel_data[thread_index]);
+            if(prog_aborted())
+                break;
         }
-        if(prog_aborted())
-            terminated = true;
     }
     void end(MatFile& writer)
     {
