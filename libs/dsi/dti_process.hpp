@@ -19,15 +19,46 @@ public:
 
 class Dwi2Tensor : public BaseProcess
 {
+    std::vector<float> d0;
+    std::vector<float> d1;
+    std::vector<float> d2;
+    std::vector<float> md;
+    std::vector<float> fa;
+    std::vector<float> fdir;
+
+    float get_fa(float l1,float l2,float l3)
+    {
+        float ll = (l1+l2+l3)/3.0;
+        if (ll == 0.0)
+            return 0.0;
+        float ll1 = l1-ll;
+        float ll2 = l2-ll;
+        float ll3 = l3-ll;
+        return std::sqrt(1.5*(ll1*ll1+ll2*ll2+ll3*ll3)/(l1*l1+l2*l2+l3*l3));
+
+    }
 private:
     //math::dynamic_matrix<float> iKtKKt;
-    std::vector<float> iKtK; // 6-by-6
+    std::vector<double> iKtK; // 6-by-6
     std::vector<unsigned int> iKtK_pivot;
-    std::vector<float> Kt;
+    std::vector<double> Kt;
     unsigned int b_count;
 public:
     virtual void init(Voxel& voxel)
     {
+        fa.clear();
+        fa.resize(voxel.dim.size());
+        fdir.clear();
+        fdir.resize(voxel.dim.size()*3);
+        md.clear();
+        md.resize(voxel.dim.size());
+        d0.clear();
+        d0.resize(voxel.dim.size());
+        d1.clear();
+        d1.resize(voxel.dim.size());
+        d2.clear();
+        d2.resize(voxel.dim.size());
+
         b_count = voxel.q_count-1;
         std::vector<image::vector<3> > b_data(b_count);
         //skip null
@@ -38,7 +69,7 @@ public:
         Kt.resize(6*b_count);
         {
             unsigned int qmap[6]		= {0  ,4  ,8  ,1  ,2  ,5  };
-            float qweighting[6]= {1.0,1.0,1.0,2.0,2.0,2.0};
+            double qweighting[6]= {1.0,1.0,1.0,2.0,2.0,2.0};
             //					  bxx,byy,bzz,bxy,bxz,byz
             for (unsigned int i = 0,k = 0; i < b_data.size(); ++i,k+=6)
             {
@@ -65,75 +96,25 @@ public:
 public:
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        if (data.space.front() == 0.0)
-            std::fill(data.space.begin(),data.space.end(),(float)0.0);
-        else
+        std::vector<float> signal(data.space.size());
+        if (data.space.front() != 0.0)
         {
             float logs0 = std::log(std::max<float>(1.0,data.space.front()));
             for (unsigned int i = 1; i < data.space.size(); ++i)
-                data.space[i-1] = std::max<float>(0.0,logs0-std::log(std::max<float>(1.0,data.space[i])));
+                signal[i-1] = std::max<float>(0.0,logs0-std::log(std::max<float>(1.0,data.space[i])));
         }
         //  Kt S = Kt K D
-        float KtS[6];
-        math::matrix_product(Kt.begin(),data.space.begin(),KtS,math::dyndim(6,b_count),math::dyndim(b_count,1));
-        math::matrix_lu_solve(iKtK.begin(),iKtK_pivot.begin(),KtS,data.space.begin(),math::dyndim(6,6));
-    }
-};
-
-class TensorEigenAnalysis : public BaseProcess
-{
-    std::vector<float> d0;
-    std::vector<float> d1;
-    std::vector<float> d2;
-    std::vector<float> md;
-    std::vector<float> fa;
-    std::vector<float> fdir;
-
-    float get_fa(float l1,float l2,float l3)
-    {
-        float ll = (l1+l2+l3)/3.0;
-        if (ll == 0.0)
-            return 0.0;
-        float ll1 = l1-ll;
-        float ll2 = l2-ll;
-        float ll3 = l3-ll;
-        return std::sqrt(1.5*(ll1*ll1+ll2*ll2+ll3*ll3)/(l1*l1+l2*l2+l3*l3));
-
-    }
-    float get_odf_value(const image::vector<3>& vec,float* V,float* d) const
-    {
-        float sum = 0.0;
-        for (unsigned int index = 0; index < 3; ++index)
-        {
-            float value = vec[0]*V[index]+vec[1]*V[index+3]+vec[2]*V[index+6];
-            sum += value*value*d[index];
-        }
-        return sum;
-    }
-public:
-    virtual void init(Voxel& voxel)
-    {
-        fa.clear();
-        fa.resize(voxel.total_size);
-        fdir.clear();
-        fdir.resize(voxel.total_size*3);
-        md.clear();
-        md.resize(voxel.total_size);
-        d0.clear();
-        d0.resize(voxel.total_size);
-        d1.clear();
-        d1.resize(voxel.total_size);
-        d2.clear();
-        d2.resize(voxel.total_size);
-    }
-    virtual void run(Voxel& voxel, VoxelData& data)
-    {
+        double KtS[6],tensor_param[6];
         double tensor[9];
         double V[9],d[3];
 
+        math::matrix_product(Kt.begin(),signal.begin(),KtS,math::dyndim(6,b_count),math::dyndim(b_count,1));
+        math::matrix_lu_solve(iKtK.begin(),iKtK_pivot.begin(),KtS,tensor_param,math::dyndim(6,6));
+
+
         unsigned int tensor_index[9] = {0,3,4,3,1,5,4,5,2};
         for (unsigned int index = 0; index < 9; ++index)
-            tensor[index] = data.space[tensor_index[index]];
+            tensor[index] = tensor_param[tensor_index[index]];
 
         math::matrix_eigen_decomposition_sym(tensor,V,d,math::dim<3,3>());
         if (d[1] < 0.0)
@@ -155,15 +136,6 @@ public:
         d0[data.voxel_index] = d[0];
         d1[data.voxel_index] = d[1];
         d2[data.voxel_index] = d[2];
-
-        //if(!voxel.need_odf)
-        //	return;
-        //for (unsigned int index = 0;index < data.odf.size();++index)
-        //    data.odf[index] = get_odf_value(ti_vertices(index),V,d);
-        //float sum = Accumulator()(data.odf);
-        //if (sum == 0.0)
-        //    return;
-        //std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 /= sum);
     }
     virtual void end(Voxel& voxel,MatFile& mat_writer)
     {

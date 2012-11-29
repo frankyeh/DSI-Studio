@@ -28,9 +28,7 @@
 #include "image_model.hpp"
 typedef boost::mpl::vector<
     ReadDWIData,
-    Dwi2Tensor,
-    TensorEigenAnalysis
-//OutputODF
+    Dwi2Tensor
 > dti_process;
 
 
@@ -101,6 +99,8 @@ typedef estimation_type<boost::mpl::vector<
 // for ODF deconvolution
 typedef boost::mpl::vector<
     ReadDWIData,
+    Dwi2Tensor,
+    RecordFA,
     CorrectB0,
     QSpace2Odf,
     DetermineFiberDirections,
@@ -168,50 +168,6 @@ extern "C"
 {
     delete image_model;
 }
-
-
-extern "C"
-    const float* get_b_table(ImageModel* image_model,unsigned int& b_number)
-{
-    unsigned int row;
-    const float* table;
-    image_model->mat_reader->get_matrix("b_table",row,b_number,table);
-    return table;
-}
-
-
-extern "C"
-    const unsigned short* get_dimension(ImageModel* image_model)
-{
-    static unsigned short dim[3];
-    dim[0] = image_model->voxel.matrix_width;
-    dim[1] = image_model->voxel.matrix_height;
-    dim[2] = image_model->voxel.slice_number;
-    return dim;
-}
-
-extern "C"
-    const float* get_voxel_size(ImageModel* image_model)
-{
-    return image_model->voxel.voxel_size;
-}
-
-
-extern "C"
-    char* check_reconstruction(ImageModel* image_model)
-{
-    static char ava[13];
-    ava[0] = image_model->avaliable<CheckDSI>();
-    ava[1] = image_model->avaliable<CheckDTI>();
-    ava[2] = ava[3] = image_model->avaliable<CheckHARDI>();
-    ava[4] = 1;
-    ava[5] = 1;
-    ava[6] = 1;
-    ava[7] = 1;
-    return ava;
-}
-
-
 
 extern "C"
     const char* reconstruction(ImageModel* image_model,unsigned int method_id,const float* param_values)
@@ -311,7 +267,6 @@ extern "C"
             */
         case 7:
             // run gqi to get the spin quantity
-            std::fill(image_model->mask.begin(),image_model->mask.end(),1.0);
             if (!image_model->reconstruct<gqi_estimate_response_function>())
                 return "reconstruction calceled";
             out << ".reg" << (int)image_model->voxel.reg_method;
@@ -414,7 +369,7 @@ bool output_odfs(const image::basic_image<unsigned char,3>& mni_mask,
     image_model.thread_count = 1;
     image_model.file_name = out_name;
     std::copy(mni_mask.begin(),mni_mask.end(),image_model.mask.begin());
-    std::copy(vs,vs+3,image_model.voxel.voxel_size);
+    std::copy(vs,vs+3,image_model.voxel.vs.begin());
     if (prog_aborted() || !image_model.reconstruct<reprocess_odf>(ext))
         return false;
     image_model.voxel.template_odfs.swap(odfs);
