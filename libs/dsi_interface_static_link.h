@@ -4,10 +4,6 @@ extern "C"
     // dsi
     void* init_reconstruction(const char* file_name);
     void free_reconstruction(ImageModel* image_model);
-    const float* get_b_table(ImageModel* image_model,unsigned int& b_number);
-    const unsigned short* get_dimension(ImageModel* image_model);
-    const float* get_voxel_size(ImageModel* image_model);
-    char* check_reconstruction(ImageModel* image_model);
     const char* reconstruction(ImageModel* image_model,
                        unsigned int method_id,
                        const float* param_values);

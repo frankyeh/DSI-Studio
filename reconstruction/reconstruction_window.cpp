@@ -25,11 +25,10 @@ void reconstruction_window::load_src(int index)
         QMessageBox::information(this,"error","Cannot load the .src file, please check the memory sufficiency",0);
         throw;
     }
-    dim[0] = handle->voxel.matrix_width;
-    dim[1] = handle->voxel.matrix_height;
-    dim[2] = handle->voxel.slice_number;
-    image.resize(dim);
-    std::copy(handle->mask.begin(),handle->mask.end(),image.begin());
+    dim = handle->voxel.dim;
+    image.resize(handle->voxel.dim);
+    for(unsigned int index = 0;index < image.size();++index)
+        image[index] = handle->dwi_sum[index]*255.0;
 }
 
 reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *parent) :
@@ -37,17 +36,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui(new Ui::reconstruction_window)
 {
     load_src(0);
-    image::segmentation::otsu(image,handle->mask);
-    image::morphology::erosion(handle->mask);
-    image::morphology::smoothing(handle->mask);
-    image::morphology::smoothing(handle->mask);
-    image::morphology::smoothing(handle->mask);
-    image::morphology::defragment(handle->mask);
-    image::morphology::dilation(handle->mask);
-    image::morphology::dilation(handle->mask);
-    image::morphology::smoothing(handle->mask);
-    image::morphology::smoothing(handle->mask);
-    image::morphology::smoothing(handle->mask);
     max_source_value = 0.0;
 
     ui->setupUi(this);
@@ -337,7 +325,7 @@ void reconstruction_window::on_load_mask_clicked()
             "Mask files (*.txt *.nii *.nii.gz *.hdr);;All files (*.*)" );
     if(filename.isEmpty())
         return;
-    ROIRegion region(image.geometry(),image::vector<3>(get_voxel_size((ImageModel*)handle)));
+    ROIRegion region(image.geometry(),handle->voxel.vs);
     std::vector<float> trans;
     region.LoadFromFile(filename.toLocal8Bit().begin(),trans);
     region.SaveToBuffer(handle->mask);
@@ -354,7 +342,7 @@ void reconstruction_window::on_save_mask_clicked()
             "Text files (*.txt);;Nifti file(*.nii.gz *.nii)" );
     if(filename.isEmpty())
         return;
-    ROIRegion region(image.geometry(),image::vector<3>(get_voxel_size((ImageModel*)handle)));
+    ROIRegion region(image.geometry(),handle->voxel.vs);
     region.LoadFromBuffer(handle->mask);
     std::vector<float> trans;
     region.SaveToFile(filename.toLocal8Bit().begin(),trans);

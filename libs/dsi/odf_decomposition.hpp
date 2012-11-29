@@ -247,7 +247,7 @@ public:
         decomposition_fraction = voxel.param[3];
         m = std::max<int>(voxel.param[4],voxel.max_fiber_number);
         lm.init(voxel);
-        fiber_ratio.resize(voxel.total_size);
+        fiber_ratio.resize(voxel.dim.size());
         max_iso = 0.0;
         half_odf_size = voxel.ti.half_vertices_count;
         // scale the free water diffusion to 1

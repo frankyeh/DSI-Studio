@@ -57,8 +57,8 @@ public:
         {
             has_assigned_odf = true;
             assigned_index = voxel.odf_xyz[0] +
-                             voxel.odf_xyz[1]*voxel.matrix_width +
-                             voxel.odf_xyz[2]*voxel.matrix_width*voxel.matrix_height;
+                    voxel.odf_xyz[1]*voxel.dim[0] +
+                    voxel.odf_xyz[2]*voxel.dim.plane_size();
         }
         else
             has_assigned_odf = false;

@@ -261,7 +261,7 @@ class RecordQA  : public BaseProcess
 public:
     virtual void init(Voxel& voxel)
     {
-        voxel.qa_map.resize(image::geometry<3>(voxel.matrix_width,voxel.matrix_height,voxel.slice_number));
+        voxel.qa_map.resize(voxel.dim);
         std::fill(voxel.qa_map.begin(),voxel.qa_map.end(),0.0);
     }
     virtual void run(Voxel& voxel, VoxelData& data)
@@ -273,7 +273,23 @@ public:
 
     }
 };
+class RecordFA  : public BaseProcess
+{
+public:
+    virtual void init(Voxel& voxel)
+    {
+        voxel.fa_map.resize(voxel.dim);
+        std::fill(voxel.fa_map.begin(),voxel.fa_map.end(),0.0);
+    }
+    virtual void run(Voxel& voxel, VoxelData& data)
+    {
+        voxel.fa_map[data.voxel_index] = data.fa[0];
+    }
+    virtual void end(Voxel& voxel,MatFile& mat_writer)
+    {
 
+    }
+};
 
 
 struct SaveFA : public BaseProcess
@@ -287,11 +303,11 @@ public:
 
         fa.resize(voxel.max_fiber_number);
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-            fa[index].resize(voxel.total_size);
+            fa[index].resize(voxel.dim.size());
         gfa.clear();
-        gfa.resize(voxel.total_size);
+        gfa.resize(voxel.dim.size());
         iso.clear();
-        iso.resize(voxel.total_size);
+        iso.resize(voxel.dim.size());
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
@@ -309,13 +325,13 @@ public:
         {
             voxel.qa_scaling = *std::max_element(iso.begin(),iso.end());
             // scaled to 1mm cubic
-            if(voxel.voxel_size[0] != 0.0 &&
-               voxel.voxel_size[1] != 0.0 &&
-               voxel.voxel_size[2] != 0.0)
+            if(voxel.vs[0] != 0.0 &&
+               voxel.vs[1] != 0.0 &&
+               voxel.vs[2] != 0.0)
             {
-                voxel.qa_scaling /= voxel.voxel_size[0];
-                voxel.qa_scaling /= voxel.voxel_size[1];
-                voxel.qa_scaling /= voxel.voxel_size[2];
+                voxel.qa_scaling /= voxel.vs[0];
+                voxel.qa_scaling /= voxel.vs[1];
+                voxel.qa_scaling /= voxel.vs[2];
             }
             mat_writer.add_matrix("qa_scaling",&voxel.qa_scaling,1,1);
             std::for_each(iso.begin(),iso.end(),boost::lambda::_1 /= voxel.qa_scaling);
@@ -379,7 +395,7 @@ public:
 
         findex.resize(voxel.max_fiber_number);
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-            findex[index].resize(voxel.total_size);
+            findex[index].resize(voxel.dim.size());
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
@@ -413,7 +429,7 @@ public:
 
         dir.resize(voxel.max_fiber_number);
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-            dir[index].resize(voxel.total_size*3);
+            dir[index].resize(voxel.dim.size()*3);
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {

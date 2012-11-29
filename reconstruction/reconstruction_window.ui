@@ -41,7 +41,7 @@
     <item>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <property name="tabSpacing">
        <number>6</number>
@@ -432,12 +432,12 @@
               <widget class="QComboBox" name="reg_method">
                <item>
                 <property name="text">
-                 <string>SPM normalization</string>
+                 <string>SPM norm 7-9-7</string>
                 </property>
                </item>
                <item>
                 <property name="text">
-                 <string>Diffeomorphic Mapping</string>
+                 <string>SPM norm 12-14-12</string>
                 </property>
                </item>
               </widget>

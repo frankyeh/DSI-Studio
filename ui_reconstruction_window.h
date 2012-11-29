@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Wed Nov 28 12:25:21 2012
+** Created: Wed Nov 28 23:11:31 2012
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -698,7 +698,7 @@ public:
 
         retranslateUi(reconstruction_window);
 
-        toolBox->setCurrentIndex(0);
+        toolBox->setCurrentIndex(2);
         toolBox->layout()->setSpacing(6);
         ODFDim->setCurrentIndex(3);
         ThreadCount->setCurrentIndex(3);
@@ -744,8 +744,8 @@ public:
         label_15->setText(QApplication::translate("reconstruction_window", "Registration method", 0, QApplication::UnicodeUTF8));
         reg_method->clear();
         reg_method->insertItems(0, QStringList()
-         << QApplication::translate("reconstruction_window", "SPM normalization", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("reconstruction_window", "Diffeomorphic Mapping", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("reconstruction_window", "SPM norm 7-9-7", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("reconstruction_window", "SPM norm 12-14-12", 0, QApplication::UnicodeUTF8)
         );
         label_5->setText(QApplication::translate("reconstruction_window", "DSI Hamming filter", 0, QApplication::UnicodeUTF8));
         label_6->setText(QApplication::translate("reconstruction_window", "QBI Regularization", 0, QApplication::UnicodeUTF8));

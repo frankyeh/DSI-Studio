@@ -137,50 +137,29 @@ int rec(int ac, char *av[])
     }
 
     {
-        const unsigned short* dim = get_dimension(handle);
-        image::geometry<3> geometry(dim[0],dim[1],dim[2]);
         if(vm.count("mask"))
         {
             std::string mask_file = vm["mask"].as<std::string>();
             out << "reading mask..." << mask_file << std::endl;
             gz_nifti header;
-            if(!header.load_from_file(mask_file.c_str()))
+            if(header.load_from_file(mask_file.c_str()))
             {
-                out << "fail reading the mask...using default mask" << std::endl;
-                goto no_mask;
-            }
-            header >> handle->mask;
-            if(header.nif_header.srow_x[0] < 0 || !header.is_nii)
-                image::flip_y(handle->mask);
-            else
-                image::flip_xy(handle->mask);
+                image::basic_image<unsigned char,3> external_mask;
+                header >> external_mask;
+                if(header.nif_header.srow_x[0] < 0 || !header.is_nii)
+                    image::flip_y(external_mask);
+                else
+                    image::flip_xy(external_mask);
 
-            if(handle->mask.geometry() != geometry)
-            {
-                out << "In consistent the mask dimension...using default mask" << std::endl;
-                goto no_mask;
+                if(external_mask.geometry() != handle->voxel.dim)
+                    out << "In consistent the mask dimension...using default mask" << std::endl;
+                else
+                    handle->mask = external_mask;
             }
+            else
+                out << "fail reading the mask...using default mask" << std::endl;
         }
-        else
-            if(method_index != 7) //QSDR does not need mask
-        {
-            no_mask:
-            out << "init mask..." <<std::endl;
-            image::basic_image<unsigned char,3> image(geometry);
-            std::copy(handle->mask.begin(),handle->mask.end(),image.begin());
-            image::segmentation::otsu(image,handle->mask);
-            image::morphology::erosion(handle->mask);
-            image::morphology::smoothing(handle->mask);
-            image::morphology::smoothing(handle->mask);
-            image::morphology::smoothing(handle->mask);
-            image::morphology::defragment(handle->mask);
-            image::morphology::dilation(handle->mask);
-            image::morphology::dilation(handle->mask);
-            image::morphology::smoothing(handle->mask);
-            image::morphology::smoothing(handle->mask);
-            image::morphology::smoothing(handle->mask);
-        }
-        }
+    }
     out << "start reconstruction..." <<std::endl;
     const char* msg = reconstruction(handle,method_index,param);
     if (!msg)

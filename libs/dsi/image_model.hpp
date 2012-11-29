@@ -15,18 +15,20 @@ public:
     std::string file_name;
     std::auto_ptr<MatFile> mat_reader;
     std::vector<const unsigned short*> dwi_data;
+    image::basic_image<float,3> dwi_sum;
     image::basic_image<unsigned char,3> mask;
 public:
     ImageModel(void):thread_count(1) {}
     bool set_dimension(unsigned int w,unsigned int h,unsigned int d)
     {
-        voxel.matrix_width = w;
-        voxel.matrix_height = h;
-        voxel.slice_number = d;
-        voxel.total_size = w*h*d;
+        voxel.dim[0] = w;
+        voxel.dim[1] = h;
+        voxel.dim[2] = d;
         mask.clear();
-        mask.resize(image::geometry<3>(w,h,d));
-        if (voxel.total_size <= 0)
+        mask.resize(voxel.dim);
+        dwi_sum.clear();
+        dwi_sum.resize(voxel.dim);
+        if (voxel.dim.size() <= 0)
             return false;
         return true;
     }
@@ -38,19 +40,19 @@ public:
             return false;
         unsigned int row,col;
 
-        const unsigned short* dim = 0;
-        mat_reader->get_matrix("dimension",row,col,dim);
-        if (!dim)
+        const unsigned short* dim_ptr = 0;
+        mat_reader->get_matrix("dimension",row,col,dim_ptr);
+        if (!dim_ptr)
             return false;
 
         const float* voxel_size = 0;
         mat_reader->get_matrix("voxel_size",row,col,voxel_size);
         if (voxel_size)
-            std::copy(voxel_size,voxel_size+3,voxel.voxel_size);
+            std::copy(voxel_size,voxel_size+3,voxel.vs.begin());
         else
-            std::fill(voxel.voxel_size,voxel.voxel_size+3,3.0);
+            std::fill(voxel.vs.begin(),voxel.vs.end(),2.0);
 
-        if (!set_dimension(dim[0],dim[1],dim[2]))
+        if (!set_dimension(dim_ptr[0],dim_ptr[1],dim_ptr[2]))
             return false;
         const float* table;
         mat_reader->get_matrix("b_table",row,col,table);
@@ -79,33 +81,31 @@ public:
         }
 
         // create mask;
-        std::vector<unsigned int> sum_image(voxel.total_size);
+        for (unsigned int index = 0;index < voxel.q_count;++index)
+            image::add(dwi_sum.begin(),dwi_sum.end(),dwi_data[index]);
 
+        float max_value = *std::max_element(dwi_sum.begin(),dwi_sum.end());
+        float min_value = max_value;
+        for (unsigned int index = 0;index < dwi_sum.size();++index)
+            if (dwi_sum[index] < min_value && dwi_sum[index] > 0)
+                min_value = dwi_sum[index];
 
-        set_title("generating mask");
-        for (unsigned int index = 0;check_prog(index,voxel.q_count);++index)
-            image::add(sum_image.begin(),sum_image.end(),dwi_data[index]);
-
-        unsigned int range = *std::max_element(sum_image.begin(),sum_image.end());
-        {
-            unsigned int min_value = range;
-            for (unsigned int index = 0;index < sum_image.size();++index)
-                if (sum_image[index] < min_value && sum_image[index] > 0)
-                    min_value = sum_image[index];
-            range -= min_value;
-            for (unsigned int index = 0;index < sum_image.size();++index)
-                if (sum_image[index] > 0)
-                    sum_image[index] -= min_value;
-        }
-
-        if (range)
-            for (unsigned int index = 0;index < sum_image.size();++index)
-            {
-                unsigned int value = std::floor(std::log((float)sum_image[index]/(float)range+1.0)/0.301*255.0);
-                if (value >= 256)
-                    value = 255;
-                mask[index] = (unsigned char)value;
-            }
+        ::set_title("creating mask");
+        check_prog(0,3);
+        image::minus_constant(dwi_sum,min_value);
+        image::lower_threshold(dwi_sum,0.0f);
+        image::normalize(dwi_sum,1.0);
+        image::add_constant(dwi_sum,1.0);
+        image::log(dwi_sum);
+        image::divide_constant(dwi_sum,0.301);
+        image::upper_threshold(dwi_sum,1.0f);
+        image::threshold(dwi_sum,mask,image::segmentation::otsu_threshold(dwi_sum)*0.8,1,0);
+        check_prog(1,3);
+        image::morphology::recursive_smoothing(mask);
+        check_prog(2,3);
+        image::morphology::defragment(mask);
+        image::morphology::recursive_smoothing(mask);
+        check_prog(3,3);
         return true;
     }
     void save_to_file(MatFile& mat_writer)
@@ -116,14 +116,14 @@ public:
         // dimension
         {
             short dim[3];
-            dim[0] = voxel.matrix_width;
-            dim[1] = voxel.matrix_height;
-            dim[2] = voxel.slice_number;
+            dim[0] = voxel.dim[0];
+            dim[1] = voxel.dim[1];
+            dim[2] = voxel.dim[2];
             mat_writer.add_matrix("dimension",dim,1,3);
         }
 
         // voxel size
-        mat_writer.add_matrix("voxel_size",voxel.voxel_size,1,3);
+        mat_writer.add_matrix("voxel_size",&*voxel.vs.begin(),1,3);
 
         std::vector<float> float_data;
         std::vector<short> short_data;
@@ -146,11 +146,10 @@ public:
         voxel.CreateProcesses<ProcessType>();
         voxel.init(thread_count);
         boost::thread_group threads;
-        bool terminated = false;
         for (unsigned int index = 1;index < thread_count;++index)
             threads.add_thread(new boost::thread(&Voxel::thread_run,&voxel,
-                                                 index,thread_count,mask,terminated));
-        voxel.thread_run(0,thread_count,mask,terminated);
+                                                 index,thread_count,mask));
+        voxel.thread_run(0,thread_count,mask);
         threads.join_all();
         return !prog_aborted();
     }
