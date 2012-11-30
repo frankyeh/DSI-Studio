@@ -488,7 +488,8 @@ void GLWidget::paintGL()
 
         if(get_param("tract_color_style") != tract_color_style)
         {
-            if(get_param("tract_color_style") > 1) // index painting
+            if(get_param("tract_color_style") > 1 &&
+                    get_param("tract_color_style") <= 3) // index painting
             {
                 cur_tracking_window.ui->color_bar->show();
                 cur_tracking_window.ui->color_bar->setFloating(true);
@@ -764,7 +765,7 @@ void GLWidget::makeTracts(void)
     unsigned int tract_color_index = cur_tracking_window.ui->tract_color_index->currentIndex();
 
     // show tract by index value
-    if (tract_color_style > 1)
+    if (tract_color_style > 1 && tract_color_style <= 3)
     {
         if(tract_color_index > 0)
             color_item_index = cur_tracking_window.handle->fib_data.other_mapping_index+tract_color_index-1;
@@ -888,6 +889,28 @@ void GLWidget::makeTracts(void)
                             cur_tracking_window.color_map[std::floor(
                                     std::min(1.0f,(std::max<float>(mean_fa[mean_fa_index++]-color_min_value,0.0))/color_r)*255.0+0.49)];
                     break;
+                case 4:// mean directional
+                    {
+                        const float* iter = data_iter;
+                        for (unsigned int index = 0;
+                             index < vertex_count;iter += 3, ++index)
+                        {
+                            image::vector<3,float> vec_n;
+                            if (index + 1 < vertex_count)
+                            {
+                                vec_n[0] = iter[3] - iter[0];
+                                vec_n[1] = iter[4] - iter[1];
+                                vec_n[2] = iter[5] - iter[2];
+                                vec_n.normalize();
+                                paint_color_f[0] += std::fabs(vec_n[0]);
+                                paint_color_f[1] += std::fabs(vec_n[1]);
+                                paint_color_f[2] += std::fabs(vec_n[2]);
+                            }
+                        }
+                        paint_color_f /= vertex_count;
+                    }
+                    break;
+
                 }
                 image::vector<3,float> last_pos(data_iter),pos,
                     vec_a(1,0,0),vec_b(0,1,0),
@@ -916,6 +939,7 @@ void GLWidget::makeTracts(void)
                         break;
                     case 1://manual assigned
                     case 3://mean anisotropy
+                    case 4://mean directional
                         cur_color = paint_color_f;
                         break;
                     case 2://local anisotropy

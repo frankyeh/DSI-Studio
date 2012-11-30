@@ -377,7 +377,8 @@ void RenderingTableWidget::initialize(void)
                                        << QString("Directional")
                                        << QString("Assigned")
                                        << QString("Local index")
-                                       << QString("Averaged index"),0));
+                                       << QString("Averaged index")
+                                       << QString("Averaged Directional"),0));
     openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
         "tract_visible_tracts",QString("Visible Tracts"),
                                                       QStringList()
