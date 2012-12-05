@@ -140,7 +140,7 @@ public:
                 sin_rq[j] /= (float)k;
 
             images_sinc.push_back(sin_rq);
-            images.push_back(std::vector<short>(voxel.total_size));
+            images.push_back(std::vector<short>(voxel.dim.size()));
 
         }
     }
