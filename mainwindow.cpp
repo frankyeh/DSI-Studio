@@ -176,7 +176,7 @@ void MainWindow::loadFib(QString filename)
     new_mdi->setWindowTitle(filename);
     new_mdi->showNormal();
     addFib(filename);
-
+    add_work_dir(QFileInfo(filename).absolutePath());
 }
 
 void MainWindow::loadSrc(QStringList filenames)
@@ -187,7 +187,10 @@ void MainWindow::loadSrc(QStringList filenames)
         new_mdi->setAttribute(Qt::WA_DeleteOnClose);
         new_mdi->show();
         if(filenames.size() == 1)
+        {
             addSrc(filenames[0]);
+            add_work_dir(QFileInfo(filenames[0]).absolutePath());
+        }
     }
     catch(...)
     {
@@ -217,6 +220,7 @@ void MainWindow::on_OpenDICOM_clicked()
                                 "Image files (*.dcm *.hdr *.nii *.nii.gz 2dseq);;All files (*.*)" );
     if ( filenames.isEmpty() )
         return;
+    add_work_dir(QFileInfo(filenames[0]).absolutePath());
     if(QFileInfo(filenames[0]).baseName() != "2dseq")
     {
         QString sel = QString("*.")+QFileInfo(filenames[0]).suffix();
@@ -371,6 +375,11 @@ void MainWindow::on_RenameDICOM_clicked()
 }
 
 
+void MainWindow::add_work_dir(QString dir)
+{
+    ui->workDir->insertItem(0,dir);
+    ui->workDir->setCurrentIndex(0);
+}
 
 
 void MainWindow::on_browseDir_clicked()
@@ -380,8 +389,7 @@ void MainWindow::on_browseDir_clicked()
                                           ui->workDir->currentText());
     if ( filename.isEmpty() )
         return;
-    ui->workDir->insertItem(0,filename);
-    ui->workDir->setCurrentIndex(0);
+    add_work_dir(filename);
 }
 
 void MainWindow::on_simulateMRI_clicked()

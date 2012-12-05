@@ -11,7 +11,7 @@ namespace Ui {
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
-    enum { MaxRecentFiles = 20 };
+    enum { MaxRecentFiles = 50 };
     void updateRecentList(void);
     QSettings settings;
 public:
@@ -23,6 +23,7 @@ public:
 private:
     void loadFib(QString Filename);
     void loadSrc(QStringList filenames);
+    void add_work_dir(QString dir);
 private slots:
     void on_averagefib_clicked();
     void on_vbc_clicked();
