@@ -2,6 +2,11 @@
 #define MIX_GAUSSIAN_MODEL_HPP
 #include <cmath>
 #include <image/image.hpp>
+struct basic_sigal_model{
+    virtual float operator()(float b,const image::vector<3,float>& g_dir) const = 0;
+};
+
+
 class GaussianModel
 {
 private:
@@ -21,7 +26,7 @@ public:
 };
 
 
-class MixGaussianModel
+class MixGaussianModel: public basic_sigal_model
 {
 private:
     GaussianModel g1,g2;
@@ -43,6 +48,40 @@ public:
 
 };
 
+
+
+class GaussianDispersion: public basic_sigal_model
+{
+private:
+    std::vector<GaussianModel> g;
+    float fiber_ratio;
+    float iso_l;
+public:
+    GaussianDispersion(float l1,float l2,float l0,float dis_angle,float fiber_ratio_):
+        fiber_ratio(fiber_ratio_),
+        iso_l(l0)
+    {
+        for(unsigned int fib = 0;fib <= 999;++fib)
+        {
+            float angle = -dis_angle/2.0 + dis_angle*((float)fib)/999.0;
+            g.push_back(GaussianModel(l1,l2,image::vector<3,float>(std::cos(angle),std::sin(angle),0.0)));
+        }
+    }
+
+    float operator()(float b,const image::vector<3,float>& g_dir) const
+    {
+        float sum_signal = 0.0f;
+        for(unsigned int index = 0;index < g.size();++index)
+            sum_signal += g[index](b,g_dir);
+        sum_signal /= g.size();
+        sum_signal *= fiber_ratio;
+        return sum_signal+(1.0f-fiber_ratio)*std::exp(-b*iso_l);
+    }
+
+
+
+
+};
 
 
 

@@ -97,7 +97,10 @@ HEADERS += mainwindow.h \
     plot/qcustomplot.h \
     view_image.h \
     libs/vbc/vbc_database.h \
-    libs/gzip_interface.hpp
+    libs/gzip_interface.hpp \
+    libs/dsi/racian_noise.hpp \
+    libs/dsi/mix_gaussian_model.hpp \
+    libs/dsi/layout.hpp
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
     reconstruction/reconstruction_window.ui \

@@ -46,12 +46,14 @@ void Simulation::on_buttonBox_accepted()
     }
     std::vector<float> fa;
     std::vector<float> angle;
+    if(!ui->FA->text().isEmpty())
     {
         std::string fa_iteration_str(ui->FA->text().toLocal8Bit().begin());
         std::istringstream tmp(fa_iteration_str);
         std::copy(std::istream_iterator<float>(tmp),
                   std::istream_iterator<float>(),std::back_inserter(fa));
     }
+    if(!ui->CrossingAngle->text().isEmpty())
     {
         std::string crossing_angle_iteration_str(ui->CrossingAngle->text().toLocal8Bit().begin());
         std::istringstream tmp(crossing_angle_iteration_str);
@@ -59,14 +61,13 @@ void Simulation::on_buttonBox_accepted()
                   std::istream_iterator<float>(),std::back_inserter(angle));
     }
 
-    layout.createLayout(fa,angle,ui->Trial->value(),ui-);
     std::ostringstream out;
     out << ui->Btable->text().toLocal8Bit().begin() <<
            "_snr" << (int)ui->SNR->value() <<
            "_dif" << ui->MD->value() <<
            "_odf" << (int)odf_fold <<
            "_n" << (int)ui->Trial->value() << ".src";
-    layout.generate(out.str().c_str());
+    layout.createLayout(out.str().c_str(),fa,angle,ui->Trial->value(),ui->phantom_size->value(),ui->background_size->value());
     return;
 }
 

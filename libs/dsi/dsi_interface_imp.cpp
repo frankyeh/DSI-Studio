@@ -139,21 +139,6 @@ typedef boost::mpl::vector<
 > reprocess_odf;
 
 
-#include "mix_gaussian_model.hpp"
-#include "racian_noise.hpp"
-
-#include "layout.hpp"
-
-
-boost::mt19937 RacianNoise::generator(static_cast<unsigned> (std::time(0)));
-boost::normal_distribution<float> RacianNoise::normal;
-boost::uniform_real<float> RacianNoise::uniform(0.0,1.0);
-boost::variate_generator<boost::mt19937&,
-boost::normal_distribution<float> > RacianNoise::gen_normal(RacianNoise::generator,RacianNoise::normal);
-boost::variate_generator<boost::mt19937&,
-boost::uniform_real<float> > RacianNoise::gen_uniform(RacianNoise::generator,RacianNoise::uniform);
-std::string error_msg;
-
 
 extern "C"
     void* init_reconstruction(const char* file_name)
@@ -520,39 +505,6 @@ extern "C"
     return true;
 }
 
-extern "C"
-    bool generate_simulation(
-        const char* bvec_file_name,unsigned char s0_snr,float mean_dif,unsigned char odf_fold,
-        const char* fa_iteration,
-        const char* crossing_angle_iteration,
-        unsigned char repeat_num)
-{
-    tessellated_icosahedron ti;
-    ti.init(odf_fold);
-    Layout layout(s0_snr,mean_dif);
-    if (!layout.load_b_table(bvec_file_name))
-        return false;
-    std::vector<float> fa;
-    std::vector<float> angle;
-    {
-        std::string fa_iteration_str(fa_iteration);
-        std::istringstream tmp(fa_iteration_str);
-        std::copy(std::istream_iterator<float>(tmp),
-                  std::istream_iterator<float>(),std::back_inserter(fa));
-    }
-    {
-        std::string crossing_angle_iteration_str(crossing_angle_iteration);
-        std::istringstream tmp(crossing_angle_iteration_str);
-        std::copy(std::istream_iterator<float>(tmp),
-                  std::istream_iterator<float>(),std::back_inserter(angle));
-    }
-
-    layout.createLayout(fa,angle,repeat_num);
-    std::ostringstream out;
-    out << bvec_file_name << "_snr" << (int)s0_snr << "_dif" << mean_dif << "_odf" << (int)odf_fold << "_n" << (int)repeat_num << ".src";
-    layout.generate(out.str().c_str());
-    return true;
-}
 
 
 

@@ -9,10 +9,5 @@ extern "C"
                        const float* param_values);
     bool odf_average(const char* out_name,
             const char* const * file_name,unsigned int file_num);
-    bool generate_simulation(
-        const char* bvec_file_name,unsigned char s0_snr,float mean_dif,unsigned char odf_fold,
-        const char* fa_iteration,
-        const char* crossing_angle_iteration,
-        unsigned char repeat_num);
 
 }

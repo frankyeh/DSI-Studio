@@ -1,13 +1,18 @@
 #ifndef LAYOUT_HPP
 #define LAYOUT_HPP
 #include <iterator>
+#include <boost/ptr_container/ptr_vector.hpp>
+#include "mix_gaussian_model.hpp"
 #include "tessellated_icosahedron.hpp"
+#include "racian_noise.hpp"
+#include "prog_interface_static_link.h"
+#include "mat_file.hpp"
 
 class Layout
 {
 
 private:
-    std::vector<MixGaussianModel*> models;
+    std::vector<basic_sigal_model*> models;
     boost::ptr_vector<RacianNoise> rician_gen;
     float discrete_scale;
     float spin_density;
@@ -18,19 +23,16 @@ private:
     }
 private:
     tessellated_icosahedron ti;
-    short dim[3];
+    image::geometry<3> dim;
     std::vector<image::vector<3,float> > bvectors;
     std::vector<float> bvalues;
-    std::vector<float> fa[2];
-    std::vector<float> gfa;
-    std::vector<float> vf[3];
-    std::vector<short> findex[2];
 private:
 
 public:
-    Layout(float s0_snr,float mean_dif_,float discrete_scale_ = 0.5,float spin_density_ = 2000.0)
+    Layout(float s0_snr,float mean_dif_,unsigned char odf_fold = 8,float discrete_scale_ = 0.5,float spin_density_ = 2000.0)
             :mean_dif(mean_dif_),discrete_scale(discrete_scale_),spin_density(spin_density_)
     {
+        ti.init(odf_fold);
         for (unsigned int index = 0; index * discrete_scale <= spin_density+1.0; ++index)
             rician_gen.push_back(new RacianNoise((float)index * discrete_scale,spin_density/s0_snr));
     }
@@ -63,21 +65,27 @@ public:
         return true;
     }
 
-    void createLayout(const std::vector<float>& fa_iteration,
+    void createLayout(const char* file_name,
+                      const std::vector<float>& fa_iteration,
                       const std::vector<float>& angle_iteration,
-                      unsigned int repeat_num)
+                      unsigned int repeat_num,
+                      unsigned int phantom_width,
+                      unsigned int boundary)
     {
-        dim[0] = 128;
-        dim[1] = 128;
-        dim[2] = fa_iteration.size()*angle_iteration.size()*repeat_num;
+        float iso_fraction = 0.2;
+        float fiber_fraction = 1.0-iso_fraction;
+        dim[0] = phantom_width+boundary+boundary;
+        dim[1] = phantom_width+boundary+boundary;
+        dim[2] = fa_iteration.size()*std::max<int>(1,angle_iteration.size())*repeat_num;
 
-        unsigned int total_size = 128*128*fa_iteration.size()*angle_iteration.size()*repeat_num;
+        unsigned int total_size = dim.size();
+        std::vector<float> fa[2];
+        std::vector<float> gfa;
+        std::vector<short> findex[2];
+
         models.resize(total_size);
         fa[0].resize(total_size);
         fa[1].resize(total_size);
-        vf[0].resize(total_size);
-        vf[1].resize(total_size);
-        vf[2].resize(total_size);
 
         gfa.resize(total_size);
         findex[0].resize(total_size);
@@ -89,6 +97,46 @@ public:
         std::fill(models.begin(),models.end(),(MixGaussianModel*)0);
         begin_prog("creating layout");
 
+        if(angle_iteration.empty()) // use 0 to 90 degrees crossing
+            for (unsigned int i = 0,index = 0; i < fa_iteration.size(); ++i)
+                    for (unsigned int n = 0; n < repeat_num; ++n)
+                    {
+                        if (!check_prog(index,total_size))
+                            break;
+                        float fa_value = fa_iteration[i];
+                        float fa2 = fa_value*fa_value;
+                        //fa*fa = (r*r-2*r+1)/(r*r+2)
+                        float r = (1.0+fa_value*std::sqrt(3-2*fa2))/(1-fa2);
+                        float l2 = mean_dif*3.0/(2.0+r);
+                        float l1 = r*l2;
+                        for (unsigned int y = 0; y < dim[1]; ++y)
+                        {
+                            float angle = ((float)y - boundary)/((float)(phantom_width-1));//from 0 to PI/2
+                            angle = 1.0-angle;
+                            angle *= M_PI*0.5*;
+                            for (unsigned int x = 0; x < dim[0]; ++x,++index)
+                            {
+                                if (x >= boundary &&
+                                    x < boundary+phantom_width &&
+                                    y >= boundary &&
+                                    y < boundary+phantom_width)
+                                {
+                                    float xf = ((float)x - boundary)/((float)(phantom_width-1));//from 0.5 to 1.0
+                                    xf = 1.0-xf;
+                                    xf = 0.5+0.5*xf;
+                                    models[index] = new MixGaussianModel(l1,l2,mean_dif,angle,
+                                                                         fiber_fraction*xf,
+                                                                         fiber_fraction*(1.0-xf));
+                                    fa[0][index] = fiber_fraction*xf;
+                                    fa[1][index] = fiber_fraction*(1.0-xf);
+                                    gfa[index] = fa_value;
+                                    findex[0][index] = main_fiber_index;
+                                    findex[1][index] = ti.discretize(std::cos(angle),std::sin(angle),0.0);
+                                }
+                            }
+                        }
+                    }
+        else
         for (unsigned int i = 0,index = 0; i < fa_iteration.size(); ++i)
             for (unsigned int j = 0; j < angle_iteration.size(); ++j)
                 for (unsigned int n = 0; n < repeat_num; ++n)
@@ -102,32 +150,29 @@ public:
                     float r = (1.0+fa_value*std::sqrt(3-2*fa2))/(1-fa2);
                     float l2 = mean_dif*3.0/(2.0+r);
                     float l1 = r*l2;
-                    float l0 = mean_dif;
-                    for (unsigned int y = 0; y < 128; ++y)
+                    for (unsigned int y = 0; y < dim[1]; ++y)
                     {
-                        float fraction = 0.5+0.5*((float)y - 32.0)/64.0;//from 0.5 to 1.0
-                        for (unsigned int x = 0; x < 128; ++x,++index)
+                        for (unsigned int x = 0; x < dim[0]; ++x,++index)
                         {
-                            if (x >= 32 && x <= 96 && y >= 32 && y <= 96)
+                            if (x >= boundary &&
+                                x < boundary+phantom_width &&
+                                y >= boundary &&
+                                y < boundary+phantom_width)
                             {
-                                float fiber_fraction = 0.5+0.5*((float)x - 32.0)/64.0;//from 0.5 to 1.0
-                                //models[index] = new MixGaussianModel(l1,l2,mean_dif,inner_angle,fiber_fraction*fraction,fiber_fraction*(1.0-fraction));
-                                models[index] = new MixGaussianModel(l1,l2,mean_dif,inner_angle,0.5,0.5);
-                                fa[0][index] = fraction;
-                                fa[1][index] = 1.0-fraction;
+                                if(inner_angle == 0.0)
+                                    models[index] = new MixGaussianModel(l1,l2,mean_dif,0.0,fiber_fraction/2.0,fiber_fraction/2.0);
+                                else
+                                    models[index] = new GaussianDispersion(l1,l2,mean_dif,inner_angle,fiber_fraction);
+                                fa[0][index] = fiber_fraction/2.0;
+                                fa[1][index] = fiber_fraction/2.0;
                                 gfa[index] = fa_value;
                                 findex[0][index] = main_fiber_index;
                                 findex[1][index] = ti.discretize(std::cos(inner_angle),std::sin(inner_angle),0.0);
-                                vf[1][index] = fiber_fraction*fraction;
-                                vf[2][index] = fiber_fraction*(1.0-fraction);
-                                vf[0][index] = 1.0-fiber_fraction;
                             }
                         }
                     }
                 }
-    }
-    void generate(const char* file_name)
-    {
+
         set_title("Generating images");
 
         std::string fib_file_name(file_name);
@@ -135,8 +180,8 @@ public:
         MatFile mat_writer(file_name),mat_layout(fib_file_name.c_str());
         // output dimension
         {
-            mat_writer.add_matrix("dimension",dim,1,3);
-            mat_layout.add_matrix("dimension",dim,1,3);
+            mat_writer.add_matrix("dimension",&*dim.begin(),1,3);
+            mat_layout.add_matrix("dimension",&*dim.begin(),1,3);
         }
         // output vexol size
         {
@@ -181,22 +226,12 @@ public:
             ti.save_to_buffer(float_data,short_data);
             mat_layout.add_matrix("odf_vertices",&*float_data.begin(),3,ti.vertices_count);
             mat_layout.add_matrix("odf_faces",&*short_data.begin(),3,ti.faces.size());
-
             mat_layout.add_matrix("fa0",&*fa[0].begin(),1,fa[0].size());
             mat_layout.add_matrix("fa1",&*fa[1].begin(),1,fa[1].size());
-            std::fill(fa[0].begin(),fa[0].end(),0);
-            mat_layout.add_matrix("fa2",&*fa[0].begin(),1,fa[0].size());
-
             mat_layout.add_matrix("gfa",&*gfa.begin(),1,gfa.size());
-
             mat_layout.add_matrix("index0",&*findex[0].begin(),1,findex[0].size());
             mat_layout.add_matrix("index1",&*findex[1].begin(),1,findex[1].size());
-            std::fill(findex[0].begin(),findex[0].end(),0);
-            mat_layout.add_matrix("index2",&*findex[0].begin(),1,findex[0].size());
 
-            mat_layout.add_matrix("vf0",&*vf[0].begin(),1,vf[0].size());
-            mat_layout.add_matrix("vf1",&*vf[1].begin(),1,vf[1].size());
-            mat_layout.add_matrix("vf2",&*vf[2].begin(),1,vf[2].size());
         }
 
 
