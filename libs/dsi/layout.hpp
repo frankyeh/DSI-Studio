@@ -66,7 +66,7 @@ public:
     }
 
     void createLayout(const char* file_name,
-                      const std::vector<float>& fa_iteration,
+                      float fa_value,
                       const std::vector<float>& angle_iteration,
                       unsigned int repeat_num,
                       unsigned int phantom_width,
@@ -76,7 +76,7 @@ public:
         float fiber_fraction = 1.0-iso_fraction;
         dim[0] = phantom_width+boundary+boundary;
         dim[1] = phantom_width+boundary+boundary;
-        dim[2] = fa_iteration.size()*std::max<int>(1,angle_iteration.size())*repeat_num;
+        dim[2] = std::max<int>(1,angle_iteration.size())*repeat_num;
 
         unsigned int total_size = dim.size();
         std::vector<float> fa[2];
@@ -98,12 +98,10 @@ public:
         begin_prog("creating layout");
 
         if(angle_iteration.empty()) // use 0 to 90 degrees crossing
-            for (unsigned int i = 0,index = 0; i < fa_iteration.size(); ++i)
-                    for (unsigned int n = 0; n < repeat_num; ++n)
+            for (unsigned int n = 0,index = 0; n < repeat_num; ++n)
                     {
                         if (!check_prog(index,total_size))
                             break;
-                        float fa_value = fa_iteration[i];
                         float fa2 = fa_value*fa_value;
                         //fa*fa = (r*r-2*r+1)/(r*r+2)
                         float r = (1.0+fa_value*std::sqrt(3-2*fa2))/(1-fa2);
@@ -111,9 +109,6 @@ public:
                         float l1 = r*l2;
                         for (unsigned int y = 0; y < dim[1]; ++y)
                         {
-                            float angle = ((float)y - boundary)/((float)(phantom_width-1));//from 0 to PI/2
-                            angle = 1.0-angle;
-                            angle *= M_PI*0.5*;
                             for (unsigned int x = 0; x < dim[0]; ++x,++index)
                             {
                                 if (x >= boundary &&
@@ -121,9 +116,12 @@ public:
                                     y >= boundary &&
                                     y < boundary+phantom_width)
                                 {
-                                    float xf = ((float)x - boundary)/((float)(phantom_width-1));//from 0.5 to 1.0
-                                    xf = 1.0-xf;
-                                    xf = 0.5+0.5*xf;
+                                    float xf = ((float)x - boundary + 1)/((float)phantom_width);//from 0.02 to 1.00
+                                    xf = 1.0-xf;//0.00 to 0.98
+                                    xf = 0.5+0.5*xf;//0.50 to 0.99
+                                    float angle = ((float)y - boundary)/((float)phantom_width);//0.00 to 0.98
+                                    angle = 1.0-angle;//0.02 to 1.00
+                                    angle *= M_PI*0.5;//1.8 degrees 90 degrees
                                     models[index] = new MixGaussianModel(l1,l2,mean_dif,angle,
                                                                          fiber_fraction*xf,
                                                                          fiber_fraction*(1.0-xf));
@@ -137,13 +135,11 @@ public:
                         }
                     }
         else
-        for (unsigned int i = 0,index = 0; i < fa_iteration.size(); ++i)
-            for (unsigned int j = 0; j < angle_iteration.size(); ++j)
+            for (unsigned int j = 0,index = 0; j < angle_iteration.size(); ++j)
                 for (unsigned int n = 0; n < repeat_num; ++n)
                 {
                     if (!check_prog(index,total_size))
                         break;
-                    float fa_value = fa_iteration[i];
                     float inner_angle = angle_iteration[j]*M_PI/180.0;
                     float fa2 = fa_value*fa_value;
                     //fa*fa = (r*r-2*r+1)/(r*r+2)
@@ -159,10 +155,10 @@ public:
                                 y >= boundary &&
                                 y < boundary+phantom_width)
                             {
-                                if(inner_angle == 0.0)
-                                    models[index] = new MixGaussianModel(l1,l2,mean_dif,0.0,fiber_fraction/2.0,fiber_fraction/2.0);
+                                if(inner_angle >= 0.0)
+                                    models[index] = new MixGaussianModel(l1,l2,mean_dif,inner_angle,0.5,0.5);
                                 else
-                                    models[index] = new GaussianDispersion(l1,l2,mean_dif,inner_angle,fiber_fraction);
+                                    models[index] = new GaussianDispersion(l1,l2,mean_dif,inner_angle,1.0);
                                 fa[0][index] = fiber_fraction/2.0;
                                 fa[1][index] = fiber_fraction/2.0;
                                 gfa[index] = fa_value;

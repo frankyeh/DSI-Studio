@@ -20,7 +20,8 @@ private:
 
 private slots:
     void on_pushButton_clicked();
-    void on_buttonBox_accepted();
+    void on_generate_clicked();
+    void update_file_name();
 };
 
 #endif // SIMULATION_H

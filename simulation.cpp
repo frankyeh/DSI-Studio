@@ -23,6 +23,11 @@ Simulation::Simulation(QWidget *parent,QString dir_) :
     ui(new Ui::Simulation)
 {
     ui->setupUi(this);
+    connect(ui->SNR,SIGNAL(valueChanged(int)),this,SLOT(update_file_name()));
+    connect(ui->FA,SIGNAL(valueChanged(double)),this,SLOT(update_file_name()));
+    connect(ui->MD,SIGNAL(valueChanged(double)),this,SLOT(update_file_name()));
+    connect(ui->Trial,SIGNAL(valueChanged(int)),this,SLOT(update_file_name()));
+
 }
 
 Simulation::~Simulation()
@@ -30,7 +35,31 @@ Simulation::~Simulation()
     delete ui;
 }
 
-void Simulation::on_buttonBox_accepted()
+
+
+void Simulation::on_pushButton_clicked()
+{
+    ui->Btable->setText(QFileDialog::getOpenFileName(
+                                this,
+                                "Open Images files",
+                                dir,
+                                "Image files (*.txt);;All files (*.*)" ));
+    update_file_name();
+}
+
+void Simulation::update_file_name()
+{
+    std::ostringstream out;
+    out << QFileInfo(ui->Btable->text()).absolutePath().toLocal8Bit().begin() << "/"
+        << QFileInfo(ui->Btable->text()).baseName().toLocal8Bit().begin() <<
+           "_snr" << (int)ui->SNR->value() <<
+           "_fa" << (int)(ui->FA->value()*10.0) <<
+           "_dif" << ui->MD->value() <<
+           "_n" << (int)ui->Trial->value() << ".src";
+    ui->output->setText(out.str().c_str());
+}
+
+void Simulation::on_generate_clicked()
 {
     if(!QFileInfo(ui->Btable->text()).exists())
     {
@@ -44,15 +73,7 @@ void Simulation::on_buttonBox_accepted()
         QMessageBox::information(this,"error","Cannot open b-table file",0);
         return;
     }
-    std::vector<float> fa;
     std::vector<float> angle;
-    if(!ui->FA->text().isEmpty())
-    {
-        std::string fa_iteration_str(ui->FA->text().toLocal8Bit().begin());
-        std::istringstream tmp(fa_iteration_str);
-        std::copy(std::istream_iterator<float>(tmp),
-                  std::istream_iterator<float>(),std::back_inserter(fa));
-    }
     if(!ui->CrossingAngle->text().isEmpty())
     {
         std::string crossing_angle_iteration_str(ui->CrossingAngle->text().toLocal8Bit().begin());
@@ -61,21 +82,9 @@ void Simulation::on_buttonBox_accepted()
                   std::istream_iterator<float>(),std::back_inserter(angle));
     }
 
-    std::ostringstream out;
-    out << ui->Btable->text().toLocal8Bit().begin() <<
-           "_snr" << (int)ui->SNR->value() <<
-           "_dif" << ui->MD->value() <<
-           "_odf" << (int)odf_fold <<
-           "_n" << (int)ui->Trial->value() << ".src";
-    layout.createLayout(out.str().c_str(),fa,angle,ui->Trial->value(),ui->phantom_size->value(),ui->background_size->value());
-    return;
-}
+    layout.createLayout(ui->output->text().toLocal8Bit().begin(),
+                        ui->FA->value(),angle,
+                        ui->Trial->value(),
+                        50,5);
 
-void Simulation::on_pushButton_clicked()
-{
-    ui->Btable->setText(QFileDialog::getOpenFileName(
-                                this,
-                                "Open Images files",
-                                dir,
-                                "Image files (*.txt);;All files (*.*)" ));
 }
