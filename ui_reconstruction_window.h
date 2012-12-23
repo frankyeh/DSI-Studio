@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Wed Nov 28 23:11:31 2012
+** Created: Sat Dec 22 23:56:19 2012
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -99,6 +99,10 @@ public:
     QSpinBox *hamming_filter;
     QGroupBox *QBIOption_2;
     QHBoxLayout *QBIOption;
+    QHBoxLayout *horizontalLayout_12;
+    QLabel *label;
+    QSpinBox *SHOrder;
+    QHBoxLayout *horizontalLayout_13;
     QLabel *label_6;
     QDoubleSpinBox *regularization_param;
     QGroupBox *GQIOption_2;
@@ -164,7 +168,7 @@ public:
         toolBox->setObjectName(QString::fromUtf8("toolBox"));
         source_page = new QWidget();
         source_page->setObjectName(QString::fromUtf8("source_page"));
-        source_page->setGeometry(QRect(0, 0, 608, 453));
+        source_page->setGeometry(QRect(0, 0, 259, 130));
         verticalLayout_4 = new QVBoxLayout(source_page);
         verticalLayout_4->setObjectName(QString::fromUtf8("verticalLayout_4"));
         splitter = new QSplitter(source_page);
@@ -255,7 +259,7 @@ public:
         toolBox->addItem(source_page, QString::fromUtf8("Source Images"));
         page_3 = new QWidget();
         page_3->setObjectName(QString::fromUtf8("page_3"));
-        page_3->setGeometry(QRect(0, 0, 608, 453));
+        page_3->setGeometry(QRect(0, 0, 534, 146));
         gridLayout_2 = new QGridLayout(page_3);
         gridLayout_2->setObjectName(QString::fromUtf8("gridLayout_2"));
         verticalLayout_5 = new QVBoxLayout();
@@ -332,7 +336,7 @@ public:
         toolBox->addItem(page_3, QString::fromUtf8("Step 1: setup brain mask"));
         page = new QWidget();
         page->setObjectName(QString::fromUtf8("page"));
-        page->setGeometry(QRect(0, 0, 591, 492));
+        page->setGeometry(QRect(0, 0, 591, 494));
         page->setMinimumSize(QSize(0, 0));
         verticalLayout_2 = new QVBoxLayout(page);
         verticalLayout_2->setObjectName(QString::fromUtf8("verticalLayout_2"));
@@ -443,10 +447,30 @@ public:
         QBIOption_2->setObjectName(QString::fromUtf8("QBIOption_2"));
         QBIOption = new QHBoxLayout(QBIOption_2);
         QBIOption->setObjectName(QString::fromUtf8("QBIOption"));
+        horizontalLayout_12 = new QHBoxLayout();
+        horizontalLayout_12->setObjectName(QString::fromUtf8("horizontalLayout_12"));
+        label = new QLabel(QBIOption_2);
+        label->setObjectName(QString::fromUtf8("label"));
+
+        horizontalLayout_12->addWidget(label);
+
+        SHOrder = new QSpinBox(QBIOption_2);
+        SHOrder->setObjectName(QString::fromUtf8("SHOrder"));
+        SHOrder->setMinimum(4);
+        SHOrder->setMaximum(10);
+        SHOrder->setValue(8);
+
+        horizontalLayout_12->addWidget(SHOrder);
+
+
+        QBIOption->addLayout(horizontalLayout_12);
+
+        horizontalLayout_13 = new QHBoxLayout();
+        horizontalLayout_13->setObjectName(QString::fromUtf8("horizontalLayout_13"));
         label_6 = new QLabel(QBIOption_2);
         label_6->setObjectName(QString::fromUtf8("label_6"));
 
-        QBIOption->addWidget(label_6);
+        horizontalLayout_13->addWidget(label_6);
 
         regularization_param = new QDoubleSpinBox(QBIOption_2);
         regularization_param->setObjectName(QString::fromUtf8("regularization_param"));
@@ -457,7 +481,10 @@ public:
         regularization_param->setSingleStep(0.001);
         regularization_param->setValue(0.006);
 
-        QBIOption->addWidget(regularization_param);
+        horizontalLayout_13->addWidget(regularization_param);
+
+
+        QBIOption->addLayout(horizontalLayout_13);
 
 
         verticalLayout_2->addWidget(QBIOption_2);
@@ -748,6 +775,7 @@ public:
          << QApplication::translate("reconstruction_window", "SPM norm 12-14-12", 0, QApplication::UnicodeUTF8)
         );
         label_5->setText(QApplication::translate("reconstruction_window", "DSI Hamming filter", 0, QApplication::UnicodeUTF8));
+        label->setText(QApplication::translate("reconstruction_window", "SH order", 0, QApplication::UnicodeUTF8));
         label_6->setText(QApplication::translate("reconstruction_window", "QBI Regularization", 0, QApplication::UnicodeUTF8));
         label_7->setText(QApplication::translate("reconstruction_window", "GQI Diffusion sampling ratio", 0, QApplication::UnicodeUTF8));
         ODFDef->clear();

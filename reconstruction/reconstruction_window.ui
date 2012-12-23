@@ -51,8 +51,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>608</width>
-         <height>453</height>
+         <width>259</width>
+         <height>130</height>
         </rect>
        </property>
        <attribute name="label">
@@ -197,8 +197,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>608</width>
-         <height>453</height>
+         <width>534</width>
+         <height>146</height>
         </rect>
        </property>
        <attribute name="label">
@@ -307,7 +307,7 @@
          <x>0</x>
          <y>0</y>
          <width>591</width>
-         <height>492</height>
+         <height>494</height>
         </rect>
        </property>
        <property name="minimumSize">
@@ -483,36 +483,64 @@
          <widget class="QGroupBox" name="QBIOption_2">
           <layout class="QHBoxLayout" name="QBIOption">
            <item>
-            <widget class="QLabel" name="label_6">
-             <property name="text">
-              <string>QBI Regularization</string>
-             </property>
-            </widget>
+            <layout class="QHBoxLayout" name="horizontalLayout_12">
+             <item>
+              <widget class="QLabel" name="label">
+               <property name="text">
+                <string>SH order</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="SHOrder">
+               <property name="minimum">
+                <number>4</number>
+               </property>
+               <property name="maximum">
+                <number>10</number>
+               </property>
+               <property name="value">
+                <number>8</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </item>
            <item>
-            <widget class="QDoubleSpinBox" name="regularization_param">
-             <property name="maximumSize">
-              <size>
-               <width>75</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="decimals">
-              <number>3</number>
-             </property>
-             <property name="minimum">
-              <double>0.001000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>1.000000000000000</double>
-             </property>
-             <property name="singleStep">
-              <double>0.001000000000000</double>
-             </property>
-             <property name="value">
-              <double>0.006000000000000</double>
-             </property>
-            </widget>
+            <layout class="QHBoxLayout" name="horizontalLayout_13">
+             <item>
+              <widget class="QLabel" name="label_6">
+               <property name="text">
+                <string>QBI Regularization</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QDoubleSpinBox" name="regularization_param">
+               <property name="maximumSize">
+                <size>
+                 <width>75</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="decimals">
+                <number>3</number>
+               </property>
+               <property name="minimum">
+                <double>0.001000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>1.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.001000000000000</double>
+               </property>
+               <property name="value">
+                <double>0.006000000000000</double>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </item>
           </layout>
          </widget>

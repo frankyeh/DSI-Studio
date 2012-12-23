@@ -107,6 +107,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     ui->diffusion_sampling->setValue(settings.value("rec_gqi_sampling",1.25).toDouble());
     ui->regularization_param->setValue(settings.value("rec_qbi_reg",0.006).toDouble());
+    ui->SHOrder->setValue(settings.value("rec_qbi_sh_order",8).toInt());
     ui->hamming_filter->setValue(settings.value("rec_hamming_filter",17).toDouble());
     ui->SharpeningParam->setValue(settings.value("rec_deconvolution_param",3.0).toDouble());
 
@@ -374,7 +375,9 @@ void reconstruction_window::on_doDTI_clicked()
         if(ui->QBI->isChecked())
         {
             params[0] = ui->regularization_param->value();
+            params[1] = ui->SHOrder->value();
             settings.setValue("rec_qbi_reg",params[0]);
+            settings.setValue("rec_qbi_sh_order",params[1]);
             doReconstruction(3,index+1 == filenames.size());
         }
         else

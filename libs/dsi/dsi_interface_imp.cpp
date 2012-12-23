@@ -69,7 +69,7 @@ typedef odf_reco_type<boost::mpl::vector<
 > >::type qbi_process;
 
 typedef odf_reco_type<boost::mpl::vector<
-    SHDecomposition<8>
+    SHDecomposition
 > >::type qbi_sh_process;
 
 
@@ -92,7 +92,7 @@ typedef estimation_type<boost::mpl::vector<
 
 // for ODF deconvolution
 typedef estimation_type<boost::mpl::vector<
-    SHDecomposition<8>
+    SHDecomposition
 > >::type qbi_sh_estimate_response_function;
 
 
@@ -227,7 +227,7 @@ extern "C"
 
                 begin_prog("deconvolving");
             }
-            out << ".qbi.sh."<< param_values[0] << ".fib";
+            out << ".qbi.sh"<< (int) param_values[1] << "." << param_values[0] << ".fib";
             if (!image_model->reconstruct<qbi_sh_process>(out.str()))
                 return "reconstruction canceled";
             break;

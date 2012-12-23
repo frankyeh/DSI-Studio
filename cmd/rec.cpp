@@ -72,8 +72,11 @@ int rec(int ac, char *av[])
         param[0] = 5;
         param[1] = 15;
     }
-    if(method_index == 3)
+    if(method_index == 3) // QBI-SH
+    {
         param[0] = 0.006;
+        param[1] = 8;
+    }
     if(method_index == 4)
         param[0] = 1.2;
     if(method_index == 7)

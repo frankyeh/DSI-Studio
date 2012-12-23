@@ -8,7 +8,6 @@
 #define _USE_MATH_DEFINES
 
 
-template<unsigned int max_l>
 struct SHDecomposition : public BaseProcess
 {
 
@@ -43,6 +42,7 @@ public:
 
         half_odf_size = voxel.ti.vertices_count/2;
         float lambda = voxel.param[0];
+        unsigned int max_l = voxel.param[1];
         const unsigned int R = ((max_l+1)*(max_l+2)/2);
         std::vector<std::pair<int,int> > j_map(R);
         for (int k = 0; k <= max_l; k += 2)
