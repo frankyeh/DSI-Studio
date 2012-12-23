@@ -163,7 +163,6 @@ public:
 
 public:
     std::vector<const float*> fa;
-    float fa_threshold;
     image::geometry<3> dim;
 
     std::vector<image::vector<3,float> > odf_table;
@@ -187,39 +186,32 @@ public:
     bool add_data(MatFile& mat_reader)
     {
         unsigned int row,col;
-        fa_threshold = 0;
-        for (unsigned int index = 0;check_prog(index,mat_reader.get_matrix_count());++index)
+        // dimension
         {
-            std::string matrix_name = mat_reader.get_matrix_name(index);
-            if (matrix_name == "dimension")
+            const unsigned short* dim_buf = 0;
+            if (!mat_reader.get_matrix("dimension",row,col,dim_buf))
+                return false;
+            std::copy(dim_buf,dim_buf+3,dim.begin());
+        }
+        // odf_vertices
+        {
+            const float* odf_buffer;
+            if (!mat_reader.get_matrix("odf_vertices",row,col,odf_buffer))
+                return false;
+            odf_table.resize(col);
+            for (unsigned int index = 0;index < odf_table.size();++index,odf_buffer += 3)
             {
-                const unsigned short* dim_buf = 0;
-                mat_reader.get_matrix(index,row,col,dim_buf);
-                if (!dim_buf)
-                    return false;
-                std::copy(dim_buf,dim_buf+3,dim.begin());
-                continue;
+                odf_table[index][0] = odf_buffer[0];
+                odf_table[index][1] = odf_buffer[1];
+                odf_table[index][2] = odf_buffer[2];
             }
-            if (matrix_name == "odf_vertices")
+            half_odf_size = col / 2;
+        }
+        // odf_faces
+        {
+            const unsigned short* odf_buffer;
+            if(mat_reader.get_matrix("odf_faces",row,col,odf_buffer))
             {
-                const float* odf_buffer;
-                mat_reader.get_matrix(index,row,col,odf_buffer);
-                if (!odf_buffer)
-                    return false;
-                odf_table.resize(col);
-                for (unsigned int index = 0;index < odf_table.size();++index,odf_buffer += 3)
-                {
-                    odf_table[index][0] = odf_buffer[0];
-                    odf_table[index][1] = odf_buffer[1];
-                    odf_table[index][2] = odf_buffer[2];
-                }
-                half_odf_size = col / 2;
-                continue;
-            }
-            if (matrix_name == "odf_faces")
-            {
-                const unsigned short* odf_buffer;
-                mat_reader.get_matrix(index,row,col,odf_buffer);
                 odf_faces.resize(col);
                 for (unsigned int index = 0;index < odf_faces.size();++index,odf_buffer += 3)
                 {
@@ -227,15 +219,12 @@ public:
                     odf_faces[index][1] = odf_buffer[1];
                     odf_faces[index][2] = odf_buffer[2];
                 }
-                continue;
             }
-            if (matrix_name == "fa_threshold")
-            {
-                const float* fa_threshold_ptr;
-                mat_reader.get_matrix(index,row,col,fa_threshold_ptr);
-                fa_threshold = *fa_threshold_ptr;
-                continue;
-            }
+        }
+
+        for (unsigned int index = 0;check_prog(index,mat_reader.get_matrix_count());++index)
+        {
+            std::string matrix_name = mat_reader.get_matrix_name(index);
 
             if (matrix_name == "odfs")
             {
@@ -332,6 +321,8 @@ public:
 
         }
 
+
+
         // adding the primary fiber index
         index_name.insert(index_name.begin(),fa.size() == 1 ? "fa":"qa");
         index_data.insert(index_data.begin(),fa);
@@ -369,10 +360,6 @@ public:
         if(order >= num_fiber)
             return 0.0;
         return fa[order][index];
-    }
-    float getFAThreshold(void) const
-    {
-        return fa_threshold;
     }
 
     float estimateFA(const image::vector<3,float>& pos,unsigned char order) const
