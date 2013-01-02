@@ -499,12 +499,15 @@ void GLWidget::paintGL()
                 cur_tracking_window.ui->color_bar->hide();
         }
 
-        if(get_param("tract_style") != tract_style ||
+
+        if(get_param("tract_alpha") != tract_alpha ||
+           get_param("tract_style") != tract_style ||
            get_param("tract_color_style") != tract_color_style ||
            get_param("tract_size") != tube_size ||
            get_param("tract_tube_detail") != tract_tube_detail ||
            get_param("end_point_shift") != end_point_shift)
         {
+
             tract_style = get_param("tract_style");
             tract_color_style = get_param("tract_color_style");
             tube_size = get_param("tract_size");
@@ -512,7 +515,14 @@ void GLWidget::paintGL()
             end_point_shift = get_param("end_point_shift");
             makeTracts();
         }
-
+        if(get_param("tract_alpha") != 10)
+        {
+            glEnable(GL_BLEND);
+            glBlendFunc (BlendFunc1[get_param("tract_bend1")],
+                         BlendFunc2[get_param("tract_bend2")]);
+        }
+        else
+            glDisable(GL_BLEND);
         glCallList(tracts);
         glPopMatrix();
         glDisable(GL_COLOR_MATERIAL);
@@ -739,6 +749,13 @@ void GLWidget::add_odf(int x,int y,int z)
         *(iter+half_odf) -= displacement;
     }
 }
+void myglColor(const image::vector<3,float>& color,float alpha)
+{
+    if(alpha == 1.0)
+        glColor3fv(color.begin());
+    else
+        glColor4f(color[0],color[1],color[2],alpha);
+}
 
 void GLWidget::makeTracts(void)
 {
@@ -747,7 +764,7 @@ void GLWidget::makeTracts(void)
     makeCurrent();
     glDeleteLists(tracts, 1);
     glNewList(tracts, GL_COMPILE);
-
+    float alpha = (float)(get_param("tract_alpha"))/10.0;
     const float radius_option[] = {0.01,0.02,0.04,0.08,0.1,0.2,0.4,0.6,0.8};
     const float detail_option[] = {1.0,0.5,0.25,0.0,0.0};
     float radius = radius_option[tube_size];
@@ -1014,7 +1031,7 @@ void GLWidget::makeTracts(void)
                             glEnd();*/
                         if(show_end_points)
                         {
-                            glColor3fv(cur_color.begin());
+                            myglColor(cur_color,alpha);
                             glNormal3f(-vec_n[0],-vec_n[1],-vec_n[2]);
                             image::vector<3,float> shift(vec_n);
                             shift *= -end_point_shift;
@@ -1028,7 +1045,7 @@ void GLWidget::makeTracts(void)
                         }
                         else
                         {
-                            glColor3fv(cur_color.begin());
+                            myglColor(cur_color,alpha);
                             glNormal3f(-vec_n[0],-vec_n[1],-vec_n[2]);
                             for (unsigned int k = 0;k < 8;++k)
                                 glVertex3fv(points[end_sequence[k]].begin());
@@ -1040,20 +1057,20 @@ void GLWidget::makeTracts(void)
 
                         if(!show_end_points)
                         {
-                            glColor3fv(cur_color.begin());
+                            myglColor(cur_color,alpha);
                             glNormal3fv(normals[0].begin());
                             glVertex3fv(points[0].begin());
                             for (unsigned int k = 1;k < 8;++k)
                             {
-                               glColor3fv(previous_color.begin());
+                               myglColor(previous_color,alpha);
                                glNormal3fv(previous_normals[k].begin());
                                glVertex3fv(previous_points[k].begin());
 
-                                glColor3fv(cur_color.begin());
-                                glNormal3fv(normals[k].begin());
-                                glVertex3fv(points[k].begin());
+                               myglColor(cur_color,alpha);
+                               glNormal3fv(normals[k].begin());
+                               glVertex3fv(points[k].begin());
                             }
-                            glColor3fv(cur_color.begin());
+                            myglColor(cur_color,alpha);
                             glNormal3fv(normals[0].begin());
                             glVertex3fv(points[0].begin());
                         }
@@ -1062,7 +1079,7 @@ void GLWidget::makeTracts(void)
                             if(show_end_points)
                             {
                                 glBegin((tract_style) ? GL_TRIANGLE_STRIP : GL_LINE_STRIP);
-                                glColor3fv(cur_color.begin());
+                                myglColor(cur_color,alpha);
                                 glNormal3fv(vec_n.begin());
                                 image::vector<3,float> shift(vec_n);
                                 shift *= end_point_shift;
@@ -1075,10 +1092,10 @@ void GLWidget::makeTracts(void)
                             }
                             else
                             {
-                            glColor3fv(cur_color.begin());
-                            glNormal3fv(vec_n.begin());
-                            for (int k = 7;k >= 0;--k)
-                                glVertex3fv(points[end_sequence[k]].begin());
+                                myglColor(cur_color,alpha);
+                                glNormal3fv(vec_n.begin());
+                                for (int k = 7;k >= 0;--k)
+                                    glVertex3fv(points[end_sequence[k]].begin());
                             }
                         }
 
@@ -1092,7 +1109,7 @@ void GLWidget::makeTracts(void)
                     }
                     else
                     {
-                        glColor3fv(cur_color.begin());
+                        myglColor(cur_color,alpha);
                         glVertex3fv(pos.begin());
                     }
                 }

@@ -340,6 +340,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
     }
     // color bar
     {
+        ui->color_bar_style->setCurrentIndex(1);
         connect(ui->color_bar_style,SIGNAL(currentIndexChanged(int)),this,SLOT(update_color_map()));
         connect(ui->color_from,SIGNAL(clicked()),this,SLOT(update_color_map()));
         connect(ui->color_to,SIGNAL(clicked()),this,SLOT(update_color_map()));
@@ -348,6 +349,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
         connect(ui->update_rendering,SIGNAL(clicked()),glWidget,SLOT(makeTracts()));
         connect(ui->update_rendering,SIGNAL(clicked()),glWidget,SLOT(updateGL()));
         on_tract_color_index_currentIndexChanged(0);
+
     }
 
 

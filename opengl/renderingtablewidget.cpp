@@ -366,6 +366,30 @@ void RenderingTableWidget::initialize(void)
                                                       << QString("DST_ALPHA")
                                                       << QString("ONE_MINUS_DST_ALPHA"),5));
 
+    openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
+        "tract_alpha",QString("Opacity"),QString("int"),10));
+    openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
+        "tract_bend1",QString("Blend Func1"),
+                                                      QStringList()
+                                                      << QString("ZERO")
+                                                      << QString("ONE")
+                                                      << QString("DST_COLOR")
+                                                      << QString("ONE_MINUS_DST_COLOR")
+                                                      << QString("SRC_ALPHA")
+                                                      << QString("ONE_MINUS_SRC_ALPHA")
+                                                      << QString("DST_ALPHA")
+                                                      << QString("ONE_MINUS_DST_ALPHA"),4));
+    openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
+        "tract_bend2",QString("Blend Func2"),
+                                                      QStringList()
+                                                      << QString("ZERO")
+                                                      << QString("ONE")
+                                                      << QString("SRC_COLOR")
+                                                      << QString("ONE_MINUS_DST_COLOR")
+                                                      << QString("SRC_ALPHA")
+                                                      << QString("ONE_MINUS_SRC_ALPHA")
+                                                      << QString("DST_ALPHA")
+                                                      << QString("ONE_MINUS_DST_ALPHA"),5));
 
     openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
         "tract_style",QString("Style"),QStringList()

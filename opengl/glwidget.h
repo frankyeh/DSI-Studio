@@ -91,6 +91,7 @@ class RenderingTableWidget;
  private:
      int get_param(const char* name);
  private:
+     unsigned char tract_alpha;
      unsigned char tract_style;
      unsigned char tract_color_style;
      unsigned char tube_size;
