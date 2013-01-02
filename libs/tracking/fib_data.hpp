@@ -196,16 +196,23 @@ public:
         // odf_vertices
         {
             const float* odf_buffer;
-            if (!mat_reader.get_matrix("odf_vertices",row,col,odf_buffer))
-                return false;
-            odf_table.resize(col);
-            for (unsigned int index = 0;index < odf_table.size();++index,odf_buffer += 3)
+            if (mat_reader.get_matrix("odf_vertices",row,col,odf_buffer))
             {
-                odf_table[index][0] = odf_buffer[0];
-                odf_table[index][1] = odf_buffer[1];
-                odf_table[index][2] = odf_buffer[2];
+                    odf_table.resize(col);
+                for (unsigned int index = 0;index < odf_table.size();++index,odf_buffer += 3)
+                {
+                    odf_table[index][0] = odf_buffer[0];
+                    odf_table[index][1] = odf_buffer[1];
+                    odf_table[index][2] = odf_buffer[2];
+                }
+                half_odf_size = col / 2;
             }
-            half_odf_size = col / 2;
+            else
+            {
+                odf_table.resize(2);
+                half_odf_size = 1;
+                odf_faces.clear();
+            }
         }
         // odf_faces
         {
