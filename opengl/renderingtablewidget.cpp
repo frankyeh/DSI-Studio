@@ -369,6 +369,11 @@ void RenderingTableWidget::initialize(void)
     openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
         "tract_alpha",QString("Opacity"),QString("int"),10));
     openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
+        "tract_alpha_style",QString("Transparent Style"),
+                                                      QStringList()
+                                                      << QString("Sketch")
+                                                      << QString("Classic"),0));
+    openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
         "tract_bend1",QString("Blend Func1"),
                                                       QStringList()
                                                       << QString("ZERO")

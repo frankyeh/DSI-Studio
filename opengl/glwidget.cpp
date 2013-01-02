@@ -501,13 +501,15 @@ void GLWidget::paintGL()
 
 
         if(get_param("tract_alpha") != tract_alpha ||
+           get_param("tract_alpha_style") != tract_alpha_style ||
            get_param("tract_style") != tract_style ||
            get_param("tract_color_style") != tract_color_style ||
            get_param("tract_size") != tube_size ||
            get_param("tract_tube_detail") != tract_tube_detail ||
            get_param("end_point_shift") != end_point_shift)
         {
-
+            tract_alpha = get_param("tract_alpha");
+            tract_alpha_style = get_param("tract_alpha_style");
             tract_style = get_param("tract_style");
             tract_color_style = get_param("tract_color_style");
             tube_size = get_param("tract_size");
@@ -520,12 +522,19 @@ void GLWidget::paintGL()
             glEnable(GL_BLEND);
             glBlendFunc (BlendFunc1[get_param("tract_bend1")],
                          BlendFunc2[get_param("tract_bend2")]);
+            glDepthMask(tract_alpha_style);
         }
         else
+        {
             glDisable(GL_BLEND);
+            glDepthMask(true);
+        }
         glCallList(tracts);
         glPopMatrix();
         glDisable(GL_COLOR_MATERIAL);
+        glDisable(GL_BLEND);
+        glDisable(GL_TEXTURE_2D);
+        glDepthMask(true);
         check_error("show_tract");
     }
 
@@ -764,7 +773,7 @@ void GLWidget::makeTracts(void)
     makeCurrent();
     glDeleteLists(tracts, 1);
     glNewList(tracts, GL_COMPILE);
-    float alpha = (float)(get_param("tract_alpha"))/10.0;
+    float alpha = (tract_alpha_style == 0)? ((float)tract_alpha)/20.0:((float)tract_alpha)/10.0;
     const float radius_option[] = {0.01,0.02,0.04,0.08,0.1,0.2,0.4,0.6,0.8};
     const float detail_option[] = {1.0,0.5,0.25,0.0,0.0};
     float radius = radius_option[tube_size];
