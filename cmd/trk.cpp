@@ -41,9 +41,10 @@ int trk(int ac, char *av[])
     ("end", po::value<std::string>(), "file for ending regions")
     ("end2", po::value<std::string>(), "file for ending regions")
     ("seed", po::value<std::string>(), "file for seed regions")
+    ("threshold_index", po::value<std::string>(), "index for thresholding")
     ("step_size", po::value<float>()->default_value(1), "the step size in minimeter (default:1)")
     ("turning_angle", po::value<float>()->default_value(60), "the turning angle in degrees (default:60)")
-    ("fa_threshold", po::value<float>()->default_value(0.03), "the fa threshold (default:0.03)")
+    ("fa_threshold", po::value<float>(), "the fa threshold (default:0.03)")
     ("smoothing", po::value<float>()->default_value(0), "smoothing fiber tracts, from 0 to 1. (default:0)")
     ("min_length", po::value<float>()->default_value(10), "minimum fiber length in minimeter (default:10)")
     ("max_length", po::value<float>()->default_value(500), "maximum fiber length in minimeter (default:500)")
@@ -76,6 +77,11 @@ int trk(int ac, char *av[])
             return 0;
         }
     }
+
+
+    if (vm.count("threshold_index"))
+        handle->fib_data.fib.set_tracking_index(vm["threshold_index"].as<std::string>());
+
     image::geometry<3> geometry = handle->fib_data.dim;
     image::vector<3> voxel_size = handle->fib_data.vs;
     const float *fa0 = handle->fib_data.fib.fa[0];
@@ -85,7 +91,11 @@ int trk(int ac, char *av[])
     param[2] = param[1] = vm["turning_angle"].as<float>();
     param[1] *= 3.1415926/180.0;
     param[2] *= 3.1415926/180.0;
-    param[3] = vm["fa_threshold"].as<float>();
+    if (vm.count("fiber_count"))
+        param[3] = vm["fa_threshold"].as<float>();
+    else
+        param[3] = 0.6*image::segmentation::otsu_threshold(
+                image::basic_image<float, 3,image::const_pointer_memory<float> >(fa0,geometry));
     param[4] = vm["smoothing"].as<float>();
     param[5] = vm["min_length"].as<float>();
     param[6] = vm["max_length"].as<float>();
@@ -96,8 +106,7 @@ int trk(int ac, char *av[])
     {
         termination_count = vm["fiber_count"].as<int>();
         stop_by_track = true;
-    }
-
+    }        
     if (vm.count("seed_count"))
     {
         termination_count = vm["seed_count"].as<int>();
