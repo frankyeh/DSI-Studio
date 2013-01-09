@@ -362,6 +362,11 @@ public:
         findex = index_data_dir[new_index];
     }
 
+    void set_tracking_index(const std::string name)
+    {
+        set_tracking_index(std::find(index_name.begin(),index_name.end(),name)-index_name.begin());
+    }
+
     float getFA(unsigned int index,unsigned char order) const
     {
         if(order >= num_fiber)
