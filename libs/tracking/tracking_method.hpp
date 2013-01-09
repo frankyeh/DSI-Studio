@@ -91,8 +91,10 @@ public:
 				return false;
             if(roi_mgr.is_excluded_point(info.position))
 				return false;
-            std::copy(info.position.begin(),info.position.end(),track_buffer.begin()+buffer_back_pos);
-			buffer_back_pos += 3;
+            track_buffer[buffer_back_pos] = info.position[0];
+            track_buffer[buffer_back_pos+1] = info.position[1];
+            track_buffer[buffer_back_pos+2] = info.position[2];
+            buffer_back_pos += 3;
 			tracking(ProcessList());
 			// make sure that the length won't overflow
 			
@@ -117,8 +119,10 @@ public:
 			buffer_front_pos -= 3;
             if(roi_mgr.is_excluded_point(info.position))
 				return false;
-            std::copy(info.position.begin(),info.position.end(),track_buffer.begin()+buffer_front_pos);
-		}
+            track_buffer[buffer_front_pos] = info.position[0];
+            track_buffer[buffer_front_pos+1] = info.position[1];
+            track_buffer[buffer_front_pos+2] = info.position[2];
+        }
 		while(1);
 
         if(smoothing)
