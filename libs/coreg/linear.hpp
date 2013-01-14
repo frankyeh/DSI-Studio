@@ -13,7 +13,6 @@ public:
     ImageType from,to;
     std::auto_ptr<boost::thread> thread;
     TransformType arg_min;
-    unsigned char cost_function_id;
     bool terminated;
     bool ended;
 public:
@@ -37,22 +36,12 @@ public:
         ended = true;
     }
 
+    template<typename CostFunctionType>
     void argmin(int reg_type)
     {
         terminated = false;
         ended = false;
-        //opti_method.minimize(*cost_function.get(),arg_min);
-        switch (cost_function_id)
-        {
-        case 0:
-        case 1:
-            image::reg::linear_seq(from,to,arg_min,reg_type,image::reg::square_error(),terminated);
-            break;
-        case 2:
-            image::reg::linear_seq(from,to,arg_min,reg_type,image::reg::mutual_information(),terminated);
-            break;
-
-        }
+        image::reg::linear(from,to,arg_min,reg_type,CostFunctionType(),terminated);
     }
 
     const float* get(void) const
@@ -62,9 +51,10 @@ public:
         result = T;
         return result.get();
     }
-    void thread_argmin(int reg_type)
+    template<typename CostFunctionType>
+    void thread_argmin(int reg_type,CostFunctionType)
     {
-        thread.reset(new boost::thread(&LinearMapping::argmin,this,reg_type));
+        thread.reset(new boost::thread(&LinearMapping::argmin<CostFunctionType>,this,reg_type));
     }
 };
 
