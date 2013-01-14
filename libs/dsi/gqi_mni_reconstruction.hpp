@@ -6,12 +6,17 @@
 #include "basic_voxel.hpp"
 #include "basic_process.hpp"
 #include "odf_decomposition.hpp"
+#include "odf_deconvolusion.hpp"
 #include "gqi_process.hpp"
 
 extern fa_template fa_template_imp;
 class GQI_MNI  : public BaseProcess
 {
 public:
+    ODFDecomposition decomposition;
+    ODFDeconvolusion deconvolution;
+    float angle_variance;
+    QSpace2Odf gqi;
 protected:
     normalization<image::basic_image<float,3> > mni;
     image::geometry<3> src_geo;
@@ -262,8 +267,62 @@ public:
 
         jdet.resize(des_geo.size());
 
+
+        if (voxel.odf_deconvolusion)
+        {
+            gqi.init(voxel);
+            deconvolution.init(voxel);
+        }
+        if (voxel.odf_decomposition)
+        {
+            gqi.init(voxel);
+            decomposition.init(voxel);
+        }
+        angle_variance = 8; //degress;
+        angle_variance *= M_PI/180;
+        angle_variance *= angle_variance;
+        angle_variance *= 2.0;
+
     }
 
+    void get_jacobian(const image::vector<3,double>& pos,float jacobian[9])
+    {
+        float M[9];
+        mni.get_jacobian(pos,M);
+        math::matrix_product(affine.scaling_rotation,M,jacobian,math::dim<3,3>(),math::dim<3,3>());
+    }
+
+    // combined with deconvolution or decomposition
+    void odf_sharpening(Voxel& voxel, VoxelData& data,float jacobian[9])
+    {
+        gqi.run(voxel,data);
+        if (voxel.odf_deconvolusion)
+            deconvolution.run(voxel,data);
+        else
+            decomposition.run(voxel,data);
+        std::vector<float> new_odf(data.odf.size());
+        std::vector<float> w(voxel.ti.half_vertices_count*voxel.ti.half_vertices_count);
+        for(unsigned int i = 0,w_pos = 0;i < data.odf.size();++i,++w_pos)
+            {
+                image::vector<3,double> new_dir;
+                math::matrix_product(jacobian,voxel.ti.vertices[i].begin(),new_dir.begin(),math::dim<3,3>(),math::dim<3,1>());
+                new_dir.normalize();
+                if(data.odf[i] >= data.min_odf)
+                for(unsigned int row = 0,w_row = w_pos;
+                    row < voxel.ti.half_vertices_count;
+                    ++row,w_row += voxel.ti.half_vertices_count)
+                {
+                    float angle = std::acos(std::min<float>(1.0,std::abs(voxel.ti.vertices[row]*new_dir)));
+                    w[w_row] = std::exp(-angle*angle/angle_variance);
+                }
+            }
+        for(unsigned int i = 0,w_pos = 0;i < data.odf.size();++i,w_pos += voxel.ti.half_vertices_count)
+        {
+            new_odf[i] = math::vector_op_dot(data.odf.begin(),data.odf.end(),w.begin()+w_pos)/
+                    std::accumulate(w.begin()+w_pos,w.begin()+w_pos+voxel.ti.half_vertices_count,0.0f);
+        }
+        data.odf.swap(new_odf);
+    }
 
     virtual void run(Voxel& voxel, VoxelData& data)
     {
@@ -286,11 +345,15 @@ public:
         if(voxel.half_sphere && b0_index != -1)
             data.space[b0_index] /= 2.0;
 
-        std::vector<float> sinc_ql(data.odf.size()*voxel.q_count);
+        float jacobian[9];
+        get_jacobian(pos,jacobian);
+
+
+        if (voxel.odf_deconvolusion || voxel.odf_decomposition)
+            odf_sharpening(voxel,data,jacobian);
+        else
         {
-            float jacobian[9],M[9];
-            mni.get_jacobian(pos,M);
-            math::matrix_product(affine.scaling_rotation,M,jacobian,math::dim<3,3>(),math::dim<3,3>());
+            std::vector<float> sinc_ql(data.odf.size()*voxel.q_count);
             for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
             {
                 image::vector<3,double> dir(voxel.ti.vertices[j]),from;
@@ -304,14 +367,12 @@ public:
                         sinc_ql[index] = boost::math::sinc_pi(q_vectors_time[i]*from);
 
             }
-            jdet[data.voxel_index] = std::abs(math::matrix_determinant(jacobian,math::dim<3,3>())*voxel_volume_scale);
+            math::matrix_vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
+                                        math::dyndim(data.odf.size(),data.space.size()));
         }
 
-        math::matrix_vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
-                                    math::dyndim(data.odf.size(),data.space.size()));
-
+        jdet[data.voxel_index] = std::abs(math::matrix_determinant(jacobian,math::dim<3,3>())*voxel_volume_scale);
         std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 *= jdet[data.voxel_index]);
-
         float accumulated_qa = std::accumulate(data.odf.begin(),data.odf.end(),0.0);
         if (max_accumulated_qa < accumulated_qa)
         {
@@ -335,75 +396,6 @@ public:
         mat_writer.add_matrix("R2",&R2,1,1);
     }
 
-};
-
-class QSDR_Decomposition : public GQI_MNI{
-private:
-    ODFDecomposition decomposition;
-    QSpace2Odf gqi;
-public:
-    virtual void init(Voxel& voxel)
-    {
-        GQI_MNI::init(voxel);
-        gqi.init(voxel);
-        decomposition.init(voxel);
-    }
-
-    virtual void run(Voxel& voxel, VoxelData& data)
-    {
-        image::pixel_index<3> pos(data.voxel_index,des_geo);
-        image::vector<3,double> b;
-        float jacobian[9];
-        mni.warp_coordinate(pos,b);
-        mni.get_jacobian(pos,jacobian);
-        // resample the images
-        {
-
-            image::interpolation<image::linear_weighting,3> trilinear_interpolation;
-            if (!trilinear_interpolation.get_location(src_geo,b))
-                std::fill(data.odf.begin(),data.odf.end(),0);
-            else
-            {
-                for (unsigned int i = 0; i < data.space.size(); ++i)
-                    trilinear_interpolation.estimate(ptr_images[i],b,data.space[i]);
-
-                gqi.run(voxel,data);
-                decomposition.run(voxel,data);
-                std::vector<float> new_odf(data.odf.size());
-                std::fill(new_odf.begin(),new_odf.end(),data.min_odf);
-                for(unsigned int i = 0;i < data.odf.size();++i)
-                    if(data.odf[i] > data.min_odf)
-                    {
-                        image::vector<3,double> dir(voxel.ti.vertices[i]),from;
-                        math::matrix_product(jacobian,dir.begin(),from.begin(),math::dim<3,3>(),math::dim<3,1>());
-                        from.normalize();
-                        float max_cos = 0.0;
-                        unsigned int max_j = 0;
-                        for(unsigned int j = 0;j < data.odf.size();++j)
-                        {
-                            float cos = std::abs(voxel.ti.vertices[j]*from);
-                            if(cos > max_cos)
-                            {
-                                max_cos = cos;
-                                max_j = j;
-                            }
-                        }
-                        new_odf[max_j] += data.odf[i]-data.min_odf;
-                    }
-                data.odf.swap(new_odf);
-                float Jdet = std::abs(math::matrix_determinant(jacobian,math::dim<3,3>())*voxel_volume_scale);
-                std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 *= Jdet);
-                jdet[data.voxel_index] = Jdet;
-            }
-        }
-    }
-
-    virtual void end(Voxel& voxel,MatFile& mat_writer)
-    {
-        mat_writer.add_matrix("free_water_quantity",&voxel.qa_scaling,1,1);
-        mat_writer.add_matrix("jdet",&*jdet.begin(),1,jdet.size());
-        //mat_writer.add_matrix("mni",&*mni.trans_to_mni,4,3);
-    }
 };
 
 #endif//MNI_RECONSTRUCTION_HPP
