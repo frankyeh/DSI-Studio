@@ -36,12 +36,11 @@ public:
         ended = true;
     }
 
-    template<typename CostFunctionType>
     void argmin(int reg_type)
     {
         terminated = false;
         ended = false;
-        image::reg::linear(from,to,arg_min,reg_type,CostFunctionType(),terminated);
+        image::reg::linear(from,to,arg_min,reg_type,image::reg::mutual_information(),terminated,0.01);
     }
 
     const float* get(void) const
@@ -51,10 +50,9 @@ public:
         result = T;
         return result.get();
     }
-    template<typename CostFunctionType>
-    void thread_argmin(int reg_type,CostFunctionType)
+    void thread_argmin(int reg_type)
     {
-        thread.reset(new boost::thread(&LinearMapping::argmin<CostFunctionType>,this,reg_type));
+        thread.reset(new boost::thread(&LinearMapping::argmin,this,reg_type));
     }
 };
 

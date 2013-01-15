@@ -94,7 +94,7 @@ int rec(int ac, char *av[])
 
     if(vm["deconvolution"].as<int>())
     {
-        param[2] = 0.5;
+        param[2] = 7;
     }
     if(vm["decomposition"].as<int>())
     {

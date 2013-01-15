@@ -1632,7 +1632,7 @@ bool GLWidget::addSlices(QStringList filenames)
     mi3s.back().arg_min.scaling[0] = cur_tracking_window.slice.voxel_size[0] / other_slices.back().voxel_size[0];
     mi3s.back().arg_min.scaling[1] = cur_tracking_window.slice.voxel_size[1] / other_slices.back().voxel_size[1];
     mi3s.back().arg_min.scaling[2] = cur_tracking_window.slice.voxel_size[2] / other_slices.back().voxel_size[2];
-    mi3s.back().thread_argmin(image::reg::rigid_body,image::reg::mutual_information());
+    mi3s.back().thread_argmin(image::reg::rigid_body);
     // handle views
     current_visible_slide = mi3s.size();
     transform.push_back(std::vector<float>(16));

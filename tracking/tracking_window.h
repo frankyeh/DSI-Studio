@@ -59,7 +59,7 @@ public:
     QString absolute_path;
     ODFModel* handle;
     FibSliceModel slice;
-    std::auto_ptr<LinearMapping<image::basic_image<float,3,image::const_pointer_memory<float> >,image::affine_transform<3> > > mi3;
+    std::auto_ptr<lm3_type> mi3;
     std::vector<float> trans_to_mni;
     bool slice_no_update;
     bool eventFilter(QObject *obj, QEvent *event);

@@ -156,7 +156,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
         mi3->arg_min.scaling[0] = slice.voxel_size[0] / std::fabs(fa_template_imp.tran[0]);
         mi3->arg_min.scaling[1] = slice.voxel_size[1] / std::fabs(fa_template_imp.tran[5]);
         mi3->arg_min.scaling[2] = slice.voxel_size[2] / std::fabs(fa_template_imp.tran[10]);
-        mi3->thread_argmin(image::reg::affine,image::reg::mutual_information());
+        mi3->thread_argmin(image::reg::affine);
             for(int index = 0;index < atlas_list.size();++index)
                 ui->atlasListBox->addItem(atlas_list[index].name.c_str());
     }
