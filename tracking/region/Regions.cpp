@@ -199,34 +199,58 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
     return false;
 
 }
-
 // ---------------------------------------------------------------------------
-void ROIRegion::updateMesh(bool smooth)
+std::vector<boost::thread*> back_thread;
+std::vector<RegionModel*> back_region;
+std::vector<ROIRegion*> back_roi;
+void updateMesh(unsigned int id,bool smooth)
 {
     image::basic_image<unsigned char, 3> mask;
-    SaveToBuffer(mask,200);
+    back_roi[id]->SaveToBuffer(mask,200);
+    back_roi[id] = 0;
     if(smooth)
         image::filter::gaussian(mask);
     std::auto_ptr<RegionModel> new_region(new RegionModel);
-    new_region->color = show_region.color;
-    new_region->alpha = show_region.alpha;
     new_region->load(mask,20);
-    back_region.reset(new_region.release());
+    if(back_thread[id])
+        back_region[id] = new_region.release();
+}
+// ---------------------------------------------------------------------------
+ROIRegion::~ROIRegion(void)
+{
+    if(has_back_thread)
+    {
+        if(back_roi[back_thread_id])
+            back_thread[back_thread_id]->join();
+        delete back_thread[back_thread_id];
+        delete back_region[back_thread_id];
+        back_thread[back_thread_id] = 0;
+        back_region[back_thread_id] = 0;
+    }
 }
 // ---------------------------------------------------------------------------
 void ROIRegion::makeMeshes(bool smooth)
 {
-    if (modified && !back_thread.get())
+    if(has_back_thread && back_thread[back_thread_id] == 0)
+        has_back_thread = false;
+    if (modified && !has_back_thread)
     {
-        back_thread.reset(new boost::thread(&ROIRegion::updateMesh,this,smooth));
+        back_thread_id = back_thread.size();
+        has_back_thread = true;
+        back_roi.push_back(this);
+        back_thread.push_back(new boost::thread(&updateMesh,back_thread_id,smooth));
+        back_region.push_back(0);
         modified = false;
     }
-    if(back_region.get())
+    if(has_back_thread && back_region[back_thread_id])
     {
-        show_region.object.reset(back_region->object.release());
-        show_region.sorted_index.swap(back_region->sorted_index);
-        back_region.reset(0);
-        back_thread.reset(0);
+        show_region.object.reset(back_region[back_thread_id]->object.release());
+        show_region.sorted_index.swap(back_region[back_thread_id]->sorted_index);
+        delete back_thread[back_thread_id];
+        delete back_region[back_thread_id];
+        back_thread[back_thread_id] = 0;
+        back_region[back_thread_id] = 0;
+        has_back_thread = false;
     }
 }
 // ---------------------------------------------------------------------------

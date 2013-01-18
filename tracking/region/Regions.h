@@ -23,19 +23,21 @@ private:
         image::vector<3> vs;
         bool modified;
 private:
-        std::auto_ptr<boost::thread> back_thread;
-        std::auto_ptr<RegionModel> back_region;
-        void updateMesh(bool smooth);
+        bool has_back_thread;
+        unsigned int back_thread_id;
 public:
-        bool has_background_thread(void) const{return back_thread.get();}
+        bool need_update(void) const{return has_back_thread;}
 public: // rendering options
         RegionModel show_region;
         unsigned char regions_feature;
 
-        ROIRegion(const ROIRegion& rhs) : region(rhs.region), geo(rhs.geo),vs(rhs.vs),
-        regions_feature(rhs.regions_feature), modified(true) {
-                show_region = rhs.show_region;
-    }
+        ROIRegion(const ROIRegion& rhs) :
+            region(rhs.region), geo(rhs.geo),vs(rhs.vs),
+            regions_feature(rhs.regions_feature), modified(true),has_back_thread(false)
+        {
+            show_region = rhs.show_region;
+        }
+        ~ROIRegion(void);
         const ROIRegion& operator = (const ROIRegion & rhs) {
             region = rhs.region;
             geo = rhs.geo;
@@ -43,11 +45,13 @@ public: // rendering options
             regions_feature = rhs.regions_feature;
             show_region = rhs.show_region;
             modified = true;
+            has_back_thread = rhs.has_back_thread;
+            back_thread_id = rhs.back_thread_id;
             return *this;
         }
 
         ROIRegion(const image::geometry<3>& geo_, const image::vector<3>& vs_)
-            : geo(geo_), vs(vs_),modified(false){}
+            : geo(geo_), vs(vs_),has_back_thread(false),modified(false){}
 
         const std::vector<image::vector<3,short> >& get(void) const {
         return region;

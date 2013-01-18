@@ -348,7 +348,7 @@ public:
             FILE* in = fopen(filename.c_str(), "rb");
             if (!in)
             {
-                std::cout << "gzopen failed " << file_name << std::endl;
+                std::cout << "open failed " << file_name << std::endl;
                 return false;
             }
             fseek(in,0,SEEK_END);

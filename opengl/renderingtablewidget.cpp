@@ -537,7 +537,11 @@ void RenderingTableWidget::initialize(void)
 
     openPersistentEditor(treemodel->addItem(TreeModel::surfaceItem,
         "surface_alpha",QString("Opacity"),QString("int"),5));
-
+    openPersistentEditor(treemodel->addItem(TreeModel::surfaceItem,
+        "surface_mesh_smoothed",QString("Mesh Rendering"),QStringList()
+                                                      << QString("Original")
+                                                      << QString("Smoothed")
+                                                      << QString("Smoothed2"),0));
     openPersistentEditor(treemodel->addItem(TreeModel::surfaceItem,
         "surface_bend1",QString("Blend Func1"),
                                                       QStringList()

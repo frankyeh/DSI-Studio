@@ -435,7 +435,7 @@ void RegionTableWidget::check_update(void)
 {
 
     for(unsigned int index = 0;index < regions.size();++index)
-        if(regions[index].has_background_thread())
+        if(regions[index].need_update())
         {
             emit need_update();
             return;

@@ -1703,6 +1703,16 @@ void GLWidget::addSurface(void)
             }
             break;
         }
+        switch(get_param("surface_mesh_smoothed"))
+        {
+        case 1:
+            image::filter::gaussian(crop_image);
+            break;
+        case 2:
+            image::filter::gaussian(crop_image);
+            image::filter::gaussian(crop_image);
+            break;
+        }
         if(!surface->load(crop_image,threshold))
         {
             surface.reset(0);
