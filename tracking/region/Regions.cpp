@@ -202,26 +202,29 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
 // ---------------------------------------------------------------------------
 std::vector<boost::thread*> back_thread;
 std::vector<RegionModel*> back_region;
-std::vector<ROIRegion*> back_roi;
-void updateMesh(unsigned int id,bool smooth)
+void updateMesh(unsigned int id,image::geometry<3> geo,
+                std::vector<image::vector<3,short> > region,bool smooth)
 {
-    image::basic_image<unsigned char, 3> mask;
-    back_roi[id]->SaveToBuffer(mask,200);
-    back_roi[id] = 0;
+    image::basic_image<unsigned char, 3> mask(geo);
+    for (unsigned int index = 0; index < region.size(); ++index)
+    {
+        if (geo.is_valid(region[index][0], region[index][1], region[index][2]))
+            mask[image::pixel_index<3>(region[index][0], region[index][1],
+            region[index][2], geo).index()] = 200;
+    }
     if(smooth)
         image::filter::gaussian(mask);
     std::auto_ptr<RegionModel> new_region(new RegionModel);
     new_region->load(mask,20);
     if(back_thread[id])
         back_region[id] = new_region.release();
+
 }
 // ---------------------------------------------------------------------------
 ROIRegion::~ROIRegion(void)
 {
     if(has_back_thread)
     {
-        if(back_roi[back_thread_id])
-            back_thread[back_thread_id]->join();
         delete back_thread[back_thread_id];
         delete back_region[back_thread_id];
         back_thread[back_thread_id] = 0;
@@ -237,8 +240,7 @@ void ROIRegion::makeMeshes(bool smooth)
     {
         back_thread_id = back_thread.size();
         has_back_thread = true;
-        back_roi.push_back(this);
-        back_thread.push_back(new boost::thread(&updateMesh,back_thread_id,smooth));
+        back_thread.push_back(new boost::thread(&updateMesh,back_thread_id,geo,region,smooth));
         back_region.push_back(0);
         modified = false;
     }
@@ -252,6 +254,8 @@ void ROIRegion::makeMeshes(bool smooth)
         back_region[back_thread_id] = 0;
         has_back_thread = false;
     }
+
+
 }
 // ---------------------------------------------------------------------------
 void ROIRegion::LoadFromBuffer(const image::basic_image<unsigned char, 3>& mask) {
