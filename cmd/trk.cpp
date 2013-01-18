@@ -4,6 +4,7 @@
 #include <string>
 #include "image/image.hpp"
 #include "boost/program_options.hpp"
+#include <boost/exception/diagnostic_information.hpp>
 #include "tracking_static_link.h"
 #include "tracking/region/Regions.h"
 #include "libs/tracking/tract_model.hpp"
@@ -19,6 +20,7 @@ namespace po = boost::program_options;
 int trk(int ac, char *av[])
 {
     std::ofstream out("log.txt");
+    try{
     // options for fiber tracking
     po::options_description trk_desc("fiber tracking options");
     trk_desc.add_options()
@@ -80,7 +82,10 @@ int trk(int ac, char *av[])
 
 
     if (vm.count("threshold_index"))
+    {
+        out << "setting index to " << vm["threshold_index"].as<std::string>() << std::endl;
         handle->fib_data.fib.set_tracking_index(vm["threshold_index"].as<std::string>());
+    }
 
     image::geometry<3> geometry = handle->fib_data.dim;
     image::vector<3> voxel_size = handle->fib_data.vs;
@@ -91,7 +96,7 @@ int trk(int ac, char *av[])
     param[2] = param[1] = vm["turning_angle"].as<float>();
     param[1] *= 3.1415926/180.0;
     param[2] *= 3.1415926/180.0;
-    if (vm.count("fiber_count"))
+    if (vm.count("fa_threshold") )
         param[3] = vm["fa_threshold"].as<float>();
     else
         param[3] = 0.6*image::segmentation::otsu_threshold(
@@ -99,6 +104,21 @@ int trk(int ac, char *av[])
     param[4] = vm["smoothing"].as<float>();
     param[5] = vm["min_length"].as<float>();
     param[6] = vm["max_length"].as<float>();
+
+    //set
+    {
+        out << "step_size=" << param[0] << std::endl;
+        out << "turning_angle=" << param[1] << std::endl;
+        out << "interpo_angle=" << param[2] << std::endl;
+        out << "fa_threshold=" << param[3] << std::endl;
+        out << "smoothing=" << param[4] << std::endl;
+        out << "min_length=" << param[5] << std::endl;
+        out << "max_length=" << param[6] << std::endl;
+        out << "tracking_method=" << vm["method"].as<int>() << std::endl;
+        out << "initial direction=" << vm["initial_dir"].as<int>() << std::endl;
+        out << "interpolation=" << vm["interpolation"].as<int>() << std::endl;
+        out << "thread_count=" << vm["thread_count"].as<int>() << std::endl;
+    }
 
     bool stop_by_track = true;
     unsigned int termination_count = 10000;
@@ -228,7 +248,7 @@ int trk(int ac, char *av[])
     else
     {
         std::ostringstream fout;
-        fout << file_name.c_str() <<
+        fout << vm["source"].as<std::string>() <<
             ".st" << (int)std::floor(param[0]*10.0+0.5) <<
             ".tu" << (int)std::floor(param[1]+0.5) <<
             ".in" << (int)std::floor(param[2]+0.5) <<
@@ -237,29 +257,9 @@ int trk(int ac, char *av[])
             ".me" << (int)vm["method"].as<int>() <<
             ".sd" << (int)vm["initial_dir"].as<int>() <<
             ".pd" << (int)vm["interpolation"].as<int>() <<
-            ".txt";
+            ".trk";
         file_name = fout.str();
     }
-    //set
-    {
-        out << "output=" << file_name << std::endl;
-        out << "step_size=" << param[0] << std::endl;
-        out << "turning_angle=" << param[1] << std::endl;
-        out << "interpo_angle=" << param[2] << std::endl;
-        out << "fa_threshold=" << param[3] << std::endl;
-        out << "smoothing=" << param[4] << std::endl;
-        out << "min_length=" << param[5] << std::endl;
-        out << "max_length=" << param[6] << std::endl;
-        out << "tracking_method=" << vm["method"].as<int>() << std::endl;
-        out << "initial direction=" << vm["initial_dir"].as<int>() << std::endl;
-        out << "interpolation=" << vm["interpolation"].as<int>() << std::endl;
-        out << "thread_count=" << vm["thread_count"].as<int>() << std::endl;
-
-
-
-    }
-
-
 
     out << "start tracking..." << std::endl;
     thread_handle->run_until_terminate(vm["thread_count"].as<int>());// no multi-thread
@@ -320,5 +320,19 @@ int trk(int ac, char *av[])
         file_name += vm["endpoint"].as<std::string>();
         tract_model_save_end_points(tract_handle,file_name.c_str());
     }*/
+    }
+    catch(boost::exception const&  ex)
+    {
+        out << "program terminated due to exception:" <<
+               boost::diagnostic_information(ex) << std::endl;
+    }
+    catch(std::exception const&  ex)
+    {
+        out << "program terminated due to exception:" << ex.what() << std::endl;
+    }
+    catch(...)
+    {
+        out << "program terminated due to unkown exception" << std::endl;
+    }
 
 }
