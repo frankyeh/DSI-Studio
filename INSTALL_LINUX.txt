@@ -25,7 +25,7 @@ Max
 
  1.1) install qmake, qt tools and libraries
 
-> sudo apt-get install qt4-make qt4-dev-tools
+> sudo apt-get install qt4-qmake qt4-dev-tools
 
       This should install all the needed dependencies
 
@@ -82,8 +82,8 @@ Max
 3) install dependencies for dsi-studio
 
 > sudo apt-get install git
-> sudo apt-get install libboost*
-> sudo apt-get install zlib*
+> sudo apt-get install libboost-all-dev
+> sudo apt-get install zlib1g zlib1g-dev
 
 4) create working folder
 
