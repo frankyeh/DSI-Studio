@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Wed Nov 28 12:31:49 2012
+** Created: Tue Jan 22 15:30:46 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -123,6 +123,7 @@ public:
     QAction *actionSave_All_Tracts_As;
     QAction *actionSave_Left_Right_3D_Image;
     QAction *actionOpen_Subject_Data;
+    QAction *actionRegion_statistics;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QHBoxLayout *horizontalLayout_13;
@@ -204,6 +205,7 @@ public:
     QToolButton *tool2;
     QToolButton *tool3;
     QToolButton *tool5;
+    QToolButton *tool6;
     QFrame *line_2;
     QComboBox *view_style;
     QComboBox *sliceViewBox;
@@ -540,6 +542,8 @@ public:
         actionOpen_Subject_Data = new QAction(tracking_window);
         actionOpen_Subject_Data->setObjectName(QString::fromUtf8("actionOpen_Subject_Data"));
         actionOpen_Subject_Data->setIcon(icon1);
+        actionRegion_statistics = new QAction(tracking_window);
+        actionRegion_statistics->setObjectName(QString::fromUtf8("actionRegion_statistics"));
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -930,7 +934,7 @@ public:
         sizePolicy6.setVerticalStretch(1);
         sizePolicy6.setHeightForWidth(dockWidget->sizePolicy().hasHeightForWidth());
         dockWidget->setSizePolicy(sizePolicy6);
-        dockWidget->setMinimumSize(QSize(423, 162));
+        dockWidget->setMinimumSize(QSize(446, 253));
         dockWidget->setFloating(false);
         dockWidget->setFeatures(QDockWidget::AllDockWidgetFeatures);
         dockWidgetContents = new QWidget();
@@ -1048,6 +1052,14 @@ public:
         tool5->setAutoExclusive(true);
 
         horizontalLayout_7->addWidget(tool5);
+
+        tool6 = new QToolButton(dockWidgetContents);
+        tool6->setObjectName(QString::fromUtf8("tool6"));
+        tool6->setMaximumSize(QSize(23, 22));
+        tool6->setCheckable(true);
+        tool6->setAutoExclusive(true);
+
+        horizontalLayout_7->addWidget(tool6);
 
         line_2 = new QFrame(dockWidgetContents);
         line_2->setObjectName(QString::fromUtf8("line_2"));
@@ -1654,7 +1666,6 @@ public:
 
         splitter_2->addWidget(widget);
         label_13->raise();
-        label_13->raise();
         tract_color_index->raise();
         label_10->raise();
         color_bar_style->raise();
@@ -1786,6 +1797,8 @@ public:
         menuRegions->addSeparator();
         menuRegions->addAction(menuModify->menuAction());
         menuRegions->addAction(actionWhole_brain_seeding);
+        menuRegions->addSeparator();
+        menuRegions->addAction(actionRegion_statistics);
         menuModify->addAction(actionShift_X);
         menuModify->addAction(actionShift_X_2);
         menuModify->addAction(actionShift_Y);
@@ -2002,6 +2015,7 @@ public:
         actionSave_All_Tracts_As->setText(QApplication::translate("tracking_window", "Save All Tracts As...", 0, QApplication::UnicodeUTF8));
         actionSave_Left_Right_3D_Image->setText(QApplication::translate("tracking_window", "Save Left/Right 3D Image...", 0, QApplication::UnicodeUTF8));
         actionOpen_Subject_Data->setText(QApplication::translate("tracking_window", "Open Subject Data...", 0, QApplication::UnicodeUTF8));
+        actionRegion_statistics->setText(QApplication::translate("tracking_window", "Statistics...", 0, QApplication::UnicodeUTF8));
         label_3->setText(QApplication::translate("tracking_window", "Current Slice:", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
@@ -2082,6 +2096,10 @@ public:
         tool5->setToolTip(QApplication::translate("tracking_window", "move object", 0, QApplication::UnicodeUTF8));
 #endif // QT_NO_TOOLTIP
         tool5->setText(QString());
+#ifndef QT_NO_TOOLTIP
+        tool6->setToolTip(QApplication::translate("tracking_window", "show ruler", 0, QApplication::UnicodeUTF8));
+#endif // QT_NO_TOOLTIP
+        tool6->setText(QApplication::translate("tracking_window", "|_|_|", 0, QApplication::UnicodeUTF8));
         view_style->clear();
         view_style->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Single slice", 0, QApplication::UnicodeUTF8)

@@ -250,6 +250,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     case 2:
     case 3:
     case 4:
+    case 6:
         sel_coord.push_back(image::vector<3,short>(x, y, z));
         sel_point.push_back(image::vector<2,short>(X, Y));
         break;
@@ -297,8 +298,62 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     }
 
     QImage annotated_image = view_image;
-    QPainter paint(&annotated_image);
+    if(sel_mode == 6) // ruler
+    {
+        sel_coord.back() = image::vector<3,short>(x, y, z);
+        sel_point.back() = image::vector<2,short>(X, Y);
 
+        QImage temp = (cur_tracking_window.slice.cur_dim == 2) ? view_image:view_image.mirrored();
+        QPainter paint(&temp);
+        float tX = sel_point.front()[0];
+        float tY = sel_point.front()[1];
+        if(cur_tracking_window.slice.cur_dim != 2)
+        {
+            Y = view_image.height() - Y;
+            tY = view_image.height() - tY;
+        }
+        QPen pen;  // creates a default pen
+        pen.setWidth(2);
+        pen.setCapStyle(Qt::RoundCap);
+        pen.setJoinStyle(Qt::RoundJoin);
+        pen.setColor(Qt::white);
+        paint.setPen(pen);
+        paint.drawLine(X, Y, tX, tY);
+        image::vector<3,float> from(sel_coord[0]);
+        image::vector<3,float> to(sel_coord[1]);
+        from -= to;
+        from[0] *= cur_tracking_window.handle->fib_data.vs[0];
+        from[1] *= cur_tracking_window.handle->fib_data.vs[1];
+        from[2] *= cur_tracking_window.handle->fib_data.vs[2];
+        float length = from.length();
+        float tic_dis = std::pow(10.0,std::floor(std::log10((double)length/2.0)));
+
+        image::vector<2,float> tic_dir(Y-tY,tX-X);
+        tic_dir.normalize();
+        tic_dir *= 5.0;
+        for(double L = 0.0;1;L+=tic_dis)
+        {
+            if(L+tic_dis > length)
+                L = length;
+            image::vector<2,float> npos(tX,tY);
+            npos[0] += ((float)X-npos[0])*L/length;
+            npos[1] += ((float)Y-npos[1])*L/length;
+            paint.drawLine(npos[0],npos[1],npos[0]+tic_dir[0],npos[1]+tic_dir[1]);
+            npos += tic_dir;
+            npos += tic_dir;
+            npos += tic_dir;
+            paint.drawText(npos[0]-40,npos[1]-40,80,80,
+                           Qt::AlignHCenter|Qt::AlignVCenter,
+                           QString::number(L)+(L >= length ? " mm":""));
+            if(L >= length)
+                break;
+        }
+        annotated_image = (cur_tracking_window.slice.cur_dim == 2) ? temp:temp.mirrored();
+    }
+
+
+
+    QPainter paint(&annotated_image);
     paint.setPen(cur_tracking_window.regionWidget->currentRowColor());
     paint.setBrush(Qt::NoBrush);
     switch (sel_mode)
@@ -344,6 +399,7 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     setItemIndexMethod(QGraphicsScene::NoIndex);
     addRect(0, 0, annotated_image.width(),annotated_image.height(),QPen(),
             (cur_tracking_window.slice.cur_dim == 2) ? annotated_image : annotated_image.mirrored());
+
 }
 
 void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent )
@@ -483,6 +539,10 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         setItemIndexMethod(QGraphicsScene::NoIndex);
         addRect(0, 0, annotated_image.width(),annotated_image.height(),QPen(),
                 (cur_tracking_window.slice.cur_dim == 2) ? annotated_image : annotated_image.mirrored());
+        return;
+    }
+    case 6:
+    {
         return;
     }
     }

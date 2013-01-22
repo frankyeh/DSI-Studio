@@ -949,8 +949,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>423</width>
-     <height>162</height>
+     <width>446</width>
+     <height>253</height>
     </size>
    </property>
    <property name="floating">
@@ -1211,6 +1211,28 @@
          <property name="icon">
           <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/move.xpm</normaloff>:/icons/icons/move.xpm</iconset>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="autoExclusive">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="tool6">
+         <property name="maximumSize">
+          <size>
+           <width>23</width>
+           <height>22</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>show ruler</string>
+         </property>
+         <property name="text">
+          <string>|_|_|</string>
          </property>
          <property name="checkable">
           <bool>true</bool>

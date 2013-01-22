@@ -637,6 +637,10 @@ void tracking_window::on_tool5_pressed()
 {
     scene.sel_mode = 5;
 }
+void tracking_window::on_tool6_pressed()
+{
+    scene.sel_mode = 6;
+}
 
 void tracking_window::on_sliceViewBox_currentIndexChanged(int index)
 {
@@ -1375,3 +1379,5 @@ void tracking_window::on_subject_list_itemSelectionChanged()
     vbc_scene.addRect(0, 0, vbc_slice_image.width(),vbc_slice_image.height(),QPen(),vbc_slice_image);
     vbc_slice_pos = ui->AxiSlider->value();
 }
+
+
