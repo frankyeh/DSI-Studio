@@ -431,12 +431,15 @@ void TractTableWidget::showCurTractStatistics(float threshold,float cull_angle_c
     std::string result;
     {
         std::vector<std::string> titles;
-        cur_tracking_window.handle->get_quantitative_title(titles);
+        titles.push_back("number of tracts");
+        titles.push_back("tract length mean(mm)");
+        titles.push_back("tract length sd(mm)");
+        titles.push_back("tracts volume (mm^3)");
+        cur_tracking_window.handle->get_index_titles(titles);
         std::vector<std::vector<float> > data(tract_models.size());
         begin_prog("calculating");
         for(unsigned int index = 0;check_prog(index,tract_models.size());++index)
-            cur_tracking_window.handle->get_quantitative_data(tract_models[index]->get_tracts(),
-                                                          threshold,cull_angle_cos,data[index]);
+            tract_models[index]->get_quantitative_data(cur_tracking_window.handle,threshold,cull_angle_cos,data[index]);
         if(prog_aborted())
             return;
         std::ostringstream out;

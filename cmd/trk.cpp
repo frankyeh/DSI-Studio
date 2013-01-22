@@ -277,8 +277,8 @@ int trk(int ac, char *av[])
         file_name_stat += ".stat.txt";
         std::ofstream out_stat(file_name_stat.c_str());
         std::string result;
-        handle->get_quantitative_info(
-                tract_model->get_tracts(),
+        tract_model->get_quantitative_info(
+                    handle.get(),
                 vm["fa_threshold"].as<float>(),
                 std::cos(vm["turning_angle"].as<float>()* 3.14159265358979323846 / 180.0),
                          result);

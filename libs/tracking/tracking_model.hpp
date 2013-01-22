@@ -317,14 +317,9 @@ public:
         return true;
     }
 
-    void get_quantitative_title(std::vector<std::string>& titles)
+
+    void get_index_titles(std::vector<std::string>& titles)
     {
-        titles.push_back("number of tracts");
-        titles.push_back("tract length mean(mm)");
-        titles.push_back("tract length sd(mm)");
-        titles.push_back("tracts volume (mm^3)");
-
-
         if (fib_data.view_item[0].name[0] == 'f')// is dti
         {
             titles.push_back("FA mean");
@@ -332,7 +327,6 @@ public:
         }
         else
         {
-            titles.push_back("total spin quantity");
             titles.push_back("QA mean");
             titles.push_back("QA sd");
         }
@@ -342,129 +336,9 @@ public:
             titles.push_back(fib_data.view_item[data_index].name+" mean");
             titles.push_back(fib_data.view_item[data_index].name+" sd");
         }
-    }
-    void get_quantitative_data(const std::vector<std::vector<float> >& tracts,
-                               float threshold,
-                               float cull_angle_cos,
-                               std::vector<float>& data)
-    {
-        if(tracts.empty())
-            return;
-        image::vector<3> voxel_size = fib_data.vs;
-        float voxel_volume = voxel_size[0]*voxel_size[1]*voxel_size[2];
 
-        data.push_back(tracts.size());
-
-        // mean length
-        {
-            float sum_length = 0.0;
-            float sum_length2 = 0.0;
-            for (unsigned int i = 0;i < tracts.size();++i)
-            {
-                float length = 0.0;
-                for (unsigned int j = 3;j < tracts[i].size();j += 3)
-                {
-                    length += image::vector<3,float>(
-                        voxel_size[0]*(tracts[i][j]-tracts[i][j-3]),
-                        voxel_size[1]*(tracts[i][j+1]-tracts[i][j-2]),
-                        voxel_size[2]*(tracts[i][j+2]-tracts[i][j-1])).length();
-
-                }
-                sum_length += length;
-                sum_length2 += length*length;
-            }
-            data.push_back(sum_length/((float)tracts.size()));
-            data.push_back(std::sqrt(sum_length2/(double)tracts.size()-
-                                     sum_length*sum_length/(double)tracts.size()/(double)tracts.size()));
-        }
-
-
-        // tract volume
-        {
-
-            std::set<image::vector<3,int> > pass_map;
-            for (unsigned int i = 0;i < tracts.size();++i)
-                for (unsigned int j = 0;j < tracts[i].size();j += 3)
-                    pass_map.insert(image::vector<3,int>(std::floor(tracts[i][j]+0.5),
-                                                  std::floor(tracts[i][j+1]+0.5),
-                                                  std::floor(tracts[i][j+2]+0.5)));
-
-            data.push_back(pass_map.size()*voxel_volume);
-        }
-
-        // output mean FA
-        {
-            float sum_fa = 0.0;
-            float sum_fa2 = 0.0;
-            unsigned int total = 0;
-            for (unsigned int i = 0;i < tracts.size();++i)
-            {
-                std::vector<float> data;
-                get_tract_fa(tracts[i],threshold,cull_angle_cos,data);
-                for(int j = 0;j < data.size();++j)
-                {
-                    float value = data[j];
-                    sum_fa += value;
-                    sum_fa2 += value*value;
-                    ++total;
-                }
-            }
-            if (fib_data.view_item[0].name[0] == 'f')// is dti
-            {
-                data.push_back(sum_fa/((double)total));
-                data.push_back(std::sqrt(sum_fa2/(double)total-sum_fa*sum_fa/(double)total/(double)total));
-            }
-            else
-            {
-                data.push_back(get_spin_volume(tracts,threshold,cull_angle_cos));
-                data.push_back(sum_fa/((double)total));
-                data.push_back(std::sqrt(sum_fa2/(double)total-sum_fa*sum_fa/(double)total/(double)total));
-            }
-        }
-        // output other data
-
-        for(int data_index = fib_data.other_mapping_index;
-            data_index < fib_data.view_item.size();++data_index)
-        {
-            float sum_data = 0.0;
-            float sum_data2 = 0.0;
-            unsigned int total = 0;
-            for (unsigned int i = 0;i < tracts.size();++i)
-            {
-                std::vector<float> data;
-                get_tract_data(tracts[i],data_index,data);
-                for(int j = 0;j < data.size();++j)
-                {
-                    float value = data[j];
-                    sum_data += value;
-                    sum_data2 += value*value;
-                    ++total;
-                }
-            }
-
-            data.push_back(sum_data/((double)total));
-            data.push_back(std::sqrt(sum_data2/(double)total-sum_data*sum_data/(double)total/(double)total));
-        }
     }
 
-
-    void get_quantitative_info(
-            const std::vector<std::vector<float> >& tracts,
-            float threshold,
-            float cull_angle_cos,
-            std::string& result)
-    {
-        if(tracts.empty())
-            return;
-        std::ostringstream out;
-        std::vector<std::string> titles;
-        std::vector<float> data;
-        get_quantitative_title(titles);
-        get_quantitative_data(tracts,threshold,cull_angle_cos,data);
-        for(unsigned int index = 0;index < data.size() && index < titles.size();++index)
-            out << titles[index] << "\t" << data[index] << std::endl;
-        result = out.str();
-    }
 
 };
 

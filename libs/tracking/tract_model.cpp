@@ -834,3 +834,82 @@ void TractModel::get_density_map(
 }
 
 
+void TractModel::get_quantitative_data(ODFModel* handle,
+                               float threshold,
+                               float cull_angle_cos,
+                               std::vector<float>& data)
+{
+    if(tract_data.empty())
+        return;
+    float voxel_volume = vs[0]*vs[1]*vs[2];
+
+    data.push_back(tract_data.size());
+
+    // mean length
+    {
+        float sum_length = 0.0;
+        float sum_length2 = 0.0;
+        for (unsigned int i = 0;i < tract_data.size();++i)
+        {
+            float length = 0.0;
+            for (unsigned int j = 3;j < tract_data[i].size();j += 3)
+            {
+                length += image::vector<3,float>(
+                    vs[0]*(tract_data[i][j]-tract_data[i][j-3]),
+                    vs[1]*(tract_data[i][j+1]-tract_data[i][j-2]),
+                    vs[2]*(tract_data[i][j+2]-tract_data[i][j-1])).length();
+
+            }
+            sum_length += length;
+            sum_length2 += length*length;
+        }
+        data.push_back(sum_length/((float)tract_data.size()));
+        data.push_back(std::sqrt(sum_length2/(double)tract_data.size()-
+                                 sum_length*sum_length/(double)tract_data.size()/(double)tract_data.size()));
+    }
+
+
+    // tract volume
+    {
+
+        std::set<image::vector<3,int> > pass_map;
+        for (unsigned int i = 0;i < tract_data.size();++i)
+            for (unsigned int j = 0;j < tract_data[i].size();j += 3)
+                pass_map.insert(image::vector<3,int>(std::floor(tract_data[i][j]+0.5),
+                                              std::floor(tract_data[i][j+1]+0.5),
+                                              std::floor(tract_data[i][j+2]+0.5)));
+
+        data.push_back(pass_map.size()*voxel_volume);
+    }
+
+    // output mean and std of each index
+    for(int data_index = 0;
+        data_index < handle->fib_data.view_item.size();++data_index)
+    {
+        if(data_index > 0 && data_index < handle->fib_data.other_mapping_index)
+            continue;
+
+        float sum_data = 0.0;
+        float sum_data2 = 0.0;
+        unsigned int total = 0;
+        for (unsigned int i = 0;i < tract_data.size();++i)
+        {
+            std::vector<float> data;
+            if(data_index == 0)
+                handle->get_tract_fa(tract_data[i],threshold,cull_angle_cos,data);
+            else
+                handle->get_tract_data(tract_data[i],data_index,data);
+            for(int j = 0;j < data.size();++j)
+            {
+                float value = data[j];
+                sum_data += value;
+                sum_data2 += value*value;
+                ++total;
+            }
+        }
+
+        data.push_back(sum_data/((double)total));
+        data.push_back(std::sqrt(sum_data2/(double)total-sum_data*sum_data/(double)total/(double)total));
+    }
+}
+
