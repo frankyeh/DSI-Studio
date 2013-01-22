@@ -26,7 +26,8 @@ private:
         bool has_back_thread;
         unsigned int back_thread_id;
 public:
-        bool need_update(void) const{return has_back_thread;}
+        bool need_update(void);
+        bool has_thread(void) const{return has_back_thread;}
 public: // rendering options
         RegionModel show_region;
         unsigned char regions_feature;

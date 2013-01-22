@@ -232,18 +232,10 @@ ROIRegion::~ROIRegion(void)
     }
 }
 // ---------------------------------------------------------------------------
-void ROIRegion::makeMeshes(bool smooth)
+bool ROIRegion::need_update(void)
 {
-    if(has_back_thread && back_thread[back_thread_id] == 0)
-        has_back_thread = false;
-    if (modified && !has_back_thread)
-    {
-        back_thread_id = back_thread.size();
-        has_back_thread = true;
-        back_thread.push_back(new boost::thread(&updateMesh,back_thread_id,geo,region,smooth));
-        back_region.push_back(0);
-        modified = false;
-    }
+    if(!has_back_thread)
+        return false;
     if(has_back_thread && back_region[back_thread_id])
     {
         show_region.object.reset(back_region[back_thread_id]->object.release());
@@ -253,8 +245,31 @@ void ROIRegion::makeMeshes(bool smooth)
         back_thread[back_thread_id] = 0;
         back_region[back_thread_id] = 0;
         has_back_thread = false;
+        return true;
     }
+    return false;
+}
 
+void ROIRegion::makeMeshes(bool smooth)
+{
+    /*
+    if (modified && !has_back_thread)
+    {
+        modified = false;
+        back_thread_id = back_thread.size();
+        has_back_thread = true;
+        back_region.push_back(0);
+        back_thread.push_back(new boost::thread(&updateMesh,back_thread_id,geo,region,smooth));
+    }
+    */
+    if(!modified)
+        return;
+    modified = false;
+    image::basic_image<unsigned char, 3> mask(geo);
+    SaveToBuffer(mask,200);
+    if(smooth)
+        image::filter::gaussian(mask);
+    show_region.load(mask,20);
 
 }
 // ---------------------------------------------------------------------------

@@ -96,10 +96,6 @@ RegionTableWidget::RegionTableWidget(tracking_window& cur_tracking_window_,QWidg
     QObject::connect(this,SIGNAL(cellClicked(int,int)),this,SLOT(check_check_status(int,int)));
     QObject::connect(this,SIGNAL(itemChanged(QTableWidgetItem*)),this,SLOT(updateRegions(QTableWidgetItem*)));
 
-    // for updating region
-    timer = new QTimer(this);
-    timer->setInterval(1000);
-    connect(timer, SIGNAL(timeout()), this, SLOT(check_update()));
 }
 
 
@@ -268,7 +264,6 @@ void RegionTableWidget::load_region(void)
         regions.back().assign(region.get());
     }
     emit need_update();
-    timer->start();
 }
 
 void RegionTableWidget::save_region(void)
@@ -364,7 +359,6 @@ void RegionTableWidget::whole_brain(void)
     add_region("whole brain",seed_id);
     add_points(points,false);
     emit need_update();
-    timer->start();
 }
 extern std::vector<float> mni_fa0_template_tran;
 extern image::basic_image<float,3> mni_fa0_template;
@@ -390,7 +384,6 @@ void RegionTableWidget::add_atlas(void)
     add_region(cur_tracking_window.ui->atlasComboBox->currentText(),seed_id);
     add_points(points,false);
     emit need_update();
-    timer->start();
 }
 
 void RegionTableWidget::add_points(std::vector<image::vector<3,short> >& points,bool erase)
@@ -400,7 +393,6 @@ void RegionTableWidget::add_points(std::vector<image::vector<3,short> >& points,
     regions[currentRow()].add_points(points,erase);
     item(currentRow(),0)->setCheckState(Qt::Checked);
     item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
-    timer->start();
 }
 
 bool RegionTableWidget::has_seeding(void)
@@ -431,17 +423,6 @@ void RegionTableWidget::setROIs(ThreadData* data)
                              regions[index].regions_feature);
 }
 
-void RegionTableWidget::check_update(void)
-{
-
-    for(unsigned int index = 0;index < regions.size();++index)
-        if(regions[index].need_update())
-        {
-            emit need_update();
-            return;
-        }
-    timer->stop();
-}
 
 void RegionTableWidget::do_action(int id)
 {
@@ -519,5 +500,4 @@ void RegionTableWidget::do_action(int id)
         break;
     }
     emit need_update();
-    timer->start();
 }
