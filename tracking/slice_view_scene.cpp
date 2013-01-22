@@ -157,12 +157,17 @@ void slice_view_scene::catch_screen()
             "PNG files (*.png);;BMP files (*.bmp);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*.*)");
     if(filename.isEmpty())
         return;
-    view_image.save(filename);
+    if(cur_tracking_window.slice.cur_dim == 2 || cur_tracking_window.ui->view_style->currentIndex() != 0) // axial view of mosaic
+        view_image.save(filename);
+    else
+        view_image.mirrored().save(filename);
 }
 
 void slice_view_scene::copyClipBoard()
 {
-    QApplication::clipboard()->setImage(view_image);
+    QApplication::clipboard()->setImage(
+                (cur_tracking_window.slice.cur_dim == 2 || cur_tracking_window.ui->view_style->currentIndex() != 0) ?  // axial view of mosaic
+                        view_image : view_image.mirrored());
 }
 
 
