@@ -1,6 +1,7 @@
 #include <QFileDialog>
 #include <QContextMenuEvent>
 #include <QMessageBox>
+#include <QClipboard>
 #include "regiontablewidget.h"
 #include "tracking/tracking_window.h"
 #include "tracking_static_link.h"
@@ -205,7 +206,6 @@ void RegionTableWidget::draw_region(QImage& qimage)
 }
 void RegionTableWidget::draw_mosaic_region(QImage& qimage,unsigned int mosaic_size,unsigned int skip)
 {
-    int X, Y, Z;
     image::geometry<3> geo = cur_tracking_window.slice.geometry;
     unsigned int slice_number = geo[2] >> skip;
     std::vector<int> shift_x(slice_number),shift_y(slice_number);
@@ -222,7 +222,9 @@ void RegionTableWidget::draw_mosaic_region(QImage& qimage,unsigned int mosaic_si
         unsigned int cur_color = regions[roi_index].show_region.color;
         for (unsigned int index = 0;index < regions[roi_index].size();++index)
         {
-            regions[roi_index].getSlicePosition(&cur_tracking_window.slice, index, X, Y, Z);
+            int X = regions[roi_index].get()[index][0];
+            int Y = regions[roi_index].get()[index][1];
+            int Z = regions[roi_index].get()[index][2];
             if(Z != ((Z >> skip) << skip))
                 continue;
             X += shift_x[Z >> skip];
@@ -360,6 +362,78 @@ void RegionTableWidget::whole_brain(void)
     add_points(points,false);
     emit need_update();
 }
+
+void RegionTableWidget::show_statistics(void)
+{
+    if(currentRow() >= regions.size())
+        return;
+    std::string result;
+    {
+
+        std::vector<std::string> titles;
+        titles.push_back("voxel counts");
+        titles.push_back("volume (mm^3)");
+        titles.push_back("center x");
+        titles.push_back("center y");
+        titles.push_back("center z");
+        titles.push_back("bounding box x");
+        titles.push_back("bounding box y");
+        titles.push_back("bounding box z");
+        titles.push_back("bounding box x");
+        titles.push_back("bounding box y");
+        titles.push_back("bounding box z");
+        cur_tracking_window.handle->get_index_titles(titles);
+
+        std::vector<std::vector<float> > data(regions.size());
+        begin_prog("calculating");
+        for(unsigned int index = 0;check_prog(index,regions.size());++index)
+            regions[index].get_quantitative_data(cur_tracking_window.handle,data[index]);
+        if(prog_aborted())
+            return;
+        std::ostringstream out;
+        out << "Name\t";
+        for(unsigned int index = 0;index < regions.size();++index)
+            out << item(index,0)->text().toLocal8Bit().begin() << "\t";
+        out << std::endl;
+        for(unsigned int i = 0;i < titles.size();++i)
+        {
+            out << titles[i] << "\t";
+            for(unsigned int j = 0;j < regions.size();++j)
+            {
+                if(i < data[j].size())
+                    out << data[j][i];
+                out << "\t";
+            }
+            out << std::endl;
+        }
+        result = out.str();
+    }
+    QMessageBox msgBox;
+    msgBox.setText("Region Statistics");
+    msgBox.setInformativeText(result.c_str());
+    msgBox.setStandardButtons(QMessageBox::Ok|QMessageBox::Save);
+    msgBox.setDefaultButton(QMessageBox::Ok);
+    QPushButton *copyButton = msgBox.addButton("Copy To Clipboard", QMessageBox::ActionRole);
+
+
+    if(msgBox.exec() == QMessageBox::Save)
+    {
+        QString filename;
+        filename = QFileDialog::getSaveFileName(
+                    this,
+                    "Save satistics as",
+                    cur_tracking_window.absolute_path + +"/" + item(currentRow(),0)->text() + "_stat.txt",
+                    "Text files (*.txt);;All files|(*.*)");
+        if(filename.isEmpty())
+            return;
+        cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+        std::ofstream out(filename.toLocal8Bit().begin());
+        out << result.c_str();
+    }
+    if (msgBox.clickedButton() == copyButton)
+        QApplication::clipboard()->setText(result.c_str());
+}
+
 extern std::vector<float> mni_fa0_template_tran;
 extern image::basic_image<float,3> mni_fa0_template;
 

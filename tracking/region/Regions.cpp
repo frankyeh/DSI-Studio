@@ -4,6 +4,7 @@
 #include <math/matrix_op.hpp>
 #include "Regions.h"
 #include "SliceModel.h"
+#include "libs/tracking/tracking_model.hpp"
 #include "mat_file.hpp"
 #include "libs/gzip_interface.hpp"
 typedef class ReadMatFile MatReader;
@@ -330,4 +331,51 @@ void ROIRegion::shift(const image::vector<3,short>& dx) {
     show_region.move_object(shift);
     for (unsigned int index = 0; index < region.size(); ++index)
 		region[index] += dx;
+}
+
+void ROIRegion::get_quantitative_data(ODFModel* handle,std::vector<float>& data)
+{
+    data.push_back(region.size()); //number of voxels
+    data.push_back(region.size()*vs[0]*vs[1]*vs[2]); //volume (mm^3)
+    if(region.empty())
+        return;
+    image::vector<3,float> cm;
+    image::vector<3,float> max(region[0]),min(region[0]);
+    for (unsigned int index = 0; index < region.size(); ++index)
+    {
+        cm += region[index];
+        max[0] = std::max<short>(max[0],region[index][0]);
+        max[1] = std::max<short>(max[1],region[index][1]);
+        max[2] = std::max<short>(max[2],region[index][2]);
+        min[0] = std::min<short>(min[0],region[index][0]);
+        min[1] = std::min<short>(min[1],region[index][1]);
+        min[2] = std::min<short>(min[2],region[index][2]);
+    }
+    cm /= region.size();
+    std::copy(cm.begin(),cm.end(),std::back_inserter(data)); // center of the mass
+    std::copy(max.begin(),max.end(),std::back_inserter(data)); // bounding box
+    std::copy(min.begin(),min.end(),std::back_inserter(data)); // bounding box
+
+    std::vector<unsigned int> pos_index;
+    for (unsigned int index = 0; index < region.size(); ++index)
+        pos_index.push_back(image::pixel_index<3>(region[index][0],region[index][1],region[index][2],geo).index());
+
+    for(int data_index = 0;
+        data_index < handle->fib_data.view_item.size();++data_index)
+    {
+        if(data_index > 0 && data_index < handle->fib_data.other_mapping_index)
+            continue;
+        float sum = 0.0,sum2 = 0.0;
+        image::basic_image<float, 3,image::const_pointer_memory<float> > I = handle->fib_data.view_item[data_index].image_data;
+        for(unsigned int index = 0;index < pos_index.size();++index)
+        {
+            float value = I[pos_index[index]];
+            sum += value;
+            sum2 += value*value;
+        }
+        sum /= pos_index.size();
+        sum2 /= pos_index.size();
+        data.push_back(sum);
+        data.push_back(std::sqrt(sum2-sum*sum));
+    }
 }

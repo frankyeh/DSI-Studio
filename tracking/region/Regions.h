@@ -7,7 +7,7 @@
 #include "image/image.hpp"
 #include "RegionModel.h"
 // ---------------------------------------------------------------------------
-
+class ODFModel;
 class SliceModel;
 // region_feature
 const unsigned int roi_id = 0;
@@ -106,6 +106,7 @@ public:
         void makeMeshes(bool smooth);
         bool has_point(const image::vector<3,short>& point);
         bool has_points(const std::vector<image::vector<3,short> >& points);
+        void get_quantitative_data(ODFModel* handle,std::vector<float>& data);
 };
 
 #endif

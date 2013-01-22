@@ -709,6 +709,8 @@
     <addaction name="separator"/>
     <addaction name="menuModify"/>
     <addaction name="actionWhole_brain_seeding"/>
+    <addaction name="separator"/>
+    <addaction name="actionRegion_statistics"/>
    </widget>
    <widget class="QMenu" name="menuTracts">
     <property name="title">
@@ -2492,7 +2494,6 @@
          </item>
         </layout>
         <zorder>label_13</zorder>
-        <zorder>label_13</zorder>
         <zorder>tract_color_index</zorder>
         <zorder>label_10</zorder>
         <zorder>color_bar_style</zorder>
@@ -3321,6 +3322,11 @@
    </property>
    <property name="text">
     <string>Open Subject Data...</string>
+   </property>
+  </action>
+  <action name="actionRegion_statistics">
+   <property name="text">
+    <string>Statistics...</string>
    </property>
   </action>
  </widget>
