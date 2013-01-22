@@ -62,6 +62,10 @@ int GLWidget::get_param(const char* name)
 {
     return renderWidget->getData(name).toInt();
 }
+float GLWidget::get_param_float(const char* name)
+{
+    return renderWidget->getData(name).toFloat();
+}
 
 void check_error(const char* line)
 {
@@ -344,7 +348,7 @@ void GLWidget::paintGL()
         // The following code is a fancy bit of math that is eqivilant to calling:
         // gluPerspective( fieldOfView/2.0f, width/height , 0.1f, 255.0f )
         // We do it this way simply to avoid requiring glu.h
-        GLfloat fieldOfView = 2.0*(get_param("fov_angle")*5+1);
+        GLfloat fieldOfView = 2.0*(get_param_float("fov_angle")*5.0+1);
         GLfloat zNear = 1.0f;
         GLfloat zFar = 1000.0f;
         GLfloat aspect = float(width)/float(height);
@@ -354,7 +358,7 @@ void GLWidget::paintGL()
 
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-        my_gluLookAt(0,0,get_param("view_distance")*-40,0,0,0,0,-1.0,0);
+        my_gluLookAt(0,0,get_param_float("view_distance")*-40,0,0,0,0,-1.0,0);
     }
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -500,7 +504,7 @@ void GLWidget::paintGL()
         }
 
 
-        if(get_param("tract_alpha") != tract_alpha ||
+        if(get_param_float("tract_alpha") != tract_alpha ||
            get_param("tract_alpha_style") != tract_alpha_style ||
            get_param("tract_style") != tract_style ||
            get_param("tract_color_style") != tract_color_style ||
@@ -508,7 +512,7 @@ void GLWidget::paintGL()
            get_param("tract_tube_detail") != tract_tube_detail ||
            get_param("end_point_shift") != end_point_shift)
         {
-            tract_alpha = get_param("tract_alpha");
+            tract_alpha = get_param_float("tract_alpha");
             tract_alpha_style = get_param("tract_alpha_style");
             tract_style = get_param("tract_style");
             tract_color_style = get_param("tract_color_style");
@@ -517,7 +521,7 @@ void GLWidget::paintGL()
             end_point_shift = get_param("end_point_shift");
             makeTracts();
         }
-        if(get_param("tract_alpha") != 10)
+        if(get_param_float("tract_alpha") != 10.0)
         {
             glEnable(GL_BLEND);
             glBlendFunc (BlendFunc1[get_param("tract_bend1")],
@@ -562,7 +566,7 @@ void GLWidget::paintGL()
         glEnable(GL_TEXTURE_2D);
         glEnable(GL_COLOR_MATERIAL);
         glDisable(GL_LIGHTING);
-        float alpha = (float)(get_param("slice_alpha"))/10.0;
+        float alpha = get_param_float("slice_alpha")/10.0;
         handleAlpha(image::rgb_color(0,0,0,255),
                         alpha,get_param("slice_bend1"),get_param("slice_bend2"));
         glDepthMask((alpha == 1.0));
@@ -575,12 +579,12 @@ void GLWidget::paintGL()
                                    (SliceModel*)&other_slices[current_visible_slide-1] :
                                    (SliceModel*)&cur_tracking_window.slice;
 
-        if(get_param("slice_contrast") != slice_contrast ||
-            get_param("slice_offset") != slice_offset ||
+        if(get_param_float("slice_contrast") != slice_contrast ||
+            get_param_float("slice_offset") != slice_offset ||
             slice_index != current_visible_slide)
         {
-            slice_contrast = get_param("slice_contrast");
-            slice_offset = get_param("slice_offset");
+            slice_contrast = get_param_float("slice_contrast");
+            slice_offset = get_param_float("slice_offset");
             slice_index = current_visible_slide;
             active_slice->texture_need_update[0] = true;
             active_slice->texture_need_update[1] = true;
@@ -653,7 +657,7 @@ void GLWidget::paintGL()
 
         setupMaterial((float)(get_param("region_emission"))/10.0);
 
-        float alpha = (float)(get_param("region_alpha"))/10.0;
+        float alpha = get_param_float("region_alpha")/10.0;
         unsigned char cur_view = (alpha == 1.0 ? 0 : getCurView(transformation_matrix));
         for(unsigned int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
             if(cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked)
@@ -681,7 +685,7 @@ void GLWidget::paintGL()
         glMultMatrixf(transformation_matrix);
         setupMaterial((float)(get_param("surface_emission"))/10.0);
 
-        float alpha = (float)(get_param("surface_alpha"))/10.0;
+        float alpha = get_param_float("surface_alpha")/10.0;
         surface->color = (unsigned int)get_param("surface_color");
         surface->color.a = 255;
         unsigned char cur_view = (alpha == 1.0 ? 0 : getCurView(transformation_matrix));
@@ -773,7 +777,7 @@ void GLWidget::makeTracts(void)
     makeCurrent();
     glDeleteLists(tracts, 1);
     glNewList(tracts, GL_COMPILE);
-    float alpha = (tract_alpha_style == 0)? ((float)tract_alpha)/20.0:((float)tract_alpha)/10.0;
+    float alpha = (tract_alpha_style == 0)? tract_alpha/20.0:tract_alpha/10.0;
     const float radius_option[] = {0.01,0.02,0.04,0.08,0.1,0.2,0.4,0.6,0.8};
     const float detail_option[] = {1.0,0.5,0.25,0.0,0.0};
     float radius = radius_option[tube_size];

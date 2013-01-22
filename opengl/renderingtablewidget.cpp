@@ -20,6 +20,14 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
         connect(sd, SIGNAL(valueChanged(int)), this, SLOT(emitCommitData()));
         return sd;
     }
+    if (index.data(Qt::UserRole+1).toString() == QString("float"))
+    {
+        QSlider* sd = new QSlider(parent);
+        sd->setOrientation(Qt::Horizontal);
+        sd->setRange(0,50);
+        connect(sd, SIGNAL(valueChanged(int)), this, SLOT(emitCommitData()));
+        return sd;
+    }
 
     if (index.data(Qt::UserRole+1).toString() == QString("color"))
     {
@@ -49,6 +57,11 @@ void RenderingDelegate::setEditorData(QWidget *editor,
         ((QSlider*)editor)->setValue(index.data(Qt::UserRole).toInt());
         return;
     }
+    if (index.data(Qt::UserRole+1).toString() == QString("float"))
+    {
+        ((QSlider*)editor)->setValue(index.data(Qt::UserRole).toFloat()*5.0);
+        return;
+    }
     if (index.data(Qt::UserRole+1).toString() == QString("color"))
     {
         ((QColorToolButton*)editor)->setColor(index.data(Qt::UserRole).toInt());
@@ -70,6 +83,12 @@ void RenderingDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
             index.data(Qt::UserRole+1).toString() == QString("int"))
     {
         model->setData(index,((QSlider*)editor)->value(),Qt::UserRole);
+        return;
+    }
+    if (index.column() == 1 &&
+            index.data(Qt::UserRole+1).toString() == QString("float"))
+    {
+        model->setData(index,((QSlider*)editor)->value()/5.0,Qt::UserRole);
         return;
     }
 
@@ -313,10 +332,10 @@ void RenderingTableWidget::initialize(void)
 {
     // Environment
     openPersistentEditor(treemodel->addItem(TreeModel::environItem,
-        "fov_angle",QString("View Angle"),QString("int"),5));
+        "fov_angle",QString("View Angle"),QString("float"),5));
 
     openPersistentEditor(treemodel->addItem(TreeModel::environItem,
-        "view_distance",QString("View Distance"),QString("int"),3));
+        "view_distance",QString("View Distance"),QString("float"),3));
 
     openPersistentEditor(treemodel->addItem(TreeModel::environItem,
         "bkg_color",QString("Background Color"),QString("color"),(int)0x00FFFFFF));
@@ -338,11 +357,11 @@ void RenderingTableWidget::initialize(void)
 
     // Slice
     openPersistentEditor(treemodel->addItem(TreeModel::sliceItem,
-        "slice_alpha",QString("Opacity"),QString("int"),10));
+        "slice_alpha",QString("Opacity"),QString("float"),10));
     openPersistentEditor(treemodel->addItem(TreeModel::sliceItem,
-        "slice_contrast",QString("Contrast"),QString("int"),2));
+        "slice_contrast",QString("Contrast"),QString("float"),2));
     openPersistentEditor(treemodel->addItem(TreeModel::sliceItem,
-        "slice_offset",QString("Offset"),QString("int"),5));
+        "slice_offset",QString("Offset"),QString("float"),5));
     openPersistentEditor(treemodel->addItem(TreeModel::sliceItem,
         "slice_bend1",QString("Blend Func1"),
                                                       QStringList()
@@ -367,7 +386,7 @@ void RenderingTableWidget::initialize(void)
                                                       << QString("ONE_MINUS_DST_ALPHA"),5));
 
     openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
-        "tract_alpha",QString("Opacity"),QString("int"),10));
+        "tract_alpha",QString("Opacity"),QString("float"),10));
     openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
         "tract_alpha_style",QString("Transparent Style"),
                                                       QStringList()
@@ -478,7 +497,7 @@ void RenderingTableWidget::initialize(void)
     // region rednering options
 
     openPersistentEditor(treemodel->addItem(TreeModel::regionItem,
-        "region_alpha",QString("Opacity"),QString("int"),8));
+        "region_alpha",QString("Opacity"),QString("float"),8));
 
     openPersistentEditor(treemodel->addItem(TreeModel::regionItem,
         "region_mesh_smoothed",QString("Mesh Rendering"),QStringList()
@@ -536,7 +555,7 @@ void RenderingTableWidget::initialize(void)
 
 
     openPersistentEditor(treemodel->addItem(TreeModel::surfaceItem,
-        "surface_alpha",QString("Opacity"),QString("int"),5));
+        "surface_alpha",QString("Opacity"),QString("float"),5));
     openPersistentEditor(treemodel->addItem(TreeModel::surfaceItem,
         "surface_mesh_smoothed",QString("Mesh Rendering"),QStringList()
                                                       << QString("Original")

@@ -90,8 +90,9 @@ class RenderingTableWidget;
 
  private:
      int get_param(const char* name);
+     float get_param_float(const char* name);
  private:
-     unsigned char tract_alpha;
+     float tract_alpha;
      unsigned char tract_alpha_style;
      unsigned char tract_style;
      unsigned char tract_color_style;
@@ -99,8 +100,8 @@ class RenderingTableWidget;
      unsigned char tract_color_contrast;
      unsigned char tract_tube_detail;
      unsigned char end_point_shift;
-     unsigned char slice_contrast;
-     unsigned char slice_offset;
+     float slice_contrast;
+     float slice_offset;
      unsigned char slice_index;
  private:
      GLuint tracts,slice_texture[3];
