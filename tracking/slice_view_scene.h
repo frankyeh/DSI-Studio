@@ -37,6 +37,7 @@ private:
 
     QImage view_image;
     void show_fiber(QPainter& painter,float* dir, unsigned int x, unsigned int y);
+    void show_ruler(QPainter& painter);
     // update cursor info
 protected:
     void mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseEvent );
