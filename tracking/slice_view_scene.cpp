@@ -171,7 +171,7 @@ void slice_view_scene::save_slice_as()
                 0,
                 "Save as",
                 cur_tracking_window.absolute_path + "/" +
-                cur_tracking_window.view_name[cur_tracking_window.ui->sliceViewBox->currentIndex()].c_str()+".nii",
+                cur_tracking_window.handle->fib_data.view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str()+".nii",
                 "NIFTI files (*.nii.gz *.nii);;MAT File (*.mat);;");
     if(filename.isEmpty())
         return;
@@ -423,6 +423,42 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     addRect(0, 0, annotated_image.width(),annotated_image.height(),QPen(),
             (cur_tracking_window.slice.cur_dim == 2) ? annotated_image : annotated_image.mirrored());
 
+}
+
+void slice_view_scene::keyPressEvent ( QKeyEvent * event )
+{
+
+     switch(event->key())
+     {
+     case Qt::Key_Q:
+         cur_tracking_window.ui->SagSlider->setValue(cur_tracking_window.ui->SagSlider->value()+1);
+         break;
+     case Qt::Key_A:
+         cur_tracking_window.ui->SagSlider->setValue(cur_tracking_window.ui->SagSlider->value()-1);
+         break;
+     case Qt::Key_W:
+         cur_tracking_window.ui->CorSlider->setValue(cur_tracking_window.ui->CorSlider->value()+1);
+         break;
+     case Qt::Key_S:
+         cur_tracking_window.ui->CorSlider->setValue(cur_tracking_window.ui->CorSlider->value()-1);
+         break;
+     case Qt::Key_E:
+         cur_tracking_window.ui->AxiSlider->setValue(cur_tracking_window.ui->AxiSlider->value()+1);
+         break;
+     case Qt::Key_D:
+         cur_tracking_window.ui->AxiSlider->setValue(cur_tracking_window.ui->AxiSlider->value()-1);
+         break;
+     case Qt::Key_Z:
+         cur_tracking_window.on_SagView_clicked();
+         break;
+     case Qt::Key_X:
+         cur_tracking_window.on_CorView_clicked();
+         break;
+     case Qt::Key_C:
+         cur_tracking_window.on_AxiView_clicked();
+         break;
+
+     }
 }
 
 void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent )

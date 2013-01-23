@@ -47,7 +47,6 @@ public:
     unsigned int odf_size;
     unsigned int odf_face_size;
     unsigned char has_odfs;
-    std::vector<std::string> view_name;
     bool is_dti;
 
 public:// color_bar
@@ -65,6 +64,10 @@ public:
     bool eventFilter(QObject *obj, QEvent *event);
     void get_nifti_trans(std::vector<float>& trans);
     void get_dicom_trans(std::vector<float>& trans);
+public slots:
+    void on_SagView_clicked();
+    void on_CorView_clicked();
+    void on_AxiView_clicked();
 private slots:
     void on_tract_color_index_currentIndexChanged(int index);
     void on_actionRestore_window_layout_triggered();
@@ -94,9 +97,7 @@ private slots:
     void on_tool2_pressed();
     void on_tool1_pressed();
     void on_tool0_pressed();
-    void on_SagView_clicked();
-    void on_CorView_clicked();
-    void on_AxiView_clicked();
+
     void SliderValueChanged(void);
     void glSliderValueChanged(void);
     void update_color_map(void);

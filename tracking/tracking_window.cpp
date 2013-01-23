@@ -59,9 +59,8 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
 
 
     }
-    for (unsigned int index = 0;index < fib_data.view_item.size();++index)
-        view_name.push_back(fib_data.view_item[index].name);
-    is_dti = (view_name[0][0] == 'f');
+    // check whether first index is "fa0"
+    is_dti = (fib_data.view_item[0].name[0] == 'f');
 
     ui->setupUi(this);
     {
@@ -135,13 +134,13 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
         slice_no_update = false;
         on_SliceModality_currentIndexChanged(0);
 
-        for (unsigned int index = 0; index < view_name.size(); ++index)
-            ui->sliceViewBox->addItem(view_name[index].c_str());
-        ui->sliceViewBox->setCurrentIndex(0);
-
-        for (unsigned int index = 0;index < fib_data.view_item.size();++index)
+        for (unsigned int index = 0;index < fib_data.view_item.size(); ++index)
+        {
+            ui->sliceViewBox->addItem(fib_data.view_item[index].name.c_str());
             if(fib_data.view_item[index].is_overlay)
-                ui->overlay->addItem(view_name[index].c_str());
+                ui->overlay->addItem(fib_data.view_item[index].name.c_str());
+        }
+        ui->sliceViewBox->setCurrentIndex(0);
         ui->overlay->setCurrentIndex(0);
         if(ui->overlay->count() == 1)
            ui->overlay->hide();
@@ -167,16 +166,17 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
             ui->actionQuantitative_anisotropy_QA->setText("Save FA...");
         ui->report_index->addItem((is_dti) ? "fa":"qa");
         ui->tract_color_index->addItem((is_dti) ? "fa":"qa");
-        for (int index = fib_data.other_mapping_index; index < view_name.size(); ++index)
+        for (int index = fib_data.other_mapping_index; index < fib_data.view_item.size(); ++index)
             {
+                std::string& name = fib_data.view_item[index].name;
                 QAction* Item = new QAction(this);
-                Item->setText(QString("Save %1...").arg(view_name[index].c_str()));
-                Item->setData(QString(view_name[index].c_str()));
+                Item->setText(QString("Save %1...").arg(name.c_str()));
+                Item->setData(QString(name.c_str()));
                 Item->setVisible(true);
                 connect(Item, SIGNAL(triggered()),tractWidget, SLOT(save_tracts_data_as()));
                 ui->menuSave->addAction(Item);
-                ui->report_index->addItem(view_name[index].c_str());
-                ui->tract_color_index->addItem(view_name[index].c_str());
+                ui->report_index->addItem(name.c_str());
+                ui->tract_color_index->addItem(name.c_str());
             }
     }
 
@@ -495,10 +495,10 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
       status += " ";
       std::vector<float> data;
       handle->get_voxel_information(x, y, z, data);
-      for(unsigned int index = 0,data_index = 0;index < view_name.size() && data_index < data.size();++index)
-          if(view_name[index] != "color")
+      for(unsigned int index = 0,data_index = 0;index < handle->fib_data.view_item.size() && data_index < data.size();++index)
+          if(handle->fib_data.view_item[index].name != "color")
           {
-              status += view_name[index].c_str();
+              status += handle->fib_data.view_item[index].name.c_str();
               status += QString("=%1 ").arg(data[data_index]);
               ++data_index;
           }
@@ -592,6 +592,7 @@ void tracking_window::on_AxiView_clicked()
     slice.cur_dim = 2;
     if(ui->view_style->currentIndex() == 0)
         scene.show_slice();
+    scene.setFocus();
 }
 
 void tracking_window::on_CorView_clicked()
@@ -599,6 +600,7 @@ void tracking_window::on_CorView_clicked()
     slice.cur_dim = 1;
     if(ui->view_style->currentIndex() == 0)
         scene.show_slice();
+    scene.setFocus();
 }
 
 void tracking_window::on_SagView_clicked()
@@ -606,40 +608,53 @@ void tracking_window::on_SagView_clicked()
     slice.cur_dim = 0;
     if(ui->view_style->currentIndex() == 0)
         scene.show_slice();
+    scene.setFocus();
 }
 
 void tracking_window::on_tool0_pressed()
 {
     scene.sel_mode = 0;
+    scene.setFocus();
+
 }
 
 void tracking_window::on_tool1_pressed()
 {
     scene.sel_mode = 1;
+    scene.setFocus();
+
 }
 
 void tracking_window::on_tool2_pressed()
 {
     scene.sel_mode = 2;
+    scene.setFocus();
+
 }
 
 void tracking_window::on_tool3_pressed()
 {
     scene.sel_mode = 3;
+    scene.setFocus();
 }
 
 void tracking_window::on_tool4_clicked()
 {
     scene.sel_mode = 4;
+    scene.setFocus();
 }
 
 void tracking_window::on_tool5_pressed()
 {
     scene.sel_mode = 5;
+    scene.setFocus();
+
 }
 void tracking_window::on_tool6_pressed()
 {
     scene.sel_mode = 6;
+    scene.setFocus();
+
 }
 
 void tracking_window::on_sliceViewBox_currentIndexChanged(int index)
@@ -693,18 +708,21 @@ void tracking_window::on_glSagView_clicked()
 {
     glWidget->set_view(0);
     glWidget->updateGL();
+    glWidget->setFocus();
 }
 
 void tracking_window::on_glCorView_clicked()
 {
     glWidget->set_view(1);
     glWidget->updateGL();
+    glWidget->setFocus();
 }
 
 void tracking_window::on_glAxiView_clicked()
 {
     glWidget->set_view(2);
     glWidget->updateGL();
+    glWidget->setFocus();
 }
 
 void tracking_window::on_SliceModality_currentIndexChanged(int index)
@@ -809,6 +827,14 @@ void tracking_window::on_actionInsert_T1_T2_triggered()
         return;
     ui->SliceModality->addItem(QFileInfo(filenames[0]).baseName());
     ui->SliceModality->setCurrentIndex(glWidget->other_slices.size());
+    ui->sliceViewBox->addItem(QString("slice:")+QFileInfo(filenames[0]).baseName().toLocal8Bit().begin());
+    handle->fib_data.view_item.push_back(handle->fib_data.view_item[0]);
+    handle->fib_data.view_item.back().name = std::string("slice:")+QFileInfo(filenames[0]).baseName().toLocal8Bit().begin();
+    handle->fib_data.view_item.back().is_overlay = false;
+    handle->fib_data.view_item.back().image_data = glWidget->roi_image_buf.back();
+    handle->fib_data.view_item.back().set_scale(
+                glWidget->other_slices.back().source_images.begin(),
+                glWidget->other_slices.back().source_images.end());
 }
 
 
@@ -1281,9 +1307,16 @@ void tracking_window::on_deleteSlice_clicked()
     if(ui->SliceModality->currentIndex() == 0)
         return;
     int index = ui->SliceModality->currentIndex();
+    unsigned int view_item_index = handle->fib_data.view_item.size()-glWidget->mi3s.size()+index-1;
+    if(ui->sliceViewBox->currentIndex() == view_item_index)
+        ui->sliceViewBox->setCurrentIndex(0);
+    ui->sliceViewBox->removeItem(view_item_index);
+    handle->fib_data.view_item.erase(handle->fib_data.view_item.begin()+view_item_index);
     ui->SliceModality->setCurrentIndex(0);
     glWidget->delete_slice(index-1);
     ui->SliceModality->removeItem(index);
+
+
 }
 
 

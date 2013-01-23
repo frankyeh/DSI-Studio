@@ -41,6 +41,10 @@ class RenderingTableWidget;
      boost::ptr_vector<CustomSliceModel> other_slices;
      boost::ptr_vector<LinearMapping<image::basic_image<float,3,image::const_pointer_memory<float> >,image::rigid_scaling_transform<3> > > mi3s;
      std::vector<std::vector<float> > transform;
+
+     boost::ptr_vector<image::basic_image<float,3> > roi_image;
+     std::vector<float*> roi_image_buf;
+
      unsigned int current_visible_slide;
      bool addSlices(QStringList filenames);
      void delete_slice(int index);
@@ -81,6 +85,7 @@ class RenderingTableWidget;
      void mouseReleaseEvent(QMouseEvent *event);
      void mouseMoveEvent(QMouseEvent *event);
      void mouseDoubleClickEvent(QMouseEvent *event);
+     void keyPressEvent ( QKeyEvent * event );
      void wheelEvent ( QWheelEvent * event );
  private:
      tracking_window& cur_tracking_window;

@@ -304,9 +304,9 @@ void RegionTableWidget::save_region_info(void)
     for(unsigned int index = 0;index < cur_tracking_window.handle->fib_data.fib.num_fiber;++index)
             out << "\tdx" << index << "\tdy" << index << "\tdz" << index;
 
-    for(unsigned int index = 0;index < cur_tracking_window.view_name.size();++index)
-        if(cur_tracking_window.view_name[index] != "color")
-            out << "\t" << cur_tracking_window.view_name[index];
+    for(unsigned int index = 0;index < cur_tracking_window.handle->fib_data.view_item.size();++index)
+        if(cur_tracking_window.handle->fib_data.view_item[index].name != "color")
+            out << "\t" << cur_tracking_window.handle->fib_data.view_item[index].name;
 
     out << std::endl;
     for(int index = 0;index < regions[currentRow()].get().size();++index)
