@@ -1280,11 +1280,6 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
         ui->fa_threshold->setRange(0.0,1.0);
         ui->fa_threshold->setValue(0.98);
         ui->fa_threshold->setSingleStep(0.01);
-        ui->tracking_plan->setCurrentIndex(0); // use seed only
-        ui->tracking_plan->setEnabled(false);
-        ui->min_length->setEnabled(false);
-        ui->max_length->setEnabled(false);
-        ui->track_count->setValue(10000);
     }
     else
     {
@@ -1292,12 +1287,7 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
         ui->fa_threshold->setRange(0.0,max_value*1.1);
         ui->fa_threshold->setValue(0.6*image::segmentation::otsu_threshold(
             image::basic_image<float, 3,image::const_pointer_memory<float> >(handle->fib_data.fib.fa[0],handle->fib_data.fib.dim)));
-        ui->fa_threshold->setSingleStep(max_value/50.0);
-
-        ui->tracking_plan->setEnabled(true);
-        ui->min_length->setEnabled(true);
-        ui->max_length->setEnabled(true);
-
+        ui->fa_threshold->setSingleStep(max_value/50.0);    
     }
 }
 
@@ -1414,3 +1404,63 @@ void tracking_window::on_subject_list_itemSelectionChanged()
 }
 
 
+
+void tracking_window::on_actionPair_comparison_triggered()
+{
+    if(!handle->has_vbc())
+        return;
+    QString filename1 = QFileDialog::getOpenFileName(
+                                this,
+                                "Select subject fib file for analysis",
+                                absolute_path,
+                                "Fib files (*.fib.gz *.fib);;All files (*.*)" );
+    if (filename1.isEmpty())
+        return;
+    QString filename2 = QFileDialog::getOpenFileName(
+                                this,
+                                "Select subject fib file for analysis",
+                                absolute_path,
+                                "Fib files (*.fib.gz *.fib);;All files (*.*)" );
+    if (filename2.isEmpty())
+        return;
+
+
+    begin_prog("load data");
+    if(!handle->vbc->single_subject_paired_analysis(filename1.toLocal8Bit().begin(),
+                                                    filename2.toLocal8Bit().begin()))
+    {
+        check_prog(1,1);
+        QMessageBox::information(this,"error",handle->vbc->error_msg.c_str(),0);
+        return;
+    }
+    check_prog(1,1);
+
+
+    unsigned int greater_index_id =
+            std::find(handle->fib_data.fib.index_name.begin(),
+                      handle->fib_data.fib.index_name.end(),
+                      "greater mapping")-handle->fib_data.fib.index_name.begin();
+    if(greater_index_id == handle->fib_data.fib.index_name.size())
+    {
+        handle->fib_data.fib.index_name.push_back("greater mapping");
+        handle->fib_data.fib.index_data.push_back(std::vector<const float*>());
+        handle->fib_data.fib.index_data_dir.push_back(std::vector<const short*>());
+        ui->tracking_index->addItem("greater mapping");
+    }
+    handle->fib_data.fib.index_data[greater_index_id] = handle->vbc->greater_ptr;
+    handle->fib_data.fib.index_data_dir[greater_index_id] = handle->vbc->greater_dir_ptr;
+
+    unsigned int lesser_index_id =
+            std::find(handle->fib_data.fib.index_name.begin(),
+                      handle->fib_data.fib.index_name.end(),
+                      "lesser mapping")-handle->fib_data.fib.index_name.begin();
+    if(lesser_index_id == handle->fib_data.fib.index_name.size())
+    {
+        handle->fib_data.fib.index_name.push_back("lesser mapping");
+        handle->fib_data.fib.index_data.push_back(std::vector<const float*>());
+        handle->fib_data.fib.index_data_dir.push_back(std::vector<const short*>());
+        ui->tracking_index->addItem("lesser mapping");
+    }
+    handle->fib_data.fib.index_data[lesser_index_id] = handle->vbc->lesser_ptr;
+    handle->fib_data.fib.index_data_dir[lesser_index_id] = handle->vbc->lesser_dir_ptr;
+}

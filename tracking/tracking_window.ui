@@ -818,6 +818,7 @@
      <string>Connectometry</string>
     </property>
     <addaction name="actionOpen_Subject_Data"/>
+    <addaction name="actionPair_comparison"/>
    </widget>
    <addaction name="menu_Edit"/>
    <addaction name="menuRegions"/>
@@ -3349,6 +3350,11 @@
   <action name="actionRegion_statistics">
    <property name="text">
     <string>Statistics...</string>
+   </property>
+  </action>
+  <action name="actionPair_comparison">
+   <property name="text">
+    <string>Single Subject Paired Comparison...</string>
    </property>
   </action>
  </widget>

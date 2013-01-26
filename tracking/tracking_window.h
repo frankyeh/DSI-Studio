@@ -113,6 +113,7 @@ private slots:
     void on_actionOpen_Subject_Data_triggered();
     void on_subject_list_itemSelectionChanged();
     void on_tool6_pressed();
+    void on_actionPair_comparison_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

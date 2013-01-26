@@ -52,14 +52,15 @@ public:
     void get_data_at(unsigned int index,unsigned int fib,std::vector<float>& data) const;
     void get_subject_slice(unsigned int subject_index,unsigned int z_pos,image::basic_image<float,2>& slice) const;
 private: // single subject analysis result
-    std::auto_ptr<MatFile> single_subject;
     std::vector<std::vector<float> > greater,lesser;
     std::vector<std::vector<short> > greater_dir,lesser_dir;
+    void initialize_greater_lesser(void);
+    bool get_odf_profile(const char* file_name,std::vector<float>& cur_subject_data);
 public:
     std::vector<const float*> greater_ptr,lesser_ptr;
     std::vector<const short*> greater_dir_ptr,lesser_dir_ptr;
-    void single_subject_percentile(const std::vector<float>& cur_subject_data);
     bool single_subject_analysis(const char* file_name);
+    bool single_subject_paired_analysis(const char* file_name1,const char* file_name2);
 };
 
 #endif // VBC_DATABASE_H

@@ -261,8 +261,30 @@ void vbc_database::save_subject_data(const char* output_name) const
     matfile.close_file();
 }
 
-void vbc_database::single_subject_percentile(const std::vector<float>& cur_subject_data)
+void vbc_database::initialize_greater_lesser(void)
 {
+    greater.resize(num_fiber);
+    lesser.resize(num_fiber);
+    greater_dir.resize(num_fiber);
+    lesser_dir.resize(num_fiber);
+    for(unsigned char fib = 0;fib < num_fiber;++fib)
+    {
+        greater[fib].resize(dim.size());
+        lesser[fib].resize(dim.size());
+        greater_dir[fib].resize(dim.size());
+        lesser_dir[fib].resize(dim.size());
+    }
+    greater_ptr.resize(num_fiber);
+    lesser_ptr.resize(num_fiber);
+    greater_dir_ptr.resize(num_fiber);
+    lesser_dir_ptr.resize(num_fiber);
+    for(unsigned char fib = 0;fib < num_fiber;++fib)
+    {
+        greater_ptr[fib] = &greater[fib][0];
+        lesser_ptr[fib] = &lesser[fib][0];
+        greater_dir_ptr[fib] = &greater_dir[fib][0];
+        lesser_dir_ptr[fib] = &lesser_dir[fib][0];
+    }
     for(unsigned char fib = 0;fib < num_fiber;++fib)
     {
         std::fill(greater[fib].begin(),greater[fib].end(),0.0);
@@ -270,6 +292,36 @@ void vbc_database::single_subject_percentile(const std::vector<float>& cur_subje
         std::fill(greater_dir[fib].begin(),greater_dir[fib].end(),0);
         std::fill(lesser_dir[fib].begin(),lesser_dir[fib].end(),0);
     }
+}
+bool vbc_database::get_odf_profile(const char* file_name,std::vector<float>& cur_subject_data)
+{
+    std::auto_ptr<MatFile> single_subject(new MatFile);
+    if(!single_subject->load_from_file(file_name))
+    {
+        error_msg = "fail to load the fib file";
+        return false;
+    }
+    if(!is_consistent(*single_subject.get()))
+    {
+        error_msg = "Inconsistent ODF dimension";
+        return false;
+    }
+    cur_subject_data.clear();
+    cur_subject_data.resize(num_fiber*si2vi.size());
+    if(!sample_odf(*single_subject.get(),cur_subject_data))
+    {
+        error_msg += file_name;
+        return false;
+    }
+    return true;
+}
+
+bool vbc_database::single_subject_analysis(const char* file_name)
+{
+    std::vector<float> cur_subject_data;
+    if(!get_odf_profile(file_name,cur_subject_data))
+        return false;
+    initialize_greater_lesser();
     std::vector<unsigned char> greater_fib_count(dim.size()),lesser_fib_count(dim.size());
     std::vector<float> population;
     for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
@@ -306,7 +358,7 @@ void vbc_database::single_subject_percentile(const std::vector<float>& cur_subje
                 greater_dir[fib_count][cur_index] = findex[fib][cur_index];
                 ++greater_fib_count[cur_index];
             }
-            if(lesser_rank > (population.size() >> 1)) // greater
+            if(lesser_rank > (population.size() >> 1)) // lesser
             {
                 unsigned char fib_count = lesser_fib_count[cur_index];
                 lesser[fib_count][cur_index] = (double)lesser_rank/(population.size()+1);
@@ -315,51 +367,49 @@ void vbc_database::single_subject_percentile(const std::vector<float>& cur_subje
             }
         }
     }
+    return true;
 }
 
-bool vbc_database::single_subject_analysis(const char* file_name)
+bool vbc_database::single_subject_paired_analysis(const char* file_name1,const char* file_name2)
 {
-    single_subject.reset(new MatFile);
-    if(!single_subject->load_from_file(file_name))
-    {
-        error_msg = "fail to load the fib file";
+    std::vector<float> cur_subject_data1,cur_subject_data2;
+    if(!get_odf_profile(file_name1,cur_subject_data1) ||
+       !get_odf_profile(file_name2,cur_subject_data2))
         return false;
-    }
-    if(!is_consistent(*single_subject.get()))
-    {
-        error_msg = "Inconsistent ODF dimension";
-        return false;
-    }
-    std::vector<float> cur_subject_data(num_fiber*si2vi.size());
-    if(!sample_odf(*single_subject.get(),cur_subject_data))
-    {
-        error_msg += file_name;
-        return false;
-    }
+    initialize_greater_lesser();
 
-    greater.resize(num_fiber);
-    lesser.resize(num_fiber);
-    greater_dir.resize(num_fiber);
-    lesser_dir.resize(num_fiber);
-    for(unsigned char fib = 0;fib < num_fiber;++fib)
-    {
-        greater[fib].resize(dim.size());
-        lesser[fib].resize(dim.size());
-        greater_dir[fib].resize(dim.size());
-        lesser_dir[fib].resize(dim.size());
-    }
-    greater_ptr.resize(num_fiber);
-    lesser_ptr.resize(num_fiber);
-    greater_dir_ptr.resize(num_fiber);
-    lesser_dir_ptr.resize(num_fiber);
-    for(unsigned char fib = 0;fib < num_fiber;++fib)
-    {
-        greater_ptr[fib] = &greater[fib][0];
-        lesser_ptr[fib] = &lesser[fib][0];
-        greater_dir_ptr[fib] = &greater_dir[fib][0];
-        lesser_dir_ptr[fib] = &lesser_dir[fib][0];
-    }
+    float max_value = *std::max_element(cur_subject_data1.begin(),cur_subject_data1.end());
+    image::minus(cur_subject_data1,cur_subject_data2);
+    image::divide_constant(cur_subject_data1,max_value);
 
-    single_subject_percentile(cur_subject_data);
+    std::vector<unsigned char> greater_fib_count(dim.size()),lesser_fib_count(dim.size());
+    for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
+    {
+        unsigned int cur_index = si2vi[s_index];
+        for(unsigned int fib = 0,fib_offset = 0;
+            fib < num_fiber && fa[fib][cur_index] > fiber_threshold;
+                ++fib,fib_offset+=si2vi.size())
+        {
+            unsigned int pos = s_index + fib_offset;
+            float cur_value = cur_subject_data1[pos];
+            if(cur_value == 0.0)
+                continue;
+
+            if(cur_value > 0.0) // greater
+            {
+                unsigned char fib_count = greater_fib_count[cur_index];
+                greater[fib_count][cur_index] = cur_value;
+                greater_dir[fib_count][cur_index] = findex[fib][cur_index];
+                ++greater_fib_count[cur_index];
+            }
+            if(cur_value < 0.0) // lesser
+            {
+                unsigned char fib_count = lesser_fib_count[cur_index];
+                lesser[fib_count][cur_index] = -cur_value;
+                lesser_dir[fib_count][cur_index] = findex[fib][cur_index];
+                ++lesser_fib_count[cur_index];
+            }
+        }
+    }
     return true;
 }
