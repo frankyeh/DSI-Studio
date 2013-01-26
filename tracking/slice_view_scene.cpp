@@ -30,52 +30,66 @@ void slice_view_scene::show_fiber(QPainter& painter,float* dir, unsigned int x, 
 }
 void slice_view_scene::show_ruler(QPainter& paint)
 {
-    if(sel_mode != 6 || sel_point.size() != 2 || sel_point.size() != 2)
+    if(sel_mode != 6 || sel_point.size() < 2 || sel_point.size() < 2)
         return;
-    float tX = sel_point.front()[0];
-    float tY = sel_point.front()[1];
-    float X = sel_point.back()[0];
-    float Y = sel_point.back()[1];
-    if(cur_tracking_window.slice.cur_dim != 2)
-    {
-        Y = view_image.height() - Y;
-        tY = view_image.height() - tY;
-    }
     QPen pen;  // creates a default pen
     pen.setWidth(2);
     pen.setCapStyle(Qt::RoundCap);
     pen.setJoinStyle(Qt::RoundJoin);
     pen.setColor(Qt::white);
     paint.setPen(pen);
-    paint.drawLine(X, Y, tX, tY);
-    image::vector<3,float> from(sel_coord[0]);
-    image::vector<3,float> to(sel_coord[1]);
-    from -= to;
-    from[0] *= cur_tracking_window.handle->fib_data.vs[0];
-    from[1] *= cur_tracking_window.handle->fib_data.vs[1];
-    from[2] *= cur_tracking_window.handle->fib_data.vs[2];
-    float length = from.length();
-    float tic_dis = std::pow(10.0,std::floor(std::log10((double)length/2.0)));
-
-    image::vector<2,float> tic_dir(Y-tY,tX-X);
-    tic_dir.normalize();
-    tic_dir *= 5.0;
-    for(double L = 0.0;1;L+=tic_dis)
+    for(unsigned int index = 1;index < sel_point.size();index += 2)
     {
-        if(L+tic_dis > length)
-            L = length;
-        image::vector<2,float> npos(tX,tY);
-        npos[0] += ((float)X-npos[0])*L/length;
-        npos[1] += ((float)Y-npos[1])*L/length;
-        paint.drawLine(npos[0],npos[1],npos[0]+tic_dir[0],npos[1]+tic_dir[1]);
-        npos += tic_dir;
-        npos += tic_dir;
-        npos += tic_dir;
-        paint.drawText(npos[0]-40,npos[1]-40,80,80,
-                       Qt::AlignHCenter|Qt::AlignVCenter,
-                       QString::number(L)+(L >= length ? " mm":""));
-        if(L >= length)
-            break;
+        float tX = sel_point[index-1][0];
+        float tY = sel_point[index-1][1];
+        float X = sel_point[index][0];
+        float Y = sel_point[index][1];
+        if(cur_tracking_window.slice.cur_dim != 2)
+        {
+            Y = view_image.height() - Y;
+            tY = view_image.height() - tY;
+        }
+        paint.drawLine(X, Y, tX, tY);
+        image::vector<3,float> from(sel_coord[0]);
+        image::vector<3,float> to(sel_coord[1]);
+        from -= to;
+        float pixel_length = from.length();
+        from[0] *= cur_tracking_window.handle->fib_data.vs[0];
+        from[1] *= cur_tracking_window.handle->fib_data.vs[1];
+        from[2] *= cur_tracking_window.handle->fib_data.vs[2];
+        float length = from.length();
+        float precision = std::pow(10.0,std::floor(std::log10((double)length))-1);
+        float tic_dis = precision;
+        while(tic_dis/length*pixel_length*display_ratio < 20.0)
+            tic_dis *= 2.0;
+
+        image::vector<2,float> tic_dir(Y-tY,tX-X);
+        tic_dir.normalize();
+        tic_dir *= 5.0;
+        for(double L = 0.0;1;L+=tic_dis)
+        {
+            if(L+tic_dis > length)
+                L = length;
+            image::vector<2,float> npos(tX,tY);
+            npos[0] += ((float)X-npos[0])*L/length;
+            npos[1] += ((float)Y-npos[1])*L/length;
+            paint.drawLine(npos[0],npos[1],npos[0]+tic_dir[0],npos[1]+tic_dir[1]);
+            npos += tic_dir;
+            npos += tic_dir;
+            npos += tic_dir;
+            if(L < length)
+                paint.drawText(npos[0]-40,npos[1]-40,80,80,
+                               Qt::AlignHCenter|Qt::AlignVCenter,
+                               QString::number(L));
+            else
+            {
+                paint.drawText(npos[0]-40,npos[1]-40,80,80,
+                               Qt::AlignHCenter|Qt::AlignVCenter,
+                               QString::number(std::floor(L*100.0/precision+0.5)*precision/100.0)+" mm");
+                break;
+            }
+
+        }
     }
 }
 
@@ -304,8 +318,11 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 
     if(sel_mode != 4)
     {
-        sel_point.clear();
-        sel_coord.clear();
+        if(sel_mode != 6)
+        {
+            sel_point.clear();
+            sel_coord.clear();
+        }
         sel_point.push_back(image::vector<2,short>(X, Y));
         sel_coord.push_back(image::vector<3,short>(x, y, z));
     }
