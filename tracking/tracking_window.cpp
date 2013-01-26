@@ -1464,3 +1464,45 @@ void tracking_window::on_actionPair_comparison_triggered()
     handle->fib_data.fib.index_data[lesser_index_id] = handle->vbc->lesser_ptr;
     handle->fib_data.fib.index_data_dir[lesser_index_id] = handle->vbc->lesser_dir_ptr;
 }
+
+void tracking_window::on_offset_sliderMoved(int position)
+{
+    ui->offset_value->setValue((float)position/100.0);
+}
+
+void tracking_window::on_offset_value_valueChanged(double arg1)
+{
+    ui->offset->setValue(arg1*100.0);
+}
+
+void tracking_window::on_contrast_sliderMoved(int position)
+{
+    ui->contrast_value->setValue((float)position/100.0);
+}
+
+void tracking_window::on_contrast_value_valueChanged(double arg1)
+{
+    ui->contrast->setValue(arg1*100.0);
+}
+
+void tracking_window::on_gl_offset_sliderMoved(int position)
+{
+    ui->gl_offset_value->setValue((float)position/100.0);
+}
+
+void tracking_window::on_gl_offset_value_valueChanged(double arg1)
+{
+    ui->gl_offset->setValue(arg1*100.0);
+    glWidget->updateGL();
+}
+
+void tracking_window::on_gl_contrast_sliderMoved(int position)
+{
+     ui->gl_contrast_value->setValue((float)position/100.0);
+}
+
+void tracking_window::on_gl_contrast_value_valueChanged(double arg1)
+{
+     ui->gl_contrast->setValue(arg1*100.0);
+     glWidget->updateGL();
+}

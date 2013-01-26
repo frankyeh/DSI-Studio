@@ -47,13 +47,6 @@
        <number>0</number>
       </property>
       <item>
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>Current Slice:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QComboBox" name="SliceModality">
         <property name="maximumSize">
          <size>
@@ -127,34 +120,106 @@
         </item>
         <item>
          <property name="text">
-          <string>Right Hemisphere</string>
+          <string>Right</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>Left Hemisphere</string>
+          <string>Left</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>Lower Brain</string>
+          <string>Lower</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>Upper Brain</string>
+          <string>Upper</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>Anterior Half</string>
+          <string>Anterior</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>Posterior Half</string>
+          <string>Posterior</string>
          </property>
         </item>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_16">
+        <property name="text">
+         <string>Contrast</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QDoubleSpinBox" name="gl_contrast_value">
+        <property name="minimum">
+         <double>1.000000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>5.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.500000000000000</double>
+        </property>
+        <property name="value">
+         <double>1.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSlider" name="gl_contrast">
+        <property name="minimum">
+         <number>100</number>
+        </property>
+        <property name="maximum">
+         <number>500</number>
+        </property>
+        <property name="pageStep">
+         <number>50</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_17">
+        <property name="text">
+         <string>Offset</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QDoubleSpinBox" name="gl_offset_value">
+        <property name="minimum">
+         <double>-1.000000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>1.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.100000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSlider" name="gl_offset">
+        <property name="minimum">
+         <number>-100</number>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
        </widget>
       </item>
       <item>
@@ -987,58 +1052,6 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="zoomIn">
-         <property name="minimumSize">
-          <size>
-           <width>22</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>23</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>+</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="zoomOut">
-         <property name="minimumSize">
-          <size>
-           <width>22</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>23</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>-</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="Line" name="line_4">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="Line" name="line_3">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-        </widget>
-       </item>
-       <item>
         <widget class="QToolButton" name="tool0">
          <property name="maximumSize">
           <size>
@@ -1244,13 +1257,6 @@
         </widget>
        </item>
        <item>
-        <widget class="Line" name="line_2">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-        </widget>
-       </item>
-       <item>
         <widget class="QComboBox" name="view_style">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -1266,7 +1272,7 @@
          </property>
          <item>
           <property name="text">
-           <string>Single slice</string>
+           <string>Single</string>
           </property>
          </item>
          <item>
@@ -1341,6 +1347,44 @@
         </widget>
        </item>
        <item>
+        <widget class="QToolButton" name="zoomIn">
+         <property name="minimumSize">
+          <size>
+           <width>22</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>23</width>
+           <height>22</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>+</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="zoomOut">
+         <property name="minimumSize">
+          <size>
+           <width>22</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>23</width>
+           <height>22</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>-</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QCheckBox" name="show_fiber">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
@@ -1387,6 +1431,22 @@
         </widget>
        </item>
        <item>
+        <widget class="QDoubleSpinBox" name="contrast_value">
+         <property name="prefix">
+          <string/>
+         </property>
+         <property name="minimum">
+          <double>1.000000000000000</double>
+         </property>
+         <property name="maximum">
+          <double>5.000000000000000</double>
+         </property>
+         <property name="singleStep">
+          <double>0.500000000000000</double>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QSlider" name="contrast">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -1399,6 +1459,9 @@
          </property>
          <property name="maximum">
           <number>500</number>
+         </property>
+         <property name="pageStep">
+          <number>50</number>
          </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -1426,6 +1489,19 @@
         </widget>
        </item>
        <item>
+        <widget class="QDoubleSpinBox" name="offset_value">
+         <property name="minimum">
+          <double>-1.000000000000000</double>
+         </property>
+         <property name="maximum">
+          <double>1.000000000000000</double>
+         </property>
+         <property name="singleStep">
+          <double>0.100000000000000</double>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QSlider" name="offset">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -1438,6 +1514,12 @@
          </property>
          <property name="maximum">
           <number>100</number>
+         </property>
+         <property name="singleStep">
+          <number>1</number>
+         </property>
+         <property name="pageStep">
+          <number>10</number>
          </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>

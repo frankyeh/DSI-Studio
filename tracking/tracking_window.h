@@ -114,6 +114,14 @@ private slots:
     void on_subject_list_itemSelectionChanged();
     void on_tool6_pressed();
     void on_actionPair_comparison_triggered();
+    void on_offset_sliderMoved(int position);
+    void on_offset_value_valueChanged(double arg1);
+    void on_contrast_sliderMoved(int position);
+    void on_contrast_value_valueChanged(double arg1);
+    void on_gl_offset_sliderMoved(int position);
+    void on_gl_offset_value_valueChanged(double arg1);
+    void on_gl_contrast_sliderMoved(int position);
+    void on_gl_contrast_value_valueChanged(double arg1);
 };
 
 #endif // TRACKING_WINDOW_H

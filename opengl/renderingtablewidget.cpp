@@ -359,10 +359,6 @@ void RenderingTableWidget::initialize(void)
     openPersistentEditor(treemodel->addItem(TreeModel::sliceItem,
         "slice_alpha",QString("Opacity"),QString("float"),10));
     openPersistentEditor(treemodel->addItem(TreeModel::sliceItem,
-        "slice_contrast",QString("Contrast"),QString("float"),2));
-    openPersistentEditor(treemodel->addItem(TreeModel::sliceItem,
-        "slice_offset",QString("Offset"),QString("float"),5));
-    openPersistentEditor(treemodel->addItem(TreeModel::sliceItem,
         "slice_bend1",QString("Blend Func1"),
                                                       QStringList()
                                                       << QString("ZERO")

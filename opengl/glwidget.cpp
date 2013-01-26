@@ -549,8 +549,8 @@ void GLWidget::paintGL()
             unsigned int index = current_visible_slide-1;
             if(!mi3s[index].ended)
             {
-                slice_contrast = get_param("slice_contrast");
-                slice_offset = get_param("slice_offset");
+                slice_contrast = cur_tracking_window.ui->gl_contrast_value->value();
+                slice_offset = cur_tracking_window.ui->gl_offset_value->value();
                 slice_index = current_visible_slide;
                 const float* buf = mi3s[index].get();
                 std::vector<float> inverse_transform(16);
@@ -590,12 +590,12 @@ void GLWidget::paintGL()
                                    (SliceModel*)&other_slices[current_visible_slide-1] :
                                    (SliceModel*)&cur_tracking_window.slice;
 
-        if(get_param_float("slice_contrast") != slice_contrast ||
-            get_param_float("slice_offset") != slice_offset ||
+        if(cur_tracking_window.ui->gl_contrast_value->value() != slice_contrast ||
+           cur_tracking_window.ui->gl_offset_value->value() != slice_offset ||
             slice_index != current_visible_slide)
         {
-            slice_contrast = get_param_float("slice_contrast");
-            slice_offset = get_param_float("slice_offset");
+            slice_contrast = cur_tracking_window.ui->gl_contrast_value->value();
+            slice_offset = cur_tracking_window.ui->gl_offset_value->value();
             slice_index = current_visible_slide;
             active_slice->texture_need_update[0] = true;
             active_slice->texture_need_update[1] = true;
@@ -617,12 +617,7 @@ void GLWidget::paintGL()
                 if(slice_texture[dim])
                     deleteTexture(slice_texture[dim]);
                 image::color_image texture;
-                float contrast_value[10] = {0.25,0.5,1.0,1.2,1.4,1.8,2.6,4.2,8.0,16.0};
-                active_slice->get_texture(dim,texture,
-                    contrast_value[get_param("slice_contrast")],
-                    ((float)get_param("slice_offset")-5.0)/5.0);
-
-
+                active_slice->get_texture(dim,texture,slice_contrast,slice_offset);
                 slice_texture[dim] =
                     bindTexture(QImage((unsigned char*)&*texture.begin(),
                 texture.width(),texture.height(),QImage::Format_RGB32));
