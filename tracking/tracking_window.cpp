@@ -653,6 +653,7 @@ void tracking_window::on_tool5_pressed()
 void tracking_window::on_tool6_pressed()
 {
     scene.sel_mode = 6;
+    scene.show_slice();
     scene.setFocus();
 
 }

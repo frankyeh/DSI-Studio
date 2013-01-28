@@ -30,7 +30,7 @@ void slice_view_scene::show_fiber(QPainter& painter,float* dir, unsigned int x, 
 }
 void slice_view_scene::show_ruler(QPainter& paint)
 {
-    if(sel_mode != 6 || sel_point.size() < 2 || sel_point.size() < 2)
+    if(sel_mode != 6 || sel_point.size() < 2)
         return;
     QPen pen;  // creates a default pen
     pen.setWidth(2);
@@ -50,18 +50,19 @@ void slice_view_scene::show_ruler(QPainter& paint)
             tY = view_image.height() - tY;
         }
         paint.drawLine(X, Y, tX, tY);
-        image::vector<3,float> from(sel_coord[0]);
-        image::vector<3,float> to(sel_coord[1]);
+        image::vector<2,float> from(X,Y);
+        image::vector<2,float> to(tX,tY);
         from -= to;
         float pixel_length = from.length();
+        from /= display_ratio;
         from[0] *= cur_tracking_window.handle->fib_data.vs[0];
         from[1] *= cur_tracking_window.handle->fib_data.vs[1];
         from[2] *= cur_tracking_window.handle->fib_data.vs[2];
         float length = from.length();
         float precision = std::pow(10.0,std::floor(std::log10((double)length))-1);
-        float tic_dis = precision;
-        while(tic_dis/length*pixel_length*display_ratio < 20.0)
-            tic_dis *= 2.0;
+        float tic_dis = std::pow(10.0,std::floor(std::log10((double)50.0*length/pixel_length)));
+        if(tic_dis*pixel_length/length < 10)
+            tic_dis *= 5.0;
 
         image::vector<2,float> tic_dir(Y-tY,tX-X);
         tic_dir.normalize();
@@ -85,7 +86,7 @@ void slice_view_scene::show_ruler(QPainter& paint)
             {
                 paint.drawText(npos[0]-40,npos[1]-40,80,80,
                                Qt::AlignHCenter|Qt::AlignVCenter,
-                               QString::number(std::floor(L*100.0/precision+0.5)*precision/100.0)+" mm");
+                               QString::number(std::floor(L*10.0/precision+0.5)*precision/10.0)+" mm");
                 break;
             }
 

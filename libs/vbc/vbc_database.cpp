@@ -379,7 +379,7 @@ bool vbc_database::single_subject_paired_analysis(const char* file_name1,const c
     initialize_greater_lesser();
 
     float max_value = *std::max_element(cur_subject_data1.begin(),cur_subject_data1.end());
-    image::minus(cur_subject_data1,cur_subject_data2);
+    image::minus(cur_subject_data1.begin(),cur_subject_data1.end(),cur_subject_data2.begin());
     image::divide_constant(cur_subject_data1,max_value);
 
     std::vector<unsigned char> greater_fib_count(dim.size()),lesser_fib_count(dim.size());

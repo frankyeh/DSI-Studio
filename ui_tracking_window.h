@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Fri Jan 25 21:17:31 2013
+** Created: Fri Jan 25 22:33:53 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -133,6 +133,8 @@ public:
     QToolButton *deleteSlice;
     QToolButton *isosurfaceButton;
     QComboBox *surfaceStyle;
+    QHBoxLayout *horizontalLayout;
+    QSpacerItem *horizontalSpacer_8;
     QLabel *label_16;
     QDoubleSpinBox *gl_contrast_value;
     QSlider *gl_contrast;
@@ -594,10 +596,17 @@ public:
 
         horizontalLayout_13->addWidget(surfaceStyle);
 
+        horizontalLayout = new QHBoxLayout();
+        horizontalLayout->setSpacing(0);
+        horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
+        horizontalSpacer_8 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+        horizontalLayout->addItem(horizontalSpacer_8);
+
         label_16 = new QLabel(centralwidget);
         label_16->setObjectName(QString::fromUtf8("label_16"));
 
-        horizontalLayout_13->addWidget(label_16);
+        horizontalLayout->addWidget(label_16);
 
         gl_contrast_value = new QDoubleSpinBox(centralwidget);
         gl_contrast_value->setObjectName(QString::fromUtf8("gl_contrast_value"));
@@ -606,7 +615,7 @@ public:
         gl_contrast_value->setSingleStep(0.5);
         gl_contrast_value->setValue(1);
 
-        horizontalLayout_13->addWidget(gl_contrast_value);
+        horizontalLayout->addWidget(gl_contrast_value);
 
         gl_contrast = new QSlider(centralwidget);
         gl_contrast->setObjectName(QString::fromUtf8("gl_contrast"));
@@ -615,12 +624,12 @@ public:
         gl_contrast->setPageStep(50);
         gl_contrast->setOrientation(Qt::Horizontal);
 
-        horizontalLayout_13->addWidget(gl_contrast);
+        horizontalLayout->addWidget(gl_contrast);
 
         label_17 = new QLabel(centralwidget);
         label_17->setObjectName(QString::fromUtf8("label_17"));
 
-        horizontalLayout_13->addWidget(label_17);
+        horizontalLayout->addWidget(label_17);
 
         gl_offset_value = new QDoubleSpinBox(centralwidget);
         gl_offset_value->setObjectName(QString::fromUtf8("gl_offset_value"));
@@ -628,7 +637,7 @@ public:
         gl_offset_value->setMaximum(1);
         gl_offset_value->setSingleStep(0.1);
 
-        horizontalLayout_13->addWidget(gl_offset_value);
+        horizontalLayout->addWidget(gl_offset_value);
 
         gl_offset = new QSlider(centralwidget);
         gl_offset->setObjectName(QString::fromUtf8("gl_offset"));
@@ -636,7 +645,10 @@ public:
         gl_offset->setMaximum(100);
         gl_offset->setOrientation(Qt::Horizontal);
 
-        horizontalLayout_13->addWidget(gl_offset);
+        horizontalLayout->addWidget(gl_offset);
+
+
+        horizontalLayout_13->addLayout(horizontalLayout);
 
         horizontalSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
