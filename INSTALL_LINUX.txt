@@ -1,4 +1,4 @@
-#
+﻿#
 # DSI Studio, linux version
 # by: Max Novelli
 #     2012/09/19
@@ -92,20 +92,18 @@ Max
 
 5) download source code from git
 
-> git clone -b linux_dev git://github.com/frankyeh/DSI-Studio.git src
+> git clone -b master git://github.com/frankyeh/DSI-Studio.git src
 
-6) there is no need to download additional libraries as stated in the original 
-   readme.txt file. They have been included in the linux version after being 
-   revised to work with gcc on 64 bits platform. The author approved it.
-   If you are looking to use them in other project, please download them from 
-   the main repositories. Be aware that they have been modified to be able to 
-   work within dsi studio.
+6) you need to download additional libraries and place them into the right directories
    Here are the links to their main repositories
 
-   - Image: http://tipl.labsolver.org/d/image.zip?attredirects=0&d=1
+   - Image: http://tipl.labsolver.org/d/image.zip?attredirects=0&d=1 
+     put it under ../src/image
    - Matrix: http://gmo.labsolver.org/download/matrix_op.hpp?attredirects=0&d=1
+     put it under ../src/math
    - TMLL: https://github.com/frankyeh/TMLL/zipball/master
-
+     put it under ../src/ml
+   
 7) create build folder
 
 > mkdir build
@@ -124,11 +122,12 @@ Max
 > sudo mkdir /usr/local/pkg/dsistudio/20120919
 > sudo cp dsi_studio /usr/local/pkg/dsistudio/20120919/dsi_studio
 
-11) FA file. DSI Studio needs a template image file called FMRIB58_FA_1mm.nii. 
+11) FA file. DSI Studio needs a template image file called FMRIB58_FA_1mm.nii.gz 
     If you do not make it available, DSI Studio will not open with the error 
     “FA template file not found”. 
-    It still unclear where you can download this file from. We have many copies 
-    on our servers, so I have not spent any time to track it down as of now.
+    You may find this file in any downloadable package on DSI Studio website.
+
+    http://dsi-studio.labsolver.org/dsi-studio-download
 
  11.1) create repository for the file
 
@@ -138,7 +137,7 @@ Max
 
  11.3) define environmental variable to provide path:
 
-> export DSI_STUDIO_FA_TEMPLATE=/usr/local/pkg/dsi_studio/20120516/FMRIB58_FA_1mm.nii
+> export DSI_STUDIO_FA_TEMPLATE=/usr/local/pkg/dsi_studio/20120516/FMRIB58_FA_1mm.nii.gz
 
 12) Create alias to run dsi studio
 
