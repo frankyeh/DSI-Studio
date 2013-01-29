@@ -97,11 +97,11 @@ Max
 6) you need to download additional libraries and place them into the right directories
    Here are the links to their main repositories
 
-   - Image: http://tipl.labsolver.org/d/image.zip?attredirects=0&d=1 
+   - Image: https://github.com/frankyeh/TIPL/archive/master.zip
      put it under ../src/image
-   - Matrix: http://gmo.labsolver.org/download/matrix_op.hpp?attredirects=0&d=1
+   - Matrix: https://github.com/frankyeh/GMOL/archive/master.zip
      put it under ../src/math
-   - TMLL: https://github.com/frankyeh/TMLL/zipball/master
+   - TMLL: https://github.com/frankyeh/TMLL/archive/master.zip
      put it under ../src/ml
    
 7) create build folder
