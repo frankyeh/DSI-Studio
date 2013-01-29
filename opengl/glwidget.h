@@ -85,7 +85,6 @@ class RenderingTableWidget;
      void mouseReleaseEvent(QMouseEvent *event);
      void mouseMoveEvent(QMouseEvent *event);
      void mouseDoubleClickEvent(QMouseEvent *event);
-     void keyPressEvent ( QKeyEvent * event );
      void wheelEvent ( QWheelEvent * event );
  private:
      tracking_window& cur_tracking_window;
@@ -108,7 +107,7 @@ class RenderingTableWidget;
      float slice_contrast;
      float slice_offset;
      unsigned char slice_index;
- private:
+ public:
      GLuint tracts,slice_texture[3];
      QPoint lastPos;
      float transformation_matrix[16];

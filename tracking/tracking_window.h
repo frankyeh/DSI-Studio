@@ -25,6 +25,8 @@ class tracking_window : public QMainWindow
     Q_OBJECT
 protected:
     void closeEvent(QCloseEvent *event);
+    void keyPressEvent ( QKeyEvent * event );
+
 public:
     explicit tracking_window(QWidget *parent,ODFModel* handle);
     ~tracking_window();

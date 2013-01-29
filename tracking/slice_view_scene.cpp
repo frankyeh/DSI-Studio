@@ -443,41 +443,6 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 
 }
 
-void slice_view_scene::keyPressEvent ( QKeyEvent * event )
-{
-
-     switch(event->key())
-     {
-     case Qt::Key_Q:
-         cur_tracking_window.ui->SagSlider->setValue(cur_tracking_window.ui->SagSlider->value()+1);
-         break;
-     case Qt::Key_A:
-         cur_tracking_window.ui->SagSlider->setValue(cur_tracking_window.ui->SagSlider->value()-1);
-         break;
-     case Qt::Key_W:
-         cur_tracking_window.ui->CorSlider->setValue(cur_tracking_window.ui->CorSlider->value()+1);
-         break;
-     case Qt::Key_S:
-         cur_tracking_window.ui->CorSlider->setValue(cur_tracking_window.ui->CorSlider->value()-1);
-         break;
-     case Qt::Key_E:
-         cur_tracking_window.ui->AxiSlider->setValue(cur_tracking_window.ui->AxiSlider->value()+1);
-         break;
-     case Qt::Key_D:
-         cur_tracking_window.ui->AxiSlider->setValue(cur_tracking_window.ui->AxiSlider->value()-1);
-         break;
-     case Qt::Key_Z:
-         cur_tracking_window.on_SagView_clicked();
-         break;
-     case Qt::Key_X:
-         cur_tracking_window.on_CorView_clicked();
-         break;
-     case Qt::Key_C:
-         cur_tracking_window.on_AxiView_clicked();
-         break;
-
-     }
-}
 
 void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {

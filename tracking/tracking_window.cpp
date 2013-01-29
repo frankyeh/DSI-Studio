@@ -1507,3 +1507,134 @@ void tracking_window::on_gl_contrast_value_valueChanged(double arg1)
      ui->gl_contrast->setValue(arg1*100.0);
      glWidget->updateGL();
 }
+void tracking_window::keyPressEvent ( QKeyEvent * event )
+{
+    if(copy_target == 0) // glWidget
+    {
+        switch(event->key())
+        {
+        case Qt::Key_Q:
+            ui->glSagSlider->setValue(ui->glSagSlider->value()+1);
+            event->accept();
+            break;
+        case Qt::Key_A:
+            ui->glSagSlider->setValue(ui->glSagSlider->value()-1);
+            event->accept();
+            break;
+        case Qt::Key_W:
+            ui->glCorSlider->setValue(ui->glCorSlider->value()+1);
+            event->accept();
+            break;
+        case Qt::Key_S:
+            ui->glCorSlider->setValue(ui->glCorSlider->value()-1);
+            event->accept();
+            break;
+        case Qt::Key_E:
+            ui->glAxiSlider->setValue(ui->glAxiSlider->value()+1);
+            event->accept();
+            break;
+        case Qt::Key_D:
+            ui->glAxiSlider->setValue(ui->glAxiSlider->value()-1);
+            event->accept();
+            break;
+        case Qt::Key_Z:
+            event->accept();
+            glWidget->set_view(0);
+            glWidget->updateGL();
+            break;
+        case Qt::Key_X:
+            event->accept();
+            glWidget->set_view(1);
+            glWidget->updateGL();
+            break;
+        case Qt::Key_C:
+            event->accept();
+            glWidget->set_view(2);
+            glWidget->updateGL();
+            break;
+        }
+    }
+    else
+    {
+        switch(event->key())
+        {
+        case Qt::Key_Q:
+            ui->SagSlider->setValue(ui->SagSlider->value()+1);
+            event->accept();
+            break;
+        case Qt::Key_A:
+            ui->SagSlider->setValue(ui->SagSlider->value()-1);
+            event->accept();
+            break;
+        case Qt::Key_W:
+            ui->CorSlider->setValue(ui->CorSlider->value()+1);
+            event->accept();
+            break;
+        case Qt::Key_S:
+            ui->CorSlider->setValue(ui->CorSlider->value()-1);
+            event->accept();
+            break;
+        case Qt::Key_E:
+            ui->AxiSlider->setValue(ui->AxiSlider->value()+1);
+            event->accept();
+            break;
+        case Qt::Key_D:
+            ui->AxiSlider->setValue(ui->AxiSlider->value()-1);
+            event->accept();
+            break;
+        case Qt::Key_Z:
+            on_SagView_clicked();
+            event->accept();
+            break;
+        case Qt::Key_X:
+            on_CorView_clicked();
+            event->accept();
+            break;
+        case Qt::Key_C:
+            on_AxiView_clicked();
+            event->accept();
+            break;
+        }
+
+    }
+
+
+    if(event->key() >= Qt::Key_1 && event->key() <= Qt::Key_9)
+    {
+        QSettings settings;
+        event->accept();
+        int key_num =  event->key()-Qt::Key_1;
+        char key_str[3] = "F1";
+        key_str[1] += key_num;
+        if(event->modifiers() & Qt::AltModifier)
+        {
+            std::ostringstream out;
+            out << ui->glSagSlider->value() << " "
+                << ui->glCorSlider->value() << " "
+                << ui->glAxiSlider->value() << " ";
+            std::copy(glWidget->transformation_matrix,glWidget->transformation_matrix+16,std::ostream_iterator<float>(out," "));
+            settings.setValue(key_str,QString(out.str().c_str()));
+        }
+        else
+        {
+            QString value = settings.value(key_str,"").toString();
+            if(value == "")
+                return;
+            std::istringstream in(value.toLocal8Bit().begin());
+            int sag,cor,axi;
+            in >> sag >> cor >> axi;
+            std::vector<float> tran((std::istream_iterator<float>(in)),(std::istream_iterator<float>()));
+            if(tran.size() != 16)
+                return;
+            std::copy(tran.begin(),tran.begin()+16,glWidget->transformation_matrix);
+            ui->glSagSlider->setValue(sag);
+            ui->glCorSlider->setValue(cor);
+            ui->glAxiSlider->setValue(axi);
+            glWidget->updateGL();
+        }
+    }
+    if(event->isAccepted())
+        return;
+    QWidget::keyPressEvent(event);
+
+}

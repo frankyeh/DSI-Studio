@@ -1167,42 +1167,6 @@ void GLWidget::wheelEvent ( QWheelEvent * event )
     updateGL();
     event->ignore();
 }
-void GLWidget::keyPressEvent ( QKeyEvent * event )
-{
-    switch(event->key())
-    {
-    case Qt::Key_Q:
-        cur_tracking_window.ui->glSagSlider->setValue(cur_tracking_window.ui->glSagSlider->value()+1);
-        break;
-    case Qt::Key_A:
-        cur_tracking_window.ui->glSagSlider->setValue(cur_tracking_window.ui->glSagSlider->value()-1);
-        break;
-    case Qt::Key_W:
-        cur_tracking_window.ui->glCorSlider->setValue(cur_tracking_window.ui->glCorSlider->value()+1);
-        break;
-    case Qt::Key_S:
-        cur_tracking_window.ui->glCorSlider->setValue(cur_tracking_window.ui->glCorSlider->value()-1);
-        break;
-    case Qt::Key_E:
-        cur_tracking_window.ui->glAxiSlider->setValue(cur_tracking_window.ui->glAxiSlider->value()+1);
-        break;
-    case Qt::Key_D:
-        cur_tracking_window.ui->glAxiSlider->setValue(cur_tracking_window.ui->glAxiSlider->value()-1);
-        break;
-    case Qt::Key_Z:
-        set_view(0);
-        updateGL();
-        break;
-    case Qt::Key_X:
-        set_view(1);
-        updateGL();
-        break;
-    case Qt::Key_C:
-        set_view(2);
-        updateGL();
-        break;
-    }
-}
 
 void GLWidget::slice_location(unsigned char dim,std::vector<image::vector<3,float> >& points)
 {
