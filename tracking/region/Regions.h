@@ -96,8 +96,17 @@ public:
         void Flip(unsigned int dimension);
         void shift(const image::vector<3,short>& dx);
 
-    void LoadFromBuffer(const image::basic_image<unsigned char, 3>& mask);
-    void SaveToBuffer(image::basic_image<unsigned char, 3>& mask,
+        void LoadFromBuffer(const image::basic_image<short, 3>& from,const std::vector<float>& trans);
+        template<typename image_type>
+        void LoadFromBuffer(const image_type& mask)
+        {
+            modified = true;region.clear();
+            for (image::pixel_index<3>index; mask.geometry().is_valid(index);index.next(mask.geometry()))
+                if (mask[index.index()])
+                region.push_back(image::vector<3,short>(index.x(), index.y(),index.z()));
+            std::sort(region.begin(),region.end());
+        }
+        void SaveToBuffer(image::basic_image<unsigned char, 3>& mask,
                 unsigned char value=255);
 
         void getSlicePosition(SliceModel* slice, unsigned int pindex, int& x, int& y,

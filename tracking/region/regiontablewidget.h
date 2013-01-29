@@ -40,6 +40,7 @@ private:
     unsigned char regions_index;
     void do_action(int id);
     void whole_brain_points(std::vector<image::vector<3,short> >& points);
+    bool load_multiple_roi_nii(QString file_name);
 signals:
     void need_update(void);
 public:

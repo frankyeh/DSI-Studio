@@ -40,7 +40,6 @@ HEADERS += mainwindow.h \
     dicom/dicom_parser.h \
     dicom/dwi_header.hpp \
     libs/mat_file.hpp \
-    libs/gzlib_static_link.hpp \
     libs/dsi/stdafx.h \
     libs/dsi/tessellated_icosahedron.hpp \
     libs/dsi/space_mapping.hpp \

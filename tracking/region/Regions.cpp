@@ -107,6 +107,24 @@ void ROIRegion::SaveToFile(const char* FileName,const std::vector<float>& trans)
 }
 
 // ---------------------------------------------------------------------------
+void ROIRegion::LoadFromBuffer(const image::basic_image<short, 3>& from,const std::vector<float>& convert)
+{
+    std::vector<image::vector<3,short> > points;
+    for (image::pixel_index<3>index; index.valid(from.geometry());index.next(from.geometry()))
+    {
+        if (from[index.index()])
+        {
+            image::vector<3> p(index.begin()),p2;
+            image::vector_transformation(p.begin(),p2.begin(),convert.begin(),image::vdim<3>());
+            points.push_back(image::vector<3,short>(std::floor(p2[0]+0.5),
+                                                    std::floor(p2[1]+0.5),
+                                                    std::floor(p2[2]+0.5)));
+        }
+    }
+    region.swap(points);
+    std::sort(region.begin(),region.end());
+}
+
 bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& trans) {
 
     std::string file_name(FileName);
@@ -129,7 +147,8 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
             point.floor();
             points.push_back(image::vector<3,short>(point[0],point[1],point[2]));
         }
-        add_points(points,false);
+        region.swap(points);
+        std::sort(region.begin(),region.end());
         return true;
     }
 
@@ -145,7 +164,8 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
         for (image::pixel_index<3>index; index.valid(from.geometry());index.next(from.geometry()))
             if (from[index.index()])
                 points.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
-        add_points(points,false);
+        region.swap(points);
+        std::sort(region.begin(),region.end());
         return true;
     }
 
@@ -166,19 +186,7 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
             t[15] = 1.0;
             math::matrix_inverse(trans.begin(),inv_trans.begin(),math::dim<4,4>());
             math::matrix_product(inv_trans.begin(),t.begin(),convert.begin(),math::dim<4,4>(),math::dim<4,4>());
-            std::vector<image::vector<3,short> > points;
-            for (image::pixel_index<3>index; index.valid(from.geometry());index.next(from.geometry()))
-            {
-                if (from[index.index()])
-                {
-                    image::vector<3> p(index.begin()),p2;
-                    image::vector_transformation(p.begin(),p2.begin(),convert.begin(),image::vdim<3>());
-                    points.push_back(image::vector<3,short>(std::floor(p2[0]+0.5),
-                                                            std::floor(p2[1]+0.5),
-                                                            std::floor(p2[2]+0.5)));
-                }
-            }
-            add_points(points,false);
+            LoadFromBuffer(from,convert);
             return true;
         }
         // from +x = Right  +y = Anterior +z = Superior
@@ -187,14 +195,7 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
             image::flip_y(from);
         else
             image::flip_xy(from);
-
-        std::vector<image::vector<3,short> > points;
-        for (image::pixel_index<3>index; index.valid(from.geometry());index.next(from.geometry()))
-        {
-            if (from[index.index()])
-                points.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
-        }
-        add_points(points,false);
+        LoadFromBuffer(from);
         return true;
     }
     return false;
@@ -273,19 +274,6 @@ void ROIRegion::makeMeshes(bool smooth)
     show_region.load(mask,20);
 
 }
-// ---------------------------------------------------------------------------
-void ROIRegion::LoadFromBuffer(const image::basic_image<unsigned char, 3>& mask) {
-	modified = true;
-	geo = mask.geometry();
-	region.clear();
-	for (image::pixel_index<3>index; mask.geometry().is_valid(index);
-	index.next(mask.geometry()))
-		if (mask[index.index()])
-                        region.push_back(image::vector<3,short>(index.x(), index.y(),
-			index.z()));
-        std::sort(region.begin(),region.end());
-}
-
 // ---------------------------------------------------------------------------
 void ROIRegion::SaveToBuffer(image::basic_image<unsigned char, 3>& mask,
 	unsigned char value) {

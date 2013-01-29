@@ -240,6 +240,97 @@ void RegionTableWidget::new_region(void)
 {
     add_region("New Region",roi_id);
 }
+bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
+{
+    gz_nifti header;
+    if (!header.load_from_file(file_name.toLocal8Bit().begin()))
+        return false;
+    image::basic_image<short, 3>from;
+    header >> from;
+    std::vector<unsigned char> value_map(std::numeric_limits<unsigned short>::max());
+    for (image::pixel_index<3>index; index.valid(from.geometry());index.next(from.geometry()))
+        value_map[(unsigned short)from[index.index()]] = 1;
+
+    unsigned short region_count = std::accumulate(value_map.begin(),value_map.end(),(unsigned short)0);
+    if(region_count <= 2)
+        return false;
+
+    QMessageBox msgBox;
+    msgBox.setText("Load multiple ROIs in the nifti file?");
+    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    msgBox.setDefaultButton(QMessageBox::Yes);
+    int rec = msgBox.exec();
+    if(rec == QMessageBox::No)
+        return false;
+
+    std::map<short,std::string> label_map;
+    QString label_file = QFileInfo(file_name).absolutePath()+"/"+QFileInfo(file_name).baseName()+".txt";
+    if(QFileInfo(label_file).exists())
+    {
+        std::ifstream in(label_file.toLocal8Bit().begin());
+        if(in)
+        {
+            std::string line,txt;
+            while(std::getline(in,line))
+            {
+                if(line.empty() || line[0] == '#')
+                    continue;
+                std::istringstream read_line(line);
+                short num = 0;
+                read_line >> num >> txt;
+                label_map[num] = txt;
+            }
+        }
+    }
+    else
+        QMessageBox::information(this,"Value used as ROI name",QString("Cannot find label file at ") + label_file,0);
+
+    if(from.geometry() != cur_tracking_window.slice.geometry)// use transformation information
+    {
+        std::vector<float> trans;
+        cur_tracking_window.get_dicom_trans(trans);
+        std::vector<float> t(header.get_transformation(),
+                             header.get_transformation()+12),inv_trans(16),convert(16);
+        t.resize(16);
+        t[15] = 1.0;
+        math::matrix_inverse(trans.begin(),inv_trans.begin(),math::dim<4,4>());
+        math::matrix_product(inv_trans.begin(),t.begin(),convert.begin(),math::dim<4,4>(),math::dim<4,4>());
+        for(unsigned int value = 1;check_prog(value,value_map.size());++value)
+            if(value_map[value])
+            {
+                image::basic_image<short,3> mask(from.geometry());
+                for(unsigned int i = 0;i < mask.size();++i)
+                    if(from[i] == value)
+                        mask[i] = 1;
+                ROIRegion region(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size);
+                region.LoadFromBuffer(mask,convert);
+                QString name = (label_map.find(value) == label_map.end() ? QString::number(value):label_map[value].c_str());
+                add_region(QFileInfo(file_name).completeBaseName()+":"+name,roi_id);
+                regions.back().assign(region.get());
+            }
+        return true;
+    }
+    // from +x = Right  +y = Anterior +z = Superior
+    // to +x = Left  +y = Posterior +z = Superior
+    if(header.nif_header.srow_x[0] < 0 || !header.is_nii)
+        image::flip_y(from);
+    else
+        image::flip_xy(from);
+    for(unsigned int value = 1;check_prog(value,value_map.size());++value)
+        if(value_map[value])
+        {
+            image::basic_image<unsigned char,3> mask(from.geometry());
+            for(unsigned int i = 0;i < mask.size();++i)
+                if(from[i] == value)
+                    mask[i] = 1;
+            ROIRegion region(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size);
+            region.LoadFromBuffer(mask);
+            QString name = (label_map.find(value) == label_map.end() ? QString::number(value):label_map[value].c_str());
+            add_region(QFileInfo(file_name).completeBaseName()+":"+name,roi_id);
+            regions.back().assign(region.get());
+        }
+    return true;
+}
 
 void RegionTableWidget::load_region(void)
 {
@@ -254,15 +345,21 @@ void RegionTableWidget::load_region(void)
 
     for (unsigned int index = 0;index < filenames.size();++index)
     {
+        // check for multiple nii
+        if((QFileInfo(filenames[index]).suffix() == "gz" ||
+           QFileInfo(filenames[index]).suffix() == "nii") &&
+                load_multiple_roi_nii(filenames[index]))
+            continue;
+
         ROIRegion region(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size);
         std::vector<float> trans;
         cur_tracking_window.get_dicom_trans(trans);
         if(!region.LoadFromFile(filenames[index].toLocal8Bit().begin(),trans))
         {
-            QMessageBox::information(this,"error","Inconsistent geometry",0);
+            QMessageBox::information(this,"error","Unknown file format",0);
             return;
         }
-        add_region(QFileInfo(filenames[index]).baseName(),roi_id);
+        add_region(QFileInfo(filenames[index]).completeBaseName(),roi_id);
         regions.back().assign(region.get());
     }
     emit need_update();
