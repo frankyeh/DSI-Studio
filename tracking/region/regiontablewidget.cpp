@@ -255,35 +255,51 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     if(region_count <= 2)
         return false;
 
-    QMessageBox msgBox;
-    msgBox.setText("Load multiple ROIs in the nifti file?");
-    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-    msgBox.setDefaultButton(QMessageBox::Yes);
-    int rec = msgBox.exec();
-    if(rec == QMessageBox::No)
-        return false;
+    {
+        QMessageBox msgBox;
+        msgBox.setText("Load multiple ROIs in the nifti file?");
+        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        msgBox.setDefaultButton(QMessageBox::Yes);
+        int rec = msgBox.exec();
+        if(rec == QMessageBox::No)
+            return false;
+    }
 
     std::map<short,std::string> label_map;
-    QString label_file = QFileInfo(file_name).absolutePath()+"/"+QFileInfo(file_name).baseName()+".txt";
-    if(QFileInfo(label_file).exists())
     {
-        std::ifstream in(label_file.toLocal8Bit().begin());
-        if(in)
+        QString label_file = QFileInfo(file_name).absolutePath()+"/"+QFileInfo(file_name).baseName()+".txt";
+        if(!QFileInfo(label_file).exists())
         {
-            std::string line,txt;
-            while(std::getline(in,line))
+            QMessageBox msgBox;
+            msgBox.setText("Has label file (*.txt)?");
+            msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+            msgBox.setDefaultButton(QMessageBox::Yes);
+            int rec = msgBox.exec();
+            if(rec == QMessageBox::Yes)
+                label_file = QFileDialog::getOpenFileName(
+                                       this,
+                                       "Label file",
+                                       QFileInfo(file_name).absolutePath(),
+                                       "Text files (*.txt)" );
+        }
+        if(QFileInfo(label_file).exists())
+        {
+            std::ifstream in(label_file.toLocal8Bit().begin());
+            if(in)
             {
-                if(line.empty() || line[0] == '#')
-                    continue;
-                std::istringstream read_line(line);
-                short num = 0;
-                read_line >> num >> txt;
-                label_map[num] = txt;
+                std::string line,txt;
+                while(std::getline(in,line))
+                {
+                    if(line.empty() || line[0] == '#')
+                        continue;
+                    std::istringstream read_line(line);
+                    short num = 0;
+                    read_line >> num >> txt;
+                    label_map[num] = txt;
+                }
             }
         }
     }
-    else
-        QMessageBox::information(this,"Value used as ROI name",QString("Cannot find label file at ") + label_file,0);
 
     if(from.geometry() != cur_tracking_window.slice.geometry)// use transformation information
     {
@@ -307,6 +323,8 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
                 QString name = (label_map.find(value) == label_map.end() ? QString::number(value):label_map[value].c_str());
                 add_region(QFileInfo(file_name).completeBaseName()+":"+name,roi_id);
                 regions.back().assign(region.get());
+                item(currentRow(),0)->setCheckState(Qt::Unchecked);
+                item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
             }
         return true;
     }
@@ -328,6 +346,8 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
             QString name = (label_map.find(value) == label_map.end() ? QString::number(value):label_map[value].c_str());
             add_region(QFileInfo(file_name).completeBaseName()+":"+name,roi_id);
             regions.back().assign(region.get());
+            item(currentRow(),0)->setCheckState(Qt::Unchecked);
+            item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
         }
     return true;
 }
