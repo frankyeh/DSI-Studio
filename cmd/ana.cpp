@@ -90,6 +90,52 @@ int ana(int ac, char *av[])
     }
     if(vm.count("export") && vm["export"].as<std::string>().find("report")!=std::string::npos)
     {
+        std::string report_cmd = vm["export"].as<std::string>();
+        std::replace(report_cmd.begin(),report_cmd.end(),',',' ');
+        std::istringstream in(report_cmd);
+        std::string report_tag,index_name;
+        int profile_dir = 0,bandwidth = 0;
+        in >> report_tag >> index_name >> profile_dir >> bandwidth;
+        std::vector<float> values,data_profile;
+        float threshold = 0.6*image::segmentation::otsu_threshold(
+                    image::basic_image<float, 3,image::const_pointer_memory<float> >(handle->fib_data.fib.fa[0],geometry));
 
+        unsigned int index_num = handle->get_name_index(index_name);
+        if(index_num == handle->fib_data.view_item.size())
+        {
+            out << "cannot find index name:" << index_name << std::endl;
+            return 0;
+        }
+        if(bandwidth == 0)
+        {
+            out << "please specify bandwidth value" << std::endl;
+            return 0;
+        }
+        if(profile_dir > 4)
+        {
+            out << "please specify a valid profile type" << std::endl;
+            return 0;
+        }
+        out << "calculating report" << std::endl;
+        tract_model->get_report(
+                    handle.get(),threshold,60.0,
+                            profile_dir,
+                            bandwidth,
+                            index_name,
+                            values,data_profile);
+
+        std::replace(report_cmd.begin(),report_cmd.end(),' ','.');
+        std::string file_name_stat(file_name);
+        file_name_stat += ".";
+        file_name_stat += report_cmd;
+        file_name_stat += ".txt";
+        out << "output report:" << file_name_stat << std::endl;
+        std::ofstream report(file_name_stat.c_str());
+        report << "position\t";
+        std::copy(values.begin(),values.end(),std::ostream_iterator<float>(report,"\t"));
+        report << std::endl;
+        report << "value";
+        std::copy(data_profile.begin(),data_profile.end(),std::ostream_iterator<float>(report,"\t"));
+        report << std::endl;
     }
 }

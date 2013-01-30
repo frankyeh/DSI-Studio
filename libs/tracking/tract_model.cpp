@@ -913,3 +913,95 @@ void TractModel::get_quantitative_data(ODFModel* handle,
     }
 }
 
+void TractModel::get_report(ODFModel* handle,
+                            float threshold,float angle,unsigned int profile_dir,float band_width,const std::string& index_name,
+                            std::vector<float>& values,
+                            std::vector<float>& data_profile)
+{
+    if(tract_data.empty())
+        return;
+    float cull_angle_cos = std::cos(angle * 3.1415926 / 180.0);
+    int profile_on_length = 0;// 1 :along tract 2: mean value
+    if(profile_dir > 2)
+    {
+        profile_on_length = profile_dir-2;
+        profile_dir = 0;
+    }
+    double detail = profile_on_length ? 1.0 : 2.0;
+    unsigned int profile_width = (geometry[profile_dir]+1)*detail;
+
+
+    std::vector<float> weighting((int)(1.0+band_width*3.0));
+    for(int index = 0;index < weighting.size();++index)
+    {
+        float x = index;
+        weighting[index] = std::exp(-x*x/2.0/band_width/band_width);
+    }
+    // along tract profile
+    if(profile_on_length == 1)
+        profile_width = tract_data[0].size()/2.0;
+    // mean value of each tract
+    if(profile_on_length == 2)
+        profile_width = tract_data.size();
+
+    values.resize(profile_width);
+    data_profile.resize(profile_width);
+    std::vector<float> data_profile_w(profile_width);
+
+
+    {
+        std::vector<std::vector<float> > data;
+        if(index_name == "qa" || index_name == "fa")
+            handle->get_tracts_fa(tract_data,threshold,cull_angle_cos,data);
+        else
+            handle->get_tracts_data(tract_data,index_name,data);
+
+        if(profile_on_length == 2)// list the mean fa value of each tract
+        {
+            data_profile.resize(data.size());
+            data_profile_w.resize(data.size());
+            for(unsigned int index = 0;index < data_profile.size();++index)
+            {
+                data_profile[index] = image::mean(data[index].begin(),data[index].end());
+                data_profile_w[index] = 1.0;
+            }
+        }
+        else
+            for(int i = 0;i < data.size();++i)
+                for(int j = 0;j < data[i].size();++j)
+                {
+                    int pos = profile_on_length ?
+                              j*(int)profile_width/data[i].size() :
+                              std::floor(tract_data[i][j + j + j + profile_dir]*detail+0.5);
+                    if(pos < 0)
+                        pos = 0;
+                    if(pos >= profile_width)
+                        pos = profile_width-1;
+
+                    data_profile[pos] += data[i][j]*weighting[0];
+                    data_profile_w[pos] += weighting[0];
+                    for(int k = 1;k < weighting.size();++k)
+                    {
+                        if(pos > k)
+                        {
+                            data_profile[pos-k] += data[i][j]*weighting[k];
+                            data_profile_w[pos-k] += weighting[k];
+                        }
+                        if(pos+k < data_profile.size())
+                        {
+                            data_profile[pos+k] += data[i][j]*weighting[k];
+                            data_profile_w[pos+k] += weighting[k];
+                        }
+                    }
+                }
+    }
+
+    for(unsigned int j = 0;j < data_profile.size();++j)
+    {
+        values[j] = (double)j/detail;
+        if(data_profile_w[j] + 1.0 != 1.0)
+            data_profile[j] /= data_profile_w[j];
+        else
+            data_profile[j] = 0.0;
+    }
+}

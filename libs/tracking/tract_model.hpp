@@ -113,6 +113,10 @@ public:
                 out << titles[index] << "\t" << data[index] << std::endl;
             result = out.str();
         }
+        void get_report(ODFModel* handle,
+                        float fa,float angle,unsigned int profile_dir,float band_width,const std::string& index_name,
+                        std::vector<float>& values,
+                        std::vector<float>& data_profile);
 
 };
 

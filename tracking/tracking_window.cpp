@@ -993,109 +993,37 @@ void tracking_window::on_refresh_report_clicked()
     ui->dockWidget_report->show();
     ui->report_widget->clearGraphs();
 
-    float threshold = ui->fa_threshold->value();
-    float cull_angle_cos = std::cos(ui->turning_angle->value() * 3.1415926 / 180.0);
-    unsigned int profile_dir = ui->profile_dir->currentIndex();
-    int profile_on_length = 0;// 1 :along tract 2: mean value
-    if(profile_dir > 2)
-    {
-        profile_on_length = ui->profile_dir->currentIndex()-2;
-        profile_dir = 0;
-    }
-    double detail = profile_on_length ? 1.0 : 2.0;
-    unsigned int profile_width = (slice.geometry[profile_dir]+1)*detail;
-    double max_y = 0.0;
-    double min_x = slice.geometry[profile_dir],max_x = 0;
-
-    float band_width = ui->report_bandwidth->value();
-    std::vector<float> weighting((int)(1.0+band_width*3.0));
-    for(int index = 0;index < weighting.size();++index)
-    {
-        float x = index;
-        weighting[index] = std::exp(-x*x/2.0/band_width/band_width);
-    }
+    double max_y = 0.0,min_x = 0.0,max_x = 0;
+    if(ui->profile_dir->currentIndex() <= 2)
+        min_x = slice.geometry[ui->profile_dir->currentIndex()];
     for(unsigned int index = 0;index < tractWidget->tract_models.size();++index)
     {
         if(tractWidget->item(index,0)->checkState() != Qt::Checked)
             continue;
-        const std::vector<std::vector<float> >& tracts =
-                tractWidget->tract_models[index]->get_tracts();
-        if(tracts.empty())
+        std::vector<float> values,data_profile;
+        tractWidget->tract_models[index]->get_report(
+                    handle,
+                    ui->fa_threshold->value(),
+                    ui->turning_angle->value(),
+                    ui->profile_dir->currentIndex(),
+                    ui->report_bandwidth->value(),
+                    ui->report_index->currentText().toLocal8Bit().begin(),
+                    values,data_profile);
+        if(data_profile.empty())
             continue;
-        // along tract profile
-        if(profile_on_length == 1)
-            profile_width = tracts[0].size()/2.0;
-        // mean value of each tract
-        if(profile_on_length == 2)
-            profile_width = tracts.size();
 
-        std::vector<float> data_profile(profile_width);
-        std::vector<float> data_profile_w(profile_width);
-        {
-            std::vector<std::vector<float> > data;
-            if(ui->report_index->currentIndex())
-                handle->get_tracts_data(tracts,ui->report_index->currentText().toLocal8Bit().begin(),data);
-            else
-                handle->get_tracts_fa(tracts,threshold,cull_angle_cos,data);
-
-            if(profile_on_length == 2)// list the mean fa value of each tract
+        for(unsigned int i = 0;i < data_profile.size();++i)
+            if(data_profile[i] > 0.0)
             {
-                data_profile.resize(data.size());
-                data_profile_w.resize(data.size());
-                for(unsigned int index = 0;index < data_profile.size();++index)
-                {
-                    data_profile[index] = image::mean(data[index].begin(),data[index].end());
-                    data_profile_w[index] = 1.0;
-                }
+                max_y = std::max<float>(max_y,data_profile[i]);
+                max_x = std::max<float>(max_x,values[i]);
+                min_x = std::min<float>(min_x,values[i]);
             }
-            else
-                for(int i = 0;i < data.size();++i)
-                    for(int j = 0;j < data[i].size();++j)
-                    {
-                        int pos = profile_on_length ?
-                                  j*(int)profile_width/data[i].size() :
-                                  std::floor(tracts[i][j + j + j + profile_dir]*detail+0.5);
-                        if(pos < 0)
-                            pos = 0;
-                        if(pos >= profile_width)
-                            pos = profile_width-1;
 
-                        data_profile[pos] += data[i][j]*weighting[0];
-                        data_profile_w[pos] += weighting[0];
-                        for(int k = 1;k < weighting.size();++k)
-                        {
-                            if(pos > k)
-                            {
-                                data_profile[pos-k] += data[i][j]*weighting[k];
-                                data_profile_w[pos-k] += weighting[k];
-                            }
-                            if(pos+k < data_profile.size())
-                            {
-                                data_profile[pos+k] += data[i][j]*weighting[k];
-                                data_profile_w[pos+k] += weighting[k];
-                            }
-                        }
-                    }
-        }
+        QVector<double> x(data_profile.size()),y(data_profile.size());
+        std::copy(values.begin(),values.end(),x.begin());
+        std::copy(data_profile.begin(),data_profile.end(),y.begin());
 
-        QVector<double> x(profile_width),y(profile_width);
-        for(unsigned int j = 0;j < profile_width;++j)
-        {
-            x[j] = (double)j/detail;
-            if(data_profile_w[j] + 1.0 != 1.0)
-                y[j] = data_profile[j]/data_profile_w[j];
-            else
-                y[j]= 0.0;
-            if(y[j] > max_y)
-                max_y = y[j];
-            if(y[j] > 0.0)
-            {
-                if(x[j] < min_x)
-                    min_x = x[j];
-                if(x[j] > max_x)
-                    max_x = x[j];
-            }
-        }
         ui->report_widget->addGraph();
         QPen pen;
         image::rgb_color color = tractWidget->tract_models[index]->get_tract_color(0);
@@ -1113,7 +1041,7 @@ void tracking_window::on_refresh_report_clicked()
 
     }
     ui->report_widget->xAxis->setRange(min_x,max_x);
-    ui->report_widget->yAxis->setRange(ui->report_index->currentIndex() ? 0 : threshold, max_y);
+    ui->report_widget->yAxis->setRange(ui->report_index->currentIndex() ? 0 : ui->fa_threshold->value(), max_y);
     if(ui->report_legend->checkState() == Qt::Checked)
     {
         ui->report_widget->legend->setVisible(true);
