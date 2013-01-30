@@ -1199,11 +1199,13 @@ void GLWidget::get_view_dir(QPoint p,image::vector<3,float>& dir)
     dir.normalize();
 }
 
-bool get_slice_projection_point(const std::vector<image::vector<3,float> >& slice_points,
+float GLWidget::get_slice_projection_point(unsigned char dim,
                                 const image::vector<3,float>& pos,
                                 const image::vector<3,float>& dir,
-                                float& dx,float& dy,float& dis)
+                                float& dx,float& dy)
 {
+    std::vector<image::vector<3,float> > slice_points(4);
+    slice_location(dim,slice_points);
     image::vector<3,float> pos_offset(pos),v1(slice_points[1]),v2(slice_points[2]),v3(dir);
     pos_offset -= slice_points[0];
     v1 -= slice_points[0];
@@ -1220,20 +1222,11 @@ bool get_slice_projection_point(const std::vector<image::vector<3,float> >& slic
     m[8] = -v3[2];
 
     if(!math::matrix_inverse(m,math::dim<3,3>()))
-        return false;
+        return 0.0;
     math::matrix_vector_product(m,pos_offset.begin(),result,math::dim<3,3>());
     dx = result[0];
     dy = result[1];
-    dis = result[2];
-    return true;
-}
-bool get_slice_projection_point(const std::vector<image::vector<3,float> >& slice_points,
-                                const image::vector<3,float>& pos,
-                                const image::vector<3,float>& dir,
-                                float& dx,float& dy)
-{
-    float dis;
-    return get_slice_projection_point(slice_points,pos,dir,dx,dy,dis);
+    return result[2];
 }
 
 image::vector<3,float> get_norm(const std::vector<image::vector<3,float> >& slice_points)
@@ -1276,8 +1269,6 @@ void GLWidget::select_slice(void)
     show_slice[0] = cur_tracking_window.ui->glSagCheck->checkState();
     show_slice[1] = cur_tracking_window.ui->glCorCheck->checkState();
     show_slice[2] = cur_tracking_window.ui->glAxiCheck->checkState();
-    std::vector<image::vector<3,float> > points(4);
-
     // select slice
     slice_selected = false;
     {
@@ -1287,10 +1278,7 @@ void GLWidget::select_slice(void)
         {
             if(!show_slice[dim])
                 continue;
-            slice_location(dim,points);
-            float d;
-            if(!get_slice_projection_point(points,pos,dir1,slice_dx,slice_dy,d))
-                continue;
+            float d = get_slice_projection_point(dim,pos,dir1,slice_dx,slice_dy);
             if(slice_dx > 0.0 && slice_dy > 0.0 &&
                slice_dx < 1.0 && slice_dy < 1.0 &&
                     d > 0 && slice_distance > d)
@@ -1302,21 +1290,23 @@ void GLWidget::select_slice(void)
         }
     }
 }
+void GLWidget::get_pos(void)
+{
+    float view[16];
+    //glMultMatrixf(transformation_matrix);
+    glGetFloatv(GL_MODELVIEW_MATRIX,mat);
+    math::matrix_product(transformation_matrix,mat,view,math::dim<4,4>(),math::dim<4,4>());
+    math::matrix_inverse(view,mat,math::dim<4,4>());
+    pos[0] = mat[12];
+    pos[1] = mat[13];
+    pos[2] = mat[14];
+}
+
 void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
     makeCurrent();
-    {
-        float view[16];
-        //glMultMatrixf(transformation_matrix);
-        glGetFloatv(GL_MODELVIEW_MATRIX,mat);
-        math::matrix_product(transformation_matrix,mat,view,math::dim<4,4>(),math::dim<4,4>());
-        math::matrix_inverse(view,mat,math::dim<4,4>());
-        pos[0] = mat[12];
-        pos[1] = mat[13];
-        pos[2] = mat[14];
-    }
+    get_pos();
     get_view_dir(event->pos(),dir1);
-    // nothing selected
     select_object();
     select_slice();
     if(!object_selected && !slice_selected)
@@ -1345,6 +1335,40 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
         emit region_edited();
     }
 }
+bool GLWidget::get_mouse_pos(QMouseEvent *event,image::vector<3,float>& position)
+{
+    get_pos();
+    image::vector<3,float> cur_dir;
+    get_view_dir(event->pos(),cur_dir);
+
+    bool show_slice[3];
+    show_slice[0] = cur_tracking_window.ui->glSagCheck->checkState();
+    show_slice[1] = cur_tracking_window.ui->glCorCheck->checkState();
+    show_slice[2] = cur_tracking_window.ui->glAxiCheck->checkState();
+    // select slice
+    slice_selected = false;
+    {
+        // now check whether the slices are selected
+        std::vector<float> x(3),y(3),d(3);
+        for(unsigned char dim = 0;dim < 3;++dim)
+        {
+            if(!show_slice[dim])
+                continue;
+            d[dim] = get_slice_projection_point(dim,pos,cur_dir,x[dim],y[dim]);
+            if(d[dim] == 0.0 || x[dim] < 0.0 || x[dim] > 1.0 || y[dim] < 0.0 || y[dim] > 1.0)
+                d[dim] = std::numeric_limits<float>::max();
+        }
+        unsigned int min_index = std::min_element(d.begin(),d.end())-d.begin();
+        if(d[min_index] != 0.0 && d[min_index] != std::numeric_limits<float>::max())
+        {
+            std::vector<image::vector<3,float> > points(4);
+            slice_location(min_index,points);
+            position = points[0] + (points[1]-points[0])*x[min_index] + (points[2]-points[0])*y[min_index];
+            return true;
+        }
+    }
+    return false;
+}
 
 void GLWidget::mousePressEvent(QMouseEvent *event)
 {
@@ -1352,16 +1376,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
     makeCurrent();
     lastPos = event->pos();
     if(editing_option)
-    {
-        float view[16];
-        //glMultMatrixf(transformation_matrix);
-        glGetFloatv(GL_MODELVIEW_MATRIX,mat);
-        math::matrix_product(transformation_matrix,mat,view,math::dim<4,4>(),math::dim<4,4>());
-        math::matrix_inverse(view,mat,math::dim<4,4>());
-        pos[0] = mat[12];
-        pos[1] = mat[13];
-        pos[2] = mat[14];
-    }
+        get_pos();
 
     if(editing_option == 2) // move object
     {
@@ -1391,16 +1406,15 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
         show_slice[0] = cur_tracking_window.ui->glSagCheck->checkState();
         show_slice[1] = cur_tracking_window.ui->glCorCheck->checkState();
         show_slice[2] = cur_tracking_window.ui->glAxiCheck->checkState();
-        std::vector<image::vector<3,float> > points(4);
 
         for(unsigned char dim = 0;dim < 3;++dim)
         {
+            std::vector<image::vector<3,float> > points(4);
             slice_location(dim,points);
             angle[dim] = std::fabs(dir1*get_norm(points)) + (show_slice[dim] ? 1:0);
         }
         moving_at_slice_index = std::max_element(angle,angle+3)-angle;
-        slice_location(moving_at_slice_index,points);
-        if(!get_slice_projection_point(points,pos,dir1,slice_dx,slice_dy))
+        if(get_slice_projection_point(moving_at_slice_index,pos,dir1,slice_dx,slice_dy) == 0.0)
         {
             editing_option = 0;
             setCursor(Qt::ArrowCursor);
@@ -1439,7 +1453,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         slice_location(moving_at_slice_index,points);
         get_view_dir(event->pos(),dir2);
         float dx,dy;
-        if(!get_slice_projection_point(points,pos,dir2,dx,dy))
+        if(get_slice_projection_point(moving_at_slice_index,pos,dir2,dx,dy) == 0.0)
             return;
         image::vector<3,float> v1(points[1]),v2(points[2]),dis;
         v1 -= points[0];

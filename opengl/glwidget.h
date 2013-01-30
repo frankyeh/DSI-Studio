@@ -23,6 +23,7 @@ class RenderingTableWidget;
      unsigned char editing_option;
      float mat[16];
      image::vector<3,float> pos,dir1,dir2;
+     void get_pos(void);
      void set_view(unsigned char view_option);
  private:
      bool object_selected,slice_selected;
@@ -31,6 +32,9 @@ class RenderingTableWidget;
      unsigned char moving_at_slice_index;
      float slice_dx,slice_dy;
      void slice_location(unsigned char dim,std::vector<image::vector<3,float> >& points);
+     float get_slice_projection_point(unsigned char dim,
+                                      const image::vector<3,float>& pos,const image::vector<3,float>& dir,
+                                      float& dx,float& dy);
      void get_view_dir(QPoint p,image::vector<3,float>& dir);
      void select_slice(void);
  private:
@@ -53,6 +57,7 @@ class RenderingTableWidget;
      void get_current_slice_transformation(image::geometry<3>& geo,
                                            image::vector<3,float>& vs,
                                            std::vector<float>& tr);
+     bool get_mouse_pos(QMouseEvent *mouseEvent,image::vector<3,float>& position);
  private://surface
      std::auto_ptr<RegionModel> surface;
 

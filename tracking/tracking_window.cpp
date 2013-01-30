@@ -1,3 +1,4 @@
+#include <utility>
 #include <QFileDialog>
 #include <QSplitter>
 #include <QSettings>
@@ -439,73 +440,82 @@ void tracking_window::get_dicom_trans(std::vector<float>& trans)
 
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 {
-  if (event->type() == QEvent::MouseMove &&
-      obj->parent() && obj->parent()->objectName() == QString("graphicsView"))
-  {
+    bool has_info = false;
+    image::vector<3,float> pos;
+    if (event->type() == QEvent::MouseMove && obj == glWidget)
+    {
+        has_info = glWidget->get_mouse_pos(static_cast<QMouseEvent*>(event),pos);
+        copy_target = 0;
+    }
+    if (event->type() == QEvent::MouseMove && obj->parent() && obj->parent()->objectName() == QString("graphicsView"))
+    {
+        QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+        QPointF point = ui->graphicsView->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
+        if(ui->view_style->currentIndex() == 0)// single slice
+        {
+            if(slice.cur_dim != 2)
+                point.setY(scene.height() - point.y());
+            has_info = slice.get3dPosition(((float)point.x()) / scene.display_ratio,
+                                           ((float)point.y()) / scene.display_ratio, pos[0], pos[1], pos[2]);
+        }
+        else
+        {
+            pos[0] = ((float)point.x())*(float)scene.mosaic_size / scene.display_ratio;
+            pos[1] = ((float)point.y())*(float)scene.mosaic_size / scene.display_ratio;
+            pos[2] = std::floor(pos[1]/slice.geometry[1])*scene.mosaic_size + std::floor(pos[0]/slice.geometry[0]);
+            pos[0] -= std::floor(pos[0]/slice.geometry[0])*slice.geometry[0];
+            pos[1] -= std::floor(pos[1]/slice.geometry[1])*slice.geometry[1];
+            has_info = true;
+        }
+    }
 
-      QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
-      QPointF point = ui->graphicsView->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
-      float x,y,z;
-      if(ui->view_style->currentIndex() == 0)// single slice
-      {
-          if(slice.cur_dim != 2)
-              point.setY(scene.height() - point.y());
-          if (!slice.get3dPosition(((float)point.x()) / scene.display_ratio,
-                                   ((float)point.y()) / scene.display_ratio, x, y, z))
-              return false;
-      }
-      else
-      {
-          x = ((float)point.x())*(float)scene.mosaic_size / scene.display_ratio;
-          y = ((float)point.y())*(float)scene.mosaic_size / scene.display_ratio;
-          z = std::floor(y/slice.geometry[1])*scene.mosaic_size + std::floor(x/slice.geometry[0]);
-          x -= std::floor(x/slice.geometry[0])*slice.geometry[0];
-          y -= std::floor(y/slice.geometry[1])*slice.geometry[1];
-      }
-      QString status;
-      status = QString("(%1,%2,%3) ").arg((int)x).arg((int)y).arg((int)z);
+    if(!has_info)
+        return false;
+    QString status;
+    status = QString("(%1,%2,%3) ").arg(std::floor(pos[0]*10.0+0.5)/10.0)
+            .arg(std::floor(pos[1]*10.0+0.5)/10.0)
+            .arg(std::floor(pos[2]*10.0+0.5)/10.0);
+    // show atlas position
+    if(mi3.get() || !trans_to_mni.empty())
+    {
+        image::vector<3,float> mni;
+        if(!trans_to_mni.empty())
+        {
+            // flip xy
+            mni[0] = slice.geometry[0]-1;
+            mni[1] = slice.geometry[1]-1;
+            image::vector_transformation(pos.begin(),mni.begin(), trans_to_mni,image::vdim<3>());
+        }
+        else
+        {
+            const float* m = mi3->get();
+            image::vector_transformation(pos.begin(),mni.begin(), m,m + 9, image::vdim<3>());
+            fa_template_imp.to_mni(mni);
+        }
 
-      // show atlas position
-      if(mi3.get() || !trans_to_mni.empty())
-      {
-          image::vector<3,float> cur_coordinate(x, y, z),mni_coordinate;
-          if(!trans_to_mni.empty())
-          {
-              // flip xy
-              mni_coordinate[0] = slice.geometry[0]-mni_coordinate[0]-1;
-              mni_coordinate[1] = slice.geometry[1]-mni_coordinate[1]-1;
-              image::vector_transformation(cur_coordinate.begin(),mni_coordinate.begin(), trans_to_mni,image::vdim<3>());
-          }
-          else
-          {
-              const float* m = mi3->get();
-              image::vector_transformation(cur_coordinate.begin(),mni_coordinate.begin(), m,m + 9, image::vdim<3>());
-              fa_template_imp.to_mni(mni_coordinate);
-          }
+        status += QString("MNI(%1,%2,%3) ")
+                .arg(std::floor(mni[0]*10.0+0.5)/10.0)
+                .arg(std::floor(mni[1]*10.0+0.5)/10.0)
+                .arg(std::floor(mni[2]*10.0+0.5)/10.0);
 
-          status += QString("MNI(%1,%2,%3) ").
-                    arg(mni_coordinate[0]).
-                        arg(mni_coordinate[1]).
-                            arg(mni_coordinate[2]);
+        if(!atlas_list.empty())
+          status += atlas_list[ui->atlasListBox->currentIndex()].get_label_name_at(mni).c_str();
 
-          if(!atlas_list.empty())
-            status += atlas_list[ui->atlasListBox->currentIndex()].get_label_name_at(mni_coordinate).c_str();
+    }
+    status += " ";
+    std::vector<float> data;
+    handle->get_voxel_information(std::floor(pos[0] + 0.5), std::floor(pos[1] + 0.5), std::floor(pos[2] + 0.5), data);
+    for(unsigned int index = 0,data_index = 0;index < handle->fib_data.view_item.size() && data_index < data.size();++index)
+        if(handle->fib_data.view_item[index].name != "color")
+        {
+            status += handle->fib_data.view_item[index].name.c_str();
+            status += QString("=%1 ").arg(data[data_index]);
+            ++data_index;
+        }
+    ui->statusbar->showMessage(status);
+    copy_target = 1;
 
-      }
-      status += " ";
-      std::vector<float> data;
-      handle->get_voxel_information(x, y, z, data);
-      for(unsigned int index = 0,data_index = 0;index < handle->fib_data.view_item.size() && data_index < data.size();++index)
-          if(handle->fib_data.view_item[index].name != "color")
-          {
-              status += handle->fib_data.view_item[index].name.c_str();
-              status += QString("=%1 ").arg(data[data_index]);
-              ++data_index;
-          }
-      ui->statusbar->showMessage(status);
-      copy_target = 1;
-  }
-  return false;
+    return false;
 }
 
 
