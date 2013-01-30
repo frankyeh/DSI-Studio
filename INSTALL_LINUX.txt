@@ -144,5 +144,14 @@ Max
 > alias dsistudio=”/usr/local/pkg/dsistudio/20120919/dsi_studio”
 
 
+13) Additional note for RedHat, CentOS, and Fedora 
+
+   You may need to modify dsi_studio.pro 
+
+   include -lboost_thread-mt instead of -lboost_thread
+
+   (information provided by Miro Drahos)
+
+
 Feedback is appreciated.
 Max
