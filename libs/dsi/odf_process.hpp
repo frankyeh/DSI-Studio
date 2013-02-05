@@ -324,23 +324,13 @@ public:
         if(!voxel.odf_deconvolusion)
         {
             voxel.qa_scaling = *std::max_element(iso.begin(),iso.end());
-            // scaled to 1mm cubic
-            if(voxel.vs[0] != 0.0 &&
-               voxel.vs[1] != 0.0 &&
-               voxel.vs[2] != 0.0)
-            {
-                voxel.qa_scaling /= voxel.vs[0];
-                voxel.qa_scaling /= voxel.vs[1];
-                voxel.qa_scaling /= voxel.vs[2];
-            }
             mat_writer.add_matrix("qa_scaling",&voxel.qa_scaling,1,1);
-            std::for_each(iso.begin(),iso.end(),boost::lambda::_1 /= voxel.qa_scaling);
+            if (voxel.qa_scaling + 1.0 != 1.0)
+                std::for_each(iso.begin(),iso.end(),boost::lambda::_1 /= voxel.qa_scaling);
             mat_writer.add_matrix("iso",&*iso.begin(),1,iso.size());
-
-            if (voxel.qa_scaling != 0.0)
+            if (voxel.qa_scaling + 1.0 != 1.0)
                 for (unsigned int i = 0;i < voxel.max_fiber_number;++i)
                     std::for_each(fa[i].begin(),fa[i].end(),boost::lambda::_1 /= voxel.qa_scaling);
-
             // cellularity
             int max_fa_index = std::max_element(fa[0].begin(),fa[0].end())-fa[0].begin();
             float ratio = iso[max_fa_index]/fa[0][max_fa_index];
