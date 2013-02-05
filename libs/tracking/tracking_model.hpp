@@ -312,7 +312,7 @@ public:
         if(!fib_data.load_from_file(file_name))
             return false;
         vbc.reset(new vbc_database);
-        if(!vbc->load_template(this))
+        if(!vbc->read_database(this))
             vbc.reset(0);
         return true;
     }

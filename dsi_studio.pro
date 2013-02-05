@@ -83,13 +83,10 @@ HEADERS += mainwindow.h \
     opengl/renderingtablewidget.h \
     qcolorcombobox.h \
     libs/coreg/linear.hpp \
-    libs/coreg/lddmm.hpp \
-    libs/coreg/coreg_interface.h \
     libs/tracking/tracking_thread.hpp \
     libs/prog_interface_static_link.h \
     simulation.h \
     reconstruction/vbcdialog.h \
-    libs/vbc/vbc.hpp \
     libs/mapping/atlas.hpp \
     libs/mapping/fa_template.hpp \
     libs/mapping/normalization.hpp \
@@ -132,8 +129,6 @@ SOURCES += main.cpp \
     tracking/tract/tracttablewidget.cpp \
     opengl/renderingtablewidget.cpp \
     qcolorcombobox.cpp \
-    libs/coreg/lddmm_interface.cpp \
-    libs/coreg/coreg_interface.cpp \
     cmd/trk.cpp \
     cmd/rec.cpp \
     simulation.cpp \
@@ -157,7 +152,6 @@ SOURCES += main.cpp \
     libs/mapping/atlas.cpp \
     libs/mapping/fa_template.cpp \
     plot/qcustomplot.cpp \
-    libs/vbc/vbc.cpp \
     cmd/ana.cpp \
     view_image.cpp \
     libs/vbc/vbc_database.cpp

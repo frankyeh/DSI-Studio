@@ -51,6 +51,9 @@ public:
     unsigned char has_odfs;
     bool is_dti;
 
+
+    void set_tracking_param(float* param,unsigned char* methods);
+
 public:// color_bar
     image::color_image bar;
     QGraphicsScene color_bar;
@@ -124,6 +127,8 @@ private slots:
     void on_gl_offset_value_valueChanged(double arg1);
     void on_gl_contrast_sliderMoved(int position);
     void on_gl_contrast_value_valueChanged(double arg1);
+    void on_actionCalculate_null_distibution_triggered();
+    void on_comboBox_currentIndexChanged(int index);
 };
 
 #endif // TRACKING_WINDOW_H

@@ -33,13 +33,15 @@ private:// template information
     bool is_consistent(MatFile& mat_reader) const;
 public:
     bool load_template(const char* templat_name);
-    bool load_template(ODFModel* fib_file_);
+    void read_template(ODFModel* fib_file_);
+    bool read_database(ODFModel* fib_file_);
 private:// database information
     std::vector<std::string> subject_names;
     unsigned int num_subjects;
     // 0: subject index 1:findex 2.s_index (fa > 0)
     std::vector<std::vector<float> > subject_qa_buffer;
     std::vector<const float*> subject_qa;
+    std::vector<float> avg_subject_data;
     std::vector<float> R2;
     bool sample_odf(MatFile& mat_reader,std::vector<float>& data);
 public:
@@ -59,8 +61,18 @@ private: // single subject analysis result
 public:
     std::vector<const float*> greater_ptr,lesser_ptr;
     std::vector<const short*> greater_dir_ptr,lesser_dir_ptr;
+    void add_greater_lesser_mapping_for_tracking(void);
     bool single_subject_analysis(const char* file_name);
     bool single_subject_paired_analysis(const char* file_name1,const char* file_name2);
+public:
+    std::vector<float> null_threshold;
+    std::vector<std::vector<unsigned int> > null_greater,null_lesser;
+    std::vector<std::vector<unsigned int> > subject_greater,subject_lesser;
+    bool calculate_distribution(float* param,unsigned char* methods,
+                                        std::vector<unsigned int>& dist);
+    void calculate_subject_distribution(float* param,unsigned char* methods);
+    bool calculate_null_distribution(const std::vector<std::string>& file_list,float* param,unsigned char* methods);
+public:
 };
 
 #endif // VBC_DATABASE_H

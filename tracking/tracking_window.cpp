@@ -471,6 +471,52 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 
     if(!has_info)
         return false;
+
+
+    if(handle->has_vbc())
+    {
+        // show image
+        if(vbc_slice_pos != ui->AxiSlider->value())
+            on_subject_list_itemSelectionChanged();
+        // show data
+        std::vector<float> vbc_data;
+        handle->vbc->get_data_at(
+                image::pixel_index<3>(std::floor(pos[0] + 0.5), std::floor(pos[1] + 0.5), std::floor(pos[2] + 0.5),
+                                      handle->fib_data.dim).index(),0,vbc_data);
+        if(!vbc_data.empty())
+        {
+            for(unsigned int index = 0;index < handle->vbc->subject_count();++index)
+                ui->subject_list->item(index,1)->setText(QString::number(vbc_data[index]));
+
+            vbc_data.erase(std::remove(vbc_data.begin(),vbc_data.end(),0.0),vbc_data.end());
+            if(!vbc_data.empty())
+            {
+                float max_y = *std::max_element(vbc_data.begin(),vbc_data.end());
+                std::vector<unsigned int> hist;
+                image::histogram(vbc_data,hist,0,max_y,20);
+                QVector<double> x(hist.size()),y(hist.size());
+                unsigned int max_hist = 0;
+                for(unsigned int j = 0;j < hist.size();++j)
+                {
+                    x[j] = max_y*(float)j/(float)hist.size();
+                    y[j] = hist[j];
+                    max_hist = std::max<unsigned int>(max_hist,hist[j]);
+                }
+                ui->vbc_report->clearGraphs();
+                ui->vbc_report->addGraph();
+                QPen pen;
+                pen.setColor(QColor(20,20,100,200));
+                ui->vbc_report->graph(0)->setLineStyle(QCPGraph::lsLine);
+                ui->vbc_report->graph(0)->setPen(pen);
+                ui->vbc_report->graph(0)->setData(x, y);
+
+                ui->vbc_report->xAxis->setRange(0,max_y);
+                ui->vbc_report->yAxis->setRange(0,max_hist);
+                ui->vbc_report->replot();
+                }
+        }
+    }
+
     QString status;
     status = QString("(%1,%2,%3) ").arg(std::floor(pos[0]*10.0+0.5)/10.0)
             .arg(std::floor(pos[1]*10.0+0.5)/10.0)
@@ -518,6 +564,21 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     return false;
 }
 
+void tracking_window::set_tracking_param(float* param,unsigned char* methods)
+{
+    param[0] = ui->step_size->value();
+    param[1] = ui->turning_angle->value() * 3.1415926 / 180.0;
+    param[2] = ui->turning_angle->value() * 3.1415926 / 180.0;
+    param[3] = ui->fa_threshold->value();
+    param[4] = ui->smoothing->value();
+    param[5] = ui->min_length->value();
+    param[6] = ui->max_length->value();
+    methods[0] = ui->tracking_method->currentIndex();
+    methods[1] = ui->initial_direction->currentIndex();
+    methods[2] = ui->interpolation->currentIndex();
+    methods[3] = ui->tracking_plan->currentIndex();
+    methods[4] = ui->seed_plan->currentIndex();
+}
 
 void tracking_window::SliderValueChanged(void)
 {
@@ -532,49 +593,7 @@ void tracking_window::SliderValueChanged(void)
             glWidget->updateGL();
     }
 
-    if(handle->has_vbc())
-    {
-        // show image
-        if(vbc_slice_pos != ui->AxiSlider->value())
-            on_subject_list_itemSelectionChanged();
-        // show data
-        std::vector<float> vbc_data;
-        handle->vbc->get_data_at(
-                image::pixel_index<3>(ui->SagSlider->value(),
-                                      ui->CorSlider->value(),
-                                      ui->AxiSlider->value(),
-                                      handle->fib_data.dim).index(),0,vbc_data);
-        if(vbc_data.empty())
-            return;
-        for(unsigned int index = 0;index < handle->vbc->subject_count();++index)
-            ui->subject_list->item(index,1)->setText(QString::number(vbc_data[index]));
 
-        vbc_data.erase(std::remove(vbc_data.begin(),vbc_data.end(),0.0),vbc_data.end());
-        if(vbc_data.empty())
-            return;
-        float max_y = *std::max_element(vbc_data.begin(),vbc_data.end());
-        std::vector<unsigned int> hist;
-        image::histogram(vbc_data,hist,0,max_y,20);
-        QVector<double> x(hist.size()),y(hist.size());
-        unsigned int max_hist = 0;
-        for(unsigned int j = 0;j < hist.size();++j)
-        {
-            x[j] = max_y*(float)j/(float)hist.size();
-            y[j] = hist[j];
-            max_hist = std::max<unsigned int>(max_hist,hist[j]);
-        }
-        ui->vbc_report->clearGraphs();
-        ui->vbc_report->addGraph();
-        QPen pen;
-        pen.setColor(QColor(20,20,100,200));
-        ui->vbc_report->graph(0)->setLineStyle(QCPGraph::lsLine);
-        ui->vbc_report->graph(0)->setPen(pen);
-        ui->vbc_report->graph(0)->setData(x, y);
-
-        ui->vbc_report->xAxis->setRange(0,max_y);
-        ui->vbc_report->yAxis->setRange(0,max_hist);
-        ui->vbc_report->replot();
-    }
 
 }
 void tracking_window::glSliderValueChanged(void)
@@ -583,11 +602,6 @@ void tracking_window::glSliderValueChanged(void)
         return;
     SliceModel& cur_slice =
                 glWidget->other_slices[glWidget->current_visible_slide-1];
-    ui->statusbar->showMessage(
-                QString("slice position (sagittal,coronal,axial)=(%1,%2,%3) ").
-                arg(ui->glSagSlider->value()).
-                arg(ui->glCorSlider->value()).
-                arg(ui->glAxiSlider->value()));
     if(!slice_no_update && cur_slice.set_slice_pos(
                 ui->glSagSlider->value(),
                 ui->glCorSlider->value(),
@@ -1217,7 +1231,8 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
     if(ui->tracking_index->currentText().contains("mapping")) // connectometry
     {
         ui->fa_threshold->setRange(0.0,1.0);
-        ui->fa_threshold->setValue(0.98);
+        ui->fa_threshold->setValue(0.0);// to update the scene
+        ui->fa_threshold->setValue(0.5);
         ui->fa_threshold->setSingleStep(0.01);
     }
     else
@@ -1295,54 +1310,138 @@ void tracking_window::on_actionOpen_Subject_Data_triggered()
     }
     check_prog(1,1);
 
+    float param[8];
+    unsigned char methods[5];
+    set_tracking_param(param,methods);
+    param[5] = 0; // ui->min_length->value();
+    methods[4] = 0;//ui->seed_plan->currentIndex();
+    handle->vbc->calculate_subject_distribution(param,methods);
 
-    unsigned int greater_index_id =
-            std::find(handle->fib_data.fib.index_name.begin(),
-                      handle->fib_data.fib.index_name.end(),
-                      "greater mapping")-handle->fib_data.fib.index_name.begin();
-    if(greater_index_id == handle->fib_data.fib.index_name.size())
+    if(ui->tracking_index->findText("lesser mapping") == -1)
     {
-        handle->fib_data.fib.index_name.push_back("greater mapping");
-        handle->fib_data.fib.index_data.push_back(std::vector<const float*>());
-        handle->fib_data.fib.index_data_dir.push_back(std::vector<const short*>());
         ui->tracking_index->addItem("greater mapping");
-    }
-    handle->fib_data.fib.index_data[greater_index_id] = handle->vbc->greater_ptr;
-    handle->fib_data.fib.index_data_dir[greater_index_id] = handle->vbc->greater_dir_ptr;
-
-    unsigned int lesser_index_id =
-            std::find(handle->fib_data.fib.index_name.begin(),
-                      handle->fib_data.fib.index_name.end(),
-                      "lesser mapping")-handle->fib_data.fib.index_name.begin();
-    if(lesser_index_id == handle->fib_data.fib.index_name.size())
-    {
-        handle->fib_data.fib.index_name.push_back("lesser mapping");
-        handle->fib_data.fib.index_data.push_back(std::vector<const float*>());
-        handle->fib_data.fib.index_data_dir.push_back(std::vector<const short*>());
         ui->tracking_index->addItem("lesser mapping");
     }
-    handle->fib_data.fib.index_data[lesser_index_id] = handle->vbc->lesser_ptr;
-    handle->fib_data.fib.index_data_dir[lesser_index_id] = handle->vbc->lesser_dir_ptr;
 }
 
 
-void tracking_window::on_subject_list_itemSelectionChanged()
+void tracking_window::on_actionCalculate_null_distibution_triggered()
 {
-    image::basic_image<float,2> slice;
-    handle->vbc->get_subject_slice(ui->subject_list->currentRow(),ui->AxiSlider->value(),slice);
-    image::normalize(slice);
-    image::color_image color_slice(slice.geometry());
-    std::copy(slice.begin(),slice.end(),color_slice.begin());
-    QImage qimage((unsigned char*)&*color_slice.begin(),color_slice.width(),color_slice.height(),QImage::Format_RGB32);
-    vbc_slice_image = qimage.scaled(color_slice.width()*scene.display_ratio,color_slice.height()*scene.display_ratio);
-    vbc_scene.clear();
-    vbc_scene.setSceneRect(0, 0, vbc_slice_image.width(),vbc_slice_image.height());
-    vbc_scene.setItemIndexMethod(QGraphicsScene::NoIndex);
-    vbc_scene.addRect(0, 0, vbc_slice_image.width(),vbc_slice_image.height(),QPen(),vbc_slice_image);
-    vbc_slice_pos = ui->AxiSlider->value();
+    if(!handle->has_vbc())
+        return;
+    QStringList filenames = QFileDialog::getOpenFileNames(
+                                this,
+                                "Select subject fib file for analysis",
+                                absolute_path,
+                                "Fib files (*.fib.gz *.fib);;All files (*.*)" );
+    if (filenames.isEmpty())
+        return;
+    std::vector<std::string> file_list;
+    for(unsigned int index = 0;index < filenames.size();++index)
+        file_list.push_back(filenames[index].toLocal8Bit().begin());
+    float param[8];
+    unsigned char methods[5];
+    set_tracking_param(param,methods);
+    param[5] = 0; // ui->min_length->value();
+    methods[4] = 0;//ui->seed_plan->currentIndex();
+    if(!handle->vbc->calculate_null_distribution(file_list,param,methods))
+    {
+        QMessageBox::information(this,"error",handle->vbc->error_msg.c_str(),0);
+        return;
+    }
 }
 
 
+void tracking_window::on_comboBox_currentIndexChanged(int index)
+{
+    if(!handle->has_vbc() || index+2 >= handle->vbc->null_greater.size())
+        return;
+    {
+        std::vector<float> vbc_data1(handle->vbc->null_greater[index+2].size());
+        std::vector<float> vbc_data2(handle->vbc->null_lesser[index+2].size());
+        std::vector<float> vbc_data3;
+        std::vector<float> vbc_data4;
+        if(vbc_data1.empty())
+            return;    
+        std::copy(handle->vbc->null_greater[index+2].begin(),
+                  handle->vbc->null_greater[index+2].end(),vbc_data1.begin());
+        std::copy(handle->vbc->null_lesser[index+2].begin(),
+                  handle->vbc->null_lesser[index+2].end(),vbc_data2.begin());
+        std::for_each(vbc_data1.begin(),vbc_data1.end(),boost::lambda::_1 /= std::accumulate(vbc_data1.begin(),vbc_data1.end(),0.0f));
+        std::for_each(vbc_data2.begin(),vbc_data2.end(),boost::lambda::_1 /= std::accumulate(vbc_data2.begin(),vbc_data2.end(),0.0f));
+        if(!handle->vbc->subject_greater.empty())
+        {
+            std::copy(handle->vbc->subject_greater[index+2].begin(),
+                      handle->vbc->subject_greater[index+2].end(),std::back_inserter(vbc_data3));
+            std::copy(handle->vbc->subject_lesser[index+2].begin(),
+                      handle->vbc->subject_lesser[index+2].end(),std::back_inserter(vbc_data4));
+            std::for_each(vbc_data3.begin(),vbc_data3.end(),boost::lambda::_1 /= std::accumulate(vbc_data3.begin(),vbc_data3.end(),0.0f));
+            std::for_each(vbc_data4.begin(),vbc_data4.end(),boost::lambda::_1 /= std::accumulate(vbc_data4.begin(),vbc_data4.end(),0.0f));
+        }
+        QVector<double> x(vbc_data1.size()),y1(vbc_data1.size()),y2(vbc_data2.size()),y3(vbc_data3.size()),y4(vbc_data4.size());
+        unsigned int max_x = 10;
+        float max_y = std::max<float>(*std::max_element(vbc_data1.begin(),vbc_data1.end()),
+                                        *std::max_element(vbc_data2.begin(),vbc_data2.end()));
+        for(unsigned int j = 0;j < vbc_data1.size();++j)
+        {
+            x[j] = (float)j * ui->step_size->value();
+            y1[j] = vbc_data1[j];
+            y2[j] = vbc_data2[j];
+            if(y1[j] != 0 || y2[j] != 0)
+                max_x = x[j];
+            if(!handle->vbc->subject_greater.empty())
+            {
+                y3[j] = vbc_data3[j];
+                y4[j] = vbc_data4[j];
+                if(y3[j] != 0 || y4[j] != 0)
+                    max_x = x[j];
+            }
+        }
+        ui->null_dist->clearGraphs();
+        QPen pen;
+
+        ui->null_dist->addGraph();
+        pen.setColor(QColor(20,20,100,200));
+        ui->null_dist->graph()->setLineStyle(QCPGraph::lsLine);
+        ui->null_dist->graph()->setPen(pen);
+        ui->null_dist->graph()->setData(x, y1);
+        ui->null_dist->graph()->setName(QString("null greater ")+QString::number(handle->vbc->null_threshold[index+2]*100.0) + "%");
+
+        ui->null_dist->addGraph();
+        pen.setColor(QColor(100,20,20,200));
+        ui->null_dist->graph()->setLineStyle(QCPGraph::lsLine);
+        ui->null_dist->graph()->setPen(pen);
+        ui->null_dist->graph()->setData(x, y2);
+        ui->null_dist->graph()->setName(QString("null lesser ")+QString::number(handle->vbc->null_threshold[index+2]*100.0) + "%");
+
+        if(!handle->vbc->subject_greater.empty())
+        {
+            ui->null_dist->addGraph();
+            pen.setColor(QColor(20,100,20,200));
+            ui->null_dist->graph()->setLineStyle(QCPGraph::lsLine);
+            ui->null_dist->graph()->setPen(pen);
+            ui->null_dist->graph()->setData(x, y3);
+            ui->null_dist->graph()->setName(QString("subject greater ")+QString::number(handle->vbc->null_threshold[index+2]*100.0) + "%");
+
+            ui->null_dist->addGraph();
+            pen.setColor(QColor(100,100,20,200));
+            ui->null_dist->graph()->setLineStyle(QCPGraph::lsLine);
+            ui->null_dist->graph()->setPen(pen);
+            ui->null_dist->graph()->setData(x, y4);
+            ui->null_dist->graph()->setName(QString("subject lesser ")+QString::number(handle->vbc->null_threshold[index+2]*100.0) + "%");
+        }
+
+        ui->null_dist->xAxis->setRange(0,max_x);
+        ui->null_dist->yAxis->setRange(0,max_y);
+        ui->null_dist->legend->setVisible(true);
+        QFont legendFont = font();  // start out with MainWindow's font..
+        legendFont.setPointSize(9); // and make a bit smaller for legend
+        ui->null_dist->legend->setFont(legendFont);
+        ui->null_dist->legend->setPositionStyle(QCPLegend::psRight);
+        ui->null_dist->legend->setBrush(QBrush(QColor(255,255,255,230)));
+        ui->null_dist->replot();
+    }
+}
 
 void tracking_window::on_actionPair_comparison_triggered()
 {
@@ -1373,36 +1472,31 @@ void tracking_window::on_actionPair_comparison_triggered()
         return;
     }
     check_prog(1,1);
-
-
-    unsigned int greater_index_id =
-            std::find(handle->fib_data.fib.index_name.begin(),
-                      handle->fib_data.fib.index_name.end(),
-                      "greater mapping")-handle->fib_data.fib.index_name.begin();
-    if(greater_index_id == handle->fib_data.fib.index_name.size())
+    if(ui->tracking_index->findText("lesser mapping") == -1)
     {
-        handle->fib_data.fib.index_name.push_back("greater mapping");
-        handle->fib_data.fib.index_data.push_back(std::vector<const float*>());
-        handle->fib_data.fib.index_data_dir.push_back(std::vector<const short*>());
         ui->tracking_index->addItem("greater mapping");
-    }
-    handle->fib_data.fib.index_data[greater_index_id] = handle->vbc->greater_ptr;
-    handle->fib_data.fib.index_data_dir[greater_index_id] = handle->vbc->greater_dir_ptr;
-
-    unsigned int lesser_index_id =
-            std::find(handle->fib_data.fib.index_name.begin(),
-                      handle->fib_data.fib.index_name.end(),
-                      "lesser mapping")-handle->fib_data.fib.index_name.begin();
-    if(lesser_index_id == handle->fib_data.fib.index_name.size())
-    {
-        handle->fib_data.fib.index_name.push_back("lesser mapping");
-        handle->fib_data.fib.index_data.push_back(std::vector<const float*>());
-        handle->fib_data.fib.index_data_dir.push_back(std::vector<const short*>());
         ui->tracking_index->addItem("lesser mapping");
     }
-    handle->fib_data.fib.index_data[lesser_index_id] = handle->vbc->lesser_ptr;
-    handle->fib_data.fib.index_data_dir[lesser_index_id] = handle->vbc->lesser_dir_ptr;
 }
+
+void tracking_window::on_subject_list_itemSelectionChanged()
+{
+    image::basic_image<float,2> slice;
+    handle->vbc->get_subject_slice(ui->subject_list->currentRow(),ui->AxiSlider->value(),slice);
+    image::normalize(slice);
+    image::color_image color_slice(slice.geometry());
+    std::copy(slice.begin(),slice.end(),color_slice.begin());
+    QImage qimage((unsigned char*)&*color_slice.begin(),color_slice.width(),color_slice.height(),QImage::Format_RGB32);
+    vbc_slice_image = qimage.scaled(color_slice.width()*scene.display_ratio,color_slice.height()*scene.display_ratio);
+    vbc_scene.clear();
+    vbc_scene.setSceneRect(0, 0, vbc_slice_image.width(),vbc_slice_image.height());
+    vbc_scene.setItemIndexMethod(QGraphicsScene::NoIndex);
+    vbc_scene.addRect(0, 0, vbc_slice_image.width(),vbc_slice_image.height(),QPen(),vbc_slice_image);
+    vbc_slice_pos = ui->AxiSlider->value();
+}
+
+
+
 
 void tracking_window::on_offset_sliderMoved(int position)
 {
@@ -1576,3 +1670,6 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
     QWidget::keyPressEvent(event);
 
 }
+
+
+

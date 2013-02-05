@@ -101,19 +101,8 @@ void TractTableWidget::start_tracking(void)
     ++tract_serial;
     addNewTracts(QString("Tracts ")+QString::number(tract_serial));
     float param[8];
-    param[0] = cur_tracking_window.ui->step_size->value();
-    param[1] = cur_tracking_window.ui->turning_angle->value() * 3.1415926 / 180.0;
-    param[2] = cur_tracking_window.ui->turning_angle->value() * 3.1415926 / 180.0;
-    param[3] = cur_tracking_window.ui->fa_threshold->value();
-    param[4] = cur_tracking_window.ui->smoothing->value();
-    param[5] = cur_tracking_window.ui->min_length->value();
-    param[6] = cur_tracking_window.ui->max_length->value();
     unsigned char methods[5];
-    methods[0] = cur_tracking_window.ui->tracking_method->currentIndex();
-    methods[1] = cur_tracking_window.ui->initial_direction->currentIndex();
-    methods[2] = cur_tracking_window.ui->interpolation->currentIndex();
-    methods[3] = cur_tracking_window.ui->tracking_plan->currentIndex();
-    methods[4] = cur_tracking_window.ui->seed_plan->currentIndex();
+    cur_tracking_window.set_tracking_param(param,methods);
     thread_data.back() = ThreadData::new_thread(cur_tracking_window.handle,param,methods,
                              cur_tracking_window.ui->track_count->value());
 
