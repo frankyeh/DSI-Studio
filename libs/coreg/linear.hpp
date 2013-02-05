@@ -19,7 +19,7 @@ public:
     mutable image::transformation_matrix<dim,float> result;
 public:
 
-    LinearMapping(void):terminated(false),ended(false) {}
+    LinearMapping(void):terminated(true),ended(true) {}
     ~LinearMapping(void)
     {
         terminate();

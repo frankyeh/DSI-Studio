@@ -560,15 +560,7 @@ void GLWidget::paintGL()
                           other_slices[index].texture_need_update+3,1);
 
                 // update roi image
-                {
-                    image::basic_image<float,3>& cur_roi_image = roi_image[index];
-                    for(image::pixel_index<3> pos;pos.valid(cur_roi_image.geometry());pos.next(cur_roi_image.geometry()))
-                    {
-                        image::vector<3,float> from(pos),to;
-                        image::vector_transformation(from.begin(), to.begin(),inverse_transform.begin(),image::vdim<3>());
-                        image::linear_estimate(other_slices[index].source_images,to,cur_roi_image[pos.index()]);
-                    }
-                }
+                image::resample(other_slices[index].source_images,roi_image[index],inverse_transform);
             }
         }
 
@@ -1636,34 +1628,68 @@ bool GLWidget::addSlices(QStringList filenames)
     std::vector<std::string> files(filenames.size());
     for (unsigned int index = 0; index < filenames.size(); ++index)
             files[index] = filenames[index].toLocal8Bit().begin();
-
-    image::io::volume volume;
-    if(!volume.load_from_files(files,files.size()))
+    gz_nifti nifti;
+    std::vector<float> convert;
+    if(files.size() == 1 && nifti.load_from_file(files[0]))
     {
-        gz_nifti nifti;
-        if(files.size() != 1 || !nifti.load_from_file(files[0]))
+        other_slices.push_back(new CustomSliceModel(nifti,cur_tracking_window.slice.center_point));
+        if(!cur_tracking_window.trans_to_mni.empty())
+        {
+            std::vector<float> t(nifti.get_transformation(),
+                                 nifti.get_transformation()+12),inv_trans(16);
+            convert.resize(16);
+            t.resize(16);
+            t[15] = 1.0;
+            if(nifti.nif_header.srow_x[0] < 0 || !nifti.is_nii)
+            {
+                t[7] += t[5]*(nifti.height()-1);
+                t[5] = -t[5];
+            }
+            else
+            {
+                t[3] += t[0]*(nifti.width()-1);
+                t[0] = -t[0];
+                t[7] += t[5]*(nifti.height()-1);
+                t[5] = -t[5];
+            }
+            math::matrix_inverse(cur_tracking_window.trans_to_mni.begin(),inv_trans.begin(),math::dim<4,4>());
+            math::matrix_product(inv_trans.begin(),t.begin(),convert.begin(),math::dim<4,4>(),math::dim<4,4>());
+        }
+    }
+    else
+    {
+        image::io::volume volume;
+        if(!volume.load_from_files(files,files.size()))
         {
             QMessageBox::information(&cur_tracking_window,"DSI Studio","Cannot parse the images",0);
             return false;
         }
-        else
-            other_slices.push_back(new CustomSliceModel(nifti,cur_tracking_window.slice.center_point));
-    }
-    else
         other_slices.push_back(new CustomSliceModel(volume,cur_tracking_window.slice.center_point));
-
+    }
     mi3s.push_back(new LinearMapping<image::basic_image<float,3,image::const_pointer_memory<float> >,image::rigid_scaling_transform<3> >);
-    mi3s.back().from = cur_tracking_window.slice.source_images;
-    mi3s.back().to = other_slices.back().source_images;
-    mi3s.back().arg_min.scaling[0] = cur_tracking_window.slice.voxel_size[0] / other_slices.back().voxel_size[0];
-    mi3s.back().arg_min.scaling[1] = cur_tracking_window.slice.voxel_size[1] / other_slices.back().voxel_size[1];
-    mi3s.back().arg_min.scaling[2] = cur_tracking_window.slice.voxel_size[2] / other_slices.back().voxel_size[2];
-    mi3s.back().thread_argmin(image::reg::rigid_body);
-    // handle views
     current_visible_slide = mi3s.size();
-    transform.push_back(std::vector<float>(16));
     roi_image.push_back(new image::basic_image<float,3>(cur_tracking_window.handle->fib_data.dim));
     roi_image_buf.push_back(&*roi_image.back().begin());
+
+    if(convert.empty())
+    {
+        mi3s.back().from = cur_tracking_window.slice.source_images;
+        mi3s.back().to = other_slices.back().source_images;
+        mi3s.back().arg_min.scaling[0] = cur_tracking_window.slice.voxel_size[0] / other_slices.back().voxel_size[0];
+        mi3s.back().arg_min.scaling[1] = cur_tracking_window.slice.voxel_size[1] / other_slices.back().voxel_size[1];
+        mi3s.back().arg_min.scaling[2] = cur_tracking_window.slice.voxel_size[2] / other_slices.back().voxel_size[2];
+        mi3s.back().thread_argmin(image::reg::rigid_body);
+        // handle views
+        transform.push_back(std::vector<float>(16));
+    }
+    else
+    {
+        transform.push_back(convert);
+        std::vector<float> inverse_transform(16);
+        math::matrix_inverse(convert.begin(),inverse_transform.begin(),math::dim<4, 4>());
+        // update roi image
+        image::resample(other_slices.back().source_images,roi_image.back(),inverse_transform);
+    }
     return true;
 }
 
