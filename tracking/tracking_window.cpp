@@ -53,11 +53,14 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
         //               0 1 0 -1                    0 1 0 1
         //               0 0 1 -1   * my_affine *    0 0 1 1
         //               0 0 0 1]                    0 0 0 1]
-        trans_to_mni[3] = std::accumulate(trans_to_mni.begin(),trans_to_mni.begin()+3,trans_to_mni[3])-1.0;
-        trans_to_mni[7] = std::accumulate(trans_to_mni.begin()+4,trans_to_mni.begin()+4+3,trans_to_mni[7])-1.0;
-        trans_to_mni[11] = std::accumulate(trans_to_mni.begin()+8,trans_to_mni.begin()+8+3,trans_to_mni[11])-1.0;
+        trans_to_mni[3] += trans_to_mni[0];
+        trans_to_mni[7] += trans_to_mni[5];
+        trans_to_mni[11] += trans_to_mni[10];
 
-
+        trans_to_mni[3] += (odf_model->fib_data.dim.width()-1)*std::fabs(trans_to_mni[0]);
+        trans_to_mni[7] += (odf_model->fib_data.dim.height()-1)*std::fabs(trans_to_mni[5]);
+        trans_to_mni[0] = -trans_to_mni[0];
+        trans_to_mni[5] = -trans_to_mni[5];
 
     }
     // check whether first index is "fa0"
@@ -412,7 +415,13 @@ tracking_window::~tracking_window()
 void tracking_window::get_nifti_trans(std::vector<float>& trans)
 {
     if(!trans_to_mni.empty())
+    {
         trans = trans_to_mni;
+        trans[3] += trans[0]*(slice.geometry[0]-1);
+        trans[0] = -trans[0];
+        trans[7] += trans[5]*(slice.geometry[1]-1);
+        trans[5] = -trans[5];
+    }
     else
         if(mi3.get())
         {
@@ -425,17 +434,16 @@ void tracking_window::get_nifti_trans(std::vector<float>& trans)
 }
 void tracking_window::get_dicom_trans(std::vector<float>& trans)
 {
-    std::vector<float> flip_xy(16),t(16);
-    flip_xy[0] = -1;
-    flip_xy[3] = slice.geometry[0]-1;
-    flip_xy[5] = -1;
-    flip_xy[7] = slice.geometry[1]-1;
-    flip_xy[10] = 1;
-    flip_xy[15] = 1;
-    get_nifti_trans(t);
-    trans.resize(16);
-    trans[15] = 1.0;
-    math::matrix_product(t.begin(),flip_xy.begin(),trans.begin(),math::dim<3,4>(),math::dim<4,4>());
+    if(!trans_to_mni.empty())
+    {
+        trans = trans_to_mni;
+        return;
+    }
+    get_nifti_trans(trans);
+    trans[3] += trans[0]*(slice.geometry[0]-1);
+    trans[0] = -trans[0];
+    trans[7] += trans[5]*(slice.geometry[1]-1);
+    trans[5] = -trans[5];
 }
 
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)

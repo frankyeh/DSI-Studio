@@ -252,6 +252,7 @@ public:
                                       voxel.template_odfs[index].size()/(voxel.ti.half_vertices_count));
             }
         }
+        mat_writer.add_matrix("mni",&*voxel.param,4,3);
     }
 };
 

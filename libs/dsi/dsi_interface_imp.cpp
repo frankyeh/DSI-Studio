@@ -323,6 +323,7 @@ bool output_odfs(const image::basic_image<unsigned char,3>& mni_mask,
                  std::vector<std::vector<float> >& odfs,
                  const tessellated_icosahedron& ti,
                  const float* vs,
+                 const float* mni,
                  bool record_odf = true)
 {
     begin_prog("output");
@@ -337,6 +338,7 @@ bool output_odfs(const image::basic_image<unsigned char,3>& mni_mask,
     image_model.voxel.qa_scaling = 1;
     image_model.voxel.need_odf = record_odf;
     image_model.voxel.template_odfs.swap(odfs);
+    image_model.voxel.param = mni;
     image_model.thread_count = 1;
     image_model.file_name = out_name;
     std::copy(mni_mask.begin(),mni_mask.end(),image_model.mask.begin());
@@ -361,6 +363,7 @@ extern "C"
     can_cancel(true);
     unsigned int half_vertex_count = 0;
     unsigned int row,col;
+    float mni[12]={0};
     for (unsigned int index = 0;check_prog(index,num_files);++index)
     {
         const char* file_name = file_names[index];
@@ -377,12 +380,14 @@ extern "C"
             const unsigned short* dimension;
             const float* vs_ptr;
             const float* fa0;
+            const float* mni_ptr;
             unsigned int face_num,odf_num;
             if(!reader.get_matrix("dimension",row,col,dimension) ||
                !reader.get_matrix("fa0",row,col,fa0) ||
                !reader.get_matrix("voxel_size",row,col,vs_ptr) ||
                !reader.get_matrix("odf_faces",row,face_num,face_buffer) ||
-               !reader.get_matrix("odf_vertices",row,odf_num,odf_buffer))
+               !reader.get_matrix("odf_vertices",row,odf_num,odf_buffer) ||
+               !reader.get_matrix("mni",row,col,mni_ptr))
             {
                 std::cout << "Cannot find image information in " << file_name << std::endl;
                 return false;
@@ -394,6 +399,7 @@ extern "C"
             std::copy(vs_ptr,vs_ptr+3,vs);
             ti.init(odf_num,odf_buffer,face_num,face_buffer);
             half_vertex_count = odf_num >> 1;
+            std::copy(mni_ptr,mni_ptr+12,mni);
         }
         else
         // check odf consistency
@@ -486,8 +492,8 @@ extern "C"
         for (unsigned int j = 0;j < odfs[odf_index].size();++j)
             odfs[odf_index][j] /= (double)num_files;
 
-    output_odfs(mask,out_name,".mean.odf.fib",odfs,ti,vs);
-    output_odfs(mask,out_name,".mean.fib",odfs,ti,vs,false);
+    output_odfs(mask,out_name,".mean.odf.fib",odfs,ti,vs,mni);
+    output_odfs(mask,out_name,".mean.fib",odfs,ti,vs,mni,false);
     return true;
 }
 
