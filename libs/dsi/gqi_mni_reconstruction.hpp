@@ -138,9 +138,15 @@ public:
         bool terminated = false;
         set_title("linear registration");
         begin_prog("conducting registration");
-        check_prog(0,2);
+        check_prog(0,5);
+        image::reg::linear(VF,VG,arg_min,image::reg::translocation,image::reg::square_error(),terminated,0.25);
+        check_prog(1,5);
+        image::reg::linear(VF,VG,arg_min,image::reg::rigid_body,image::reg::square_error(),terminated,0.25);
+        check_prog(2,5);
+        image::reg::linear(VF,VG,arg_min,image::reg::rigid_scaling,image::reg::square_error(),terminated,0.25);
+        check_prog(3,5);
         image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::square_error(),terminated,0.25);
-        check_prog(1,2);
+        check_prog(4,5);
 
         // create VFF the affine transformed VF
         image::basic_image<float,3> VFF(VG.geometry());
@@ -157,7 +163,8 @@ public:
             }
 
             image::resample(VF,VFF,affine);
-
+            // to check the linear registration accuracy
+            // unmark this
             //VFF.save_to_file<image::io::nifti<> >("VFF.nii");
             //VG.save_to_file<image::io::nifti<> >("VG.nii");
 
