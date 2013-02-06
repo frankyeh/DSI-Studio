@@ -46,7 +46,7 @@ public:
     const float* get(void) const
     {
         image::transformation_matrix<dim,float> T(arg_min);
-        image::reg::linear_get_trans(from.geometry(),to.geometry(),T);
+        image::reg::shift_to_center(from.geometry(),to.geometry(),T);
         result = T;
         return result.get();
     }

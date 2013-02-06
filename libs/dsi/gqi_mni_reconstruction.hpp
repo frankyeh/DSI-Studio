@@ -50,31 +50,6 @@ protected:
     std::vector<point_image_type> ptr_images;
     std::vector<image::vector<3,double> > q_vectors_time;
 
-protected:
-    template<typename I_type>
-    image::vector<3,double> center_of_mass(const I_type& Im)
-    {
-        image::basic_image<unsigned char,I_type::dimension> mask;
-        image::segmentation::otsu(Im,mask);
-        image::morphology::smoothing(mask);
-        image::morphology::smoothing(mask);
-        image::morphology::defragment(mask);
-        image::vector<I_type::dimension,double> sum_mass;
-        double total_w = 0.0;
-        for(image::pixel_index<I_type::dimension> index;
-            mask.geometry().is_valid(index);
-            index.next(mask.geometry()))
-            if(mask[index.index()])
-            {
-                total_w += 1.0;
-                image::vector<3,double> pos(index);
-                sum_mass += pos;
-            }
-        sum_mass /= total_w;
-        for(unsigned char dim = 0;dim < I_type::dimension;++dim)
-            sum_mass[dim] -= (double)Im.geometry()[dim]/2.0;
-        return sum_mass;
-    }
 public:
     virtual void init(Voxel& voxel)
     {
@@ -115,6 +90,7 @@ public:
         image::lower_threshold(VG.begin(),VG.end(),0.00);
         image::normalize(VG,1.0);
 
+
         VGvs[0] = std::fabs(fa_template_imp.tran[0]);
         VGvs[1] = std::fabs(fa_template_imp.tran[5]);
         VGvs[2] = std::fabs(fa_template_imp.tran[10]);
@@ -127,8 +103,8 @@ public:
         arg_min.scaling[2] = voxel.vs[2] / VGvs[2];
         voxel_volume_scale = arg_min.scaling[0]*arg_min.scaling[1]*arg_min.scaling[2];
         // calculate center of mass
-        image::vector<3,double> mF = center_of_mass(VF);
-        image::vector<3,double> mG = center_of_mass(VG);
+        image::vector<3,double> mF = image::reg::center_of_mass(VF);
+        image::vector<3,double> mG = image::reg::center_of_mass(VG);
 
         arg_min.translocation[0] = mG[0]-mF[0]*arg_min.scaling[0];
         arg_min.translocation[1] = mG[1]-mF[1]*arg_min.scaling[1];
@@ -138,30 +114,18 @@ public:
         bool terminated = false;
         set_title("linear registration");
         begin_prog("conducting registration");
-        check_prog(0,5);
-        image::reg::linear(VF,VG,arg_min,image::reg::translocation,image::reg::square_error(),terminated,0.25);
-        check_prog(1,5);
-        image::reg::linear(VF,VG,arg_min,image::reg::rigid_body,image::reg::square_error(),terminated,0.25);
-        check_prog(2,5);
-        image::reg::linear(VF,VG,arg_min,image::reg::rigid_scaling,image::reg::square_error(),terminated,0.25);
-        check_prog(3,5);
-        image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::square_error(),terminated,0.25);
-        check_prog(4,5);
+
+        check_prog(0,2);
+        image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::square_error(),terminated);
+        check_prog(1,2);
 
         // create VFF the affine transformed VF
         image::basic_image<float,3> VFF(VG.geometry());
         {
 
             affine = arg_min;
-            image::reg::linear_get_trans(VF.geometry(),VG.geometry(),affine);
-            {
-                std::vector<double> T(16);
-                affine.save_to_transform(T.begin());
-                T[15] = 1.0;
-                math::matrix_inverse(T.begin(),math::dim<4,4>());
-                affine.load_from_transform(T.begin());
-            }
-
+            image::reg::shift_to_center(VF.geometry(),VG.geometry(),affine);
+            affine.inverse();
             image::resample(VF,VFF,affine);
             // to check the linear registration accuracy
             // unmark this
