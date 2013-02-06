@@ -17,32 +17,34 @@
 #include "manual_alignment.h"
 
 
-void reconstruction_window::load_src(int index)
+bool reconstruction_window::load_src(int index)
 {
     begin_prog("load src");
     check_prog(index,filenames.size());
     handle.reset(new ImageModel);
     if (!handle->load_from_file(filenames[index].toLocal8Bit().begin()))
     {
-        QMessageBox::information(this,"error",handle->error_msg.c_str(),0);
-        throw;
-
+        QMessageBox::information(this,"error",QString("Cannot open ") +
+            filenames[index] + " : " +handle->error_msg.c_str(),0);
+        check_prog(0,0);
+        return false;
     }
 
     dim = handle->voxel.dim;
     image.resize(handle->voxel.dim);
     for(unsigned int index = 0;index < image.size();++index)
         image[index] = handle->dwi_sum[index]*255.0;
+    return true;
 }
 
 reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *parent) :
     QMainWindow(parent),filenames(filenames_),
         ui(new Ui::reconstruction_window)
 {
-    load_src(0);
-    max_source_value = 0.0;
 
     ui->setupUi(this);
+    load_src(0);
+    max_source_value = 0.0;
     ui->toolBox->setCurrentIndex(1);
     ui->graphicsView->setScene(&scene);
     ui->view_source->setScene(&source);
@@ -356,7 +358,8 @@ void reconstruction_window::on_doDTI_clicked()
         if(index)
         {
             begin_prog("load src");
-            load_src(index);
+            if(!load_src(index))
+                return;
         }
         std::fill(params,params+5,0.0);
         if(ui->DTI->isChecked())

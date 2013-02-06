@@ -38,7 +38,7 @@ public:
         mat_reader.reset(new MatFile);
         if (!mat_reader->load_from_file(dwi_file_name))
         {
-            error_msg = "Invalid file format";
+            error_msg = "Cannot open file";
             return false;
         }
         unsigned int row,col;

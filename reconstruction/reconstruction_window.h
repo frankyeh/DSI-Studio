@@ -43,7 +43,7 @@ private:
     float params[5];
     image::basic_image<unsigned char, 3>image;
     image::basic_image<unsigned char, 3>mask;
-    void load_src(int index);
+    bool load_src(int index);
     void doReconstruction(unsigned char method_id,bool prompt);
 private slots:
     void on_QDif_toggled(bool checked);
