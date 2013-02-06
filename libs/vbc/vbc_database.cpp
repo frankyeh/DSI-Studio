@@ -78,29 +78,6 @@ bool vbc_database::read_database(ODFModel* fib_file_)
         const float* r2_values = 0;
         matfile.get_matrix("R2",row,col,r2_values);
         std::copy(r2_values,r2_values+num_subjects,R2.begin());
-
-
-        avg_subject_data.clear();
-        avg_subject_data.resize(num_fiber*si2vi.size());
-        for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
-        {
-            unsigned int cur_index = si2vi[s_index];
-            for(unsigned int fib = 0,fib_offset = 0;
-                fib < num_fiber && fa[fib][cur_index] != 0.0;
-                ++fib,fib_offset+=si2vi.size())
-            {
-                unsigned int pos = s_index + fib_offset;
-                float sum_qa = 0.0;
-                unsigned int num = 0;
-                for(unsigned int subject_id = 0;subject_id < subject_qa.size();++subject_id)
-                    if(subject_qa[subject_id][pos] != 0.0)
-                    {
-                        sum_qa += subject_qa[subject_id][pos];
-                        ++num;
-                    }
-                avg_subject_data[pos] = sum_qa/num;
-            }
-        }
     }
     return !subject_qa.empty();
 }
@@ -380,6 +357,7 @@ bool vbc_database::single_subject_analysis(const char* file_name)
         return false;
     initialize_greater_lesser();
     std::vector<unsigned char> greater_fib_count(dim.size()),lesser_fib_count(dim.size());
+    std::vector<float> population;
     for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
     {
         unsigned int cur_index = si2vi[s_index];
@@ -390,22 +368,37 @@ bool vbc_database::single_subject_analysis(const char* file_name)
             unsigned int pos = s_index + fib_offset;
             float cur_value = cur_subject_data[pos];
             if(cur_value == 0.0)
-                continue;        
-            if(cur_value > avg_subject_data[pos])
+                continue;
+            population.clear();
+            for(unsigned int subject_id = 0;subject_id < subject_qa.size();++subject_id)
+            {
+                float value = subject_qa[subject_id][pos];
+                if(value != 0.0)
+                    population.push_back(value);
+            }
+            unsigned int greater_rank = 0;
+            unsigned int lesser_rank = 0;
+            for(unsigned int subject_id = 0;subject_id < population.size();++subject_id)
+            {
+                if(cur_value > population[subject_id])
+                    ++greater_rank;
+                if(cur_value < population[subject_id])
+                    ++lesser_rank;
+            }
+            if(greater_rank > (population.size() >> 1)) // greater
             {
                 unsigned char fib_count = greater_fib_count[cur_index];
-                greater[fib_count][cur_index] = cur_value/avg_subject_data[pos]-1.0;
+                greater[fib_count][cur_index] = (double)greater_rank/(population.size()+1);
                 greater_dir[fib_count][cur_index] = findex[fib][cur_index];
                 ++greater_fib_count[cur_index];
             }
-            if(cur_value < avg_subject_data[pos])
+            if(lesser_rank > (population.size() >> 1)) // lesser
             {
                 unsigned char fib_count = lesser_fib_count[cur_index];
-                lesser[fib_count][cur_index] = 1.0-cur_value/avg_subject_data[pos];
+                lesser[fib_count][cur_index] = (double)lesser_rank/(population.size()+1);
                 lesser_dir[fib_count][cur_index] = findex[fib][cur_index];
                 ++lesser_fib_count[cur_index];
             }
-
         }
     }
     add_greater_lesser_mapping_for_tracking();
