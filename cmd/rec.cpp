@@ -51,14 +51,14 @@ int rec(int ac, char *av[])
     std::ofstream out("log.txt");
 
     std::string file_name = vm["source"].as<std::string>();
-    ImageModel *handle = 0;
-    out << "loading..." <<std::endl;
-    if (!(handle = (ImageModel *)init_reconstruction(file_name.c_str())))
+    out << "loading source..." <<std::endl;
+    std::auto_ptr<ImageModel> handle(new ImageModel);
+    if (!handle->load_from_file(file_name.c_str()))
     {
-        out << "Invalid src file format. " << std::endl;
+        out << "Load src file failed:" << handle->error_msg.c_str() << std::endl;
         return 1;
     }
-    out << "src read" <<std::endl;
+    out << "src loaded" <<std::endl;
 
     float param[4] = {0,0,0,0};
     int method_index = 0;
