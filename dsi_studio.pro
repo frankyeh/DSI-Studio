@@ -96,14 +96,16 @@ HEADERS += mainwindow.h \
     libs/gzip_interface.hpp \
     libs/dsi/racian_noise.hpp \
     libs/dsi/mix_gaussian_model.hpp \
-    libs/dsi/layout.hpp
+    libs/dsi/layout.hpp \
+    manual_alignment.h
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
     reconstruction/reconstruction_window.ui \
     dicom/dicom_parser.ui \
     simulation.ui \
     reconstruction/vbcdialog.ui \
-    view_image.ui
+    view_image.ui \
+    manual_alignment.ui
 RESOURCES += \
     icons.qrc
 SOURCES += main.cpp \
@@ -154,4 +156,5 @@ SOURCES += main.cpp \
     plot/qcustomplot.cpp \
     cmd/ana.cpp \
     view_image.cpp \
-    libs/vbc/vbc_database.cpp
+    libs/vbc/vbc_database.cpp \
+    manual_alignment.cpp
