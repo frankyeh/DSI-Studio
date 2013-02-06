@@ -189,7 +189,7 @@ reconstruction_window::~reconstruction_window()
 
 void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt)
 {
-    if(!handle)
+    if(!handle.get())
         return;
     if (*std::max_element(handle->mask.begin(),handle->mask.end()) == 0)
     {
@@ -238,7 +238,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.r2_weighted = ui->ODFDef->currentIndex();
     handle->voxel.reg_method = ui->reg_method->currentIndex();
 
-    const char* msg = (const char*)reconstruction(handle, method_id, params);
+    const char* msg = (const char*)reconstruction(handle.get(), method_id, params);
     if (!QFileInfo(msg).exists())
     {
         QMessageBox::information(this,"error",msg,0);
@@ -355,9 +355,6 @@ void reconstruction_window::on_doDTI_clicked()
     {
         if(index)
         {
-            if(handle)
-                free_reconstruction((ImageModel*)handle);
-            handle = 0;
             begin_prog("load src");
             load_src(index);
         }

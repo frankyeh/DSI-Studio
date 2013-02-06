@@ -84,7 +84,6 @@ int rec(int ac, char *av[])
         if(!load_fa_template())
         {
             out << "Cannot find FA template" << std::endl;
-            free_reconstruction(handle);
             return -1;
         }
         param[0] = 1.2;
@@ -164,9 +163,8 @@ int rec(int ac, char *av[])
         }
     }
     out << "start reconstruction..." <<std::endl;
-    const char* msg = reconstruction(handle,method_index,param);
+    const char* msg = reconstruction(handle.get(),method_index,param);
     if (!msg)
         out << "Reconstruction finished:" << msg << std::endl;
-    free_reconstruction(handle);
     return 0;
 }
