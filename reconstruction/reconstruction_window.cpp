@@ -3,6 +3,7 @@
 #include "ui_reconstruction_window.h"
 #include "dsi_interface_static_link.h"
 #include "ml/ml.hpp"
+#include "mapping/fa_template.hpp"
 #include "image/image.hpp"
 #include "mainwindow.h"
 #include <QImage>
@@ -13,18 +14,21 @@
 #include "prog_interface_static_link.h"
 #include "tracking/region/Regions.h"
 #include "libs/dsi/image_model.hpp"
+#include "manual_alignment.h"
 
 
 void reconstruction_window::load_src(int index)
 {
     begin_prog("load src");
     check_prog(index,filenames.size());
-    handle = (ImageModel*)init_reconstruction(filenames[index].toLocal8Bit().begin());
-    if (!handle)
+    handle.reset(new ImageModel);
+    if (!handle->load_from_file(filenames[index].toLocal8Bit().begin()))
     {
-        QMessageBox::information(this,"error","Cannot load the .src file, please check the memory sufficiency",0);
+        QMessageBox::information(this,"error",handle->error_msg.c_str(),0);
         throw;
+
     }
+
     dim = handle->voxel.dim;
     image.resize(handle->voxel.dim);
     for(unsigned int index = 0;index < image.size();++index)
@@ -32,7 +36,7 @@ void reconstruction_window::load_src(int index)
 }
 
 reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *parent) :
-        QMainWindow(parent),filenames(filenames_),
+    QMainWindow(parent),filenames(filenames_),
         ui(new Ui::reconstruction_window)
 {
     load_src(0);
@@ -181,10 +185,6 @@ void reconstruction_window::closeEvent(QCloseEvent *event)
 reconstruction_window::~reconstruction_window()
 {
     delete ui;
-    ui = 0;
-    if(handle)
-    free_reconstruction((ImageModel*)handle);
-    handle = 0;
 }
 
 void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt)
@@ -508,4 +508,20 @@ void reconstruction_window::on_zoom_out_clicked()
 {
     source_ratio *= 0.9;
     on_b_table_itemSelectionChanged();
+}
+
+extern fa_template fa_template_imp;
+void reconstruction_window::on_manual_reg_clicked()
+{
+    image::affine_transform<3,double> arg;
+    arg.scaling[0] = handle->voxel.vs[0];
+    arg.scaling[1] = handle->voxel.vs[1];
+    arg.scaling[2] = handle->voxel.vs[2];
+    image::vector<3,double> mF = image::reg::center_of_mass(image);
+    image::vector<3,double> mG = image::reg::center_of_mass(fa_template_imp.I);
+
+    arg.translocation[0] = mG[0]-mF[0]*arg.scaling[0];
+    arg.translocation[1] = mG[1]-mF[1]*arg.scaling[1];
+    arg.translocation[2] = mG[2]-mF[2]*arg.scaling[2];
+    (new manual_alignment(this,image,fa_template_imp.I,arg))->show();
 }

@@ -39,7 +39,7 @@ private:
     Ui::reconstruction_window *ui;
     image::geometry<3> dim;
 
-    ImageModel* handle;
+    std::auto_ptr<ImageModel> handle;
     float params[5];
     image::basic_image<unsigned char, 3>image;
     image::basic_image<unsigned char, 3>mask;
@@ -69,6 +69,7 @@ private slots:
     void on_b_table_itemSelectionChanged();
     void on_zoom_in_clicked();
     void on_zoom_out_clicked();
+    void on_manual_reg_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

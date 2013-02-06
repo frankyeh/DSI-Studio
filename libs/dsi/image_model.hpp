@@ -12,7 +12,7 @@ struct ImageModel
 public:
     Voxel voxel;
     unsigned int thread_count;
-    std::string file_name;
+    std::string file_name,error_msg;
     std::auto_ptr<MatFile> mat_reader;
     std::vector<const unsigned short*> dwi_data;
     image::basic_image<float,3> dwi_sum;
@@ -37,27 +37,40 @@ public:
         file_name = dwi_file_name;
         mat_reader.reset(new MatFile);
         if (!mat_reader->load_from_file(dwi_file_name))
+        {
+            error_msg = "Invalid file format";
             return false;
+        }
         unsigned int row,col;
 
         const unsigned short* dim_ptr = 0;
         mat_reader->get_matrix("dimension",row,col,dim_ptr);
         if (!dim_ptr)
+        {
+            error_msg = "Cannot find dimension matrix";
             return false;
-
+        }
         const float* voxel_size = 0;
         mat_reader->get_matrix("voxel_size",row,col,voxel_size);
-        if (voxel_size)
-            std::copy(voxel_size,voxel_size+3,voxel.vs.begin());
-        else
-            std::fill(voxel.vs.begin(),voxel.vs.end(),2.0);
+        if (!voxel_size)
+        {
+            error_msg = "Cannot find voxel size matrix";
+            return false;
+        }
+        std::copy(voxel_size,voxel_size+3,voxel.vs.begin());
 
         if (!set_dimension(dim_ptr[0],dim_ptr[1],dim_ptr[2]))
+        {
+            error_msg = "Invalid dimension setting";
             return false;
+        }
         const float* table;
         mat_reader->get_matrix("b_table",row,col,table);
         if (!table)
+        {
+            error_msg = "Cannot find b_table matrix";
             return false;
+        }
         voxel.bvalues.resize(col);
         voxel.bvectors.resize(col);
         for (unsigned int index = 0;index < col;++index)
@@ -77,7 +90,10 @@ public:
             out << "image" << index;
             mat_reader->get_matrix(out.str().c_str(),row,col,dwi_data[index]);
             if (!dwi_data[index])
+            {
+                error_msg = "Cannot find image matrix";
                 return false;
+            }
         }
 
         // create mask;

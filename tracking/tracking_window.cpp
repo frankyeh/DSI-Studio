@@ -1318,12 +1318,14 @@ void tracking_window::on_actionOpen_Subject_Data_triggered()
     }
     check_prog(1,1);
 
+
     float param[8];
     unsigned char methods[5];
     set_tracking_param(param,methods);
     param[5] = 0; // ui->min_length->value();
     methods[4] = 0;//ui->seed_plan->currentIndex();
     handle->vbc->calculate_subject_distribution(param,methods);
+
 
     if(ui->tracking_index->findText("lesser mapping") == -1)
     {

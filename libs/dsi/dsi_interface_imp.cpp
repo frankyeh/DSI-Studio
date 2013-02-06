@@ -133,20 +133,6 @@ typedef boost::mpl::vector<
 
 
 extern "C"
-    void* init_reconstruction(const char* file_name)
-{
-    std::auto_ptr<ImageModel> image(new ImageModel);
-    if (!image->load_from_file(file_name))
-        return 0;
-    return image.release();
-}
-extern "C"
-    void free_reconstruction(ImageModel* image_model)
-{
-    delete image_model;
-}
-
-extern "C"
     const char* reconstruction(ImageModel* image_model,unsigned int method_id,const float* param_values)
 {
     static std::string output_name;
