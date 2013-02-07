@@ -40,6 +40,8 @@ private:
 	mutable std::vector<float> reverse_buffer;
     unsigned int buffer_front_pos;
     unsigned int buffer_back_pos;
+private:
+    unsigned int init_fib_index;
 public:
         unsigned int get_buffer_size(void) const
 	{
@@ -54,7 +56,7 @@ public:
 public:
     TrackingMethod(const FibData& fib_data_,basic_interpolation* interpolation_,
                    const RoiMgr& roi_mgr_,const TrackingParam& param_):
-                       info(fib_data_,param_,interpolation_),roi_mgr(roi_mgr_),param(param_)
+        info(fib_data_,param_,interpolation_),roi_mgr(roi_mgr_),param(param_),init_fib_index(0)
 	{
 		// floatd for full backward or full forward
         track_buffer.resize(info.param.max_points_count3 << 1);
@@ -78,13 +80,15 @@ public:
 	std::vector<float>& get_reverse_buffer(void){return reverse_buffer;}
 
 	template<typename ProcessList>
-        bool start_tracking(const image::vector<3,float>& seed_pos,bool smoothing)
+    bool start_tracking(bool smoothing)
 	{
+        image::vector<3,float> seed_pos(info.position);
+        image::vector<3,float> begin_dir(info.dir);
         buffer_front_pos = info.param.max_points_count3;
         buffer_back_pos = info.param.max_points_count3;
-                image::vector<3,float> begin_dir = info.dir;
-                image::vector<3,float> end_point1;
+        image::vector<3,float> end_point1;
         info.failed = false;
+        info.terminated = false;
 		do
 		{
             if(get_buffer_size() > info.param.max_points_count3 || buffer_back_pos + 3 >= track_buffer.size())
@@ -100,11 +104,12 @@ public:
 			
 		}
         while(!info.terminated);
-                if(info.failed)
+
+        if(info.failed)
 			return false;
 		
-                end_point1 = info.position;
-                info.terminated = false;
+        end_point1 = info.position;
+        info.terminated = false;
         info.position = seed_pos;
         info.dir = -begin_dir;
         info.forward = false;
@@ -155,79 +160,76 @@ public:
                        roi_mgr.fulfill_end_point(info.position,end_point1);
 	}
 
-        const float* tracking(float* position_,unsigned int& point_count)
+        bool init(const image::vector<3,float>& position,
+                  boost::variate_generator<boost::mt19937&, boost::uniform_real<float> >& gen)
         {
-            point_count = 0;
-            image::vector<3,float> position(position_);
             info.init(position);
             switch (param.seed_id)
             {
             case 0:// main direction
                 {
-                    image::pixel_index<3> index(std::floor(info.position[0]+0.5),
-                                            std::floor(info.position[1]+0.5),
-                                            std::floor(info.position[2]+0.5),info.fib_data.dim);
+                    image::pixel_index<3> index(std::floor(position[0]+0.5),
+                                            std::floor(position[1]+0.5),
+                                            std::floor(position[2]+0.5),info.fib_data.dim);
 
                     if (!info.fib_data.dim.is_valid(index) ||
                          info.fib_data.fib.getFA(index.index(),0) < info.param.threshold)
-                        info.terminated = true;
-                    else
-                        info.dir = info.fib_data.fib.getDir(index.index(),0);
+                        return false;
+                    info.dir = info.fib_data.fib.getDir(index.index(),0);
                 }
-                break;
+                return true;
             case 1:// random direction
-                info.terminated = true;
                 for (unsigned int index = 0;index < 10;++index)
                 {
-                    float txy = info.gen();
-                    float tz = info.gen()/2.0;
+                    float txy = gen();
+                    float tz = gen()/2.0;
                     float x = std::sin(txy)*std::sin(tz);
                     float y = std::cos(txy)*std::sin(tz);
                     float z = std::cos(tz);
-                    if (info.evaluate_dir(info.position,image::vector<3,float>(x,y,z),info.dir))
-                    {
-                        info.terminated = false;
-                        break;
-                    }
+                    if (info.evaluate_dir(position,image::vector<3,float>(x,y,z),info.dir))
+                        return true;
                 }
-                break;
+                return false;
             case 2:// all direction
                 {
-                    static unsigned int fib_index = 0;
-                    image::pixel_index<3> index(std::floor(info.position[0]+0.5),
-                                        std::floor(info.position[1]+0.5),
-                                        std::floor(info.position[2]+0.5),info.fib_data.dim);
+                    image::pixel_index<3> index(std::floor(position[0]+0.5),
+                                        std::floor(position[1]+0.5),
+                                        std::floor(position[2]+0.5),info.fib_data.dim);
 
                     if (!info.fib_data.dim.is_valid(index) ||
-                         info.fib_data.fib.getFA(index.index(),fib_index) < info.param.threshold)
-                        info.terminated = true;
+                        init_fib_index > info.fib_data.fib.num_fiber ||
+                        info.fib_data.fib.getFA(index.index(),init_fib_index) < info.param.threshold)
+                    {
+                        init_fib_index = 0;
+                        return false;
+                    }
                     else
-                        info.dir = info.fib_data.fib.getDir(index.index(),fib_index);
-                    ++fib_index;
-                    if(fib_index > info.fib_data.fib.num_fiber)
-                        fib_index = 0;
+                        info.dir = info.fib_data.fib.getDir(index.index(),init_fib_index);
+                    ++init_fib_index;
                 }
-                break;
+                return true;
             }
 
-            if(info.terminated)
-                return 0;
+        }
 
+        const float* tracking(unsigned int& point_count)
+        {
+            point_count = 0;
             switch (param.method_id)
             {
             case 0:
-                if (!start_tracking<streamline_method_process>(position,false))
+                if (!start_tracking<streamline_method_process>(false))
                     return 0;
                 break;
             case 1:
-                if (!start_tracking<streamline_runge_kutta_4_method_process>(position,false))
+                if (!start_tracking<streamline_runge_kutta_4_method_process>(false))
                     return 0;
                 break;
             case 2:
                 info.position[0] = std::floor(info.position[0]+0.5);
                 info.position[1] = std::floor(info.position[1]+0.5);
                 info.position[2] = std::floor(info.position[2]+0.5);
-                if (!start_tracking<voxel_tracking>(position,true))
+                if (!start_tracking<voxel_tracking>(true))
                     return 0;
                 break;
             default:

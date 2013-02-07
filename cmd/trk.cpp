@@ -140,8 +140,7 @@ int trk(int ac, char *av[])
     methods[2] = vm["interpolation"].as<int>();
     methods[3] = stop_by_track;
     methods[4] = vm["seed_plan"].as<int>();
-    std::auto_ptr<ThreadData> thread_handle(
-            ThreadData::new_thread(handle.get(),param,methods,termination_count));
+    std::auto_ptr<ThreadData> thread_handle(ThreadData::new_thread(handle.get(),param,methods));
 
     std::vector<float> trans;
     char rois[5][5] = {"roi","roi2","roi3","roi4","roi5"};
@@ -262,7 +261,7 @@ int trk(int ac, char *av[])
     }
 
     out << "start tracking..." << std::endl;
-    thread_handle->run_until_terminate(vm["thread_count"].as<int>());// no multi-thread
+    thread_handle->run(vm["thread_count"].as<int>(),termination_count,true);
     std::auto_ptr<TractModel> tract_model(new TractModel(handle.get(),geometry,voxel_size));
     thread_handle->fetchTracks(tract_model.get());
     out << "finished tracking." << std::endl;

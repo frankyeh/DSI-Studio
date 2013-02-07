@@ -413,10 +413,9 @@ bool vbc_database::calculate_distribution(float* param,unsigned char* methods,
         if(fib_file->fib_data.fib.fa[0][index.index()] > param[3])
             seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
 
-    std::auto_ptr<ThreadData> thread_handle(
-                ThreadData::new_thread(fib_file,param,methods,seed.size()*5));
+    std::auto_ptr<ThreadData> thread_handle(ThreadData::new_thread(fib_file,param,methods));
     thread_handle->setRegions(seed,3);
-    thread_handle->run_until_terminate(1);// no multi-thread
+    thread_handle->run(4,seed.size()*5,true);
     for(unsigned int j = 0; j < thread_handle->track_buffer.size();++j)
     {
         unsigned int length = thread_handle->track_buffer[j].size()/3;

@@ -103,11 +103,11 @@ void TractTableWidget::start_tracking(void)
     float param[8];
     unsigned char methods[5];
     cur_tracking_window.set_tracking_param(param,methods);
-    thread_data.back() = ThreadData::new_thread(cur_tracking_window.handle,param,methods,
-                             cur_tracking_window.ui->track_count->value());
+    thread_data.back() = ThreadData::new_thread(cur_tracking_window.handle,param,methods);
 
     cur_tracking_window.regionWidget->setROIs(thread_data.back());
-    thread_data.back()->run(cur_tracking_window.ui->thread_count->currentIndex()+1);
+    thread_data.back()->run(cur_tracking_window.ui->thread_count->currentIndex()+1,
+                            cur_tracking_window.ui->track_count->value());
     timer->start(1000);
 
     // record
@@ -154,7 +154,7 @@ void TractTableWidget::fetch_tracts(void)
                 has_tracts = true;
             }
             item(index,3)->setText(
-                QString::number(thread_data[index]->total_seedings));
+                QString::number(thread_data[index]->get_total_seed_count()));
             if(thread_data[index]->is_ended())
             {
                 delete thread_data[index];

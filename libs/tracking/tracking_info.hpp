@@ -37,10 +37,6 @@ struct TrackingParam
 struct TrackingInfo{
 private:
 	std::auto_ptr<basic_interpolation> interpolation;
-    boost::mt19937 rand_generator;
-    boost::uniform_real<float> random_angle;
-public:
-    boost::variate_generator<boost::mt19937, boost::uniform_real<float> > gen;
 public:
 	const FibData& fib_data;
 	const TrackingParam& param;
@@ -54,9 +50,6 @@ public:// Parameters
 public:
 	TrackingInfo(const FibData& fib_data_,const TrackingParam& param_,
 				   basic_interpolation* interpolation_):
-            rand_generator(0),
-            random_angle(0.0,3.1415926*2.0),
-            gen(rand_generator,random_angle),
             fib_data(fib_data_),param(param_),interpolation(interpolation_){}
         void init(const image::vector<3,float>& position_)
 	{
