@@ -2,8 +2,11 @@
 #define MANUAL_ALIGNMENT_H
 
 #include <QDialog>
+#include <QTimer>
 #include <QGraphicsScene>
 #include "image/image.hpp"
+#include "libs/coreg/linear.hpp"
+#include <boost/thread/thread.hpp>
 
 namespace Ui {
 class manual_alignment;
@@ -14,19 +17,31 @@ class manual_alignment : public QDialog
     Q_OBJECT
 private:
     image::basic_image<float,3> from,to,warped_from;
-    image::affine_transform<3,double> arg;
-    QGraphicsScene scene;
-    image::basic_image<image::rgb_color> buffer;
-    QImage slice_image;
+    image::affine_transform<3,float> arg;
+    QGraphicsScene scene[3];
+    image::basic_image<image::rgb_color> buffer[3];
+    QImage slice_image[3];
+private:
+    unsigned char thread_terminated;
+    std::auto_ptr<boost::thread> reg_thread;
+    QTimer* timer;
+    float w;
+    void load_param(void);
 public:
+    image::transformation_matrix<3,float> affine;
     explicit manual_alignment(QWidget *parent,
         const image::basic_image<float,3>& from_,
         const image::basic_image<float,3>& to_,
-        const image::affine_transform<3,double>& arg);
+        const image::affine_transform<3,float>& arg);
     ~manual_alignment();
+    void connect_arg_update();
+    void disconnect_arg_update();
     
 private slots:
-    void on_slice_pos_sliderMoved(int position);
+    void slice_pos_moved();
+    void param_changed();
+    void check_reg();
+    void on_buttonBox_accepted();
 
 private:
     Ui::manual_alignment *ui;

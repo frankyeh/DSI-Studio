@@ -65,9 +65,11 @@ public:// parameters;
     image::vector<3,short> odf_xyz;
     bool half_sphere;
     bool r2_weighted;// used in GQI only
-    unsigned char reg_method;// used in QSDR
     unsigned int max_fiber_number;
     std::vector<std::string> file_list;
+public:
+    unsigned char reg_method;// used in QSDR
+    image::transformation_matrix<3,float> qsdr_trans;
 public:
     float qa_scaling;
     // other information for second pass processing

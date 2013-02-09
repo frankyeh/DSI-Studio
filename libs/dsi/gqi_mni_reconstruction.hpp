@@ -27,7 +27,7 @@ protected:
     std::vector<float> jdet;
     int b0_index;
 protected:
-    image::transformation_matrix<3,double> affine;
+    image::transformation_matrix<3,float> affine;
 protected:
     image::basic_image<float,3> VG,VF;
     double VGvs[3];
@@ -95,7 +95,7 @@ public:
         VGvs[1] = std::fabs(fa_template_imp.tran[5]);
         VGvs[2] = std::fabs(fa_template_imp.tran[10]);
 
-        image::affine_transform<3,double> arg_min;
+        image::affine_transform<3,float> arg_min;
         // VG: FA TEMPLATE
         // VF: SUBJECT QA
         arg_min.scaling[0] = voxel.vs[0] / VGvs[0];
@@ -115,24 +115,21 @@ public:
         set_title("linear registration");
         begin_prog("conducting registration");
 
-        check_prog(0,2);
-        image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::square_error(),terminated);
-        check_prog(1,2);
-
-        // create VFF the affine transformed VF
-        image::basic_image<float,3> VFF(VG.geometry());
+        if(voxel.qsdr_trans.data[0] != 0.0) // has manual reg data
+            affine = voxel.qsdr_trans;
+        else
         {
-
+            check_prog(0,2);
+            image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::square_error(),terminated);
+            check_prog(1,2);
             affine = arg_min;
             image::reg::shift_to_center(VF.geometry(),VG.geometry(),affine);
             affine.inverse();
-            image::resample(VF,VFF,affine);
-            // to check the linear registration accuracy
-            // unmark this
-            //VFF.save_to_file<image::io::nifti<> >("VFF.nii");
-            //VG.save_to_file<image::io::nifti<> >("VG.nii");
-
         }
+        image::basic_image<float,3> VFF(VG.geometry());
+        image::resample(VF,VFF,affine);
+        VFF.save_to_file<image::io::nifti<> >("VFF.nii");
+        VG.save_to_file<image::io::nifti<> >("VG.nii");
         {
             switch(voxel.reg_method)
             {

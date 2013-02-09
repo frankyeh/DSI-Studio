@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Wed Feb 6 15:49:39 2013
+** Created: Thu Feb 7 23:54:26 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -93,6 +93,7 @@ public:
     QHBoxLayout *horizontalLayout_10;
     QLabel *label_15;
     QComboBox *reg_method;
+    QToolButton *manual_reg;
     QGroupBox *DSIOption_2;
     QHBoxLayout *DSIOption;
     QLabel *label_5;
@@ -168,7 +169,7 @@ public:
         toolBox->setObjectName(QString::fromUtf8("toolBox"));
         source_page = new QWidget();
         source_page->setObjectName(QString::fromUtf8("source_page"));
-        source_page->setGeometry(QRect(0, 0, 259, 130));
+        source_page->setGeometry(QRect(0, 0, 608, 453));
         verticalLayout_4 = new QVBoxLayout(source_page);
         verticalLayout_4->setObjectName(QString::fromUtf8("verticalLayout_4"));
         splitter = new QSplitter(source_page);
@@ -259,7 +260,7 @@ public:
         toolBox->addItem(source_page, QString::fromUtf8("Source Images"));
         page_3 = new QWidget();
         page_3->setObjectName(QString::fromUtf8("page_3"));
-        page_3->setGeometry(QRect(0, 0, 534, 146));
+        page_3->setGeometry(QRect(0, 0, 608, 453));
         gridLayout_2 = new QGridLayout(page_3);
         gridLayout_2->setObjectName(QString::fromUtf8("gridLayout_2"));
         verticalLayout_5 = new QVBoxLayout();
@@ -336,7 +337,7 @@ public:
         toolBox->addItem(page_3, QString::fromUtf8("Step 1: setup brain mask"));
         page = new QWidget();
         page->setObjectName(QString::fromUtf8("page"));
-        page->setGeometry(QRect(0, 0, 591, 494));
+        page->setGeometry(QRect(0, 0, 591, 497));
         page->setMinimumSize(QSize(0, 0));
         verticalLayout_2 = new QVBoxLayout(page);
         verticalLayout_2->setObjectName(QString::fromUtf8("verticalLayout_2"));
@@ -405,6 +406,7 @@ public:
         gridLayout_3->addLayout(horizontalLayout_8, 0, 1, 1, 1);
 
         horizontalLayout_10 = new QHBoxLayout();
+        horizontalLayout_10->setSpacing(0);
         horizontalLayout_10->setObjectName(QString::fromUtf8("horizontalLayout_10"));
         label_15 = new QLabel(ResolutionBox);
         label_15->setObjectName(QString::fromUtf8("label_15"));
@@ -415,6 +417,12 @@ public:
         reg_method->setObjectName(QString::fromUtf8("reg_method"));
 
         horizontalLayout_10->addWidget(reg_method);
+
+        manual_reg = new QToolButton(ResolutionBox);
+        manual_reg->setObjectName(QString::fromUtf8("manual_reg"));
+        manual_reg->setMinimumSize(QSize(0, 23));
+
+        horizontalLayout_10->addWidget(manual_reg);
 
 
         gridLayout_3->addLayout(horizontalLayout_10, 0, 0, 1, 1);
@@ -774,6 +782,7 @@ public:
          << QApplication::translate("reconstruction_window", "SPM norm 7-9-7", 0, QApplication::UnicodeUTF8)
          << QApplication::translate("reconstruction_window", "SPM norm 12-14-12", 0, QApplication::UnicodeUTF8)
         );
+        manual_reg->setText(QApplication::translate("reconstruction_window", "...", 0, QApplication::UnicodeUTF8));
         label_5->setText(QApplication::translate("reconstruction_window", "DSI Hamming filter", 0, QApplication::UnicodeUTF8));
         label->setText(QApplication::translate("reconstruction_window", "SH order", 0, QApplication::UnicodeUTF8));
         label_6->setText(QApplication::translate("reconstruction_window", "QBI Regularization", 0, QApplication::UnicodeUTF8));

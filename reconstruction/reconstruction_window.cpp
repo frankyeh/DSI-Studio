@@ -513,7 +513,7 @@ void reconstruction_window::on_zoom_out_clicked()
 extern fa_template fa_template_imp;
 void reconstruction_window::on_manual_reg_clicked()
 {
-    image::affine_transform<3,double> arg;
+    image::affine_transform<3,float> arg;
     arg.scaling[0] = handle->voxel.vs[0];
     arg.scaling[1] = handle->voxel.vs[1];
     arg.scaling[2] = handle->voxel.vs[2];
@@ -523,5 +523,7 @@ void reconstruction_window::on_manual_reg_clicked()
     arg.translocation[0] = mG[0]-mF[0]*arg.scaling[0];
     arg.translocation[1] = mG[1]-mF[1]*arg.scaling[1];
     arg.translocation[2] = mG[2]-mF[2]*arg.scaling[2];
-    (new manual_alignment(this,image,fa_template_imp.I,arg))->show();
+    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,image,fa_template_imp.I,arg));
+    if(manual->exec() == QDialog::Accepted)
+        handle->voxel.qsdr_trans = manual->affine;
 }

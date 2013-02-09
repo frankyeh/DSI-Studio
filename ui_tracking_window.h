@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Mon Feb 4 14:41:23 2013
+** Created: Fri Feb 8 00:14:53 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -126,6 +126,7 @@ public:
     QAction *actionRegion_statistics;
     QAction *actionPair_comparison;
     QAction *actionCalculate_null_distibution;
+    QAction *actionPlot;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QHBoxLayout *horizontalLayout_13;
@@ -563,6 +564,8 @@ public:
         actionPair_comparison->setObjectName(QString::fromUtf8("actionPair_comparison"));
         actionCalculate_null_distibution = new QAction(tracking_window);
         actionCalculate_null_distibution->setObjectName(QString::fromUtf8("actionCalculate_null_distibution"));
+        actionPlot = new QAction(tracking_window);
+        actionPlot->setObjectName(QString::fromUtf8("actionPlot"));
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -1942,7 +1945,9 @@ public:
         menuTracts->addAction(actionSave_Tracts_in_Current_Mapping);
         menuTracts->addAction(actionSave_Tracts_in_MNI_space);
         menuTracts->addAction(actionSave_Endpoints_in_Current_Mapping);
+        menuTracts->addSeparator();
         menuTracts->addAction(actionStatistics);
+        menuTracts->addAction(actionPlot);
         menuSave->addAction(actionQuantitative_anisotropy_QA);
         menuClustering->addAction(actionK_means);
         menuClustering->addAction(actionEM);
@@ -2123,6 +2128,7 @@ public:
         actionRegion_statistics->setText(QApplication::translate("tracking_window", "Statistics...", 0, QApplication::UnicodeUTF8));
         actionPair_comparison->setText(QApplication::translate("tracking_window", "Single Subject Paired Comparison...", 0, QApplication::UnicodeUTF8));
         actionCalculate_null_distibution->setText(QApplication::translate("tracking_window", "Calculate null distibution...", 0, QApplication::UnicodeUTF8));
+        actionPlot->setText(QApplication::translate("tracking_window", "Plot...", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)

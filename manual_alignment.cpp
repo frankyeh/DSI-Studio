@@ -1,18 +1,110 @@
 #include "manual_alignment.h"
 #include "ui_manual_alignment.h"
+#include "tracking/tracking_window.h"
 
+typedef image::reg::mutual_information cost_func;
+void run_reg(const image::basic_image<float,3>& from,
+             const image::basic_image<float,3>& to,
+             image::affine_transform<3,float>* arg_min,
+             unsigned char* terminated)
+{
+    image::reg::linear(from,to,*arg_min,image::reg::affine,cost_func(),*terminated,0.01);
+}
 manual_alignment::manual_alignment(QWidget *parent,
                                    const image::basic_image<float,3>& from_,
                                    const image::basic_image<float,3>& to_,
-                                   const image::affine_transform<3,double>& arg_) :
+                                   const image::affine_transform<3,float>& arg_) :
     QDialog(parent),
     ui(new Ui::manual_alignment),
     from(from_),to(to_),arg(arg_)
 {
-    image::normalize(to,1.0);
+
+    image::filter::gaussian(from);
+    from -= image::segmentation::otsu_threshold(from);
+    image::lower_threshold(from,0.0);
+
     image::normalize(from,1.0);
+    image::normalize(to,1.0);
+
     ui->setupUi(this);
-    ui->graphicsView->setScene(&scene);
+    ui->sag_view->setScene(&scene[0]);
+    ui->cor_view->setScene(&scene[1]);
+    ui->axi_view->setScene(&scene[2]);
+
+    load_param();
+    update_image();
+
+    ui->sag_slice_pos->setMaximum(to.geometry()[0]-1);
+    ui->sag_slice_pos->setMinimum(0);
+    ui->sag_slice_pos->setValue(to.geometry()[0] >> 1);
+    ui->cor_slice_pos->setMaximum(to.geometry()[1]-1);
+    ui->cor_slice_pos->setMinimum(0);
+    ui->cor_slice_pos->setValue(to.geometry()[1] >> 1);
+    ui->axi_slice_pos->setMaximum(to.geometry()[2]-1);
+    ui->axi_slice_pos->setMinimum(0);
+    ui->axi_slice_pos->setValue(to.geometry()[2] >> 1);
+    timer = new QTimer(this);
+    timer->setInterval(200);
+
+    connect_arg_update();
+    connect(ui->sag_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
+    connect(ui->cor_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
+    connect(ui->axi_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
+    connect(timer, SIGNAL(timeout()), this, SLOT(check_reg()));
+
+    w = 0.0;
+
+    thread_terminated = 0;
+    reg_thread.reset(new boost::thread(run_reg,from,to,&arg,&thread_terminated));
+
+    timer->start();
+
+
+}
+void manual_alignment::connect_arg_update()
+{
+    connect(ui->tx,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->ty,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->tz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->sx,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->sy,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->sz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->rx,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->ry,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->rz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->xy,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->xz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->yz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+}
+
+void manual_alignment::disconnect_arg_update()
+{
+    disconnect(ui->tx,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    disconnect(ui->ty,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    disconnect(ui->tz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    disconnect(ui->sx,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    disconnect(ui->sy,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    disconnect(ui->sz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    disconnect(ui->rx,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    disconnect(ui->ry,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    disconnect(ui->rz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    disconnect(ui->xy,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    disconnect(ui->xz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    disconnect(ui->yz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+}
+
+manual_alignment::~manual_alignment()
+{
+    if(reg_thread.get())
+    {
+        timer->stop();
+        thread_terminated = 1;
+        reg_thread->join();
+    }
+    delete ui;
+}
+void manual_alignment::load_param(void)
+{
     // translocation
     ui->tx->setMaximum(from.geometry()[0]/2);
     ui->tx->setMinimum(-from.geometry()[0]/2);
@@ -54,52 +146,110 @@ manual_alignment::manual_alignment(QWidget *parent,
     ui->yz->setMinimum(-1);
     ui->yz->setValue(arg.affine[2]);
 
-    update_image();
-
-    ui->slice_pos->setMaximum(to.geometry()[2]-1);
-    ui->slice_pos->setMinimum(0);
-    ui->slice_pos->setValue(to.geometry()[2] >> 1);
-
-
 }
+
 void manual_alignment::update_image(void)
 {
+    warped_from.clear();
     warped_from.resize(to.geometry());
-    image::transformation_matrix<3,double> affine = arg;
-
+    affine = arg;
     image::reg::shift_to_center(from.geometry(),to.geometry(),affine);
     affine.inverse();
     image::resample(from,warped_from,affine);
+}
+void manual_alignment::param_changed()
+{
+    arg.translocation[0] = ui->tx->value();
+    arg.translocation[1] = ui->ty->value();
+    arg.translocation[2] = ui->tz->value();
 
-    warped_from += to;
-    image::normalize(warped_from,1.0);
+    arg.rotation[0] = ui->rx->value();
+    arg.rotation[1] = ui->ry->value();
+    arg.rotation[2] = ui->rz->value();
 
+    arg.scaling[0] = ui->sx->value();
+    arg.scaling[1] = ui->sy->value();
+    arg.scaling[2] = ui->sz->value();
+
+    arg.affine[0] = ui->xy->value();
+    arg.affine[1] = ui->xz->value();
+    arg.affine[2] = ui->yz->value();
+
+    update_image();
+    slice_pos_moved();
 }
 
-manual_alignment::~manual_alignment()
-{
-    delete ui;
-}
 
-void manual_alignment::on_slice_pos_sliderMoved(int position)
-{
 
-    buffer.resize(image::geometry<2>(warped_from.width(),warped_from.height()));
-    const float* slice_image_ptr = &*warped_from.begin() + buffer.size()* position;
-    for (unsigned int index = 0; index < buffer.size(); ++index)
+void manual_alignment::slice_pos_moved()
+{
+    int slice_pos[3];
+    slice_pos[0] = ui->sag_slice_pos->value();
+    slice_pos[1] = ui->cor_slice_pos->value();
+    slice_pos[2] = ui->axi_slice_pos->value();
+    double ratio =
+        std::min((double)(ui->axi_view->width()-10)/(double)warped_from.width(),
+                 (double)(ui->axi_view->height()-10)/(double)warped_from.height());
+    float w1 = w;
+    float w2 = 1.0-w1;
+    w1*= 255.0;
+    w2 *= 255.0;
+    for(unsigned char dim = 0;dim < 3;++dim)
     {
-        float value = slice_image_ptr[index];
-        value*=255.0;
-        buffer[index] = image::rgb_color(value,value,value);
+        image::basic_image<float,2> slice,slice2;
+        image::reslicing(warped_from,slice,dim,slice_pos[dim]);
+        image::reslicing(to,slice2,dim,slice_pos[dim]);
+        buffer[dim].resize(slice.geometry());
+        for (unsigned int index = 0; index < slice.size(); ++index)
+        {
+            float value = slice[index]*w2+slice2[index]*w1;
+            buffer[dim][index] = image::rgb_color(value,value,value);
+        }
+        scene[dim].setSceneRect(0, 0, buffer[dim].width()*ratio,buffer[dim].height()*ratio);
+        slice_image[dim] = QImage((unsigned char*)&*buffer[dim].begin(),buffer[dim].width(),buffer[dim].height(),QImage::Format_RGB32).
+                        scaled(buffer[dim].width()*ratio,buffer[dim].height()*ratio);
+        if(dim != 2)
+            slice_image[dim] = slice_image[dim].mirrored();
+        scene[dim].clear();
+        scene[dim].addRect(0, 0, buffer[dim].width()*ratio,buffer[dim].height()*ratio,QPen(),slice_image[dim]);
     }
+}
 
-    double ratio = std::max(1.0,
-        std::min((double)ui->graphicsView->width()/(double)warped_from.width(),
-                 (double)ui->graphicsView->height()/(double)warped_from.height()));
-    scene.setSceneRect(0, 0, warped_from.width()*ratio,warped_from.height()*ratio);
-    slice_image = QImage((unsigned char*)&*buffer.begin(),warped_from.width(),warped_from.height(),QImage::Format_RGB32).
-                    scaled(warped_from.width()*ratio,warped_from.height()*ratio);
-    scene.clear();
-    scene.addRect(0, 0, warped_from.width()*ratio,warped_from.height()*ratio,QPen(),slice_image);
+void manual_alignment::check_reg()
+{
+    if(w > 0.95 && reg_thread.get())
+    {
+        disconnect_arg_update();
+        ui->tx->setValue(arg.translocation[0]);
+        ui->ty->setValue(arg.translocation[1]);
+        ui->tz->setValue(arg.translocation[2]);
+        ui->rx->setValue(arg.rotation[0]);
+        ui->ry->setValue(arg.rotation[1]);
+        ui->rz->setValue(arg.rotation[2]);
+        ui->sx->setValue(arg.scaling[0]);
+        ui->sy->setValue(arg.scaling[1]);
+        ui->sz->setValue(arg.scaling[2]);
+        ui->xy->setValue(arg.affine[0]);
+        ui->xz->setValue(arg.affine[1]);
+        ui->yz->setValue(arg.affine[2]);
+        connect_arg_update();
+        update_image();
+    }
+    w += 0.1;
+    if(w > 1.05)
+        w = 0.0;
+    slice_pos_moved();
+}
 
+
+
+void manual_alignment::on_buttonBox_accepted()
+{
+    timer->stop();
+    if(reg_thread.get())
+    {
+        thread_terminated = 1;
+        reg_thread->join();
+    }
+    update_image(); // to update the affine matrix
 }
