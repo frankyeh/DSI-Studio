@@ -33,8 +33,8 @@ void tracking_window::closeEvent(QCloseEvent *event)
 tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
         QMainWindow(parent),handle(new_handle),
         ui(new Ui::tracking_window),scene(*this,new_handle),slice(new_handle)
-{
 
+{
 
     ODFModel* odf_model = (ODFModel*)handle;
     FibData& fib_data = odf_model->fib_data;
@@ -42,27 +42,6 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
     odf_size = fib_data.fib.odf_table.size();
     odf_face_size = fib_data.fib.odf_faces.size();
     has_odfs = fib_data.fib.has_odfs() ? 1:0;
-    if(fib_data.trans)
-    {
-        trans_to_mni.resize(16);
-        trans_to_mni[15] = 1.0;
-        std::copy(fib_data.trans,fib_data.trans+12,trans_to_mni.begin());
-        // this is 1-based transformation, need to change to 0-based and flip xy
-
-        // spm_affine = [1 0 0 -1                   [1 0 0 1
-        //               0 1 0 -1                    0 1 0 1
-        //               0 0 1 -1   * my_affine *    0 0 1 1
-        //               0 0 0 1]                    0 0 0 1]
-        trans_to_mni[3] += trans_to_mni[0];
-        trans_to_mni[7] += trans_to_mni[5];
-        trans_to_mni[11] += trans_to_mni[10];
-
-        trans_to_mni[3] += (odf_model->fib_data.dim.width()-1)*std::fabs(trans_to_mni[0]);
-        trans_to_mni[7] += (odf_model->fib_data.dim.height()-1)*std::fabs(trans_to_mni[5]);
-        trans_to_mni[0] = -trans_to_mni[0];
-        trans_to_mni[5] = -trans_to_mni[5];
-
-    }
     // check whether first index is "fa0"
     is_dti = (fib_data.view_item[0].name[0] == 'f');
 
@@ -151,7 +130,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
     }
 
     // setup atlas
-    if(!fa_template_imp.I.empty() && fib_data.vs[0] > 0.5)
+    if(!fa_template_imp.I.empty() && fib_data.vs[0] > 0.5 && handle->fib_data.trans_to_mni.empty())
     {
         mi3.reset(new lm3_type);
         mi3->from = slice.source_images;
@@ -159,10 +138,13 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
         mi3->arg_min.scaling[0] = slice.voxel_size[0] / std::fabs(fa_template_imp.tran[0]);
         mi3->arg_min.scaling[1] = slice.voxel_size[1] / std::fabs(fa_template_imp.tran[5]);
         mi3->arg_min.scaling[2] = slice.voxel_size[2] / std::fabs(fa_template_imp.tran[10]);
+        mi3->arg_min.translocation[0] = fa_template_imp.I.geometry()[0]-slice.source_images.geometry()[0]*mi3->arg_min.scaling[0];
+        mi3->arg_min.translocation[1] = fa_template_imp.I.geometry()[1]-slice.source_images.geometry()[1]*mi3->arg_min.scaling[1];
+        mi3->arg_min.translocation[2] = fa_template_imp.I.geometry()[2]-slice.source_images.geometry()[2]*mi3->arg_min.scaling[2];
         mi3->thread_argmin(image::reg::affine);
-            for(int index = 0;index < atlas_list.size();++index)
-                ui->atlasListBox->addItem(atlas_list[index].name.c_str());
     }
+    for(int index = 0;index < atlas_list.size();++index)
+        ui->atlasListBox->addItem(atlas_list[index].name.c_str());
 
 
     {
@@ -412,39 +394,6 @@ tracking_window::~tracking_window()
     handle = 0;
     //std::cout << __FUNCTION__ << " " << __FILE__ << std::endl;
 }
-void tracking_window::get_nifti_trans(std::vector<float>& trans)
-{
-    if(!trans_to_mni.empty())
-    {
-        trans = trans_to_mni;
-        trans[3] += trans[0]*(slice.geometry[0]-1);
-        trans[0] = -trans[0];
-        trans[7] += trans[5]*(slice.geometry[1]-1);
-        trans[5] = -trans[5];
-    }
-    else
-        if(mi3.get())
-        {
-            trans.resize(16);
-            image::create_affine_transformation_matrix(
-                        mi3->get(),
-                        mi3->get()+9,trans.begin(),image::vdim<3>());
-            fa_template_imp.get_transformation(trans);
-        }
-}
-void tracking_window::get_dicom_trans(std::vector<float>& trans)
-{
-    if(!trans_to_mni.empty())
-    {
-        trans = trans_to_mni;
-        return;
-    }
-    get_nifti_trans(trans);
-    trans[3] += trans[0]*(slice.geometry[0]-1);
-    trans[0] = -trans[0];
-    trans[7] += trans[5]*(slice.geometry[1]-1);
-    trans[5] = -trans[5];
-}
 
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 {
@@ -530,31 +479,29 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
             .arg(std::floor(pos[1]*10.0+0.5)/10.0)
             .arg(std::floor(pos[2]*10.0+0.5)/10.0);
     // show atlas position
-    if(mi3.get() || !trans_to_mni.empty())
+    if(mi3.get() && !mi3->ended)
+    {
+        handle->fib_data.trans_to_mni.resize(16);
+        image::create_affine_transformation_matrix(
+                    mi3->get(),
+                    mi3->get()+9,handle->fib_data.trans_to_mni.begin(),image::vdim<3>());
+        fa_template_imp.get_transformation(handle->fib_data.trans_to_mni);
+        handle->fib_data.trans_to_mni[3] += handle->fib_data.trans_to_mni[0]*(slice.geometry[0]-1);
+        handle->fib_data.trans_to_mni[0] = -handle->fib_data.trans_to_mni[0];
+        handle->fib_data.trans_to_mni[7] += handle->fib_data.trans_to_mni[5]*(slice.geometry[1]-1);
+        handle->fib_data.trans_to_mni[5] = -handle->fib_data.trans_to_mni[5];
+    }
+
+    if(!handle->fib_data.trans_to_mni.empty())
     {
         image::vector<3,float> mni;
-        if(!trans_to_mni.empty())
-        {
-            // flip xy
-            mni[0] = slice.geometry[0]-1;
-            mni[1] = slice.geometry[1]-1;
-            image::vector_transformation(pos.begin(),mni.begin(), trans_to_mni,image::vdim<3>());
-        }
-        else
-        {
-            const float* m = mi3->get();
-            image::vector_transformation(pos.begin(),mni.begin(), m,m + 9, image::vdim<3>());
-            fa_template_imp.to_mni(mni);
-        }
-
+        image::vector_transformation(pos.begin(),mni.begin(), handle->fib_data.trans_to_mni,image::vdim<3>());
         status += QString("MNI(%1,%2,%3) ")
                 .arg(std::floor(mni[0]*10.0+0.5)/10.0)
                 .arg(std::floor(mni[1]*10.0+0.5)/10.0)
                 .arg(std::floor(mni[2]*10.0+0.5)/10.0);
-
         if(!atlas_list.empty())
           status += atlas_list[ui->atlasListBox->currentIndex()].get_label_name_at(mni).c_str();
-
     }
     status += " ";
     std::vector<float> data;
@@ -1293,9 +1240,9 @@ void tracking_window::on_actionSave_Report_as_triggered()
 
 void tracking_window::on_actionSave_Tracts_in_MNI_space_triggered()
 {
-    std::vector<float> t(16);
-    get_dicom_trans(t);
-    tractWidget->saveTransformedTracts(&*t.begin());
+    if(handle->fib_data.trans_to_mni.empty())
+        return;
+    tractWidget->saveTransformedTracts(&*(handle->fib_data.trans_to_mni.begin()));
 }
 
 void tracking_window::on_actionOpen_Subject_Data_triggered()
@@ -1682,4 +1629,8 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
 }
 
 
-
+void tracking_window::on_actionPlot_triggered()
+{
+    ui->dockWidget_report->show();
+    on_refresh_report_clicked();
+}

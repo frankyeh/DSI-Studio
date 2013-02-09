@@ -186,7 +186,7 @@ void slice_view_scene::save_slice_as()
                 0,
                 "Save as",
                 cur_tracking_window.absolute_path + "/" +
-                cur_tracking_window.handle->fib_data.view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str()+".nii",
+                cur_tracking_window.handle->fib_data.view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str(),
                 "NIFTI files (*.nii.gz *.nii);;MAT File (*.mat);;");
     if(filename.isEmpty())
         return;
@@ -201,12 +201,9 @@ void slice_view_scene::save_slice_as()
     {
         gz_nifti file;
         file.set_voxel_size(cur_tracking_window.slice.voxel_size.begin());
-        image::basic_image<float,3> I(cur_tracking_window.handle->fib_data.view_item[index].image_data);
-        image::flip_xy(I);
-        std::vector<float> trans;
-        cur_tracking_window.get_nifti_trans(trans);
-        file.set_image_transformation(trans.begin());
-        file << I;
+        if(!cur_tracking_window.handle->fib_data.trans_to_mni.empty())
+            file.set_image_transformation(cur_tracking_window.handle->fib_data.trans_to_mni.begin());
+        file << cur_tracking_window.handle->fib_data.view_item[index].image_data;
         file.save_to_file(filename.toLocal8Bit().begin());
     }
     if(QFileInfo(filename).completeSuffix().toLower() == "mat")

@@ -1633,7 +1633,8 @@ bool GLWidget::addSlices(QStringList filenames)
     if(files.size() == 1 && nifti.load_from_file(files[0]))
     {
         other_slices.push_back(new CustomSliceModel(nifti,cur_tracking_window.slice.center_point));
-        if(!cur_tracking_window.trans_to_mni.empty())
+        if(!cur_tracking_window.handle->fib_data.trans_to_mni.empty() &&
+            cur_tracking_window.mi3.get() == 0)
         {
             std::vector<float> t(nifti.get_transformation(),
                                  nifti.get_transformation()+12),inv_trans(16);
@@ -1652,7 +1653,7 @@ bool GLWidget::addSlices(QStringList filenames)
                 t[7] += t[5]*(nifti.height()-1);
                 t[5] = -t[5];
             }
-            math::matrix_inverse(cur_tracking_window.trans_to_mni.begin(),inv_trans.begin(),math::dim<4,4>());
+            math::matrix_inverse(cur_tracking_window.handle->fib_data.trans_to_mni.begin(),inv_trans.begin(),math::dim<4,4>());
             math::matrix_product(inv_trans.begin(),t.begin(),convert.begin(),math::dim<4,4>(),math::dim<4,4>());
         }
     }

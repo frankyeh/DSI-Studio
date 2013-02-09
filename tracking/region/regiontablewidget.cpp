@@ -301,15 +301,15 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         }
     }
 
-    if(from.geometry() != cur_tracking_window.slice.geometry)// use transformation information
+    if(from.geometry() != cur_tracking_window.slice.geometry &&
+       !cur_tracking_window.handle->fib_data.trans_to_mni.empty())// use transformation information
     {
-        std::vector<float> trans;
-        cur_tracking_window.get_dicom_trans(trans);
         std::vector<float> t(header.get_transformation(),
                              header.get_transformation()+12),inv_trans(16),convert(16);
         t.resize(16);
         t[15] = 1.0;
-        math::matrix_inverse(trans.begin(),inv_trans.begin(),math::dim<4,4>());
+        math::matrix_inverse(cur_tracking_window.handle->fib_data.trans_to_mni.begin(),
+                             inv_trans.begin(),math::dim<4,4>());
         math::matrix_product(inv_trans.begin(),t.begin(),convert.begin(),math::dim<4,4>(),math::dim<4,4>());
         for(unsigned int value = 1;check_prog(value,value_map.size());++value)
             if(value_map[value])
@@ -330,10 +330,14 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     }
     // from +x = Right  +y = Anterior +z = Superior
     // to +x = Left  +y = Posterior +z = Superior
-    if(header.nif_header.srow_x[0] < 0 || !header.is_nii)
-        image::flip_y(from);
+    if(header.nif_header.srow_x[0] < 0)
+    {
+        if(header.nif_header.srow_y[1] > 0)
+            image::flip_y(from);
+    }
     else
         image::flip_xy(from);
+
     for(unsigned int value = 1;check_prog(value,value_map.size());++value)
         if(value_map[value])
         {
@@ -372,9 +376,8 @@ void RegionTableWidget::load_region(void)
             continue;
 
         ROIRegion region(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size);
-        std::vector<float> trans;
-        cur_tracking_window.get_dicom_trans(trans);
-        if(!region.LoadFromFile(filenames[index].toLocal8Bit().begin(),trans))
+        if(!region.LoadFromFile(filenames[index].toLocal8Bit().begin(),
+                cur_tracking_window.handle->fib_data.trans_to_mni))
         {
             QMessageBox::information(this,"error","Unknown file format",0);
             return;
@@ -392,15 +395,13 @@ void RegionTableWidget::save_region(void)
     QString filename = QFileDialog::getSaveFileName(
                            this,
                            "Save region",
-                           cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + ".txt",
+                           cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text(),
                            "Nifti file(*.nii.gz *.nii);;Text files (*.txt);;Maylab file (*.mat)" );
     if (filename.isEmpty())
         return;
     cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
-
-    std::vector<float> trans;
-    cur_tracking_window.get_nifti_trans(trans);
-    regions[currentRow()].SaveToFile(filename.toLocal8Bit().begin(),trans);
+    regions[currentRow()].SaveToFile(filename.toLocal8Bit().begin(),
+                                     cur_tracking_window.handle->fib_data.trans_to_mni);
     item(currentRow(),0)->setText(QFileInfo(filename).baseName());
 }
 void RegionTableWidget::save_region_info(void)
@@ -556,19 +557,21 @@ extern image::basic_image<float,3> mni_fa0_template;
 
 void RegionTableWidget::add_atlas(void)
 {
+    if(cur_tracking_window.handle->fib_data.trans_to_mni.empty())
+        return;
     int atlas_index = cur_tracking_window.ui->atlasListBox->currentIndex();
     std::vector<image::vector<3,short> > points;
     unsigned short label = cur_tracking_window.ui->atlasComboBox->currentIndex();
-    const float* m = cur_tracking_window.mi3->get();
-    image::vector<3,float>mni_coordinate;
     image::geometry<3> geo = cur_tracking_window.slice.geometry;
     for (image::pixel_index<3>index; index.valid(geo);index.next(geo))
     {
+        image::vector<3,float> mni;
         image::vector<3,float>cur_coordinate((const unsigned int*)(index.begin()));
         image::vector_transformation(cur_coordinate.begin(),
-                                     mni_coordinate.begin(), m, m + 9, image::vdim<3>());
-        fa_template_imp.to_mni(mni_coordinate);
-        if (!atlas_list[atlas_index].is_labeled_as(mni_coordinate, label))
+                                     mni.begin(),
+                                     cur_tracking_window.handle->fib_data.trans_to_mni.begin(),
+                                     image::vdim<3>());
+        if (!atlas_list[atlas_index].is_labeled_as(mni, label))
                 continue;
         points.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
     }

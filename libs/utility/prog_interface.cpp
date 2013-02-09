@@ -52,7 +52,7 @@ const long interval = 500;
                 progressDialog->setRange(0, total);
                 progressDialog->setValue(now);
 
-                if(expected_sec > 60)
+                if(expected_sec)
                     progressDialog->setLabelText(QString("%1 of %2, estimated time: %3 min %4 sec").
                                                      arg(now).arg(total).arg(expected_sec/60).arg(expected_sec%60));
                 else

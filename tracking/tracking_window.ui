@@ -846,7 +846,9 @@
     <addaction name="actionSave_Tracts_in_Current_Mapping"/>
     <addaction name="actionSave_Tracts_in_MNI_space"/>
     <addaction name="actionSave_Endpoints_in_Current_Mapping"/>
+    <addaction name="separator"/>
     <addaction name="actionStatistics"/>
+    <addaction name="actionPlot"/>
    </widget>
    <widget class="QMenu" name="menu_Edit">
     <property name="title">
@@ -3555,6 +3557,11 @@
   <action name="actionCalculate_null_distibution">
    <property name="text">
     <string>Calculate null distibution...</string>
+   </property>
+  </action>
+  <action name="actionPlot">
+   <property name="text">
+    <string>Plot...</string>
    </property>
   </action>
  </widget>

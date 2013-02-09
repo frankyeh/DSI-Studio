@@ -335,7 +335,7 @@ void TractTableWidget::save_tracts_as(void)
     filename = QFileDialog::getSaveFileName(
                 this,
                 "Save tracts as",
-                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + ".txt",
+                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text(),
                 "Tract files (*.txt);; Travis file (*.trk);;All files (*.*)");
     if(filename.isEmpty())
         return;
@@ -657,8 +657,8 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
         QString filename = QFileDialog::getSaveFileName(
                 this,
                 "Save Images files",
-                cur_tracking_window.absolute_path+"/" + item(currentRow(),0)->text() + ".bmp",
-                "PNG files (*.png );;BMP files (*.bmp);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*.*)");
+                cur_tracking_window.absolute_path+"/" + item(currentRow(),0)->text(),
+                "BMP files (*.bmp);;PNG files (*.png );;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*.*)");
         if(filename.isEmpty())
             return;
         cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
@@ -678,7 +678,7 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
         QString filename = QFileDialog::getSaveFileName(
                     this,
                     "Save as",
-                    cur_tracking_window.absolute_path+"/" + item(currentRow(),0)->text() + ".nii",
+                    cur_tracking_window.absolute_path+"/" + item(currentRow(),0)->text(),
                     "NIFTI files (*.nii.gz *.nii);;MAT File (*.mat);;");
         if(filename.isEmpty())
             return;
@@ -694,12 +694,10 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
                 QFileInfo(filename).completeSuffix().toLower() == "nii.gz")
         {
             gz_nifti nii_header;
-            image::flip_xy(tdi);
             nii_header << tdi;
             nii_header.set_voxel_size(vs.begin());
-            std::vector<float> trans;
-            cur_tracking_window.get_nifti_trans(trans);
-            nii_header.set_image_transformation(trans.begin());
+            if(!cur_tracking_window.handle->fib_data.trans_to_mni.empty())
+                nii_header.set_image_transformation(cur_tracking_window.handle->fib_data.trans_to_mni.begin());
             nii_header.save_to_file(filename.toLocal8Bit().begin());
         }
         else

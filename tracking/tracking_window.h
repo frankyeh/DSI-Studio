@@ -54,6 +54,8 @@ public:
 
     void set_tracking_param(float* param,unsigned char* methods);
 
+public:
+    std::auto_ptr<lm3_type> mi3;
 public:// color_bar
     image::color_image bar;
     QGraphicsScene color_bar;
@@ -63,12 +65,8 @@ public:
     QString absolute_path;
     ODFModel* handle;
     FibSliceModel slice;
-    std::auto_ptr<lm3_type> mi3;
-    std::vector<float> trans_to_mni;
     bool slice_no_update;
     bool eventFilter(QObject *obj, QEvent *event);
-    void get_nifti_trans(std::vector<float>& trans);
-    void get_dicom_trans(std::vector<float>& trans);
 public slots:
     void on_SagView_clicked();
     void on_CorView_clicked();
@@ -129,6 +127,7 @@ private slots:
     void on_gl_contrast_value_valueChanged(double arg1);
     void on_actionCalculate_null_distibution_triggered();
     void on_comboBox_currentIndexChanged(int index);
+    void on_actionPlot_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

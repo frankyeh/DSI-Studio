@@ -419,7 +419,7 @@ public:
 public:
     image::geometry<3> dim;
     image::vector<3> vs;
-    const float* trans;
+    std::vector<float> trans_to_mni;
     unsigned int total_size;
 public:
     std::vector<ViewItem> view_item;
@@ -428,7 +428,6 @@ public:
     FibData(void)
     {
         vs[0] = vs[1] = vs[2] = 1.0;
-        trans = 0;
     }
 public:
     bool load_from_file(const char* file_name)
@@ -481,7 +480,29 @@ public:
             }
             if (matrix_name == "mni")
             {
+                const unsigned short* dim_buf = 0;
+                mat_reader.get_matrix("dimension",row,col,dim_buf);
+                if (!dim_buf|| row*col != 3)
+                    return false;
+                const float* trans = 0;
                 mat_reader.get_matrix(index,row,col,trans);
+                trans_to_mni.resize(16);
+                trans_to_mni[15] = 1.0;
+                std::copy(trans,trans+12,trans_to_mni.begin());
+                // this is 1-based transformation, need to change to 0-based and flip xy
+
+                // spm_affine = [1 0 0 -1                   [1 0 0 1
+                //               0 1 0 -1                    0 1 0 1
+                //               0 0 1 -1   * my_affine *    0 0 1 1
+                //               0 0 0 1]                    0 0 0 1]
+                trans_to_mni[3] += trans_to_mni[0];
+                trans_to_mni[7] += trans_to_mni[5];
+                trans_to_mni[11] += trans_to_mni[10];
+
+                trans_to_mni[3] += (dim_buf[0]-1)*std::fabs(trans_to_mni[0]);
+                trans_to_mni[7] += (dim_buf[1]-1)*std::fabs(trans_to_mni[5]);
+                trans_to_mni[0] = -trans_to_mni[0];
+                trans_to_mni[5] = -trans_to_mni[5];
                 continue;
             }
             if (matrix_name == "image")
