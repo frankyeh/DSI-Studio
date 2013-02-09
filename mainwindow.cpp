@@ -281,12 +281,16 @@ void MainWindow::on_FiberTracking_clicked()
         }
         header >> I;
         header.get_image_transformation(trans.begin());
+
         if(header.nif_header.srow_x[0] < 0)
         {
-            image::flip_y(I);
-            for(unsigned int index = 4;index < 8;++index)
-                trans[index] = -trans[index];
-            trans[7] = I.height()-1-trans[7];
+            if(header.nif_header.srow_y[1] > 0)
+            {
+                image::flip_y(I);
+                for(unsigned int index = 4;index < 8;++index)
+                    trans[index] = -trans[index];
+                trans[7] = I.height()-1-trans[7];
+            }
         }
         else
         {

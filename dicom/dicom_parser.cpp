@@ -96,8 +96,11 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
         {
             std::auto_ptr<DwiHeader> new_file(new DwiHeader);
             analyze_header >> new_file->image;
-            if(analyze_header.nif_header.srow_x[0] < 0 || !analyze_header.is_nii)
-                image::flip_y(new_file->image);
+            if(analyze_header.nif_header.srow_x[0] < 0)
+            {
+                if(analyze_header.nif_header.srow_y[1] > 0)
+                    image::flip_y(new_file->image);
+            }
             else
                 image::flip_xy(new_file->image);
 

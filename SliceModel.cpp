@@ -69,10 +69,14 @@ CustomSliceModel::CustomSliceModel(const gz_nifti &volume,
 {
     center_point = center_point_;
     load(volume);
-    if(volume.nif_header.srow_x[0] < 0 || !volume.is_nii)
-        image::flip_y(source_images);
+    if(volume.nif_header.srow_x[0] < 0)
+    {
+        if(volume.nif_header.srow_y[1] > 0)
+            image::flip_y(source_images);
+    }
     else
         image::flip_xy(source_images);
+
 }
 void CustomSliceModel::init(void)
 {

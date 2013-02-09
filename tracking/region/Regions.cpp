@@ -97,10 +97,10 @@ void ROIRegion::SaveToFile(const char* FileName,const std::vector<float>& trans)
 		}
                 gz_nifti header;
                 header.set_voxel_size(vs.begin());
-                header.set_image_transformation(trans.begin());
+                if(!trans.empty())
+                    header.set_image_transformation(trans.begin());
                 // from +x = Left  +y = Posterior +z = Superior
                 // to +x = Right  +y = Anterior +z = Superior
-                image::flip_xy(mask);
                 header << mask;
                 header.save_to_file(FileName);
 	}
@@ -191,8 +191,11 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
         }
         // from +x = Right  +y = Anterior +z = Superior
         // to +x = Left  +y = Posterior +z = Superior
-        if(header.nif_header.srow_x[0] < 0 || !header.is_nii)
-            image::flip_y(from);
+        if(header.nif_header.srow_x[0] < 0)
+        {
+            if(header.nif_header.srow_y[1] > 0)
+                image::flip_y(from);
+        }
         else
             image::flip_xy(from);
         LoadFromBuffer(from);
