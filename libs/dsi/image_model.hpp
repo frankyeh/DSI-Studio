@@ -54,10 +54,12 @@ public:
         mat_reader->get_matrix("voxel_size",row,col,voxel_size);
         if (!voxel_size)
         {
-            error_msg = "Cannot find voxel size matrix";
-            return false;
+            //error_msg = "Cannot find voxel size matrix";
+            //return false;
+            std::fill(voxel.vs.begin(),voxel.vs.end(),3.0);
         }
-        std::copy(voxel_size,voxel_size+3,voxel.vs.begin());
+        else
+            std::copy(voxel_size,voxel_size+3,voxel.vs.begin());
 
         if (!set_dimension(dim_ptr[0],dim_ptr[1],dim_ptr[2]))
         {

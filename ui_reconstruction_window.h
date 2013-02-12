@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Thu Feb 7 23:54:26 2013
+** Created: Tue Feb 12 11:49:40 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -169,7 +169,7 @@ public:
         toolBox->setObjectName(QString::fromUtf8("toolBox"));
         source_page = new QWidget();
         source_page->setObjectName(QString::fromUtf8("source_page"));
-        source_page->setGeometry(QRect(0, 0, 608, 453));
+        source_page->setGeometry(QRect(0, 0, 259, 130));
         verticalLayout_4 = new QVBoxLayout(source_page);
         verticalLayout_4->setObjectName(QString::fromUtf8("verticalLayout_4"));
         splitter = new QSplitter(source_page);
@@ -260,7 +260,7 @@ public:
         toolBox->addItem(source_page, QString::fromUtf8("Source Images"));
         page_3 = new QWidget();
         page_3->setObjectName(QString::fromUtf8("page_3"));
-        page_3->setGeometry(QRect(0, 0, 608, 453));
+        page_3->setGeometry(QRect(0, 0, 534, 146));
         gridLayout_2 = new QGridLayout(page_3);
         gridLayout_2->setObjectName(QString::fromUtf8("gridLayout_2"));
         verticalLayout_5 = new QVBoxLayout();
@@ -395,7 +395,7 @@ public:
         mni_resolution = new QDoubleSpinBox(ResolutionBox);
         mni_resolution->setObjectName(QString::fromUtf8("mni_resolution"));
         mni_resolution->setMaximumSize(QSize(75, 16777215));
-        mni_resolution->setMinimum(0.5);
+        mni_resolution->setMinimum(1);
         mni_resolution->setMaximum(3);
         mni_resolution->setSingleStep(0.1);
         mni_resolution->setValue(2);

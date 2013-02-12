@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Fri Feb 8 00:14:53 2013
+** Created: Tue Feb 12 11:49:40 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -217,8 +217,7 @@ public:
     QComboBox *overlay;
     QHBoxLayout *horizontalLayout_4;
     QFrame *line_7;
-    QToolButton *zoomIn;
-    QToolButton *zoomOut;
+    QDoubleSpinBox *zoom;
     QCheckBox *show_fiber;
     QCheckBox *show_pos;
     QFrame *line_6;
@@ -320,8 +319,9 @@ public:
     QWidget *tab_3;
     QVBoxLayout *verticalLayout_9;
     QHBoxLayout *horizontalLayout_21;
+    QDoubleSpinBox *vbc_threshold;
     QSpacerItem *horizontalSpacer_9;
-    QComboBox *comboBox;
+    QPushButton *vbc_dist_update;
     QCustomPlot *null_dist;
     QWidget *tab_4;
     QVBoxLayout *verticalLayout_6;
@@ -1145,19 +1145,14 @@ public:
 
         horizontalLayout_4->addWidget(line_7);
 
-        zoomIn = new QToolButton(dockWidgetContents);
-        zoomIn->setObjectName(QString::fromUtf8("zoomIn"));
-        zoomIn->setMinimumSize(QSize(22, 0));
-        zoomIn->setMaximumSize(QSize(23, 22));
+        zoom = new QDoubleSpinBox(dockWidgetContents);
+        zoom->setObjectName(QString::fromUtf8("zoom"));
+        zoom->setMinimum(1);
+        zoom->setMaximum(32);
+        zoom->setSingleStep(1);
+        zoom->setValue(8);
 
-        horizontalLayout_4->addWidget(zoomIn);
-
-        zoomOut = new QToolButton(dockWidgetContents);
-        zoomOut->setObjectName(QString::fromUtf8("zoomOut"));
-        zoomOut->setMinimumSize(QSize(22, 0));
-        zoomOut->setMaximumSize(QSize(23, 22));
-
-        horizontalLayout_4->addWidget(zoomOut);
+        horizontalLayout_4->addWidget(zoom);
 
         show_fiber = new QCheckBox(dockWidgetContents);
         show_fiber->setObjectName(QString::fromUtf8("show_fiber"));
@@ -1811,14 +1806,23 @@ public:
         verticalLayout_9->setObjectName(QString::fromUtf8("verticalLayout_9"));
         horizontalLayout_21 = new QHBoxLayout();
         horizontalLayout_21->setObjectName(QString::fromUtf8("horizontalLayout_21"));
+        vbc_threshold = new QDoubleSpinBox(tab_3);
+        vbc_threshold->setObjectName(QString::fromUtf8("vbc_threshold"));
+        vbc_threshold->setMinimum(0.5);
+        vbc_threshold->setMaximum(1);
+        vbc_threshold->setSingleStep(0.05);
+        vbc_threshold->setValue(0.75);
+
+        horizontalLayout_21->addWidget(vbc_threshold);
+
         horizontalSpacer_9 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
         horizontalLayout_21->addItem(horizontalSpacer_9);
 
-        comboBox = new QComboBox(tab_3);
-        comboBox->setObjectName(QString::fromUtf8("comboBox"));
+        vbc_dist_update = new QPushButton(tab_3);
+        vbc_dist_update->setObjectName(QString::fromUtf8("vbc_dist_update"));
 
-        horizontalLayout_21->addWidget(comboBox);
+        horizontalLayout_21->addWidget(vbc_dist_update);
 
 
         verticalLayout_9->addLayout(horizontalLayout_21);
@@ -1965,9 +1969,6 @@ public:
         menu_Edit->addAction(actionPaint);
         menu_Edit->addSeparator();
         menu_Edit->addAction(actionMove_Object);
-        menu_View->addAction(actionZoom_In);
-        menu_View->addAction(actionZoom_Out);
-        menu_View->addSeparator();
         menu_View->addAction(actionSagittal_view);
         menu_View->addAction(actionCoronal_View);
         menu_View->addAction(actionAxial_View);
@@ -2075,11 +2076,11 @@ public:
         actionZoom_Out->setText(QApplication::translate("tracking_window", "Zoom Out&", 0, QApplication::UnicodeUTF8));
         actionZoom_Out->setShortcut(QApplication::translate("tracking_window", "F4", 0, QApplication::UnicodeUTF8));
         actionSagittal_view->setText(QApplication::translate("tracking_window", "&Sagittal View", 0, QApplication::UnicodeUTF8));
-        actionSagittal_view->setShortcut(QApplication::translate("tracking_window", "F5", 0, QApplication::UnicodeUTF8));
+        actionSagittal_view->setShortcut(QApplication::translate("tracking_window", "Z", 0, QApplication::UnicodeUTF8));
         actionCoronal_View->setText(QApplication::translate("tracking_window", "&Coronal View", 0, QApplication::UnicodeUTF8));
-        actionCoronal_View->setShortcut(QApplication::translate("tracking_window", "F6", 0, QApplication::UnicodeUTF8));
+        actionCoronal_View->setShortcut(QApplication::translate("tracking_window", "X", 0, QApplication::UnicodeUTF8));
         actionAxial_View->setText(QApplication::translate("tracking_window", "&Axial View", 0, QApplication::UnicodeUTF8));
-        actionAxial_View->setShortcut(QApplication::translate("tracking_window", "F7", 0, QApplication::UnicodeUTF8));
+        actionAxial_View->setShortcut(QApplication::translate("tracking_window", "C", 0, QApplication::UnicodeUTF8));
         actionQuantitative_anisotropy_QA->setText(QApplication::translate("tracking_window", "Save Quantitative anisotropy (QA)", 0, QApplication::UnicodeUTF8));
         actionMerge_All->setText(QApplication::translate("tracking_window", "Merge All", 0, QApplication::UnicodeUTF8));
         actionSave_Screen->setText(QApplication::translate("tracking_window", "Save 3D Screen...", 0, QApplication::UnicodeUTF8));
@@ -2223,8 +2224,6 @@ public:
         overlay->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "No overlay", 0, QApplication::UnicodeUTF8)
         );
-        zoomIn->setText(QApplication::translate("tracking_window", "+", 0, QApplication::UnicodeUTF8));
-        zoomOut->setText(QApplication::translate("tracking_window", "-", 0, QApplication::UnicodeUTF8));
         show_fiber->setText(QApplication::translate("tracking_window", "Fibers", 0, QApplication::UnicodeUTF8));
         show_pos->setText(QApplication::translate("tracking_window", "Pos", 0, QApplication::UnicodeUTF8));
         label_6->setText(QApplication::translate("tracking_window", "Contrast", 0, QApplication::UnicodeUTF8));
@@ -2325,17 +2324,7 @@ public:
         vbc_open_subject->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
         label_14->setText(QApplication::translate("tracking_window", "FDR:", 0, QApplication::UnicodeUTF8));
         tabWidget->setTabText(tabWidget->indexOf(tab_5), QApplication::translate("tracking_window", "Individual Analysis", 0, QApplication::UnicodeUTF8));
-        comboBox->clear();
-        comboBox->insertItems(0, QStringList()
-         << QApplication::translate("tracking_window", "20%", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("tracking_window", "30%", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("tracking_window", "40%", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("tracking_window", "50%", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("tracking_window", "60%", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("tracking_window", "70%", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("tracking_window", "80%", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("tracking_window", "90%", 0, QApplication::UnicodeUTF8)
-        );
+        vbc_dist_update->setText(QApplication::translate("tracking_window", "Calculate Distribution", 0, QApplication::UnicodeUTF8));
         tabWidget->setTabText(tabWidget->indexOf(tab_3), QApplication::translate("tracking_window", "Distribution ", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem = subject_list->horizontalHeaderItem(0);
         ___qtablewidgetitem->setText(QApplication::translate("tracking_window", "Subject ID", 0, QApplication::UnicodeUTF8));
