@@ -103,6 +103,10 @@ void slice_view_scene::show_slice(void)
                 threshold = 0.00000001;
             int X,Y,Z;
             float r = display_ratio /  3.0;
+            float pen_w = display_ratio /  5.0;
+            const char dir_x[3] = {1,0,0};
+            const char dir_y[3] = {2,2,1};
+
             for (unsigned int y = 0; y < slice_image.height(); ++y)
                 for (unsigned int x = 0; x < slice_image.width(); ++x)
                     if (cur_tracking_window.slice.get3dPosition(x, y, X, Y, Z))
@@ -113,14 +117,11 @@ void slice_view_scene::show_slice(void)
                             if(fa[fiber] > threshold)
                             {
                                 float* dir_ptr = dir + fiber + fiber + fiber;
-                                float dx, dy;
                                 QPen pen(QColor(std::abs(dir_ptr[0]) * 255.0,std::abs(dir_ptr[1]) * 255.0, std::abs(dir_ptr[2]) * 255.0));
-                                pen.setWidthF(display_ratio/5.0);
+                                pen.setWidthF(pen_w);
                                 painter.setPen(pen);
-                                const char dir_x[3] = {1,0,0};
-                                const char dir_y[3] = {2,2,1};
-                                dx = r * dir[dir_x[cur_tracking_window.slice.cur_dim]] + 0.5;
-                                dy = r * dir[dir_y[cur_tracking_window.slice.cur_dim]] + 0.5;
+                                float dx = r * dir_ptr[dir_x[cur_tracking_window.slice.cur_dim]] + 0.5;
+                                float dy = r * dir_ptr[dir_y[cur_tracking_window.slice.cur_dim]] + 0.5;
                                 painter.drawLine(
                                     display_ratio*((float)x + 0.5) - dx,
                                     display_ratio*((float)y + 0.5) - dy,
