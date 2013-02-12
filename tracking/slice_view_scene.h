@@ -10,14 +10,12 @@ class slice_view_scene : public QGraphicsScene
 {
     Q_OBJECT
 public:
-    slice_view_scene(tracking_window& cur_tracking_window_,ODFModel* handle_):
-        display_ratio(8.0),sel_mode(0),mid_down(false),
+    slice_view_scene(tracking_window& cur_tracking_window_,ODFModel* handle_):sel_mode(0),mid_down(false),
             cur_tracking_window(cur_tracking_window_),
             handle(handle_),statusbar(0)
     {
 
     }
-    double display_ratio;
     unsigned char sel_mode;
     QStatusBar* statusbar;
 private:
@@ -36,7 +34,6 @@ private:
     int cX, cY;
 
     QImage view_image;
-    void show_fiber(QPainter& painter,float* dir, unsigned int x, unsigned int y);
     void show_ruler(QPainter& painter);
     // update cursor info
 protected:
@@ -46,8 +43,6 @@ protected:
     void mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent );
 public slots:
     void show_slice();
-    void zoom_in();
-    void zoom_out();
     void catch_screen();
     void copyClipBoard();
     void center();

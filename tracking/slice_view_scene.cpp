@@ -11,23 +11,6 @@
 #include "region/regiontablewidget.h"
 #include "libs/gzip_interface.hpp"
 
-void slice_view_scene::show_fiber(QPainter& painter,float* dir, unsigned int x, unsigned int y)
-{
-    float r = display_ratio / 3;
-    float dx, dy;
-    QPen pen(QColor(std::abs(dir[0]) * 255.0,std::abs(dir[1]) * 255.0, std::abs(dir[2]) * 255.0));
-    pen.setWidthF(display_ratio/5.0);
-    painter.setPen(pen);
-    const char dir_x[3] = {1,0,0};
-    const char dir_y[3] = {2,2,1};
-    dx = r * dir[dir_x[cur_tracking_window.slice.cur_dim]] + 0.5;
-    dy = r * dir[dir_y[cur_tracking_window.slice.cur_dim]] + 0.5;
-    painter.drawLine(
-        display_ratio*((float)x + 0.5) - dx,
-        display_ratio*((float)y + 0.5) - dy,
-        display_ratio*((float)x + 0.5) + dx,
-        display_ratio*((float)y + 0.5) + dy);
-}
 void slice_view_scene::show_ruler(QPainter& paint)
 {
     if(sel_mode != 6 || sel_point.size() < 2)
@@ -54,7 +37,7 @@ void slice_view_scene::show_ruler(QPainter& paint)
         image::vector<2,float> to(tX,tY);
         from -= to;
         float pixel_length = from.length();
-        from /= display_ratio;
+        from /= cur_tracking_window.ui->zoom->value();
         from[0] *= cur_tracking_window.handle->fib_data.vs[0];
         from[1] *= cur_tracking_window.handle->fib_data.vs[1];
         from[2] *= cur_tracking_window.handle->fib_data.vs[2];
@@ -96,6 +79,7 @@ void slice_view_scene::show_ruler(QPainter& paint)
 
 void slice_view_scene::show_slice(void)
 {
+    float display_ratio = cur_tracking_window.ui->zoom->value();
     float contrast = cur_tracking_window.ui->contrast->value()/100.0;
     float offset = cur_tracking_window.ui->offset->value()/100.0;
     if(cur_tracking_window.ui->view_style->currentIndex() == 0)// single slice
@@ -118,31 +102,32 @@ void slice_view_scene::show_slice(void)
             if (threshold == 0.0)
                 threshold = 0.00000001;
             int X,Y,Z;
-
-
+            float r = display_ratio /  3.0;
             for (unsigned int y = 0; y < slice_image.height(); ++y)
                 for (unsigned int x = 0; x < slice_image.width(); ++x)
                     if (cur_tracking_window.slice.get3dPosition(x, y, X, Y, Z))
                     {
                         if (!tracking_get_voxel_dir(handle, X, Y, Z,fa, dir))
                             continue;
-                        //if (TrackForm->ShowAllFiber->Checked)
                         for (char fiber = 2; fiber >= 0; --fiber)
                             if(fa[fiber] > threshold)
-                                show_fiber(painter,dir + fiber + fiber + fiber, x, y);
-                        /*
-                        else if (TrackForm->Show1stFiber->Checked && fa[0] >
-                                threshold)
-                                showFiber(dir, x, y);
-                        else if (TrackForm->Show2ndFiber->Checked && fa[1] >
-                                threshold)
-                                showFiber(dir + 3, x, y);
-                        else if (TrackForm->Show3rdFiber->Checked && fa[2] >
-                                threshold)
-                                showFiber(dir + 6, x, y);*/
+                            {
+                                float* dir_ptr = dir + fiber + fiber + fiber;
+                                float dx, dy;
+                                QPen pen(QColor(std::abs(dir_ptr[0]) * 255.0,std::abs(dir_ptr[1]) * 255.0, std::abs(dir_ptr[2]) * 255.0));
+                                pen.setWidthF(display_ratio/5.0);
+                                painter.setPen(pen);
+                                const char dir_x[3] = {1,0,0};
+                                const char dir_y[3] = {2,2,1};
+                                dx = r * dir[dir_x[cur_tracking_window.slice.cur_dim]] + 0.5;
+                                dy = r * dir[dir_y[cur_tracking_window.slice.cur_dim]] + 0.5;
+                                painter.drawLine(
+                                    display_ratio*((float)x + 0.5) - dx,
+                                    display_ratio*((float)y + 0.5) - dy,
+                                    display_ratio*((float)x + 0.5) + dx,
+                                    display_ratio*((float)y + 0.5) + dy);
+                            }
                     }
-            // draw slice position lines
-
         }
 
         if(cur_tracking_window.ui->show_pos->checkState() == Qt::Checked)
@@ -296,8 +281,8 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 
     int x, y, z;
 
-    cur_tracking_window.slice.get3dPosition(((float)X) / display_ratio,
-                                            ((float)Y) / display_ratio, x, y, z);
+    cur_tracking_window.slice.get3dPosition(((float)X) / cur_tracking_window.ui->zoom->value(),
+                                            ((float)Y) / cur_tracking_window.ui->zoom->value(), x, y, z);
     if(sel_mode == 5)// move object
     {
         bool find_region = false;
@@ -361,8 +346,8 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     cY = Y;
     int x, y, z;
     if (!mouse_down || sel_mode == 4 ||
-        !cur_tracking_window.slice.get3dPosition(((float)cX) / display_ratio,
-                            ((float)cY) / display_ratio, x, y, z))
+        !cur_tracking_window.slice.get3dPosition(((float)cX) / cur_tracking_window.ui->zoom->value(),
+                            ((float)cY) / cur_tracking_window.ui->zoom->value(), x, y, z))
         return;
 
     if(sel_mode == 5 && !cur_tracking_window.regionWidget->regions.empty()) // move object
@@ -510,7 +495,9 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
             paint.setBrush(Qt::white);
             std::vector<QPoint> qpoints(sel_point.size());
             for(unsigned int index = 0;index < sel_point.size();++index)
-                qpoints[index] = QPoint(sel_point[index][0]/display_ratio,sel_point[index][1]/display_ratio);
+                qpoints[index] = QPoint(
+                            sel_point[index][0]/cur_tracking_window.ui->zoom->value(),
+                            sel_point[index][1]/cur_tracking_window.ui->zoom->value());
             paint.drawPolygon(&*qpoints.begin(),qpoints.size() - 1);
             int x, y, z;
             for (image::pixel_index<2>index; index.valid(slice_image.geometry());
@@ -602,19 +589,6 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     need_update();
 }
 
-void slice_view_scene::zoom_in(void)
-{
-    display_ratio += 1.0;
-    show_slice();
-    center();
-}
-
-void slice_view_scene::zoom_out(void)
-{
-    display_ratio = std::max(1.0,display_ratio-1.0);
-    show_slice();
-    center();
-}
 void slice_view_scene::center()
 {
     QList<QGraphicsView*> views = this->views();
