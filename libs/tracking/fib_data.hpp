@@ -478,31 +478,12 @@ public:
                     vs[0] = vs[1] = vs[2] = 2.0;
                 continue;
             }
-            if (matrix_name == "mni")
+            if (matrix_name == "trans")
             {
-                const unsigned short* dim_buf = 0;
-                mat_reader.get_matrix("dimension",row,col,dim_buf);
-                if (!dim_buf|| row*col != 3)
-                    return false;
                 const float* trans = 0;
                 mat_reader.get_matrix(index,row,col,trans);
                 trans_to_mni.resize(16);
-                trans_to_mni[15] = 1.0;
-                std::copy(trans,trans+12,trans_to_mni.begin());
-                // this is 1-based transformation, need to change to 0-based and flip xy
-
-                // spm_affine = [1 0 0 -1                   [1 0 0 1
-                //               0 1 0 -1                    0 1 0 1
-                //               0 0 1 -1   * my_affine *    0 0 1 1
-                //               0 0 0 1]                    0 0 0 1]
-                trans_to_mni[3] += trans_to_mni[0];
-                trans_to_mni[7] += trans_to_mni[5];
-                trans_to_mni[11] += trans_to_mni[10];
-
-                trans_to_mni[3] += (dim_buf[0]-1)*std::fabs(trans_to_mni[0]);
-                trans_to_mni[7] += (dim_buf[1]-1)*std::fabs(trans_to_mni[5]);
-                trans_to_mni[0] = -trans_to_mni[0];
-                trans_to_mni[5] = -trans_to_mni[5];
+                std::copy(trans,trans+16,trans_to_mni.begin());
                 continue;
             }
             if (matrix_name == "image")

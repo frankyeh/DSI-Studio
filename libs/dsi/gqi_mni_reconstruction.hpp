@@ -37,6 +37,10 @@ protected:
     image::vector<3,int> bounding_box_upper;
     image::vector<3,int> des_offset;// = {6,7,11};	// the offset due to bounding box
     image::vector<3,double> scale;
+    double trans_to_mni[16];
+protected:
+    image::vector<3,int> csf_pos[2];
+    float csf_dif;
 
 protected:
     double r2_base_function(double theta)
@@ -128,8 +132,8 @@ public:
         }
         image::basic_image<float,3> VFF(VG.geometry());
         image::resample(VF,VFF,affine);
-        VFF.save_to_file<image::io::nifti<> >("VFF.nii");
-        VG.save_to_file<image::io::nifti<> >("VG.nii");
+        //VFF.save_to_file<image::io::nifti<> >("VFF.nii");
+        //VG.save_to_file<image::io::nifti<> >("VG.nii");
         {
             switch(voxel.reg_method)
             {
@@ -142,23 +146,21 @@ public:
             }
 
             //calculate the goodness of fit
-            std::vector<float> x,y;
-            x.reserve(VG.size());
-            y.reserve(VG.size());
-            image::interpolation<image::linear_weighting,3> trilinear_interpolation;
-            for(image::pixel_index<3> index;VG.geometry().is_valid(index);
-                    index.next(VG.geometry()))
-                if(VG[index.index()] != 0)
+            std::vector<float> y(VG.size());
+            for(image::pixel_index<3> index;VG.geometry().is_valid(index);index.next(VG.geometry()))
+                if(fa_template_imp.I[index.index()] > 0.0)
                 {
                     image::vector<3,double> pos;
                     mni.warp_coordinate(index,pos);
-                    double value = 0.0;
-                    if(!trilinear_interpolation.estimate(VFF,pos,value))
-                        continue;
-                    x.push_back(VG[index.index()]);
-                    y.push_back(value);
+                    image::linear_estimate(VFF,pos,y[index.index()]);
                 }
-            R2 = x.empty() ? 0.0 : image::correlation(x.begin(),x.end(),y.begin());
+
+            //std::copy(y.begin(),y.end(),VFF.begin());
+            //VFF.save_to_file<image::io::nifti<> >("VFF.nii");
+            //VG.save_to_file<image::io::nifti<> >("VG.nii");
+            //fa_template_imp.I.save_to_file<image::io::nifti<> >("I.nii");
+
+            R2 = image::correlation(VG.begin(),VG.end(),y.begin());
             R2 *= R2;
             std::cout << "R2 = " << R2 << std::endl;
         }
@@ -179,12 +181,30 @@ public:
             des_geo[0] = (bounding_box_upper[0]-bounding_box_lower[0])/voxel_size+1;//79
             des_geo[1] = (bounding_box_upper[1]-bounding_box_lower[1])/voxel_size+1;//95
             des_geo[2] = (bounding_box_upper[2]-bounding_box_lower[2])/voxel_size+1;//69
-            des_offset[0] = bounding_box_lower[0]/VGvs[0]-fa_template_imp.tran[3]/fa_template_imp.tran[0];
-            des_offset[1] = bounding_box_lower[1]/VGvs[1]-fa_template_imp.tran[7]/fa_template_imp.tran[5];
-            des_offset[2] = bounding_box_lower[2]/VGvs[2]-fa_template_imp.tran[11]/fa_template_imp.tran[10];
+
+            // DSI Studio use radiology convention, the MNI coordinate of the x and y are flipped
+            des_offset[0] = (fa_template_imp.I.width()-1)*VGvs[0]+fa_template_imp.tran[3]-bounding_box_upper[0];
+            des_offset[1] = (fa_template_imp.I.height()-1)*VGvs[1]+fa_template_imp.tran[7]-bounding_box_upper[1];
+            des_offset[2] = bounding_box_lower[2]-fa_template_imp.tran[11];
+
+            // units in template space
+            des_offset[0] /= VGvs[0];
+            des_offset[1] /= VGvs[1];
+            des_offset[2] /= VGvs[2];
+
             scale[0] = voxel_size/VGvs[0];
             scale[1] = voxel_size/VGvs[1];
             scale[2] = voxel_size/VGvs[2];
+
+            // setup transformation matrix
+            std::fill(trans_to_mni,trans_to_mni+16,0.0);
+            trans_to_mni[15] = 1.0;
+            trans_to_mni[0] = -voxel_size;
+            trans_to_mni[5] = -voxel_size;
+            trans_to_mni[10] = voxel_size;
+            trans_to_mni[3] = bounding_box_upper[0];
+            trans_to_mni[7] = bounding_box_upper[1];
+            trans_to_mni[11] = bounding_box_lower[2];
         }
 
         begin_prog("q-space diffeomorphic reconstruction");
@@ -197,14 +217,17 @@ public:
             voxel.image_model->set_dimension(des_geo[0],des_geo[1],des_geo[2]);
             for(image::pixel_index<3> index;des_geo.is_valid(index);index.next(des_geo))
             {
-                image::vector<3,int> mni_pos(index);
+                image::vector<3,float> mni_pos(index);
                 mni_pos *= voxel.param[1];
                 mni_pos[0] /= VGvs[0];
                 mni_pos[1] /= VGvs[1];
                 mni_pos[2] /= VGvs[2];
                 mni_pos += des_offset;
                 voxel.image_model->mask[index.index()] =
-                        fa_template_imp.I.at(mni_pos[0],mni_pos[1],mni_pos[2]) > 0.0? 1: 0;
+                        fa_template_imp.I.at(
+                            std::floor(mni_pos[0]+0.5),
+                            std::floor(mni_pos[1]+0.5),
+                            std::floor(mni_pos[2]+0.5)) > 0.0? 1: 0;
             }
         }
 
@@ -228,7 +251,6 @@ public:
             ptr_images.push_back(point_image_type((const unsigned short*)voxel.image_model->dwi_data[index],src_geo));
 
 
-        voxel.qa_scaling = voxel.reponse_function_scaling/voxel.vs[0]/voxel.vs[1]/voxel.vs[2];
         max_accumulated_qa = 0;
 
         std::fill(voxel.vs.begin(),voxel.vs.end(),voxel.param[1]);
@@ -251,6 +273,21 @@ public:
         angle_variance *= angle_variance;
         angle_variance *= 2.0;
 
+
+        csf_pos[0] = mni_to_voxel_index(6,0,18);
+        csf_pos[1] = mni_to_voxel_index(-6,0,18);
+        voxel.z0 = 0.0;
+    }
+
+    image::vector<3,int> mni_to_voxel_index(int x,int y,int z) const
+    {
+        x = bounding_box_upper[0]-x;
+        y = bounding_box_upper[1]-y;
+        z -= bounding_box_lower[2];
+        x /= scale[0];
+        y /= scale[1];
+        z /= scale[2];
+        return image::vector<3,int>(x,y,z);
     }
 
     void get_jacobian(const image::vector<3,double>& pos,float jacobian[9])
@@ -300,6 +337,8 @@ public:
         pos[1] *= scale[1];
         pos[2] *= scale[2];
         pos += des_offset;
+        pos += 0.5;
+        pos.floor();
         mni.warp_coordinate(pos,Jpos);
         affine(Jpos.begin());
         if(!trilinear_interpolation.get_location(src_geo,Jpos))
@@ -339,6 +378,17 @@ public:
                                         math::dyndim(data.odf.size(),data.space.size()));
         }
 
+        // perform csf cross-subject normalization
+        {
+            image::vector<3,int> cur_pos(image::pixel_index<3>(data.voxel_index,des_geo));
+            if((cur_pos-csf_pos[0]).length() <= 2.0/scale[0] || (cur_pos-csf_pos[1]).length() <= 2.0/scale[0])
+            {
+                float odf_dif = *std::min_element(data.odf.begin(),data.odf.end());
+                if(odf_dif > voxel.z0)
+                    voxel.z0 = odf_dif;
+            }
+        }
+
         jdet[data.voxel_index] = std::abs(math::matrix_determinant(jacobian,math::dim<3,3>())*voxel_volume_scale);
         std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 *= jdet[data.voxel_index]);
         float accumulated_qa = std::accumulate(data.odf.begin(),data.odf.end(),0.0);
@@ -350,17 +400,11 @@ public:
     }
     virtual void end(Voxel& voxel,MatFile& mat_writer)
     {
-        mat_writer.add_matrix("free_water_quantity",&voxel.qa_scaling,1,1);
+        if(voxel.z0 == 0.0)
+            voxel.z0 = 1.0;
+        mat_writer.add_matrix("z0",&voxel.z0,1,1);
         mat_writer.add_matrix("jdet",&*jdet.begin(),1,jdet.size());
-        double trans_to_mni[16];
-        std::fill(trans_to_mni,trans_to_mni+16,0.0);
-        trans_to_mni[0] = scale[0];
-        trans_to_mni[5] = scale[1];
-        trans_to_mni[10] = scale[2];
-        trans_to_mni[3] = bounding_box_lower[0]-scale[0];
-        trans_to_mni[7] = bounding_box_lower[1]-scale[1];
-        trans_to_mni[11] = bounding_box_lower[2]-scale[2];
-        mat_writer.add_matrix("mni",&*trans_to_mni,4,3);
+        mat_writer.add_matrix("trans",&*trans_to_mni,4,4);
         mat_writer.add_matrix("R2",&R2,1,1);
     }
 
