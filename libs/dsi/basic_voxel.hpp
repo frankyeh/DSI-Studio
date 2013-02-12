@@ -71,7 +71,7 @@ public:
     unsigned char reg_method;// used in QSDR
     image::transformation_matrix<3,float> qsdr_trans;
 public:
-    float qa_scaling;
+    float z0;
     // other information for second pass processing
     std::vector<float> response_function,free_water_diffusion;
     image::basic_image<float,3> qa_map,fa_map;

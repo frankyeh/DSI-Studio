@@ -127,7 +127,7 @@ public:
             for (unsigned int index = 0;index < odf_data.size();++index)
             {
                 if (!voxel.odf_deconvolusion)
-                    std::for_each(odf_data[index].begin(),odf_data[index].end(),boost::lambda::_1 /= voxel.qa_scaling);
+                    std::for_each(odf_data[index].begin(),odf_data[index].end(),boost::lambda::_1 /= voxel.z0);
                 std::ostringstream out;
                 out << "odf" << index;
                 mat_writer.add_matrix(out.str().c_str(),&*odf_data[index].begin(),
@@ -182,7 +182,7 @@ public:
     }
     virtual void run(Voxel& voxel,VoxelData& data)
     {
-        std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 /= voxel.qa_scaling);
+        std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 /= voxel.z0);
         unsigned int odf_index = odf_index_map[data.voxel_index];
         image::add(voxel.template_odfs[odf_index/odf_block_size].begin() + (odf_index%odf_block_size)*(voxel.ti.half_vertices_count),
                    voxel.template_odfs[odf_index/odf_block_size].begin() + (odf_index%odf_block_size+1)*(voxel.ti.half_vertices_count),
@@ -201,7 +201,7 @@ public:
     virtual void init(Voxel& voxel)
     {
         //voxel.qa_scaling must be 1
-        voxel.qa_scaling = 1.0;
+        voxel.z0 = 1.0;
         index_mapping1.resize(voxel.image_model->mask.size());
         index_mapping2.resize(voxel.image_model->mask.size());
         int voxel_index = 0;
@@ -324,14 +324,13 @@ public:
 
         if(!voxel.odf_deconvolusion)
         {
-            voxel.qa_scaling = *std::max_element(iso.begin(),iso.end());
-            mat_writer.add_matrix("qa_scaling",&voxel.qa_scaling,1,1);
-            if (voxel.qa_scaling + 1.0 != 1.0)
-                std::for_each(iso.begin(),iso.end(),boost::lambda::_1 /= voxel.qa_scaling);
+            mat_writer.add_matrix("z0",&voxel.z0,1,1);
+            if (voxel.z0 + 1.0 != 1.0)
+                std::for_each(iso.begin(),iso.end(),boost::lambda::_1 /= voxel.z0);
             mat_writer.add_matrix("iso",&*iso.begin(),1,iso.size());
-            if (voxel.qa_scaling + 1.0 != 1.0)
+            if (voxel.z0 + 1.0 != 1.0)
                 for (unsigned int i = 0;i < voxel.max_fiber_number;++i)
-                    std::for_each(fa[i].begin(),fa[i].end(),boost::lambda::_1 /= voxel.qa_scaling);
+                    std::for_each(fa[i].begin(),fa[i].end(),boost::lambda::_1 /= voxel.z0);
             // cellularity
             int max_fa_index = std::max_element(fa[0].begin(),fa[0].end())-fa[0].begin();
             float ratio = iso[max_fa_index]/fa[0][max_fa_index];
@@ -521,6 +520,22 @@ public:
             data.dir_index[index] = iter->second;
             data.fa[index] = iter->first - data.min_odf;
         }
+    }
+};
+
+struct ScaleZ0ToMinODF : public BaseProcess
+{
+    float max_min_odf;
+public:
+    virtual void init(Voxel& voxel)
+    {
+        voxel.z0 = 0.0;
+    }
+
+    virtual void run(Voxel& voxel,VoxelData& data)
+    {
+        if(data.min_odf > voxel.z0)
+            voxel.z0 = data.min_odf;
     }
 };
 

@@ -38,6 +38,7 @@ struct odf_reco_type{
         ODFDeconvolusion,
         ODFDecomposition,
         DetermineFiberDirections,
+        ScaleZ0ToMinODF,
         SaveFA,
         SaveDirIndex,
         OutputODF
@@ -321,7 +322,7 @@ bool output_odfs(const image::basic_image<unsigned char,3>& mni_mask,
     image_model.voxel.odf_deconvolusion = false;
     image_model.voxel.half_sphere = false;
     image_model.voxel.max_fiber_number = 3;
-    image_model.voxel.qa_scaling = 1;
+    image_model.voxel.z0 = 1;
     image_model.voxel.need_odf = record_odf;
     image_model.voxel.template_odfs.swap(odfs);
     image_model.voxel.param = mni;
