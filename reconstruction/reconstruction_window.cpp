@@ -68,8 +68,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     load_b_table();
 
-    if(filenames.size() == 1)
-        ui->QSDRT->hide();
     switch(settings.value("rec_method_id",4).toInt())
     {
     case 0:
@@ -88,13 +86,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui->QDif->setChecked(true);
         on_QDif_toggled(true);
         break;
-    case 8:
-        if(filenames.size() != 1)
-        {
-            ui->QSDRT->setChecked(true);
-            on_QSDRT_toggled(true);
-            break;
-        }
     default:
         ui->GQI->setChecked(true);
         on_GQI_toggled(true);
@@ -103,9 +94,8 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     ui->ThreadCount->setCurrentIndex(settings.value("rec_thread_count",0).toInt());
     ui->RecordODF->setChecked(settings.value("rec_record_odf",0).toInt());
-    ui->ODFSharpening->setCurrentIndex(settings.value("rec_odf_sharpening",0).toInt());
-    ui->Decomposition->setCurrentIndex(settings.value("rec_odf_decomposition",0).toInt());
-    ui->decom_m->setValue(settings.value("rec_decom_m",10).toInt());
+
+
     ui->HalfSphere->setChecked(settings.value("rec_half_sphere",0).toInt());
     ui->NumOfFibers->setValue(settings.value("rec_num_fiber",5).toInt());
     ui->ODFDef->setCurrentIndex(settings.value("rec_gqi_def",0).toInt());
@@ -115,11 +105,14 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->regularization_param->setValue(settings.value("rec_qbi_reg",0.006).toDouble());
     ui->SHOrder->setValue(settings.value("rec_qbi_sh_order",8).toInt());
     ui->hamming_filter->setValue(settings.value("rec_hamming_filter",17).toDouble());
-    ui->SharpeningParam->setValue(settings.value("rec_deconvolution_param",3.0).toDouble());
+
+    ui->odf_sharpening->setCurrentIndex(settings.value("rec_odf_sharpening",0).toInt());
+    ui->decon_param->setValue(settings.value("rec_deconvolution_param",3.0).toDouble());
+    ui->decom_m->setValue(settings.value("rec_decom_m",10).toInt());
 
     ui->mni_resolution->setValue(settings.value("rec_mni_resolution",2.0).toDouble());
 
-
+    on_odf_sharpening_currentIndexChanged(ui->odf_sharpening->currentIndex());
     connect(ui->z_pos,SIGNAL(sliderMoved(int)),this,SLOT(on_b_table_itemSelectionChanged()));
     connect(ui->contrast,SIGNAL(sliderMoved(int)),this,SLOT(on_b_table_itemSelectionChanged()));
     connect(ui->brightness,SIGNAL(sliderMoved(int)),this,SLOT(on_b_table_itemSelectionChanged()));
@@ -199,14 +192,14 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
         return;
     }
 
-    if (ui->ODFSharpening->currentIndex() > 0 && method_id != 1) // not DTI
+    if (ui->odf_sharpening->currentIndex() == 1 && method_id != 1) // deconvolution
     {
-        params[2] = ui->SharpeningParam->value();
+        params[2] = ui->decon_param->value();
         settings.setValue("rec_deconvolution_param",params[2]);
     }
-    if (ui->Decomposition->currentIndex() > 0 && method_id != 1) // not DTI
+    if (ui->odf_sharpening->currentIndex() == 2 && method_id != 1) // decomposition
     {
-        params[3] = ui->decompose_fraction->value();
+        params[3] = ui->decom_fraction->value();
         params[4] = ui->decom_m->value();
         settings.setValue("rec_decomposition_param",params[3]);
         settings.setValue("rec_decom_m",params[4]);
@@ -217,8 +210,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     settings.setValue("rec_method_id",method_id);
     settings.setValue("rec_thread_count",ui->ThreadCount->currentIndex());
     settings.setValue("rec_record_odf",ui->RecordODF->isChecked() ? 1 : 0);
-    settings.setValue("rec_odf_sharpening",ui->ODFSharpening->currentIndex());
-    settings.setValue("rec_odf_decomposition",ui->Decomposition->currentIndex());
+    settings.setValue("rec_odf_sharpening",ui->odf_sharpening->currentIndex());
     settings.setValue("rec_half_sphere",ui->HalfSphere->isChecked() ? 1 : 0);
     settings.setValue("rec_num_fiber",ui->NumOfFibers->value());
     settings.setValue("rec_gqi_def",ui->ODFDef->currentIndex());
@@ -230,8 +222,8 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->thread_count = ui->ThreadCount->currentIndex() + 1;
     handle->voxel.ti.init(odf_order[ui->ODFDim->currentIndex()]);
     handle->voxel.need_odf = ui->RecordODF->isChecked() ? 1 : 0;
-    handle->voxel.odf_deconvolusion = ui->ODFSharpening->currentIndex() >= 1 ? 1 : 0;
-    handle->voxel.odf_decomposition = ui->Decomposition->currentIndex() >= 1 ? 1 : 0;
+    handle->voxel.odf_deconvolusion = ui->odf_sharpening->currentIndex() == 1 ? 1 : 0;
+    handle->voxel.odf_decomposition = ui->odf_sharpening->currentIndex() == 2 ? 1 : 0;
     handle->voxel.odf_xyz[0] = ui->x->value();
     handle->voxel.odf_xyz[1] = ui->y->value();
     handle->voxel.odf_xyz[2] = ui->z->value();
@@ -381,26 +373,15 @@ void reconstruction_window::on_doDTI_clicked()
             doReconstruction(3,index+1 == filenames.size());
         }
         else
-        if(ui->GQI->isChecked() || ui->QDif->isChecked() || ui->QSDRT->isChecked())
+        if(ui->GQI->isChecked() || ui->QDif->isChecked())
         {
             params[0] = ui->diffusion_sampling->value();
             settings.setValue("rec_gqi_sampling",ui->diffusion_sampling->value());
-            if(ui->QDif->isChecked() || ui->QSDRT->isChecked())
+            if(ui->QDif->isChecked())
             {
                 params[1] = ui->mni_resolution->value();
                 settings.setValue("rec_mni_resolution",params[1]);
-                if(ui->QSDRT->isChecked())
-                {
-                    handle->voxel.template_file_name = (QFileInfo(filenames[0]).absolutePath() + "/atlas").toLocal8Bit().begin();
-                    handle->voxel.file_list.clear();
-                    for(int index = 0;index < filenames.size();++index)
-                        handle->voxel.file_list.push_back(filenames[index].toLocal8Bit().begin());
-                    doReconstruction(8,true);
-                    return;
-                }
-                else
-                    doReconstruction(7,index+1 == filenames.size());
-
+                doReconstruction(7,index+1 == filenames.size());
             }
             else
                 doReconstruction(4,index+1 == filenames.size());
@@ -455,31 +436,6 @@ void reconstruction_window::on_QDif_toggled(bool checked)
     ui->GQIOption_2->setVisible(checked);
 }
 
-void reconstruction_window::on_QSDRT_toggled(bool checked)
-{
-    ui->ResolutionBox->setVisible(checked);
-    ui->OptionGroupBox->setVisible(checked);
-    ui->DSIOption_2->setVisible(!checked);
-    ui->QBIOption_2->setVisible(!checked);
-    ui->GQIOption_2->setVisible(checked);
-}
-
-void reconstruction_window::on_ODFSharpening_currentIndexChanged(int index)
-{
-    if(ui->ODFSharpening->currentIndex() == 1 && ui->Decomposition->currentIndex() == 1)
-        ui->Decomposition->setCurrentIndex(0);
-    ui->xyz_widget->setVisible(ui->ODFSharpening->currentIndex() ||
-                               ui->Decomposition->currentIndex());
-}
-
-void reconstruction_window::on_Decomposition_currentIndexChanged(int index)
-{
-    if(ui->ODFSharpening->currentIndex() == 1 && ui->Decomposition->currentIndex() == 1)
-        ui->ODFSharpening->setCurrentIndex(0);
-    ui->xyz_widget->setVisible(ui->ODFSharpening->currentIndex() ||
-                               ui->Decomposition->currentIndex());
-
-}
 
 void reconstruction_window::on_remove_background_clicked()
 {
@@ -526,4 +482,11 @@ void reconstruction_window::on_manual_reg_clicked()
     std::auto_ptr<manual_alignment> manual(new manual_alignment(this,image,fa_template_imp.I,arg));
     if(manual->exec() == QDialog::Accepted)
         handle->voxel.qsdr_trans = manual->affine;
+}
+
+void reconstruction_window::on_odf_sharpening_currentIndexChanged(int index)
+{
+    ui->xyz_widget->setVisible(ui->odf_sharpening->currentIndex() > 0);
+    ui->decom_panel->setVisible(ui->odf_sharpening->currentIndex() == 2);
+    ui->decon_param->setVisible(ui->odf_sharpening->currentIndex() == 1);
 }

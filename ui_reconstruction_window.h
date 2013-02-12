@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Tue Feb 12 11:49:40 2013
+** Created: Tue Feb 12 14:54:28 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -84,7 +84,6 @@ public:
     QRadioButton *QBI;
     QRadioButton *GQI;
     QRadioButton *QDif;
-    QRadioButton *QSDRT;
     QGroupBox *ResolutionBox;
     QGridLayout *gridLayout_3;
     QHBoxLayout *horizontalLayout_8;
@@ -113,18 +112,21 @@ public:
     QComboBox *ODFDef;
     QGroupBox *OptionGroupBox;
     QGridLayout *gridLayout;
+    QCheckBox *RecordODF;
+    QCheckBox *HalfSphere;
+    QHBoxLayout *horizontalLayout_14;
+    QLabel *label_16;
+    QWidget *decom_panel;
+    QHBoxLayout *horizontalLayout_5;
+    QLabel *label_12;
+    QDoubleSpinBox *decom_fraction;
+    QLabel *label_11;
+    QSpinBox *decom_m;
+    QDoubleSpinBox *decon_param;
+    QComboBox *odf_sharpening;
     QHBoxLayout *horizontalLayout_3;
     QLabel *label_2;
     QComboBox *ODFDim;
-    QCheckBox *RecordODF;
-    QCheckBox *HalfSphere;
-    QHBoxLayout *horizontalLayout_5;
-    QLabel *label_9;
-    QComboBox *Decomposition;
-    QLabel *label_12;
-    QDoubleSpinBox *decompose_fraction;
-    QLabel *label_11;
-    QSpinBox *decom_m;
     QHBoxLayout *xyz;
     QWidget *xyz_widget;
     QHBoxLayout *horizontalLayout_4;
@@ -132,10 +134,6 @@ public:
     QSpinBox *x;
     QSpinBox *y;
     QSpinBox *z;
-    QHBoxLayout *horizontalLayout_9;
-    QLabel *label_4;
-    QComboBox *ODFSharpening;
-    QDoubleSpinBox *SharpeningParam;
     QHBoxLayout *horizontalLayout_6;
     QLabel *label_3;
     QSpinBox *NumOfFibers;
@@ -169,7 +167,7 @@ public:
         toolBox->setObjectName(QString::fromUtf8("toolBox"));
         source_page = new QWidget();
         source_page->setObjectName(QString::fromUtf8("source_page"));
-        source_page->setGeometry(QRect(0, 0, 259, 130));
+        source_page->setGeometry(QRect(0, 0, 608, 453));
         verticalLayout_4 = new QVBoxLayout(source_page);
         verticalLayout_4->setObjectName(QString::fromUtf8("verticalLayout_4"));
         splitter = new QSplitter(source_page);
@@ -260,7 +258,7 @@ public:
         toolBox->addItem(source_page, QString::fromUtf8("Source Images"));
         page_3 = new QWidget();
         page_3->setObjectName(QString::fromUtf8("page_3"));
-        page_3->setGeometry(QRect(0, 0, 534, 146));
+        page_3->setGeometry(QRect(0, 0, 608, 453));
         gridLayout_2 = new QGridLayout(page_3);
         gridLayout_2->setObjectName(QString::fromUtf8("gridLayout_2"));
         verticalLayout_5 = new QVBoxLayout();
@@ -337,7 +335,7 @@ public:
         toolBox->addItem(page_3, QString::fromUtf8("Step 1: setup brain mask"));
         page = new QWidget();
         page->setObjectName(QString::fromUtf8("page"));
-        page->setGeometry(QRect(0, 0, 591, 497));
+        page->setGeometry(QRect(0, 0, 591, 469));
         page->setMinimumSize(QSize(0, 0));
         verticalLayout_2 = new QVBoxLayout(page);
         verticalLayout_2->setObjectName(QString::fromUtf8("verticalLayout_2"));
@@ -372,11 +370,6 @@ public:
         QDif->setEnabled(true);
 
         horizontalLayout_2->addWidget(QDif);
-
-        QSDRT = new QRadioButton(groupBox);
-        QSDRT->setObjectName(QString::fromUtf8("QSDRT"));
-
-        horizontalLayout_2->addWidget(QSDRT);
 
 
         verticalLayout_2->addWidget(groupBox);
@@ -535,6 +528,84 @@ public:
         OptionGroupBox->setSizePolicy(sizePolicy1);
         gridLayout = new QGridLayout(OptionGroupBox);
         gridLayout->setObjectName(QString::fromUtf8("gridLayout"));
+        RecordODF = new QCheckBox(OptionGroupBox);
+        RecordODF->setObjectName(QString::fromUtf8("RecordODF"));
+
+        gridLayout->addWidget(RecordODF, 7, 0, 1, 1);
+
+        HalfSphere = new QCheckBox(OptionGroupBox);
+        HalfSphere->setObjectName(QString::fromUtf8("HalfSphere"));
+        HalfSphere->setChecked(false);
+
+        gridLayout->addWidget(HalfSphere, 7, 1, 1, 1);
+
+        horizontalLayout_14 = new QHBoxLayout();
+        horizontalLayout_14->setSpacing(0);
+        horizontalLayout_14->setObjectName(QString::fromUtf8("horizontalLayout_14"));
+        label_16 = new QLabel(OptionGroupBox);
+        label_16->setObjectName(QString::fromUtf8("label_16"));
+
+        horizontalLayout_14->addWidget(label_16);
+
+        decom_panel = new QWidget(OptionGroupBox);
+        decom_panel->setObjectName(QString::fromUtf8("decom_panel"));
+        horizontalLayout_5 = new QHBoxLayout(decom_panel);
+        horizontalLayout_5->setSpacing(0);
+        horizontalLayout_5->setContentsMargins(0, 0, 0, 0);
+        horizontalLayout_5->setObjectName(QString::fromUtf8("horizontalLayout_5"));
+        label_12 = new QLabel(decom_panel);
+        label_12->setObjectName(QString::fromUtf8("label_12"));
+        label_12->setMaximumSize(QSize(10, 16777215));
+
+        horizontalLayout_5->addWidget(label_12);
+
+        decom_fraction = new QDoubleSpinBox(decom_panel);
+        decom_fraction->setObjectName(QString::fromUtf8("decom_fraction"));
+        decom_fraction->setMaximumSize(QSize(75, 16777215));
+        decom_fraction->setMinimum(0.01);
+        decom_fraction->setMaximum(0.5);
+        decom_fraction->setSingleStep(0.05);
+        decom_fraction->setValue(0.05);
+
+        horizontalLayout_5->addWidget(decom_fraction);
+
+        label_11 = new QLabel(decom_panel);
+        label_11->setObjectName(QString::fromUtf8("label_11"));
+        label_11->setMaximumSize(QSize(10, 16777215));
+
+        horizontalLayout_5->addWidget(label_11);
+
+        decom_m = new QSpinBox(decom_panel);
+        decom_m->setObjectName(QString::fromUtf8("decom_m"));
+        decom_m->setMaximumSize(QSize(35, 16777215));
+        decom_m->setMinimum(3);
+        decom_m->setMaximum(20);
+        decom_m->setValue(10);
+
+        horizontalLayout_5->addWidget(decom_m);
+
+
+        horizontalLayout_14->addWidget(decom_panel);
+
+        decon_param = new QDoubleSpinBox(OptionGroupBox);
+        decon_param->setObjectName(QString::fromUtf8("decon_param"));
+        decon_param->setMaximumSize(QSize(45, 16777215));
+        decon_param->setMinimum(0.01);
+        decon_param->setMaximum(20);
+        decon_param->setSingleStep(0.5);
+        decon_param->setValue(3);
+
+        horizontalLayout_14->addWidget(decon_param);
+
+        odf_sharpening = new QComboBox(OptionGroupBox);
+        odf_sharpening->setObjectName(QString::fromUtf8("odf_sharpening"));
+        odf_sharpening->setMaximumSize(QSize(75, 16777215));
+
+        horizontalLayout_14->addWidget(odf_sharpening);
+
+
+        gridLayout->addLayout(horizontalLayout_14, 0, 1, 1, 1);
+
         horizontalLayout_3 = new QHBoxLayout();
         horizontalLayout_3->setObjectName(QString::fromUtf8("horizontalLayout_3"));
         label_2 = new QLabel(OptionGroupBox);
@@ -549,67 +620,7 @@ public:
         horizontalLayout_3->addWidget(ODFDim);
 
 
-        gridLayout->addLayout(horizontalLayout_3, 1, 0, 1, 1);
-
-        RecordODF = new QCheckBox(OptionGroupBox);
-        RecordODF->setObjectName(QString::fromUtf8("RecordODF"));
-
-        gridLayout->addWidget(RecordODF, 7, 0, 1, 1);
-
-        HalfSphere = new QCheckBox(OptionGroupBox);
-        HalfSphere->setObjectName(QString::fromUtf8("HalfSphere"));
-        HalfSphere->setChecked(false);
-
-        gridLayout->addWidget(HalfSphere, 7, 1, 1, 1);
-
-        horizontalLayout_5 = new QHBoxLayout();
-        horizontalLayout_5->setSpacing(0);
-        horizontalLayout_5->setObjectName(QString::fromUtf8("horizontalLayout_5"));
-        label_9 = new QLabel(OptionGroupBox);
-        label_9->setObjectName(QString::fromUtf8("label_9"));
-        label_9->setMinimumSize(QSize(100, 0));
-        label_9->setMaximumSize(QSize(80, 16777215));
-
-        horizontalLayout_5->addWidget(label_9);
-
-        Decomposition = new QComboBox(OptionGroupBox);
-        Decomposition->setObjectName(QString::fromUtf8("Decomposition"));
-        Decomposition->setMinimumSize(QSize(50, 0));
-        Decomposition->setMaximumSize(QSize(50, 16777215));
-
-        horizontalLayout_5->addWidget(Decomposition);
-
-        label_12 = new QLabel(OptionGroupBox);
-        label_12->setObjectName(QString::fromUtf8("label_12"));
-
-        horizontalLayout_5->addWidget(label_12);
-
-        decompose_fraction = new QDoubleSpinBox(OptionGroupBox);
-        decompose_fraction->setObjectName(QString::fromUtf8("decompose_fraction"));
-        decompose_fraction->setMaximumSize(QSize(75, 16777215));
-        decompose_fraction->setMinimum(0.01);
-        decompose_fraction->setMaximum(0.5);
-        decompose_fraction->setSingleStep(0.05);
-        decompose_fraction->setValue(0.05);
-
-        horizontalLayout_5->addWidget(decompose_fraction);
-
-        label_11 = new QLabel(OptionGroupBox);
-        label_11->setObjectName(QString::fromUtf8("label_11"));
-        label_11->setMaximumSize(QSize(10, 16777215));
-
-        horizontalLayout_5->addWidget(label_11);
-
-        decom_m = new QSpinBox(OptionGroupBox);
-        decom_m->setObjectName(QString::fromUtf8("decom_m"));
-        decom_m->setMinimum(3);
-        decom_m->setMaximum(20);
-        decom_m->setValue(10);
-
-        horizontalLayout_5->addWidget(decom_m);
-
-
-        gridLayout->addLayout(horizontalLayout_5, 2, 1, 1, 1);
+        gridLayout->addLayout(horizontalLayout_3, 0, 0, 1, 1);
 
         xyz = new QHBoxLayout();
         xyz->setSpacing(0);
@@ -646,37 +657,7 @@ public:
         xyz->addWidget(xyz_widget);
 
 
-        gridLayout->addLayout(xyz, 3, 1, 1, 1);
-
-        horizontalLayout_9 = new QHBoxLayout();
-        horizontalLayout_9->setSpacing(0);
-        horizontalLayout_9->setObjectName(QString::fromUtf8("horizontalLayout_9"));
-        label_4 = new QLabel(OptionGroupBox);
-        label_4->setObjectName(QString::fromUtf8("label_4"));
-        label_4->setMinimumSize(QSize(100, 0));
-        label_4->setMaximumSize(QSize(80, 16777215));
-
-        horizontalLayout_9->addWidget(label_4);
-
-        ODFSharpening = new QComboBox(OptionGroupBox);
-        ODFSharpening->setObjectName(QString::fromUtf8("ODFSharpening"));
-        ODFSharpening->setMinimumSize(QSize(50, 0));
-        ODFSharpening->setMaximumSize(QSize(50, 16777215));
-
-        horizontalLayout_9->addWidget(ODFSharpening);
-
-        SharpeningParam = new QDoubleSpinBox(OptionGroupBox);
-        SharpeningParam->setObjectName(QString::fromUtf8("SharpeningParam"));
-        SharpeningParam->setMaximumSize(QSize(16777215, 16777215));
-        SharpeningParam->setMinimum(0.01);
-        SharpeningParam->setMaximum(20);
-        SharpeningParam->setSingleStep(0.5);
-        SharpeningParam->setValue(3);
-
-        horizontalLayout_9->addWidget(SharpeningParam);
-
-
-        gridLayout->addLayout(horizontalLayout_9, 1, 1, 1, 1);
+        gridLayout->addLayout(xyz, 1, 1, 1, 1);
 
         horizontalLayout_6 = new QHBoxLayout();
         horizontalLayout_6->setObjectName(QString::fromUtf8("horizontalLayout_6"));
@@ -695,7 +676,7 @@ public:
         horizontalLayout_6->addWidget(NumOfFibers);
 
 
-        gridLayout->addLayout(horizontalLayout_6, 2, 0, 1, 1);
+        gridLayout->addLayout(horizontalLayout_6, 1, 0, 1, 1);
 
 
         verticalLayout_2->addWidget(OptionGroupBox);
@@ -773,7 +754,6 @@ public:
         QBI->setText(QApplication::translate("reconstruction_window", "QBI", 0, QApplication::UnicodeUTF8));
         GQI->setText(QApplication::translate("reconstruction_window", "GQI", 0, QApplication::UnicodeUTF8));
         QDif->setText(QApplication::translate("reconstruction_window", "Q-Space Diffeomorphic", 0, QApplication::UnicodeUTF8));
-        QSDRT->setText(QApplication::translate("reconstruction_window", "QSDR Template", 0, QApplication::UnicodeUTF8));
         ResolutionBox->setTitle(QString());
         label_8->setText(QApplication::translate("reconstruction_window", "Output Resolution", 0, QApplication::UnicodeUTF8));
         label_15->setText(QApplication::translate("reconstruction_window", "Registration method", 0, QApplication::UnicodeUTF8));
@@ -793,6 +773,17 @@ public:
          << QApplication::translate("reconstruction_window", "r-squared weighted", 0, QApplication::UnicodeUTF8)
         );
         OptionGroupBox->setTitle(QApplication::translate("reconstruction_window", "Options", 0, QApplication::UnicodeUTF8));
+        RecordODF->setText(QApplication::translate("reconstruction_window", "Record ODF in the output file", 0, QApplication::UnicodeUTF8));
+        HalfSphere->setText(QApplication::translate("reconstruction_window", "Half-sphere scheme", 0, QApplication::UnicodeUTF8));
+        label_16->setText(QApplication::translate("reconstruction_window", "ODF sharpening", 0, QApplication::UnicodeUTF8));
+        label_12->setText(QApplication::translate("reconstruction_window", "\317\265", 0, QApplication::UnicodeUTF8));
+        label_11->setText(QApplication::translate("reconstruction_window", "m", 0, QApplication::UnicodeUTF8));
+        odf_sharpening->clear();
+        odf_sharpening->insertItems(0, QStringList()
+         << QApplication::translate("reconstruction_window", "Off", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("reconstruction_window", "Deconvolution", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("reconstruction_window", "Decomposition", 0, QApplication::UnicodeUTF8)
+        );
         label_2->setText(QApplication::translate("reconstruction_window", "ODF Tessellation", 0, QApplication::UnicodeUTF8));
         ODFDim->clear();
         ODFDim->insertItems(0, QStringList()
@@ -801,23 +792,7 @@ public:
          << QApplication::translate("reconstruction_window", "6-fold", 0, QApplication::UnicodeUTF8)
          << QApplication::translate("reconstruction_window", "8-fold", 0, QApplication::UnicodeUTF8)
         );
-        RecordODF->setText(QApplication::translate("reconstruction_window", "Record ODF in the output file", 0, QApplication::UnicodeUTF8));
-        HalfSphere->setText(QApplication::translate("reconstruction_window", "Half-sphere scheme", 0, QApplication::UnicodeUTF8));
-        label_9->setText(QApplication::translate("reconstruction_window", "Decomposition", 0, QApplication::UnicodeUTF8));
-        Decomposition->clear();
-        Decomposition->insertItems(0, QStringList()
-         << QApplication::translate("reconstruction_window", "Off", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("reconstruction_window", "On", 0, QApplication::UnicodeUTF8)
-        );
-        label_12->setText(QApplication::translate("reconstruction_window", "\317\265", 0, QApplication::UnicodeUTF8));
-        label_11->setText(QApplication::translate("reconstruction_window", "m", 0, QApplication::UnicodeUTF8));
         label_10->setText(QApplication::translate("reconstruction_window", "ODF (x,y,z)=", 0, QApplication::UnicodeUTF8));
-        label_4->setText(QApplication::translate("reconstruction_window", "Deconvolution", 0, QApplication::UnicodeUTF8));
-        ODFSharpening->clear();
-        ODFSharpening->insertItems(0, QStringList()
-         << QApplication::translate("reconstruction_window", "Off", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("reconstruction_window", "On", 0, QApplication::UnicodeUTF8)
-        );
         label_3->setText(QApplication::translate("reconstruction_window", "Number of fibers resolved", 0, QApplication::UnicodeUTF8));
         ThreadCount->clear();
         ThreadCount->insertItems(0, QStringList()

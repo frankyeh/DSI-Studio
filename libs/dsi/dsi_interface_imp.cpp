@@ -118,12 +118,6 @@ typedef boost::mpl::vector<
     OutputODF
 > gqi_mni_process;
 
-
-typedef boost::mpl::vector<
-    GQI_MNI,
-    AccumulateODF
-> gqi_mni_template_process;
-
 typedef boost::mpl::vector<
     ODFLoader,
     DetermineFiberDirections,
@@ -174,7 +168,7 @@ extern "C"
             {
                 if (!image_model->reconstruct<dsi_estimate_response_function>())
                     return "reconstruction calceled";
-                begin_prog("deconvolving");
+                begin_prog("calculating");
             }
             out << ".dsi."<< (int)param_values[0] << ".fib";
             if (!image_model->reconstruct<dsi_process>(out.str()))
@@ -192,7 +186,7 @@ extern "C"
             {
                 if (!image_model->reconstruct<qbi_estimate_response_function>())
                     return "reconstruction calceled";
-                begin_prog("deconvolving");
+                begin_prog("calculating");
             }
             out << ".qbi."<< param_values[0] << "_" << param_values[1] << ".fib";
             if (!image_model->reconstruct<qbi_process>(out.str()))
@@ -203,8 +197,7 @@ extern "C"
             {
                 if (!image_model->reconstruct<qbi_sh_estimate_response_function>())
                     return "reconstruction calceled";
-
-                begin_prog("deconvolving");
+                begin_prog("calculating");
             }
             out << ".qbi.sh"<< (int) param_values[1] << "." << param_values[0] << ".fib";
             if (!image_model->reconstruct<qbi_sh_process>(out.str()))
@@ -216,7 +209,7 @@ extern "C"
             {
                 if (!image_model->reconstruct<gqi_estimate_response_function>())
                     return "reconstruction calceled";
-                begin_prog("deconvolving");
+                begin_prog("calculating");
             }
             out << (image_model->voxel.r2_weighted ? ".gqir2.":".gqi.") << param_values[0] << ".fib";
             if (!image_model->reconstruct<gqi_process>(out.str()))
@@ -240,59 +233,6 @@ extern "C"
             if (!image_model->reconstruct<gqi_mni_process>(out.str()))
                 return "reconstruction canceled";
             break;
-
-        case 8:
-            {
-                for(int index = 0;index < image_model->voxel.file_list.size();++index)
-                {
-                    {
-                        std::ostringstream msg;
-                        msg << "loading (" << index << "/" << image_model->voxel.file_list.size();
-                        begin_prog(msg.str().c_str());
-                    }
-                    if(index)
-                        if(!image_model->load_from_file(image_model->voxel.file_list[index].c_str()))
-                        {
-                            output_name = "Cannot open file ";
-                            output_name += image_model->voxel.file_list[index];
-                            return output_name.c_str();
-                        }
-                    {
-                        std::ostringstream msg;
-                        msg << "running (" << index << "/" << image_model->voxel.file_list.size();
-                        begin_prog(msg.str().c_str());
-                    }
-                    std::fill(image_model->mask.begin(),image_model->mask.end(),1.0);
-                    if (!image_model->reconstruct<gqi_estimate_response_function>()||
-                        !image_model->reconstruct<gqi_mni_template_process>())
-                        return "reconstruction calceled";
-                }
-
-                //averaging
-                for (unsigned int index = 0;index < image_model->voxel.template_odfs.size();++index)
-                {
-                    std::for_each(image_model->voxel.template_odfs[index].begin(),
-                                  image_model->voxel.template_odfs[index].end(),
-                                  boost::lambda::_1 /= image_model->voxel.file_list.size());
-                }
-
-                out << (image_model->voxel.r2_weighted ? ".qsdr2.":".qsdr.");
-                out << param_values[0] << "." << param_values[1] << "mm.fib";
-
-                begin_prog("output result without odf");
-                image_model->voxel.need_odf = false;
-                image_model->file_name = image_model->voxel.template_file_name;
-                if (!image_model->reconstruct<reprocess_odf>(out.str()))
-                    return "reconstruction calceled";
-
-                begin_prog("output result without odf");
-                image_model->voxel.need_odf = true;
-                image_model->file_name = image_model->voxel.template_file_name;
-                image_model->file_name += ".rec";
-                if (!image_model->reconstruct<reprocess_odf>(out.str()))
-                    return "reconstruction calceled";
-
-            }
         }
         output_name = image_model->file_name + out.str() + ".gz";
     }
