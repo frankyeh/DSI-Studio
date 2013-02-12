@@ -30,7 +30,7 @@ void vbc_database::read_template(ODFModel* fib_file_)
         findex[index] = fib_file->fib_data.fib.findex[index];
         fa[index] = fib_file->fib_data.fib.fa[index];
     }
-    fiber_threshold = image::segmentation::otsu_threshold(
+    fiber_threshold = 1.2*image::segmentation::otsu_threshold(
         image::basic_image<float, 3,image::const_pointer_memory<float> >(fa[0],dim));
     vi2si.resize(dim.size());
     for(unsigned int index = 0;index < dim.size();++index)
@@ -426,27 +426,34 @@ bool vbc_database::calculate_distribution(float* param,unsigned char* methods,
                 ++dist.back();
     }
 }
-void vbc_database::calculate_subject_distribution(float* param,unsigned char* methods)
+
+void vbc_database::calculate_subject_distribution(float* param,unsigned char* methods,float value,
+                                                  std::vector<float>& subject_greater,
+                                                  std::vector<float>& subject_lesser)
 {
     // calculate subject fiber distribution
     std::vector<const float*> old_fa = fib_file->fib_data.fib.fa; // for restoring the fiber index
-    subject_greater.clear();
-    subject_lesser.clear();
-    subject_greater.resize(10);
-    subject_lesser.resize(10);
-    for(unsigned int i = 2;i < 10;++i)
-    {
-        subject_greater[i].resize(1000);
-        subject_lesser[i].resize(1000);
-        param[3] = (float)i/10.0;//ui->fa_threshold->value();
-        fib_file->fib_data.fib.set_tracking_index("greater mapping");
-        calculate_distribution(param,methods,subject_greater[i]);
-        fib_file->fib_data.fib.set_tracking_index("lesser mapping");
-        calculate_distribution(param,methods,subject_lesser[i]);
-    }
+    std::vector<unsigned int> dist_greater(1000);
+    std::vector<unsigned int> dist_lesser(1000);
+    param[3] = value;//ui->fa_threshold->value();
+    fib_file->fib_data.fib.set_tracking_index("greater mapping");
+    calculate_distribution(param,methods,dist_greater);
+    fib_file->fib_data.fib.set_tracking_index("lesser mapping");
+    calculate_distribution(param,methods,dist_lesser);
+
+    subject_greater.resize(dist_greater.size());
+    subject_lesser.resize(dist_lesser.size());
+    std::copy(dist_greater.begin(),dist_greater.end(),subject_greater.begin());
+    std::copy(dist_lesser.begin(),dist_lesser.end(),subject_lesser.begin());
+
+    std::for_each(subject_greater.begin(),subject_greater.end(),boost::lambda::_1 /=
+            std::accumulate(subject_greater.begin(),subject_greater.end(),0.0f));
+    std::for_each(subject_lesser.begin(),subject_lesser.end(),boost::lambda::_1 /=
+            std::accumulate(subject_lesser.begin(),subject_lesser.end(),0.0f));
     fib_file->fib_data.fib.fa = old_fa;
 }
 
+/*
 bool vbc_database::calculate_null_distribution(const std::vector<std::string>& file_list,float* param,unsigned char* methods)
 {
     begin_prog("processing");
@@ -473,6 +480,19 @@ bool vbc_database::calculate_null_distribution(const std::vector<std::string>& f
             calculate_distribution(param,methods,lesser_distribution[i]);
         }
     }
+
+    for(unsigned int i = 2;i < 10;++i)
+    {
+        std::for_each(greater_distribution[i].begin(),
+                      greater_distribution[i].end(),boost::lambda::_1 /=
+                std::accumulate(greater_distribution[i].begin(),
+                                greater_distribution[i].end(),0.0f));
+        std::for_each(lesser_distribution[i].begin(),
+                      lesser_distribution[i].end(),boost::lambda::_1 /=
+                std::accumulate(lesser_distribution[i].begin(),
+                                lesser_distribution[i].end(),0.0f));
+    }
+
     check_prog(1,1);
     greater_distribution.swap(null_greater);
     lesser_distribution.swap(null_lesser);
@@ -480,6 +500,7 @@ bool vbc_database::calculate_null_distribution(const std::vector<std::string>& f
     fib_file->fib_data.fib.fa = old_fa;
     return true;
 }
+*/
 
 bool vbc_database::single_subject_paired_analysis(const char* file_name1,const char* file_name2)
 {

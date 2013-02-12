@@ -126,8 +126,8 @@ private slots:
     void on_gl_contrast_sliderMoved(int position);
     void on_gl_contrast_value_valueChanged(double arg1);
     void on_actionCalculate_null_distibution_triggered();
-    void on_comboBox_currentIndexChanged(int index);
     void on_actionPlot_triggered();
+    void on_vbc_dist_update_clicked();
 };
 
 #endif // TRACKING_WINDOW_H

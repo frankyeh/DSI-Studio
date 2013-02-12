@@ -64,13 +64,13 @@ public:
     bool single_subject_analysis(const char* file_name);
     bool single_subject_paired_analysis(const char* file_name1,const char* file_name2);
 public:
-    std::vector<float> null_threshold;
-    std::vector<std::vector<unsigned int> > null_greater,null_lesser;
-    std::vector<std::vector<unsigned int> > subject_greater,subject_lesser;
+    //std::vector<float> null_threshold;
     bool calculate_distribution(float* param,unsigned char* methods,
                                         std::vector<unsigned int>& dist);
-    void calculate_subject_distribution(float* param,unsigned char* methods);
-    bool calculate_null_distribution(const std::vector<std::string>& file_list,float* param,unsigned char* methods);
+    void calculate_subject_distribution(float* param,unsigned char* methods,float value,
+                                        std::vector<float>& subject_greater,
+                                        std::vector<float>& subject_lesser);
+    //bool calculate_null_distribution(const std::vector<std::string>& file_list,float* param,unsigned char* methods);
 public:
 };
 

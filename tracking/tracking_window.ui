@@ -869,9 +869,6 @@
     <property name="title">
      <string>&amp;View</string>
     </property>
-    <addaction name="actionZoom_In"/>
-    <addaction name="actionZoom_Out"/>
-    <addaction name="separator"/>
     <addaction name="actionSagittal_view"/>
     <addaction name="actionCoronal_View"/>
     <addaction name="actionAxial_View"/>
@@ -1370,40 +1367,18 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="zoomIn">
-         <property name="minimumSize">
-          <size>
-           <width>22</width>
-           <height>0</height>
-          </size>
+        <widget class="QDoubleSpinBox" name="zoom">
+         <property name="minimum">
+          <double>1.000000000000000</double>
          </property>
-         <property name="maximumSize">
-          <size>
-           <width>23</width>
-           <height>22</height>
-          </size>
+         <property name="maximum">
+          <double>32.000000000000000</double>
          </property>
-         <property name="text">
-          <string>+</string>
+         <property name="singleStep">
+          <double>1.000000000000000</double>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="zoomOut">
-         <property name="minimumSize">
-          <size>
-           <width>22</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>23</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>-</string>
+         <property name="value">
+          <double>8.000000000000000</double>
          </property>
         </widget>
        </item>
@@ -2756,6 +2731,22 @@
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_21">
            <item>
+            <widget class="QDoubleSpinBox" name="vbc_threshold">
+             <property name="minimum">
+              <double>0.500000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>1.000000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.050000000000000</double>
+             </property>
+             <property name="value">
+              <double>0.750000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item>
             <spacer name="horizontalSpacer_9">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
@@ -2769,47 +2760,10 @@
             </spacer>
            </item>
            <item>
-            <widget class="QComboBox" name="comboBox">
-             <item>
-              <property name="text">
-               <string>20%</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>30%</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>40%</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>50%</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>60%</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>70%</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>80%</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>90%</string>
-              </property>
-             </item>
+            <widget class="QPushButton" name="vbc_dist_update">
+             <property name="text">
+              <string>Calculate Distribution</string>
+             </property>
             </widget>
            </item>
           </layout>
@@ -3200,7 +3154,7 @@
     <string>&amp;Sagittal View</string>
    </property>
    <property name="shortcut">
-    <string>F5</string>
+    <string>Z</string>
    </property>
   </action>
   <action name="actionCoronal_View">
@@ -3208,7 +3162,7 @@
     <string>&amp;Coronal View</string>
    </property>
    <property name="shortcut">
-    <string>F6</string>
+    <string>X</string>
    </property>
   </action>
   <action name="actionAxial_View">
@@ -3216,7 +3170,7 @@
     <string>&amp;Axial View</string>
    </property>
    <property name="shortcut">
-    <string>F7</string>
+    <string>C</string>
    </property>
   </action>
   <action name="actionQuantitative_anisotropy_QA">

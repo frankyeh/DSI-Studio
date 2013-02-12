@@ -211,11 +211,9 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
         connect(ui->show_fiber,SIGNAL(clicked()),&scene,SLOT(show_slice()));
         connect(ui->show_pos,SIGNAL(clicked()),&scene,SLOT(show_slice()));
 
-        connect(ui->zoomIn,SIGNAL(clicked()),&scene,SLOT(zoom_in()));
-        connect(ui->zoomOut,SIGNAL(clicked()),&scene,SLOT(zoom_out()));
+        connect(ui->zoom,SIGNAL(valueChanged(double)),&scene,SLOT(show_slice()));
+        connect(ui->zoom,SIGNAL(valueChanged(double)),&scene,SLOT(center()));
 
-        connect(ui->actionZoom_In,SIGNAL(triggered()),&scene,SLOT(zoom_in()));
-        connect(ui->actionZoom_Out,SIGNAL(triggered()),&scene,SLOT(zoom_out()));
 
         connect(ui->actionAxial_View,SIGNAL(triggered()),this,SLOT(on_AxiView_clicked()));
         connect(ui->actionCoronal_View,SIGNAL(triggered()),this,SLOT(on_CorView_clicked()));
@@ -412,13 +410,14 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
         {
             if(slice.cur_dim != 2)
                 point.setY(scene.height() - point.y());
-            has_info = slice.get3dPosition(((float)point.x()) / scene.display_ratio,
-                                           ((float)point.y()) / scene.display_ratio, pos[0], pos[1], pos[2]);
+            has_info = slice.get3dPosition(((float)point.x()) / ui->zoom->value() - 0.5,
+                                           ((float)point.y()) / ui->zoom->value() - 0.5,
+                                           pos[0], pos[1], pos[2]);
         }
         else
         {
-            pos[0] = ((float)point.x())*(float)scene.mosaic_size / scene.display_ratio;
-            pos[1] = ((float)point.y())*(float)scene.mosaic_size / scene.display_ratio;
+            pos[0] = ((float)point.x())*(float)scene.mosaic_size / ui->zoom->value();
+            pos[1] = ((float)point.y())*(float)scene.mosaic_size / ui->zoom->value();
             pos[2] = std::floor(pos[1]/slice.geometry[1])*scene.mosaic_size + std::floor(pos[0]/slice.geometry[0]);
             pos[0] -= std::floor(pos[0]/slice.geometry[0])*slice.geometry[0];
             pos[1] -= std::floor(pos[1]/slice.geometry[1])*slice.geometry[1];
@@ -1265,15 +1264,6 @@ void tracking_window::on_actionOpen_Subject_Data_triggered()
     }
     check_prog(1,1);
 
-
-    float param[8];
-    unsigned char methods[5];
-    set_tracking_param(param,methods);
-    param[5] = 0; // ui->min_length->value();
-    methods[4] = 0;//ui->seed_plan->currentIndex();
-    handle->vbc->calculate_subject_distribution(param,methods);
-
-
     if(ui->tracking_index->findText("lesser mapping") == -1)
     {
         ui->tracking_index->addItem("greater mapping");
@@ -1301,7 +1291,7 @@ void tracking_window::on_actionCalculate_null_distibution_triggered()
     set_tracking_param(param,methods);
     param[5] = 0; // ui->min_length->value();
     methods[4] = 0;//ui->seed_plan->currentIndex();
-    if(!handle->vbc->calculate_null_distribution(file_list,param,methods))
+    ///if(!handle->vbc->calculate_null_distribution(file_list,param,methods))
     {
         QMessageBox::information(this,"error",handle->vbc->error_msg.c_str(),0);
         return;
@@ -1309,96 +1299,69 @@ void tracking_window::on_actionCalculate_null_distibution_triggered()
 }
 
 
-void tracking_window::on_comboBox_currentIndexChanged(int index)
+void tracking_window::on_vbc_dist_update_clicked()
 {
-    if(!handle->has_vbc() || index+2 >= handle->vbc->null_greater.size())
+
+    if(!handle->has_vbc() || ui->tracking_index->findText("lesser mapping") == -1)
         return;
+    std::vector<std::vector<float> > vbc_data(2);
+    float param[8];
+    unsigned char methods[5];
+    set_tracking_param(param,methods);
+    param[5] = 0; // ui->min_length->value();
+    methods[4] = 0;//ui->seed_plan->currentIndex();
+
+    handle->vbc->calculate_subject_distribution(param,methods,ui->vbc_threshold->value(),vbc_data[0],vbc_data[1]);
+
+    unsigned int x_size = 0;
+    for(unsigned int i = 0;i < vbc_data.size();++i)
+        x_size = std::max<unsigned int>(x_size,vbc_data[i].size());
+    if(x_size == 0)
+        return;
+    QVector<double> x(x_size);
+    std::vector<QVector<double> > y(vbc_data.size());
+    unsigned int max_x = 50;
+    float max_y = 0.25;
+    for(unsigned int i = 0;i < vbc_data.size();++i)
+        y[i].resize(x_size);
+    for(unsigned int j = 0;j < x_size;++j)
     {
-        std::vector<float> vbc_data1(handle->vbc->null_greater[index+2].size());
-        std::vector<float> vbc_data2(handle->vbc->null_lesser[index+2].size());
-        std::vector<float> vbc_data3;
-        std::vector<float> vbc_data4;
-        if(vbc_data1.empty())
-            return;    
-        std::copy(handle->vbc->null_greater[index+2].begin(),
-                  handle->vbc->null_greater[index+2].end(),vbc_data1.begin());
-        std::copy(handle->vbc->null_lesser[index+2].begin(),
-                  handle->vbc->null_lesser[index+2].end(),vbc_data2.begin());
-        std::for_each(vbc_data1.begin(),vbc_data1.end(),boost::lambda::_1 /= std::accumulate(vbc_data1.begin(),vbc_data1.end(),0.0f));
-        std::for_each(vbc_data2.begin(),vbc_data2.end(),boost::lambda::_1 /= std::accumulate(vbc_data2.begin(),vbc_data2.end(),0.0f));
-        if(!handle->vbc->subject_greater.empty())
-        {
-            std::copy(handle->vbc->subject_greater[index+2].begin(),
-                      handle->vbc->subject_greater[index+2].end(),std::back_inserter(vbc_data3));
-            std::copy(handle->vbc->subject_lesser[index+2].begin(),
-                      handle->vbc->subject_lesser[index+2].end(),std::back_inserter(vbc_data4));
-            std::for_each(vbc_data3.begin(),vbc_data3.end(),boost::lambda::_1 /= std::accumulate(vbc_data3.begin(),vbc_data3.end(),0.0f));
-            std::for_each(vbc_data4.begin(),vbc_data4.end(),boost::lambda::_1 /= std::accumulate(vbc_data4.begin(),vbc_data4.end(),0.0f));
-        }
-        QVector<double> x(vbc_data1.size()),y1(vbc_data1.size()),y2(vbc_data2.size()),y3(vbc_data3.size()),y4(vbc_data4.size());
-        unsigned int max_x = 10;
-        float max_y = std::max<float>(*std::max_element(vbc_data1.begin(),vbc_data1.end()),
-                                        *std::max_element(vbc_data2.begin(),vbc_data2.end()));
-        for(unsigned int j = 0;j < vbc_data1.size();++j)
-        {
-            x[j] = (float)j * ui->step_size->value();
-            y1[j] = vbc_data1[j];
-            y2[j] = vbc_data2[j];
-            if(y1[j] != 0 || y2[j] != 0)
-                max_x = x[j];
-            if(!handle->vbc->subject_greater.empty())
-            {
-                y3[j] = vbc_data3[j];
-                y4[j] = vbc_data4[j];
-                if(y3[j] != 0 || y4[j] != 0)
-                    max_x = x[j];
-            }
-        }
-        ui->null_dist->clearGraphs();
-        QPen pen;
-
-        ui->null_dist->addGraph();
-        pen.setColor(QColor(20,20,100,200));
-        ui->null_dist->graph()->setLineStyle(QCPGraph::lsLine);
-        ui->null_dist->graph()->setPen(pen);
-        ui->null_dist->graph()->setData(x, y1);
-        ui->null_dist->graph()->setName(QString("null greater ")+QString::number(handle->vbc->null_threshold[index+2]*100.0) + "%");
-
-        ui->null_dist->addGraph();
-        pen.setColor(QColor(100,20,20,200));
-        ui->null_dist->graph()->setLineStyle(QCPGraph::lsLine);
-        ui->null_dist->graph()->setPen(pen);
-        ui->null_dist->graph()->setData(x, y2);
-        ui->null_dist->graph()->setName(QString("null lesser ")+QString::number(handle->vbc->null_threshold[index+2]*100.0) + "%");
-
-        if(!handle->vbc->subject_greater.empty())
-        {
-            ui->null_dist->addGraph();
-            pen.setColor(QColor(20,100,20,200));
-            ui->null_dist->graph()->setLineStyle(QCPGraph::lsLine);
-            ui->null_dist->graph()->setPen(pen);
-            ui->null_dist->graph()->setData(x, y3);
-            ui->null_dist->graph()->setName(QString("subject greater ")+QString::number(handle->vbc->null_threshold[index+2]*100.0) + "%");
-
-            ui->null_dist->addGraph();
-            pen.setColor(QColor(100,100,20,200));
-            ui->null_dist->graph()->setLineStyle(QCPGraph::lsLine);
-            ui->null_dist->graph()->setPen(pen);
-            ui->null_dist->graph()->setData(x, y4);
-            ui->null_dist->graph()->setName(QString("subject lesser ")+QString::number(handle->vbc->null_threshold[index+2]*100.0) + "%");
-        }
-
-        ui->null_dist->xAxis->setRange(0,max_x);
-        ui->null_dist->yAxis->setRange(0,max_y);
-        ui->null_dist->legend->setVisible(true);
-        QFont legendFont = font();  // start out with MainWindow's font..
-        legendFont.setPointSize(9); // and make a bit smaller for legend
-        ui->null_dist->legend->setFont(legendFont);
-        ui->null_dist->legend->setPositionStyle(QCPLegend::psRight);
-        ui->null_dist->legend->setBrush(QBrush(QColor(255,255,255,230)));
-        ui->null_dist->replot();
+        x[j] = (float)j * ui->step_size->value();
+        for(unsigned int i = 0; i < vbc_data.size(); ++i)
+            if(j < vbc_data[i].size())
+                y[i][j] = vbc_data[i][j];
     }
+    ui->null_dist->clearGraphs();
+    QPen pen;
+
+    QColor color[4];
+    color[0] = QColor(20,20,100,200);
+    color[1] = QColor(100,20,20,200);
+    color[2] = QColor(20,100,20,200);
+    color[3] = QColor(20,100,100,200);
+    char legend[4][60] = {"subject greater","subject lesser","null greater","null lesser"};
+    for(unsigned int i = 0; i < vbc_data.size(); ++i)
+    {
+        ui->null_dist->addGraph();
+        pen.setColor(color[i]);
+        ui->null_dist->graph()->setLineStyle(QCPGraph::lsLine);
+        ui->null_dist->graph()->setPen(pen);
+        ui->null_dist->graph()->setData(x, y[i]);
+        ui->null_dist->graph()->setName(QString(legend[i]));
+    }
+
+    ui->null_dist->xAxis->setRange(0,max_x);
+    ui->null_dist->yAxis->setRange(0,max_y);
+    ui->null_dist->legend->setVisible(true);
+    QFont legendFont = font();  // start out with MainWindow's font..
+    legendFont.setPointSize(9); // and make a bit smaller for legend
+    ui->null_dist->legend->setFont(legendFont);
+    ui->null_dist->legend->setPositionStyle(QCPLegend::psRight);
+    ui->null_dist->legend->setBrush(QBrush(QColor(255,255,255,230)));
+    ui->null_dist->replot();
+
 }
+
 
 void tracking_window::on_actionPair_comparison_triggered()
 {
@@ -1444,7 +1407,7 @@ void tracking_window::on_subject_list_itemSelectionChanged()
     image::color_image color_slice(slice.geometry());
     std::copy(slice.begin(),slice.end(),color_slice.begin());
     QImage qimage((unsigned char*)&*color_slice.begin(),color_slice.width(),color_slice.height(),QImage::Format_RGB32);
-    vbc_slice_image = qimage.scaled(color_slice.width()*scene.display_ratio,color_slice.height()*scene.display_ratio);
+    vbc_slice_image = qimage.scaled(color_slice.width()*ui->zoom->value(),color_slice.height()*ui->zoom->value());
     vbc_scene.clear();
     vbc_scene.setSceneRect(0, 0, vbc_slice_image.width(),vbc_slice_image.height());
     vbc_scene.setItemIndexMethod(QGraphicsScene::NoIndex);
@@ -1526,6 +1489,7 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
             ui->glAxiSlider->setValue(ui->glAxiSlider->value()-1);
             event->accept();
             break;
+            /*
         case Qt::Key_Z:
             event->accept();
             glWidget->set_view(0);
@@ -1540,7 +1504,7 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
             event->accept();
             glWidget->set_view(2);
             glWidget->updateGL();
-            break;
+            break;*/
         }
     }
     else
@@ -1571,6 +1535,7 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
             ui->AxiSlider->setValue(ui->AxiSlider->value()-1);
             event->accept();
             break;
+            /*
         case Qt::Key_Z:
             on_SagView_clicked();
             event->accept();
@@ -1582,7 +1547,7 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
         case Qt::Key_C:
             on_AxiView_clicked();
             event->accept();
-            break;
+            break;*/
         }
 
     }
@@ -1634,3 +1599,7 @@ void tracking_window::on_actionPlot_triggered()
     ui->dockWidget_report->show();
     on_refresh_report_clicked();
 }
+
+
+
+
