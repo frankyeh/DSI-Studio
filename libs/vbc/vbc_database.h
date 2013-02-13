@@ -70,7 +70,7 @@ public:
     void calculate_subject_distribution(float* param,unsigned char* methods,
                                         std::vector<float>& subject_greater,
                                         std::vector<float>& subject_lesser);
-    bool calculate_null_distribution(const std::vector<std::string>& file_list,float* param,unsigned char* methods,
+    bool calculate_null_distribution(float* param,unsigned char* methods,
                                      std::vector<float>& subject_greater,
                                      std::vector<float>& subject_lesser);
 public:

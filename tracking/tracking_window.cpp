@@ -1329,17 +1329,6 @@ void tracking_window::on_actionCalculate_null_distibution_triggered()
 {
     if(!handle->has_vbc())
         return;
-    QStringList filenames = QFileDialog::getOpenFileNames(
-                                this,
-                                "Select subject fib file for analysis",
-                                absolute_path,
-                                "Fib files (*.fib.gz *.fib);;All files (*.*)" );
-    if (filenames.isEmpty())
-        return;
-    std::vector<std::string> file_list;
-    for(unsigned int index = 0;index < filenames.size();++index)
-        file_list.push_back(filenames[index].toLocal8Bit().begin());
-
     std::vector<std::vector<float> > vbc_data(2);
     float param[8];
     unsigned char methods[5];
@@ -1347,7 +1336,7 @@ void tracking_window::on_actionCalculate_null_distibution_triggered()
     param[3] = ui->vbc_threshold->value();
     param[5] = 0; // ui->min_length->value();
     methods[4] = 0;//ui->seed_plan->currentIndex();
-    if(!handle->vbc->calculate_null_distribution(file_list,param,methods,vbc_data[0],vbc_data[1]))
+    if(!handle->vbc->calculate_null_distribution(param,methods,vbc_data[0],vbc_data[1]))
     {
         QMessageBox::information(this,"error",handle->vbc->error_msg.c_str(),0);
         return;
