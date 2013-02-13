@@ -201,7 +201,7 @@ public:
     virtual void init(Voxel& voxel)
     {
         //voxel.qa_scaling must be 1
-        voxel.z0 = 1.0;
+        voxel.z0 = 0.0;
         index_mapping1.resize(voxel.image_model->mask.size());
         index_mapping2.resize(voxel.image_model->mask.size());
         int voxel_index = 0;
@@ -252,7 +252,7 @@ public:
                                       voxel.template_odfs[index].size()/(voxel.ti.half_vertices_count));
             }
         }
-        mat_writer.add_matrix("mni",&*voxel.param,4,3);
+        mat_writer.add_matrix("trans",&*voxel.param,4,4);
     }
 };
 
@@ -322,22 +322,15 @@ public:
         set_title("output gfa");
         mat_writer.add_matrix("gfa",&*gfa.begin(),1,gfa.size());
 
-        if(!voxel.odf_deconvolusion)
+        if(!voxel.odf_deconvolusion && voxel.z0 + 1.0 != 1.0)
         {
             mat_writer.add_matrix("z0",&voxel.z0,1,1);
-            if (voxel.z0 + 1.0 != 1.0)
-                std::for_each(iso.begin(),iso.end(),boost::lambda::_1 /= voxel.z0);
-            mat_writer.add_matrix("iso",&*iso.begin(),1,iso.size());
-            if (voxel.z0 + 1.0 != 1.0)
-                for (unsigned int i = 0;i < voxel.max_fiber_number;++i)
-                    std::for_each(fa[i].begin(),fa[i].end(),boost::lambda::_1 /= voxel.z0);
-            // cellularity
-            int max_fa_index = std::max_element(fa[0].begin(),fa[0].end())-fa[0].begin();
-            float ratio = iso[max_fa_index]/fa[0][max_fa_index];
-            for(unsigned int index = 0;index < iso.size();++index)
-                iso[index] -= fa[0][index]*ratio;
-            mat_writer.add_matrix("cell",&*iso.begin(),1,iso.size());
+            std::for_each(iso.begin(),iso.end(),boost::lambda::_1 /= voxel.z0);
+            for (unsigned int i = 0;i < voxel.max_fiber_number;++i)
+                std::for_each(fa[i].begin(),fa[i].end(),boost::lambda::_1 /= voxel.z0);
         }
+
+        mat_writer.add_matrix("iso",&*iso.begin(),1,iso.size());
 
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
         {

@@ -261,8 +261,8 @@ bool output_odfs(const image::basic_image<unsigned char,3>& mni_mask,
     image_model.voxel.odf_decomposition = false;
     image_model.voxel.odf_deconvolusion = false;
     image_model.voxel.half_sphere = false;
-    image_model.voxel.max_fiber_number = 3;
-    image_model.voxel.z0 = 1;
+    image_model.voxel.max_fiber_number = 5;
+    image_model.voxel.z0 = 0.0;
     image_model.voxel.need_odf = record_odf;
     image_model.voxel.template_odfs.swap(odfs);
     image_model.voxel.param = mni;
@@ -290,7 +290,7 @@ extern "C"
     can_cancel(true);
     unsigned int half_vertex_count = 0;
     unsigned int row,col;
-    float mni[12]={0};
+    float mni[16]={0};
     for (unsigned int index = 0;check_prog(index,num_files);++index)
     {
         const char* file_name = file_names[index];
@@ -314,7 +314,7 @@ extern "C"
                !reader.get_matrix("voxel_size",row,col,vs_ptr) ||
                !reader.get_matrix("odf_faces",row,face_num,face_buffer) ||
                !reader.get_matrix("odf_vertices",row,odf_num,odf_buffer) ||
-               !reader.get_matrix("mni",row,col,mni_ptr))
+               !reader.get_matrix("trans",row,col,mni_ptr))
             {
                 std::cout << "Cannot find image information in " << file_name << std::endl;
                 return false;
@@ -326,7 +326,7 @@ extern "C"
             std::copy(vs_ptr,vs_ptr+3,vs);
             ti.init(odf_num,odf_buffer,face_num,face_buffer);
             half_vertex_count = odf_num >> 1;
-            std::copy(mni_ptr,mni_ptr+12,mni);
+            std::copy(mni_ptr,mni_ptr+16,mni);
         }
         else
         // check odf consistency
@@ -388,7 +388,7 @@ extern "C"
                 odf_bufs_size.push_back(row*col);
             }
         }
-        if(odfs.empty())
+        if(index == 0)
         {
             odfs.resize(odf_bufs.size());
             for(unsigned int i = 0;i < odf_bufs.size();++i)
@@ -399,13 +399,12 @@ extern "C"
             bool inconsistence = false;
             if(odfs.size() != odf_bufs.size())
                 inconsistence = true;
-            else
-                for(unsigned int i = 0;i < odf_bufs.size();++i)
-                    if(odfs[i].size() != odf_bufs_size[i])
-                        inconsistence = true;
+            for(unsigned int i = 0;i < odf_bufs.size();++i)
+                if(odfs[i].size() != odf_bufs_size[i])
+                    inconsistence = true;
             if(inconsistence)
             {
-                std::cout << "Inconsistence mask coverage in" << file_name << std::endl;
+                std::cout << "Inconsistent mask coverage in" << file_name << std::endl;
                 return false;
             }
         }
