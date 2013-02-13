@@ -44,6 +44,7 @@ public://vbc
     QGraphicsScene vbc_scene;
     QImage vbc_slice_image;
     unsigned int vbc_slice_pos;
+    void show_report(const std::vector<std::vector<float> >& vbc_data);
 public:
 
     unsigned int odf_size;

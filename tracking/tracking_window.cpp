@@ -1272,46 +1272,9 @@ void tracking_window::on_actionOpen_Subject_Data_triggered()
 }
 
 
-void tracking_window::on_actionCalculate_null_distibution_triggered()
+
+void tracking_window::show_report(const std::vector<std::vector<float> >& vbc_data)
 {
-    if(!handle->has_vbc())
-        return;
-    QStringList filenames = QFileDialog::getOpenFileNames(
-                                this,
-                                "Select subject fib file for analysis",
-                                absolute_path,
-                                "Fib files (*.fib.gz *.fib);;All files (*.*)" );
-    if (filenames.isEmpty())
-        return;
-    std::vector<std::string> file_list;
-    for(unsigned int index = 0;index < filenames.size();++index)
-        file_list.push_back(filenames[index].toLocal8Bit().begin());
-    float param[8];
-    unsigned char methods[5];
-    set_tracking_param(param,methods);
-    param[5] = 0; // ui->min_length->value();
-    methods[4] = 0;//ui->seed_plan->currentIndex();
-    ///if(!handle->vbc->calculate_null_distribution(file_list,param,methods))
-    {
-        QMessageBox::information(this,"error",handle->vbc->error_msg.c_str(),0);
-        return;
-    }
-}
-
-
-void tracking_window::on_vbc_dist_update_clicked()
-{
-
-    if(!handle->has_vbc() || ui->tracking_index->findText("lesser mapping") == -1)
-        return;
-    std::vector<std::vector<float> > vbc_data(2);
-    float param[8];
-    unsigned char methods[5];
-    set_tracking_param(param,methods);
-    param[5] = 0; // ui->min_length->value();
-    methods[4] = 0;//ui->seed_plan->currentIndex();
-
-    handle->vbc->calculate_subject_distribution(param,methods,ui->vbc_threshold->value(),vbc_data[0],vbc_data[1]);
 
     unsigned int x_size = 0;
     for(unsigned int i = 0;i < vbc_data.size();++i)
@@ -1359,6 +1322,55 @@ void tracking_window::on_vbc_dist_update_clicked()
     ui->null_dist->legend->setPositionStyle(QCPLegend::psRight);
     ui->null_dist->legend->setBrush(QBrush(QColor(255,255,255,230)));
     ui->null_dist->replot();
+}
+
+
+void tracking_window::on_actionCalculate_null_distibution_triggered()
+{
+    if(!handle->has_vbc())
+        return;
+    QStringList filenames = QFileDialog::getOpenFileNames(
+                                this,
+                                "Select subject fib file for analysis",
+                                absolute_path,
+                                "Fib files (*.fib.gz *.fib);;All files (*.*)" );
+    if (filenames.isEmpty())
+        return;
+    std::vector<std::string> file_list;
+    for(unsigned int index = 0;index < filenames.size();++index)
+        file_list.push_back(filenames[index].toLocal8Bit().begin());
+
+    std::vector<std::vector<float> > vbc_data(2);
+    float param[8];
+    unsigned char methods[5];
+    set_tracking_param(param,methods);
+    param[3] = ui->vbc_threshold->value();
+    param[5] = 0; // ui->min_length->value();
+    methods[4] = 0;//ui->seed_plan->currentIndex();
+    if(!handle->vbc->calculate_null_distribution(file_list,param,methods,vbc_data[0],vbc_data[1]))
+    {
+        QMessageBox::information(this,"error",handle->vbc->error_msg.c_str(),0);
+        return;
+    }
+    show_report(vbc_data);
+}
+
+void tracking_window::on_vbc_dist_update_clicked()
+{
+
+    if(!handle->has_vbc() || ui->tracking_index->findText("lesser mapping") == -1)
+        return;
+
+    std::vector<std::vector<float> > vbc_data(2);
+    float param[8];
+    unsigned char methods[5];
+    set_tracking_param(param,methods);
+    param[3] = ui->vbc_threshold->value();
+    param[5] = 0; // ui->min_length->value();
+    methods[4] = 0;//ui->seed_plan->currentIndex();
+
+    handle->vbc->calculate_subject_distribution(param,methods,vbc_data[0],vbc_data[1]);
+    show_report(vbc_data);
 
 }
 

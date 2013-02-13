@@ -30,7 +30,7 @@ void vbc_database::read_template(ODFModel* fib_file_)
         findex[index] = fib_file->fib_data.fib.findex[index];
         fa[index] = fib_file->fib_data.fib.fa[index];
     }
-    fiber_threshold = 1.2*image::segmentation::otsu_threshold(
+    fiber_threshold = 1.5*image::segmentation::otsu_threshold(
         image::basic_image<float, 3,image::const_pointer_memory<float> >(fa[0],dim));
     vi2si.resize(dim.size());
     for(unsigned int index = 0;index < dim.size();++index)
@@ -172,7 +172,6 @@ bool vbc_database::sample_odf(MatFile& mat_reader,std::vector<float>& data)
     subject_odf.initializeODF(dim,cur_fa,half_odf_size);
 
     set_title("load data");
-    float max_iso = 0.0;
     for(unsigned int index = 0;index < si2vi.size();++index)
     {
         unsigned int cur_index = si2vi[index];
@@ -180,8 +179,6 @@ bool vbc_database::sample_odf(MatFile& mat_reader,std::vector<float>& data)
         if(odf == 0)
             continue;
         float min_value = *std::min_element(odf, odf + half_odf_size);
-        if(min_value > max_iso)
-            max_iso = min_value;
         unsigned int pos = index;
         for(unsigned char fib = 0;fib < num_fiber;++fib,pos += si2vi.size())
         {
@@ -191,10 +188,6 @@ bool vbc_database::sample_odf(MatFile& mat_reader,std::vector<float>& data)
             data[pos] = odf[findex[fib][cur_index]]-min_value;
         }
     }
-
-    // normalization
-    if(max_iso + 1.0 != 1.0)
-        image::divide_constant(data.begin(),data.end(),max_iso);
     return true;
 }
 
@@ -415,7 +408,7 @@ bool vbc_database::calculate_distribution(float* param,unsigned char* methods,
 
     std::auto_ptr<ThreadData> thread_handle(ThreadData::new_thread(fib_file,param,methods));
     thread_handle->setRegions(seed,3);
-    thread_handle->run(4,seed.size()*5,true);
+    thread_handle->run(4,seed.size()*50,true);
     for(unsigned int j = 0; j < thread_handle->track_buffer.size();++j)
     {
         unsigned int length = thread_handle->track_buffer[j].size()/3;
@@ -427,7 +420,7 @@ bool vbc_database::calculate_distribution(float* param,unsigned char* methods,
     }
 }
 
-void vbc_database::calculate_subject_distribution(float* param,unsigned char* methods,float value,
+void vbc_database::calculate_subject_distribution(float* param,unsigned char* methods,
                                                   std::vector<float>& subject_greater,
                                                   std::vector<float>& subject_lesser)
 {
@@ -435,7 +428,7 @@ void vbc_database::calculate_subject_distribution(float* param,unsigned char* me
     std::vector<const float*> old_fa = fib_file->fib_data.fib.fa; // for restoring the fiber index
     std::vector<unsigned int> dist_greater(1000);
     std::vector<unsigned int> dist_lesser(1000);
-    param[3] = value;//ui->fa_threshold->value();
+
     fib_file->fib_data.fib.set_tracking_index("greater mapping");
     calculate_distribution(param,methods,dist_greater);
     fib_file->fib_data.fib.set_tracking_index("lesser mapping");
@@ -445,7 +438,6 @@ void vbc_database::calculate_subject_distribution(float* param,unsigned char* me
     subject_lesser.resize(dist_lesser.size());
     std::copy(dist_greater.begin(),dist_greater.end(),subject_greater.begin());
     std::copy(dist_lesser.begin(),dist_lesser.end(),subject_lesser.begin());
-
     std::for_each(subject_greater.begin(),subject_greater.end(),boost::lambda::_1 /=
             std::accumulate(subject_greater.begin(),subject_greater.end(),0.0f));
     std::for_each(subject_lesser.begin(),subject_lesser.end(),boost::lambda::_1 /=
@@ -453,13 +445,15 @@ void vbc_database::calculate_subject_distribution(float* param,unsigned char* me
     fib_file->fib_data.fib.fa = old_fa;
 }
 
-/*
-bool vbc_database::calculate_null_distribution(const std::vector<std::string>& file_list,float* param,unsigned char* methods)
+
+bool vbc_database::calculate_null_distribution(const std::vector<std::string>& file_list,float* param,unsigned char* methods,
+                                               std::vector<float>& subject_greater,
+                                               std::vector<float>& subject_lesser)
 {
     begin_prog("processing");
-    std::vector<float> threshold(10);
-    std::vector<std::vector<unsigned int> >  greater_distribution(10),lesser_distribution(10);
     std::vector<const float*> old_fa = fib_file->fib_data.fib.fa; // for restoring the fiber index
+    std::vector<unsigned int> dist_greater(1000);
+    std::vector<unsigned int> dist_lesser(1000);
     for(unsigned int index = 0;check_prog(index,file_list.size());++index)
     {
         if(!single_subject_analysis(file_list[index].c_str()))
@@ -469,38 +463,24 @@ bool vbc_database::calculate_null_distribution(const std::vector<std::string>& f
             return false;
         }
         add_greater_lesser_mapping_for_tracking();
-        for(unsigned int i = 2;i < 10;++i)
-        {
-            greater_distribution[i].resize(1000);
-            lesser_distribution[i].resize(1000);
-            param[3] = threshold[i] = (float)i/10.0;//ui->fa_threshold->value();
-            fib_file->fib_data.fib.set_tracking_index("greater mapping");
-            calculate_distribution(param,methods,greater_distribution[i]);
-            fib_file->fib_data.fib.set_tracking_index("lesser mapping");
-            calculate_distribution(param,methods,lesser_distribution[i]);
-        }
+        fib_file->fib_data.fib.set_tracking_index("greater mapping");
+        calculate_distribution(param,methods,dist_greater);
+        fib_file->fib_data.fib.set_tracking_index("lesser mapping");
+        calculate_distribution(param,methods,dist_lesser);
     }
 
-    for(unsigned int i = 2;i < 10;++i)
-    {
-        std::for_each(greater_distribution[i].begin(),
-                      greater_distribution[i].end(),boost::lambda::_1 /=
-                std::accumulate(greater_distribution[i].begin(),
-                                greater_distribution[i].end(),0.0f));
-        std::for_each(lesser_distribution[i].begin(),
-                      lesser_distribution[i].end(),boost::lambda::_1 /=
-                std::accumulate(lesser_distribution[i].begin(),
-                                lesser_distribution[i].end(),0.0f));
-    }
-
-    check_prog(1,1);
-    greater_distribution.swap(null_greater);
-    lesser_distribution.swap(null_lesser);
-    threshold.swap(null_threshold);
+    subject_greater.resize(dist_greater.size());
+    subject_lesser.resize(dist_lesser.size());
+    std::copy(dist_greater.begin(),dist_greater.end(),subject_greater.begin());
+    std::copy(dist_lesser.begin(),dist_lesser.end(),subject_lesser.begin());
+    std::for_each(subject_greater.begin(),subject_greater.end(),boost::lambda::_1 /=
+            std::accumulate(subject_greater.begin(),subject_greater.end(),0.0f));
+    std::for_each(subject_lesser.begin(),subject_lesser.end(),boost::lambda::_1 /=
+            std::accumulate(subject_lesser.begin(),subject_lesser.end(),0.0f));
     fib_file->fib_data.fib.fa = old_fa;
+
     return true;
 }
-*/
 
 bool vbc_database::single_subject_paired_analysis(const char* file_name1,const char* file_name2)
 {
