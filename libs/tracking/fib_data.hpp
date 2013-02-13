@@ -170,6 +170,8 @@ public:
 
     unsigned int num_fiber;
     unsigned int half_odf_size;
+
+    std::string error_msg;
 private:
     void check_index(unsigned int index)
     {
@@ -190,7 +192,10 @@ public:
         {
             const unsigned short* dim_buf = 0;
             if (!mat_reader.get_matrix("dimension",row,col,dim_buf))
+            {
+                error_msg = "cannot find dimension matrix";
                 return false;
+            }
             std::copy(dim_buf,dim_buf+3,dim.begin());
         }
         // odf_vertices
@@ -351,6 +356,8 @@ public:
         }
 
         odf.initializeODF(dim,fa,half_odf_size);
+        if(num_fiber == 0)
+            error_msg = "No image data found";
         return num_fiber;
     }
 
@@ -414,6 +421,7 @@ struct ViewItem
 class FibData
 {
 public:
+    std::string error_msg;
     MatFile mat_reader;
     FiberDirection fib;
 public:
@@ -432,10 +440,16 @@ public:
 public:
     bool load_from_file(const char* file_name)
     {
-        if (!mat_reader.load_from_file(file_name) ||
-            !fib.add_data(mat_reader))
+        if (!mat_reader.load_from_file(file_name))
+        {
+            error_msg = mat_reader.error_msg;
             return false;
-
+        }
+        if(!fib.add_data(mat_reader))
+        {
+            error_msg = fib.error_msg;
+            return false;
+        }
         for(int index = 0;index < fib.fa.size();++index)
         {
             view_item.push_back(ViewItem());
@@ -511,7 +525,10 @@ public:
 
         }
         if (!dim[2])
+        {
+            error_msg = "invalid dimension";
             return false;
+        }
         return true;
     }
     void compare_fiber_directions(const FibData& rhs,const short *points,unsigned int number,std::string& result,std::ostream& report) const

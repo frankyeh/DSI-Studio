@@ -167,7 +167,7 @@ void MainWindow::loadFib(QString filename)
     std::auto_ptr<ODFModel> new_handle(new ODFModel);
     if (!new_handle->load_from_file(&*file_name.begin()))
     {
-        QMessageBox::information(this,"error","Cannot load the .fib file, please check the memory sufficiency",0);
+        QMessageBox::information(this,"error",new_handle->fib_data.error_msg.c_str(),0);
         return;
     }
     tracking_window* new_mdi = new tracking_window(this,new_handle.release());

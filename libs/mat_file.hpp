@@ -262,7 +262,6 @@ public:
         }
         catch (...)
         {
-            std::cout << "Insufficient memory: size=" << get_total_size(type) << std::endl;
             return false;
         }
         data_ptr = &*data_buf.begin();
@@ -296,7 +295,6 @@ public:
         }
         catch (...)
         {
-            std::cout << "Insufficient memory: size=" << get_total_size(type) << std::endl;
             return false;
         }
         data_ptr = &*data_buf.begin();
@@ -314,6 +312,7 @@ private:
     void* out;
     bool compressed;
 public:
+    std::string error_msg;
     MatFile(void):out(0){}
     MatFile(const char* file_name):out(0),compressed(false){write_to_file(file_name);}
     bool load_from_file(const char* file_name)
@@ -328,7 +327,7 @@ public:
             void* in = gzopen(file_name, "rb");
             if (!in)
             {
-                std::cout << "gzopen failed " << file_name << std::endl;
+                error_msg =  "gzopen failed";
                 return false;
             }
             for (unsigned int index = 0;!gzeof(in);++index)
@@ -336,7 +335,7 @@ public:
                 std::auto_ptr<MatMatrix> matrix(new MatMatrix);
                 if (!matrix->read(in))
                 {
-                    std::cout << "read matrix failed " << std::endl;
+                    error_msg = "read matrix failed";
                     return false;
                 }
                 dataset_buf.push_back(matrix.release());
@@ -348,7 +347,7 @@ public:
             FILE* in = fopen(filename.c_str(), "rb");
             if (!in)
             {
-                std::cout << "open failed " << file_name << std::endl;
+                error_msg = "fopen failed";
                 return false;
             }
             fseek(in,0,SEEK_END);
@@ -359,7 +358,7 @@ public:
                 std::auto_ptr<MatMatrix> matrix(new MatMatrix);
                 if (!matrix->read((FILE*)in))
                 {
-                    std::cout << "read matrix failed " << std::endl;
+                    error_msg = "read mat matrix failed";
                     return false;
                 }
                 dataset_buf.push_back(matrix.release());

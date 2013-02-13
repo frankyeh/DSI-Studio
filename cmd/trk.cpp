@@ -75,7 +75,8 @@ int trk(int ac, char *av[])
         }
         if (!handle->load_from_file(file_name.c_str()))
         {
-            out << "Cannot open file " << file_name.c_str() <<std::endl;
+            out << "Open file " << file_name.c_str() << " failed" << std::endl;
+            out << "msg:" << handle->fib_data.error_msg.c_str() << std::endl;
             return 0;
         }
     }
