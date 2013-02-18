@@ -1630,43 +1630,49 @@ bool GLWidget::addSlices(QStringList filenames)
             files[index] = filenames[index].toLocal8Bit().begin();
     gz_nifti nifti;
     std::vector<float> convert;
-    if(files.size() == 1 && nifti.load_from_file(files[0]))
+    // QSDR loaded, use MNI transformation instead
+    if(!cur_tracking_window.handle->fib_data.trans_to_mni.empty() && cur_tracking_window.mi3.get() == 0 &&
+            files.size() == 1 && nifti.load_from_file(files[0]))
     {
         other_slices.push_back(new CustomSliceModel(nifti,cur_tracking_window.slice.center_point));
-        if(!cur_tracking_window.handle->fib_data.trans_to_mni.empty() &&
-            cur_tracking_window.mi3.get() == 0)
+        std::vector<float> t(nifti.get_transformation(),
+                             nifti.get_transformation()+12),inv_trans(16);
+        convert.resize(16);
+        t.resize(16);
+        t[15] = 1.0;
+        if(nifti.nif_header.srow_x[0] < 0 || !nifti.is_nii)
         {
-            std::vector<float> t(nifti.get_transformation(),
-                                 nifti.get_transformation()+12),inv_trans(16);
-            convert.resize(16);
-            t.resize(16);
-            t[15] = 1.0;
-            if(nifti.nif_header.srow_x[0] < 0 || !nifti.is_nii)
-            {
-                t[7] += t[5]*(nifti.height()-1);
-                t[5] = -t[5];
-            }
-            else
-            {
-                t[3] += t[0]*(nifti.width()-1);
-                t[0] = -t[0];
-                t[7] += t[5]*(nifti.height()-1);
-                t[5] = -t[5];
-            }
-            math::matrix_inverse(cur_tracking_window.handle->fib_data.trans_to_mni.begin(),inv_trans.begin(),math::dim<4,4>());
-            math::matrix_product(inv_trans.begin(),t.begin(),convert.begin(),math::dim<4,4>(),math::dim<4,4>());
+            t[7] += t[5]*(nifti.height()-1);
+            t[5] = -t[5];
         }
+        else
+        {
+            t[3] += t[0]*(nifti.width()-1);
+            t[0] = -t[0];
+            t[7] += t[5]*(nifti.height()-1);
+            t[5] = -t[5];
+        }
+        math::matrix_inverse(cur_tracking_window.handle->fib_data.trans_to_mni.begin(),inv_trans.begin(),math::dim<4,4>());
+        math::matrix_product(inv_trans.begin(),t.begin(),convert.begin(),math::dim<4,4>(),math::dim<4,4>());
     }
     else
     {
         image::io::volume volume;
-        if(!volume.load_from_files(files,files.size()))
+        if(volume.load_from_files(files,files.size()))
+            other_slices.push_back(new CustomSliceModel(volume,cur_tracking_window.slice.center_point));
+        else
         {
-            QMessageBox::information(&cur_tracking_window,"DSI Studio","Cannot parse the images",0);
-            return false;
+            if(files.size() == 1 && nifti.load_from_file(files[0]))
+                other_slices.push_back(new CustomSliceModel(nifti,cur_tracking_window.slice.center_point));
+            else
+            {
+                QMessageBox::information(&cur_tracking_window,"DSI Studio","Cannot parse the images",0);
+                return false;
+            }
         }
-        other_slices.push_back(new CustomSliceModel(volume,cur_tracking_window.slice.center_point));
     }
+
+
     mi3s.push_back(new LinearMapping<image::basic_image<float,3,image::const_pointer_memory<float> >,image::rigid_scaling_transform<3> >);
     current_visible_slide = mi3s.size();
     roi_image.push_back(new image::basic_image<float,3>(cur_tracking_window.handle->fib_data.dim));
