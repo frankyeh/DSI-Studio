@@ -1,5 +1,5 @@
 ﻿#
-# DSI Studio, linux version
+# DSI Studio, linux version for Ubuntu
 # by: Max Novelli
 #     2012/09/19
 #
@@ -155,3 +155,28 @@ Max
 
 Feedback is appreciated.
 Max
+
+
+#
+# Installiation Instruction for Linux Fedora 
+# By West, John at Indiana University – Purdue University Indianapolis
+# 2013/02/15
+
+The compiling was pretty much exactly the same. The difference is packages needed as prereqs are different in Fedora than in Ubuntu. 
+
+From step 1.1
+> sudo apt-get install qt4-qmake qt4-dev-tools  --->  sudo yum install qt qt-devel qt-create (NOTE:  I installed qt-create while we were debugging, so that may not be necessary)
+
+From step 3
+> sudo apt-get install git ---> sudo yum install git
+> sudo apt-get install libboost-all-dev  --->  sudo yum install boost boost-dev
+> sudo apt-get install zlib1g zlib1g-dev ---> sudo yum install zlib zlib-dev
+
+I should also mention that this was done on Fedora 17 (possible other versions may have different issues)  and that I installed the Nvidia drivers (replacing nouveau - open source nvidia drivers in Fedora) using the instructions on the following website:  http://www.if-not-true-then-false.com/2012/fedora-17-nvidia-guide/ .  Note, I followed the akmod-nvidia instructions under step 4.  I'm not sure if doing kmod or kmod-PAE would affect things. Instructions for other Fedora versions are available as well.
+
+Only other difference is that for Fedora (17 at least) qmake and qmake-qt4 are one in the same but only qmake-qt4 is provided as a link.  So I had to use the qmake-qt4 command in step 8:
+
+So in step 8:
+> qmake ../src  becomes qmake-qt4 ../src
+
+Also, please note that the environment variable defined in step 11.3 did not work for the template.  I had to store the template (FMRIB58_FA_1mm.nii.gz) in the same directory as the dsistudio executable.
