@@ -65,14 +65,21 @@ public:
     bool single_subject_paired_analysis(const char* file_name1,const char* file_name2);
 public:
     //std::vector<float> null_threshold;
-    bool calculate_distribution(float* param,unsigned char* methods,
-                                        std::vector<unsigned int>& dist);
-    void calculate_subject_distribution(float* param,unsigned char* methods,
-                                        std::vector<float>& subject_greater,
+    void run_span(float percentile,std::vector<std::vector<float> >& span);
+    void calculate_span_distribution(float percentile,std::vector<unsigned int>& dist);
+    void calculate_subject_distribution(float percentile,std::vector<float>& subject_greater,
                                         std::vector<float>& subject_lesser);
-    bool calculate_null_distribution(float* param,unsigned char* methods,
-                                     std::vector<float>& subject_greater,
+    bool calculate_group_distribution(const std::vector<std::string>& files,
+                                        float percentile,std::vector<float>& subject_greater,
+                                        std::vector<float>& subject_lesser);
+    void calculate_null_distribution(float percentile,std::vector<float>& subject_greater,
                                      std::vector<float>& subject_lesser);
+    void hist_to_dist(const std::vector<unsigned int>& dist_greater,
+                      const std::vector<unsigned int>& dist_lesser,
+                      std::vector<float>& subject_greater,
+                      std::vector<float>& subject_lesser);
+    void calculate_subject_spans(float percentile,std::vector<std::vector<float> >& spans);
+
 public:
 };
 

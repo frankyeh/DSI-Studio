@@ -86,6 +86,8 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
                 ui->subject_list->setItem(index,2, new QTableWidgetItem(QString::number(handle->vbc->subject_R2(index))));
             }
             ui->subject_list->selectRow(0);
+
+
         }
     }
 
@@ -450,7 +452,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
                 float max_y = *std::max_element(vbc_data.begin(),vbc_data.end());
                 std::vector<unsigned int> hist;
                 image::histogram(vbc_data,hist,0,max_y,20);
-                QVector<double> x(hist.size()),y(hist.size());
+                QVector<double> x(hist.size()+1),y(hist.size()+1);
                 unsigned int max_hist = 0;
                 for(unsigned int j = 0;j < hist.size();++j)
                 {
@@ -458,6 +460,8 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
                     y[j] = hist[j];
                     max_hist = std::max<unsigned int>(max_hist,hist[j]);
                 }
+                x.back() = max_y*(hist.size()+1)/hist.size();
+                y.back() = 0;
                 ui->vbc_report->clearGraphs();
                 ui->vbc_report->addGraph();
                 QPen pen;
@@ -466,7 +470,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
                 ui->vbc_report->graph(0)->setPen(pen);
                 ui->vbc_report->graph(0)->setData(x, y);
 
-                ui->vbc_report->xAxis->setRange(0,max_y);
+                ui->vbc_report->xAxis->setRange(0,x.back());
                 ui->vbc_report->yAxis->setRange(0,max_hist);
                 ui->vbc_report->replot();
                 }
@@ -1273,6 +1277,7 @@ void tracking_window::on_actionOpen_Subject_Data_triggered()
 
 
 
+
 void tracking_window::show_report(const std::vector<std::vector<float> >& vbc_data)
 {
 
@@ -1283,16 +1288,21 @@ void tracking_window::show_report(const std::vector<std::vector<float> >& vbc_da
         return;
     QVector<double> x(x_size);
     std::vector<QVector<double> > y(vbc_data.size());
-    unsigned int max_x = 50;
-    float max_y = 0.25;
+    int min_x = -1;
+    unsigned int max_x = 40;
+    float max_y = 0.4;
     for(unsigned int i = 0;i < vbc_data.size();++i)
         y[i].resize(x_size);
     for(unsigned int j = 0;j < x_size;++j)
     {
-        x[j] = (float)j * ui->step_size->value();
+        x[j] = (float)j;
         for(unsigned int i = 0; i < vbc_data.size(); ++i)
             if(j < vbc_data[i].size())
+            {
                 y[i][j] = vbc_data[i][j];
+                if(min_x == -1 && vbc_data[i][j] > 0)
+                    min_x = x[j];
+            }
     }
     ui->null_dist->clearGraphs();
     QPen pen;
@@ -1313,7 +1323,7 @@ void tracking_window::show_report(const std::vector<std::vector<float> >& vbc_da
         ui->null_dist->graph()->setName(QString(legend[i]));
     }
 
-    ui->null_dist->xAxis->setRange(0,max_x);
+    ui->null_dist->xAxis->setRange(min_x,max_x);
     ui->null_dist->yAxis->setRange(0,max_y);
     ui->null_dist->legend->setVisible(true);
     QFont legendFont = font();  // start out with MainWindow's font..
@@ -1322,25 +1332,38 @@ void tracking_window::show_report(const std::vector<std::vector<float> >& vbc_da
     ui->null_dist->legend->setPositionStyle(QCPLegend::psRight);
     ui->null_dist->legend->setBrush(QBrush(QColor(255,255,255,230)));
     ui->null_dist->replot();
+
+
+    ui->dist_table->setColumnCount(5);
+    ui->dist_table->setColumnWidth(0,50);
+    ui->dist_table->setColumnWidth(1,150);
+    ui->dist_table->setColumnWidth(2,150);
+    ui->dist_table->setColumnWidth(3,150);
+    ui->dist_table->setColumnWidth(4,150);
+    ui->dist_table->setHorizontalHeaderLabels(
+                QStringList() << "span" << "pdf(x)" << "cdf(x)" << "pdf(x)" << "cdf(x)");
+
+
+    ui->dist_table->setRowCount(100);
+    float sum[2] = {0.0,0.0};
+    for(unsigned int index = 0;index < 100;++index)
+    {
+        ui->dist_table->setItem(index,0, new QTableWidgetItem(QString::number(index + 1)));
+        ui->dist_table->setItem(index,1, new QTableWidgetItem(QString::number(vbc_data[0][index+1])));
+        ui->dist_table->setItem(index,2, new QTableWidgetItem(QString::number(sum[0] += vbc_data[0][index+1])));
+        ui->dist_table->setItem(index,3, new QTableWidgetItem(QString::number(vbc_data[1][index+1])));
+        ui->dist_table->setItem(index,4, new QTableWidgetItem(QString::number(sum[1] += vbc_data[1][index+1])));
+    }
+    ui->dist_table->selectRow(0);
 }
 
 
-void tracking_window::on_actionCalculate_null_distibution_triggered()
+void tracking_window::on_show_null_distribution_clicked()
 {
     if(!handle->has_vbc())
         return;
     std::vector<std::vector<float> > vbc_data(2);
-    float param[8];
-    unsigned char methods[5];
-    set_tracking_param(param,methods);
-    param[3] = ui->vbc_threshold->value();
-    param[5] = 0; // ui->min_length->value();
-    methods[4] = 0;//ui->seed_plan->currentIndex();
-    if(!handle->vbc->calculate_null_distribution(param,methods,vbc_data[0],vbc_data[1]))
-    {
-        QMessageBox::information(this,"error",handle->vbc->error_msg.c_str(),0);
-        return;
-    }
+    handle->vbc->calculate_null_distribution(ui->vbc_threshold->value(),vbc_data[0],vbc_data[1]);
     show_report(vbc_data);
 }
 
@@ -1351,17 +1374,108 @@ void tracking_window::on_vbc_dist_update_clicked()
         return;
 
     std::vector<std::vector<float> > vbc_data(2);
-    float param[8];
-    unsigned char methods[5];
-    set_tracking_param(param,methods);
-    param[3] = ui->vbc_threshold->value();
-    param[5] = 0; // ui->min_length->value();
-    methods[4] = 0;//ui->seed_plan->currentIndex();
-
-    handle->vbc->calculate_subject_distribution(param,methods,vbc_data[0],vbc_data[1]);
+    handle->vbc->calculate_subject_distribution(ui->vbc_threshold->value(),vbc_data[0],vbc_data[1]);
     show_report(vbc_data);
 
 }
+
+
+void tracking_window::on_cal_lesser_tracts_clicked()
+{
+    if(!handle->has_vbc() || ui->tracking_index->findText("lesser mapping") == -1)
+        return;
+    std::vector<std::vector<float> > tracts;
+    begin_prog("calculating");
+    handle->vbc->calculate_subject_spans(ui->vbc_threshold->value(),tracts);
+    if(tracts.empty())
+    {
+        QMessageBox::information(this,"result","no significant lesser span",0);
+        return;
+    }
+    tractWidget->addNewTracts("lesser tracts");
+    tractWidget->tract_models.back()->add_tracts(tracts);
+    tractWidget->item(tractWidget->tract_models.size()-1,1)->
+            setText(QString::number(tractWidget->tract_models.back()->get_visible_track_count()));
+
+    glWidget->makeTracts();
+    glWidget->updateGL();
+}
+
+void tracking_window::on_save_vbc_dist_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                this,
+                "Save report as",
+                absolute_path + "/report.txt",
+                "Report file (*.txt);;All files (*.*)");
+    if(filename.isEmpty())
+        return;
+    std::ofstream out(filename.toLocal8Bit().begin());
+    if(!out)
+    {
+        QMessageBox::information(this,"Error","Cannot write to file",0);
+        return;
+    }
+
+    std::vector<QCPDataMap::const_iterator> iterators(ui->null_dist->graphCount());
+    for(int row = 0;;++row)
+    {
+        bool has_output = false;
+        for(int index = 0;index < ui->null_dist->graphCount();++index)
+        {
+            if(row == 0)
+            {
+                out << ui->null_dist->graph(index)->name().toLocal8Bit().begin() << "\t\t";
+                has_output = true;
+                continue;
+            }
+            if(row == 1)
+            {
+                out << "x\ty\t";
+                iterators[index] = ui->null_dist->graph(index)->data()->begin();
+                has_output = true;
+                continue;
+            }
+            if(iterators[index] != ui->null_dist->graph(index)->data()->end())
+            {
+                out << iterators[index]->key << "\t" << iterators[index]->value << "\t";
+                ++iterators[index];
+                has_output = true;
+            }
+            else
+                out << "\t\t";
+        }
+        out << std::endl;
+        if(!has_output)
+            break;
+    }
+}
+
+
+void tracking_window::on_cal_group_dist_clicked()
+{
+    if(!handle->has_vbc())
+        return;
+    QStringList filename = QFileDialog::getOpenFileNames(
+                                this,
+                                "Select subject fib file for analysis",
+                                absolute_path,
+                                "Fib files (*.fib.gz *.fib);;All files (*.*)" );
+    if (filename.isEmpty())
+        return;
+    std::vector<std::string> file_names;
+    for(unsigned int index = 0;index < filename.size();++index)
+        file_names.push_back(filename[index].toLocal8Bit().begin());
+    std::vector<std::vector<float> > vbc_data(2);
+    if(!handle->vbc->calculate_group_distribution(file_names,ui->vbc_threshold->value(),vbc_data[0],vbc_data[1]))
+    {
+        QMessageBox::information(this,"error",handle->vbc->error_msg.c_str(),0);
+        return;
+    }
+    show_report(vbc_data);
+}
+
+
 
 
 void tracking_window::on_actionPair_comparison_triggered()
@@ -1600,7 +1714,5 @@ void tracking_window::on_actionPlot_triggered()
     ui->dockWidget_report->show();
     on_refresh_report_clicked();
 }
-
-
 
 

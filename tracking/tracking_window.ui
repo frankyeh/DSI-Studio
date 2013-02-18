@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1559</width>
-    <height>672</height>
+    <height>692</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -903,7 +903,6 @@
     </property>
     <addaction name="actionOpen_Subject_Data"/>
     <addaction name="actionPair_comparison"/>
-    <addaction name="actionCalculate_null_distibution"/>
    </widget>
    <addaction name="menu_Edit"/>
    <addaction name="menuRegions"/>
@@ -2730,6 +2729,22 @@
          </property>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_21">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item>
+            <spacer name="horizontalSpacer_9">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
            <item>
             <widget class="QDoubleSpinBox" name="vbc_threshold">
              <property name="minimum">
@@ -2747,17 +2762,25 @@
             </widget>
            </item>
            <item>
-            <spacer name="horizontalSpacer_9">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+            <widget class="QPushButton" name="cal_lesser_tracts">
+             <property name="text">
+              <string>Show Lesser Tracts</string>
              </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="cal_group_dist">
+             <property name="text">
+              <string>Group distribution</string>
              </property>
-            </spacer>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="show_null_distribution">
+             <property name="text">
+              <string>Show null distribution</string>
+             </property>
+            </widget>
            </item>
            <item>
             <widget class="QPushButton" name="vbc_dist_update">
@@ -2766,16 +2789,55 @@
              </property>
             </widget>
            </item>
+           <item>
+            <widget class="QToolButton" name="save_vbc_dist">
+             <property name="text">
+              <string>...</string>
+             </property>
+             <property name="icon">
+              <iconset resource="../icons.qrc">
+               <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+             </property>
+            </widget>
+           </item>
           </layout>
          </item>
          <item>
-          <widget class="QCustomPlot" name="null_dist" native="true">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
+          <widget class="QWidget" name="widget_2" native="true">
+           <layout class="QHBoxLayout" name="horizontalLayout_22">
+            <item>
+             <widget class="QSplitter" name="splitter_4">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <widget class="QCustomPlot" name="null_dist" native="true">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+              </widget>
+              <widget class="QTableWidget" name="dist_table">
+               <column>
+                <property name="text">
+                 <string>voxel</string>
+                </property>
+               </column>
+               <column>
+                <property name="text">
+                 <string>pdf(x)</string>
+                </property>
+               </column>
+               <column>
+                <property name="text">
+                 <string>cdf(x)</string>
+                </property>
+               </column>
+              </widget>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </item>
         </layout>
@@ -3601,6 +3663,70 @@
    </hints>
   </connection>
   <connection>
+   <sender>isosurfaceButton</sender>
+   <signal>clicked()</signal>
+   <receiver>actionAdd_surface</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>629</x>
+     <y>176</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>tbSaveTract</sender>
+   <signal>clicked()</signal>
+   <receiver>actionSave_All_Tracts_As</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>915</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>tbOpenTract</sender>
+   <signal>clicked()</signal>
+   <receiver>actionOpenTract</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>892</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>tbDeleteTract</sender>
+   <signal>clicked()</signal>
+   <receiver>actionDeleteTract</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>938</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
    <sender>glAxiBox</sender>
    <signal>valueChanged(int)</signal>
    <receiver>glAxiSlider</receiver>
@@ -3693,70 +3819,6 @@
     <hint type="destinationlabel">
      <x>479</x>
      <y>486</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>isosurfaceButton</sender>
-   <signal>clicked()</signal>
-   <receiver>actionAdd_surface</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>629</x>
-     <y>176</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>tbSaveTract</sender>
-   <signal>clicked()</signal>
-   <receiver>actionSave_All_Tracts_As</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>915</x>
-     <y>260</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>tbOpenTract</sender>
-   <signal>clicked()</signal>
-   <receiver>actionOpenTract</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>892</x>
-     <y>260</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>tbDeleteTract</sender>
-   <signal>clicked()</signal>
-   <receiver>actionDeleteTract</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>938</x>
-     <y>260</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
     </hint>
    </hints>
   </connection>

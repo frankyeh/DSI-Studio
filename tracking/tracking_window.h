@@ -126,9 +126,12 @@ private slots:
     void on_gl_offset_value_valueChanged(double arg1);
     void on_gl_contrast_sliderMoved(int position);
     void on_gl_contrast_value_valueChanged(double arg1);
-    void on_actionCalculate_null_distibution_triggered();
     void on_actionPlot_triggered();
     void on_vbc_dist_update_clicked();
+    void on_show_null_distribution_clicked();
+    void on_cal_group_dist_clicked();
+    void on_save_vbc_dist_clicked();
+    void on_cal_lesser_tracts_clicked();
 };
 
 #endif // TRACKING_WINDOW_H
