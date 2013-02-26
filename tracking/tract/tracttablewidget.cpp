@@ -207,7 +207,7 @@ void TractTableWidget::save_all_tracts_as(void)
     filename = QFileDialog::getSaveFileName(
                 this,
                 "Save tracts as",
-                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + ".txt",
+                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text().replace(':','_') + ".txt",
                 "Tract files (*.txt);; Travis file (*.trk);;All files (*.*)");
     if(filename.isEmpty())
         return;
@@ -335,7 +335,7 @@ void TractTableWidget::save_tracts_as(void)
     filename = QFileDialog::getSaveFileName(
                 this,
                 "Save tracts as",
-                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text(),
+                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text().replace(':','_'),
                 "Tract files (*.txt);; Travis file (*.trk);;All files (*.*)");
     if(filename.isEmpty())
         return;

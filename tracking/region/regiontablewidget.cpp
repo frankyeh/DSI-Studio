@@ -395,7 +395,7 @@ void RegionTableWidget::save_region(void)
     QString filename = QFileDialog::getSaveFileName(
                            this,
                            "Save region",
-                           cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text(),
+                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text().replace(':','_'),
                            "Nifti file(*.nii.gz *.nii);;Text files (*.txt);;Maylab file (*.mat)" );
     if (filename.isEmpty())
         return;
@@ -465,9 +465,7 @@ void RegionTableWidget::whole_brain_points(std::vector<image::vector<3,short> >&
     for (image::pixel_index<3>index; index.valid(geo);index.next(geo))
     {
         image::vector<3,short> pos(index);
-        if (!tracking_get_voxel_dir(cur_tracking_window.handle,pos[0],pos[1],pos[2],fa, dir))
-            continue;
-        if (fa[0] > threshold)
+        if(cur_tracking_window.handle->fib_data.fib.fa[0][index.index()] > threshold)
             points.push_back(pos);
     }
 }

@@ -70,6 +70,7 @@ public:
                   const image::vector<3,float>& from_pos,const image::vector<3,float>& to_pos,
                   unsigned int color);
         void set_color(unsigned int color){std::fill(tract_color.begin(),tract_color.end(),color);}
+        void set_tract_color(unsigned int index,unsigned int color){tract_color[index] = color;}
         void cut_by_mask(const char* file_name);
         void undo(void);
         void redo(void);
