@@ -10,7 +10,7 @@
 #include "opengl/renderingtablewidget.h"
 #include "region/regiontablewidget.h"
 #include <QApplication>
-#include <QScrollBar>
+#include <QScrollBar>S
 #include <QMouseEvent>
 #include <QMessageBox>
 #include <QGraphicsTextItem>
@@ -1385,18 +1385,40 @@ void tracking_window::on_cal_lesser_tracts_clicked()
     if(!handle->has_vbc() || ui->tracking_index->findText("lesser mapping") == -1)
         return;
     std::vector<std::vector<float> > tracts;
+    std::vector<float> fdr;
     begin_prog("calculating");
-    handle->vbc->calculate_subject_spans(ui->vbc_threshold->value(),tracts);
+    handle->vbc->calculate_subject_spans(ui->vbc_threshold->value(),tracts,fdr);
     if(tracts.empty())
     {
         QMessageBox::information(this,"result","no significant lesser span",0);
         return;
     }
-    tractWidget->addNewTracts("lesser tracts");
-    tractWidget->tract_models.back()->add_tracts(tracts);
-    tractWidget->item(tractWidget->tract_models.size()-1,1)->
-            setText(QString::number(tractWidget->tract_models.back()->get_visible_track_count()));
 
+    for(float fdr_upper = 0.1,fdr_lower = 0.0;
+        fdr_upper < 1.0;fdr_upper += 0.1,fdr_lower += 0.1)
+    {
+        std::vector<std::vector<float> > selected_tracts;
+        std::vector<image::rgb_color> color;
+        for(unsigned int index = 0;index < fdr.size();++index)
+        {
+            if(fdr[index] >= fdr_lower && fdr[index] < fdr_upper)
+            {
+                selected_tracts.push_back(std::vector<float>());
+                selected_tracts.back().swap(tracts[index]);
+                color.push_back(image::rgb_color(230,fdr[index]*230,fdr[index]*230));
+            }
+        }
+        tractWidget->addNewTracts(QString("FDR ") + QString::number(fdr_lower) + " to " + QString::number(fdr_upper));
+        tractWidget->tract_models.back()->add_tracts(selected_tracts);
+        for(unsigned int index = 0;index < color.size();++index)
+        {
+            tractWidget->tract_models.back()->set_tract_color(index,color[index]);
+        }
+        tractWidget->item(tractWidget->tract_models.size()-1,1)->
+            setText(QString::number(tractWidget->tract_models.back()->get_visible_track_count()));
+    }
+
+    renderWidget->setData("tract_color_style",1);//manual assigned
     glWidget->makeTracts();
     glWidget->updateGL();
 }
@@ -1467,7 +1489,9 @@ void tracking_window::on_cal_group_dist_clicked()
     for(unsigned int index = 0;index < filename.size();++index)
         file_names.push_back(filename[index].toLocal8Bit().begin());
     std::vector<std::vector<float> > vbc_data(2);
-    if(!handle->vbc->calculate_group_distribution(file_names,ui->vbc_threshold->value(),vbc_data[0],vbc_data[1]))
+    if(!handle->vbc->calculate_group_distribution(ui->vbc_threshold->value(),
+
+                                                  file_names,vbc_data[0],vbc_data[1]))
     {
         QMessageBox::information(this,"error",handle->vbc->error_msg.c_str(),0);
         return;
@@ -1499,7 +1523,8 @@ void tracking_window::on_actionPair_comparison_triggered()
 
 
     begin_prog("load data");
-    if(!handle->vbc->single_subject_paired_analysis(filename1.toLocal8Bit().begin(),
+    if(!handle->vbc->single_subject_paired_analysis(
+                                                    filename1.toLocal8Bit().begin(),
                                                     filename2.toLocal8Bit().begin()))
     {
         check_prog(1,1);
