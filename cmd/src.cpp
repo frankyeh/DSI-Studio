@@ -38,14 +38,11 @@ int src(int ac, char *av[])
 
     boost::ptr_vector<DwiHeader> dwi_files;
     QStringList file_list;
-    if(ext ==".nii" || ext == ".dcm" || ext == "dseq")
-        // load nii file
-    {
+    if(ext ==".nii" || ext == ".dcm" || ext == "dseq" || ext == "i.gz")
         file_list << source.c_str();
-    }
     else
-        // load directory
     {
+        // load directory
         QDir directory = QString(source.c_str());
         if(vm.count("recursive"))
         {
