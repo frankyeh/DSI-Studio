@@ -154,10 +154,21 @@ bool load_4d_2dseq(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files
                         vs[2] = vs[0];
             }
             if(bvalues.empty())
+            {
+                QMessageBox::information(0,"error",QString("Cannot find bvalue in method file at ") + method_name,0);
                 return false;
+            }
+        }
+        else
+        {
+            QMessageBox::information(0,"error",QString("Cannot find method file at ") + method_name,0);
+            return false;
         }
     }
-    image::normalize(buf_image,65535.0);
+    buf_image /= 10.0;
+    //image::normalize(buf_image,65535.0);
+    std::istringstream bvalue(method_file["PVM_DwEffBval"]);
+    std::istringstream bvec(method_file["PVM_DwGradVec"]);
     for (unsigned int index = 0;index < buf_image.geometry()[3];++index)
     {
         std::auto_ptr<DwiHeader> new_file(new DwiHeader);
@@ -172,19 +183,11 @@ bool load_4d_2dseq(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files
         new_file->file_name += out.str();
         std::copy(vs,vs+3,new_file->voxel_size);
         dwi_files.push_back(new_file.release());
-    }
-    // load b_table
-    {
-        std::istringstream bvalue(method_file["PVM_DwEffBval"]);
-        std::istringstream bvec(method_file["PVM_DwGradVec"]);
-        for (unsigned int index = 0;index < dwi_files.size();++index)
-        {
-            bvalue >> dwi_files[index].bvalue;
-            bvec >> dwi_files[index].bvec[0]
-                 >> dwi_files[index].bvec[1]
-                 >> dwi_files[index].bvec[2];
-            dwi_files[index].bvec.normalize();
-        }
+        bvalue >> dwi_files.back().bvalue;
+        bvec >> dwi_files.back().bvec[0]
+             >> dwi_files.back().bvec[1]
+             >> dwi_files.back().bvec[2];
+        dwi_files[index].bvec.normalize();
     }
     return true;
 }
@@ -330,7 +333,7 @@ void dicom_parser::load_files(QStringList file_list)
             max_b = std::max(max_b,(double)dwi_files[index].get_bvalue());
         }
         if(max_b == 0.0)
-            QMessageBox::information(this,"DSI Studio","Cannot found b-table from the header. You may need to load an external b-table",0);
+            QMessageBox::information(this,"DSI Studio","Cannot find b-table from the header. You may need to load an external b-table",0);
     }
 }
 
