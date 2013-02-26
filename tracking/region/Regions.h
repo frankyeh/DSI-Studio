@@ -95,14 +95,30 @@ public:
         bool LoadFromFile(const char* FileName,const std::vector<float>& trans);
         void Flip(unsigned int dimension);
         void shift(const image::vector<3,short>& dx);
-
-        void LoadFromBuffer(const image::basic_image<short, 3>& from,const std::vector<float>& trans);
+        template<typename image_type>
+        void LoadFromBuffer(const image_type& from,const std::vector<float>& trans)
+        {
+            std::vector<image::vector<3,short> > points;
+            for (image::pixel_index<3>index; index.valid(from.geometry());index.next(from.geometry()))
+            {
+                if (from[index.index()] != 0)
+                {
+                    image::vector<3> p(index.begin()),p2;
+                    image::vector_transformation(p.begin(),p2.begin(),trans.begin(),image::vdim<3>());
+                    points.push_back(image::vector<3,short>(std::floor(p2[0]+0.5),
+                                                            std::floor(p2[1]+0.5),
+                                                            std::floor(p2[2]+0.5)));
+                }
+            }
+            region.swap(points);
+            std::sort(region.begin(),region.end());
+        }
         template<typename image_type>
         void LoadFromBuffer(const image_type& mask)
         {
             modified = true;region.clear();
             for (image::pixel_index<3>index; mask.geometry().is_valid(index);index.next(mask.geometry()))
-                if (mask[index.index()])
+                if (mask[index.index()] != 0)
                 region.push_back(image::vector<3,short>(index.x(), index.y(),index.z()));
             std::sort(region.begin(),region.end());
         }
