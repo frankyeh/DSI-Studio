@@ -67,18 +67,17 @@ public:
     //std::vector<float> null_threshold;
     void run_span(float percentile,std::vector<std::vector<float> >& span);
     void calculate_span_distribution(float percentile,std::vector<unsigned int>& dist);
-    void calculate_subject_distribution(float percentile,std::vector<float>& subject_greater,
+    void calculate_subject_distribution(float percentile,
+                                        std::vector<float>& subject_greater,
                                         std::vector<float>& subject_lesser);
-    bool calculate_group_distribution(const std::vector<std::string>& files,
-                                        float percentile,std::vector<float>& subject_greater,
+    bool calculate_group_distribution(float percentile,const std::vector<std::string>& files,
+                                        std::vector<float>& subject_greater,
                                         std::vector<float>& subject_lesser);
-    void calculate_null_distribution(float percentile,std::vector<float>& subject_greater,
+    void calculate_null_distribution(float percentile,
+                                     std::vector<float>& subject_greater,
                                      std::vector<float>& subject_lesser);
-    void hist_to_dist(const std::vector<unsigned int>& dist_greater,
-                      const std::vector<unsigned int>& dist_lesser,
-                      std::vector<float>& subject_greater,
-                      std::vector<float>& subject_lesser);
-    void calculate_subject_spans(float percentile,std::vector<std::vector<float> >& spans);
+    void calculate_subject_spans(float percentile,std::vector<std::vector<float> >& spans,
+                                 std::vector<float>& fdr);
 
 public:
 };

@@ -30,7 +30,7 @@ void vbc_database::read_template(ODFModel* fib_file_)
         findex[index] = fib_file->fib_data.fib.findex[index];
         fa[index] = fib_file->fib_data.fib.fa[index];
     }
-    fiber_threshold = image::segmentation::otsu_threshold(
+    fiber_threshold = 0.6*image::segmentation::otsu_threshold(
         image::basic_image<float, 3,image::const_pointer_memory<float> >(fa[0],dim));
     vi2si.resize(dim.size());
     for(unsigned int index = 0;index < dim.size();++index)
@@ -352,6 +352,7 @@ bool vbc_database::single_subject_analysis(const char* file_name)
     initialize_greater_lesser();
     std::vector<unsigned char> greater_fib_count(dim.size()),lesser_fib_count(dim.size());
     std::vector<float> population;
+
     for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
     {
         unsigned int cur_index = si2vi[s_index];
@@ -403,20 +404,21 @@ void vbc_database::run_span(float percentile,std::vector<std::vector<float> >& s
     float param[8];
     unsigned char methods[5];
     param[0] = fib_file->fib_data.vs[0];
-    param[1] = 30 * 3.1415926 / 180.0;
-    param[2] = 30 * 3.1415926 / 180.0;
+    param[1] = 60 * 3.1415926 / 180.0;
+    param[2] = 60 * 3.1415926 / 180.0;
     param[3] = percentile;
     param[4] = 0;//ui->smoothing->value();
     param[5] = 0;//ui->min_length->value();
     param[6] = 500;//ui->max_length->value();
-    methods[0] = 2;//voxel tracking ui->tracking_method->currentIndex();
+    methods[0] = 0;//voxel tracking ui->tracking_method->currentIndex();
     methods[1] = 2;//all directions ui->initial_direction->currentIndex();
     methods[2] = 0;//trilinear interpolation ui->interpolation->currentIndex();
     methods[3] = 1;//stop by seed ui->tracking_plan->currentIndex();
     methods[4] = 1;//voxelwise tracking ui->seed_plan->currentIndex();
     std::vector<image::vector<3,short> > seed;
+
     for(image::pixel_index<3> index;index.valid(dim);index.next(dim))
-        if(fib_file->fib_data.fib.fa[0][index.index()] > param[3])
+        if(fib_file->fib_data.fib.fa[0][index.index()] > percentile)
             seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
 
     std::auto_ptr<ThreadData> thread_handle(ThreadData::new_thread(fib_file,param,methods));
@@ -425,10 +427,8 @@ void vbc_database::run_span(float percentile,std::vector<std::vector<float> >& s
     span.swap(thread_handle->track_buffer);
 }
 
-void vbc_database::calculate_span_distribution(float percentile,std::vector<unsigned int>& dist)
+void cal_hist(const std::vector<std::vector<float> >& span,std::vector<unsigned int>& dist)
 {
-    std::vector<std::vector<float> > span;
-    run_span(percentile,span);
     for(unsigned int j = 0; j < span.size();++j)
     {
         unsigned int length = span[j].size()/3-1;
@@ -440,22 +440,41 @@ void vbc_database::calculate_span_distribution(float percentile,std::vector<unsi
     }
 }
 
-void vbc_database::hist_to_dist(const std::vector<unsigned int>& dist_greater,
-                  const std::vector<unsigned int>& dist_lesser,
-                  std::vector<float>& subject_greater,
-                  std::vector<float>& subject_lesser)
+void hist_to_dist(const std::vector<unsigned int>& count,
+                  std::vector<float>& dist)
 {
-    subject_greater.resize(dist_greater.size());
-    subject_lesser.resize(dist_lesser.size());
-    std::copy(dist_greater.begin(),dist_greater.end(),subject_greater.begin());
-    std::copy(dist_lesser.begin(),dist_lesser.end(),subject_lesser.begin());
-    std::for_each(subject_greater.begin(),subject_greater.end(),boost::lambda::_1 /=
-            std::accumulate(subject_greater.begin(),subject_greater.end(),0.0f));
-    std::for_each(subject_lesser.begin(),subject_lesser.end(),boost::lambda::_1 /=
-            std::accumulate(subject_lesser.begin(),subject_lesser.end(),0.0f));
+    dist.resize(count.size());
+    std::copy(count.begin(),count.end(),dist.begin());
+    std::for_each(dist.begin(),dist.end(),boost::lambda::_1 /=
+            std::accumulate(dist.begin(),dist.end(),0.0f));
 }
 
-void vbc_database::calculate_subject_distribution(float percentile,std::vector<float>& subject_greater,
+void dist_to_cdf(std::vector<float>& dist)
+{
+    float sum = 1.0;
+    for(unsigned int index = 0;index < dist.size();++index)
+    {
+        float value = dist[index];
+        dist[index] = sum;
+        sum -= value;
+        if(sum < 0.0)
+            sum = 0.0;
+    }
+}
+
+
+void vbc_database::calculate_span_distribution(float percentile,std::vector<unsigned int>& dist)
+{
+    std::vector<std::vector<float> > span;
+    run_span(percentile,span);
+    cal_hist(span,dist);
+}
+
+
+
+void vbc_database::calculate_subject_distribution(float percentile,
+
+                                                  std::vector<float>& subject_greater,
                                                   std::vector<float>& subject_lesser)
 {
     // calculate subject fiber distribution
@@ -465,12 +484,13 @@ void vbc_database::calculate_subject_distribution(float percentile,std::vector<f
     calculate_span_distribution(percentile,dist_greater);
     fib_file->fib_data.fib.set_tracking_index("lesser mapping");
     calculate_span_distribution(percentile,dist_lesser);
-    hist_to_dist(dist_greater,dist_lesser,subject_greater,subject_lesser);
+    hist_to_dist(dist_greater,subject_greater);
+    hist_to_dist(dist_lesser,subject_lesser);
 }
 
-bool vbc_database::calculate_group_distribution(const std::vector<std::string>& files,
-                                    float percentile,std::vector<float>& subject_greater,
-                                    std::vector<float>& subject_lesser)
+bool vbc_database::calculate_group_distribution(float percentile,const std::vector<std::string>& files,
+                                                std::vector<float>& subject_greater,
+                                                std::vector<float>& subject_lesser)
 {
     begin_prog("processing");
     std::vector<unsigned int> dist_greater(200);
@@ -484,7 +504,8 @@ bool vbc_database::calculate_group_distribution(const std::vector<std::string>& 
         fib_file->fib_data.fib.set_tracking_index("lesser mapping");
         calculate_span_distribution(percentile,dist_lesser);
     }
-    hist_to_dist(dist_greater,dist_lesser,subject_greater,subject_lesser);
+    hist_to_dist(dist_greater,subject_greater);
+    hist_to_dist(dist_lesser,subject_lesser);
 }
 
 void vbc_database::calculate_null_distribution(float percentile,
@@ -501,6 +522,7 @@ void vbc_database::calculate_null_distribution(float percentile,
     begin_prog("processing");
     std::vector<unsigned int> dist_greater(200);
     std::vector<unsigned int> dist_lesser(200);
+
     for(unsigned int main_index = 0;check_prog(main_index,subject_qa.size());++main_index)
     {
         initialize_greater_lesser();
@@ -555,7 +577,8 @@ void vbc_database::calculate_null_distribution(float percentile,
         fib_file->fib_data.fib.set_tracking_index("lesser mapping");
         calculate_span_distribution(percentile,dist_lesser);
     }
-    hist_to_dist(dist_greater,dist_lesser,subject_greater,subject_lesser);
+    hist_to_dist(dist_greater,subject_greater);
+    hist_to_dist(dist_lesser,subject_lesser);
     fib_file->fib_data.fib.set_tracking_index("qa");
 
 
@@ -566,59 +589,49 @@ void vbc_database::calculate_null_distribution(float percentile,
 
 }
 
-void vbc_database::calculate_subject_spans(float percentile,std::vector<std::vector<float> >& lesser_tracts)
+void vbc_database::calculate_subject_spans(float percentile,
+                                           std::vector<std::vector<float> >& lesser_tracts,
+                                           std::vector<float>& fdr)
 {
     fib_file->fib_data.fib.set_tracking_index("lesser mapping");
     std::vector<std::vector<float> > spans;
     run_span(percentile,spans);
 
-
-    //std::vector<float> subject_greater,subject_lesser;
-    //calculate_subject_distribution(percentile,subject_greater,subject_lesser);
     std::vector<float> greater_dist,lesser_dist;
     calculate_null_distribution(percentile,greater_dist,lesser_dist);
+    dist_to_cdf(lesser_dist);
 
-    for(unsigned int index = 2;index < lesser_dist.size();++index)
-        lesser_dist[index] /= (float)index;
-
-    std::for_each(lesser_dist.begin(),lesser_dist.end(),boost::lambda::_1 /= std::accumulate(lesser_dist.begin(),lesser_dist.end(),0.0));
-
-    float sum = 1.0;
-    for(unsigned int index = 0;index < lesser_dist.size();++index)
+    std::map<unsigned int,unsigned int,std::greater<unsigned int> > length_map;
     {
-        float value = lesser_dist[index];
-        lesser_dist[index] = sum;
-        sum -= value;
-        if(sum < 0.0)
-            sum = 0.0;
+        std::vector<unsigned int> length_list(spans.size());
+        for(unsigned int i = 0; i < spans.size();++i)
+            length_map[length_list[i] = spans[i].size()/3-1] = 0;
+        for(unsigned int i = 0; i < spans.size();++i)
+            ++length_map[length_list[i]];
     }
 
+    std::map<unsigned int,unsigned int,std::greater<unsigned int> >::iterator beg = length_map.begin();
+    std::map<unsigned int,unsigned int,std::greater<unsigned int> >::iterator end = length_map.end();
+    std::vector<float> fdr_of_length(beg->first+1);
+    std::fill(fdr_of_length.begin(),fdr_of_length.end(),1.0);
+    for(unsigned int accumulated_count = 0;beg != end;++beg)
+    {
+        unsigned int cur_length = beg->first;
+        accumulated_count += beg->second;
+        float expected_n = accumulated_count;
+        if(cur_length < lesser_dist.size())
+            expected_n = lesser_dist[cur_length]*(float)spans.size();
+        fdr_of_length[cur_length] = expected_n/(float)accumulated_count;
+    }
 
-    std::vector<float> p_values(spans.size());
     for(unsigned int i = 0; i < spans.size();++i)
     {
         unsigned int length = spans[i].size()/3-1;
-        if(length < lesser_dist.size())
-            p_values[i] = lesser_dist[length];
-    }
-    std::sort(p_values.begin(),p_values.end());
-
-    float p_value_threshold = 0.0;
-    for(int k = p_values.size()-1;k >= 0;--k)
-        if(p_values[k] <= k*0.05/p_values.size())
+        if(fdr_of_length[length] < 0.5)
         {
-            p_value_threshold = p_values[k];
-            break;
-        }
-
-    for(unsigned int i = 0; i < spans.size();++i)
-    {
-        unsigned int length = spans[i].size()/3-1;
-        float cur_p_value = 0.0;
-        if(length < lesser_dist.size())
-            cur_p_value = lesser_dist[length];
-        if(cur_p_value <= p_value_threshold)
             lesser_tracts.push_back(spans[i]);
+            fdr.push_back(fdr_of_length[length]);
+        }
     }
 }
 
@@ -635,6 +648,7 @@ bool vbc_database::single_subject_paired_analysis(const char* file_name1,const c
     image::divide_constant(cur_subject_data1,max_value);
 
     std::vector<unsigned char> greater_fib_count(dim.size()),lesser_fib_count(dim.size());
+
     for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
     {
         unsigned int cur_index = si2vi[s_index];
