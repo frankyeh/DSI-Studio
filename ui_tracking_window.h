@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Thu Feb 21 14:30:17 2013
+** Created: Thu Feb 28 12:56:50 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -127,6 +127,7 @@ public:
     QAction *actionPair_comparison;
     QAction *actionCalculate_null_distibution;
     QAction *actionPlot;
+    QAction *actionManual_Registration;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QHBoxLayout *horizontalLayout_13;
@@ -566,6 +567,8 @@ public:
         actionCalculate_null_distibution->setObjectName(QString::fromUtf8("actionCalculate_null_distibution"));
         actionPlot = new QAction(tracking_window);
         actionPlot->setObjectName(QString::fromUtf8("actionPlot"));
+        actionManual_Registration = new QAction(tracking_window);
+        actionManual_Registration->setObjectName(QString::fromUtf8("actionManual_Registration"));
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -1990,6 +1993,7 @@ public:
         menu_View->addAction(actionCopy_to_clipboard);
         menu_View->addSeparator();
         menu_View->addAction(actionRestore_window_layout);
+        menu_View->addAction(actionManual_Registration);
         menu_Slices->addAction(actionInsert_T1_T2);
         menu_Slices->addAction(actionAdd_surface);
         menu_Slices->addSeparator();
@@ -2134,6 +2138,7 @@ public:
         actionPair_comparison->setText(QApplication::translate("tracking_window", "Single Subject Paired Comparison...", 0, QApplication::UnicodeUTF8));
         actionCalculate_null_distibution->setText(QApplication::translate("tracking_window", "Calculate null distibution...", 0, QApplication::UnicodeUTF8));
         actionPlot->setText(QApplication::translate("tracking_window", "Plot...", 0, QApplication::UnicodeUTF8));
+        actionManual_Registration->setText(QApplication::translate("tracking_window", "Background Registration...", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)

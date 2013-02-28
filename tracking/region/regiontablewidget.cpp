@@ -2,6 +2,7 @@
 #include <QContextMenuEvent>
 #include <QMessageBox>
 #include <QClipboard>
+#include <QSettings>
 #include "regiontablewidget.h"
 #include "tracking/tracking_window.h"
 #include "tracking_static_link.h"
@@ -392,13 +393,15 @@ void RegionTableWidget::save_region(void)
 {
     if (currentRow() >= regions.size())
         return;
+    QSettings settings;
     QString filename = QFileDialog::getSaveFileName(
                            this,
                            "Save region",
-                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text().replace(':','_'),
-                           "Nifti file(*.nii.gz *.nii);;Text files (*.txt);;Maylab file (*.mat)" );
+                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text().replace(':','_') + "." + settings.value("region_save_type","nii.gz").toString(),
+                           "Region file(*.nii.gz *.nii *.txt *.mat);;All file types (*.*)" );
     if (filename.isEmpty())
         return;
+    settings.setValue("region_save_type",QFileInfo(filename).completeSuffix());
     cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
     regions[currentRow()].SaveToFile(filename.toLocal8Bit().begin(),
                                      cur_tracking_window.handle->fib_data.trans_to_mni);

@@ -19,7 +19,7 @@ namespace Ui {
 }
 
 class GLWidget;
-
+class manual_alignment;
 class tracking_window : public QMainWindow
 {
     Q_OBJECT
@@ -56,7 +56,8 @@ public:
     void set_tracking_param(float* param,unsigned char* methods);
 
 public:
-    std::auto_ptr<lm3_type> mi3;
+    image::affine_transform<3,float> mi3_arg;
+    std::auto_ptr<manual_alignment> mi3;
 public:// color_bar
     image::color_image bar;
     QGraphicsScene color_bar;
@@ -132,6 +133,7 @@ private slots:
     void on_cal_group_dist_clicked();
     void on_save_vbc_dist_clicked();
     void on_cal_lesser_tracts_clicked();
+    void on_actionManual_Registration_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

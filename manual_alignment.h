@@ -24,11 +24,12 @@ private:
 private:
     unsigned char thread_terminated;
     std::auto_ptr<boost::thread> reg_thread;
-    QTimer* timer;
     float w;
     void load_param(void);
 public:
-    image::transformation_matrix<3,float> affine;
+    QTimer* timer;
+    image::transformation_matrix<3,float> T;
+    image::transformation_matrix<3,float> iT;
     explicit manual_alignment(QWidget *parent,
         const image::basic_image<float,3>& from_,
         const image::basic_image<float,3>& to_,
@@ -36,12 +37,14 @@ public:
     ~manual_alignment();
     void connect_arg_update();
     void disconnect_arg_update();
-    
+    void update_affine(void);
 private slots:
     void slice_pos_moved();
     void param_changed();
     void check_reg();
     void on_buttonBox_accepted();
+
+    void on_buttonBox_rejected();
 
 private:
     Ui::manual_alignment *ui;

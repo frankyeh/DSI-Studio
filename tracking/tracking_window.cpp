@@ -16,6 +16,7 @@
 #include <QGraphicsTextItem>
 #include "tracking_model.hpp"
 #include "libs/tracking/tracking_model.hpp"
+#include "manual_alignment.h"
 
 
 #include "mapping/atlas.hpp"
@@ -134,16 +135,16 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
     // setup atlas
     if(!fa_template_imp.I.empty() && fib_data.vs[0] > 0.5 && handle->fib_data.trans_to_mni.empty())
     {
-        mi3.reset(new lm3_type);
-        mi3->from = slice.source_images;
-        mi3->to = fa_template_imp.I;
-        mi3->arg_min.scaling[0] = slice.voxel_size[0] / std::fabs(fa_template_imp.tran[0]);
-        mi3->arg_min.scaling[1] = slice.voxel_size[1] / std::fabs(fa_template_imp.tran[5]);
-        mi3->arg_min.scaling[2] = slice.voxel_size[2] / std::fabs(fa_template_imp.tran[10]);
-        mi3->arg_min.translocation[0] = fa_template_imp.I.geometry()[0]-slice.source_images.geometry()[0]*mi3->arg_min.scaling[0];
-        mi3->arg_min.translocation[1] = fa_template_imp.I.geometry()[1]-slice.source_images.geometry()[1]*mi3->arg_min.scaling[1];
-        mi3->arg_min.translocation[2] = fa_template_imp.I.geometry()[2]-slice.source_images.geometry()[2]*mi3->arg_min.scaling[2];
-        mi3->thread_argmin(image::reg::affine);
+        mi3_arg.scaling[0] = slice.voxel_size[0] / std::fabs(fa_template_imp.tran[0]);
+        mi3_arg.scaling[1] = slice.voxel_size[1] / std::fabs(fa_template_imp.tran[5]);
+        mi3_arg.scaling[2] = slice.voxel_size[2] / std::fabs(fa_template_imp.tran[10]);
+        image::vector<3,double> mF = image::reg::center_of_mass(slice.source_images);
+        image::vector<3,double> mG = image::reg::center_of_mass(fa_template_imp.I);
+
+        mi3_arg.translocation[0] = mG[0]-mF[0]*mi3_arg.scaling[0];
+        mi3_arg.translocation[1] = mG[1]-mF[1]*mi3_arg.scaling[1];
+        mi3_arg.translocation[2] = mG[2]-mF[2]*mi3_arg.scaling[2];
+        mi3.reset(new manual_alignment(this,slice.source_images,fa_template_imp.I,mi3_arg));
     }
     for(int index = 0;index < atlas_list.size();++index)
         ui->atlasListBox->addItem(atlas_list[index].name.c_str());
@@ -425,6 +426,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
             pos[1] -= std::floor(pos[1]/slice.geometry[1])*slice.geometry[1];
             has_info = true;
         }
+        copy_target = 1;
     }
 
     if(!has_info)
@@ -482,17 +484,14 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
             .arg(std::floor(pos[1]*10.0+0.5)/10.0)
             .arg(std::floor(pos[2]*10.0+0.5)/10.0);
     // show atlas position
-    if(mi3.get() && !mi3->ended)
+    if(mi3.get())
     {
+        mi3->update_affine();
+        image::transformation_matrix<3,float> T(mi3_arg);
+        image::reg::shift_to_center(slice.source_images.geometry(),fa_template_imp.I.geometry(),T);
         handle->fib_data.trans_to_mni.resize(16);
-        image::create_affine_transformation_matrix(
-                    mi3->get(),
-                    mi3->get()+9,handle->fib_data.trans_to_mni.begin(),image::vdim<3>());
-        fa_template_imp.get_transformation(handle->fib_data.trans_to_mni);
-        handle->fib_data.trans_to_mni[3] += handle->fib_data.trans_to_mni[0]*(slice.geometry[0]-1);
-        handle->fib_data.trans_to_mni[0] = -handle->fib_data.trans_to_mni[0];
-        handle->fib_data.trans_to_mni[7] += handle->fib_data.trans_to_mni[5]*(slice.geometry[1]-1);
-        handle->fib_data.trans_to_mni[5] = -handle->fib_data.trans_to_mni[5];
+        image::create_affine_transformation_matrix(mi3->T.get(),mi3->T.get() + 9,handle->fib_data.trans_to_mni.begin(),image::vdim<3>());
+        fa_template_imp.add_transformation(handle->fib_data.trans_to_mni);
     }
 
     if(!handle->fib_data.trans_to_mni.empty())
@@ -517,7 +516,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
             ++data_index;
         }
     ui->statusbar->showMessage(status);
-    copy_target = 1;
+
 
     return false;
 }
@@ -808,6 +807,7 @@ void tracking_window::on_actionInsert_T1_T2_triggered()
         "Image files (*.dcm *.hdr *.nii *.nii.gz);;All files (*.*)" );
     if( filenames.isEmpty() || !glWidget->addSlices(filenames))
         return;
+    absolute_path = QFileInfo(filenames[0]).absolutePath();
     ui->SliceModality->addItem(QFileInfo(filenames[0]).baseName());
     ui->SliceModality->setCurrentIndex(glWidget->other_slices.size());
     ui->sliceViewBox->addItem(QString("slice:")+QFileInfo(filenames[0]).baseName().toLocal8Bit().begin());
@@ -1142,6 +1142,7 @@ void tracking_window::on_save_report_clicked()
                 "Report file (*.txt);;All files (*.*)");
     if(filename.isEmpty())
         return;
+    absolute_path = QFileInfo(filename).absolutePath();
     std::ofstream out(filename.toLocal8Bit().begin());
     if(!out)
     {
@@ -1238,6 +1239,8 @@ void tracking_window::on_actionSave_Report_as_triggered()
         ui->report_widget->savePng(filename);
     if(QFileInfo(filename).completeSuffix().toLower() == "pdf")
         ui->report_widget->savePdf(filename);
+    absolute_path = QFileInfo(filename).absolutePath();
+
 
 }
 
@@ -1259,6 +1262,8 @@ void tracking_window::on_actionOpen_Subject_Data_triggered()
                                 "Fib files (*.fib.gz *.fib);;All files (*.*)" );
     if (filename.isEmpty())
         return;
+    absolute_path = QFileInfo(filename).absolutePath();
+
     begin_prog("load data");
     if(!handle->vbc->single_subject_analysis(filename.toLocal8Bit().begin()))
     {
@@ -1432,6 +1437,8 @@ void tracking_window::on_save_vbc_dist_clicked()
                 "Report file (*.txt);;All files (*.*)");
     if(filename.isEmpty())
         return;
+    absolute_path = QFileInfo(filename).absolutePath();
+
     std::ofstream out(filename.toLocal8Bit().begin());
     if(!out)
     {
@@ -1485,6 +1492,8 @@ void tracking_window::on_cal_group_dist_clicked()
                                 "Fib files (*.fib.gz *.fib);;All files (*.*)" );
     if (filename.isEmpty())
         return;
+    absolute_path = QFileInfo(filename[0]).absolutePath();
+
     std::vector<std::string> file_names;
     for(unsigned int index = 0;index < filename.size();++index)
         file_names.push_back(filename[index].toLocal8Bit().begin());
@@ -1741,3 +1750,12 @@ void tracking_window::on_actionPlot_triggered()
 }
 
 
+
+void tracking_window::on_actionManual_Registration_triggered()
+{
+    if(mi3.get())
+    {
+        mi3->timer->start();
+        mi3->show();
+    }
+}

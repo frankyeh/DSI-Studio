@@ -57,9 +57,6 @@ manual_alignment::manual_alignment(QWidget *parent,
     thread_terminated = 0;
     reg_thread.reset(new boost::thread(run_reg,from,to,&arg,&thread_terminated));
 
-    timer->start();
-
-
 }
 void manual_alignment::connect_arg_update()
 {
@@ -95,6 +92,7 @@ void manual_alignment::disconnect_arg_update()
 
 manual_alignment::~manual_alignment()
 {
+    timer->stop();
     if(reg_thread.get())
     {
         timer->stop();
@@ -147,15 +145,20 @@ void manual_alignment::load_param(void)
     ui->yz->setValue(arg.affine[2]);
 
 }
+void manual_alignment::update_affine(void)
+{
+    T = arg;
+    image::reg::shift_to_center(from.geometry(),to.geometry(),T);
+    iT = T;
+    iT.inverse();
+}
 
 void manual_alignment::update_image(void)
 {
+    update_affine();
     warped_from.clear();
     warped_from.resize(to.geometry());
-    affine = arg;
-    image::reg::shift_to_center(from.geometry(),to.geometry(),affine);
-    affine.inverse();
-    image::resample(from,warped_from,affine);
+    image::resample(from,warped_from,iT);
 }
 void manual_alignment::param_changed()
 {
@@ -246,10 +249,10 @@ void manual_alignment::check_reg()
 void manual_alignment::on_buttonBox_accepted()
 {
     timer->stop();
-    if(reg_thread.get())
-    {
-        thread_terminated = 1;
-        reg_thread->join();
-    }
     update_image(); // to update the affine matrix
+}
+
+void manual_alignment::on_buttonBox_rejected()
+{
+    timer->stop();
 }

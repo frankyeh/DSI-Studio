@@ -879,6 +879,7 @@
     <addaction name="actionCopy_to_clipboard"/>
     <addaction name="separator"/>
     <addaction name="actionRestore_window_layout"/>
+    <addaction name="actionManual_Registration"/>
    </widget>
    <widget class="QMenu" name="menu_Slices">
     <property name="title">
@@ -3513,6 +3514,11 @@
   <action name="actionPlot">
    <property name="text">
     <string>Plot...</string>
+   </property>
+  </action>
+  <action name="actionManual_Registration">
+   <property name="text">
+    <string>Background Registration...</string>
    </property>
   </action>
  </widget>
