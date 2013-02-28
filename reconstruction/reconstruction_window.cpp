@@ -482,7 +482,7 @@ void reconstruction_window::on_manual_reg_clicked()
     std::auto_ptr<manual_alignment> manual(new manual_alignment(this,image,fa_template_imp.I,arg));
     manual->timer->start();
     if(manual->exec() == QDialog::Accepted)
-        handle->voxel.qsdr_trans = manual->affine;
+        handle->voxel.qsdr_trans = manual->T;
 }
 
 void reconstruction_window::on_odf_sharpening_currentIndexChanged(int index)
