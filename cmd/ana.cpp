@@ -100,8 +100,8 @@ int ana(int ac, char *av[])
         float threshold = 0.6*image::segmentation::otsu_threshold(
                     image::basic_image<float, 3,image::const_pointer_memory<float> >(handle->fib_data.fib.fa[0],geometry));
 
-        unsigned int index_num = handle->get_name_index(index_name);
-        if(index_num == handle->fib_data.view_item.size())
+        // check index
+        if(index_name != "qa" && index_name != "fa" &&  handle->get_name_index(index_name) == handle->fib_data.view_item.size())
         {
             out << "cannot find index name:" << index_name << std::endl;
             return 0;
