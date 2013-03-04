@@ -165,7 +165,7 @@ bool load_4d_2dseq(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files
             return false;
         }
     }
-    buf_image /= 10.0;
+    buf_image /= 50.0;
     //image::normalize(buf_image,65535.0);
     std::istringstream bvalue(method_file["PVM_DwEffBval"]);
     std::istringstream bvec(method_file["PVM_DwGradVec"]);
