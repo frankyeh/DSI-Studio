@@ -759,12 +759,10 @@ void TractModel::get_density_map(image::basic_image<unsigned int,3>& mapping,
                                  const std::vector<float>& transformation,bool endpoint)
 {
     image::geometry<3> geometry = mapping.geometry();
-    std::fill(mapping.begin(),mapping.end(),0);
-    std::vector<char> buf(geometry.size());
     begin_prog("calculating");
     for (unsigned int i = 0;check_prog(i,tract_data.size());++i)
     {
-        std::fill(buf.begin(),buf.end(),0);
+        std::set<unsigned int> point_set;
         for (unsigned int j = 0;j < tract_data[i].size();j+=3)
         {
             if(j && endpoint)
@@ -778,9 +776,12 @@ void TractModel::get_density_map(image::basic_image<unsigned int,3>& mapping,
             int z = std::floor(tmp[2]+0.5);
             if (!geometry.is_valid(x,y,z))
                 continue;
-            buf[(z*mapping.height()+y)*mapping.width()+x] = 1;
+            point_set.insert((z*mapping.height()+y)*mapping.width()+x);
         }
-        image::add(mapping.begin(),mapping.end(),buf.begin());
+
+        std::vector<unsigned int> point_list(point_set.begin(),point_set.end());
+        for(unsigned int j = 0;j < point_list.size();++j)
+            ++mapping[point_list[j]];
     }
 }
 //---------------------------------------------------------------------------

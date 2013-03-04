@@ -697,7 +697,13 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
             nii_header << tdi;
             nii_header.set_voxel_size(vs.begin());
             if(!cur_tracking_window.handle->fib_data.trans_to_mni.empty())
-                nii_header.set_image_transformation(cur_tracking_window.handle->fib_data.trans_to_mni.begin());
+            {
+                std::vector<float> T(transformation),Tout(16);
+                image::matrix::inverse(T.begin(),image::dim<4,4>());
+                image::matrix::product(cur_tracking_window.handle->fib_data.trans_to_mni.begin(),T.begin(),Tout.begin(),
+                                       image::dim<4,4>(),image::dim<4,4>());
+                nii_header.set_image_transformation(Tout.begin());
+            }
             nii_header.save_to_file(filename.toLocal8Bit().begin());
         }
         else
