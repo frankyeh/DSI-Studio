@@ -164,7 +164,7 @@ public:
                   boost::variate_generator<boost::mt19937&, boost::uniform_real<float> >& gen)
         {
             info.init(position);
-            switch (param.seed_id)
+            switch (param.initial_dir)
             {
             case 0:// main direction
                 {

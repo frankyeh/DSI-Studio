@@ -23,7 +23,7 @@ struct TrackingParam
     unsigned int max_points_count3;
 
     unsigned int method_id;
-    unsigned int seed_id;
+    unsigned int initial_dir;
     unsigned int interpo_id;
 
     void scaling_in_voxel(image::vector<3,float>& dir) const

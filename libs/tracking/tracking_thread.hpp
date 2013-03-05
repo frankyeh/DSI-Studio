@@ -34,7 +34,7 @@ public:
         new_thread->param.max_points_count3 = std::max<unsigned int>(6,3.0*param[6]/param[0]);
 
         new_thread->param.method_id = methods[0];
-        new_thread->param.seed_id = methods[1];
+        new_thread->param.initial_dir = methods[1];
         new_thread->param.interpo_id = methods[2];
         new_thread->stop_by_track = methods[3];
         new_thread->center_seed = methods[4];
@@ -129,7 +129,7 @@ public:
                         iteration+=thread_count;
                         continue;
                     }
-                    if(param.seed_id == 0)
+                    if(param.initial_dir == 0)// primary direction
                         iteration+=thread_count;
                 }
                 else
@@ -218,6 +218,11 @@ public:
 
     void run(unsigned int thread_count,unsigned int termination_count,bool wait = false)
     {
+        if(center_seed)
+        {
+            std::srand(0);
+            std::random_shuffle(seeds.begin(),seeds.end());
+        }
         seed_count.clear();
         tract_count.clear();
         seed_count.resize(thread_count);
