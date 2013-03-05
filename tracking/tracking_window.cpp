@@ -363,7 +363,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
         ui->max_length->setValue(settings.value("max_length",500).toDouble());
         ui->tracking_method->setCurrentIndex(settings.value("tracking_method",0).toInt());
         ui->seed_plan->setCurrentIndex(settings.value("seed_plan",0).toInt());
-        ui->initial_direction->setCurrentIndex(settings.value("initial_direction",1).toInt());
+        ui->initial_direction->setCurrentIndex(settings.value("initial_direction",0).toInt());
         ui->interpolation->setCurrentIndex(settings.value("interpolation",0).toInt());
         ui->tracking_plan->setCurrentIndex(settings.value("tracking_plan",0).toInt());
         ui->track_count->setValue(settings.value("track_count",2000).toInt());
