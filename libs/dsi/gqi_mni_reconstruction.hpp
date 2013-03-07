@@ -124,7 +124,7 @@ public:
         else
         {
             check_prog(0,2);
-            image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::square_error(),terminated);
+            image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::mutual_information(),terminated);
             check_prog(1,2);
             affine = arg_min;
             image::reg::shift_to_center(VF.geometry(),VG.geometry(),affine);
