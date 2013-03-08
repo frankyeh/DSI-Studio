@@ -361,48 +361,36 @@ public:
         return num_fiber;
     }
 
-    void set_tracking_index(int new_index)
+    bool set_tracking_index(int new_index)
     {
         if(new_index >= index_data.size())
-            return;
+            return false;
         fa = index_data[new_index];
         findex = index_data_dir[new_index];
+        return true;
     }
 
-    void set_tracking_index(const std::string name)
+    bool set_tracking_index(const std::string name)
     {
-        set_tracking_index(std::find(index_name.begin(),index_name.end(),name)-index_name.begin());
+        return set_tracking_index(std::find(index_name.begin(),index_name.end(),name)-index_name.begin());
     }
-
     float getFA(unsigned int index,unsigned char order) const
     {
-        if(order >= num_fiber)
+        if(order >= fa.size())
             return 0.0;
         return fa[order][index];
     }
-
-    float estimateFA(const image::vector<3,float>& pos,unsigned char order) const
-    {
-        if(order >= num_fiber)
-            return 0.0;
-        return
-            image::linear_estimate(image::basic_image<float,3,image::pointer_memory<float> >((float*)(fa[order]),dim),pos);
-    }
     image::vector<3,float> getDir(unsigned int index,unsigned int order) const
     {
-        if(order >= num_fiber)
+        if(order >= findex.size())
             return odf_table[0];
         return odf_table[findex[order][index]];
     }
-    image::vector<3,float> getReverseDir(unsigned int index,unsigned int order) const
-    {
-        if(order >= num_fiber)
-            return odf_table[0];
-        unsigned int odf_index = findex[order][index];
-        return odf_index < half_odf_size ? odf_table[odf_index + half_odf_size] : odf_table[odf_index-half_odf_size];
-    }
 
 };
+
+
+
 struct ViewItem
 {
     std::string name;
@@ -418,6 +406,7 @@ struct ViewItem
         min_value = *std::min_element(from,to);
     }
 };
+
 class FibData
 {
 public:
@@ -531,98 +520,37 @@ public:
         }
         return true;
     }
-    void compare_fiber_directions(const FibData& rhs,const short *points,unsigned int number,std::string& result,std::ostream& report) const
-    {
-        AngStatistics st_ma;
-        unsigned int crossing_count = 0;
-        unsigned int match_number = 0;
-        unsigned int false_fiber = 0;
-        float match_angle = std::cos(9.0*3.14159265358979323846/180.0);
-        std::ostringstream out;
-        report << "x,y,rfa0,rfa1,rfa2";
-        for (unsigned int index = other_mapping_index;index < view_item.size();++index)
-            report << "," << view_item[index].name;
-        report << ",major dev,minor suc\r\n";
-        begin_prog("analyzing");
-        for (unsigned int index = 0;check_prog(index,number);++index,points+=3)
-        {
-            unsigned int pixel_index = points[0] + dim[0]*(points[1] + dim[1]*points[2]);
-            unsigned int fiber_number1 = 1;
-            unsigned int fiber_number2 = 1;
-            for (;fiber_number1 < 3;++fiber_number1)
-                if (fib.getFA(pixel_index,fiber_number1) == 0.0)
-                    break;
-            for (;fiber_number2 < 3;++fiber_number2)
-                if (rhs.fib.getFA(pixel_index,fiber_number2) == 0.0)
-                    break;
-            if (fiber_number2 != fiber_number1)
-                ++false_fiber;
+};
 
-            bool mis_match = false;
-            {
-                float ma_dev = std::abs(fib.getDir(pixel_index,0)*rhs.fib.getDir(pixel_index,0));
-                // match the nearest one
-                if (rhs.fib.getFA(pixel_index,1) != 0.0)
-                {
-                    float ma2_dev = std::abs(fib.getDir(pixel_index,0)*rhs.fib.getDir(pixel_index,1));
-                    if (ma2_dev > ma_dev)
-                    {
-                        mis_match = true;
-                        ma_dev = ma2_dev;
-                    }
-                }
-                st_ma.add(ma_dev);
-            }
 
-            if (fiber_number1 == 1)
-            {
-                continue;
-            }
-            ++crossing_count;
-            if (fiber_number2 == 1)
-            {
-                continue;
-            }
 
-            if (std::abs(fib.getDir(pixel_index,1)*rhs.fib.getDir(pixel_index,(mis_match) ? 0 : 1)) >= match_angle)
-            {
-                ++match_number;
-                report << points[0] << "," << points[1] << "," <<
-                rhs.fib.getFA(pixel_index,0) << "," << rhs.fib.getFA(pixel_index,1) << "," << rhs.fib.getFA(pixel_index,2);
-                for (unsigned int index = other_mapping_index;index < view_item.size();++index)
-                    report << "," << view_item[index].image_data[pixel_index];
-                report << std::endl;
-            }
-        }
-        st_ma.calculation();
-        out << "major dev avg_angle:" << st_ma.ang_dev << " std_angle:" << st_ma.ang_dev_sq << "\r\n";
-        if (crossing_count)
-            out << "sucessful minor fiber resolving rate:" << 100.0*(float)match_number/(float)crossing_count << "%\r\n";
-        out << "false minor fiber rate:" << 100.0*(float)false_fiber/(float)number << "%\r\n";
-        result = out.str();
-        report << result;
-    }
+class fiber_orientations{
+
 public:
-
-
-
-    bool get_nearest_dir(unsigned int space_index,
-                         const image::vector<3,float>& dir, // reference direction, should be unit vector
+    image::geometry<3> dim;
+    image::vector<3> vs;
+    unsigned char fib_num;
+    std::vector<const float*> fa;
+    std::vector<const short*> findex;
+    std::vector<image::vector<3,float> > odf_table;
+    float threshold;
+    float cull_cos_angle;
+private:
+    bool get_nearest_dir_fib(unsigned int space_index,
+                         const image::vector<3,float>& ref_dir, // reference direction, should be unit vector
                          unsigned char& fib_order_,
-                         unsigned char& reverse_,
-                         float threshold,float cull_cos_angle) const
+                         unsigned char& reverse_) const
     {
-
-        if (fib.getFA(space_index,0) <= threshold)
+        if(space_index >= dim.size() || fa[0][space_index] <= threshold)
             return false;
         float max_value = cull_cos_angle;
         unsigned char fib_order;
         unsigned char reverse;
-        for (unsigned char index = 0;index < fib.num_fiber;++index)
+        for (unsigned char index = 0;index < fib_num;++index)
         {
-            if (fib.getFA(space_index,index) <= threshold)
+            if (fa[index][space_index] <= threshold)
                 break;
-            float value = dir*fib.getDir(space_index,index);
+            float value = ref_dir*odf_table[findex[index][space_index]];
             if (-value > max_value)
             {
                 max_value = -value;
@@ -643,32 +571,49 @@ public:
         reverse_ = reverse;
         return true;
     }
+public:
+    void read(const FibData& fib_data)
+    {
+        dim = fib_data.dim;
+        vs = fib_data.vs;
+        odf_table = fib_data.fib.odf_table;
+        fib_num = fib_data.fib.num_fiber;
+        fa = fib_data.fib.fa;
+        findex = fib_data.fib.findex;
+    }
 
-    bool get_nearest_dir(unsigned int space_index,
+    bool get_dir(unsigned int space_index,
                          const image::vector<3,float>& dir, // reference direction, should be unit vector
-                         image::vector<3,float>& main_dir,
-                         float threshold,float cull_cos_angle) const
+                         image::vector<3,float>& main_dir) const
     {
         unsigned char fib_order;
         unsigned char reverse;
-        if (!get_nearest_dir(space_index,dir,fib_order,reverse,threshold,cull_cos_angle))
+        if (!get_nearest_dir_fib(space_index,dir,fib_order,reverse))
             return false;
-        main_dir = (reverse) ? fib.getReverseDir(space_index,fib_order) : fib.getDir(space_index,fib_order);
+        main_dir = odf_table[findex[fib_order][space_index]];
+        if(reverse)
+        {
+            main_dir[0] = -main_dir[0];
+            main_dir[1] = -main_dir[1];
+            main_dir[2] = -main_dir[2];
+        }
         return true;
     }
+    const image::vector<3,float>& get_dir(unsigned int space_index,unsigned char fib_order) const
+    {
+        return odf_table[findex[fib_order][space_index]];
+    }
 
-    float get_directional_fa(unsigned int space_index,
-                             const image::vector<3,float>& dir, // reference direction, should be unit vector
-                             float threshold,float cull_cos_angle) const
+    float get_fa(unsigned int space_index,
+                             const image::vector<3,float>& dir) const
     {
         unsigned char fib_order;
         unsigned char reverse;
-        if (!get_nearest_dir(space_index,dir,fib_order,reverse,threshold,cull_cos_angle))
+        if (!get_nearest_dir_fib(space_index,dir,fib_order,reverse))
             return 0.0;
-        return fib.getFA(space_index,fib_order);
+        return fa[fib_order][space_index];
     }
-
-
-
 };
+
+
 #endif//FIB_DATA_HPP

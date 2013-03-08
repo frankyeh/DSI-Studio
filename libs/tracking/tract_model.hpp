@@ -5,9 +5,8 @@
 #include "image/image.hpp"
 
 class ODFModel;
+class fiber_orientations;
 class TractModel{
-
-
 private:
         image::geometry<3> geometry;
         image::vector<3> vs;
@@ -97,27 +96,28 @@ public:
                                    std::vector<float>& data);
         void get_quantitative_info(ODFModel* handle,
                                    float threshold,
-                float cull_angle_cos,
-                std::string& result)
-        {
-            if(tract_data.empty())
-                return;
-            std::ostringstream out;
-            std::vector<std::string> titles;
-            std::vector<float> data;
-            titles.push_back("number of tracts");
-            titles.push_back("tract length mean(mm)");
-            titles.push_back("tract length sd(mm)");
-            titles.push_back("tracts volume (mm^3)");
-            get_quantitative_data(handle,threshold,cull_angle_cos,data);
-            for(unsigned int index = 0;index < data.size() && index < titles.size();++index)
-                out << titles[index] << "\t" << data[index] << std::endl;
-            result = out.str();
-        }
+                                   float cull_angle_cos,
+                                   std::string& result);
         void get_report(ODFModel* handle,
                         float fa,float angle,unsigned int profile_dir,float band_width,const std::string& index_name,
                         std::vector<float>& values,
                         std::vector<float>& data_profile);
+
+public:
+
+
+        void get_tract_data(unsigned int fiber_index,
+                            unsigned int index_num,
+                            std::vector<float>& data);
+        void get_tracts_data(
+                const std::string& index_name,
+                std::vector<std::vector<float> >& data);
+
+        void get_tract_fa(unsigned int fiber_index,float threshold,float cull_angle_cos,
+                          std::vector<float>& data);
+        void get_tracts_fa(float threshold,float cull_angle_cos,
+                          std::vector<std::vector<float> >& data);
+        double get_spin_volume(float threshold,float cull_angle_cos);
 
 };
 

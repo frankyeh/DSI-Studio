@@ -48,18 +48,6 @@ public:
     bool has_vbc(void) const{return vbc.get();}
 public:
 
-    void get_tract_data(const std::vector<float>& tract,
-                        unsigned int index_num,
-                        std::vector<float>& data)
-    {
-        data.clear();
-        if(index_num >= fib_data.view_item.size())
-            return;
-        data.resize(tract.size()/3);
-        for (unsigned int data_index = 0,index = 0;index < tract.size();index += 3,++data_index)
-            image::linear_estimate(fib_data.view_item[index_num].image_data,&tract[index],data[data_index]);
-    }
-
     unsigned int get_name_index(const std::string& index_name) const
     {
         for(unsigned int index_num = 0;index_num < fib_data.view_item.size();++index_num)
@@ -68,124 +56,6 @@ public:
         return fib_data.view_item.size();
     }
 
-    void get_tracts_data(
-            const std::vector<std::vector<float> >& tracts,
-            const std::string& index_name,
-            std::vector<std::vector<float> >& data)
-    {
-        data.clear();
-        unsigned int index_num = get_name_index(index_name);
-        if(index_num == fib_data.view_item.size())
-            return;
-
-        data.resize(tracts.size());
-        for (unsigned int i = 0;i <tracts.size();++i)
-            get_tract_data(tracts[i],index_num,data[i]);
-    }
-
-    void get_tract_fa(const std::vector<float>& tract,
-                      float threshold,float cull_angle,
-                      std::vector<float>& data)
-    {
-        unsigned int count = tract.size()/3;
-        data.resize(count);
-        if(tract.empty())
-            return;
-        std::vector<image::vector<3,float> > gradient(count);
-        const float (*tract_ptr)[3] = (const float (*)[3])&tract[0];
-        ::gradient(tract_ptr,tract_ptr+count,gradient.begin());
-
-        float prev_info = threshold;
-        for (unsigned int point_index = 0,tract_index = 0;
-             point_index < count;++point_index,tract_index += 3)
-        {
-            image::interpolation<image::linear_weighting,3> tri_interpo;
-            gradient[point_index].normalize();
-            if (tri_interpo.get_location(fib_data.dim,&tract[tract_index]))
-            {
-                float value,average_value = 0.0;
-                float sum_value = 0.0;
-                for (unsigned int index = 0;index < 8;++index)
-                {
-                    if ((value = fib_data.get_directional_fa(tri_interpo.dindex[index],gradient[point_index],threshold,cull_angle)) == 0.0)
-                        continue;
-                    average_value += value*tri_interpo.ratio[index];
-                    sum_value += tri_interpo.ratio[index];
-                }
-                if (sum_value > 0.5)
-                    data[point_index] = prev_info = average_value/sum_value;
-				else
-                data[point_index] = threshold;
-            }
-            else
-                data[point_index] = threshold;
-        }
-    }
-    void get_tracts_fa(const std::vector<std::vector<float> >& tracts,
-                      float threshold,float cull_angle,
-                      std::vector<std::vector<float> >& data)
-    {
-        data.resize(tracts.size());
-        for(unsigned int index = 0;index < tracts.size();++index)
-            get_tract_fa(tracts[index],threshold,cull_angle,data[index]);
-    }
-
-    double get_spin_volume(
-            const std::vector<std::vector<float> >& tracts,
-            float threshold,float cull_angle)
-    {
-
-        std::map<image::vector<3,short>,image::vector<3,float> > passing_regions;
-        for (unsigned int i = 0;i < tracts.size();++i)
-        {
-            std::vector<image::vector<3,float> > point(tracts[i].size() / 3);
-            std::vector<image::vector<3,float> > gradient(tracts[i].size() / 3);
-            for (unsigned int j = 0,index = 0;j < tracts[i].size();j += 3,++index)
-                point[index] = &(tracts[i][j]);
-
-            ::gradient(point.begin(),point.end(),gradient.begin());
-
-            for (unsigned int j = 0;j < point.size();++j)
-            {
-                gradient[j].normalize();
-                point[j] += 0.5;
-                point[j].floor();
-                passing_regions[image::vector<3,short>(point[j])] += gradient[j];
-            }
-        }
-        double result = 0.0;
-        std::map<image::vector<3,short>,image::vector<3,float> >::iterator iter = passing_regions.begin();
-        std::map<image::vector<3,short>,image::vector<3,float> >::iterator end = passing_regions.end();
-        for (;iter != end;++iter)
-        {
-            iter->second.normalize();
-            result += fib_data.get_directional_fa(
-                          image::pixel_index<3>(iter->first[0],iter->first[1],iter->first[2],fib_data.dim).index(),
-                          iter->second,threshold,cull_angle);
-        }
-        return result;
-    }
-    void getSlicesDirColor(unsigned short order,unsigned int* pixels) const
-    {
-        for (unsigned int index = 0;index < fib_data.total_size;++index,++pixels)
-        {
-            if (fib_data.fib.getFA(index,order) == 0.0)
-            {
-                *pixels = 0;
-                continue;
-            }
-
-            float fa = fib_data.fib.getFA(index,order)*255.0;
-                        image::vector<3,float> dir = fib_data.fib.getDir(index,order);
-
-            unsigned int color = (unsigned char)std::abs(dir[0]*fa);
-            color <<= 8;
-            color |= (unsigned char)std::abs(dir[1]*fa);
-            color <<= 8;
-            color |= (unsigned char)std::abs(dir[2]*fa);
-            *pixels = color;
-        }
-    }
 public:
     static unsigned int make_color(unsigned char gray)
     {
@@ -217,7 +87,7 @@ public:
                 for (unsigned int index = 0;index < fib_data.total_size;++index)
                 {
                     image::vector<3,float> dir = fib_data.fib.getDir(index,0);
-                                    dir *= std::floor(fib_data.fib.getFA(index,0)*r);
+                    dir *= std::floor(fib_data.fib.getFA(index,0)*r);
                     unsigned int color = (unsigned char)std::abs(dir[0]);
                     color <<= 8;
                     color |= (unsigned char)std::abs(dir[1]);
@@ -337,6 +207,27 @@ public:
             titles.push_back(fib_data.view_item[data_index].name+" sd");
         }
 
+    }
+    void getSlicesDirColor(unsigned short order,unsigned int* pixels) const
+    {
+        for (unsigned int index = 0;index < fib_data.total_size;++index,++pixels)
+        {
+            if (fib_data.fib.getFA(index,order) == 0.0)
+            {
+                *pixels = 0;
+                continue;
+            }
+
+            float fa = fib_data.fib.getFA(index,order)*255.0;
+                        image::vector<3,float> dir = fib_data.fib.getDir(index,order);
+
+            unsigned int color = (unsigned char)std::abs(dir[0]*fa);
+            color <<= 8;
+            color |= (unsigned char)std::abs(dir[1]*fa);
+            color <<= 8;
+            color |= (unsigned char)std::abs(dir[2]*fa);
+            *pixels = color;
+        }
     }
 
 

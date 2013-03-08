@@ -607,14 +607,14 @@ void RegionTableWidget::setROIs(ThreadData* data)
     {
         std::vector<image::vector<3,short> > points;
         whole_brain_points(points);
-        data->setRegions(points,seed_id);
+        data->setRegions(cur_tracking_window.handle->fib_data.dim,points,seed_id);
     }
 
     for (unsigned int index = 0;index < regions.size();++index)
         if (!regions[index].empty() &&
                 item(index,0)->checkState() == Qt::Checked &&
                 regions[index].regions_feature <= 3) // either roi roa end or seed
-            data->setRegions(regions[index].get(),
+            data->setRegions(cur_tracking_window.handle->fib_data.dim,regions[index].get(),
                              regions[index].regions_feature);
 }
 

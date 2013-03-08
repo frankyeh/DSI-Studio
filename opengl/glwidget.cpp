@@ -819,11 +819,9 @@ void GLWidget::makeTracts(void)
 
                     std::vector<float> fa_values;
                     if(tract_color_index == 0)
-                        cur_tracking_window.handle->get_tract_fa(
-                            active_tract_model->get_tract(data_index),color_min_value,cull_angle_cos,fa_values);
+                        active_tract_model->get_tract_fa(data_index,color_min_value,cull_angle_cos,fa_values);
                     else
-                        cur_tracking_window.handle->get_tract_data(
-                            active_tract_model->get_tract(data_index),color_item_index,fa_values);
+                        active_tract_model->get_tract_data(data_index,color_item_index,fa_values);
 
                     float sum = std::accumulate(fa_values.begin(),fa_values.end(),0.0f);
                     sum /= (float)fa_values.size();
@@ -906,11 +904,9 @@ void GLWidget::makeTracts(void)
                     break;
                 case 2:// local
                     if(tract_color_index == 0)
-                        cur_tracking_window.handle->get_tract_fa(
-                            active_tract_model->get_tract(data_index),color_min_value,cull_angle_cos,color);
+                        active_tract_model->get_tract_fa(data_index,color_min_value,cull_angle_cos,color);
                     else
-                        cur_tracking_window.handle->get_tract_data(
-                            active_tract_model->get_tract(data_index),color_item_index,color);
+                        active_tract_model->get_tract_data(data_index,color_item_index,color);
                     break;
                 case 3:// mean
                     paint_color_f =

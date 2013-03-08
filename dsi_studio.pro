@@ -69,7 +69,6 @@ HEADERS += mainwindow.h \
     opengl/glwidget.h \
     libs/tracking/tracking_model.hpp \
     libs/tracking/tracking_method.hpp \
-    libs/tracking/tracking_info.hpp \
     libs/tracking/roi.hpp \
     libs/tracking/interpolation_process.hpp \
     libs/tracking/fib_data.hpp \

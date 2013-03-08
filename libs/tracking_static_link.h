@@ -8,13 +8,6 @@ extern "C"
      const float* get_odf_direction(ODFModel* handle,unsigned int index);
      const unsigned short* get_odf_faces(ODFModel* handle,unsigned int index);
      const float* get_odf_data(ODFModel* odf_model,unsigned int index);
-     const short* select_bundle(ODFModel* odf_model,short* position,
-				float angle,float fa_threshold,unsigned int& count);
-
-
-     const char* compare_fiber_directions(const char* file_name1,const char* file_name2,
-								  const short *points,unsigned int number);
-
      void* tract_cluster_create(unsigned int method,const float* param);
      void tract_cluster_add_tract(void* tract_cluster,const float* points,unsigned int count);
      unsigned int tract_cluster_get_cluster_count(void* tract_cluster);

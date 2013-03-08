@@ -25,6 +25,7 @@ private:
     QTimer *timer;
 public:
     unsigned int tract_serial;
+    std::vector<fiber_orientations*> fibs;
     std::vector<ThreadData*> thread_data;
     std::vector<TractModel*> tract_models;
     unsigned char edit_option;

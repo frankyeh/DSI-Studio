@@ -15,32 +15,6 @@
 struct ThreadData
 {
 public:
-    static ThreadData* new_thread(ODFModel* handle,float* param,
-                                      unsigned char* methods)
-    {
-        std::auto_ptr<ThreadData> new_thread(new ThreadData(handle));
-        new_thread->param.step_size = param[0];
-        new_thread->param.step_size_in_voxel[0] = param[0]/handle->fib_data.vs[0];
-        new_thread->param.step_size_in_voxel[1] = param[0]/handle->fib_data.vs[1];
-        new_thread->param.step_size_in_voxel[2] = param[0]/handle->fib_data.vs[2];
-        new_thread->param.allowed_cos_angle = std::cos(param[1]);
-        new_thread->param.cull_cos_angle = std::cos(param[2]);
-        new_thread->param.threshold = param[3];
-        new_thread->param.smooth_fraction = param[4];
-
-        new_thread->param.min_points_count3 = 3.0*param[5]/param[0];
-        if(new_thread->param.min_points_count3 < 6)
-            new_thread->param.min_points_count3 = 6;
-        new_thread->param.max_points_count3 = std::max<unsigned int>(6,3.0*param[6]/param[0]);
-
-        new_thread->param.method_id = methods[0];
-        new_thread->param.initial_dir = methods[1];
-        new_thread->param.interpo_id = methods[2];
-        new_thread->stop_by_track = methods[3];
-        new_thread->center_seed = methods[4];
-        return new_thread.release();
-    }
-public:
     RoiMgr roi_mgr;
     std::vector<image::vector<3,short> > seeds;
 public:
@@ -48,8 +22,6 @@ public:
     bool stop_by_track;
     bool center_seed;
     unsigned int termination_count;
-public:
-    ODFModel* handle;
 public:
     std::auto_ptr<boost::thread_group> threads;
     std::vector<unsigned int> seed_count;
@@ -98,8 +70,7 @@ public:
         }
     }
 public:
-    ThreadData(ODFModel* handle_):handle(handle_),joinning(false),
-    generator(0),uniform_rand(0,1.0),rand_gen(generator,uniform_rand){}
+    ThreadData(void):joinning(false),generator(0),uniform_rand(0,1.0),rand_gen(generator,uniform_rand){}
     ~ThreadData(void)
     {
         end_thread();
@@ -177,19 +148,20 @@ public:
         return true;
 
     }
-    void setRegions(const std::vector<image::vector<3,short> >& points,
+    void setRegions(image::geometry<3> dim,
+                    const std::vector<image::vector<3,short> >& points,
                        unsigned type)
     {
         switch(type)
         {
         case 0: //ROI
-            roi_mgr.add_inclusive_roi(handle->fib_data.dim,points);
+            roi_mgr.add_inclusive_roi(dim,points);
                 break;
         case 1: //ROA
-            roi_mgr.add_exclusive_roi(handle->fib_data.dim,points);
+            roi_mgr.add_exclusive_roi(dim,points);
                 break;
         case 2: //End
-            roi_mgr.add_end_roi(handle->fib_data.dim,points);
+            roi_mgr.add_end_roi(dim,points);
                 break;
         case 3: //seed
             for (unsigned int index = 0;index < points.size();++index)
@@ -197,7 +169,7 @@ public:
             break;
         }
     }
-    TrackingMethod* new_method(void)
+    TrackingMethod* new_method(const fiber_orientations& fib)
     {
         std::auto_ptr<basic_interpolation> interpo_method;
         switch (param.interpo_id)
@@ -213,11 +185,30 @@ public:
             break;
 
         }
-        return new TrackingMethod(handle->fib_data,interpo_method.release(),roi_mgr,param);
+        return new TrackingMethod(fib,interpo_method.release(),roi_mgr,param);
     }
 
-    void run(unsigned int thread_count,unsigned int termination_count,bool wait = false)
+    void run(const fiber_orientations& fib,float* param_,unsigned char* methods,
+             unsigned int thread_count,unsigned int termination_count,bool wait = false)
     {
+        // setup parameters
+        param.step_size = param_[0];
+        param.step_size_in_voxel[0] = param_[0]/fib.vs[0];
+        param.step_size_in_voxel[1] = param_[0]/fib.vs[1];
+        param.step_size_in_voxel[2] = param_[0]/fib.vs[2];
+        param.smooth_fraction = param_[4];
+
+        param.min_points_count3 = 3.0*param_[5]/param_[0];
+        if(param.min_points_count3 < 6)
+            param.min_points_count3 = 6;
+        param.max_points_count3 = std::max<unsigned int>(6,3.0*param_[6]/param_[0]);
+
+        param.method_id = methods[0];
+        param.initial_dir = methods[1];
+        param.interpo_id = methods[2];
+        stop_by_track = methods[3];
+        center_seed = methods[4];
+
         if(center_seed)
         {
             std::srand(0);
@@ -233,16 +224,16 @@ public:
         unsigned int run_count = termination_count/thread_count+1;
         unsigned int total_run_count = 0;
         for (unsigned int index = 0;index < thread_count-1;++index,total_run_count += run_count)
-            threads->add_thread(new boost::thread(&ThreadData::run_thread,this,new_method(),thread_count,index,run_count));
+            threads->add_thread(new boost::thread(&ThreadData::run_thread,this,new_method(fib),thread_count,index,run_count));
 
         if(wait)
         {
-            run_thread(new_method(),thread_count,thread_count-1,termination_count-total_run_count);
+            run_thread(new_method(fib),thread_count,thread_count-1,termination_count-total_run_count);
             threads->join_all();
         }
         else
             threads->add_thread(new boost::thread(&ThreadData::run_thread,this,
-                        new_method(),thread_count,thread_count-1,termination_count-total_run_count));
+                        new_method(fib),thread_count,thread_count-1,termination_count-total_run_count));
 
     }
 };

@@ -80,13 +80,18 @@ int trk(int ac, char *av[])
             return 0;
         }
     }
-
-
     if (vm.count("threshold_index"))
     {
         out << "setting index to " << vm["threshold_index"].as<std::string>() << std::endl;
-        handle->fib_data.fib.set_tracking_index(vm["threshold_index"].as<std::string>());
+        if(!handle->fib_data.fib.set_tracking_index(vm["threshold_index"].as<std::string>()))
+        {
+            out << "failed...cannot find the index";
+            return 0;
+        }
     }
+
+
+
 
     image::geometry<3> geometry = handle->fib_data.dim;
     image::vector<3> voxel_size = handle->fib_data.vs;
@@ -141,7 +146,8 @@ int trk(int ac, char *av[])
     methods[2] = vm["interpolation"].as<int>();
     methods[3] = stop_by_track;
     methods[4] = vm["seed_plan"].as<int>();
-    std::auto_ptr<ThreadData> thread_handle(ThreadData::new_thread(handle.get(),param,methods));
+    ThreadData tracking_thread;
+
 
     char rois[5][5] = {"roi","roi2","roi3","roi4","roi5"};
     for(int index = 0;index < 5;++index)
@@ -159,7 +165,7 @@ int trk(int ac, char *av[])
             out << "Invalid file format:" << file_name << std::endl;
             return 0;
         }
-        thread_handle->setRegions(roi.get(),0);
+        tracking_thread.setRegions(geometry,roi.get(),0);
         out << rois[index] << "=" << file_name << std::endl;
     }
 
@@ -177,7 +183,7 @@ int trk(int ac, char *av[])
             out << "Invalid file format:" << file_name.c_str() << std::endl;
             return 0;
         }
-        thread_handle->setRegions(roa.get(),1);
+        tracking_thread.setRegions(geometry,roa.get(),1);
         out << "roa=" << file_name << std::endl;
     }
     if (vm.count("end"))
@@ -194,7 +200,7 @@ int trk(int ac, char *av[])
             out << "Invalid file format:" << file_name.c_str() << std::endl;
             return 0;
         }
-        thread_handle->setRegions(end.get(),2);
+        tracking_thread.setRegions(geometry,end.get(),2);
         out << "end=" << file_name << std::endl;
     }
     if (vm.count("end2"))
@@ -211,7 +217,7 @@ int trk(int ac, char *av[])
             out << "Invalid file format:" << file_name.c_str() << std::endl;
             return 0;
         }
-        thread_handle->setRegions(end.get(),2);
+        tracking_thread.setRegions(geometry,end.get(),2);
         out << "end2=" << file_name << std::endl;
     }
     if (vm.count("seed"))
@@ -228,7 +234,7 @@ int trk(int ac, char *av[])
             out << "Invalid file format:" << file_name.c_str() << std::endl;
             return 0;
         }
-        thread_handle->setRegions(seed.get(),3);
+        tracking_thread.setRegions(geometry,seed.get(),3);
         out << "seed=" << file_name << std::endl;
     }
     else
@@ -238,7 +244,7 @@ int trk(int ac, char *av[])
         for(image::pixel_index<3> index;index.valid(geometry);index.next(geometry))
             if(fa0[index.index()])
                 seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
-        thread_handle->setRegions(seed,3);
+        tracking_thread.setRegions(geometry,seed,3);
     }
 
     std::string file_name;
@@ -261,9 +267,16 @@ int trk(int ac, char *av[])
     }
 
     out << "start tracking..." << std::endl;
-    thread_handle->run(vm["thread_count"].as<int>(),termination_count,true);
+    {
+        fiber_orientations fib;
+        fib.read(handle->fib_data);
+        fib.threshold = param[3];
+        fib.cull_cos_angle = std::cos(param[1]);
+        tracking_thread.run(fib,param,methods,vm["thread_count"].as<int>(),termination_count,true);
+    }
+
     std::auto_ptr<TractModel> tract_model(new TractModel(handle.get(),geometry,voxel_size));
-    thread_handle->fetchTracks(tract_model.get());
+    tracking_thread.fetchTracks(tract_model.get());
     out << "finished tracking." << std::endl;
     out << "output file:" << file_name << std::endl;
     tract_model->save_tracts_to_file(file_name.c_str());

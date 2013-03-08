@@ -76,6 +76,7 @@ void TractTableWidget::check_check_status(int row, int col)
 void TractTableWidget::addNewTracts(QString tract_name)
 {
     thread_data.push_back(0);
+    fibs.push_back(0);
     tract_models.push_back(new TractModel(cur_tracking_window.handle,
                                           cur_tracking_window.slice.geometry,
                                           cur_tracking_window.slice.voxel_size));
@@ -103,10 +104,14 @@ void TractTableWidget::start_tracking(void)
     float param[8];
     unsigned char methods[5];
     cur_tracking_window.set_tracking_param(param,methods);
-    thread_data.back() = ThreadData::new_thread(cur_tracking_window.handle,param,methods);
-
+    thread_data.back() = new ThreadData;
+    fibs.back() = new fiber_orientations;
+    fibs.back()->read(cur_tracking_window.handle->fib_data);
     cur_tracking_window.regionWidget->setROIs(thread_data.back());
-    thread_data.back()->run(cur_tracking_window.ui->thread_count->currentIndex()+1,
+    fibs.back()->threshold = param[3];
+    fibs.back()->cull_cos_angle = std::cos(param[1]);
+    thread_data.back()->run(*fibs.back(),param,methods,
+                            cur_tracking_window.ui->thread_count->currentIndex()+1,
                             cur_tracking_window.ui->track_count->value());
     timer->start(1000);
 
@@ -134,6 +139,8 @@ void TractTableWidget::stop_tracking(void)
     {
         delete thread_data[index];
         thread_data[index] = 0;
+        delete fibs[index];
+        fibs[index] = 0;
     }
 }
 
@@ -159,6 +166,8 @@ void TractTableWidget::fetch_tracts(void)
             {
                 delete thread_data[index];
                 thread_data[index] = 0;
+                delete fibs[index];
+                fibs[index] = 0;
             }
         }
     if(has_tracts)
@@ -545,8 +554,10 @@ void TractTableWidget::delete_row(int row)
         return;
     delete thread_data[row];
     delete tract_models[row];
+    delete fibs[row];
     thread_data.erase(thread_data.begin()+row);
     tract_models.erase(tract_models.begin()+row);
+    fibs.erase(fibs.begin()+row);
     removeRow(row);
 }
 
@@ -563,9 +574,11 @@ void TractTableWidget::delete_all_tract(void)
     {
         delete thread_data[index];
         delete tract_models[index];
+        delete fibs[index];
     }
     thread_data.clear();
     tract_models.clear();
+    fibs.clear();
     emit need_update();
 }
 

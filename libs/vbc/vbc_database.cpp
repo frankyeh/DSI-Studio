@@ -421,10 +421,14 @@ void vbc_database::run_span(float percentile,std::vector<std::vector<float> >& s
         if(fib_file->fib_data.fib.fa[0][index.index()] > percentile)
             seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
 
-    std::auto_ptr<ThreadData> thread_handle(ThreadData::new_thread(fib_file,param,methods));
-    thread_handle->setRegions(seed,3);
-    thread_handle->run(1,seed.size()*10,true);
-    span.swap(thread_handle->track_buffer);
+    ThreadData tracking_thread;
+    fiber_orientations fib;
+    fib.read(fib_file->fib_data);
+    fib.threshold = percentile;
+    fib.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);
+    tracking_thread.setRegions(fib.dim,seed,3);
+    tracking_thread.run(fib,param,methods,1,seed.size()*10,true);
+    span.swap(tracking_thread.track_buffer);
 }
 
 void cal_hist(const std::vector<std::vector<float> >& span,std::vector<unsigned int>& dist)

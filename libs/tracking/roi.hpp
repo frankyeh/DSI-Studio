@@ -2,9 +2,7 @@
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <functional>
 #include <set>
-
-#include "tracking_info.hpp"
-
+#include "image/image.hpp"
 
 class Roi{
 private:

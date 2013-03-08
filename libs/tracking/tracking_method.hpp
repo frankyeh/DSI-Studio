@@ -7,9 +7,9 @@
 #include <vector>
 #include "image/image.hpp"
 #include "interpolation_process.hpp"
-#include "tracking_info.hpp"
 #include "basic_process.hpp"
 #include "roi.hpp"
+#include "fib_data.hpp"
 
 typedef boost::mpl::vector<
             EstimateNextDirection,
@@ -18,9 +18,6 @@ typedef boost::mpl::vector<
 > streamline_method_process;
 
 typedef boost::mpl::vector<
-            //EstimateNextDirection,
-            //SmoothDir,
-            //MoveTrack2
             LocateVoxel
 > voxel_tracking;
 
@@ -32,10 +29,44 @@ typedef boost::mpl::vector<
 
 
 
+struct TrackingParam
+{
+    float step_size;
+    float step_size_in_voxel[3];
+
+    float smooth_fraction;
+
+    unsigned int min_points_count3;
+    unsigned int max_points_count3;
+
+    unsigned int method_id;
+    unsigned int initial_dir;
+    unsigned int interpo_id;
+
+    void scaling_in_voxel(image::vector<3,float>& dir) const
+    {
+        dir[0] *= step_size_in_voxel[0];
+        dir[1] *= step_size_in_voxel[1];
+        dir[2] *= step_size_in_voxel[2];
+    }
+};
+
+
 class TrackingMethod{
 private:
+    std::auto_ptr<basic_interpolation> interpolation;
+public:// Parameters
+    image::vector<3,float> position;
+    image::vector<3,float> dir;
+    image::vector<3,float> next_dir;
+    bool terminated;
+    bool forward;
+    bool failed;
+public:
+    const fiber_orientations& fib;
     const TrackingParam& param;
-	const RoiMgr& roi_mgr;
+private:
+    const RoiMgr& roi_mgr;
 	std::vector<float> track_buffer;
 	mutable std::vector<float> reverse_buffer;
     unsigned int buffer_front_pos;
@@ -43,30 +74,34 @@ private:
 private:
     unsigned int init_fib_index;
 public:
-        unsigned int get_buffer_size(void) const
+    unsigned int get_buffer_size(void) const
 	{
 		return buffer_back_pos-buffer_front_pos;
 	}
-        unsigned int get_point_count(void) const
+    unsigned int get_point_count(void) const
 	{
 		return (buffer_back_pos-buffer_front_pos)/3;
 	}
+    bool get_dir(const image::vector<3,float>& position,
+                      const image::vector<3,float>& ref_dir,
+                      image::vector<3,float>& result_dir)
+    {
+        return interpolation->evaluate(fib,position,ref_dir,result_dir);
+    }
 public:
-    TrackingInfo info;
-public:
-    TrackingMethod(const FibData& fib_data_,basic_interpolation* interpolation_,
+    TrackingMethod(const fiber_orientations& fib_,basic_interpolation* interpolation_,
                    const RoiMgr& roi_mgr_,const TrackingParam& param_):
-        info(fib_data_,param_,interpolation_),roi_mgr(roi_mgr_),param(param_),init_fib_index(0)
+        fib(fib_),interpolation(interpolation_),roi_mgr(roi_mgr_),param(param_),init_fib_index(0)
 	{
 		// floatd for full backward or full forward
-        track_buffer.resize(info.param.max_points_count3 << 1);
-        reverse_buffer.resize(info.param.max_points_count3 << 1);
+        track_buffer.resize(param.max_points_count3 << 1);
+        reverse_buffer.resize(param.max_points_count3 << 1);
 	}
 public:
 	template<typename Process>
     void operator()(Process)
     {
-        Process()(info);
+        Process()(*this);
     }
 	template<typename ProcessList>
     void tracking(ProcessList)
@@ -82,51 +117,51 @@ public:
 	template<typename ProcessList>
     bool start_tracking(bool smoothing)
 	{
-        image::vector<3,float> seed_pos(info.position);
-        image::vector<3,float> begin_dir(info.dir);
-        buffer_front_pos = info.param.max_points_count3;
-        buffer_back_pos = info.param.max_points_count3;
+        image::vector<3,float> seed_pos(position);
+        image::vector<3,float> begin_dir(dir);
+        buffer_front_pos = param.max_points_count3;
+        buffer_back_pos = param.max_points_count3;
         image::vector<3,float> end_point1;
-        info.failed = false;
-        info.terminated = false;
+        failed = false;
+        terminated = false;
 		do
 		{
-            if(get_buffer_size() > info.param.max_points_count3 || buffer_back_pos + 3 >= track_buffer.size())
+            if(get_buffer_size() > param.max_points_count3 || buffer_back_pos + 3 >= track_buffer.size())
 				return false;
-            if(roi_mgr.is_excluded_point(info.position))
+            if(roi_mgr.is_excluded_point(position))
 				return false;
-            track_buffer[buffer_back_pos] = info.position[0];
-            track_buffer[buffer_back_pos+1] = info.position[1];
-            track_buffer[buffer_back_pos+2] = info.position[2];
+            track_buffer[buffer_back_pos] = position[0];
+            track_buffer[buffer_back_pos+1] = position[1];
+            track_buffer[buffer_back_pos+2] = position[2];
             buffer_back_pos += 3;
 			tracking(ProcessList());
 			// make sure that the length won't overflow
 			
 		}
-        while(!info.terminated);
+        while(!terminated);
 
-        if(info.failed)
+        if(failed)
 			return false;
 		
-        end_point1 = info.position;
-        info.terminated = false;
-        info.position = seed_pos;
-        info.dir = -begin_dir;
-        info.forward = false;
+        end_point1 = position;
+        terminated = false;
+        position = seed_pos;
+        dir = -begin_dir;
+        forward = false;
 		do
 		{
 		    tracking(ProcessList());	
 			// make sure that the length won't overflow
-            if(get_buffer_size() > info.param.max_points_count3 || buffer_front_pos < 3)
+            if(get_buffer_size() > param.max_points_count3 || buffer_front_pos < 3)
 				return false;			
-            if(info.terminated)
+            if(terminated)
 				break;
 			buffer_front_pos -= 3;
-            if(roi_mgr.is_excluded_point(info.position))
+            if(roi_mgr.is_excluded_point(position))
 				return false;
-            track_buffer[buffer_front_pos] = info.position[0];
-            track_buffer[buffer_front_pos+1] = info.position[1];
-            track_buffer[buffer_front_pos+2] = info.position[2];
+            track_buffer[buffer_front_pos] = position[0];
+            track_buffer[buffer_front_pos+1] = position[1];
+            track_buffer[buffer_front_pos+2] = position[2];
         }
 		while(1);
 
@@ -154,28 +189,30 @@ public:
         }
 
 
-                return !info.failed &&
-                       get_buffer_size() >= info.param.min_points_count3 &&
+                return !failed &&
+                       get_buffer_size() >= param.min_points_count3 &&
                        roi_mgr.have_include(get_result(),get_buffer_size()) &&
-                       roi_mgr.fulfill_end_point(info.position,end_point1);
+                       roi_mgr.fulfill_end_point(position,end_point1);
 	}
 
-        bool init(const image::vector<3,float>& position,
+        bool init(const image::vector<3,float>& position_,
                   boost::variate_generator<boost::mt19937&, boost::uniform_real<float> >& gen)
         {
-            info.init(position);
+            position = position_;
+            terminated = false;
+            forward = true;
             switch (param.initial_dir)
             {
             case 0:// main direction
                 {
                     image::pixel_index<3> index(std::floor(position[0]+0.5),
                                             std::floor(position[1]+0.5),
-                                            std::floor(position[2]+0.5),info.fib_data.dim);
+                                            std::floor(position[2]+0.5),fib.dim);
 
-                    if (!info.fib_data.dim.is_valid(index) ||
-                         info.fib_data.fib.getFA(index.index(),0) < info.param.threshold)
+                    if (!fib.dim.is_valid(index) ||
+                         fib.fa[0][index.index()] < fib.threshold)
                         return false;
-                    info.dir = info.fib_data.fib.getDir(index.index(),0);
+                    dir = fib.get_dir(index.index(),0);
                 }
                 return true;
             case 1:// random direction
@@ -186,7 +223,7 @@ public:
                     float x = std::sin(txy)*std::sin(tz);
                     float y = std::cos(txy)*std::sin(tz);
                     float z = std::cos(tz);
-                    if (info.evaluate_dir(position,image::vector<3,float>(x,y,z),info.dir))
+                    if (get_dir(position,image::vector<3,float>(x,y,z),dir))
                         return true;
                 }
                 return false;
@@ -194,17 +231,17 @@ public:
                 {
                     image::pixel_index<3> index(std::floor(position[0]+0.5),
                                         std::floor(position[1]+0.5),
-                                        std::floor(position[2]+0.5),info.fib_data.dim);
+                                        std::floor(position[2]+0.5),fib.dim);
 
-                    if (!info.fib_data.dim.is_valid(index) ||
-                        init_fib_index > info.fib_data.fib.num_fiber ||
-                        info.fib_data.fib.getFA(index.index(),init_fib_index) < info.param.threshold)
+                    if (!fib.dim.is_valid(index) ||
+                         init_fib_index >= fib.fib_num ||
+                         fib.fa[init_fib_index][index.index()] < fib.threshold)
                     {
                         init_fib_index = 0;
                         return false;
                     }
                     else
-                        info.dir = info.fib_data.fib.getDir(index.index(),init_fib_index);
+                        dir = fib.get_dir(index.index(),init_fib_index);
                     ++init_fib_index;
                 }
                 return true;
@@ -226,9 +263,9 @@ public:
                     return 0;
                 break;
             case 2:
-                info.position[0] = std::floor(info.position[0]+0.5);
-                info.position[1] = std::floor(info.position[1]+0.5);
-                info.position[2] = std::floor(info.position[2]+0.5);
+                position[0] = std::floor(position[0]+0.5);
+                position[1] = std::floor(position[1]+0.5);
+                position[2] = std::floor(position[2]+0.5);
                 if (!start_tracking<voxel_tracking>(true))
                     return 0;
                 break;
