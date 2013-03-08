@@ -780,7 +780,6 @@ void GLWidget::makeTracts(void)
     const float detail_option[] = {1.0,0.5,0.25,0.0,0.0};
     float radius = radius_option[tube_size];
     bool show_end_points = tract_style == 2;
-    float cull_angle_cos = std::cos(cur_tracking_window.ui->turning_angle->value() * 3.1415926 / 180.0);
     float tube_detail = radius*detail_option[tract_tube_detail]*4.0;
     float skip_rate = 1.0;
 
@@ -819,7 +818,7 @@ void GLWidget::makeTracts(void)
 
                     std::vector<float> fa_values;
                     if(tract_color_index == 0)
-                        active_tract_model->get_tract_fa(data_index,color_min_value,cull_angle_cos,fa_values);
+                        active_tract_model->get_tract_fa(data_index,fa_values);
                     else
                         active_tract_model->get_tract_data(data_index,color_item_index,fa_values);
 
@@ -904,7 +903,7 @@ void GLWidget::makeTracts(void)
                     break;
                 case 2:// local
                     if(tract_color_index == 0)
-                        active_tract_model->get_tract_fa(data_index,color_min_value,cull_angle_cos,color);
+                        active_tract_model->get_tract_fa(data_index,color);
                     else
                         active_tract_model->get_tract_data(data_index,color_item_index,color);
                     break;

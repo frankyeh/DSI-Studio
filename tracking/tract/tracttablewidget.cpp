@@ -76,10 +76,11 @@ void TractTableWidget::check_check_status(int row, int col)
 void TractTableWidget::addNewTracts(QString tract_name)
 {
     thread_data.push_back(0);
-    fibs.push_back(0);
     tract_models.push_back(new TractModel(cur_tracking_window.handle,
                                           cur_tracking_window.slice.geometry,
                                           cur_tracking_window.slice.voxel_size));
+    tract_models.back()->get_fib().threshold = cur_tracking_window.ui->fa_threshold->value();
+    tract_models.back()->get_fib().cull_cos_angle = std::cos(cur_tracking_window.ui->turning_angle->value() * 3.1415926 / 180.0);
 
     setRowCount(tract_models.size());
     QTableWidgetItem *item0 = new QTableWidgetItem(tract_name);
@@ -105,12 +106,8 @@ void TractTableWidget::start_tracking(void)
     unsigned char methods[5];
     cur_tracking_window.set_tracking_param(param,methods);
     thread_data.back() = new ThreadData;
-    fibs.back() = new fiber_orientations;
-    fibs.back()->read(cur_tracking_window.handle->fib_data);
     cur_tracking_window.regionWidget->setROIs(thread_data.back());
-    fibs.back()->threshold = param[3];
-    fibs.back()->cull_cos_angle = std::cos(param[1]);
-    thread_data.back()->run(*fibs.back(),param,methods,
+    thread_data.back()->run(tract_models.back()->get_fib(),param,methods,
                             cur_tracking_window.ui->thread_count->currentIndex()+1,
                             cur_tracking_window.ui->track_count->value());
     timer->start(1000);
@@ -139,8 +136,6 @@ void TractTableWidget::stop_tracking(void)
     {
         delete thread_data[index];
         thread_data[index] = 0;
-        delete fibs[index];
-        fibs[index] = 0;
     }
 }
 
@@ -166,8 +161,6 @@ void TractTableWidget::fetch_tracts(void)
             {
                 delete thread_data[index];
                 thread_data[index] = 0;
-                delete fibs[index];
-                fibs[index] = 0;
             }
         }
     if(has_tracts)
@@ -422,7 +415,7 @@ void TractTableWidget::save_tracts_color_as(void)
     tract_models[currentRow()]->save_tracts_color_to_file(&*sfilename.begin());
 }
 
-void TractTableWidget::showCurTractStatistics(float threshold,float cull_angle_cos)
+void TractTableWidget::show_tracts_statistics(void)
 {
     if(currentRow() >= tract_models.size())
         return;
@@ -437,7 +430,7 @@ void TractTableWidget::showCurTractStatistics(float threshold,float cull_angle_c
         std::vector<std::vector<float> > data(tract_models.size());
         begin_prog("calculating");
         for(unsigned int index = 0;check_prog(index,tract_models.size());++index)
-            tract_models[index]->get_quantitative_data(cur_tracking_window.handle,threshold,cull_angle_cos,data[index]);
+            tract_models[index]->get_quantitative_data(data[index]);
         if(prog_aborted())
             return;
         std::ostringstream out;
@@ -497,13 +490,8 @@ void TractTableWidget::save_fa_as(void)
     if(filename.isEmpty())
         return;
     cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
-    float threshold = cur_tracking_window.ui->fa_threshold->value();
-    float cull_angle_cos = std::cos(cur_tracking_window.ui->turning_angle->value() * 3.1415926 / 180.0);
-    if(!tract_models[currentRow()]->save_fa_to_file(
-            filename.toLocal8Bit().begin(),threshold,cull_angle_cos))
-    {
+    if(!tract_models[currentRow()]->save_fa_to_file(filename.toLocal8Bit().begin()))
         QMessageBox::information(this,"error","fail to save information",0);
-    }
 }
 
 void TractTableWidget::save_tracts_data_as(void)
@@ -554,10 +542,8 @@ void TractTableWidget::delete_row(int row)
         return;
     delete thread_data[row];
     delete tract_models[row];
-    delete fibs[row];
     thread_data.erase(thread_data.begin()+row);
     tract_models.erase(tract_models.begin()+row);
-    fibs.erase(fibs.begin()+row);
     removeRow(row);
 }
 
@@ -574,11 +560,9 @@ void TractTableWidget::delete_all_tract(void)
     {
         delete thread_data[index];
         delete tract_models[index];
-        delete fibs[index];
     }
     thread_data.clear();
     tract_models.clear();
-    fibs.clear();
     emit need_update();
 }
 

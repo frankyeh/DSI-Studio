@@ -267,15 +267,13 @@ int trk(int ac, char *av[])
     }
 
     out << "start tracking..." << std::endl;
+    std::auto_ptr<TractModel> tract_model(new TractModel(handle.get(),geometry,voxel_size));
     {
-        fiber_orientations fib;
-        fib.read(handle->fib_data);
-        fib.threshold = param[3];
-        fib.cull_cos_angle = std::cos(param[1]);
-        tracking_thread.run(fib,param,methods,vm["thread_count"].as<int>(),termination_count,true);
+        tract_model->get_fib().threshold = param[3];
+        tract_model->get_fib().cull_cos_angle = std::cos(param[1]);
+        tracking_thread.run(tract_model->get_fib(),param,methods,vm["thread_count"].as<int>(),termination_count,true);
     }
 
-    std::auto_ptr<TractModel> tract_model(new TractModel(handle.get(),geometry,voxel_size));
     tracking_thread.fetchTracks(tract_model.get());
     out << "finished tracking." << std::endl;
     out << "output file:" << file_name << std::endl;
@@ -289,11 +287,7 @@ int trk(int ac, char *av[])
         file_name_stat += ".stat.txt";
         std::ofstream out_stat(file_name_stat.c_str());
         std::string result;
-        tract_model->get_quantitative_info(
-                    handle.get(),
-                vm["fa_threshold"].as<float>(),
-                std::cos(vm["turning_angle"].as<float>()* 3.14159265358979323846 / 180.0),
-                         result);
+        tract_model->get_quantitative_info(result);
         out_stat << result;
     }
     // export qa
@@ -302,9 +296,7 @@ int trk(int ac, char *av[])
         out << "export qa..." << std::endl;
         std::string file_name_stat(file_name);
         file_name_stat += ".qa.txt";
-        tract_model->save_fa_to_file(file_name_stat.c_str(),
-                                     vm["fa_threshold"].as<float>(),
-                                     std::cos(vm["turning_angle"].as<float>()* 3.14159265358979323846 / 180.0));
+        tract_model->save_fa_to_file(file_name_stat.c_str());
     }
 
     // export tdi

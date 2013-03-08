@@ -25,12 +25,10 @@ private:
     QTimer *timer;
 public:
     unsigned int tract_serial;
-    std::vector<fiber_orientations*> fibs;
     std::vector<ThreadData*> thread_data;
     std::vector<TractModel*> tract_models;
     unsigned char edit_option;
     void addNewTracts(QString tract_name);
-    void showCurTractStatistics(float threshold,float cull_angle_cos);
     void export_tract_density(image::geometry<3>& dim,
                               image::vector<3,float> vs,
                               std::vector<float>& transformation,bool color,bool endpoint);
@@ -67,6 +65,7 @@ public slots:
     void trim_tracts(void);
     void stop_tracking(void);
     void assign_colors(void);
+    void show_tracts_statistics(void);
 };
 
 #endif // TRACTTABLEWIDGET_H

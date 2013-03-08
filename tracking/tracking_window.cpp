@@ -318,6 +318,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
         connect(ui->actionSaveTractAs,SIGNAL(triggered()),tractWidget,SLOT(save_tracts_as()));
         connect(ui->actionSave_All_Tracts_As,SIGNAL(triggered()),tractWidget,SLOT(save_all_tracts_as()));
         connect(ui->actionQuantitative_anisotropy_QA,SIGNAL(triggered()),tractWidget,SLOT(save_fa_as()));
+        connect(ui->actionStatistics,SIGNAL(triggered()),tractWidget,SLOT(show_tracts_statistics()));
     }
 
     // report
@@ -822,12 +823,7 @@ void tracking_window::on_actionInsert_T1_T2_triggered()
 
 
 
-void tracking_window::on_actionStatistics_triggered()
-{
-    tractWidget->showCurTractStatistics(
-            ui->fa_threshold->value(),
-            std::cos(ui->turning_angle->value() * 3.1415926 / 180.0));
-}
+
 
 bool ask_TDI_options(int& rec,int& rec2)
 {
@@ -974,9 +970,6 @@ void tracking_window::on_refresh_report_clicked()
             continue;
         std::vector<float> values,data_profile;
         tractWidget->tract_models[index]->get_report(
-                    handle,
-                    ui->fa_threshold->value(),
-                    ui->turning_angle->value(),
                     ui->profile_dir->currentIndex(),
                     ui->report_bandwidth->value(),
                     ui->report_index->currentText().toLocal8Bit().begin(),

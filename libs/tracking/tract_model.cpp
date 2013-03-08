@@ -67,7 +67,13 @@ struct TrackVis
         hdr_size = 1000;
     }
 };
-
+//---------------------------------------------------------------------------
+TractModel::TractModel(ODFModel* handle_,
+           const image::geometry<3>& geo,
+                       const image::vector<3>& vs_):geometry(geo),vs(vs_),handle(handle_),fib(new fiber_orientations)
+{
+    fib->read(handle->fib_data);
+}
 //---------------------------------------------------------------------------
 void TractModel::add(const TractModel& rhs)
 {
@@ -181,10 +187,10 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     return true;
 }
 //---------------------------------------------------------------------------
-bool TractModel::save_fa_to_file(const char* file_name,float threshold,float cull_angle_cos)
+bool TractModel::save_fa_to_file(const char* file_name)
 {
     std::vector<std::vector<float> > data;
-    get_tracts_fa(threshold,cull_angle_cos,data);
+    get_tracts_fa(data);
     if(data.empty())
         return false;
     std::ofstream out(file_name,std::ios::binary);
@@ -835,10 +841,7 @@ void TractModel::get_density_map(
 }
 
 
-void TractModel::get_quantitative_data(ODFModel* handle,
-                               float threshold,
-                               float cull_angle_cos,
-                               std::vector<float>& data)
+void TractModel::get_quantitative_data(std::vector<float>& data)
 {
     if(tract_data.empty())
         return;
@@ -897,7 +900,7 @@ void TractModel::get_quantitative_data(ODFModel* handle,
         {
             std::vector<float> data;
             if(data_index == 0)
-                get_tract_fa(i,threshold,cull_angle_cos,data);
+                get_tract_fa(i,data);
             else
                 get_tract_data(i,data_index,data);
             for(int j = 0;j < data.size();++j)
@@ -914,10 +917,7 @@ void TractModel::get_quantitative_data(ODFModel* handle,
     }
 }
 
-void TractModel::get_quantitative_info(ODFModel* handle,
-                           float threshold,
-                           float cull_angle_cos,
-                           std::string& result)
+void TractModel::get_quantitative_info(std::string& result)
 {
     if(tract_data.empty())
         return;
@@ -928,21 +928,19 @@ void TractModel::get_quantitative_info(ODFModel* handle,
     titles.push_back("tract length mean(mm)");
     titles.push_back("tract length sd(mm)");
     titles.push_back("tracts volume (mm^3)");
-    get_quantitative_data(handle,threshold,cull_angle_cos,data);
+    get_quantitative_data(data);
     for(unsigned int index = 0;index < data.size() && index < titles.size();++index)
         out << titles[index] << "\t" << data[index] << std::endl;
     result = out.str();
 }
 
 
-void TractModel::get_report(ODFModel* handle,
-                            float threshold,float angle,unsigned int profile_dir,float band_width,const std::string& index_name,
+void TractModel::get_report(unsigned int profile_dir,float band_width,const std::string& index_name,
                             std::vector<float>& values,
                             std::vector<float>& data_profile)
 {
     if(tract_data.empty())
         return;
-    float cull_angle_cos = std::cos(angle * 3.1415926 / 180.0);
     int profile_on_length = 0;// 1 :along tract 2: mean value
     if(profile_dir > 2)
     {
@@ -974,7 +972,7 @@ void TractModel::get_report(ODFModel* handle,
     {
         std::vector<std::vector<float> > data;
         if(index_name == "qa" || index_name == "fa")
-            get_tracts_fa(threshold,cull_angle_cos,data);
+            get_tracts_fa(data);
         else
             get_tracts_data(index_name,data);
 
@@ -1054,8 +1052,7 @@ void TractModel::get_tracts_data(
         get_tract_data(i,index_num,data[i]);
 }
 
-void TractModel::get_tract_fa(unsigned int fiber_index,float threshold,float cull_angle_cos,
-                              std::vector<float>& data)
+void TractModel::get_tract_fa(unsigned int fiber_index,std::vector<float>& data)
 {
     unsigned int count = tract_data[fiber_index].size()/3;
     data.resize(count);
@@ -1064,24 +1061,19 @@ void TractModel::get_tract_fa(unsigned int fiber_index,float threshold,float cul
     std::vector<image::vector<3,float> > gradient(count);
     const float (*tract_ptr)[3] = (const float (*)[3])&(tract_data[fiber_index][0]);
     ::gradient(tract_ptr,tract_ptr+count,gradient.begin());
-
-    fiber_orientations fib;
-    fib.read(handle->fib_data);
-    fib.threshold = threshold;
-    fib.cull_cos_angle = cull_angle_cos;
-    float prev_info = threshold;
+    float prev_info = fib->threshold;
     for (unsigned int point_index = 0,tract_index = 0;
          point_index < count;++point_index,tract_index += 3)
     {
         image::interpolation<image::linear_weighting,3> tri_interpo;
         gradient[point_index].normalize();
-        if (tri_interpo.get_location(fib.dim,&(tract_data[fiber_index][tract_index])))
+        if (tri_interpo.get_location(fib->dim,&(tract_data[fiber_index][tract_index])))
         {
             float value,average_value = 0.0;
             float sum_value = 0.0;
             for (unsigned int index = 0;index < 8;++index)
             {
-                if ((value = fib.get_fa(tri_interpo.dindex[index],gradient[point_index])) == 0.0)
+                if ((value = fib->get_fa(tri_interpo.dindex[index],gradient[point_index])) == 0.0)
                     continue;
                 average_value += value*tri_interpo.ratio[index];
                 sum_value += tri_interpo.ratio[index];
@@ -1089,23 +1081,21 @@ void TractModel::get_tract_fa(unsigned int fiber_index,float threshold,float cul
             if (sum_value > 0.5)
                 data[point_index] = prev_info = average_value/sum_value;
             else
-            data[point_index] = threshold;
+            data[point_index] = fib->threshold;
         }
         else
-            data[point_index] = threshold;
+            data[point_index] = fib->threshold;
     }
 }
-void TractModel::get_tracts_fa(float threshold,float cull_angle_cos,
-                               std::vector<std::vector<float> >& data)
+void TractModel::get_tracts_fa(std::vector<std::vector<float> >& data)
 {
     data.resize(tract_data.size());
     for(unsigned int index = 0;index < tract_data.size();++index)
-        get_tract_fa(index,threshold,cull_angle_cos,data[index]);
+        get_tract_fa(index,data[index]);
 }
 
-double TractModel::get_spin_volume(float threshold,float cull_cos_angle)
+double TractModel::get_spin_volume(void)
 {
-
     std::map<image::vector<3,short>,image::vector<3,float> > passing_regions;
     for (unsigned int i = 0;i < tract_data.size();++i)
     {
@@ -1124,18 +1114,14 @@ double TractModel::get_spin_volume(float threshold,float cull_cos_angle)
             passing_regions[image::vector<3,short>(point[j])] += gradient[j];
         }
     }
-    fiber_orientations fib;
-    fib.read(handle->fib_data);
-    fib.threshold = threshold;
-    fib.cull_cos_angle = cull_cos_angle;
     double result = 0.0;
     std::map<image::vector<3,short>,image::vector<3,float> >::iterator iter = passing_regions.begin();
     std::map<image::vector<3,short>,image::vector<3,float> >::iterator end = passing_regions.end();
     for (;iter != end;++iter)
     {
         iter->second.normalize();
-        result += fib.get_fa(
-                      image::pixel_index<3>(iter->first[0],iter->first[1],iter->first[2],fib.dim).index(),iter->second);
+        result += fib->get_fa(
+                      image::pixel_index<3>(iter->first[0],iter->first[1],iter->first[2],fib->dim).index(),iter->second);
     }
     return result;
 }

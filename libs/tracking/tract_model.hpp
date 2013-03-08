@@ -11,6 +11,7 @@ private:
         image::geometry<3> geometry;
         image::vector<3> vs;
         ODFModel* handle;
+        std::auto_ptr<fiber_orientations> fib;
 private:
         std::vector<std::vector<float> > tract_data;
         std::vector<std::vector<float> > deleted_tract_data;
@@ -36,7 +37,7 @@ private:
 public:
         TractModel(ODFModel* handle_,
                    const image::geometry<3>& geo,
-                   const image::vector<3>& vs_):geometry(geo),vs(vs_),handle(handle_){}
+                   const image::vector<3>& vs_);
         const TractModel& operator=(const TractModel& rhs)
         {
             geometry = rhs.geometry;
@@ -45,10 +46,12 @@ public:
             tract_data = rhs.tract_data;
             return *this;
         }
+        const fiber_orientations& get_fib(void) const{return *fib.get();}
+        fiber_orientations& get_fib(void){return *fib.get();}
         void add(const TractModel& rhs);
         bool load_from_file(const char* file_name,bool append = false);
 
-        bool save_fa_to_file(const char* file_name,float threshold,float cull_angle_cos);
+        bool save_fa_to_file(const char* file_name);
         bool save_tracts_to_file(const char* file_name);
         bool save_transformed_tracts_to_file(const char* file_name,const float* transform,bool end_point);
         bool save_data_to_file(const char* file_name,const std::string& index_name);
@@ -90,16 +93,9 @@ public:
              const std::vector<float>& transformation,bool endpoint);
         void get_density_map(image::basic_image<image::rgb_color,3>& mapping,
              const std::vector<float>& transformation,bool endpoint);
-        void get_quantitative_data(ODFModel* handle,
-                                   float threshold,
-                                   float cull_angle_cos,
-                                   std::vector<float>& data);
-        void get_quantitative_info(ODFModel* handle,
-                                   float threshold,
-                                   float cull_angle_cos,
-                                   std::string& result);
-        void get_report(ODFModel* handle,
-                        float fa,float angle,unsigned int profile_dir,float band_width,const std::string& index_name,
+        void get_quantitative_data(std::vector<float>& data);
+        void get_quantitative_info(std::string& result);
+        void get_report(unsigned int profile_dir,float band_width,const std::string& index_name,
                         std::vector<float>& values,
                         std::vector<float>& data_profile);
 
@@ -113,11 +109,9 @@ public:
                 const std::string& index_name,
                 std::vector<std::vector<float> >& data);
 
-        void get_tract_fa(unsigned int fiber_index,float threshold,float cull_angle_cos,
-                          std::vector<float>& data);
-        void get_tracts_fa(float threshold,float cull_angle_cos,
-                          std::vector<std::vector<float> >& data);
-        double get_spin_volume(float threshold,float cull_angle_cos);
+        void get_tract_fa(unsigned int fiber_index,std::vector<float>& data);
+        void get_tracts_fa(std::vector<std::vector<float> >& data);
+        double get_spin_volume(void);
 
 };
 

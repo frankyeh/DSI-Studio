@@ -84,7 +84,6 @@ private slots:
     void on_actionTDI_Import_Slice_Space_triggered();
     void on_actionTDI_Subvoxel_Diffusion_Space_triggered();
     void on_actionTDI_Diffusion_Space_triggered();
-    void on_actionStatistics_triggered();
     void on_actionInsert_T1_T2_triggered();
     void on_actionPaint_triggered();
     void on_actionTracts_to_seeds_triggered();
