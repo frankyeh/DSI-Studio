@@ -8,7 +8,7 @@
 #include <image/image.hpp>
 #include <string>
 #include "tessellated_icosahedron.hpp"
-
+#include "mat_file.hpp"
 
 
 struct ImageModel;

@@ -370,7 +370,7 @@ public:
         return true;
     }
 
-    bool set_tracking_index(const std::string name)
+    bool set_tracking_index(const std::string& name)
     {
         return set_tracking_index(std::find(index_name.begin(),index_name.end(),name)-index_name.begin());
     }
