@@ -10,7 +10,18 @@
 
 
 class ODFModel;
+class fiber_orientations;
 class TractModel;
+
+struct fib_data{
+    std::vector<std::vector<float> > greater,lesser;
+    std::vector<std::vector<short> > greater_dir,lesser_dir;
+    std::vector<const float*> greater_ptr,lesser_ptr;
+    std::vector<const short*> greater_dir_ptr,lesser_dir_ptr;
+public:
+    void initialize(ODFModel* fib_file);
+    void add_greater_lesser_mapping_for_tracking(ODFModel* fib_file);
+};
 
 class vbc_database
 {
@@ -53,21 +64,15 @@ public:
     void get_data_at(unsigned int index,unsigned int fib,std::vector<float>& data) const;
     void get_subject_slice(unsigned int subject_index,unsigned int z_pos,image::basic_image<float,2>& slice) const;
 private: // single subject analysis result
-    std::vector<std::vector<float> > greater,lesser;
-    std::vector<std::vector<short> > greater_dir,lesser_dir;
-    void initialize_greater_lesser(void);
+
     bool get_odf_profile(const char* file_name,std::vector<float>& cur_subject_data);
 public:
-    std::vector<const float*> greater_ptr,lesser_ptr;
-    std::vector<const short*> greater_dir_ptr,lesser_dir_ptr;
-    void add_greater_lesser_mapping_for_tracking(void);
-    bool single_subject_analysis(const char* file_name);
-    bool single_subject_paired_analysis(const char* file_name1,const char* file_name2);
+    bool single_subject_analysis(const char* file_name,fib_data& result);
+    //bool single_subject_paired_analysis(const char* file_name1,const char* file_name2);
 public:
-    //std::vector<float> null_threshold;
-    void run_span(float percentile,std::vector<std::vector<float> >& span);
-    void calculate_span_distribution(float percentile,std::vector<unsigned int>& dist);
-    void calculate_subject_distribution(float percentile,
+    void run_span(const fiber_orientations& fib,std::vector<std::vector<float> >& span);
+    void calculate_span_distribution(const fiber_orientations& fib,std::vector<unsigned int>& dist);
+    void calculate_subject_distribution(float percentile,const fib_data& data,
                                         std::vector<float>& subject_greater,
                                         std::vector<float>& subject_lesser);
     bool calculate_group_distribution(float percentile,const std::vector<std::string>& files,
@@ -76,8 +81,13 @@ public:
     void calculate_null_distribution(float percentile,
                                      std::vector<float>& subject_greater,
                                      std::vector<float>& subject_lesser);
-    void calculate_subject_spans(float percentile,std::vector<std::vector<float> >& spans,
+    void calculate_subject_fdr(float percentile,const fib_data& result,std::vector<std::vector<float> >& spans,
                                  std::vector<float>& fdr);
+public:
+    void tend_analysis(const std::vector<unsigned int>& permu,fib_data& result);
+    void calculate_null_trend_distribution(float percentile,
+                                                   std::vector<float>& subject_greater,
+                                                   std::vector<float>& subject_lesser);
 
 public:
 };

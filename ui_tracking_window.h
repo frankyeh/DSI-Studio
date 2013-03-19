@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Thu Feb 28 12:56:50 2013
+** Created: Sat Mar 16 21:48:17 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -312,6 +312,8 @@ public:
     QWidget *tab_3;
     QVBoxLayout *verticalLayout_9;
     QHBoxLayout *horizontalLayout_21;
+    QPushButton *cal_null_trend;
+    QPushButton *cal_trend;
     QSpacerItem *horizontalSpacer_9;
     QDoubleSpinBox *vbc_threshold;
     QPushButton *cal_lesser_tracts;
@@ -1767,6 +1769,16 @@ public:
         horizontalLayout_21 = new QHBoxLayout();
         horizontalLayout_21->setSpacing(0);
         horizontalLayout_21->setObjectName(QString::fromUtf8("horizontalLayout_21"));
+        cal_null_trend = new QPushButton(tab_3);
+        cal_null_trend->setObjectName(QString::fromUtf8("cal_null_trend"));
+
+        horizontalLayout_21->addWidget(cal_null_trend);
+
+        cal_trend = new QPushButton(tab_3);
+        cal_trend->setObjectName(QString::fromUtf8("cal_trend"));
+
+        horizontalLayout_21->addWidget(cal_trend);
+
         horizontalSpacer_9 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
         horizontalLayout_21->addItem(horizontalSpacer_9);
@@ -2330,6 +2342,8 @@ public:
         color_to->setText(QString());
         update_rendering->setText(QApplication::translate("tracking_window", "Update", 0, QApplication::UnicodeUTF8));
         vbc_widget->setWindowTitle(QApplication::translate("tracking_window", "Connectometry Analysis", 0, QApplication::UnicodeUTF8));
+        cal_null_trend->setText(QApplication::translate("tracking_window", "null trend", 0, QApplication::UnicodeUTF8));
+        cal_trend->setText(QApplication::translate("tracking_window", "cal_trend", 0, QApplication::UnicodeUTF8));
         cal_lesser_tracts->setText(QApplication::translate("tracking_window", "FDR", 0, QApplication::UnicodeUTF8));
         cal_group_dist->setText(QApplication::translate("tracking_window", "Group ", 0, QApplication::UnicodeUTF8));
         show_null_distribution->setText(QApplication::translate("tracking_window", "Null", 0, QApplication::UnicodeUTF8));

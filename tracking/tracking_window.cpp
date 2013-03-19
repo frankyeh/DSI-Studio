@@ -10,14 +10,15 @@
 #include "opengl/renderingtablewidget.h"
 #include "region/regiontablewidget.h"
 #include <QApplication>
-#include <QScrollBar>S
+#include <QScrollBar>
 #include <QMouseEvent>
 #include <QMessageBox>
-#include <QGraphicsTextItem>
 #include "tracking_model.hpp"
 #include "libs/tracking/tracking_model.hpp"
 #include "manual_alignment.h"
-
+#include "vbc_dialog.hpp"
+#include "tract_report.hpp"
+#include "color_bar_dialog.hpp"
 
 #include "mapping/atlas.hpp"
 #include "mapping/fa_template.hpp"
@@ -49,6 +50,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
     ui->setupUi(this);
     {
         setGeometry(10,10,800,600);
+
         ui->regionDockWidget->setMinimumWidth(0);
         ui->dockWidget->setMinimumWidth(0);
         ui->dockWidget_3->setMinimumWidth(0);
@@ -57,41 +59,15 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
                                                                   *this,renderWidget,ui->centralwidget));
         ui->verticalLayout_3->addWidget(regionWidget = new RegionTableWidget(*this,ui->regionDockWidget));
         ui->tractverticalLayout->addWidget(tractWidget = new TractTableWidget(*this,ui->TractWidgetHolder));
-        ui->color_bar->hide();
-        ui->dockWidget_report->hide();
         ui->graphicsView->setScene(&scene);
-        ui->color_bar_view->setScene(&color_bar);
         ui->graphicsView->setCursor(Qt::CrossCursor);
         scene.statusbar = ui->statusbar;
         if(!handle->has_vbc())
-        {
-            ui->vbc_widget->setAttribute(Qt::WA_DeleteOnClose);
-            ui->vbc_widget->close();
-            ui->menuConnectometry->setAttribute(Qt::WA_DeleteOnClose);
-            ui->menuConnectometry->close();
-        }
+            ui->actionConnectometry->setEnabled(false);
         else
-        {
-            ui->vbc_view->setScene(&vbc_scene);
-            ui->subject_list->setColumnCount(3);
-            ui->subject_list->setColumnWidth(0,300);
-            ui->subject_list->setColumnWidth(1,50);
-            ui->subject_list->setColumnWidth(2,50);
-            ui->subject_list->setHorizontalHeaderLabels(
-                        QStringList() << "name" << "value" << "R2");
-            ui->subject_list->setRowCount(handle->vbc->subject_count());
-            for(unsigned int index = 0;index < handle->vbc->subject_count();++index)
-            {
-                ui->subject_list->setItem(index,0, new QTableWidgetItem(QString(handle->vbc->subject_name(index).c_str())));
-                ui->subject_list->setItem(index,1, new QTableWidgetItem(QString::number(0)));
-                ui->subject_list->setItem(index,2, new QTableWidgetItem(QString::number(handle->vbc->subject_R2(index))));
-            }
-            ui->subject_list->selectRow(0);
-
-
-        }
+            vbc.reset(new vbc_dialog(this,handle));
+        color_bar.reset(new color_bar_dialog(this));
     }
-
 
     // setup fa threshold
     {
@@ -146,6 +122,8 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
         mi3_arg.translocation[2] = mG[2]-mF[2]*mi3_arg.scaling[2];
         mi3.reset(new manual_alignment(this,slice.source_images,fa_template_imp.I,mi3_arg));
     }
+    else
+        ui->actionManual_Registration->setEnabled(false);
     for(int index = 0;index < atlas_list.size();++index)
         ui->atlasListBox->addItem(atlas_list[index].name.c_str());
 
@@ -153,8 +131,6 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
     {
         if(is_dti)
             ui->actionQuantitative_anisotropy_QA->setText("Save FA...");
-        ui->report_index->addItem((is_dti) ? "fa":"qa");
-        ui->tract_color_index->addItem((is_dti) ? "fa":"qa");
         for (int index = fib_data.other_mapping_index; index < fib_data.view_item.size(); ++index)
             {
                 std::string& name = fib_data.view_item[index].name;
@@ -164,8 +140,6 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
                 Item->setVisible(true);
                 connect(Item, SIGNAL(triggered()),tractWidget, SLOT(save_tracts_data_as()));
                 ui->menuSave->addAction(Item);
-                ui->report_index->addItem(name.c_str());
-                ui->tract_color_index->addItem(name.c_str());
             }
     }
 
@@ -321,25 +295,6 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
         connect(ui->actionStatistics,SIGNAL(triggered()),tractWidget,SLOT(show_tracts_statistics()));
     }
 
-    // report
-    {
-        connect(ui->report_index,SIGNAL(currentIndexChanged(int)),this,SLOT(on_refresh_report_clicked()));
-        connect(ui->profile_dir,SIGNAL(currentIndexChanged(int)),this,SLOT(on_refresh_report_clicked()));
-    }
-    // color bar
-    {
-        ui->color_bar_style->setCurrentIndex(1);
-        connect(ui->color_bar_style,SIGNAL(currentIndexChanged(int)),this,SLOT(update_color_map()));
-        connect(ui->color_from,SIGNAL(clicked()),this,SLOT(update_color_map()));
-        connect(ui->color_to,SIGNAL(clicked()),this,SLOT(update_color_map()));
-        connect(ui->tract_color_max_value,SIGNAL(valueChanged(double)),this,SLOT(update_color_map()));
-        connect(ui->tract_color_min_value,SIGNAL(valueChanged(double)),this,SLOT(update_color_map()));
-        connect(ui->update_rendering,SIGNAL(clicked()),glWidget,SLOT(makeTracts()));
-        connect(ui->update_rendering,SIGNAL(clicked()),glWidget,SLOT(updateGL()));
-        on_tract_color_index_currentIndexChanged(0);
-
-    }
-
 
     {
         scene.show_slice();
@@ -375,8 +330,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
         ui->glAxiCheck->setChecked(settings.value("AxiSlice",1).toBool());
         ui->RenderingQualityBox->setCurrentIndex(settings.value("RenderingQuality",1).toInt());
 
-        ui->color_from->setColor(settings.value("color_from",0x00FF1010).toInt());
-        ui->color_to->setColor(settings.value("color_to",0x00FFFF10).toInt());
+
     }
 
     qApp->installEventFilter(this);
@@ -388,8 +342,6 @@ tracking_window::~tracking_window()
     QSettings settings;
     settings.setValue("geometry", saveGeometry());
     settings.setValue("state", saveState());
-    settings.setValue("color_from",ui->color_from->color().rgba());
-    settings.setValue("color_to",ui->color_to->color().rgba());
     tractWidget->delete_all_tract();
     delete ui;
     delete handle;
@@ -434,51 +386,8 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
         return false;
 
 
-    if(handle->has_vbc())
-    {
-        // show image
-        if(vbc_slice_pos != ui->AxiSlider->value())
-            on_subject_list_itemSelectionChanged();
-        // show data
-        std::vector<float> vbc_data;
-        handle->vbc->get_data_at(
-                image::pixel_index<3>(std::floor(pos[0] + 0.5), std::floor(pos[1] + 0.5), std::floor(pos[2] + 0.5),
-                                      handle->fib_data.dim).index(),0,vbc_data);
-        if(!vbc_data.empty())
-        {
-            for(unsigned int index = 0;index < handle->vbc->subject_count();++index)
-                ui->subject_list->item(index,1)->setText(QString::number(vbc_data[index]));
-
-            vbc_data.erase(std::remove(vbc_data.begin(),vbc_data.end(),0.0),vbc_data.end());
-            if(!vbc_data.empty())
-            {
-                float max_y = *std::max_element(vbc_data.begin(),vbc_data.end());
-                std::vector<unsigned int> hist;
-                image::histogram(vbc_data,hist,0,max_y,20);
-                QVector<double> x(hist.size()+1),y(hist.size()+1);
-                unsigned int max_hist = 0;
-                for(unsigned int j = 0;j < hist.size();++j)
-                {
-                    x[j] = max_y*(float)j/(float)hist.size();
-                    y[j] = hist[j];
-                    max_hist = std::max<unsigned int>(max_hist,hist[j]);
-                }
-                x.back() = max_y*(hist.size()+1)/hist.size();
-                y.back() = 0;
-                ui->vbc_report->clearGraphs();
-                ui->vbc_report->addGraph();
-                QPen pen;
-                pen.setColor(QColor(20,20,100,200));
-                ui->vbc_report->graph(0)->setLineStyle(QCPGraph::lsLine);
-                ui->vbc_report->graph(0)->setPen(pen);
-                ui->vbc_report->graph(0)->setData(x, y);
-
-                ui->vbc_report->xAxis->setRange(0,x.back());
-                ui->vbc_report->yAxis->setRange(0,max_hist);
-                ui->vbc_report->replot();
-                }
-        }
-    }
+    if(vbc.get() && vbc->isVisible())
+        vbc->show_info_at(pos);
 
     QString status;
     status = QString("(%1,%2,%3) ").arg(std::floor(pos[0]*10.0+0.5)/10.0)
@@ -936,11 +845,8 @@ void tracking_window::on_actionCopy_to_clipboard_triggered()
         scene.copyClipBoard();
         return;
     case 2:
-        {
-            QImage image;
-            ui->report_widget->saveImage(image);
-            QApplication::clipboard()->setImage(image);
-        }
+        if(tact_report_imp.get())
+            tact_report_imp->copyToClipboard();
         return;
     }
 }
@@ -952,77 +858,6 @@ void tracking_window::on_atlasListBox_currentIndexChanged(int atlas_index)
         ui->atlasComboBox->addItem(atlas_list[atlas_index].get_list()[index].c_str());
 }
 
-void tracking_window::on_refresh_report_clicked()
-{
-    if(tractWidget->tract_models.size() > 1 &&
-       tractWidget->tract_models[0]->get_tract_color(0) ==
-       tractWidget->tract_models[1]->get_tract_color(0))
-        tractWidget->assign_colors();
-    ui->dockWidget_report->show();
-    ui->report_widget->clearGraphs();
-
-    double max_y = 0.0,min_x = 0.0,max_x = 0;
-    if(ui->profile_dir->currentIndex() <= 2)
-        min_x = slice.geometry[ui->profile_dir->currentIndex()];
-    for(unsigned int index = 0;index < tractWidget->tract_models.size();++index)
-    {
-        if(tractWidget->item(index,0)->checkState() != Qt::Checked)
-            continue;
-        std::vector<float> values,data_profile;
-        tractWidget->tract_models[index]->get_report(
-                    ui->profile_dir->currentIndex(),
-                    ui->report_bandwidth->value(),
-                    ui->report_index->currentText().toLocal8Bit().begin(),
-                    values,data_profile);
-        if(data_profile.empty())
-            continue;
-
-        for(unsigned int i = 0;i < data_profile.size();++i)
-            if(data_profile[i] > 0.0)
-            {
-                max_y = std::max<float>(max_y,data_profile[i]);
-                max_x = std::max<float>(max_x,values[i]);
-                min_x = std::min<float>(min_x,values[i]);
-            }
-
-        QVector<double> x(data_profile.size()),y(data_profile.size());
-        std::copy(values.begin(),values.end(),x.begin());
-        std::copy(data_profile.begin(),data_profile.end(),y.begin());
-
-        ui->report_widget->addGraph();
-        QPen pen;
-        image::rgb_color color = tractWidget->tract_models[index]->get_tract_color(0);
-        pen.setColor(QColor(color.r,color.g,color.b,200));
-        pen.setWidth(ui->linewidth->value());
-        ui->report_widget->graph()->setLineStyle(QCPGraph::lsLine);
-        ui->report_widget->graph()->setPen(pen);
-        ui->report_widget->graph()->setData(x, y);
-        ui->report_widget->graph()->setName(tractWidget->item(index,0)->text());
-        // give the axes some labels:
-        //customPlot->xAxis->setLabel("x");
-        //customPlot->yAxis->setLabel("y");
-        // set axes ranges, so we see all data:
-
-
-    }
-    ui->report_widget->xAxis->setRange(min_x,max_x);
-    ui->report_widget->yAxis->setRange(ui->report_index->currentIndex() ? 0 : ui->fa_threshold->value(), max_y);
-    if(ui->report_legend->checkState() == Qt::Checked)
-    {
-        ui->report_widget->legend->setVisible(true);
-        QFont legendFont = font();  // start out with MainWindow's font..
-        legendFont.setPointSize(9); // and make a bit smaller for legend
-        ui->report_widget->legend->setFont(legendFont);
-        ui->report_widget->legend->setPositionStyle(QCPLegend::psRight);
-        ui->report_widget->legend->setBrush(QBrush(QColor(255,255,255,230)));
-    }
-    else
-        ui->report_widget->legend->setVisible(false);
-
-    ui->report_widget->replot();
-    copy_target = 2;
-}
-
 void tracking_window::on_actionRestore_window_layout_triggered()
 {
     restoreGeometry(default_geo);
@@ -1031,151 +866,6 @@ void tracking_window::on_actionRestore_window_layout_triggered()
 }
 
 
-unsigned char color_spectrum_value(unsigned char center, unsigned char value)
-{
-    unsigned char dif = center > value ? center-value:value-center;
-    if(dif < 32)
-        return 255;
-    dif -= 32;
-    if(dif >= 64)
-        return 0;
-    return 255-(dif << 2);
-}
-
-void tracking_window::update_color_map(void)
-{
-    color_map.resize(256);
-    bar.resize(image::geometry<2>(20,256));
-
-    if(ui->color_bar_style->currentIndex() == 0)
-    {
-        image::rgb_color from_color = ui->color_from->color().rgba();
-        image::rgb_color to_color = ui->color_to->color().rgba();
-        for(unsigned int index = 0;index < color_map.size();++index)
-        {
-            float findex = (float)index/255.0;
-            for(unsigned char rgb_index = 0;rgb_index < 3;++rgb_index)
-                color_map[index][2-rgb_index] =
-                        (float)to_color[rgb_index]*findex/255.0+
-                        (float)from_color[rgb_index]*(1.0-findex)/255.0;
-        }
-
-
-
-        for(unsigned int index = 1;index < 255;++index)
-        {
-            float findex = (float)index/256.0;
-            image::rgb_color color;
-            for(unsigned char rgb_index = 0;rgb_index < 3;++rgb_index)
-                color[rgb_index] = (float)from_color[rgb_index]*findex+(float)to_color[rgb_index]*(1.0-findex);
-            std::fill(bar.begin()+index*20+1,bar.begin()+(index+1)*20-1,color);
-        }
-    }
-
-    if(ui->color_bar_style->currentIndex() == 1)
-    {
-        for(unsigned int index = 0;index < color_map.size();++index)
-        {
-            color_map[index][0] = (float)color_spectrum_value(128+64,index)/255.0;
-            color_map[index][1] = (float)color_spectrum_value(128,index)/255.0;
-            color_map[index][2] = (float)color_spectrum_value(64,index)/255.0;
-        }
-        for(unsigned int index = 1;index < 255;++index)
-        {
-            image::rgb_color color;
-            color.r = color_spectrum_value(64,index);
-            color.g = color_spectrum_value(128,index);
-            color.b = color_spectrum_value(128+64,index);
-            std::fill(bar.begin()+index*20+1,bar.begin()+(index+1)*20-1,color);
-        }
-    }
-
-    color_bar.clear();
-    QGraphicsTextItem *max_text = color_bar.addText(QString::number(ui->tract_color_max_value->value()));
-    QGraphicsTextItem *min_text = color_bar.addText(QString::number(ui->tract_color_min_value->value()));
-    QGraphicsPixmapItem *map = color_bar.addPixmap(QPixmap::fromImage(
-            QImage((unsigned char*)&*bar.begin(),bar.width(),bar.height(),QImage::Format_RGB32)));
-    max_text->moveBy(10,-128-10);
-    min_text->moveBy(10,128-10);
-    map->moveBy(-10,-128);
-    ui->color_bar_view->show();
-
-}
-
-void tracking_window::on_tract_color_index_currentIndexChanged(int index)
-{
-    unsigned int item_index = index ? index+handle->fib_data.other_mapping_index-1:0;
-    float max_value = handle->fib_data.view_item[item_index].max_value;
-    float min_value = handle->fib_data.view_item[item_index].min_value;
-    float scale2 = std::pow(10.0,std::floor(2.0-std::log10(max_value)));
-    float scale1 = std::pow(10.0,std::floor(1.0-std::log10(max_value)));
-    float decimal = std::floor(2.0-std::log10(max_value));
-    if(decimal < 1.0)
-        decimal = 1.0;
-    ui->tract_color_max_value->setDecimals(decimal);
-    ui->tract_color_max_value->setMaximum(std::ceil(max_value*scale1)/scale1);
-    ui->tract_color_max_value->setMinimum(std::floor(min_value*scale1)/scale1);
-    ui->tract_color_max_value->setSingleStep(std::ceil(max_value*scale1)/scale1/50);
-    ui->tract_color_max_value->setValue(std::ceil(max_value*scale2)/scale1);
-
-    ui->tract_color_min_value->setDecimals(decimal);
-    ui->tract_color_min_value->setMaximum(std::ceil(max_value*scale1)/scale1);
-    ui->tract_color_min_value->setMinimum(std::floor(min_value*scale1)/scale1);
-    ui->tract_color_min_value->setSingleStep(std::ceil(max_value*scale1)/scale1/50);
-    ui->tract_color_min_value->setValue(std::floor(min_value*scale2)/scale1);
-    update_color_map();
-}
-
-void tracking_window::on_save_report_clicked()
-{
-    QString filename = QFileDialog::getSaveFileName(
-                this,
-                "Save report as",
-                absolute_path + "/report.txt",
-                "Report file (*.txt);;All files (*.*)");
-    if(filename.isEmpty())
-        return;
-    absolute_path = QFileInfo(filename).absolutePath();
-    std::ofstream out(filename.toLocal8Bit().begin());
-    if(!out)
-    {
-        QMessageBox::information(this,"Error","Cannot write to file",0);
-        return;
-    }
-
-    std::vector<QCPDataMap::const_iterator> iterators(ui->report_widget->graphCount());
-    for(int row = 0;;++row)
-    {
-        bool has_output = false;
-        for(int index = 0;index < ui->report_widget->graphCount();++index)
-        {
-            if(row == 0)
-            {
-                out << ui->report_widget->graph(index)->name().toLocal8Bit().begin() << "\t\t";
-                has_output = true;
-                continue;
-            }
-            if(row == 1)
-            {
-                out << "x\ty\t";
-                iterators[index] = ui->report_widget->graph(index)->data()->begin();
-                has_output = true;
-                continue;
-            }
-            if(iterators[index] != ui->report_widget->graph(index)->data()->end())
-            {
-                out << iterators[index]->key << "\t" << iterators[index]->value << "\t";
-                ++iterators[index];
-                has_output = true;
-            }
-            else
-                out << "\t\t";
-        }
-        out << std::endl;
-        if(!has_output)
-            break;
-    }
-}
 
 void tracking_window::on_tracking_index_currentIndexChanged(int index)
 {
@@ -1216,348 +906,12 @@ void tracking_window::on_deleteSlice_clicked()
 }
 
 
-
-void tracking_window::on_actionSave_Report_as_triggered()
-{
-    QString filename = QFileDialog::getSaveFileName(
-                this,
-                "Save report as",
-                absolute_path + "/report.jpg",
-                "JPEC file (*.jpg);;BMP file (*.bmp);;PDF file (*.pdf);;PNG file (*.png);;All files (*.*)");
-    if(QFileInfo(filename).completeSuffix().toLower() == "jpg")
-        ui->report_widget->saveJpg(filename);
-    if(QFileInfo(filename).completeSuffix().toLower() == "bmp")
-        ui->report_widget->saveBmp(filename);
-    if(QFileInfo(filename).completeSuffix().toLower() == "png")
-        ui->report_widget->savePng(filename);
-    if(QFileInfo(filename).completeSuffix().toLower() == "pdf")
-        ui->report_widget->savePdf(filename);
-    absolute_path = QFileInfo(filename).absolutePath();
-
-
-}
-
 void tracking_window::on_actionSave_Tracts_in_MNI_space_triggered()
 {
     if(handle->fib_data.trans_to_mni.empty())
         return;
     tractWidget->saveTransformedTracts(&*(handle->fib_data.trans_to_mni.begin()));
 }
-
-void tracking_window::on_actionOpen_Subject_Data_triggered()
-{
-    if(!handle->has_vbc())
-        return;
-    QString filename = QFileDialog::getOpenFileName(
-                                this,
-                                "Select subject fib file for analysis",
-                                absolute_path,
-                                "Fib files (*.fib.gz *.fib);;All files (*.*)" );
-    if (filename.isEmpty())
-        return;
-    absolute_path = QFileInfo(filename).absolutePath();
-
-    begin_prog("load data");
-    if(!handle->vbc->single_subject_analysis(filename.toLocal8Bit().begin()))
-    {
-        check_prog(1,1);
-        QMessageBox::information(this,"error",handle->vbc->error_msg.c_str(),0);
-        return;
-    }
-    check_prog(1,1);
-
-    if(ui->tracking_index->findText("lesser mapping") == -1)
-    {
-        ui->tracking_index->addItem("greater mapping");
-        ui->tracking_index->addItem("lesser mapping");
-    }
-}
-
-
-
-
-void tracking_window::show_report(const std::vector<std::vector<float> >& vbc_data)
-{
-
-    unsigned int x_size = 0;
-    for(unsigned int i = 0;i < vbc_data.size();++i)
-        x_size = std::max<unsigned int>(x_size,vbc_data[i].size());
-    if(x_size == 0)
-        return;
-    QVector<double> x(x_size);
-    std::vector<QVector<double> > y(vbc_data.size());
-    int min_x = -1;
-    unsigned int max_x = 40;
-    float max_y = 0.4;
-    for(unsigned int i = 0;i < vbc_data.size();++i)
-        y[i].resize(x_size);
-    for(unsigned int j = 0;j < x_size;++j)
-    {
-        x[j] = (float)j;
-        for(unsigned int i = 0; i < vbc_data.size(); ++i)
-            if(j < vbc_data[i].size())
-            {
-                y[i][j] = vbc_data[i][j];
-                if(min_x == -1 && vbc_data[i][j] > 0)
-                    min_x = x[j];
-            }
-    }
-    ui->null_dist->clearGraphs();
-    QPen pen;
-
-    QColor color[4];
-    color[0] = QColor(20,20,100,200);
-    color[1] = QColor(100,20,20,200);
-    color[2] = QColor(20,100,20,200);
-    color[3] = QColor(20,100,100,200);
-    char legend[4][60] = {"subject greater","subject lesser","null greater","null lesser"};
-    for(unsigned int i = 0; i < vbc_data.size(); ++i)
-    {
-        ui->null_dist->addGraph();
-        pen.setColor(color[i]);
-        ui->null_dist->graph()->setLineStyle(QCPGraph::lsLine);
-        ui->null_dist->graph()->setPen(pen);
-        ui->null_dist->graph()->setData(x, y[i]);
-        ui->null_dist->graph()->setName(QString(legend[i]));
-    }
-
-    ui->null_dist->xAxis->setRange(min_x,max_x);
-    ui->null_dist->yAxis->setRange(0,max_y);
-    ui->null_dist->legend->setVisible(true);
-    QFont legendFont = font();  // start out with MainWindow's font..
-    legendFont.setPointSize(9); // and make a bit smaller for legend
-    ui->null_dist->legend->setFont(legendFont);
-    ui->null_dist->legend->setPositionStyle(QCPLegend::psRight);
-    ui->null_dist->legend->setBrush(QBrush(QColor(255,255,255,230)));
-    ui->null_dist->replot();
-
-
-    ui->dist_table->setColumnCount(5);
-    ui->dist_table->setColumnWidth(0,50);
-    ui->dist_table->setColumnWidth(1,150);
-    ui->dist_table->setColumnWidth(2,150);
-    ui->dist_table->setColumnWidth(3,150);
-    ui->dist_table->setColumnWidth(4,150);
-    ui->dist_table->setHorizontalHeaderLabels(
-                QStringList() << "span" << "pdf(x)" << "cdf(x)" << "pdf(x)" << "cdf(x)");
-
-
-    ui->dist_table->setRowCount(100);
-    float sum[2] = {0.0,0.0};
-    for(unsigned int index = 0;index < 100;++index)
-    {
-        ui->dist_table->setItem(index,0, new QTableWidgetItem(QString::number(index + 1)));
-        ui->dist_table->setItem(index,1, new QTableWidgetItem(QString::number(vbc_data[0][index+1])));
-        ui->dist_table->setItem(index,2, new QTableWidgetItem(QString::number(sum[0] += vbc_data[0][index+1])));
-        ui->dist_table->setItem(index,3, new QTableWidgetItem(QString::number(vbc_data[1][index+1])));
-        ui->dist_table->setItem(index,4, new QTableWidgetItem(QString::number(sum[1] += vbc_data[1][index+1])));
-    }
-    ui->dist_table->selectRow(0);
-}
-
-
-void tracking_window::on_show_null_distribution_clicked()
-{
-    if(!handle->has_vbc())
-        return;
-    std::vector<std::vector<float> > vbc_data(2);
-    handle->vbc->calculate_null_distribution(ui->vbc_threshold->value(),vbc_data[0],vbc_data[1]);
-    show_report(vbc_data);
-}
-
-void tracking_window::on_vbc_dist_update_clicked()
-{
-
-    if(!handle->has_vbc() || ui->tracking_index->findText("lesser mapping") == -1)
-        return;
-
-    std::vector<std::vector<float> > vbc_data(2);
-    handle->vbc->calculate_subject_distribution(ui->vbc_threshold->value(),vbc_data[0],vbc_data[1]);
-    show_report(vbc_data);
-
-}
-
-
-void tracking_window::on_cal_lesser_tracts_clicked()
-{
-    if(!handle->has_vbc() || ui->tracking_index->findText("lesser mapping") == -1)
-        return;
-    std::vector<std::vector<float> > tracts;
-    std::vector<float> fdr;
-    begin_prog("calculating");
-    handle->vbc->calculate_subject_spans(ui->vbc_threshold->value(),tracts,fdr);
-    if(tracts.empty())
-    {
-        QMessageBox::information(this,"result","no significant lesser span",0);
-        return;
-    }
-
-    for(float fdr_upper = 0.1,fdr_lower = 0.0;
-        fdr_upper < 1.0;fdr_upper += 0.1,fdr_lower += 0.1)
-    {
-        std::vector<std::vector<float> > selected_tracts;
-        std::vector<image::rgb_color> color;
-        for(unsigned int index = 0;index < fdr.size();++index)
-        {
-            if(fdr[index] >= fdr_lower && fdr[index] < fdr_upper)
-            {
-                selected_tracts.push_back(std::vector<float>());
-                selected_tracts.back().swap(tracts[index]);
-                color.push_back(image::rgb_color(230,fdr[index]*230,fdr[index]*230));
-            }
-        }
-        tractWidget->addNewTracts(QString("FDR ") + QString::number(fdr_lower) + " to " + QString::number(fdr_upper));
-        tractWidget->tract_models.back()->add_tracts(selected_tracts);
-        for(unsigned int index = 0;index < color.size();++index)
-        {
-            tractWidget->tract_models.back()->set_tract_color(index,color[index]);
-        }
-        tractWidget->item(tractWidget->tract_models.size()-1,1)->
-            setText(QString::number(tractWidget->tract_models.back()->get_visible_track_count()));
-    }
-
-    renderWidget->setData("tract_color_style",1);//manual assigned
-    glWidget->makeTracts();
-    glWidget->updateGL();
-}
-
-void tracking_window::on_save_vbc_dist_clicked()
-{
-    QString filename = QFileDialog::getSaveFileName(
-                this,
-                "Save report as",
-                absolute_path + "/report.txt",
-                "Report file (*.txt);;All files (*.*)");
-    if(filename.isEmpty())
-        return;
-    absolute_path = QFileInfo(filename).absolutePath();
-
-    std::ofstream out(filename.toLocal8Bit().begin());
-    if(!out)
-    {
-        QMessageBox::information(this,"Error","Cannot write to file",0);
-        return;
-    }
-
-    std::vector<QCPDataMap::const_iterator> iterators(ui->null_dist->graphCount());
-    for(int row = 0;;++row)
-    {
-        bool has_output = false;
-        for(int index = 0;index < ui->null_dist->graphCount();++index)
-        {
-            if(row == 0)
-            {
-                out << ui->null_dist->graph(index)->name().toLocal8Bit().begin() << "\t\t";
-                has_output = true;
-                continue;
-            }
-            if(row == 1)
-            {
-                out << "x\ty\t";
-                iterators[index] = ui->null_dist->graph(index)->data()->begin();
-                has_output = true;
-                continue;
-            }
-            if(iterators[index] != ui->null_dist->graph(index)->data()->end())
-            {
-                out << iterators[index]->key << "\t" << iterators[index]->value << "\t";
-                ++iterators[index];
-                has_output = true;
-            }
-            else
-                out << "\t\t";
-        }
-        out << std::endl;
-        if(!has_output)
-            break;
-    }
-}
-
-
-void tracking_window::on_cal_group_dist_clicked()
-{
-    if(!handle->has_vbc())
-        return;
-    QStringList filename = QFileDialog::getOpenFileNames(
-                                this,
-                                "Select subject fib file for analysis",
-                                absolute_path,
-                                "Fib files (*.fib.gz *.fib);;All files (*.*)" );
-    if (filename.isEmpty())
-        return;
-    absolute_path = QFileInfo(filename[0]).absolutePath();
-
-    std::vector<std::string> file_names;
-    for(unsigned int index = 0;index < filename.size();++index)
-        file_names.push_back(filename[index].toLocal8Bit().begin());
-    std::vector<std::vector<float> > vbc_data(2);
-    if(!handle->vbc->calculate_group_distribution(ui->vbc_threshold->value(),
-
-                                                  file_names,vbc_data[0],vbc_data[1]))
-    {
-        QMessageBox::information(this,"error",handle->vbc->error_msg.c_str(),0);
-        return;
-    }
-    show_report(vbc_data);
-}
-
-
-
-
-void tracking_window::on_actionPair_comparison_triggered()
-{
-    if(!handle->has_vbc())
-        return;
-    QString filename1 = QFileDialog::getOpenFileName(
-                                this,
-                                "Select subject fib file for analysis",
-                                absolute_path,
-                                "Fib files (*.fib.gz *.fib);;All files (*.*)" );
-    if (filename1.isEmpty())
-        return;
-    QString filename2 = QFileDialog::getOpenFileName(
-                                this,
-                                "Select subject fib file for analysis",
-                                absolute_path,
-                                "Fib files (*.fib.gz *.fib);;All files (*.*)" );
-    if (filename2.isEmpty())
-        return;
-
-
-    begin_prog("load data");
-    if(!handle->vbc->single_subject_paired_analysis(
-                                                    filename1.toLocal8Bit().begin(),
-                                                    filename2.toLocal8Bit().begin()))
-    {
-        check_prog(1,1);
-        QMessageBox::information(this,"error",handle->vbc->error_msg.c_str(),0);
-        return;
-    }
-    check_prog(1,1);
-    if(ui->tracking_index->findText("lesser mapping") == -1)
-    {
-        ui->tracking_index->addItem("greater mapping");
-        ui->tracking_index->addItem("lesser mapping");
-    }
-}
-
-void tracking_window::on_subject_list_itemSelectionChanged()
-{
-    image::basic_image<float,2> slice;
-    handle->vbc->get_subject_slice(ui->subject_list->currentRow(),ui->AxiSlider->value(),slice);
-    image::normalize(slice);
-    image::color_image color_slice(slice.geometry());
-    std::copy(slice.begin(),slice.end(),color_slice.begin());
-    QImage qimage((unsigned char*)&*color_slice.begin(),color_slice.width(),color_slice.height(),QImage::Format_RGB32);
-    vbc_slice_image = qimage.scaled(color_slice.width()*ui->zoom->value(),color_slice.height()*ui->zoom->value());
-    vbc_scene.clear();
-    vbc_scene.setSceneRect(0, 0, vbc_slice_image.width(),vbc_slice_image.height());
-    vbc_scene.setItemIndexMethod(QGraphicsScene::NoIndex);
-    vbc_scene.addRect(0, 0, vbc_slice_image.width(),vbc_slice_image.height(),QPen(),vbc_slice_image);
-    vbc_slice_pos = ui->AxiSlider->value();
-}
-
-
 
 
 void tracking_window::on_offset_sliderMoved(int position)
@@ -1736,13 +1090,6 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
 }
 
 
-void tracking_window::on_actionPlot_triggered()
-{
-    ui->dockWidget_report->show();
-    on_refresh_report_clicked();
-}
-
-
 
 void tracking_window::on_actionManual_Registration_triggered()
 {
@@ -1751,4 +1098,20 @@ void tracking_window::on_actionManual_Registration_triggered()
         mi3->timer->start();
         mi3->show();
     }
+}
+
+
+void tracking_window::on_actionConnectometry_triggered()
+{
+    if(vbc.get())
+        vbc->show();
+}
+
+
+void tracking_window::on_actionTract_Analysis_Report_triggered()
+{
+    if(!tact_report_imp.get())
+        tact_report_imp.reset(new tract_report(this));
+    tact_report_imp->show();
+    tact_report_imp->on_refresh_report_clicked();
 }

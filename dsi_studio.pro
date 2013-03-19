@@ -96,7 +96,10 @@ HEADERS += mainwindow.h \
     libs/dsi/racian_noise.hpp \
     libs/dsi/mix_gaussian_model.hpp \
     libs/dsi/layout.hpp \
-    manual_alignment.h
+    manual_alignment.h \
+    tracking/vbc_dialog.hpp \
+    tracking/tract_report.hpp \
+    tracking/color_bar_dialog.hpp
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
     reconstruction/reconstruction_window.ui \
@@ -104,7 +107,10 @@ FORMS += mainwindow.ui \
     simulation.ui \
     reconstruction/vbcdialog.ui \
     view_image.ui \
-    manual_alignment.ui
+    manual_alignment.ui \
+    tracking/vbc_dialog.ui \
+    tracking/tract_report.ui \
+    tracking/color_bar_dialog.ui
 RESOURCES += \
     icons.qrc
 SOURCES += main.cpp \
@@ -156,4 +162,7 @@ SOURCES += main.cpp \
     cmd/ana.cpp \
     view_image.cpp \
     libs/vbc/vbc_database.cpp \
-    manual_alignment.cpp
+    manual_alignment.cpp \
+    tracking/vbc_dialog.cpp \
+    tracking/tract_report.cpp \
+    tracking/color_bar_dialog.cpp

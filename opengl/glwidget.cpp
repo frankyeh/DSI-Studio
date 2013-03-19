@@ -16,7 +16,7 @@
 #include "tracking/region/regiontablewidget.h"
 #include "SliceModel.h"
 #include "libs/tracking/tracking_model.hpp"
-
+#include "tracking/color_bar_dialog.hpp"
 
 GLenum BlendFunc1[] = {GL_ZERO,GL_ONE,GL_DST_COLOR,
                       GL_ONE_MINUS_DST_COLOR,GL_SRC_ALPHA,
@@ -494,13 +494,9 @@ void GLWidget::paintGL()
         {
             if(get_param("tract_color_style") > 1 &&
                     get_param("tract_color_style") <= 3) // index painting
-            {
-                cur_tracking_window.ui->color_bar->show();
-                cur_tracking_window.ui->color_bar->setFloating(true);
-                cur_tracking_window.ui->color_bar->setAllowedAreas( Qt::NoDockWidgetArea );
-            }
+                cur_tracking_window.color_bar->show();
             else
-                cur_tracking_window.ui->color_bar->hide();
+                cur_tracking_window.color_bar->hide();
         }
 
 
@@ -787,9 +783,9 @@ void GLWidget::makeTracts(void)
     std::vector<float> mean_fa;
     int color_item_index;
     unsigned int mean_fa_index = 0;
-    float color_max_value = cur_tracking_window.ui->tract_color_max_value->value();
-    float color_min_value = cur_tracking_window.ui->tract_color_min_value->value();
-    unsigned int tract_color_index = cur_tracking_window.ui->tract_color_index->currentIndex();
+    float color_max_value = cur_tracking_window.color_bar->get_color_max_value();
+    float color_min_value = cur_tracking_window.color_bar->get_color_min_value();
+    unsigned int tract_color_index = cur_tracking_window.color_bar->get_tract_color_index();
 
     // show tract by index value
     if (tract_color_style > 1 && tract_color_style <= 3)
@@ -909,7 +905,7 @@ void GLWidget::makeTracts(void)
                     break;
                 case 3:// mean
                     paint_color_f =
-                            cur_tracking_window.color_map[std::floor(
+                            cur_tracking_window.color_bar->color_map[std::floor(
                                     std::min(1.0f,(std::max<float>(mean_fa[mean_fa_index++]-color_min_value,0.0))/color_r)*255.0+0.49)];
                     break;
                 case 4:// mean directional
@@ -967,7 +963,7 @@ void GLWidget::makeTracts(void)
                         break;
                     case 2://local anisotropy
                         if(index < color.size())
-                        cur_color = cur_tracking_window.color_map[
+                        cur_color = cur_tracking_window.color_bar->color_map[
                         std::floor(std::min(1.0f,(std::max<float>(color[index]-color_min_value,0.0))/color_r)*255.0+0.49)];
                         break;
                     }

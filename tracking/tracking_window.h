@@ -20,6 +20,9 @@ namespace Ui {
 
 class GLWidget;
 class manual_alignment;
+class vbc_dialog;
+class tract_report;
+class color_bar_dialog;
 class tracking_window : public QMainWindow
 {
     Q_OBJECT
@@ -40,11 +43,6 @@ public:
 
     // For clipboard
     unsigned int copy_target;
-public://vbc
-    QGraphicsScene vbc_scene;
-    QImage vbc_slice_image;
-    unsigned int vbc_slice_pos;
-    void show_report(const std::vector<std::vector<float> >& vbc_data);
 public:
 
     unsigned int odf_size;
@@ -58,11 +56,11 @@ public:
 public:
     image::affine_transform<3,float> mi3_arg;
     std::auto_ptr<manual_alignment> mi3;
-public:// color_bar
-    image::color_image bar;
-    QGraphicsScene color_bar;
-    std::vector<image::vector<3,float> > color_map;
+    std::auto_ptr<vbc_dialog> vbc;
+    std::auto_ptr<tract_report> tact_report_imp;
+    std::auto_ptr<color_bar_dialog> color_bar;
 
+public:
 public:
     QString absolute_path;
     ODFModel* handle;
@@ -74,9 +72,7 @@ public slots:
     void on_CorView_clicked();
     void on_AxiView_clicked();
 private slots:
-    void on_tract_color_index_currentIndexChanged(int index);
     void on_actionRestore_window_layout_triggered();
-    void on_refresh_report_clicked();
     void on_atlasListBox_currentIndexChanged(int index);
     void on_actionCopy_to_clipboard_triggered();
     void on_RenderingQualityBox_currentIndexChanged(int index);
@@ -104,20 +100,15 @@ private slots:
 
     void SliderValueChanged(void);
     void glSliderValueChanged(void);
-    void update_color_map(void);
 
-    void on_save_report_clicked();
+
     void on_tracking_index_currentIndexChanged(int index);
     void on_actionSave_Endpoints_in_Current_Mapping_triggered();
     void on_deleteSlice_clicked();
     void on_tool5_pressed();
     void on_actionMove_Object_triggered();
-    void on_actionSave_Report_as_triggered();
     void on_actionSave_Tracts_in_MNI_space_triggered();
-    void on_actionOpen_Subject_Data_triggered();
-    void on_subject_list_itemSelectionChanged();
     void on_tool6_pressed();
-    void on_actionPair_comparison_triggered();
     void on_offset_sliderMoved(int position);
     void on_offset_value_valueChanged(double arg1);
     void on_contrast_sliderMoved(int position);
@@ -126,13 +117,9 @@ private slots:
     void on_gl_offset_value_valueChanged(double arg1);
     void on_gl_contrast_sliderMoved(int position);
     void on_gl_contrast_value_valueChanged(double arg1);
-    void on_actionPlot_triggered();
-    void on_vbc_dist_update_clicked();
-    void on_show_null_distribution_clicked();
-    void on_cal_group_dist_clicked();
-    void on_save_vbc_dist_clicked();
-    void on_cal_lesser_tracts_clicked();
     void on_actionManual_Registration_triggered();
+    void on_actionConnectometry_triggered();
+    void on_actionTract_Analysis_Report_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

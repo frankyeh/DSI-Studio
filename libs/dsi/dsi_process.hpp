@@ -1,7 +1,8 @@
 #ifndef DSI_PROCESS_HPP
 #define DSI_PROCESS_HPP
 #define _USE_MATH_DEFINES
-#include <vector>#include "basic_process.hpp"
+#include <vector>
+#include "basic_process.hpp"
 #include "basic_voxel.hpp"
 
 
