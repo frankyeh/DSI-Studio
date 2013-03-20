@@ -175,6 +175,7 @@
 */
 
 #include "qcustomplot.h"
+#include <fstream>
 
 // ================================================================================
 // =================== QCPData
@@ -8148,6 +8149,44 @@ void QCustomPlot::saveImage(QImage &image)
     image.fill(mColor);
     QCPPainter painter(&image);
     draw(&painter);
+}
+void QCustomPlot::saveTxt(const QString &fileName)
+{
+    std::ofstream out(fileName.toLocal8Bit().begin());
+    if(!out)
+        return;
+    std::vector<QCPDataMap::const_iterator> iterators(graphCount());
+    for(int row = 0;;++row)
+    {
+        bool has_output = false;
+        for(int index = 0;index < graphCount();++index)
+        {
+            if(row == 0)
+            {
+                out << graph(index)->name().toLocal8Bit().begin() << "\t\t";
+                has_output = true;
+                continue;
+            }
+            if(row == 1)
+            {
+                out << "x\ty\t";
+                iterators[index] = graph(index)->data()->begin();
+                has_output = true;
+                continue;
+            }
+            if(iterators[index] != graph(index)->data()->end())
+            {
+                out << iterators[index]->key << "\t" << iterators[index]->value << "\t";
+                ++iterators[index];
+                has_output = true;
+            }
+            else
+                out << "\t\t";
+        }
+        out << std::endl;
+        if(!has_output)
+            break;
+    }
 }
 
 bool QCustomPlot::saveRastered(const QString &fileName, int width, int height, double scale, const char *format, int quality)

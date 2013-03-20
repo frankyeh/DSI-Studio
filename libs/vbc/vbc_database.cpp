@@ -526,14 +526,32 @@ bool vbc_database::calculate_group_distribution(float percentile,const std::vect
     hist_to_dist(dist_lesser,subject_lesser);
 }
 
-void vbc_database::tend_analysis(const std::vector<unsigned int>& permu,fib_data& data)
+double vbc_database::get_trend_std(const std::vector<float>& data)
+{
+    std::map<float,unsigned int> accounting;
+    for(unsigned int index = 0;index < data.size();++index)
+        ++accounting[data[index]];
+
+    std::vector<std::pair<float,unsigned int> > group_size(accounting.begin(),accounting.end());
+    double n = subject_qa.size();
+    double permutations = n*(n-1.0)*(2.0*n+5.0);
+
+    for(unsigned int index = 0;index < group_size.size();++index)
+        if(group_size[index].second > 1)
+        {
+            double t = group_size[index].second;
+            permutations -= t*(t-1.0)*(2.0*t+5.0);
+        }
+    return std::sqrt(permutations/18.0);
+}
+
+void vbc_database::tend_analysis(float sqrt_var_S,const std::vector<unsigned int>& permu,fib_data& data)
 {
     data.initialize(fib_file);
 
     boost::math::normal gaussian;
     std::vector<float> population(subject_qa.size());
     unsigned int n = subject_qa.size();
-    float sqrt_var_S = std::sqrt(n*(n-1)*(2.0*n+5.0)/18.0);
     std::vector<unsigned char> greater_fib_count(dim.size()),lesser_fib_count(dim.size());
     for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
     {
@@ -581,7 +599,19 @@ void vbc_database::tend_analysis(const std::vector<unsigned int>& permu,fib_data
 
 }
 
-void vbc_database::calculate_null_trend_distribution(float percentile,
+void vbc_database::tend_analysis(const std::vector<float>& data,fib_data& result)
+{
+    std::multimap<float,unsigned int> rank;
+    for(unsigned int index = 0;index < data.size();++index)
+        rank.insert(std::make_pair(data[index],index));
+    std::vector<std::pair<float,unsigned int> > sorted(rank.begin(),rank.end());
+    std::vector<unsigned int> permu(sorted.size());
+    for(unsigned int index = 0;index < sorted.size();++index)
+        permu[index] = sorted[index].second;
+    tend_analysis(get_trend_std(data),permu,result);
+}
+
+void vbc_database::calculate_null_trend_distribution(float sqrt_var_S,float percentile,
                                                std::vector<float>& subject_greater,
                                                std::vector<float>& subject_lesser)
 {
@@ -604,7 +634,7 @@ void vbc_database::calculate_null_trend_distribution(float percentile,
     {
         std::random_shuffle(permu.begin(),permu.end());
 
-        tend_analysis(permu,data);
+        tend_analysis(sqrt_var_S,permu,data);
 
         fib.fa = data.greater_ptr;
         fib.findex = data.greater_dir_ptr;

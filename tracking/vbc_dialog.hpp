@@ -13,12 +13,19 @@ class ODFModel;
 class vbc_dialog : public QDialog
 {
     Q_OBJECT
-public://vbc
+private:
     QGraphicsScene vbc_scene;
     QImage vbc_slice_image;
     unsigned int vbc_slice_pos;
     fib_data cur_subject_fib;
-    void show_report(const std::vector<std::vector<float> >& vbc_data);
+    std::vector<std::vector<float> > dist;
+    std::vector<std::vector<float> > fdr;
+
+
+    void show_dis_table(void);
+    void show_fdr_table(void);
+
+
 public:
     tracking_window* cur_tracking_window;
     ODFModel* handle;
@@ -26,15 +33,8 @@ public:
     ~vbc_dialog();
     void show_info_at(const image::vector<3,float>& pos);
 private slots:
-    void on_cal_null_trend_clicked();
-
-    void on_cal_trend_clicked();
 
     void on_cal_lesser_tracts_clicked();
-
-    void on_cal_group_dist_clicked();
-
-    void on_show_null_distribution_clicked();
 
     void on_vbc_dist_update_clicked();
 
@@ -43,6 +43,16 @@ private slots:
     void on_save_vbc_dist_clicked();
 
     void on_open_subject_clicked();
+
+    void on_cal_FDR_clicked();
+
+    void on_toggled(bool checked);
+
+    void show_report();
+
+    void show_fdr_report();
+
+    void on_save_fdr_dist_clicked();
 
 private:
     Ui::vbc_dialog *ui;

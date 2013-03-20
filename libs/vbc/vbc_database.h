@@ -84,8 +84,10 @@ public:
     void calculate_subject_fdr(float percentile,const fib_data& result,std::vector<std::vector<float> >& spans,
                                  std::vector<float>& fdr);
 public:
-    void tend_analysis(const std::vector<unsigned int>& permu,fib_data& result);
-    void calculate_null_trend_distribution(float percentile,
+    double get_trend_std(const std::vector<float>& data);
+    void tend_analysis(const std::vector<float>& data,fib_data& result);
+    void tend_analysis(float sqrt_var_S,const std::vector<unsigned int>& permu,fib_data& result);
+    void calculate_null_trend_distribution(float sqrt_var_S,float percentile,
                                                    std::vector<float>& subject_greater,
                                                    std::vector<float>& subject_lesser);
 

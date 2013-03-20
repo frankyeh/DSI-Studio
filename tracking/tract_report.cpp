@@ -117,7 +117,7 @@ void tract_report::on_save_report_clicked()
     QString filename = QFileDialog::getSaveFileName(
                 this,
                 "Save report as",
-                "report.txt",
+                cur_tracking_window->absolute_path + "/report.txt",
                 "Report file (*.txt);;All files (*.*)");
     if(filename.isEmpty())
         return;
@@ -127,39 +127,7 @@ void tract_report::on_save_report_clicked()
         QMessageBox::information(this,"Error","Cannot write to file",0);
         return;
     }
-
-    std::vector<QCPDataMap::const_iterator> iterators(ui->report_widget->graphCount());
-    for(int row = 0;;++row)
-    {
-        bool has_output = false;
-        for(int index = 0;index < ui->report_widget->graphCount();++index)
-        {
-            if(row == 0)
-            {
-                out << ui->report_widget->graph(index)->name().toLocal8Bit().begin() << "\t\t";
-                has_output = true;
-                continue;
-            }
-            if(row == 1)
-            {
-                out << "x\ty\t";
-                iterators[index] = ui->report_widget->graph(index)->data()->begin();
-                has_output = true;
-                continue;
-            }
-            if(iterators[index] != ui->report_widget->graph(index)->data()->end())
-            {
-                out << iterators[index]->key << "\t" << iterators[index]->value << "\t";
-                ++iterators[index];
-                has_output = true;
-            }
-            else
-                out << "\t\t";
-        }
-        out << std::endl;
-        if(!has_output)
-            break;
-    }
+    ui->report_widget->saveTxt(filename);
 }
 
 
@@ -168,7 +136,7 @@ void tract_report::on_save_image_clicked()
     QString filename = QFileDialog::getSaveFileName(
                 this,
                 "Save report as",
-                "report.jpg",
+                cur_tracking_window->absolute_path + "/report.jpg",
                 "JPEC file (*.jpg);;BMP file (*.bmp);;PDF file (*.pdf);;PNG file (*.png);;All files (*.*)");
     if(QFileInfo(filename).completeSuffix().toLower() == "jpg")
         ui->report_widget->saveJpg(filename);
