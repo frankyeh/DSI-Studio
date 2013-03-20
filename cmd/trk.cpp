@@ -279,43 +279,58 @@ int trk(int ac, char *av[])
     out << "output file:" << file_name << std::endl;
     tract_model->save_tracts_to_file(file_name.c_str());
 
-    // export statistics
-    if(vm.count("export") && vm["export"].as<std::string>().find("stat")!=std::string::npos)
+    if(vm.count("export"))
     {
-        out << "export statistics..." << std::endl;
-        std::string file_name_stat(file_name);
-        file_name_stat += ".stat.txt";
-        std::ofstream out_stat(file_name_stat.c_str());
-        std::string result;
-        tract_model->get_quantitative_info(result);
-        out_stat << result;
-    }
-    // export qa
-    if(vm.count("export") && vm["export"].as<std::string>().find("qa")!=std::string::npos)
-    {
-        out << "export qa..." << std::endl;
-        std::string file_name_stat(file_name);
-        file_name_stat += ".qa.txt";
-        tract_model->save_fa_to_file(file_name_stat.c_str());
+        std::string export_option = vm["export"].as<std::string>();
+        std::replace(export_option.begin(),export_option.end(),',',' ');
+        std::istringstream in(export_option);
+        std::string cmd;
+        while(in >> cmd)
+        {
+            std::string file_name_stat(file_name);
+            file_name_stat += ".";
+            file_name_stat += cmd;
+            file_name_stat += ".txt";
+            // export statistics
+            if(cmd == "stat")
+            {
+                out << "export statistics..." << std::endl;
+                std::ofstream out_stat(file_name_stat.c_str());
+                std::string result;
+                tract_model->get_quantitative_info(result);
+                out_stat << result;
+                continue;
+            }
+            if(cmd == "tdi")
+            {
+                out << "export tract density images..." << std::endl;
+                image::basic_image<unsigned int,3> tdi(geometry);
+                std::vector<float> tr(16);
+                tr[0] = tr[5] = tr[10] = tr[15] = 1.0;
+                tract_model->get_density_map(tdi,tr,false);
+                gz_nifti nii_header;
+                image::flip_xy(tdi);
+                nii_header << tdi;
+                nii_header.set_voxel_size(voxel_size.begin());
+                nii_header.save_to_file(file_name_stat.c_str());
+                continue;
+            }
+            if(cmd == "fa" || cmd == "qa")
+            {
+                out << "export..." << cmd << std::endl;
+                tract_model->save_fa_to_file(file_name_stat.c_str());
+                continue;
+            }
+            if(handle->get_name_index(cmd) != handle->fib_data.view_item.size())
+                tract_model->save_data_to_file(file_name_stat.c_str(),cmd);
+            else
+            {
+                out << "cannot find index name:" << cmd << std::endl;
+                continue;
+            }
+        }
     }
 
-    // export tdi
-    if(vm.count("export") && vm["export"].as<std::string>().find("tdi")!=std::string::npos)
-    {
-        out << "export tract density images..." << std::endl;
-        std::string file_name_stat(file_name);
-        file_name_stat += ".tdi.nii";
-        image::basic_image<unsigned int,3> tdi(geometry);
-        std::vector<float> tr(16);
-        tr[0] = tr[5] = tr[10] = tr[15] = 1.0;
-        tract_model->get_density_map(tdi,tr,false);
-
-        gz_nifti nii_header;
-        image::flip_xy(tdi);
-        nii_header << tdi;
-        nii_header.set_voxel_size(voxel_size.begin());
-        nii_header.save_to_file(file_name_stat.c_str());
-    }
     /*
     if (vm.count("endpoint"))
     {
