@@ -76,7 +76,7 @@ int ana(int ac, char *av[])
     {
         out << "export tract density images..." << std::endl;
         std::string file_name_stat(file_name);
-        file_name_stat += ".tdi.nii";
+        file_name_stat += ".tdi.nii.gz";
         image::basic_image<unsigned int,3> tdi(geometry);
         std::vector<float> tr(16);
         tr[0] = tr[5] = tr[10] = tr[15] = 1.0;

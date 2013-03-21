@@ -14,14 +14,32 @@
 
 struct ThreadData
 {
+
 public:
     RoiMgr roi_mgr;
     std::vector<image::vector<3,short> > seeds;
 public:
     TrackingParam param;
-    bool stop_by_track;
+    bool stop_by_tract;
     bool center_seed;
     unsigned int termination_count;
+    unsigned char interpolation_strategy;
+    unsigned char tracking_method;
+    unsigned char initial_direction;
+public:
+    ThreadData(void):
+        joinning(false),generator(0),uniform_rand(0,1.0),rand_gen(generator,uniform_rand),
+        stop_by_tract(true),
+        center_seed(false),
+        termination_count(1000),
+        interpolation_strategy(0),//trilinear_interpolation
+        tracking_method(0),//streamline
+        initial_direction(0)// main direction
+    {}
+    ~ThreadData(void)
+    {
+        end_thread();
+    }
 public:
     std::auto_ptr<boost::thread_group> threads;
     std::vector<unsigned int> seed_count;
@@ -69,12 +87,7 @@ public:
             threads.reset(0);
         }
     }
-public:
-    ThreadData(void):joinning(false),generator(0),uniform_rand(0,1.0),rand_gen(generator,uniform_rand){}
-    ~ThreadData(void)
-    {
-        end_thread();
-    }
+
 private:
     boost::mt19937 generator;
     boost::uniform_real<float> uniform_rand;
@@ -88,19 +101,21 @@ public:
         try{
             std::vector<std::vector<float> > local_track_buffer;
             while(!joinning &&
-                  (!stop_by_track || tract_count[thread_id] < max_count) &&
-                  (stop_by_track || seed_count[thread_id] < max_count) &&
+                  (!stop_by_tract || tract_count[thread_id] < max_count) &&
+                  (stop_by_tract || seed_count[thread_id] < max_count) &&
                   (!center_seed || iteration < seeds.size()))
             {
                 ++seed_count[thread_id];
                 if(center_seed)
                 {
-                    if(!method->init(image::vector<3,float>(seeds[iteration].x(),seeds[iteration].y(),seeds[iteration].z()),rand_gen))
+                    if(!method->init(initial_direction,
+                                     image::vector<3,float>(seeds[iteration].x(),seeds[iteration].y(),seeds[iteration].z()),
+                                     rand_gen))
                     {
                         iteration+=thread_count;
                         continue;
                     }
-                    if(param.initial_dir == 0)// primary direction
+                    if(initial_direction == 0)// primary direction
                         iteration+=thread_count;
                 }
                 else
@@ -113,11 +128,11 @@ public:
                     pos[0] = (float)seeds[i].x() + rand_gen()-0.5;
                     pos[1] = (float)seeds[i].y() + rand_gen()-0.5;
                     pos[2] = (float)seeds[i].z() + rand_gen()-0.5;
-                    if(!method->init(pos,rand_gen))
+                    if(!method->init(initial_direction,pos,rand_gen))
                         continue;
                 }
                 unsigned int point_count;
-                const float *result = method->tracking(point_count);
+                const float *result = method->tracking(tracking_method,point_count);
                 if (result && point_count)
                 {    
                     ++tract_count[thread_id];
@@ -172,7 +187,7 @@ public:
     TrackingMethod* new_method(const fiber_orientations& fib)
     {
         std::auto_ptr<basic_interpolation> interpo_method;
-        switch (param.interpo_id)
+        switch (interpolation_strategy)
         {
         case 0:
             interpo_method.reset(new trilinear_interpolation);
@@ -188,26 +203,11 @@ public:
         return new TrackingMethod(fib,interpo_method.release(),roi_mgr,param);
     }
 
-    void run(const fiber_orientations& fib,float* param_,unsigned char* methods,
-             unsigned int thread_count,unsigned int termination_count,bool wait = false)
+    void run(const fiber_orientations& fib,unsigned int thread_count,unsigned int termination_count,bool wait = false)
     {
-        // setup parameters
-        param.step_size = param_[0];
-        param.step_size_in_voxel[0] = param_[0]/fib.vs[0];
-        param.step_size_in_voxel[1] = param_[0]/fib.vs[1];
-        param.step_size_in_voxel[2] = param_[0]/fib.vs[2];
-        param.smooth_fraction = param_[4];
-
-        param.min_points_count3 = 3.0*param_[5]/param_[0];
-        if(param.min_points_count3 < 6)
-            param.min_points_count3 = 6;
-        param.max_points_count3 = std::max<unsigned int>(6,3.0*param_[6]/param_[0]);
-
-        param.method_id = methods[0];
-        param.initial_dir = methods[1];
-        param.interpo_id = methods[2];
-        stop_by_track = methods[3];
-        center_seed = methods[4];
+        param.step_size_in_voxel[0] = param.step_size/fib.vs[0];
+        param.step_size_in_voxel[1] = param.step_size/fib.vs[1];
+        param.step_size_in_voxel[2] = param.step_size/fib.vs[2];
 
         if(center_seed)
         {

@@ -96,57 +96,36 @@ int trk(int ac, char *av[])
     image::geometry<3> geometry = handle->fib_data.dim;
     image::vector<3> voxel_size = handle->fib_data.vs;
     const float *fa0 = handle->fib_data.fib.fa[0];
+    ThreadData tracking_thread;
 
-    float param[8] = {1,60,60,0.03,0.0,10.0,500.0};
-    param[0] = vm["step_size"].as<float>();
-    param[2] = param[1] = vm["turning_angle"].as<float>();
-    param[1] *= 3.1415926/180.0;
-    param[2] *= 3.1415926/180.0;
-    if (vm.count("fa_threshold") )
-        param[3] = vm["fa_threshold"].as<float>();
-    else
-        param[3] = 0.6*image::segmentation::otsu_threshold(
-                image::basic_image<float, 3,image::const_pointer_memory<float> >(fa0,geometry));
-    param[4] = vm["smoothing"].as<float>();
-    param[5] = vm["min_length"].as<float>();
-    param[6] = vm["max_length"].as<float>();
+    tracking_thread.param.step_size = vm["step_size"].as<float>();
+    tracking_thread.param.smooth_fraction = vm["smoothing"].as<float>();
+    tracking_thread.param.min_points_count3 = 3.0* vm["min_length"].as<float>()/tracking_thread.param.step_size;
+    if(tracking_thread.param.min_points_count3 < 6)
+        tracking_thread.param.min_points_count3 = 6;
+    tracking_thread.param.max_points_count3 = std::max<unsigned int>(6,3.0*vm["max_length"].as<float>()/tracking_thread.param.step_size);
 
-    //set
-    {
-        out << "step_size=" << param[0] << std::endl;
-        out << "turning_angle=" << param[1] << std::endl;
-        out << "interpo_angle=" << param[2] << std::endl;
-        out << "fa_threshold=" << param[3] << std::endl;
-        out << "smoothing=" << param[4] << std::endl;
-        out << "min_length=" << param[5] << std::endl;
-        out << "max_length=" << param[6] << std::endl;
-        out << "tracking_method=" << vm["method"].as<int>() << std::endl;
-        out << "initial direction=" << vm["initial_dir"].as<int>() << std::endl;
-        out << "interpolation=" << vm["interpolation"].as<int>() << std::endl;
-        out << "thread_count=" << vm["thread_count"].as<int>() << std::endl;
-    }
+    tracking_thread.tracking_method = vm["method"].as<int>();
+    tracking_thread.initial_direction  = vm["initial_dir"].as<int>();
+    tracking_thread.interpolation_strategy = vm["interpolation"].as<int>();
+    tracking_thread.center_seed = vm["seed_plan"].as<int>();
 
-    bool stop_by_track = true;
+
     unsigned int termination_count = 10000;
     if (vm.count("fiber_count"))
     {
         termination_count = vm["fiber_count"].as<int>();
-        stop_by_track = true;
+        tracking_thread.stop_by_tract = true;
     }        
     if (vm.count("seed_count"))
     {
         termination_count = vm["seed_count"].as<int>();
-        stop_by_track = false;
+        tracking_thread.stop_by_tract = false;
     }
-    out << (stop_by_track ? "fiber_count=" : "seed_count=") <<
+    out << (tracking_thread.stop_by_tract ? "fiber_count=" : "seed_count=") <<
             termination_count << std::endl;
-    unsigned char methods[5];
-    methods[0] = vm["method"].as<int>();
-    methods[1] = vm["initial_dir"].as<int>();
-    methods[2] = vm["interpolation"].as<int>();
-    methods[3] = stop_by_track;
-    methods[4] = vm["seed_plan"].as<int>();
-    ThreadData tracking_thread;
+
+
 
 
     char rois[5][5] = {"roi","roi2","roi3","roi4","roi5"};
@@ -239,14 +218,51 @@ int trk(int ac, char *av[])
     }
     else
     {
+
         std::vector<image::vector<3,short> > seed;
         out << "no seeding area assigned. perform whole brain tracking" << std::endl;
         for(image::pixel_index<3> index;index.valid(geometry);index.next(geometry))
-            if(fa0[index.index()])
+            if(fa0[index.index()] > 0)
                 seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
         tracking_thread.setRegions(geometry,seed,3);
     }
 
+
+
+
+
+
+    out << "start tracking..." << std::endl;
+    TractModel tract_model(handle.get(),geometry,voxel_size);
+
+    if (vm.count("fa_threshold") )
+        tract_model.get_fib().threshold = vm["fa_threshold"].as<float>();
+    else
+        tract_model.get_fib().threshold = 0.6*image::segmentation::otsu_threshold(
+                image::basic_image<float, 3,image::const_pointer_memory<float> >(fa0,geometry));
+    tract_model.get_fib().cull_cos_angle = std::cos(vm["turning_angle"].as<float>()*3.1415926/180.0);
+
+
+    {
+        out << "turning_angle=" << vm["turning_angle"].as<float>() << std::endl;
+        out << "fa_threshold=" << tract_model.get_fib().threshold << std::endl;
+        out << "step_size=" << tracking_thread.param.step_size << std::endl;
+        out << "smoothing=" << tracking_thread.param.smooth_fraction << std::endl;
+        out << "min_length=" << vm["min_length"].as<float>() << std::endl;
+        out << "max_length=" << vm["max_length"].as<float>() << std::endl;
+        out << "tracking_method=" << tracking_thread.tracking_method << std::endl;
+        out << "initial direction=" << tracking_thread.tracking_method << std::endl;
+        out << "interpolation=" << tracking_thread.interpolation_strategy << std::endl;
+        out << "voxelwise=" << tracking_thread.center_seed << std::endl;
+        out << "thread_count=" << vm["thread_count"].as<int>() << std::endl;
+
+    }
+
+    tracking_thread.run(tract_model.get_fib(),vm["thread_count"].as<int>(),termination_count,true);
+
+    tracking_thread.fetchTracks(&tract_model);
+
+    out << "finished tracking." << std::endl;
     std::string file_name;
     if (vm.count("output"))
         file_name = vm["output"].as<std::string>();
@@ -254,30 +270,19 @@ int trk(int ac, char *av[])
     {
         std::ostringstream fout;
         fout << vm["source"].as<std::string>() <<
-            ".st" << (int)std::floor(param[0]*10.0+0.5) <<
-            ".tu" << (int)std::floor(param[1]+0.5) <<
-            ".in" << (int)std::floor(param[2]+0.5) <<
-            ".fa" << (int)std::floor(param[3]*100.0+0.5) <<
-            ".sm" << (int)std::floor(param[4]*10.0+0.5) <<
-            ".me" << (int)vm["method"].as<int>() <<
-            ".sd" << (int)vm["initial_dir"].as<int>() <<
-            ".pd" << (int)vm["interpolation"].as<int>() <<
+            ".st" << (int)std::floor(tracking_thread.param.step_size*10.0+0.5) <<
+            ".tu" << (int)std::floor(vm["turning_angle"].as<float>()+0.5) <<
+            ".fa" << (int)std::floor(tract_model.get_fib().threshold*100.0+0.5) <<
+            ".sm" << (int)std::floor(tracking_thread.param.smooth_fraction*10.0+0.5) <<
+            ".me" << (int)tracking_thread.tracking_method <<
+            ".sd" << (int)tracking_thread.initial_direction <<
+            ".pd" << (int)tracking_thread.interpolation_strategy <<
             ".trk";
         file_name = fout.str();
     }
 
-    out << "start tracking..." << std::endl;
-    std::auto_ptr<TractModel> tract_model(new TractModel(handle.get(),geometry,voxel_size));
-    {
-        tract_model->get_fib().threshold = param[3];
-        tract_model->get_fib().cull_cos_angle = std::cos(param[1]);
-        tracking_thread.run(tract_model->get_fib(),param,methods,vm["thread_count"].as<int>(),termination_count,true);
-    }
-
-    tracking_thread.fetchTracks(tract_model.get());
-    out << "finished tracking." << std::endl;
     out << "output file:" << file_name << std::endl;
-    tract_model->save_tracts_to_file(file_name.c_str());
+    tract_model.save_tracts_to_file(file_name.c_str());
 
     if(vm.count("export"))
     {
@@ -290,39 +295,43 @@ int trk(int ac, char *av[])
             std::string file_name_stat(file_name);
             file_name_stat += ".";
             file_name_stat += cmd;
-            file_name_stat += ".txt";
             // export statistics
-            if(cmd == "stat")
-            {
-                out << "export statistics..." << std::endl;
-                std::ofstream out_stat(file_name_stat.c_str());
-                std::string result;
-                tract_model->get_quantitative_info(result);
-                out_stat << result;
-                continue;
-            }
             if(cmd == "tdi")
             {
                 out << "export tract density images..." << std::endl;
                 image::basic_image<unsigned int,3> tdi(geometry);
                 std::vector<float> tr(16);
                 tr[0] = tr[5] = tr[10] = tr[15] = 1.0;
-                tract_model->get_density_map(tdi,tr,false);
+                tract_model.get_density_map(tdi,tr,false);
                 gz_nifti nii_header;
                 image::flip_xy(tdi);
                 nii_header << tdi;
                 nii_header.set_voxel_size(voxel_size.begin());
+                file_name_stat += ".nii.gz";
                 nii_header.save_to_file(file_name_stat.c_str());
                 continue;
             }
+
+            file_name_stat += ".txt";
+
+            if(cmd == "stat")
+            {
+                out << "export statistics..." << std::endl;
+                std::ofstream out_stat(file_name_stat.c_str());
+                std::string result;
+                tract_model.get_quantitative_info(result);
+                out_stat << result;
+                continue;
+            }
+
             if(cmd == "fa" || cmd == "qa")
             {
                 out << "export..." << cmd << std::endl;
-                tract_model->save_fa_to_file(file_name_stat.c_str());
+                tract_model.save_fa_to_file(file_name_stat.c_str());
                 continue;
             }
             if(handle->get_name_index(cmd) != handle->fib_data.view_item.size())
-                tract_model->save_data_to_file(file_name_stat.c_str(),cmd);
+                tract_model.save_data_to_file(file_name_stat.c_str(),cmd);
             else
             {
                 out << "cannot find index name:" << cmd << std::endl;
@@ -331,14 +340,14 @@ int trk(int ac, char *av[])
         }
     }
 
-    /*
+
     if (vm.count("endpoint"))
     {
         out << "output endpoint." << std::endl;
-        file_name += ".end.";
-        file_name += vm["endpoint"].as<std::string>();
-        tract_model_save_end_points(tract_handle,file_name.c_str());
-    }*/
+        file_name += ".end.txt";
+        tract_model.save_end_points(file_name.c_str());
+    }
+
     }
     catch(boost::exception const&  ex)
     {

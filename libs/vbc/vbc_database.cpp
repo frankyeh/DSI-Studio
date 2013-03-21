@@ -406,26 +406,23 @@ bool vbc_database::single_subject_analysis(const char* file_name,fib_data& resul
 }
 void vbc_database::run_span(const fiber_orientations& fib,std::vector<std::vector<float> >& span)
 {
-    float param[8]={0};
-    unsigned char methods[5];
-    param[0] = fib.vs[0];
-    param[4] = 0;//ui->smoothing->value();
-    param[5] = 0;//ui->min_length->value();
-    param[6] = 500;//ui->max_length->value();
-    methods[0] = 0;//voxel tracking ui->tracking_method->currentIndex();
-    methods[1] = 2;//all directions ui->initial_direction->currentIndex();
-    methods[2] = 0;//trilinear interpolation ui->interpolation->currentIndex();
-    methods[3] = 1;//stop by seed ui->tracking_plan->currentIndex();
-    methods[4] = 1;//voxelwise tracking ui->seed_plan->currentIndex();
     std::vector<image::vector<3,short> > seed;
-
     for(image::pixel_index<3> index;index.valid(dim);index.next(dim))
         if(fib.fa[0][index.index()] > fib.threshold)
             seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
 
     ThreadData tracking_thread;
+    tracking_thread.param.step_size = fib.vs[0];
+    tracking_thread.param.smooth_fraction = 0;
+    tracking_thread.param.min_points_count3 = 6;
+    tracking_thread.param.max_points_count3 = std::max<unsigned int>(6,3.0*500/tracking_thread.param.step_size);
+    tracking_thread.tracking_method = 0;// streamline fiber tracking
+    tracking_thread.initial_direction = 2;// all directions
+    tracking_thread.interpolation_strategy = 0; // trilinear interpolation
+    tracking_thread.stop_by_tract = 1;// stop by tract
+    tracking_thread.center_seed = 1;// center seeded
     tracking_thread.setRegions(fib.dim,seed,3);
-    tracking_thread.run(fib,param,methods,1,seed.size()*10,true);
+    tracking_thread.run(fib,1,seed.size()*10,true);
     span.swap(tracking_thread.track_buffer);
 }
 

@@ -51,7 +51,7 @@ public:
     bool is_dti;
 
 
-    void set_tracking_param(float* param,unsigned char* methods);
+    void set_tracking_param(ThreadData& tracking_thread);
 
 public:
     image::affine_transform<3,float> mi3_arg;

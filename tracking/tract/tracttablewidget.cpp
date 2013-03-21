@@ -102,12 +102,10 @@ void TractTableWidget::start_tracking(void)
 
     ++tract_serial;
     addNewTracts(QString("Tracts ")+QString::number(tract_serial));
-    float param[8];
-    unsigned char methods[5];
-    cur_tracking_window.set_tracking_param(param,methods);
     thread_data.back() = new ThreadData;
+    cur_tracking_window.set_tracking_param(*thread_data.back());
     cur_tracking_window.regionWidget->setROIs(thread_data.back());
-    thread_data.back()->run(tract_models.back()->get_fib(),param,methods,
+    thread_data.back()->run(tract_models.back()->get_fib(),
                             cur_tracking_window.ui->thread_count->currentIndex()+1,
                             cur_tracking_window.ui->track_count->value());
     timer->start(1000);

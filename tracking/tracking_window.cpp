@@ -431,20 +431,21 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     return false;
 }
 
-void tracking_window::set_tracking_param(float* param,unsigned char* methods)
+void tracking_window::set_tracking_param(ThreadData& tracking_thread)
 {
-    param[0] = ui->step_size->value();
-    param[1] = ui->turning_angle->value() * 3.1415926 / 180.0;
-    param[2] = ui->turning_angle->value() * 3.1415926 / 180.0;
-    param[3] = ui->fa_threshold->value();
-    param[4] = ui->smoothing->value();
-    param[5] = ui->min_length->value();
-    param[6] = ui->max_length->value();
-    methods[0] = ui->tracking_method->currentIndex();
-    methods[1] = ui->initial_direction->currentIndex();
-    methods[2] = ui->interpolation->currentIndex();
-    methods[3] = ui->tracking_plan->currentIndex();
-    methods[4] = ui->seed_plan->currentIndex();
+
+    tracking_thread.param.step_size = ui->step_size->value();
+    tracking_thread.param.smooth_fraction = ui->smoothing->value();
+    tracking_thread.param.min_points_count3 = 3.0*ui->min_length->value()/tracking_thread.param.step_size;
+    if(tracking_thread.param.min_points_count3 < 6)
+        tracking_thread.param.min_points_count3 = 6;
+    tracking_thread.param.max_points_count3 = std::max<unsigned int>(6,3.0*ui->max_length->value()/tracking_thread.param.step_size);
+
+    tracking_thread.tracking_method = ui->tracking_method->currentIndex();
+    tracking_thread.initial_direction = ui->initial_direction->currentIndex();
+    tracking_thread.interpolation_strategy = ui->interpolation->currentIndex();
+    tracking_thread.stop_by_tract = ui->tracking_plan->currentIndex();
+    tracking_thread.center_seed = ui->seed_plan->currentIndex();
 }
 
 void tracking_window::SliderValueChanged(void)

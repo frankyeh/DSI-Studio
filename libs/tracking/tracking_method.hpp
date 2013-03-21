@@ -38,11 +38,6 @@ struct TrackingParam
 
     unsigned int min_points_count3;
     unsigned int max_points_count3;
-
-    unsigned int method_id;
-    unsigned int initial_dir;
-    unsigned int interpo_id;
-
     void scaling_in_voxel(image::vector<3,float>& dir) const
     {
         dir[0] *= step_size_in_voxel[0];
@@ -195,13 +190,14 @@ public:
                        roi_mgr.fulfill_end_point(position,end_point1);
 	}
 
-        bool init(const image::vector<3,float>& position_,
+        bool init(unsigned char initial_direction,
+                  const image::vector<3,float>& position_,
                   boost::variate_generator<boost::mt19937&, boost::uniform_real<float> >& gen)
         {
             position = position_;
             terminated = false;
             forward = true;
-            switch (param.initial_dir)
+            switch (initial_direction)
             {
             case 0:// main direction
                 {
@@ -249,10 +245,10 @@ public:
 
         }
 
-        const float* tracking(unsigned int& point_count)
+        const float* tracking(unsigned char tracking_method,unsigned int& point_count)
         {
             point_count = 0;
-            switch (param.method_id)
+            switch (tracking_method)
             {
             case 0:
                 if (!start_tracking<streamline_method_process>(false))
