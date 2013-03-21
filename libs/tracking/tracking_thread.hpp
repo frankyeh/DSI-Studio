@@ -164,8 +164,7 @@ public:
 
     }
     void setRegions(image::geometry<3> dim,
-                    const std::vector<image::vector<3,short> >& points,
-                       unsigned type)
+                    const std::vector<image::vector<3,short> >& points,unsigned char type)
     {
         switch(type)
         {

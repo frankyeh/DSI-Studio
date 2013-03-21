@@ -439,7 +439,8 @@ void tracking_window::set_tracking_param(ThreadData& tracking_thread)
     tracking_thread.param.min_points_count3 = 3.0*ui->min_length->value()/tracking_thread.param.step_size;
     if(tracking_thread.param.min_points_count3 < 6)
         tracking_thread.param.min_points_count3 = 6;
-    tracking_thread.param.max_points_count3 = std::max<unsigned int>(6,3.0*ui->max_length->value()/tracking_thread.param.step_size);
+    tracking_thread.param.max_points_count3 =
+            std::max<unsigned int>(tracking_thread.param.min_points_count3,3.0*ui->max_length->value()/tracking_thread.param.step_size);
 
     tracking_thread.tracking_method = ui->tracking_method->currentIndex();
     tracking_thread.initial_direction = ui->initial_direction->currentIndex();

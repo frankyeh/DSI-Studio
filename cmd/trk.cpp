@@ -96,8 +96,9 @@ int trk(int ac, char *av[])
     image::geometry<3> geometry = handle->fib_data.dim;
     image::vector<3> voxel_size = handle->fib_data.vs;
     const float *fa0 = handle->fib_data.fib.fa[0];
-    ThreadData tracking_thread;
 
+
+    ThreadData tracking_thread;
     tracking_thread.param.step_size = vm["step_size"].as<float>();
     tracking_thread.param.smooth_fraction = vm["smoothing"].as<float>();
     tracking_thread.param.min_points_count3 = 3.0* vm["min_length"].as<float>()/tracking_thread.param.step_size;
@@ -128,12 +129,13 @@ int trk(int ac, char *av[])
 
 
 
-    char rois[5][5] = {"roi","roi2","roi3","roi4","roi5"};
-    for(int index = 0;index < 5;++index)
-    if (vm.count(rois[index]))
+    char roi_names[9][5] = {"roi","roi2","roi3","roi4","roi5","roa","end","end2","seed"};
+    unsigned char type[9] = {0,0,0,0,0,1,2,2,3};
+    for(int index = 0;index < 9;++index)
+    if (vm.count(roi_names[index]))
     {
         ROIRegion roi(geometry, voxel_size);
-        std::string file_name = vm[rois[index]].as<std::string>();
+        std::string file_name = vm[roi_names[index]].as<std::string>();
         if(!QFileInfo(file_name.c_str()).exists())
         {
             out << file_name.c_str() << " does not exist. terminating..." << std::endl;
@@ -144,79 +146,11 @@ int trk(int ac, char *av[])
             out << "Invalid file format:" << file_name << std::endl;
             return 0;
         }
-        tracking_thread.setRegions(geometry,roi.get(),0);
-        out << rois[index] << "=" << file_name << std::endl;
+        tracking_thread.setRegions(geometry,roi.get(),type[index]);
+        out << roi_names[index] << "=" << file_name << std::endl;
     }
 
-    if (vm.count("roa"))
-    {
-        ROIRegion roa(geometry, voxel_size);
-        std::string file_name = vm["roa"].as<std::string>();
-        if(!QFileInfo(file_name.c_str()).exists())
-        {
-            out << file_name.c_str() << " does not exist. terminating..." << std::endl;
-            return 0;
-        }
-        if(!roa.LoadFromFile(file_name.c_str(),handle->fib_data.trans_to_mni))
-        {
-            out << "Invalid file format:" << file_name.c_str() << std::endl;
-            return 0;
-        }
-        tracking_thread.setRegions(geometry,roa.get(),1);
-        out << "roa=" << file_name << std::endl;
-    }
-    if (vm.count("end"))
-    {
-        ROIRegion end(geometry, voxel_size);
-        std::string file_name = vm["end"].as<std::string>();
-        if(!QFileInfo(file_name.c_str()).exists())
-        {
-            out << file_name.c_str() << " does not exist. terminating..." << std::endl;
-            return 0;
-        }
-        if(!end.LoadFromFile(file_name.c_str(),handle->fib_data.trans_to_mni))
-        {
-            out << "Invalid file format:" << file_name.c_str() << std::endl;
-            return 0;
-        }
-        tracking_thread.setRegions(geometry,end.get(),2);
-        out << "end=" << file_name << std::endl;
-    }
-    if (vm.count("end2"))
-    {
-        ROIRegion end(geometry, voxel_size);
-        std::string file_name = vm["end2"].as<std::string>();
-        if(!QFileInfo(file_name.c_str()).exists())
-        {
-            out << file_name.c_str() << " does not exist. terminating..." << std::endl;
-            return 0;
-        }
-        if(!end.LoadFromFile(file_name.c_str(),handle->fib_data.trans_to_mni))
-        {
-            out << "Invalid file format:" << file_name.c_str() << std::endl;
-            return 0;
-        }
-        tracking_thread.setRegions(geometry,end.get(),2);
-        out << "end2=" << file_name << std::endl;
-    }
-    if (vm.count("seed"))
-    {
-        ROIRegion seed(geometry, voxel_size);
-        std::string file_name = vm["seed"].as<std::string>();
-        if(!QFileInfo(file_name.c_str()).exists())
-        {
-            out << file_name.c_str() << " does not exist. terminating..." << std::endl;
-            return 0;
-        }
-        if(!seed.LoadFromFile(file_name.c_str(),handle->fib_data.trans_to_mni))
-        {
-            out << "Invalid file format:" << file_name.c_str() << std::endl;
-            return 0;
-        }
-        tracking_thread.setRegions(geometry,seed.get(),3);
-        out << "seed=" << file_name << std::endl;
-    }
-    else
+    if (!vm.count("seed"))
     {
 
         std::vector<image::vector<3,short> > seed;
