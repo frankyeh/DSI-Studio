@@ -165,4 +165,5 @@ SOURCES += main.cpp \
     manual_alignment.cpp \
     tracking/vbc_dialog.cpp \
     tracking/tract_report.cpp \
-    tracking/color_bar_dialog.cpp
+    tracking/color_bar_dialog.cpp \
+    cmd/exp.cpp

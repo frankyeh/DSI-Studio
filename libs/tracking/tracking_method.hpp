@@ -88,7 +88,7 @@ public:
                    const RoiMgr& roi_mgr_,const TrackingParam& param_):
         fib(fib_),interpolation(interpolation_),roi_mgr(roi_mgr_),param(param_),init_fib_index(0)
 	{
-		// floatd for full backward or full forward
+        // floatd for full backward or full forward
         track_buffer.resize(param.max_points_count3 << 1);
         reverse_buffer.resize(param.max_points_count3 << 1);
 	}
@@ -111,7 +111,7 @@ public:
 
 	template<typename ProcessList>
     bool start_tracking(bool smoothing)
-	{
+    {
         image::vector<3,float> seed_pos(position);
         image::vector<3,float> begin_dir(dir);
         buffer_front_pos = param.max_points_count3;
@@ -183,11 +183,12 @@ public:
             smoothed.swap(track_buffer);
         }
 
+        return !failed &&
+               get_buffer_size() >= param.min_points_count3 &&
+               roi_mgr.have_include(get_result(),get_buffer_size()) &&
+               roi_mgr.fulfill_end_point(position,end_point1);
 
-                return !failed &&
-                       get_buffer_size() >= param.min_points_count3 &&
-                       roi_mgr.have_include(get_result(),get_buffer_size()) &&
-                       roi_mgr.fulfill_end_point(position,end_point1);
+
 	}
 
         bool init(unsigned char initial_direction,

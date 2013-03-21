@@ -20,6 +20,7 @@ int rec(int ac, char *av[]);
 int trk(int ac, char *av[]);
 int src(int ac, char *av[]);
 int ana(int ac, char *av[]);
+int exp(int ac, char *av[]);
 
 fa_template fa_template_imp;
 
@@ -114,6 +115,8 @@ int main(int ac, char *av[])
                 return src(ac,av);
             if(vm["action"].as<std::string>() == std::string("ana"))
                 return ana(ac,av);
+            if(vm["action"].as<std::string>() == std::string("exp"))
+                return exp(ac,av);
         }
         return 1;
     }
