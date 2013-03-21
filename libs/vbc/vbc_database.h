@@ -87,9 +87,17 @@ public:
     double get_trend_std(const std::vector<float>& data);
     void tend_analysis(const std::vector<float>& data,fib_data& result);
     void tend_analysis(float sqrt_var_S,const std::vector<unsigned int>& permu,fib_data& result);
+
+
     void calculate_null_trend_distribution(float sqrt_var_S,float percentile,
                                                    std::vector<float>& subject_greater,
                                                    std::vector<float>& subject_lesser);
+private:
+    void calculate_null_trend_multithread(float sqrt_var_S,float percentile,
+                                          std::vector<unsigned int>& dist_greater,
+                                          std::vector<unsigned int>& dist_lesser,
+                                          bool progress,
+                                          unsigned int* total_count);
 
 public:
 };

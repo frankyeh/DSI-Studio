@@ -1,3 +1,6 @@
+#include <cstdlib>     /* srand, rand */
+#include <ctime>
+#include <boost/thread.hpp>
 #include "vbc_database.h"
 #include "libs/tracking/tracking_model.hpp"
 #include "libs/tracking/tract_model.hpp"
@@ -608,27 +611,29 @@ void vbc_database::tend_analysis(const std::vector<float>& data,fib_data& result
     tend_analysis(get_trend_std(data),permu,result);
 }
 
-void vbc_database::calculate_null_trend_distribution(float sqrt_var_S,float percentile,
-                                               std::vector<float>& subject_greater,
-                                               std::vector<float>& subject_lesser)
+void vbc_database::calculate_null_trend_multithread(float sqrt_var_S,float percentile,
+                                               std::vector<unsigned int>& dist_greater,
+                                               std::vector<unsigned int>& dist_lesser,
+                                                    bool progress,
+                                                    unsigned int* total_count)
 {
-    begin_prog("processing");
-    std::vector<unsigned int> dist_greater(200);
-    std::vector<unsigned int> dist_lesser(200);
     fib_data data;
     fiber_orientations fib;
     fib.read(fib_file->fib_data);
     fib.threshold = percentile;
     fib.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);
 
+    std::srand(std::time(0));
     std::vector<unsigned int> permu(subject_qa.size());
     for(unsigned int index = 0;index < permu.size();++index)
         permu[index] = index;
 
-    unsigned int permu_count = 100;
-
-    for(unsigned int main_index = 0;check_prog(main_index,permu_count);++main_index)
+    for(;*total_count < 1000;++(*total_count))
     {
+        if(progress)
+            check_prog(*total_count,1000);
+        if(prog_aborted())
+            break;
         std::random_shuffle(permu.begin(),permu.end());
 
         tend_analysis(sqrt_var_S,permu,data);
@@ -640,6 +645,22 @@ void vbc_database::calculate_null_trend_distribution(float sqrt_var_S,float perc
         fib.findex = data.lesser_dir_ptr;
         calculate_span_distribution(fib,dist_lesser);
     }
+}
+
+void vbc_database::calculate_null_trend_distribution(float sqrt_var_S,float percentile,
+                                               std::vector<float>& subject_greater,
+                                               std::vector<float>& subject_lesser)
+{
+    begin_prog("processing");
+    std::vector<unsigned int> dist_greater(200);
+    std::vector<unsigned int> dist_lesser(200);
+    boost::thread_group threads;
+    unsigned int total_count = 0;
+    for(unsigned int index = 0;index < 6;++index)
+        threads.add_thread(new boost::thread(&vbc_database::calculate_null_trend_multithread,
+                                             this,sqrt_var_S,percentile,dist_greater,dist_lesser,false,&total_count));
+    calculate_null_trend_multithread(sqrt_var_S,percentile,dist_greater,dist_lesser,true,&total_count);
+    threads.join_all();
     hist_to_dist(dist_greater,subject_greater);
     hist_to_dist(dist_lesser,subject_lesser);
 }
