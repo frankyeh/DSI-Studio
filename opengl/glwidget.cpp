@@ -1661,6 +1661,12 @@ bool GLWidget::addSlices(QStringList filenames)
                 return false;
             }
         }
+        // same dimension, no registration required.
+        if(other_slices.back().source_images.geometry() == cur_tracking_window.slice.source_images.geometry())
+        {
+            convert.resize(16);
+            convert[0] = convert[5] = convert[10] = convert[15] = 1.0;
+        }
     }
 
 
