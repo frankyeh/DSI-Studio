@@ -403,8 +403,10 @@ void RegionTableWidget::save_region(void)
         return;
     settings.setValue("region_save_type",QFileInfo(filename).completeSuffix());
     cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+    std::vector<float> no_trans;
     regions[currentRow()].SaveToFile(filename.toLocal8Bit().begin(),
-                                     cur_tracking_window.handle->fib_data.trans_to_mni);
+                                     !cur_tracking_window.mi3.get()/*Is QSDR?*/ ?
+                                     cur_tracking_window.handle->fib_data.trans_to_mni: no_trans);
     item(currentRow(),0)->setText(QFileInfo(filename).baseName());
 }
 void RegionTableWidget::save_region_info(void)

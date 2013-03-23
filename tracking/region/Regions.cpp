@@ -99,8 +99,8 @@ void ROIRegion::SaveToFile(const char* FileName,const std::vector<float>& trans)
                 header.set_voxel_size(vs.begin());
                 if(!trans.empty())
                     header.set_image_transformation(trans.begin());
-                // from +x = Left  +y = Posterior +z = Superior
-                // to +x = Right  +y = Anterior +z = Superior
+                else
+                    image::flip_xy(mask);
                 header << mask;
                 header.save_to_file(FileName);
 	}
