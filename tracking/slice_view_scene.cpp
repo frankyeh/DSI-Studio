@@ -187,10 +187,19 @@ void slice_view_scene::save_slice_as()
     {
         gz_nifti file;
         file.set_voxel_size(cur_tracking_window.slice.voxel_size.begin());
-        if(!cur_tracking_window.handle->fib_data.trans_to_mni.empty())
+        if(!cur_tracking_window.mi3.get() && !cur_tracking_window.handle->fib_data.trans_to_mni.empty()) //QSDR condition
+        {
             file.set_image_transformation(cur_tracking_window.handle->fib_data.trans_to_mni.begin());
-        file << cur_tracking_window.handle->fib_data.view_item[index].image_data;
-        file.save_to_file(filename.toLocal8Bit().begin());
+            file << cur_tracking_window.handle->fib_data.view_item[index].image_data;
+            file.save_to_file(filename.toLocal8Bit().begin());
+        }
+        else
+        {
+            image::basic_image<float,3> buf(cur_tracking_window.handle->fib_data.view_item[index].image_data);
+            image::flip_xy(buf);
+            file << buf;
+            file.save_to_file(filename.toLocal8Bit().begin());
+        }
     }
     if(QFileInfo(filename).completeSuffix().toLower() == "mat")
     {
