@@ -81,7 +81,7 @@ protected:
         {
             normalize_vector(Rt.begin()+i*half_odf_size,Rt.begin()+(i+1)*half_odf_size);
             std::for_each(oRt.begin()+i*half_odf_size,oRt.begin()+(i+1)*half_odf_size,
-                          boost::lambda::_1 /= image::mean(oRt.begin()+i*half_odf_size,oRt.begin()+(i+1)*half_odf_size));
+                          boost::lambda::_1 /= *std::max_element(oRt.begin()+i*half_odf_size,oRt.begin()+(i+1)*half_odf_size));
 
         }
     }
