@@ -531,32 +531,17 @@ void MainWindow::on_batch_src_clicked()
         dir_list << dir;
         for(unsigned int i = 0;check_prog(i,dir_list.size());++i)
         {
-            set_title(dir_list[i].toLocal8Bit().begin());
             QDir cur_dir = dir_list[i];
             QStringList new_list = cur_dir.entryList(QStringList(""),QDir::AllDirs|QDir::NoDotAndDotDot);
             for(unsigned int index = 0;index < new_list.size();++index)
                 dir_list << cur_dir.absolutePath() + "/" + new_list[index];
-            QStringList file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
-            if(file_list.empty())
-                continue;
+
             boost::ptr_vector<DwiHeader> dwi_files;
-            std::string name;
-            begin_prog(dir_list[i].toLocal8Bit().begin());
-            for (unsigned int index = 0;index < file_list.size();++index)
-            {
-                file_list[index] = dir_list[i] + "/" + file_list[index];
-                if(!index)
-                {
-                    image::io::dicom header;
-                    if (header.load_from_file(file_list[0].toLocal8Bit().begin()))
-                        header.get_patient(name);
-                }
-            }
-            if(!load_all_files(file_list,dwi_files))
+            if(!load_all_files(QStringList() << dir_list[i],dwi_files))
                 continue;
             if(prog_aborted())
                 break;
-            QString output = QFileInfo(file_list[0]).absoluteDir().absolutePath()+"/"+name.c_str()+".src";
+            QString output = dir_list[i] + ".src";
             DwiHeader::output_src(output.toLocal8Bit().begin(),dwi_files,false,false);
         }
     }

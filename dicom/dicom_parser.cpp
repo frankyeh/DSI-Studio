@@ -281,6 +281,29 @@ bool load_multiple_slice_dicom(QStringList file_list,boost::ptr_vector<DwiHeader
 
 bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files)
 {
+    if(file_list.size() == 1 && QFileInfo(file_list[0]).isDir()) // single folder with DICOM files
+    {
+        QDir cur_dir = file_list[0];
+        QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
+        if(dicom_file_list.empty())
+            return false;
+        boost::ptr_vector<DwiHeader> dwi_files;
+        begin_prog(file_list[0].toLocal8Bit().begin());
+        for (unsigned int index = 0;index < dicom_file_list.size();++index)
+            dicom_file_list[index] = file_list[0] + "/" + dicom_file_list[index];
+        return load_all_files(dicom_file_list,dwi_files);
+    }
+
+    //Combine 2dseq folders
+    if(file_list.size() > 1 && QFileInfo(file_list[0]).isDir() &&
+            QFileInfo(file_list[0]+"/pdata/1/2dseq").exists())
+    {
+        for(unsigned int index = 0;index < file_list.size();++index)
+            load_all_files(QStringList() << (file_list[index]+"/pdata/1/2dseq"),dwi_files);
+        return !dwi_files.empty();
+    }
+
+
     begin_prog("loading");
     if (file_list.size() == 1) // 4d image
     {
