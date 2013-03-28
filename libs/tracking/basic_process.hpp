@@ -53,7 +53,7 @@ public:
                 float fa_value = info.fib.fa[j][next_voxels_index[i]];
                 if (fa_value <= info.fib.threshold)
                     break;
-                float value = std::abs(next_voxels_dir[i]*info.fib.get_dir(next_voxels_index[i],j));
+                float value = std::abs(info.fib.cos_angle(next_voxels_dir[i],next_voxels_index[i],j));
                 if(value < info.fib.cull_cos_angle)
                     continue;
                 if(voxel_angle[i]*value*fa_value > max_angle_cos)

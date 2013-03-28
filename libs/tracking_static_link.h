@@ -4,7 +4,6 @@ class ODFModel;
 extern "C"
 {
      void tracking_get_slices_dir_color(ODFModel* handle,unsigned short order,unsigned int* pixels);
-     bool tracking_get_voxel_dir(ODFModel* handle,unsigned int x,unsigned int y,unsigned int z,float* fa,float* dir);
      const float* get_odf_direction(ODFModel* handle,unsigned int index);
      const unsigned short* get_odf_faces(ODFModel* handle,unsigned int index);
      const float* get_odf_data(ODFModel* odf_model,unsigned int index);

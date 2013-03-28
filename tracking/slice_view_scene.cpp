@@ -96,8 +96,6 @@ void slice_view_scene::show_slice(void)
 
         if(cur_tracking_window.ui->show_fiber->checkState() == Qt::Checked)
         {
-            float fa[3];
-            float dir[9];
             float threshold = cur_tracking_window.ui->fa_threshold->value();
             if (threshold == 0.0)
                 threshold = 0.00000001;
@@ -107,16 +105,18 @@ void slice_view_scene::show_slice(void)
             const char dir_x[3] = {1,0,0};
             const char dir_y[3] = {2,2,1};
 
+            const FibData& fib_data = handle->fib_data;
             for (unsigned int y = 0; y < slice_image.height(); ++y)
                 for (unsigned int x = 0; x < slice_image.width(); ++x)
                     if (cur_tracking_window.slice.get3dPosition(x, y, X, Y, Z))
                     {
-                        if (!tracking_get_voxel_dir(handle, X, Y, Z,fa, dir))
+                        image::pixel_index<3> pos(X,Y,Z,fib_data.dim);
+                        if (pos.index() >= fib_data.total_size || fib_data.fib.getFA(pos.index(),0) == 0.0)
                             continue;
                         for (char fiber = 2; fiber >= 0; --fiber)
-                            if(fa[fiber] > threshold)
+                            if(fib_data.fib.getFA(pos.index(),fiber) > threshold)
                             {
-                                float* dir_ptr = dir + fiber + fiber + fiber;
+                                const float* dir_ptr = fib_data.fib.getDir(pos.index(),fiber);
                                 QPen pen(QColor(std::abs(dir_ptr[0]) * 255.0,std::abs(dir_ptr[1]) * 255.0, std::abs(dir_ptr[2]) * 255.0));
                                 pen.setWidthF(pen_w);
                                 painter.setPen(pen);

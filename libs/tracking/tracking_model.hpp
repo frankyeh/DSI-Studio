@@ -86,7 +86,7 @@ public:
                 float r = 255.9/max_value;
                 for (unsigned int index = 0;index < fib_data.total_size;++index)
                 {
-                    image::vector<3,float> dir = fib_data.fib.getDir(index,0);
+                    image::vector<3,float> dir(fib_data.fib.getDir(index,0));
                     dir *= std::floor(fib_data.fib.getFA(index,0)*r);
                     unsigned int color = (unsigned char)std::abs(dir[0]);
                     color <<= 8;
@@ -161,7 +161,7 @@ public:
             return;
         for(unsigned int fib = 0;fib < fib_data.fib.num_fiber;++fib)
         {
-            image::vector<3,float> dir = fib_data.fib.getDir(index,fib);
+            image::vector<3,float> dir(fib_data.fib.getDir(index,fib));
             buf.push_back(dir[0]);
             buf.push_back(dir[1]);
             buf.push_back(dir[2]);
@@ -219,8 +219,7 @@ public:
             }
 
             float fa = fib_data.fib.getFA(index,order)*255.0;
-                        image::vector<3,float> dir = fib_data.fib.getDir(index,order);
-
+            image::vector<3,float> dir(fib_data.fib.getDir(index,order));
             unsigned int color = (unsigned char)std::abs(dir[0]*fa);
             color <<= 8;
             color |= (unsigned char)std::abs(dir[1]*fa);

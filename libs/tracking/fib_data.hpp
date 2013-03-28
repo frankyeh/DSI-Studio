@@ -147,9 +147,10 @@ public:
 
 class FiberDirection
 {
-    std::vector<std::vector<short> > findex_buf;
 public:
+    std::vector<const float*> dir;
     std::vector<const short*> findex;
+    std::vector<std::vector<short> > findex_buf;
 public:
 private:
     ODFData odf;
@@ -252,7 +253,7 @@ public:
                 mat_reader.get_matrix(index,row,col,fa[0]);
                 findex_buf.resize(1);
                 findex_buf[0].resize(row*col);
-                findex[0] = &(findex_buf[0][0]);
+                findex[0] = &*(findex_buf[0].begin());
                 odf_table.resize(2);
                 half_odf_size = 1;
                 odf_faces.clear();
@@ -279,25 +280,11 @@ public:
             }
             if (prefix_name == "dir")
             {
-                const float* dir;
-                mat_reader.get_matrix(index,row,col,dir);
+                const float* dir_ptr;
+                mat_reader.get_matrix(index,row,col,dir_ptr);
                 check_index(store_index);
-                if(findex_buf.size() <= store_index)
-                    findex_buf.resize(store_index+1);
-                findex_buf[store_index].resize(row*col/3);
-                for(unsigned int index = 0;index < findex_buf[store_index].size();++index)
-                {
-                    image::vector<3> d(dir+index+index+index);
-                    findex_buf[store_index][index] = 0;
-                    double cos = std::fabs(d*odf_table[0]);
-                    for(unsigned int i = 0;i < half_odf_size;++i)
-                        if(d*odf_table[i] > cos)
-                        {
-                            findex_buf[store_index][index] = i;
-                            cos = d*odf_table[i];
-                        }
-                }
-                findex[store_index] = &(findex_buf[store_index][0]);
+                dir.resize(findex.size());
+                dir[store_index] = dir_ptr;
                 continue;
             }
             if (prefix_name == "odf1" || prefix_name == "odf2" || prefix_name == "odf3" ||
@@ -380,11 +367,13 @@ public:
             return 0.0;
         return fa[order][index];
     }
-    image::vector<3,float> getDir(unsigned int index,unsigned int order) const
+    const float* getDir(unsigned int index,unsigned int order) const
     {
+        if(!dir.empty())
+            return dir[order] + index + (index << 1);
         if(order >= findex.size())
-            return odf_table[0];
-        return odf_table[findex[order][index]];
+            return &*(odf_table[0].begin());
+        return &*(odf_table[findex[order][index]].begin());
     }
 
 };
@@ -525,11 +514,11 @@ public:
 
 
 class fiber_orientations{
-
 public:
     image::geometry<3> dim;
     image::vector<3> vs;
     unsigned char fib_num;
+    std::vector<const float*> dir;
     std::vector<const float*> fa;
     std::vector<const short*> findex;
     std::vector<image::vector<3,float> > odf_table;
@@ -550,7 +539,7 @@ private:
         {
             if (fa[index][space_index] <= threshold)
                 break;
-            float value = ref_dir*odf_table[findex[index][space_index]];
+            float value = cos_angle(ref_dir,space_index,index);
             if (-value > max_value)
             {
                 max_value = -value;
@@ -580,6 +569,7 @@ public:
         fib_num = fib_data.fib.num_fiber;
         fa = fib_data.fib.fa;
         findex = fib_data.fib.findex;
+        dir = fib_data.fib.dir;
     }
 
     bool get_dir(unsigned int space_index,
@@ -590,7 +580,7 @@ public:
         unsigned char reverse;
         if (!get_nearest_dir_fib(space_index,dir,fib_order,reverse))
             return false;
-        main_dir = odf_table[findex[fib_order][space_index]];
+        main_dir = get_dir(space_index,fib_order);
         if(reverse)
         {
             main_dir[0] = -main_dir[0];
@@ -599,9 +589,22 @@ public:
         }
         return true;
     }
-    const image::vector<3,float>& get_dir(unsigned int space_index,unsigned char fib_order) const
+
+    const float* get_dir(unsigned int space_index,unsigned char fib_order) const
     {
-        return odf_table[findex[fib_order][space_index]];
+        if(!dir.empty())
+            return dir[fib_order] + space_index + (space_index << 1);
+        return &*(odf_table[findex[fib_order][space_index]].begin());
+    }
+
+    float cos_angle(const image::vector<3>& cur_dir,unsigned int space_index,unsigned char fib_order) const
+    {
+        if(!dir.empty())
+        {
+            const float* dir_at = dir[fib_order] + space_index + (space_index << 1);
+            return cur_dir[0]*dir_at[0] + cur_dir[1]*dir_at[1] + cur_dir[2]*dir_at[2];
+        }
+        return cur_dir*odf_table[findex[fib_order][space_index]];
     }
 
     float get_fa(unsigned int space_index,

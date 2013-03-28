@@ -21,32 +21,6 @@ extern "C"
 }
 
 extern "C"
-    bool tracking_get_voxel_dir(ODFModel* odf_model,unsigned int x,unsigned int y,unsigned int z,
-                                float* fa,float* dir)
-{
-    FibData& fib_data = odf_model->fib_data;
-    image::pixel_index<3> pos(x,y,z,odf_model->fib_data.dim);
-    if (pos.index() >= odf_model->fib_data.total_size || fib_data.fib.getFA(pos.index(),0) == 0.0)
-        return false;
-    unsigned int limit = std::min<unsigned int>(3,fib_data.fib.num_fiber);
-    for (unsigned int index = 0;index < limit;++index)
-    {
-        fa[index] = fib_data.fib.getFA(pos.index(),index);
-        const image::vector<3,float>& fdir = fib_data.fib.getDir(pos.index(),index);
-        std::copy(fdir.begin(),fdir.end(),dir);
-        dir += 3;
-    }
-    for (unsigned int index = limit;index < 3;++index)
-    {
-        fa[index] = 0.0;
-        std::fill(dir,dir+3,0.0);
-        dir += 3;
-    }
-    return true;
-}
-
-
-extern "C"
     const float* get_odf_direction(ODFModel* odf_model,unsigned int index)
 {
     return &*odf_model->fib_data.fib.odf_table[index].begin();

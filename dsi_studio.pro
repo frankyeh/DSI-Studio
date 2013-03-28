@@ -8,7 +8,7 @@ QT += core \
 TARGET = dsi_studio
 TEMPLATE = app
 win32{
-INCLUDEPATH += C:\frank\myprog\include
+INCLUDEPATH += C:/frank/myprog/include
 }
 
 win32-g++ {

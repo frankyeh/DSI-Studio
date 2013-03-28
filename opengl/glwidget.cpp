@@ -429,9 +429,7 @@ void GLWidget::paintGL()
             {
                 if((index[0] & mask) | (index[1] & mask))
                     continue;
-                if (!slice.get3dPosition(index[0],index[1],sX,sY,sZ) ||
-                !tracking_get_voxel_dir(cur_tracking_window.handle, sX, sY, sZ, fa,dir) ||
-                fa[0] <= fa_threshold)
+                if (!slice.get3dPosition(index[0],index[1],sX,sY,sZ) || fa[0] <= fa_threshold)
                     continue;
                 add_odf(sX,sY,sZ);
             }
