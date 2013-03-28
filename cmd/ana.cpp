@@ -57,7 +57,7 @@ int ana(int ac, char *av[])
     image::geometry<3> geometry = handle->fib_data.dim;
     image::vector<3> voxel_size = handle->fib_data.vs;
 
-    std::auto_ptr<TractModel> tract_model(new TractModel(handle.get(),geometry,voxel_size));
+    TractModel tract_model(handle.get(),geometry,voxel_size);
     std::string file_name = vm["tract"].as<std::string>();
     {
         out << "loading " << file_name.c_str() << "..." <<std::endl;
@@ -66,13 +66,13 @@ int ana(int ac, char *av[])
             out << file_name.c_str() << " does not exist. terminating..." << std::endl;
             return 0;
         }
-        if (!tract_model->load_from_file(file_name.c_str()))
+        if (!tract_model.load_from_file(file_name.c_str()))
         {
             out << "Cannot open file " << file_name.c_str() << std::endl;
             return 0;
         }
     }
-    if(vm.count("export") && vm["export"].as<std::string>().find("tdi")!=std::string::npos)
+    if(vm.count("export") && vm["export"].as<std::string>() == std::string("tdi"))
     {
         out << "export tract density images..." << std::endl;
         std::string file_name_stat(file_name);
@@ -80,15 +80,40 @@ int ana(int ac, char *av[])
         image::basic_image<unsigned int,3> tdi(geometry);
         std::vector<float> tr(16);
         tr[0] = tr[5] = tr[10] = tr[15] = 1.0;
-        tract_model->get_density_map(tdi,tr,false);
+        tract_model.get_density_map(tdi,tr,false);
 
         gz_nifti nii_header;
         image::flip_xy(tdi);
         nii_header << tdi;
         nii_header.set_voxel_size(voxel_size.begin());
         nii_header.save_to_file(file_name_stat.c_str());
+        return 0;
     }
-    if(vm.count("export") && vm["export"].as<std::string>().find("report")!=std::string::npos)
+    if(vm.count("export") && vm["export"].as<std::string>() == std::string("statistics"))
+    {
+        out << "export statistics..." << std::endl;
+        std::string file_name_stat(file_name);
+        file_name_stat += ".statistics.txt";
+        std::ofstream out(file_name_stat.c_str());
+        std::vector<std::string> titles;
+        titles.push_back("number of tracts");
+        titles.push_back("tract length mean(mm)");
+        titles.push_back("tract length sd(mm)");
+        titles.push_back("tracts volume (mm^3)");
+        handle->get_index_titles(titles);
+        std::vector<float> data;
+        tract_model.get_quantitative_data(data);
+        for(unsigned int i = 0;i < titles.size();++i)
+        {
+            out << titles[i] << "\t";
+            if(i < data.size())
+                out << data[i];
+            out << "\t";
+            out << std::endl;
+        }
+        return 0;
+    }
+    if(vm.count("export") && vm["export"].as<std::string>().find("report,") == 0)
     {
         std::string report_cmd = vm["export"].as<std::string>();
         std::replace(report_cmd.begin(),report_cmd.end(),',',' ');
@@ -100,8 +125,8 @@ int ana(int ac, char *av[])
 
         float threshold = 0.6*image::segmentation::otsu_threshold(
                     image::basic_image<float, 3,image::const_pointer_memory<float> >(handle->fib_data.fib.fa[0],geometry));
-        tract_model->get_fib().threshold = threshold;
-        tract_model->get_fib().cull_cos_angle = std::cos(60.0*3.1415926/180.0);
+        tract_model.get_fib().threshold = threshold;
+        tract_model.get_fib().cull_cos_angle = std::cos(60.0*3.1415926/180.0);
 
         // check index
         if(index_name != "qa" && index_name != "fa" &&  handle->get_name_index(index_name) == handle->fib_data.view_item.size())
@@ -120,7 +145,7 @@ int ana(int ac, char *av[])
             return 0;
         }
         out << "calculating report" << std::endl;
-        tract_model->get_report(
+        tract_model.get_report(
                             profile_dir,
                             bandwidth,
                             index_name,
@@ -139,5 +164,8 @@ int ana(int ac, char *av[])
         report << "value";
         std::copy(data_profile.begin(),data_profile.end(),std::ostream_iterator<float>(report,"\t"));
         report << std::endl;
+        return 0;
     }
+    out << "unknown export specification" << std::endl;
+    return 0;
 }
