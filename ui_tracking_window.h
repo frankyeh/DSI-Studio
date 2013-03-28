@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Mon Mar 18 22:48:03 2013
+** Created: Wed Mar 27 21:29:40 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -120,6 +120,7 @@ public:
     QAction *actionManual_Registration;
     QAction *actionConnectometry;
     QAction *actionTract_Analysis_Report;
+    QAction *actionSave_End_Points_As;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QHBoxLayout *horizontalLayout_13;
@@ -490,6 +491,9 @@ public:
         actionConnectometry->setObjectName(QString::fromUtf8("actionConnectometry"));
         actionTract_Analysis_Report = new QAction(tracking_window);
         actionTract_Analysis_Report->setObjectName(QString::fromUtf8("actionTract_Analysis_Report"));
+        actionSave_End_Points_As = new QAction(tracking_window);
+        actionSave_End_Points_As->setObjectName(QString::fromUtf8("actionSave_End_Points_As"));
+        actionSave_End_Points_As->setIcon(icon2);
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -1478,6 +1482,7 @@ public:
         menuTracts->addAction(actionOpenTract);
         menuTracts->addAction(actionSaveTractAs);
         menuTracts->addAction(actionSave_All_Tracts_As);
+        menuTracts->addAction(actionSave_End_Points_As);
         menuTracts->addAction(menuSave->menuAction());
         menuTracts->addAction(menuExport_Tract_Density->menuAction());
         menuTracts->addSeparator();
@@ -1676,6 +1681,7 @@ public:
         actionManual_Registration->setText(QApplication::translate("tracking_window", "Background Registration...", 0, QApplication::UnicodeUTF8));
         actionConnectometry->setText(QApplication::translate("tracking_window", "Connectometry...", 0, QApplication::UnicodeUTF8));
         actionTract_Analysis_Report->setText(QApplication::translate("tracking_window", "Tract Analysis Report", 0, QApplication::UnicodeUTF8));
+        actionSave_End_Points_As->setText(QApplication::translate("tracking_window", "Save End Points As...", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)

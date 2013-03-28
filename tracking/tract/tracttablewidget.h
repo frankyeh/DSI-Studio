@@ -56,6 +56,7 @@ public slots:
     void save_fa_as(void);
     void save_tracts_data_as(void);
     void save_all_tracts_as(void);
+    void save_end_point_as(void);
     void merge_all(void);
     void delete_tract(void);
     void delete_all_tract(void);

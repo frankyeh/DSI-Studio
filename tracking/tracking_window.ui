@@ -826,6 +826,7 @@
     <addaction name="actionOpenTract"/>
     <addaction name="actionSaveTractAs"/>
     <addaction name="actionSave_All_Tracts_As"/>
+    <addaction name="actionSave_End_Points_As"/>
     <addaction name="menuSave"/>
     <addaction name="menuExport_Tract_Density"/>
     <addaction name="separator"/>
@@ -2798,6 +2799,15 @@
   <action name="actionTract_Analysis_Report">
    <property name="text">
     <string>Tract Analysis Report</string>
+   </property>
+  </action>
+  <action name="actionSave_End_Points_As">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save End Points As...</string>
    </property>
   </action>
  </widget>

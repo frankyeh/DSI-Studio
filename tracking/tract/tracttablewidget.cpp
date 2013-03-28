@@ -173,7 +173,7 @@ void TractTableWidget::load_tracts(void)
             this,
             "Load tracts as",
             cur_tracking_window.absolute_path,
-            "Tract files (*.txt *.trk);;All files (*.*)");
+            "Tract files (*.txt *.trk *.mat);;All files (*.*)");
     if(!filenames.size())
         return;
     cur_tracking_window.absolute_path = QFileInfo(filenames[0]).absolutePath();
@@ -208,13 +208,15 @@ void TractTableWidget::save_all_tracts_as(void)
                 this,
                 "Save tracts as",
                 cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text().replace(':','_') + ".txt",
-                "Tract files (*.txt);; Travis file (*.trk);;All files (*.*)");
+                "Tract files (*.txt *.trk *.mat);;All files (*.*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
     std::string sfilename = filename.toLocal8Bit().begin();
     TractModel::save_all(&*sfilename.begin(),tract_models);
 }
+
+
 void TractTableWidget::set_color(void)
 {
     if(tract_models.empty())
@@ -270,7 +272,6 @@ void TractTableWidget::open_cluster_label(void)
     if(!filename.size())
         return;
     cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
-
     std::ifstream in(filename.toLocal8Bit().begin());
     std::vector<unsigned int> labels(tract_models[currentRow()]->get_visible_track_count());
     std::copy(std::istream_iterator<unsigned int>(in),
@@ -335,14 +336,32 @@ void TractTableWidget::save_tracts_as(void)
     filename = QFileDialog::getSaveFileName(
                 this,
                 "Save tracts as",
-                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text().replace(':','_'),
-                "Tract files (*.txt);; Travis file (*.trk);;All files (*.*)");
+                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text().replace(':','_') + ".txt",
+                 "Tract files (*.txt *.trk *.mat);;All files (*.*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
     std::string sfilename = filename.toLocal8Bit().begin();
     tract_models[currentRow()]->save_tracts_to_file(&*sfilename.begin());
 }
+
+void TractTableWidget::save_end_point_as(void)
+{
+    if(currentRow() >= tract_models.size())
+        return;
+    QString filename;
+    filename = QFileDialog::getSaveFileName(
+                this,
+                "Save end points as",
+                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text().replace(':','_') + "endpoint.txt",
+                "Tract files (*.txt *.mat);;All files (*.*)");
+    if(filename.isEmpty())
+        return;
+    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+    std::string sfilename = filename.toLocal8Bit().begin();
+    tract_models[currentRow()]->save_end_points(&*sfilename.begin());
+}
+
 void TractTableWidget::saveTransformedTracts(const float* transform)
 {
     if(currentRow() >= tract_models.size())
@@ -352,7 +371,7 @@ void TractTableWidget::saveTransformedTracts(const float* transform)
                 this,
                 "Save tracts as",
                 cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + ".txt",
-                "Tract files (*.txt);; Travis file (*.trk);;All files (*.*)");
+                 "Tract files (*.txt *.trk *.mat);;All files (*.*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
@@ -371,7 +390,7 @@ void TractTableWidget::saveTransformedEndpoints(const float* transform)
                 this,
                 "Save end_point as",
                 cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + ".txt",
-                "Tract files (*.txt);;All files (*.*)");
+                "Tract files (*.txt *.mat);;All files (*.*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();

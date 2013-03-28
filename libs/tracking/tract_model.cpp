@@ -165,7 +165,30 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
             }
         }
         else
-            return false;
+            if (file_name.find(".mat") != std::string::npos)
+            {
+                MatFile in;
+                if(!in.load_from_file(file_name_))
+                    return false;
+                const float* buf = 0;
+                const unsigned int* length = 0;
+                const unsigned int* cluster = 0;
+                unsigned int row,col;
+                if(!in.get_matrix("tracts",row,col,buf))
+                    return false;
+                if(!in.get_matrix("length",row,col,length))
+                    return false;
+                loaded_tract_data.resize(col);
+                in.get_matrix("cluster",row,col,cluster);
+                for(unsigned int index = 0;index < loaded_tract_data.size();++index)
+                {
+                    loaded_tract_data[index].resize(length[index]*3);
+                    if(cluster)
+                        loaded_tract_cluster.push_back(cluster[index]);
+                    std::copy(buf,buf + loaded_tract_data[index].size(),loaded_tract_data[index].begin());
+                    buf += loaded_tract_data[index].size();
+                }
+            }
 
     if (loaded_tract_data.empty())
         return false;
@@ -242,38 +265,54 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         }
         return true;
     }
-    else
-        if (file_name.find(".trk") != std::string::npos)
+
+    if (file_name.find(".trk") != std::string::npos)
+    {
+        std::ofstream out(file_name_,std::ios::binary);
+        if (!out)
+            return false;
         {
-            std::ofstream out(file_name_,std::ios::binary);
-            if (!out)
-                return false;
-            {
-                TrackVis trk;
-                trk.init(geometry,vs);
-                trk.n_count = tract_data.size();
-                out.write((const char*)&trk,1000);
-            }
-            begin_prog("saving");
-            for (unsigned int i = 0;check_prog(i,tract_data.size());++i)
-            {
-                int n_point = tract_data[i].size()/3;
-                std::vector<float> buffer(tract_data[i].size());
-                const float *from = &*tract_data[i].begin();
-                const float *end = from + tract_data[i].size();
-                float* to = &*buffer.begin();
-                for (unsigned int flag = 0;from != end;++from,++to)
-                {
-                    *to = (*from)*vs[flag];
-                    ++flag;
-                    if (flag == 3)
-                        flag = 0;
-                }
-                out.write((const char*)&n_point,sizeof(int));
-                out.write((const char*)&*buffer.begin(),sizeof(float)*buffer.size());
-            }
-            return true;
+            TrackVis trk;
+            trk.init(geometry,vs);
+            trk.n_count = tract_data.size();
+            out.write((const char*)&trk,1000);
         }
+        begin_prog("saving");
+        for (unsigned int i = 0;check_prog(i,tract_data.size());++i)
+        {
+            int n_point = tract_data[i].size()/3;
+            std::vector<float> buffer(tract_data[i].size());
+            const float *from = &*tract_data[i].begin();
+            const float *end = from + tract_data[i].size();
+            float* to = &*buffer.begin();
+            for (unsigned int flag = 0;from != end;++from,++to)
+            {
+                *to = (*from)*vs[flag];
+                ++flag;
+                if (flag == 3)
+                    flag = 0;
+            }
+            out.write((const char*)&n_point,sizeof(int));
+            out.write((const char*)&*buffer.begin(),sizeof(float)*buffer.size());
+        }
+        return true;
+    }
+    if (file_name.find(".mat") != std::string::npos)
+    {
+        MatFile out;
+        if(!out.write_to_file(file_name.c_str(),false))
+            return false;
+        std::vector<float> buf;
+        std::vector<unsigned int> length;
+        for(unsigned int index = 0;index < tract_data.size();++index)
+        {
+            length.push_back(tract_data[index].size()/3);
+            std::copy(tract_data[index].begin(),tract_data[index].end(),std::back_inserter(buf));
+        }
+        out.add_matrix("tracts",&*buf.begin(),3,buf.size()/3);
+        out.add_matrix("length",&*length.begin(),1,length.size());
+        return true;
+    }
     return false;
 }
 
@@ -289,8 +328,8 @@ bool TractModel::save_all(const char* file_name_,const std::vector<TractModel*>&
         if (!out)
             return false;
         begin_prog("saving");
-        for(unsigned int index = 0;index < all.size();++index)
-        for (unsigned int i = 0;check_prog(i,all[index]->tract_data.size());++i)
+        for(unsigned int index = 0;check_prog(index,all.size());++index)
+        for (unsigned int i = 0;i < all[index]->tract_data.size();++i)
         {
             std::copy(all[index]->tract_data[i].begin(),
                       all[index]->tract_data[i].end(),
@@ -300,44 +339,65 @@ bool TractModel::save_all(const char* file_name_,const std::vector<TractModel*>&
         }
         return true;
     }
-    else
-        if (file_name.find(".trk") != std::string::npos)
-        {
-            std::ofstream out(file_name_,std::ios::binary);
-            if (!out)
-                return false;
-            {
-                TrackVis trk;
-                trk.init(all[0]->geometry,all[0]->vs);
-                trk.n_count = 0;
-                trk.n_properties = 1;
-                for(unsigned int index = 0;index < all.size();++index)
-                    trk.n_count += all[index]->tract_data.size();
-                out.write((const char*)&trk,1000);
 
-            }
-            begin_prog("saving");
+    if (file_name.find(".trk") != std::string::npos)
+    {
+        std::ofstream out(file_name_,std::ios::binary);
+        if (!out)
+            return false;
+        {
+            TrackVis trk;
+            trk.init(all[0]->geometry,all[0]->vs);
+            trk.n_count = 0;
+            trk.n_properties = 1;
             for(unsigned int index = 0;index < all.size();++index)
-            for (unsigned int i = 0;check_prog(i,all[index]->tract_data.size());++i)
-            {
-                int n_point = all[index]->tract_data[i].size()/3;
-                std::vector<float> buffer(all[index]->tract_data[i].size()+1);
-                const float *from = &*all[index]->tract_data[i].begin();
-                const float *end = from + all[index]->tract_data[i].size();
-                float* to = &*buffer.begin();
-                for (unsigned int flag = 0;from != end;++from,++to)
-                {
-                    *to = (*from)*all[index]->vs[flag];
-                    ++flag;
-                    if (flag == 3)
-                        flag = 0;
-                }
-                buffer.back() = index;
-                out.write((const char*)&n_point,sizeof(int));
-                out.write((const char*)&*buffer.begin(),sizeof(float)*buffer.size());
-            }
-            return true;
+                trk.n_count += all[index]->tract_data.size();
+            out.write((const char*)&trk,1000);
+
         }
+        begin_prog("saving");
+        for(unsigned int index = 0;check_prog(index,all.size());++index)
+        for (unsigned int i = 0;i < all[index]->tract_data.size();++i)
+        {
+            int n_point = all[index]->tract_data[i].size()/3;
+            std::vector<float> buffer(all[index]->tract_data[i].size()+1);
+            const float *from = &*all[index]->tract_data[i].begin();
+            const float *end = from + all[index]->tract_data[i].size();
+            float* to = &*buffer.begin();
+            for (unsigned int flag = 0;from != end;++from,++to)
+            {
+                *to = (*from)*all[index]->vs[flag];
+                ++flag;
+                if (flag == 3)
+                    flag = 0;
+            }
+            buffer.back() = index;
+            out.write((const char*)&n_point,sizeof(int));
+            out.write((const char*)&*buffer.begin(),sizeof(float)*buffer.size());
+        }
+        return true;
+    }
+
+    if (file_name.find(".mat") != std::string::npos)
+    {
+        MatFile out;
+        if(!out.write_to_file(file_name.c_str(),false))
+            return false;
+        std::vector<float> buf;
+        std::vector<unsigned int> length;
+        std::vector<unsigned int> cluster;
+        for(unsigned int index = 0;check_prog(index,all.size());++index)
+        for (unsigned int i = 0;i < all[index]->tract_data.size();++i)
+        {
+            cluster.push_back(index);
+            length.push_back(all[index]->tract_data[i].size()/3);
+            std::copy(all[index]->tract_data[i].begin(),all[index]->tract_data[i].end(),std::back_inserter(buf));
+        }
+        out.add_matrix("tracts",&*buf.begin(),3,buf.size()/3);
+        out.add_matrix("length",&*length.begin(),1,length.size());
+        out.add_matrix("cluster",&*cluster.begin(),1,cluster.size());
+        return true;
+    }
     return false;
 }
 //---------------------------------------------------------------------------
@@ -433,8 +493,10 @@ void TractModel::save_end_points(const char* file_name_) const
     }
     if (file_name.find(".mat") != std::string::npos)
     {
-        MatFile write(file_name_);
-        write.add_matrix("end_points",(const short*)&*buffer.begin(),3,buffer.size()/3);
+        MatFile out;
+        if(!out.write_to_file(file_name_,false))
+            return;
+        out.add_matrix("end_points",(const short*)&*buffer.begin(),3,buffer.size()/3);
     }
 
 }
