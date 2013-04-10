@@ -23,6 +23,7 @@ class manual_alignment;
 class vbc_dialog;
 class tract_report;
 class color_bar_dialog;
+class connectivity_matrix_dialog;
 class tracking_window : public QMainWindow
 {
     Q_OBJECT
@@ -59,7 +60,7 @@ public:
     std::auto_ptr<vbc_dialog> vbc;
     std::auto_ptr<tract_report> tact_report_imp;
     std::auto_ptr<color_bar_dialog> color_bar;
-
+    std::auto_ptr<connectivity_matrix_dialog> connectivity_matrix;
 public:
 public:
     QString absolute_path;
@@ -120,6 +121,7 @@ private slots:
     void on_actionManual_Registration_triggered();
     void on_actionConnectometry_triggered();
     void on_actionTract_Analysis_Report_triggered();
+    void on_actionConnectivity_matrix_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

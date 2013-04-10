@@ -19,7 +19,7 @@
 #include "vbc_dialog.hpp"
 #include "tract_report.hpp"
 #include "color_bar_dialog.hpp"
-
+#include "connectivity_matrix_dialog.h"
 #include "mapping/atlas.hpp"
 #include "mapping/fa_template.hpp"
 
@@ -63,7 +63,10 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
         ui->graphicsView->setCursor(Qt::CrossCursor);
         scene.statusbar = ui->statusbar;
         if(!handle->has_vbc())
+        {
             ui->actionConnectometry->setEnabled(false);
+            ui->actionConnectometry->setVisible(false);
+        }
         else
             vbc.reset(new vbc_dialog(this,handle));
         color_bar.reset(new color_bar_dialog(this));
@@ -354,35 +357,41 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 {
     bool has_info = false;
     image::vector<3,float> pos;
-    if (event->type() == QEvent::MouseMove && obj == glWidget)
+    if (event->type() == QEvent::MouseMove)
     {
-        has_info = glWidget->get_mouse_pos(static_cast<QMouseEvent*>(event),pos);
-        copy_target = 0;
-    }
-    if (event->type() == QEvent::MouseMove && obj->parent() && obj->parent()->objectName() == QString("graphicsView"))
-    {
-        QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
-        QPointF point = ui->graphicsView->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
-        if(ui->view_style->currentIndex() == 0)// single slice
+        if (obj == glWidget)
         {
-            if(slice.cur_dim != 2)
-                point.setY(scene.height() - point.y());
-            has_info = slice.get3dPosition(((float)point.x()) / ui->zoom->value() - 0.5,
-                                           ((float)point.y()) / ui->zoom->value() - 0.5,
-                                           pos[0], pos[1], pos[2]);
+            has_info = glWidget->get_mouse_pos(static_cast<QMouseEvent*>(event),pos);
+            copy_target = 0;
         }
-        else
+        if (obj->parent() == ui->graphicsView)
         {
-            pos[0] = ((float)point.x())*(float)scene.mosaic_size / ui->zoom->value();
-            pos[1] = ((float)point.y())*(float)scene.mosaic_size / ui->zoom->value();
-            pos[2] = std::floor(pos[1]/slice.geometry[1])*scene.mosaic_size + std::floor(pos[0]/slice.geometry[0]);
-            pos[0] -= std::floor(pos[0]/slice.geometry[0])*slice.geometry[0];
-            pos[1] -= std::floor(pos[1]/slice.geometry[1])*slice.geometry[1];
-            has_info = true;
+            QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+            QPointF point = ui->graphicsView->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
+            if(ui->view_style->currentIndex() == 0)// single slice
+            {
+                if(slice.cur_dim != 2)
+                    point.setY(scene.height() - point.y());
+                has_info = slice.get3dPosition(((float)point.x()) / ui->zoom->value() - 0.5,
+                                               ((float)point.y()) / ui->zoom->value() - 0.5,
+                                               pos[0], pos[1], pos[2]);
+            }
+            else
+            {
+                pos[0] = ((float)point.x())*(float)scene.mosaic_size / ui->zoom->value();
+                pos[1] = ((float)point.y())*(float)scene.mosaic_size / ui->zoom->value();
+                pos[2] = std::floor(pos[1]/slice.geometry[1])*scene.mosaic_size + std::floor(pos[0]/slice.geometry[0]);
+                pos[0] -= std::floor(pos[0]/slice.geometry[0])*slice.geometry[0];
+                pos[1] -= std::floor(pos[1]/slice.geometry[1])*slice.geometry[1];
+                has_info = true;
+            }
+            copy_target = 1;
         }
-        copy_target = 1;
-    }
 
+        // for connectivity matrix
+        if(connectivity_matrix.get() && connectivity_matrix->is_graphic_view(obj->parent()))
+            connectivity_matrix->mouse_move(static_cast<QMouseEvent*>(event));
+    }
     if(!has_info)
         return false;
 
@@ -1117,4 +1126,12 @@ void tracking_window::on_actionTract_Analysis_Report_triggered()
         tact_report_imp.reset(new tract_report(this));
     tact_report_imp->show();
     tact_report_imp->on_refresh_report_clicked();
+}
+
+void tracking_window::on_actionConnectivity_matrix_triggered()
+{
+    if(tractWidget->tract_models.size() == 0)
+        return;
+    connectivity_matrix.reset(new connectivity_matrix_dialog(this));
+    connectivity_matrix->show();
 }

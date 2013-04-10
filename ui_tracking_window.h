@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Wed Mar 27 21:29:40 2013
+** Created: Wed Apr 10 12:41:28 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -121,6 +121,7 @@ public:
     QAction *actionConnectometry;
     QAction *actionTract_Analysis_Report;
     QAction *actionSave_End_Points_As;
+    QAction *actionConnectivity_matrix;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QHBoxLayout *horizontalLayout_13;
@@ -181,6 +182,8 @@ public:
     QMenu *menuSave;
     QMenu *menuClustering;
     QMenu *menuExport_Tract_Density;
+    QMenu *menuTract_Color;
+    QMenu *menuSave_Tracts;
     QMenu *menu_Edit;
     QMenu *menu_View;
     QMenu *menu_Slices;
@@ -494,6 +497,8 @@ public:
         actionSave_End_Points_As = new QAction(tracking_window);
         actionSave_End_Points_As->setObjectName(QString::fromUtf8("actionSave_End_Points_As"));
         actionSave_End_Points_As->setIcon(icon2);
+        actionConnectivity_matrix = new QAction(tracking_window);
+        actionConnectivity_matrix->setObjectName(QString::fromUtf8("actionConnectivity_matrix"));
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -868,6 +873,10 @@ public:
         menuClustering->setObjectName(QString::fromUtf8("menuClustering"));
         menuExport_Tract_Density = new QMenu(menuTracts);
         menuExport_Tract_Density->setObjectName(QString::fromUtf8("menuExport_Tract_Density"));
+        menuTract_Color = new QMenu(menuTracts);
+        menuTract_Color->setObjectName(QString::fromUtf8("menuTract_Color"));
+        menuSave_Tracts = new QMenu(menuTracts);
+        menuSave_Tracts->setObjectName(QString::fromUtf8("menuSave_Tracts"));
         menu_Edit = new QMenu(menuBar);
         menu_Edit->setObjectName(QString::fromUtf8("menu_Edit"));
         menu_View = new QMenu(menuBar);
@@ -1480,9 +1489,7 @@ public:
         menuModify->addAction(actionDefragment);
         menuModify->addAction(actionThreshold);
         menuTracts->addAction(actionOpenTract);
-        menuTracts->addAction(actionSaveTractAs);
-        menuTracts->addAction(actionSave_All_Tracts_As);
-        menuTracts->addAction(actionSave_End_Points_As);
+        menuTracts->addAction(menuSave_Tracts->menuAction());
         menuTracts->addAction(menuSave->menuAction());
         menuTracts->addAction(menuExport_Tract_Density->menuAction());
         menuTracts->addSeparator();
@@ -1493,25 +1500,30 @@ public:
         menuTracts->addAction(actionEndpoints_to_seeding);
         menuTracts->addAction(actionTracts_to_seeds);
         menuTracts->addSeparator();
-        menuTracts->addAction(actionSet_Color);
-        menuTracts->addAction(actionOpen_Colors);
-        menuTracts->addSeparator();
-        menuTracts->addAction(actionOpen_Cluster_Labels);
+        menuTracts->addAction(menuTract_Color->menuAction());
         menuTracts->addAction(menuClustering->menuAction());
         menuTracts->addSeparator();
-        menuTracts->addAction(actionSave_Tracts_Colors_As);
-        menuTracts->addAction(actionSave_Tracts_in_Current_Mapping);
-        menuTracts->addAction(actionSave_Tracts_in_MNI_space);
-        menuTracts->addAction(actionSave_Endpoints_in_Current_Mapping);
-        menuTracts->addSeparator();
+        menuTracts->addAction(actionTract_Analysis_Report);
+        menuTracts->addAction(actionConnectivity_matrix);
         menuTracts->addAction(actionStatistics);
         menuSave->addAction(actionQuantitative_anisotropy_QA);
+        menuClustering->addAction(actionOpen_Cluster_Labels);
         menuClustering->addAction(actionK_means);
         menuClustering->addAction(actionEM);
         menuClustering->addAction(actionHierarchical);
         menuExport_Tract_Density->addAction(actionTDI_Diffusion_Space);
         menuExport_Tract_Density->addAction(actionTDI_Subvoxel_Diffusion_Space);
         menuExport_Tract_Density->addAction(actionTDI_Import_Slice_Space);
+        menuTract_Color->addAction(actionSet_Color);
+        menuTract_Color->addAction(actionOpen_Colors);
+        menuTract_Color->addAction(actionSave_Tracts_Colors_As);
+        menuSave_Tracts->addAction(actionSaveTractAs);
+        menuSave_Tracts->addAction(actionSave_Tracts_in_Current_Mapping);
+        menuSave_Tracts->addAction(actionSave_Tracts_in_MNI_space);
+        menuSave_Tracts->addAction(actionSave_All_Tracts_As);
+        menuSave_Tracts->addSeparator();
+        menuSave_Tracts->addAction(actionSave_End_Points_As);
+        menuSave_Tracts->addAction(actionSave_Endpoints_in_Current_Mapping);
         menu_Edit->addAction(actionUndo);
         menu_Edit->addAction(actionRedo);
         menu_Edit->addSeparator();
@@ -1536,7 +1548,6 @@ public:
         menu_View->addAction(actionSave_Left_Right_3D_Image);
         menu_View->addAction(actionCopy_to_clipboard);
         menu_View->addSeparator();
-        menu_View->addAction(actionTract_Analysis_Report);
         menu_View->addAction(actionManual_Registration);
         menu_View->addAction(actionConnectometry);
         menu_View->addSeparator();
@@ -1574,15 +1585,15 @@ public:
     void retranslateUi(QMainWindow *tracking_window)
     {
         tracking_window->setWindowTitle(QApplication::translate("tracking_window", "Fiber Tracking", 0, QApplication::UnicodeUTF8));
-        actionNewRegion->setText(QApplication::translate("tracking_window", "&New", 0, QApplication::UnicodeUTF8));
-        actionOpenRegion->setText(QApplication::translate("tracking_window", "&Open...", 0, QApplication::UnicodeUTF8));
-        actionSaveRegionAs->setText(QApplication::translate("tracking_window", "Save &As...", 0, QApplication::UnicodeUTF8));
-        actionDeleteRegion->setText(QApplication::translate("tracking_window", "&Delete", 0, QApplication::UnicodeUTF8));
+        actionNewRegion->setText(QApplication::translate("tracking_window", "&New Region", 0, QApplication::UnicodeUTF8));
+        actionOpenRegion->setText(QApplication::translate("tracking_window", "&Open Region...", 0, QApplication::UnicodeUTF8));
+        actionSaveRegionAs->setText(QApplication::translate("tracking_window", "Save Region &As...", 0, QApplication::UnicodeUTF8));
+        actionDeleteRegion->setText(QApplication::translate("tracking_window", "&Delete Region", 0, QApplication::UnicodeUTF8));
         actionOpenTract->setText(QApplication::translate("tracking_window", "Open Tracts...", 0, QApplication::UnicodeUTF8));
-        actionSaveTractAs->setText(QApplication::translate("tracking_window", "Save Tracts As...", 0, QApplication::UnicodeUTF8));
+        actionSaveTractAs->setText(QApplication::translate("tracking_window", "Save Current Tracts As...", 0, QApplication::UnicodeUTF8));
         actionSaveTractFA->setText(QApplication::translate("tracking_window", "Save tract anisotropy as...", 0, QApplication::UnicodeUTF8));
-        actionDeleteRegionAll->setText(QApplication::translate("tracking_window", "Delete All", 0, QApplication::UnicodeUTF8));
-        actionDeleteTract->setText(QApplication::translate("tracking_window", "Delete", 0, QApplication::UnicodeUTF8));
+        actionDeleteRegionAll->setText(QApplication::translate("tracking_window", "Delete All Regions", 0, QApplication::UnicodeUTF8));
+        actionDeleteTract->setText(QApplication::translate("tracking_window", "Delete Current", 0, QApplication::UnicodeUTF8));
         actionDeleteTractAll->setText(QApplication::translate("tracking_window", "Delete All", 0, QApplication::UnicodeUTF8));
         actionShift_X->setText(QApplication::translate("tracking_window", "Shift +X", 0, QApplication::UnicodeUTF8));
         actionShift_X->setShortcut(QApplication::translate("tracking_window", "Ctrl+1", 0, QApplication::UnicodeUTF8));
@@ -1652,9 +1663,9 @@ public:
         actionK_means->setText(QApplication::translate("tracking_window", "K-means", 0, QApplication::UnicodeUTF8));
         actionEM->setText(QApplication::translate("tracking_window", "EM", 0, QApplication::UnicodeUTF8));
         actionHierarchical->setText(QApplication::translate("tracking_window", "Hierarchical", 0, QApplication::UnicodeUTF8));
-        actionSet_Color->setText(QApplication::translate("tracking_window", "Set Color...", 0, QApplication::UnicodeUTF8));
+        actionSet_Color->setText(QApplication::translate("tracking_window", "Set Tract Color...", 0, QApplication::UnicodeUTF8));
         actionSave_Tracts_Colors_As->setText(QApplication::translate("tracking_window", "Save Tracts Colors As...", 0, QApplication::UnicodeUTF8));
-        actionOpen_Colors->setText(QApplication::translate("tracking_window", "Open Colors...", 0, QApplication::UnicodeUTF8));
+        actionOpen_Colors->setText(QApplication::translate("tracking_window", "Open Tract Colors...", 0, QApplication::UnicodeUTF8));
         actionSave_Voxel_Data_As->setText(QApplication::translate("tracking_window", "Save &Region Data As...", 0, QApplication::UnicodeUTF8));
         actionTDI_Diffusion_Space->setText(QApplication::translate("tracking_window", "Diffusion Space...", 0, QApplication::UnicodeUTF8));
         actionTDI_Import_Slice_Space->setText(QApplication::translate("tracking_window", "Current Slice Space...", 0, QApplication::UnicodeUTF8));
@@ -1680,8 +1691,9 @@ public:
         actionRegion_statistics->setText(QApplication::translate("tracking_window", "Statistics...", 0, QApplication::UnicodeUTF8));
         actionManual_Registration->setText(QApplication::translate("tracking_window", "Background Registration...", 0, QApplication::UnicodeUTF8));
         actionConnectometry->setText(QApplication::translate("tracking_window", "Connectometry...", 0, QApplication::UnicodeUTF8));
-        actionTract_Analysis_Report->setText(QApplication::translate("tracking_window", "Tract Analysis Report", 0, QApplication::UnicodeUTF8));
+        actionTract_Analysis_Report->setText(QApplication::translate("tracking_window", "Tract Analysis Report...", 0, QApplication::UnicodeUTF8));
         actionSave_End_Points_As->setText(QApplication::translate("tracking_window", "Save End Points As...", 0, QApplication::UnicodeUTF8));
+        actionConnectivity_matrix->setText(QApplication::translate("tracking_window", "Connectivity matrix...", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)
@@ -1731,6 +1743,8 @@ public:
         menuSave->setTitle(QApplication::translate("tracking_window", "Save Index", 0, QApplication::UnicodeUTF8));
         menuClustering->setTitle(QApplication::translate("tracking_window", "Clustering", 0, QApplication::UnicodeUTF8));
         menuExport_Tract_Density->setTitle(QApplication::translate("tracking_window", "Export Tract Density", 0, QApplication::UnicodeUTF8));
+        menuTract_Color->setTitle(QApplication::translate("tracking_window", "Tract Color", 0, QApplication::UnicodeUTF8));
+        menuSave_Tracts->setTitle(QApplication::translate("tracking_window", "Save Tracts", 0, QApplication::UnicodeUTF8));
         menu_Edit->setTitle(QApplication::translate("tracking_window", "&Edit", 0, QApplication::UnicodeUTF8));
         menu_View->setTitle(QApplication::translate("tracking_window", "&View", 0, QApplication::UnicodeUTF8));
         menu_Slices->setTitle(QApplication::translate("tracking_window", "&Slices", 0, QApplication::UnicodeUTF8));

@@ -811,6 +811,7 @@
      <property name="title">
       <string>Clustering</string>
      </property>
+     <addaction name="actionOpen_Cluster_Labels"/>
      <addaction name="actionK_means"/>
      <addaction name="actionEM"/>
      <addaction name="actionHierarchical"/>
@@ -823,10 +824,28 @@
      <addaction name="actionTDI_Subvoxel_Diffusion_Space"/>
      <addaction name="actionTDI_Import_Slice_Space"/>
     </widget>
+    <widget class="QMenu" name="menuTract_Color">
+     <property name="title">
+      <string>Tract Color</string>
+     </property>
+     <addaction name="actionSet_Color"/>
+     <addaction name="actionOpen_Colors"/>
+     <addaction name="actionSave_Tracts_Colors_As"/>
+    </widget>
+    <widget class="QMenu" name="menuSave_Tracts">
+     <property name="title">
+      <string>Save Tracts</string>
+     </property>
+     <addaction name="actionSaveTractAs"/>
+     <addaction name="actionSave_Tracts_in_Current_Mapping"/>
+     <addaction name="actionSave_Tracts_in_MNI_space"/>
+     <addaction name="actionSave_All_Tracts_As"/>
+     <addaction name="separator"/>
+     <addaction name="actionSave_End_Points_As"/>
+     <addaction name="actionSave_Endpoints_in_Current_Mapping"/>
+    </widget>
     <addaction name="actionOpenTract"/>
-    <addaction name="actionSaveTractAs"/>
-    <addaction name="actionSave_All_Tracts_As"/>
-    <addaction name="actionSave_End_Points_As"/>
+    <addaction name="menuSave_Tracts"/>
     <addaction name="menuSave"/>
     <addaction name="menuExport_Tract_Density"/>
     <addaction name="separator"/>
@@ -837,17 +856,11 @@
     <addaction name="actionEndpoints_to_seeding"/>
     <addaction name="actionTracts_to_seeds"/>
     <addaction name="separator"/>
-    <addaction name="actionSet_Color"/>
-    <addaction name="actionOpen_Colors"/>
-    <addaction name="separator"/>
-    <addaction name="actionOpen_Cluster_Labels"/>
+    <addaction name="menuTract_Color"/>
     <addaction name="menuClustering"/>
     <addaction name="separator"/>
-    <addaction name="actionSave_Tracts_Colors_As"/>
-    <addaction name="actionSave_Tracts_in_Current_Mapping"/>
-    <addaction name="actionSave_Tracts_in_MNI_space"/>
-    <addaction name="actionSave_Endpoints_in_Current_Mapping"/>
-    <addaction name="separator"/>
+    <addaction name="actionTract_Analysis_Report"/>
+    <addaction name="actionConnectivity_matrix"/>
     <addaction name="actionStatistics"/>
    </widget>
    <widget class="QMenu" name="menu_Edit">
@@ -883,7 +896,6 @@
     <addaction name="actionSave_Left_Right_3D_Image"/>
     <addaction name="actionCopy_to_clipboard"/>
     <addaction name="separator"/>
-    <addaction name="actionTract_Analysis_Report"/>
     <addaction name="actionManual_Registration"/>
     <addaction name="actionConnectometry"/>
     <addaction name="separator"/>
@@ -2145,7 +2157,7 @@
      <normaloff>:/icons/icons/new.xpm</normaloff>:/icons/icons/new.xpm</iconset>
    </property>
    <property name="text">
-    <string>&amp;New</string>
+    <string>&amp;New Region</string>
    </property>
   </action>
   <action name="actionOpenRegion">
@@ -2154,7 +2166,7 @@
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>&amp;Open...</string>
+    <string>&amp;Open Region...</string>
    </property>
   </action>
   <action name="actionSaveRegionAs">
@@ -2163,7 +2175,7 @@
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save &amp;As...</string>
+    <string>Save Region &amp;As...</string>
    </property>
   </action>
   <action name="actionDeleteRegion">
@@ -2172,7 +2184,7 @@
      <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
    </property>
    <property name="text">
-    <string>&amp;Delete</string>
+    <string>&amp;Delete Region</string>
    </property>
    <property name="font">
     <font>
@@ -2200,7 +2212,7 @@
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Tracts As...</string>
+    <string>Save Current Tracts As...</string>
    </property>
    <property name="font">
     <font>
@@ -2228,7 +2240,7 @@
      <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
    </property>
    <property name="text">
-    <string>Delete All</string>
+    <string>Delete All Regions</string>
    </property>
    <property name="font">
     <font>
@@ -2242,7 +2254,7 @@
      <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
    </property>
    <property name="text">
-    <string>Delete</string>
+    <string>Delete Current</string>
    </property>
    <property name="font">
     <font>
@@ -2600,7 +2612,7 @@
   </action>
   <action name="actionSet_Color">
    <property name="text">
-    <string>Set Color...</string>
+    <string>Set Tract Color...</string>
    </property>
   </action>
   <action name="actionSave_Tracts_Colors_As">
@@ -2618,7 +2630,7 @@
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Open Colors...</string>
+    <string>Open Tract Colors...</string>
    </property>
   </action>
   <action name="actionSave_Voxel_Data_As">
@@ -2798,7 +2810,7 @@
   </action>
   <action name="actionTract_Analysis_Report">
    <property name="text">
-    <string>Tract Analysis Report</string>
+    <string>Tract Analysis Report...</string>
    </property>
   </action>
   <action name="actionSave_End_Points_As">
@@ -2808,6 +2820,11 @@
    </property>
    <property name="text">
     <string>Save End Points As...</string>
+   </property>
+  </action>
+  <action name="actionConnectivity_matrix">
+   <property name="text">
+    <string>Connectivity matrix...</string>
    </property>
   </action>
  </widget>

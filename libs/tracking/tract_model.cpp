@@ -1187,3 +1187,53 @@ double TractModel::get_spin_volume(void)
     }
     return result;
 }
+
+void TractModel::get_connectivity_matrix(const std::vector<std::vector<image::vector<3,short> > >& regions,
+                             std::vector<std::vector<unsigned int> >& matrix) const
+{
+    matrix.clear();
+    matrix.resize(regions.size());
+    for(unsigned int index = 0;index < regions.size();++index)
+        matrix[index].resize(regions.size());
+
+    // create regions maps
+    std::vector<std::vector<short> > region_map(geometry.size());
+    {
+        std::vector<std::set<short> > regions_set(geometry.size());
+        for(unsigned int roi = 0;roi < regions.size();++roi)
+        {
+            for(unsigned int index = 0;index < regions[roi].size();++index)
+            {
+                image::vector<3,short> pos = regions[roi][index];
+                regions_set[image::pixel_index<3>(pos[0],pos[1],pos[2],geometry).index()].insert(roi);
+            }
+        }
+
+        for(unsigned int index = 0;index < geometry.size();++index)
+            if(!regions_set[index].empty())
+                region_map[index] = std::vector<short>(regions_set[index].begin(),regions_set[index].end());
+    }
+
+    for(unsigned int index = 0;index < tract_data.size();++index)
+    {
+        std::vector<unsigned char> has_region(regions.size());
+        for(unsigned int ptr = 0;ptr < tract_data[index].size();ptr += 3)
+        {
+            unsigned int pos = image::pixel_index<3>(std::floor(tract_data[index][ptr]+0.5),
+                                                     std::floor(tract_data[index][ptr+1]+0.5),
+                                                     std::floor(tract_data[index][ptr+2]+0.5),geometry).index();
+            for(unsigned int j = 0;j < region_map[pos].size();++j)
+                has_region[region_map[pos][j]] = 1;
+        }
+        std::vector<unsigned int> region_list;
+        for(unsigned int i = 0;i < has_region.size();++i)
+            if(has_region[i])
+                region_list.push_back(i);
+        for(unsigned int i = 0;i < region_list.size();++i)
+            for(unsigned int j = i+1;j < region_list.size();++j)
+            {
+                ++matrix[region_list[i]][region_list[j]];
+                ++matrix[region_list[j]][region_list[i]];
+            }
+    }
+}

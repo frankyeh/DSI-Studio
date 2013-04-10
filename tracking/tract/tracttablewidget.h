@@ -67,6 +67,7 @@ public slots:
     void stop_tracking(void);
     void assign_colors(void);
     void show_tracts_statistics(void);
+
 };
 
 #endif // TRACTTABLEWIDGET_H

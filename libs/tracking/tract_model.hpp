@@ -113,6 +113,9 @@ public:
         void get_tracts_fa(std::vector<std::vector<float> >& data);
         double get_spin_volume(void);
 
+        void get_connectivity_matrix(const std::vector<std::vector<image::vector<3,short> > >& regions,
+                                     std::vector<std::vector<unsigned int> >& matrix) const;
+
 };
 
 
