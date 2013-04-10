@@ -167,8 +167,8 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
                                  header.get_transformation()+12),inv_trans(16),convert(16);
             t.resize(16);
             t[15] = 1.0;
-            math::matrix_inverse(trans.begin(),inv_trans.begin(),math::dim<4,4>());
-            math::matrix_product(inv_trans.begin(),t.begin(),convert.begin(),math::dim<4,4>(),math::dim<4,4>());
+            math::matrix_inverse(t.begin(),inv_trans.begin(),math::dim<4,4>());
+            math::matrix_product(trans.begin(),inv_trans.begin(),convert.begin(),math::dim<4,4>(),math::dim<4,4>());
             LoadFromBuffer(from,convert);
             return true;
         }

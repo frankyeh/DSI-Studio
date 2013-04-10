@@ -309,9 +309,11 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
                              header.get_transformation()+12),inv_trans(16),convert(16);
         t.resize(16);
         t[15] = 1.0;
-        math::matrix_inverse(cur_tracking_window.handle->fib_data.trans_to_mni.begin(),
+        math::matrix_inverse(t.begin(),
                              inv_trans.begin(),math::dim<4,4>());
-        math::matrix_product(inv_trans.begin(),t.begin(),convert.begin(),math::dim<4,4>(),math::dim<4,4>());
+        math::matrix_product(cur_tracking_window.handle->fib_data.trans_to_mni.begin(),
+                             inv_trans.begin(),convert.begin(),math::dim<4,4>(),math::dim<4,4>());
+
         for(unsigned int value = 1;check_prog(value,value_map.size());++value)
             if(value_map[value])
             {
