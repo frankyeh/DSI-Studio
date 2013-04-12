@@ -129,5 +129,5 @@ public:
 };
 
 
-typedef image::io::nifti<gz_istream,gz_ostream> gz_nifti;
+typedef image::io::nifti_base<gz_istream,gz_ostream> gz_nifti;
 #endif // GZIP_INTERFACE_HPP
