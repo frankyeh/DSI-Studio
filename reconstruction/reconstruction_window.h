@@ -26,14 +26,14 @@ protected:
     void closeEvent(QCloseEvent *event);
 private:
     QGraphicsScene source;
-    image::basic_image<image::rgb_color> buffer_source;
+    image::color_image buffer_source;
     QImage source_image;
     float max_source_value,source_ratio;
 
     void load_b_table(void);
 private:
     QGraphicsScene scene;
-    image::basic_image<image::rgb_color> buffer;
+    image::color_image buffer;
     QImage slice_image;
 private:
     Ui::reconstruction_window *ui;

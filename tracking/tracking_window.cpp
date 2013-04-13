@@ -736,7 +736,8 @@ void tracking_window::on_actionInsert_T1_T2_triggered()
     handle->fib_data.view_item.push_back(handle->fib_data.view_item[0]);
     handle->fib_data.view_item.back().name = std::string("slice:")+QFileInfo(filenames[0]).baseName().toLocal8Bit().begin();
     handle->fib_data.view_item.back().is_overlay = false;
-    handle->fib_data.view_item.back().image_data = glWidget->roi_image_buf.back();
+    handle->fib_data.view_item.back().image_data = image::make_image(glWidget->roi_image.back().geometry(),
+                                                                     glWidget->roi_image_buf.back());
     handle->fib_data.view_item.back().set_scale(
                 glWidget->other_slices.back().source_images.begin(),
                 glWidget->other_slices.back().source_images.end());
@@ -893,8 +894,8 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
     {
         float max_value = *std::max_element(handle->fib_data.fib.fa[0],handle->fib_data.fib.fa[0]+handle->fib_data.fib.dim.size());
         ui->fa_threshold->setRange(0.0,max_value*1.1);
-        ui->fa_threshold->setValue(0.6*image::segmentation::otsu_threshold(
-            image::basic_image<float, 3,image::const_pointer_memory<float> >(handle->fib_data.fib.fa[0],handle->fib_data.fib.dim)));
+        ui->fa_threshold->setValue(0.6*image::segmentation::otsu_threshold(image::make_image(handle->fib_data.fib.dim,
+                                                                                             handle->fib_data.fib.fa[0])));
         ui->fa_threshold->setSingleStep(max_value/50.0);    
     }
 }

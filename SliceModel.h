@@ -17,7 +17,7 @@ public:
         SliceModel(void);
 public:
         virtual void get_slice(image::color_image& image,float contrast,float offset) const = 0;
-        virtual image::basic_image<float, 3,image::const_pointer_memory<float> > get_source(void) const = 0;
+        virtual image::const_pointer_image<float, 3> get_source(void) const = 0;
 public:
 public:
         template<typename input_type1,typename input_type2>
@@ -98,7 +98,7 @@ class ODFModel;
 class FibSliceModel : public SliceModel{
 public:
     ODFModel* handle;
-    image::basic_image<float, 3,image::const_pointer_memory<float> > source_images;
+    image::const_pointer_image<float,3> source_images;
     std::string view_name,overlay_name;
 public:
     FibSliceModel(ODFModel* new_handle);
@@ -109,7 +109,7 @@ public:
     }
 public:
     void get_slice(image::color_image& image,float contrast,float offset) const;
-    image::basic_image<float, 3,image::const_pointer_memory<float> > get_source(void) const{return source_images;}
+    image::const_pointer_image<float, 3> get_source(void) const{return source_images;}
     void get_mosaic(image::color_image& image,
                     unsigned int mosaic_size,
                     float contrast,
@@ -138,7 +138,7 @@ public:
     CustomSliceModel(const gz_nifti& volume,const image::vector<3,float>& center_point_);
 public:
     void get_slice(image::color_image& image,float contrast,float offset) const;
-    image::basic_image<float, 3,image::const_pointer_memory<float> > get_source(void) const
+    image::const_pointer_image<float, 3> get_source(void) const
     {
         if(back_thread.get())
         {

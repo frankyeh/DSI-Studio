@@ -57,8 +57,8 @@ public:
 };
 
 // dimenion = 2
-typedef  LinearMapping<image::basic_image<float,2,image::const_pointer_memory<float> >,image::affine_transform<2> > lm2_type;
+typedef  LinearMapping<image::pointer_image<float,2>,image::affine_transform<2> > lm2_type;
 // dimenion = 3
-typedef  LinearMapping<image::basic_image<float,3,image::const_pointer_memory<float> >,image::affine_transform<3> > lm3_type;
+typedef  LinearMapping<image::pointer_image<float,3>,image::affine_transform<3> > lm3_type;
 
 #endif//linear_hpp

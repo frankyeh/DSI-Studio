@@ -21,8 +21,7 @@ FibSliceModel::FibSliceModel(ODFModel* handle_):handle(handle_)
     FibData& fib_data = handle->fib_data;
     geometry = fib_data.dim;
     voxel_size = fib_data.vs;
-    source_images = fib_data.fib.fa[0];
-    source_images.resize(geometry);
+    source_images = image::make_image(geometry,fib_data.fib.fa[0]);
     center_point = geometry;
     center_point -= 1.0;
     center_point /= 2.0;

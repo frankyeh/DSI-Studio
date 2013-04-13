@@ -27,7 +27,7 @@ private:
     image::basic_image<float,3> data;
 private:
     QGraphicsScene source;
-    image::basic_image<image::rgb_color> buffer;
+    image::color_image buffer;
     QImage source_image;
     float max_source_value,source_ratio;
 

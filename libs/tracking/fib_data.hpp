@@ -383,7 +383,7 @@ public:
 struct ViewItem
 {
     std::string name;
-    image::basic_image<float, 3,image::const_pointer_memory<float> > image_data;
+    image::const_pointer_image<float,3> image_data;
     bool is_overlay;
     float max_value;
     float min_value;
@@ -433,8 +433,7 @@ public:
             view_item.push_back(ViewItem());
             view_item.back().name =  fib.fa.size() == 1 ? "fa0":"qa0";
             view_item.back().name[2] += index;
-            view_item.back().image_data = fib.fa[index];
-            view_item.back().image_data.resize(fib.dim);
+            view_item.back().image_data = image::make_image(fib.dim,fib.fa[index]);
             view_item.back().is_overlay = false;
             view_item.back().set_scale(fib.fa[index],fib.fa[index]+fib.dim.size());
         }
@@ -497,8 +496,7 @@ public:
                     view_item.back().is_overlay = true;
                     break;
                 }
-            view_item.back().image_data = buf;
-            view_item.back().image_data.resize(fib.dim);
+            view_item.back().image_data = image::make_image(fib.dim,buf);
             view_item.back().set_scale(buf,buf+total_size);
 
         }

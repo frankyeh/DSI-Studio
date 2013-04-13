@@ -113,7 +113,7 @@ public:
     }
 
     void thread_run(unsigned char thread_index,unsigned char thread_count,
-                    const std::vector<unsigned char>& mask)
+                    const image::basic_image<unsigned char,3>& mask)
     {
         unsigned int sum_mask = std::accumulate(mask.begin(),mask.end(),(unsigned int)0)/thread_count;
         unsigned int cur = 0;

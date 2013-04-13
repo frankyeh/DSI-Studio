@@ -340,7 +340,7 @@ void ROIRegion::get_quantitative_data(ODFModel* handle,std::vector<float>& data)
         if(data_index > 0 && data_index < handle->fib_data.other_mapping_index)
             continue;
         float sum = 0.0,sum2 = 0.0;
-        image::basic_image<float, 3,image::const_pointer_memory<float> > I = handle->fib_data.view_item[data_index].image_data;
+        image::const_pointer_image<float, 3> I(handle->fib_data.view_item[data_index].image_data);
         for(unsigned int index = 0;index < pos_index.size();++index)
         {
             float value = I[pos_index[index]];

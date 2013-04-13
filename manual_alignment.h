@@ -19,7 +19,7 @@ private:
     image::basic_image<float,3> from,to,warped_from;
     image::affine_transform<3,float> arg;
     QGraphicsScene scene[3];
-    image::basic_image<image::rgb_color> buffer[3];
+    image::color_image buffer[3];
     QImage slice_image[3];
 private:
     unsigned char thread_terminated;

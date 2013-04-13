@@ -50,7 +50,7 @@ protected:
             return (2*std::cos(theta)+(theta-2.0/theta)*std::sin(theta))/theta/theta;
     }
 protected:
-    typedef image::basic_image<unsigned short,3,image::const_pointer_memory<unsigned short> > point_image_type;
+    typedef image::const_pointer_image<unsigned short,3> point_image_type;
     std::vector<point_image_type> ptr_images;
     std::vector<image::vector<3,double> > q_vectors_time;
 
@@ -248,7 +248,7 @@ public:
 
         ptr_images.clear();
         for (unsigned int index = 0; index < voxel.image_model->dwi_data.size(); ++index)
-            ptr_images.push_back(point_image_type((const unsigned short*)voxel.image_model->dwi_data[index],src_geo));
+            ptr_images.push_back(image::make_image(src_geo,voxel.image_model->dwi_data[index]));
 
 
         max_accumulated_qa = 0;

@@ -33,8 +33,7 @@ void vbc_database::read_template(ODFModel* fib_file_)
         findex[index] = fib_file->fib_data.fib.findex[index];
         fa[index] = fib_file->fib_data.fib.fa[index];
     }
-    fiber_threshold = 0.6*image::segmentation::otsu_threshold(
-        image::basic_image<float, 3,image::const_pointer_memory<float> >(fa[0],dim));
+    fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(dim,fa[0]));
     vi2si.resize(dim.size());
     for(unsigned int index = 0;index < dim.size();++index)
     {

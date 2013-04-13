@@ -172,8 +172,7 @@ int trk(int ac, char *av[])
     if (vm.count("fa_threshold") )
         tract_model.get_fib().threshold = vm["fa_threshold"].as<float>();
     else
-        tract_model.get_fib().threshold = 0.6*image::segmentation::otsu_threshold(
-                image::basic_image<float, 3,image::const_pointer_memory<float> >(fa0,geometry));
+        tract_model.get_fib().threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(geometry,fa0));
     tract_model.get_fib().cull_cos_angle = std::cos(vm["turning_angle"].as<float>()*3.1415926/180.0);
 
 

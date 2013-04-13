@@ -123,8 +123,7 @@ int ana(int ac, char *av[])
         in >> report_tag >> index_name >> profile_dir >> bandwidth;
         std::vector<float> values,data_profile;
 
-        float threshold = 0.6*image::segmentation::otsu_threshold(
-                    image::basic_image<float, 3,image::const_pointer_memory<float> >(handle->fib_data.fib.fa[0],geometry));
+        float threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(geometry,handle->fib_data.fib.fa[0]));
         tract_model.get_fib().threshold = threshold;
         tract_model.get_fib().cull_cos_angle = std::cos(60.0*3.1415926/180.0);
 
