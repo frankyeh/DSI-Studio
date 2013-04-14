@@ -274,24 +274,6 @@ public:
 
     }
 };
-class RecordFA  : public BaseProcess
-{
-public:
-    virtual void init(Voxel& voxel)
-    {
-        voxel.fa_map.resize(voxel.dim);
-        std::fill(voxel.fa_map.begin(),voxel.fa_map.end(),0.0);
-    }
-    virtual void run(Voxel& voxel, VoxelData& data)
-    {
-        voxel.fa_map[data.voxel_index] = data.fa[0];
-    }
-    virtual void end(Voxel& voxel,MatFile& mat_writer)
-    {
-
-    }
-};
-
 
 struct SaveFA : public BaseProcess
 {

@@ -65,33 +65,16 @@ public:
         begin_prog("normalization");
 
         VG = fa_template_imp.I;
-        VF = voxel.fa_map;
+        VF = voxel.qa_map;
 
-        image::filter::gaussian(voxel.fa_map);
-        image::filter::gaussian(voxel.fa_map);
-        image::filter::gaussian(voxel.qa_map);
-        image::filter::gaussian(voxel.qa_map);
-        image::normalize(voxel.fa_map,1.0);
-        image::normalize(voxel.qa_map,1.0);
-        for(unsigned int index = 0;index < voxel.qa_map.size();++index)
-            if(voxel.qa_map[index] == 0.0 || voxel.fa_map[index]/voxel.qa_map[index] > 2.5)
-                VF[index] = 0.0;
         image::filter::gaussian(VF);
+
+        VF -= image::mean(VF.begin(),VF.begin()+VF.width())*2.0;
+        image::lower_threshold(VF,0.0);
 
         src_geo = VF.geometry();
 
         image::normalize(VF,1.0);
-        //VF.save_to_file<image::io::nifti<> >("VF.nii");
-
-        image::normalize(VG,1.0);
-
-        // get rid of the gray matters
-        image::minus_constant(VF.begin(),VF.end(),0.3);
-        image::lower_threshold(VF.begin(),VF.end(),0.00);
-        image::normalize(VF,1.0);
-
-        image::minus_constant(VG.begin(),VG.end(),0.3);
-        image::lower_threshold(VG.begin(),VG.end(),0.00);
         image::normalize(VG,1.0);
 
 
@@ -119,6 +102,10 @@ public:
         set_title("linear registration");
         begin_prog("conducting registration");
 
+        //VG.save_to_file<image::io::nifti>("VG.nii");
+        //VF.save_to_file<image::io::nifti>("VF.nii");
+
+
         if(voxel.qsdr_trans.data[0] != 0.0) // has manual reg data
             affine = voxel.qsdr_trans;
         else
@@ -132,8 +119,9 @@ public:
         }
         image::basic_image<float,3> VFF(VG.geometry());
         image::resample(VF,VFF,affine);
-        //VFF.save_to_file<image::io::nifti<> >("VFF.nii");
-        //VG.save_to_file<image::io::nifti<> >("VG.nii");
+
+        //VFF.save_to_file<image::io::nifti>("VFF.nii");
+
         {
             switch(voxel.reg_method)
             {
@@ -156,9 +144,7 @@ public:
                 }
 
             //std::copy(y.begin(),y.end(),VFF.begin());
-            //VFF.save_to_file<image::io::nifti<> >("VFF.nii");
-            //VG.save_to_file<image::io::nifti<> >("VG.nii");
-            //fa_template_imp.I.save_to_file<image::io::nifti<> >("I.nii");
+            //VFF.save_to_file<image::io::nifti>("nVFF.nii");
 
             R2 = image::correlation(VG.begin(),VG.end(),y.begin());
             R2 *= R2;
@@ -215,6 +201,7 @@ public:
         {
             // set the current mask to template space
             voxel.image_model->set_dimension(des_geo[0],des_geo[1],des_geo[2]);
+            std::fill(voxel.image_model->mask.begin(),voxel.image_model->mask.end(),0);
             for(image::pixel_index<3> index;des_geo.is_valid(index);index.next(des_geo))
             {
                 image::vector<3,float> mni_pos(index);
@@ -223,11 +210,11 @@ public:
                 mni_pos[1] /= VGvs[1];
                 mni_pos[2] /= VGvs[2];
                 mni_pos += des_offset;
-                voxel.image_model->mask[index.index()] =
-                        fa_template_imp.I.at(
-                            std::floor(mni_pos[0]+0.5),
-                            std::floor(mni_pos[1]+0.5),
-                            std::floor(mni_pos[2]+0.5)) > 0.0? 1: 0;
+                mni_pos += 0.5;
+                mni_pos.floor();
+                if(fa_template_imp.I.geometry().is_valid(mni_pos) &&
+                   fa_template_imp.I.at(mni_pos[0],mni_pos[1],mni_pos[2]) > 0.0)
+                    voxel.image_model->mask[index.index()] = 1;
             }
         }
 

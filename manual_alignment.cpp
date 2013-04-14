@@ -11,14 +11,13 @@ void run_reg(const image::basic_image<float,3>& from,
     image::reg::linear(from,to,*arg_min,image::reg::affine,cost_func(),*terminated,0.01);
 }
 manual_alignment::manual_alignment(QWidget *parent,
-                                   const image::basic_image<float,3>& from_,
-                                   const image::basic_image<float,3>& to_,
+                                   image::basic_image<float,3> from_,
+                                   image::basic_image<float,3> to_,
                                    const image::affine_transform<3,float>& arg_) :
-    QDialog(parent),
-    ui(new Ui::manual_alignment),
-    from(from_),to(to_),arg(arg_)
+    QDialog(parent),ui(new Ui::manual_alignment),arg(arg_)
 {
-
+    from.swap(from_);
+    to.swap(to_);
     image::filter::gaussian(from);
     from -= image::segmentation::otsu_threshold(from);
     image::lower_threshold(from,0.0);

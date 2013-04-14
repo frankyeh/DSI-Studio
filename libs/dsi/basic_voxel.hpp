@@ -74,7 +74,7 @@ public:
     float z0;
     // other information for second pass processing
     std::vector<float> response_function,free_water_diffusion;
-    image::basic_image<float,3> qa_map,fa_map;
+    image::basic_image<float,3> qa_map;
     float reponse_function_scaling;
 public:// for template creation
     std::vector<std::vector<float> > template_odfs;

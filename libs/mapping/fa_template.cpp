@@ -12,11 +12,14 @@ bool fa_template::load_from_file(const char* file_name)
         tran[15] = 1.0;
         if(tran[0] < 0)
         {
+            tran[0] = -tran[0];
+            tran[3] -= (I.width()-1)*tran[0];
             if(tran[5] > 0)
-            {
                 image::flip_y(I);
-                tran[0] = -tran[0];
-                tran[3] -= (I.width()-1)*tran[0];
+            else
+            {
+                tran[5] = -tran[5];
+                tran[7] -= (I.height()-1)*tran[5];
             }
         }
         else

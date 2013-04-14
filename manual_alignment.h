@@ -31,8 +31,8 @@ public:
     image::transformation_matrix<3,float> T;
     image::transformation_matrix<3,float> iT;
     explicit manual_alignment(QWidget *parent,
-        const image::basic_image<float,3>& from_,
-        const image::basic_image<float,3>& to_,
+        image::basic_image<float,3> from_,
+        image::basic_image<float,3> to_,
         const image::affine_transform<3,float>& arg);
     ~manual_alignment();
     void connect_arg_update();

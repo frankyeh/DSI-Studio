@@ -51,10 +51,10 @@ std::string program_base;
 bool load_fa_template(void)
 {
     std::string fa_template_path = program_base;
-    fa_template_path += "FMRIB58_FA_1mm.nii.gz";
+    fa_template_path += "NTU90_QA.nii.gz";
     if(!fa_template_imp.load_from_file(fa_template_path.c_str()))
     {
-        std::string error_str = "Cannot find the fa template file at ";
+        std::string error_str = "Cannot find the qa template file at ";
         error_str += fa_template_path;
         QMessageBox::information(0,"Error",error_str.c_str(),0);
         return false;

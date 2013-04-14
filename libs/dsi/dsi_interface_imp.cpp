@@ -100,8 +100,6 @@ typedef estimation_type<boost::mpl::vector<
 // for ODF deconvolution
 typedef boost::mpl::vector<
     ReadDWIData,
-    Dwi2Tensor,
-    RecordFA,
     CorrectB0,
     QSpace2Odf,
     DetermineFiberDirections,
