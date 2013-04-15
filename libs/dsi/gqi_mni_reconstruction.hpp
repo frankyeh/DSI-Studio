@@ -61,15 +61,14 @@ public:
            voxel.vs[1] == 0.0 ||
            voxel.vs[2] == 0.0)
             throw std::runtime_error("No spatial information found in src file. Recreate src file or contact developer for assistance");
-
+        bool export_intermediate = false;
         begin_prog("normalization");
 
         VG = fa_template_imp.I;
         VF = voxel.qa_map;
 
         image::filter::gaussian(VF);
-
-        VF -= image::mean(VF.begin(),VF.begin()+VF.width())*2.0;
+        VF -= image::segmentation::otsu_threshold(VF);
         image::lower_threshold(VF,0.0);
 
         src_geo = VF.geometry();
@@ -102,9 +101,11 @@ public:
         set_title("linear registration");
         begin_prog("conducting registration");
 
-        //VG.save_to_file<image::io::nifti>("VG.nii");
-        //VF.save_to_file<image::io::nifti>("VF.nii");
-
+        if(export_intermediate)
+        {
+            VG.save_to_file<image::io::nifti>("VG.nii");
+            VF.save_to_file<image::io::nifti>("VF.nii");
+        }
 
         if(voxel.qsdr_trans.data[0] != 0.0) // has manual reg data
             affine = voxel.qsdr_trans;
@@ -120,7 +121,8 @@ public:
         image::basic_image<float,3> VFF(VG.geometry());
         image::resample(VF,VFF,affine);
 
-        //VFF.save_to_file<image::io::nifti>("VFF.nii");
+        if(export_intermediate)
+            VFF.save_to_file<image::io::nifti>("VFF.nii");
 
         {
             switch(voxel.reg_method)
@@ -134,7 +136,7 @@ public:
             }
 
             //calculate the goodness of fit
-            std::vector<float> y(VG.size());
+            image::basic_image<float,3> y(VG.geometry());
             for(image::pixel_index<3> index;VG.geometry().is_valid(index);index.next(VG.geometry()))
                 if(fa_template_imp.I[index.index()] > 0.0)
                 {
@@ -143,8 +145,8 @@ public:
                     image::linear_estimate(VFF,pos,y[index.index()]);
                 }
 
-            //std::copy(y.begin(),y.end(),VFF.begin());
-            //VFF.save_to_file<image::io::nifti>("nVFF.nii");
+            if(export_intermediate)
+                y.save_to_file<image::io::nifti>("nVFF.nii");
 
             R2 = image::correlation(VG.begin(),VG.end(),y.begin());
             R2 *= R2;
