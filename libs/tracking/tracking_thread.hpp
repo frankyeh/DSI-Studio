@@ -120,9 +120,9 @@ public:
                 }
                 else
                 {
-                    iteration+=thread_count;
                     // this ensure consistency
                     boost::mutex::scoped_lock lock(lock_seed_function);
+                    iteration+=thread_count;
                     unsigned int i = rand_gen()*((float)seeds.size()-1.0);
                     image::vector<3,float> pos;
                     pos[0] = (float)seeds[i].x() + rand_gen()-0.5;
@@ -138,8 +138,6 @@ public:
                     ++tract_count[thread_id];
                     local_track_buffer.push_back(std::vector<float>(result,result+point_count+point_count+point_count));
                 }
-
-
                 if((iteration & 0x00000FFF) == 0x00000FFF && !local_track_buffer.empty())
                     push_tracts(local_track_buffer);
             }
@@ -204,6 +202,9 @@ public:
 
     void run(const fiber_orientations& fib,unsigned int thread_count,unsigned int termination_count,bool wait = false)
     {
+        // to ensure consistency, seed initialization with all orientation only fits with single thread
+        if(initial_direction == 2)
+            thread_count = 1;
         param.step_size_in_voxel[0] = param.step_size/fib.vs[0];
         param.step_size_in_voxel[1] = param.step_size/fib.vs[1];
         param.step_size_in_voxel[2] = param.step_size/fib.vs[2];

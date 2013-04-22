@@ -7,9 +7,7 @@ QT += core \
 #CONFIG += console
 TARGET = dsi_studio
 TEMPLATE = app
-win32{
 INCLUDEPATH += C:/frank/myprog/include
-}
 
 win32-g++ {
 LIBS += -L. -lboost_thread-mgw45-mt-1_45.dll \
