@@ -17,11 +17,13 @@ bool DwiHeader::open(const char* filename)
     }
     else
     {
-        image::io::volume analyze_header;
+        image::io::nifti analyze_header;
         if (!analyze_header.load_from_file(filename))
             return false;
         analyze_header >> image;
+        image::flip_xy(image);
         analyze_header.get_voxel_size(voxel_size);
+        return true;
     }
 
     unsigned char man_id = 0;

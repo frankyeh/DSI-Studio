@@ -279,6 +279,19 @@ bool load_multiple_slice_dicom(QStringList file_list,boost::ptr_vector<DwiHeader
     return true;
 }
 
+bool load_3d_series(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files)
+{
+    for (unsigned int index = 0;check_prog(index,file_list.size());++index)
+    {
+        std::auto_ptr<DwiHeader> new_file(new DwiHeader);
+        if (!new_file->open(file_list[index].toLocal8Bit().begin()))
+            continue;
+        new_file->file_name = file_list[index].toLocal8Bit().begin();
+        dwi_files.push_back(new_file.release());
+    }
+    return !dwi_files.empty();
+}
+
 bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files)
 {
     if(file_list.size() == 1 && QFileInfo(file_list[0]).isDir()) // single folder with DICOM files
@@ -311,20 +324,13 @@ bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_file
            !load_4d_nii(file_list[0].toLocal8Bit().begin(),dwi_files) &&
            !load_4d_2dseq(file_list[0].toLocal8Bit().begin(),dwi_files))
             return false;
+         return !dwi_files.empty();
     }
-    else
-        if(!load_multiple_slice_dicom(file_list,dwi_files))
-        {
-            for (unsigned int index = 0;check_prog(index,file_list.size());++index)
-            {
-                std::auto_ptr<DwiHeader> new_file(new DwiHeader);
-                if (!new_file->open(file_list[index].toLocal8Bit().begin()))
-                    continue;
-                new_file->file_name = file_list[index].toLocal8Bit().begin();
-                dwi_files.push_back(new_file.release());
-            }
-        }
-    return !dwi_files.empty();
+
+    if(load_multiple_slice_dicom(file_list,dwi_files))
+        return !dwi_files.empty();
+
+    return load_3d_series(file_list,dwi_files);
 }
 
 void dicom_parser::load_files(QStringList file_list)
