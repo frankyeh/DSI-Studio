@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Wed Apr 10 12:41:28 2013
+** Created: Thu Apr 25 22:39:41 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -1679,7 +1679,7 @@ public:
         actionSave_Anisotrpy_Map_as->setText(QApplication::translate("tracking_window", "Save anisotrpy map As...", 0, QApplication::UnicodeUTF8));
         actionRestore_window_layout->setText(QApplication::translate("tracking_window", "Restore window layout", 0, QApplication::UnicodeUTF8));
         actionSave_Endpoints_in_Current_Mapping->setText(QApplication::translate("tracking_window", "Save Endpoints InT1/T2 space...", 0, QApplication::UnicodeUTF8));
-        actionMove_Object->setText(QApplication::translate("tracking_window", "Move Onject", 0, QApplication::UnicodeUTF8));
+        actionMove_Object->setText(QApplication::translate("tracking_window", "Move Object", 0, QApplication::UnicodeUTF8));
         actionMove_Object->setShortcut(QApplication::translate("tracking_window", "Ctrl+A", 0, QApplication::UnicodeUTF8));
         actionSave_Report_as->setText(QApplication::translate("tracking_window", "Save Report As...", 0, QApplication::UnicodeUTF8));
         actionSave_Tracts_in_MNI_space->setText(QApplication::translate("tracking_window", "Save Tracts In MNI Space...", 0, QApplication::UnicodeUTF8));
@@ -1714,10 +1714,19 @@ public:
         label_16->setText(QApplication::translate("tracking_window", "Contrast", 0, QApplication::UnicodeUTF8));
         label_17->setText(QApplication::translate("tracking_window", "Offset", 0, QApplication::UnicodeUTF8));
         glSagCheck->setText(QString());
+#ifndef QT_NO_TOOLTIP
+        glSagView->setToolTip(QApplication::translate("tracking_window", "Click to rotate to sagittal  view", 0, QApplication::UnicodeUTF8));
+#endif // QT_NO_TOOLTIP
         glSagView->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
         glCorCheck->setText(QString());
+#ifndef QT_NO_TOOLTIP
+        glCorView->setToolTip(QApplication::translate("tracking_window", "Click to rotate to coronal view", 0, QApplication::UnicodeUTF8));
+#endif // QT_NO_TOOLTIP
         glCorView->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
         glAxiCheck->setText(QString());
+#ifndef QT_NO_TOOLTIP
+        glAxiView->setToolTip(QApplication::translate("tracking_window", "Click to rotate to axial view", 0, QApplication::UnicodeUTF8));
+#endif // QT_NO_TOOLTIP
         glAxiView->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
         regionDockWidget->setWindowTitle(QApplication::translate("tracking_window", "Region List", 0, QApplication::UnicodeUTF8));
         tbNewRegion->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
