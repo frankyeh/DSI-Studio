@@ -58,6 +58,10 @@ int ana(int ac, char *av[])
     image::vector<3> voxel_size = handle->fib_data.vs;
 
     TractModel tract_model(handle.get(),geometry,voxel_size);
+    float threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(geometry,handle->fib_data.fib.fa[0]));
+    tract_model.get_fib().threshold = threshold;
+    tract_model.get_fib().cull_cos_angle = std::cos(60.0*3.1415926/180.0);
+
     std::string file_name = vm["tract"].as<std::string>();
     {
         out << "loading " << file_name.c_str() << "..." <<std::endl;
@@ -122,11 +126,6 @@ int ana(int ac, char *av[])
         int profile_dir = 0,bandwidth = 0;
         in >> report_tag >> index_name >> profile_dir >> bandwidth;
         std::vector<float> values,data_profile;
-
-        float threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(geometry,handle->fib_data.fib.fa[0]));
-        tract_model.get_fib().threshold = threshold;
-        tract_model.get_fib().cull_cos_angle = std::cos(60.0*3.1415926/180.0);
-
         // check index
         if(index_name != "qa" && index_name != "fa" &&  handle->get_name_index(index_name) == handle->fib_data.view_item.size())
         {
