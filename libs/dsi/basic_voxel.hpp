@@ -67,6 +67,10 @@ public:// parameters;
     bool r2_weighted;// used in GQI only
     unsigned int max_fiber_number;
     std::vector<std::string> file_list;
+
+    // used in QSDR only
+    bool output_jacobian;
+    bool output_mapping;
 public:
     unsigned char reg_method;// used in QSDR
     image::transformation_matrix<3,float> qsdr_trans;

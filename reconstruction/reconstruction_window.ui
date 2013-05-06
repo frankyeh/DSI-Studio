@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>608</width>
-    <height>537</height>
+    <width>626</width>
+    <height>490</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -51,8 +51,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>608</width>
-         <height>453</height>
+         <width>626</width>
+         <height>406</height>
         </rect>
        </property>
        <attribute name="label">
@@ -197,8 +197,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>608</width>
-         <height>453</height>
+         <width>626</width>
+         <height>406</height>
         </rect>
        </property>
        <attribute name="label">
@@ -305,9 +305,9 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>0</y>
-         <width>591</width>
-         <height>469</height>
+         <y>-62</y>
+         <width>609</width>
+         <height>498</height>
         </rect>
        </property>
        <property name="minimumSize">
@@ -326,6 +326,12 @@
            <string>Reconstruction Method</string>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>6</number>
+           </property>
            <item>
             <widget class="QRadioButton" name="DTI">
              <property name="text">
@@ -378,41 +384,14 @@
           <property name="title">
            <string/>
           </property>
-          <layout class="QGridLayout" name="gridLayout_3">
-           <item row="0" column="1">
-            <layout class="QHBoxLayout" name="horizontalLayout_8">
-             <item>
-              <widget class="QLabel" name="label_8">
-               <property name="text">
-                <string>Output Resolution</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QDoubleSpinBox" name="mni_resolution">
-               <property name="maximumSize">
-                <size>
-                 <width>75</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="minimum">
-                <double>1.000000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>3.000000000000000</double>
-               </property>
-               <property name="singleStep">
-                <double>0.100000000000000</double>
-               </property>
-               <property name="value">
-                <double>2.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="0" column="0">
+          <layout class="QHBoxLayout" name="horizontalLayout_9">
+           <property name="topMargin">
+            <number>6</number>
+           </property>
+           <property name="bottomMargin">
+            <number>6</number>
+           </property>
+           <item>
             <layout class="QHBoxLayout" name="horizontalLayout_10">
              <property name="spacing">
               <number>0</number>
@@ -453,12 +432,51 @@
              </item>
             </layout>
            </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_8">
+             <item>
+              <widget class="QLabel" name="label_8">
+               <property name="text">
+                <string>Output Resolution</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QDoubleSpinBox" name="mni_resolution">
+               <property name="maximumSize">
+                <size>
+                 <width>75</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="minimum">
+                <double>1.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>3.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.100000000000000</double>
+               </property>
+               <property name="value">
+                <double>2.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
           </layout>
          </widget>
         </item>
         <item>
          <widget class="QGroupBox" name="DSIOption_2">
           <layout class="QHBoxLayout" name="DSIOption">
+           <property name="topMargin">
+            <number>6</number>
+           </property>
+           <property name="bottomMargin">
+            <number>6</number>
+           </property>
            <item>
             <widget class="QLabel" name="label_5">
              <property name="text">
@@ -491,6 +509,12 @@
         <item>
          <widget class="QGroupBox" name="QBIOption_2">
           <layout class="QHBoxLayout" name="QBIOption">
+           <property name="topMargin">
+            <number>6</number>
+           </property>
+           <property name="bottomMargin">
+            <number>6</number>
+           </property>
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_12">
              <item>
@@ -557,6 +581,12 @@
         <item>
          <widget class="QGroupBox" name="GQIOption_2">
           <layout class="QHBoxLayout" name="GQIOption">
+           <property name="topMargin">
+            <number>6</number>
+           </property>
+           <property name="bottomMargin">
+            <number>6</number>
+           </property>
            <item>
             <widget class="QLabel" name="label_7">
              <property name="text">
@@ -613,73 +643,170 @@
          </widget>
         </item>
         <item>
-         <widget class="QGroupBox" name="OptionGroupBox">
+         <layout class="QHBoxLayout" name="horizontalLayout_19">
+          <item>
+           <widget class="QPushButton" name="AdvancedOptions">
+            <property name="text">
+             <string>Advanced Options &gt;&gt;</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_6">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QWidget" name="AdvancedWidget" native="true">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+           <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
-          <property name="title">
-           <string>Options</string>
-          </property>
-          <layout class="QGridLayout" name="gridLayout">
-           <item row="7" column="0">
-            <widget class="QCheckBox" name="RecordODF">
-             <property name="text">
-              <string>Record ODF in the output file</string>
+          <layout class="QVBoxLayout" name="verticalLayout_7">
+           <property name="margin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QGroupBox" name="ODFSharpening">
+             <property name="title">
+              <string>ODF Sharpening</string>
              </property>
-            </widget>
-           </item>
-           <item row="7" column="1">
-            <widget class="QCheckBox" name="HalfSphere">
-             <property name="text">
-              <string>Half-sphere scheme</string>
-             </property>
-             <property name="checked">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <layout class="QHBoxLayout" name="horizontalLayout_14">
-             <property name="spacing">
-              <number>0</number>
-             </property>
-             <item>
-              <widget class="QLabel" name="label_16">
-               <property name="text">
-                <string>ODF sharpening</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QWidget" name="decom_panel" native="true">
-               <layout class="QHBoxLayout" name="horizontalLayout_5">
+             <layout class="QHBoxLayout" name="horizontalLayout_17">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>6</number>
+              </property>
+              <item>
+               <layout class="QHBoxLayout" name="horizontalLayout_14">
                 <property name="spacing">
                  <number>0</number>
                 </property>
-                <property name="margin">
-                 <number>0</number>
-                </property>
                 <item>
-                 <widget class="QLabel" name="label_12">
+                 <widget class="QComboBox" name="odf_sharpening">
                   <property name="maximumSize">
                    <size>
-                    <width>10</width>
+                    <width>16777215</width>
                     <height>16777215</height>
                    </size>
                   </property>
-                  <property name="text">
-                   <string>ϵ</string>
-                  </property>
+                  <item>
+                   <property name="text">
+                    <string>Off</string>
+                   </property>
+                  </item>
+                  <item>
+                   <property name="text">
+                    <string>Deconvolution</string>
+                   </property>
+                  </item>
+                  <item>
+                   <property name="text">
+                    <string>Decomposition</string>
+                   </property>
+                  </item>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QDoubleSpinBox" name="decom_fraction">
+                 <widget class="QWidget" name="decom_panel" native="true">
+                  <layout class="QHBoxLayout" name="horizontalLayout_5">
+                   <property name="spacing">
+                    <number>0</number>
+                   </property>
+                   <property name="margin">
+                    <number>0</number>
+                   </property>
+                   <item>
+                    <widget class="QLabel" name="label_12">
+                     <property name="maximumSize">
+                      <size>
+                       <width>10</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string>ϵ</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QDoubleSpinBox" name="decom_fraction">
+                     <property name="maximumSize">
+                      <size>
+                       <width>75</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
+                     <property name="minimum">
+                      <double>0.010000000000000</double>
+                     </property>
+                     <property name="maximum">
+                      <double>0.500000000000000</double>
+                     </property>
+                     <property name="singleStep">
+                      <double>0.050000000000000</double>
+                     </property>
+                     <property name="value">
+                      <double>0.050000000000000</double>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QLabel" name="label_11">
+                     <property name="maximumSize">
+                      <size>
+                       <width>10</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string>m</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QSpinBox" name="decom_m">
+                     <property name="maximumSize">
+                      <size>
+                       <width>35</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
+                     <property name="minimum">
+                      <number>3</number>
+                     </property>
+                     <property name="maximum">
+                      <number>20</number>
+                     </property>
+                     <property name="value">
+                      <number>10</number>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QDoubleSpinBox" name="decon_param">
                   <property name="maximumSize">
                    <size>
-                    <width>75</width>
+                    <width>45</width>
                     <height>16777215</height>
                    </size>
                   </property>
@@ -687,34 +814,228 @@
                    <double>0.010000000000000</double>
                   </property>
                   <property name="maximum">
-                   <double>0.500000000000000</double>
+                   <double>20.000000000000000</double>
                   </property>
                   <property name="singleStep">
-                   <double>0.050000000000000</double>
+                   <double>0.500000000000000</double>
                   </property>
                   <property name="value">
-                   <double>0.050000000000000</double>
+                   <double>3.000000000000000</double>
                   </property>
                  </widget>
                 </item>
+               </layout>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_3">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item>
+               <layout class="QHBoxLayout" name="xyz">
+                <property name="spacing">
+                 <number>0</number>
+                </property>
+                <property name="topMargin">
+                 <number>0</number>
+                </property>
                 <item>
-                 <widget class="QLabel" name="label_11">
-                  <property name="maximumSize">
-                   <size>
-                    <width>10</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
+                 <widget class="QWidget" name="xyz_widget" native="true">
+                  <layout class="QHBoxLayout" name="horizontalLayout_4">
+                   <property name="spacing">
+                    <number>0</number>
+                   </property>
+                   <property name="margin">
+                    <number>0</number>
+                   </property>
+                   <item>
+                    <widget class="QLabel" name="label_4">
+                     <property name="text">
+                      <string>Response Function Selection</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QComboBox" name="RFSelection">
+                     <property name="maximumSize">
+                      <size>
+                       <width>60</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
+                     <item>
+                      <property name="text">
+                       <string>Auto</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>Manual</string>
+                      </property>
+                     </item>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <widget class="QWidget" name="ODFSelection" native="true">
+                <layout class="QHBoxLayout" name="horizontalLayout_15">
+                 <property name="spacing">
+                  <number>0</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>7</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <widget class="QLabel" name="label_10">
+                   <property name="minimumSize">
+                    <size>
+                     <width>20</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>60</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="text">
+                    <string>at (x,y,z)=</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QSpinBox" name="x">
+                   <property name="maximumSize">
+                    <size>
+                     <width>35</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QSpinBox" name="y">
+                   <property name="maximumSize">
+                    <size>
+                     <width>35</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QSpinBox" name="z">
+                   <property name="maximumSize">
+                    <size>
+                     <width>35</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QGroupBox" name="Output">
+             <property name="title">
+              <string>Output in fib file</string>
+             </property>
+             <layout class="QHBoxLayout" name="horizontalLayout_16">
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>6</number>
+              </property>
+              <item>
+               <widget class="QCheckBox" name="RecordODF">
+                <property name="text">
+                 <string>Complete ODF</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="output_mapping">
+                <property name="text">
+                 <string>spatial mapping function</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="output_jacobian">
+                <property name="text">
+                 <string>Jacobian determinant</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_4">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QGroupBox" name="groupBox_2">
+             <property name="title">
+              <string>ODF Processing</string>
+             </property>
+             <layout class="QHBoxLayout" name="horizontalLayout_18">
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>6</number>
+              </property>
+              <item>
+               <layout class="QHBoxLayout" name="horizontalLayout_6">
+                <item>
+                 <widget class="QLabel" name="label_3">
                   <property name="text">
-                   <string>m</string>
+                   <string>Number of fibers resolved</string>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QSpinBox" name="decom_m">
+                 <widget class="QSpinBox" name="NumOfFibers">
                   <property name="maximumSize">
                    <size>
-                    <width>35</width>
+                    <width>75</width>
                     <height>16777215</height>
                    </size>
                   </property>
@@ -725,179 +1046,68 @@
                    <number>20</number>
                   </property>
                   <property name="value">
-                   <number>10</number>
+                   <number>5</number>
                   </property>
                  </widget>
                 </item>
                </layout>
-              </widget>
-             </item>
-             <item>
-              <widget class="QDoubleSpinBox" name="decon_param">
-               <property name="maximumSize">
-                <size>
-                 <width>45</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="minimum">
-                <double>0.010000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>20.000000000000000</double>
-               </property>
-               <property name="singleStep">
-                <double>0.500000000000000</double>
-               </property>
-               <property name="value">
-                <double>3.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="odf_sharpening">
-               <property name="maximumSize">
-                <size>
-                 <width>75</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <item>
-                <property name="text">
-                 <string>Off</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Deconvolution</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Decomposition</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="0" column="0">
-            <layout class="QHBoxLayout" name="horizontalLayout_3">
-             <item>
-              <widget class="QLabel" name="label_2">
-               <property name="text">
-                <string>ODF Tessellation</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="ODFDim">
-               <property name="maximumSize">
-                <size>
-                 <width>75</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="currentIndex">
-                <number>3</number>
-               </property>
-               <item>
-                <property name="text">
-                 <string>4-fold</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>5-fold</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>6-fold</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>8-fold</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="1" column="1">
-            <layout class="QHBoxLayout" name="xyz">
-             <property name="spacing">
-              <number>0</number>
-             </property>
-             <property name="topMargin">
-              <number>0</number>
-             </property>
-             <item>
-              <widget class="QWidget" name="xyz_widget" native="true">
-               <layout class="QHBoxLayout" name="horizontalLayout_4">
-                <property name="spacing">
-                 <number>0</number>
-                </property>
-                <property name="margin">
-                 <number>0</number>
-                </property>
+              </item>
+              <item>
+               <layout class="QHBoxLayout" name="horizontalLayout_3">
                 <item>
-                 <widget class="QLabel" name="label_10">
-                  <property name="minimumSize">
+                 <widget class="QLabel" name="label_2">
+                  <property name="text">
+                   <string>ODF Tessellation</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QComboBox" name="ODFDim">
+                  <property name="maximumSize">
                    <size>
-                    <width>100</width>
-                    <height>0</height>
+                    <width>75</width>
+                    <height>16777215</height>
                    </size>
                   </property>
-                  <property name="text">
-                   <string>ODF (x,y,z)=</string>
+                  <property name="currentIndex">
+                   <number>3</number>
                   </property>
+                  <item>
+                   <property name="text">
+                    <string>4-fold</string>
+                   </property>
+                  </item>
+                  <item>
+                   <property name="text">
+                    <string>5-fold</string>
+                   </property>
+                  </item>
+                  <item>
+                   <property name="text">
+                    <string>6-fold</string>
+                   </property>
+                  </item>
+                  <item>
+                   <property name="text">
+                    <string>8-fold</string>
+                   </property>
+                  </item>
                  </widget>
                 </item>
-                <item>
-                 <widget class="QSpinBox" name="x"/>
-                </item>
-                <item>
-                 <widget class="QSpinBox" name="y"/>
-                </item>
-                <item>
-                 <widget class="QSpinBox" name="z"/>
-                </item>
                </layout>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="1" column="0">
-            <layout class="QHBoxLayout" name="horizontalLayout_6">
-             <item>
-              <widget class="QLabel" name="label_3">
-               <property name="text">
-                <string>Number of fibers resolved</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QSpinBox" name="NumOfFibers">
-               <property name="maximumSize">
-                <size>
-                 <width>75</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="minimum">
-                <number>3</number>
-               </property>
-               <property name="maximum">
-                <number>20</number>
-               </property>
-               <property name="value">
-                <number>5</number>
-               </property>
-              </widget>
-             </item>
-            </layout>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="HalfSphere">
+                <property name="text">
+                 <string>Half-sphere scheme</string>
+                </property>
+                <property name="checked">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
            </item>
           </layout>
          </widget>

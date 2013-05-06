@@ -133,31 +133,34 @@ extern "C"
     {
         image_model->voxel.param = param_values;
         std::ostringstream out;
-        out << ".odf" << image_model->voxel.ti.fold;// odf_order
-        out << ".f" << image_model->voxel.max_fiber_number;
-        if (image_model->voxel.need_odf && method_id != 1)
-            out << "rec";
-        if (image_model->voxel.half_sphere && method_id != 1)
-            out << ".hs";
-        if (image_model->voxel.odf_deconvolusion && method_id != 1)
+        if(method_id != 1) // not DTI
         {
-            out << ".de" << param_values[2];
-            if(image_model->voxel.odf_xyz[0] != 0 ||
-               image_model->voxel.odf_xyz[1] != 0 ||
-               image_model->voxel.odf_xyz[2] != 0)
-                out << ".at_" << image_model->voxel.odf_xyz[0]
-                    << "_" << image_model->voxel.odf_xyz[1]
-                    << "_" << image_model->voxel.odf_xyz[2];
-        }
-        if (image_model->voxel.odf_decomposition && method_id != 1)
-        {
-            out << ".dec" << param_values[3] << "m" << (int)param_values[4];
-            if(image_model->voxel.odf_xyz[0] != 0 ||
-               image_model->voxel.odf_xyz[1] != 0 ||
-               image_model->voxel.odf_xyz[2] != 0)
-                out << ".at_" << image_model->voxel.odf_xyz[0]
-                    << "_" << image_model->voxel.odf_xyz[1]
-                    << "_" << image_model->voxel.odf_xyz[2];
+            out << ".odf" << image_model->voxel.ti.fold;// odf_order
+            out << ".f" << image_model->voxel.max_fiber_number;
+            if (image_model->voxel.need_odf)
+                out << "rec";
+            if (image_model->voxel.half_sphere)
+                out << ".hs";
+            if (image_model->voxel.odf_deconvolusion)
+            {
+                out << ".de" << param_values[2];
+                if(image_model->voxel.odf_xyz[0] != 0 ||
+                   image_model->voxel.odf_xyz[1] != 0 ||
+                   image_model->voxel.odf_xyz[2] != 0)
+                    out << ".at_" << image_model->voxel.odf_xyz[0]
+                        << "_" << image_model->voxel.odf_xyz[1]
+                        << "_" << image_model->voxel.odf_xyz[2];
+            }
+            if (image_model->voxel.odf_decomposition)
+            {
+                out << ".dec" << param_values[3] << "m" << (int)param_values[4];
+                if(image_model->voxel.odf_xyz[0] != 0 ||
+                   image_model->voxel.odf_xyz[1] != 0 ||
+                   image_model->voxel.odf_xyz[2] != 0)
+                    out << ".at_" << image_model->voxel.odf_xyz[0]
+                        << "_" << image_model->voxel.odf_xyz[1]
+                        << "_" << image_model->voxel.odf_xyz[2];
+            }
         }
         switch (method_id)
         {
@@ -226,7 +229,12 @@ extern "C"
                 return "reconstruction calceled";
             out << ".reg" << (int)image_model->voxel.reg_method;
             out << (image_model->voxel.r2_weighted ? ".qsdr2.":".qsdr.");
-            out << param_values[0] << "." << param_values[1] << "mm.fib";
+            out << param_values[0] << "." << param_values[1] << "mm";
+            if(image_model->voxel.output_jacobian)
+                out << ".jac";
+            if(image_model->voxel.output_mapping)
+                out << ".map";
+            out << ".fib";
             begin_prog("deforming");
             if (!image_model->reconstruct<gqi_mni_process>(out.str()))
                 return "reconstruction canceled";

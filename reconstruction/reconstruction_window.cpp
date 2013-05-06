@@ -91,9 +91,9 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         on_GQI_toggled(true);
         break;
     }
+    ui->AdvancedWidget->setVisible(false);
 
     ui->ThreadCount->setCurrentIndex(settings.value("rec_thread_count",0).toInt());
-    ui->RecordODF->setChecked(settings.value("rec_record_odf",0).toInt());
 
 
     ui->HalfSphere->setChecked(settings.value("rec_half_sphere",0).toInt());
@@ -111,6 +111,11 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->decom_m->setValue(settings.value("rec_decom_m",10).toInt());
 
     ui->mni_resolution->setValue(settings.value("rec_mni_resolution",2.0).toDouble());
+
+    ui->RecordODF->setChecked(settings.value("rec_record_odf",0).toInt());
+    ui->output_jacobian->setChecked(settings.value("output_jacobian",0).toInt());
+    ui->output_mapping->setChecked(settings.value("output_mapping",0).toInt());
+
 
     on_odf_sharpening_currentIndexChanged(ui->odf_sharpening->currentIndex());
     connect(ui->z_pos,SIGNAL(sliderMoved(int)),this,SLOT(on_b_table_itemSelectionChanged()));
@@ -209,19 +214,21 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
 
     settings.setValue("rec_method_id",method_id);
     settings.setValue("rec_thread_count",ui->ThreadCount->currentIndex());
-    settings.setValue("rec_record_odf",ui->RecordODF->isChecked() ? 1 : 0);
     settings.setValue("rec_odf_sharpening",ui->odf_sharpening->currentIndex());
     settings.setValue("rec_half_sphere",ui->HalfSphere->isChecked() ? 1 : 0);
     settings.setValue("rec_num_fiber",ui->NumOfFibers->value());
     settings.setValue("rec_gqi_def",ui->ODFDef->currentIndex());
     settings.setValue("rec_reg_method",ui->reg_method->currentIndex());
 
+    settings.setValue("rec_record_odf",ui->RecordODF->isChecked() ? 1 : 0);
+    settings.setValue("output_jacobian",ui->output_jacobian->isChecked() ? 1 : 0);
+    settings.setValue("output_mapping",ui->output_mapping->isChecked() ? 1 : 0);
+
 
     begin_prog("reconstructing");
     int odf_order[4] = {4, 5, 6, 8};
     handle->thread_count = ui->ThreadCount->currentIndex() + 1;
     handle->voxel.ti.init(odf_order[ui->ODFDim->currentIndex()]);
-    handle->voxel.need_odf = ui->RecordODF->isChecked() ? 1 : 0;
     handle->voxel.odf_deconvolusion = ui->odf_sharpening->currentIndex() == 1 ? 1 : 0;
     handle->voxel.odf_decomposition = ui->odf_sharpening->currentIndex() == 2 ? 1 : 0;
     handle->voxel.odf_xyz[0] = ui->x->value();
@@ -231,6 +238,10 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.max_fiber_number = ui->NumOfFibers->value();
     handle->voxel.r2_weighted = ui->ODFDef->currentIndex();
     handle->voxel.reg_method = ui->reg_method->currentIndex();
+
+    handle->voxel.need_odf = ui->RecordODF->isChecked() ? 1 : 0;
+    handle->voxel.output_jacobian = ui->output_jacobian->isChecked() ? 1 : 0;
+    handle->voxel.output_mapping = ui->output_mapping->isChecked() ? 1 : 0;
 
     const char* msg = (const char*)reconstruction(handle.get(), method_id, params);
     if (!QFileInfo(msg).exists())
@@ -394,46 +405,76 @@ void reconstruction_window::on_doDTI_clicked()
 void reconstruction_window::on_DTI_toggled(bool checked)
 {
     ui->ResolutionBox->setVisible(!checked);
-    ui->OptionGroupBox->setVisible(!checked);
+    ui->ODFSharpening->setVisible(!checked);
     ui->DSIOption_2->setVisible(!checked);
     ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(!checked);
+
+    ui->AdvancedOptions->setVisible(!checked);
+
+    ui->output_mapping->setVisible(!checked);
+    ui->output_jacobian->setVisible(!checked);
+    ui->RecordODF->setVisible(!checked);
 }
 
 void reconstruction_window::on_DSI_toggled(bool checked)
 {
     ui->ResolutionBox->setVisible(!checked);
-    ui->OptionGroupBox->setVisible(checked);
+    ui->ODFSharpening->setVisible(checked);
     ui->DSIOption_2->setVisible(checked);
     ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(!checked);
+
+    ui->AdvancedOptions->setVisible(checked);
+
+    ui->output_mapping->setVisible(!checked);
+    ui->output_jacobian->setVisible(!checked);
+    ui->RecordODF->setVisible(checked);
 }
 
 void reconstruction_window::on_QBI_toggled(bool checked)
 {
     ui->ResolutionBox->setVisible(!checked);
-    ui->OptionGroupBox->setVisible(checked);
+    ui->ODFSharpening->setVisible(checked);
     ui->DSIOption_2->setVisible(!checked);
     ui->QBIOption_2->setVisible(checked);
     ui->GQIOption_2->setVisible(!checked);
+
+    ui->AdvancedOptions->setVisible(checked);
+
+    ui->output_mapping->setVisible(!checked);
+    ui->output_jacobian->setVisible(!checked);
+    ui->RecordODF->setVisible(checked);
 }
 
 void reconstruction_window::on_GQI_toggled(bool checked)
 {
     ui->ResolutionBox->setVisible(!checked);
-    ui->OptionGroupBox->setVisible(checked);
+    ui->ODFSharpening->setVisible(checked);
     ui->DSIOption_2->setVisible(!checked);
     ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(checked);
+
+    ui->AdvancedOptions->setVisible(checked);
+
+    ui->output_mapping->setVisible(!checked);
+    ui->output_jacobian->setVisible(!checked);
+    ui->RecordODF->setVisible(checked);
 }
 
 void reconstruction_window::on_QDif_toggled(bool checked)
 {
     ui->ResolutionBox->setVisible(checked);
-    ui->OptionGroupBox->setVisible(checked);
+    ui->ODFSharpening->setVisible(checked);
     ui->DSIOption_2->setVisible(!checked);
     ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(checked);
+
+    ui->AdvancedOptions->setVisible(checked);
+
+    ui->output_mapping->setVisible(checked);
+    ui->output_jacobian->setVisible(checked);
+    ui->RecordODF->setVisible(checked);
 }
 
 
@@ -490,4 +531,24 @@ void reconstruction_window::on_odf_sharpening_currentIndexChanged(int index)
     ui->xyz_widget->setVisible(ui->odf_sharpening->currentIndex() > 0);
     ui->decom_panel->setVisible(ui->odf_sharpening->currentIndex() == 2);
     ui->decon_param->setVisible(ui->odf_sharpening->currentIndex() == 1);
+    on_RFSelection_currentIndexChanged(0);
+}
+
+void reconstruction_window::on_RFSelection_currentIndexChanged(int index)
+{
+    ui->ODFSelection->setVisible(ui->RFSelection->currentIndex() > 0);
+}
+
+void reconstruction_window::on_AdvancedOptions_clicked()
+{
+    if(ui->AdvancedOptions->text() == "Advanced Options >>")
+    {
+        ui->AdvancedWidget->setVisible(true);
+        ui->AdvancedOptions->setText("Advanced Options <<");
+    }
+    else
+    {
+        ui->AdvancedWidget->setVisible(false);
+        ui->AdvancedOptions->setText("Advanced Options >>");
+    }
 }

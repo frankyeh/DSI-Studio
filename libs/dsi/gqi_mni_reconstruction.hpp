@@ -41,7 +41,8 @@ protected:
 protected:
     image::vector<3,int> csf_pos[2];
     float csf_dif;
-
+protected:
+    std::vector<float> mx,my,mz;
 protected:
     double r2_base_function(double theta)
     {
@@ -244,8 +245,6 @@ public:
 
         std::fill(voxel.vs.begin(),voxel.vs.end(),voxel.param[1]);
 
-        jdet.resize(des_geo.size());
-
 
         if (voxel.odf_deconvolusion)
         {
@@ -266,6 +265,18 @@ public:
         csf_pos[0] = mni_to_voxel_index(6,0,18);
         csf_pos[1] = mni_to_voxel_index(-6,0,18);
         voxel.z0 = 0.0;
+
+
+        // output mapping
+        if(voxel.output_jacobian)
+            jdet.resize(des_geo.size());
+
+        if(voxel.output_mapping)
+        {
+            mx.resize(des_geo.size());
+            my.resize(des_geo.size());
+            mz.resize(des_geo.size());
+        }
     }
 
     image::vector<3,int> mni_to_voxel_index(int x,int y,int z) const
@@ -330,6 +341,15 @@ public:
         pos.floor();
         mni.warp_coordinate(pos,Jpos);
         affine(Jpos.begin());
+
+        // output mapping position
+        if(voxel.output_mapping)
+        {
+            mx[data.voxel_index] = Jpos[0];
+            my[data.voxel_index] = Jpos[1];
+            mz[data.voxel_index] = Jpos[2];
+        }
+
         if(!trilinear_interpolation.get_location(src_geo,Jpos))
         {
             std::fill(data.odf.begin(),data.odf.end(),0);
@@ -378,8 +398,13 @@ public:
             }
         }
 
-        jdet[data.voxel_index] = std::abs(math::matrix_determinant(jacobian,math::dim<3,3>())*voxel_volume_scale);
-        std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 *= jdet[data.voxel_index]);
+        {
+            float J = std::abs(math::matrix_determinant(jacobian,math::dim<3,3>())*voxel_volume_scale);
+            std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 *= J);
+            if(voxel.output_jacobian)
+                jdet[data.voxel_index] = J;
+        }
+
         float accumulated_qa = std::accumulate(data.odf.begin(),data.odf.end(),0.0);
         if (max_accumulated_qa < accumulated_qa)
         {
@@ -392,7 +417,14 @@ public:
         if(voxel.z0 == 0.0)
             voxel.z0 = 1.0;
         mat_writer.add_matrix("z0",&voxel.z0,1,1);
-        mat_writer.add_matrix("jdet",&*jdet.begin(),1,jdet.size());
+        if(voxel.output_jacobian)
+            mat_writer.add_matrix("jdet",&*jdet.begin(),1,jdet.size());
+        if(voxel.output_mapping)
+        {
+            mat_writer.add_matrix("mx",&*mx.begin(),1,mx.size());
+            mat_writer.add_matrix("my",&*my.begin(),1,my.size());
+            mat_writer.add_matrix("mz",&*mz.begin(),1,mz.size());
+        }
         mat_writer.add_matrix("trans",&*trans_to_mni,4,4);
         mat_writer.add_matrix("R2",&R2,1,1);
     }

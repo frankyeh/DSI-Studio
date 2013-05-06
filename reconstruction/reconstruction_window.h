@@ -68,6 +68,8 @@ private slots:
     void on_zoom_out_clicked();
     void on_manual_reg_clicked();
     void on_odf_sharpening_currentIndexChanged(int index);
+    void on_RFSelection_currentIndexChanged(int index);
+    void on_AdvancedOptions_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H
