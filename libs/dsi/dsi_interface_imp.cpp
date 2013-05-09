@@ -259,7 +259,7 @@ bool output_odfs(const image::basic_image<unsigned char,3>& mni_mask,
 {
     begin_prog("output");
     ImageModel image_model;
-    image_model.set_dimension(mni_mask.width(),mni_mask.height(),mni_mask.depth());
+    image_model.voxel.dim = mni_mask.geometry();
     image_model.voxel.ti = ti;
     image_model.voxel.q_count = 0;
     image_model.voxel.odf_decomposition = false;
@@ -272,7 +272,7 @@ bool output_odfs(const image::basic_image<unsigned char,3>& mni_mask,
     image_model.voxel.param = mni;
     image_model.thread_count = 1;
     image_model.file_name = out_name;
-    std::copy(mni_mask.begin(),mni_mask.end(),image_model.mask.begin());
+    image_model.mask = mni_mask;
     std::copy(vs,vs+3,image_model.voxel.vs.begin());
     if (prog_aborted() || !image_model.reconstruct<reprocess_odf>(ext))
         return false;

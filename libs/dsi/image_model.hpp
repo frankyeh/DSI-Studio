@@ -18,19 +18,6 @@ public:
     image::basic_image<unsigned char,3> mask;
 public:
     ImageModel(void):thread_count(1) {}
-    bool set_dimension(unsigned int w,unsigned int h,unsigned int d)
-    {
-        voxel.dim[0] = w;
-        voxel.dim[1] = h;
-        voxel.dim[2] = d;
-        mask.clear();
-        mask.resize(voxel.dim);
-        dwi_sum.clear();
-        dwi_sum.resize(voxel.dim);
-        if (voxel.dim.size() <= 0)
-            return false;
-        return true;
-    }
     bool load_from_file(const char* dwi_file_name)
     {
         file_name = dwi_file_name;
@@ -60,11 +47,15 @@ public:
         else
             std::copy(voxel_size,voxel_size+3,voxel.vs.begin());
 
-        if (!set_dimension(dim_ptr[0],dim_ptr[1],dim_ptr[2]))
+        if (dim_ptr[0]*dim_ptr[1]*dim_ptr[2] <= 0)
         {
             error_msg = "Invalid dimension setting";
             return false;
         }
+        voxel.dim[0] = dim_ptr[0];
+        voxel.dim[1] = dim_ptr[1];
+        voxel.dim[2] = dim_ptr[2];
+
         const float* table;
         mat_reader->get_matrix("b_table",row,col,table);
         if (!table)
@@ -98,6 +89,8 @@ public:
         }
 
         // create mask;
+        dwi_sum.clear();
+        dwi_sum.resize(voxel.dim);
         for (unsigned int index = 0;index < voxel.q_count;++index)
             image::add(dwi_sum.begin(),dwi_sum.end(),dwi_data[index]);
 

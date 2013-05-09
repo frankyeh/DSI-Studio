@@ -190,6 +190,9 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
 {
     if(!handle.get())
         return;
+    if(method_id == 7)
+        std::fill(handle->mask.begin(),handle->mask.end(),1.0);
+    else
     if (*std::max_element(handle->mask.begin(),handle->mask.end()) == 0)
     {
         QMessageBox::information(this,"error","Please select mask for reconstruction",0);

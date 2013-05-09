@@ -205,7 +205,8 @@ public:
         // setup mask
         {
             // set the current mask to template space
-            voxel.image_model->set_dimension(des_geo[0],des_geo[1],des_geo[2]);
+            voxel.dim = des_geo;
+            voxel.image_model->mask.resize(des_geo);
             std::fill(voxel.image_model->mask.begin(),voxel.image_model->mask.end(),0);
             for(image::pixel_index<3> index;des_geo.is_valid(index);index.next(des_geo))
             {
@@ -416,6 +417,8 @@ public:
     }
     virtual void end(Voxel& voxel,MatFile& mat_writer)
     {
+        voxel.image_model->mask.resize(src_geo);
+        voxel.dim = src_geo;
         if(voxel.z0 == 0.0)
             voxel.z0 = 1.0;
         mat_writer.add_matrix("z0",&voxel.z0,1,1);
