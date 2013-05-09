@@ -1123,7 +1123,6 @@ void TractModel::get_tract_fa(unsigned int fiber_index,std::vector<float>& data)
     std::vector<image::vector<3,float> > gradient(count);
     const float (*tract_ptr)[3] = (const float (*)[3])&(tract_data[fiber_index][0]);
     ::gradient(tract_ptr,tract_ptr+count,gradient.begin());
-    float prev_info = fib->threshold;
     for (unsigned int point_index = 0,tract_index = 0;
          point_index < count;++point_index,tract_index += 3)
     {
@@ -1141,7 +1140,7 @@ void TractModel::get_tract_fa(unsigned int fiber_index,std::vector<float>& data)
                 sum_value += tri_interpo.ratio[index];
             }
             if (sum_value > 0.5)
-                data[point_index] = prev_info = average_value/sum_value;
+                data[point_index] = average_value/sum_value;
             else
             data[point_index] = fib->threshold;
         }

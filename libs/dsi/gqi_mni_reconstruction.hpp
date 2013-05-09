@@ -2,7 +2,7 @@
 #define MNI_RECONSTRUCTION_HPP
 #include "gqi_process.hpp"
 #include "mapping/fa_template.hpp"
-#include "mapping/normalization.hpp"
+#include "image/image.hpp"
 #include "basic_voxel.hpp"
 #include "basic_process.hpp"
 #include "odf_decomposition.hpp"
@@ -18,7 +18,7 @@ public:
     float angle_variance;
     QSpace2Odf gqi;
 protected:
-    normalization<image::basic_image<float,3> > mni;
+    std::auto_ptr<image::reg::bfnorm_mapping<double,3> > mni;
     image::geometry<3> src_geo;
     image::geometry<3> des_geo;
     double max_accumulated_qa;
@@ -99,9 +99,7 @@ public:
 
 
         bool terminated = false;
-        set_title("linear registration");
-        begin_prog("conducting registration");
-
+        begin_prog("registration");
         if(export_intermediate)
         {
             VG.save_to_file<image::io::nifti>("VG.nii");
@@ -112,9 +110,9 @@ public:
             affine = voxel.qsdr_trans;
         else
         {
-            check_prog(0,2);
+            check_prog(0,3);
             image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::mutual_information(),terminated);
-            check_prog(1,2);
+            check_prog(1,3);
             affine = arg_min;
             image::reg::shift_to_center(VF.geometry(),VG.geometry(),affine);
             affine.inverse();
@@ -126,23 +124,26 @@ public:
             VFF.save_to_file<image::io::nifti>("VFF.nii");
 
         {
+            check_prog(2,3);
             switch(voxel.reg_method)
             {
                 case 0:
-                    mni.normalize(VG,VFF);
+                    mni.reset(new image::reg::bfnorm_mapping<double,3>(VG.geometry(),image::geometry<3>(7,9,7)));
+                    image::reg::bfnorm(VG,VFF,*mni.get());
                 break;
                 case 1:
-                    mni.normalize(VG,VFF,12,14,12,4,8);
+                    mni.reset(new image::reg::bfnorm_mapping<double,3>(VG.geometry(),image::geometry<3>(12,14,12)));
+                    image::reg::bfnorm(VG,VFF,*mni.get(),4.0,8);
                 break;
             }
-
+            check_prog(3,3);
             //calculate the goodness of fit
             image::basic_image<float,3> y(VG.geometry());
             for(image::pixel_index<3> index;VG.geometry().is_valid(index);index.next(VG.geometry()))
                 if(fa_template_imp.I[index.index()] > 0.0)
                 {
                     image::vector<3,double> pos;
-                    mni.warp_coordinate(index,pos);
+                    image::reg::bfnorm_warp_coordinate(*mni.get(),index,pos);
                     image::linear_estimate(VFF,pos,y[index.index()]);
                 }
 
@@ -153,6 +154,7 @@ public:
             R2 *= R2;
             std::cout << "R2 = " << R2 << std::endl;
         }
+
 
         check_prog(2,2);
 
@@ -293,7 +295,7 @@ public:
     void get_jacobian(const image::vector<3,double>& pos,float jacobian[9])
     {
         float M[9];
-        mni.get_jacobian(pos,M);
+        image::reg::bfnorm_get_jacobian(*mni.get(),pos,M);
         math::matrix_product(affine.scaling_rotation,M,jacobian,math::dim<3,3>(),math::dim<3,3>());
     }
 
@@ -339,7 +341,7 @@ public:
         pos += des_offset;
         pos += 0.5;
         pos.floor();
-        mni.warp_coordinate(pos,Jpos);
+        image::reg::bfnorm_warp_coordinate(*mni.get(),pos,Jpos);
         affine(Jpos.begin());
 
         // output mapping position

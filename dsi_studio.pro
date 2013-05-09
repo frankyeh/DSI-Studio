@@ -86,7 +86,6 @@ HEADERS += mainwindow.h \
     reconstruction/vbcdialog.h \
     libs/mapping/atlas.hpp \
     libs/mapping/fa_template.hpp \
-    libs/mapping/normalization.hpp \
     plot/qcustomplot.h \
     view_image.h \
     libs/vbc/vbc_database.h \
