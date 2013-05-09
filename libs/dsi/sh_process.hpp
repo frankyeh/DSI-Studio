@@ -4,7 +4,7 @@
 #include <cmath>
 #include <boost/math/special_functions/spherical_harmonic.hpp>
 #include <boost/math/special_functions/legendre.hpp>
-#include "math/matrix_op.hpp"
+#include "image/image.hpp"
 #define _USE_MATH_DEFINES
 
 
@@ -73,28 +73,28 @@ public:
             for (unsigned int i = 0,index = 0; i < R; ++i,index += R+1)
                 P[index] = boost::math::legendre_p(j_map[i].second,0.0)*2.0*M_PI;
 
-            math::matrix_product(U.begin(),P.begin(),UP.begin(),math::dyndim(half_odf_size,R),math::dyndim(R,R));
+            image::matrix::product(U.begin(),P.begin(),UP.begin(),image::dyndim(half_odf_size,R),image::dyndim(R,R));
         }
 
         std::vector<float> iB(Bt.size());
         {
             std::vector<float> BtB(R*R); // BtB = Bt * trans(Bt);
-            math::matrix_square(Bt.begin(),BtB.begin(),math::dyndim(R,voxel.bvectors.size()));
+            image::matrix::square(Bt.begin(),BtB.begin(),image::dyndim(R,voxel.bvectors.size()));
             for (unsigned int i = 0,index = 0; i < R; ++i,index += R+1)
             {
                 float l = j_map[i].second;
                 BtB[index] += l*l*(l+1.0)*(l+1.0)*lambda;
             }
             std::vector<unsigned int> pivot(R);
-            math::matrix_lu_decomposition(BtB.begin(),pivot.begin(),math::dyndim(R,R));
+            image::matrix::lu_decomposition(BtB.begin(),pivot.begin(),image::dyndim(R,R));
 
             //iB = inv(BtB)*Bt;
-            math::matrix_lu_solve(BtB.begin(),pivot.begin(),Bt.begin(),iB.begin(),math::dyndim(R,R),math::dyndim(R,voxel.bvectors.size()));
+            image::matrix::lu_solve(BtB.begin(),pivot.begin(),Bt.begin(),iB.begin(),image::dyndim(R,R),image::dyndim(R,voxel.bvectors.size()));
         }
 
 
         UPiB.resize(half_odf_size*voxel.bvectors.size());
-        math::matrix_product(UP.begin(),iB.begin(),UPiB.begin(),math::dyndim(half_odf_size,R),math::dyndim(R,voxel.bvectors.size()));
+        image::matrix::product(UP.begin(),iB.begin(),UPiB.begin(),image::dyndim(half_odf_size,R),image::dyndim(R,voxel.bvectors.size()));
 
 
 
@@ -108,7 +108,7 @@ public:
                 for(unsigned int index = 0;index < b0_index.size();++index)
 			data.space[b0_index[index]] = 0;
         
-		math::matrix_vector_product(&*UPiB.begin(),&*data.space.begin(),&*data.odf.begin(),math::dyndim(half_odf_size,voxel.bvectors.size()));
+        image::matrix::vector_product(&*UPiB.begin(),&*data.space.begin(),&*data.odf.begin(),image::dyndim(half_odf_size,voxel.bvectors.size()));
         for (unsigned int index = 0; index < data.odf.size(); ++index)
             if (data.odf[index] < 0.0)
                 data.odf[index] = 0.0;

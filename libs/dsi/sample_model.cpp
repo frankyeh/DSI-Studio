@@ -1,10 +1,9 @@
 //---------------------------------------------------------------------------
 #include <cmath>
 #include <vector>
-#include "stdafx.h"
 #include "space_mapping.hpp"
 #include "sample_model.hpp"
-
+#include "libs/dsi/dsi_process.hpp"
 
 //---------------------------------------------------------------------------
 SamplePoint::SamplePoint(unsigned int odf_index_,

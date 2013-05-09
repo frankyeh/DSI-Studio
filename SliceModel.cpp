@@ -1,6 +1,5 @@
 // ---------------------------------------------------------------------------
 #include <string>
-#include "math/matrix_op.hpp"
 #include "SliceModel.h"
 #include "prog_interface_static_link.h"
 #include "libs/tracking/tracking_model.hpp"

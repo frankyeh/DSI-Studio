@@ -6,6 +6,21 @@
 #include <string>
 #include <vector>
 #include <cmath>
+
+const int dsi_range = 4;
+const unsigned int qcode_count = 203;
+const int display_range = 3;
+const int min_display = -(1 << (display_range-1));
+const int max_display = (1 << (display_range-1))-1;
+const double odf_min_radius = 2.1;
+const double odf_max_radius = 6.0;
+const double odf_sampling_interval = 0.2;
+
+const unsigned int space_length = 1 << dsi_range;             //16
+const unsigned int space_half_length = 1 << (dsi_range-1);    //8
+const int space_min_offset = -(1 << (dsi_range-1));                //-8
+const int space_max_offset = space_half_length-1;                  //7
+const unsigned int qspace_size = 1 << (dsi_range * 3);         //4096
 //---------------------------------------------------------------------------
 template <int offset_shift>
 class SpaceMapping

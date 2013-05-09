@@ -3,7 +3,6 @@
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include "image/image.hpp"
-#include "ml/ml.hpp"
 #include <map>
 
 struct Cluster : public::boost::noncopyable

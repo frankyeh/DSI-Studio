@@ -1,5 +1,8 @@
 #ifndef STREAM_LINE_HPP
 #define STREAM_LINE_HPP
+#include <ctime>
+#include <boost/random.hpp>
+#include <boost/lambda/lambda.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <boost/utility.hpp>

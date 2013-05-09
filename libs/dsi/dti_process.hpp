@@ -2,8 +2,7 @@
 #define DTI_PROCESS_HPP
 #include <cmath>
 #include "basic_voxel.hpp"
-#include "math/matrix_op.hpp"
-
+#include "image/image.hpp"
 
 struct CheckDTI
 {
@@ -75,8 +74,8 @@ public:
             {
                 //qq = q qT
                 std::vector<float> qq(3*3);
-                math::matrix_product_transpose(b_data[i].begin(),b_data[i].begin(),qq.begin(),
-                                               math::dyndim(3,1),math::dyndim(3,1));
+                image::matrix::product_transpose(b_data[i].begin(),b_data[i].begin(),qq.begin(),
+                                               image::dyndim(3,1),image::dyndim(3,1));
 
                 /*
                       q11 q15 q19 2*q12 2*q13 2*q16
@@ -89,9 +88,9 @@ public:
         }
         iKtK.resize(6*6);
         iKtK_pivot.resize(6);
-        math::matrix_product_transpose(Kt.begin(),Kt.begin(),iKtK.begin(),
-                                       math::dyndim(6,b_count),math::dyndim(6,b_count));
-        math::matrix_lu_decomposition(iKtK.begin(),iKtK_pivot.begin(),math::dyndim(6,6));
+        image::matrix::product_transpose(Kt.begin(),Kt.begin(),iKtK.begin(),
+                                       image::dyndim(6,b_count),image::dyndim(6,b_count));
+        image::matrix::lu_decomposition(iKtK.begin(),iKtK_pivot.begin(),image::dyndim(6,6));
     }
 public:
     virtual void run(Voxel& voxel, VoxelData& data)
@@ -108,15 +107,15 @@ public:
         double tensor[9];
         double V[9],d[3];
 
-        math::matrix_product(Kt.begin(),signal.begin(),KtS,math::dyndim(6,b_count),math::dyndim(b_count,1));
-        math::matrix_lu_solve(iKtK.begin(),iKtK_pivot.begin(),KtS,tensor_param,math::dyndim(6,6));
+        image::matrix::product(Kt.begin(),signal.begin(),KtS,image::dyndim(6,b_count),image::dyndim(b_count,1));
+        image::matrix::lu_solve(iKtK.begin(),iKtK_pivot.begin(),KtS,tensor_param,image::dyndim(6,6));
 
 
         unsigned int tensor_index[9] = {0,3,4,3,1,5,4,5,2};
         for (unsigned int index = 0; index < 9; ++index)
             tensor[index] = tensor_param[tensor_index[index]];
 
-        math::matrix_eigen_decomposition_sym(tensor,V,d,math::dim<3,3>());
+        image::matrix::eigen_decomposition_sym(tensor,V,d,image::dim<3,3>());
         if (d[1] < 0.0)
         {
             d[1] = 0.0;

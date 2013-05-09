@@ -3,8 +3,6 @@
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/insert_range.hpp>
 #include <boost/mpl/begin_end.hpp>
-
-#include "stdafx.h"
 #include "tessellated_icosahedron.hpp"
 #include "prog_interface_static_link.h"
 #include "mat_file.hpp"

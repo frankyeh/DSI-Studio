@@ -4,10 +4,7 @@ The following libraries are also needed to build DSI Studio
 
 1. download libraries (required for building DSI Studio)
 
-download https://github.com/frankyeh/TIPL/zipball/master to directory named image
-download https://github.com/frankyeh/GMOL/zipball/master to directory named math
-download https://github.com/frankyeh/TMLL/zipball/master to directory named ml
-
+download https://github.com/frankyeh/TIPL/zipball/master to directory src/image
 
 2. download Boost library (required for building DSI Studio)
 

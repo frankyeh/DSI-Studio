@@ -45,9 +45,9 @@ extern "C"
     case 0:
         return new TractCluster(param);
     case 1:
-        return new FeatureBasedClutering<k_means<double,unsigned char> >(param);
+        return new FeatureBasedClutering<image::ml::k_means<double,unsigned char> >(param);
     case 2:
-        return new FeatureBasedClutering<expectation_maximization<double,unsigned char> >(param);
+        return new FeatureBasedClutering<image::ml::expectation_maximization<double,unsigned char> >(param);
     }
     return 0;
 }

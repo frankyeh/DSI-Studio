@@ -7,7 +7,6 @@
 #include <QClipboard>
 #include <math.h>
 #include <vector>
-#include "math/matrix_op.hpp"
 #include "glwidget.h"
 #include "tracking_static_link.h"
 #include "tracking/tracking_window.h"
@@ -115,7 +114,7 @@ void GLWidget::initializeGL()
 void GLWidget::set_view(unsigned char view_option)
 {
     // initialize world matrix
-    math::matrix_identity(transformation_matrix,math::dim<4,4>());
+    image::matrix::identity(transformation_matrix,image::dim<4,4>());
     if(cur_tracking_window.slice.voxel_size[0] > 0.0)
     {
         transformation_matrix[5] = cur_tracking_window.slice.voxel_size[1] / cur_tracking_window.slice.voxel_size[0];
@@ -150,7 +149,7 @@ void GLWidget::set_view(unsigned char view_option)
         case 2:
             break;
         }
-        math::matrix_product(m1, m2, transformation_matrix, math::dim<4, 4>(),math::dim<4, 4>());
+        image::matrix::product(m1, m2, transformation_matrix, image::dim<4, 4>(),image::dim<4, 4>());
     }
     // rotate 180 degrees
     if(set_view_flip)
@@ -162,7 +161,7 @@ void GLWidget::set_view(unsigned char view_option)
         m2[5] = 1.0;
         m2[10] = -1.0;
         m2[15] = 1.0;
-        math::matrix_product(m1, m2, transformation_matrix, math::dim<4, 4>(),math::dim<4, 4>());
+        image::matrix::product(m1, m2, transformation_matrix, image::dim<4, 4>(),image::dim<4, 4>());
     }
     set_view_flip = !set_view_flip;
 }
@@ -230,8 +229,8 @@ unsigned char getCurView(float* transformation_matrix)
     {
         const float view_dirs[6][3] = {{1,0,0},{0,1,0},{0,0,1},{-1,0,0},{0,-1,0},{0,0,-1}};
         float mat[16],view[16];
-        //math::matrix_product(transformation_matrix,mat,view,math::dim<4,4>(),math::dim<4,4>());
-        math::matrix_inverse(transformation_matrix,mat,math::dim<4,4>());
+        //image::matrix::product(transformation_matrix,mat,view,image::dim<4,4>(),image::dim<4,4>());
+        image::matrix::inverse(transformation_matrix,mat,image::dim<4,4>());
         image::vector<3,float> dir(mat+8);
         float max_cos = 0;
         for (unsigned int index = 0;index < 6;++index)
@@ -549,7 +548,7 @@ void GLWidget::paintGL()
                 const float* buf = mi3s[index].get();
                 std::vector<float> inverse_transform(16);
                 image::create_affine_transformation_matrix(buf, buf + 9,inverse_transform.begin(), image::vdim<3>());
-                math::matrix_inverse(inverse_transform.begin(),transform[index].begin(),math::dim<4, 4>());
+                image::matrix::inverse(inverse_transform.begin(),transform[index].begin(),image::dim<4, 4>());
                 std::fill(other_slices[index].texture_need_update,
                           other_slices[index].texture_need_update+3,1);
 
@@ -1202,9 +1201,9 @@ float GLWidget::get_slice_projection_point(unsigned char dim,
     m[7] = v2[2];
     m[8] = -v3[2];
 
-    if(!math::matrix_inverse(m,math::dim<3,3>()))
+    if(!image::matrix::inverse(m,image::dim<3,3>()))
         return 0.0;
-    math::matrix_vector_product(m,pos_offset.begin(),result,math::dim<3,3>());
+    image::matrix::vector_product(m,pos_offset.begin(),result,image::dim<3,3>());
     dx = result[0];
     dy = result[1];
     return result[2];
@@ -1276,8 +1275,8 @@ void GLWidget::get_pos(void)
     float view[16];
     //glMultMatrixf(transformation_matrix);
     glGetFloatv(GL_MODELVIEW_MATRIX,mat);
-    math::matrix_product(transformation_matrix,mat,view,math::dim<4,4>(),math::dim<4,4>());
-    math::matrix_inverse(view,mat,math::dim<4,4>());
+    image::matrix::product(transformation_matrix,mat,view,image::dim<4,4>(),image::dim<4,4>());
+    image::matrix::inverse(view,mat,image::dim<4,4>());
     pos[0] = mat[12];
     pos[1] = mat[13];
     pos[2] = mat[14];
@@ -1401,7 +1400,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
             setCursor(Qt::ArrowCursor);
             return;
         }
-        accumulated_dis = math::zero<float>();
+        accumulated_dis = image::zero<float>();
     }
 }
 void GLWidget::mouseReleaseEvent(QMouseEvent *event)
@@ -1565,7 +1564,7 @@ void GLWidget::get_current_slice_transformation(
     tr = transform[current_visible_slide-1];
     tr.resize(16);
     tr[15] = 1.0;
-    math::matrix_inverse(tr.begin(),math::dim<4,4>());
+    image::matrix::inverse(tr.begin(),image::dim<4,4>());
 }
 
 void GLWidget::saveMapping(void)
@@ -1641,8 +1640,8 @@ bool GLWidget::addSlices(QStringList filenames)
             t[7] += t[5]*(nifti.height()-1);
             t[5] = -t[5];
         }
-        math::matrix_inverse(cur_tracking_window.handle->fib_data.trans_to_mni.begin(),inv_trans.begin(),math::dim<4,4>());
-        math::matrix_product(inv_trans.begin(),t.begin(),convert.begin(),math::dim<4,4>(),math::dim<4,4>());
+        image::matrix::inverse(cur_tracking_window.handle->fib_data.trans_to_mni.begin(),inv_trans.begin(),image::dim<4,4>());
+        image::matrix::product(inv_trans.begin(),t.begin(),convert.begin(),image::dim<4,4>(),image::dim<4,4>());
     }
     else
     {
@@ -1688,7 +1687,7 @@ bool GLWidget::addSlices(QStringList filenames)
     {
         transform.push_back(convert);
         std::vector<float> inverse_transform(16);
-        math::matrix_inverse(convert.begin(),inverse_transform.begin(),math::dim<4, 4>());
+        image::matrix::inverse(convert.begin(),inverse_transform.begin(),image::dim<4, 4>());
         // update roi image
         image::resample(other_slices.back().source_images,roi_image.back(),inverse_transform);
     }

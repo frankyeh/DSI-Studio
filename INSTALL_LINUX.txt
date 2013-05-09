@@ -99,10 +99,6 @@ Max
 
    - Image: https://github.com/frankyeh/TIPL/archive/master.zip
      put it under ../src/image
-   - Matrix: https://github.com/frankyeh/GMOL/archive/master.zip
-     put it under ../src/math
-   - TMLL: https://github.com/frankyeh/TMLL/archive/master.zip
-     put it under ../src/ml
    
 7) create build folder
 

@@ -1,9 +1,6 @@
 #ifndef BASIC_PROCESS_HPP
 #define BASIC_PROCESS_HPP
-#include <ctime>
-#include <boost/random.hpp>
-#include <boost/lambda/lambda.hpp>
-#include "math/matrix_op.hpp"
+#include "image/image.hpp"
 struct LocateVoxel{
 
 public:

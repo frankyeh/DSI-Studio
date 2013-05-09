@@ -14,15 +14,6 @@ public:
     }
     virtual void end(Voxel&,MatFile& mat_writer) {}
 };
-struct Accumulator
-{
-    float operator()(const std::vector<float>& odf)
-    {
-        float sum = std::accumulate(odf.begin(),odf.end(),0.0);
-        sum /= ((float)odf.size());
-        return sum;
-    }
-};
 
 
 struct GeneralizedFA

@@ -1,5 +1,4 @@
 #include "atlas.hpp"
-#include "math/matrix_op.hpp"
 #include <fstream>
 #include <sstream>
 #include "libs/gzip_interface.hpp"
@@ -18,7 +17,7 @@ bool atlas::load_from_file(const char* file_name)
         transform.resize(16);
         transform[15] = 1.0;
         nii.get_image_transformation(transform.begin());
-        math::matrix_inverse(transform.begin(),math::dim<4,4>());
+        image::matrix::inverse(transform.begin(),image::dim<4,4>());
     }
     std::string file_name_str(file_name);
     std::string text_file_name;

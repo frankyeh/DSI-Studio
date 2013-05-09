@@ -5,8 +5,7 @@
 #include <math.h>
 #include <cmath>
 #include <map>
-#include "common.hpp"
-#include "math/matrix_op.hpp"
+#include "image/image.hpp"
 #include "basic_process.hpp"
 #include "basic_voxel.hpp"
 #include "odf_process.hpp"
@@ -55,7 +54,7 @@ protected:
     void normalize_vector(iterator_type from,iterator_type to)
     {
         std::for_each(from,to,boost::lambda::_1 -= std::accumulate(from,to,0.0)/((float)(to-from)));
-        float length = math::vector_op_norm2(from,to);
+        float length = image::vec::norm2(from,to);
         if(length+1.0 != 1.0)
             std::for_each(from,to,boost::lambda::_1 /= length);
     }
@@ -118,8 +117,8 @@ protected:
 
         for(int fib_index = 1;fib_index < max_fiber;++fib_index)
         {
-            math::matrix_vector_product(&*x.begin(),&*residual.begin(),&*tmp.begin(),
-                                            math::dyndim(y_dim,y_dim));
+            image::matrix::vector_product(&*x.begin(),&*residual.begin(),&*tmp.begin(),
+                                            image::dyndim(y_dim,y_dim));
             std::vector<float> u(y_dim);
             std::vector<float> s(fib_index);
             if(fib_index == 1)
@@ -138,12 +137,12 @@ protected:
             {
                 std::vector<float> XtX(fib_index*fib_index);
                 std::vector<int> piv(y_dim);
-                math::matrix_product_transpose(Xt.begin(),Xt.begin(),XtX.begin(),math::dyndim(fib_index,y_dim),math::dyndim(fib_index,y_dim));
-                math::matrix_lu_decomposition(XtX.begin(),piv.begin(),math::dyndim(fib_index,fib_index));
-                math::matrix_lu_solve(XtX.begin(),piv.begin(),math::one<float>(),s.begin(),math::dyndim(fib_index,fib_index));
+                image::matrix::product_transpose(Xt.begin(),Xt.begin(),XtX.begin(),image::dyndim(fib_index,y_dim),image::dyndim(fib_index,y_dim));
+                image::matrix::lu_decomposition(XtX.begin(),piv.begin(),image::dyndim(fib_index,fib_index));
+                image::matrix::lu_solve(XtX.begin(),piv.begin(),image::one<float>(),s.begin(),image::dyndim(fib_index,fib_index));
                 float Aa = 1.0/std::sqrt(std::accumulate(s.begin(),s.end(),0.0f));
                 image::multiply_constant(s.begin(),s.end(),Aa);
-                math::matrix_product(s.begin(),Xt.begin(),u.begin(),math::dyndim(1,fib_index),math::dyndim(fib_index,y_dim));
+                image::matrix::product(s.begin(),Xt.begin(),u.begin(),image::dyndim(1,fib_index),image::dyndim(fib_index,y_dim));
             }
 
             unsigned int dir = 0;
@@ -173,7 +172,7 @@ protected:
                 w[fib_list[index]] += s[index]*min_step_value;
 
             // update residual
-            math::vector_op_axpy(residual.begin(),residual.end(),-min_step_value,u.begin());
+            image::vec::axpy(residual.begin(),residual.end(),-min_step_value,u.begin());
 
             // update the X matrix
             std::copy(x.begin()+dir*y_dim,x.begin()+(dir+1)*y_dim,std::back_inserter(Xt));
@@ -197,8 +196,8 @@ protected:
         {
             // calculate the correlation with each SFO
 
-            math::matrix_vector_product(&*x.begin(),&*residual.begin(),&*tmp.begin(),
-                                            math::dyndim(y_dim,y_dim));
+            image::matrix::vector_product(&*x.begin(),&*residual.begin(),&*tmp.begin(),
+                                            image::dyndim(y_dim,y_dim));
             // get the most correlated orientation
             int dir = std::max_element(tmp.begin(),tmp.end())-tmp.begin();
             float corr = tmp[dir];
@@ -229,12 +228,12 @@ protected:
                     }
                 }
                 w[dir] += min_step_value;
-                math::vector_op_axpy(residual.begin(),residual.end(),-min_step_value,xi);
+                image::vec::axpy(residual.begin(),residual.end(),-min_step_value,xi);
             }
             else
             {
                 w[dir] += corr*step_size;
-                math::vector_op_axpy(residual.begin(),residual.end(),-corr*step_size,xi);
+                image::vec::axpy(residual.begin(),residual.end(),-corr*step_size,xi);
             }
         }
     }
@@ -303,7 +302,7 @@ public:
             }
             results.resize(dir_list.size()+has_isotropic);
 
-            math::matrix_pseudo_inverse_solve(&*RRt.begin(),&*old_odf.begin(),&*results.begin(),math::dyndim(results.size(),half_odf_size));
+            image::matrix::pseudo_inverse_solve(&*RRt.begin(),&*old_odf.begin(),&*results.begin(),image::dyndim(results.size(),half_odf_size));
 
             float threshold = 0.0;//std::max<float>(*std::max_element(results.begin()+has_isotropic,results.end())*0.25,0.0);
             int min_index = std::min_element(results.begin()+has_isotropic,results.end())-results.begin();

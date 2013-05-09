@@ -38,7 +38,6 @@ HEADERS += mainwindow.h \
     dicom/dicom_parser.h \
     dicom/dwi_header.hpp \
     libs/mat_file.hpp \
-    libs/dsi/stdafx.h \
     libs/dsi/tessellated_icosahedron.hpp \
     libs/dsi/space_mapping.hpp \
     libs/dsi/shaping_model.hpp \
@@ -56,7 +55,6 @@ HEADERS += mainwindow.h \
     libs/dsi/gqi_mni_reconstruction.hpp \
     libs/dsi/dti_process.hpp \
     libs/dsi/dsi_process.hpp \
-    libs/dsi/common.hpp \
     libs/dsi/basic_voxel.hpp \
     libs/dsi_interface_static_link.h \
     SliceModel.h \
@@ -117,7 +115,6 @@ SOURCES += main.cpp \
     dicom/dicom_parser.cpp \
     dicom/dwi_header.cpp \
     libs/utility/prog_interface.cpp \
-    libs/dsi/common.cpp \
     libs/dsi/sample_model.cpp \
     libs/dsi/dsi_interface_imp.cpp \
     libs/tracking/tracking_interface_imp.cpp \

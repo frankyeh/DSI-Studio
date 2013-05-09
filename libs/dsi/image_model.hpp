@@ -2,7 +2,6 @@
 #define IMAGE_MODEL_HPP
 #include <boost/thread.hpp>
 #include <boost/math/special_functions/sinc.hpp>
-#include "math/matrix_op.hpp"
 #include "gqi_process.hpp"
 #include "image/image.hpp"
 

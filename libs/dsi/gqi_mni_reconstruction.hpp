@@ -296,7 +296,7 @@ public:
     {
         float M[9];
         image::reg::bfnorm_get_jacobian(*mni.get(),pos,M);
-        math::matrix_product(affine.scaling_rotation,M,jacobian,math::dim<3,3>(),math::dim<3,3>());
+        image::matrix::product(affine.scaling_rotation,M,jacobian,image::dim<3,3>(),image::dim<3,3>());
     }
 
     // combined with deconvolution or decomposition
@@ -312,7 +312,7 @@ public:
         for(unsigned int i = 0,w_pos = 0;i < data.odf.size();++i,++w_pos)
             {
                 image::vector<3,double> new_dir;
-                math::matrix_product(jacobian,voxel.ti.vertices[i].begin(),new_dir.begin(),math::dim<3,3>(),math::dim<3,1>());
+                image::matrix::product(jacobian,voxel.ti.vertices[i].begin(),new_dir.begin(),image::dim<3,3>(),image::dim<3,1>());
                 new_dir.normalize();
                 if(data.odf[i] >= data.min_odf)
                 for(unsigned int row = 0,w_row = w_pos;
@@ -325,7 +325,7 @@ public:
             }
         for(unsigned int i = 0,w_pos = 0;i < data.odf.size();++i,w_pos += voxel.ti.half_vertices_count)
         {
-            new_odf[i] = math::vector_op_dot(data.odf.begin(),data.odf.end(),w.begin()+w_pos)/
+            new_odf[i] = image::vec::dot(data.odf.begin(),data.odf.end(),w.begin()+w_pos)/
                     std::accumulate(w.begin()+w_pos,w.begin()+w_pos+voxel.ti.half_vertices_count,0.0f);
         }
         data.odf.swap(new_odf);
@@ -375,7 +375,7 @@ public:
             for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
             {
                 image::vector<3,double> dir(voxel.ti.vertices[j]),from;
-                math::matrix_product(jacobian,dir.begin(),from.begin(),math::dim<3,3>(),math::dim<3,1>());
+                image::matrix::product(jacobian,dir.begin(),from.begin(),image::dim<3,3>(),image::dim<3,1>());
                 from.normalize();
                 if(voxel.r2_weighted)
                     for (unsigned int i = 0; i < voxel.q_count; ++i,++index)
@@ -385,8 +385,8 @@ public:
                         sinc_ql[index] = boost::math::sinc_pi(q_vectors_time[i]*from);
 
             }
-            math::matrix_vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
-                                        math::dyndim(data.odf.size(),data.space.size()));
+            image::matrix::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
+                                        image::dyndim(data.odf.size(),data.space.size()));
         }
 
         // perform csf cross-subject normalization
@@ -401,7 +401,7 @@ public:
         }
 
         {
-            float J = std::abs(math::matrix_determinant(jacobian,math::dim<3,3>())*voxel_volume_scale);
+            float J = std::abs(image::matrix::determinant(jacobian,image::dim<3,3>())*voxel_volume_scale);
             std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 *= J);
             if(voxel.output_jacobian)
                 jdet[data.voxel_index] = J;

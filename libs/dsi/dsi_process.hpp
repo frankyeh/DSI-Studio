@@ -2,8 +2,15 @@
 #define DSI_PROCESS_HPP
 #define _USE_MATH_DEFINES
 #include <vector>
+#include <cmath>
+#include <map>
+#include <algorithm>
+#include <boost/lambda/lambda.hpp>
+#include <boost/lambda/bind.hpp>
 #include "basic_process.hpp"
 #include "basic_voxel.hpp"
+#include "space_mapping.hpp"
+
 class QSpace2Pdf  : public BaseProcess
 {
     std::vector<unsigned int> qspace_mapping1;
@@ -118,7 +125,7 @@ public:
                            boost::ref(data.odf)));
 
         // normalization
-        float sum = Accumulator()(data.odf);
+        float sum = image::mean(data.odf.begin(),data.odf.end());
         if (sum != 0.0)
             std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 *= (data.space[b0_index]/sum));
     }

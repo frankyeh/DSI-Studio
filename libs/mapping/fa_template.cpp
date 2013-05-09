@@ -1,5 +1,4 @@
 #include "image/image.hpp"
-#include "math/matrix_op.hpp"
 #include "fa_template.hpp"
 #include "libs/gzip_interface.hpp"
 bool fa_template::load_from_file(const char* file_name)
@@ -48,5 +47,5 @@ void fa_template::add_transformation(std::vector<float>& t)
         tt[i] = -tt[i];
     tt[3] += I.width()-1;
     tt[7] += I.height()-1;
-    math::matrix_product(tran.begin(),tt.begin(),t.begin(),math::dim<3,4>(),math::dim<4,4>());
+    image::matrix::product(tran.begin(),tt.begin(),t.begin(),image::dim<3,4>(),image::dim<4,4>());
  }
