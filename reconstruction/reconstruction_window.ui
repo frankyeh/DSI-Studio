@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>626</width>
-    <height>490</height>
+    <height>480</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -44,7 +44,7 @@
        <number>2</number>
       </property>
       <property name="tabSpacing">
-       <number>6</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="source_page">
        <property name="geometry">
@@ -52,7 +52,7 @@
          <x>0</x>
          <y>0</y>
          <width>626</width>
-         <height>406</height>
+         <height>414</height>
         </rect>
        </property>
        <attribute name="label">
@@ -198,7 +198,7 @@
          <x>0</x>
          <y>0</y>
          <width>626</width>
-         <height>406</height>
+         <height>414</height>
         </rect>
        </property>
        <attribute name="label">
@@ -305,9 +305,9 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>-62</y>
+         <y>0</y>
          <width>609</width>
-         <height>498</height>
+         <height>454</height>
         </rect>
        </property>
        <property name="minimumSize">
@@ -320,6 +320,12 @@
         <string>Step 2: select reconstruction method</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_2">
+        <property name="spacing">
+         <number>3</number>
+        </property>
+        <property name="margin">
+         <number>6</number>
+        </property>
         <item>
          <widget class="QGroupBox" name="groupBox">
           <property name="title">
@@ -375,95 +381,6 @@
               <string>Q-Space Diffeomorphic</string>
              </property>
             </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="ResolutionBox">
-          <property name="title">
-           <string/>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_9">
-           <property name="topMargin">
-            <number>6</number>
-           </property>
-           <property name="bottomMargin">
-            <number>6</number>
-           </property>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_10">
-             <property name="spacing">
-              <number>0</number>
-             </property>
-             <item>
-              <widget class="QLabel" name="label_15">
-               <property name="text">
-                <string>Registration method</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="reg_method">
-               <item>
-                <property name="text">
-                 <string>SPM norm 7-9-7</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>SPM norm 12-14-12</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <widget class="QToolButton" name="manual_reg">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>23</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>...</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_8">
-             <item>
-              <widget class="QLabel" name="label_8">
-               <property name="text">
-                <string>Output Resolution</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QDoubleSpinBox" name="mni_resolution">
-               <property name="maximumSize">
-                <size>
-                 <width>75</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="minimum">
-                <double>1.000000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>3.000000000000000</double>
-               </property>
-               <property name="singleStep">
-                <double>0.100000000000000</double>
-               </property>
-               <property name="value">
-                <double>2.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-            </layout>
            </item>
           </layout>
          </widget>
@@ -526,6 +443,12 @@
              </item>
              <item>
               <widget class="QSpinBox" name="SHOrder">
+               <property name="maximumSize">
+                <size>
+                 <width>75</width>
+                 <height>16777215</height>
+                </size>
+               </property>
                <property name="minimum">
                 <number>4</number>
                </property>
@@ -643,6 +566,92 @@
          </widget>
         </item>
         <item>
+         <widget class="QGroupBox" name="ResolutionBox">
+          <property name="title">
+           <string/>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_9">
+           <property name="topMargin">
+            <number>6</number>
+           </property>
+           <property name="bottomMargin">
+            <number>6</number>
+           </property>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_10">
+             <property name="spacing">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="label_15">
+               <property name="text">
+                <string>Registration method</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="reg_method">
+               <item>
+                <property name="text">
+                 <string>SPM norm 7-9-7</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>SPM norm 12-14-12</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="manual_reg">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>23</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>...</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_8">
+             <item>
+              <widget class="QLabel" name="label_8">
+               <property name="text">
+                <string>Output Resolution</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="mni_resolution">
+               <property name="maximumSize">
+                <size>
+                 <width>75</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>3</number>
+               </property>
+               <property name="value">
+                <number>2</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
          <layout class="QHBoxLayout" name="horizontalLayout_19">
           <item>
            <widget class="QPushButton" name="AdvancedOptions">
@@ -675,6 +684,9 @@
            </sizepolicy>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_7">
+           <property name="spacing">
+            <number>0</number>
+           </property>
            <property name="margin">
             <number>0</number>
            </property>
@@ -1117,6 +1129,9 @@
           <property name="orientation">
            <enum>Qt::Vertical</enum>
           </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Expanding</enum>
+          </property>
           <property name="sizeHint" stdset="0">
            <size>
             <width>20</width>
@@ -1126,100 +1141,127 @@
          </spacer>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_7">
-          <item>
-           <spacer name="horizontalSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QComboBox" name="ThreadCount">
-            <property name="maximumSize">
-             <size>
-              <width>75</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="currentIndex">
-             <number>3</number>
-            </property>
-            <item>
-             <property name="text">
-              <string>Off</string>
+         <widget class="QWidget" name="widget" native="true">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_20">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <property name="margin">
+            <number>0</number>
+           </property>
+           <item>
+            <spacer name="horizontalSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
              </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>2 threads</string>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
              </property>
-            </item>
-            <item>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_9">
              <property name="text">
-              <string>3 threads</string>
+              <string>Parallel reconstruction:</string>
              </property>
-            </item>
-            <item>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="ThreadCount">
+             <property name="maximumSize">
+              <size>
+               <width>75</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="currentIndex">
+              <number>3</number>
+             </property>
+             <item>
+              <property name="text">
+               <string>Off</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>2 threads</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>3 threads</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>4 threads</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>5 threads</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>6 threads</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>7 threads</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>8 threads</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>9 threads</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>10 threads</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCommandLinkButton" name="doDTI">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>40</height>
+              </size>
+             </property>
              <property name="text">
-              <string>4 threads</string>
+              <string>Run reconstruction</string>
              </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>5 threads</string>
+             <property name="description">
+              <string/>
              </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>6 threads</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>7 threads</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>8 threads</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>9 threads</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>10 threads</string>
-             </property>
-            </item>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCommandLinkButton" name="doDTI">
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>Run reconstruction</string>
-            </property>
-            <property name="description">
-             <string/>
-            </property>
-           </widget>
-          </item>
-         </layout>
+            </widget>
+           </item>
+          </layout>
+         </widget>
         </item>
        </layout>
       </widget>

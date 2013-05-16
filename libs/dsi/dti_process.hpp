@@ -4,18 +4,6 @@
 #include "basic_voxel.hpp"
 #include "image/image.hpp"
 
-struct CheckDTI
-{
-public:
-    template<typename ParamType>
-    static bool check(const ParamType& param)
-    {
-        if(param.bvalues.size() < 7 || param.bvalues.front() != 0)
-            return false;
-        return true;
-    }
-};
-
 class Dwi2Tensor : public BaseProcess
 {
     std::vector<float> d0;
@@ -152,92 +140,5 @@ public:
         mat_writer.add_matrix("radial_dif2",&*d2.begin(),1,d2.size());
     }
 };
-
-
-/*
-struct TensorCalculator
-{
-
-    static la::lu<float,la::dim<6,6> > iKtK;
-    static std::vector<float> Kt;
-    static float eps;
-
-public:
-    void operator()(std::vector<float>& pdf,Model& )
-    {
-        float tensor[9];
-        {
-            // S = S0-S
-            std::vector<float> S(_qcount-1);
-            {
-                float logs0 = std::log(pdf[SpaceMapping<dsi_range>::getIndex(0,0,0)]+eps);
-                for (unsigned int i = 1;i < _qcount;++i)
-                {
-                    float value = std::log(pdf[SpaceMapping<dsi_range>::
-                                                getIndex(qcode[i][0],qcode[i][1],qcode[i][2])]+eps);
-                    S[i-1] = (logs0 > value) ? logs0-value:0.0;
-                }
-
-            }
-
-            //  Kt S = Kt K D
-            float KtS[6];
-            la::matrix_product(Kt.begin(),S.begin(),KtS,
-                               la::dim<6,_qcount-1>(),la::dim<_qcount-1,1>());
-
-            float D[6];
-            iKtK.solve(KtS,D);
-            unsigned int tensor_index[9] = {0,3,4,3,1,5,4,5,2};
-            for (unsigned int index = 0;index < 9;++index)
-                tensor[index] = D[tensor_index[index]];
-        }
-        float V[9],d[3];
-        la::symmetric_matrix_eigen_decompose(tensor,V,d,la::dim<3,3>());
-
-        float fa;
-        float l1 = d[0];
-        float l2 = d[1];
-        float l3 = d[2];
-
-        {
-            float ll = (l1+l2+l3)/3.0;
-            if (l1 < 0.0 || ll == 0.0)
-            {
-                .setValue(0,1.0,0.0);
-                return;
-            }
-            float ll1 = l1-ll;
-            float ll2 = l2-ll;
-            float ll3 = l3-ll;
-            fa = std::sqrt(1.5*(ll1*ll1+ll2*ll2+ll3*ll3)/(l1*l1+l2*l2+l3*l3));
-        }
-
-
-        unsigned int dir_index = 0;
-        {
-            float max_value = 0.0;
-            float vx = V[0];
-            float vy = V[3];
-            float vz = V[6];
-            for (unsigned int index = 0;index < odf_size;++index)
-            {
-                float value = 0.0;
-                value += ti_vertices(index)[0]*vx;
-                value += ti_vertices(index)[1]*vy;
-                value += ti_vertices(index)[2]*vz;
-                if (value > max_value)
-                {
-                    max_value = value;
-                    dir_index = index;
-                }
-            }
-        }
-
-        .setValue(dir_index,l1,fa);
-
-    }
-
-};
-*/
 
 #endif//_PROCESS_HPP
