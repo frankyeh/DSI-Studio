@@ -16,9 +16,8 @@ namespace po = boost::program_options;
 // test example
 // --action=ana --source=20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
 
-int exp(int ac, char *av[])
+int exp(int ac, char *av[],std::ostream& out)
 {
-    std::ofstream out("log.txt");
     // options for fiber tracking
     po::options_description ana_desc("analysis options");
     ana_desc.add_options()

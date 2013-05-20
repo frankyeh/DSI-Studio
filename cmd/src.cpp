@@ -9,7 +9,7 @@
 namespace po = boost::program_options;
 QStringList search_files(QString dir,QString filter);
 bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files);
-int src(int ac, char *av[])
+int src(int ac, char *av[],std::ostream& out)
 {
     po::options_description rec_desc("dicom parsing options");
     rec_desc.add_options()
@@ -20,7 +20,6 @@ int src(int ac, char *av[])
     ("b_table", po::value<std::string>(), "assign the b-table")
     ("output", po::value<std::string>(), "assign the output filename")
     ;
-    std::ofstream out("log.txt");
     if(!ac)
     {
         std::cout << rec_desc << std::endl;

@@ -15,7 +15,7 @@ namespace po = boost::program_options;
  perform reconstruction
  */
 bool load_fa_template();
-int rec(int ac, char *av[])
+int rec(int ac, char *av[],std::ostream& out)
 {
     po::options_description rec_desc("reconstruction options");
     rec_desc.add_options()
@@ -47,8 +47,6 @@ int rec(int ac, char *av[])
     po::variables_map vm;
     po::store(po::command_line_parser(ac, av).options(rec_desc).allow_unregistered().run(), vm);
     po::notify(vm);
-
-    std::ofstream out("log.txt");
 
     std::string file_name = vm["source"].as<std::string>();
     out << "loading source..." <<std::endl;

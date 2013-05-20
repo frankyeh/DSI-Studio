@@ -16,11 +16,11 @@
 #include <iterator>
 namespace po = boost::program_options;
 
-int rec(int ac, char *av[]);
-int trk(int ac, char *av[]);
-int src(int ac, char *av[]);
-int ana(int ac, char *av[]);
-int exp(int ac, char *av[]);
+int rec(int ac, char *av[],std::ostream& out);
+int trk(int ac, char *av[],std::ostream& out);
+int src(int ac, char *av[],std::ostream& out);
+int ana(int ac, char *av[],std::ostream& out);
+int exp(int ac, char *av[],std::ostream& out);
 
 fa_template fa_template_imp;
 
@@ -93,12 +93,8 @@ int main(int ac, char *av[])
             {
                 std::cout << "example: perform reconstruction" << std::endl;
                 std::cout << "    --action=rec --source=test.src.gz --method=4 " << std::endl;
-                std::cout << "options:" << std::endl;
-                rec(0,0);
                 std::cout << "example: perform fiber tracking" << std::endl;
                 std::cout << "    --action=trk --source=test.src.gz.fib.gz --method=0 --fiber_count=5000" << std::endl;
-                std::cout << "options:" << std::endl;
-                trk(0,0);
                 return 1;
             }
 
@@ -108,15 +104,15 @@ int main(int ac, char *av[])
                 return 1;
             }
             if(vm["action"].as<std::string>() == std::string("rec"))
-                return rec(ac,av);
+                return rec(ac,av,std::cout);
             if(vm["action"].as<std::string>() == std::string("trk"))
-                return trk(ac,av);
+                return trk(ac,av,std::cout);
             if(vm["action"].as<std::string>() == std::string("src"))
-                return src(ac,av);
+                return src(ac,av,std::cout);
             if(vm["action"].as<std::string>() == std::string("ana"))
-                return ana(ac,av);
+                return ana(ac,av,std::cout);
             if(vm["action"].as<std::string>() == std::string("exp"))
-                return exp(ac,av);
+                return exp(ac,av,std::cout);
         }
         return 1;
     }
