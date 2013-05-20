@@ -70,6 +70,7 @@ private slots:
     void on_odf_sharpening_currentIndexChanged(int index);
     void on_RFSelection_currentIndexChanged(int index);
     void on_AdvancedOptions_clicked();
+    void on_save4dnifti_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

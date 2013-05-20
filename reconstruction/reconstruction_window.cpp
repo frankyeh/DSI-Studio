@@ -13,6 +13,7 @@
 #include "prog_interface_static_link.h"
 #include "tracking/region/Regions.h"
 #include "libs/dsi/image_model.hpp"
+#include "gzip_interface.hpp"
 #include "manual_alignment.h"
 
 
@@ -552,5 +553,37 @@ void reconstruction_window::on_AdvancedOptions_clicked()
     {
         ui->AdvancedWidget->setVisible(false);
         ui->AdvancedOptions->setText("Advanced Options >>");
+    }
+}
+
+void reconstruction_window::on_save4dnifti_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                                this,
+                                "Save image as...",
+                            filenames[0] + ".nii.gz",
+                                "All files (*.*)" );
+    if ( filename.isEmpty() )
+        return;
+    gz_nifti header;
+    {
+        float vs[4];
+        std::copy(handle->voxel.vs.begin(),handle->voxel.vs.end(),vs);
+        vs[3] = 1.0;
+        header.set_voxel_size(vs);
+    }
+    {
+        image::geometry<4> nifti_dim;
+        std::copy(dim.begin(),dim.end(),nifti_dim.begin());
+        nifti_dim[3] = handle->voxel.bvalues.size();
+        image::basic_image<float,4> buffer(nifti_dim);
+        for(unsigned int index = 0;index < handle->voxel.bvalues.size();++index)
+        {
+            std::copy(handle->dwi_data[index],
+                      handle->dwi_data[index]+dim.size(),
+                      buffer.begin() + index*dim.size());
+        }
+        header << buffer;
+        header.save_to_file(filename.toLocal8Bit().begin());
     }
 }
