@@ -66,7 +66,7 @@ class RenderingTableWidget;
      std::vector<float>odf_colors;
      unsigned char odf_dim;
      unsigned char odf_slide_pos;
-     void add_odf(int x,int y,int z);
+     void add_odf(image::pixel_index<3> pos);
 
  public slots:
      void makeTracts(void);

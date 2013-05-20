@@ -419,8 +419,6 @@ void GLWidget::paintGL()
             odf_points.clear();
             image::geometry<2> geo(slice.geometry[odf_dim==0?1:0],
                                    slice.geometry[odf_dim==2?1:2]);
-            float fa[3],dir[9];
-            int sX, sY, sZ;
             float fa_threshold = cur_tracking_window.ui->fa_threshold->value();
             unsigned char skip_mask_set[3] = {0,1,3};
             unsigned char mask = skip_mask_set[get_param("odf_skip")];
@@ -428,18 +426,21 @@ void GLWidget::paintGL()
             {
                 if((index[0] & mask) | (index[1] & mask))
                     continue;
-                if (!slice.get3dPosition(index[0],index[1],sX,sY,sZ) || fa[0] <= fa_threshold)
+                int x,y,z;
+                if (!slice.get3dPosition(index[0],index[1],x,y,z))
                     continue;
-                add_odf(sX,sY,sZ);
+                image::pixel_index<3> pos(x,y,z,cur_tracking_window.slice.geometry);
+                if (handle->fib_data.fib.getFA(pos.index(),0) <= fa_threshold)
+                    continue;
+                add_odf(pos);
             }
         }
         }
         else
         {
             odf_points.clear();
-            add_odf(slice.slice_pos[0],
-                    slice.slice_pos[1],
-                    slice.slice_pos[2]);
+            add_odf(image::pixel_index<3>(slice.slice_pos[0],slice.slice_pos[1],slice.slice_pos[2],
+                                          slice.geometry));
         }
         if(odf_colors.empty())
         {
@@ -690,16 +691,11 @@ void GLWidget::paintGL()
 
 }
 
-void GLWidget::add_odf(int x,int y,int z)
+void GLWidget::add_odf(image::pixel_index<3> pos)
 {
     ODFModel* handle = cur_tracking_window.handle;
-    image::vector<3,float> pos(x,y,z);
-
     const float* odf_buffer =
-            handle->fib_data.fib.get_odf_data(
-                image::pixel_index<3>(pos[0],pos[1],pos[2],cur_tracking_window.slice.geometry).index());
-
-
+            handle->fib_data.fib.get_odf_data(pos.index());
     if(!odf_buffer)
         return;
     static float size_set[] = {0.5,1.0,1.5,2.0,4.0,8.0,16.0,32.0};
