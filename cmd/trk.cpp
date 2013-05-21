@@ -39,6 +39,10 @@ int trk(int ac, char *av[],std::ostream& out)
     ("roi4", po::value<std::string>(), "file for the forth ROI regions")
     ("roi5", po::value<std::string>(), "file for the fifth ROI regions")
     ("roa", po::value<std::string>(), "file for ROA regions")
+    ("roa2", po::value<std::string>(), "file for ROA regions")
+    ("roa3", po::value<std::string>(), "file for ROA regions")
+    ("roa4", po::value<std::string>(), "file for ROA regions")
+    ("roa5", po::value<std::string>(), "file for ROA regions")
     ("end", po::value<std::string>(), "file for ending regions")
     ("end2", po::value<std::string>(), "file for ending regions")
     ("seed", po::value<std::string>(), "file for seed regions")
@@ -128,8 +132,8 @@ int trk(int ac, char *av[],std::ostream& out)
 
 
 
-    char roi_names[9][5] = {"roi","roi2","roi3","roi4","roi5","roa","end","end2","seed"};
-    unsigned char type[9] = {0,0,0,0,0,1,2,2,3};
+    char roi_names[13][5] = {"roi","roi2","roi3","roi4","roi5","roa","roa2","roa3","roa4","roa5","end","end2","seed"};
+    unsigned char type[13] = {0,0,0,0,0,1,1,1,1,1,2,2,3};
     for(int index = 0;index < 9;++index)
     if (vm.count(roi_names[index]))
     {
