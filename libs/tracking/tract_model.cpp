@@ -9,6 +9,7 @@
 #include "prog_interface_static_link.h"
 #include "mat_file.hpp"
 #include "libs/tracking/tracking_model.hpp"
+#include "gzip_interface.hpp"
 typedef class ReadMatFile MatReader;
 typedef class WriteMatFile MatWriter;
 
@@ -900,6 +901,29 @@ void TractModel::get_density_map(
         cmap *= 255.0*sum/max_value;
         mapping[index] = image::rgb_color(cmap[0],cmap[1],cmap[2]);
     }
+}
+
+void TractModel::save_tdi(const char* file_name,bool sub_voxel,bool endpoint)
+{
+    std::vector<float> tr(16);
+    tr[0] = tr[5] = tr[10] = tr[15] = (sub_voxel ? 4.0:1.0);
+    image::vector<3,float> new_vs(vs);
+    if(sub_voxel)
+        new_vs /= 4.0;
+    image::basic_image<unsigned int,3> tdi;
+
+    if(sub_voxel)
+        tdi.resize(image::geometry<3>(geometry[0]*4,geometry[1]*4,geometry[2]*4));
+    else
+        tdi.resize(geometry);
+
+    get_density_map(tdi,tr,endpoint);
+    gz_nifti nii_header;
+    image::flip_xy(tdi);
+    nii_header << tdi;
+    nii_header.set_voxel_size(new_vs.begin());
+    nii_header.save_to_file(file_name);
+
 }
 
 

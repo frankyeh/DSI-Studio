@@ -9,7 +9,7 @@
 namespace po = boost::program_options;
 QStringList search_files(QString dir,QString filter);
 bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files);
-int src(int ac, char *av[],std::ostream& out)
+int src(int ac, char *av[])
 {
     po::options_description rec_desc("dicom parsing options");
     rec_desc.add_options()
@@ -45,7 +45,7 @@ int src(int ac, char *av[],std::ostream& out)
         QDir directory = QString(source.c_str());
         if(vm.count("recursive"))
         {
-            out << "search recursively in the subdir" << std::endl;
+            std::cout << "search recursively in the subdir" << std::endl;
             file_list = search_files(source.c_str(),"*.dcm");
         }
         else
@@ -54,18 +54,18 @@ int src(int ac, char *av[],std::ostream& out)
             for (unsigned int index = 0;index < file_list.size();++index)
                 file_list[index] = QString(source.c_str()) + "/" + file_list[index];
         }
-        out << "A total of " << file_list.size() <<" files found in the directory" << std::endl;
+        std::cout << "A total of " << file_list.size() <<" files found in the directory" << std::endl;
     }
 
     if(file_list.empty())
     {
-        out << "No file found for creating src" << std::endl;
+        std::cout << "No file found for creating src" << std::endl;
         return -1;
     }
 
     if(!load_all_files(file_list,dwi_files))
     {
-        out << "Invalid file format" << std::endl;
+        std::cout << "Invalid file format" << std::endl;
         return -1;
     }
     if(vm.count("b_table"))
@@ -74,7 +74,7 @@ int src(int ac, char *av[],std::ostream& out)
         std::ifstream in(table_file_name.c_str());
         if(!in)
         {
-            out << "Failed to open b-table" <<std::endl;
+            std::cout << "Failed to open b-table" <<std::endl;
             return -1;
         }
         std::string line;
@@ -88,7 +88,7 @@ int src(int ac, char *av[],std::ostream& out)
         }
         if(b_table.size() != dwi_files.size()*4)
         {
-            out << "Mismatch between b-table and the loaded image" << std::endl;
+            std::cout << "Mismatch between b-table and the loaded image" << std::endl;
             return -1;
         }
         for(unsigned int index = 0,b_index = 0;index < dwi_files.size();++index,b_index += 4)
@@ -96,15 +96,15 @@ int src(int ac, char *av[],std::ostream& out)
             dwi_files[index].set_bvalue(b_table[b_index]);
             dwi_files[index].set_bvec(b_table[b_index+1],b_table[b_index+2],b_table[b_index+3]);
         }
-        out << "B-table " << table_file_name << " loaded" << std::endl;
+        std::cout << "B-table " << table_file_name << " loaded" << std::endl;
     }
 
     if(dwi_files.empty())
     {
-        out << "No file readed. Abort." << std::endl;
+        std::cout << "No file readed. Abort." << std::endl;
         return 1;
     }
-    out << "Output src" << std::endl;
+    std::cout << "Output src" << std::endl;
     DwiHeader::output_src(vm["output"].as<std::string>().c_str(),dwi_files,false,false);
     return 0;
 }

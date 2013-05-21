@@ -16,7 +16,7 @@ namespace po = boost::program_options;
 // test example
 // --action=ana --source=20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
 
-int exp(int ac, char *av[],std::ostream& out)
+int exp(int ac, char *av[])
 {
     // options for fiber tracking
     po::options_description ana_desc("analysis options");
@@ -29,7 +29,7 @@ int exp(int ac, char *av[],std::ostream& out)
 
     if(!ac)
     {
-        out << ana_desc << std::endl;
+        std::cout << ana_desc << std::endl;
         return 1;
     }
 
@@ -39,15 +39,15 @@ int exp(int ac, char *av[],std::ostream& out)
 
     MatFile mat_reader;
     std::string file_name = vm["source"].as<std::string>();
-    out << "loading " << file_name.c_str() << "..." <<std::endl;
+    std::cout << "loading " << file_name.c_str() << "..." <<std::endl;
     if(!QFileInfo(file_name.c_str()).exists())
     {
-        out << file_name.c_str() << " does not exist. terminating..." << std::endl;
+        std::cout << file_name.c_str() << " does not exist. terminating..." << std::endl;
         return 0;
     }
     if (!mat_reader.load_from_file(file_name.c_str()))
     {
-        out << "Invalid file format" << std::endl;
+        std::cout << "Invalid file format" << std::endl;
         return 0;
     }
 
@@ -55,13 +55,13 @@ int exp(int ac, char *av[],std::ostream& out)
     const unsigned short* dim_buf = 0;
     if(!mat_reader.get_matrix("dimension",row,col,dim_buf))
     {
-        out << "Cannot find dimension matrix in the file" << file_name.c_str() <<std::endl;
+        std::cout << "Cannot find dimension matrix in the file" << file_name.c_str() <<std::endl;
         return 0;
     }
     const float* vs = 0;
     if(!mat_reader.get_matrix("voxel_size",row,col,vs))
     {
-        out << "Cannot find voxel_size matrix in the file" << file_name.c_str() <<std::endl;
+        std::cout << "Cannot find voxel_size matrix in the file" << file_name.c_str() <<std::endl;
         return 0;
     }
 
@@ -78,17 +78,17 @@ int exp(int ac, char *av[],std::ostream& out)
         file_name_stat += ".nii.gz";
         gz_nifti nifti_header;
         const float* volume = 0;
-        out << "retriving matrix " << cmd.c_str() << std::endl;
+        std::cout << "retriving matrix " << cmd.c_str() << std::endl;
         if(!mat_reader.get_matrix(cmd.c_str(),row,col,volume))
         {
-            out << "Cannot find matrix "<< cmd.c_str() <<" in the file" << file_name.c_str() <<std::endl;
+            std::cout << "Cannot find matrix "<< cmd.c_str() <<" in the file" << file_name.c_str() <<std::endl;
             continue;
         }
         if(row*col != geometry.size())
         {
-            out << "The matrix "<< cmd.c_str() <<" is not an image volume" <<std::endl;
-            out << "matrix size: " << row << " by " << col << std::endl;
-            out << "expected dimension: " << geometry[0] << " by " << geometry[1] << " by " << geometry[2] << std::endl;
+            std::cout << "The matrix "<< cmd.c_str() <<" is not an image volume" <<std::endl;
+            std::cout << "matrix size: " << row << " by " << col << std::endl;
+            std::cout << "expected dimension: " << geometry[0] << " by " << geometry[1] << " by " << geometry[2] << std::endl;
             continue;
         }
         image::basic_image<float,3> data(geometry);
@@ -97,6 +97,6 @@ int exp(int ac, char *av[],std::ostream& out)
         nifti_header << data;
         nifti_header.set_voxel_size(vs);
         nifti_header.save_to_file(file_name_stat.c_str());
-        out << "write to file " << file_name_stat.c_str() << std::endl;
+        std::cout << "write to file " << file_name_stat.c_str() << std::endl;
     }
 }

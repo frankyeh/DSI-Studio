@@ -15,7 +15,7 @@ namespace po = boost::program_options;
  perform reconstruction
  */
 bool load_fa_template();
-int rec(int ac, char *av[],std::ostream& out)
+int rec(int ac, char *av[])
 {
     po::options_description rec_desc("reconstruction options");
     rec_desc.add_options()
@@ -49,14 +49,14 @@ int rec(int ac, char *av[],std::ostream& out)
     po::notify(vm);
 
     std::string file_name = vm["source"].as<std::string>();
-    out << "loading source..." <<std::endl;
+    std::cout << "loading source..." <<std::endl;
     std::auto_ptr<ImageModel> handle(new ImageModel);
     if (!handle->load_from_file(file_name.c_str()))
     {
-        out << "Load src file failed:" << handle->error_msg.c_str() << std::endl;
+        std::cout << "Load src file failed:" << handle->error_msg.c_str() << std::endl;
         return 1;
     }
-    out << "src loaded" <<std::endl;
+    std::cout << "src loaded" <<std::endl;
 
     float param[4] = {0,0,0,0};
     int method_index = 0;
@@ -81,7 +81,7 @@ int rec(int ac, char *av[],std::ostream& out)
     {
         if(!load_fa_template())
         {
-            out << "Cannot find FA template" << std::endl;
+            std::cout << "Cannot find FA template" << std::endl;
             return -1;
         }
         param[0] = 1.2;
@@ -121,26 +121,26 @@ int rec(int ac, char *av[],std::ostream& out)
     handle->voxel.reg_method = vm["reg_method"].as<int>();
 
     {
-        out << "method=" << method_index << std::endl;
-        out << "odf_order=" << vm["odf_order"].as<int>() << std::endl;
-        out << "num_fiber=" << vm["num_fiber"].as<int>() << std::endl;
+        std::cout << "method=" << method_index << std::endl;
+        std::cout << "odf_order=" << vm["odf_order"].as<int>() << std::endl;
+        std::cout << "num_fiber=" << vm["num_fiber"].as<int>() << std::endl;
         if(handle->voxel.need_odf)
-            out << "record ODF in the fib file" << std::endl;
+            std::cout << "record ODF in the fib file" << std::endl;
         if(handle->voxel.odf_deconvolusion)
-            out << "apply deconvolution" << std::endl;
+            std::cout << "apply deconvolution" << std::endl;
         if(handle->voxel.odf_decomposition)
-            out << "apply decomposition" << std::endl;
+            std::cout << "apply decomposition" << std::endl;
         if(handle->voxel.half_sphere)
-            out << "half sphere is used" << std::endl;
+            std::cout << "half sphere is used" << std::endl;
         if(handle->voxel.r2_weighted && method_index == 4)
-            out << "r2 weighted is used for GQI" << std::endl;
+            std::cout << "r2 weighted is used for GQI" << std::endl;
     }
 
     {
         if(vm.count("mask"))
         {
             std::string mask_file = vm["mask"].as<std::string>();
-            out << "reading mask..." << mask_file << std::endl;
+            std::cout << "reading mask..." << mask_file << std::endl;
             gz_nifti header;
             if(header.load_from_file(mask_file.c_str()))
             {
@@ -155,17 +155,17 @@ int rec(int ac, char *av[],std::ostream& out)
                     image::flip_xy(external_mask);
 
                 if(external_mask.geometry() != handle->voxel.dim)
-                    out << "In consistent the mask dimension...using default mask" << std::endl;
+                    std::cout << "In consistent the mask dimension...using default mask" << std::endl;
                 else
                     handle->mask = external_mask;
             }
             else
-                out << "fail reading the mask...using default mask" << std::endl;
+                std::cout << "fail reading the mask...using default mask" << std::endl;
         }
     }
-    out << "start reconstruction..." <<std::endl;
+    std::cout << "start reconstruction..." <<std::endl;
     const char* msg = reconstruction(handle.get(),method_index,param);
     if (!msg)
-        out << "Reconstruction finished:" << msg << std::endl;
+        std::cout << "Reconstruction finished:" << msg << std::endl;
     return 0;
 }

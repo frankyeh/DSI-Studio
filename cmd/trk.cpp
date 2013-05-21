@@ -17,7 +17,7 @@ namespace po = boost::program_options;
 // test example
 // --action=trk --source=./test/20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
 
-int trk(int ac, char *av[],std::ostream& out)
+int trk(int ac, char *av[])
 {
     try{
     // options for fiber tracking
@@ -59,7 +59,7 @@ int trk(int ac, char *av[],std::ostream& out)
 
     if(!ac)
     {
-        out << trk_desc << std::endl;
+        std::cout << trk_desc << std::endl;
         return 1;
     }
 
@@ -70,25 +70,25 @@ int trk(int ac, char *av[],std::ostream& out)
     std::auto_ptr<ODFModel> handle(new ODFModel);
     {
         std::string file_name = vm["source"].as<std::string>();
-        out << "loading " << file_name.c_str() << "..." <<std::endl;
+        std::cout << "loading " << file_name.c_str() << "..." <<std::endl;
         if(!QFileInfo(file_name.c_str()).exists())
         {
-            out << file_name.c_str() << " does not exist. terminating..." << std::endl;
+            std::cout << file_name.c_str() << " does not exist. terminating..." << std::endl;
             return 0;
         }
         if (!handle->load_from_file(file_name.c_str()))
         {
-            out << "Open file " << file_name.c_str() << " failed" << std::endl;
-            out << "msg:" << handle->fib_data.error_msg.c_str() << std::endl;
+            std::cout << "Open file " << file_name.c_str() << " failed" << std::endl;
+            std::cout << "msg:" << handle->fib_data.error_msg.c_str() << std::endl;
             return 0;
         }
     }
     if (vm.count("threshold_index"))
     {
-        out << "setting index to " << vm["threshold_index"].as<std::string>() << std::endl;
+        std::cout << "setting index to " << vm["threshold_index"].as<std::string>() << std::endl;
         if(!handle->fib_data.fib.set_tracking_index(vm["threshold_index"].as<std::string>()))
         {
-            out << "failed...cannot find the index";
+            std::cout << "failed...cannot find the index";
             return 0;
         }
     }
@@ -126,7 +126,7 @@ int trk(int ac, char *av[],std::ostream& out)
         termination_count = vm["seed_count"].as<int>();
         tracking_thread.stop_by_tract = false;
     }
-    out << (tracking_thread.stop_by_tract ? "fiber_count=" : "seed_count=") <<
+    std::cout << (tracking_thread.stop_by_tract ? "fiber_count=" : "seed_count=") <<
             termination_count << std::endl;
 
 
@@ -141,23 +141,23 @@ int trk(int ac, char *av[],std::ostream& out)
         std::string file_name = vm[roi_names[index]].as<std::string>();
         if(!QFileInfo(file_name.c_str()).exists())
         {
-            out << file_name.c_str() << " does not exist. terminating..." << std::endl;
+            std::cout << file_name.c_str() << " does not exist. terminating..." << std::endl;
             return 0;
         }
         if(!roi.LoadFromFile(file_name.c_str(),handle->fib_data.trans_to_mni))
         {
-            out << "Invalid file format:" << file_name << std::endl;
+            std::cout << "Invalid file format:" << file_name << std::endl;
             return 0;
         }
         tracking_thread.setRegions(geometry,roi.get(),type[index]);
-        out << roi_names[index] << "=" << file_name << std::endl;
+        std::cout << roi_names[index] << "=" << file_name << std::endl;
     }
 
     if (!vm.count("seed"))
     {
 
         std::vector<image::vector<3,short> > seed;
-        out << "no seeding area assigned. perform whole brain tracking" << std::endl;
+        std::cout << "no seeding area assigned. perform whole brain tracking" << std::endl;
         for(image::pixel_index<3> index;index.valid(geometry);index.next(geometry))
             if(fa0[index.index()] > 0)
                 seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
@@ -169,7 +169,7 @@ int trk(int ac, char *av[],std::ostream& out)
 
 
 
-    out << "start tracking..." << std::endl;
+    std::cout << "start tracking..." << std::endl;
     TractModel tract_model(handle.get(),geometry,voxel_size);
 
     if (vm.count("fa_threshold") )
@@ -180,17 +180,17 @@ int trk(int ac, char *av[],std::ostream& out)
 
 
     {
-        out << "turning_angle=" << vm["turning_angle"].as<float>() << std::endl;
-        out << "fa_threshold=" << tract_model.get_fib().threshold << std::endl;
-        out << "step_size=" << tracking_thread.param.step_size << std::endl;
-        out << "smoothing=" << tracking_thread.param.smooth_fraction << std::endl;
-        out << "min_length=" << vm["min_length"].as<float>() << std::endl;
-        out << "max_length=" << vm["max_length"].as<float>() << std::endl;
-        out << "tracking_method=" << tracking_thread.tracking_method << std::endl;
-        out << "initial direction=" << tracking_thread.tracking_method << std::endl;
-        out << "interpolation=" << tracking_thread.interpolation_strategy << std::endl;
-        out << "voxelwise=" << tracking_thread.center_seed << std::endl;
-        out << "thread_count=" << vm["thread_count"].as<int>() << std::endl;
+        std::cout << "turning_angle=" << vm["turning_angle"].as<float>() << std::endl;
+        std::cout << "fa_threshold=" << tract_model.get_fib().threshold << std::endl;
+        std::cout << "step_size=" << tracking_thread.param.step_size << std::endl;
+        std::cout << "smoothing=" << tracking_thread.param.smooth_fraction << std::endl;
+        std::cout << "min_length=" << vm["min_length"].as<float>() << std::endl;
+        std::cout << "max_length=" << vm["max_length"].as<float>() << std::endl;
+        std::cout << "tracking_method=" << tracking_thread.tracking_method << std::endl;
+        std::cout << "initial direction=" << tracking_thread.tracking_method << std::endl;
+        std::cout << "interpolation=" << tracking_thread.interpolation_strategy << std::endl;
+        std::cout << "voxelwise=" << tracking_thread.center_seed << std::endl;
+        std::cout << "thread_count=" << vm["thread_count"].as<int>() << std::endl;
 
     }
 
@@ -198,7 +198,7 @@ int trk(int ac, char *av[],std::ostream& out)
 
     tracking_thread.fetchTracks(&tract_model);
 
-    out << "finished tracking." << std::endl;
+    std::cout << "finished tracking." << std::endl;
     std::string file_name;
     if (vm.count("output"))
         file_name = vm["output"].as<std::string>();
@@ -217,7 +217,7 @@ int trk(int ac, char *av[],std::ostream& out)
         file_name = fout.str();
     }
 
-    out << "output file:" << file_name << std::endl;
+    std::cout << "output file:" << file_name << std::endl;
     tract_model.save_tracts_to_file(file_name.c_str());
 
     if(vm.count("export"))
@@ -234,25 +234,23 @@ int trk(int ac, char *av[],std::ostream& out)
             // export statistics
             if(cmd == "tdi")
             {
-                out << "export tract density images..." << std::endl;
-                image::basic_image<unsigned int,3> tdi(geometry);
-                std::vector<float> tr(16);
-                tr[0] = tr[5] = tr[10] = tr[15] = 1.0;
-                tract_model.get_density_map(tdi,tr,false);
-                gz_nifti nii_header;
-                image::flip_xy(tdi);
-                nii_header << tdi;
-                nii_header.set_voxel_size(voxel_size.begin());
-                file_name_stat += ".nii.gz";
-                nii_header.save_to_file(file_name_stat.c_str());
+                std::cout << "export tract density images..." << std::endl;
+                tract_model.save_tdi(file_name_stat.c_str(),false,false);
                 continue;
             }
+            if(cmd == "tdi2")
+            {
+                std::cout << "export tract density images..." << std::endl;
+                tract_model.save_tdi(file_name_stat.c_str(),true,false);
+                continue;
+            }
+
 
             file_name_stat += ".txt";
 
             if(cmd == "stat")
             {
-                out << "export statistics..." << std::endl;
+                std::cout << "export statistics..." << std::endl;
                 std::ofstream out_stat(file_name_stat.c_str());
                 std::string result;
                 tract_model.get_quantitative_info(result);
@@ -262,7 +260,7 @@ int trk(int ac, char *av[],std::ostream& out)
 
             if(cmd == "fa" || cmd == "qa")
             {
-                out << "export..." << cmd << std::endl;
+                std::cout << "export..." << cmd << std::endl;
                 tract_model.save_fa_to_file(file_name_stat.c_str());
                 continue;
             }
@@ -270,7 +268,7 @@ int trk(int ac, char *av[],std::ostream& out)
                 tract_model.save_data_to_file(file_name_stat.c_str(),cmd);
             else
             {
-                out << "cannot find index name:" << cmd << std::endl;
+                std::cout << "cannot find index name:" << cmd << std::endl;
                 continue;
             }
         }
@@ -279,7 +277,7 @@ int trk(int ac, char *av[],std::ostream& out)
 
     if (vm.count("endpoint"))
     {
-        out << "output endpoint." << std::endl;
+        std::cout << "output endpoint." << std::endl;
         file_name += ".end.txt";
         tract_model.save_end_points(file_name.c_str());
     }
@@ -287,16 +285,16 @@ int trk(int ac, char *av[],std::ostream& out)
     }
     catch(boost::exception const&  ex)
     {
-        out << "program terminated due to exception:" <<
+        std::cout << "program terminated due to exception:" <<
                boost::diagnostic_information(ex) << std::endl;
     }
     catch(std::exception const&  ex)
     {
-        out << "program terminated due to exception:" << ex.what() << std::endl;
+        std::cout << "program terminated due to exception:" << ex.what() << std::endl;
     }
     catch(...)
     {
-        out << "program terminated due to unkown exception" << std::endl;
+        std::cout << "program terminated due to unkown exception" << std::endl;
     }
 
 }

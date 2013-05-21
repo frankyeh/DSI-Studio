@@ -16,11 +16,11 @@
 #include <iterator>
 namespace po = boost::program_options;
 
-int rec(int ac, char *av[],std::ostream& out);
-int trk(int ac, char *av[],std::ostream& out);
-int src(int ac, char *av[],std::ostream& out);
-int ana(int ac, char *av[],std::ostream& out);
-int exp(int ac, char *av[],std::ostream& out);
+int rec(int ac, char *av[]);
+int trk(int ac, char *av[]);
+int src(int ac, char *av[]);
+int ana(int ac, char *av[]);
+int exp(int ac, char *av[]);
 
 fa_template fa_template_imp;
 
@@ -104,15 +104,15 @@ int main(int ac, char *av[])
                 return 1;
             }
             if(vm["action"].as<std::string>() == std::string("rec"))
-                return rec(ac,av,std::cout);
+                return rec(ac,av);
             if(vm["action"].as<std::string>() == std::string("trk"))
-                return trk(ac,av,std::cout);
+                return trk(ac,av);
             if(vm["action"].as<std::string>() == std::string("src"))
-                return src(ac,av,std::cout);
+                return src(ac,av);
             if(vm["action"].as<std::string>() == std::string("ana"))
-                return ana(ac,av,std::cout);
+                return ana(ac,av);
             if(vm["action"].as<std::string>() == std::string("exp"))
-                return exp(ac,av,std::cout);
+                return exp(ac,av);
         }
         return 1;
     }

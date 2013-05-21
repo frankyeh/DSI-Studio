@@ -16,7 +16,7 @@ namespace po = boost::program_options;
 // test example
 // --action=ana --source=20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
 
-int ana(int ac, char *av[],std::ostream& out)
+int ana(int ac, char *av[])
 {
     // options for fiber tracking
     po::options_description ana_desc("analysis options");
@@ -30,7 +30,7 @@ int ana(int ac, char *av[],std::ostream& out)
 
     if(!ac)
     {
-        out << ana_desc << std::endl;
+        std::cout << ana_desc << std::endl;
         return 1;
     }
 
@@ -41,15 +41,15 @@ int ana(int ac, char *av[],std::ostream& out)
     std::auto_ptr<ODFModel> handle(new ODFModel);
     {
         std::string file_name = vm["source"].as<std::string>();
-        out << "loading " << file_name.c_str() << "..." <<std::endl;
+        std::cout << "loading " << file_name.c_str() << "..." <<std::endl;
         if(!QFileInfo(file_name.c_str()).exists())
         {
-            out << file_name.c_str() << " does not exist. terminating..." << std::endl;
+            std::cout << file_name.c_str() << " does not exist. terminating..." << std::endl;
             return 0;
         }
         if (!handle->load_from_file(file_name.c_str()))
         {
-            out << "Cannot open file " << file_name.c_str() <<std::endl;
+            std::cout << "Cannot open file " << file_name.c_str() <<std::endl;
             return 0;
         }
     }
@@ -63,58 +63,37 @@ int ana(int ac, char *av[],std::ostream& out)
 
     std::string file_name = vm["tract"].as<std::string>();
     {
-        out << "loading " << file_name.c_str() << "..." <<std::endl;
+        std::cout << "loading " << file_name.c_str() << "..." <<std::endl;
         if(!QFileInfo(file_name.c_str()).exists())
         {
-            out << file_name.c_str() << " does not exist. terminating..." << std::endl;
+            std::cout << file_name.c_str() << " does not exist. terminating..." << std::endl;
             return 0;
         }
         if (!tract_model.load_from_file(file_name.c_str()))
         {
-            out << "Cannot open file " << file_name.c_str() << std::endl;
+            std::cout << "Cannot open file " << file_name.c_str() << std::endl;
             return 0;
         }
     }
     if(vm.count("export") && vm["export"].as<std::string>() == std::string("tdi"))
     {
-        out << "export tract density images..." << std::endl;
+        std::cout << "export tract density images..." << std::endl;
         std::string file_name_stat(file_name);
         file_name_stat += ".tdi.nii.gz";
-        image::basic_image<unsigned int,3> tdi(geometry);
-        std::vector<float> tr(16);
-        tr[0] = tr[5] = tr[10] = tr[15] = 1.0;
-        tract_model.get_density_map(tdi,tr,false);
-
-        gz_nifti nii_header;
-        image::flip_xy(tdi);
-        nii_header << tdi;
-        nii_header.set_voxel_size(voxel_size.begin());
-        nii_header.save_to_file(file_name_stat.c_str());
+        tract_model.save_tdi(file_name_stat.c_str(),false,false);
         return 0;
     }
     if(vm.count("export") && vm["export"].as<std::string>() == std::string("tdi2"))
     {
-        out << "export tract density images..." << std::endl;
+        std::cout << "export tract density images in subvoxel resolution..." << std::endl;
         std::string file_name_stat(file_name);
         file_name_stat += ".tdi2.nii.gz";
-
-        std::vector<float> tr(16);
-        tr[0] = tr[5] = tr[10] = tr[15] = 4.0;
-        image::basic_image<unsigned int,3> tdi(image::geometry<3>(geometry[0]*4,geometry[1]*4,geometry[2]*4));
-        image::vector<3,float> new_vs(voxel_size);
-        new_vs /= 4.0;
-        tract_model.get_density_map(tdi,tr,false);
-
-        gz_nifti nii_header;
-        image::flip_xy(tdi);
-        nii_header << tdi;
-        nii_header.set_voxel_size(new_vs.begin());
-        nii_header.save_to_file(file_name_stat.c_str());
+        tract_model.save_tdi(file_name_stat.c_str(),true,false);
         return 0;
     }
     if(vm.count("export") && vm["export"].as<std::string>() == std::string("statistics"))
     {
-        out << "export statistics..." << std::endl;
+        std::cout << "export statistics..." << std::endl;
         std::string file_name_stat(file_name);
         file_name_stat += ".statistics.txt";
         std::ofstream out(file_name_stat.c_str());
@@ -128,11 +107,11 @@ int ana(int ac, char *av[],std::ostream& out)
         tract_model.get_quantitative_data(data);
         for(unsigned int i = 0;i < titles.size();++i)
         {
-            out << titles[i] << "\t";
+            std::cout << titles[i] << "\t";
             if(i < data.size())
-                out << data[i];
-            out << "\t";
-            out << std::endl;
+                std::cout << data[i];
+            std::cout << "\t";
+            std::cout << std::endl;
         }
         return 0;
     }
@@ -148,20 +127,20 @@ int ana(int ac, char *av[],std::ostream& out)
         // check index
         if(index_name != "qa" && index_name != "fa" &&  handle->get_name_index(index_name) == handle->fib_data.view_item.size())
         {
-            out << "cannot find index name:" << index_name << std::endl;
+            std::cout << "cannot find index name:" << index_name << std::endl;
             return 0;
         }
         if(bandwidth == 0)
         {
-            out << "please specify bandwidth value" << std::endl;
+            std::cout << "please specify bandwidth value" << std::endl;
             return 0;
         }
         if(profile_dir > 4)
         {
-            out << "please specify a valid profile type" << std::endl;
+            std::cout << "please specify a valid profile type" << std::endl;
             return 0;
         }
-        out << "calculating report" << std::endl;
+        std::cout << "calculating report" << std::endl;
         tract_model.get_report(
                             profile_dir,
                             bandwidth,
@@ -173,7 +152,7 @@ int ana(int ac, char *av[],std::ostream& out)
         file_name_stat += ".";
         file_name_stat += report_cmd;
         file_name_stat += ".txt";
-        out << "output report:" << file_name_stat << std::endl;
+        std::cout << "output report:" << file_name_stat << std::endl;
         std::ofstream report(file_name_stat.c_str());
         report << "position\t";
         std::copy(values.begin(),values.end(),std::ostream_iterator<float>(report,"\t"));
@@ -183,6 +162,6 @@ int ana(int ac, char *av[],std::ostream& out)
         report << std::endl;
         return 0;
     }
-    out << "unknown export specification" << std::endl;
+    std::cout << "unknown export specification" << std::endl;
     return 0;
 }

@@ -93,6 +93,8 @@ public:
              const std::vector<float>& transformation,bool endpoint);
         void get_density_map(image::basic_image<image::rgb_color,3>& mapping,
              const std::vector<float>& transformation,bool endpoint);
+        void save_tdi(const char* file_name,bool sub_voxel,bool endpoint);
+
         void get_quantitative_data(std::vector<float>& data);
         void get_quantitative_info(std::string& result);
         void get_report(unsigned int profile_dir,float band_width,const std::string& index_name,
