@@ -242,15 +242,15 @@ int trk(int ac, char *av[])
             // export statistics
             if(cmd == "tdi")
             {
-                std::cout << "export tract density images..." << std::endl;
-                file_name_stat + ".nii.gz";
+                file_name_stat += ".nii.gz";
+                std::cout << "export TDI to " << file_name_stat.c_str() << std::endl;
                 tract_model.save_tdi(file_name_stat.c_str(),false,false);
                 continue;
             }
             if(cmd == "tdi2")
             {
-                std::cout << "export tract density images..." << std::endl;
-                file_name_stat + ".nii.gz";
+                file_name_stat += ".nii.gz";
+                std::cout << "export subvoxel TDI to " << file_name_stat.c_str() << std::endl;
                 tract_model.save_tdi(file_name_stat.c_str(),true,false);
                 continue;
             }
