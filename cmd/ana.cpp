@@ -92,6 +92,26 @@ int ana(int ac, char *av[],std::ostream& out)
         nii_header.save_to_file(file_name_stat.c_str());
         return 0;
     }
+    if(vm.count("export") && vm["export"].as<std::string>() == std::string("tdi2"))
+    {
+        out << "export tract density images..." << std::endl;
+        std::string file_name_stat(file_name);
+        file_name_stat += ".tdi2.nii.gz";
+
+        std::vector<float> tr(16);
+        tr[0] = tr[5] = tr[10] = tr[15] = 4.0;
+        image::basic_image<unsigned int,3> tdi(image::geometry<3>(geometry[0]*4,geometry[1]*4,geometry[2]*4));
+        image::vector<3,float> new_vs(voxel_size);
+        new_vs /= 4.0;
+        tract_model.get_density_map(tdi,tr,false);
+
+        gz_nifti nii_header;
+        image::flip_xy(tdi);
+        nii_header << tdi;
+        nii_header.set_voxel_size(new_vs.begin());
+        nii_header.save_to_file(file_name_stat.c_str());
+        return 0;
+    }
     if(vm.count("export") && vm["export"].as<std::string>() == std::string("statistics"))
     {
         out << "export statistics..." << std::endl;
