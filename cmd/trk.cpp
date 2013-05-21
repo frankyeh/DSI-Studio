@@ -88,7 +88,7 @@ int trk(int ac, char *av[])
         std::cout << "setting index to " << vm["threshold_index"].as<std::string>() << std::endl;
         if(!handle->fib_data.fib.set_tracking_index(vm["threshold_index"].as<std::string>()))
         {
-            std::cout << "failed...cannot find the index";
+            std::cout << "failed...cannot find the index" << std::endl;
             return 0;
         }
     }
@@ -134,7 +134,7 @@ int trk(int ac, char *av[])
 
     char roi_names[13][5] = {"roi","roi2","roi3","roi4","roi5","roa","roa2","roa3","roa4","roa5","end","end2","seed"};
     unsigned char type[13] = {0,0,0,0,0,1,1,1,1,1,2,2,3};
-    for(int index = 0;index < 9;++index)
+    for(int index = 0;index < 13;++index)
     if (vm.count(roi_names[index]))
     {
         ROIRegion roi(geometry, voxel_size);
@@ -186,10 +186,10 @@ int trk(int ac, char *av[])
         std::cout << "smoothing=" << tracking_thread.param.smooth_fraction << std::endl;
         std::cout << "min_length=" << vm["min_length"].as<float>() << std::endl;
         std::cout << "max_length=" << vm["max_length"].as<float>() << std::endl;
-        std::cout << "tracking_method=" << tracking_thread.tracking_method << std::endl;
-        std::cout << "initial direction=" << tracking_thread.tracking_method << std::endl;
-        std::cout << "interpolation=" << tracking_thread.interpolation_strategy << std::endl;
-        std::cout << "voxelwise=" << tracking_thread.center_seed << std::endl;
+        std::cout << "tracking_method=" << (int)tracking_thread.tracking_method << std::endl;
+        std::cout << "initial direction=" << (int)tracking_thread.tracking_method << std::endl;
+        std::cout << "interpolation=" << (int)tracking_thread.interpolation_strategy << std::endl;
+        std::cout << "voxelwise=" << (int)tracking_thread.center_seed << std::endl;
         std::cout << "thread_count=" << vm["thread_count"].as<int>() << std::endl;
 
     }
@@ -199,6 +199,13 @@ int trk(int ac, char *av[])
     tracking_thread.fetchTracks(&tract_model);
 
     std::cout << "finished tracking." << std::endl;
+
+    if(tract_model.get_visible_track_count() == 0)
+    {
+        std::cout << "No tract generated. Terminating..." << std::endl;
+        return 0;
+    }
+
     std::string file_name;
     if (vm.count("output"))
         file_name = vm["output"].as<std::string>();
@@ -217,6 +224,7 @@ int trk(int ac, char *av[])
         file_name = fout.str();
     }
 
+    std::cout << "a total of " << tract_model.get_visible_track_count() << " tracts are generated" << std::endl;
     std::cout << "output file:" << file_name << std::endl;
     tract_model.save_tracts_to_file(file_name.c_str());
 
@@ -235,12 +243,14 @@ int trk(int ac, char *av[])
             if(cmd == "tdi")
             {
                 std::cout << "export tract density images..." << std::endl;
+                file_name_stat + ".nii.gz";
                 tract_model.save_tdi(file_name_stat.c_str(),false,false);
                 continue;
             }
             if(cmd == "tdi2")
             {
                 std::cout << "export tract density images..." << std::endl;
+                file_name_stat + ".nii.gz";
                 tract_model.save_tdi(file_name_stat.c_str(),true,false);
                 continue;
             }
