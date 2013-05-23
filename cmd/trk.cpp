@@ -169,7 +169,6 @@ int trk(int ac, char *av[])
 
 
 
-    std::cout << "start tracking..." << std::endl;
     TractModel tract_model(handle.get(),geometry,voxel_size);
 
     if (vm.count("fa_threshold") )
@@ -193,6 +192,8 @@ int trk(int ac, char *av[])
         std::cout << "thread_count=" << vm["thread_count"].as<int>() << std::endl;
 
     }
+
+    std::cout << "start tracking." << std::endl;
 
     tracking_thread.run(tract_model.get_fib(),vm["thread_count"].as<int>(),termination_count,true);
 

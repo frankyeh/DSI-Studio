@@ -167,7 +167,7 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
             t.resize(16);
             t[15] = 1.0;
             image::matrix::inverse(t.begin(),inv_trans.begin(),image::dim<4,4>());
-            image::matrix::product(trans.begin(),inv_trans.begin(),convert.begin(),image::dim<4,4>(),image::dim<4,4>());
+            image::matrix::product(inv_trans.begin(),trans.begin(),convert.begin(),image::dim<4,4>(),image::dim<4,4>());
             LoadFromBuffer(from,convert);
             return true;
         }

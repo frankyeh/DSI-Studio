@@ -305,14 +305,15 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     if(from.geometry() != cur_tracking_window.slice.geometry &&
        !cur_tracking_window.handle->fib_data.trans_to_mni.empty())// use transformation information
     {
+        QMessageBox::information(this,"Warning","The nii file has different image dimension. Transformation will be applied to load the region",0);
         std::vector<float> t(header.get_transformation(),
                              header.get_transformation()+12),inv_trans(16),convert(16);
         t.resize(16);
         t[15] = 1.0;
-        image::matrix::inverse(t.begin(),
-                             inv_trans.begin(),image::dim<4,4>());
-        image::matrix::product(cur_tracking_window.handle->fib_data.trans_to_mni.begin(),
-                             inv_trans.begin(),convert.begin(),image::dim<4,4>(),image::dim<4,4>());
+        image::matrix::inverse(t.begin(),inv_trans.begin(),image::dim<4,4>());
+        image::matrix::product(inv_trans.begin(),
+                               cur_tracking_window.handle->fib_data.trans_to_mni.begin(),
+                               convert.begin(),image::dim<4,4>(),image::dim<4,4>());
 
         for(unsigned int value = 1;check_prog(value,value_map.size());++value)
             if(value_map[value])
