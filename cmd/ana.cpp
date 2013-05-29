@@ -91,31 +91,18 @@ int ana(int ac, char *av[])
         tract_model.save_tdi(file_name_stat.c_str(),true,false);
         return 0;
     }
-    if(vm.count("export") && vm["export"].as<std::string>() == std::string("statistics"))
+    if(vm.count("export") && vm["export"].as<std::string>() == std::string("stat"))
     {
-        std::cout << "export statistics..." << std::endl;
         std::string file_name_stat(file_name);
         file_name_stat += ".statistics.txt";
-        std::ofstream out(file_name_stat.c_str());
-        std::vector<std::string> titles;
-        titles.push_back("number of tracts");
-        titles.push_back("tract length mean(mm)");
-        titles.push_back("tract length sd(mm)");
-        titles.push_back("tracts volume (mm^3)");
-        handle->get_index_titles(titles);
-        std::vector<float> data;
-        tract_model.get_quantitative_data(data);
-        for(unsigned int i = 0;i < titles.size();++i)
-        {
-            std::cout << titles[i] << "\t";
-            if(i < data.size())
-                std::cout << data[i];
-            std::cout << "\t";
-            std::cout << std::endl;
-        }
+        std::cout << "export statistics..." << std::endl;
+        std::ofstream out_stat(file_name_stat.c_str());
+        std::string result;
+        tract_model.get_quantitative_info(result);
+        out_stat << result;
         return 0;
     }
-    if(vm.count("export") && vm["export"].as<std::string>().find("report,") == 0)
+    if(vm.count("export") && vm["export"].as<std::string>().find("report") == 0)
     {
         std::string report_cmd = vm["export"].as<std::string>();
         std::replace(report_cmd.begin(),report_cmd.end(),',',' ');

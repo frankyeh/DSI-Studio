@@ -1014,6 +1014,7 @@ void TractModel::get_quantitative_info(std::string& result)
     titles.push_back("tract length mean(mm)");
     titles.push_back("tract length sd(mm)");
     titles.push_back("tracts volume (mm^3)");
+    handle->get_index_titles(titles);
     get_quantitative_data(data);
     for(unsigned int index = 0;index < data.size() && index < titles.size();++index)
         out << titles[index] << "\t" << data[index] << std::endl;
