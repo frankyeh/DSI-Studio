@@ -214,7 +214,7 @@
     <bool>true</bool>
    </property>
    <property name="windowTitle">
-    <string>Fiber-Based Connectometry</string>
+    <string>Diffusion MRI Connectometry</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>1</number>
@@ -230,20 +230,20 @@
      <item>
       <widget class="QCommandLinkButton" name="averagefib">
        <property name="text">
-        <string>STEP1: Average FIB Files</string>
+        <string>STEP1: Create piecewise skeleton</string>
        </property>
        <property name="description">
-        <string>Average the ODFs to create an atlas.</string>
+        <string>Average the SDFs/ODFs to create template.</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QCommandLinkButton" name="vbc">
        <property name="text">
-        <string>STEP2: Permutation Tests</string>
+        <string>STEP2: Create population-based atlas</string>
        </property>
        <property name="description">
-        <string>Perform permutation to obtain statistical mapping</string>
+        <string>Load a group of subjects ODFs to create connectometry dataset</string>
        </property>
       </widget>
      </item>
@@ -294,7 +294,7 @@
      <item>
       <widget class="QCommandLinkButton" name="batch_src">
        <property name="text">
-        <string>Batch SRC Files Creation</string>
+        <string>Batch creating SRC files</string>
        </property>
        <property name="description">
         <string>Generate src file for each subdirectory</string>

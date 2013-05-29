@@ -361,7 +361,22 @@ void vbc_dialog::on_cal_FDR_clicked()
             QMessageBox::information(this,"error",handle->vbc->error_msg.c_str(),0);
             return;
         }
+        ui->result_label1->setText(QString::number(handle->vbc->p_greater*100.0) +
+                                   "% orientations in study group > " +
+                                   QString::number(ui->percentile_rank->value()) + " rank.");
+        ui->result_label2->setText(QString::number(handle->vbc->p_lesser*100.0) +
+                                   "% orientations in study group < " +
+                                   QString::number(ui->percentile_rank->value()) + " rank.");
+
         handle->vbc->calculate_null_distribution(1.0-ui->percentile_rank->value(),dist[0],dist[1]);
+
+        ui->result_label3->setText(QString::number(handle->vbc->p_greater*100.0) +
+                                   "% orientations in control group > " +
+                                   QString::number(ui->percentile_rank->value()) + " rank.");
+        ui->result_label4->setText(QString::number(handle->vbc->p_lesser*100.0) +
+                                   "% orientations in control group < " +
+                                   QString::number(ui->percentile_rank->value()) + " rank.");
+
     }
     else
     if(ui->Trend->isChecked())
@@ -523,7 +538,8 @@ void vbc_dialog::on_open_subject_clicked()
         return;
 
     begin_prog("load data");
-    if(!handle->vbc->single_subject_analysis(filename.toLocal8Bit().begin(),cur_subject_fib))
+    if(!handle->vbc->single_subject_analysis(1.0-ui->percentile_rank->value(),
+                                             filename.toLocal8Bit().begin(),cur_subject_fib))
     {
         check_prog(1,1);
         QMessageBox::information(this,"error",handle->vbc->error_msg.c_str(),0);

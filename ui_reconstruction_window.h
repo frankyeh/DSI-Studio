@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Thu May 9 15:01:01 2013
+** Created: Tue May 28 21:34:58 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -52,6 +52,7 @@ public:
     QWidget *source_widget;
     QVBoxLayout *verticalLayout_6;
     QHBoxLayout *horizontalLayout_11;
+    QPushButton *save4dnifti;
     QToolButton *zoom_in;
     QToolButton *zoom_out;
     QLabel *label_14;
@@ -216,6 +217,12 @@ public:
         horizontalLayout_11 = new QHBoxLayout();
         horizontalLayout_11->setSpacing(0);
         horizontalLayout_11->setObjectName(QString::fromUtf8("horizontalLayout_11"));
+        save4dnifti = new QPushButton(source_widget);
+        save4dnifti->setObjectName(QString::fromUtf8("save4dnifti"));
+        save4dnifti->setMaximumSize(QSize(16777215, 22));
+
+        horizontalLayout_11->addWidget(save4dnifti);
+
         zoom_in = new QToolButton(source_widget);
         zoom_in->setObjectName(QString::fromUtf8("zoom_in"));
         zoom_in->setMinimumSize(QSize(24, 0));
@@ -354,7 +361,7 @@ public:
         toolBox->addItem(page_3, QString::fromUtf8("Step 1: setup brain mask"));
         page = new QWidget();
         page->setObjectName(QString::fromUtf8("page"));
-        page->setGeometry(QRect(0, 0, 609, 454));
+        page->setGeometry(QRect(0, 0, 626, 414));
         page->setMinimumSize(QSize(0, 0));
         verticalLayout_2 = new QVBoxLayout(page);
         verticalLayout_2->setSpacing(3);
@@ -854,6 +861,7 @@ public:
         ___qtablewidgetitem2->setText(QApplication::translate("reconstruction_window", "by", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem3 = b_table->horizontalHeaderItem(3);
         ___qtablewidgetitem3->setText(QApplication::translate("reconstruction_window", "bz", 0, QApplication::UnicodeUTF8));
+        save4dnifti->setText(QApplication::translate("reconstruction_window", "Save 4D nifti...", 0, QApplication::UnicodeUTF8));
         zoom_in->setText(QApplication::translate("reconstruction_window", "+", 0, QApplication::UnicodeUTF8));
         zoom_out->setText(QApplication::translate("reconstruction_window", "-", 0, QApplication::UnicodeUTF8));
         label_14->setText(QApplication::translate("reconstruction_window", "Contrast", 0, QApplication::UnicodeUTF8));
@@ -873,7 +881,7 @@ public:
         DSI->setText(QApplication::translate("reconstruction_window", "DSI", 0, QApplication::UnicodeUTF8));
         QBI->setText(QApplication::translate("reconstruction_window", "QBI", 0, QApplication::UnicodeUTF8));
         GQI->setText(QApplication::translate("reconstruction_window", "GQI", 0, QApplication::UnicodeUTF8));
-        QDif->setText(QApplication::translate("reconstruction_window", "Q-Space Diffeomorphic", 0, QApplication::UnicodeUTF8));
+        QDif->setText(QApplication::translate("reconstruction_window", "QSDR", 0, QApplication::UnicodeUTF8));
         label_5->setText(QApplication::translate("reconstruction_window", "DSI Hamming filter", 0, QApplication::UnicodeUTF8));
         label->setText(QApplication::translate("reconstruction_window", "SH order", 0, QApplication::UnicodeUTF8));
         label_6->setText(QApplication::translate("reconstruction_window", "QBI Regularization", 0, QApplication::UnicodeUTF8));
@@ -909,8 +917,8 @@ public:
          << QApplication::translate("reconstruction_window", "Manual", 0, QApplication::UnicodeUTF8)
         );
         label_10->setText(QApplication::translate("reconstruction_window", "at (x,y,z)=", 0, QApplication::UnicodeUTF8));
-        Output->setTitle(QApplication::translate("reconstruction_window", "Output in fib file", 0, QApplication::UnicodeUTF8));
-        RecordODF->setText(QApplication::translate("reconstruction_window", "Complete ODF", 0, QApplication::UnicodeUTF8));
+        Output->setTitle(QApplication::translate("reconstruction_window", "Output", 0, QApplication::UnicodeUTF8));
+        RecordODF->setText(QApplication::translate("reconstruction_window", "Complete ODFs", 0, QApplication::UnicodeUTF8));
         output_mapping->setText(QApplication::translate("reconstruction_window", "spatial mapping function", 0, QApplication::UnicodeUTF8));
         output_jacobian->setText(QApplication::translate("reconstruction_window", "Jacobian determinant", 0, QApplication::UnicodeUTF8));
         groupBox_2->setTitle(QApplication::translate("reconstruction_window", "ODF Processing", 0, QApplication::UnicodeUTF8));

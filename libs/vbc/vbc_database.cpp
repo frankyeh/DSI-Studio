@@ -352,7 +352,7 @@ void fib_data::add_greater_lesser_mapping_for_tracking(ODFModel* fib_file)
 }
 
 
-bool vbc_database::single_subject_analysis(const char* file_name,fib_data& result)
+bool vbc_database::single_subject_analysis(float percentile,const char* file_name,fib_data& result)
 {
     std::vector<float> cur_subject_data;
     if(!get_odf_profile(file_name,cur_subject_data))
@@ -361,6 +361,9 @@ bool vbc_database::single_subject_analysis(const char* file_name,fib_data& resul
     std::vector<unsigned char> greater_fib_count(dim.size()),lesser_fib_count(dim.size());
     std::vector<float> population;
 
+    unsigned int total_greater = 0;
+    unsigned int total_lesser = 0;
+    unsigned int total = 0;
     for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
     {
         unsigned int cur_index = si2vi[s_index];
@@ -372,6 +375,7 @@ bool vbc_database::single_subject_analysis(const char* file_name,fib_data& resul
             float cur_value = cur_subject_data[pos];
             if(cur_value == 0.0)
                 continue;
+
             population.clear();
             for(unsigned int subject_id = 0;subject_id < subject_qa.size();++subject_id)
             {
@@ -394,6 +398,8 @@ bool vbc_database::single_subject_analysis(const char* file_name,fib_data& resul
                 result.greater[fib_count][cur_index] = (double)greater_rank/(population.size()+1);
                 result.greater_dir[fib_count][cur_index] = findex[fib][cur_index];
                 ++greater_fib_count[cur_index];
+                if(result.greater[fib_count][cur_index] > percentile)
+                    ++total_greater;
             }
             if(lesser_rank > (population.size() >> 1)) // lesser
             {
@@ -401,9 +407,14 @@ bool vbc_database::single_subject_analysis(const char* file_name,fib_data& resul
                 result.lesser[fib_count][cur_index] = (double)lesser_rank/(population.size()+1);
                 result.lesser_dir[fib_count][cur_index] = findex[fib][cur_index];
                 ++lesser_fib_count[cur_index];
+                if(result.lesser[fib_count][cur_index] > percentile)
+                    ++total_lesser;
             }
+            ++total;
         }
     }
+    p_greater = (float)total_greater/(float)total;
+    p_lesser = (float)total_lesser/(float)total;
     return true;
 }
 void vbc_database::run_span(const fiber_orientations& fib,std::vector<std::vector<float> >& span)
@@ -510,10 +521,14 @@ bool vbc_database::calculate_group_distribution(float percentile,const std::vect
     fib.threshold = percentile;
     fib.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);
 
+    float pg = 0;
+    float pl = 0;
     for(unsigned int main_index = 0;check_prog(main_index,files.size());++main_index)
     {
-        if(!single_subject_analysis(files[main_index].c_str(),data))
+        if(!single_subject_analysis(percentile,files[main_index].c_str(),data))
             return false;
+        pg += p_greater;
+        pl += p_lesser;
         fib.fa = data.greater_ptr;
         fib.findex = data.greater_dir_ptr;
         calculate_span_distribution(fib,dist_greater);
@@ -521,6 +536,8 @@ bool vbc_database::calculate_group_distribution(float percentile,const std::vect
         fib.findex = data.lesser_dir_ptr;
         calculate_span_distribution(fib,dist_lesser);
     }
+    p_greater = pg/files.size();
+    p_lesser = pl/files.size();
     hist_to_dist(dist_greater,subject_greater);
     hist_to_dist(dist_lesser,subject_lesser);
 }
@@ -676,6 +693,9 @@ void vbc_database::calculate_null_distribution(float percentile,
     fib.read(fib_file->fib_data);
     fib.threshold = percentile;
     fib.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);
+    unsigned int total_greater = 0;
+    unsigned int total_lesser = 0;
+    unsigned int total = 0;
     for(unsigned int main_index = 0;check_prog(main_index,subject_qa.size());++main_index)
     {
         data.initialize(fib_file);
@@ -714,6 +734,8 @@ void vbc_database::calculate_null_distribution(float percentile,
                     data.greater[fib_count][cur_index] = (double)greater_rank/(population.size()+1);
                     data.greater_dir[fib_count][cur_index] = findex[fib][cur_index];
                     ++greater_fib_count[cur_index];
+                    if(data.greater[fib_count][cur_index] > percentile)
+                        ++total_greater;
                 }
                 if(lesser_rank > (population.size() >> 1)) // lesser
                 {
@@ -721,7 +743,10 @@ void vbc_database::calculate_null_distribution(float percentile,
                     data.lesser[fib_count][cur_index] = (double)lesser_rank/(population.size()+1);
                     data.lesser_dir[fib_count][cur_index] = findex[fib][cur_index];
                     ++lesser_fib_count[cur_index];
+                    if(data.lesser[fib_count][cur_index] > percentile)
+                        ++total_lesser;
                 }
+                ++total;
             }
         }
         fib.fa = data.greater_ptr;
@@ -731,6 +756,8 @@ void vbc_database::calculate_null_distribution(float percentile,
         fib.findex = data.lesser_dir_ptr;
         calculate_span_distribution(fib,dist_lesser);
     }
+    p_greater = (float)total_greater/(float)total;
+    p_lesser = (float)total_lesser/(float)total;
     hist_to_dist(dist_greater,subject_greater);
     hist_to_dist(dist_lesser,subject_lesser);
 }

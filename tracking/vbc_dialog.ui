@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>640</width>
-    <height>480</height>
+    <height>551</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -184,7 +184,7 @@
               <item>
                <widget class="QTabWidget" name="tabWidget_2">
                 <property name="currentIndex">
-                 <number>0</number>
+                 <number>2</number>
                 </property>
                 <widget class="QWidget" name="tab">
                  <attribute name="title">
@@ -334,7 +334,6 @@
                   </item>
                  </layout>
                  <zorder>null_dist</zorder>
-                 <zorder>null_dist</zorder>
                  <zorder></zorder>
                 </widget>
                 <widget class="QWidget" name="tab_2">
@@ -405,6 +404,54 @@
                      </property>
                     </column>
                    </widget>
+                  </item>
+                 </layout>
+                </widget>
+                <widget class="QWidget" name="tab_7">
+                 <attribute name="title">
+                  <string>Other information</string>
+                 </attribute>
+                 <layout class="QVBoxLayout" name="verticalLayout_15">
+                  <item>
+                   <widget class="QLabel" name="result_label1">
+                    <property name="text">
+                     <string/>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="result_label2">
+                    <property name="text">
+                     <string/>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="result_label3">
+                    <property name="text">
+                     <string/>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="result_label4">
+                    <property name="text">
+                     <string/>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <spacer name="verticalSpacer">
+                    <property name="orientation">
+                     <enum>Qt::Vertical</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>20</width>
+                      <height>40</height>
+                     </size>
+                    </property>
+                   </spacer>
                   </item>
                  </layout>
                 </widget>
@@ -627,8 +674,6 @@
                </widget>
               </item>
              </layout>
-             <zorder>groupBox_2</zorder>
-             <zorder>tabWidget_3</zorder>
             </widget>
            </widget>
           </item>

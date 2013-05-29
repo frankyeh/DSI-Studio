@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'vbc_dialog.ui'
 **
-** Created: Wed Apr 10 12:41:28 2013
+** Created: Tue May 28 23:01:23 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -89,6 +89,13 @@ public:
     QToolButton *save_vbc_dist;
     QSpacerItem *horizontalSpacer_2;
     QTableWidget *dist_table;
+    QWidget *tab_7;
+    QVBoxLayout *verticalLayout_15;
+    QLabel *result_label1;
+    QLabel *result_label2;
+    QLabel *result_label3;
+    QLabel *result_label4;
+    QSpacerItem *verticalSpacer;
     QGroupBox *groupBox_3;
     QVBoxLayout *verticalLayout_12;
     QTabWidget *tabWidget_3;
@@ -138,7 +145,7 @@ public:
     {
         if (vbc_dialog->objectName().isEmpty())
             vbc_dialog->setObjectName(QString::fromUtf8("vbc_dialog"));
-        vbc_dialog->resize(640, 480);
+        vbc_dialog->resize(640, 551);
         QIcon icon;
         icon.addFile(QString::fromUtf8(":/icons/icons/axial.xpm"), QSize(), QIcon::Normal, QIcon::Off);
         vbc_dialog->setWindowIcon(icon);
@@ -353,7 +360,6 @@ public:
 
         tabWidget_2->addTab(tab, QString());
         null_dist->raise();
-        null_dist->raise();
         tab_2 = new QWidget();
         tab_2->setObjectName(QString::fromUtf8("tab_2"));
         verticalLayout_10 = new QVBoxLayout(tab_2);
@@ -398,6 +404,35 @@ public:
         verticalLayout_10->addWidget(dist_table);
 
         tabWidget_2->addTab(tab_2, QString());
+        tab_7 = new QWidget();
+        tab_7->setObjectName(QString::fromUtf8("tab_7"));
+        verticalLayout_15 = new QVBoxLayout(tab_7);
+        verticalLayout_15->setObjectName(QString::fromUtf8("verticalLayout_15"));
+        result_label1 = new QLabel(tab_7);
+        result_label1->setObjectName(QString::fromUtf8("result_label1"));
+
+        verticalLayout_15->addWidget(result_label1);
+
+        result_label2 = new QLabel(tab_7);
+        result_label2->setObjectName(QString::fromUtf8("result_label2"));
+
+        verticalLayout_15->addWidget(result_label2);
+
+        result_label3 = new QLabel(tab_7);
+        result_label3->setObjectName(QString::fromUtf8("result_label3"));
+
+        verticalLayout_15->addWidget(result_label3);
+
+        result_label4 = new QLabel(tab_7);
+        result_label4->setObjectName(QString::fromUtf8("result_label4"));
+
+        verticalLayout_15->addWidget(result_label4);
+
+        verticalSpacer = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+        verticalLayout_15->addItem(verticalSpacer);
+
+        tabWidget_2->addTab(tab_7, QString());
 
         verticalLayout_4->addWidget(tabWidget_2);
 
@@ -539,8 +574,6 @@ public:
         verticalLayout_12->addWidget(tabWidget_3);
 
         splitter_3->addWidget(groupBox_3);
-        groupBox_2->raise();
-        tabWidget_3->raise();
 
         verticalLayout_7->addWidget(splitter_3);
 
@@ -659,7 +692,7 @@ public:
         retranslateUi(vbc_dialog);
 
         tabWidget->setCurrentIndex(0);
-        tabWidget_2->setCurrentIndex(0);
+        tabWidget_2->setCurrentIndex(2);
         tabWidget_3->setCurrentIndex(0);
 
 
@@ -698,6 +731,11 @@ public:
         QTableWidgetItem *___qtablewidgetitem3 = dist_table->horizontalHeaderItem(3);
         ___qtablewidgetitem3->setText(QApplication::translate("vbc_dialog", "FDR", 0, QApplication::UnicodeUTF8));
         tabWidget_2->setTabText(tabWidget_2->indexOf(tab_2), QApplication::translate("vbc_dialog", "Data", 0, QApplication::UnicodeUTF8));
+        result_label1->setText(QString());
+        result_label2->setText(QString());
+        result_label3->setText(QString());
+        result_label4->setText(QString());
+        tabWidget_2->setTabText(tabWidget_2->indexOf(tab_7), QApplication::translate("vbc_dialog", "Other information", 0, QApplication::UnicodeUTF8));
         groupBox_3->setTitle(QApplication::translate("vbc_dialog", "FDR", 0, QApplication::UnicodeUTF8));
         label_6->setText(QApplication::translate("vbc_dialog", "Span to", 0, QApplication::UnicodeUTF8));
         label_7->setText(QApplication::translate("vbc_dialog", "Span from", 0, QApplication::UnicodeUTF8));

@@ -67,7 +67,8 @@ private: // single subject analysis result
 
     bool get_odf_profile(const char* file_name,std::vector<float>& cur_subject_data);
 public:
-    bool single_subject_analysis(const char* file_name,fib_data& result);
+    float p_greater,p_lesser;
+    bool single_subject_analysis(float percentile,const char* file_name,fib_data& result);
     //bool single_subject_paired_analysis(const char* file_name1,const char* file_name2);
 public:
     void run_span(const fiber_orientations& fib,std::vector<std::vector<float> >& span);

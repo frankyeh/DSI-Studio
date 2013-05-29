@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'mainwindow.ui'
 **
-** Created: Wed Apr 10 12:41:28 2013
+** Created: Tue May 28 21:24:32 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -289,17 +289,17 @@ public:
         Reconstruction->setDescription(QApplication::translate("MainWindow", "Open .src file to reconstruct DTI, QBI, DSI, or GQI", 0, QApplication::UnicodeUTF8));
         FiberTracking->setText(QApplication::translate("MainWindow", "STEP3: Fiber tracking", 0, QApplication::UnicodeUTF8));
         FiberTracking->setDescription(QApplication::translate("MainWindow", "Open .fib file to perform fiber tracking", 0, QApplication::UnicodeUTF8));
-        dockWidget_3->setWindowTitle(QApplication::translate("MainWindow", "Fiber-Based Connectometry", 0, QApplication::UnicodeUTF8));
-        averagefib->setText(QApplication::translate("MainWindow", "STEP1: Average FIB Files", 0, QApplication::UnicodeUTF8));
-        averagefib->setDescription(QApplication::translate("MainWindow", "Average the ODFs to create an atlas.", 0, QApplication::UnicodeUTF8));
-        vbc->setText(QApplication::translate("MainWindow", "STEP2: Permutation Tests", 0, QApplication::UnicodeUTF8));
-        vbc->setDescription(QApplication::translate("MainWindow", "Perform permutation to obtain statistical mapping", 0, QApplication::UnicodeUTF8));
+        dockWidget_3->setWindowTitle(QApplication::translate("MainWindow", "Diffusion MRI Connectometry", 0, QApplication::UnicodeUTF8));
+        averagefib->setText(QApplication::translate("MainWindow", "STEP1: Create piecewise skeleton", 0, QApplication::UnicodeUTF8));
+        averagefib->setDescription(QApplication::translate("MainWindow", "Average the SDFs/ODFs to create template.", 0, QApplication::UnicodeUTF8));
+        vbc->setText(QApplication::translate("MainWindow", "STEP2: Create population-based atlas", 0, QApplication::UnicodeUTF8));
+        vbc->setDescription(QApplication::translate("MainWindow", "Load a group of subjects ODFs to create connectometry dataset", 0, QApplication::UnicodeUTF8));
         dockWidget_2->setWindowTitle(QApplication::translate("MainWindow", "Tools", 0, QApplication::UnicodeUTF8));
         RenameDICOM->setText(QApplication::translate("MainWindow", "Rename DICOM Files", 0, QApplication::UnicodeUTF8));
         RenameDICOM->setDescription(QApplication::translate("MainWindow", "Separate files according to their acquisition sequences", 0, QApplication::UnicodeUTF8));
         RenameDICOMDir->setText(QApplication::translate("MainWindow", "Rename DICOM Files", 0, QApplication::UnicodeUTF8));
         RenameDICOMDir->setDescription(QApplication::translate("MainWindow", "Apply to all subdirectoires", 0, QApplication::UnicodeUTF8));
-        batch_src->setText(QApplication::translate("MainWindow", "Batch SRC Files Creation", 0, QApplication::UnicodeUTF8));
+        batch_src->setText(QApplication::translate("MainWindow", "Batch creating SRC files", 0, QApplication::UnicodeUTF8));
         batch_src->setDescription(QApplication::translate("MainWindow", "Generate src file for each subdirectory", 0, QApplication::UnicodeUTF8));
         batch_reconstruction->setText(QApplication::translate("MainWindow", "Batch Reconstruction", 0, QApplication::UnicodeUTF8));
         batch_reconstruction->setDescription(QApplication::translate("MainWindow", "Select a directory that contains src file in the subdirectories", 0, QApplication::UnicodeUTF8));
