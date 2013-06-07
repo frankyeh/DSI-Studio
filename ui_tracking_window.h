@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Thu Apr 25 22:39:41 2013
+** Created: Tue Jun 4 15:54:35 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -1086,7 +1086,7 @@ public:
         zoom = new QDoubleSpinBox(dockWidgetContents);
         zoom->setObjectName(QString::fromUtf8("zoom"));
         zoom->setMinimum(1);
-        zoom->setMaximum(32);
+        zoom->setMaximum(100);
         zoom->setSingleStep(1);
         zoom->setValue(8);
 

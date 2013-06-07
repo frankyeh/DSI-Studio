@@ -355,25 +355,25 @@ void vbc_dialog::on_cal_FDR_clicked()
         std::vector<std::string> file_names;
         for(unsigned int index = 0;index < filename.size();++index)
             file_names.push_back(filename[index].toLocal8Bit().begin());
-        if(!handle->vbc->calculate_group_distribution(1.0-ui->percentile_rank->value(),
-                                                      file_names,dist[2],dist[3]))
+        if(!handle->vbc->calculate_group_distribution(1.0-ui->percentile_rank->value(),file_names,dist[2],dist[3]))
         {
             QMessageBox::information(this,"error",handle->vbc->error_msg.c_str(),0);
             return;
         }
-        ui->result_label1->setText(QString::number(handle->vbc->p_greater*100.0) +
+        ui->result_label1->setText(QString::number(100.0*handle->vbc->total_greater/handle->vbc->total) +
                                    "% orientations in study group > " +
                                    QString::number(ui->percentile_rank->value()) + " rank.");
-        ui->result_label2->setText(QString::number(handle->vbc->p_lesser*100.0) +
+        ui->result_label2->setText(QString::number(100.0*handle->vbc->total_lesser/handle->vbc->total) +
                                    "% orientations in study group < " +
                                    QString::number(ui->percentile_rank->value()) + " rank.");
 
-        handle->vbc->calculate_null_distribution(1.0-ui->percentile_rank->value(),dist[0],dist[1]);
+        file_names.clear();
+        handle->vbc->calculate_group_distribution(1.0-ui->percentile_rank->value(),file_names,dist[0],dist[1]);
 
-        ui->result_label3->setText(QString::number(handle->vbc->p_greater*100.0) +
+        ui->result_label3->setText(QString::number(100.0*handle->vbc->total_greater/handle->vbc->total) +
                                    "% orientations in control group > " +
                                    QString::number(ui->percentile_rank->value()) + " rank.");
-        ui->result_label4->setText(QString::number(handle->vbc->p_lesser*100.0) +
+        ui->result_label4->setText(QString::number(100.0*handle->vbc->total_lesser/handle->vbc->total) +
                                    "% orientations in control group < " +
                                    QString::number(ui->percentile_rank->value()) + " rank.");
 
@@ -398,7 +398,7 @@ void vbc_dialog::on_cal_FDR_clicked()
             QMessageBox::information(this,"error","The number of data does not mactch the subject count",0);
             return;
         }
-        handle->vbc->tend_analysis(data,cur_subject_fib);
+        handle->vbc->trend_analysis(data,cur_subject_fib);
         handle->vbc->calculate_subject_distribution(1.0-ui->percentile_rank->value(),cur_subject_fib,dist[2],dist[3]);
         cur_subject_fib.add_greater_lesser_mapping_for_tracking(handle);
         if(cur_tracking_window->ui->tracking_index->findText("lesser mapping") == -1)
@@ -538,8 +538,8 @@ void vbc_dialog::on_open_subject_clicked()
         return;
 
     begin_prog("load data");
-    if(!handle->vbc->single_subject_analysis(1.0-ui->percentile_rank->value(),
-                                             filename.toLocal8Bit().begin(),cur_subject_fib))
+    if(!handle->vbc->single_subject_analysis(filename.toLocal8Bit().begin(),1.0-ui->percentile_rank->value(),
+                                             cur_subject_fib))
     {
         check_prog(1,1);
         QMessageBox::information(this,"error",handle->vbc->error_msg.c_str(),0);

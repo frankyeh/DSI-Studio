@@ -67,27 +67,30 @@ private: // single subject analysis result
 
     bool get_odf_profile(const char* file_name,std::vector<float>& cur_subject_data);
 public:
-    float p_greater,p_lesser;
-    bool single_subject_analysis(float percentile,const char* file_name,fib_data& result);
+    unsigned int total_greater;
+    unsigned int total_lesser;
+    unsigned int total;
+    void single_subject_analysis(const float* cur_subject_data,float percentile,fib_data& result);
+    bool single_subject_analysis(const char* filename,float percentile,fib_data& result);
     //bool single_subject_paired_analysis(const char* file_name1,const char* file_name2);
+public:
+    bool calculate_group_distribution(float percentile,const std::vector<std::string>& files,
+                                        std::vector<float>& subject_greater,
+                                        std::vector<float>& subject_lesser);
+
 public:
     void run_span(const fiber_orientations& fib,std::vector<std::vector<float> >& span);
     void calculate_span_distribution(const fiber_orientations& fib,std::vector<unsigned int>& dist);
     void calculate_subject_distribution(float percentile,const fib_data& data,
                                         std::vector<float>& subject_greater,
                                         std::vector<float>& subject_lesser);
-    bool calculate_group_distribution(float percentile,const std::vector<std::string>& files,
-                                        std::vector<float>& subject_greater,
-                                        std::vector<float>& subject_lesser);
-    void calculate_null_distribution(float percentile,
-                                     std::vector<float>& subject_greater,
-                                     std::vector<float>& subject_lesser);
+
     void calculate_subject_fdr(float percentile,const fib_data& result,std::vector<std::vector<float> >& spans,
                                  std::vector<float>& fdr);
 public:
     double get_trend_std(const std::vector<float>& data);
-    void tend_analysis(const std::vector<float>& data,fib_data& result);
-    void tend_analysis(float sqrt_var_S,const std::vector<unsigned int>& permu,fib_data& result);
+    void trend_analysis(const std::vector<float>& data,fib_data& result);
+    void trend_analysis(float sqrt_var_S,const std::vector<unsigned int>& permu,fib_data& result);
 
 
     void calculate_null_trend_distribution(float sqrt_var_S,float percentile,
