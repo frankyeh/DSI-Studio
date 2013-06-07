@@ -3,8 +3,10 @@
 #include "image/image.hpp"
 #include <QFileDialog>
 #include <QDateTime>
+#include <QUrl>
 #include <QMessageBox>
 #include <QProgressDialog>
+#include <QDragEnterEvent>
 #include <qmessagebox.h>
 #include "reconstruction/reconstruction_window.h"
 #include "dsi_interface_static_link.h"
@@ -28,7 +30,7 @@ MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
         ui(new Ui::MainWindow)
 {
-
+    setAcceptDrops(true);
     QDir dir = QString(program_base.c_str())+ "/atlas";
     QStringList atlas_name_list = dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
     atlas_name_list << dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
@@ -60,6 +62,41 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->workDir->addItem(QDir::currentPath());
 
     ui->dockWidget_3->hide();
+}
+void MainWindow::dragEnterEvent(QDragEnterEvent *event)
+{
+    if(event->mimeData()->hasUrls())
+    {
+        event->acceptProposedAction();
+    }
+}
+
+void MainWindow::dropEvent(QDropEvent *event)
+{
+    event->acceptProposedAction();
+    QList<QUrl> droppedUrls = event->mimeData()->urls();
+    int droppedUrlCnt = droppedUrls.size();
+    QStringList files;
+    for(int i = 0; i < droppedUrlCnt; i++)
+        files << droppedUrls[i].toLocalFile();
+
+    if(files.size() == 1)
+    {
+        if(QFileInfo(files[0]).completeSuffix() == "fib.gz")
+        {
+            loadFib(files[0]);
+            return;
+        }
+        if(QFileInfo(files[0]).completeSuffix() == "src.gz")
+        {
+            loadSrc(files);
+            return;
+        }
+    }
+
+    dicom_parser dp(files,this);
+    dp.exec();
+
 }
 
 void MainWindow::open_fib_at(int row,int col)
@@ -220,6 +257,7 @@ void MainWindow::on_OpenDICOM_clicked()
                                 "Image files (*.dcm *.hdr *.nii *.nii.gz 2dseq);;All files (*.*)" );
     if ( filenames.isEmpty() )
         return;
+
     add_work_dir(QFileInfo(filenames[0]).absolutePath());
     if(QFileInfo(filenames[0]).baseName() != "2dseq")
     {

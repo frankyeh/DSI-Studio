@@ -294,6 +294,16 @@ bool load_3d_series(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_file
 
 bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files)
 {
+    if(QFileInfo(file_list[0]).baseName() == "2dseq")
+    {
+        for(unsigned int index = 0;index < file_list.size();++index)
+        {
+            if(!load_4d_2dseq(file_list[index].toLocal8Bit().begin(),dwi_files))
+                return false;
+        }
+        return !dwi_files.empty();
+    }
+
     if(file_list.size() == 1 && QFileInfo(file_list[0]).isDir()) // single folder with DICOM files
     {
         QDir cur_dir = file_list[0];
@@ -321,8 +331,7 @@ bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_file
     if (file_list.size() == 1) // 4d image
     {
         if(!load_dicom_multi_frame(file_list[0].toLocal8Bit().begin(),dwi_files) &&
-           !load_4d_nii(file_list[0].toLocal8Bit().begin(),dwi_files) &&
-           !load_4d_2dseq(file_list[0].toLocal8Bit().begin(),dwi_files))
+           !load_4d_nii(file_list[0].toLocal8Bit().begin(),dwi_files))
             return false;
          return !dwi_files.empty();
     }

@@ -20,6 +20,8 @@ public:
     Ui::MainWindow *ui;
     void addFib(QString Filename);
     void addSrc(QString Filename);
+    void dragEnterEvent(QDragEnterEvent *event);
+    void dropEvent(QDropEvent *event);
 private:
     void loadFib(QString Filename);
     void loadSrc(QStringList filenames);
