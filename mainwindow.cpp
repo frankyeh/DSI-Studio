@@ -343,11 +343,10 @@ void MainWindow::on_FiberTracking_clicked()
         trans[7] += 2.0;
         trans[11] += 2.0;
         filename += ".mat";
-        image::io::mat mat;
+        image::io::mat_write mat(filename.toLocal8Bit().begin());
         mat << I;
-        mat.add_matrix("voxel_size",header.nif_header.pixdim+1,3,1);
-        mat.add_matrix("mni",&*trans.begin(),4,4);
-        mat.save_to_file(filename.toLocal8Bit().begin());
+        mat.write("voxel_size",header.nif_header.pixdim+1,3,1);
+        mat.write("mni",&*trans.begin(),4,4);
         loadFib(filename);
         return;
     }

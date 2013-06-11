@@ -716,9 +716,8 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
         else
             if(QFileInfo(filename).completeSuffix().toLower() == "mat")
             {
-                image::io::mat mat_header;
+                image::io::mat_write mat_header(filename.toLocal8Bit().begin());
                 mat_header << tdi;
-                mat_header.save_to_file(filename.toLocal8Bit().begin());
             }
     }
 }

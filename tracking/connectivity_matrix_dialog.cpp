@@ -219,13 +219,12 @@ void connectivity_matrix_dialog::on_save_as_clicked()
 
     if(QFileInfo(filename).suffix().toLower() == "mat")
     {
-        image::io::mat mat_header;
-        mat_header.add_matrix("connectivity",&*matrix_buf.begin(),matrix.size(),matrix.size());
+        image::io::mat_write mat_header(filename.toLocal8Bit().begin());
+        mat_header.write("connectivity",&*matrix_buf.begin(),matrix.size(),matrix.size());
         std::ostringstream out;
         std::copy(region_name.begin(),region_name.end(),std::ostream_iterator<std::string>(out,"\n"));
         std::string result(out.str());
-        mat_header.add_matrix("name",result.c_str(),1,result.length());
-        mat_header.save_to_file(filename.toLocal8Bit().begin());
+        mat_header.write("name",result.c_str(),1,result.length());
     }
     else
     {

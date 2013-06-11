@@ -203,9 +203,8 @@ void slice_view_scene::save_slice_as()
     }
     if(QFileInfo(filename).completeSuffix().toLower() == "mat")
     {
-        image::io::mat file;
+        image::io::mat_write file(filename.toLocal8Bit().begin());
         file << cur_tracking_window.handle->fib_data.view_item[index].image_data;
-        file.save_to_file(filename.toLocal8Bit().begin());
     }
 
 }

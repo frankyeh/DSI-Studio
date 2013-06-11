@@ -80,11 +80,8 @@ void ROIRegion::SaveToFile(const char* FileName,const std::vector<float>& trans)
                                 mask[image::pixel_index<3>(region[index][0], region[index][1],
                                 region[index][2], geo).index()] = 255;
                 }
-                image::io::mat header;
+                image::io::mat_write header(FileName);
                 header << mask;
-                if (!header.save_to_file(FileName))
-                    return;
-
         }
         else if (ext == std::string(".nii") || ext == std::string("i.gz")) {
 		image::basic_image<unsigned char, 3>mask(geo);
@@ -135,7 +132,7 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
     }
 
     if (ext == std::string(".mat")) {
-        image::io::mat header;
+        image::io::mat_read header;
         if(!header.load_from_file(FileName))
             return false;
         image::basic_image<short, 3>from;
