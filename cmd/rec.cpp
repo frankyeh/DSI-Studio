@@ -25,7 +25,9 @@ int rec(int ac, char *av[])
     ("mask", po::value<std::string>(), "assign the mask file")
     ("method", po::value<int>(), "reconstruction methods (0:dsi, 1:dti, 2:qbi_frt, 3:qbi_sh, 4:gqi)")
     ("odf_order", po::value<int>()->default_value(8), "set odf dimensions (4:162 direcitons, 5:252 directions, 6:362 directions, 8:642 directions)")
-    ("record_odf", po::value<int>()->default_value(0), "set record odf to on using --record_odf=1")
+    ("record_odf", po::value<int>()->default_value(0), "output odf information")
+    ("output_jac", po::value<int>()->default_value(0), "output jacobian determinant")
+    ("output_map", po::value<int>()->default_value(0), "output mapping")
     ("thread", po::value<int>()->default_value(2), "set the multi-thread count --thread=2")
     ("num_fiber", po::value<int>()->default_value(3), "maximum fibers resolved per voxel, default=3")
     ("half_sphere", po::value<int>()->default_value(0), "specific whether half sphere is used")
@@ -113,6 +115,8 @@ int rec(int ac, char *av[])
     handle->thread_count = vm["thread"].as<int>(); //thread count
     handle->voxel.ti.init(vm["odf_order"].as<int>());
     handle->voxel.need_odf = vm["record_odf"].as<int>();
+    handle->voxel.output_jacobian = vm["output_jac"].as<int>();
+    handle->voxel.output_mapping = vm["output_map"].as<int>();
     handle->voxel.odf_deconvolusion = vm["deconvolution"].as<int>();
     handle->voxel.odf_decomposition = vm["decomposition"].as<int>();
     handle->voxel.half_sphere = vm["half_sphere"].as<int>();
