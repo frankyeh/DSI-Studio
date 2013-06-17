@@ -497,7 +497,7 @@ void TractModel::save_end_points(const char* file_name_) const
         MatFile out;
         if(!out.write_to_file(file_name_,false))
             return;
-        out.add_matrix("end_points",(const short*)&*buffer.begin(),3,buffer.size()/3);
+        out.add_matrix("end_points",(const float*)&*buffer.begin(),3,buffer.size()/3);
     }
 
 }
