@@ -6,19 +6,25 @@
 #include "ui_vbcdialog.h"
 #include "libs/vbc/vbc_database.h"
 #include "prog_interface_static_link.h"
+#include "dsi_interface_static_link.h"
 
 
-VBCDialog::VBCDialog(QWidget *parent,QString file_name,vbc_database* data_) :
+VBCDialog::VBCDialog(QWidget *parent,bool create_db_) :
     QDialog(parent),
-    ui(new Ui::VBCDialog),
-    data(data_)
+    create_db(create_db_),
+    ui(new Ui::VBCDialog)
 {
     ui->setupUi(this);
     ui->group_list->setModel(new QStringListModel);
     ui->group_list->setSelectionModel(new QItemSelectionModel(ui->group_list->model()));
 
-    work_dir = QFileInfo(file_name).absolutePath();
-    ui->output_file_name->setText(file_name + ".db.fib.gz");
+    if(!create_db)
+    {
+        ui->skeleton_widget->hide();
+        ui->movedown->hide();
+        ui->moveup->hide();
+    }
+
 }
 
 VBCDialog::~VBCDialog()
@@ -45,7 +51,7 @@ void VBCDialog::on_group1open_clicked()
     QStringList filenames = QFileDialog::getOpenFileNames(
                                      this,
                                      "Open Fib files",
-                                     work_dir,
+                                     "",
                                      "Fib files (*.fib.gz);;All files (*.*)" );
     if (filenames.isEmpty())
         return;
@@ -90,7 +96,7 @@ void VBCDialog::on_open_list1_clicked()
     QString filename = QFileDialog::getOpenFileName(
                                  this,
                                  "Open text file",
-                                 work_dir,
+                                 "",
                                  "Text files (*.txt);;All files (*.*)" );
     if(filename.isEmpty())
         return;
@@ -107,7 +113,7 @@ void VBCDialog::on_save_list1_clicked()
     QString filename = QFileDialog::getSaveFileName(
                                  this,
                                  "Open text file",
-                                 work_dir,
+                                 "",
                                  "Text files (*.txt);;All files (*.*)" );
     if(filename.isEmpty())
         return;
@@ -117,60 +123,13 @@ void VBCDialog::on_save_list1_clicked()
         out << group[index].toLocal8Bit().begin() <<  std::endl;
 }
 
-
- /*
-void VBCDialog::show_distribution(void)
-{
-
-    static unsigned int cur_prog = 0;
-    if(data.->cur_prog != cur_prog)
-    {
-        unsigned int max_x = 0;
-        for(unsigned int index = 0;index < data.->length_dist.size();++index)
-            if(data.->length_dist[index])
-                max_x = index;
-        if(max_x == 0)
-            return;
-        ui->report_widget->clearGraphs();
-        QVector<double> x(max_x),y(max_x);
-        double max_y = 0.0;
-        for(unsigned int j = 0;j < max_x;++j)
-        {
-            x[j] = j;
-            y[j] = data.->length_dist[j];
-            max_y = std::max(max_y,y[j]);
-        }
-        ui->report_widget->addGraph();
-        QPen pen;
-        pen.setColor(QColor(20,20,100,200));
-        ui->report_widget->graph(0)->setLineStyle(QCPGraph::lsLine);
-        ui->report_widget->graph(0)->setPen(pen);
-        ui->report_widget->graph(0)->setData(x, y);
-
-        ui->report_widget->xAxis->setRange(0,max_x);
-        ui->report_widget->yAxis->setRange(0,max_y);
-        ui->report_widget->replot();
-
-        cur_prog = data.->cur_prog;
-
-        // calculate the cut-off tract_length
-
-    }
-
-    if(data.->cur_prog == data.->total_prog)
-        timer->stop();
-    else
-        ui->progress->setText(QString("Progress %1/%2").arg(data.->cur_prog).arg(data.->total_prog));
-
-}
-*/
 QStringList search_files(QString dir,QString filter);
 void VBCDialog::on_open_dir1_clicked()
 {
     QString dir = QFileDialog::getExistingDirectory(
                                 this,
                                 "Open directory",
-                                work_dir);
+                                "");
     if(dir.isEmpty())
         return;
     group << search_files(dir,"*.fib.gz");
@@ -182,29 +141,82 @@ void VBCDialog::on_select_output_file_clicked()
     QString filename = QFileDialog::getSaveFileName(
                                  this,
                                  "Save file",
-                                 work_dir,
+                                 "",
                                  "FIB file (*.fib);;All files (*.*)");
     if(filename.isEmpty())
         return;
     ui->output_file_name->setText(filename);
 }
+void VBCDialog::on_open_skeleton_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(
+                                 this,
+                                 "Template file",
+                                 "",
+                                 "FIB file (*.fib.gz);;All files (*.*)");
+    if(filename.isEmpty())
+        return;
+    ui->skeleton->setText(filename);
+    if(ui->output_file_name->text().isEmpty())
+        ui->output_file_name->setText(filename + ".db.fib.gz");
+}
 
 void VBCDialog::on_create_data_base_clicked()
 {
-    //instance.permutation_test(output_dir,num_files1,p_value_threshold))
-    begin_prog("loading");
-    if(group.empty())
-        return;
-    std::vector<std::string> name_list(group.count()),tag_list(group.count());
-    for (unsigned int index = 0;index < group.count();++index)
+    if(ui->output_file_name->text().isEmpty())
     {
-        name_list[index] = group[index].toLocal8Bit().begin();
-        tag_list[index] = QFileInfo(group[index]).baseName().toLocal8Bit().begin();
-    }
-    if(!data->load_subject_files(name_list,tag_list))
-    {
-        QMessageBox::information(this,"error",data->error_msg.c_str(),0);
+        QMessageBox::information(this,"error","Please assign output file",0);
         return;
     }
-    data->save_subject_data(ui->output_file_name->text().toLocal8Bit().begin());
+
+    if(create_db)
+    {
+        if(ui->skeleton->text().isEmpty())
+        {
+            QMessageBox::information(this,"error","Please assign skeleton file",0);
+            return;
+        }
+
+        std::auto_ptr<vbc_database> data(new vbc_database);
+        if(!data->load_template(ui->skeleton->text().toLocal8Bit().begin()))
+        {
+            QMessageBox::information(this,"error","Invalid template file",0);
+            return;
+        }
+        //instance.permutation_test(output_dir,num_files1,p_value_threshold))
+        begin_prog("loading");
+        if(group.empty())
+            return;
+        std::vector<std::string> name_list(group.count()),tag_list(group.count());
+        for (unsigned int index = 0;index < group.count();++index)
+        {
+            name_list[index] = group[index].toLocal8Bit().begin();
+            tag_list[index] = QFileInfo(group[index]).baseName().toLocal8Bit().begin();
+        }
+        if(!data->load_subject_files(name_list,tag_list))
+        {
+            QMessageBox::information(this,"error",data->error_msg.c_str(),0);
+            return;
+        }
+        data->save_subject_data(ui->output_file_name->text().toLocal8Bit().begin());
+        QMessageBox::information(this,"completed","Connectometry database created",0);
+    }
+    else
+    {
+        std::vector<std::string> name_list(group.count());
+        std::vector<const char*> name_list_buf(group.count());
+        for (unsigned int index = 0;index < group.count();++index)
+        {
+            name_list[index] = group[index].toLocal8Bit().begin();
+            name_list_buf[index] = name_list[index].c_str();
+        }
+        odf_average(ui->output_file_name->text().toLocal8Bit().begin(),
+                    &*name_list_buf.begin(),
+                    group.count());
+        QMessageBox::information(this,"completed","File created",0);
+    }
+
+
 }
+
+

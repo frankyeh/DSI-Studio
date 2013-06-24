@@ -9,18 +9,15 @@ namespace Ui {
     class VBCDialog;
 }
 
-class vbc_database;
 class VBCDialog : public QDialog
 {
     Q_OBJECT
-
+private:
+    bool create_db;
 public:
-    QString work_dir;
     QStringList group;
-    bool data_loaded;
-    explicit VBCDialog(QWidget *parent,QString file_name,vbc_database* data_);
+    explicit VBCDialog(QWidget *parent,bool create_db_);
     ~VBCDialog();
-    std::auto_ptr<vbc_database> data;
 private:
     Ui::VBCDialog *ui;
     void update_list(void);
@@ -37,6 +34,7 @@ private slots:
     void on_open_dir1_clicked();
     void on_select_output_file_clicked();
     void on_create_data_base_clicked();
+    void on_open_skeleton_clicked();
 };
 
 #endif // VBCDIALOG_H

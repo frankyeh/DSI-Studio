@@ -211,7 +211,7 @@
     </sizepolicy>
    </property>
    <property name="floating">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="windowTitle">
     <string>Diffusion MRI Connectometry</string>
@@ -230,20 +230,20 @@
      <item>
       <widget class="QCommandLinkButton" name="averagefib">
        <property name="text">
-        <string>STEP1: Create piecewise skeleton</string>
+        <string>STEP1: Create skeleton</string>
        </property>
        <property name="description">
-        <string>Average the SDFs/ODFs to create template.</string>
+        <string>Average the SDFs/ODFs to create a local tract skeleton.</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QCommandLinkButton" name="vbc">
        <property name="text">
-        <string>STEP2: Create population-based atlas</string>
+        <string>STEP2: Create connectometry database</string>
        </property>
        <property name="description">
-        <string>Load a group of subjects ODFs to create connectometry dataset</string>
+        <string>Load a group of subjects SDFs to create a connectometry dataset</string>
        </property>
       </widget>
      </item>

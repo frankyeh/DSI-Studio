@@ -20,7 +20,6 @@
 #include "reconstruction/vbcdialog.h"
 #include "view_image.h"
 #include "mapping/atlas.hpp"
-#include "libs/vbc/vbc_database.h"
 #include "libs/gzip_interface.hpp"
 
 std::vector<atlas> atlas_list;
@@ -60,8 +59,6 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->workDir->addItems(settings.value("WORK_PATH").toStringList());
     else
         ui->workDir->addItem(QDir::currentPath());
-
-    ui->dockWidget_3->hide();
 }
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {
@@ -450,51 +447,16 @@ void MainWindow::on_RenameDICOMDir_clicked()
 
 void MainWindow::on_vbc_clicked()
 {
-    QString filename = QFileDialog::getOpenFileName(
-                                this,
-                                "Select a template file as the skeleton",
-                                ui->workDir->currentText(),
-                            "Fib files (*.fib.gz *.fib);;All files (*.*)" );
-    if (filename.isEmpty())
-        return;
-    std::auto_ptr<vbc_database> data(new vbc_database);
-    if(!data->load_template(filename.toLocal8Bit().begin()))
-    {
-        QMessageBox::information(this,"error","Invalid template file",0);
-        return;
-    }
-    VBCDialog* new_mdi = new VBCDialog(this,filename,data.release());
+    VBCDialog* new_mdi = new VBCDialog(this,true);
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
     new_mdi->show();
 }
 
 void MainWindow::on_averagefib_clicked()
 {
-    QStringList filenames = QFileDialog::getOpenFileNames(
-                                this,
-                                "Select Fib files to average",
-                                ui->workDir->currentText(),
-                                "Fib files (*.fib.gz *.src);;All files (*.*)" );
-    if (filenames.isEmpty())
-        return;
-    QString outfile = QFileDialog::getSaveFileName(
-                                this,
-                                "Save file to",
-                                filenames[0],
-                                "Fib files (*.fib.gz *.src);;All files (*.*)" );
-    if (outfile.isEmpty())
-        return;
-    std::vector<std::string> name_list(filenames.count());
-    std::vector<const char*> name_list_buf(filenames.count());
-    for (unsigned int index = 0;index < filenames.count();++index)
-    {
-        name_list[index] = filenames[index].toLocal8Bit().begin();
-        name_list_buf[index] = name_list[index].c_str();
-    }
-    std::string out_name = outfile.toLocal8Bit().begin();
-    odf_average(out_name.c_str(),
-                &*name_list_buf.begin(),
-                filenames.count());
+    VBCDialog* new_mdi = new VBCDialog(this,false);
+    new_mdi->setAttribute(Qt::WA_DeleteOnClose);
+    new_mdi->show();
 }
 
 
