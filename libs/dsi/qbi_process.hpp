@@ -2,7 +2,6 @@
 #define QBI_PROCESS_HPP
 #include <vector>
 #include <cmath>
-#include "tessellated_icosahedron.hpp"
 #include "image/image.hpp"
 template<typename value_type>
 void rotation_matrix(value_type r[9],value_type* u)

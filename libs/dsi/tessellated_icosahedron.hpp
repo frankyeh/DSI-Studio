@@ -9,6 +9,10 @@
 #define M_PI        3.14159265358979323846
 #endif
 
+extern float odf6_vec[362][3];
+extern short odf6_face[720][3];
+extern float odf8_vec[642][3];
+extern short odf8_face[1280][3];
 
 class tessellated_icosahedron
 {
@@ -383,8 +387,41 @@ public:
         vertices.resize(vertices_count);
         faces.clear();
         icosa_cos.clear();
-        build_icosahedron();
-        sort_vertices();
+        switch(fold)
+        {
+        case 6:
+            for(unsigned int index = 0;index < 362;++index)
+            {
+                vertices[index][0] = odf6_vec[index][0];
+                vertices[index][1] = odf6_vec[index][1];
+                vertices[index][2] = odf6_vec[index][2];
+            }
+            faces.resize(720);
+            for(unsigned int index = 0;index < 720;++index)
+            {
+                faces[index][0] = odf6_face[index][0];
+                faces[index][1] = odf6_face[index][1];
+                faces[index][2] = odf6_face[index][2];
+            }break;
+        case 8:
+            for(unsigned int index = 0;index < 642;++index)
+            {
+                vertices[index][0] = odf8_vec[index][0];
+                vertices[index][1] = odf8_vec[index][1];
+                vertices[index][2] = odf8_vec[index][2];
+            }
+            faces.resize(1280);
+            for(unsigned int index = 0;index < 1280;++index)
+            {
+                faces[index][0] = odf8_face[index][0];
+                faces[index][1] = odf8_face[index][1];
+                faces[index][2] = odf8_face[index][2];
+            }
+            break;
+        default:
+            build_icosahedron();
+            sort_vertices();
+        }
         #ifdef _DEBUG
         check_vertex();
         check_face();

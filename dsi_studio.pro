@@ -40,7 +40,6 @@ HEADERS += mainwindow.h \
     libs/mat_file.hpp \
     libs/dsi/tessellated_icosahedron.hpp \
     libs/dsi/space_mapping.hpp \
-    libs/dsi/shaping_model.hpp \
     libs/dsi/sh_process.hpp \
     libs/dsi/sample_model.hpp \
     libs/dsi/racian_noise.hpp \
@@ -163,4 +162,5 @@ SOURCES += main.cpp \
     tracking/tract_report.cpp \
     tracking/color_bar_dialog.cpp \
     cmd/exp.cpp \
-    tracking/connectivity_matrix_dialog.cpp
+    tracking/connectivity_matrix_dialog.cpp \
+    libs/dsi/tessellated_icosahedron.cpp
