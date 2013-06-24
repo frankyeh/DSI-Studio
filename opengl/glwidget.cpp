@@ -1854,6 +1854,26 @@ void GLWidget::saveRotationSeries(void)
         "DSI Studio","Rotation angle in each step (degrees):",10,1,360,5,&ok);
     if(!ok)
         return;
+    QString axis_text = QInputDialog::getText(this,
+                                      "DSI Studio","Input rotation axis (x y z):",QLineEdit::Normal,"0.0 0.0 1.0", &ok);
+    if(!ok)
+        return;
+    image::vector<3> axis;
+    {
+        std::vector<float> axis_values;
+        std::istringstream in(axis_text.toLocal8Bit().begin());
+        std::copy(std::istream_iterator<float>(in),
+                  std::istream_iterator<float>(),
+                  std::back_inserter(axis_values));
+        if(axis_values.size() != 3)
+        {
+            QMessageBox::information(this,"error","invalid axis values",0);
+            return;
+        }
+        std::copy(axis_values.begin(),axis_values.end(),axis.begin());
+        axis.normalize();
+    }
+
     makeCurrent();
     std::vector<float> m(transformation_matrix,transformation_matrix+16);
     begin_prog("save images");
@@ -1866,7 +1886,7 @@ void GLWidget::saveRotationSeries(void)
         glTranslatef(cur_tracking_window.slice.center_point[0],
                      cur_tracking_window.slice.center_point[1],
                      cur_tracking_window.slice.center_point[2]);
-        glRotated(angle, 0.0, 0.0, 1.0);
+        glRotated(angle, axis[0], axis[1], axis[2]);
         glTranslatef(-cur_tracking_window.slice.center_point[0],
                      -cur_tracking_window.slice.center_point[1],
                      -cur_tracking_window.slice.center_point[2]);
