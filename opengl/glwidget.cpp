@@ -1855,7 +1855,7 @@ void GLWidget::saveRotationSeries(void)
     if(!ok)
         return;
     QString axis_text = QInputDialog::getText(this,
-                                      "DSI Studio","Input rotation axis (x y z):",QLineEdit::Normal,"0.0 0.0 1.0", &ok);
+                                      "DSI Studio","Input rotation axis (x y z):",QLineEdit::Normal,"0.0 1.0 0.0", &ok);
     if(!ok)
         return;
     image::vector<3> axis;
@@ -1882,14 +1882,8 @@ void GLWidget::saveRotationSeries(void)
     {
         glPushMatrix();
         glLoadIdentity();
-        glMultMatrixf(transformation_matrix);
-        glTranslatef(cur_tracking_window.slice.center_point[0],
-                     cur_tracking_window.slice.center_point[1],
-                     cur_tracking_window.slice.center_point[2]);
         glRotated(angle, axis[0], axis[1], axis[2]);
-        glTranslatef(-cur_tracking_window.slice.center_point[0],
-                     -cur_tracking_window.slice.center_point[1],
-                     -cur_tracking_window.slice.center_point[2]);
+        glMultMatrixf(transformation_matrix);
         glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
         glPopMatrix();
         updateGL();
