@@ -118,8 +118,13 @@ bool RegionModel::load(const image::basic_image<unsigned char, 3>& mask,unsigned
 bool RegionModel::load(const image::basic_image<float, 3>& image_,
                        float threshold)
 {
-    image::basic_image<float, 3>image_buffer(image_);
-
+    image::basic_image<float, 3> image_buffer(image_);
+    float scale = 1.0;
+    while(image_buffer.width() > 256 || image_buffer.height() > 256 || image_buffer.depth() > 256)
+    {
+        scale *= 2.0;
+        image::downsampling(image_buffer);
+    }
     if (threshold == 0.0)
     {
         float sum = 0;
@@ -141,6 +146,9 @@ bool RegionModel::load(const image::basic_image<float, 3>& image_,
     }
     object.reset(new image::march_cube<image::vector<3,float> >(image_buffer,
                  threshold));
+    if (scale != 1.0)
+        for (unsigned int index = 0; index < object->point_list.size(); ++index)
+            object->point_list[index] *= scale;
     sortIndices();
     return object->point_list.size();
 }

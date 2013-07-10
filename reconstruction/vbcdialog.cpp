@@ -23,6 +23,7 @@ VBCDialog::VBCDialog(QWidget *parent,bool create_db_) :
         ui->skeleton_widget->hide();
         ui->movedown->hide();
         ui->moveup->hide();
+        ui->create_data_base->setText("Create skeleton");
     }
 
 }
