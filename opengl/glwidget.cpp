@@ -34,9 +34,9 @@ GLWidget::GLWidget(bool samplebuffer,
         cur_tracking_window(cur_tracking_window_),
         renderWidget(renderWidget_),
         tracts(0),
+        current_scale(1),
         editing_option(0),
         current_visible_slide(0),
-        scaled_factor(1.0),
         set_view_flip(false)
 {
     std::fill(slice_texture,slice_texture+3,0);
@@ -121,9 +121,9 @@ void GLWidget::set_view(unsigned char view_option)
         transformation_matrix[10] = cur_tracking_window.slice.voxel_size[2] / cur_tracking_window.slice.voxel_size[0];
     }
 
-    transformation_matrix[0] *= scaled_factor;
-    transformation_matrix[5] *= scaled_factor;
-    transformation_matrix[10] *= scaled_factor;
+    transformation_matrix[0] *= cur_tracking_window.ui->zoom_3d->value();
+    transformation_matrix[5] *= cur_tracking_window.ui->zoom_3d->value();
+    transformation_matrix[10] *= cur_tracking_window.ui->zoom_3d->value();
     transformation_matrix[12] = -transformation_matrix[0]*cur_tracking_window.slice.center_point[0];
     transformation_matrix[13] = -transformation_matrix[5]*cur_tracking_window.slice.center_point[1];
     transformation_matrix[14] = -transformation_matrix[10]*cur_tracking_window.slice.center_point[2];
@@ -347,7 +347,7 @@ void GLWidget::paintGL()
         // The following code is a fancy bit of math that is eqivilant to calling:
         // gluPerspective( fieldOfView/2.0f, width/height , 0.1f, 255.0f )
         // We do it this way simply to avoid requiring glu.h
-        GLfloat fieldOfView = 2.0*(get_param_float("fov_angle")*5.0+1);
+        GLfloat fieldOfView = get_param_float("fov_angle")*5.0+25;
         GLfloat zNear = 1.0f;
         GLfloat zFar = 1000.0f;
         GLfloat aspect = float(width)/float(height);
@@ -357,7 +357,7 @@ void GLWidget::paintGL()
 
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-        my_gluLookAt(0,0,get_param_float("view_distance")*-40,0,0,0,0,-1.0,0);
+        my_gluLookAt(0,0,(1+get_param_float("view_distance"))*-200.0/(get_param_float("fov_angle")+5.0),0,0,0,0,-1.0,0);
     }
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -1127,20 +1127,26 @@ void GLWidget::resizeGL(int width_, int height_)
     glMatrixMode(GL_MODELVIEW);
     check_error(__FUNCTION__);
 }
-void GLWidget::wheelEvent ( QWheelEvent * event )
+void GLWidget::scale_by(float scalefactor)
 {
     makeCurrent();
     glPushMatrix();
     glLoadIdentity();
-    double scalefactor = event->delta();
-    scalefactor /= 1200.0;
-    scalefactor = 1.0+scalefactor;
     glScaled(scalefactor,scalefactor,scalefactor);
-    scaled_factor *= scalefactor;
     glMultMatrixf(transformation_matrix);
     glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
     glPopMatrix();
     updateGL();
+}
+
+void GLWidget::wheelEvent ( QWheelEvent * event )
+{
+    double scalefactor = event->delta();
+    scalefactor /= 1200.0;
+    scalefactor = 1.0+scalefactor;
+    scale_by(scalefactor);
+    current_scale *= scalefactor;
+    cur_tracking_window.ui->zoom_3d->setValue(current_scale);
     event->ignore();
 }
 
@@ -1497,7 +1503,8 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     {
         double scalefactor = (-dx+dy+100.0)/100.0;
         glScaled(scalefactor,scalefactor,scalefactor);
-        scaled_factor *= scalefactor;
+        current_scale *= scalefactor;
+        cur_tracking_window.ui->zoom_3d->setValue(current_scale);
     }
     else
         glTranslated(dx/5.0,dy/5.0,0);

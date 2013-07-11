@@ -1136,3 +1136,13 @@ void tracking_window::on_actionConnectivity_matrix_triggered()
     connectivity_matrix.reset(new connectivity_matrix_dialog(this));
     connectivity_matrix->show();
 }
+
+
+void tracking_window::on_zoom_3d_valueChanged(double arg1)
+{
+    if(std::fabs(ui->zoom_3d->value() - glWidget->current_scale) > 0.02)
+    {
+        glWidget->scale_by(ui->zoom_3d->value()/glWidget->current_scale);
+        glWidget->current_scale = ui->zoom_3d->value();
+    }
+}

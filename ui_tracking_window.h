@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Tue Jun 4 15:54:35 2013
+** Created: Wed Jul 10 20:34:35 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -132,6 +132,8 @@ public:
     QComboBox *surfaceStyle;
     QHBoxLayout *horizontalLayout;
     QSpacerItem *horizontalSpacer_8;
+    QLabel *label;
+    QDoubleSpinBox *zoom_3d;
     QLabel *label_16;
     QDoubleSpinBox *gl_contrast_value;
     QSlider *gl_contrast;
@@ -548,6 +550,20 @@ public:
         horizontalSpacer_8 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
         horizontalLayout->addItem(horizontalSpacer_8);
+
+        label = new QLabel(centralwidget);
+        label->setObjectName(QString::fromUtf8("label"));
+
+        horizontalLayout->addWidget(label);
+
+        zoom_3d = new QDoubleSpinBox(centralwidget);
+        zoom_3d->setObjectName(QString::fromUtf8("zoom_3d"));
+        zoom_3d->setMinimum(0.01);
+        zoom_3d->setMaximum(100);
+        zoom_3d->setSingleStep(0.1);
+        zoom_3d->setValue(1);
+
+        horizontalLayout->addWidget(zoom_3d);
 
         label_16 = new QLabel(centralwidget);
         label_16->setObjectName(QString::fromUtf8("label_16"));
@@ -1711,6 +1727,7 @@ public:
          << QApplication::translate("tracking_window", "Anterior", 0, QApplication::UnicodeUTF8)
          << QApplication::translate("tracking_window", "Posterior", 0, QApplication::UnicodeUTF8)
         );
+        label->setText(QApplication::translate("tracking_window", "Zoom", 0, QApplication::UnicodeUTF8));
         label_16->setText(QApplication::translate("tracking_window", "Contrast", 0, QApplication::UnicodeUTF8));
         label_17->setText(QApplication::translate("tracking_window", "Offset", 0, QApplication::UnicodeUTF8));
         glSagCheck->setText(QString());

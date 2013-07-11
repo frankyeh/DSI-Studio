@@ -25,6 +25,7 @@ class RenderingTableWidget;
      image::vector<3,float> pos,dir1,dir2;
      void get_pos(void);
      void set_view(unsigned char view_option);
+     void scale_by(float scale);
  private:
      bool object_selected,slice_selected;
      image::vector<3,float> accumulated_dis;
@@ -116,7 +117,7 @@ class RenderingTableWidget;
      GLuint tracts,slice_texture[3];
      QPoint lastPos;
      float transformation_matrix[16];
-     float scaled_factor;
+     float current_scale;
      bool set_view_flip;
 
  };
