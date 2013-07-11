@@ -54,7 +54,6 @@ void RegionModel::sortIndices(void)
 // ---------------------------------------------------------------------------
 bool RegionModel::load(const std::vector<image::vector<3,short> >& seeds, double scale)
 {
-
     image::vector<3,short> max_value, min_value;
     for (unsigned int index = 0; index < seeds.size(); ++index)
         for (unsigned int dim = 0; dim < 3; ++dim)
@@ -84,10 +83,20 @@ bool RegionModel::load(const std::vector<image::vector<3,short> >& seeds, double
         buffer[image::pixel_index<3>(point[0], point[1], point[2],
                                      buffer.geometry()).index()] = 200;
     }
-
+    float cur_scale = 1.0;
+    while(buffer.width() > 256 || buffer.height() > 256 || buffer.depth() > 256)
+    {
+        cur_scale *= 2.0;
+        image::downsampling(buffer);
+    }
     image::filter::mean(buffer);
 
     object.reset(new image::march_cube<image::vector<3,float> >(buffer, 20));
+
+    if (cur_scale != 1.0)
+        for (unsigned int index = 0; index < object->point_list.size(); ++index)
+            object->point_list[index] *= cur_scale;
+
     image::vector<3,float>shift(min_value);
     if (object->point_list.empty())
         object.reset(0);
@@ -107,7 +116,23 @@ bool RegionModel::load(const std::vector<image::vector<3,short> >& seeds, double
 
 bool RegionModel::load(const image::basic_image<unsigned char, 3>& mask,unsigned char threshold)
 {
-    object.reset(new image::march_cube<image::vector<3,float> >(mask, threshold));
+    if(mask.width() > 256 || mask.height() > 256 || mask.depth() > 256)
+    {
+        image::basic_image<unsigned int, 3> new_mask(mask);
+        float scale = 1.0;
+        while(new_mask.width() > 256 || new_mask.height() > 256 || new_mask.depth() > 256)
+        {
+            scale *= 2.0;
+            image::downsampling(new_mask);
+        }
+        object.reset(new image::march_cube<image::vector<3,float> >(new_mask, threshold));
+        for (unsigned int index = 0; index < object->point_list.size(); ++index)
+            object->point_list[index] *= scale;
+    }
+    else
+        object.reset(new image::march_cube<image::vector<3,float> >(mask, threshold));
+
+
     if (object->point_list.empty())
         object.reset(0);
     else

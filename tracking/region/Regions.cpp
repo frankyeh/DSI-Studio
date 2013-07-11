@@ -249,12 +249,15 @@ void ROIRegion::makeMeshes(bool smooth)
     if(!modified)
         return;
     modified = false;
-    image::basic_image<unsigned char, 3> mask(geo);
-    SaveToBuffer(mask,200);
     if(smooth)
+    {
+        image::basic_image<unsigned char, 3> mask(geo);
+        SaveToBuffer(mask,200);
         image::filter::gaussian(mask);
-    show_region.load(mask,20);
-
+        show_region.load(mask,20);
+    }
+    else
+        show_region.load(region);
 }
 // ---------------------------------------------------------------------------
 void ROIRegion::SaveToBuffer(image::basic_image<unsigned char, 3>& mask,
