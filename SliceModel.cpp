@@ -87,16 +87,6 @@ void CustomSliceModel::init(void)
     scale = max_value-min_value;
     if(scale != 0.0)
         scale = 255.0/scale;
-    back_thread.reset(new boost::thread(&CustomSliceModel::load_smooth_image,this));
-}
-
-// ---------------------------------------------------------------------------
-void CustomSliceModel::load_smooth_image(void)
-{
-    image::basic_image<float, 3> buf = source_images;
-    //image::filter::anisotropic_diffusion(buf);
-    image::filter::gaussian(buf);
-    buf.swap(smoothed_source_images);
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::get_slice(image::color_image& show_image,float contrast,float offset) const

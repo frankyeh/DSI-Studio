@@ -119,6 +119,7 @@ bool RegionModel::load(const image::basic_image<float, 3>& image_,
                        float threshold)
 {
     image::basic_image<float, 3> image_buffer(image_);
+
     float scale = 1.0;
     while(image_buffer.width() > 256 || image_buffer.height() > 256 || image_buffer.depth() > 256)
     {

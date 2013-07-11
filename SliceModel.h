@@ -119,9 +119,6 @@ public:
 
 class CustomSliceModel : public SliceModel{
 
-    mutable std::auto_ptr<boost::thread> back_thread;
-    image::basic_image<float, 3> smoothed_source_images;
-    void load_smooth_image(void);
 public:
     image::basic_image<float, 3> source_images;
     float min_value,max_value,scale;
@@ -138,15 +135,7 @@ public:
     CustomSliceModel(const gz_nifti& volume,const image::vector<3,float>& center_point_);
 public:
     void get_slice(image::color_image& image,float contrast,float offset) const;
-    image::const_pointer_image<float, 3> get_source(void) const
-    {
-        if(back_thread.get())
-        {
-            back_thread->join();
-            back_thread.reset(0);
-        }
-        return smoothed_source_images;
-    }
+    image::const_pointer_image<float, 3> get_source(void) const  {return source_images;}
 };
 
 #endif
