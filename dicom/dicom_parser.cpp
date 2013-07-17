@@ -227,6 +227,7 @@ bool load_multiple_slice_dicom(QStringList file_list,boost::ptr_vector<DwiHeader
             if(slice_index == 0)
             {
                 dwi_files.push_back(new DwiHeader);
+                dwi_files.back().open(file_list[index].toLocal8Bit().begin());
                 dwi_files.back().image.resize(geo);
                 dwi_files.back().file_name = file_list[index].toLocal8Bit().begin();
                 dicom_header.get_voxel_size(dwi_files.back().voxel_size);

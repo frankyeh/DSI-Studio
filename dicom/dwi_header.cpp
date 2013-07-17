@@ -37,6 +37,8 @@ bool DwiHeader::open(const char* filename)
                 man_id = 1;
             if (name == std::string("GE"))
                 man_id = 2;
+            if (name == std::string("Ph"))
+                man_id = 3;
         }
     }
     unsigned int length = 0;
@@ -134,6 +136,20 @@ bool DwiHeader::open(const char* filename)
             std::istringstream((std::string(gvalue,gvalue+gvalue_length))) >> bvalue;
 
     }
+    break;
+    case 3://Phillips
+        // get b-table
+    {
+        unsigned int gvalue_length = 0;
+        // GE header
+        const double* gvalue = (const double*)header.get_ge_data(0x0018,0x9089,gvalue_length);// B-vector
+        if(gvalue && gvalue_length == 24)
+            std::copy(gvalue,gvalue+3,bvec.begin());
+        gvalue = (const double*)header.get_ge_data(0x0018,0x9087,gvalue_length);//B-Value
+        if(gvalue && gvalue_length == 8)
+            bvalue = gvalue[0];
+    }
+
     break;
     }
 
