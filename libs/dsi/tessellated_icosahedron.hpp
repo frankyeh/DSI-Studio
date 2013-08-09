@@ -24,7 +24,7 @@ public:
     std::vector<image::vector<3,short> > faces;
     std::vector<std::vector<float> > icosa_cos;
 private:
-    float edge_length,face_dis,angle_res;
+    float face_dis,angle_res;
     unsigned short cur_vertex;
     void add_vertex(const image::vector<3,float>& vertex)
     {
@@ -51,7 +51,30 @@ private:
 		v4.normalize();
 	}
 public:
-    // obtain the segmentation from vector u to v
+    void get_edge_segmentation2(unsigned short from_vertex,unsigned short to_vertex,
+                                   std::vector<unsigned short>& edge)
+    {
+        edge.push_back(from_vertex);
+        image::vector<3,float> uv = vertices[to_vertex];
+        uv -= vertices[from_vertex];
+        double angle = std::acos(1.0-uv.length2()*0.5);
+        uv.normalize();
+        double face_d = std::cos(angle*0.5);
+        for (unsigned int index = 1;index < fold;++index)
+        {
+            float phi = angle*index;
+            phi /= (float)fold;
+            float y = face_d/std::cos(phi-angle*0.5);
+            image::vector<3,float> vec = uv;
+            vec *= std::sqrt(1.0 + y*(y-2.0*std::cos(phi)));
+            vec += vertices[from_vertex];
+            vec.normalize();
+            edge.push_back(cur_vertex);
+            add_vertex(vec);
+        }
+        edge.push_back(to_vertex);
+    }
+
     void get_edge_segmentation(unsigned short from_vertex,unsigned short to_vertex,
                                std::vector<unsigned short>& edge)
     {
@@ -148,6 +171,21 @@ public:
     template<typename input_type1,typename input_type2,typename input_type3>
         void build_faces(input_type1 edge0,input_type2 edge1,input_type3 edge2)
     {
+        if(fold > 8)
+        {
+            unsigned int old_fold = fold;
+            fold >>= 1;
+            std::vector<unsigned short> e0,e1,e2;
+            get_edge_segmentation2(edge2[fold],edge1[fold],e0);
+            get_edge_segmentation2(edge0[fold],edge2[fold],e1);
+            get_edge_segmentation2(edge1[fold],edge0[fold],e2);
+            build_faces(e2.begin(),e1.begin(),e0.begin());
+            build_faces(edge0,e1.begin(),edge2+fold);
+            build_faces(edge1,e2.begin(),edge0+fold);
+            build_faces(edge2,e0.begin(),edge1+fold);
+            fold = old_fold;
+            return;
+        }
         add_faces_in_triangle(edge0,edge1,edge2,fold);
         if(fold == 3)
 		{
@@ -216,7 +254,7 @@ public:
 		}
         if(fold == 8)
 		{
-                        image::vector<3,float> u[22]; // (8-1)*(8-2)/2=21, add one for index started from1
+            image::vector<3,float> u[22]; // (8-1)*(8-2)/2=21, add one for index started from1
 			get_mid_vertex(vertices[edge0[4]],vertices[edge2[4]],u[8]);
 			get_mid_vertex(vertices[edge1[4]],vertices[edge2[4]],u[17]);
 			get_mid_vertex(vertices[edge0[4]],vertices[edge1[4]],u[10]);
@@ -243,10 +281,11 @@ public:
 			get_mid_vertex(vertices[edge2[2]],u[17],u[19]);
 			get_mid_vertex(vertices[edge1[6]],u[17],u[20]);
 			get_mid_vertex(vertices[edge2[2]],vertices[edge1[6]],u[21]);
-                        for(unsigned int index = 1;index <= 21;++index)
+            for(unsigned int index = 1;index <= 21;++index)
 				add_vertex(u[index]);
 			return;
 		}
+
     }
 
     void build_icosahedron()
@@ -262,7 +301,7 @@ public:
                                    std::cos(((float)index)*M_PI*0.4)*radius,
                                    std::sin(((float)index)*M_PI*0.4)*radius,height));
 
-        edge_length = std::sqrt(2.0-2.0/sqrt5);
+        //edge_length = std::sqrt(2.0-2.0/sqrt5);
         face_dis = std::sqrt(0.5+0.5/sqrt5);
         angle_res = std::acos(1.0/sqrt5);
 

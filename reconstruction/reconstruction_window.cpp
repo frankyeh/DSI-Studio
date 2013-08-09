@@ -112,9 +112,12 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     ui->mni_resolution->setValue(settings.value("rec_mni_resolution",2.0).toDouble());
 
+    ui->ODFDim->setCurrentIndex(settings.value("odf_order",3).toInt());
+
     ui->RecordODF->setChecked(settings.value("rec_record_odf",0).toInt());
     ui->output_jacobian->setChecked(settings.value("output_jacobian",0).toInt());
     ui->output_mapping->setChecked(settings.value("output_mapping",0).toInt());
+
 
 
     on_odf_sharpening_currentIndexChanged(ui->odf_sharpening->currentIndex());
@@ -223,13 +226,13 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     settings.setValue("rec_gqi_def",ui->ODFDef->currentIndex());
     settings.setValue("rec_reg_method",ui->reg_method->currentIndex());
 
+    settings.setValue("odf_order",ui->ODFDim->currentIndex());
     settings.setValue("rec_record_odf",ui->RecordODF->isChecked() ? 1 : 0);
     settings.setValue("output_jacobian",ui->output_jacobian->isChecked() ? 1 : 0);
     settings.setValue("output_mapping",ui->output_mapping->isChecked() ? 1 : 0);
 
-
     begin_prog("reconstructing");
-    int odf_order[4] = {4, 5, 6, 8};
+    int odf_order[8] = {4, 5, 6, 8, 10, 12, 16, 20};
     handle->thread_count = ui->ThreadCount->currentIndex() + 1;
     handle->voxel.ti.init(odf_order[ui->ODFDim->currentIndex()]);
     handle->voxel.odf_deconvolusion = ui->odf_sharpening->currentIndex() == 1 ? 1 : 0;

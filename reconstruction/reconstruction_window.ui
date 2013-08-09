@@ -1117,6 +1117,26 @@
                     <string>8-fold</string>
                    </property>
                   </item>
+                  <item>
+                   <property name="text">
+                    <string>10-fold</string>
+                   </property>
+                  </item>
+                  <item>
+                   <property name="text">
+                    <string>12-fold</string>
+                   </property>
+                  </item>
+                  <item>
+                   <property name="text">
+                    <string>16-fold</string>
+                   </property>
+                  </item>
+                  <item>
+                   <property name="text">
+                    <string>20-fold</string>
+                   </property>
+                  </item>
                  </widget>
                 </item>
                </layout>
