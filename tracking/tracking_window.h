@@ -20,7 +20,6 @@ namespace Ui {
 
 class GLWidget;
 class manual_alignment;
-class vbc_dialog;
 class tract_report;
 class color_bar_dialog;
 class connectivity_matrix_dialog;
@@ -32,7 +31,7 @@ protected:
     void keyPressEvent ( QKeyEvent * event );
 
 public:
-    explicit tracking_window(QWidget *parent,ODFModel* handle);
+    explicit tracking_window(QWidget *parent,ODFModel* handle,bool handle_release_ = true);
     ~tracking_window();
 
     Ui::tracking_window *ui;
@@ -57,7 +56,6 @@ public:
 public:
     image::affine_transform<3,float> mi3_arg;
     std::auto_ptr<manual_alignment> mi3;
-    std::auto_ptr<vbc_dialog> vbc;
     std::auto_ptr<tract_report> tact_report_imp;
     std::auto_ptr<color_bar_dialog> color_bar;
     std::auto_ptr<connectivity_matrix_dialog> connectivity_matrix;
@@ -66,6 +64,7 @@ public:
     QString absolute_path;
     ODFModel* handle;
     FibSliceModel slice;
+    bool handle_release;
     bool slice_no_update;
     bool eventFilter(QObject *obj, QEvent *event);
 public slots:
@@ -119,7 +118,6 @@ private slots:
     void on_gl_contrast_sliderMoved(int position);
     void on_gl_contrast_value_valueChanged(double arg1);
     void on_actionManual_Registration_triggered();
-    void on_actionConnectometry_triggered();
     void on_actionTract_Analysis_Report_triggered();
     void on_actionConnectivity_matrix_triggered();
     void on_zoom_3d_valueChanged(double arg1);

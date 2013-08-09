@@ -51,8 +51,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>626</width>
-         <height>414</height>
+         <width>337</width>
+         <height>132</height>
         </rect>
        </property>
        <attribute name="label">
@@ -210,8 +210,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>626</width>
-         <height>414</height>
+         <width>534</width>
+         <height>146</height>
         </rect>
        </property>
        <attribute name="label">
@@ -526,7 +526,7 @@
            <item>
             <widget class="QLabel" name="label_7">
              <property name="text">
-              <string>GQI Diffusion sampling ratio</string>
+              <string>Diffusion sampling length ratio</string>
              </property>
             </widget>
            </item>

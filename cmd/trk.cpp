@@ -169,7 +169,7 @@ int trk(int ac, char *av[])
 
 
 
-    TractModel tract_model(handle.get(),geometry,voxel_size);
+    TractModel tract_model(handle.get());
 
     if (vm.count("fa_threshold") )
         tract_model.get_fib().threshold = vm["fa_threshold"].as<float>();

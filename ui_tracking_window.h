@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Wed Jul 10 21:50:52 2013
+** Created: Wed Jul 17 13:38:05 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -118,7 +118,6 @@ public:
     QAction *actionSave_Left_Right_3D_Image;
     QAction *actionRegion_statistics;
     QAction *actionManual_Registration;
-    QAction *actionConnectometry;
     QAction *actionTract_Analysis_Report;
     QAction *actionSave_End_Points_As;
     QAction *actionConnectivity_matrix;
@@ -492,8 +491,6 @@ public:
         actionRegion_statistics->setObjectName(QString::fromUtf8("actionRegion_statistics"));
         actionManual_Registration = new QAction(tracking_window);
         actionManual_Registration->setObjectName(QString::fromUtf8("actionManual_Registration"));
-        actionConnectometry = new QAction(tracking_window);
-        actionConnectometry->setObjectName(QString::fromUtf8("actionConnectometry"));
         actionTract_Analysis_Report = new QAction(tracking_window);
         actionTract_Analysis_Report->setObjectName(QString::fromUtf8("actionTract_Analysis_Report"));
         actionSave_End_Points_As = new QAction(tracking_window);
@@ -1565,7 +1562,6 @@ public:
         menu_View->addAction(actionCopy_to_clipboard);
         menu_View->addSeparator();
         menu_View->addAction(actionManual_Registration);
-        menu_View->addAction(actionConnectometry);
         menu_View->addSeparator();
         menu_View->addAction(actionRestore_window_layout);
         menu_Slices->addAction(actionInsert_T1_T2);
@@ -1706,7 +1702,6 @@ public:
         actionSave_Left_Right_3D_Image->setText(QApplication::translate("tracking_window", "Save Left/Right 3D Image...", 0, QApplication::UnicodeUTF8));
         actionRegion_statistics->setText(QApplication::translate("tracking_window", "Statistics...", 0, QApplication::UnicodeUTF8));
         actionManual_Registration->setText(QApplication::translate("tracking_window", "Background Registration...", 0, QApplication::UnicodeUTF8));
-        actionConnectometry->setText(QApplication::translate("tracking_window", "Connectometry...", 0, QApplication::UnicodeUTF8));
         actionTract_Analysis_Report->setText(QApplication::translate("tracking_window", "Tract Analysis Report...", 0, QApplication::UnicodeUTF8));
         actionSave_End_Points_As->setText(QApplication::translate("tracking_window", "Save End Points As...", 0, QApplication::UnicodeUTF8));
         actionConnectivity_matrix->setText(QApplication::translate("tracking_window", "Connectivity matrix...", 0, QApplication::UnicodeUTF8));

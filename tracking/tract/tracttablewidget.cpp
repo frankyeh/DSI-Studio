@@ -76,9 +76,7 @@ void TractTableWidget::check_check_status(int row, int col)
 void TractTableWidget::addNewTracts(QString tract_name)
 {
     thread_data.push_back(0);
-    tract_models.push_back(new TractModel(cur_tracking_window.handle,
-                                          cur_tracking_window.slice.geometry,
-                                          cur_tracking_window.slice.voxel_size));
+    tract_models.push_back(new TractModel(cur_tracking_window.handle));
     tract_models.back()->get_fib().threshold = cur_tracking_window.ui->fa_threshold->value();
     tract_models.back()->get_fib().cull_cos_angle = std::cos(cur_tracking_window.ui->turning_angle->value() * 3.1415926 / 180.0);
 

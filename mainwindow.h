@@ -43,6 +43,7 @@ private slots:
     void on_batch_src_clicked();
     void on_batch_reconstruction_clicked();
     void on_view_image_clicked();
+    void on_connectometry_clicked();
 };
 
 #endif // MAINWINDOW_H

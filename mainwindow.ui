@@ -247,6 +247,13 @@
        </property>
       </widget>
      </item>
+     <item>
+      <widget class="QCommandLinkButton" name="connectometry">
+       <property name="text">
+        <string>STEP3: Connectometry Analysis </string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </widget>
   </widget>

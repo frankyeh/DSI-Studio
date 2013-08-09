@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'mainwindow.ui'
 **
-** Created: Sun Jun 23 23:17:39 2013
+** Created: Wed Jul 17 20:54:17 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -53,6 +53,7 @@ public:
     QVBoxLayout *verticalLayout_5;
     QCommandLinkButton *averagefib;
     QCommandLinkButton *vbc;
+    QCommandLinkButton *connectometry;
     QDockWidget *dockWidget_2;
     QWidget *dockWidgetContents_2;
     QVBoxLayout *verticalLayout;
@@ -217,6 +218,11 @@ public:
 
         verticalLayout_5->addWidget(vbc);
 
+        connectometry = new QCommandLinkButton(dockWidgetContents_3);
+        connectometry->setObjectName(QString::fromUtf8("connectometry"));
+
+        verticalLayout_5->addWidget(connectometry);
+
         dockWidget_3->setWidget(dockWidgetContents_3);
         MainWindow->addDockWidget(static_cast<Qt::DockWidgetArea>(1), dockWidget_3);
         dockWidget_2 = new QDockWidget(MainWindow);
@@ -294,6 +300,7 @@ public:
         averagefib->setDescription(QApplication::translate("MainWindow", "Average the SDFs/ODFs to create a local tract skeleton.", 0, QApplication::UnicodeUTF8));
         vbc->setText(QApplication::translate("MainWindow", "STEP2: Create connectometry database", 0, QApplication::UnicodeUTF8));
         vbc->setDescription(QApplication::translate("MainWindow", "Load a group of subjects SDFs to create a connectometry dataset", 0, QApplication::UnicodeUTF8));
+        connectometry->setText(QApplication::translate("MainWindow", "STEP3: Connectometry Analysis ", 0, QApplication::UnicodeUTF8));
         dockWidget_2->setWindowTitle(QApplication::translate("MainWindow", "Tools", 0, QApplication::UnicodeUTF8));
         RenameDICOM->setText(QApplication::translate("MainWindow", "Rename DICOM Files", 0, QApplication::UnicodeUTF8));
         RenameDICOM->setDescription(QApplication::translate("MainWindow", "Separate files according to their acquisition sequences", 0, QApplication::UnicodeUTF8));

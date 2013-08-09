@@ -24,27 +24,22 @@ private:
 
     void show_dis_table(void);
     void show_fdr_table(void);
-
-
+private:
+    QStringList filename;
 public:
-    tracking_window* cur_tracking_window;
-    ODFModel* handle;
-    explicit vbc_dialog(QWidget *parent,ODFModel* handle);
+    QString work_dir;
+    std::auto_ptr<vbc_database> vbc;
+    explicit vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_);
     ~vbc_dialog();
-    void show_info_at(const image::vector<3,float>& pos);
+    bool eventFilter(QObject *obj, QEvent *event);
 private slots:
 
-    void on_cal_lesser_tracts_clicked();
-
-    void on_vbc_dist_update_clicked();
 
     void on_subject_list_itemSelectionChanged();
 
     void on_save_vbc_dist_clicked();
 
-    void on_open_subject_clicked();
-
-    void on_cal_FDR_clicked();
+    void on_view_dif_map_clicked();
 
     void on_toggled(bool checked);
 
@@ -53,6 +48,14 @@ private slots:
     void show_fdr_report();
 
     void on_save_fdr_dist_clicked();
+
+    void on_open_files_clicked();
+
+    void on_FDR_analysis_clicked();
+
+    void on_pushButton_2_clicked();
+
+    void on_buttonBox_accepted();
 
 private:
     Ui::vbc_dialog *ui;

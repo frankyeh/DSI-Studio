@@ -69,11 +69,9 @@ struct TrackVis
     }
 };
 //---------------------------------------------------------------------------
-TractModel::TractModel(ODFModel* handle_,
-           const image::geometry<3>& geo,
-                       const image::vector<3>& vs_):geometry(geo),vs(vs_),handle(handle_),fib(new fiber_orientations)
+TractModel::TractModel(ODFModel* handle_):handle(handle_),geometry(handle_->fib_data.dim),vs(handle_->fib_data.vs),fib(new fiber_orientations)
 {
-    fib->read(handle->fib_data);
+    fib->read(handle_->fib_data);
 }
 //---------------------------------------------------------------------------
 void TractModel::add(const TractModel& rhs)
@@ -278,8 +276,7 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
             trk.n_count = tract_data.size();
             out.write((const char*)&trk,1000);
         }
-        begin_prog("saving");
-        for (unsigned int i = 0;check_prog(i,tract_data.size());++i)
+        for (unsigned int i = 0;i < tract_data.size();++i)
         {
             int n_point = tract_data[i].size()/3;
             std::vector<float> buffer(tract_data[i].size());

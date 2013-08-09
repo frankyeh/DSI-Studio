@@ -54,9 +54,7 @@ int ana(int ac, char *av[])
         }
     }
     image::geometry<3> geometry = handle->fib_data.dim;
-    image::vector<3> voxel_size = handle->fib_data.vs;
-
-    TractModel tract_model(handle.get(),geometry,voxel_size);
+    TractModel tract_model(handle.get());
     float threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(geometry,handle->fib_data.fib.fa[0]));
     tract_model.get_fib().threshold = threshold;
     tract_model.get_fib().cull_cos_angle = std::cos(60.0*3.1415926/180.0);

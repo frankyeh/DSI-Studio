@@ -26,11 +26,9 @@ public:
 class vbc_database
 {
 public:
+    std::auto_ptr<ODFModel> handle;
     mutable std::string error_msg;
     vbc_database();
-private:// template information
-    std::auto_ptr<ODFModel> fib_file_buffer;
-    ODFModel* fib_file;
 private:// template information
     image::geometry<3> dim;
     unsigned int num_fiber;
@@ -42,10 +40,10 @@ private:// template information
     unsigned int half_odf_size;
     float fiber_threshold;
     bool is_consistent(MatFile& mat_reader) const;
+    void read_template(void);
 public:
-    bool load_template(const char* templat_name);
-    void read_template(ODFModel* fib_file_);
-    bool read_database(ODFModel* fib_file_);
+    bool create_database(const char* templat_name);
+    bool load_database(const char* database_name);
 private:// database information
     std::vector<std::string> subject_names;
     unsigned int num_subjects;
@@ -74,30 +72,43 @@ public:
     bool single_subject_analysis(const char* filename,float percentile,fib_data& result);
     //bool single_subject_paired_analysis(const char* file_name1,const char* file_name2);
 public:
-    bool calculate_group_distribution(float percentile,const std::vector<std::string>& files,
+    bool calculate_individual_distribution(float percentile,
+                                           unsigned int length_threshold,
+                                           const std::vector<std::string>& files,
                                         std::vector<float>& subject_greater,
                                         std::vector<float>& subject_lesser);
-
 public:
-    void run_span(const fiber_orientations& fib,std::vector<std::vector<float> >& span);
-    void calculate_span_distribution(const fiber_orientations& fib,std::vector<unsigned int>& dist);
-    void calculate_subject_distribution(float percentile,const fib_data& data,
+    void run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& track);
+    bool save_track_as(const char* file_name,std::vector<std::vector<float> >& track,unsigned int length_threshold);
+    void calculate_subject_distribution(float percentile,
+                                        const fib_data& data,
                                         std::vector<float>& subject_greater,
                                         std::vector<float>& subject_lesser);
+    bool save_subject_distribution(float percentile,
+                                   unsigned int length_threshold,
+                                   const char* file_name,
+                                   const fib_data& data);
 
-    void calculate_subject_fdr(float percentile,const fib_data& result,std::vector<std::vector<float> >& spans,
-                                 std::vector<float>& fdr);
 public:
     double get_trend_std(const std::vector<float>& data);
     void trend_analysis(const std::vector<float>& data,fib_data& result);
+    void group_analysis(const std::vector<int>& label,fib_data& data);
     void trend_analysis(float sqrt_var_S,const std::vector<unsigned int>& permu,fib_data& result);
 
 
     void calculate_null_trend_distribution(float sqrt_var_S,float percentile,
                                                    std::vector<float>& subject_greater,
                                                    std::vector<float>& subject_lesser);
+    void calculate_null_group_distribution(const std::vector<int>& label,float dif,
+                                                   std::vector<float>& subject_greater,
+                                                   std::vector<float>& subject_lesser);
 private:
-    void calculate_null_trend_multithread(float sqrt_var_S,float percentile,
+    void calculate_null_trend_multithread(unsigned int id,float sqrt_var_S,float percentile,
+                                          std::vector<unsigned int>& dist_greater,
+                                          std::vector<unsigned int>& dist_lesser,
+                                          bool progress,
+                                          unsigned int* total_count);
+    void calculate_null_group_multithread(unsigned int id,const std::vector<int>& label,float dif,
                                           std::vector<unsigned int>& dist_greater,
                                           std::vector<unsigned int>& dist_lesser,
                                           bool progress,

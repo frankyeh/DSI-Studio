@@ -179,7 +179,7 @@ void VBCDialog::on_create_data_base_clicked()
         }
 
         std::auto_ptr<vbc_database> data(new vbc_database);
-        if(!data->load_template(ui->skeleton->text().toLocal8Bit().begin()))
+        if(!data->create_database(ui->skeleton->text().toLocal8Bit().begin()))
         {
             QMessageBox::information(this,"error","Invalid template file",0);
             return;

@@ -43,9 +43,6 @@ class ODFModel : public boost::noncopyable
 {
 public:
     FibData fib_data;
-    std::auto_ptr<vbc_database> vbc;
-public:
-    bool has_vbc(void) const{return vbc.get();}
 public:
 
     unsigned int get_name_index(const std::string& index_name) const
@@ -179,12 +176,7 @@ public:
 public:
     bool load_from_file(const char* file_name)
     {
-        if(!fib_data.load_from_file(file_name))
-            return false;
-        vbc.reset(new vbc_database);
-        if(!vbc->read_database(this))
-            vbc.reset(0);
-        return true;
+        return fib_data.load_from_file(file_name);
     }
 
 

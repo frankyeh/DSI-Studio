@@ -16,7 +16,6 @@
 #include "tracking_model.hpp"
 #include "libs/tracking/tracking_model.hpp"
 #include "manual_alignment.h"
-#include "vbc_dialog.hpp"
 #include "tract_report.hpp"
 #include "color_bar_dialog.hpp"
 #include "connectivity_matrix_dialog.h"
@@ -32,8 +31,8 @@ void tracking_window::closeEvent(QCloseEvent *event)
     QMainWindow::closeEvent(event);
 }
 
-tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
-        QMainWindow(parent),handle(new_handle),
+tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handle_release_) :
+        QMainWindow(parent),handle(new_handle),handle_release(handle_release_),
         ui(new Ui::tracking_window),scene(*this,new_handle),slice(new_handle)
 
 {
@@ -62,13 +61,6 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
         ui->graphicsView->setScene(&scene);
         ui->graphicsView->setCursor(Qt::CrossCursor);
         scene.statusbar = ui->statusbar;
-        if(!handle->has_vbc())
-        {
-            ui->actionConnectometry->setEnabled(false);
-            ui->actionConnectometry->setVisible(false);
-        }
-        else
-            vbc.reset(new vbc_dialog(this,handle));
         color_bar.reset(new color_bar_dialog(this));
     }
 
@@ -342,13 +334,14 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle) :
 
 tracking_window::~tracking_window()
 {
-
+    qApp->removeEventFilter(this);
     QSettings settings;
     settings.setValue("geometry", saveGeometry());
     settings.setValue("state", saveState());
     tractWidget->delete_all_tract();
     delete ui;
-    delete handle;
+    if(handle_release)
+        delete handle;
     handle = 0;
     //std::cout << __FUNCTION__ << " " << __FILE__ << std::endl;
 }
@@ -394,10 +387,6 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     }
     if(!has_info)
         return false;
-
-
-    if(vbc.get() && vbc->isVisible())
-        vbc->show_info_at(pos);
 
     QString status;
     status = QString("(%1,%2,%3) ").arg(std::floor(pos[0]*10.0+0.5)/10.0)
@@ -1111,13 +1100,6 @@ void tracking_window::on_actionManual_Registration_triggered()
         mi3->timer->start();
         mi3->show();
     }
-}
-
-
-void tracking_window::on_actionConnectometry_triggered()
-{
-    if(vbc.get())
-        vbc->show();
 }
 
 

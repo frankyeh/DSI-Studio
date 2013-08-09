@@ -8,9 +8,9 @@ class ODFModel;
 class fiber_orientations;
 class TractModel{
 private:
+        ODFModel* handle;
         image::geometry<3> geometry;
         image::vector<3> vs;
-        ODFModel* handle;
         std::auto_ptr<fiber_orientations> fib;
 private:
         std::vector<std::vector<float> > tract_data;
@@ -35,9 +35,7 @@ private:
         void delete_tracts(const std::vector<unsigned int>& tracts_to_delete);
         void select_tracts(const std::vector<unsigned int>& tracts_to_select);
 public:
-        TractModel(ODFModel* handle_,
-                   const image::geometry<3>& geo,
-                   const image::vector<3>& vs_);
+        TractModel(ODFModel* handle_);
         const TractModel& operator=(const TractModel& rhs)
         {
             geometry = rhs.geometry;

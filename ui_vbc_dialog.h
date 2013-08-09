@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'vbc_dialog.ui'
 **
-** Created: Tue May 28 23:01:23 2013
+** Created: Thu Jul 18 14:51:58 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -49,18 +49,27 @@ public:
     QGroupBox *groupBox;
     QHBoxLayout *horizontalLayout;
     QRadioButton *Individual;
-    QRadioButton *radioButton_4;
-    QRadioButton *radioButton_2;
+    QRadioButton *Group;
     QRadioButton *Trend;
-    QGroupBox *groupBox_4;
-    QVBoxLayout *verticalLayout_13;
-    QHBoxLayout *horizontalLayout_4;
-    QToolButton *cal_FDR;
+    QGroupBox *groupBox_5;
+    QVBoxLayout *verticalLayout_14;
+    QHBoxLayout *horizontalLayout_9;
+    QToolButton *open_files;
     QLabel *open_instruction;
-    QSpacerItem *horizontalSpacer;
-    QLabel *label_2;
+    QSpacerItem *horizontalSpacer_5;
+    QLabel *p_label;
     QDoubleSpinBox *percentile_rank;
-    QWidget *widget_2;
+    QWidget *file_name_widget;
+    QHBoxLayout *horizontalLayout_8;
+    QLabel *show_file_name;
+    QGroupBox *groupBox_6;
+    QVBoxLayout *verticalLayout_16;
+    QHBoxLayout *horizontalLayout_4;
+    QPushButton *FDR_analysis;
+    QPushButton *pushButton_2;
+    QPushButton *view_dif_map;
+    QSpacerItem *horizontalSpacer;
+    QWidget *FDR_widget;
     QVBoxLayout *verticalLayout_7;
     QSplitter *splitter_3;
     QGroupBox *groupBox_2;
@@ -120,13 +129,7 @@ public:
     QToolButton *save_fdr_dist;
     QSpacerItem *horizontalSpacer_3;
     QTableWidget *fdr_table;
-    QGroupBox *individual_study;
-    QVBoxLayout *verticalLayout_14;
-    QHBoxLayout *horizontalLayout_21;
-    QSpacerItem *horizontalSpacer_9;
-    QPushButton *open_subject;
-    QPushButton *cal_lesser_tracts;
-    QPushButton *vbc_dist_update;
+    QSpacerItem *verticalSpacer_2;
     QWidget *tab_4;
     QVBoxLayout *verticalLayout_6;
     QSplitter *splitter;
@@ -135,6 +138,11 @@ public:
     QSplitter *splitter_2;
     QWidget *widget;
     QVBoxLayout *verticalLayout_2;
+    QHBoxLayout *horizontalLayout_7;
+    QLabel *label_11;
+    QDoubleSpinBox *zoom;
+    QLabel *coordinate;
+    QSpacerItem *horizontalSpacer_4;
     QGraphicsView *vbc_view;
     QScrollBar *AxiSlider;
     QTableWidget *subject_list;
@@ -145,7 +153,7 @@ public:
     {
         if (vbc_dialog->objectName().isEmpty())
             vbc_dialog->setObjectName(QString::fromUtf8("vbc_dialog"));
-        vbc_dialog->resize(640, 551);
+        vbc_dialog->resize(716, 594);
         QIcon icon;
         icon.addFile(QString::fromUtf8(":/icons/icons/axial.xpm"), QSize(), QIcon::Normal, QIcon::Off);
         vbc_dialog->setWindowIcon(icon);
@@ -172,17 +180,11 @@ public:
 
         horizontalLayout->addWidget(Individual);
 
-        radioButton_4 = new QRadioButton(groupBox);
-        radioButton_4->setObjectName(QString::fromUtf8("radioButton_4"));
-        radioButton_4->setEnabled(false);
+        Group = new QRadioButton(groupBox);
+        Group->setObjectName(QString::fromUtf8("Group"));
+        Group->setEnabled(true);
 
-        horizontalLayout->addWidget(radioButton_4);
-
-        radioButton_2 = new QRadioButton(groupBox);
-        radioButton_2->setObjectName(QString::fromUtf8("radioButton_2"));
-        radioButton_2->setEnabled(false);
-
-        horizontalLayout->addWidget(radioButton_2);
+        horizontalLayout->addWidget(Group);
 
         Trend = new QRadioButton(groupBox);
         Trend->setObjectName(QString::fromUtf8("Trend"));
@@ -192,37 +194,36 @@ public:
 
         verticalLayout_9->addWidget(groupBox);
 
-        groupBox_4 = new QGroupBox(tab_3);
-        groupBox_4->setObjectName(QString::fromUtf8("groupBox_4"));
-        verticalLayout_13 = new QVBoxLayout(groupBox_4);
-        verticalLayout_13->setObjectName(QString::fromUtf8("verticalLayout_13"));
-        horizontalLayout_4 = new QHBoxLayout();
-        horizontalLayout_4->setSpacing(0);
-        horizontalLayout_4->setObjectName(QString::fromUtf8("horizontalLayout_4"));
-        cal_FDR = new QToolButton(groupBox_4);
-        cal_FDR->setObjectName(QString::fromUtf8("cal_FDR"));
-        cal_FDR->setMaximumSize(QSize(23, 22));
+        groupBox_5 = new QGroupBox(tab_3);
+        groupBox_5->setObjectName(QString::fromUtf8("groupBox_5"));
+        verticalLayout_14 = new QVBoxLayout(groupBox_5);
+        verticalLayout_14->setObjectName(QString::fromUtf8("verticalLayout_14"));
+        horizontalLayout_9 = new QHBoxLayout();
+        horizontalLayout_9->setObjectName(QString::fromUtf8("horizontalLayout_9"));
+        open_files = new QToolButton(groupBox_5);
+        open_files->setObjectName(QString::fromUtf8("open_files"));
+        open_files->setMaximumSize(QSize(23, 22));
         QIcon icon1;
         icon1.addFile(QString::fromUtf8(":/icons/icons/open.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        cal_FDR->setIcon(icon1);
+        open_files->setIcon(icon1);
 
-        horizontalLayout_4->addWidget(cal_FDR);
+        horizontalLayout_9->addWidget(open_files);
 
-        open_instruction = new QLabel(groupBox_4);
+        open_instruction = new QLabel(groupBox_5);
         open_instruction->setObjectName(QString::fromUtf8("open_instruction"));
 
-        horizontalLayout_4->addWidget(open_instruction);
+        horizontalLayout_9->addWidget(open_instruction);
 
-        horizontalSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+        horizontalSpacer_5 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
-        horizontalLayout_4->addItem(horizontalSpacer);
+        horizontalLayout_9->addItem(horizontalSpacer_5);
 
-        label_2 = new QLabel(groupBox_4);
-        label_2->setObjectName(QString::fromUtf8("label_2"));
+        p_label = new QLabel(groupBox_5);
+        p_label->setObjectName(QString::fromUtf8("p_label"));
 
-        horizontalLayout_4->addWidget(label_2);
+        horizontalLayout_9->addWidget(p_label);
 
-        percentile_rank = new QDoubleSpinBox(groupBox_4);
+        percentile_rank = new QDoubleSpinBox(groupBox_5);
         percentile_rank->setObjectName(QString::fromUtf8("percentile_rank"));
         percentile_rank->setDecimals(3);
         percentile_rank->setMinimum(0.001);
@@ -230,25 +231,68 @@ public:
         percentile_rank->setSingleStep(0.05);
         percentile_rank->setValue(0.05);
 
-        horizontalLayout_4->addWidget(percentile_rank);
+        horizontalLayout_9->addWidget(percentile_rank);
 
 
-        verticalLayout_13->addLayout(horizontalLayout_4);
+        verticalLayout_14->addLayout(horizontalLayout_9);
+
+        file_name_widget = new QWidget(groupBox_5);
+        file_name_widget->setObjectName(QString::fromUtf8("file_name_widget"));
+        horizontalLayout_8 = new QHBoxLayout(file_name_widget);
+        horizontalLayout_8->setObjectName(QString::fromUtf8("horizontalLayout_8"));
+        show_file_name = new QLabel(file_name_widget);
+        show_file_name->setObjectName(QString::fromUtf8("show_file_name"));
+
+        horizontalLayout_8->addWidget(show_file_name);
 
 
-        verticalLayout_9->addWidget(groupBox_4);
+        verticalLayout_14->addWidget(file_name_widget);
 
-        widget_2 = new QWidget(tab_3);
-        widget_2->setObjectName(QString::fromUtf8("widget_2"));
+
+        verticalLayout_9->addWidget(groupBox_5);
+
+        groupBox_6 = new QGroupBox(tab_3);
+        groupBox_6->setObjectName(QString::fromUtf8("groupBox_6"));
+        verticalLayout_16 = new QVBoxLayout(groupBox_6);
+        verticalLayout_16->setObjectName(QString::fromUtf8("verticalLayout_16"));
+        horizontalLayout_4 = new QHBoxLayout();
+        horizontalLayout_4->setObjectName(QString::fromUtf8("horizontalLayout_4"));
+        FDR_analysis = new QPushButton(groupBox_6);
+        FDR_analysis->setObjectName(QString::fromUtf8("FDR_analysis"));
+
+        horizontalLayout_4->addWidget(FDR_analysis);
+
+        pushButton_2 = new QPushButton(groupBox_6);
+        pushButton_2->setObjectName(QString::fromUtf8("pushButton_2"));
+
+        horizontalLayout_4->addWidget(pushButton_2);
+
+        view_dif_map = new QPushButton(groupBox_6);
+        view_dif_map->setObjectName(QString::fromUtf8("view_dif_map"));
+
+        horizontalLayout_4->addWidget(view_dif_map);
+
+        horizontalSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+        horizontalLayout_4->addItem(horizontalSpacer);
+
+
+        verticalLayout_16->addLayout(horizontalLayout_4);
+
+
+        verticalLayout_9->addWidget(groupBox_6);
+
+        FDR_widget = new QWidget(tab_3);
+        FDR_widget->setObjectName(QString::fromUtf8("FDR_widget"));
         QSizePolicy sizePolicy1(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
         sizePolicy1.setHorizontalStretch(0);
         sizePolicy1.setVerticalStretch(0);
-        sizePolicy1.setHeightForWidth(widget_2->sizePolicy().hasHeightForWidth());
-        widget_2->setSizePolicy(sizePolicy1);
-        verticalLayout_7 = new QVBoxLayout(widget_2);
+        sizePolicy1.setHeightForWidth(FDR_widget->sizePolicy().hasHeightForWidth());
+        FDR_widget->setSizePolicy(sizePolicy1);
+        verticalLayout_7 = new QVBoxLayout(FDR_widget);
         verticalLayout_7->setContentsMargins(0, 0, 0, 0);
         verticalLayout_7->setObjectName(QString::fromUtf8("verticalLayout_7"));
-        splitter_3 = new QSplitter(widget_2);
+        splitter_3 = new QSplitter(FDR_widget);
         splitter_3->setObjectName(QString::fromUtf8("splitter_3"));
         splitter_3->setOrientation(Qt::Horizontal);
         groupBox_2 = new QGroupBox(splitter_3);
@@ -578,41 +622,11 @@ public:
         verticalLayout_7->addWidget(splitter_3);
 
 
-        verticalLayout_9->addWidget(widget_2);
+        verticalLayout_9->addWidget(FDR_widget);
 
-        individual_study = new QGroupBox(tab_3);
-        individual_study->setObjectName(QString::fromUtf8("individual_study"));
-        verticalLayout_14 = new QVBoxLayout(individual_study);
-        verticalLayout_14->setObjectName(QString::fromUtf8("verticalLayout_14"));
-        horizontalLayout_21 = new QHBoxLayout();
-        horizontalLayout_21->setSpacing(0);
-        horizontalLayout_21->setObjectName(QString::fromUtf8("horizontalLayout_21"));
-        horizontalSpacer_9 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+        verticalSpacer_2 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
 
-        horizontalLayout_21->addItem(horizontalSpacer_9);
-
-        open_subject = new QPushButton(individual_study);
-        open_subject->setObjectName(QString::fromUtf8("open_subject"));
-
-        horizontalLayout_21->addWidget(open_subject);
-
-        cal_lesser_tracts = new QPushButton(individual_study);
-        cal_lesser_tracts->setObjectName(QString::fromUtf8("cal_lesser_tracts"));
-        cal_lesser_tracts->setMaximumSize(QSize(40, 16777215));
-
-        horizontalLayout_21->addWidget(cal_lesser_tracts);
-
-        vbc_dist_update = new QPushButton(individual_study);
-        vbc_dist_update->setObjectName(QString::fromUtf8("vbc_dist_update"));
-        vbc_dist_update->setMaximumSize(QSize(40, 16777215));
-
-        horizontalLayout_21->addWidget(vbc_dist_update);
-
-
-        verticalLayout_14->addLayout(horizontalLayout_21);
-
-
-        verticalLayout_9->addWidget(individual_study);
+        verticalLayout_9->addItem(verticalSpacer_2);
 
         tabWidget->addTab(tab_3, QString());
         tab_4 = new QWidget();
@@ -637,6 +651,33 @@ public:
         verticalLayout_2->setSpacing(0);
         verticalLayout_2->setContentsMargins(0, 0, 0, 0);
         verticalLayout_2->setObjectName(QString::fromUtf8("verticalLayout_2"));
+        horizontalLayout_7 = new QHBoxLayout();
+        horizontalLayout_7->setObjectName(QString::fromUtf8("horizontalLayout_7"));
+        label_11 = new QLabel(widget);
+        label_11->setObjectName(QString::fromUtf8("label_11"));
+
+        horizontalLayout_7->addWidget(label_11);
+
+        zoom = new QDoubleSpinBox(widget);
+        zoom->setObjectName(QString::fromUtf8("zoom"));
+        zoom->setMinimum(0.1);
+        zoom->setMaximum(20);
+        zoom->setValue(3);
+
+        horizontalLayout_7->addWidget(zoom);
+
+        coordinate = new QLabel(widget);
+        coordinate->setObjectName(QString::fromUtf8("coordinate"));
+
+        horizontalLayout_7->addWidget(coordinate);
+
+        horizontalSpacer_4 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+        horizontalLayout_7->addItem(horizontalSpacer_4);
+
+
+        verticalLayout_2->addLayout(horizontalLayout_7);
+
         vbc_view = new QGraphicsView(widget);
         vbc_view->setObjectName(QString::fromUtf8("vbc_view"));
 
@@ -692,7 +733,7 @@ public:
         retranslateUi(vbc_dialog);
 
         tabWidget->setCurrentIndex(0);
-        tabWidget_2->setCurrentIndex(2);
+        tabWidget_2->setCurrentIndex(0);
         tabWidget_3->setCurrentIndex(0);
 
 
@@ -704,13 +745,17 @@ public:
         vbc_dialog->setWindowTitle(QApplication::translate("vbc_dialog", "Connectometry", 0, QApplication::UnicodeUTF8));
         groupBox->setTitle(QApplication::translate("vbc_dialog", "STEP 1: Selection Analysis Approach", 0, QApplication::UnicodeUTF8));
         Individual->setText(QApplication::translate("vbc_dialog", "Individual", 0, QApplication::UnicodeUTF8));
-        radioButton_4->setText(QApplication::translate("vbc_dialog", "Paired Individual", 0, QApplication::UnicodeUTF8));
-        radioButton_2->setText(QApplication::translate("vbc_dialog", "Group", 0, QApplication::UnicodeUTF8));
+        Group->setText(QApplication::translate("vbc_dialog", "Group", 0, QApplication::UnicodeUTF8));
         Trend->setText(QApplication::translate("vbc_dialog", "Trend", 0, QApplication::UnicodeUTF8));
-        groupBox_4->setTitle(QApplication::translate("vbc_dialog", "STEP 2: Load Data", 0, QApplication::UnicodeUTF8));
-        cal_FDR->setText(QApplication::translate("vbc_dialog", "...", 0, QApplication::UnicodeUTF8));
+        groupBox_5->setTitle(QApplication::translate("vbc_dialog", "STEP 2: Open files", 0, QApplication::UnicodeUTF8));
+        open_files->setText(QApplication::translate("vbc_dialog", "...", 0, QApplication::UnicodeUTF8));
         open_instruction->setText(QApplication::translate("vbc_dialog", "Open", 0, QApplication::UnicodeUTF8));
-        label_2->setText(QApplication::translate("vbc_dialog", "Percentile rank", 0, QApplication::UnicodeUTF8));
+        p_label->setText(QApplication::translate("vbc_dialog", "Percentile rank", 0, QApplication::UnicodeUTF8));
+        show_file_name->setText(QApplication::translate("vbc_dialog", "TextLabel", 0, QApplication::UnicodeUTF8));
+        groupBox_6->setTitle(QApplication::translate("vbc_dialog", "STEP 3: Run analysis", 0, QApplication::UnicodeUTF8));
+        FDR_analysis->setText(QApplication::translate("vbc_dialog", "FDR analysis", 0, QApplication::UnicodeUTF8));
+        pushButton_2->setText(QApplication::translate("vbc_dialog", "Save tracks", 0, QApplication::UnicodeUTF8));
+        view_dif_map->setText(QApplication::translate("vbc_dialog", "View mappings...", 0, QApplication::UnicodeUTF8));
         groupBox_2->setTitle(QApplication::translate("vbc_dialog", " Empirical Distribution", 0, QApplication::UnicodeUTF8));
         label_3->setText(QApplication::translate("vbc_dialog", "Span to", 0, QApplication::UnicodeUTF8));
         label_4->setText(QApplication::translate("vbc_dialog", "Span from", 0, QApplication::UnicodeUTF8));
@@ -754,11 +799,9 @@ public:
         QTableWidgetItem *___qtablewidgetitem7 = fdr_table->horizontalHeaderItem(3);
         ___qtablewidgetitem7->setText(QApplication::translate("vbc_dialog", "FDR", 0, QApplication::UnicodeUTF8));
         tabWidget_3->setTabText(tabWidget_3->indexOf(tab_6), QApplication::translate("vbc_dialog", "Data", 0, QApplication::UnicodeUTF8));
-        individual_study->setTitle(QApplication::translate("vbc_dialog", "STEP 3: Individual Study", 0, QApplication::UnicodeUTF8));
-        open_subject->setText(QApplication::translate("vbc_dialog", "open...", 0, QApplication::UnicodeUTF8));
-        cal_lesser_tracts->setText(QApplication::translate("vbc_dialog", "FDR", 0, QApplication::UnicodeUTF8));
-        vbc_dist_update->setText(QApplication::translate("vbc_dialog", "Dist", 0, QApplication::UnicodeUTF8));
         tabWidget->setTabText(tabWidget->indexOf(tab_3), QApplication::translate("vbc_dialog", "Analysis", 0, QApplication::UnicodeUTF8));
+        label_11->setText(QApplication::translate("vbc_dialog", "Zoom", 0, QApplication::UnicodeUTF8));
+        coordinate->setText(QApplication::translate("vbc_dialog", "(x,y,z)", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem8 = subject_list->horizontalHeaderItem(0);
         ___qtablewidgetitem8->setText(QApplication::translate("vbc_dialog", "Subject ID", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem9 = subject_list->horizontalHeaderItem(1);

@@ -21,6 +21,8 @@
 #include "view_image.h"
 #include "mapping/atlas.hpp"
 #include "libs/gzip_interface.hpp"
+#include "tracking/vbc_dialog.hpp"
+#include "vbc/vbc_database.h"
 
 std::vector<atlas> atlas_list;
 extern std::string program_base;
@@ -577,4 +579,26 @@ void MainWindow::on_view_image_clicked()
     }
     dialog->show();
 
+}
+
+void MainWindow::on_connectometry_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(
+                           this,
+                           "Open Database files",
+                           ui->workDir->currentText(),
+                           "Database files (*.db.fib.gz);;All files (*.*)");
+    if (filename.isEmpty())
+        return;
+
+    std::auto_ptr<vbc_database> database(new vbc_database);
+    database.reset(new vbc_database);
+    if(!database->load_database(filename.toLocal8Bit().begin()))
+    {
+        QMessageBox::information(this,"Error","Invalid databse format",0);
+        return;
+    }
+    vbc_dialog* vbc = new vbc_dialog(this,database.release(),QFileInfo(filename).absoluteDir().absolutePath());
+    vbc->setAttribute(Qt::WA_DeleteOnClose);
+    vbc->show();
 }

@@ -1,15 +1,14 @@
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QInputDialog>
 #include "vbc_dialog.hpp"
 #include "ui_vbc_dialog.h"
 #include "ui_tracking_window.h"
 #include "tracking_window.h"
 #include "tract/tracttablewidget.h"
 
-vbc_dialog::vbc_dialog(QWidget *parent,ODFModel* handle_) :
-    QDialog(parent),
-    cur_tracking_window((tracking_window*)parent),
-    handle(handle_),
+vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) :
+    QDialog(parent),vbc(vbc_ptr),work_dir(work_dir_),
     ui(new Ui::vbc_dialog)
 {
     ui->setupUi(this);
@@ -20,17 +19,21 @@ vbc_dialog::vbc_dialog(QWidget *parent,ODFModel* handle_) :
     ui->subject_list->setColumnWidth(2,50);
     ui->subject_list->setHorizontalHeaderLabels(
                 QStringList() << "name" << "value" << "R2");
-    ui->subject_list->setRowCount(handle->vbc->subject_count());
-    for(unsigned int index = 0;index < handle->vbc->subject_count();++index)
+    ui->subject_list->setRowCount(vbc->subject_count());
+    for(unsigned int index = 0;index < vbc->subject_count();++index)
     {
-        ui->subject_list->setItem(index,0, new QTableWidgetItem(QString(handle->vbc->subject_name(index).c_str())));
+        ui->subject_list->setItem(index,0, new QTableWidgetItem(QString(vbc->subject_name(index).c_str())));
         ui->subject_list->setItem(index,1, new QTableWidgetItem(QString::number(0)));
-        ui->subject_list->setItem(index,2, new QTableWidgetItem(QString::number(handle->vbc->subject_R2(index))));
+        ui->subject_list->setItem(index,2, new QTableWidgetItem(QString::number(vbc->subject_R2(index))));
     }
-    ui->subject_list->selectRow(0);
+    ui->AxiSlider->setMaximum(vbc->handle->fib_data.dim[2]-1);
+    ui->AxiSlider->setMinimum(0);
+    ui->AxiSlider->setValue(vbc->handle->fib_data.dim[2] >> 1);
+
 
     connect(ui->Individual,SIGNAL(toggled(bool)),this,SLOT(on_toggled(bool)));
     connect(ui->Trend,SIGNAL(toggled(bool)),this,SLOT(on_toggled(bool)));
+    connect(ui->Group,SIGNAL(toggled(bool)),this,SLOT(on_toggled(bool)));
 
     // dist report
     connect(ui->line_width,SIGNAL(valueChanged(int)),this,SLOT(show_report()));
@@ -49,29 +52,45 @@ vbc_dialog::vbc_dialog(QWidget *parent,ODFModel* handle_) :
     connect(ui->show_greater_2,SIGNAL(toggled(bool)),this,SLOT(show_fdr_report()));
     connect(ui->show_lesser_2,SIGNAL(toggled(bool)),this,SLOT(show_fdr_report()));
 
-    ui->individual_study->hide();
+
+    connect(ui->AxiSlider,SIGNAL(valueChanged(int)),this,SLOT(on_subject_list_itemSelectionChanged()));
+    connect(ui->zoom,SIGNAL(valueChanged(double)),this,SLOT(on_subject_list_itemSelectionChanged()));
+
+    ui->subject_list->selectRow(0);
+    ui->FDR_widget->hide();
     on_toggled(true);
+    qApp->installEventFilter(this);
 }
 
 vbc_dialog::~vbc_dialog()
 {
+    qApp->removeEventFilter(this);
+
     delete ui;
 }
 
-void vbc_dialog::show_info_at(const image::vector<3,float>& pos)
+bool vbc_dialog::eventFilter(QObject *obj, QEvent *event)
 {
-    // show image
-    if(vbc_slice_pos != cur_tracking_window->ui->AxiSlider->value())
-       on_subject_list_itemSelectionChanged();
+    if (event->type() != QEvent::MouseMove || obj->parent() != ui->vbc_view)
+        return false;
+    QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+    QPointF point = ui->vbc_view->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
+    image::vector<3,float> pos;
+    pos[0] =  ((float)point.x()) / ui->zoom->value() - 0.5;
+    pos[1] =  ((float)point.y()) / ui->zoom->value() - 0.5;
+    pos[2] = ui->AxiSlider->value();
+    if(!vbc->handle->fib_data.dim.is_valid(pos))
+        return true;
+    ui->coordinate->setText(QString("(%1,%2,%3)").arg(pos[0]).arg(pos[1]).arg(pos[2]));
 
     // show data
     std::vector<float> vbc_data;
-    handle->vbc->get_data_at(
+    vbc->get_data_at(
             image::pixel_index<3>(std::floor(pos[0] + 0.5), std::floor(pos[1] + 0.5), std::floor(pos[2] + 0.5),
-                                  handle->fib_data.dim).index(),0,vbc_data);
+                                  vbc->handle->fib_data.dim).index(),0,vbc_data);
     if(!vbc_data.empty())
     {
-        for(unsigned int index = 0;index < handle->vbc->subject_count();++index)
+        for(unsigned int index = 0;index < vbc->subject_count();++index)
             ui->subject_list->item(index,1)->setText(QString::number(vbc_data[index]));
 
         vbc_data.erase(std::remove(vbc_data.begin(),vbc_data.end(),0.0),vbc_data.end());
@@ -103,6 +122,7 @@ void vbc_dialog::show_info_at(const image::vector<3,float>& pos)
             ui->vbc_report->replot();
             }
     }
+    return true;
 }
 
 void vbc_dialog::show_fdr_report()
@@ -166,7 +186,7 @@ void vbc_dialog::show_report()
     if(dist.empty())
         return;
     std::vector<std::vector<float> > vbc_data;
-    char legends[4][60] = {"greater","lesser","null greater","null lesser"};
+    char legends[4][60] = {"null greater","null lesser","greater","lesser"};
     std::vector<const char*> legend;
 
     if(ui->show_null_greater->isChecked())
@@ -297,205 +317,15 @@ void vbc_dialog::show_fdr_table(void)
     ui->fdr_table->selectRow(0);
 }
 
-void vbc_dialog::on_cal_lesser_tracts_clicked()
-{
-    if(cur_tracking_window->ui->tracking_index->findText("lesser mapping") == -1)
-        return;
-    std::vector<std::vector<float> > tracts;
-    std::vector<float> fdr;
-    begin_prog("calculating");
-    handle->vbc->calculate_subject_fdr(1.0-ui->percentile_rank->value(),cur_subject_fib,tracts,fdr);
-    if(tracts.empty())
-    {
-        QMessageBox::information(this,"result","no significant lesser span",0);
-        return;
-    }
-
-    for(float fdr_upper = 0.1,fdr_lower = 0.0;
-        fdr_upper < 1.0;fdr_upper += 0.1,fdr_lower += 0.1)
-    {
-        std::vector<std::vector<float> > selected_tracts;
-        std::vector<image::rgb_color> color;
-        for(unsigned int index = 0;index < fdr.size();++index)
-        {
-            if(fdr[index] >= fdr_lower && fdr[index] < fdr_upper)
-            {
-                selected_tracts.push_back(std::vector<float>());
-                selected_tracts.back().swap(tracts[index]);
-                color.push_back(image::rgb_color(230,fdr[index]*230,fdr[index]*230));
-            }
-        }
-        cur_tracking_window->tractWidget->addNewTracts(QString("FDR ") + QString::number(fdr_lower) + " to " + QString::number(fdr_upper));
-        cur_tracking_window->tractWidget->tract_models.back()->add_tracts(selected_tracts);
-        for(unsigned int index = 0;index < color.size();++index)
-            cur_tracking_window->tractWidget->tract_models.back()->set_tract_color(index,color[index]);
-        cur_tracking_window->tractWidget->item(cur_tracking_window->tractWidget->tract_models.size()-1,1)->
-            setText(QString::number(cur_tracking_window->tractWidget->tract_models.back()->get_visible_track_count()));
-    }
-
-    //cur_tracking_window->renderWidget->setData("tract_color_style",1);//manual assigned
-    //cur_tracking_window->glWidget->makeTracts();
-    //cur_tracking_window->glWidget->updateGL();
-}
-
-void vbc_dialog::on_cal_FDR_clicked()
-{
-    dist.clear();
-    dist.resize(4);
-
-    if(ui->Individual->isChecked())
-    {
-        QStringList filename = QFileDialog::getOpenFileNames(
-                                    this,
-                    "Select subject fib file for analysis",
-                    cur_tracking_window->absolute_path,"Fib files (*.fib.gz *.fib);;All files (*.*)" );
-        if (filename.isEmpty())
-            return;
-
-        std::vector<std::string> file_names;
-        for(unsigned int index = 0;index < filename.size();++index)
-            file_names.push_back(filename[index].toLocal8Bit().begin());
-        if(!handle->vbc->calculate_group_distribution(1.0-ui->percentile_rank->value(),file_names,dist[2],dist[3]))
-        {
-            QMessageBox::information(this,"error",handle->vbc->error_msg.c_str(),0);
-            return;
-        }
-        ui->result_label1->setText(QString::number(100.0*handle->vbc->total_greater/handle->vbc->total) +
-                                   "% orientations in study group > " +
-                                   QString::number(ui->percentile_rank->value()) + " rank.");
-        ui->result_label2->setText(QString::number(100.0*handle->vbc->total_lesser/handle->vbc->total) +
-                                   "% orientations in study group < " +
-                                   QString::number(ui->percentile_rank->value()) + " rank.");
-
-        file_names.clear();
-        handle->vbc->calculate_group_distribution(1.0-ui->percentile_rank->value(),file_names,dist[0],dist[1]);
-
-        ui->result_label3->setText(QString::number(100.0*handle->vbc->total_greater/handle->vbc->total) +
-                                   "% orientations in control group > " +
-                                   QString::number(ui->percentile_rank->value()) + " rank.");
-        ui->result_label4->setText(QString::number(100.0*handle->vbc->total_lesser/handle->vbc->total) +
-                                   "% orientations in control group < " +
-                                   QString::number(ui->percentile_rank->value()) + " rank.");
-
-    }
-    else
-    if(ui->Trend->isChecked())
-    {
-        QString filename = QFileDialog::getOpenFileName(
-                                    this,
-                                "Select a value text file for analysis",
-                                cur_tracking_window->absolute_path,"Text files (*.txt);;All files (*.*)" );
-        if (filename.isEmpty())
-            return;
-
-        std::ifstream in(filename.toLocal8Bit().begin());
-        std::vector<float> data;
-        std::copy(std::istream_iterator<float>(in),
-                  std::istream_iterator<float>(),std::back_inserter(data));
-
-        if(data.size() != handle->vbc->subject_count())
-        {
-            QMessageBox::information(this,"error","The number of data does not mactch the subject count",0);
-            return;
-        }
-        handle->vbc->trend_analysis(data,cur_subject_fib);
-        handle->vbc->calculate_subject_distribution(1.0-ui->percentile_rank->value(),cur_subject_fib,dist[2],dist[3]);
-        cur_subject_fib.add_greater_lesser_mapping_for_tracking(handle);
-        if(cur_tracking_window->ui->tracking_index->findText("lesser mapping") == -1)
-        {
-            cur_tracking_window->ui->tracking_index->addItem("greater mapping");
-            cur_tracking_window->ui->tracking_index->addItem("lesser mapping");
-        }
-        handle->vbc->calculate_null_trend_distribution(handle->vbc->get_trend_std(data),1.0-ui->percentile_rank->value(),dist[0],dist[1]);
-    }    
-    else
-        return;
-
-    fdr.clear();
-    fdr.resize(2);
-    std::vector<double> sum(4);
-    for(unsigned int index = 0;index < dist[0].size();++index)
-    {
-        for(unsigned int j = 0;j < 4;++j)
-            sum[j] += dist[j][index];
-        if(sum[2] < 1.0)
-            fdr[0].push_back((1.0-sum[0])/(1.0-sum[2]));
-        if(sum[3] < 1.0)
-            fdr[1].push_back((1.0-sum[1])/(1.0-sum[3]));
-    }
-
-    show_report();
-    show_dis_table();
-    show_fdr_report();
-    show_fdr_table();
-    if(ui->Individual->isChecked())
-        ui->individual_study->show();
-    else
-        ui->individual_study->hide();
-}
-
-/*
-
-void tracking_window::on_actionPair_comparison_triggered()
-{
-    if(!handle->has_vbc())
-        return;
-    QString filename1 = QFileDialog::getOpenFileName(
-                                this,
-                                "Select subject fib file for analysis",
-                                absolute_path,
-                                "Fib files (*.fib.gz *.fib);;All files (*.*)" );
-    if (filename1.isEmpty())
-        return;
-    QString filename2 = QFileDialog::getOpenFileName(
-                                this,
-                                "Select subject fib file for analysis",
-                                absolute_path,
-                                "Fib files (*.fib.gz *.fib);;All files (*.*)" );
-    if (filename2.isEmpty())
-        return;
-
-
-    begin_prog("load data");
-    if(!handle->vbc->single_subject_paired_analysis(
-                                                    filename1.toLocal8Bit().begin(),
-                                                    filename2.toLocal8Bit().begin()))
-    {
-        check_prog(1,1);
-        QMessageBox::information(this,"error",handle->vbc->error_msg.c_str(),0);
-        return;
-    }
-    check_prog(1,1);
-    if(ui->tracking_index->findText("lesser mapping") == -1)
-    {
-        ui->tracking_index->addItem("greater mapping");
-        ui->tracking_index->addItem("lesser mapping");
-    }
-}
-    */
-
-
-void vbc_dialog::on_vbc_dist_update_clicked()
-{
-    /*
-    if(cur_tracking_window->ui->tracking_index->findText("lesser mapping") == -1)
-        return;
-
-    std::vector<std::vector<float> > vbc_data(2);
-    handle->vbc->calculate_subject_distribution(1.0-ui->percentile_rank->value(),cur_subject_fib,vbc_data[0],vbc_data[1]);
-    show_report(vbc_data);
-    */
-}
-
 void vbc_dialog::on_subject_list_itemSelectionChanged()
 {
     image::basic_image<float,2> slice;
-    handle->vbc->get_subject_slice(ui->subject_list->currentRow(),ui->AxiSlider->value(),slice);
+    vbc->get_subject_slice(ui->subject_list->currentRow(),ui->AxiSlider->value(),slice);
     image::normalize(slice);
     image::color_image color_slice(slice.geometry());
     std::copy(slice.begin(),slice.end(),color_slice.begin());
     QImage qimage((unsigned char*)&*color_slice.begin(),color_slice.width(),color_slice.height(),QImage::Format_RGB32);
-    vbc_slice_image = qimage.scaled(color_slice.width()*cur_tracking_window->ui->zoom->value(),color_slice.height()*cur_tracking_window->ui->zoom->value());
+    vbc_slice_image = qimage.scaled(color_slice.width()*ui->zoom->value(),color_slice.height()*ui->zoom->value());
     vbc_scene.clear();
     vbc_scene.setSceneRect(0, 0, vbc_slice_image.width(),vbc_slice_image.height());
     vbc_scene.setItemIndexMethod(QGraphicsScene::NoIndex);
@@ -508,7 +338,7 @@ void vbc_dialog::on_save_vbc_dist_clicked()
     QString filename = QFileDialog::getSaveFileName(
                 this,
                 "Save report as",
-                cur_tracking_window->absolute_path + "/dist_report.txt",
+                work_dir + "/dist_report.txt",
                 "Report file (*.txt);;All files (*.*)");
     if(filename.isEmpty())
         return;
@@ -520,52 +350,316 @@ void vbc_dialog::on_save_fdr_dist_clicked()
     QString filename = QFileDialog::getSaveFileName(
                 this,
                 "Save report as",
-                cur_tracking_window->absolute_path + "/fdr_report.txt",
+                work_dir + "/fdr_report.txt",
                 "Report file (*.txt);;All files (*.*)");
     if(filename.isEmpty())
         return;
     ui->fdr_dist->saveTxt(filename);
 }
 
-void vbc_dialog::on_open_subject_clicked()
-{
-    QString filename = QFileDialog::getOpenFileName(
-                                this,
-                                "Select subject fib file for analysis",
-                                cur_tracking_window->absolute_path,
-                                "Fib files (*.fib.gz *.fib);;All files (*.*)" );
-    if (filename.isEmpty())
-        return;
-
-    begin_prog("load data");
-    if(!handle->vbc->single_subject_analysis(filename.toLocal8Bit().begin(),1.0-ui->percentile_rank->value(),
-                                             cur_subject_fib))
-    {
-        check_prog(1,1);
-        QMessageBox::information(this,"error",handle->vbc->error_msg.c_str(),0);
-        return;
-    }
-    check_prog(1,1);
-
-    cur_subject_fib.add_greater_lesser_mapping_for_tracking(handle);
-    if(cur_tracking_window->ui->tracking_index->findText("lesser mapping") == -1)
-    {
-        cur_tracking_window->ui->tracking_index->addItem("greater mapping");
-        cur_tracking_window->ui->tracking_index->addItem("lesser mapping");
-    }
-}
 
 void vbc_dialog::on_toggled(bool checked)
 {
     if(ui->Trend->isChecked())
     {
         ui->open_instruction->setText("Open the value text file");
+        ui->p_label->setText("Alpha");
+        ui->percentile_rank->setValue(0.25);
+    }
+    if(ui->Group->isChecked())
+    {
+        ui->open_instruction->setText("Open the label text file");
+        ui->p_label->setText("Alpha");
+        ui->percentile_rank->setValue(0.25);
     }
 
     if(ui->Individual->isChecked())
     {
         ui->open_instruction->setText("Open all subjects data");
+        ui->p_label->setText("Percentile");
+        ui->percentile_rank->setValue(0.05);
+    }
+    ui->file_name_widget->hide();
+    filename.clear();
+}
+
+
+
+void vbc_dialog::on_open_files_clicked()
+{
+    if(ui->Individual->isChecked())
+    {
+        filename = QFileDialog::getOpenFileNames(
+                                    this,
+                    "Select subject fib file for analysis",
+                    work_dir,"Fib files (*.fib.gz *.fib);;All files (*.*)" );
+        if (filename.isEmpty())
+            return;
+        ui->show_file_name->setText(QString("Subject files:")+QFileInfo(filename[0]).fileName()+"...etc.");
+    }
+    if(ui->Group->isChecked())
+    {
+        QString filename1 = QFileDialog::getOpenFileName(
+                                    this,
+                                "Select a value text file for analysis",
+                                work_dir,"Text files (*.txt);;All files (*.*)" );
+        if (filename1.isEmpty())
+            return;
+        filename.clear();
+        filename.append(filename1);
+        ui->show_file_name->setText(QString("Value source:")+QFileInfo(filename[0]).fileName());
+    }
+    if(ui->Trend->isChecked())
+    {
+        QString filename1 = QFileDialog::getOpenFileName(
+                                    this,
+                                "Select a label text file for analysis",
+                                work_dir,"Text files (*.txt);;All files (*.*)" );
+        if (filename1.isEmpty())
+            return;
+        filename.clear();
+        filename.append(filename1);
+        ui->show_file_name->setText(QString("Label source:")+QFileInfo(filename[0]).fileName());
+    }
+    ui->file_name_widget->show();
+}
+
+void vbc_dialog::on_FDR_analysis_clicked()
+{
+    if (filename.isEmpty())
+    {
+        QMessageBox::information(this,"Error","Please assign files in STEP2");
+        return;
+    }
+
+    dist.clear();
+    dist.resize(4);
+
+    if(ui->Individual->isChecked())
+    {
+        std::vector<std::string> individal_file_names;
+        for(unsigned int index = 0;index < filename.size();++index)
+            individal_file_names.push_back(filename[index].toLocal8Bit().begin());
+
+        if(!vbc->calculate_individual_distribution(1.0-ui->percentile_rank->value(),
+                                             0, //output_tracks ? ui->length_threshold->value():0,
+                                             individal_file_names,dist[2],dist[3]))
+        {
+            QMessageBox::information(this,"error",vbc->error_msg.c_str(),0);
+            return;
+        }
+
+        ui->result_label1->setText(QString::number(100.0*vbc->total_greater/vbc->total) +
+                                   "% orientations in study group > " +
+                                   QString::number(ui->percentile_rank->value()) + " rank.");
+        ui->result_label2->setText(QString::number(100.0*vbc->total_lesser/vbc->total) +
+                                   "% orientations in study group < " +
+                                   QString::number(ui->percentile_rank->value()) + " rank.");
+
+        individal_file_names.clear();
+        vbc->calculate_individual_distribution(1.0-ui->percentile_rank->value(),0,individal_file_names,dist[0],dist[1]);
+
+        ui->result_label3->setText(QString::number(100.0*vbc->total_greater/vbc->total) +
+                                   "% orientations in control group > " +
+                                   QString::number(ui->percentile_rank->value()) + " rank.");
+        ui->result_label4->setText(QString::number(100.0*vbc->total_lesser/vbc->total) +
+                                   "% orientations in control group < " +
+                                   QString::number(ui->percentile_rank->value()) + " rank.");
+
+    }
+    if(ui->Trend->isChecked())
+    {
+        std::ifstream in(filename[0].toLocal8Bit().begin());
+        std::vector<float> data;
+        std::copy(std::istream_iterator<float>(in),
+                  std::istream_iterator<float>(),std::back_inserter(data));
+
+        if(data.size() != vbc->subject_count())
+        {
+            QMessageBox::information(this,"error","The number of data does not mactch the subject count",0);
+            return;
+        }
+        vbc->trend_analysis(data,cur_subject_fib);
+        vbc->calculate_subject_distribution(1.0-ui->percentile_rank->value(),cur_subject_fib,dist[2],dist[3]);
+        cur_subject_fib.add_greater_lesser_mapping_for_tracking(vbc->handle.get());
+        vbc->calculate_null_trend_distribution(vbc->get_trend_std(data),1.0-ui->percentile_rank->value(),dist[0],dist[1]);
+    }
+
+    if(ui->Group->isChecked())
+    {
+
+
+        std::ifstream in(filename[0].toLocal8Bit().begin());
+        std::vector<int> data;
+        std::copy(std::istream_iterator<int>(in),
+                  std::istream_iterator<int>(),std::back_inserter(data));
+
+        if(data.size() != vbc->subject_count())
+        {
+            QMessageBox::information(this,"error","The number of data does not mactch the subject count",0);
+            return;
+        }
+        vbc->group_analysis(data,cur_subject_fib);
+        vbc->calculate_subject_distribution(1.0-ui->percentile_rank->value(),cur_subject_fib,dist[2],dist[3]);
+        cur_subject_fib.add_greater_lesser_mapping_for_tracking(vbc->handle.get());
+        vbc->calculate_null_group_distribution(data,1.0-ui->percentile_rank->value(),dist[0],dist[1]);
+    }
+
+    {
+        fdr.clear();
+        fdr.resize(2);
+        std::vector<double> sum(4);
+        for(unsigned int index = 0;index < dist[0].size();++index)
+        {
+            for(unsigned int j = 0;j < 4;++j)
+                sum[j] += dist[j][index];
+            if(sum[2] < 1.0)
+                fdr[0].push_back((1.0-sum[0])/(1.0-sum[2]));
+            if(sum[3] < 1.0)
+                fdr[1].push_back((1.0-sum[1])/(1.0-sum[3]));
+        }
+        show_report();
+        show_dis_table();
+        show_fdr_report();
+        show_fdr_table();
+        ui->FDR_widget->show();
     }
 }
 
 
+void vbc_dialog::on_view_dif_map_clicked()
+{
+    if(ui->Individual->isChecked())
+    {
+        QString filename1 = QFileDialog::getOpenFileName(
+                                    this,
+                    "Select subject fib file for analysis",
+                    work_dir,"Fib files (*.fib.gz *.fib);;All files (*.*)" );
+        if (filename1.isEmpty())
+            return;
+        if(!vbc->single_subject_analysis(filename1.toLocal8Bit().begin(),1.0-ui->percentile_rank->value(),cur_subject_fib))
+        {
+            QMessageBox::information(this,"error",vbc->error_msg.c_str(),0);
+            return;
+        }
+    }
+    else
+    if (filename.isEmpty())
+    {
+        QMessageBox::information(this,"Error","Please assign files in STEP2");
+        return;
+    }
+
+
+    if(ui->Trend->isChecked())
+    {
+        std::ifstream in(filename[0].toLocal8Bit().begin());
+        std::vector<float> data;
+        std::copy(std::istream_iterator<float>(in),
+                  std::istream_iterator<float>(),std::back_inserter(data));
+
+        if(data.size() != vbc->subject_count())
+        {
+            QMessageBox::information(this,"error","The number of data does not mactch the subject count",0);
+            return;
+        }
+        vbc->trend_analysis(data,cur_subject_fib);
+
+    }
+
+    if(ui->Group->isChecked())
+    {
+        std::ifstream in(filename[0].toLocal8Bit().begin());
+        std::vector<int> data;
+        std::copy(std::istream_iterator<int>(in),
+                  std::istream_iterator<int>(),std::back_inserter(data));
+
+        if(data.size() != vbc->subject_count())
+        {
+            QMessageBox::information(this,"error","The number of data does not mactch the subject count",0);
+            return;
+        }
+        vbc->group_analysis(data,cur_subject_fib);
+    }
+
+    cur_subject_fib.add_greater_lesser_mapping_for_tracking(vbc->handle.get());
+    tracking_window* new_mdi = new tracking_window(this,vbc->handle.get(),false);
+    new_mdi->setAttribute(Qt::WA_DeleteOnClose);
+    new_mdi->absolute_path = QFileInfo(filename[0]).absoluteDir().absolutePath();
+    new_mdi->setWindowTitle(filename[0] + ": Connectometry mapping");
+    new_mdi->showNormal();
+
+}
+
+void vbc_dialog::on_pushButton_2_clicked()
+{
+    if (filename.isEmpty())
+    {
+        QMessageBox::information(this,"Error","Please assign files in STEP2");
+        return;
+    }
+    bool okay = false;
+    unsigned int length_threshold = QInputDialog::getInteger(this,"Assign value","Threshold for track length",30,1,200,10,&okay);
+    if(!okay)
+        return;
+    if(ui->Individual->isChecked())
+    {
+        std::vector<std::string> individal_file_names;
+        for(unsigned int index = 0;index < filename.size();++index)
+            individal_file_names.push_back(filename[index].toLocal8Bit().begin());
+        if(!vbc->calculate_individual_distribution(1.0-ui->percentile_rank->value(),length_threshold,
+                                             individal_file_names,dist[2],dist[3]))
+        {
+            QMessageBox::information(this,"error",vbc->error_msg.c_str(),0);
+            return;
+        }
+    }
+    if(ui->Trend->isChecked())
+    {
+        std::ifstream in(filename[0].toLocal8Bit().begin());
+        std::vector<float> data;
+        std::copy(std::istream_iterator<float>(in),
+                  std::istream_iterator<float>(),std::back_inserter(data));
+
+        if(data.size() != vbc->subject_count())
+        {
+            QMessageBox::information(this,"error","The number of data does not mactch the subject count",0);
+            return;
+        }
+        vbc->trend_analysis(data,cur_subject_fib);
+
+        if(!vbc->save_subject_distribution(1.0-ui->percentile_rank->value(),length_threshold,
+                                           filename[0].toLocal8Bit().begin(),cur_subject_fib))
+        {
+            QMessageBox::information(this,"error",vbc->error_msg.c_str(),0);
+            return;
+        }
+    }
+
+    if(ui->Group->isChecked())
+    {
+        std::ifstream in(filename[0].toLocal8Bit().begin());
+        std::vector<int> data;
+        std::copy(std::istream_iterator<int>(in),
+                  std::istream_iterator<int>(),std::back_inserter(data));
+
+        if(data.size() != vbc->subject_count())
+        {
+            QMessageBox::information(this,"error","The number of data does not mactch the subject count",0);
+            return;
+        }
+        vbc->group_analysis(data,cur_subject_fib);
+        if(!vbc->save_subject_distribution(1.0-ui->percentile_rank->value(),length_threshold,
+                                           filename[0].toLocal8Bit().begin(),cur_subject_fib))
+        {
+            QMessageBox::information(this,"error",vbc->error_msg.c_str(),0);
+            return;
+        }
+    }
+    QMessageBox::information(this,"Done","Data saved!",0);
+}
+
+void vbc_dialog::on_buttonBox_accepted()
+{
+    close();
+}

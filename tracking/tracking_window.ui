@@ -929,7 +929,6 @@
     <addaction name="actionCopy_to_clipboard"/>
     <addaction name="separator"/>
     <addaction name="actionManual_Registration"/>
-    <addaction name="actionConnectometry"/>
     <addaction name="separator"/>
     <addaction name="actionRestore_window_layout"/>
    </widget>
@@ -2833,11 +2832,6 @@
   <action name="actionManual_Registration">
    <property name="text">
     <string>Background Registration...</string>
-   </property>
-  </action>
-  <action name="actionConnectometry">
-   <property name="text">
-    <string>Connectometry...</string>
    </property>
   </action>
   <action name="actionTract_Analysis_Report">

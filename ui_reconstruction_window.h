@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Tue May 28 21:34:58 2013
+** Created: Thu Jul 18 15:44:30 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -187,7 +187,7 @@ public:
         toolBox->setObjectName(QString::fromUtf8("toolBox"));
         source_page = new QWidget();
         source_page->setObjectName(QString::fromUtf8("source_page"));
-        source_page->setGeometry(QRect(0, 0, 626, 414));
+        source_page->setGeometry(QRect(0, 0, 337, 132));
         verticalLayout_4 = new QVBoxLayout(source_page);
         verticalLayout_4->setObjectName(QString::fromUtf8("verticalLayout_4"));
         splitter = new QSplitter(source_page);
@@ -284,7 +284,7 @@ public:
         toolBox->addItem(source_page, QString::fromUtf8("Source Images"));
         page_3 = new QWidget();
         page_3->setObjectName(QString::fromUtf8("page_3"));
-        page_3->setGeometry(QRect(0, 0, 626, 414));
+        page_3->setGeometry(QRect(0, 0, 534, 146));
         gridLayout_2 = new QGridLayout(page_3);
         gridLayout_2->setObjectName(QString::fromUtf8("gridLayout_2"));
         verticalLayout_5 = new QVBoxLayout();
@@ -885,7 +885,7 @@ public:
         label_5->setText(QApplication::translate("reconstruction_window", "DSI Hamming filter", 0, QApplication::UnicodeUTF8));
         label->setText(QApplication::translate("reconstruction_window", "SH order", 0, QApplication::UnicodeUTF8));
         label_6->setText(QApplication::translate("reconstruction_window", "QBI Regularization", 0, QApplication::UnicodeUTF8));
-        label_7->setText(QApplication::translate("reconstruction_window", "GQI Diffusion sampling ratio", 0, QApplication::UnicodeUTF8));
+        label_7->setText(QApplication::translate("reconstruction_window", "Diffusion sampling length ratio", 0, QApplication::UnicodeUTF8));
         ODFDef->clear();
         ODFDef->insertItems(0, QStringList()
          << QApplication::translate("reconstruction_window", "No distance weighting", 0, QApplication::UnicodeUTF8)
@@ -919,7 +919,7 @@ public:
         label_10->setText(QApplication::translate("reconstruction_window", "at (x,y,z)=", 0, QApplication::UnicodeUTF8));
         Output->setTitle(QApplication::translate("reconstruction_window", "Output", 0, QApplication::UnicodeUTF8));
         RecordODF->setText(QApplication::translate("reconstruction_window", "Complete ODFs", 0, QApplication::UnicodeUTF8));
-        output_mapping->setText(QApplication::translate("reconstruction_window", "spatial mapping function", 0, QApplication::UnicodeUTF8));
+        output_mapping->setText(QApplication::translate("reconstruction_window", "Spatial mapping", 0, QApplication::UnicodeUTF8));
         output_jacobian->setText(QApplication::translate("reconstruction_window", "Jacobian determinant", 0, QApplication::UnicodeUTF8));
         groupBox_2->setTitle(QApplication::translate("reconstruction_window", "ODF Processing", 0, QApplication::UnicodeUTF8));
         label_3->setText(QApplication::translate("reconstruction_window", "Number of fibers resolved", 0, QApplication::UnicodeUTF8));
