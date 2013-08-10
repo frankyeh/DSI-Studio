@@ -47,22 +47,24 @@ void color_bar_dialog::on_tract_color_index_currentIndexChanged(int index)
     unsigned int item_index = index ? index+cur_tracking_window->handle->fib_data.other_mapping_index-1:0;
     float max_value = cur_tracking_window->handle->fib_data.view_item[item_index].max_value;
     float min_value = cur_tracking_window->handle->fib_data.view_item[item_index].min_value;
-    float scale2 = std::pow(10.0,std::floor(2.0-std::log10(max_value)));
-    float scale1 = std::pow(10.0,std::floor(1.0-std::log10(max_value)));
     float decimal = std::floor(2.0-std::log10(max_value));
+    float scale = std::pow(10.0,(double)decimal);
     if(decimal < 1.0)
         decimal = 1.0;
+    max_value = std::ceil(max_value*scale)/scale;
+    min_value = std::floor(min_value*scale)/scale;
+
     ui->tract_color_max_value->setDecimals(decimal);
-    ui->tract_color_max_value->setMaximum(std::ceil(max_value*scale1)/scale1);
-    ui->tract_color_max_value->setMinimum(std::floor(min_value*scale1)/scale1);
-    ui->tract_color_max_value->setSingleStep(std::ceil(max_value*scale1)/scale1/50);
-    ui->tract_color_max_value->setValue(std::ceil(max_value*scale2)/scale1);
+    ui->tract_color_max_value->setMaximum(max_value);
+    ui->tract_color_max_value->setMinimum(min_value);
+    ui->tract_color_max_value->setSingleStep((max_value-min_value)/50);
+    ui->tract_color_max_value->setValue(max_value);
 
     ui->tract_color_min_value->setDecimals(decimal);
-    ui->tract_color_min_value->setMaximum(std::ceil(max_value*scale1)/scale1);
-    ui->tract_color_min_value->setMinimum(std::floor(min_value*scale1)/scale1);
-    ui->tract_color_min_value->setSingleStep(std::ceil(max_value*scale1)/scale1/50);
-    ui->tract_color_min_value->setValue(std::floor(min_value*scale2)/scale1);
+    ui->tract_color_min_value->setMaximum(max_value);
+    ui->tract_color_min_value->setMinimum(min_value);
+    ui->tract_color_min_value->setSingleStep((max_value-min_value)/50);
+    ui->tract_color_min_value->setValue(min_value);
     update_color_map();
 }
 
