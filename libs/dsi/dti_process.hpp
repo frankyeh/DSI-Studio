@@ -21,8 +21,7 @@ class Dwi2Tensor : public BaseProcess
         float ll1 = l1-ll;
         float ll2 = l2-ll;
         float ll3 = l3-ll;
-        return std::sqrt(1.5*(ll1*ll1+ll2*ll2+ll3*ll3)/(l1*l1+l2*l2+l3*l3));
-
+        return std::min(1.0,std::sqrt(1.5*(ll1*ll1+ll2*ll2+ll3*ll3)/(l1*l1+l2*l2+l3*l3)));
     }
 private:
     //math::dynamic_matrix<float> iKtKKt;
