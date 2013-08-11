@@ -1334,6 +1334,11 @@
          </item>
          <item>
           <property name="text">
+           <string>3 Slices</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
            <string>Mosaic</string>
           </property>
          </item>

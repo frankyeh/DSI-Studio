@@ -326,6 +326,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         ui->glAxiCheck->setChecked(settings.value("AxiSlice",1).toBool());
         ui->RenderingQualityBox->setCurrentIndex(settings.value("RenderingQuality",1).toInt());
 
+        ui->view_style->setCurrentIndex((settings.value("view_style",0).toInt()));
 
     }
 
@@ -338,6 +339,7 @@ tracking_window::~tracking_window()
     QSettings settings;
     settings.setValue("geometry", saveGeometry());
     settings.setValue("state", saveState());
+    settings.setValue("view_style",ui->view_style->currentIndex());
     tractWidget->delete_all_tract();
     delete ui;
     if(handle_release)
@@ -361,23 +363,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
         {
             QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
             QPointF point = ui->graphicsView->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
-            if(ui->view_style->currentIndex() == 0)// single slice
-            {
-                if(slice.cur_dim != 2)
-                    point.setY(scene.height() - point.y());
-                has_info = slice.get3dPosition(((float)point.x()) / ui->zoom->value() - 0.5,
-                                               ((float)point.y()) / ui->zoom->value() - 0.5,
-                                               pos[0], pos[1], pos[2]);
-            }
-            else
-            {
-                pos[0] = ((float)point.x())*(float)scene.mosaic_size / ui->zoom->value();
-                pos[1] = ((float)point.y())*(float)scene.mosaic_size / ui->zoom->value();
-                pos[2] = std::floor(pos[1]/slice.geometry[1])*scene.mosaic_size + std::floor(pos[0]/slice.geometry[0]);
-                pos[0] -= std::floor(pos[0]/slice.geometry[0])*slice.geometry[0];
-                pos[1] -= std::floor(pos[1]/slice.geometry[1])*slice.geometry[1];
-                has_info = true;
-            }
+            has_info = scene.get_location(point.x(),point.y(),pos);
             copy_target = 1;
         }
 
@@ -455,7 +441,7 @@ void tracking_window::SliderValueChanged(void)
             ui->CorSlider->value(),
             ui->AxiSlider->value()))
     {
-        if(ui->view_style->currentIndex() == 0)
+        if(ui->view_style->currentIndex() <= 1)
             scene.show_slice();
         if(glWidget->current_visible_slide == 0)
             glWidget->updateGL();

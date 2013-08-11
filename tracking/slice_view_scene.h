@@ -24,6 +24,7 @@ private:
     image::color_image slice_image,mosaic_image;
 public:
     unsigned int mosaic_size;
+    bool get_location(float x,float y,image::vector<3,float>& pos);
 private:
     // record the mouse press points
     std::vector<image::vector<3,short> >sel_coord;
@@ -33,8 +34,11 @@ private:
     bool mid_down;
     int cX, cY;
 
-    QImage view_image;
+    QImage view_image,annotated_image;
     void show_ruler(QPainter& painter);
+    void show_pos(QPainter& painter);
+    void show_fiber(QPainter& painter);
+    void get_view_image(QImage& new_view_image);
     // update cursor info
 protected:
     void mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseEvent );

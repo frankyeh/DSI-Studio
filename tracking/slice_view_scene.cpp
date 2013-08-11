@@ -27,11 +27,6 @@ void slice_view_scene::show_ruler(QPainter& paint)
         float tY = sel_point[index-1][1];
         float X = sel_point[index][0];
         float Y = sel_point[index][1];
-        if(cur_tracking_window.slice.cur_dim != 2)
-        {
-            Y = view_image.height() - Y;
-            tY = view_image.height() - tY;
-        }
         paint.drawLine(X, Y, tX, tY);
         image::vector<2,float> from(X,Y);
         image::vector<2,float> to(tX,tY);
@@ -76,75 +71,161 @@ void slice_view_scene::show_ruler(QPainter& paint)
         }
     }
 }
+void slice_view_scene::show_fiber(QPainter& painter)
+{
+    float threshold = cur_tracking_window.ui->fa_threshold->value();
+    if (threshold == 0.0)
+        threshold = 0.00000001;
+    int X,Y,Z;
+    float display_ratio = cur_tracking_window.ui->zoom->value();
+    float r = display_ratio /  3.0;
+    float pen_w = display_ratio /  5.0;
+    const char dir_x[3] = {1,0,0};
+    const char dir_y[3] = {2,2,1};
 
-void slice_view_scene::show_slice(void)
+    const FibData& fib_data = handle->fib_data;
+    for (unsigned int y = 0; y < slice_image.height(); ++y)
+        for (unsigned int x = 0; x < slice_image.width(); ++x)
+            if (cur_tracking_window.slice.get3dPosition(x, y, X, Y, Z))
+            {
+                image::pixel_index<3> pos(X,Y,Z,fib_data.dim);
+                if (pos.index() >= fib_data.total_size || fib_data.fib.getFA(pos.index(),0) == 0.0)
+                    continue;
+                for (char fiber = 2; fiber >= 0; --fiber)
+                    if(fib_data.fib.getFA(pos.index(),fiber) > threshold)
+                    {
+                        const float* dir_ptr = fib_data.fib.getDir(pos.index(),fiber);
+                        QPen pen(QColor(std::abs(dir_ptr[0]) * 255.0,std::abs(dir_ptr[1]) * 255.0, std::abs(dir_ptr[2]) * 255.0));
+                        pen.setWidthF(pen_w);
+                        painter.setPen(pen);
+                        float dx = r * dir_ptr[dir_x[cur_tracking_window.slice.cur_dim]] + 0.5;
+                        float dy = r * dir_ptr[dir_y[cur_tracking_window.slice.cur_dim]] + 0.5;
+                        painter.drawLine(
+                            display_ratio*((float)x + 0.5) - dx,
+                            display_ratio*((float)y + 0.5) - dy,
+                            display_ratio*((float)x + 0.5) + dx,
+                            display_ratio*((float)y + 0.5) + dy);
+                    }
+            }
+}
+void slice_view_scene::show_pos(QPainter& painter)
+{
+    int x_pos,y_pos;
+    float display_ratio = cur_tracking_window.ui->zoom->value();
+    cur_tracking_window.slice.get_other_slice_pos(x_pos, y_pos);
+    painter.setPen(QColor(255,0,0));
+    painter.drawLine(((double)x_pos + 0.5)*display_ratio, 0,((double)x_pos + 0.5)*display_ratio,view_image.height());
+    painter.drawLine(0, ((double)y_pos + 0.5)*display_ratio,view_image.width(),((double)y_pos + 0.5)*display_ratio);
+}
+
+void slice_view_scene::get_view_image(QImage& new_view_image)
 {
     float display_ratio = cur_tracking_window.ui->zoom->value();
     float contrast = cur_tracking_window.ui->contrast->value()/100.0;
     float offset = cur_tracking_window.ui->offset->value()/100.0;
+    cur_tracking_window.slice.get_slice(slice_image,contrast,offset);
+    QImage qimage((unsigned char*)&*slice_image.begin(),slice_image.width(),slice_image.height(),QImage::Format_RGB32);
+    // draw region colors on the image
+    cur_tracking_window.regionWidget->draw_region(qimage);
+    QImage scaled_image = qimage.scaled(slice_image.width()*display_ratio,slice_image.height()*display_ratio);
+
+    QPainter painter(&scaled_image);
+
+    if(cur_tracking_window.ui->show_fiber->checkState() == Qt::Checked)
+        show_fiber(painter);
+
+    if(cur_tracking_window.ui->show_pos->checkState() == Qt::Checked)
+        show_pos(painter);
+
+    new_view_image = (cur_tracking_window.slice.cur_dim == 2 ? scaled_image : scaled_image.mirrored());
+}
+bool slice_view_scene::get_location(float x,float y,image::vector<3,float>& pos)
+{
+    image::geometry<3> geo(cur_tracking_window.slice.geometry);
+    float display_ratio = cur_tracking_window.ui->zoom->value();
+    x /= display_ratio;
+    y /= display_ratio;
     if(cur_tracking_window.ui->view_style->currentIndex() == 0)// single slice
     {
-        cur_tracking_window.slice.get_slice(slice_image,contrast,offset);
-
-        QImage qimage((unsigned char*)&*slice_image.begin(),slice_image.width(),slice_image.height(),QImage::Format_RGB32);
-        // draw region colors on the image
-        cur_tracking_window.regionWidget->draw_region(qimage);
-        view_image = qimage.scaled(slice_image.width()*display_ratio,slice_image.height()*display_ratio);
-
-
-        QPainter painter(&view_image);
-
-        if(cur_tracking_window.ui->show_fiber->checkState() == Qt::Checked)
+        if(cur_tracking_window.slice.cur_dim != 2)
+            y = geo[2] - y;
+        return cur_tracking_window.slice.get3dPosition(x - 0.5,y - 0.5,pos[0], pos[1], pos[2]);
+    }
+    else
+    if(cur_tracking_window.ui->view_style->currentIndex() == 1)// 3 slice
+    {
+        unsigned char old_dim = cur_tracking_window.slice.cur_dim;
+        if(x < geo[1])
         {
-            float threshold = cur_tracking_window.ui->fa_threshold->value();
-            if (threshold == 0.0)
-                threshold = 0.00000001;
-            int X,Y,Z;
-            float r = display_ratio /  3.0;
-            float pen_w = display_ratio /  5.0;
-            const char dir_x[3] = {1,0,0};
-            const char dir_y[3] = {2,2,1};
-
-            const FibData& fib_data = handle->fib_data;
-            for (unsigned int y = 0; y < slice_image.height(); ++y)
-                for (unsigned int x = 0; x < slice_image.width(); ++x)
-                    if (cur_tracking_window.slice.get3dPosition(x, y, X, Y, Z))
-                    {
-                        image::pixel_index<3> pos(X,Y,Z,fib_data.dim);
-                        if (pos.index() >= fib_data.total_size || fib_data.fib.getFA(pos.index(),0) == 0.0)
-                            continue;
-                        for (char fiber = 2; fiber >= 0; --fiber)
-                            if(fib_data.fib.getFA(pos.index(),fiber) > threshold)
-                            {
-                                const float* dir_ptr = fib_data.fib.getDir(pos.index(),fiber);
-                                QPen pen(QColor(std::abs(dir_ptr[0]) * 255.0,std::abs(dir_ptr[1]) * 255.0, std::abs(dir_ptr[2]) * 255.0));
-                                pen.setWidthF(pen_w);
-                                painter.setPen(pen);
-                                float dx = r * dir_ptr[dir_x[cur_tracking_window.slice.cur_dim]] + 0.5;
-                                float dy = r * dir_ptr[dir_y[cur_tracking_window.slice.cur_dim]] + 0.5;
-                                painter.drawLine(
-                                    display_ratio*((float)x + 0.5) - dx,
-                                    display_ratio*((float)y + 0.5) - dy,
-                                    display_ratio*((float)x + 0.5) + dx,
-                                    display_ratio*((float)y + 0.5) + dy);
-                            }
-                    }
+            if(y < geo[2])
+                cur_tracking_window.slice.cur_dim = 0;
+            else
+                return false;
         }
-
-        if(cur_tracking_window.ui->show_pos->checkState() == Qt::Checked)
+        else
         {
-            int x_pos,y_pos;
-            cur_tracking_window.slice.get_other_slice_pos(x_pos, y_pos);
-            painter.setPen(QColor(255,0,0));
-            painter.drawLine(((double)x_pos + 0.5)*display_ratio, 0,((double)x_pos + 0.5)*display_ratio,view_image.height());
-            painter.drawLine(0, ((double)y_pos + 0.5)*display_ratio,view_image.width(),((double)y_pos + 0.5)*display_ratio);
+            x -= geo[1];
+            if(y < geo[2])
+                cur_tracking_window.slice.cur_dim = 1;
+            else
+            {
+                cur_tracking_window.slice.cur_dim = 2;
+                y -= geo[2];
+            }
         }
-
-
+        if(cur_tracking_window.slice.cur_dim != 2)
+            y = geo[2] - y;
+        bool result = cur_tracking_window.slice.get3dPosition(x - 0.5,y - 0.5,pos[0], pos[1], pos[2]);
+        cur_tracking_window.slice.cur_dim = old_dim;
+        return result;
     }
     else
     {
-        unsigned int skip = cur_tracking_window.ui->view_style->currentIndex()-1;
+        pos[0] = x*(float)mosaic_size;
+        pos[1] = y*(float)mosaic_size;
+        pos[2] = std::floor(pos[1]/geo[1])*mosaic_size +
+                 std::floor(pos[0]/geo[0]);
+        pos[0] -= std::floor(pos[0]/geo[0])*geo[0];
+        pos[1] -= std::floor(pos[1]/geo[1])*geo[1];
+    }
+    return geo.is_valid(pos);
+}
+
+void slice_view_scene::show_slice(void)
+{
+    float display_ratio = cur_tracking_window.ui->zoom->value();
+
+    if(cur_tracking_window.ui->view_style->currentIndex() == 0)// single slice
+        get_view_image(view_image);
+    else
+    if(cur_tracking_window.ui->view_style->currentIndex() == 1)// 3 slices
+    {
+        unsigned char old_dim = cur_tracking_window.slice.cur_dim;
+        QImage view1,view2,view3;
+        cur_tracking_window.slice.cur_dim = 0;
+        get_view_image(view1);
+        cur_tracking_window.slice.cur_dim = 1;
+        get_view_image(view2);
+        cur_tracking_window.slice.cur_dim = 2;
+        get_view_image(view3);
+        cur_tracking_window.slice.cur_dim = old_dim;
+        view_image = QImage(QSize(view1.width()+view2.width(),view1.height()+view3.height()),QImage::Format_RGB32);
+        QPainter painter(&view_image);
+        painter.fillRect(0,0,view_image.width(),view_image.height(),QColor(0,0,0));
+        painter.drawImage(0,0,view1);
+        painter.drawImage(view1.width(),0,view2);
+        painter.drawImage(view1.width(),view1.height(),view3);
+        QPen pen(QColor(255,255,255));
+        pen.setWidthF(std::max(1.0,display_ratio/4.0));
+        painter.setPen(pen);
+        painter.drawLine(view1.width(),0,view1.width(),view_image.height());
+        painter.drawLine(0,view1.height(),view_image.width(),view1.height());
+    }
+    else
+    {
+        float contrast = cur_tracking_window.ui->contrast->value()/100.0;
+        float offset = cur_tracking_window.ui->offset->value()/100.0;
+        unsigned int skip = cur_tracking_window.ui->view_style->currentIndex()-2;
         mosaic_size = std::max((int)1,(int)std::ceil(std::sqrt((float)(cur_tracking_window.slice.geometry[2] >> skip))));
         cur_tracking_window.slice.get_mosaic(mosaic_image,mosaic_size,contrast,offset,skip);
         QImage qimage((unsigned char*)&*mosaic_image.begin(),mosaic_image.width(),mosaic_image.height(),QImage::Format_RGB32);
@@ -154,8 +235,7 @@ void slice_view_scene::show_slice(void)
     setSceneRect(0, 0, view_image.width(),view_image.height());
     clear();
     setItemIndexMethod(QGraphicsScene::NoIndex);
-    addRect(0, 0, view_image.width(),view_image.height(),QPen(),
-            (cur_tracking_window.slice.cur_dim == 2 || cur_tracking_window.ui->view_style->currentIndex() != 0) ? view_image : view_image.mirrored());
+    addRect(0, 0, view_image.width(),view_image.height(),QPen(),view_image);
     // clear point buffer
     if(sel_mode != 5) // move object need the selection record
     {
@@ -260,7 +340,7 @@ void slice_view_scene::mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseE
 
 void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {
-    if(cur_tracking_window.ui->view_style->currentIndex() != 0)// single slice
+    if(cur_tracking_window.ui->view_style->currentIndex() > 1)// single slice or 3 slices
         return;
 
     if(mouseEvent->button() == Qt::MidButton)
@@ -282,16 +362,51 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         sel_coord.clear();
     }
 
+    int x, y, z;
     float Y = mouseEvent->scenePos().y();
     float X = mouseEvent->scenePos().x();
+    float display_ratio = cur_tracking_window.ui->zoom->value();
 
-    if (cur_tracking_window.slice.cur_dim != 2)
-        Y = view_image.height() - Y;
+    if(cur_tracking_window.ui->view_style->currentIndex() == 0)
+    {
+        cur_tracking_window.slice.get3dPosition(
+                    ((float)X) / display_ratio,
+                    (cur_tracking_window.slice.cur_dim == 2 ? Y:view_image.height() - Y) / display_ratio, x, y, z);
+    }
+    else
+    {
+        unsigned char new_dim;
+        image::geometry<3> geo(cur_tracking_window.slice.geometry);
+        if(X < geo[1]*display_ratio)
+        {
+            if(Y < geo[2]*display_ratio)
+                new_dim = 0;
+            else
+                return;
+        }
+        else
+        {
+            X -= geo[1]*display_ratio;
+            if(Y < geo[2]*display_ratio)
+                new_dim = 1;
+            else
+            {
+                new_dim = 2;
+                Y -= geo[2]*display_ratio;
+            }
+        }
+        if(new_dim != cur_tracking_window.slice.cur_dim)
+        {
+            sel_point.clear();
+            sel_coord.clear();
+            cur_tracking_window.slice.cur_dim = new_dim;
+        }
+        cur_tracking_window.slice.get3dPosition(
+                    ((float)X) / display_ratio,
+                    cur_tracking_window.slice.cur_dim == 2 ? ((float)Y)/ display_ratio : geo[2] - ((float)Y)/ display_ratio, x, y, z);
+    }
 
-    int x, y, z;
 
-    cur_tracking_window.slice.get3dPosition(((float)X) / cur_tracking_window.ui->zoom->value(),
-                                            ((float)Y) / cur_tracking_window.ui->zoom->value(), x, y, z);
     if(sel_mode == 5)// move object
     {
         bool find_region = false;
@@ -337,7 +452,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 
 void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {
-    if(cur_tracking_window.ui->view_style->currentIndex() != 0)// single slice
+    if(cur_tracking_window.ui->view_style->currentIndex() > 1)// single slice
         return;
 
     if (!mouse_down && !mid_down)
@@ -346,18 +461,27 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     {
         return;
     }
-
+    image::geometry<3> geo(cur_tracking_window.slice.geometry);
     float Y = mouseEvent->scenePos().y();
     float X = mouseEvent->scenePos().x();
-    if (cur_tracking_window.slice.cur_dim != 2)
-        Y = view_image.height() - Y;
+    float display_ratio = cur_tracking_window.ui->zoom->value();
+    if(cur_tracking_window.ui->view_style->currentIndex() == 1)
+    {
+        if(cur_tracking_window.slice.cur_dim >= 1)
+            X -= geo[1]*display_ratio;
+        if(cur_tracking_window.slice.cur_dim == 2)
+            Y -= geo[2]*display_ratio;
+    }
+
     cX = X;
     cY = Y;
     int x, y, z;
-    if (!mouse_down || sel_mode == 4 ||
-        !cur_tracking_window.slice.get3dPosition(((float)cX) / cur_tracking_window.ui->zoom->value(),
-                            ((float)cY) / cur_tracking_window.ui->zoom->value(), x, y, z))
+    if (!mouse_down || sel_mode == 4)
         return;
+
+    cur_tracking_window.slice.get3dPosition(
+                ((float)cX) / display_ratio,
+                cur_tracking_window.slice.cur_dim == 2 ? cY/ display_ratio : geo[2]-cY/ display_ratio, x, y, z);
 
     if(sel_mode == 5 && !cur_tracking_window.regionWidget->regions.empty()) // move object
     {
@@ -372,15 +496,23 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         return;
     }
 
-    QImage annotated_image = view_image;
+    if(cur_tracking_window.ui->view_style->currentIndex() == 0)
+        annotated_image = view_image;
+    else
+    {
+        annotated_image = view_image.copy(
+                    cur_tracking_window.slice.cur_dim == 0 ? 0:geo[1]*display_ratio,
+                    cur_tracking_window.slice.cur_dim != 2 ? 0:geo[2]*display_ratio,
+                    cur_tracking_window.slice.cur_dim == 0 ? geo[1]*display_ratio:geo[0]*display_ratio,
+                    cur_tracking_window.slice.cur_dim != 2 ? geo[2]*display_ratio:geo[1]*display_ratio);
+    }
+
     if(sel_mode == 6) // ruler
     {
         sel_coord.back() = image::vector<3,short>(x, y, z);
         sel_point.back() = image::vector<2,short>(X, Y);
-        QImage temp = (cur_tracking_window.slice.cur_dim == 2) ? view_image:view_image.mirrored();
-        QPainter paint(&temp);
+        QPainter paint(&annotated_image);
         show_ruler(paint);
-        annotated_image = (cur_tracking_window.slice.cur_dim == 2) ? temp:temp.mirrored();
     }
 
 
@@ -429,15 +561,24 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 
     clear();
     setItemIndexMethod(QGraphicsScene::NoIndex);
-    addRect(0, 0, annotated_image.width(),annotated_image.height(),QPen(),
-            (cur_tracking_window.slice.cur_dim == 2) ? annotated_image : annotated_image.mirrored());
+
+    if(cur_tracking_window.ui->view_style->currentIndex() == 1)
+    {
+        QImage temp = view_image;
+        QPainter paint(&temp);
+        paint.drawImage(cur_tracking_window.slice.cur_dim == 0 ? 0:geo[1]*display_ratio,
+                        cur_tracking_window.slice.cur_dim != 2 ? 0:geo[2]*display_ratio,annotated_image);
+        addRect(0, 0, temp.width(),temp.height(),QPen(),temp);
+    }
+    else
+        addRect(0, 0, annotated_image.width(),annotated_image.height(),QPen(),annotated_image);
 
 }
 
 
 void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {
-    if(cur_tracking_window.ui->view_style->currentIndex() != 0)// single slice
+    if(cur_tracking_window.ui->view_style->currentIndex() > 1)
         return;
 
     if (!mouse_down && !mid_down)
@@ -447,23 +588,10 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         mid_down = false;
         return;
     }
-    int Y = mouseEvent->scenePos().y();
-    int X = mouseEvent->scenePos().x();
-    if (cur_tracking_window.slice.cur_dim != 2)
-        Y = view_image.height() - Y;
     mouse_down = false;
-    /*
-    {
-            if (TrackForm->odf_model.get()) {
-                    TrackForm->odf_model->loadFromData
-                            (TrackForm->cur_tracking_window.slice.getOriginal3dPosition
-                            (((float)X) / display_ratio, ((float)Y) / display_ratio));
-                    TrackForm->odf_model->Show(0);
-            }
-            if (TrackForm->odf_slice_model.get())
-                    TrackForm->odf_slice_model->SetPosition(((float)X) / display_ratio,
-                    ((float)Y) / display_ratio);
-    }*/
+    image::geometry<3> geo(cur_tracking_window.slice.geometry);
+    float display_ratio = cur_tracking_window.ui->zoom->value();
+
 
     std::vector<image::vector<3,short> >points;
     switch (sel_mode)
@@ -497,19 +625,23 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
             break;
         }
         {
-            QImage bitmap(slice_image.width(),slice_image.height(),QImage::Format_Mono);
+            QImage bitmap(cur_tracking_window.slice.cur_dim == 0 ? geo[1]:geo[0],
+                          cur_tracking_window.slice.cur_dim != 2 ? geo[2]:geo[1],QImage::Format_Mono);
             QPainter paint(&bitmap);
             paint.setBrush(Qt::black);
-            paint.drawRect(0,0,slice_image.width(),slice_image.height());
+            paint.drawRect(0,0,bitmap.width(),bitmap.height());
             paint.setBrush(Qt::white);
             std::vector<QPoint> qpoints(sel_point.size());
             for(unsigned int index = 0;index < sel_point.size();++index)
                 qpoints[index] = QPoint(
-                            sel_point[index][0]/cur_tracking_window.ui->zoom->value(),
-                            sel_point[index][1]/cur_tracking_window.ui->zoom->value());
+                            sel_point[index][0]/display_ratio,
+                            cur_tracking_window.slice.cur_dim == 2 ?
+                                sel_point[index][1]/display_ratio:
+                                geo[2] - sel_point[index][1]/display_ratio);
             paint.drawPolygon(&*qpoints.begin(),qpoints.size() - 1);
+            image::geometry<2> geo2(bitmap.width(),bitmap.height());
             int x, y, z;
-            for (image::pixel_index<2>index; index.valid(slice_image.geometry());
+            for (image::pixel_index<2>index; index.valid(geo2);
                     index.next(slice_image.geometry()))
             {
                 if (QColor(bitmap.pixel(index.x(),index.y())).red() < 64
@@ -558,9 +690,17 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     break;
     case 4:
     {
-        QImage annotated_image = view_image;
+        if(cur_tracking_window.ui->view_style->currentIndex() == 0)
+            annotated_image = view_image;
+        else
+        {
+            annotated_image = view_image.copy(
+                        cur_tracking_window.slice.cur_dim == 0 ? 0:geo[1]*display_ratio,
+                        cur_tracking_window.slice.cur_dim != 2 ? 0:geo[2]*display_ratio,
+                        cur_tracking_window.slice.cur_dim == 0 ? geo[1]*display_ratio:geo[0]*display_ratio,
+                        cur_tracking_window.slice.cur_dim != 2 ? geo[2]*display_ratio:geo[1]*display_ratio);
+        }
         QPainter paint(&annotated_image);
-
         paint.setPen(cur_tracking_window.regionWidget->currentRowColor());
         paint.setBrush(Qt::NoBrush);
 
@@ -572,8 +712,17 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
 
         clear();
         setItemIndexMethod(QGraphicsScene::NoIndex);
-        addRect(0, 0, annotated_image.width(),annotated_image.height(),QPen(),
-                (cur_tracking_window.slice.cur_dim == 2) ? annotated_image : annotated_image.mirrored());
+        if(cur_tracking_window.ui->view_style->currentIndex() == 1)
+        {
+            QImage temp = view_image;
+            QPainter paint(&temp);
+            paint.drawImage(cur_tracking_window.slice.cur_dim == 0 ? 0:geo[1]*display_ratio,
+                            cur_tracking_window.slice.cur_dim != 2 ? 0:geo[2]*display_ratio,annotated_image);
+            addRect(0, 0, temp.width(),temp.height(),QPen(),temp);
+        }
+        else
+            addRect(0, 0, annotated_image.width(),annotated_image.height(),QPen(),annotated_image);
+
         return;
     }
     case 6:
@@ -581,19 +730,6 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         return;
     }
     }
-    /*
-    if(mouseEvent->button() != Qt::RightButton &&
-       !cur_tracking_window.regionWidget->regions.empty() &&
-       !cur_tracking_window.regionWidget->regions[cur_tracking_window.regionWidget->currentRow()].empty() &&
-       !cur_tracking_window.regionWidget->regions[cur_tracking_window.regionWidget->currentRow()].has_points(points))
-    {
-        int result = QMessageBox::information(0,"DSI Studio","Draw a new region?",QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
-        if(result == QMessageBox::Cancel)
-            return;
-        if(result == QMessageBox::Yes)
-            cur_tracking_window.regionWidget->new_region();
-    }
-    */
     cur_tracking_window.regionWidget->add_points(points,mouseEvent->button() == Qt::RightButton);
     need_update();
 }
