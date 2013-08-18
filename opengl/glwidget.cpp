@@ -1501,7 +1501,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     }
     else if (event->buttons() & Qt::RightButton)
     {
-        double scalefactor = (-dx+dy+100.0)/100.0;
+        double scalefactor = (-dx-dy+100.0)/100.0;
         glScaled(scalefactor,scalefactor,scalefactor);
         current_scale *= scalefactor;
         cur_tracking_window.ui->zoom_3d->setValue(current_scale);

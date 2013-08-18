@@ -247,7 +247,7 @@ public:
             return false;
         if (gzread(in,(char*)&imagf,4) == -1)
             return false;
-        if (gzread(in,(char*)&namelen,4) == -1)
+        if (gzread(in,(char*)&namelen,4) == -1 || namelen > 255)
             return false;
         std::vector<char> buffer(namelen+1);
         if (gzread(in,(char*)&*buffer.begin(),namelen) == -1)
@@ -280,7 +280,7 @@ public:
             return false;
         if (fread((char*)&imagf,4,1,in) != 1)
             return false;
-        if (fread((char*)&namelen,4,1,in) != 1)
+        if (fread((char*)&namelen,4,1,in) != 1 || namelen > 255)
             return false;
         std::vector<char> buffer(namelen+1);
         if (fread((char*)&*buffer.begin(),1,namelen,in) != namelen)

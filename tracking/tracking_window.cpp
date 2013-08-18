@@ -707,9 +707,9 @@ void tracking_window::on_actionInsert_T1_T2_triggered()
     absolute_path = QFileInfo(filenames[0]).absolutePath();
     ui->SliceModality->addItem(QFileInfo(filenames[0]).baseName());
     ui->SliceModality->setCurrentIndex(glWidget->other_slices.size());
-    ui->sliceViewBox->addItem(QString("slice:")+QFileInfo(filenames[0]).baseName().toLocal8Bit().begin());
+    ui->sliceViewBox->addItem(QFileInfo(filenames[0]).baseName().toLocal8Bit().begin());
     handle->fib_data.view_item.push_back(handle->fib_data.view_item[0]);
-    handle->fib_data.view_item.back().name = std::string("slice:")+QFileInfo(filenames[0]).baseName().toLocal8Bit().begin();
+    handle->fib_data.view_item.back().name = QFileInfo(filenames[0]).baseName().toLocal8Bit().begin();
     handle->fib_data.view_item.back().is_overlay = false;
     handle->fib_data.view_item.back().image_data = image::make_image(glWidget->roi_image.back().geometry(),
                                                                      glWidget->roi_image_buf.back());
@@ -1100,7 +1100,10 @@ void tracking_window::on_actionTract_Analysis_Report_triggered()
 void tracking_window::on_actionConnectivity_matrix_triggered()
 {
     if(tractWidget->tract_models.size() == 0)
+    {
+        QMessageBox::information(this,"DSI Studio","Run fiber tracking first",0);
         return;
+    }
     connectivity_matrix.reset(new connectivity_matrix_dialog(this));
     connectivity_matrix->show();
 }
