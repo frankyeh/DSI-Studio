@@ -334,10 +334,7 @@ public:
             {
                 std::auto_ptr<MatMatrix> matrix(new MatMatrix);
                 if (!matrix->read(in))
-                {
-                    error_msg = "read matrix failed";
-                    return false;
-                }
+                    break;
                 dataset_buf.push_back(matrix.release());
             }
             gzclose(in);
@@ -357,10 +354,7 @@ public:
             {
                 std::auto_ptr<MatMatrix> matrix(new MatMatrix);
                 if (!matrix->read((FILE*)in))
-                {
-                    error_msg = "read mat matrix failed";
-                    return false;
-                }
+                    break;
                 dataset_buf.push_back(matrix.release());
             }
             fclose(in);
