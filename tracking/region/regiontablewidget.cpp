@@ -131,8 +131,18 @@ QColor RegionTableWidget::currentRowColor(void)
     return (unsigned int)regions[currentRow()].show_region.color;
 }
 
-void RegionTableWidget::add_region(QString name,unsigned char feature)
+void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
 {
+    if(color == 0)
+    {
+        color = (int)ROIColor[regions_index].rgb();
+        if (feature != none_roi_id)
+        {
+            ++regions_index;
+            if (regions_index >= 15)
+                regions_index = 0;
+        }
+    }
     regions.push_back(new ROIRegion(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size));
 
     setRowCount(regions.size());
@@ -149,7 +159,7 @@ void RegionTableWidget::add_region(QString name,unsigned char feature)
     item1->setData(Qt::ForegroundRole,QBrush(Qt::white));
     setItem(regions.size()-1, 2, item2);
     item2->setData(Qt::ForegroundRole,QBrush(Qt::white));
-    item2->setData(Qt::UserRole,(int)ROIColor[regions_index].rgb());
+    item2->setData(Qt::UserRole,color);
     setRowHeight(regions.size()-1,22);
 
 
@@ -158,12 +168,7 @@ void RegionTableWidget::add_region(QString name,unsigned char feature)
     item0->setCheckState(Qt::Checked);
 
     setCurrentCell(regions.size()-1,0);
-    if (feature != none_roi_id)
-    {
-        ++regions_index;
-        if (regions_index >= 15)
-            regions_index = 0;
-    }
+
 }
 void RegionTableWidget::check_check_status(int row, int col)
 {
@@ -386,8 +391,10 @@ void RegionTableWidget::load_region(void)
             QMessageBox::information(this,"error","Unknown file format",0);
             return;
         }
-        add_region(QFileInfo(filenames[index]).completeBaseName(),roi_id);
+        add_region(QFileInfo(filenames[index]).completeBaseName(),roi_id,
+                   (region.show_region.color == image::rgb_color(0x00FFFFFF)) ? 0 : (int)(0xFF000000 | region.show_region.color.color));
         regions.back().assign(region.get());
+
     }
     emit need_update();
 }

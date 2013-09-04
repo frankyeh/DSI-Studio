@@ -51,7 +51,7 @@ public:
 
     QColor currentRowColor(void);
     bool has_seeding(void);
-    void add_region(QString name,unsigned char type);
+    void add_region(QString name,unsigned char type,int color = 0);
     void setROIs(ThreadData* data);
 public slots:
     void draw_region(QImage& image);

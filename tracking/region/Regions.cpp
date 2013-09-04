@@ -83,13 +83,15 @@ void ROIRegion::SaveToFile(const char* FileName,const std::vector<float>& trans)
                 image::io::mat_write header(FileName);
                 header << mask;
         }
-        else if (ext == std::string(".nii") || ext == std::string("i.gz")) {
-		image::basic_image<unsigned char, 3>mask(geo);
+        else if (ext == std::string(".nii") || ext == std::string("i.gz"))
+        {
+            unsigned int color = show_region.color.color & 0x00FFFFFF;
+        image::basic_image<unsigned int, 3>mask(geo);
                 for (unsigned int index = 0; index < region.size(); ++index) {
                         if (geo.is_valid(region[index][0], region[index][1],
 				region[index][2]))
 				mask[image::pixel_index<3>(region[index][0], region[index][1],
-				region[index][2], geo).index()] = 255;
+                region[index][2], geo).index()] = color;
 		}
                 gz_nifti header;
                 header.set_voxel_size(vs.begin());
@@ -178,6 +180,9 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
         else
             image::flip_xy(from);
         LoadFromBuffer(from);
+        float max_value = *std::max_element(from.begin(),from.end());
+        if(max_value > 128 && max_value < 0x00FFFFFF)
+            show_region.color = (unsigned int)max_value;
         return true;
     }
     return false;
