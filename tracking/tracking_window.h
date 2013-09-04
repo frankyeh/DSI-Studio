@@ -60,6 +60,9 @@ public:
     std::auto_ptr<color_bar_dialog> color_bar;
     std::auto_ptr<connectivity_matrix_dialog> connectivity_matrix;
 public:
+    std::map<std::string,QString> path_map;
+    QString get_path(const std::string& id);
+    void add_path(const std::string& id,QString filename);
 public:
     QString absolute_path;
     ODFModel* handle;

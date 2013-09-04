@@ -700,11 +700,11 @@ void tracking_window::on_actionInsert_T1_T2_triggered()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
         this,
-        "Open Images files",absolute_path,
+        "Open Images files",get_path("t1_path"),
         "Image files (*.dcm *.hdr *.nii *.nii.gz);;All files (*.*)" );
     if( filenames.isEmpty() || !glWidget->addSlices(filenames))
         return;
-    absolute_path = QFileInfo(filenames[0]).absolutePath();
+    add_path("t1_path",filenames[0]);
     ui->SliceModality->addItem(QFileInfo(filenames[0]).baseName());
     ui->SliceModality->setCurrentIndex(glWidget->other_slices.size());
     ui->sliceViewBox->addItem(QFileInfo(filenames[0]).baseName().toLocal8Bit().begin());
@@ -1116,4 +1116,15 @@ void tracking_window::on_zoom_3d_valueChanged(double arg1)
         glWidget->scale_by(ui->zoom_3d->value()/glWidget->current_scale);
         glWidget->current_scale = ui->zoom_3d->value();
     }
+}
+QString tracking_window::get_path(const std::string& id)
+{
+    std::map<std::string,QString>::const_iterator iter = path_map.find(id);
+    if(iter == path_map.end())
+        return absolute_path;
+    return iter->second;
+}
+void tracking_window::add_path(const std::string& id,QString filename)
+{
+    path_map[id] = QFileInfo(filename).absolutePath();
 }

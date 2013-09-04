@@ -365,11 +365,11 @@ void RegionTableWidget::load_region(void)
     QStringList filenames = QFileDialog::getOpenFileNames(
                                 this,
                                 "Open region",
-                                cur_tracking_window.absolute_path,
+                                cur_tracking_window.get_path("region"),
                                 "Region files (*.txt *.nii *.hdr *.nii.gz *.mat);;All files (*.*)" );
     if (filenames.isEmpty())
         return;
-    cur_tracking_window.absolute_path = QFileInfo(filenames[0]).absolutePath();
+    cur_tracking_window.add_path("region",filenames[0]);
 
     for (unsigned int index = 0;index < filenames.size();++index)
     {
@@ -400,12 +400,12 @@ void RegionTableWidget::save_region(void)
     QString filename = QFileDialog::getSaveFileName(
                            this,
                            "Save region",
-                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text().replace(':','_') + "." + settings.value("region_save_type","nii.gz").toString(),
+                cur_tracking_window.get_path("region") + "/" + item(currentRow(),0)->text().replace(':','_') + "." + settings.value("region_save_type","nii.gz").toString(),
                            "Region file(*.nii.gz *.nii *.txt *.mat);;All file types (*.*)" );
     if (filename.isEmpty())
         return;
     settings.setValue("region_save_type",QFileInfo(filename).completeSuffix());
-    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+    cur_tracking_window.add_path("region",filename);
     std::vector<float> no_trans;
     regions[currentRow()].SaveToFile(filename.toLocal8Bit().begin(),
                                      !cur_tracking_window.mi3.get()/*Is QSDR?*/ ?
@@ -419,11 +419,11 @@ void RegionTableWidget::save_region_info(void)
     QString filename = QFileDialog::getSaveFileName(
                            this,
                            "Save voxel information",
-                           cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + "_info.txt",
+                           cur_tracking_window.get_path("region") + "/" + item(currentRow(),0)->text() + "_info.txt",
                            "Text files (*.txt)" );
     if (filename.isEmpty())
         return;
-    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+    cur_tracking_window.add_path("region",filename);
 
     std::ofstream out(filename.toLocal8Bit().begin());
     out << "x\ty\tz";
@@ -546,11 +546,11 @@ void RegionTableWidget::show_statistics(void)
         filename = QFileDialog::getSaveFileName(
                     this,
                     "Save satistics as",
-                    cur_tracking_window.absolute_path + +"/" + item(currentRow(),0)->text() + "_stat.txt",
+                    cur_tracking_window.get_path("region") + +"/" + item(currentRow(),0)->text() + "_stat.txt",
                     "Text files (*.txt);;All files|(*.*)");
         if(filename.isEmpty())
             return;
-        cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+        cur_tracking_window.add_path("region",filename);
         std::ofstream out(filename.toLocal8Bit().begin());
         out << result.c_str();
     }

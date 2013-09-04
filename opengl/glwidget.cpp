@@ -1521,10 +1521,11 @@ void GLWidget::saveCamera(void)
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Save Translocation Matrix",
-            cur_tracking_window.absolute_path + "/camera.txt",
+            cur_tracking_window.get_path("camera") + "/camera.txt",
             "Text files (*.txt);;All files (*.*)");
     if(filename.isEmpty())
         return;
+    cur_tracking_window.add_path("camera",filename);
     std::ofstream out(filename.toLocal8Bit().begin());
     for(int row = 0,index = 0;row < 4;++row)
     {
@@ -1539,11 +1540,12 @@ void GLWidget::loadCamera(void)
     QString filename = QFileDialog::getOpenFileName(
             this,
             "Open Translocation Matrix",
-            cur_tracking_window.absolute_path,
+            cur_tracking_window.get_path("camera"),
             "Text files (*.txt);;All files (*.*)");
     std::ifstream in(filename.toLocal8Bit().begin());
     if(filename.isEmpty() || !in)
         return;
+    cur_tracking_window.add_path("camera",filename);
     std::vector<float> data;
     std::copy(std::istream_iterator<float>(in),
               std::istream_iterator<float>(),std::back_inserter(data));
@@ -1577,10 +1579,11 @@ void GLWidget::saveMapping(void)
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Save Mapping Matrix",
-            cur_tracking_window.absolute_path + "/mapping.txt",
+            cur_tracking_window.get_path("mapping") + "/mapping.txt",
             "Text files (*.txt);;All files (*.*)");
     if(filename.isEmpty())
         return;
+    cur_tracking_window.add_path("mapping",filename);
     std::ofstream out(filename.toLocal8Bit().begin());
 
     for(int row = 0,index = 0;row < 4;++row)
@@ -1598,11 +1601,12 @@ void GLWidget::loadMapping(void)
     QString filename = QFileDialog::getOpenFileName(
             this,
             "Open Mapping Matrix",
-            cur_tracking_window.absolute_path,
+            cur_tracking_window.get_path("mapping"),
             "Text files (*.txt);;All files (*.*)");
     std::ifstream in(filename.toLocal8Bit().begin());
     if(filename.isEmpty() || !in)
         return;
+    cur_tracking_window.add_path("mapping",filename);
     mi3s[current_visible_slide-1].terminate();
     std::vector<float> data;
     std::copy(std::istream_iterator<float>(in),
@@ -1803,10 +1807,11 @@ void GLWidget::catchScreen(void)
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Save Images files",
-            cur_tracking_window.absolute_path,
+            cur_tracking_window.get_path("catch_screen"),
             "PNG files (*.png );;BMP files (*.bmp);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*.*)");
     if(filename.isEmpty())
         return;
+    cur_tracking_window.add_path("catch_screen",filename);
     updateGL();
     grabFrameBuffer().save(filename);
 }
@@ -1815,10 +1820,11 @@ void GLWidget::saveLeftRight3DImage(void)
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Assign image name",
-            cur_tracking_window.absolute_path,
+            cur_tracking_window.get_path("catch_screen"),
             "BMP files (*.bmp);;PNG files (*.png );;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*.*)");
     if(filename.isEmpty())
         return;
+    cur_tracking_window.add_path("catch_screen",filename);
     bool ok;
     int angle = QInputDialog::getInteger(this,
             "DSI Studio",
@@ -1852,10 +1858,11 @@ void GLWidget::saveRotationSeries(void)
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Assign image name",
-            cur_tracking_window.absolute_path,
+            cur_tracking_window.get_path("catch_screen"),
             "BMP files (*.bmp);;PNG files (*.png );;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*.*)");
     if(filename.isEmpty())
         return;
+    cur_tracking_window.add_path("catch_screen",filename);
     bool ok;
     int angle = QInputDialog::getInteger(this,
         "DSI Studio","Rotation angle in each step (degrees):",10,1,360,5,&ok);

@@ -170,11 +170,11 @@ void TractTableWidget::load_tracts(void)
     QStringList filenames = QFileDialog::getOpenFileNames(
             this,
             "Load tracts as",
-            cur_tracking_window.absolute_path,
+            cur_tracking_window.get_path("track"),
             "Tract files (*.txt *.trk *.mat);;All files (*.*)");
     if(!filenames.size())
         return;
-    cur_tracking_window.absolute_path = QFileInfo(filenames[0]).absolutePath();
+    cur_tracking_window.add_path("track",filenames[0]);
     for(unsigned int index = 0;index < filenames.size();++index)
     {
         QString filename = filenames[index];
@@ -205,11 +205,11 @@ void TractTableWidget::save_all_tracts_as(void)
     filename = QFileDialog::getSaveFileName(
                 this,
                 "Save tracts as",
-                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text().replace(':','_') + ".txt",
+                cur_tracking_window.get_path("track") + "/" + item(currentRow(),0)->text().replace(':','_') + ".txt",
                 "Tract files (*.txt *.trk *.mat);;All files (*.*)");
     if(filename.isEmpty())
         return;
-    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+    cur_tracking_window.add_path("track",filename);
     std::string sfilename = filename.toLocal8Bit().begin();
     TractModel::save_all(&*sfilename.begin(),tract_models);
 }
@@ -265,11 +265,11 @@ void TractTableWidget::open_cluster_label(void)
     QString filename = QFileDialog::getOpenFileName(
             this,
             "Load cluster label",
-            cur_tracking_window.absolute_path,
+            cur_tracking_window.get_path("track"),
             "Cluster label files (*.txt);;All files (*.*)");
     if(!filename.size())
         return;
-    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+    cur_tracking_window.add_path("track",filename);
     std::ifstream in(filename.toLocal8Bit().begin());
     std::vector<unsigned int> labels(tract_models[currentRow()]->get_visible_track_count());
     std::copy(std::istream_iterator<unsigned int>(in),
@@ -334,11 +334,11 @@ void TractTableWidget::save_tracts_as(void)
     filename = QFileDialog::getSaveFileName(
                 this,
                 "Save tracts as",
-                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text().replace(':','_') + ".txt",
+                cur_tracking_window.get_path("track") + "/" + item(currentRow(),0)->text().replace(':','_') + ".txt",
                  "Tract files (*.txt *.trk *.mat);;All files (*.*)");
     if(filename.isEmpty())
         return;
-    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+    cur_tracking_window.add_path("track",filename);
     std::string sfilename = filename.toLocal8Bit().begin();
     tract_models[currentRow()]->save_tracts_to_file(&*sfilename.begin());
 }
@@ -351,11 +351,11 @@ void TractTableWidget::save_end_point_as(void)
     filename = QFileDialog::getSaveFileName(
                 this,
                 "Save end points as",
-                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text().replace(':','_') + "endpoint.txt",
+                cur_tracking_window.get_path("track") + "/" + item(currentRow(),0)->text().replace(':','_') + "endpoint.txt",
                 "Tract files (*.txt *.mat);;All files (*.*)");
     if(filename.isEmpty())
         return;
-    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+    cur_tracking_window.add_path("track",filename);
     std::string sfilename = filename.toLocal8Bit().begin();
     tract_models[currentRow()]->save_end_points(&*sfilename.begin());
 }
@@ -368,11 +368,11 @@ void TractTableWidget::saveTransformedTracts(const float* transform)
     filename = QFileDialog::getSaveFileName(
                 this,
                 "Save tracts as",
-                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + ".txt",
+                cur_tracking_window.get_path("track") + "/" + item(currentRow(),0)->text() + ".txt",
                  "Tract files (*.txt *.trk *.mat);;All files (*.*)");
     if(filename.isEmpty())
         return;
-    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+    cur_tracking_window.add_path("track",filename);
     std::string sfilename = filename.toLocal8Bit().begin();
     tract_models[currentRow()]->save_transformed_tracts_to_file(&*sfilename.begin(),transform,false);
 }
@@ -387,11 +387,11 @@ void TractTableWidget::saveTransformedEndpoints(const float* transform)
     filename = QFileDialog::getSaveFileName(
                 this,
                 "Save end_point as",
-                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + ".txt",
+                cur_tracking_window.get_path("track") + "/" + item(currentRow(),0)->text() + ".txt",
                 "Tract files (*.txt *.mat);;All files (*.*)");
     if(filename.isEmpty())
         return;
-    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+    cur_tracking_window.add_path("track",filename);
     std::string sfilename = filename.toLocal8Bit().begin();
     tract_models[currentRow()]->save_transformed_tracts_to_file(&*sfilename.begin(),transform,true);
 }
@@ -403,11 +403,11 @@ void TractTableWidget::load_tracts_color(void)
     QString filename = QFileDialog::getOpenFileName(
             this,
             "Load tracts color",
-            cur_tracking_window.absolute_path,
+            cur_tracking_window.get_path("track"),
             "Color files (*.txt);;All files (*.*)");
     if(filename.isEmpty())
         return;
-    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+    cur_tracking_window.add_path("track",filename);
     std::string sfilename = filename.toLocal8Bit().begin();
     tract_models[currentRow()]->load_tracts_color_from_file(&*sfilename.begin());
     emit need_update();
@@ -421,11 +421,11 @@ void TractTableWidget::save_tracts_color_as(void)
     filename = QFileDialog::getSaveFileName(
                 this,
                 "Save tracts color as",
-                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + "_color.txt",
+                cur_tracking_window.get_path("track") + "/" + item(currentRow(),0)->text() + "_color.txt",
                 "Color files (*.txt);;All files (*.*)");
     if(filename.isEmpty())
         return;
-    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+    cur_tracking_window.add_path("track",filename);
     std::string sfilename = filename.toLocal8Bit().begin();
     tract_models[currentRow()]->save_tracts_color_to_file(&*sfilename.begin());
 }
@@ -480,11 +480,11 @@ void TractTableWidget::show_tracts_statistics(void)
         filename = QFileDialog::getSaveFileName(
                     this,
                     "Save satistics as",
-                    cur_tracking_window.absolute_path + +"/" + item(currentRow(),0)->text() + "_stat.txt",
+                    cur_tracking_window.get_path("track") + +"/" + item(currentRow(),0)->text() + "_stat.txt",
                     "Text files (*.txt);;All files|(*.*)");
         if(filename.isEmpty())
             return;
-        cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+        cur_tracking_window.add_path("track",filename);
         std::ofstream out(filename.toLocal8Bit().begin());
         out << result.c_str();
     }
@@ -500,11 +500,11 @@ void TractTableWidget::save_fa_as(void)
     filename = QFileDialog::getSaveFileName(
                 this,
                 "Save QA as",
-                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + "_qa.txt",
+                cur_tracking_window.get_path("track") + "/" + item(currentRow(),0)->text() + "_qa.txt",
                 "Text files (*.txt);;All files|(*.*)");
     if(filename.isEmpty())
         return;
-    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+    cur_tracking_window.add_path("track",filename);
     if(!tract_models[currentRow()]->save_fa_to_file(filename.toLocal8Bit().begin()))
         QMessageBox::information(this,"error","fail to save information",0);
 }
@@ -519,12 +519,12 @@ void TractTableWidget::save_tracts_data_as(void)
     QString filename = QFileDialog::getSaveFileName(
                 this,
                 "Save as",
-                cur_tracking_window.absolute_path +"/" +
+                cur_tracking_window.get_path("track") +"/" +
                 item(currentRow(),0)->text() + "_" + action->data().toString() + ".txt",
                 "Text files (*.txt);;All files (*.*)");
     if(filename.isEmpty())
         return;
-    cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+    cur_tracking_window.add_path("track",filename);
     if(!tract_models[currentRow()]->save_data_to_file(
                     filename.toLocal8Bit().begin(),
                     action->data().toString().toLocal8Bit().begin()))
@@ -669,11 +669,11 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
         QString filename = QFileDialog::getSaveFileName(
                 this,
                 "Save Images files",
-                cur_tracking_window.absolute_path+"/" + item(currentRow(),0)->text(),
+                cur_tracking_window.get_path("track")+"/" + item(currentRow(),0)->text(),
                 "BMP files (*.bmp);;PNG files (*.png );;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*.*)");
         if(filename.isEmpty())
             return;
-        cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+        cur_tracking_window.add_path("track",filename);
         image::basic_image<image::rgb_color,3> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
         {
@@ -690,11 +690,11 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
         QString filename = QFileDialog::getSaveFileName(
                     this,
                     "Save as",
-                    cur_tracking_window.absolute_path+"/" + item(currentRow(),0)->text(),
+                    cur_tracking_window.get_path("track")+"/" + item(currentRow(),0)->text(),
                     "NIFTI files (*.nii.gz *.nii);;MAT File (*.mat);;");
         if(filename.isEmpty())
             return;
-        cur_tracking_window.absolute_path = QFileInfo(filename).absolutePath();
+        cur_tracking_window.add_path("track",filename);
         image::basic_image<unsigned int,3> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
         {

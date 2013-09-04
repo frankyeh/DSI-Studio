@@ -251,11 +251,12 @@ void slice_view_scene::save_slice_as()
     QString filename = QFileDialog::getSaveFileName(
                 0,
                 "Save as",
-                cur_tracking_window.absolute_path + "/" +
+                cur_tracking_window.get_path("slice") + "/" +
                 cur_tracking_window.handle->fib_data.view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str(),
                 "NIFTI files (*.nii.gz *.nii);;MAT File (*.mat);;");
     if(filename.isEmpty())
         return;
+    cur_tracking_window.add_path("region",filename);
 
     int index = cur_tracking_window.handle->get_name_index(
                 cur_tracking_window.ui->sliceViewBox->currentText().toLocal8Bit().begin());
