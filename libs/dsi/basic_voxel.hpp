@@ -67,7 +67,7 @@ public:// parameters;
     bool r2_weighted;// used in GQI only
     unsigned int max_fiber_number;
     std::vector<std::string> file_list;
-    const float* grad_dev;
+    std::vector<image::const_pointer_image<float,3> > grad_dev;
 public:
     unsigned char reg_method;// used in QSDR
     image::transformation_matrix<3,float> qsdr_trans;

@@ -74,8 +74,16 @@ public:
             table += 4;
         }
 
-        mat_reader->get_matrix("grad_dev",row,col,voxel.grad_dev);
-
+        {
+            // this grad_dev matrix is rotated
+            const float* grad_dev = 0;
+            if(mat_reader->get_matrix("grad_dev",row,col,grad_dev))
+            {
+                voxel.grad_dev.resize(9);
+                for(unsigned int index = 0;index < 9;index++)
+                    voxel.grad_dev[index] = image::make_image(voxel.dim,grad_dev+index*voxel.dim.size());
+            }
+        }
         voxel.q_count = col;
         dwi_data.resize(voxel.q_count);
         for (unsigned int index = 0;index < voxel.q_count;++index)

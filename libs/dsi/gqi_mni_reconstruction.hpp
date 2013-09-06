@@ -313,7 +313,7 @@ public:
         for(unsigned int i = 0,w_pos = 0;i < data.odf.size();++i,++w_pos)
             {
                 image::vector<3,double> new_dir;
-                image::matrix::product(jacobian,voxel.ti.vertices[i].begin(),new_dir.begin(),image::dim<3,3>(),image::dim<3,1>());
+                image::matrix::vector_product(jacobian,voxel.ti.vertices[i].begin(),new_dir.begin(),image::dim<3,3>());
                 new_dir.normalize();
                 if(data.odf[i] >= data.min_odf)
                 for(unsigned int row = 0,w_row = w_pos;
@@ -364,9 +364,37 @@ public:
         if(voxel.half_sphere && b0_index != -1)
             data.space[b0_index] /= 2.0;
 
-        float jacobian[9];
-        get_jacobian(pos,jacobian);
+        float jacobian[9],Jdet;
+        {
+            get_jacobian(pos,jacobian);
+            Jdet = std::abs(image::matrix::determinant(jacobian,image::dim<3,3>())*voxel_volume_scale);
+            if(voxel.output_jacobian)
+                jdet[data.voxel_index] = Jdet;
+        }
 
+        if(!voxel.grad_dev.empty())
+        {
+            float grad_dev[9];
+            for(unsigned int i = 0;i < 9;++i)
+                trilinear_interpolation.estimate(voxel.grad_dev[i],grad_dev[i]);
+            // this grad_dev matrix is rotated
+            // add identity matrix
+            grad_dev[0] += 1.0;
+            grad_dev[4] += 1.0;
+            grad_dev[8] += 1.0;
+            // bvec is flipped at y direction
+            // 1  0  0         1  0  0
+            //[0 -1  0] *Grad*[0 -1  0]
+            // 0  0  1         0  0  1
+            grad_dev[1] = -grad_dev[1];
+            grad_dev[3] = -grad_dev[3];
+            grad_dev[5] = -grad_dev[5];
+            grad_dev[7] = -grad_dev[7];
+            float new_j[9];
+            image::matrix::product(grad_dev,jacobian,new_j,image::dim<3,3>(),image::dim<3,3>());
+            //  <G*b_vec,J*odf>
+            //  = trans(b_vec)*trans(G)*J*odf
+        }
 
         if (voxel.odf_deconvolusion || voxel.odf_decomposition)
             odf_sharpening(voxel,data,jacobian);
@@ -376,7 +404,7 @@ public:
             for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
             {
                 image::vector<3,double> dir(voxel.ti.vertices[j]),from;
-                image::matrix::product(jacobian,dir.begin(),from.begin(),image::dim<3,3>(),image::dim<3,1>());
+                image::matrix::vector_product(jacobian,dir.begin(),from.begin(),image::dim<3,3>());
                 from.normalize();
                 if(voxel.r2_weighted)
                     for (unsigned int i = 0; i < voxel.q_count; ++i,++index)
@@ -401,12 +429,7 @@ public:
             }
         }
 
-        {
-            float J = std::abs(image::matrix::determinant(jacobian,image::dim<3,3>())*voxel_volume_scale);
-            std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 *= J);
-            if(voxel.output_jacobian)
-                jdet[data.voxel_index] = J;
-        }
+        std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 *= Jdet);
 
         float accumulated_qa = std::accumulate(data.odf.begin(),data.odf.end(),0.0);
         if (max_accumulated_qa < accumulated_qa)
