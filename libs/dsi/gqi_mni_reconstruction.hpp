@@ -374,6 +374,10 @@ public:
 
         if(!voxel.grad_dev.empty())
         {
+            /*
+            new_bvecs = (I+grad_dev) * bvecs;
+            */
+
             float grad_dev[9];
             for(unsigned int i = 0;i < 9;++i)
                 trilinear_interpolation.estimate(voxel.grad_dev[i],grad_dev[i]);
@@ -392,6 +396,7 @@ public:
             grad_dev[7] = -grad_dev[7];
             float new_j[9];
             image::matrix::product(grad_dev,jacobian,new_j,image::dim<3,3>(),image::dim<3,3>());
+            std::copy(new_j,new_j+9,jacobian);
             //  <G*b_vec,J*odf>
             //  = trans(b_vec)*trans(G)*J*odf
         }
