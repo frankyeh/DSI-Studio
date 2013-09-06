@@ -14,6 +14,9 @@ public:
         std::string file_name;
         image::basic_image<unsigned short,3> image;
 	float te;
+public:// for HCP dataset
+    image::basic_image<float,4> grad_dev;
+    image::basic_image<unsigned char,3> mask;
 public:	
         image::vector<3,float> bvec;
         float bvalue;

@@ -74,6 +74,8 @@ public:
             table += 4;
         }
 
+        mat_reader->get_matrix("grad_dev",row,col,voxel.grad_dev);
+
         voxel.q_count = col;
         dwi_data.resize(voxel.q_count);
         for (unsigned int index = 0;index < voxel.q_count;++index)
@@ -88,6 +90,7 @@ public:
             }
         }
 
+
         // create mask;
         dwi_sum.clear();
         dwi_sum.resize(voxel.dim);
@@ -100,6 +103,7 @@ public:
             if (dwi_sum[index] < min_value && dwi_sum[index] > 0)
                 min_value = dwi_sum[index];
 
+
         ::set_title("creating mask");
         check_prog(0,3);
         image::minus_constant(dwi_sum,min_value);
@@ -109,12 +113,24 @@ public:
         image::log(dwi_sum);
         image::divide_constant(dwi_sum,0.301);
         image::upper_threshold(dwi_sum,1.0f);
-        image::threshold(dwi_sum,mask,image::segmentation::otsu_threshold(dwi_sum)*0.8,1,0);
-        check_prog(1,3);
-        image::morphology::recursive_smoothing(mask);
-        check_prog(2,3);
-        image::morphology::defragment(mask);
-        image::morphology::recursive_smoothing(mask);
+
+
+        const unsigned char* mask_ptr = 0;
+        if(mat_reader->get_matrix("mask",row,col,mask_ptr))
+        {
+            mask.resize(voxel.dim);
+            if(row*col == voxel.dim.size())
+                std::copy(mask_ptr,mask_ptr+row*col,mask.begin());
+        }
+        else
+        {
+            image::threshold(dwi_sum,mask,image::segmentation::otsu_threshold(dwi_sum)*0.8,1,0);
+            check_prog(1,3);
+            image::morphology::recursive_smoothing(mask);
+            check_prog(2,3);
+            image::morphology::defragment(mask);
+            image::morphology::recursive_smoothing(mask);
+        }
         check_prog(3,3);
         return true;
     }

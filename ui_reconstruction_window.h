@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Thu Jul 18 15:44:30 2013
+** Created: Wed Sep 4 17:54:09 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -487,7 +487,7 @@ public:
         diffusion_sampling->setObjectName(QString::fromUtf8("diffusion_sampling"));
         diffusion_sampling->setMaximumSize(QSize(75, 16777215));
         diffusion_sampling->setDecimals(2);
-        diffusion_sampling->setMinimum(0.01);
+        diffusion_sampling->setMinimum(0);
         diffusion_sampling->setMaximum(3);
         diffusion_sampling->setSingleStep(0.05);
         diffusion_sampling->setValue(1.25);
@@ -930,6 +930,10 @@ public:
          << QApplication::translate("reconstruction_window", "5-fold", 0, QApplication::UnicodeUTF8)
          << QApplication::translate("reconstruction_window", "6-fold", 0, QApplication::UnicodeUTF8)
          << QApplication::translate("reconstruction_window", "8-fold", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("reconstruction_window", "10-fold", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("reconstruction_window", "12-fold", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("reconstruction_window", "16-fold", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("reconstruction_window", "20-fold", 0, QApplication::UnicodeUTF8)
         );
         HalfSphere->setText(QApplication::translate("reconstruction_window", "Half-sphere scheme", 0, QApplication::UnicodeUTF8));
         label_9->setText(QApplication::translate("reconstruction_window", "Parallel reconstruction:", 0, QApplication::UnicodeUTF8));

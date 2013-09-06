@@ -448,6 +448,11 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
         }
         write_mat.add_matrix("b_table",&b_table[0],4,b_table.size()/4);
     }
+
+    if(!dwi_files[0].grad_dev.empty())
+        write_mat.add_matrix("grad_dev",&*dwi_files[0].grad_dev.begin(),dwi_files[0].grad_dev.size()/9,9);
+    if(!dwi_files[0].mask.empty())
+        write_mat.add_matrix("mask",&*dwi_files[0].mask.begin(),1,dwi_files[0].mask.size());
     write_mat.close_file();
 
     return true;

@@ -89,6 +89,56 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
     gz_nifti analyze_header;
     if(!analyze_header.load_from_file(file_name))
         return false;
+    std::vector<float> bvals,bvecs;
+    if(QFileInfo(QFileInfo(file_name).absolutePath() + "/bvals").exists() &&
+            QFileInfo(QFileInfo(file_name).absolutePath() + "/bvecs").exists())
+    {
+        std::ifstream in1(QString(QFileInfo(file_name).absolutePath() + "/bvals").toLocal8Bit().begin());
+        std::ifstream in2(QString(QFileInfo(file_name).absolutePath() + "/bvecs").toLocal8Bit().begin());
+        std::copy(std::istream_iterator<float>(in1),
+                  std::istream_iterator<float>(),std::back_inserter(bvals));
+        std::copy(std::istream_iterator<float>(in2),
+                  std::istream_iterator<float>(),std::back_inserter(bvecs));
+        if(analyze_header.dim(4) != bvals.size() ||
+           bvals.size()*3 != bvecs.size())
+        {
+            bvals.clear();
+            bvecs.clear();
+        }
+    }
+
+    image::basic_image<float,4> grad_dev;
+    image::basic_image<unsigned char,3> mask;
+    if(QFileInfo(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").exists())
+    {
+        gz_nifti grad_header;
+        if(grad_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").toLocal8Bit().begin()))
+        {
+            grad_header >> grad_dev;
+            if(grad_header.nif_header.srow_x[0] < 0)
+            {
+                if(grad_header.nif_header.srow_y[1] > 0)
+                    image::flip_y(mask);
+            }
+            else
+                image::flip_xy(mask);
+        }
+    }
+    if(QFileInfo(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").exists())
+    {
+        gz_nifti mask_header;
+        if(mask_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").toLocal8Bit().begin()))
+        {
+            mask_header >> mask;
+            if(mask_header.nif_header.srow_x[0] < 0)
+            {
+                if(mask_header.nif_header.srow_y[1] > 0)
+                    image::flip_y(mask);
+            }
+            else
+                image::flip_xy(mask);
+        }
+    }
     {
         float vs[4];
         analyze_header.get_voxel_size(vs);
@@ -109,9 +159,29 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
             out << index;
             new_file->file_name += out.str();
             std::copy(vs,vs+3,new_file->voxel_size);
+
+            if(!bvals.empty())
+            {
+                new_file->bvalue = bvals[index];
+                new_file->bvec[0] = bvecs[index];
+                new_file->bvec[1] = -bvecs[index+bvals.size()];
+                new_file->bvec[2] = bvecs[index+bvals.size()+bvals.size()];
+                new_file->bvalue *= new_file->bvec.length2();
+                new_file->bvec.normalize();
+                if(new_file->bvalue < 10)
+                {
+                    new_file->bvalue = 0;
+                    new_file->bvec = image::vector<3>(0,0,0);
+                }
+            }
+            if(index == 0 && !grad_dev.empty())
+                new_file->grad_dev.swap(grad_dev);
+            if(index == 0 && !mask.empty())
+                new_file->mask.swap(mask);
             dwi_files.push_back(new_file.release());
         }
     }
+
     return true;
 }
 
