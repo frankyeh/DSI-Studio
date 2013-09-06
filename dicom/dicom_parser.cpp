@@ -118,10 +118,10 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
             if(grad_header.nif_header.srow_x[0] < 0)
             {
                 if(grad_header.nif_header.srow_y[1] > 0)
-                    image::flip_y(mask);
+                    image::flip_y(grad_dev);
             }
             else
-                image::flip_xy(mask);
+                image::flip_xy(grad_dev);
         }
     }
     if(QFileInfo(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").exists())
@@ -166,7 +166,6 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
                 new_file->bvec[0] = bvecs[index];
                 new_file->bvec[1] = -bvecs[index+bvals.size()];
                 new_file->bvec[2] = bvecs[index+bvals.size()+bvals.size()];
-                new_file->bvalue *= new_file->bvec.length2();
                 new_file->bvec.normalize();
                 if(new_file->bvalue < 10)
                 {
