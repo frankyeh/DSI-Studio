@@ -30,15 +30,13 @@ public:
         unsigned int row,col;
 
         const unsigned short* dim_ptr = 0;
-        mat_reader->get_matrix("dimension",row,col,dim_ptr);
-        if (!dim_ptr)
+        if (!mat_reader->get_matrix("dimension",row,col,dim_ptr))
         {
             error_msg = "Cannot find dimension matrix";
             return false;
         }
         const float* voxel_size = 0;
-        mat_reader->get_matrix("voxel_size",row,col,voxel_size);
-        if (!voxel_size)
+        if (!mat_reader->get_matrix("voxel_size",row,col,voxel_size))
         {
             //error_msg = "Cannot find voxel size matrix";
             //return false;
@@ -57,8 +55,7 @@ public:
         voxel.dim[2] = dim_ptr[2];
 
         const float* table;
-        mat_reader->get_matrix("b_table",row,col,table);
-        if (!table)
+        if (!mat_reader->get_matrix("b_table",row,col,table))
         {
             error_msg = "Cannot find b_table matrix";
             return false;
@@ -74,16 +71,6 @@ public:
             table += 4;
         }
 
-        {
-            // this grad_dev matrix is rotated
-            const float* grad_dev = 0;
-            if(mat_reader->get_matrix("grad_dev",row,col,grad_dev))
-            {
-                voxel.grad_dev.resize(9);
-                for(unsigned int index = 0;index < 9;index++)
-                    voxel.grad_dev[index] = image::make_image(voxel.dim,grad_dev+index*voxel.dim.size());
-            }
-        }
         voxel.q_count = col;
         dwi_data.resize(voxel.q_count);
         for (unsigned int index = 0;index < voxel.q_count;++index)
@@ -98,6 +85,16 @@ public:
             }
         }
 
+
+        {
+            // this grad_dev matrix is rotated
+            const float* grad_dev = 0;
+            if(mat_reader->get_matrix("grad_dev",row,col,grad_dev) && row*col == voxel.dim.size()*9)
+            {
+                for(unsigned int index = 0;index < 9;index++)
+                    voxel.grad_dev.push_back(image::make_image(voxel.dim,grad_dev+index*voxel.dim.size()));
+            }
+        }
 
         // create mask;
         dwi_sum.clear();

@@ -167,6 +167,10 @@ int rec(int ac, char *av[])
                 std::cout << "fail reading the mask...using default mask" << std::endl;
         }
     }
+
+    if(method_id == 7)
+        std::fill(handle->mask.begin(),handle->mask.end(),1.0);
+
     std::cout << "start reconstruction..." <<std::endl;
     const char* msg = reconstruction(handle.get(),method_index,param);
     if (!msg)
