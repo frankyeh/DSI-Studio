@@ -77,6 +77,11 @@ typedef odf_reco_type<boost::mpl::vector<
     QSpace2Odf
 > >::type gqi_process;
 
+typedef boost::mpl::vector<
+    ReadDWIData,
+    CorrectB0,
+    QSpaceSpectral
+> gqi_spectral_process;
 
 // for ODF deconvolution
 typedef estimation_type<boost::mpl::vector<
@@ -204,13 +209,20 @@ extern "C"
             break;
 
         case 4://GQI
+            if(param_values[0] == 0.0) // spectral analysis
+            {
+                out << (image_model->voxel.r2_weighted ? ".gqi2.spec.fib":".gqi.spec.fib");
+                if (!image_model->reconstruct<gqi_spectral_process>(out.str()))
+                    return "reconstruction canceled";
+                break;
+            }
             if (image_model->voxel.odf_deconvolusion || image_model->voxel.odf_decomposition)
             {
                 if (!image_model->reconstruct<gqi_estimate_response_function>())
                     return "reconstruction calceled";
                 begin_prog("calculating");
             }
-            out << (image_model->voxel.r2_weighted ? ".gqir2.":".gqi.") << param_values[0] << ".fib";
+            out << (image_model->voxel.r2_weighted ? ".gqi2.":".gqi.") << param_values[0] << ".fib";
             if (!image_model->reconstruct<gqi_process>(out.str()))
                 return "reconstruction canceled";
             break;

@@ -81,6 +81,61 @@ public:
     }
 };
 
+class QSpaceSpectral  : public BaseProcess
+{
+public:
+    std::vector<QSpace2Odf*> gqis;
+    std::vector<std::vector<float> > isos;
+public:
+    virtual void init(Voxel& voxel)
+    {
+        isos.clear();
+        gqis.clear();
+        isos.resize(50);
+        gqis.resize(50);
+        const float* old_param = voxel.param;
+        float sigma = 0.02;
+        voxel.param = &sigma;
+        for(unsigned int index = 0;index < isos.size();++index)
+        {
+            isos[index].resize(voxel.dim.size());
+            gqis[index] = new QSpace2Odf;
+            gqis[index]->init(voxel);
+            sigma += 0.02;
+        }
+        voxel.param = old_param;
+    }
+    virtual void run(Voxel& voxel, VoxelData& data)
+    {
+        float sigma = 0.02;
+        float last_iso = 0.0;
+        for(unsigned int index = 0;index < gqis.size();++index)
+        {
+            gqis[index]->run(voxel,data);
+            float iso = image::mean(data.odf.begin(),data.odf.end());
+            iso *= sigma;
+            isos[index][data.voxel_index] = std::max<float>(0.0,iso-last_iso);
+            last_iso = iso;
+            sigma += 0.02;
+        }
+    }
+    virtual void end(Voxel& voxel,MatFile& mat_writer)
+    {
+        for(unsigned int index = 0;index < gqis.size();++index)
+        {
+            delete gqis[index];
+            std::ostringstream out;
+            if(index < 9)
+                out << "iso0" << index+1;
+            else
+                out << "iso" << index+1;
+            mat_writer.add_matrix(out.str().c_str(),&*isos[index].begin(),1,isos[index].size());
+        }
+        mat_writer.add_matrix("fa0",&*isos[0].begin(),1,isos[0].size());
+        std::vector<short> index0(voxel.dim.size());
+        mat_writer.add_matrix("index0",&*index0.begin(),1,index0.size());
+    }
+};
 
 
 #endif//DDI_PROCESS_HPP
