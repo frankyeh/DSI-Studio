@@ -8,12 +8,10 @@
 #include "image/image.hpp"
 #include "basic_process.hpp"
 #include "basic_voxel.hpp"
-#include "odf_process.hpp"
 
 struct ODFDecomposition : public BaseProcess
 {
-    SearchLocalMaximum lm;
-    boost::mutex mutex;
+    std::vector<std::vector<unsigned char> > is_neighbor;
     float decomposition_fraction;
 protected:
     std::vector<float> fiber_ratio;
@@ -104,83 +102,6 @@ protected:
         return t1/t2;
     }
 
-    void lasso(const std::vector<float>& y,const std::vector<float>& x,std::vector<float>& w,unsigned int max_fiber)
-    {
-        unsigned int y_dim = y.size();
-        std::vector<float> residual(y);
-        std::vector<float> tmp(y_dim);
-        std::vector<char> fib_map(y_dim);
-        std::vector<int> fib_list;
-        w.resize(y_dim);
-
-        std::vector<float> Xt;
-
-        for(int fib_index = 1;fib_index < max_fiber;++fib_index)
-        {
-            image::matrix::vector_product(&*x.begin(),&*residual.begin(),&*tmp.begin(),
-                                            image::dyndim(y_dim,y_dim));
-            std::vector<float> u(y_dim);
-            std::vector<float> s(fib_index);
-            if(fib_index == 1)
-            {
-                // get the most correlated orientation
-                int dir = std::max_element(tmp.begin(),tmp.end())-tmp.begin();
-                if(tmp[dir] < 0.0)
-                    return;
-                fib_map[dir] = 1;
-                fib_list.push_back(dir);
-                std::copy(x.begin()+dir*y_dim,x.begin()+(dir+1)*y_dim,u.begin());
-                Xt = u;
-                s[0] = 1.0;
-            }
-            else
-            {
-                std::vector<float> XtX(fib_index*fib_index);
-                std::vector<int> piv(y_dim);
-                image::matrix::product_transpose(Xt.begin(),Xt.begin(),XtX.begin(),image::dyndim(fib_index,y_dim),image::dyndim(fib_index,y_dim));
-                image::matrix::lu_decomposition(XtX.begin(),piv.begin(),image::dyndim(fib_index,fib_index));
-                image::matrix::lu_solve(XtX.begin(),piv.begin(),image::one<float>(),s.begin(),image::dyndim(fib_index,fib_index));
-                float Aa = 1.0/std::sqrt(std::accumulate(s.begin(),s.end(),0.0f));
-                image::multiply_constant(s.begin(),s.end(),Aa);
-                image::matrix::product(s.begin(),Xt.begin(),u.begin(),image::dyndim(1,fib_index),image::dyndim(fib_index,y_dim));
-            }
-
-            unsigned int dir = 0;
-            float min_step_value = std::numeric_limits<float>::max();
-            std::vector<float>::const_iterator xi = x.begin()+fib_list.front()*y_dim;
-            std::vector<float>::const_iterator xj = x.begin();
-            for(unsigned int cur_dir = 0;cur_dir < y_dim;xj += y_dim,++cur_dir)
-            {
-                if(fib_map[cur_dir])
-                    continue;
-
-                float value = lar_get_step(u.begin(),xi,xj,residual.begin(),y_dim);
-                if(value < min_step_value)
-                    {
-                        dir = cur_dir;
-                        min_step_value = value;
-                    }
-            }
-            /*
-            std::vector<float> new_w(w);
-            for(int index = 0;index < s.size();++index)
-                if((new_w[fib_list[index]] += s[index]*min_step_value) < 0.0)
-                    return;
-            new_w.swap(w);
-            */
-            for(int index = 0;index < s.size();++index)
-                w[fib_list[index]] += s[index]*min_step_value;
-
-            // update residual
-            image::vec::axpy(residual.begin(),residual.end(),-min_step_value,u.begin());
-
-            // update the X matrix
-            std::copy(x.begin()+dir*y_dim,x.begin()+(dir+1)*y_dim,std::back_inserter(Xt));
-            fib_list.push_back(dir);
-            fib_map[dir] = 1;
-        }
-    }
-
     void lasso2(const std::vector<float>& y,const std::vector<float>& x,std::vector<float>& w,unsigned int max_fiber)
     {
         unsigned int y_dim = y.size();
@@ -245,10 +166,30 @@ public:
             return;
         decomposition_fraction = voxel.param[3];
         m = std::max<int>(voxel.param[4],voxel.max_fiber_number);
-        lm.init(voxel);
         fiber_ratio.resize(voxel.dim.size());
         max_iso = 0.0;
         half_odf_size = voxel.ti.half_vertices_count;
+        is_neighbor.resize(half_odf_size);
+        for(unsigned int index = 0;index < half_odf_size;++index)
+            is_neighbor[index].resize(half_odf_size);
+        for(unsigned int index = 0;index < voxel.ti.faces.size();++index)
+        {
+            short i1 = voxel.ti.faces[index][0];
+            short i2 = voxel.ti.faces[index][1];
+            short i3 = voxel.ti.faces[index][2];
+            if (i1 >= half_odf_size)
+                i1 -= half_odf_size;
+            if (i2 >= half_odf_size)
+                i2 -= half_odf_size;
+            if (i3 >= half_odf_size)
+                i3 -= half_odf_size;
+            is_neighbor[i1][i2] = 1;
+            is_neighbor[i2][i1] = 1;
+            is_neighbor[i1][i3] = 1;
+            is_neighbor[i3][i1] = 1;
+            is_neighbor[i2][i3] = 1;
+            is_neighbor[i3][i2] = 1;
+        }
         // scale the free water diffusion to 1
         std::for_each(voxel.free_water_diffusion.begin(),voxel.free_water_diffusion.end(),(boost::lambda::_1 /= voxel.reponse_function_scaling));
 
@@ -264,12 +205,7 @@ public:
         normalize_vector(data.odf.begin(),data.odf.end());
         std::vector<float> w;
         lasso2(data.odf,Rt,w,m);
-        //lasso(data.odf,Rt,w,voxel.max_fiber_number << 1);
 
-
-        //std::fill(data.odf.begin(),data.odf.end(),1.0f);
-        //image::add(data.odf.begin(),data.odf.end(),w.begin());
-        //return;
         std::vector<int> dir_list;
 
         for(unsigned int index = 0;index < half_odf_size;++index)
@@ -304,9 +240,9 @@ public:
 
             image::matrix::pseudo_inverse_solve(&*RRt.begin(),&*old_odf.begin(),&*results.begin(),image::dyndim(results.size(),half_odf_size));
 
-            float threshold = 0.0;//std::max<float>(*std::max_element(results.begin()+has_isotropic,results.end())*0.25,0.0);
+            //  drop negative
             int min_index = std::min_element(results.begin()+has_isotropic,results.end())-results.begin();
-            if(results[min_index] < threshold)
+            if(results[min_index] < 0.0)
             {
                 dir_list.erase(dir_list.begin()+min_index-has_isotropic);
                 results.erase(results.begin()+min_index);
@@ -317,7 +253,28 @@ public:
                 has_isotropic = 0;
                 continue;
             }
-            break;
+
+            // drop non local maximum
+            std::vector<int> neighbors;
+            for(unsigned int i = 0;i < dir_list.size();++i)
+                for(unsigned int j = i+1;j < dir_list.size();++j)
+                    if(is_neighbor[dir_list[i]][dir_list[j]])
+                    {
+                        neighbors.push_back(i);
+                        neighbors.push_back(j);
+                    }
+            if(neighbors.empty())
+                break;
+            int smallest_neighbor = neighbors[0];
+            float value = results[smallest_neighbor+has_isotropic];
+            for(unsigned int i = 1;i < neighbors.size();++i)
+                if(results[neighbors[i]+has_isotropic] < value)
+                {
+                    smallest_neighbor = neighbors[i];
+                    value = results[smallest_neighbor+has_isotropic];
+                }
+            dir_list.erase(dir_list.begin()+smallest_neighbor);
+            results.erase(results.begin()+smallest_neighbor+has_isotropic);
         }
         float fiber_sum = std::accumulate(results.begin()+has_isotropic,results.end(),0.0f);
 
