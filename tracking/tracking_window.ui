@@ -824,6 +824,9 @@
     <addaction name="actionDeleteRegion"/>
     <addaction name="actionDeleteRegionAll"/>
     <addaction name="separator"/>
+    <addaction name="actionCheck_all_regions"/>
+    <addaction name="actionUnckech_all_regions"/>
+    <addaction name="separator"/>
     <addaction name="menuModify"/>
     <addaction name="actionWhole_brain_seeding"/>
     <addaction name="separator"/>
@@ -2856,6 +2859,16 @@
   <action name="actionConnectivity_matrix">
    <property name="text">
     <string>Connectivity matrix...</string>
+   </property>
+  </action>
+  <action name="actionCheck_all_regions">
+   <property name="text">
+    <string>Check all regions</string>
+   </property>
+  </action>
+  <action name="actionUnckech_all_regions">
+   <property name="text">
+    <string>Uncheck all regions</string>
    </property>
   </action>
  </widget>

@@ -68,6 +68,8 @@ public slots:
     void add_atlas(void);
     void whole_brain(void);
     void show_statistics(void);
+    void check_all(void);
+    void uncheck_all(void);
 
     // actions
     void action_smoothing(void){do_action(0);}

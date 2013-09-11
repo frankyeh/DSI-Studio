@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Wed Jul 17 13:38:05 2013
+** Created: Tue Sep 10 15:09:08 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -121,6 +121,8 @@ public:
     QAction *actionTract_Analysis_Report;
     QAction *actionSave_End_Points_As;
     QAction *actionConnectivity_matrix;
+    QAction *actionCheck_all_regions;
+    QAction *actionUnckech_all_regions;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QHBoxLayout *horizontalLayout_13;
@@ -498,6 +500,10 @@ public:
         actionSave_End_Points_As->setIcon(icon2);
         actionConnectivity_matrix = new QAction(tracking_window);
         actionConnectivity_matrix->setObjectName(QString::fromUtf8("actionConnectivity_matrix"));
+        actionCheck_all_regions = new QAction(tracking_window);
+        actionCheck_all_regions->setObjectName(QString::fromUtf8("actionCheck_all_regions"));
+        actionUnckech_all_regions = new QAction(tracking_window);
+        actionUnckech_all_regions->setObjectName(QString::fromUtf8("actionUnckech_all_regions"));
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -1480,6 +1486,9 @@ public:
         menuRegions->addAction(actionDeleteRegion);
         menuRegions->addAction(actionDeleteRegionAll);
         menuRegions->addSeparator();
+        menuRegions->addAction(actionCheck_all_regions);
+        menuRegions->addAction(actionUnckech_all_regions);
+        menuRegions->addSeparator();
         menuRegions->addAction(menuModify->menuAction());
         menuRegions->addAction(actionWhole_brain_seeding);
         menuRegions->addSeparator();
@@ -1705,6 +1714,8 @@ public:
         actionTract_Analysis_Report->setText(QApplication::translate("tracking_window", "Tract Analysis Report...", 0, QApplication::UnicodeUTF8));
         actionSave_End_Points_As->setText(QApplication::translate("tracking_window", "Save End Points As...", 0, QApplication::UnicodeUTF8));
         actionConnectivity_matrix->setText(QApplication::translate("tracking_window", "Connectivity matrix...", 0, QApplication::UnicodeUTF8));
+        actionCheck_all_regions->setText(QApplication::translate("tracking_window", "Check all regions", 0, QApplication::UnicodeUTF8));
+        actionUnckech_all_regions->setText(QApplication::translate("tracking_window", "Uncheck all regions", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)
@@ -1802,6 +1813,7 @@ public:
         view_style->clear();
         view_style->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Single", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("tracking_window", "3 Slices", 0, QApplication::UnicodeUTF8)
          << QApplication::translate("tracking_window", "Mosaic", 0, QApplication::UnicodeUTF8)
          << QApplication::translate("tracking_window", "Mosaic2", 0, QApplication::UnicodeUTF8)
          << QApplication::translate("tracking_window", "Mosaic4", 0, QApplication::UnicodeUTF8)

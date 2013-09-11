@@ -10,6 +10,7 @@
 #include "ui_tracking_window.h"
 #include "mapping/atlas.hpp"
 #include "mapping/fa_template.hpp"
+#include "opengl/glwidget.h"
 extern std::vector<atlas> atlas_list;
 extern fa_template fa_template_imp;
 
@@ -256,6 +257,8 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     std::vector<unsigned char> value_map(std::numeric_limits<unsigned short>::max());
     for (image::pixel_index<3>index; index.valid(from.geometry());index.next(from.geometry()))
         value_map[(unsigned short)from[index.index()]] = 1;
+    while(!value_map.empty() && value_map.back() == 0)
+        value_map.pop_back();
 
     unsigned short region_count = std::accumulate(value_map.begin(),value_map.end(),(unsigned short)0);
     if(region_count <= 2)
@@ -307,45 +310,48 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         }
     }
 
+    std::vector<float> convert;
+
+    // searching for T1/T2 mappings
+    for(unsigned int index = 0;index < cur_tracking_window.glWidget->other_slices.size();++index)
+    {
+        if(from.geometry() == cur_tracking_window.glWidget->other_slices[index].source_images.geometry())
+        {
+            const float* buf = cur_tracking_window.glWidget->mi3s[index].get();
+            convert.resize(16);
+            image::create_affine_transformation_matrix(buf, buf + 9,convert.begin(), image::vdim<3>());
+            break;
+        }
+    }
+
     if(from.geometry() != cur_tracking_window.slice.geometry &&
-       !cur_tracking_window.handle->fib_data.trans_to_mni.empty())// use transformation information
+            !cur_tracking_window.handle->fib_data.trans_to_mni.empty() && convert.empty())// use transformation information
     {
         QMessageBox::information(this,"Warning","The nii file has different image dimension. Transformation will be applied to load the region",0);
         std::vector<float> t(header.get_transformation(),
-                             header.get_transformation()+12),inv_trans(16),convert(16);
+                             header.get_transformation()+12),inv_trans(16);
+        convert.resize(16);
         t.resize(16);
         t[15] = 1.0;
         image::matrix::inverse(t.begin(),inv_trans.begin(),image::dim<4,4>());
         image::matrix::product(inv_trans.begin(),
                                cur_tracking_window.handle->fib_data.trans_to_mni.begin(),
                                convert.begin(),image::dim<4,4>(),image::dim<4,4>());
-
-        for(unsigned int value = 1;check_prog(value,value_map.size());++value)
-            if(value_map[value])
-            {
-                image::basic_image<short,3> mask(from.geometry());
-                for(unsigned int i = 0;i < mask.size();++i)
-                    if(from[i] == value)
-                        mask[i] = 1;
-                ROIRegion region(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size);
-                region.LoadFromBuffer(mask,convert);
-                QString name = (label_map.find(value) == label_map.end() ? QString::number(value):label_map[value].c_str());
-                add_region(QFileInfo(file_name).completeBaseName()+":"+name,roi_id);
-                regions.back().assign(region.get());
-                item(currentRow(),0)->setCheckState(Qt::Unchecked);
-                item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
-            }
-        return true;
-    }
-    // from +x = Right  +y = Anterior +z = Superior
-    // to +x = Left  +y = Posterior +z = Superior
-    if(header.nif_header.srow_x[0] < 0)
-    {
-        if(header.nif_header.srow_y[1] > 0)
-            image::flip_y(from);
     }
     else
-        image::flip_xy(from);
+    {
+        // from +x = Right  +y = Anterior +z = Superior
+        // to +x = Left  +y = Posterior +z = Superior
+        if(header.nif_header.srow_x[0] < 0)
+        {
+            if(header.nif_header.srow_y[1] > 0)
+                image::flip_y(from);
+        }
+        else
+            image::flip_xy(from);
+    }
+
+
 
     for(unsigned int value = 1;check_prog(value,value_map.size());++value)
         if(value_map[value])
@@ -355,14 +361,37 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
                 if(from[i] == value)
                     mask[i] = 1;
             ROIRegion region(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size);
-            region.LoadFromBuffer(mask);
+            if(convert.empty())
+                region.LoadFromBuffer(mask);
+            else
+                region.LoadFromBuffer(mask,convert);
             QString name = (label_map.find(value) == label_map.end() ? QString::number(value):label_map[value].c_str());
             add_region(QFileInfo(file_name).completeBaseName()+":"+name,roi_id);
             regions.back().assign(region.get());
-            item(currentRow(),0)->setCheckState(Qt::Unchecked);
-            item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
+            item(currentRow(),0)->setCheckState(Qt::Checked);
+            item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
         }
     return true;
+}
+
+void RegionTableWidget::check_all(void)
+{
+    for(unsigned int row = 0;row < rowCount();++row)
+    {
+        item(row,0)->setCheckState(Qt::Checked);
+        item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
+    }
+    emit need_update();
+}
+
+void RegionTableWidget::uncheck_all(void)
+{
+    for(unsigned int row = 0;row < rowCount();++row)
+    {
+        item(row,0)->setCheckState(Qt::Unchecked);
+        item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
+    }
+    emit need_update();
 }
 
 void RegionTableWidget::load_region(void)

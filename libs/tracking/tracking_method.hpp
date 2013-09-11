@@ -201,16 +201,17 @@ public:
             position = position_;
             terminated = false;
             forward = true;
+            image::pixel_index<3> index(std::floor(position[0]+0.5),
+                                    std::floor(position[1]+0.5),
+                                    std::floor(position[2]+0.5),fib.dim);
+            if (!fib.dim.is_valid(index))
+                return false;
+
             switch (initial_direction)
             {
             case 0:// main direction
                 {
-                    image::pixel_index<3> index(std::floor(position[0]+0.5),
-                                            std::floor(position[1]+0.5),
-                                            std::floor(position[2]+0.5),fib.dim);
-
-                    if (!fib.dim.is_valid(index) ||
-                         fib.fa[0][index.index()] < fib.threshold)
+                    if(fib.fa[0][index.index()] < fib.threshold)
                         return false;
                     dir = fib.get_dir(index.index(),0);
                 }
@@ -229,13 +230,8 @@ public:
                 return false;
             case 2:// all direction
                 {
-                    image::pixel_index<3> index(std::floor(position[0]+0.5),
-                                        std::floor(position[1]+0.5),
-                                        std::floor(position[2]+0.5),fib.dim);
-
-                    if (!fib.dim.is_valid(index) ||
-                         init_fib_index >= fib.fib_num ||
-                         fib.fa[init_fib_index][index.index()] < fib.threshold)
+                    if (init_fib_index >= fib.fib_num ||
+                        fib.fa[init_fib_index][index.index()] < fib.threshold)
                     {
                         init_fib_index = 0;
                         return false;
@@ -246,7 +242,7 @@ public:
                 }
                 return true;
             }
-
+            return false;
         }
 
         const float* tracking(unsigned char tracking_method,unsigned int& point_count)
