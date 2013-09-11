@@ -252,18 +252,20 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     gz_nifti header;
     if (!header.load_from_file(file_name.toLocal8Bit().begin()))
         return false;
-    image::basic_image<short, 3>from;
+    image::basic_image<unsigned int, 3> from;
     header >> from;
     std::vector<unsigned char> value_map(std::numeric_limits<unsigned short>::max());
+    unsigned int max_value = 0;
     for (image::pixel_index<3>index; index.valid(from.geometry());index.next(from.geometry()))
+    {
         value_map[(unsigned short)from[index.index()]] = 1;
-    while(!value_map.empty() && value_map.back() == 0)
-        value_map.pop_back();
+        max_value = std::max<unsigned short>(from[index.index()],max_value);
+    }
+    value_map.resize(max_value+1);
 
     unsigned short region_count = std::accumulate(value_map.begin(),value_map.end(),(unsigned short)0);
-    if(region_count <= 2)
-        return false;
-
+    bool multiple_roi = region_count > 2;
+    if(region_count > 2)
     {
         QMessageBox msgBox;
         msgBox.setText("Load multiple ROIs in the nifti file?");
@@ -271,10 +273,11 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         msgBox.setDefaultButton(QMessageBox::Yes);
         int rec = msgBox.exec();
         if(rec == QMessageBox::No)
-            return false;
+            multiple_roi = false;
     }
 
     std::map<short,std::string> label_map;
+    if(multiple_roi)
     {
         QString label_file = QFileInfo(file_name).absolutePath()+"/"+QFileInfo(file_name).baseName()+".txt";
         if(!QFileInfo(label_file).exists())
@@ -351,7 +354,28 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
             image::flip_xy(from);
     }
 
+    if(!multiple_roi)
+    {
+        ROIRegion region(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size);
 
+        if(convert.empty())
+            region.LoadFromBuffer(from);
+        else
+            region.LoadFromBuffer(from,convert);
+        max_value = *std::max_element(from.begin(),from.end());
+        if(max_value > 128 && max_value < 0x00FFFFFF)
+        {
+            region.show_region.color = max_value;
+            add_region(QFileInfo(file_name).baseName(),roi_id,0xFF000000 | max_value);
+        }
+        else
+            add_region(QFileInfo(file_name).baseName(),roi_id);
+
+        regions.back().assign(region.get());
+        item(currentRow(),0)->setCheckState(Qt::Checked);
+        item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
+        return true;
+    }
 
     for(unsigned int value = 1;check_prog(value,value_map.size());++value)
         if(value_map[value])
@@ -366,7 +390,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
             else
                 region.LoadFromBuffer(mask,convert);
             QString name = (label_map.find(value) == label_map.end() ? QString::number(value):label_map[value].c_str());
-            add_region(QFileInfo(file_name).completeBaseName()+":"+name,roi_id);
+            add_region(QFileInfo(file_name).baseName()+"_"+name,roi_id);
             regions.back().assign(region.get());
             item(currentRow(),0)->setCheckState(Qt::Unchecked);
             item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
@@ -374,25 +398,6 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     return true;
 }
 
-void RegionTableWidget::check_all(void)
-{
-    for(unsigned int row = 0;row < rowCount();++row)
-    {
-        item(row,0)->setCheckState(Qt::Checked);
-        item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
-    }
-    emit need_update();
-}
-
-void RegionTableWidget::uncheck_all(void)
-{
-    for(unsigned int row = 0;row < rowCount();++row)
-    {
-        item(row,0)->setCheckState(Qt::Unchecked);
-        item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
-    }
-    emit need_update();
-}
 
 void RegionTableWidget::load_region(void)
 {
@@ -420,10 +425,30 @@ void RegionTableWidget::load_region(void)
             QMessageBox::information(this,"error","Unknown file format",0);
             return;
         }
-        add_region(QFileInfo(filenames[index]).completeBaseName(),roi_id,
+        add_region(QFileInfo(filenames[index]).baseName(),roi_id,
                    (region.show_region.color == image::rgb_color(0x00FFFFFF)) ? 0 : (int)(0xFF000000 | region.show_region.color.color));
         regions.back().assign(region.get());
 
+    }
+    emit need_update();
+}
+
+void RegionTableWidget::check_all(void)
+{
+    for(unsigned int row = 0;row < rowCount();++row)
+    {
+        item(row,0)->setCheckState(Qt::Checked);
+        item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
+    }
+    emit need_update();
+}
+
+void RegionTableWidget::uncheck_all(void)
+{
+    for(unsigned int row = 0;row < rowCount();++row)
+    {
+        item(row,0)->setCheckState(Qt::Unchecked);
+        item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
     }
     emit need_update();
 }
@@ -436,7 +461,7 @@ void RegionTableWidget::save_region(void)
     QString filename = QFileDialog::getSaveFileName(
                            this,
                            "Save region",
-                cur_tracking_window.get_path("region") + "/" + item(currentRow(),0)->text().replace(':','_') + "." + settings.value("region_save_type","nii.gz").toString(),
+                cur_tracking_window.get_path("region") + "/" + item(currentRow(),0)->text() + "." + settings.value("region_save_type","nii.gz").toString(),
                            "Region file(*.nii.gz *.nii *.txt *.mat);;All file types (*.*)" );
     if (filename.isEmpty())
         return;
