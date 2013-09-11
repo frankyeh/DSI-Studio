@@ -368,8 +368,8 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
             QString name = (label_map.find(value) == label_map.end() ? QString::number(value):label_map[value].c_str());
             add_region(QFileInfo(file_name).completeBaseName()+":"+name,roi_id);
             regions.back().assign(region.get());
-            item(currentRow(),0)->setCheckState(Qt::Checked);
-            item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
+            item(currentRow(),0)->setCheckState(Qt::Unchecked);
+            item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
         }
     return true;
 }
