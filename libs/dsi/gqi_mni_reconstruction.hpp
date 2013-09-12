@@ -305,31 +305,45 @@ public:
     {
         gqi.run(voxel,data);
         if (voxel.odf_deconvolusion)
-            deconvolution.run(voxel,data);
-        else
-            decomposition.run(voxel,data);
-        std::vector<float> new_odf(data.odf.size());
-        std::vector<float> w(voxel.ti.half_vertices_count*voxel.ti.half_vertices_count);
-        for(unsigned int i = 0,w_pos = 0;i < data.odf.size();++i,++w_pos)
-            {
-                image::vector<3,double> new_dir;
-                image::matrix::vector_product(jacobian,voxel.ti.vertices[i].begin(),new_dir.begin(),image::dim<3,3>());
-                new_dir.normalize();
-                if(data.odf[i] >= data.min_odf)
-                for(unsigned int row = 0,w_row = w_pos;
-                    row < voxel.ti.half_vertices_count;
-                    ++row,w_row += voxel.ti.half_vertices_count)
-                {
-                    float angle = std::acos(std::min<float>(1.0,std::abs(voxel.ti.vertices[row]*new_dir)));
-                    w[w_row] = std::exp(-angle*angle/angle_variance);
-                }
-            }
-        for(unsigned int i = 0,w_pos = 0;i < data.odf.size();++i,w_pos += voxel.ti.half_vertices_count)
         {
-            new_odf[i] = image::vec::dot(data.odf.begin(),data.odf.end(),w.begin()+w_pos)/
-                    std::accumulate(w.begin()+w_pos,w.begin()+w_pos+voxel.ti.half_vertices_count,0.0f);
+            deconvolution.run(voxel,data);
+            std::vector<float> new_odf(data.odf.size());
+            std::vector<float> w(voxel.ti.half_vertices_count*voxel.ti.half_vertices_count);
+            for(unsigned int i = 0,w_pos = 0;i < data.odf.size();++i,++w_pos)
+                {
+                    image::vector<3,double> new_dir;
+                    image::matrix::vector_product(jacobian,voxel.ti.vertices[i].begin(),new_dir.begin(),image::dim<3,3>());
+                    new_dir.normalize();
+                    if(data.odf[i] >= data.min_odf)
+                    for(unsigned int row = 0,w_row = w_pos;
+                        row < voxel.ti.half_vertices_count;
+                        ++row,w_row += voxel.ti.half_vertices_count)
+                    {
+                        float angle = std::acos(std::min<float>(1.0,std::abs(voxel.ti.vertices[row]*new_dir)));
+                        w[w_row] = std::exp(-angle*angle/angle_variance);
+                    }
+                }
+            for(unsigned int i = 0,w_pos = 0;i < data.odf.size();++i,w_pos += voxel.ti.half_vertices_count)
+            {
+                new_odf[i] = image::vec::dot(data.odf.begin(),data.odf.end(),w.begin()+w_pos)/
+                        std::accumulate(w.begin()+w_pos,w.begin()+w_pos+voxel.ti.half_vertices_count,0.0f);
+            }
+            data.odf.swap(new_odf);
         }
-        data.odf.swap(new_odf);
+        else
+        {
+            decomposition.run(voxel,data);
+            std::vector<float> new_odf(data.odf.size());
+            std::fill(new_odf.begin(),new_odf.end(),data.min_odf);
+            for(unsigned int i = 0;i < data.odf.size();++i)
+                if(data.odf[i] > data.min_odf)
+                {
+                    image::vector<3,double> new_dir;
+                    image::matrix::vector_product(jacobian,voxel.ti.vertices[i].begin(),new_dir.begin(),image::dim<3,3>());
+                    new_odf[voxel.ti.discretize(new_dir[0],new_dir[1],new_dir[2])] = data.odf[i];
+                }
+            data.odf.swap(new_odf);
+        }
     }
 
     virtual void run(Voxel& voxel, VoxelData& data)
