@@ -332,15 +332,18 @@ public:
         }
         else
         {
+            float invJ[9];
+            image::matrix::inverse(jacobian,invJ,image::dim<3,3>());
             decomposition.run(voxel,data);
             std::vector<float> new_odf(data.odf.size());
             std::fill(new_odf.begin(),new_odf.end(),data.min_odf);
             for(unsigned int i = 0;i < data.odf.size();++i)
                 if(data.odf[i] > data.min_odf)
                 {
-                    image::vector<3,double> new_dir;
-                    image::matrix::vector_product(jacobian,voxel.ti.vertices[i].begin(),new_dir.begin(),image::dim<3,3>());
-                    new_odf[voxel.ti.discretize(new_dir[0],new_dir[1],new_dir[2])] = data.odf[i];
+                    image::vector<3,float> new_dir;
+                    image::matrix::vector_product(invJ,voxel.ti.vertices[i].begin(),new_dir.begin(),image::dim<3,3>());
+                    new_dir.normalize();
+                    new_odf[voxel.ti.discretize(new_dir)] = data.odf[i];
                 }
             data.odf.swap(new_odf);
         }
