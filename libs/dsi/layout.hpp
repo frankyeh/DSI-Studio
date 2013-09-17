@@ -92,7 +92,7 @@ public:
         findex[1].resize(total_size);
 
 
-        unsigned int main_fiber_index = ti.discretize(1.0,0.0,0.0);
+        unsigned int main_fiber_index = ti.discretize(image::vector<3>(1.0,0.0,0.0));
 
         std::fill(models.begin(),models.end(),(MixGaussianModel*)0);
         begin_prog("creating layout");
@@ -129,7 +129,7 @@ public:
                                     fa[1][index] = fiber_fraction*(1.0-xf);
                                     gfa[index] = fa_value;
                                     findex[0][index] = main_fiber_index;
-                                    findex[1][index] = ti.discretize(std::cos(angle),std::sin(angle),0.0);
+                                    findex[1][index] = ti.discretize(image::vector<3>(std::cos(angle),std::sin(angle),0.0));
                                 }
                             }
                         }
@@ -163,7 +163,7 @@ public:
                                 fa[1][index] = fiber_fraction/2.0;
                                 gfa[index] = fa_value;
                                 findex[0][index] = main_fiber_index;
-                                findex[1][index] = ti.discretize(std::cos(inner_angle),std::sin(inner_angle),0.0);
+                                findex[1][index] = ti.discretize(image::vector<3>(std::cos(inner_angle),std::sin(inner_angle),0.0));
                             }
                         }
                     }

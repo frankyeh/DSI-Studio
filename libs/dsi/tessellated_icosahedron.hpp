@@ -523,14 +523,13 @@ public:
             std::copy(faces[i].begin(),faces[i].end(),short_data.begin()+index);
     }
 
-    short discretize(float vx,float vy,float vz)
+    unsigned short discretize(const image::vector<3,float>& v)
     {
         short dir_index = 0;
         float max_value = 0.0;
-        image::vector<3,float> v(vx,vy,vz);
-        for (unsigned int index = 0; index < vertices_count; ++index)
+        for (unsigned int index = 0; index < half_vertices_count; ++index)
         {
-            float value = vertices[index]*v;
+            float value = std::abs(vertices[index]*v);
             if (value > max_value)
             {
                 max_value = value;
