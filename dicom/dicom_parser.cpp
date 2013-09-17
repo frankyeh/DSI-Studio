@@ -142,25 +142,11 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
     {
         float vs[4];
         analyze_header.get_voxel_size(vs);
-
-        std::vector<image::basic_image<float,3> > data(analyze_header.dim(4));
-        float max_value = 0.0;
-        for(unsigned int index = 0;check_prog(index,analyze_header.dim(4));++index)
-        {
-            analyze_header >> data[index];
-            max_value = std::max<float>(max_value,*std::max_element(data[index].begin(),data[index].end()));
-            image::lower_threshold(data[index],0.0);
-        }
-
-        for(unsigned int index = 0;index < analyze_header.dim(4);++index)
-            image::multiply_constant(data[index],65535.0/max_value);
-
-
         for(unsigned int index = 0;check_prog(index,analyze_header.dim(4));++index)
         {
             std::auto_ptr<DwiHeader> new_file(new DwiHeader);
-            new_file->image = data[index];
-
+            analyze_header >> new_file->image;
+            image::lower_threshold(new_file->image,0);
             if(analyze_header.nif_header.srow_x[0] < 0)
             {
                 if(analyze_header.nif_header.srow_y[1] > 0)

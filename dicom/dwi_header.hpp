@@ -12,7 +12,7 @@ class DwiHeader : public boost::noncopyable
 	typedef std::vector<short>::iterator image_iterator;
 public:
         std::string file_name;
-        image::basic_image<unsigned short,3> image;
+        image::basic_image<short,3> image;
 	float te;
 public:// for HCP dataset
     image::basic_image<float,4> grad_dev;
@@ -25,10 +25,10 @@ public:
 	DwiHeader(void):bvalue(0.0),te(0.0){}
         bool open(const char* filename);
 public:
-        const unsigned short* begin(void) const{return &*image.begin();}
-        unsigned short* begin(void) {return &*image.begin();}
-        unsigned short operator[](unsigned int index) const{return image[index];}
-        unsigned short& operator[](unsigned int index) {return image[index];}
+        const short* begin(void) const{return &*image.begin();}
+        short* begin(void) {return &*image.begin();}
+        short operator[](unsigned int index) const{return image[index];}
+        short& operator[](unsigned int index) {return image[index];}
         unsigned int size(void) const{return image.size();}
 	void swap(DwiHeader& rhs)
 	{
