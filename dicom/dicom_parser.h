@@ -37,6 +37,8 @@ private slots:
     void on_toolButton_3_clicked();
     void on_toolButton_clicked();
     void on_buttonBox_accepted();
+    void on_load_bval_clicked();
+    void on_load_bvec_clicked();
 };
 
 #endif // DICOM_PARSER_H

@@ -38,7 +38,7 @@
        <item>
         <widget class="QToolButton" name="loadImage">
          <property name="text">
-          <string>Load Images...</string>
+          <string>Add Images...</string>
          </property>
         </widget>
        </item>
@@ -46,6 +46,20 @@
         <widget class="QToolButton" name="toolButton_2">
          <property name="text">
           <string>Load b-table...</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="load_bval">
+         <property name="text">
+          <string>Load bval...</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="load_bvec">
+         <property name="text">
+          <string>Load bvec...</string>
          </property>
         </widget>
        </item>

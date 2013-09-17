@@ -142,10 +142,25 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
     {
         float vs[4];
         analyze_header.get_voxel_size(vs);
+
+        std::vector<image::basic_image<float,3> > data(analyze_header.dim(4));
+        float max_value = 0.0;
+        for(unsigned int index = 0;check_prog(index,analyze_header.dim(4));++index)
+        {
+            analyze_header >> data[index];
+            max_value = std::max<float>(max_value,*std::max_element(data[index].begin(),data[index].end()));
+            image::lower_threshold(data[index],0.0);
+        }
+
+        for(unsigned int index = 0;index < analyze_header.dim(4);++index)
+            image::multiply_constant(data[index],65535.0/max_value);
+
+
         for(unsigned int index = 0;check_prog(index,analyze_header.dim(4));++index)
         {
             std::auto_ptr<DwiHeader> new_file(new DwiHeader);
-            analyze_header >> new_file->image;
+            new_file->image = data[index];
+
             if(analyze_header.nif_header.srow_x[0] < 0)
             {
                 if(analyze_header.nif_header.srow_y[1] > 0)
@@ -548,35 +563,68 @@ void dicom_parser::on_toolButton_2_clicked()
                   std::istream_iterator<double>(),
                   std::back_inserter(b_table));
     }
-    /*
-    if(b_table.size() != ui->tableWidget->rowCount()*4)
-    {
-        // GE condition
-        if((ui->tableWidget->rowCount()*4) % b_table.size() == 0)
-        {
-            int slice_num = ui->tableWidget->rowCount()*4/b_table.size();
-            for (unsigned int index = 0,b_index = 0;index < ui->tableWidget->rowCount();index+=slice_num,b_index+=4)
-            {
-                for(unsigned int slice_index = 0;slice_index < slice_num;++slice_index)
-                for(unsigned int j = 0;j < 4;++j)
-                    ui->tableWidget->item(index+slice_index,j+1)->
-                            setText(QString::number(b_table[b_index+j]));
-            }
-        }
-        else
-        {
-            QMessageBox::information(this,"Error","B-table number does not match the number of the images",0);
-            return;
-        }
-    }
-    else
-    */
     for (unsigned int index = 0,b_index = 0;index < ui->tableWidget->rowCount();++index)
     {
         for(unsigned int j = 0;j < 4 && b_index < b_table.size();++j,++b_index)
             ui->tableWidget->item(index,j+1)->setText(QString::number(b_table[b_index]));
     }
 }
+
+
+void dicom_parser::on_load_bval_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(
+            this,
+            "Open bval",
+            QFileInfo(ui->SrcName->text()).absolutePath(),
+            "b-value file (bval *.txt);;All files (*.*)" );
+    if(filename.isEmpty())
+        return;
+    std::ifstream in(filename.toLocal8Bit().begin());
+    if(!in)
+        return;
+    std::vector<float> bval;
+    std::copy(std::istream_iterator<double>(in),
+              std::istream_iterator<double>(),
+              std::back_inserter(bval));
+    for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
+        ui->tableWidget->item(index,1)->setText(QString::number(bval[index]));
+}
+
+
+
+void dicom_parser::on_load_bvec_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(
+            this,
+            "Open bvec",
+            QFileInfo(ui->SrcName->text()).absolutePath(),
+            "b-vector file (bvec *.txt);;All files (*.*)" );
+    if(filename.isEmpty())
+        return;
+    std::ifstream in(filename.toLocal8Bit().begin());
+    if(!in)
+        return;
+    std::string line;
+    std::vector<double> b_table;
+    unsigned int total_line = 0;
+    while(std::getline(in,line))
+    {
+        std::istringstream read_line(line);
+        std::copy(std::istream_iterator<double>(read_line),
+                  std::istream_iterator<double>(),
+                  std::back_inserter(b_table));
+        ++total_line;
+    }
+    if(total_line == 3)
+        image::matrix::transpose(b_table.begin(),image::dyndim(3,b_table.size()/3));
+    for (unsigned int index = 0,b_index = 0;index < ui->tableWidget->rowCount();++index)
+    {
+        for(unsigned int j = 0;j < 3 && b_index < b_table.size();++j,++b_index)
+            ui->tableWidget->item(index,j+2)->setText(QString::number(b_table[b_index]));
+    }
+}
+
 
 void dicom_parser::on_toolButton_8_clicked()
 {
