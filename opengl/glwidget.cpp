@@ -610,8 +610,9 @@ void GLWidget::paintGL()
             }
 
             glBindTexture(GL_TEXTURE_2D, slice_texture[dim]);
-            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+            int texparam[] = {GL_NEAREST,
+                               GL_LINEAR};
+            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,texparam[get_param("slice_mag_filter")]);
 
             glBegin(GL_QUADS);
             glColor4f(1.0,1.0,1.0,std::min(alpha+0.2,1.0));
