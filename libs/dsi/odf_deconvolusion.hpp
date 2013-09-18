@@ -3,45 +3,6 @@
 #include "odf_decomposition.hpp"
 #include "odf_process.hpp"
 
-
-/*
-
-struct EstimateResponseFunction : public BaseProcess
-{
-    SearchLocalMaximum lm;
-	ConvolutedOdfComponent decomposition;
-	double max_value;
-public:
-    virtual void init(Voxel& voxel)
-    {
-        lm.init();
-		decomposition.icosa_components.resize(ti_vertices_count() >> 1);
-                for(unsigned int index = 0;index < ti_vertices_count() >> 1;++index)
-			decomposition.icosa_components[index].initialize(index);
-
-		voxel.response_function.resize(FiberDistribution::discrete_count+2);
-		std::fill(voxel.response_function.begin(),voxel.response_function.end(),0);
-		max_value = 0;
-
-    }
-    virtual void run(Voxel& voxel, VoxelData& data)
-    {
-        lm.search(data.odf);
-        if(lm.max_table.size() > 1)
-			return;
-		std::vector<float> function;
-		double min_value = RemoveIsotropicPart()(data.odf);
-		double cur_max_value = *std::max_element(data.odf.begin(),data.odf.end());
-		if(cur_max_value < max_value)
-			return;
-		max_value = cur_max_value;
-		decomposition.get_response_function(data.odf,function);
-		std::for_each(function.begin(),function.end(),boost::lambda::_1 += min_value);
-		voxel.response_function = function;
-    }
-};
-*/
-
 struct EstimateResponseFunction : public BaseProcess
 {
     float max_value;
@@ -229,7 +190,7 @@ public:
         
 		deconvolution(data.odf);
 
-		remove_isotropic(data.odf);
+        remove_isotropic(data.odf);
     }
 
     virtual void end(Voxel& voxel,MatFile& mat_writer)
