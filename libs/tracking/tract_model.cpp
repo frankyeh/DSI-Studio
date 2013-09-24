@@ -188,6 +188,50 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                     buf += loaded_tract_data[index].size();
                 }
             }
+    else
+                if (file_name.find(".tck") != std::string::npos)
+                {
+                    unsigned int offset = 0;
+                    {
+                        std::ifstream in(file_name.c_str());
+                        if(!in)
+                            return false;
+                        std::string line;
+                        while(std::getline(in,line))
+                        {
+                            if(line.size() > 4 &&
+                                    line.substr(0,7) == std::string("file: ."))
+                            {
+                                std::istringstream str(line);
+                                std::string s1,s2;
+                                str >> s1 >> s2 >> offset;
+                                break;
+                            }
+                        }
+                        if(!in)
+                            return false;
+                    }
+                    std::ifstream in(file_name.c_str(),std::ios::binary);
+                    if(!in)
+                        return false;
+                    in.seekg(0,std::ios::end);
+                    unsigned int total_size = in.tellg();
+                    in.seekg(offset,std::ios::beg);
+                    std::vector<unsigned int> buf((total_size-offset)/4);
+                    in.read((char*)&*buf.begin(),total_size-offset-16);// 16 skip the final inf
+                    for(unsigned int index = 0;index < buf.size();)
+                    {
+                        unsigned int end = std::find(buf.begin()+index,buf.end(),2143289344)-buf.begin(); // NaN
+                        loaded_tract_data.push_back(std::vector<float>());
+                        loaded_tract_data.back().resize(end-index);
+                        std::copy((const float*)&*buf.begin() + index,
+                                  (const float*)&*buf.begin() + end,
+                                  loaded_tract_data.back().begin());
+                        image::divide_constant(loaded_tract_data.back().begin(),loaded_tract_data.back().end(),handle->fib_data.vs[0]);
+                        index = end+3;
+                    }
+
+                }
 
     if (loaded_tract_data.empty())
         return false;

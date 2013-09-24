@@ -171,7 +171,7 @@ void TractTableWidget::load_tracts(void)
             this,
             "Load tracts as",
             cur_tracking_window.get_path("track"),
-            "Tract files (*.txt *.trk *.mat);;All files (*.*)");
+            "Tract files (*.txt *.trk *.mat *.tck);;All files (*.*)");
     if(!filenames.size())
         return;
     cur_tracking_window.add_path("track",filenames[0]);
