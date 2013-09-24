@@ -9,12 +9,122 @@ public:
     virtual void init(Voxel&) {}
     virtual void run(Voxel& voxel, VoxelData& voxel_data)
     {
-        for (unsigned int index = 0; index < voxel.q_count; ++index)
+        for (unsigned int index = 0; index < voxel.image_model->dwi_data.size(); ++index)
             voxel_data.space[index] = voxel.image_model->dwi_data[index][voxel_data.voxel_index];
     }
     virtual void end(Voxel&,MatFile& mat_writer) {}
 };
 
+class BalanceScheme : public BaseProcess{
+    std::vector<float> trans;
+    unsigned int old_q_count;
+    unsigned int new_q_count;
+public:
+    virtual void init(Voxel& voxel)
+    {
+        if(!voxel.scheme_balance)
+            return;
+        std::vector<unsigned int> shell;
+        shell.push_back(0);
+        unsigned int b_count = voxel.q_count;
+        for(unsigned int index = 1;index < b_count;++index)
+        {
+            if(std::abs(voxel.bvalues[index]-voxel.bvalues[index-1]) > 100)
+                shell.push_back(index);
+        }
+        if(shell.size() > 4) // more than 3 shell
+        {
+            voxel.scheme_balance = false;
+            return;
+        }
+
+        unsigned int total_signals = 0;
+
+        tessellated_icosahedron new_dir;
+        new_dir.init(6);
+
+        std::vector<image::vector<3,float> > new_bvectors;
+        std::vector<float> new_bvalues;
+
+        for(unsigned int shell_index = 0;shell_index < shell.size();++shell_index)
+        {
+            unsigned int from = shell[shell_index];
+            unsigned int to = (shell_index + 1 == shell.size() ? b_count:shell[shell_index+1]);
+            unsigned int num = to-from;
+            // if there is b0, average them
+            if(shell_index == 0 && voxel.bvalues.front() < 100)
+            {
+                trans.resize(num*b_count);
+                new_bvectors.resize(num);
+                new_bvalues.resize(num);
+                float weighting = 1.0/(float)num;
+                for(unsigned int index = 0;index < num;++index)
+                    trans[index+index*b_count] = weighting;
+                total_signals += num;
+
+                continue;
+            }
+
+            //calculate averaged angle distance
+            double averaged_angle = 0.0;
+            for(unsigned int i = from;i < to;++i)
+            {
+                double max_cos = 0.0;
+                for(unsigned int j = from;j < to;++j)
+                {
+                    if(i == j)
+                        continue;
+                    double cur_cos = std::fabs(std::cos(voxel.bvectors[i]*voxel.bvectors[j]));
+                    if(cur_cos > 0.998)
+                        continue;
+                    max_cos = std::max<double>(max_cos,cur_cos);
+                }
+                averaged_angle += std::acos(max_cos);
+            }
+            averaged_angle /= num;
+
+            //calculate averaged b_value
+            double avg_b = image::mean(voxel.bvalues.begin()+from,voxel.bvalues.begin()+to);
+            unsigned int trans_old_size = trans.size();
+            trans.resize(trans.size() + new_dir.half_vertices_count*b_count);
+            for(unsigned int i = 0; i < new_dir.half_vertices_count;++i)
+            {
+                std::vector<double> t(b_count);
+                for(unsigned int j = from;j < to;++j)
+                {
+                    double angle = std::acos(std::min<double>(1.0,std::fabs(new_dir.vertices[i]*voxel.bvectors[j])));
+                    angle/=averaged_angle;
+                    t[j] = std::exp(-2.0*angle*angle); // if the angle == 1, then weighting = 0.135
+                }
+                double w = avg_b/1000.0;
+                w /= std::accumulate(t.begin(),t.end(),0.0);
+                std::for_each(t.begin(),t.end(),boost::lambda::_1 *= w);
+                std::copy(t.begin(),t.end(),trans.begin() + trans_old_size + i * b_count);
+                new_bvalues.push_back(avg_b);
+                new_bvectors.push_back(new_dir.vertices[i]);
+            }
+            total_signals += new_dir.half_vertices_count;
+        }
+
+        old_q_count = voxel.q_count;
+        voxel.q_count = new_q_count = total_signals;
+        voxel.bvalues.swap(new_bvalues);
+        voxel.bvectors.swap(new_bvectors);
+    }
+    virtual void run(Voxel& voxel, VoxelData& voxel_data)
+    {
+        if(!voxel.scheme_balance)
+            return;
+        std::vector<float> new_data(new_q_count);
+        image::matrix::vector_product(trans.begin(),voxel_data.space.begin(),new_data.begin(),image::dyndim(new_q_count,old_q_count));
+        voxel_data.space.swap(new_data);
+    }
+    virtual void end(Voxel&,MatFile& mat_writer)
+    {
+    }
+
+
+};
 
 struct GeneralizedFA
 {

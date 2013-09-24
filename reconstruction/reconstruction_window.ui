@@ -51,46 +51,130 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>337</width>
-         <height>132</height>
+         <width>626</width>
+         <height>414</height>
         </rect>
        </property>
        <attribute name="label">
         <string>Source Images</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_4">
+       <layout class="QHBoxLayout" name="horizontalLayout_21">
         <item>
          <widget class="QSplitter" name="splitter">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
-          <widget class="QTableWidget" name="b_table">
-           <property name="selectionMode">
-            <enum>QAbstractItemView::SingleSelection</enum>
-           </property>
-           <property name="selectionBehavior">
-            <enum>QAbstractItemView::SelectRows</enum>
-           </property>
-           <column>
-            <property name="text">
-             <string>b value</string>
+          <widget class="QWidget" name="widget_2" native="true">
+           <layout class="QVBoxLayout" name="verticalLayout_4">
+            <property name="spacing">
+             <number>0</number>
             </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>bx</string>
+            <property name="margin">
+             <number>0</number>
             </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>by</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>bz</string>
-            </property>
-           </column>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_7">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QPushButton" name="save4dnifti">
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>22</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Save nifti...</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="save_b_table">
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>22</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Save b table...</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="save_bvals">
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>22</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Save bvals...</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="save_bvec">
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>22</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Save bvecs...</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_5">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <widget class="QTableWidget" name="b_table">
+              <property name="selectionMode">
+               <enum>QAbstractItemView::SingleSelection</enum>
+              </property>
+              <property name="selectionBehavior">
+               <enum>QAbstractItemView::SelectRows</enum>
+              </property>
+              <column>
+               <property name="text">
+                <string>b value</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>bx</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>by</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>bz</string>
+               </property>
+              </column>
+             </widget>
+            </item>
+           </layout>
           </widget>
           <widget class="QWidget" name="source_widget" native="true">
            <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -105,19 +189,6 @@
               <property name="spacing">
                <number>0</number>
               </property>
-              <item>
-               <widget class="QPushButton" name="save4dnifti">
-                <property name="maximumSize">
-                 <size>
-                  <width>16777215</width>
-                  <height>22</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string>Save 4D nifti...</string>
-                </property>
-               </widget>
-              </item>
               <item>
                <widget class="QToolButton" name="zoom_in">
                 <property name="minimumSize">
@@ -1140,6 +1211,13 @@
                  </widget>
                 </item>
                </layout>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="balance_scheme">
+                <property name="text">
+                 <string>Balance scheme</string>
+                </property>
+               </widget>
               </item>
               <item>
                <widget class="QCheckBox" name="HalfSphere">

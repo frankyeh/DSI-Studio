@@ -117,6 +117,8 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->RecordODF->setChecked(settings.value("rec_record_odf",0).toInt());
     ui->output_jacobian->setChecked(settings.value("output_jacobian",0).toInt());
     ui->output_mapping->setChecked(settings.value("output_mapping",0).toInt());
+    ui->balance_scheme->setChecked(settings.value("balance_scheme",0).toInt());
+
 
 
 
@@ -230,6 +232,9 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     settings.setValue("rec_record_odf",ui->RecordODF->isChecked() ? 1 : 0);
     settings.setValue("output_jacobian",ui->output_jacobian->isChecked() ? 1 : 0);
     settings.setValue("output_mapping",ui->output_mapping->isChecked() ? 1 : 0);
+    settings.setValue("balance_scheme",ui->balance_scheme->isChecked() ? 1 : 0);
+
+
 
     begin_prog("reconstructing");
     int odf_order[8] = {4, 5, 6, 8, 10, 12, 16, 20};
@@ -244,6 +249,8 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.max_fiber_number = ui->NumOfFibers->value();
     handle->voxel.r2_weighted = ui->ODFDef->currentIndex();
     handle->voxel.reg_method = ui->reg_method->currentIndex();
+
+    handle->voxel.scheme_balance = ui->balance_scheme->isChecked();
 
     handle->voxel.need_odf = ui->RecordODF->isChecked() ? 1 : 0;
     handle->voxel.output_jacobian = ui->output_jacobian->isChecked() ? 1 : 0;
@@ -586,7 +593,63 @@ void reconstruction_window::on_save4dnifti_clicked()
                       handle->dwi_data[index]+dim.size(),
                       buffer.begin() + index*dim.size());
         }
+        image::flip_xy(buffer);
         header << buffer;
         header.save_to_file(filename.toLocal8Bit().begin());
+    }
+}
+
+void reconstruction_window::on_save_b_table_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                                this,
+                                "Save b table as...",
+                            QFileInfo(filenames[0]).absolutePath() + "/b_table.txt",
+                                "Text files (*.txt)" );
+    if ( filename.isEmpty() )
+        return;
+    std::ofstream out(filename.toLocal8Bit().begin());
+    for(unsigned int index = 0;index < handle->voxel.bvalues.size();++index)
+    {
+        out << handle->voxel.bvalues[index] << " "
+            << handle->voxel.bvectors[index][0] << " "
+            << handle->voxel.bvectors[index][1] << " "
+            << handle->voxel.bvectors[index][2] << std::endl;
+    }
+}
+
+void reconstruction_window::on_save_bvals_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                                this,
+                                "Save b table as...",
+                                QFileInfo(filenames[0]).absolutePath() + "/bvals",
+                                "Text files (*.txt  *.*)" );
+    if ( filename.isEmpty() )
+        return;
+    std::ofstream out(filename.toLocal8Bit().begin());
+    for(unsigned int index = 0;index < handle->voxel.bvalues.size();++index)
+    {
+        if(index)
+            out << " ";
+        out << handle->voxel.bvalues[index];
+    }
+}
+
+void reconstruction_window::on_save_bvec_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                                this,
+                                "Save b table as...",
+                                QFileInfo(filenames[0]).absolutePath() + "/bvecs",
+                                "Text files (*.txt *.*)" );
+    if ( filename.isEmpty() )
+        return;
+    std::ofstream out(filename.toLocal8Bit().begin());
+    for(unsigned int index = 0;index < handle->voxel.bvalues.size();++index)
+    {
+        out << handle->voxel.bvectors[index][0] << " "
+            << handle->voxel.bvectors[index][1] << " "
+            << handle->voxel.bvectors[index][2] << std::endl;
     }
 }

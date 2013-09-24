@@ -71,6 +71,9 @@ private slots:
     void on_RFSelection_currentIndexChanged(int index);
     void on_AdvancedOptions_clicked();
     void on_save4dnifti_clicked();
+    void on_save_b_table_clicked();
+    void on_save_bvals_clicked();
+    void on_save_bvec_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

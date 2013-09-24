@@ -74,6 +74,7 @@ typedef odf_reco_type<boost::mpl::vector<
 
 typedef odf_reco_type<boost::mpl::vector<
     CorrectB0,
+    BalanceScheme,
     QSpace2Odf
 > >::type gqi_process;
 
@@ -104,6 +105,7 @@ typedef estimation_type<boost::mpl::vector<
 typedef boost::mpl::vector<
     ReadDWIData,
     CorrectB0,
+    BalanceScheme,
     QSpace2Odf,
     DetermineFiberDirections,
     RecordQA,
@@ -112,6 +114,8 @@ typedef boost::mpl::vector<
 > gqi_estimate_response_function;
 
 typedef boost::mpl::vector<
+    CorrectB0,
+    BalanceScheme,
     GQI_MNI,
     DetermineFiberDirections,
     SaveFA,
@@ -142,6 +146,8 @@ extern "C"
             out << ".f" << image_model->voxel.max_fiber_number;
             if (image_model->voxel.need_odf)
                 out << "rec";
+            if (image_model->voxel.scheme_balance)
+                out << ".bal";
             if (image_model->voxel.half_sphere)
                 out << ".hs";
             if (image_model->voxel.odf_deconvolusion)

@@ -65,6 +65,7 @@ public:// parameters;
     image::vector<3,short> odf_xyz;
     bool half_sphere;
     bool r2_weighted;// used in GQI only
+    bool scheme_balance;
     unsigned int max_fiber_number;
     std::vector<std::string> file_list;
     std::vector<image::const_pointer_image<float,3> > grad_dev;

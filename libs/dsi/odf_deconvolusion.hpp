@@ -3,6 +3,8 @@
 #include "odf_decomposition.hpp"
 #include "odf_process.hpp"
 
+
+
 struct EstimateResponseFunction : public BaseProcess
 {
     float max_value;
@@ -159,7 +161,7 @@ public:
         std::for_each(voxel.response_function.begin(),voxel.response_function.end(),
                       boost::lambda::_1 /= (std::accumulate(voxel.response_function.begin(),voxel.response_function.end(),0.0)
                                             /((double)voxel.response_function.size())));
-		// scale the free water diffusion to 1
+        // scale the free water diffusion to 1
 		std::for_each(voxel.free_water_diffusion.begin(),voxel.free_water_diffusion.end(),(boost::lambda::_1 /= voxel.reponse_function_scaling));
         
 
@@ -187,7 +189,7 @@ public:
         if (!voxel.odf_deconvolusion)
             return;
         std::for_each(data.odf.begin(),data.odf.end(),(boost::lambda::_1 /= voxel.reponse_function_scaling));
-        
+
 		deconvolution(data.odf);
 
         remove_isotropic(data.odf);
