@@ -114,8 +114,6 @@ typedef boost::mpl::vector<
 > gqi_estimate_response_function;
 
 typedef boost::mpl::vector<
-    CorrectB0,
-    BalanceScheme,
     GQI_MNI,
     DetermineFiberDirections,
     SaveFA,
