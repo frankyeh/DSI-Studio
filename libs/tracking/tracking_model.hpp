@@ -42,6 +42,7 @@ void gradient(input_iterator from,input_iterator to,output_iterator out)
 class ODFModel : public boost::noncopyable
 {
 public:
+    ::fib_data connectometry;
     FibData fib_data;
 public:
 

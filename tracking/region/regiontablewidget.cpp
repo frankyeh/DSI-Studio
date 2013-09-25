@@ -469,8 +469,7 @@ void RegionTableWidget::save_region(void)
     cur_tracking_window.add_path("region",filename);
     std::vector<float> no_trans;
     regions[currentRow()].SaveToFile(filename.toLocal8Bit().begin(),
-                                     !cur_tracking_window.mi3.get()/*Is QSDR?*/ ?
-                                     cur_tracking_window.handle->fib_data.trans_to_mni: no_trans);
+                                     cur_tracking_window.is_qsdr ? cur_tracking_window.handle->fib_data.trans_to_mni: no_trans);
     item(currentRow(),0)->setText(QFileInfo(filename).baseName());
 }
 void RegionTableWidget::save_region_info(void)

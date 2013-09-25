@@ -339,7 +339,7 @@ void slice_view_scene::save_slice_as()
     {
         gz_nifti file;
         file.set_voxel_size(cur_tracking_window.slice.voxel_size.begin());
-        if(!cur_tracking_window.mi3.get() && !cur_tracking_window.handle->fib_data.trans_to_mni.empty()) //QSDR condition
+        if(cur_tracking_window.is_qsdr) //QSDR condition
         {
             file.set_image_transformation(cur_tracking_window.handle->fib_data.trans_to_mni.begin());
             file << cur_tracking_window.handle->fib_data.view_item[index].image_data;

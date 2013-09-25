@@ -897,6 +897,7 @@
     <addaction name="separator"/>
     <addaction name="actionTract_Analysis_Report"/>
     <addaction name="actionConnectivity_matrix"/>
+    <addaction name="actionConnectometry"/>
     <addaction name="actionStatistics"/>
    </widget>
    <widget class="QMenu" name="menu_Edit">
@@ -2882,6 +2883,11 @@
   <action name="actionCopyTrack">
    <property name="text">
     <string>Copy</string>
+   </property>
+  </action>
+  <action name="actionConnectometry">
+   <property name="text">
+    <string>Connectometry...</string>
    </property>
   </action>
  </widget>

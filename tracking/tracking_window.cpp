@@ -103,8 +103,10 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
            ui->overlay->hide();
     }
 
+    is_qsdr = !handle->fib_data.trans_to_mni.empty();
+
     // setup atlas
-    if(!fa_template_imp.I.empty() && fib_data.vs[0] > 0.5 && handle->fib_data.trans_to_mni.empty())
+    if(!fa_template_imp.I.empty() && fib_data.vs[0] > 0.5 && !is_qsdr)
     {
         mi3_arg.scaling[0] = slice.voxel_size[0] / std::fabs(fa_template_imp.tran[0]);
         mi3_arg.scaling[1] = slice.voxel_size[1] / std::fabs(fa_template_imp.tran[5]);
@@ -116,9 +118,11 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         mi3_arg.translocation[1] = mG[1]-mF[1]*mi3_arg.scaling[1];
         mi3_arg.translocation[2] = mG[2]-mF[2]*mi3_arg.scaling[2];
         mi3.reset(new manual_alignment(this,slice.source_images,fa_template_imp.I,mi3_arg));
+        is_qsdr = false;
     }
     else
         ui->actionManual_Registration->setEnabled(false);
+    ui->actionConnectometry->setEnabled(handle->fib_data.fib.has_odfs() && is_qsdr);
     for(int index = 0;index < atlas_list.size();++index)
         ui->atlasListBox->addItem(atlas_list[index].name.c_str());
 
@@ -866,12 +870,12 @@ void tracking_window::on_actionRestore_window_layout_triggered()
 void tracking_window::on_tracking_index_currentIndexChanged(int index)
 {
     handle->fib_data.fib.set_tracking_index(index);
-    if(ui->tracking_index->currentText().contains("mapping")) // connectometry
+    if(ui->tracking_index->currentText().contains("greater") ||
+       ui->tracking_index->currentText().contains("lesser")) // connectometry
     {
-        ui->fa_threshold->setRange(0.0,1.0);
-        ui->fa_threshold->setValue(0.0);// to update the scene
-        ui->fa_threshold->setValue(0.5);
-        ui->fa_threshold->setSingleStep(0.01);
+        ui->fa_threshold->setRange(0.5,1.0);
+        ui->fa_threshold->setValue(0.75);
+        ui->fa_threshold->setSingleStep(0.05);
     }
     else
     {
@@ -1149,4 +1153,34 @@ void tracking_window::on_RAS_clicked()
         QMessageBox::information(this,"DSI Studio","Switch to neurology orientation. The RIGHT side of the image is the RIGHT side of the patient",0);
     else
         QMessageBox::information(this,"DSI Studio","Switch to radiology orientation. The RIGHT side of the image is the LEFT side of the patient",0);
+}
+
+void tracking_window::on_actionConnectometry_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(
+                           this,
+                           "Open Database files",
+                           absolute_path,
+                           "Database files (*.db.fib.gz);;All files (*.*)");
+    if (filename.isEmpty())
+        return;
+
+    std::auto_ptr<vbc_database> database(new vbc_database);
+    database.reset(new vbc_database);
+    if(!database->load_database(filename.toLocal8Bit().begin()))
+    {
+        QMessageBox::information(this,"Error","Invalid database format",0);
+        return;
+    }
+    if(!database->single_subject_analysis(this->windowTitle().toLocal8Bit().begin(),0.95,database->handle->connectometry))
+    {
+        QMessageBox::information(this,"error",database->error_msg.c_str(),0);
+        return;
+    }
+    database->handle->connectometry.add_greater_lesser_mapping_for_tracking(database->handle.get());
+    tracking_window* new_mdi = new tracking_window((QWidget*)(this->parent()),database->handle.release());
+    new_mdi->setAttribute(Qt::WA_DeleteOnClose);
+    new_mdi->absolute_path = absolute_path;
+    new_mdi->setWindowTitle(this->windowTitle() + " : connectometry mapping");
+    new_mdi->showNormal();
 }

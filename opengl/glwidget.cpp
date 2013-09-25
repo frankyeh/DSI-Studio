@@ -1629,8 +1629,7 @@ bool GLWidget::addSlices(QStringList filenames)
     gz_nifti nifti;
     std::vector<float> convert;
     // QSDR loaded, use MNI transformation instead
-    if(!cur_tracking_window.handle->fib_data.trans_to_mni.empty() && cur_tracking_window.mi3.get() == 0 &&
-            files.size() == 1 && nifti.load_from_file(files[0]))
+    if(cur_tracking_window.is_qsdr && files.size() == 1 && nifti.load_from_file(files[0]))
     {
         other_slices.push_back(new CustomSliceModel(nifti,cur_tracking_window.slice.center_point));
         std::vector<float> t(nifti.get_transformation(),

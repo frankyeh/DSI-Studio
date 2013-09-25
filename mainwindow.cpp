@@ -597,7 +597,7 @@ void MainWindow::on_connectometry_clicked()
     database.reset(new vbc_database);
     if(!database->load_database(filename.toLocal8Bit().begin()))
     {
-        QMessageBox::information(this,"Error","Invalid databse format",0);
+        QMessageBox::information(this,"Error","Invalid database format",0);
         return;
     }
     vbc_dialog* vbc = new vbc_dialog(this,database.release(),QFileInfo(filename).absoluteDir().absolutePath());

@@ -48,7 +48,7 @@ public:
     unsigned int odf_size;
     unsigned int odf_face_size;
     unsigned char has_odfs;
-    bool is_dti;
+    bool is_dti,is_qsdr;
 
 
     void set_tracking_param(ThreadData& tracking_thread);
@@ -126,6 +126,7 @@ private slots:
     void on_zoom_3d_valueChanged(double arg1);
     void on_RAS_toggled(bool checked);
     void on_RAS_clicked();
+    void on_actionConnectometry_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

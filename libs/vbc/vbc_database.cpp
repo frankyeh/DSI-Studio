@@ -336,10 +336,10 @@ void fib_data::add_greater_lesser_mapping_for_tracking(ODFModel* handle)
     unsigned int greater_index_id =
             std::find(handle->fib_data.fib.index_name.begin(),
                       handle->fib_data.fib.index_name.end(),
-                      "greater mapping")-handle->fib_data.fib.index_name.begin();
+                      "greater")-handle->fib_data.fib.index_name.begin();
     if(greater_index_id == handle->fib_data.fib.index_name.size())
     {
-        handle->fib_data.fib.index_name.push_back("greater mapping");
+        handle->fib_data.fib.index_name.push_back("greater");
         handle->fib_data.fib.index_data.push_back(std::vector<const float*>());
         handle->fib_data.fib.index_data_dir.push_back(std::vector<const short*>());
     }
@@ -349,10 +349,10 @@ void fib_data::add_greater_lesser_mapping_for_tracking(ODFModel* handle)
     unsigned int lesser_index_id =
             std::find(handle->fib_data.fib.index_name.begin(),
                       handle->fib_data.fib.index_name.end(),
-                      "lesser mapping")-handle->fib_data.fib.index_name.begin();
+                      "lesser")-handle->fib_data.fib.index_name.begin();
     if(lesser_index_id == handle->fib_data.fib.index_name.size())
     {
-        handle->fib_data.fib.index_name.push_back("lesser mapping");
+        handle->fib_data.fib.index_name.push_back("lesser");
         handle->fib_data.fib.index_data.push_back(std::vector<const float*>());
         handle->fib_data.fib.index_data_dir.push_back(std::vector<const short*>());
     }
