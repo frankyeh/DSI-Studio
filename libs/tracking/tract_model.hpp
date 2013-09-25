@@ -42,6 +42,7 @@ public:
             vs = rhs.vs;
             handle = rhs.handle;
             tract_data = rhs.tract_data;
+            tract_color = rhs.tract_color;
             return *this;
         }
         const fiber_orientations& get_fib(void) const{return *fib.get();}

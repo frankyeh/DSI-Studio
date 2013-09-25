@@ -92,7 +92,6 @@ void TractTableWidget::addNewTracts(QString tract_name)
     }
 
     setRowHeight(tract_models.size()-1,22);
-
     setCurrentCell(tract_models.size()-1,0);
 }
 void TractTableWidget::start_tracking(void)
@@ -561,6 +560,16 @@ void TractTableWidget::delete_row(int row)
     tract_models.erase(tract_models.begin()+row);
     removeRow(row);
 }
+
+void TractTableWidget::copy_track(void)
+{
+    unsigned int cur_row = currentRow();
+    addNewTracts(item(cur_row,0)->text() + "copy");
+    *(tract_models.back()) = *(tract_models[cur_row]);
+    item(currentRow(),1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
+    emit need_update();
+}
+
 
 void TractTableWidget::delete_tract(void)
 {

@@ -885,6 +885,7 @@
     <addaction name="menuExport_Tract_Density"/>
     <addaction name="separator"/>
     <addaction name="actionMerge_All"/>
+    <addaction name="actionCopyTrack"/>
     <addaction name="actionDeleteTract"/>
     <addaction name="actionDeleteTractAll"/>
     <addaction name="separator"/>
@@ -2869,6 +2870,11 @@
   <action name="actionUnckech_all_regions">
    <property name="text">
     <string>Uncheck all regions</string>
+   </property>
+  </action>
+  <action name="actionCopyTrack">
+   <property name="text">
+    <string>Copy</string>
    </property>
   </action>
  </widget>

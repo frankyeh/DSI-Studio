@@ -58,6 +58,7 @@ public slots:
     void save_all_tracts_as(void);
     void save_end_point_as(void);
     void merge_all(void);
+    void copy_track(void);
     void delete_tract(void);
     void delete_all_tract(void);
     void edit_tracts(void);

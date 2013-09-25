@@ -269,6 +269,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
 
         connect(ui->actionOpenTract,SIGNAL(triggered()),tractWidget,SLOT(load_tracts()));
         connect(ui->actionMerge_All,SIGNAL(triggered()),tractWidget,SLOT(merge_all()));
+        connect(ui->actionCopyTrack,SIGNAL(triggered()),tractWidget,SLOT(copy_track()));
         connect(ui->actionDeleteTract,SIGNAL(triggered()),tractWidget,SLOT(delete_tract()));
         connect(ui->actionDeleteTractAll,SIGNAL(triggered()),tractWidget,SLOT(delete_all_tract()));
 
