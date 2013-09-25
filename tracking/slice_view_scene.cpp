@@ -165,58 +165,73 @@ bool slice_view_scene::get_location(float x,float y,image::vector<3,float>& pos)
     else
     if(cur_tracking_window.ui->view_style->currentIndex() == 1)// 3 slice
     {
-        unsigned char new_dim = 0;
-        if(neurology_convention)
+
+        if(mouse_down)
         {
-            if(x > geo[0])
+            if(neurology_convention)
             {
-                x -= geo[0];
-                if(y < geo[2])
-                    new_dim = 0;
-                else
-                    return false;
+                if(cur_tracking_window.slice.cur_dim == 0)
+                    x -= geo[0];
             }
             else
-            {
-                if(y < geo[2])
-                    new_dim = 1;
-                else
-                {
-                    new_dim = 2;
-                    y -= geo[2];
-                }
-            }
+                if(cur_tracking_window.slice.cur_dim)
+                    x -= geo[1];
+            if(cur_tracking_window.slice.cur_dim == 2)
+                y -= geo[2];
         }
         else
         {
-            if(x < geo[1])
+            unsigned char new_dim = 0;
+            if(neurology_convention)
             {
-                if(y < geo[2])
-                    new_dim = 0;
+                if(x > geo[0])
+                {
+                    x -= geo[0];
+                    if(y < geo[2])
+                        new_dim = 0;
+                    else
+                        return false;
+                }
                 else
-                    return false;
+                {
+                    if(y < geo[2])
+                        new_dim = 1;
+                    else
+                    {
+                        new_dim = 2;
+                        y -= geo[2];
+                    }
+                }
             }
             else
             {
-                x -= geo[1];
-                if(y < geo[2])
-                    new_dim = 1;
+                if(x < geo[1])
+                {
+                    if(y < geo[2])
+                        new_dim = 0;
+                    else
+                        return false;
+                }
                 else
                 {
-                    new_dim = 2;
-                    y -= geo[2];
+                    x -= geo[1];
+                    if(y < geo[2])
+                        new_dim = 1;
+                    else
+                    {
+                        new_dim = 2;
+                        y -= geo[2];
+                    }
                 }
             }
+            cur_tracking_window.slice.cur_dim = new_dim;
         }
+
         if(neurology_convention)
-            x = (new_dim ? geo[0]:geo[1])-x;
-        if(new_dim != 2)
+            x = (cur_tracking_window.slice.cur_dim ? geo[0]:geo[1])-x;
+        if(cur_tracking_window.slice.cur_dim != 2)
             y = geo[2] - y;
-        unsigned char old_dim = cur_tracking_window.slice.cur_dim;
-        cur_tracking_window.slice.cur_dim = new_dim;
-        bool result = cur_tracking_window.slice.get3dPosition(x - 0.5,y - 0.5,pos[0], pos[1], pos[2]);
-        cur_tracking_window.slice.cur_dim = old_dim;
-        return result;
+        return cur_tracking_window.slice.get3dPosition(x - 0.5,y - 0.5,pos[0], pos[1], pos[2]);
     }
     else
     {
@@ -431,69 +446,37 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     float X = mouseEvent->scenePos().x();
     float display_ratio = cur_tracking_window.ui->zoom->value();
 
-    if(cur_tracking_window.ui->view_style->currentIndex() == 0)
-    {
-        cur_tracking_window.slice.get3dPosition(
-                    (!neurology_convention ? X:view_image.width() - X) / display_ratio,
-                    (cur_tracking_window.slice.cur_dim == 2 ? Y:view_image.height() - Y) / display_ratio, x, y, z);
-    }
-    else
-    {
-        unsigned char new_dim;
-        image::geometry<3> geo(cur_tracking_window.slice.geometry);
+    image::geometry<3> geo(cur_tracking_window.slice.geometry);
 
 
-        if(neurology_convention)
-        {
-            if(X > geo[0]*display_ratio)
-            {
-                X -= geo[0]*display_ratio;
-                if(Y < geo[2]*display_ratio)
-                    new_dim = 0;
-                else
-                    return;
-            }
-            else
-                if(Y < geo[2]*display_ratio)
-                    new_dim = 1;
-                else
-                {
-                    new_dim = 2;
-                    Y -= geo[2]*display_ratio;
-                }
-        }
-        else
-        {
-            if(X < geo[1]*display_ratio)
-            {
-                if(Y < geo[2]*display_ratio)
-                    new_dim = 0;
-                else
-                    return;
-            }
-            else
-            {
-                X -= geo[1]*display_ratio;
-                if(Y < geo[2]*display_ratio)
-                    new_dim = 1;
-                else
-                {
-                    new_dim = 2;
-                    Y -= geo[2]*display_ratio;
-                }
-            }
-        }
-        if(new_dim != cur_tracking_window.slice.cur_dim)
+    {
+        image::vector<3,float> pos;
+        unsigned char old_dim = cur_tracking_window.slice.cur_dim;
+        if(!get_location(X,Y,pos))
+            return;
+        x = std::floor(pos[0]+0.5);
+        y = std::floor(pos[1]+0.5);
+        z = std::floor(pos[2]+0.5);
+        if(old_dim != cur_tracking_window.slice.cur_dim)
         {
             sel_point.clear();
             sel_coord.clear();
-            cur_tracking_window.slice.cur_dim = new_dim;
         }
-        cur_tracking_window.slice.get3dPosition(
-                    !neurology_convention ? ((float)X)/ display_ratio : (cur_tracking_window.slice.cur_dim ? geo[0]:geo[1]) - ((float)X)/ display_ratio,
-                    cur_tracking_window.slice.cur_dim == 2 ? ((float)Y)/ display_ratio : geo[2] - ((float)Y)/ display_ratio, x, y, z);
     }
 
+    if(cur_tracking_window.ui->view_style->currentIndex() == 1)
+    {
+        if(neurology_convention)
+        {
+            if(cur_tracking_window.slice.cur_dim == 0)
+                X -= geo[0]*display_ratio;
+        }
+        else
+            if(cur_tracking_window.slice.cur_dim >= 1)
+                X -= geo[1]*display_ratio;
+        if(cur_tracking_window.slice.cur_dim == 2)
+            Y -= geo[2]*display_ratio;
+    }
 
     if(sel_mode == 5)// move object
     {
@@ -553,6 +536,22 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     float Y = mouseEvent->scenePos().y();
     float X = mouseEvent->scenePos().x();
     float display_ratio = cur_tracking_window.ui->zoom->value();
+
+
+    cX = X;
+    cY = Y;
+    int x, y, z;
+    if (!mouse_down || sel_mode == 4)
+        return;
+
+    {
+        image::vector<3> pos;
+        this->get_location(cX,cY,pos);
+        x = std::floor(pos[0]+0.5);
+        y = std::floor(pos[1]+0.5);
+        z = std::floor(pos[2]+0.5);
+    }
+
     if(cur_tracking_window.ui->view_style->currentIndex() == 1)
     {
         if(neurology_convention)
@@ -566,16 +565,6 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         if(cur_tracking_window.slice.cur_dim == 2)
             Y -= geo[2]*display_ratio;
     }
-
-    cX = X;
-    cY = Y;
-    int x, y, z;
-    if (!mouse_down || sel_mode == 4)
-        return;
-
-    cur_tracking_window.slice.get3dPosition(
-                !neurology_convention  ? cX/ display_ratio : (cur_tracking_window.slice.cur_dim ? geo[0]:geo[1])-cX/ display_ratio,
-                cur_tracking_window.slice.cur_dim == 2 ? cY/ display_ratio : geo[2]-cY/ display_ratio, x, y, z);
 
     if(sel_mode == 5 && !cur_tracking_window.regionWidget->regions.empty()) // move object
     {
@@ -739,8 +728,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
             paint.drawPolygon(&*qpoints.begin(),qpoints.size() - 1);
             image::geometry<2> geo2(bitmap.width(),bitmap.height());
             int x, y, z;
-            for (image::pixel_index<2>index; index.valid(geo2);
-                    index.next(slice_image.geometry()))
+            for (image::pixel_index<2>index; index.valid(geo2);index.next(geo2))
             {
                 if (QColor(bitmap.pixel(index.x(),index.y())).red() < 64
                     || !cur_tracking_window.slice.get3dPosition(index.x(),index.y(),x, y, z))
