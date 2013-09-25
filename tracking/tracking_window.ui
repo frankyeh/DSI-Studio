@@ -1429,6 +1429,13 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="RAS">
+         <property name="text">
+          <string>RAS</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QCheckBox" name="show_fiber">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">

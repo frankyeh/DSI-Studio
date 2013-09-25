@@ -296,12 +296,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
     }
 
 
-    {
-        scene.show_slice();
-        scene.center();
-        slice_no_update = false;
-        copy_target = 0;
-    }
+
 
     // recall the setting
     {
@@ -331,9 +326,17 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         ui->RenderingQualityBox->setCurrentIndex(settings.value("RenderingQuality",1).toInt());
 
         ui->view_style->setCurrentIndex((settings.value("view_style",0).toInt()));
-
+        ui->RAS->setChecked(settings.value("RAS",0).toBool());
     }
 
+    {
+        scene.center();
+        slice_no_update = false;
+        copy_target = 0;
+    }
+
+    if(scene.neurology_convention)
+        on_glAxiView_clicked();
     qApp->installEventFilter(this);
 }
 
@@ -344,6 +347,7 @@ tracking_window::~tracking_window()
     settings.setValue("geometry", saveGeometry());
     settings.setValue("state", saveState());
     settings.setValue("view_style",ui->view_style->currentIndex());
+    settings.setValue("RAS",ui->RAS->isChecked()? 1:0);
     tractWidget->delete_all_tract();
     delete ui;
     if(handle_release)
@@ -1131,4 +1135,18 @@ QString tracking_window::get_path(const std::string& id)
 void tracking_window::add_path(const std::string& id,QString filename)
 {
     path_map[id] = QFileInfo(filename).absolutePath();
+}
+
+void tracking_window::on_RAS_toggled(bool checked)
+{
+    scene.neurology_convention = ui->RAS->isChecked();
+    scene.show_slice();
+}
+
+void tracking_window::on_RAS_clicked()
+{
+    if(scene.neurology_convention)
+        QMessageBox::information(this,"DSI Studio","Switch to neurology orientation. The RIGHT side of the image is the RIGHT side of the patient",0);
+    else
+        QMessageBox::information(this,"DSI Studio","Switch to radiology orientation. The RIGHT side of the image is the LEFT side of the patient",0);
 }

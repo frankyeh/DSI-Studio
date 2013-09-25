@@ -124,6 +124,8 @@ private slots:
     void on_actionTract_Analysis_Report_triggered();
     void on_actionConnectivity_matrix_triggered();
     void on_zoom_3d_valueChanged(double arg1);
+    void on_RAS_toggled(bool checked);
+    void on_RAS_clicked();
 };
 
 #endif // TRACKING_WINDOW_H
