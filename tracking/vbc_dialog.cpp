@@ -542,6 +542,8 @@ void vbc_dialog::on_view_dif_map_clicked()
             QMessageBox::information(this,"error",vbc->error_msg.c_str(),0);
             return;
         }
+        if (filename.isEmpty())
+            filename << filename1;
     }
     else
     if (filename.isEmpty())
@@ -585,7 +587,7 @@ void vbc_dialog::on_view_dif_map_clicked()
     cur_subject_fib.add_greater_lesser_mapping_for_tracking(vbc->handle.get());
     tracking_window* new_mdi = new tracking_window(this,vbc->handle.get(),false);
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
-    new_mdi->absolute_path = QFileInfo(filename[0]).absoluteDir().absolutePath();
+    new_mdi->absolute_path = QFileInfo(filename[0]).absolutePath();
     new_mdi->setWindowTitle(filename[0] + ": Connectometry mapping");
     new_mdi->showNormal();
 
