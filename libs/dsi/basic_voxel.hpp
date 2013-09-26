@@ -36,6 +36,8 @@ struct VoxelData
     std::vector<image::vector<3,float> > dir;
     std::vector<short> dir_index;
     float min_odf;
+    float jdet;
+    float jacobian[9];
 
     void init(void)
     {
@@ -75,6 +77,7 @@ public:
     // used in QSDR only
     bool output_jacobian;
     bool output_mapping;
+    image::vector<3,int> csf_pos1,csf_pos2;
 public:
     float z0;
     // other information for second pass processing

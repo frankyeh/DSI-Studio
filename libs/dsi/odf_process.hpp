@@ -7,19 +7,35 @@
 class ReadDWIData : public BaseProcess{
 public:
     virtual void init(Voxel&) {}
-    virtual void run(Voxel& voxel, VoxelData& voxel_data)
+    virtual void run(Voxel& voxel, VoxelData& data)
     {
-        for (unsigned int index = 0; index < voxel.image_model->dwi_data.size(); ++index)
-            voxel_data.space[index] = voxel.image_model->dwi_data[index][voxel_data.voxel_index];
+        data.space.resize(voxel.image_model->dwi_data.size());
+        for (unsigned int index = 0; index < data.space.size(); ++index)
+            data.space[index] = voxel.image_model->dwi_data[index][data.voxel_index];
     }
     virtual void end(Voxel&,MatFile& mat_writer) {}
 };
 
 class BalanceScheme : public BaseProcess{
     std::vector<float> trans;
-    unsigned int old_q_count;
     unsigned int new_q_count;
+private:
+    Voxel* stored_voxel;
+    unsigned int old_q_count;
+    std::vector<image::vector<3,float> > old_bvectors;
+    std::vector<float> old_bvalues;
 public:
+    BalanceScheme(void):stored_voxel(0){}
+    ~BalanceScheme(void)
+    {
+        if(stored_voxel)
+        {
+            stored_voxel->q_count = old_q_count;
+            stored_voxel->bvalues.swap(old_bvalues);
+            stored_voxel->bvectors.swap(old_bvectors);
+        }
+    }
+
     virtual void init(Voxel& voxel)
     {
         if(!voxel.scheme_balance)
@@ -110,20 +126,19 @@ public:
         voxel.q_count = new_q_count = total_signals;
         voxel.bvalues.swap(new_bvalues);
         voxel.bvectors.swap(new_bvectors);
+        new_bvalues.swap(old_bvalues);
+        new_bvectors.swap(old_bvectors);
+        stored_voxel = &voxel;
+
     }
-    virtual void run(Voxel& voxel, VoxelData& voxel_data)
+    virtual void run(Voxel& voxel, VoxelData& data)
     {
         if(!voxel.scheme_balance)
             return;
         std::vector<float> new_data(new_q_count);
-        image::matrix::vector_product(trans.begin(),voxel_data.space.begin(),new_data.begin(),image::dyndim(new_q_count,old_q_count));
-        voxel_data.space.swap(new_data);
+        data.space.swap(new_data);
+        image::matrix::vector_product(trans.begin(),new_data.begin(),data.space.begin(),image::dyndim(new_q_count,old_q_count));
     }
-    virtual void end(Voxel&,MatFile& mat_writer)
-    {
-    }
-
-
 };
 
 struct GeneralizedFA

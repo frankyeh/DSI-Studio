@@ -10,21 +10,13 @@
 #include "gqi_process.hpp"
 
 extern fa_template fa_template_imp;
-class GQI_MNI  : public BaseProcess
+
+class DWINormalization  : public BaseProcess
 {
-public:
-    ODFDecomposition decomposition;
-    ODFDeconvolusion deconvolution;
-    float angle_variance;
-    QSpace2Odf gqi;
 protected:
     std::auto_ptr<image::reg::bfnorm_mapping<double,3> > mni;
     image::geometry<3> src_geo;
     image::geometry<3> des_geo;
-    double max_accumulated_qa;
-    double voxel_volume_scale;
-    std::vector<float> max_odf;
-    std::vector<float> jdet;
     int b0_index;
 protected:
     image::transformation_matrix<3,float> affine;
@@ -39,17 +31,9 @@ protected:
     image::vector<3,double> scale;
     double trans_to_mni[16];
 protected:
-    image::vector<3,int> csf_pos[2];
-    float csf_dif;
-protected:
+    float voxel_volume_scale;
+    std::vector<float> jdet;
     std::vector<float> mx,my,mz;
-protected:
-    double r2_base_function(double theta)
-    {
-            if(std::abs(theta) < 0.000001)
-                    return 1.0/3.0;
-            return (2*std::cos(theta)+(theta-2.0/theta)*std::sin(theta))/theta/theta;
-    }
 protected:
     typedef image::const_pointer_image<unsigned short,3> point_image_type;
     std::vector<point_image_type> ptr_images;
@@ -198,10 +182,6 @@ public:
             trans_to_mni[11] = bounding_box_lower[2];
         }
 
-        begin_prog("q-space diffeomorphic reconstruction");
-
-
-        float sigma = voxel.param[0]; //diffusion sampling length ratio, optimal 1.24
         // setup mask
         {
             // set the current mask to template space
@@ -225,13 +205,7 @@ public:
         }
 
 
-        q_vectors_time.resize(voxel.bvalues.size());
-        for (unsigned int index = 0; index < voxel.bvalues.size(); ++index)
-        {
-            q_vectors_time[index] = voxel.bvectors[index];
-            q_vectors_time[index] *= std::sqrt(voxel.bvalues[index]*0.01506);// get q in (mm) -1
-            q_vectors_time[index] *= sigma;
-        }
+
 
         b0_index = -1;
         if(voxel.half_sphere)
@@ -244,41 +218,21 @@ public:
             ptr_images.push_back(image::make_image(src_geo,voxel.image_model->dwi_data[index]));
 
 
-        max_accumulated_qa = 0;
-
         std::fill(voxel.vs.begin(),voxel.vs.end(),voxel.param[1]);
 
-
-        if (voxel.odf_deconvolusion)
-        {
-            gqi.init(voxel);
-            deconvolution.init(voxel);
-        }
-        if (voxel.odf_decomposition)
-        {
-            gqi.init(voxel);
-            decomposition.init(voxel);
-        }
-        angle_variance = 8; //degress;
-        angle_variance *= M_PI/180;
-        angle_variance *= angle_variance;
-        angle_variance *= 2.0;
-
-
-        csf_pos[0] = mni_to_voxel_index(6,0,18);
-        csf_pos[1] = mni_to_voxel_index(-6,0,18);
+        voxel.csf_pos1 = mni_to_voxel_index(6,0,18);
+        voxel.csf_pos2 = mni_to_voxel_index(-6,0,18);
         voxel.z0 = 0.0;
-
 
         // output mapping
         if(voxel.output_jacobian)
-            jdet.resize(des_geo.size());
+            jdet.resize(voxel.dim.size());
 
         if(voxel.output_mapping)
         {
-            mx.resize(des_geo.size());
-            my.resize(des_geo.size());
-            mz.resize(des_geo.size());
+            mx.resize(voxel.dim.size());
+            my.resize(voxel.dim.size());
+            mz.resize(voxel.dim.size());
         }
     }
 
@@ -293,66 +247,18 @@ public:
         return image::vector<3,int>(x,y,z);
     }
 
-    void get_jacobian(const image::vector<3,double>& pos,float jacobian[9])
+    void get_jacobian(const image::vector<3,double>& pos,float* jacobian)
     {
         float M[9];
         image::reg::bfnorm_get_jacobian(*mni.get(),pos,M);
         image::matrix::product(affine.scaling_rotation,M,jacobian,image::dim<3,3>(),image::dim<3,3>());
     }
 
-    // combined with deconvolution or decomposition
-    void odf_sharpening(Voxel& voxel, VoxelData& data,float jacobian[9])
-    {
-        gqi.run(voxel,data);
-        if (voxel.odf_deconvolusion)
-        {
-            deconvolution.run(voxel,data);
-            std::vector<float> new_odf(data.odf.size());
-            std::vector<float> w(voxel.ti.half_vertices_count*voxel.ti.half_vertices_count);
-            for(unsigned int i = 0,w_pos = 0;i < data.odf.size();++i,++w_pos)
-                {
-                    image::vector<3,double> new_dir;
-                    image::matrix::vector_product(jacobian,voxel.ti.vertices[i].begin(),new_dir.begin(),image::dim<3,3>());
-                    new_dir.normalize();
-                    if(data.odf[i] >= data.min_odf)
-                    for(unsigned int row = 0,w_row = w_pos;
-                        row < voxel.ti.half_vertices_count;
-                        ++row,w_row += voxel.ti.half_vertices_count)
-                    {
-                        float angle = std::acos(std::min<float>(1.0,std::abs(voxel.ti.vertices[row]*new_dir)));
-                        w[w_row] = std::exp(-angle*angle/angle_variance);
-                    }
-                }
-            for(unsigned int i = 0,w_pos = 0;i < data.odf.size();++i,w_pos += voxel.ti.half_vertices_count)
-            {
-                new_odf[i] = image::vec::dot(data.odf.begin(),data.odf.end(),w.begin()+w_pos)/
-                        std::accumulate(w.begin()+w_pos,w.begin()+w_pos+voxel.ti.half_vertices_count,0.0f);
-            }
-            data.odf.swap(new_odf);
-        }
-        else
-        {
-            float invJ[9];
-            image::matrix::inverse(jacobian,invJ,image::dim<3,3>());
-            decomposition.run(voxel,data);
-            std::vector<float> new_odf(data.odf.size());
-            std::fill(new_odf.begin(),new_odf.end(),data.min_odf);
-            for(unsigned int i = 0;i < data.odf.size();++i)
-                if(data.odf[i] > data.min_odf)
-                {
-                    image::vector<3,float> new_dir;
-                    image::matrix::vector_product(invJ,voxel.ti.vertices[i].begin(),new_dir.begin(),image::dim<3,3>());
-                    new_dir.normalize();
-                    new_odf[voxel.ti.discretize(new_dir)] = data.odf[i];
-                }
-            data.odf.swap(new_odf);
-        }
-    }
 
     virtual void run(Voxel& voxel, VoxelData& data)
     {
         image::interpolation<image::linear_weighting,3> trilinear_interpolation;
-        image::vector<3,double> pos(image::pixel_index<3>(data.voxel_index,des_geo)),Jpos;
+        image::vector<3,double> pos(image::pixel_index<3>(data.voxel_index,voxel.dim)),Jpos;
         pos[0] *= scale[0];
         pos[1] *= scale[1];
         pos[2] *= scale[2];
@@ -372,21 +278,21 @@ public:
 
         if(!trilinear_interpolation.get_location(src_geo,Jpos))
         {
-            std::fill(data.odf.begin(),data.odf.end(),0);
+            std::fill(data.space.begin(),data.space.end(),0);
             return;
         }
-        for (unsigned int i = 0; i < data.space.size(); ++i)
+        data.space.resize(ptr_images.size());
+        for (unsigned int i = 0; i < ptr_images.size(); ++i)
             trilinear_interpolation.estimate(ptr_images[i],data.space[i]);
 
         if(voxel.half_sphere && b0_index != -1)
             data.space[b0_index] /= 2.0;
 
-        float jacobian[9],Jdet;
         {
-            get_jacobian(pos,jacobian);
-            Jdet = std::abs(image::matrix::determinant(jacobian,image::dim<3,3>())*voxel_volume_scale);
+            get_jacobian(pos,data.jacobian);
+            data.jdet = std::abs(image::matrix::determinant(data.jacobian,image::dim<3,3>())*voxel_volume_scale);
             if(voxel.output_jacobian)
-                jdet[data.voxel_index] = Jdet;
+                jdet[data.voxel_index] = data.jdet;
         }
 
         if(!voxel.grad_dev.empty())
@@ -412,61 +318,16 @@ public:
             grad_dev[5] = -grad_dev[5];
             grad_dev[7] = -grad_dev[7];
             float new_j[9];
-            image::matrix::product(grad_dev,jacobian,new_j,image::dim<3,3>(),image::dim<3,3>());
-            std::copy(new_j,new_j+9,jacobian);
+            image::matrix::product(grad_dev,data.jacobian,new_j,image::dim<3,3>(),image::dim<3,3>());
+            std::copy(new_j,new_j+9,data.jacobian);
             //  <G*b_vec,J*odf>
             //  = trans(b_vec)*trans(G)*J*odf
-        }
-
-        if (voxel.odf_deconvolusion || voxel.odf_decomposition)
-            odf_sharpening(voxel,data,jacobian);
-        else
-        {
-            std::vector<float> sinc_ql(data.odf.size()*voxel.q_count);
-            for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
-            {
-                image::vector<3,double> dir(voxel.ti.vertices[j]),from;
-                image::matrix::vector_product(jacobian,dir.begin(),from.begin(),image::dim<3,3>());
-                from.normalize();
-                if(voxel.r2_weighted)
-                    for (unsigned int i = 0; i < voxel.q_count; ++i,++index)
-                        sinc_ql[index] = r2_base_function(q_vectors_time[i]*from);
-                else
-                    for (unsigned int i = 0; i < voxel.q_count; ++i,++index)
-                        sinc_ql[index] = boost::math::sinc_pi(q_vectors_time[i]*from);
-
-            }
-            image::matrix::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
-                                        image::dyndim(data.odf.size(),data.space.size()));
-        }
-
-        // perform csf cross-subject normalization
-        {
-            image::vector<3,int> cur_pos(image::pixel_index<3>(data.voxel_index,des_geo));
-            if((cur_pos-csf_pos[0]).length() <= 2.0/scale[0] || (cur_pos-csf_pos[1]).length() <= 2.0/scale[0])
-            {
-                float odf_dif = *std::min_element(data.odf.begin(),data.odf.end());
-                if(odf_dif > voxel.z0)
-                    voxel.z0 = odf_dif;
-            }
-        }
-
-        std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 *= Jdet);
-
-        float accumulated_qa = std::accumulate(data.odf.begin(),data.odf.end(),0.0);
-        if (max_accumulated_qa < accumulated_qa)
-        {
-            max_accumulated_qa = accumulated_qa;
-            max_odf = data.odf;
         }
     }
     virtual void end(Voxel& voxel,MatFile& mat_writer)
     {
         voxel.image_model->mask.resize(src_geo);
         voxel.dim = src_geo;
-        if(voxel.z0 == 0.0)
-            voxel.z0 = 1.0;
-        mat_writer.add_matrix("z0",&voxel.z0,1,1);
         if(voxel.output_jacobian)
             mat_writer.add_matrix("jdet",&*jdet.begin(),1,jdet.size());
         if(voxel.output_mapping)
@@ -477,6 +338,90 @@ public:
         }
         mat_writer.add_matrix("trans",&*trans_to_mni,4,4);
         mat_writer.add_matrix("R2",&R2,1,1);
+    }
+
+};
+
+class EstimateZ0_MNI : public BaseProcess
+{
+public:
+    void init(Voxel& voxel)
+    {
+        voxel.z0 = 0.0;
+    }
+    void run(Voxel& voxel, VoxelData& data)
+    {
+        // perform csf cross-subject normalization
+        {
+            image::vector<3,int> cur_pos(image::pixel_index<3>(data.voxel_index,voxel.dim));
+            if((cur_pos-voxel.csf_pos1).length() <= 1.0 || (cur_pos-voxel.csf_pos2).length() <= 1.0)
+            {
+                float odf_dif = *std::min_element(data.odf.begin(),data.odf.end());
+                odf_dif /= data.jdet;
+                if(odf_dif > voxel.z0)
+                    voxel.z0 = odf_dif;
+            }
+        }
+    }
+    void end(Voxel& voxel,MatFile& mat_writer)
+    {
+        if(voxel.z0 == 0.0)
+            voxel.z0 = 1.0;
+        mat_writer.add_matrix("z0",&voxel.z0,1,1);
+    }
+
+};
+
+class QSDR  : public BaseProcess
+{
+public:
+    BalanceScheme balance_scheme;
+    float angle_variance;
+    double r2_base_function(double theta)
+    {
+            if(std::abs(theta) < 0.000001)
+                    return 1.0/3.0;
+            return (2*std::cos(theta)+(theta-2.0/theta)*std::sin(theta))/theta/theta;
+    }
+protected:
+    std::vector<image::vector<3,double> > q_vectors_time;
+public:
+    virtual void init(Voxel& voxel)
+    {
+        float sigma = voxel.param[0];
+        q_vectors_time.resize(voxel.bvalues.size());
+        for (unsigned int index = 0; index < voxel.bvalues.size(); ++index)
+        {
+            q_vectors_time[index] = voxel.bvectors[index];
+            q_vectors_time[index] *= std::sqrt(voxel.bvalues[index]*0.01506);// get q in (mm) -1
+            q_vectors_time[index] *= sigma;
+        }
+    }
+
+    virtual void run(Voxel& voxel, VoxelData& data)
+    {
+        std::vector<float> sinc_ql(data.odf.size()*voxel.q_count);
+        for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
+        {
+            image::vector<3,double> dir(voxel.ti.vertices[j]),from;
+            image::matrix::vector_product(data.jacobian,dir.begin(),from.begin(),image::dim<3,3>());
+            from.normalize();
+            if(voxel.r2_weighted)
+                for (unsigned int i = 0; i < voxel.q_count; ++i,++index)
+                    sinc_ql[index] = r2_base_function(q_vectors_time[i]*from);
+            else
+                for (unsigned int i = 0; i < voxel.q_count; ++i,++index)
+                    sinc_ql[index] = boost::math::sinc_pi(q_vectors_time[i]*from);
+
+        }
+        image::matrix::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
+                                    image::dyndim(data.odf.size(),data.space.size()));
+        std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 *= data.jdet);
+
+    }
+    virtual void end(Voxel& voxel,MatFile& mat_writer)
+    {
+
     }
 
 };

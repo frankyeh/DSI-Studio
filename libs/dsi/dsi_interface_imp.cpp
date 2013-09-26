@@ -114,7 +114,12 @@ typedef boost::mpl::vector<
 > gqi_estimate_response_function;
 
 typedef boost::mpl::vector<
-    GQI_MNI,
+    DWINormalization,
+    BalanceScheme,
+    QSDR,
+    ODFDeconvolusion,
+    ODFDecomposition,
+    EstimateZ0_MNI,
     DetermineFiberDirections,
     SaveFA,
     SaveDirIndex,
