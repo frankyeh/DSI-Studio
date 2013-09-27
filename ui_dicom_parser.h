@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'dicom_parser.ui'
 **
-** Created: Wed Apr 10 12:41:28 2013
+** Created: Thu Sep 26 22:22:06 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -38,6 +38,8 @@ public:
     QHBoxLayout *horizontalLayout_3;
     QToolButton *loadImage;
     QToolButton *toolButton_2;
+    QToolButton *load_bval;
+    QToolButton *load_bvec;
     QToolButton *toolButton_8;
     QToolButton *apply_slice_orientation;
     QSpacerItem *horizontalSpacer_2;
@@ -86,6 +88,16 @@ public:
         toolButton_2->setObjectName(QString::fromUtf8("toolButton_2"));
 
         horizontalLayout_3->addWidget(toolButton_2);
+
+        load_bval = new QToolButton(dicom_parser);
+        load_bval->setObjectName(QString::fromUtf8("load_bval"));
+
+        horizontalLayout_3->addWidget(load_bval);
+
+        load_bvec = new QToolButton(dicom_parser);
+        load_bvec->setObjectName(QString::fromUtf8("load_bvec"));
+
+        horizontalLayout_3->addWidget(load_bvec);
 
         toolButton_8 = new QToolButton(dicom_parser);
         toolButton_8->setObjectName(QString::fromUtf8("toolButton_8"));
@@ -223,8 +235,10 @@ public:
     void retranslateUi(QDialog *dicom_parser)
     {
         dicom_parser->setWindowTitle(QApplication::translate("dicom_parser", "B-table", 0, QApplication::UnicodeUTF8));
-        loadImage->setText(QApplication::translate("dicom_parser", "Load Images...", 0, QApplication::UnicodeUTF8));
+        loadImage->setText(QApplication::translate("dicom_parser", "Add Images...", 0, QApplication::UnicodeUTF8));
         toolButton_2->setText(QApplication::translate("dicom_parser", "Load b-table...", 0, QApplication::UnicodeUTF8));
+        load_bval->setText(QApplication::translate("dicom_parser", "Load bval...", 0, QApplication::UnicodeUTF8));
+        load_bvec->setText(QApplication::translate("dicom_parser", "Load bvec...", 0, QApplication::UnicodeUTF8));
         toolButton_8->setText(QApplication::translate("dicom_parser", "Save b-table...", 0, QApplication::UnicodeUTF8));
         apply_slice_orientation->setText(QApplication::translate("dicom_parser", "Apply slice orientation", 0, QApplication::UnicodeUTF8));
         toolButton->setText(QApplication::translate("dicom_parser", "Flip bx", 0, QApplication::UnicodeUTF8));

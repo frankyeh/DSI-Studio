@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Tue Sep 10 15:09:08 2013
+** Created: Thu Sep 26 22:22:06 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -123,6 +123,8 @@ public:
     QAction *actionConnectivity_matrix;
     QAction *actionCheck_all_regions;
     QAction *actionUnckech_all_regions;
+    QAction *actionCopyTrack;
+    QAction *actionConnectometry;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QHBoxLayout *horizontalLayout_13;
@@ -217,6 +219,7 @@ public:
     QHBoxLayout *horizontalLayout_4;
     QFrame *line_7;
     QDoubleSpinBox *zoom;
+    QCheckBox *RAS;
     QCheckBox *show_fiber;
     QCheckBox *show_pos;
     QFrame *line_6;
@@ -504,6 +507,10 @@ public:
         actionCheck_all_regions->setObjectName(QString::fromUtf8("actionCheck_all_regions"));
         actionUnckech_all_regions = new QAction(tracking_window);
         actionUnckech_all_regions->setObjectName(QString::fromUtf8("actionUnckech_all_regions"));
+        actionCopyTrack = new QAction(tracking_window);
+        actionCopyTrack->setObjectName(QString::fromUtf8("actionCopyTrack"));
+        actionConnectometry = new QAction(tracking_window);
+        actionConnectometry->setObjectName(QString::fromUtf8("actionConnectometry"));
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -1111,6 +1118,11 @@ public:
 
         horizontalLayout_4->addWidget(zoom);
 
+        RAS = new QCheckBox(dockWidgetContents);
+        RAS->setObjectName(QString::fromUtf8("RAS"));
+
+        horizontalLayout_4->addWidget(RAS);
+
         show_fiber = new QCheckBox(dockWidgetContents);
         show_fiber->setObjectName(QString::fromUtf8("show_fiber"));
         sizePolicy2.setHeightForWidth(show_fiber->sizePolicy().hasHeightForWidth());
@@ -1516,6 +1528,7 @@ public:
         menuTracts->addAction(menuExport_Tract_Density->menuAction());
         menuTracts->addSeparator();
         menuTracts->addAction(actionMerge_All);
+        menuTracts->addAction(actionCopyTrack);
         menuTracts->addAction(actionDeleteTract);
         menuTracts->addAction(actionDeleteTractAll);
         menuTracts->addSeparator();
@@ -1527,6 +1540,7 @@ public:
         menuTracts->addSeparator();
         menuTracts->addAction(actionTract_Analysis_Report);
         menuTracts->addAction(actionConnectivity_matrix);
+        menuTracts->addAction(actionConnectometry);
         menuTracts->addAction(actionStatistics);
         menuSave->addAction(actionQuantitative_anisotropy_QA);
         menuClustering->addAction(actionOpen_Cluster_Labels);
@@ -1716,6 +1730,8 @@ public:
         actionConnectivity_matrix->setText(QApplication::translate("tracking_window", "Connectivity matrix...", 0, QApplication::UnicodeUTF8));
         actionCheck_all_regions->setText(QApplication::translate("tracking_window", "Check all regions", 0, QApplication::UnicodeUTF8));
         actionUnckech_all_regions->setText(QApplication::translate("tracking_window", "Uncheck all regions", 0, QApplication::UnicodeUTF8));
+        actionCopyTrack->setText(QApplication::translate("tracking_window", "Copy", 0, QApplication::UnicodeUTF8));
+        actionConnectometry->setText(QApplication::translate("tracking_window", "Connectometry...", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)
@@ -1822,6 +1838,7 @@ public:
         overlay->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "No overlay", 0, QApplication::UnicodeUTF8)
         );
+        RAS->setText(QApplication::translate("tracking_window", "RAS", 0, QApplication::UnicodeUTF8));
         show_fiber->setText(QApplication::translate("tracking_window", "Fibers", 0, QApplication::UnicodeUTF8));
         show_pos->setText(QApplication::translate("tracking_window", "Pos", 0, QApplication::UnicodeUTF8));
         label_6->setText(QApplication::translate("tracking_window", "Contrast", 0, QApplication::UnicodeUTF8));

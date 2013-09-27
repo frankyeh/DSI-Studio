@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'connectivity_matrix_dialog.ui'
 **
-** Created: Wed Apr 10 12:54:22 2013
+** Created: Thu Sep 26 22:22:06 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -78,7 +78,7 @@ public:
         zoom->setMinimum(0.1);
         zoom->setMaximum(50);
         zoom->setSingleStep(1);
-        zoom->setValue(5);
+        zoom->setValue(3);
 
         horizontalLayout->addWidget(zoom);
 

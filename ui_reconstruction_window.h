@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Wed Sep 4 17:54:09 2013
+** Created: Thu Sep 26 22:22:06 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -46,13 +46,20 @@ public:
     QVBoxLayout *verticalLayout;
     QToolBox *toolBox;
     QWidget *source_page;
-    QVBoxLayout *verticalLayout_4;
+    QHBoxLayout *horizontalLayout_21;
     QSplitter *splitter;
+    QWidget *widget_2;
+    QVBoxLayout *verticalLayout_4;
+    QHBoxLayout *horizontalLayout_7;
+    QPushButton *save4dnifti;
+    QPushButton *save_b_table;
+    QPushButton *save_bvals;
+    QPushButton *save_bvec;
+    QSpacerItem *horizontalSpacer_5;
     QTableWidget *b_table;
     QWidget *source_widget;
     QVBoxLayout *verticalLayout_6;
     QHBoxLayout *horizontalLayout_11;
-    QPushButton *save4dnifti;
     QToolButton *zoom_in;
     QToolButton *zoom_out;
     QLabel *label_14;
@@ -154,6 +161,7 @@ public:
     QHBoxLayout *horizontalLayout_3;
     QLabel *label_2;
     QComboBox *ODFDim;
+    QCheckBox *balance_scheme;
     QCheckBox *HalfSphere;
     QSpacerItem *verticalSpacer;
     QWidget *widget;
@@ -187,13 +195,53 @@ public:
         toolBox->setObjectName(QString::fromUtf8("toolBox"));
         source_page = new QWidget();
         source_page->setObjectName(QString::fromUtf8("source_page"));
-        source_page->setGeometry(QRect(0, 0, 337, 132));
-        verticalLayout_4 = new QVBoxLayout(source_page);
-        verticalLayout_4->setObjectName(QString::fromUtf8("verticalLayout_4"));
+        source_page->setGeometry(QRect(0, 0, 626, 414));
+        horizontalLayout_21 = new QHBoxLayout(source_page);
+        horizontalLayout_21->setObjectName(QString::fromUtf8("horizontalLayout_21"));
         splitter = new QSplitter(source_page);
         splitter->setObjectName(QString::fromUtf8("splitter"));
         splitter->setOrientation(Qt::Horizontal);
-        b_table = new QTableWidget(splitter);
+        widget_2 = new QWidget(splitter);
+        widget_2->setObjectName(QString::fromUtf8("widget_2"));
+        verticalLayout_4 = new QVBoxLayout(widget_2);
+        verticalLayout_4->setSpacing(0);
+        verticalLayout_4->setContentsMargins(0, 0, 0, 0);
+        verticalLayout_4->setObjectName(QString::fromUtf8("verticalLayout_4"));
+        horizontalLayout_7 = new QHBoxLayout();
+        horizontalLayout_7->setSpacing(0);
+        horizontalLayout_7->setObjectName(QString::fromUtf8("horizontalLayout_7"));
+        save4dnifti = new QPushButton(widget_2);
+        save4dnifti->setObjectName(QString::fromUtf8("save4dnifti"));
+        save4dnifti->setMaximumSize(QSize(16777215, 22));
+
+        horizontalLayout_7->addWidget(save4dnifti);
+
+        save_b_table = new QPushButton(widget_2);
+        save_b_table->setObjectName(QString::fromUtf8("save_b_table"));
+        save_b_table->setMaximumSize(QSize(16777215, 22));
+
+        horizontalLayout_7->addWidget(save_b_table);
+
+        save_bvals = new QPushButton(widget_2);
+        save_bvals->setObjectName(QString::fromUtf8("save_bvals"));
+        save_bvals->setMaximumSize(QSize(16777215, 22));
+
+        horizontalLayout_7->addWidget(save_bvals);
+
+        save_bvec = new QPushButton(widget_2);
+        save_bvec->setObjectName(QString::fromUtf8("save_bvec"));
+        save_bvec->setMaximumSize(QSize(16777215, 22));
+
+        horizontalLayout_7->addWidget(save_bvec);
+
+        horizontalSpacer_5 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+        horizontalLayout_7->addItem(horizontalSpacer_5);
+
+
+        verticalLayout_4->addLayout(horizontalLayout_7);
+
+        b_table = new QTableWidget(widget_2);
         if (b_table->columnCount() < 4)
             b_table->setColumnCount(4);
         QTableWidgetItem *__qtablewidgetitem = new QTableWidgetItem();
@@ -207,7 +255,10 @@ public:
         b_table->setObjectName(QString::fromUtf8("b_table"));
         b_table->setSelectionMode(QAbstractItemView::SingleSelection);
         b_table->setSelectionBehavior(QAbstractItemView::SelectRows);
-        splitter->addWidget(b_table);
+
+        verticalLayout_4->addWidget(b_table);
+
+        splitter->addWidget(widget_2);
         source_widget = new QWidget(splitter);
         source_widget->setObjectName(QString::fromUtf8("source_widget"));
         verticalLayout_6 = new QVBoxLayout(source_widget);
@@ -217,12 +268,6 @@ public:
         horizontalLayout_11 = new QHBoxLayout();
         horizontalLayout_11->setSpacing(0);
         horizontalLayout_11->setObjectName(QString::fromUtf8("horizontalLayout_11"));
-        save4dnifti = new QPushButton(source_widget);
-        save4dnifti->setObjectName(QString::fromUtf8("save4dnifti"));
-        save4dnifti->setMaximumSize(QSize(16777215, 22));
-
-        horizontalLayout_11->addWidget(save4dnifti);
-
         zoom_in = new QToolButton(source_widget);
         zoom_in->setObjectName(QString::fromUtf8("zoom_in"));
         zoom_in->setMinimumSize(QSize(24, 0));
@@ -279,7 +324,7 @@ public:
         view_source->raise();
         z_pos->raise();
 
-        verticalLayout_4->addWidget(splitter);
+        horizontalLayout_21->addWidget(splitter);
 
         toolBox->addItem(source_page, QString::fromUtf8("Source Images"));
         page_3 = new QWidget();
@@ -780,6 +825,11 @@ public:
 
         horizontalLayout_18->addLayout(horizontalLayout_3);
 
+        balance_scheme = new QCheckBox(groupBox_2);
+        balance_scheme->setObjectName(QString::fromUtf8("balance_scheme"));
+
+        horizontalLayout_18->addWidget(balance_scheme);
+
         HalfSphere = new QCheckBox(groupBox_2);
         HalfSphere->setObjectName(QString::fromUtf8("HalfSphere"));
         HalfSphere->setChecked(false);
@@ -853,6 +903,10 @@ public:
     void retranslateUi(QMainWindow *reconstruction_window)
     {
         reconstruction_window->setWindowTitle(QApplication::translate("reconstruction_window", "Reconstruction", 0, QApplication::UnicodeUTF8));
+        save4dnifti->setText(QApplication::translate("reconstruction_window", "Save nifti...", 0, QApplication::UnicodeUTF8));
+        save_b_table->setText(QApplication::translate("reconstruction_window", "Save b table...", 0, QApplication::UnicodeUTF8));
+        save_bvals->setText(QApplication::translate("reconstruction_window", "Save bvals...", 0, QApplication::UnicodeUTF8));
+        save_bvec->setText(QApplication::translate("reconstruction_window", "Save bvecs...", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem = b_table->horizontalHeaderItem(0);
         ___qtablewidgetitem->setText(QApplication::translate("reconstruction_window", "b value", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem1 = b_table->horizontalHeaderItem(1);
@@ -861,7 +915,6 @@ public:
         ___qtablewidgetitem2->setText(QApplication::translate("reconstruction_window", "by", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem3 = b_table->horizontalHeaderItem(3);
         ___qtablewidgetitem3->setText(QApplication::translate("reconstruction_window", "bz", 0, QApplication::UnicodeUTF8));
-        save4dnifti->setText(QApplication::translate("reconstruction_window", "Save 4D nifti...", 0, QApplication::UnicodeUTF8));
         zoom_in->setText(QApplication::translate("reconstruction_window", "+", 0, QApplication::UnicodeUTF8));
         zoom_out->setText(QApplication::translate("reconstruction_window", "-", 0, QApplication::UnicodeUTF8));
         label_14->setText(QApplication::translate("reconstruction_window", "Contrast", 0, QApplication::UnicodeUTF8));
@@ -935,6 +988,7 @@ public:
          << QApplication::translate("reconstruction_window", "16-fold", 0, QApplication::UnicodeUTF8)
          << QApplication::translate("reconstruction_window", "20-fold", 0, QApplication::UnicodeUTF8)
         );
+        balance_scheme->setText(QApplication::translate("reconstruction_window", "Balance scheme", 0, QApplication::UnicodeUTF8));
         HalfSphere->setText(QApplication::translate("reconstruction_window", "Half-sphere scheme", 0, QApplication::UnicodeUTF8));
         label_9->setText(QApplication::translate("reconstruction_window", "Parallel reconstruction:", 0, QApplication::UnicodeUTF8));
         ThreadCount->clear();

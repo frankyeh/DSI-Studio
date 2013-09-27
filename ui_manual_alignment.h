@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'manual_alignment.ui'
 **
-** Created: Wed Apr 10 12:41:28 2013
+** Created: Thu Sep 26 22:22:06 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
