@@ -4,7 +4,7 @@
 #include <boost/thread/thread.hpp>
 #include "image/image.hpp"
 
-template<typename ImageType,typename TransformType>
+template<typename ImageType>
 class LinearMapping
 {
     static const int dim = ImageType::dimension;
@@ -12,7 +12,7 @@ class LinearMapping
 public:
     ImageType from,to;
     std::auto_ptr<boost::thread> thread;
-    TransformType arg_min;
+    image::affine_transform<dim> arg_min;
     bool terminated;
     bool ended;
 public:
@@ -40,13 +40,12 @@ public:
     {
         terminated = false;
         ended = false;
-        image::reg::linear(from,to,arg_min,reg_type,image::reg::mutual_information(),terminated,0.01);
+        image::reg::linear<boost::thread>(from,to,arg_min,reg_type,image::reg::mutual_information(),2,terminated);
     }
 
     const float* get(void) const
     {
-        image::transformation_matrix<dim,float> T(arg_min);
-        image::reg::shift_to_center(from.geometry(),to.geometry(),T);
+        image::transformation_matrix<dim,float> T(arg_min,from.geometry(),to.geometry());
         result = T;
         return result.get();
     }
@@ -55,10 +54,7 @@ public:
         thread.reset(new boost::thread(&LinearMapping::argmin,this,reg_type));
     }
 };
-
-// dimenion = 2
-typedef  LinearMapping<image::pointer_image<float,2>,image::affine_transform<2> > lm2_type;
 // dimenion = 3
-typedef  LinearMapping<image::pointer_image<float,3>,image::affine_transform<3> > lm3_type;
+typedef  LinearMapping<image::pointer_image<float,3> > lm3_type;
 
 #endif//linear_hpp

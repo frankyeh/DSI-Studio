@@ -44,7 +44,7 @@ class RenderingTableWidget;
      void select_object(void);
  public:// other slices
      boost::ptr_vector<CustomSliceModel> other_slices;
-     boost::ptr_vector<LinearMapping<image::const_pointer_image<float,3>,image::rigid_scaling_transform<3> > > mi3s;
+     boost::ptr_vector<LinearMapping<image::const_pointer_image<float,3> > > mi3s;
      std::vector<std::vector<float> > transform;
 
      boost::ptr_vector<image::basic_image<float,3> > roi_image;

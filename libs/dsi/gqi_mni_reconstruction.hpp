@@ -72,14 +72,11 @@ public:
         arg_min.scaling[0] = voxel.vs[0] / VGvs[0];
         arg_min.scaling[1] = voxel.vs[1] / VGvs[1];
         arg_min.scaling[2] = voxel.vs[2] / VGvs[2];
+        image::reg::align_center(VF,VG,arg_min);
+
         voxel_volume_scale = arg_min.scaling[0]*arg_min.scaling[1]*arg_min.scaling[2];
         // calculate center of mass
-        image::vector<3,double> mF = image::reg::center_of_mass(VF);
-        image::vector<3,double> mG = image::reg::center_of_mass(VG);
 
-        arg_min.translocation[0] = mG[0]-mF[0]*arg_min.scaling[0];
-        arg_min.translocation[1] = mG[1]-mF[1]*arg_min.scaling[1];
-        arg_min.translocation[2] = mG[2]-mF[2]*arg_min.scaling[2];
 
 
         bool terminated = false;
@@ -95,10 +92,9 @@ public:
         else
         {
             check_prog(0,3);
-            image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::mutual_information(),terminated);
+            image::reg::linear<boost::thread>(VF,VG,arg_min,image::reg::affine,image::reg::mutual_information(),voxel.image_model->thread_count,terminated);
             check_prog(1,3);
-            affine = arg_min;
-            image::reg::shift_to_center(VF.geometry(),VG.geometry(),affine);
+            affine = image::transformation_matrix<3,float>(arg_min,VF.geometry(),VG.geometry());
             affine.inverse();
         }
         image::basic_image<float,3> VFF(VG.geometry());

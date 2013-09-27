@@ -1676,7 +1676,7 @@ bool GLWidget::addSlices(QStringList filenames)
     }
 
 
-    mi3s.push_back(new LinearMapping<image::const_pointer_image<float,3>,image::rigid_scaling_transform<3> >);
+    mi3s.push_back(new LinearMapping<image::const_pointer_image<float,3> >);
     current_visible_slide = mi3s.size();
     roi_image.push_back(new image::basic_image<float,3>(cur_tracking_window.handle->fib_data.dim));
     roi_image_buf.push_back(&*roi_image.back().begin());

@@ -394,8 +394,6 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     if(mi3.get())
     {
         mi3->update_affine();
-        image::transformation_matrix<3,float> T(mi3_arg);
-        image::reg::shift_to_center(slice.source_images.geometry(),fa_template_imp.I.geometry(),T);
         handle->fib_data.trans_to_mni.resize(16);
         image::create_affine_transformation_matrix(mi3->T.get(),mi3->T.get() + 9,handle->fib_data.trans_to_mni.begin(),image::vdim<3>());
         fa_template_imp.add_transformation(handle->fib_data.trans_to_mni);

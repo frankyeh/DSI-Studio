@@ -8,7 +8,7 @@ void run_reg(const image::basic_image<float,3>& from,
              image::affine_transform<3,float>* arg_min,
              unsigned char* terminated)
 {
-    image::reg::linear(from,to,*arg_min,image::reg::affine,cost_func(),*terminated,0.01);
+    image::reg::linear<boost::thread>(from,to,*arg_min,image::reg::affine,cost_func(),2,*terminated);
 }
 manual_alignment::manual_alignment(QWidget *parent,
                                    image::basic_image<float,3> from_,
@@ -146,8 +146,7 @@ void manual_alignment::load_param(void)
 }
 void manual_alignment::update_affine(void)
 {
-    T = arg;
-    image::reg::shift_to_center(from.geometry(),to.geometry(),T);
+    T = image::transformation_matrix<3,float>(arg,from.geometry(),to.geometry());
     iT = T;
     iT.inverse();
 }
