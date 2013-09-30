@@ -111,12 +111,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         mi3_arg.scaling[0] = slice.voxel_size[0] / std::fabs(fa_template_imp.tran[0]);
         mi3_arg.scaling[1] = slice.voxel_size[1] / std::fabs(fa_template_imp.tran[5]);
         mi3_arg.scaling[2] = slice.voxel_size[2] / std::fabs(fa_template_imp.tran[10]);
-        image::vector<3,double> mF = image::reg::center_of_mass(slice.source_images);
-        image::vector<3,double> mG = image::reg::center_of_mass(fa_template_imp.I);
-
-        mi3_arg.translocation[0] = mG[0]-mF[0]*mi3_arg.scaling[0];
-        mi3_arg.translocation[1] = mG[1]-mF[1]*mi3_arg.scaling[1];
-        mi3_arg.translocation[2] = mG[2]-mF[2]*mi3_arg.scaling[2];
+        image::reg::align_center(slice.source_images,fa_template_imp.I,mi3_arg);
         mi3.reset(new manual_alignment(this,slice.source_images,fa_template_imp.I,mi3_arg));
         is_qsdr = false;
     }
@@ -360,8 +355,27 @@ tracking_window::~tracking_window()
     //std::cout << __FUNCTION__ << " " << __FILE__ << std::endl;
 }
 
+void tracking_window::subject2mni(image::vector<3>& pos)
+{
+    if(mi3.get() && mi3->progress == 2)
+    {
+        mi3->T(pos);
+        image::vector<3> result;
+        mi3->bnorm_data(pos,result);
+        pos = result;
+        fa_template_imp.to_mni(pos);
+    }
+    else
+    if(!handle->fib_data.trans_to_mni.empty())
+    {
+        image::vector<3> mni;
+        image::vector_transformation(pos.begin(),mni.begin(), handle->fib_data.trans_to_mni,image::vdim<3>());
+        pos = mni;
+    }
+}
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 {
+
     bool has_info = false;
     image::vector<3,float> pos;
     if (event->type() == QEvent::MouseMove)
@@ -378,7 +392,6 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
             has_info = scene.get_location(point.x(),point.y(),pos);
             copy_target = 1;
         }
-
         // for connectivity matrix
         if(connectivity_matrix.get() && connectivity_matrix->is_graphic_view(obj->parent()))
             connectivity_matrix->mouse_move(static_cast<QMouseEvent*>(event));
@@ -391,18 +404,20 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
             .arg(std::floor(pos[1]*10.0+0.5)/10.0)
             .arg(std::floor(pos[2]*10.0+0.5)/10.0);
     // show atlas position
-    if(mi3.get())
+    if(mi3.get() && mi3->need_update_affine_matrix)
     {
         mi3->update_affine();
         handle->fib_data.trans_to_mni.resize(16);
         image::create_affine_transformation_matrix(mi3->T.get(),mi3->T.get() + 9,handle->fib_data.trans_to_mni.begin(),image::vdim<3>());
         fa_template_imp.add_transformation(handle->fib_data.trans_to_mni);
+        if(mi3->progress >= 1)
+            mi3->need_update_affine_matrix = false;
     }
 
     if(!handle->fib_data.trans_to_mni.empty())
     {
-        image::vector<3,float> mni;
-        image::vector_transformation(pos.begin(),mni.begin(), handle->fib_data.trans_to_mni,image::vdim<3>());
+        image::vector<3,float> mni(pos);
+        subject2mni(mni);
         status += QString("MNI(%1,%2,%3) ")
                 .arg(std::floor(mni[0]*10.0+0.5)/10.0)
                 .arg(std::floor(mni[1]*10.0+0.5)/10.0)

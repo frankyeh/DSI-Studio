@@ -40,7 +40,7 @@ public:
     {
         terminated = false;
         ended = false;
-        image::reg::linear<boost::thread>(from,to,arg_min,reg_type,image::reg::mutual_information(),2,terminated);
+        image::reg::linear(from,to,arg_min,reg_type,image::reg::mutual_information(),terminated);
     }
 
     const float* get(void) const

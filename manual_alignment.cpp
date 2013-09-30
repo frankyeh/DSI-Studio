@@ -6,15 +6,28 @@ typedef image::reg::mutual_information cost_func;
 void run_reg(const image::basic_image<float,3>& from,
              const image::basic_image<float,3>& to,
              image::affine_transform<3,float>* arg_min,
-             unsigned char* terminated)
+             image::reg::bfnorm_mapping<double,3>* bnorm_data,
+             unsigned char* terminated,
+             unsigned char* progress)
 {
-    image::reg::linear<boost::thread>(from,to,*arg_min,image::reg::affine,cost_func(),2,*terminated);
+    *progress = 0;
+    image::reg::linear(from,to,*arg_min,image::reg::affine,cost_func(),*terminated);
+    if(*terminated)
+        return;
+    image::transformation_matrix<3,float> affine(*arg_min,from.geometry(),to.geometry());
+    affine.inverse();
+    *progress = 1;
+    image::basic_image<float,3> new_from(to.geometry());
+    image::resample(from,new_from,affine);
+    image::reg::bfnorm(new_from,to,*bnorm_data,*terminated);
+    if(!(*terminated))
+        *progress = 2;
 }
 manual_alignment::manual_alignment(QWidget *parent,
                                    image::basic_image<float,3> from_,
                                    image::basic_image<float,3> to_,
                                    const image::affine_transform<3,float>& arg_) :
-    QDialog(parent),ui(new Ui::manual_alignment),arg(arg_)
+    QDialog(parent),ui(new Ui::manual_alignment),arg(arg_),bnorm_data(to_.geometry(),image::geometry<3>(7,9,7))
 {
     from.swap(from_);
     to.swap(to_);
@@ -54,9 +67,12 @@ manual_alignment::manual_alignment(QWidget *parent,
     w = 0.0;
 
     thread_terminated = 0;
-    reg_thread.reset(new boost::thread(run_reg,from,to,&arg,&thread_terminated));
+    need_update_affine_matrix = true;
+    reg_thread.reset(new boost::thread(run_reg,from,to,&arg,&bnorm_data,&thread_terminated,&progress));
 
 }
+
+
 void manual_alignment::connect_arg_update()
 {
     connect(ui->tx,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));

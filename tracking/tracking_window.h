@@ -56,6 +56,9 @@ public:
 public:
     image::affine_transform<3,float> mi3_arg;
     std::auto_ptr<manual_alignment> mi3;
+    void subject2mni(image::vector<3>& pos);
+
+public:
     std::auto_ptr<tract_report> tact_report_imp;
     std::auto_ptr<color_bar_dialog> color_bar;
     std::auto_ptr<connectivity_matrix_dialog> connectivity_matrix;

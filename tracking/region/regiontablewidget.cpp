@@ -11,6 +11,7 @@
 #include "mapping/atlas.hpp"
 #include "mapping/fa_template.hpp"
 #include "opengl/glwidget.h"
+#include "manual_alignment.h"
 extern std::vector<atlas> atlas_list;
 extern fa_template fa_template_imp;
 
@@ -631,12 +632,8 @@ void RegionTableWidget::add_atlas(void)
     image::geometry<3> geo = cur_tracking_window.slice.geometry;
     for (image::pixel_index<3>index; index.valid(geo);index.next(geo))
     {
-        image::vector<3,float> mni;
-        image::vector<3,float>cur_coordinate((const unsigned int*)(index.begin()));
-        image::vector_transformation(cur_coordinate.begin(),
-                                     mni.begin(),
-                                     cur_tracking_window.handle->fib_data.trans_to_mni.begin(),
-                                     image::vdim<3>());
+        image::vector<3,float> mni((const unsigned int*)(index.begin()));
+        cur_tracking_window.subject2mni(mni);
         if (!atlas_list[atlas_index].is_labeled_as(mni, label))
                 continue;
         points.push_back(image::vector<3,short>((const unsigned int*)index.begin()));

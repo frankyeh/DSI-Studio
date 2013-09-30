@@ -92,7 +92,7 @@ public:
         else
         {
             check_prog(0,3);
-            image::reg::linear<boost::thread>(VF,VG,arg_min,image::reg::affine,image::reg::mutual_information(),voxel.image_model->thread_count,terminated);
+            image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::mutual_information(),terminated);
             check_prog(1,3);
             affine = image::transformation_matrix<3,float>(arg_min,VF.geometry(),VG.geometry());
             affine.inverse();
@@ -119,14 +119,7 @@ public:
             check_prog(3,3);
             //calculate the goodness of fit
             image::basic_image<float,3> y(VG.geometry());
-            for(image::pixel_index<3> index;VG.geometry().is_valid(index);index.next(VG.geometry()))
-                if(fa_template_imp.I[index.index()] > 0.0)
-                {
-                    image::vector<3,double> pos;
-                    image::reg::bfnorm_warp_coordinate(*mni.get(),index,pos);
-                    image::linear_estimate(VFF,pos,y[index.index()]);
-                }
-
+            image::resample(VFF,y,*mni.get());
             if(export_intermediate)
                 y.save_to_file<image::io::nifti>("nVFF.nii");
 
@@ -261,8 +254,8 @@ public:
         pos += des_offset;
         pos += 0.5;
         pos.floor();
-        image::reg::bfnorm_warp_coordinate(*mni.get(),pos,Jpos);
-        affine(Jpos.begin());
+        (*mni.get())(pos,Jpos);
+        affine(Jpos);
 
         // output mapping position
         if(voxel.output_mapping)

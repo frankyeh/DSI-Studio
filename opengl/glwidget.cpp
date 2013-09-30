@@ -228,7 +228,7 @@ unsigned char getCurView(float* transformation_matrix)
     unsigned char cur_view = 0;
     {
         const float view_dirs[6][3] = {{1,0,0},{0,1,0},{0,0,1},{-1,0,0},{0,-1,0},{0,0,-1}};
-        float mat[16],view[16];
+        float mat[16];
         //image::matrix::product(transformation_matrix,mat,view,image::dim<4,4>(),image::dim<4,4>());
         image::matrix::inverse(transformation_matrix,mat,image::dim<4,4>());
         image::vector<3,float> dir(mat+8);

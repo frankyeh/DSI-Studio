@@ -30,6 +30,9 @@ public:
     QTimer* timer;
     image::transformation_matrix<3,float> T;
     image::transformation_matrix<3,float> iT;
+    image::reg::bfnorm_mapping<double,3> bnorm_data;
+    unsigned char progress;
+    bool need_update_affine_matrix;
     explicit manual_alignment(QWidget *parent,
         image::basic_image<float,3> from_,
         image::basic_image<float,3> to_,
