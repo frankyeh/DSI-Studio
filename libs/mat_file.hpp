@@ -218,7 +218,7 @@ public:
         count = rows*cols;
         name = &*buffer.begin();
         set_title(name.c_str());
-        if (!in)
+        if (!in || rows*cols == 0)
             return false;
 
         try
@@ -253,6 +253,8 @@ public:
         if (gzread(in,(char*)&*buffer.begin(),namelen) == -1)
             return false;
         count = rows*cols;
+        if(!count)
+            return false;
         name = &*buffer.begin();
         set_title(name.c_str());
         try
@@ -286,6 +288,8 @@ public:
         if (fread((char*)&*buffer.begin(),1,namelen,in) != namelen)
             return false;
         count = rows*cols;
+        if(!count)
+            return false;
         name = &*buffer.begin();
         set_title(name.c_str());
         try

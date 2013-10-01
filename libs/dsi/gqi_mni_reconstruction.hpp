@@ -109,11 +109,11 @@ public:
             {
                 case 0:
                     mni.reset(new image::reg::bfnorm_mapping<double,3>(VG.geometry(),image::geometry<3>(7,9,7)));
-                    image::reg::bfnorm(VG,VFF,*mni.get());
+                    image::reg::bfnorm(VG,VFF,*mni.get(),terminated);
                 break;
                 case 1:
                     mni.reset(new image::reg::bfnorm_mapping<double,3>(VG.geometry(),image::geometry<3>(12,14,12)));
-                    image::reg::bfnorm(VG,VFF,*mni.get(),4.0,8);
+                    image::reg::bfnorm(VG,VFF,*mni.get(),terminated,4.0,8);
                 break;
             }
             check_prog(3,3);
