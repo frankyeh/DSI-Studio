@@ -75,7 +75,7 @@ public:
         image::matrix::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
                                     image::dyndim(data.odf.size(),voxel.bvalues.size()));
     }
-    virtual void end(Voxel& voxel,MatFile& mat_writer)
+    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
 
     }
@@ -119,7 +119,7 @@ public:
             sigma += 0.02;
         }
     }
-    virtual void end(Voxel& voxel,MatFile& mat_writer)
+    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
         for(unsigned int index = 0;index < gqis.size();++index)
         {
@@ -129,11 +129,11 @@ public:
                 out << "iso0" << index+1;
             else
                 out << "iso" << index+1;
-            mat_writer.add_matrix(out.str().c_str(),&*isos[index].begin(),1,isos[index].size());
+            mat_writer.write(out.str().c_str(),&*isos[index].begin(),1,isos[index].size());
         }
-        mat_writer.add_matrix("fa0",&*isos[0].begin(),1,isos[0].size());
+        mat_writer.write("fa0",&*isos[0].begin(),1,isos[0].size());
         std::vector<short> index0(voxel.dim.size());
-        mat_writer.add_matrix("index0",&*index0.begin(),1,index0.size());
+        mat_writer.write("index0",&*index0.begin(),1,index0.size());
     }
 };
 

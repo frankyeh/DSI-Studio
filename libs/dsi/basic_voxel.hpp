@@ -8,8 +8,8 @@
 #include <image/image.hpp>
 #include <string>
 #include "tessellated_icosahedron.hpp"
-#include "mat_file.hpp"
-
+#include "gzip_interface.hpp"
+#include "prog_interface_static_link.h"
 
 struct ImageModel;
 struct VoxelParam;
@@ -21,7 +21,7 @@ public:
     BaseProcess(void) {}
     virtual void init(Voxel&) {}
     virtual void run(Voxel&, VoxelData&) {}
-    virtual void end(Voxel&,MatFile& mat_writer) {}
+    virtual void end(Voxel&,gz_mat_write& mat_writer) {}
     virtual ~BaseProcess(void) {}
 };
 
@@ -140,7 +140,7 @@ public:
                 break;
         }
     }
-    void end(MatFile& writer)
+    void end(gz_mat_write& writer)
     {
         for (unsigned int index = 0; index < process_list.size(); ++index)
             process_list[index].end(*this,writer);

@@ -37,7 +37,6 @@ INCLUDEPATH += libs \
 HEADERS += mainwindow.h \
     dicom/dicom_parser.h \
     dicom/dwi_header.hpp \
-    libs/mat_file.hpp \
     libs/dsi/tessellated_icosahedron.hpp \
     libs/dsi/space_mapping.hpp \
     libs/dsi/sh_process.hpp \

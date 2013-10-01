@@ -12,7 +12,7 @@ public:
     Voxel voxel;
     unsigned int thread_count;
     std::string file_name,error_msg;
-    std::auto_ptr<MatFile> mat_reader;
+    gz_mat_read mat_reader;
     std::vector<const unsigned short*> dwi_data;
     image::basic_image<float,3> dwi_sum;
     image::basic_image<unsigned char,3> mask;
@@ -21,8 +21,7 @@ public:
     bool load_from_file(const char* dwi_file_name)
     {
         file_name = dwi_file_name;
-        mat_reader.reset(new MatFile);
-        if (!mat_reader->load_from_file(dwi_file_name))
+        if (!mat_reader.load_from_file(dwi_file_name))
         {
             error_msg = "Cannot open file";
             return false;
@@ -30,13 +29,13 @@ public:
         unsigned int row,col;
 
         const unsigned short* dim_ptr = 0;
-        if (!mat_reader->get_matrix("dimension",row,col,dim_ptr))
+        if (!mat_reader.read("dimension",row,col,dim_ptr))
         {
             error_msg = "Cannot find dimension matrix";
             return false;
         }
         const float* voxel_size = 0;
-        if (!mat_reader->get_matrix("voxel_size",row,col,voxel_size))
+        if (!mat_reader.read("voxel_size",row,col,voxel_size))
         {
             //error_msg = "Cannot find voxel size matrix";
             //return false;
@@ -55,7 +54,7 @@ public:
         voxel.dim[2] = dim_ptr[2];
 
         const float* table;
-        if (!mat_reader->get_matrix("b_table",row,col,table))
+        if (!mat_reader.read("b_table",row,col,table))
         {
             error_msg = "Cannot find b_table matrix";
             return false;
@@ -77,7 +76,7 @@ public:
         {
             std::ostringstream out;
             out << "image" << index;
-            mat_reader->get_matrix(out.str().c_str(),row,col,dwi_data[index]);
+            mat_reader.read(out.str().c_str(),row,col,dwi_data[index]);
             if (!dwi_data[index])
             {
                 error_msg = "Cannot find image matrix";
@@ -89,7 +88,7 @@ public:
         {
             // this grad_dev matrix is rotated
             const float* grad_dev = 0;
-            if(mat_reader->get_matrix("grad_dev",row,col,grad_dev) && row*col == voxel.dim.size()*9)
+            if(mat_reader.read("grad_dev",row,col,grad_dev) && row*col == voxel.dim.size()*9)
             {
                 for(unsigned int index = 0;index < 9;index++)
                     voxel.grad_dev.push_back(image::make_image(voxel.dim,grad_dev+index*voxel.dim.size()));
@@ -121,7 +120,7 @@ public:
 
 
         const unsigned char* mask_ptr = 0;
-        if(mat_reader->get_matrix("mask",row,col,mask_ptr))
+        if(mat_reader.read("mask",row,col,mask_ptr))
         {
             mask.resize(voxel.dim);
             if(row*col == voxel.dim.size())
@@ -139,7 +138,7 @@ public:
         check_prog(3,3);
         return true;
     }
-    void save_to_file(MatFile& mat_writer)
+    void save_to_file(gz_mat_write& mat_writer)
     {
 
         set_title("saving");
@@ -150,17 +149,17 @@ public:
             dim[0] = voxel.dim[0];
             dim[1] = voxel.dim[1];
             dim[2] = voxel.dim[2];
-            mat_writer.add_matrix("dimension",dim,1,3);
+            mat_writer.write("dimension",dim,1,3);
         }
 
         // voxel size
-        mat_writer.add_matrix("voxel_size",&*voxel.vs.begin(),1,3);
+        mat_writer.write("voxel_size",&*voxel.vs.begin(),1,3);
 
         std::vector<float> float_data;
         std::vector<short> short_data;
         voxel.ti.save_to_buffer(float_data,short_data);
-        mat_writer.add_matrix("odf_vertices",&*float_data.begin(),3,voxel.ti.vertices_count);
-        mat_writer.add_matrix("odf_faces",&*short_data.begin(),3,voxel.ti.faces.size());
+        mat_writer.write("odf_vertices",&*float_data.begin(),3,voxel.ti.vertices_count);
+        mat_writer.write("odf_faces",&*short_data.begin(),3,voxel.ti.faces.size());
 
     }
 public:
@@ -193,7 +192,7 @@ public:
             return false;
         std::string output_name = file_name;
         output_name += ext;
-        MatFile mat_writer(output_name.c_str());
+        gz_mat_write mat_writer(output_name.c_str());
         save_to_file(mat_writer);
         voxel.end(mat_writer);
         check_prog(0,0);

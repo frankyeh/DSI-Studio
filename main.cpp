@@ -8,7 +8,6 @@
 #include <QMessageBox>
 #include <QDir>
 #include "mainwindow.h"
-#include "mat_file.hpp"
 #include "boost/program_options.hpp"
 #include "image/image.hpp"
 #include "mapping/fa_template.hpp"

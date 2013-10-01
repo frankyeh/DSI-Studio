@@ -58,7 +58,7 @@ bool vbc_database::load_database(const char* database_name)
     // read databse data
 
     // does it contain subject info?
-    MatFile& matfile = handle->fib_data.mat_reader;
+    gz_mat_read& matfile = handle->fib_data.mat_reader;
     subject_qa.clear();
     subject_qa_buffer.clear();
     unsigned int row,col;
@@ -67,7 +67,7 @@ bool vbc_database::load_database(const char* database_name)
         std::ostringstream out;
         out << "subject" << index;
         const float* buf = 0;
-        matfile.get_matrix(out.str().c_str(),row,col,buf);
+        matfile.read(out.str().c_str(),row,col,buf);
         if (!buf)
             break;
         subject_qa.push_back(buf);
@@ -78,7 +78,7 @@ bool vbc_database::load_database(const char* database_name)
     if(num_subjects)
     {
         const char* str = 0;
-        matfile.get_matrix("subject_names",row,col,str);
+        matfile.read("subject_names",row,col,str);
         if(str)
         {
             std::istringstream in(str);
@@ -86,7 +86,7 @@ bool vbc_database::load_database(const char* database_name)
                 in >> subject_names[index];
         }
         const float* r2_values = 0;
-        matfile.get_matrix("R2",row,col,r2_values);
+        matfile.read("R2",row,col,r2_values);
         std::copy(r2_values,r2_values+num_subjects,R2.begin());
     }
     return !subject_qa.empty();
@@ -120,11 +120,11 @@ void vbc_database::get_data_at(unsigned int index,unsigned int fib,std::vector<f
     for(unsigned int index = 0;index < num_subjects;++index)
         data[index] = subject_qa[index][s_index+fib_offset];
 }
-bool vbc_database::is_consistent(MatFile& mat_reader) const
+bool vbc_database::is_consistent(gz_mat_read& mat_reader) const
 {
     unsigned int row,col;
     const float* odf_buffer;
-    mat_reader.get_matrix("odf_vertices",row,col,odf_buffer);
+    mat_reader.read("odf_vertices",row,col,odf_buffer);
     if (!odf_buffer)
     {
         error_msg = "Invalid subject data format in ";
@@ -147,7 +147,7 @@ bool vbc_database::is_consistent(MatFile& mat_reader) const
     }
     return true;
 }
-bool vbc_database::sample_odf(MatFile& mat_reader,std::vector<float>& data)
+bool vbc_database::sample_odf(gz_mat_read& mat_reader,std::vector<float>& data)
 {
     ODFData subject_odf;
     for(unsigned int index = 0;1;++index)
@@ -156,7 +156,7 @@ bool vbc_database::sample_odf(MatFile& mat_reader,std::vector<float>& data)
         out << "odf" << index;
         const float* odf = 0;
         unsigned int row,col;
-        mat_reader.get_matrix(out.str().c_str(),row,col,odf);
+        mat_reader.read(out.str().c_str(),row,col,odf);
         if (!odf)
             break;
         subject_odf.setODF(index,odf,row*col);
@@ -167,7 +167,7 @@ bool vbc_database::sample_odf(MatFile& mat_reader,std::vector<float>& data)
         std::ostringstream out;
         out << "fa" << fib;
         unsigned int row,col;
-        mat_reader.get_matrix(out.str().c_str(),row,col,cur_fa[fib]);
+        mat_reader.read(out.str().c_str(),row,col,cur_fa[fib]);
         if (!cur_fa[fib])
         {
             error_msg = "Inconsistent fa number in subject fib file";
@@ -222,7 +222,7 @@ bool vbc_database::load_subject_files(const std::vector<std::string>& file_names
     // load subject data
     for(unsigned int subject_index = 0;check_prog(subject_index,num_subjects);++subject_index)
     {
-        MatFile mat_reader;
+        gz_mat_read mat_reader;
         if(!mat_reader.load_from_file(file_names[subject_index].c_str()))
         {
             error_msg = "failed to load subject data ";
@@ -239,7 +239,7 @@ bool vbc_database::load_subject_files(const std::vector<std::string>& file_names
         // load R2
         const float* value= 0;
         unsigned int row,col;
-        mat_reader.get_matrix("R2",row,col,value);
+        mat_reader.read("R2",row,col,value);
         if(value)
             R2[subject_index] = *value;
     }
@@ -251,13 +251,20 @@ void vbc_database::save_subject_data(const char* output_name) const
     if(!handle.get())
         return;
     // store results
-    MatFile& matfile = handle->fib_data.mat_reader;
-    matfile.write_to_file(output_name);
+    gz_mat_write matfile(output_name);
+    if(!matfile)
+    {
+        error_msg = "Cannot output file";
+        return;
+    }
+    gz_mat_read& mat_source = handle->fib_data.mat_reader;
+    for(unsigned int index = 0;index < mat_source.size();++index)
+        matfile.write(mat_source[index]);
     for(unsigned int index = 0;check_prog(index,subject_qa.size());++index)
     {
         std::ostringstream out;
         out << "subject" << index;
-        matfile.add_matrix(out.str().c_str(),subject_qa[index],num_fiber,si2vi.size());
+        matfile.write(out.str().c_str(),subject_qa[index],num_fiber,si2vi.size());
     }
     std::string name_string;
     for(unsigned int index = 0;index < num_subjects;++index)
@@ -265,28 +272,27 @@ void vbc_database::save_subject_data(const char* output_name) const
         name_string += subject_names[index];
         name_string += "\n";
     }
-    matfile.add_matrix("subject_names",name_string.c_str(),1,name_string.size());
-    matfile.add_matrix("R2",&*R2.begin(),1,R2.size());
+    matfile.write("subject_names",name_string.c_str(),1,name_string.size());
+    matfile.write("R2",&*R2.begin(),1,R2.size());
     begin_prog("output data");
-    matfile.close_file();
 }
 
 bool vbc_database::get_odf_profile(const char* file_name,std::vector<float>& cur_subject_data)
 {
-    std::auto_ptr<MatFile> single_subject(new MatFile);
-    if(!single_subject->load_from_file(file_name))
+    gz_mat_read single_subject;
+    if(!single_subject.load_from_file(file_name))
     {
         error_msg = "fail to load the fib file";
         return false;
     }
-    if(!is_consistent(*single_subject.get()))
+    if(!is_consistent(single_subject))
     {
         error_msg = "Inconsistent ODF dimension";
         return false;
     }
     cur_subject_data.clear();
     cur_subject_data.resize(num_fiber*si2vi.size());
-    if(!sample_odf(*single_subject.get(),cur_subject_data))
+    if(!sample_odf(single_subject,cur_subject_data))
     {
         error_msg += file_name;
         return false;

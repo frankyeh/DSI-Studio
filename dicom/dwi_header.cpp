@@ -3,10 +3,8 @@
 #include "image/image.hpp"
 #include <boost/lambda/lambda.hpp>
 #include "dwi_header.hpp"
-#include "mat_file.hpp"
-
-
-
+#include "gzip_interface.hpp"
+#include "prog_interface_static_link.h"
 bool DwiHeader::open(const char* filename)
 {
     image::io::dicom header;
@@ -339,8 +337,8 @@ void correct_t2(boost::ptr_vector<DwiHeader>& dwi_files)
                 neg_inv_T2[index] = 2000;
         }
 
-        //write_mat.add_matrix("spin_density",&*spin_density.begin(),1,total_size);
-        //write_mat.add_matrix("T2",&*neg_inv_T2.begin(),1,total_size);
+        //write_mat.write("spin_density",&*spin_density.begin(),1,total_size);
+        //write_mat.write("T2",&*neg_inv_T2.begin(),1,total_size);
 
     }
 
@@ -363,8 +361,8 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
     if (slice_pile == 1) // Siemens Mosaic
         correct_t2(dwi_files);
 
-    MatFile write_mat;
-    if(!write_mat.write_to_file(di_file))
+    gz_mat_write write_mat(di_file);
+    if(!write_mat)
         return false;
 
     image::geometry<3> geo = dwi_files.front().image.geometry();
@@ -381,7 +379,7 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
         if(upsampling == 2)
             std::for_each(dimension,dimension+3,boost::lambda::_1 >>= 1);
         output_size = dimension[0]*dimension[1]*dimension[2];
-        write_mat.add_matrix("dimension",dimension,1,3);
+        write_mat.write("dimension",dimension,1,3);
     }
     //store dimension
     {
@@ -391,7 +389,7 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
             std::for_each(voxel_size,voxel_size+3,boost::lambda::_1 /= 2.0);
         if(upsampling == 2)
             std::for_each(voxel_size,voxel_size+3,boost::lambda::_1 *= 2.0);
-        write_mat.add_matrix("voxel_size",voxel_size,1,3);
+        write_mat.write("voxel_size",voxel_size,1,3);
     }
 
     //store images
@@ -435,7 +433,7 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
                 image::downsampling(buffer);
             ptr = (const unsigned short*)&*buffer.begin();
         }
-        write_mat.add_matrix(name.str().c_str(),ptr,1,output_size);
+        write_mat.write(name.str().c_str(),ptr,1,output_size);
 
     }
     // store bvec file
@@ -446,14 +444,12 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
             b_table.push_back(dwi_files[index].get_bvalue());
             std::copy(dwi_files[index].get_bvec(),dwi_files[index].get_bvec()+3,std::back_inserter(b_table));
         }
-        write_mat.add_matrix("b_table",&b_table[0],4,b_table.size()/4);
+        write_mat.write("b_table",&b_table[0],4,b_table.size()/4);
     }
 
     if(!dwi_files[0].grad_dev.empty())
-        write_mat.add_matrix("grad_dev",&*dwi_files[0].grad_dev.begin(),dwi_files[0].grad_dev.size()/9,9);
+        write_mat.write("grad_dev",&*dwi_files[0].grad_dev.begin(),dwi_files[0].grad_dev.size()/9,9);
     if(!dwi_files[0].mask.empty())
-        write_mat.add_matrix("mask",&*dwi_files[0].mask.begin(),1,dwi_files[0].mask.size());
-    write_mat.close_file();
-
+        write_mat.write("mask",&*dwi_files[0].mask.begin(),1,dwi_files[0].mask.size());
     return true;
 }

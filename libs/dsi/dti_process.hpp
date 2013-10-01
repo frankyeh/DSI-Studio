@@ -123,20 +123,20 @@ public:
         d1[data.voxel_index] = d[1];
         d2[data.voxel_index] = d[2];
     }
-    virtual void end(Voxel& voxel,MatFile& mat_writer)
+    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
         set_title("fa");
-        mat_writer.add_matrix("fa0",&*fa.begin(),1,fa.size());
+        mat_writer.write("fa0",&*fa.begin(),1,fa.size());
         set_title("dir0");
-        mat_writer.add_matrix("dir0",&*fdir.begin(),1,fdir.size());
+        mat_writer.write("dir0",&*fdir.begin(),1,fdir.size());
         set_title("adc");
-        mat_writer.add_matrix("adc",&*md.begin(),1,md.size());
+        mat_writer.write("adc",&*md.begin(),1,md.size());
         set_title("axial_dif");
-        mat_writer.add_matrix("axial_dif",&*d0.begin(),1,d0.size());
+        mat_writer.write("axial_dif",&*d0.begin(),1,d0.size());
         set_title("radial_dif1");
-        mat_writer.add_matrix("radial_dif1",&*d1.begin(),1,d1.size());
+        mat_writer.write("radial_dif1",&*d1.begin(),1,d1.size());
         set_title("radial_dif2");
-        mat_writer.add_matrix("radial_dif2",&*d2.begin(),1,d2.size());
+        mat_writer.write("radial_dif2",&*d2.begin(),1,d2.size());
     }
 };
 

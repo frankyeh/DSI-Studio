@@ -4,10 +4,6 @@
 #include <set>
 
 #include "prog_interface_static_link.h"
-#include "mat_file.hpp"
-typedef class ReadMatFile MatReader;
-typedef class WriteMatFile MatWriter;
-
 #include "roi.hpp"
 #include "tracking_model.hpp"
 #include "tract_cluster.hpp"

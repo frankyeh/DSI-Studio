@@ -2,7 +2,7 @@
 #define GZIP_INTERFACE_HPP
 #include "gzlib/zlib.h"
 #include "image/image.hpp"
-
+#include "prog_interface_static_link.h"
 
 class gz_istream{
     std::ifstream in;
@@ -37,6 +37,9 @@ public:
     }
     void read(void* buf,size_t size)
     {
+        char title[] = "reading......";
+        title[7+(std::clock()/CLOCKS_PER_SEC)%5] = 0;
+        ::set_title(title);
         if(handle)
         {
             if (gzread(handle,buf,size) == -1)
@@ -105,6 +108,9 @@ public:
     }
     void write(const void* buf,size_t size)
     {
+        char title[] = "writing......";
+        title[7+(std::clock()/CLOCKS_PER_SEC)%5] = 0;
+        ::set_title(title);
         if(handle)
         {
             if(gzwrite(handle,buf,size) == -1)
@@ -130,4 +136,7 @@ public:
 
 
 typedef image::io::nifti_base<gz_istream,gz_ostream> gz_nifti;
+typedef image::io::mat_write_base<gz_ostream> gz_mat_write;
+typedef image::io::mat_read_base<gz_istream> gz_mat_read;
+
 #endif // GZIP_INTERFACE_HPP

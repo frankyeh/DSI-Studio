@@ -258,7 +258,7 @@ void MainWindow::on_OpenDICOM_clicked()
         return;
 
     add_work_dir(QFileInfo(filenames[0]).absolutePath());
-    if(QFileInfo(filenames[0]).baseName() == "dcm")
+    if(QFileInfo(filenames[0]).completeSuffix() == "dcm")
     {
         QString sel = QString("*.")+QFileInfo(filenames[0]).suffix();
         QDir directory = QFileInfo(filenames[0]).absoluteDir();

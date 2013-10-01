@@ -4,10 +4,8 @@
 #include "Regions.h"
 #include "SliceModel.h"
 #include "libs/tracking/tracking_model.hpp"
-#include "mat_file.hpp"
 #include "libs/gzip_interface.hpp"
-typedef class ReadMatFile MatReader;
-typedef class WriteMatFile MatWriter;
+
 
 // ---------------------------------------------------------------------------
 void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool del)

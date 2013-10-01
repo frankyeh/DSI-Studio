@@ -3,7 +3,7 @@
 #include <vector>
 #include <iostream>
 #include "image/image.hpp"
-#include "mat_file.hpp"
+#include "gzip_interface.hpp"
 #include "prog_interface_static_link.h"
 #include <boost/math/distributions/normal.hpp>
 #include <boost/thread/thread.hpp>
@@ -39,7 +39,7 @@ private:// template information
     std::vector<image::vector<3,float> > vertices;
     unsigned int half_odf_size;
     float fiber_threshold;
-    bool is_consistent(MatFile& mat_reader) const;
+    bool is_consistent(gz_mat_read& mat_reader) const;
     void read_template(void);
 public:
     bool create_database(const char* templat_name);
@@ -51,7 +51,7 @@ private:// database information
     std::vector<std::vector<float> > subject_qa_buffer;
     std::vector<const float*> subject_qa;
     std::vector<float> R2;
-    bool sample_odf(MatFile& mat_reader,std::vector<float>& data);
+    bool sample_odf(gz_mat_read& mat_reader,std::vector<float>& data);
 public:
     unsigned int subject_count(void)const{return num_subjects;}
     const std::string& subject_name(unsigned int index)const{return subject_names[index];}

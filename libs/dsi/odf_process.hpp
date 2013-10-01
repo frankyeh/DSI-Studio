@@ -13,7 +13,7 @@ public:
         for (unsigned int index = 0; index < data.space.size(); ++index)
             data.space[index] = voxel.image_model->dwi_data[index][data.voxel_index];
     }
-    virtual void end(Voxel&,MatFile& mat_writer) {}
+    virtual void end(Voxel&,gz_mat_write& mat_writer) {}
 };
 
 class BalanceScheme : public BaseProcess{
@@ -233,7 +233,7 @@ public:
         }
 
     }
-    virtual void end(Voxel& voxel,MatFile& mat_writer)
+    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
 
         if (!voxel.need_odf)
@@ -246,7 +246,7 @@ public:
                     std::for_each(odf_data[index].begin(),odf_data[index].end(),boost::lambda::_1 /= voxel.z0);
                 std::ostringstream out;
                 out << "odf" << index;
-                mat_writer.add_matrix(out.str().c_str(),&*odf_data[index].begin(),
+                mat_writer.write(out.str().c_str(),&*odf_data[index].begin(),
                                       voxel.ti.half_vertices_count,
                                       odf_data[index].size()/(voxel.ti.half_vertices_count));
             }
@@ -304,7 +304,7 @@ public:
                    voxel.template_odfs[odf_index/odf_block_size].begin() + (odf_index%odf_block_size+1)*(voxel.ti.half_vertices_count),
                    data.odf.begin());
     }
-    virtual void end(Voxel& voxel,MatFile& mat_writer)
+    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
     }
 };
@@ -354,7 +354,7 @@ public:
                   index_mapping2[cur_index]+data.odf.size(),data.odf.begin());
 
     }
-    virtual void end(Voxel& voxel,MatFile& mat_writer)
+    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
         if (voxel.need_odf)
         {
@@ -363,12 +363,12 @@ public:
             {
                 std::ostringstream out;
                 out << "odf" << index;
-                mat_writer.add_matrix(out.str().c_str(),&*voxel.template_odfs[index].begin(),
+                mat_writer.write(out.str().c_str(),&*voxel.template_odfs[index].begin(),
                                       voxel.ti.half_vertices_count,
                                       voxel.template_odfs[index].size()/(voxel.ti.half_vertices_count));
             }
         }
-        mat_writer.add_matrix("trans",&*voxel.param,4,4);
+        mat_writer.write("trans",&*voxel.param,4,4);
     }
 };
 
@@ -385,7 +385,7 @@ public:
     {
         voxel.qa_map[data.voxel_index] = data.fa[0];
     }
-    virtual void end(Voxel& voxel,MatFile& mat_writer)
+    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
 
     }
@@ -415,20 +415,20 @@ public:
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             fa[index][data.voxel_index] = data.fa[index];
     }
-    virtual void end(Voxel& voxel,MatFile& mat_writer)
+    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
         set_title("output gfa");
-        mat_writer.add_matrix("gfa",&*gfa.begin(),1,gfa.size());
+        mat_writer.write("gfa",&*gfa.begin(),1,gfa.size());
 
         if(!voxel.odf_deconvolusion && voxel.z0 + 1.0 != 1.0)
         {
-            mat_writer.add_matrix("z0",&voxel.z0,1,1);
+            mat_writer.write("z0",&voxel.z0,1,1);
             std::for_each(iso.begin(),iso.end(),boost::lambda::_1 /= voxel.z0);
             for (unsigned int i = 0;i < voxel.max_fiber_number;++i)
                 std::for_each(fa[i].begin(),fa[i].end(),boost::lambda::_1 /= voxel.z0);
         }
 
-        mat_writer.add_matrix("iso",&*iso.begin(),1,iso.size());
+        mat_writer.write("iso",&*iso.begin(),1,iso.size());
 
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
         {
@@ -438,7 +438,7 @@ public:
             std::string fa_str = "fa";
             fa_str += num;
             set_title(fa_str.c_str());
-            mat_writer.add_matrix(fa_str.c_str(),&*fa[index].begin(),1,fa[index].size());
+            mat_writer.write(fa_str.c_str(),&*fa[index].begin(),1,fa[index].size());
         }
 
         // output normalized qa
@@ -457,7 +457,7 @@ public:
                 std::string fa_str = "nqa";
                 fa_str += num;
                 set_title(fa_str.c_str());
-                mat_writer.add_matrix(fa_str.c_str(),&*fa[index].begin(),1,fa[index].size());
+                mat_writer.write(fa_str.c_str(),&*fa[index].begin(),1,fa[index].size());
             }
         }
 
@@ -484,7 +484,7 @@ public:
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             findex[index][data.voxel_index] = data.dir_index[index];
     }
-    virtual void end(Voxel& voxel,MatFile& mat_writer)
+    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
         {
@@ -494,7 +494,7 @@ public:
             std::string index_str = "index";
             index_str += num;
             set_title(index_str.c_str());
-            mat_writer.add_matrix(index_str.c_str(),&*findex[index].begin(),1,findex[index].size());
+            mat_writer.write(index_str.c_str(),&*findex[index].begin(),1,findex[index].size());
         }
     }
 };
@@ -519,7 +519,7 @@ public:
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             std::copy(data.dir[index].begin(),data.dir[index].end(),dir[index].begin() + dir_index + dir_index + dir_index);
     }
-    virtual void end(Voxel& voxel,MatFile& mat_writer)
+    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
         {
@@ -529,7 +529,7 @@ public:
             std::string index_str = "dir";
             index_str += num;
             set_title(index_str.c_str());
-            mat_writer.add_matrix(index_str.c_str(),&*dir[index].begin(),1,dir[index].size());
+            mat_writer.write(index_str.c_str(),&*dir[index].begin(),1,dir[index].size());
         }
     }
 };

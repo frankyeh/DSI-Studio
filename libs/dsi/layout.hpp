@@ -5,8 +5,8 @@
 #include "mix_gaussian_model.hpp"
 #include "tessellated_icosahedron.hpp"
 #include "racian_noise.hpp"
+#include "gzip_interface.hpp"
 #include "prog_interface_static_link.h"
-#include "mat_file.hpp"
 
 class Layout
 {
@@ -173,17 +173,17 @@ public:
 
         std::string fib_file_name(file_name);
         fib_file_name += ".layout.fib";
-        MatFile mat_writer(file_name),mat_layout(fib_file_name.c_str());
+        gz_mat_write mat_writer(file_name),mat_layout(fib_file_name.c_str());
         // output dimension
         {
-            mat_writer.add_matrix("dimension",&*dim.begin(),1,3);
-            mat_layout.add_matrix("dimension",&*dim.begin(),1,3);
+            mat_writer.write("dimension",&*dim.begin(),1,3);
+            mat_layout.write("dimension",&*dim.begin(),1,3);
         }
         // output vexol size
         {
             float vs[3] = {1.0,1.0,1.0};
-            mat_writer.add_matrix("voxel_size",vs,1,3);
-            mat_layout.add_matrix("voxel_size",vs,1,3);
+            mat_writer.write("voxel_size",vs,1,3);
+            mat_layout.write("voxel_size",vs,1,3);
         }
         // output b_table
         {
@@ -194,7 +194,7 @@ public:
                 buffer.push_back(bvalues[index]);
                 std::copy(bvectors[index].begin(),bvectors[index].end(),std::back_inserter(buffer));
             }
-            mat_writer.add_matrix("b_table",&*buffer.begin(),4,bvalues.size());
+            mat_writer.write("b_table",&*buffer.begin(),4,bvalues.size());
         }
         // output images
         {
@@ -212,7 +212,7 @@ public:
                 }
                 std::ostringstream out;
                 out << "image" << index;
-                mat_writer.add_matrix(out.str().c_str(),&*buffer.begin(),1,buffer.size());
+                mat_writer.write(out.str().c_str(),&*buffer.begin(),1,buffer.size());
             }
         }
         // output layout
@@ -220,13 +220,13 @@ public:
             std::vector<float> float_data;
             std::vector<short> short_data;
             ti.save_to_buffer(float_data,short_data);
-            mat_layout.add_matrix("odf_vertices",&*float_data.begin(),3,ti.vertices_count);
-            mat_layout.add_matrix("odf_faces",&*short_data.begin(),3,ti.faces.size());
-            mat_layout.add_matrix("fa0",&*fa[0].begin(),1,fa[0].size());
-            mat_layout.add_matrix("fa1",&*fa[1].begin(),1,fa[1].size());
-            mat_layout.add_matrix("gfa",&*gfa.begin(),1,gfa.size());
-            mat_layout.add_matrix("index0",&*findex[0].begin(),1,findex[0].size());
-            mat_layout.add_matrix("index1",&*findex[1].begin(),1,findex[1].size());
+            mat_layout.write("odf_vertices",&*float_data.begin(),3,ti.vertices_count);
+            mat_layout.write("odf_faces",&*short_data.begin(),3,ti.faces.size());
+            mat_layout.write("fa0",&*fa[0].begin(),1,fa[0].size());
+            mat_layout.write("fa1",&*fa[1].begin(),1,fa[1].size());
+            mat_layout.write("gfa",&*gfa.begin(),1,gfa.size());
+            mat_layout.write("index0",&*findex[0].begin(),1,findex[0].size());
+            mat_layout.write("index1",&*findex[1].begin(),1,findex[1].size());
 
         }
 

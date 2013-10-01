@@ -195,14 +195,14 @@ public:
         remove_isotropic(data.odf);
     }
 
-    virtual void end(Voxel& voxel,MatFile& mat_writer)
+    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
         if (!voxel.odf_deconvolusion)
             return;
-        mat_writer.add_matrix("deconvolution_kernel",&*voxel.response_function.begin(),1,voxel.response_function.size());
-        mat_writer.add_matrix("free_water_diffusion",&*voxel.free_water_diffusion.begin(),1,voxel.free_water_diffusion.size());
-        mat_writer.add_matrix("sensitivity_error_percentage",&sensitivity_error_percentage,1,1);
-        mat_writer.add_matrix("specificity_error_percentage",&specificity_error_percentage,1,1);
+        mat_writer.write("deconvolution_kernel",&*voxel.response_function.begin(),1,voxel.response_function.size());
+        mat_writer.write("free_water_diffusion",&*voxel.free_water_diffusion.begin(),1,voxel.free_water_diffusion.size());
+        mat_writer.write("sensitivity_error_percentage",&sensitivity_error_percentage,1,1);
+        mat_writer.write("specificity_error_percentage",&specificity_error_percentage,1,1);
     }
 
 };

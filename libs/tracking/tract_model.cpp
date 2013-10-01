@@ -7,11 +7,8 @@
 #include "tract_model.hpp"
 #include "tracking_static_link.h"
 #include "prog_interface_static_link.h"
-#include "mat_file.hpp"
 #include "libs/tracking/tracking_model.hpp"
 #include "gzip_interface.hpp"
-typedef class ReadMatFile MatReader;
-typedef class WriteMatFile MatWriter;
 
 
 struct TrackVis
@@ -166,19 +163,19 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
         else
             if (file_name.find(".mat") != std::string::npos)
             {
-                MatFile in;
+                gz_mat_read in;
                 if(!in.load_from_file(file_name_))
                     return false;
                 const float* buf = 0;
                 const unsigned int* length = 0;
                 const unsigned int* cluster = 0;
                 unsigned int row,col;
-                if(!in.get_matrix("tracts",row,col,buf))
+                if(!in.read("tracts",row,col,buf))
                     return false;
-                if(!in.get_matrix("length",row,col,length))
+                if(!in.read("length",row,col,length))
                     return false;
                 loaded_tract_data.resize(col);
-                in.get_matrix("cluster",row,col,cluster);
+                in.read("cluster",row,col,cluster);
                 for(unsigned int index = 0;index < loaded_tract_data.size();++index)
                 {
                     loaded_tract_data[index].resize(length[index]*3);
@@ -341,8 +338,8 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     }
     if (file_name.find(".mat") != std::string::npos)
     {
-        MatFile out;
-        if(!out.write_to_file(file_name.c_str(),false))
+        image::io::mat_write out(file_name.c_str());
+        if(!out)
             return false;
         std::vector<float> buf;
         std::vector<unsigned int> length;
@@ -351,8 +348,8 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
             length.push_back(tract_data[index].size()/3);
             std::copy(tract_data[index].begin(),tract_data[index].end(),std::back_inserter(buf));
         }
-        out.add_matrix("tracts",&*buf.begin(),3,buf.size()/3);
-        out.add_matrix("length",&*length.begin(),1,length.size());
+        out.write("tracts",&*buf.begin(),3,buf.size()/3);
+        out.write("length",&*length.begin(),1,length.size());
         return true;
     }
     return false;
@@ -422,8 +419,8 @@ bool TractModel::save_all(const char* file_name_,const std::vector<TractModel*>&
 
     if (file_name.find(".mat") != std::string::npos)
     {
-        MatFile out;
-        if(!out.write_to_file(file_name.c_str(),false))
+        image::io::mat_write out(file_name.c_str());
+        if(!out)
             return false;
         std::vector<float> buf;
         std::vector<unsigned int> length;
@@ -435,9 +432,9 @@ bool TractModel::save_all(const char* file_name_,const std::vector<TractModel*>&
             length.push_back(all[index]->tract_data[i].size()/3);
             std::copy(all[index]->tract_data[i].begin(),all[index]->tract_data[i].end(),std::back_inserter(buf));
         }
-        out.add_matrix("tracts",&*buf.begin(),3,buf.size()/3);
-        out.add_matrix("length",&*length.begin(),1,length.size());
-        out.add_matrix("cluster",&*cluster.begin(),1,cluster.size());
+        out.write("tracts",&*buf.begin(),3,buf.size()/3);
+        out.write("length",&*length.begin(),1,length.size());
+        out.write("cluster",&*cluster.begin(),1,cluster.size());
         return true;
     }
     return false;
@@ -535,10 +532,10 @@ void TractModel::save_end_points(const char* file_name_) const
     }
     if (file_name.find(".mat") != std::string::npos)
     {
-        MatFile out;
-        if(!out.write_to_file(file_name_,false))
+        image::io::mat_write out(file_name_);
+        if(!out)
             return;
-        out.add_matrix("end_points",(const float*)&*buffer.begin(),3,buffer.size()/3);
+        out.write("end_points",(const float*)&*buffer.begin(),3,buffer.size()/3);
     }
 
 }

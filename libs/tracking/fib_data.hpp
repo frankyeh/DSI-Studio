@@ -4,8 +4,9 @@
 #include <sstream>
 #include <string>
 #include "prog_interface_static_link.h"
-#include "mat_file.hpp"
 #include "image/image.hpp"
+#include "gzip_interface.hpp"
+
 struct AngStatistics
 {
     float ang_dev;
@@ -186,13 +187,13 @@ private:
     }
 public:
 
-    bool add_data(MatFile& mat_reader)
+    bool add_data(gz_mat_read& mat_reader)
     {
         unsigned int row,col;
         // dimension
         {
             const unsigned short* dim_buf = 0;
-            if (!mat_reader.get_matrix("dimension",row,col,dim_buf))
+            if (!mat_reader.read("dimension",row,col,dim_buf))
             {
                 error_msg = "cannot find dimension matrix";
                 return false;
@@ -202,7 +203,7 @@ public:
         // odf_vertices
         {
             const float* odf_buffer;
-            if (mat_reader.get_matrix("odf_vertices",row,col,odf_buffer))
+            if (mat_reader.read("odf_vertices",row,col,odf_buffer))
             {
                     odf_table.resize(col);
                 for (unsigned int index = 0;index < odf_table.size();++index,odf_buffer += 3)
@@ -223,7 +224,7 @@ public:
         // odf_faces
         {
             const unsigned short* odf_buffer;
-            if(mat_reader.get_matrix("odf_faces",row,col,odf_buffer))
+            if(mat_reader.read("odf_faces",row,col,odf_buffer))
             {
                 odf_faces.resize(col);
                 for (unsigned int index = 0;index < odf_faces.size();++index,odf_buffer += 3)
@@ -235,14 +236,14 @@ public:
             }
         }
 
-        for (unsigned int index = 0;check_prog(index,mat_reader.get_matrix_count());++index)
+        for (unsigned int index = 0;check_prog(index,mat_reader.size());++index)
         {
-            std::string matrix_name = mat_reader.get_matrix_name(index);
+            std::string matrix_name = mat_reader.name(index);
 
             if (matrix_name == "odfs")
             {
                 const float* odfs;
-                mat_reader.get_matrix(index,row,col,odfs);
+                mat_reader.read(index,row,col,odfs);
                 odf.setODFs(odfs,row*col);
                 continue;
             }
@@ -250,7 +251,7 @@ public:
             if (matrix_name == "image")
             {
                 check_index(0);
-                mat_reader.get_matrix(index,row,col,fa[0]);
+                mat_reader.read(index,row,col,fa[0]);
                 findex_buf.resize(1);
                 findex_buf[0].resize(row*col);
                 findex[0] = &*(findex_buf[0].begin());
@@ -269,19 +270,19 @@ public:
             if (prefix_name == "index")
             {
                 check_index(store_index);
-                mat_reader.get_matrix(index,row,col,findex[store_index]);
+                mat_reader.read(index,row,col,findex[store_index]);
                 continue;
             }
             if (prefix_name == "fa")
             {
                 check_index(store_index);
-                mat_reader.get_matrix(index,row,col,fa[store_index]);
+                mat_reader.read(index,row,col,fa[store_index]);
                 continue;
             }
             if (prefix_name == "dir")
             {
                 const float* dir_ptr;
-                mat_reader.get_matrix(index,row,col,dir_ptr);
+                mat_reader.read(index,row,col,dir_ptr);
                 check_index(store_index);
                 dir.resize(findex.size());
                 dir[store_index] = dir_ptr;
@@ -297,7 +298,7 @@ public:
             if (prefix_name == "odf")
             {
                 const float* buf;
-                mat_reader.get_matrix(index,row,col,buf);
+                mat_reader.read(index,row,col,buf);
                 odf.setODF(store_index,buf,row*col);
                 continue;
             }
@@ -316,7 +317,7 @@ public:
 
             if(index_data[prefix_name_index].size() <= store_index)
                 index_data[prefix_name_index].resize(store_index+1);
-            mat_reader.get_matrix(index,row,col,index_data[prefix_name_index][store_index]);
+            mat_reader.read(index,row,col,index_data[prefix_name_index][store_index]);
 
         }
 
@@ -400,7 +401,7 @@ class FibData
 {
 public:
     std::string error_msg;
-    MatFile mat_reader;
+    gz_mat_read mat_reader;
     FiberDirection fib;
 public:
     image::geometry<3> dim;
@@ -420,7 +421,7 @@ public:
     {
         if (!mat_reader.load_from_file(file_name))
         {
-            error_msg = mat_reader.error_msg;
+            error_msg = "Cannot open file";
             return false;
         }
         if(!fib.add_data(mat_reader))
@@ -444,14 +445,14 @@ public:
         other_mapping_index = view_item.size();
 
         unsigned int row,col;
-        for (unsigned int index = 0;check_prog(index,mat_reader.get_matrix_count());++index)
+        for (unsigned int index = 0;check_prog(index,mat_reader.size());++index)
         {
-            std::string matrix_name = mat_reader.get_matrix_name(index);
+            std::string matrix_name = mat_reader.name(index);
             ::set_title(matrix_name.c_str());
             if (matrix_name == "dimension")
             {
                 const unsigned short* dim_buf = 0;
-                mat_reader.get_matrix(index,row,col,dim_buf);
+                mat_reader.read(index,row,col,dim_buf);
                 if (!dim_buf|| row*col != 3)
                     return false;
                 std::copy(dim_buf,dim_buf+3,dim.begin());
@@ -461,7 +462,7 @@ public:
             if (matrix_name == "voxel_size")
             {
                 const float* size_buf = 0;
-                mat_reader.get_matrix(index,row,col,size_buf);
+                mat_reader.read(index,row,col,size_buf);
                 if (!size_buf || row*col != 3)
                     return false;
                 vs = size_buf;
@@ -472,7 +473,7 @@ public:
             if (matrix_name == "trans")
             {
                 const float* trans = 0;
-                mat_reader.get_matrix(index,row,col,trans);
+                mat_reader.read(index,row,col,trans);
                 trans_to_mni.resize(16);
                 std::copy(trans,trans+16,trans_to_mni.begin());
                 continue;
@@ -484,7 +485,7 @@ public:
             if (prefix_name == "index" || prefix_name == "fa" || prefix_name == "dir")
                 continue;
             const float* buf = 0;
-            mat_reader.get_matrix(index,row,col,buf);
+            mat_reader.read(index,row,col,buf);
             if (row*col != total_size || !buf)
                 continue;
             view_item.push_back(ViewItem());

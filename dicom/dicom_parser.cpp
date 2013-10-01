@@ -34,12 +34,12 @@ dicom_parser::dicom_parser(QStringList file_list,QWidget *parent) :
         {
             std::string Person;
             header.get_patient(Person);
-            ui->SrcName->setText(cur_path + "/" + &*Person.begin() + ".src");
+            ui->SrcName->setText(cur_path + "/" + &*Person.begin() + ".src.gz");
             slice_orientation.resize(9);
             header.get_image_orientation(slice_orientation.begin());
         }
         else
-            ui->SrcName->setText(cur_path + "/" + QFileInfo(file_list[0]).baseName()+".src");
+            ui->SrcName->setText(cur_path + "/" + QFileInfo(file_list[0]).baseName()+".src.gz");
     }
 }
 

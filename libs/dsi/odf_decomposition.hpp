@@ -287,13 +287,13 @@ public:
             max_iso = data.min_odf;
         fiber_ratio[data.voxel_index] = fiber_sum;
     }
-    virtual void end(Voxel& voxel,MatFile& mat_writer)
+    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
         if (!voxel.odf_decomposition)
             return;
         if(max_iso + 1.0 != 1.0)
             std::for_each(fiber_ratio.begin(),fiber_ratio.end(),boost::lambda::_1 /= max_iso);
-        mat_writer.add_matrix("fiber_ratio",&*fiber_ratio.begin(),1,fiber_ratio.size());
+        mat_writer.write("fiber_ratio",&*fiber_ratio.begin(),1,fiber_ratio.size());
 
     }
 

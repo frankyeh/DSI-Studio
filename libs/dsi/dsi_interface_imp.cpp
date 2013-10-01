@@ -5,7 +5,6 @@
 #include <boost/mpl/begin_end.hpp>
 #include "tessellated_icosahedron.hpp"
 #include "prog_interface_static_link.h"
-#include "mat_file.hpp"
 #include "basic_voxel.hpp"
 #include "image_model.hpp"
 #include "odf_decomposition.hpp"
@@ -183,12 +182,12 @@ extern "C"
                     return "reconstruction calceled";
                 begin_prog("calculating");
             }
-            out << ".dsi."<< (int)param_values[0] << ".fib";
+            out << ".dsi."<< (int)param_values[0] << ".fib.gz";
             if (!image_model->reconstruct<dsi_process>(out.str()))
                 return "reconstruction canceled";
             break;
         case 1://DTI
-            out << ".dti.fib";
+            out << ".dti.fib.gz";
             image_model->voxel.max_fiber_number = 1;
             if (!image_model->reconstruct<dti_process>(out.str()))
                 return "reconstruction canceled";
@@ -201,7 +200,7 @@ extern "C"
                     return "reconstruction calceled";
                 begin_prog("calculating");
             }
-            out << ".qbi."<< param_values[0] << "_" << param_values[1] << ".fib";
+            out << ".qbi."<< param_values[0] << "_" << param_values[1] << ".fib.gz";
             if (!image_model->reconstruct<qbi_process>(out.str()))
                 return "reconstruction canceled";
             break;
@@ -212,7 +211,7 @@ extern "C"
                     return "reconstruction calceled";
                 begin_prog("calculating");
             }
-            out << ".qbi.sh"<< (int) param_values[1] << "." << param_values[0] << ".fib";
+            out << ".qbi.sh"<< (int) param_values[1] << "." << param_values[0] << ".fib.gz";
             if (!image_model->reconstruct<qbi_sh_process>(out.str()))
                 return "reconstruction canceled";
             break;
@@ -220,7 +219,7 @@ extern "C"
         case 4://GQI
             if(param_values[0] == 0.0) // spectral analysis
             {
-                out << (image_model->voxel.r2_weighted ? ".gqi2.spec.fib":".gqi.spec.fib");
+                out << (image_model->voxel.r2_weighted ? ".gqi2.spec.fib.gz":".gqi.spec.fib.gz");
                 if (!image_model->reconstruct<gqi_spectral_process>(out.str()))
                     return "reconstruction canceled";
                 break;
@@ -231,7 +230,7 @@ extern "C"
                     return "reconstruction calceled";
                 begin_prog("calculating");
             }
-            out << (image_model->voxel.r2_weighted ? ".gqi2.":".gqi.") << param_values[0] << ".fib";
+            out << (image_model->voxel.r2_weighted ? ".gqi2.":".gqi.") << param_values[0] << ".fib.gz";
             if (!image_model->reconstruct<gqi_process>(out.str()))
                 return "reconstruction canceled";
             break;
@@ -253,13 +252,13 @@ extern "C"
                 out << ".jac";
             if(image_model->voxel.output_mapping)
                 out << ".map";
-            out << ".fib";
+            out << ".fib.gz";
             begin_prog("deforming");
             if (!image_model->reconstruct<gqi_mni_process>(out.str()))
                 return "reconstruction canceled";
             break;
         }
-        output_name = image_model->file_name + out.str() + ".gz";
+        output_name = image_model->file_name + out.str();
     }
     catch (...)
     {
@@ -319,7 +318,7 @@ extern "C"
     for (unsigned int index = 0;check_prog(index,num_files);++index)
     {
         const char* file_name = file_names[index];
-        MatFile reader;
+        gz_mat_read reader;
         if(!reader.load_from_file(file_name))
         {
             std::cout << "Cannot open file " << file_name << std::endl;
@@ -334,12 +333,12 @@ extern "C"
             const float* fa0;
             const float* mni_ptr;
             unsigned int face_num,odf_num;
-            if(!reader.get_matrix("dimension",row,col,dimension) ||
-               !reader.get_matrix("fa0",row,col,fa0) ||
-               !reader.get_matrix("voxel_size",row,col,vs_ptr) ||
-               !reader.get_matrix("odf_faces",row,face_num,face_buffer) ||
-               !reader.get_matrix("odf_vertices",row,odf_num,odf_buffer) ||
-               !reader.get_matrix("trans",row,col,mni_ptr))
+            if(!reader.read("dimension",row,col,dimension) ||
+               !reader.read("fa0",row,col,fa0) ||
+               !reader.read("voxel_size",row,col,vs_ptr) ||
+               !reader.read("odf_faces",row,face_num,face_buffer) ||
+               !reader.read("odf_vertices",row,odf_num,odf_buffer) ||
+               !reader.read("trans",row,col,mni_ptr))
             {
                 std::cout << "Cannot find image information in " << file_name << std::endl;
                 return false;
@@ -359,8 +358,8 @@ extern "C"
             const float* odf_buffer;
             const unsigned short* dimension;
             unsigned int odf_num;
-            if(!reader.get_matrix("dimension",row,col,dimension) ||
-               !reader.get_matrix("odf_vertices",row,odf_num,odf_buffer))
+            if(!reader.read("dimension",row,col,dimension) ||
+               !reader.read("odf_vertices",row,odf_num,odf_buffer))
             {
                 std::cout << "Cannot find image information in " << file_name << std::endl;
                 return false;
@@ -386,7 +385,7 @@ extern "C"
 
         {
             const float* fa0;
-            if(!reader.get_matrix("fa0",row,col,fa0))
+            if(!reader.read("fa0",row,col,fa0))
             {
                 std::cout << "Cannot find image information in " << file_name << std::endl;
                 return false;
@@ -407,7 +406,7 @@ extern "C"
                 std::ostringstream out;
                 out << "odf" << odf_index;
                 const float* odf_buf = 0;
-                if (!reader.get_matrix(out.str().c_str(),row,col,odf_buf))
+                if (!reader.read(out.str().c_str(),row,col,odf_buf))
                     break;
                 odf_bufs.push_back(odf_buf);
                 odf_bufs_size.push_back(row*col);
@@ -443,8 +442,8 @@ extern "C"
         for (unsigned int j = 0;j < odfs[odf_index].size();++j)
             odfs[odf_index][j] /= (double)num_files;
 
-    output_odfs(mask,out_name,".mean.odf.fib",odfs,ti,vs,mni);
-    output_odfs(mask,out_name,".mean.fib",odfs,ti,vs,mni,false);
+    output_odfs(mask,out_name,".mean.odf.fib.gz",odfs,ti,vs,mni);
+    output_odfs(mask,out_name,".mean.fib.gz",odfs,ti,vs,mni,false);
     return true;
 }
 

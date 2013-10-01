@@ -313,20 +313,20 @@ public:
             //  = trans(b_vec)*trans(G)*J*odf
         }
     }
-    virtual void end(Voxel& voxel,MatFile& mat_writer)
+    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
         voxel.image_model->mask.resize(src_geo);
         voxel.dim = src_geo;
         if(voxel.output_jacobian)
-            mat_writer.add_matrix("jdet",&*jdet.begin(),1,jdet.size());
+            mat_writer.write("jdet",&*jdet.begin(),1,jdet.size());
         if(voxel.output_mapping)
         {
-            mat_writer.add_matrix("mx",&*mx.begin(),1,mx.size());
-            mat_writer.add_matrix("my",&*my.begin(),1,my.size());
-            mat_writer.add_matrix("mz",&*mz.begin(),1,mz.size());
+            mat_writer.write("mx",&*mx.begin(),1,mx.size());
+            mat_writer.write("my",&*my.begin(),1,my.size());
+            mat_writer.write("mz",&*mz.begin(),1,mz.size());
         }
-        mat_writer.add_matrix("trans",&*trans_to_mni,4,4);
-        mat_writer.add_matrix("R2",&R2,1,1);
+        mat_writer.write("trans",&*trans_to_mni,4,4);
+        mat_writer.write("R2",&R2,1,1);
     }
 
 };
@@ -352,11 +352,11 @@ public:
             }
         }
     }
-    void end(Voxel& voxel,MatFile& mat_writer)
+    void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
         if(voxel.z0 == 0.0)
             voxel.z0 = 1.0;
-        mat_writer.add_matrix("z0",&voxel.z0,1,1);
+        mat_writer.write("z0",&voxel.z0,1,1);
     }
 
 };
@@ -408,7 +408,7 @@ public:
         std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 *= data.jdet);
 
     }
-    virtual void end(Voxel& voxel,MatFile& mat_writer)
+    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
 
     }

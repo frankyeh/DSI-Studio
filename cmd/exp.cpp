@@ -37,7 +37,7 @@ int exp(int ac, char *av[])
     po::store(po::command_line_parser(ac, av).options(ana_desc).allow_unregistered().run(), vm);
     po::notify(vm);
 
-    MatFile mat_reader;
+    gz_mat_read mat_reader;
     std::string file_name = vm["source"].as<std::string>();
     std::cout << "loading " << file_name.c_str() << "..." <<std::endl;
     if(!QFileInfo(file_name.c_str()).exists())
@@ -53,13 +53,13 @@ int exp(int ac, char *av[])
 
     unsigned int col,row;
     const unsigned short* dim_buf = 0;
-    if(!mat_reader.get_matrix("dimension",row,col,dim_buf))
+    if(!mat_reader.read("dimension",row,col,dim_buf))
     {
         std::cout << "Cannot find dimension matrix in the file" << file_name.c_str() <<std::endl;
         return 0;
     }
     const float* vs = 0;
-    if(!mat_reader.get_matrix("voxel_size",row,col,vs))
+    if(!mat_reader.read("voxel_size",row,col,vs))
     {
         std::cout << "Cannot find voxel_size matrix in the file" << file_name.c_str() <<std::endl;
         return 0;
@@ -79,7 +79,7 @@ int exp(int ac, char *av[])
         gz_nifti nifti_header;
         const float* volume = 0;
         std::cout << "retriving matrix " << cmd.c_str() << std::endl;
-        if(!mat_reader.get_matrix(cmd.c_str(),row,col,volume))
+        if(!mat_reader.read(cmd.c_str(),row,col,volume))
         {
             std::cout << "Cannot find matrix "<< cmd.c_str() <<" in the file" << file_name.c_str() <<std::endl;
             continue;
