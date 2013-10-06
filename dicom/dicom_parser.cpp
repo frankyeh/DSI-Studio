@@ -42,6 +42,10 @@ dicom_parser::dicom_parser(QStringList file_list,QWidget *parent) :
             ui->SrcName->setText(cur_path + "/" + QFileInfo(file_list[0]).baseName()+".src.gz");
     }
 }
+void dicom_parser::set_name(QString name)
+{
+    ui->SrcName->setText(name);
+}
 
 dicom_parser::~dicom_parser()
 {
@@ -235,6 +239,9 @@ bool load_4d_2dseq(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files
             return false;
         }
     }
+    if(dwi_files.size() && dwi_files.back().image.geometry() !=
+            image::geometry<3>(buf_image.width(),buf_image.height(),buf_image.depth()))
+        return false;
     buf_image /= 50.0;
     //image::normalize(buf_image,65535.0);
     std::istringstream bvalue(method_file["PVM_DwEffBval"]);
@@ -368,10 +375,7 @@ bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_file
     if(QFileInfo(file_list[0]).baseName() == "2dseq")
     {
         for(unsigned int index = 0;index < file_list.size();++index)
-        {
-            if(!load_4d_2dseq(file_list[index].toLocal8Bit().begin(),dwi_files))
-                return false;
-        }
+            load_4d_2dseq(file_list[index].toLocal8Bit().begin(),dwi_files);
         return !dwi_files.empty();
     }
 

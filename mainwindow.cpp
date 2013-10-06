@@ -253,11 +253,41 @@ void MainWindow::on_OpenDICOM_clicked()
                                 this,
                                 "Open Images files",
                                 ui->workDir->currentText(),
-                                "Image files (*.dcm *.hdr *.nii *.nii.gz 2dseq);;All files (*.*)" );
+                                "Image files (*.dcm *.hdr *.nii *.nii.gz 2dseq subject);;All files (*.*)" );
     if ( filenames.isEmpty() )
         return;
 
     add_work_dir(QFileInfo(filenames[0]).absolutePath());
+    if(QFileInfo(filenames[0]).completeBaseName() == "subject")
+    {
+        image::io::bruker_info subject_file;
+        if(!subject_file.load_from_file(filenames[0].toLocal8Bit().begin()))
+            return;
+        QString dir = QFileInfo(filenames[0]).absolutePath();
+        filenames.clear();
+        for(unsigned int i = 1;1;++i)
+        {
+            image::io::bruker_info method_file;
+            QString method_name = dir + "/" +QString::number(i)+"/method";
+            if(!method_file.load_from_file(method_name.toLocal8Bit().begin()))
+                break;
+            if(!method_file["PVM_DwEffBval"].length())
+                continue;
+            filenames.push_back(dir + "/" +QString::number(i)+"/pdata/1/2dseq");
+        }
+        if(filenames.size() == 0)
+        {
+            QMessageBox::information(this,"Error","No diffusion data in this subject",0);
+            return;
+        }
+        std::string file_name(subject_file["SUBJECT_study_name"]);
+        file_name.erase(std::remove(file_name.begin(),file_name.end(),' '),file_name.end());
+        dicom_parser dp(filenames,this);
+        dp.set_name(dir + "/" + file_name.c_str() + ".src.gz");
+        dp.exec();
+        return;
+    }
+
     if(QFileInfo(filenames[0]).completeSuffix() == "dcm")
     {
         QString sel = QString("*.")+QFileInfo(filenames[0]).suffix();

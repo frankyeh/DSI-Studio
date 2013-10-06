@@ -16,7 +16,7 @@ class dicom_parser : public QDialog
 public:
     explicit dicom_parser(QStringList file_list,QWidget *parent = 0);
     ~dicom_parser();
-
+    void set_name(QString name);
 private:
     Ui::dicom_parser *ui;
     QString cur_path;
