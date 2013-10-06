@@ -302,10 +302,11 @@ bool output_odfs(const image::basic_image<unsigned char,3>& mni_mask,
 
 
 extern "C"
-    bool odf_average(const char* out_name,
+    const char* odf_average(const char* out_name,
                      const char* const * file_names,
                      unsigned int num_files)
 {
+    static std::string error_msg;
     tessellated_icosahedron ti;
     float vs[3];
     image::basic_image<unsigned char,3> mask;
@@ -321,8 +322,9 @@ extern "C"
         gz_mat_read reader;
         if(!reader.load_from_file(file_name))
         {
-            std::cout << "Cannot open file " << file_name << std::endl;
-            return false;
+            error_msg = "Cannot open file ";
+            error_msg += file_name;
+            return error_msg.c_str();
         }
         if(index == 0)
         {
@@ -333,15 +335,24 @@ extern "C"
             const float* fa0;
             const float* mni_ptr;
             unsigned int face_num,odf_num;
-            if(!reader.read("dimension",row,col,dimension) ||
-               !reader.read("fa0",row,col,fa0) ||
-               !reader.read("voxel_size",row,col,vs_ptr) ||
-               !reader.read("odf_faces",row,face_num,face_buffer) ||
-               !reader.read("odf_vertices",row,odf_num,odf_buffer) ||
-               !reader.read("trans",row,col,mni_ptr))
+            error_msg = "";
+            if(!reader.read("dimension",row,col,dimension))
+                error_msg = "dimension";
+            if(!reader.read("fa0",row,col,fa0))
+                error_msg = "fa0";
+            if(!reader.read("voxel_size",row,col,vs_ptr))
+                error_msg = "voxel_size";
+            if(!reader.read("odf_faces",row,face_num,face_buffer))
+                error_msg = "odf_faces";
+            if(!reader.read("odf_vertices",row,odf_num,odf_buffer))
+                error_msg = "odf_vertices";
+            if(!reader.read("trans",row,col,mni_ptr))
+                error_msg = "trans";
+            if(error_msg.length())
             {
-                std::cout << "Cannot find image information in " << file_name << std::endl;
-                return false;
+                error_msg += " missing in ";
+                error_msg += file_name;
+                return error_msg.c_str();
             }
             mask.resize(image::geometry<3>(dimension));
             for(unsigned int index = 0;index < mask.size();++index)
@@ -358,18 +369,24 @@ extern "C"
             const float* odf_buffer;
             const unsigned short* dimension;
             unsigned int odf_num;
-            if(!reader.read("dimension",row,col,dimension) ||
-               !reader.read("odf_vertices",row,odf_num,odf_buffer))
+            error_msg = "";
+            if(!reader.read("dimension",row,col,dimension))
+                error_msg = "dimension";
+            if(!reader.read("odf_vertices",row,odf_num,odf_buffer))
+                error_msg = "odf_vertices";
+            if(error_msg.length())
             {
-                std::cout << "Cannot find image information in " << file_name << std::endl;
-                return false;
+                error_msg += " missing in ";
+                error_msg += file_name;
+                return error_msg.c_str();
             }
 
             if(odf_num != ti.vertices_count || dimension[0] != mask.width() ||
                     dimension[1] != mask.height() || dimension[2] != mask.depth())
             {
-                std::cout << "Inconsistent ODF orientations in " << file_name << std::endl;
-                return false;
+                error_msg = "Inconsistent dimension in ";
+                error_msg += file_name;
+                return error_msg.c_str();
             }
             for (unsigned int index = 0;index < col;++index,odf_buffer += 3)
             {
@@ -377,8 +394,9 @@ extern "C"
                    ti.vertices[index][1] != odf_buffer[1] ||
                    ti.vertices[index][2] != odf_buffer[2])
                 {
-                    std::cout << "Inconsistent ODF orientations in " << file_name << std::endl;
-                    return false;
+                    error_msg = "Inconsistent ODF orientations in ";
+                    error_msg += file_name;
+                    return error_msg.c_str();
                 }
             }
         }
@@ -387,8 +405,9 @@ extern "C"
             const float* fa0;
             if(!reader.read("fa0",row,col,fa0))
             {
-                std::cout << "Cannot find image information in " << file_name << std::endl;
-                return false;
+                error_msg = "Cannot find image information in ";
+                error_msg += file_name;
+                return error_msg.c_str();
             }
             for(unsigned int index = 0;index < mask.size();++index)
                 if(fa0[index] != 0.0)
@@ -428,15 +447,16 @@ extern "C"
                     inconsistence = true;
             if(inconsistence)
             {
-                std::cout << "Inconsistent mask coverage in" << file_name << std::endl;
-                return false;
+                error_msg = "Inconsistent mask coverage in ";
+                error_msg += file_name;
+                return error_msg.c_str();
             }
         }
         for(unsigned int i = 0;i < odf_bufs.size();++i)
             image::add(odfs[i].begin(),odfs[i].end(),odf_bufs[i]);
     }
     if (prog_aborted())
-        return false;
+        return 0;
 
     for (unsigned int odf_index = 0;odf_index < odfs.size();++odf_index)
         for (unsigned int j = 0;j < odfs[odf_index].size();++j)
@@ -444,7 +464,7 @@ extern "C"
 
     output_odfs(mask,out_name,".mean.odf.fib.gz",odfs,ti,vs,mni);
     output_odfs(mask,out_name,".mean.fib.gz",odfs,ti,vs,mni,false);
-    return true;
+    return 0;
 }
 
 
