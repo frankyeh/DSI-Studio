@@ -181,6 +181,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         connect(ui->offset,SIGNAL(valueChanged(int)),&scene,SLOT(show_slice()));
         connect(ui->show_fiber,SIGNAL(clicked()),&scene,SLOT(show_slice()));
         connect(ui->show_pos,SIGNAL(clicked()),&scene,SLOT(show_slice()));
+        connect(ui->show_lr,SIGNAL(clicked()),&scene,SLOT(show_slice()));
 
         connect(ui->zoom,SIGNAL(valueChanged(double)),&scene,SLOT(show_slice()));
         connect(ui->zoom,SIGNAL(valueChanged(double)),&scene,SLOT(center()));

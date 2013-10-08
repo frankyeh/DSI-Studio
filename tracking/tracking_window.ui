@@ -1070,14 +1070,14 @@
   </widget>
   <widget class="QDockWidget" name="dockWidget">
    <property name="sizePolicy">
-    <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+    <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
      <horstretch>0</horstretch>
      <verstretch>1</verstretch>
     </sizepolicy>
    </property>
    <property name="minimumSize">
     <size>
-     <width>446</width>
+     <width>334</width>
      <height>253</height>
     </size>
    </property>
@@ -1319,47 +1319,6 @@
         </widget>
        </item>
        <item>
-        <widget class="QComboBox" name="view_style">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>6666</width>
-           <height>22</height>
-          </size>
-         </property>
-         <item>
-          <property name="text">
-           <string>Single</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>3 Slices</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Mosaic</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Mosaic2</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Mosaic4</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-       <item>
         <widget class="QComboBox" name="sliceViewBox">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -1414,6 +1373,13 @@
         </widget>
        </item>
        <item>
+        <widget class="QLabel" name="label_3">
+         <property name="text">
+          <string>Zoom</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QDoubleSpinBox" name="zoom">
          <property name="minimum">
           <double>1.000000000000000</double>
@@ -1431,8 +1397,14 @@
        </item>
        <item>
         <widget class="QCheckBox" name="RAS">
+         <property name="maximumSize">
+          <size>
+           <width>40</width>
+           <height>16777215</height>
+          </size>
+         </property>
          <property name="text">
-          <string>RAS</string>
+          <string>L/R</string>
          </property>
         </widget>
        </item>
@@ -1463,12 +1435,63 @@
         </widget>
        </item>
        <item>
-        <widget class="Line" name="line_6">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
+        <widget class="QCheckBox" name="show_lr">
+         <property name="text">
+          <string>Label</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
+       <item>
+        <widget class="QComboBox" name="view_style">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>6666</width>
+           <height>22</height>
+          </size>
+         </property>
+         <item>
+          <property name="text">
+           <string>Single</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>3 Slices</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Mosaic</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Mosaic2</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Mosaic4</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_14">
+       <property name="spacing">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_6">
          <property name="sizePolicy">
@@ -1517,13 +1540,6 @@
          </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="Line" name="line_8">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
          </property>
         </widget>
        </item>

@@ -113,9 +113,13 @@ void slice_view_scene::show_pos(QPainter& painter)
     int x_pos,y_pos;
     float display_ratio = cur_tracking_window.ui->zoom->value();
     cur_tracking_window.slice.get_other_slice_pos(x_pos, y_pos);
+    x_pos = ((double)x_pos + 0.5)*display_ratio;
+    y_pos = ((double)y_pos + 0.5)*display_ratio;
     painter.setPen(QColor(255,0,0));
-    painter.drawLine(((double)x_pos + 0.5)*display_ratio, 0,((double)x_pos + 0.5)*display_ratio,view_image.height());
-    painter.drawLine(0, ((double)y_pos + 0.5)*display_ratio,view_image.width(),((double)y_pos + 0.5)*display_ratio);
+    painter.drawLine(x_pos,0,x_pos,std::max<int>(0,y_pos-20));
+    painter.drawLine(x_pos,std::min<int>(y_pos+20,slice_image.height()*display_ratio),x_pos,slice_image.height()*display_ratio);
+    painter.drawLine(0,y_pos,std::max<int>(0,x_pos-20),y_pos);
+    painter.drawLine(std::min<int>(x_pos+20,slice_image.width()*display_ratio),y_pos,slice_image.width()*display_ratio,y_pos);
 }
 
 void slice_view_scene::get_view_image(QImage& new_view_image)
@@ -137,6 +141,7 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
     if(cur_tracking_window.ui->show_pos->checkState() == Qt::Checked)
         show_pos(painter);
 
+
     bool flip_x = false;
     bool flip_y = false;
     if(cur_tracking_window.slice.cur_dim != 2)
@@ -146,7 +151,16 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
 
     new_view_image = (!flip_x && !flip_y ? scaled_image : scaled_image.mirrored(flip_x,flip_y));
 
-
+    if(cur_tracking_window.slice.cur_dim && cur_tracking_window.ui->show_lr->checkState() == Qt::Checked)
+    {
+        QPainter painter(&new_view_image);
+        painter.setPen(QPen(QColor(255,255,255)));
+        QFont f = font();  // start out with MainWindow's font..
+        f.setPointSize(cur_tracking_window.ui->zoom->value()+10); // and make a bit smaller for legend
+        painter.setFont(f);
+        painter.drawText(5,5,new_view_image.width()-10,new_view_image.height()-10,
+                         neurology_convention ? Qt::AlignTop|Qt::AlignRight: Qt::AlignTop|Qt::AlignLeft,"R");
+    }
 }
 bool slice_view_scene::get_location(float x,float y,image::vector<3,float>& pos)
 {
@@ -414,6 +428,22 @@ void slice_view_scene::mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseE
         sel_mode = 4;
         sel_point.clear();
         sel_coord.clear();
+    }
+    else
+        // move to slice
+    {
+        if(cur_tracking_window.ui->view_style->currentIndex() > 1)// single slice or 3 slices
+            return;
+        float Y = mouseEvent->scenePos().y();
+        float X = mouseEvent->scenePos().x();
+        image::vector<3,float> pos;
+        if(!get_location(X,Y,pos))
+            return;
+        pos += 0.5;
+        pos.floor();
+        cur_tracking_window.ui->SagSlider->setValue(pos[0]);
+        cur_tracking_window.ui->CorSlider->setValue(pos[1]);
+        cur_tracking_window.ui->AxiSlider->setValue(pos[2]);
     }
 }
 

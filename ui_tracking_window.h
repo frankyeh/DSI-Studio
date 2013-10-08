@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Thu Sep 26 22:22:06 2013
+** Created: Mon Oct 7 23:56:27 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -213,20 +213,21 @@ public:
     QToolButton *tool3;
     QToolButton *tool5;
     QToolButton *tool6;
-    QComboBox *view_style;
     QComboBox *sliceViewBox;
     QComboBox *overlay;
     QHBoxLayout *horizontalLayout_4;
     QFrame *line_7;
+    QLabel *label_3;
     QDoubleSpinBox *zoom;
     QCheckBox *RAS;
     QCheckBox *show_fiber;
     QCheckBox *show_pos;
-    QFrame *line_6;
+    QCheckBox *show_lr;
+    QComboBox *view_style;
+    QHBoxLayout *horizontalLayout_14;
     QLabel *label_6;
     QDoubleSpinBox *contrast_value;
     QSlider *contrast;
-    QFrame *line_8;
     QLabel *label_8;
     QDoubleSpinBox *offset_value;
     QSlider *offset;
@@ -964,12 +965,12 @@ public:
         tracking_window->addDockWidget(static_cast<Qt::DockWidgetArea>(2), TractWidgetHolder);
         dockWidget = new QDockWidget(tracking_window);
         dockWidget->setObjectName(QString::fromUtf8("dockWidget"));
-        QSizePolicy sizePolicy7(QSizePolicy::Preferred, QSizePolicy::Expanding);
+        QSizePolicy sizePolicy7(QSizePolicy::Maximum, QSizePolicy::Expanding);
         sizePolicy7.setHorizontalStretch(0);
         sizePolicy7.setVerticalStretch(1);
         sizePolicy7.setHeightForWidth(dockWidget->sizePolicy().hasHeightForWidth());
         dockWidget->setSizePolicy(sizePolicy7);
-        dockWidget->setMinimumSize(QSize(446, 253));
+        dockWidget->setMinimumSize(QSize(334, 253));
         dockWidget->setFloating(false);
         dockWidget->setFeatures(QDockWidget::AllDockWidgetFeatures);
         dockWidgetContents = new QWidget();
@@ -1068,19 +1069,11 @@ public:
 
         horizontalLayout_7->addWidget(tool6);
 
-        view_style = new QComboBox(dockWidgetContents);
-        view_style->setObjectName(QString::fromUtf8("view_style"));
+        sliceViewBox = new QComboBox(dockWidgetContents);
+        sliceViewBox->setObjectName(QString::fromUtf8("sliceViewBox"));
         QSizePolicy sizePolicy8(QSizePolicy::Preferred, QSizePolicy::Fixed);
         sizePolicy8.setHorizontalStretch(0);
         sizePolicy8.setVerticalStretch(0);
-        sizePolicy8.setHeightForWidth(view_style->sizePolicy().hasHeightForWidth());
-        view_style->setSizePolicy(sizePolicy8);
-        view_style->setMaximumSize(QSize(6666, 22));
-
-        horizontalLayout_7->addWidget(view_style);
-
-        sliceViewBox = new QComboBox(dockWidgetContents);
-        sliceViewBox->setObjectName(QString::fromUtf8("sliceViewBox"));
         sizePolicy8.setHeightForWidth(sliceViewBox->sizePolicy().hasHeightForWidth());
         sliceViewBox->setSizePolicy(sizePolicy8);
         sliceViewBox->setMaximumSize(QSize(16777215, 22));
@@ -1109,6 +1102,11 @@ public:
 
         horizontalLayout_4->addWidget(line_7);
 
+        label_3 = new QLabel(dockWidgetContents);
+        label_3->setObjectName(QString::fromUtf8("label_3"));
+
+        horizontalLayout_4->addWidget(label_3);
+
         zoom = new QDoubleSpinBox(dockWidgetContents);
         zoom->setObjectName(QString::fromUtf8("zoom"));
         zoom->setMinimum(1);
@@ -1120,6 +1118,7 @@ public:
 
         RAS = new QCheckBox(dockWidgetContents);
         RAS->setObjectName(QString::fromUtf8("RAS"));
+        RAS->setMaximumSize(QSize(40, 16777215));
 
         horizontalLayout_4->addWidget(RAS);
 
@@ -1137,19 +1136,32 @@ public:
 
         horizontalLayout_4->addWidget(show_pos);
 
-        line_6 = new QFrame(dockWidgetContents);
-        line_6->setObjectName(QString::fromUtf8("line_6"));
-        line_6->setFrameShape(QFrame::VLine);
-        line_6->setFrameShadow(QFrame::Sunken);
+        show_lr = new QCheckBox(dockWidgetContents);
+        show_lr->setObjectName(QString::fromUtf8("show_lr"));
+        show_lr->setChecked(true);
 
-        horizontalLayout_4->addWidget(line_6);
+        horizontalLayout_4->addWidget(show_lr);
 
+        view_style = new QComboBox(dockWidgetContents);
+        view_style->setObjectName(QString::fromUtf8("view_style"));
+        sizePolicy4.setHeightForWidth(view_style->sizePolicy().hasHeightForWidth());
+        view_style->setSizePolicy(sizePolicy4);
+        view_style->setMaximumSize(QSize(6666, 22));
+
+        horizontalLayout_4->addWidget(view_style);
+
+
+        verticalLayout->addLayout(horizontalLayout_4);
+
+        horizontalLayout_14 = new QHBoxLayout();
+        horizontalLayout_14->setSpacing(0);
+        horizontalLayout_14->setObjectName(QString::fromUtf8("horizontalLayout_14"));
         label_6 = new QLabel(dockWidgetContents);
         label_6->setObjectName(QString::fromUtf8("label_6"));
         sizePolicy5.setHeightForWidth(label_6->sizePolicy().hasHeightForWidth());
         label_6->setSizePolicy(sizePolicy5);
 
-        horizontalLayout_4->addWidget(label_6);
+        horizontalLayout_14->addWidget(label_6);
 
         contrast_value = new QDoubleSpinBox(dockWidgetContents);
         contrast_value->setObjectName(QString::fromUtf8("contrast_value"));
@@ -1157,7 +1169,7 @@ public:
         contrast_value->setMaximum(5);
         contrast_value->setSingleStep(0.5);
 
-        horizontalLayout_4->addWidget(contrast_value);
+        horizontalLayout_14->addWidget(contrast_value);
 
         contrast = new QSlider(dockWidgetContents);
         contrast->setObjectName(QString::fromUtf8("contrast"));
@@ -1168,21 +1180,14 @@ public:
         contrast->setPageStep(50);
         contrast->setOrientation(Qt::Horizontal);
 
-        horizontalLayout_4->addWidget(contrast);
-
-        line_8 = new QFrame(dockWidgetContents);
-        line_8->setObjectName(QString::fromUtf8("line_8"));
-        line_8->setFrameShape(QFrame::VLine);
-        line_8->setFrameShadow(QFrame::Sunken);
-
-        horizontalLayout_4->addWidget(line_8);
+        horizontalLayout_14->addWidget(contrast);
 
         label_8 = new QLabel(dockWidgetContents);
         label_8->setObjectName(QString::fromUtf8("label_8"));
         sizePolicy5.setHeightForWidth(label_8->sizePolicy().hasHeightForWidth());
         label_8->setSizePolicy(sizePolicy5);
 
-        horizontalLayout_4->addWidget(label_8);
+        horizontalLayout_14->addWidget(label_8);
 
         offset_value = new QDoubleSpinBox(dockWidgetContents);
         offset_value->setObjectName(QString::fromUtf8("offset_value"));
@@ -1190,7 +1195,7 @@ public:
         offset_value->setMaximum(1);
         offset_value->setSingleStep(0.1);
 
-        horizontalLayout_4->addWidget(offset_value);
+        horizontalLayout_14->addWidget(offset_value);
 
         offset = new QSlider(dockWidgetContents);
         offset->setObjectName(QString::fromUtf8("offset"));
@@ -1202,10 +1207,10 @@ public:
         offset->setPageStep(10);
         offset->setOrientation(Qt::Horizontal);
 
-        horizontalLayout_4->addWidget(offset);
+        horizontalLayout_14->addWidget(offset);
 
 
-        verticalLayout->addLayout(horizontalLayout_4);
+        verticalLayout->addLayout(horizontalLayout_14);
 
         graphicsView = new QGraphicsView(dockWidgetContents);
         graphicsView->setObjectName(QString::fromUtf8("graphicsView"));
@@ -1826,6 +1831,15 @@ public:
         tool6->setToolTip(QApplication::translate("tracking_window", "show ruler", 0, QApplication::UnicodeUTF8));
 #endif // QT_NO_TOOLTIP
         tool6->setText(QApplication::translate("tracking_window", "|_|_|", 0, QApplication::UnicodeUTF8));
+        overlay->clear();
+        overlay->insertItems(0, QStringList()
+         << QApplication::translate("tracking_window", "No overlay", 0, QApplication::UnicodeUTF8)
+        );
+        label_3->setText(QApplication::translate("tracking_window", "Zoom", 0, QApplication::UnicodeUTF8));
+        RAS->setText(QApplication::translate("tracking_window", "L/R", 0, QApplication::UnicodeUTF8));
+        show_fiber->setText(QApplication::translate("tracking_window", "Fibers", 0, QApplication::UnicodeUTF8));
+        show_pos->setText(QApplication::translate("tracking_window", "Pos", 0, QApplication::UnicodeUTF8));
+        show_lr->setText(QApplication::translate("tracking_window", "Label", 0, QApplication::UnicodeUTF8));
         view_style->clear();
         view_style->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Single", 0, QApplication::UnicodeUTF8)
@@ -1834,13 +1848,6 @@ public:
          << QApplication::translate("tracking_window", "Mosaic2", 0, QApplication::UnicodeUTF8)
          << QApplication::translate("tracking_window", "Mosaic4", 0, QApplication::UnicodeUTF8)
         );
-        overlay->clear();
-        overlay->insertItems(0, QStringList()
-         << QApplication::translate("tracking_window", "No overlay", 0, QApplication::UnicodeUTF8)
-        );
-        RAS->setText(QApplication::translate("tracking_window", "RAS", 0, QApplication::UnicodeUTF8));
-        show_fiber->setText(QApplication::translate("tracking_window", "Fibers", 0, QApplication::UnicodeUTF8));
-        show_pos->setText(QApplication::translate("tracking_window", "Pos", 0, QApplication::UnicodeUTF8));
         label_6->setText(QApplication::translate("tracking_window", "Contrast", 0, QApplication::UnicodeUTF8));
         contrast_value->setPrefix(QString());
         label_8->setText(QApplication::translate("tracking_window", "Offset", 0, QApplication::UnicodeUTF8));
