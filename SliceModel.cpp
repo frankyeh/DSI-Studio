@@ -55,27 +55,6 @@ void FibSliceModel::get_mosaic(image::color_image& show_image,
     }
 }
 // ---------------------------------------------------------------------------
-CustomSliceModel::CustomSliceModel(const image::io::volume& volume,
-                                   const image::vector<3,float>& center_point_)
-{
-    center_point = center_point_;
-    load(volume);
-}
-// ---------------------------------------------------------------------------
-CustomSliceModel::CustomSliceModel(const gz_nifti &volume,
-                                   const image::vector<3,float>& center_point_)
-{
-    center_point = center_point_;
-    load(volume);
-    if(volume.nif_header.srow_x[0] < 0)
-    {
-        if(volume.nif_header.srow_y[1] > 0)
-            image::flip_y(source_images);
-    }
-    else
-        image::flip_xy(source_images);
-
-}
 void CustomSliceModel::init(void)
 {
     geometry = source_images.geometry();

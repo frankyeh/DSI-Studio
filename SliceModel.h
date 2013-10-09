@@ -131,9 +131,6 @@ public:
     }
     void init(void);
 public:
-    CustomSliceModel(const image::io::volume& volume,const image::vector<3,float>& center_point_);
-    CustomSliceModel(const gz_nifti& volume,const image::vector<3,float>& center_point_);
-public:
     void get_slice(image::color_image& image,float contrast,float offset) const;
     image::const_pointer_image<float, 3> get_source(void) const  {return source_images;}
 };

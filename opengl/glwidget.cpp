@@ -1628,10 +1628,20 @@ bool GLWidget::addSlices(QStringList filenames)
             files[index] = filenames[index].toLocal8Bit().begin();
     gz_nifti nifti;
     std::vector<float> convert;
+    std::auto_ptr<CustomSliceModel> new_slice(new CustomSliceModel);
+    new_slice->center_point = cur_tracking_window.slice.center_point;
     // QSDR loaded, use MNI transformation instead
     if(cur_tracking_window.is_qsdr && files.size() == 1 && nifti.load_from_file(files[0]))
     {
-        other_slices.push_back(new CustomSliceModel(nifti,cur_tracking_window.slice.center_point));
+        new_slice->load(nifti);
+        if(nifti.nif_header.srow_x[0] < 0)
+        {
+            if(nifti.nif_header.srow_y[1] > 0)
+                image::flip_y(new_slice->source_images);
+        }
+        else
+            image::flip_xy(new_slice->source_images);
+
         std::vector<float> t(nifti.get_transformation(),
                              nifti.get_transformation()+12),inv_trans(16);
         convert.resize(16);
@@ -1654,27 +1664,48 @@ bool GLWidget::addSlices(QStringList filenames)
     }
     else
     {
-        image::io::volume volume;
-        if(volume.load_from_files(files,files.size()))
-            other_slices.push_back(new CustomSliceModel(volume,cur_tracking_window.slice.center_point));
+        image::io::bruker_2dseq bruker;
+        if(filenames.size() == 1 && QFileInfo(filenames[0]).absoluteFilePath() == "2dseq" &&
+                bruker.load_from_file(filenames[0].toLocal8Bit().begin()))
+        {
+            new_slice->load(bruker);
+        }
         else
         {
-            if(files.size() == 1 && nifti.load_from_file(files[0]))
-                other_slices.push_back(new CustomSliceModel(nifti,cur_tracking_window.slice.center_point));
+            image::io::volume volume;
+            if(volume.load_from_files(files,files.size()))
+            {
+                new_slice->load(volume);
+            }
             else
             {
-                QMessageBox::information(&cur_tracking_window,"DSI Studio","Cannot parse the images",0);
-                return false;
+                if(files.size() == 1 && nifti.load_from_file(files[0]))
+                {
+                    new_slice->load(nifti);
+                    if(nifti.nif_header.srow_x[0] < 0)
+                    {
+                        if(nifti.nif_header.srow_y[1] > 0)
+                            image::flip_y(new_slice->source_images);
+                    }
+                    else
+                        image::flip_xy(new_slice->source_images);
+                }
+                else
+                {
+                    QMessageBox::information(&cur_tracking_window,"DSI Studio","Cannot parse the images",0);
+                    return false;
+                }
             }
         }
         // same dimension, no registration required.
-        if(other_slices.back().source_images.geometry() == cur_tracking_window.slice.source_images.geometry())
+        if(new_slice->source_images.geometry() == cur_tracking_window.slice.source_images.geometry())
         {
             convert.resize(16);
             convert[0] = convert[5] = convert[10] = convert[15] = 1.0;
         }
     }
 
+    other_slices.push_back(new_slice.release());
 
     mi3s.push_back(new LinearMapping<image::const_pointer_image<float,3> >);
     current_visible_slide = mi3s.size();
