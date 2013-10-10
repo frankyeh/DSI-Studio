@@ -170,7 +170,7 @@ void TractTableWidget::load_tracts(void)
             this,
             "Load tracts as",
             cur_tracking_window.get_path("track"),
-            "Tract files (*.txt *.trk *.mat *.tck);;All files (*.*)");
+            "Tract files (*.txt *.trk *.mat *.tck);;All files (*)");
     if(!filenames.size())
         return;
     cur_tracking_window.add_path("track",filenames[0]);
@@ -205,7 +205,7 @@ void TractTableWidget::save_all_tracts_as(void)
                 this,
                 "Save tracts as",
                 cur_tracking_window.get_path("track") + "/" + item(currentRow(),0)->text().replace(':','_') + ".txt",
-                "Tract files (*.txt *.trk *.mat);;All files (*.*)");
+                "Tract files (*.txt *.trk *.mat);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("track",filename);
@@ -265,7 +265,7 @@ void TractTableWidget::open_cluster_label(void)
             this,
             "Load cluster label",
             cur_tracking_window.get_path("track"),
-            "Cluster label files (*.txt);;All files (*.*)");
+            "Cluster label files (*.txt);;All files (*)");
     if(!filename.size())
         return;
     cur_tracking_window.add_path("track",filename);
@@ -334,7 +334,7 @@ void TractTableWidget::save_tracts_as(void)
                 this,
                 "Save tracts as",
                 cur_tracking_window.get_path("track") + "/" + item(currentRow(),0)->text().replace(':','_') + ".txt",
-                 "Tract files (*.txt *.trk *.mat);;All files (*.*)");
+                 "Tract files (*.txt *.trk *.mat);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("track",filename);
@@ -351,7 +351,7 @@ void TractTableWidget::save_end_point_as(void)
                 this,
                 "Save end points as",
                 cur_tracking_window.get_path("track") + "/" + item(currentRow(),0)->text().replace(':','_') + "endpoint.txt",
-                "Tract files (*.txt *.mat);;All files (*.*)");
+                "Tract files (*.txt *.mat);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("track",filename);
@@ -368,7 +368,7 @@ void TractTableWidget::saveTransformedTracts(const float* transform)
                 this,
                 "Save tracts as",
                 cur_tracking_window.get_path("track") + "/" + item(currentRow(),0)->text() + ".txt",
-                 "Tract files (*.txt *.trk *.mat);;All files (*.*)");
+                 "Tract files (*.txt *.trk *.mat);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("track",filename);
@@ -387,7 +387,7 @@ void TractTableWidget::saveTransformedEndpoints(const float* transform)
                 this,
                 "Save end_point as",
                 cur_tracking_window.get_path("track") + "/" + item(currentRow(),0)->text() + ".txt",
-                "Tract files (*.txt *.mat);;All files (*.*)");
+                "Tract files (*.txt *.mat);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("track",filename);
@@ -403,7 +403,7 @@ void TractTableWidget::load_tracts_color(void)
             this,
             "Load tracts color",
             cur_tracking_window.get_path("track"),
-            "Color files (*.txt);;All files (*.*)");
+            "Color files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("track",filename);
@@ -421,7 +421,7 @@ void TractTableWidget::save_tracts_color_as(void)
                 this,
                 "Save tracts color as",
                 cur_tracking_window.get_path("track") + "/" + item(currentRow(),0)->text() + "_color.txt",
-                "Color files (*.txt);;All files (*.*)");
+                "Color files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("track",filename);
@@ -480,7 +480,7 @@ void TractTableWidget::show_tracts_statistics(void)
                     this,
                     "Save satistics as",
                     cur_tracking_window.get_path("track") + +"/" + item(currentRow(),0)->text() + "_stat.txt",
-                    "Text files (*.txt);;All files|(*.*)");
+                    "Text files (*.txt);;All files|(*)");
         if(filename.isEmpty())
             return;
         cur_tracking_window.add_path("track",filename);
@@ -500,7 +500,7 @@ void TractTableWidget::save_fa_as(void)
                 this,
                 "Save QA as",
                 cur_tracking_window.get_path("track") + "/" + item(currentRow(),0)->text() + "_qa.txt",
-                "Text files (*.txt);;All files|(*.*)");
+                "Text files (*.txt);;All files|(*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("track",filename);
@@ -520,7 +520,7 @@ void TractTableWidget::save_tracts_data_as(void)
                 "Save as",
                 cur_tracking_window.get_path("track") +"/" +
                 item(currentRow(),0)->text() + "_" + action->data().toString() + ".txt",
-                "Text files (*.txt);;All files (*.*)");
+                "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("track",filename);
@@ -679,7 +679,7 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
                 this,
                 "Save Images files",
                 cur_tracking_window.get_path("track")+"/" + item(currentRow(),0)->text(),
-                "BMP files (*.bmp);;PNG files (*.png );;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*.*)");
+                "BMP files (*.bmp);;PNG files (*.png );;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
         if(filename.isEmpty())
             return;
         cur_tracking_window.add_path("track",filename);

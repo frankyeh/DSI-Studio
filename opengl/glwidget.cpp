@@ -1426,6 +1426,17 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
     editing_option = 0;
     emit edited();
 }
+void GLWidget::move_by(int x,int y)
+{
+    makeCurrent();
+    glPushMatrix();
+    glLoadIdentity();
+    glTranslated(x/5.0,y/5.0,0);
+    glMultMatrixf(transformation_matrix);
+    glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
+    glPopMatrix();
+    updateGL();
+}
 
 void GLWidget::mouseMoveEvent(QMouseEvent *event)
 {
@@ -1525,7 +1536,7 @@ void GLWidget::saveCamera(void)
             this,
             "Save Translocation Matrix",
             cur_tracking_window.get_path("camera") + "/camera.txt",
-            "Text files (*.txt);;All files (*.*)");
+            "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("camera",filename);
@@ -1544,7 +1555,7 @@ void GLWidget::loadCamera(void)
             this,
             "Open Translocation Matrix",
             cur_tracking_window.get_path("camera"),
-            "Text files (*.txt);;All files (*.*)");
+            "Text files (*.txt);;All files (*)");
     std::ifstream in(filename.toLocal8Bit().begin());
     if(filename.isEmpty() || !in)
         return;
@@ -1583,7 +1594,7 @@ void GLWidget::saveMapping(void)
             this,
             "Save Mapping Matrix",
             cur_tracking_window.get_path("mapping") + "/mapping.txt",
-            "Text files (*.txt);;All files (*.*)");
+            "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("mapping",filename);
@@ -1605,7 +1616,7 @@ void GLWidget::loadMapping(void)
             this,
             "Open Mapping Matrix",
             cur_tracking_window.get_path("mapping"),
-            "Text files (*.txt);;All files (*.*)");
+            "Text files (*.txt);;All files (*)");
     std::ifstream in(filename.toLocal8Bit().begin());
     if(filename.isEmpty() || !in)
         return;
@@ -1665,7 +1676,7 @@ bool GLWidget::addSlices(QStringList filenames)
     else
     {
         image::io::bruker_2dseq bruker;
-        if(filenames.size() == 1 && QFileInfo(filenames[0]).absoluteFilePath() == "2dseq" &&
+        if(filenames.size() == 1 && QFileInfo(filenames[0]).fileName() == "2dseq" &&
                 bruker.load_from_file(filenames[0].toLocal8Bit().begin()))
         {
             new_slice->load(bruker);
@@ -1841,7 +1852,7 @@ void GLWidget::catchScreen(void)
             this,
             "Save Images files",
             cur_tracking_window.get_path("catch_screen"),
-            "PNG files (*.png );;BMP files (*.bmp);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*.*)");
+            "PNG files (*.png );;BMP files (*.bmp);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("catch_screen",filename);
@@ -1854,7 +1865,7 @@ void GLWidget::saveLeftRight3DImage(void)
             this,
             "Assign image name",
             cur_tracking_window.get_path("catch_screen"),
-            "BMP files (*.bmp);;PNG files (*.png );;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*.*)");
+            "BMP files (*.bmp);;PNG files (*.png );;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("catch_screen",filename);
@@ -1892,7 +1903,7 @@ void GLWidget::saveRotationSeries(void)
             this,
             "Assign image name",
             cur_tracking_window.get_path("catch_screen"),
-            "BMP files (*.bmp);;PNG files (*.png );;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*.*)");
+            "BMP files (*.bmp);;PNG files (*.png );;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("catch_screen",filename);

@@ -53,7 +53,7 @@ void VBCDialog::on_group1open_clicked()
                                      this,
                                      "Open Fib files",
                                      "",
-                                     "Fib files (*.fib.gz);;All files (*.*)" );
+                                     "Fib files (*.fib.gz);;All files (*)" );
     if (filenames.isEmpty())
         return;
     group << filenames;
@@ -98,7 +98,7 @@ void VBCDialog::on_open_list1_clicked()
                                  this,
                                  "Open text file",
                                  "",
-                                 "Text files (*.txt);;All files (*.*)" );
+                                 "Text files (*.txt);;All files (*)" );
     if(filename.isEmpty())
         return;
     group.clear();
@@ -115,7 +115,7 @@ void VBCDialog::on_save_list1_clicked()
                                  this,
                                  "Open text file",
                                  "",
-                                 "Text files (*.txt);;All files (*.*)" );
+                                 "Text files (*.txt);;All files (*)" );
     if(filename.isEmpty())
         return;
 
@@ -143,7 +143,7 @@ void VBCDialog::on_select_output_file_clicked()
                                  this,
                                  "Save file",
                                  "",
-                                 "FIB file (*.fib);;All files (*.*)");
+                                 "FIB file (*.fib);;All files (*)");
     if(filename.isEmpty())
         return;
     ui->output_file_name->setText(filename);
@@ -154,7 +154,7 @@ void VBCDialog::on_open_skeleton_clicked()
                                  this,
                                  "Template file",
                                  "",
-                                 "FIB file (*.fib.gz);;All files (*.*)");
+                                 "FIB file (*.fib.gz);;All files (*)");
     if(filename.isEmpty())
         return;
     ui->skeleton->setText(filename);

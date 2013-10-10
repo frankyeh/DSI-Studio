@@ -26,6 +26,7 @@ class RenderingTableWidget;
      void get_pos(void);
      void set_view(unsigned char view_option);
      void scale_by(float scale);
+     void move_by(int x,int y);
  private:
      bool object_selected,slice_selected;
      image::vector<3,float> accumulated_dis;

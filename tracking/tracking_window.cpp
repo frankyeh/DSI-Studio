@@ -727,7 +727,7 @@ void tracking_window::on_actionInsert_T1_T2_triggered()
     QStringList filenames = QFileDialog::getOpenFileNames(
         this,
         "Open Images files",get_path("t1_path"),
-        "Image files (*.dcm *.hdr *.nii *.nii.gz);;All files (*.*)" );
+        "Image files (*.dcm *.hdr *.nii *.nii.gz 2dseq);;All files (*)" );
     if( filenames.isEmpty() || !glWidget->addSlices(filenames))
         return;
     add_path("t1_path",filenames[0]);
@@ -999,6 +999,19 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
             ui->glAxiSlider->setValue(ui->glAxiSlider->value()-1);
             event->accept();
             break;
+        case Qt::Key_Left:
+            glWidget->move_by(-1,0);
+            break;
+        case Qt::Key_Right:
+            glWidget->move_by(1,0);
+            break;
+        case Qt::Key_Up:
+            glWidget->move_by(0,-1);
+            break;
+        case Qt::Key_Down:
+            glWidget->move_by(0,1);
+            break;
+
             /*
         case Qt::Key_Z:
             event->accept();
@@ -1175,7 +1188,7 @@ void tracking_window::on_actionConnectometry_triggered()
                            this,
                            "Open Database files",
                            absolute_path,
-                           "Database files (*.db.fib.gz);;All files (*.*)");
+                           "Database files (*.db.fib.gz);;All files (*)");
     if (filename.isEmpty())
         return;
 

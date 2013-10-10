@@ -341,7 +341,7 @@ void reconstruction_window::on_load_mask_clicked()
             this,
             "Open region",
             absolute_path,
-            "Mask files (*.txt *.nii *.nii.gz *.hdr);;All files (*.*)" );
+            "Mask files (*.txt *.nii *.nii.gz *.hdr);;All files (*)" );
     if(filename.isEmpty())
         return;
     ROIRegion region(image.geometry(),handle->voxel.vs);
@@ -572,7 +572,7 @@ void reconstruction_window::on_save4dnifti_clicked()
                                 this,
                                 "Save image as...",
                             filenames[0] + ".nii.gz",
-                                "All files (*.*)" );
+                                "All files (*)" );
     if ( filename.isEmpty() )
         return;
     gz_nifti header;
@@ -624,7 +624,7 @@ void reconstruction_window::on_save_bvals_clicked()
                                 this,
                                 "Save b table as...",
                                 QFileInfo(filenames[0]).absolutePath() + "/bvals",
-                                "Text files (*.txt  *.*)" );
+                                "Text files (*.txt  *)" );
     if ( filename.isEmpty() )
         return;
     std::ofstream out(filename.toLocal8Bit().begin());
@@ -642,7 +642,7 @@ void reconstruction_window::on_save_bvec_clicked()
                                 this,
                                 "Save b table as...",
                                 QFileInfo(filenames[0]).absolutePath() + "/bvecs",
-                                "Text files (*.txt *.*)" );
+                                "Text files (*.txt *)" );
     if ( filename.isEmpty() )
         return;
     std::ofstream out(filename.toLocal8Bit().begin());

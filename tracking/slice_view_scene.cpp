@@ -380,7 +380,7 @@ void slice_view_scene::catch_screen()
     QString filename = QFileDialog::getSaveFileName(
             0,"Save Images files",
             cur_tracking_window.absolute_path,
-            "PNG files (*.png);;BMP files (*.bmp);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*.*)");
+            "PNG files (*.png);;BMP files (*.bmp);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
     if(filename.isEmpty())
         return;
 

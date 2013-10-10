@@ -43,7 +43,7 @@ void Simulation::on_pushButton_clicked()
                                 this,
                                 "Open Images files",
                                 dir,
-                                "Image files (*.txt);;All files (*.*)" ));
+                                "Image files (*.txt);;All files (*)" ));
     update_file_name();
 }
 

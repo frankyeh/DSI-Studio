@@ -406,7 +406,7 @@ void RegionTableWidget::load_region(void)
                                 this,
                                 "Open region",
                                 cur_tracking_window.get_path("region"),
-                                "Region files (*.txt *.nii *.hdr *.nii.gz *.mat);;All files (*.*)" );
+                                "Region files (*.txt *.nii *.hdr *.nii.gz *.mat);;All files (*)" );
     if (filenames.isEmpty())
         return;
     cur_tracking_window.add_path("region",filenames[0]);
@@ -463,7 +463,7 @@ void RegionTableWidget::save_region(void)
                            this,
                            "Save region",
                 cur_tracking_window.get_path("region") + "/" + item(currentRow(),0)->text() + "." + settings.value("region_save_type","nii.gz").toString(),
-                           "Region file(*.nii.gz *.nii *.txt *.mat);;All file types (*.*)" );
+                           "Region file(*.nii.gz *.nii *.txt *.mat);;All file types (*)" );
     if (filename.isEmpty())
         return;
     settings.setValue("region_save_type",QFileInfo(filename).completeSuffix());
@@ -608,7 +608,7 @@ void RegionTableWidget::show_statistics(void)
                     this,
                     "Save satistics as",
                     cur_tracking_window.get_path("region") + +"/" + item(currentRow(),0)->text() + "_stat.txt",
-                    "Text files (*.txt);;All files|(*.*)");
+                    "Text files (*.txt);;All files|(*)");
         if(filename.isEmpty())
             return;
         cur_tracking_window.add_path("region",filename);

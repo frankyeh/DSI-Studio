@@ -539,7 +539,7 @@ void dicom_parser::on_toolButton_2_clicked()
             this,
             "Open b-table",
             QFileInfo(ui->SrcName->text()).absolutePath(),
-            "Text files (*.txt);;All files (*.*)" );
+            "Text files (*.txt);;All files (*)" );
 
     std::ifstream in(filename.toLocal8Bit().begin());
     if(!in)
@@ -567,7 +567,7 @@ void dicom_parser::on_load_bval_clicked()
             this,
             "Open bval",
             QFileInfo(ui->SrcName->text()).absolutePath(),
-            "b-value file (bval *.txt);;All files (*.*)" );
+            "b-value file (bval *.txt);;All files (*)" );
     if(filename.isEmpty())
         return;
     std::ifstream in(filename.toLocal8Bit().begin());
@@ -589,7 +589,7 @@ void dicom_parser::on_load_bvec_clicked()
             this,
             "Open bvec",
             QFileInfo(ui->SrcName->text()).absolutePath(),
-            "b-vector file (bvec *.txt);;All files (*.*)" );
+            "b-vector file (bvec *.txt);;All files (*)" );
     if(filename.isEmpty())
         return;
     std::ifstream in(filename.toLocal8Bit().begin());
@@ -622,7 +622,7 @@ void dicom_parser::on_toolButton_8_clicked()
             this,
             "Save b-table",
             QFileInfo(ui->SrcName->text()).absolutePath() + "/b_table.txt",
-            "Text files (*.txt);;All files (*.*)");
+            "Text files (*.txt);;All files (*)");
 
     std::ofstream btable(filename.toLocal8Bit().begin());
     if(!btable)
@@ -649,7 +649,7 @@ void dicom_parser::on_loadImage_clicked()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
             this,"Open Images files",cur_path,
-            "Images (*.dcm *.hdr *.nii *.nii.gz 2dseq);;All files (*.*)" );
+            "Images (*.dcm *.hdr *.nii *.nii.gz 2dseq);;All files (*)" );
     if( filenames.isEmpty() )
         return;
     load_files(filenames);

@@ -339,7 +339,7 @@ void vbc_dialog::on_save_vbc_dist_clicked()
                 this,
                 "Save report as",
                 work_dir + "/dist_report.txt",
-                "Report file (*.txt);;All files (*.*)");
+                "Report file (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
     ui->null_dist->saveTxt(filename);
@@ -351,7 +351,7 @@ void vbc_dialog::on_save_fdr_dist_clicked()
                 this,
                 "Save report as",
                 work_dir + "/fdr_report.txt",
-                "Report file (*.txt);;All files (*.*)");
+                "Report file (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
     ui->fdr_dist->saveTxt(filename);
@@ -392,7 +392,7 @@ void vbc_dialog::on_open_files_clicked()
         filename = QFileDialog::getOpenFileNames(
                                     this,
                     "Select subject fib file for analysis",
-                    work_dir,"Fib files (*.fib.gz *.fib);;All files (*.*)" );
+                    work_dir,"Fib files (*.fib.gz *.fib);;All files (*)" );
         if (filename.isEmpty())
             return;
         ui->show_file_name->setText(QString("Subject files:")+QFileInfo(filename[0]).fileName()+"...etc.");
@@ -402,7 +402,7 @@ void vbc_dialog::on_open_files_clicked()
         QString filename1 = QFileDialog::getOpenFileName(
                                     this,
                                 "Select a value text file for analysis",
-                                work_dir,"Text files (*.txt);;All files (*.*)" );
+                                work_dir,"Text files (*.txt);;All files (*)" );
         if (filename1.isEmpty())
             return;
         filename.clear();
@@ -414,7 +414,7 @@ void vbc_dialog::on_open_files_clicked()
         QString filename1 = QFileDialog::getOpenFileName(
                                     this,
                                 "Select a label text file for analysis",
-                                work_dir,"Text files (*.txt);;All files (*.*)" );
+                                work_dir,"Text files (*.txt);;All files (*)" );
         if (filename1.isEmpty())
             return;
         filename.clear();
@@ -534,7 +534,7 @@ void vbc_dialog::on_view_dif_map_clicked()
         QString filename1 = QFileDialog::getOpenFileName(
                                     this,
                     "Select subject fib file for analysis",
-                    work_dir,"Fib files (*.fib.gz *.fib);;All files (*.*)" );
+                    work_dir,"Fib files (*.fib.gz *.fib);;All files (*)" );
         if (filename1.isEmpty())
             return;
         if(!vbc->single_subject_analysis(filename1.toLocal8Bit().begin(),1.0-ui->percentile_rank->value(),cur_subject_fib))
