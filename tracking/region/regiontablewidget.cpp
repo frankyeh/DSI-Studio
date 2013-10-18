@@ -638,7 +638,7 @@ void RegionTableWidget::add_atlas(void)
                 continue;
         points.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
     }
-    add_region(cur_tracking_window.ui->atlasComboBox->currentText(),seed_id);
+    add_region(cur_tracking_window.ui->atlasComboBox->currentText(),roi_id);
     add_points(points,false);
     emit need_update();
 }
