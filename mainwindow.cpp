@@ -461,6 +461,8 @@ void MainWindow::on_RenameDICOM_clicked()
 
 void MainWindow::add_work_dir(QString dir)
 {
+    if(ui->workDir->findText(dir) != -1)
+        ui->workDir->removeItem(ui->workDir->findText(dir));
     ui->workDir->insertItem(0,dir);
     ui->workDir->setCurrentIndex(0);
 }
