@@ -101,13 +101,15 @@ void check_error(const char* line)
 
 void GLWidget::initializeGL()
 {
-    makeCurrent();
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
     glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
     glBlendFunc (GL_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     tracts = glGenLists(1);
-    set_view(2/*axial view*/);
+    tract_alpha = -1; // ensure that make_track is called
+    slice_contrast = -1;// ensure slices is rendered
+    //set_view(2/*axial view*/);
+    paintGL();
     check_error(__FUNCTION__);
 }
 
@@ -329,7 +331,6 @@ void GLWidget::paintGL()
     //if(!cur_tracking_window.ui)
     //    return;
     // return to the original view matrix
-    makeCurrent();
     /*
     QPainter p(this);
     glPushAttrib(GL_ALL_ATTRIB_BITS);
@@ -347,17 +348,18 @@ void GLWidget::paintGL()
         // The following code is a fancy bit of math that is eqivilant to calling:
         // gluPerspective( fieldOfView/2.0f, width/height , 0.1f, 255.0f )
         // We do it this way simply to avoid requiring glu.h
-        GLfloat fieldOfView = get_param_float("fov_angle")*5.0+25;
+        float p[11] = {0.35,0.4,0.45,0.5,0.6,0.8,1.0,1.5,2.0,12.0,50.0};
+        GLfloat perspective = p[get_param("pespective")];
         GLfloat zNear = 1.0f;
         GLfloat zFar = 1000.0f;
         GLfloat aspect = float(width)/float(height);
-        GLfloat fH = tan( float(fieldOfView / 360.0f * 3.14159f) ) * zNear;
+        GLfloat fH = 0.25;
         GLfloat fW = fH * aspect;
-        glFrustum( -fW, fW, -fH, fH, zNear, zFar );
+        glFrustum( -fW, fW, -fH, fH, zNear*perspective, zFar*perspective);
 
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-        my_gluLookAt(0,0,(1+get_param_float("view_distance"))*-200.0/(get_param_float("fov_angle")+5.0),0,0,0,0,-1.0,0);
+        my_gluLookAt(0,0,-200.0*perspective,0,0,0,0,-1.0,0);
     }
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -1123,7 +1125,6 @@ void GLWidget::makeTracts(void)
 }
 void GLWidget::resizeGL(int width_, int height_)
 {
-    makeCurrent();
     width = width_;
     height = height_;
     glViewport(0,0, width, height);
@@ -1848,6 +1849,19 @@ void GLWidget::copyToClipboard(void)
 
 void GLWidget::catchScreen(void)
 {
+    bool ok;
+    QString result = QInputDialog::getText(this,"DSI Studio","Assign image dimension (width height)",QLineEdit::Normal,QString::number(width)+" "+QString::number(height),&ok);
+    if(!ok)
+        return;
+    std::istringstream in(result.toLocal8Bit().begin());
+    int w = 0;
+    int h = 0;
+    in >> w >> h;
+    if(w < 10 || w > 10000 || h < 10 || h > 10000)
+    {
+        QMessageBox::information(this,"Error","Invalid image dimension",0);
+        return;
+    }
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Save Images files",
@@ -1857,7 +1871,11 @@ void GLWidget::catchScreen(void)
         return;
     cur_tracking_window.add_path("catch_screen",filename);
     updateGL();
-    grabFrameBuffer().save(filename);
+    int old_width = width;
+    int old_height = height;
+    renderPixmap(w,h).save(filename);
+    makeCurrent();
+    resizeGL(old_width,old_height);
 }
 void GLWidget::saveLeftRight3DImage(void)
 {

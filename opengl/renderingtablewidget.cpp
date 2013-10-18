@@ -332,10 +332,7 @@ void RenderingTableWidget::initialize(void)
 {
     // Environment
     openPersistentEditor(treemodel->addItem(TreeModel::environItem,
-        "fov_angle",QString("View Angle"),QString("float"),5));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::environItem,
-        "view_distance",QString("View Distance"),QString("float"),3));
+        "pespective",QString("Perspective"),QString("int"),5));
 
     openPersistentEditor(treemodel->addItem(TreeModel::environItem,
         "bkg_color",QString("Background Color"),QString("color"),(int)0x00FFFFFF));
