@@ -335,6 +335,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         copy_target = 0;
     }
 
+    on_glAxiView_clicked();
     if(scene.neurology_convention)
         on_glAxiView_clicked();
     qApp->installEventFilter(this);

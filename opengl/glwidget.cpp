@@ -108,7 +108,6 @@ void GLWidget::initializeGL()
     tracts = glGenLists(1);
     tract_alpha = -1; // ensure that make_track is called
     slice_contrast = -1;// ensure slices is rendered
-    //set_view(2/*axial view*/);
     paintGL();
     check_error(__FUNCTION__);
 }
