@@ -59,7 +59,7 @@ bool load_dicom_multi_frame(const char* file_name,boost::ptr_vector<DwiHeader>& 
         return false;
     {
         // Philips multiframe
-        unsigned short slice_num = dicom_header.get_ge_uint16(0x2001,0x102D);
+        unsigned int slice_num = dicom_header.get_int(0x2001,0x102D);
         if(!slice_num)
             slice_num = 1;
         image::basic_image<unsigned short,3> buf_image;

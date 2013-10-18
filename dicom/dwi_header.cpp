@@ -27,7 +27,7 @@ bool DwiHeader::open(const char* filename)
     unsigned char man_id = 0;
     {
         std::string manu;
-        header.get_ge_text(0x0008,0x0070,manu);//Manufacturer
+        header.get_text(0x0008,0x0070,manu);//Manufacturer
         if (manu.size() > 2)
         {
             std::string name(manu.begin(),manu.begin()+2);
@@ -39,14 +39,8 @@ bool DwiHeader::open(const char* filename)
                 man_id = 3;
         }
     }
-    unsigned int length = 0;
     // get TE
-    {
-        //0018 0081 Echo Time [TE, ms]
-        const char* te_str = (const char*)header.get_ge_data(0x0018,0x0081,length);// TE
-        if (te_str)
-            std::istringstream((std::string(te_str,te_str+length))) >> te;
-    }
+    header.get_value(0x0018,0x0081,te);
 
     switch (man_id)
     {
@@ -59,21 +53,15 @@ bool DwiHeader::open(const char* filename)
         0019;XX27;SIEMENS MR HEADER ;B_matrix ;1;FD;6
          */
     {
-        {
-            unsigned int gvalue_length = 0;
-            const char* gvalue = (const char*)header.get_ge_data(0x0019,0x100C,gvalue_length);//B-Value
-            if (gvalue)
-                std::istringstream((std::string(gvalue,gvalue+gvalue_length))) >> bvalue;
-        }
-
+        header.get_value(0x0019,0x100C,bvalue);
         unsigned int gev_length = 0;
-        const double* gvec = (const double*)header.get_ge_data(0x0019,0x100E,gev_length);// B-vector
+        const double* gvec = (const double*)header.get_data(0x0019,0x100E,gev_length);// B-vector
         if(gvec)
             std::copy(gvec,gvec+3,bvec.begin());
         else
         // from b-matrix
         {
-            gvec = (const double*)header.get_ge_data(0x0019,0x1027,gev_length);// B-vector
+            gvec = (const double*)header.get_data(0x0019,0x1027,gev_length);// B-vector
             if (gvec)
             {
                 if (gvec[0] != 0.0)
@@ -112,40 +100,25 @@ bool DwiHeader::open(const char* filename)
     break;
     default:
     case 2://GE
-
         // get b-table
-    {
-        unsigned int gvalue_length = 0;
-        // GE header
-        const char* gvalue = (const char*)header.get_ge_data(0x0019,0x10BB,gvalue_length);// B-vector
-        if (gvalue)
-            std::istringstream((std::string(gvalue,gvalue+gvalue_length))) >> bvec[0];
-        gvalue = (const char*)header.get_ge_data(0x0019,0x10BC,gvalue_length);// B-vector
-        if (gvalue)
-            std::istringstream((std::string(gvalue,gvalue+gvalue_length))) >> bvec[1];
-        gvalue = (const char*)header.get_ge_data(0x0019,0x10BD,gvalue_length);// B-vector
-        if (gvalue)
-        {
-            std::istringstream((std::string(gvalue,gvalue+gvalue_length))) >> bvec[2];
-            bvec[2] = -bvec[2];
-        }
-        gvalue = (const char*)header.get_ge_data(0x0043,0x1039,gvalue_length);//B-Value
-        if (gvalue)
-            std::istringstream((std::string(gvalue,gvalue+gvalue_length))) >> bvalue;
-
-    }
-    break;
+        header.get_value(0x0019,0x10BB,bvec[0]);
+        header.get_value(0x0019,0x10BC,bvec[1]);
+        header.get_value(0x0019,0x10BD,bvec[2]);
+        bvec[2] = -bvec[2];
+        header.get_value(0x0043,0x1039,bvalue);
+        break;
     case 3://Phillips
         // get b-table
     {
         unsigned int gvalue_length = 0;
         // GE header
-        const double* gvalue = (const double*)header.get_ge_data(0x0018,0x9089,gvalue_length);// B-vector
+        const double* gvalue = (const double*)header.get_data(0x0018,0x9089,gvalue_length);// B-vector
         if(gvalue && gvalue_length == 24)
             std::copy(gvalue,gvalue+3,bvec.begin());
-        gvalue = (const double*)header.get_ge_data(0x0018,0x9087,gvalue_length);//B-Value
+        gvalue = (const double*)header.get_data(0x0018,0x9087,gvalue_length);//B-Value
         if(gvalue && gvalue_length == 8)
             bvalue = gvalue[0];
+
     }
 
     break;
