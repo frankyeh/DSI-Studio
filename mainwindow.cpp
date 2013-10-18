@@ -384,6 +384,15 @@ void MainWindow::on_FiberTracking_clicked()
     loadFib(filename);
 }
 
+void check_name(std::string& name)
+{
+    for(unsigned int index = 0;index < name.size();++index)
+        if((name[index] < '0' || name[index] > '9') &&
+           (name[index] < 'a' || name[index] > 'z') &&
+           (name[index] < 'A' || name[index] > 'Z') &&
+                name[index] != '.')
+            name[index] = '_';
+}
 
 void RenameDICOMToDir(QString FileName, QString ToDir)
 {
@@ -397,6 +406,9 @@ void RenameDICOMToDir(QString FileName, QString ToDir)
         header.get_sequence(sequence);
         header.get_image_name(imagename);
     }
+    check_name(person);
+    check_name(sequence);
+    check_name(imagename);
 
     QString Person(person.c_str()), Sequence(sequence.c_str()),
     ImageName(imagename.c_str());
