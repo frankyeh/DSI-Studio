@@ -609,7 +609,8 @@ void RenderingTableWidget::initialize(void)
         "odf_position",QString("Position"),
                                                       QStringList()
                                                       << QString("Along Slide")
-                                                      << QString("Slide Intersection"),0));
+                                                      << QString("Slide Intersection")
+                                                      << QString("All"),0));
         openPersistentEditor(treemodel->addItem(TreeModel::odfItem,
         "odf_size",QString("Size"),
                                                       QStringList()

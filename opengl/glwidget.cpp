@@ -108,6 +108,7 @@ void GLWidget::initializeGL()
     tracts = glGenLists(1);
     tract_alpha = -1; // ensure that make_track is called
     slice_contrast = -1;// ensure slices is rendered
+    odf_position = 255;//ensure ODFs is renderred
     paintGL();
     check_error(__FUNCTION__);
 }
@@ -408,40 +409,59 @@ void GLWidget::paintGL()
     if (cur_tracking_window.has_odfs &&
         get_param("show_odf"))
     {
-        ODFModel* handle = cur_tracking_window.handle;
         SliceModel& slice = cur_tracking_window.slice;
-        if(!get_param("odf_position"))
+        float fa_threshold = cur_tracking_window.ui->fa_threshold->value();
+        if(odf_position != get_param("odf_position") ||
+           odf_skip != get_param("odf_skip") ||
+           odf_size != get_param("odf_size") ||
+           (get_param("odf_position") == 0 && (odf_dim != slice.cur_dim || odf_slide_pos != slice.slice_pos[slice.cur_dim]))||
+            get_param("odf_position") == 1)
         {
-        if(odf_dim != slice.cur_dim ||
-           odf_slide_pos != slice.slice_pos[slice.cur_dim])
-        {
-            odf_dim = slice.cur_dim;
-            odf_slide_pos = slice.slice_pos[odf_dim];
+            odf_position = get_param("odf_position");
+            odf_skip = get_param("odf_skip");
+            odf_size = get_param("odf_size");
             odf_points.clear();
-            image::geometry<2> geo(slice.geometry[odf_dim==0?1:0],
-                                   slice.geometry[odf_dim==2?1:2]);
-            float fa_threshold = cur_tracking_window.ui->fa_threshold->value();
-            unsigned char skip_mask_set[3] = {0,1,3};
-            unsigned char mask = skip_mask_set[get_param("odf_skip")];
-            for(image::pixel_index<2> index;index.valid(geo);index.next(geo))
+        }
+
+        ODFModel* handle = cur_tracking_window.handle;
+        unsigned char skip_mask_set[3] = {0,1,3};
+        unsigned char mask = skip_mask_set[odf_skip];
+        if(odf_points.empty())
+        switch(odf_position) // along slide
+        {
+        case 0:
             {
-                if((index[0] & mask) | (index[1] & mask))
-                    continue;
-                int x,y,z;
-                if (!slice.get3dPosition(index[0],index[1],x,y,z))
-                    continue;
-                image::pixel_index<3> pos(x,y,z,cur_tracking_window.slice.geometry);
-                if (handle->fib_data.fib.getFA(pos.index(),0) <= fa_threshold)
-                    continue;
-                add_odf(pos);
+                odf_dim = slice.cur_dim;
+                odf_slide_pos = slice.slice_pos[odf_dim];
+                image::geometry<2> geo(slice.geometry[odf_dim==0?1:0],
+                                       slice.geometry[odf_dim==2?1:2]);
+                for(image::pixel_index<2> index;index.valid(geo);index.next(geo))
+                {
+                    if((index[0] & mask) | (index[1] & mask))
+                        continue;
+                    int x,y,z;
+                    if (!slice.get3dPosition(index[0],index[1],x,y,z))
+                        continue;
+                    image::pixel_index<3> pos(x,y,z,slice.geometry);
+                    if (handle->fib_data.fib.getFA(pos.index(),0) <= fa_threshold)
+                        continue;
+                    add_odf(pos);
+                }
             }
-        }
-        }
-        else
-        {
-            odf_points.clear();
+            break;
+        case 1: // intersection
             add_odf(image::pixel_index<3>(slice.slice_pos[0],slice.slice_pos[1],slice.slice_pos[2],
                                           slice.geometry));
+            break;
+        case 2: //all
+            for(image::pixel_index<3> index;index.valid(slice.geometry);index.next(slice.geometry))
+            {
+                if(((index[0] & mask) | (index[1] & mask) | (index[2] & mask)) ||
+                   handle->fib_data.fib.getFA(index.index(),0) <= fa_threshold)
+                    continue;
+                add_odf(index);
+            }
+            break;
         }
         if(odf_colors.empty())
         {
@@ -701,11 +721,11 @@ void GLWidget::add_odf(image::pixel_index<3> pos)
     if(!odf_buffer)
         return;
     static float size_set[] = {0.5,1.0,1.5,2.0,4.0,8.0,16.0,32.0};
-    float scaling = size_set[get_param("odf_size")]*2.0/max_fa;
-    unsigned int odf_size = cur_tracking_window.odf_size;
-    unsigned int half_odf = odf_size >> 1;
-    odf_points.resize(odf_points.size()+odf_size);
-    std::vector<image::vector<3,float> >::iterator iter = odf_points.end()-odf_size;
+    float scaling = size_set[odf_size]*2.0/max_fa;
+    unsigned int odf_dim = cur_tracking_window.odf_size;
+    unsigned int half_odf = odf_dim >> 1;
+    odf_points.resize(odf_points.size()+odf_dim);
+    std::vector<image::vector<3,float> >::iterator iter = odf_points.end()-odf_dim;
     std::vector<image::vector<3,float> >::iterator end = odf_points.end();
     std::fill(iter,end,pos);
 
