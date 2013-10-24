@@ -16,6 +16,7 @@
 #include "tracking_static_link.h"
 #include "opengl/renderingtablewidget.h"
 #include "libs/gzip_interface.hpp"
+#include "tract_cluster.hpp"
 
 
 TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget *parent) :
@@ -213,7 +214,6 @@ void TractTableWidget::save_all_tracts_as(void)
     TractModel::save_all(&*sfilename.begin(),tract_models);
 }
 
-
 void TractTableWidget::set_color(void)
 {
     if(tract_models.empty())
@@ -293,36 +293,70 @@ void TractTableWidget::clustering(int method_id)
         std::copy(cur_tracking_window.slice.geometry.begin(),
                   cur_tracking_window.slice.geometry.end(),param);
         param[3] = QInputDialog::getDouble(this,
-            "DSI Studio","Clustering detail (mm):",1.0,0.2,50.0,2);
+            "DSI Studio","Clustering detail (mm):",4.0,0.2,50.0,2);
     }
-    void* handle = tract_cluster_create(method_id,param);
+    std::auto_ptr<BasicCluster> handle;
+    switch (method_id)
+    {
+    case 0:
+        handle.reset(new TractCluster(param));
+        break;
+    case 1:
+        handle.reset(new FeatureBasedClutering<image::ml::k_means<double,unsigned char> >(param));
+        break;
+    case 2:
+        handle.reset(new FeatureBasedClutering<image::ml::expectation_maximization<double,unsigned char> >(param));
+        break;
+    }
+
     for(int index = 0;index < tract_models[currentRow()]->get_visible_track_count();++index)
     {
         if(tract_models[currentRow()]->get_tract_length(index))
-            tract_cluster_add_tract(handle,
+            handle->add_tract(
                 &*(tract_models[currentRow()]->get_tract(index).begin()),
                 tract_models[currentRow()]->get_tract_length(index));
     }
-    tract_cluster_add_tract(handle,0,0);//run clustering
+    handle->run_clustering();
 
-    unsigned int cluster_count = std::min(20,
-        (int)tract_cluster_get_cluster_count(handle));
-    std::vector<std::vector<float> > tracts;
-    tract_models[currentRow()]->release_tracts(tracts);
-    delete_row(currentRow());
-    for(int index = 0;index < cluster_count;++index)
+    QMessageBox msgBox;
+    msgBox.setText("Separate tracks? (Yes: separate tracks according to the cluster labels, No: paint the tracks only)");
+    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    msgBox.setDefaultButton(QMessageBox::Yes);
+    int rec = msgBox.exec();
+    if(rec == QMessageBox::Yes)
     {
-        addNewTracts(QString("Cluster")+QString::number(index));
-        unsigned int cluster_size;
-        const unsigned int* data = tract_cluster_get_cluster(handle,index,cluster_size);
-        std::vector<std::vector<float> > add_tracts(cluster_size);
-        for(int i = 0;i < cluster_size;++i)
-            add_tracts[i].swap(tracts[data[i]]);
-        tract_models.back()->add_tracts(add_tracts);
-        item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
+        unsigned int cluster_count = method_id ? handle->get_cluster_count() : 30;
+        std::vector<std::vector<float> > tracts;
+        tract_models[currentRow()]->release_tracts(tracts);
+        delete_row(currentRow());
+        for(int index = 0;index < cluster_count;++index)
+        {
+            addNewTracts(QString("Cluster")+QString::number(index));
+            unsigned int cluster_size;
+            const unsigned int* data = handle->get_cluster(index,cluster_size);
+            std::vector<std::vector<float> > add_tracts(cluster_size);
+            for(int i = 0;i < cluster_size;++i)
+                add_tracts[i].swap(tracts[data[i]]);
+            tract_models.back()->add_tracts(add_tracts);
+            item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
+        }
+        assign_colors();
     }
-    tract_cluster_free(handle);
-    assign_colors();
+    else
+    {
+        unsigned int cluster_count = handle->get_cluster_count();
+        for(int index = 0;index < cluster_count;++index)
+        {
+            image::rgb_color color;
+            color.from_hsi(3.14159265358979323846*2.0*index/cluster_count,1.0,1.0);
+            unsigned int cluster_size = 0;
+            const unsigned int* data = handle->get_cluster(index,cluster_size);
+            for(int i = 0;i < cluster_size;++i)
+                tract_models[currentRow()]->set_tract_color(data[i],color);
+        }
+        cur_tracking_window.renderWidget->setData("tract_color_style",1);//manual assigned
+        emit need_update();
+    }
 }
 
 void TractTableWidget::save_tracts_as(void)
