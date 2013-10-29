@@ -37,6 +37,8 @@ bool DwiHeader::open(const char* filename)
                 man_id = 2;
             if (name == std::string("Ph"))
                 man_id = 3;
+            if (name == std::string("TO"))
+                man_id = 4;
         }
     }
     // get TE
@@ -122,6 +124,14 @@ bool DwiHeader::open(const char* filename)
     }
 
     break;
+    case 4://TOSHIBA
+    {
+        unsigned int gvalue_length = 0;
+        const double* gvalue = (const double*)header.get_data(0x0018,0x9087,gvalue_length);//B-Value
+        if(gvalue && gvalue_length == 8)
+            bvalue = gvalue[0];
+    }
+        break;
     }
 
     // apply slices orientation
@@ -369,6 +379,8 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
     begin_prog("Save Files");
     for (unsigned int index = 0,id = 0;check_prog(index,dwi_files.size());index+=slice_pile,++id)
     {
+        // avoid negative values
+        image::lower_threshold(dwi_files[index].image,(short)0);
         std::ostringstream name;
         image::basic_image<short,3> buffer;
         const unsigned short* ptr = 0;
