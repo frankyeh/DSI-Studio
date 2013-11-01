@@ -23,6 +23,7 @@ class RenderingTableWidget;
      unsigned char editing_option;
      float mat[16];
      image::vector<3,float> pos,dir1,dir2;
+     bool angular_selection;
      void get_pos(void);
      void set_view(unsigned char view_option);
      void scale_by(float scale);

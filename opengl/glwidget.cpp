@@ -1444,6 +1444,7 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
     get_view_dir(lastPos,dir1);
     get_view_dir(QPoint(event->x(),event->y()),dir2);
     editing_option = 0;
+    angular_selection = event->button() == Qt::RightButton;
     emit edited();
 }
 void GLWidget::move_by(int x,int y)

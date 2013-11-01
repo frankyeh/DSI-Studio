@@ -28,9 +28,9 @@ public:
         const std::vector<unsigned int>& get_cluster_info(void) const{return tract_cluster;}
         std::vector<unsigned int>& get_cluster_info(void) {return tract_cluster;}
 private:
-        void select(const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
-                  const image::vector<3,float>& from_pos,const image::vector<3,float>& to_pos,
-                  std::vector<unsigned int>& selected);
+        void select(bool angular_selection,
+                    const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
+                    const image::vector<3,float>& from_pos,std::vector<unsigned int>& selected);
         // selection
         void delete_tracts(const std::vector<unsigned int>& tracts_to_delete);
         void select_tracts(const std::vector<unsigned int>& tracts_to_select);
@@ -62,13 +62,15 @@ public:
 
         void release_tracts(std::vector<std::vector<float> >& released_tracks);
         void add_tracts(std::vector<std::vector<float> >& new_tracks);
-        void cull(const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
-                  const image::vector<3,float>& from_pos,const image::vector<3,float>& to_pos,
+        void cull(bool angular_selection,
+                  const image::vector<3,float>& from_dir,
+                  const image::vector<3,float>& to_dir,
+                  const image::vector<3,float>& from_pos,
                   bool delete_track);
-        void cut(const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
-                  const image::vector<3,float>& from_pos,const image::vector<3,float>& to_pos);
-        void paint(const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
-                  const image::vector<3,float>& from_pos,const image::vector<3,float>& to_pos,
+        void cut(bool angular_selection,const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
+                  const image::vector<3,float>& from_pos);
+        void paint(bool angular_selection,const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
+                  const image::vector<3,float>& from_pos,
                   unsigned int color);
         void set_color(unsigned int color){std::fill(tract_color.begin(),tract_color.end(),color);}
         void set_tract_color(unsigned int index,unsigned int color){tract_color[index] = color;}

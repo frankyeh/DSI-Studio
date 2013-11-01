@@ -684,23 +684,23 @@ void TractTableWidget::edit_tracts(void)
         case 1:
         case 2:
             tract_models[index]->cull(
+                             cur_tracking_window.glWidget->angular_selection,
                              cur_tracking_window.glWidget->dir1,
                              cur_tracking_window.glWidget->dir2,
-                             cur_tracking_window.glWidget->pos,
                              cur_tracking_window.glWidget->pos,edit_option == 2);
             break;
         case 3:
             tract_models[index]->cut(
+                             cur_tracking_window.glWidget->angular_selection,
                              cur_tracking_window.glWidget->dir1,
                              cur_tracking_window.glWidget->dir2,
-                             cur_tracking_window.glWidget->pos,
                              cur_tracking_window.glWidget->pos);
             break;
         case 4:
             tract_models[index]->paint(
+                             cur_tracking_window.glWidget->angular_selection,
                              cur_tracking_window.glWidget->dir1,
                              cur_tracking_window.glWidget->dir2,
-                             cur_tracking_window.glWidget->pos,
                              cur_tracking_window.glWidget->pos,QColorDialog::getColor(Qt::red).rgb());
             cur_tracking_window.renderWidget->setData("tract_color_style",1);//manual assigned
             break;
