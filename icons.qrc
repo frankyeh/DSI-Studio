@@ -15,5 +15,8 @@
         <file>icons/save.xpm</file>
         <file>icons/curves.xpm</file>
         <file>icons/move.xpm</file>
+        <file>icons/save_all.xpm</file>
+        <file>icons/down.xpm</file>
+        <file>icons/up.xpm</file>
     </qresource>
 </RCC>

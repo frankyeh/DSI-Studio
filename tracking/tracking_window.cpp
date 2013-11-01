@@ -293,6 +293,10 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         connect(ui->actionQuantitative_anisotropy_QA,SIGNAL(triggered()),tractWidget,SLOT(save_fa_as()));
         connect(ui->actionSave_End_Points_As,SIGNAL(triggered()),tractWidget,SLOT(save_end_point_as()));
         connect(ui->actionStatistics,SIGNAL(triggered()),tractWidget,SLOT(show_tracts_statistics()));
+
+        connect(ui->track_up,SIGNAL(clicked()),tractWidget,SLOT(move_up()));
+        connect(ui->track_down,SIGNAL(clicked()),tractWidget,SLOT(move_down()));
+
     }
 
 

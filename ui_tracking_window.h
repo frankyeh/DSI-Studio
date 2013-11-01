@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Mon Oct 7 23:56:27 2013
+** Created: Thu Oct 31 23:23:51 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -199,7 +199,11 @@ public:
     QFrame *line_9;
     QToolButton *tbOpenTract;
     QToolButton *tbSaveTract;
+    QToolButton *save_all_tracks;
     QToolButton *tbDeleteTract;
+    QFrame *line_2;
+    QToolButton *track_up;
+    QToolButton *track_down;
     QSpacerItem *horizontalSpacer_4;
     QDockWidget *dockWidget;
     QWidget *dockWidgetContents;
@@ -915,7 +919,7 @@ public:
         TractWidgetHolder->setObjectName(QString::fromUtf8("TractWidgetHolder"));
         sizePolicy5.setHeightForWidth(TractWidgetHolder->sizePolicy().hasHeightForWidth());
         TractWidgetHolder->setSizePolicy(sizePolicy5);
-        TractWidgetHolder->setMinimumSize(QSize(80, 46));
+        TractWidgetHolder->setMinimumSize(QSize(146, 46));
         TractWidgetHolder->setMaximumSize(QSize(524287, 524287));
         dockWidgetContents_5 = new QWidget();
         dockWidgetContents_5->setObjectName(QString::fromUtf8("dockWidgetContents_5"));
@@ -947,12 +951,46 @@ public:
 
         horizontalLayout_15->addWidget(tbSaveTract);
 
+        save_all_tracks = new QToolButton(dockWidgetContents_5);
+        save_all_tracks->setObjectName(QString::fromUtf8("save_all_tracks"));
+        save_all_tracks->setMaximumSize(QSize(23, 22));
+        QIcon icon8;
+        icon8.addFile(QString::fromUtf8(":/icons/icons/save_all.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        save_all_tracks->setIcon(icon8);
+
+        horizontalLayout_15->addWidget(save_all_tracks);
+
         tbDeleteTract = new QToolButton(dockWidgetContents_5);
         tbDeleteTract->setObjectName(QString::fromUtf8("tbDeleteTract"));
         tbDeleteTract->setMaximumSize(QSize(23, 22));
         tbDeleteTract->setIcon(icon3);
 
         horizontalLayout_15->addWidget(tbDeleteTract);
+
+        line_2 = new QFrame(dockWidgetContents_5);
+        line_2->setObjectName(QString::fromUtf8("line_2"));
+        line_2->setFrameShape(QFrame::VLine);
+        line_2->setFrameShadow(QFrame::Sunken);
+
+        horizontalLayout_15->addWidget(line_2);
+
+        track_up = new QToolButton(dockWidgetContents_5);
+        track_up->setObjectName(QString::fromUtf8("track_up"));
+        track_up->setMaximumSize(QSize(23, 22));
+        QIcon icon9;
+        icon9.addFile(QString::fromUtf8(":/icons/icons/up.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        track_up->setIcon(icon9);
+
+        horizontalLayout_15->addWidget(track_up);
+
+        track_down = new QToolButton(dockWidgetContents_5);
+        track_down->setObjectName(QString::fromUtf8("track_down"));
+        track_down->setMaximumSize(QSize(23, 22));
+        QIcon icon10;
+        icon10.addFile(QString::fromUtf8(":/icons/icons/down.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        track_down->setIcon(icon10);
+
+        horizontalLayout_15->addWidget(track_down);
 
         horizontalSpacer_4 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
@@ -992,9 +1030,9 @@ public:
         tool0 = new QToolButton(dockWidgetContents);
         tool0->setObjectName(QString::fromUtf8("tool0"));
         tool0->setMaximumSize(QSize(23, 22));
-        QIcon icon8;
-        icon8.addFile(QString::fromUtf8(":/icons/icons/rec.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        tool0->setIcon(icon8);
+        QIcon icon11;
+        icon11.addFile(QString::fromUtf8(":/icons/icons/rec.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        tool0->setIcon(icon11);
         tool0->setIconSize(QSize(16, 16));
         tool0->setCheckable(true);
         tool0->setChecked(true);
@@ -1005,9 +1043,9 @@ public:
         tool1 = new QToolButton(dockWidgetContents);
         tool1->setObjectName(QString::fromUtf8("tool1"));
         tool1->setMaximumSize(QSize(23, 22));
-        QIcon icon9;
-        icon9.addFile(QString::fromUtf8(":/icons/icons/curves.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        tool1->setIcon(icon9);
+        QIcon icon12;
+        icon12.addFile(QString::fromUtf8(":/icons/icons/curves.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        tool1->setIcon(icon12);
         tool1->setIconSize(QSize(16, 16));
         tool1->setCheckable(true);
         tool1->setChecked(false);
@@ -1018,9 +1056,9 @@ public:
         tool4 = new QToolButton(dockWidgetContents);
         tool4->setObjectName(QString::fromUtf8("tool4"));
         tool4->setMaximumSize(QSize(23, 22));
-        QIcon icon10;
-        icon10.addFile(QString::fromUtf8(":/icons/icons/poly.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        tool4->setIcon(icon10);
+        QIcon icon13;
+        icon13.addFile(QString::fromUtf8(":/icons/icons/poly.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        tool4->setIcon(icon13);
         tool4->setCheckable(true);
         tool4->setAutoExclusive(true);
 
@@ -1029,9 +1067,9 @@ public:
         tool2 = new QToolButton(dockWidgetContents);
         tool2->setObjectName(QString::fromUtf8("tool2"));
         tool2->setMaximumSize(QSize(23, 22));
-        QIcon icon11;
-        icon11.addFile(QString::fromUtf8(":/icons/icons/ball.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        tool2->setIcon(icon11);
+        QIcon icon14;
+        icon14.addFile(QString::fromUtf8(":/icons/icons/ball.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        tool2->setIcon(icon14);
         tool2->setIconSize(QSize(16, 16));
         tool2->setCheckable(true);
         tool2->setAutoExclusive(true);
@@ -1041,9 +1079,9 @@ public:
         tool3 = new QToolButton(dockWidgetContents);
         tool3->setObjectName(QString::fromUtf8("tool3"));
         tool3->setMaximumSize(QSize(23, 22));
-        QIcon icon12;
-        icon12.addFile(QString::fromUtf8(":/icons/icons/cubic.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        tool3->setIcon(icon12);
+        QIcon icon15;
+        icon15.addFile(QString::fromUtf8(":/icons/icons/cubic.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        tool3->setIcon(icon15);
         tool3->setIconSize(QSize(16, 16));
         tool3->setCheckable(true);
         tool3->setAutoExclusive(true);
@@ -1053,9 +1091,9 @@ public:
         tool5 = new QToolButton(dockWidgetContents);
         tool5->setObjectName(QString::fromUtf8("tool5"));
         tool5->setMaximumSize(QSize(23, 22));
-        QIcon icon13;
-        icon13.addFile(QString::fromUtf8(":/icons/icons/move.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        tool5->setIcon(icon13);
+        QIcon icon16;
+        icon16.addFile(QString::fromUtf8(":/icons/icons/move.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        tool5->setIcon(icon16);
         tool5->setCheckable(true);
         tool5->setAutoExclusive(true);
 
@@ -1473,9 +1511,9 @@ public:
         sizePolicy8.setHeightForWidth(perform_tracking->sizePolicy().hasHeightForWidth());
         perform_tracking->setSizePolicy(sizePolicy8);
         perform_tracking->setMaximumSize(QSize(16777215, 25));
-        QIcon icon14;
-        icon14.addFile(QString::fromUtf8(":/icons/icons/run.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        perform_tracking->setIcon(icon14);
+        QIcon icon17;
+        icon17.addFile(QString::fromUtf8(":/icons/icons/run.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        perform_tracking->setIcon(icon17);
 
         horizontalLayout_5->addWidget(perform_tracking);
 
@@ -1605,7 +1643,7 @@ public:
         QObject::connect(tbSaveRegion, SIGNAL(clicked()), actionSaveRegionAs, SLOT(trigger()));
         QObject::connect(tbDeleteRegion, SIGNAL(clicked()), actionDeleteRegion, SLOT(trigger()));
         QObject::connect(isosurfaceButton, SIGNAL(clicked()), actionAdd_surface, SLOT(trigger()));
-        QObject::connect(tbSaveTract, SIGNAL(clicked()), actionSave_All_Tracts_As, SLOT(trigger()));
+        QObject::connect(tbSaveTract, SIGNAL(clicked()), actionSaveTractAs, SLOT(trigger()));
         QObject::connect(tbOpenTract, SIGNAL(clicked()), actionOpenTract, SLOT(trigger()));
         QObject::connect(tbDeleteTract, SIGNAL(clicked()), actionDeleteTract, SLOT(trigger()));
         QObject::connect(glAxiBox, SIGNAL(valueChanged(int)), glAxiSlider, SLOT(setValue(int)));
@@ -1614,6 +1652,7 @@ public:
         QObject::connect(glAxiSlider, SIGNAL(valueChanged(int)), glAxiBox, SLOT(setValue(int)));
         QObject::connect(glCorSlider, SIGNAL(valueChanged(int)), glCorBox, SLOT(setValue(int)));
         QObject::connect(glSagSlider, SIGNAL(valueChanged(int)), glSagBox, SLOT(setValue(int)));
+        QObject::connect(save_all_tracks, SIGNAL(clicked()), actionSave_All_Tracts_As, SLOT(trigger()));
 
         initial_direction->setCurrentIndex(0);
         tracking_plan->setCurrentIndex(1);
@@ -1804,7 +1843,10 @@ public:
         TractWidgetHolder->setWindowTitle(QApplication::translate("tracking_window", "Fiber Tracts", 0, QApplication::UnicodeUTF8));
         tbOpenTract->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
         tbSaveTract->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
+        save_all_tracks->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
         tbDeleteTract->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
+        track_up->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
+        track_down->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
         dockWidget->setWindowTitle(QApplication::translate("tracking_window", "Step1: select regions", 0, QApplication::UnicodeUTF8));
 #ifndef QT_NO_TOOLTIP
         tool0->setToolTip(QApplication::translate("tracking_window", "Rectangle seeding", 0, QApplication::UnicodeUTF8));

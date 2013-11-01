@@ -603,6 +603,45 @@ void TractTableWidget::copy_track(void)
     item(currentRow(),1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     emit need_update();
 }
+void TractTableWidget::move_up(void)
+{
+    if(currentRow())
+    {
+        for(unsigned int col = 0;col <= 3;++col)
+        {
+            QString tmp = item(currentRow(),col)->text();
+            item(currentRow(),col)->setText(item(currentRow()-1,col)->text());
+            item(currentRow()-1,col)->setText(tmp);
+        }
+        Qt::CheckState checked = item(currentRow(),0)->checkState();
+        item(currentRow(),0)->setCheckState(item(currentRow()-1,0)->checkState());
+        item(currentRow()-1,0)->setCheckState(checked);
+        std::swap(thread_data[currentRow()],thread_data[currentRow()-1]);
+        std::swap(tract_models[currentRow()],tract_models[currentRow()-1]);
+        setCurrentCell(currentRow()-1,0);
+    }
+    emit need_update();
+}
+
+void TractTableWidget::move_down(void)
+{
+    if(currentRow()+1 < tract_models.size())
+    {
+        for(unsigned int col = 0;col <= 3;++col)
+        {
+            QString tmp = item(currentRow(),col)->text();
+            item(currentRow(),col)->setText(item(currentRow()+1,col)->text());
+            item(currentRow()+1,col)->setText(tmp);
+        }
+        Qt::CheckState checked = item(currentRow(),0)->checkState();
+        item(currentRow(),0)->setCheckState(item(currentRow()+1,0)->checkState());
+        item(currentRow()+1,0)->setCheckState(checked);
+        std::swap(thread_data[currentRow()],thread_data[currentRow()+1]);
+        std::swap(tract_models[currentRow()],tract_models[currentRow()+1]);
+        setCurrentCell(currentRow()+1,0);
+    }
+    emit need_update();
+}
 
 
 void TractTableWidget::delete_tract(void)
