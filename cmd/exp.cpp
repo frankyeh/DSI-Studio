@@ -14,7 +14,6 @@
 namespace po = boost::program_options;
 
 // test example
-// --action=ana --source=20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
 
 int exp(int ac, char *av[])
 {
@@ -65,7 +64,7 @@ int exp(int ac, char *av[])
         return 0;
     }
 
-    image::geometry<3> geometry(dim_buf[0],dim_buf[1],dim_buf[2]);
+    image::geometry<3> geo(dim_buf[0],dim_buf[1],dim_buf[2]);
     std::string export_option = vm["export"].as<std::string>();
     std::replace(export_option.begin(),export_option.end(),',',' ');
     std::istringstream in(export_option);
@@ -76,27 +75,72 @@ int exp(int ac, char *av[])
         file_name_stat += ".";
         file_name_stat += cmd;
         file_name_stat += ".nii.gz";
-        gz_nifti nifti_header;
+
+        // export fiber orientations
+        if(cmd.length() > 3 && cmd.substr(0,3) == std::string("dir"))
+        {
+            FiberDirection fib;
+            if(!fib.add_data(mat_reader))
+            {
+                std::cout << "Invalid file for exporting fiber orientations." << std::endl;
+                continue;
+            }
+
+            image::basic_image<float,4> fibers;
+            if(cmd[3] == 's') // all directions
+            {
+                fibers.resize(image::geometry<4>(geo[0],geo[1],geo[2],fib.num_fiber*3));
+                for(unsigned int i = 0,ptr = 0;i < fib.num_fiber;++i)
+                for(unsigned int j = 0;j < 3;++j)
+                for(unsigned int index = 0;index < geo.size();++index,++ptr)
+                    if(fib.getFA(index,i))
+                        fibers[ptr] = fib.getDir(index,i)[j];
+            }
+            else
+            {
+                unsigned char dir_index = cmd[3] - '0';
+                if(dir_index < 0 || dir_index >= fib.num_fiber)
+                {
+                    std::cout << "Invalid fiber index. The maximum fiber per voxel is " << (int) fib.num_fiber << std::endl;
+                    continue;
+                }
+                fibers.resize(image::geometry<4>(geo[0],geo[1],geo[2],3));
+                for(unsigned int j = 0,ptr = 0;j < 3;++j)
+                for(unsigned int index = 0;index < geo.size();++index,++ptr)
+                    if(fib.getFA(index,dir_index))
+                        fibers[ptr] = fib.getDir(index,dir_index)[j];
+            }
+            image::flip_xy(fibers);
+            gz_nifti nifti_header;
+            nifti_header << fibers;
+            nifti_header.set_voxel_size(vs);
+            nifti_header.save_to_file(file_name_stat.c_str());
+            std::cout << "write to file " << file_name_stat.c_str() << std::endl;
+            continue;
+        }
         const float* volume = 0;
-        std::cout << "retriving matrix " << cmd.c_str() << std::endl;
-        if(!mat_reader.read(cmd.c_str(),row,col,volume))
+        if(mat_reader.read(cmd.c_str(),row,col,volume))
         {
-            std::cout << "Cannot find matrix "<< cmd.c_str() <<" in the file" << file_name.c_str() <<std::endl;
+            std::cout << "retriving matrix " << cmd.c_str() << std::endl;
+            if(row*col != geo.size())
+            {
+                std::cout << "The matrix "<< cmd.c_str() <<" is not an image volume" <<std::endl;
+                std::cout << "matrix size: " << row << " by " << col << std::endl;
+                std::cout << "expected dimension: " << geo[0] << " by " << geo[1] << " by " << geo[2] << std::endl;
+                continue;
+            }
+            image::basic_image<float,3> data(geo);
+            std::copy(volume,volume+geo.size(),data.begin());
+            image::flip_xy(data);
+            gz_nifti nifti_header;
+            nifti_header << data;
+            nifti_header.set_voxel_size(vs);
+            nifti_header.save_to_file(file_name_stat.c_str());
+            std::cout << "write to file " << file_name_stat.c_str() << std::endl;
             continue;
         }
-        if(row*col != geometry.size())
-        {
-            std::cout << "The matrix "<< cmd.c_str() <<" is not an image volume" <<std::endl;
-            std::cout << "matrix size: " << row << " by " << col << std::endl;
-            std::cout << "expected dimension: " << geometry[0] << " by " << geometry[1] << " by " << geometry[2] << std::endl;
-            continue;
-        }
-        image::basic_image<float,3> data(geometry);
-        std::copy(volume,volume+geometry.size(),data.begin());
-        image::flip_xy(data);
-        nifti_header << data;
-        nifti_header.set_voxel_size(vs);
-        nifti_header.save_to_file(file_name_stat.c_str());
-        std::cout << "write to file " << file_name_stat.c_str() << std::endl;
+        std::cout << "Cannot find matrix "<< cmd.c_str() <<" in the file" << file_name.c_str() <<std::endl;
+        continue;
+
     }
 }
