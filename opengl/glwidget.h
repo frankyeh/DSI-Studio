@@ -75,6 +75,7 @@ class RenderingTableWidget;
      void makeTracts(void);
      void addSurface(void);
      void catchScreen(void);
+     void catchScreen2(void);
      void saveCamera(void);
      void loadCamera(void);
      void saveRotationSeries(void);

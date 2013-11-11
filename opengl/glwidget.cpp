@@ -1869,6 +1869,20 @@ void GLWidget::copyToClipboard(void)
 
 void GLWidget::catchScreen(void)
 {
+    QString filename = QFileDialog::getSaveFileName(
+               this,
+               "Save Images files",
+               cur_tracking_window.get_path("catch_screen"),
+               "PNG files (*.png );;BMP files (*.bmp);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    cur_tracking_window.add_path("catch_screen",filename);
+    updateGL();
+    grabFrameBuffer().save(filename);
+}
+
+void GLWidget::catchScreen2(void)
+{
     bool ok;
     QString result = QInputDialog::getText(this,"DSI Studio","Assign image dimension (width height)",QLineEdit::Normal,QString::number(width)+" "+QString::number(height),&ok);
     if(!ok)

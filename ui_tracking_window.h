@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Thu Oct 31 23:23:51 2013
+** Created: Mon Nov 11 14:18:50 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -125,6 +125,7 @@ public:
     QAction *actionUnckech_all_regions;
     QAction *actionCopyTrack;
     QAction *actionConnectometry;
+    QAction *actionSave_3D_screen_in_high_resolution;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QHBoxLayout *horizontalLayout_13;
@@ -516,6 +517,9 @@ public:
         actionCopyTrack->setObjectName(QString::fromUtf8("actionCopyTrack"));
         actionConnectometry = new QAction(tracking_window);
         actionConnectometry->setObjectName(QString::fromUtf8("actionConnectometry"));
+        actionSave_3D_screen_in_high_resolution = new QAction(tracking_window);
+        actionSave_3D_screen_in_high_resolution->setObjectName(QString::fromUtf8("actionSave_3D_screen_in_high_resolution"));
+        actionSave_3D_screen_in_high_resolution->setIcon(icon2);
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -1621,6 +1625,7 @@ public:
         menu_View->addAction(actionSave_Camera);
         menu_View->addSeparator();
         menu_View->addAction(actionSave_Screen);
+        menu_View->addAction(actionSave_3D_screen_in_high_resolution);
         menu_View->addAction(actionSave_ROI_Screen);
         menu_View->addAction(actionSave_Anisotrpy_Map_as);
         menu_View->addAction(actionSave_Rotation_Images);
@@ -1776,6 +1781,7 @@ public:
         actionUnckech_all_regions->setText(QApplication::translate("tracking_window", "Uncheck all regions", 0, QApplication::UnicodeUTF8));
         actionCopyTrack->setText(QApplication::translate("tracking_window", "Copy", 0, QApplication::UnicodeUTF8));
         actionConnectometry->setText(QApplication::translate("tracking_window", "Connectometry...", 0, QApplication::UnicodeUTF8));
+        actionSave_3D_screen_in_high_resolution->setText(QApplication::translate("tracking_window", "Save 3D screen in high resolution...", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)
