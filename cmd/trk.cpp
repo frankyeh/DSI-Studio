@@ -147,7 +147,12 @@ int trk(int ac, char *av[])
         if(!roi.LoadFromFile(file_name.c_str(),handle->fib_data.trans_to_mni))
         {
             std::cout << "Invalid file format:" << file_name << std::endl;
-            return 0;
+            return 0;    
+        }
+        if(roi.get().empty())
+        {
+            std::cout << "No region found in " << file_name << std::endl;
+            continue;
         }
         tracking_thread.setRegions(geometry,roi.get(),type[index]);
         std::cout << roi_names[index] << "=" << file_name << std::endl;
@@ -157,17 +162,12 @@ int trk(int ac, char *av[])
     {
 
         std::vector<image::vector<3,short> > seed;
-        std::cout << "no seeding area assigned. perform whole brain tracking" << std::endl;
+        std::cout << "no seeding area assigned. use whole brain seeding" << std::endl;
         for(image::pixel_index<3> index;index.valid(geometry);index.next(geometry))
             if(fa0[index.index()] > 0)
                 seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
         tracking_thread.setRegions(geometry,seed,3);
     }
-
-
-
-
-
 
     TractModel tract_model(handle.get());
 
@@ -190,7 +190,6 @@ int trk(int ac, char *av[])
         std::cout << "interpolation=" << (int)tracking_thread.interpolation_strategy << std::endl;
         std::cout << "voxelwise=" << (int)tracking_thread.center_seed << std::endl;
         std::cout << "thread_count=" << vm["thread_count"].as<int>() << std::endl;
-
     }
 
     std::cout << "start tracking." << std::endl;
