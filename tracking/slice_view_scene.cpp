@@ -774,8 +774,6 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         int dy = sel_coord[1][1] - sel_coord[0][1];
         int dz = sel_coord[1][2] - sel_coord[0][2];
         int distance2 = (dx * dx + dy * dy + dz * dz);
-        if (distance2 > 400)
-            distance2 = 400;
         int dis = std::sqrt((double)distance2);
         for (int z = -dis; z <= dis; ++z)
             for (int y = -dis; y <= dis; ++y)
@@ -793,8 +791,6 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         int dy = sel_coord[1][1] - sel_coord[0][1];
         int dz = sel_coord[1][2] - sel_coord[0][2];
         int distance2 = (dx * dx + dy * dy + dz * dz);
-        if (distance2 > 400)
-            distance2 = 400;
         int dis = std::sqrt((double)distance2);
         for (int z = -dis; z <= dis; ++z)
             for (int y = -dis; y <= dis; ++y)
