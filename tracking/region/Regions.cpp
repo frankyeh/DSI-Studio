@@ -153,7 +153,8 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
         gz_nifti header;
         if (!header.load_from_file(FileName))
             return false;
-        image::basic_image<float, 3>from;
+        // use unsigned int to avoid the nan background problem
+        image::basic_image<unsigned int, 3>from;
         header >> from;
         if(from.geometry() != geo)// use transformation information
         {
