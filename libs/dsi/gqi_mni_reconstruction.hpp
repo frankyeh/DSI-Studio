@@ -177,7 +177,7 @@ public:
             voxel.dim = des_geo;
             voxel.image_model->mask.resize(des_geo);
             std::fill(voxel.image_model->mask.begin(),voxel.image_model->mask.end(),0);
-            for(image::pixel_index<3> index;des_geo.is_valid(index);index.next(des_geo))
+            for(image::pixel_index<3> index;index.is_valid(des_geo);index.next(des_geo))
             {
                 image::vector<3,float> mni_pos(index);
                 mni_pos *= voxel.param[1];

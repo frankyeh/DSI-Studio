@@ -100,7 +100,7 @@ public:
         void LoadFromBuffer(const image_type& from,const std::vector<float>& trans)
         {
             std::vector<image::vector<3,short> > points;
-            for (image::pixel_index<3> index; index.valid(geo);index.next(geo))
+            for (image::pixel_index<3> index; index.is_valid(geo);index.next(geo))
             {
                 image::vector<3> p(index.begin()),p2;
                 image::vector_transformation(p.begin(),p2.begin(),trans.begin(),image::vdim<3>());
@@ -117,7 +117,7 @@ public:
         void LoadFromBuffer(const image_type& mask)
         {
             modified = true;region.clear();
-            for (image::pixel_index<3>index; mask.geometry().is_valid(index);index.next(mask.geometry()))
+            for (image::pixel_index<3>index;index.is_valid(mask.geometry());index.next(mask.geometry()))
                 if (mask[index.index()] != 0)
                 region.push_back(image::vector<3,short>(index.x(), index.y(),index.z()));
             std::sort(region.begin(),region.end());

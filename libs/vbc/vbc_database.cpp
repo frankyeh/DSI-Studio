@@ -438,7 +438,7 @@ bool vbc_database::single_subject_analysis(const char* filename,float percentile
 void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& tracks)
 {
     std::vector<image::vector<3,short> > seed;
-    for(image::pixel_index<3> index;index.valid(dim);index.next(dim))
+    for(image::pixel_index<3> index;index.is_valid(dim);index.next(dim))
         if(fib.fa[0][index.index()] > fib.threshold)
             seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
     if(seed.empty())

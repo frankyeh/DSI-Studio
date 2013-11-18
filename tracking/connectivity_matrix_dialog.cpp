@@ -92,7 +92,7 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
         {
             std::vector<image::vector<3,float> > mni_position(geo.size());
             std::vector<image::vector<3,short> > subject_position(geo.size());
-            for (image::pixel_index<3>index; index.valid(geo);index.next(geo))
+            for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))
             {
                 image::vector<3,float> mni;
                 image::vector<3,float>cur_coordinate((const unsigned int*)(index.begin()));

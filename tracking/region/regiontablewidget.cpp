@@ -257,7 +257,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     header >> from;
     std::vector<unsigned char> value_map(std::numeric_limits<unsigned short>::max());
     unsigned int max_value = 0;
-    for (image::pixel_index<3>index; index.valid(from.geometry());index.next(from.geometry()))
+    for (image::pixel_index<3>index; index.is_valid(from.geometry());index.next(from.geometry()))
     {
         value_map[(unsigned short)from[index.index()]] = 1;
         max_value = std::max<unsigned short>(from[index.index()],max_value);
@@ -531,7 +531,7 @@ void RegionTableWidget::whole_brain_points(std::vector<image::vector<3,short> >&
     float dir[9];
     image::geometry<3> geo = cur_tracking_window.slice.geometry;
     float threshold = cur_tracking_window.ui->fa_threshold->value();
-    for (image::pixel_index<3>index; index.valid(geo);index.next(geo))
+    for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))
     {
         image::vector<3,short> pos(index);
         if(cur_tracking_window.handle->fib_data.fib.fa[0][index.index()] > threshold)
@@ -630,7 +630,7 @@ void RegionTableWidget::add_atlas(void)
     std::vector<image::vector<3,short> > points;
     unsigned short label = cur_tracking_window.ui->atlasComboBox->currentIndex();
     image::geometry<3> geo = cur_tracking_window.slice.geometry;
-    for (image::pixel_index<3>index; index.valid(geo);index.next(geo))
+    for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))
     {
         image::vector<3,float> mni((const unsigned int*)(index.begin()));
         cur_tracking_window.subject2mni(mni);

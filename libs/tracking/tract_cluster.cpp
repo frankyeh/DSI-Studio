@@ -149,18 +149,18 @@ void TractCluster::add_tract(const float* points,unsigned int count)
     const float* points_end = points + count;
     for (;points_end != points;points += 3)
     {
-                image::vector<3,float> cur_point(points);
+        image::vector<3,float> cur_point(points);
 		cur_point /= error_distance;
         cur_point += 0.5;
 		cur_point.floor();
-		if(!dim.is_valid(cur_point))
+        if(!dim.is_valid(cur_point))
 			continue;
 		image::pixel_index<3> center(cur_point[0],cur_point[1],cur_point[2],dim);
 		passed_points.push_back(center.index() & 0xFFFF);
 		std::vector<image::pixel_index<3> > iterations;
 		image::get_neighbors(center,dim,iterations);
-                for(unsigned int index = 0;index < iterations.size();++index)
-			if (dim.is_valid(iterations[index]))
+        for(unsigned int index = 0;index < iterations.size();++index)
+            if (dim.is_valid(iterations[index]))
 				ranged_points.push_back(iterations[index].index() & 0xFFFF);
     }
 

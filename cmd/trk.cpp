@@ -163,7 +163,7 @@ int trk(int ac, char *av[])
 
         std::vector<image::vector<3,short> > seed;
         std::cout << "no seeding area assigned. use whole brain seeding" << std::endl;
-        for(image::pixel_index<3> index;index.valid(geometry);index.next(geometry))
+        for(image::pixel_index<3> index;index.is_valid(geometry);index.next(geometry))
             if(fa0[index.index()] > 0)
                 seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
         tracking_thread.setRegions(geometry,seed,3);

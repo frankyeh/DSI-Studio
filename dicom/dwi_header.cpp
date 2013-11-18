@@ -232,7 +232,7 @@ void correct_t2(boost::ptr_vector<DwiHeader>& dwi_files)
         std::vector<double> neg_inv_T2(geo.size());//-1/T2
         {
             //begin_prog("Eliminating T2 effect");
-            for (image::pixel_index<3> index;geo.is_valid(index);index.next(geo))
+            for (image::pixel_index<3> index;index.is_valid(geo);index.next(geo))
             {
                 std::vector<float> te_samples;
                 std::vector<float> log_Mxy_samples;
