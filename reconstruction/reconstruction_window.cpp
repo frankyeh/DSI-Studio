@@ -86,6 +86,10 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui->QDif->setChecked(true);
         on_QDif_toggled(true);
         break;
+    case 8:
+        ui->RDSI->setChecked(true);
+        on_RDSI_toggled(true);
+        break;
     default:
         ui->GQI->setChecked(true);
         on_GQI_toggled(true);
@@ -105,6 +109,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->regularization_param->setValue(settings.value("rec_qbi_reg",0.006).toDouble());
     ui->SHOrder->setValue(settings.value("rec_qbi_sh_order",8).toInt());
     ui->hamming_filter->setValue(settings.value("rec_hamming_filter",17).toDouble());
+    ui->edge_factor->setValue(settings.value("rec_hamming_factor",17).toDouble());
 
     ui->odf_sharpening->setCurrentIndex(settings.value("rec_odf_sharpening",0).toInt());
     ui->decon_param->setValue(settings.value("rec_deconvolution_param",3.0).toDouble());
@@ -387,6 +392,14 @@ void reconstruction_window::on_doDTI_clicked()
             settings.setValue("rec_hamming_filter",params[0]);
             doReconstruction(0,index+1 == filenames.size());
         }
+        if(ui->RDSI->isChecked())
+        {
+            params[0] = ui->hamming_filter->value();
+            settings.setValue("rec_hamming_filter",params[0]);
+            params[5] = ui->edge_factor->value();
+            settings.setValue("rec_edge_factor",params[5]);
+            doReconstruction(8,index+1 == filenames.size());
+        }
         else
         if(ui->QBI->isChecked())
         {
@@ -420,6 +433,7 @@ void reconstruction_window::on_DTI_toggled(bool checked)
     ui->ResolutionBox->setVisible(!checked);
     ui->ODFSharpening->setVisible(!checked);
     ui->DSIOption_2->setVisible(!checked);
+    ui->DSIOption_3->setVisible(!checked);
     ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(!checked);
 
@@ -435,6 +449,7 @@ void reconstruction_window::on_DSI_toggled(bool checked)
     ui->ResolutionBox->setVisible(!checked);
     ui->ODFSharpening->setVisible(checked);
     ui->DSIOption_2->setVisible(checked);
+    ui->DSIOption_3->setVisible(!checked);
     ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(!checked);
 
@@ -450,6 +465,7 @@ void reconstruction_window::on_QBI_toggled(bool checked)
     ui->ResolutionBox->setVisible(!checked);
     ui->ODFSharpening->setVisible(checked);
     ui->DSIOption_2->setVisible(!checked);
+    ui->DSIOption_3->setVisible(!checked);
     ui->QBIOption_2->setVisible(checked);
     ui->GQIOption_2->setVisible(!checked);
 
@@ -465,6 +481,7 @@ void reconstruction_window::on_GQI_toggled(bool checked)
     ui->ResolutionBox->setVisible(!checked);
     ui->ODFSharpening->setVisible(checked);
     ui->DSIOption_2->setVisible(!checked);
+    ui->DSIOption_3->setVisible(!checked);
     ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(checked);
 
@@ -480,6 +497,7 @@ void reconstruction_window::on_QDif_toggled(bool checked)
     ui->ResolutionBox->setVisible(checked);
     ui->ODFSharpening->setVisible(checked);
     ui->DSIOption_2->setVisible(!checked);
+    ui->DSIOption_3->setVisible(!checked);
     ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(checked);
 
@@ -490,6 +508,22 @@ void reconstruction_window::on_QDif_toggled(bool checked)
     ui->RecordODF->setVisible(checked);
 }
 
+
+void reconstruction_window::on_RDSI_toggled(bool checked)
+{
+    ui->ResolutionBox->setVisible(!checked);
+    ui->ODFSharpening->setVisible(checked);
+    ui->DSIOption_2->setVisible(checked);
+    ui->DSIOption_3->setVisible(checked);
+    ui->QBIOption_2->setVisible(!checked);
+    ui->GQIOption_2->setVisible(!checked);
+
+    ui->AdvancedOptions->setVisible(checked);
+
+    ui->output_mapping->setVisible(!checked);
+    ui->output_jacobian->setVisible(!checked);
+    ui->RecordODF->setVisible(checked);
+}
 
 void reconstruction_window::on_remove_background_clicked()
 {

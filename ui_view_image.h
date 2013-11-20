@@ -1,8 +1,8 @@
 /********************************************************************************
 ** Form generated from reading UI file 'view_image.ui'
 **
-** Created: Thu Oct 24 23:06:22 2013
-**      by: Qt User Interface Compiler version 4.8.2
+** Created: Wed Nov 20 16:16:26 2013
+**      by: Qt User Interface Compiler version 4.8.4
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/

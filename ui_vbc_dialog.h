@@ -1,8 +1,8 @@
 /********************************************************************************
 ** Form generated from reading UI file 'vbc_dialog.ui'
 **
-** Created: Sat Oct 5 20:56:27 2013
-**      by: Qt User Interface Compiler version 4.8.2
+** Created: Wed Nov 20 16:16:26 2013
+**      by: Qt User Interface Compiler version 4.8.4
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/

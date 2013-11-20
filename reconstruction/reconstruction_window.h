@@ -40,7 +40,7 @@ private:
     image::geometry<3> dim;
 
     std::auto_ptr<ImageModel> handle;
-    float params[5];
+    float params[6];
     image::basic_image<unsigned char, 3>image;
     image::basic_image<unsigned char, 3>mask;
     bool load_src(int index);
@@ -51,6 +51,7 @@ private slots:
     void on_QBI_toggled(bool checked);
     void on_DSI_toggled(bool checked);
     void on_DTI_toggled(bool checked);
+    void on_RDSI_toggled(bool checked);
 
     void on_load_mask_clicked();
     void on_save_mask_clicked();

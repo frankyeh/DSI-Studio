@@ -15,6 +15,7 @@
 
 #include "dti_process.hpp"
 #include "dsi_process.hpp"
+#include "rdsi_process.hpp"
 #include "qbi_process.hpp"
 #include "sh_process.hpp"
 #include "gqi_process.hpp"
@@ -61,6 +62,10 @@ typedef odf_reco_type<boost::mpl::vector<
     Pdf2Odf
 > >::type dsi_process;
 
+typedef odf_reco_type<boost::mpl::vector<
+    RQSpace2Pdf
+> >::type rdsi_process;
+
 const unsigned int equator_sample_count = 40;
 typedef odf_reco_type<boost::mpl::vector<
     QBIReconstruction<equator_sample_count>
@@ -88,6 +93,11 @@ typedef estimation_type<boost::mpl::vector<
     QSpace2Pdf,
     Pdf2Odf
 > >::type dsi_estimate_response_function;
+
+// for ODF deconvolution
+typedef estimation_type<boost::mpl::vector<
+    RQSpace2Pdf
+> >::type rdsi_estimate_response_function;
 
 // for ODF deconvolution
 typedef estimation_type<boost::mpl::vector<
@@ -255,6 +265,17 @@ extern "C"
             out << ".fib.gz";
             begin_prog("deforming");
             if (!image_model->reconstruct<gqi_mni_process>(out.str()))
+                return "reconstruction canceled";
+            break;
+            case 8: //RDSI local max
+            if (image_model->voxel.odf_deconvolusion || image_model->voxel.odf_decomposition)
+            {
+                if (!image_model->reconstruct<rdsi_estimate_response_function>())
+                    return "reconstruction calceled";
+                begin_prog("calculating");
+            }
+            out << ".rdsi."<< (int)param_values[0] << ".edge" << (int)(param_values[5]*10) << ".fib.gz";
+            if (!image_model->reconstruct<rdsi_process>(out.str()))
                 return "reconstruction canceled";
             break;
         }
