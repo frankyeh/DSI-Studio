@@ -73,7 +73,7 @@ public:
     virtual void run(Voxel& voxel, VoxelData& data)
     {
         image::matrix::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
-                                    image::dyndim(data.odf.size(),voxel.bvalues.size()));
+                                    image::dyndim(data.odf.size(),data.space.size()));
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {

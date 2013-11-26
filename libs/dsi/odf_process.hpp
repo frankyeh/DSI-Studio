@@ -26,15 +26,6 @@ private:
     std::vector<float> old_bvalues;
 public:
     BalanceScheme(void):stored_voxel(0){}
-    ~BalanceScheme(void)
-    {
-        if(stored_voxel)
-        {
-            stored_voxel->q_count = old_q_count;
-            stored_voxel->bvalues.swap(old_bvalues);
-            stored_voxel->bvectors.swap(old_bvectors);
-        }
-    }
 
     virtual void init(Voxel& voxel)
     {
@@ -133,11 +124,22 @@ public:
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
+
         if(!voxel.scheme_balance)
             return;
+        if(stored_voxel)
+        {
+            stored_voxel = 0;
+            voxel.q_count = old_q_count;
+            voxel.bvalues = old_bvalues;
+            voxel.bvectors = old_bvectors;
+        }
         std::vector<float> new_data(new_q_count);
         data.space.swap(new_data);
         image::matrix::vector_product(trans.begin(),new_data.begin(),data.space.begin(),image::dyndim(new_q_count,old_q_count));
+    }
+    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
+    {
     }
 };
 

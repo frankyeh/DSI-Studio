@@ -389,17 +389,17 @@ public:
 
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        std::vector<float> sinc_ql(data.odf.size()*voxel.q_count);
+        std::vector<float> sinc_ql(data.odf.size()*data.space.size());
         for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
         {
             image::vector<3,double> dir(voxel.ti.vertices[j]),from;
             image::matrix::vector_product(data.jacobian,dir.begin(),from.begin(),image::dim<3,3>());
             from.normalize();
             if(voxel.r2_weighted)
-                for (unsigned int i = 0; i < voxel.q_count; ++i,++index)
+                for (unsigned int i = 0; i < data.space.size(); ++i,++index)
                     sinc_ql[index] = r2_base_function(q_vectors_time[i]*from);
             else
-                for (unsigned int i = 0; i < voxel.q_count; ++i,++index)
+                for (unsigned int i = 0; i < data.space.size(); ++i,++index)
                     sinc_ql[index] = boost::math::sinc_pi(q_vectors_time[i]*from);
 
         }

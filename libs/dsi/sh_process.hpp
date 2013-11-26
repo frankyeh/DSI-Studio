@@ -108,7 +108,7 @@ public:
                 for(unsigned int index = 0;index < b0_index.size();++index)
 			data.space[b0_index[index]] = 0;
         
-        image::matrix::vector_product(&*UPiB.begin(),&*data.space.begin(),&*data.odf.begin(),image::dyndim(half_odf_size,voxel.bvectors.size()));
+                image::matrix::vector_product(&*UPiB.begin(),&*data.space.begin(),&*data.odf.begin(),image::dyndim(half_odf_size,data.space.size()));
         for (unsigned int index = 0; index < data.odf.size(); ++index)
             if (data.odf[index] < 0.0)
                 data.odf[index] = 0.0;
