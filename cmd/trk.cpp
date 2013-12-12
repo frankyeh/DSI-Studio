@@ -158,17 +158,6 @@ int trk(int ac, char *av[])
         std::cout << roi_names[index] << "=" << file_name << std::endl;
     }
 
-    if (!vm.count("seed"))
-    {
-
-        std::vector<image::vector<3,short> > seed;
-        std::cout << "no seeding area assigned. use whole brain seeding" << std::endl;
-        for(image::pixel_index<3> index;index.is_valid(geometry);index.next(geometry))
-            if(fa0[index.index()] > 0)
-                seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
-        tracking_thread.setRegions(geometry,seed,3);
-    }
-
     TractModel tract_model(handle.get());
 
     if (vm.count("fa_threshold") )
@@ -177,6 +166,16 @@ int trk(int ac, char *av[])
         tract_model.get_fib().threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(geometry,fa0));
     tract_model.get_fib().cull_cos_angle = std::cos(vm["turning_angle"].as<float>()*3.1415926/180.0);
 
+    if (!vm.count("seed"))
+    {
+
+        std::vector<image::vector<3,short> > seed;
+        std::cout << "no seeding area assigned. use whole brain seeding" << std::endl;
+        for(image::pixel_index<3> index;index.is_valid(geometry);index.next(geometry))
+            if(fa0[index.index()] > tract_model.get_fib().threshold)
+                seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
+        tracking_thread.setRegions(geometry,seed,3);
+    }
 
     {
         std::cout << "turning_angle=" << vm["turning_angle"].as<float>() << std::endl;
