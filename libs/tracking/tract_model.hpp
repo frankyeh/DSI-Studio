@@ -6,6 +6,18 @@
 
 class ODFModel;
 class fiber_orientations;
+
+struct connectivity_info{
+    unsigned int count;
+    std::vector<unsigned int> length;
+    connectivity_info(void):count(0){}
+    void add(const std::vector<float>& track)
+    {
+        ++count;
+        length.push_back(track.size());
+    }
+};
+
 class TractModel{
 private:
         ODFModel* handle;
@@ -115,9 +127,10 @@ public:
         void get_tract_fa(unsigned int fiber_index,std::vector<float>& data);
         void get_tracts_fa(std::vector<std::vector<float> >& data);
         double get_spin_volume(void);
+public:
 
         void get_connectivity_matrix(const std::vector<std::vector<image::vector<3,short> > >& regions,
-                                     std::vector<std::vector<unsigned int> >& matrix) const;
+                                     std::vector<std::vector<connectivity_info> >& matrix) const;
 
 };
 

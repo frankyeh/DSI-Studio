@@ -1260,7 +1260,7 @@ double TractModel::get_spin_volume(void)
 }
 
 void TractModel::get_connectivity_matrix(const std::vector<std::vector<image::vector<3,short> > >& regions,
-                             std::vector<std::vector<unsigned int> >& matrix) const
+                                         std::vector<std::vector<connectivity_info> >& matrix) const
 {
     matrix.clear();
     matrix.resize(regions.size());
@@ -1303,8 +1303,8 @@ void TractModel::get_connectivity_matrix(const std::vector<std::vector<image::ve
         for(unsigned int i = 0;i < region_list.size();++i)
             for(unsigned int j = i+1;j < region_list.size();++j)
             {
-                ++matrix[region_list[i]][region_list[j]];
-                ++matrix[region_list[j]][region_list[i]];
+                matrix[region_list[i]][region_list[j]].add(tract_data[index]);
+                matrix[region_list[j]][region_list[i]].add(tract_data[index]);
             }
     }
 }

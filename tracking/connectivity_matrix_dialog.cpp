@@ -158,9 +158,26 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
     cur_tracking_window->tractWidget->tract_models[cur_tracking_window->tractWidget->currentRow()]
             ->get_connectivity_matrix(regions,matrix);
 
-    matrix_buf.resize(matrix.size()*matrix.size());
-    for(unsigned int index = 0;index < matrix.size();++index)
-        std::copy(matrix[index].begin(),matrix[index].end(),matrix_buf.begin() + index*matrix.size());
+    connectivity_count.resize(matrix.size()*matrix.size());
+    tract_median_length.resize(matrix.size()*matrix.size());
+    tract_mean_length.resize(matrix.size()*matrix.size());
+
+    for(unsigned int i = 0,pos = 0;i < matrix.size();++i)
+        for(unsigned int j = 0;j < matrix[i].size();++j,++pos)
+        {
+            connectivity_count[pos] = matrix[i][j].count;
+            if(!connectivity_count[pos])
+            {
+                tract_median_length[pos] = 0;
+                tract_mean_length[pos] = 0;
+                continue;
+            }
+            std::nth_element(matrix[i][j].length.begin(),
+                             matrix[i][j].length.begin()+(matrix[i][j].length.size() >> 1),
+                             matrix[i][j].length.end());
+            tract_mean_length[pos] = image::mean(matrix[i][j].length.begin(),matrix[i][j].length.end());
+            tract_median_length[pos] = matrix[i][j].length[matrix[i][j].length.size() >> 1];
+        }
 
 
     matrix_to_image();
@@ -172,18 +189,19 @@ void connectivity_matrix_dialog::matrix_to_image(void)
     if(matrix.empty())
         return;
     cm.resize(image::geometry<2>(matrix.size(),matrix.size()));
-    unsigned int max_value = *std::max_element(matrix_buf.begin(),matrix_buf.end());
-    if(ui->log->isChecked())
-        max_value = std::log(max_value + 1.0);
-    for(unsigned int index = 0;index < matrix_buf.size();++index)
+    std::vector<float> values(cm.size());
+    std::copy(connectivity_count.begin(),connectivity_count.end(),values.begin());
+    for(unsigned int index = 0;index < values.size();++index)
     {
-        float value = matrix_buf[index];
         if(ui->log->isChecked())
-            value = std::log(value + 1.0);
-        value *= 255.9;
-        value /= max_value;
-        value = std::floor(value);
-        cm[index] = image::rgb_color((unsigned char)value,(unsigned char)value,(unsigned char)value);
+            values[index] = std::log(values[index] + 1.0);
+        if(ui->norm->isChecked() && tract_median_length[index] > 0)
+            values[index] /= tract_median_length[index];
+    }
+    image::normalize(values,255.99);
+    for(unsigned int index = 0;index < values.size();++index)
+    {
+        cm[index] = image::rgb_color((unsigned char)values[index],(unsigned char)values[index],(unsigned char)values[index]);
     }
 }
 
@@ -204,6 +222,11 @@ void connectivity_matrix_dialog::on_log_toggled(bool checked)
     matrix_to_image();
     on_zoom_valueChanged(0);
 }
+void connectivity_matrix_dialog::on_norm_toggled(bool checked)
+{
+    matrix_to_image();
+    on_zoom_valueChanged(0);
+}
 
 void connectivity_matrix_dialog::on_save_as_clicked()
 {
@@ -220,7 +243,9 @@ void connectivity_matrix_dialog::on_save_as_clicked()
     if(QFileInfo(filename).suffix().toLower() == "mat")
     {
         image::io::mat_write mat_header(filename.toLocal8Bit().begin());
-        mat_header.write("connectivity",&*matrix_buf.begin(),matrix.size(),matrix.size());
+        mat_header.write("connectivity",&*connectivity_count.begin(),matrix.size(),matrix.size());
+        mat_header.write("tract_median_length",&*tract_median_length.begin(),matrix.size(),matrix.size());
+        mat_header.write("tract_mean_length",&*tract_mean_length.begin(),matrix.size(),matrix.size());
         std::ostringstream out;
         std::copy(region_name.begin(),region_name.end(),std::ostream_iterator<std::string>(out,"\n"));
         std::string result(out.str());
@@ -234,3 +259,5 @@ void connectivity_matrix_dialog::on_save_as_clicked()
     }
 
 }
+
+

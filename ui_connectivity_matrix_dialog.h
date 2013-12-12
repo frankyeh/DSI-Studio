@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'connectivity_matrix_dialog.ui'
 **
-** Created: Thu Oct 24 23:06:22 2013
+** Created: Thu Dec 12 13:53:10 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -40,6 +40,7 @@ public:
     QLabel *label;
     QDoubleSpinBox *zoom;
     QCheckBox *log;
+    QCheckBox *norm;
     QSpacerItem *horizontalSpacer;
     QPushButton *recalculate;
     QToolButton *save_as;
@@ -87,6 +88,11 @@ public:
         log->setMaximumSize(QSize(16777215, 22));
 
         horizontalLayout->addWidget(log);
+
+        norm = new QCheckBox(connectivity_matrix_dialog);
+        norm->setObjectName(QString::fromUtf8("norm"));
+
+        horizontalLayout->addWidget(norm);
 
         horizontalSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
@@ -137,6 +143,7 @@ public:
         label_2->setText(QApplication::translate("connectivity_matrix_dialog", "Regioins:", 0, QApplication::UnicodeUTF8));
         label->setText(QApplication::translate("connectivity_matrix_dialog", "Zoom in/out", 0, QApplication::UnicodeUTF8));
         log->setText(QApplication::translate("connectivity_matrix_dialog", "Logarithm", 0, QApplication::UnicodeUTF8));
+        norm->setText(QApplication::translate("connectivity_matrix_dialog", "normalized by median length", 0, QApplication::UnicodeUTF8));
         recalculate->setText(QApplication::translate("connectivity_matrix_dialog", "Recalculate", 0, QApplication::UnicodeUTF8));
         save_as->setText(QApplication::translate("connectivity_matrix_dialog", "...", 0, QApplication::UnicodeUTF8));
     } // retranslateUi
