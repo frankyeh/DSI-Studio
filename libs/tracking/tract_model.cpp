@@ -602,7 +602,7 @@ void TractModel::select(bool angular_selection,
                         image::vector<3,float> p1(ptr),p2(ptr-3);
                         p1 -= p2;
                         p1.normalize();
-                        if(std::abs(p1*z_axis) < 0.75)
+                        if(std::abs(p1*z_axis) < 0.86)
                             continue;
                     }
                     selected[index] = ptr - &*tract_data[index].begin();
