@@ -430,7 +430,7 @@ void slice_view_scene::mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseE
         sel_coord.clear();
     }
     else
-        // move to slice
+    if (mouseEvent->button() == Qt::RightButton) // move to slice
     {
         if(cur_tracking_window.ui->view_style->currentIndex() > 1)// single slice or 3 slices
             return;
