@@ -527,8 +527,6 @@ void RegionTableWidget::delete_all_region(void)
 
 void RegionTableWidget::whole_brain_points(std::vector<image::vector<3,short> >& points)
 {
-    float fa[3];
-    float dir[9];
     image::geometry<3> geo = cur_tracking_window.slice.geometry;
     float threshold = cur_tracking_window.ui->fa_threshold->value();
     for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))

@@ -458,11 +458,15 @@ void dicom_parser::on_buttonBox_accepted()
     // save b table info to dwi header
     for (unsigned int index = 0;index < dwi_files.size();++index)
     {
-        dwi_files[index].set_bvalue(ui->tableWidget->item(index,1)->text().toDouble());
-        dwi_files[index].set_bvec(
-                    ui->tableWidget->item(index,2)->text().toDouble(),
-                    ui->tableWidget->item(index,3)->text().toDouble(),
-                    ui->tableWidget->item(index,4)->text().toDouble());
+        if(QString::number(dwi_files[index].get_bvalue()) != ui->tableWidget->item(index,1)->text())
+            dwi_files[index].set_bvalue(ui->tableWidget->item(index,1)->text().toFloat());
+        if(QString::number(dwi_files[index].get_bvec()[0]) != ui->tableWidget->item(index,2)->text() ||
+           QString::number(dwi_files[index].get_bvec()[1]) != ui->tableWidget->item(index,3)->text() ||
+           QString::number(dwi_files[index].get_bvec()[2]) != ui->tableWidget->item(index,4)->text())
+            dwi_files[index].set_bvec(
+                    ui->tableWidget->item(index,2)->text().toFloat(),
+                    ui->tableWidget->item(index,3)->text().toFloat(),
+                    ui->tableWidget->item(index,4)->text().toFloat());
     }
 
     DwiHeader::output_src(ui->SrcName->text().toLocal8Bit().begin(),
