@@ -41,7 +41,7 @@
     <item>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -52,7 +52,7 @@
          <x>0</x>
          <y>0</y>
          <width>626</width>
-         <height>414</height>
+         <height>393</height>
         </rect>
        </property>
        <attribute name="label">
@@ -72,78 +72,6 @@
             <property name="margin">
              <number>0</number>
             </property>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_7">
-              <property name="spacing">
-               <number>0</number>
-              </property>
-              <item>
-               <widget class="QPushButton" name="save4dnifti">
-                <property name="maximumSize">
-                 <size>
-                  <width>16777215</width>
-                  <height>22</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string>Save nifti...</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="save_b_table">
-                <property name="maximumSize">
-                 <size>
-                  <width>16777215</width>
-                  <height>22</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string>Save b table...</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="save_bvals">
-                <property name="maximumSize">
-                 <size>
-                  <width>16777215</width>
-                  <height>22</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string>Save bvals...</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="save_bvec">
-                <property name="maximumSize">
-                 <size>
-                  <width>16777215</width>
-                  <height>22</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string>Save bvecs...</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <spacer name="horizontalSpacer_5">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-             </layout>
-            </item>
             <item>
              <widget class="QTableWidget" name="b_table">
               <property name="selectionMode">
@@ -268,9 +196,6 @@
              </widget>
             </item>
            </layout>
-           <zorder></zorder>
-           <zorder>view_source</zorder>
-           <zorder>z_pos</zorder>
           </widget>
          </widget>
         </item>
@@ -390,8 +315,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>626</width>
-         <height>414</height>
+         <width>599</width>
+         <height>409</height>
         </rect>
        </property>
        <property name="minimumSize">
@@ -1380,6 +1305,94 @@
     </item>
    </layout>
   </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>626</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <addaction name="actionSave_4D_nifti"/>
+    <addaction name="actionSave_b_table"/>
+    <addaction name="actionSave_bvals"/>
+    <addaction name="actionSave_bvecs"/>
+   </widget>
+   <widget class="QMenu" name="menu_Edit">
+    <property name="title">
+     <string>&amp;Edit</string>
+    </property>
+    <addaction name="actionFlip_x"/>
+    <addaction name="actionFlip_y"/>
+    <addaction name="actionFlip_z"/>
+    <addaction name="actionFlip_xy"/>
+    <addaction name="actionFlip_xz"/>
+    <addaction name="actionFlip_yz"/>
+    <addaction name="actionRotate"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menu_Edit"/>
+  </widget>
+  <action name="actionSave_4D_nifti">
+   <property name="text">
+    <string>Save 4D nifti...</string>
+   </property>
+  </action>
+  <action name="actionSave_b_table">
+   <property name="text">
+    <string>Save b-table...</string>
+   </property>
+  </action>
+  <action name="actionSave_bvals">
+   <property name="text">
+    <string>Save bvals...</string>
+   </property>
+  </action>
+  <action name="actionSave_bvecs">
+   <property name="text">
+    <string>Save bvecs...</string>
+   </property>
+  </action>
+  <action name="actionFlip_x">
+   <property name="text">
+    <string>Flip x</string>
+   </property>
+  </action>
+  <action name="actionFlip_y">
+   <property name="text">
+    <string>Flip y</string>
+   </property>
+  </action>
+  <action name="actionFlip_z">
+   <property name="text">
+    <string>Flip z</string>
+   </property>
+  </action>
+  <action name="actionFlip_xy">
+   <property name="text">
+    <string>Swap x y</string>
+   </property>
+  </action>
+  <action name="actionFlip_xz">
+   <property name="text">
+    <string>Swap x z</string>
+   </property>
+  </action>
+  <action name="actionFlip_yz">
+   <property name="text">
+    <string>Swap y z</string>
+   </property>
+  </action>
+  <action name="actionRotate">
+   <property name="text">
+    <string>Rotate...</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

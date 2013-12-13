@@ -30,10 +30,7 @@ bool reconstruction_window::load_src(int index)
         return false;
     }
 
-    dim = handle->voxel.dim;
-    image.resize(handle->voxel.dim);
-    for(unsigned int index = 0;index < image.size();++index)
-        image[index] = handle->dwi_sum[index]*255.0;
+    update_image();
     return true;
 }
 
@@ -65,8 +62,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     absolute_path = QFileInfo(filenames[0]).absolutePath();
     source_ratio = std::max(1.0,500/(double)dim.height());
-
-    load_b_table();
 
     switch(settings.value("rec_method_id",4).toInt())
     {
@@ -566,7 +561,8 @@ void reconstruction_window::on_AdvancedOptions_clicked()
     }
 }
 
-void reconstruction_window::on_save4dnifti_clicked()
+
+void reconstruction_window::on_actionSave_4D_nifti_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
                                 this,
@@ -599,7 +595,7 @@ void reconstruction_window::on_save4dnifti_clicked()
     }
 }
 
-void reconstruction_window::on_save_b_table_clicked()
+void reconstruction_window::on_actionSave_b_table_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
                                 this,
@@ -618,7 +614,7 @@ void reconstruction_window::on_save_b_table_clicked()
     }
 }
 
-void reconstruction_window::on_save_bvals_clicked()
+void reconstruction_window::on_actionSave_bvals_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
                                 this,
@@ -636,7 +632,7 @@ void reconstruction_window::on_save_bvals_clicked()
     }
 }
 
-void reconstruction_window::on_save_bvec_clicked()
+void reconstruction_window::on_actionSave_bvecs_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
                                 this,
@@ -652,4 +648,61 @@ void reconstruction_window::on_save_bvec_clicked()
             << handle->voxel.bvectors[index][1] << " "
             << handle->voxel.bvectors[index][2] << std::endl;
     }
+}
+
+void reconstruction_window::update_image(void)
+{
+    dim = handle->voxel.dim;
+    image.resize(handle->voxel.dim);
+    for(unsigned int index = 0;index < image.size();++index)
+        image[index] = handle->dwi_sum[index]*255.0;
+    load_b_table();
+}
+
+void reconstruction_window::on_actionFlip_x_triggered()
+{
+    handle->flip(0);
+    update_image();
+    on_SlicePos_sliderMoved(ui->SlicePos->value());
+}
+
+void reconstruction_window::on_actionFlip_y_triggered()
+{
+    handle->flip(1);
+    update_image();
+    on_SlicePos_sliderMoved(ui->SlicePos->value());
+}
+
+void reconstruction_window::on_actionFlip_z_triggered()
+{
+    handle->flip(2);
+    update_image();
+    on_SlicePos_sliderMoved(ui->SlicePos->value());
+}
+
+void reconstruction_window::on_actionFlip_xy_triggered()
+{
+    handle->flip(3);
+    update_image();
+    on_SlicePos_sliderMoved(ui->SlicePos->value());
+}
+void reconstruction_window::on_actionFlip_yz_triggered()
+{
+    begin_prog("rotating");
+    handle->flip(4);
+    update_image();
+    on_SlicePos_sliderMoved(ui->SlicePos->value());
+}
+void reconstruction_window::on_actionFlip_xz_triggered()
+{
+    begin_prog("rotating");
+    handle->flip(5);
+    update_image();
+    on_SlicePos_sliderMoved(ui->SlicePos->value());
+}
+
+
+void reconstruction_window::on_actionRotate_triggered()
+{
+
 }

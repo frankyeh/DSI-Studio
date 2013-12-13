@@ -44,6 +44,7 @@ private:
     image::basic_image<unsigned char, 3>image;
     image::basic_image<unsigned char, 3>mask;
     bool load_src(int index);
+    void update_image(void);
     void doReconstruction(unsigned char method_id,bool prompt);
 private slots:
     void on_QDif_toggled(bool checked);
@@ -70,10 +71,17 @@ private slots:
     void on_odf_sharpening_currentIndexChanged(int index);
     void on_RFSelection_currentIndexChanged(int index);
     void on_AdvancedOptions_clicked();
-    void on_save4dnifti_clicked();
-    void on_save_b_table_clicked();
-    void on_save_bvals_clicked();
-    void on_save_bvec_clicked();
+    void on_actionSave_4D_nifti_triggered();
+    void on_actionSave_b_table_triggered();
+    void on_actionSave_bvals_triggered();
+    void on_actionSave_bvecs_triggered();
+    void on_actionFlip_x_triggered();
+    void on_actionFlip_y_triggered();
+    void on_actionFlip_z_triggered();
+    void on_actionFlip_xy_triggered();
+    void on_actionFlip_xz_triggered();
+    void on_actionFlip_yz_triggered();
+    void on_actionRotate_triggered();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

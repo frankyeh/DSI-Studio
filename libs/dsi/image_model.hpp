@@ -17,6 +17,27 @@ public:
     image::basic_image<float,3> dwi_sum;
     image::basic_image<unsigned char,3> mask;
 public:
+    // 0: x  1: y  2: z
+    // 3: xy 4: yz 5: xz
+    void flip(unsigned char type)
+    {
+        if(type < 3)
+            for (unsigned int index = 0;index < voxel.bvectors.size();++index)
+                voxel.bvectors[index][type] = -voxel.bvectors[index][type];
+        else
+            for (unsigned int index = 0;index < voxel.bvectors.size();++index)
+                std::swap(voxel.bvectors[index][type%3],voxel.bvectors[index][(type+1)%3]);
+        image::flip(dwi_sum,type);
+        image::flip(mask,type);
+        for (unsigned int index = 0;check_prog(index,dwi_data.size());++index)
+        {
+            image::pointer_image<unsigned short,3> I = image::make_image(voxel.dim,(unsigned short*)dwi_data[index]);
+            image::flip(I,type);
+        }
+        voxel.dim = dwi_sum.geometry();
+    }
+
+public:
     ImageModel(void):thread_count(1) {}
     bool load_from_file(const char* dwi_file_name)
     {

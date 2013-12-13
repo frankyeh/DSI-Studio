@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Thu Oct 24 23:06:22 2013
+** Created: Fri Dec 13 00:33:08 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -25,6 +25,8 @@
 #include <QtGui/QHeaderView>
 #include <QtGui/QLabel>
 #include <QtGui/QMainWindow>
+#include <QtGui/QMenu>
+#include <QtGui/QMenuBar>
 #include <QtGui/QPushButton>
 #include <QtGui/QRadioButton>
 #include <QtGui/QSlider>
@@ -42,6 +44,17 @@ QT_BEGIN_NAMESPACE
 class Ui_reconstruction_window
 {
 public:
+    QAction *actionSave_4D_nifti;
+    QAction *actionSave_b_table;
+    QAction *actionSave_bvals;
+    QAction *actionSave_bvecs;
+    QAction *actionFlip_x;
+    QAction *actionFlip_y;
+    QAction *actionFlip_z;
+    QAction *actionFlip_xy;
+    QAction *actionFlip_xz;
+    QAction *actionFlip_yz;
+    QAction *actionRotate;
     QWidget *centralwidget;
     QVBoxLayout *verticalLayout;
     QToolBox *toolBox;
@@ -50,12 +63,6 @@ public:
     QSplitter *splitter;
     QWidget *widget_2;
     QVBoxLayout *verticalLayout_4;
-    QHBoxLayout *horizontalLayout_7;
-    QPushButton *save4dnifti;
-    QPushButton *save_b_table;
-    QPushButton *save_bvals;
-    QPushButton *save_bvec;
-    QSpacerItem *horizontalSpacer_5;
     QTableWidget *b_table;
     QWidget *source_widget;
     QVBoxLayout *verticalLayout_6;
@@ -170,6 +177,9 @@ public:
     QLabel *label_9;
     QComboBox *ThreadCount;
     QCommandLinkButton *doDTI;
+    QMenuBar *menuBar;
+    QMenu *menuFile;
+    QMenu *menu_Edit;
 
     void setupUi(QMainWindow *reconstruction_window)
     {
@@ -185,6 +195,28 @@ public:
         QFont font;
         font.setFamily(QString::fromUtf8("Arial"));
         reconstruction_window->setFont(font);
+        actionSave_4D_nifti = new QAction(reconstruction_window);
+        actionSave_4D_nifti->setObjectName(QString::fromUtf8("actionSave_4D_nifti"));
+        actionSave_b_table = new QAction(reconstruction_window);
+        actionSave_b_table->setObjectName(QString::fromUtf8("actionSave_b_table"));
+        actionSave_bvals = new QAction(reconstruction_window);
+        actionSave_bvals->setObjectName(QString::fromUtf8("actionSave_bvals"));
+        actionSave_bvecs = new QAction(reconstruction_window);
+        actionSave_bvecs->setObjectName(QString::fromUtf8("actionSave_bvecs"));
+        actionFlip_x = new QAction(reconstruction_window);
+        actionFlip_x->setObjectName(QString::fromUtf8("actionFlip_x"));
+        actionFlip_y = new QAction(reconstruction_window);
+        actionFlip_y->setObjectName(QString::fromUtf8("actionFlip_y"));
+        actionFlip_z = new QAction(reconstruction_window);
+        actionFlip_z->setObjectName(QString::fromUtf8("actionFlip_z"));
+        actionFlip_xy = new QAction(reconstruction_window);
+        actionFlip_xy->setObjectName(QString::fromUtf8("actionFlip_xy"));
+        actionFlip_xz = new QAction(reconstruction_window);
+        actionFlip_xz->setObjectName(QString::fromUtf8("actionFlip_xz"));
+        actionFlip_yz = new QAction(reconstruction_window);
+        actionFlip_yz->setObjectName(QString::fromUtf8("actionFlip_yz"));
+        actionRotate = new QAction(reconstruction_window);
+        actionRotate->setObjectName(QString::fromUtf8("actionRotate"));
         centralwidget = new QWidget(reconstruction_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         verticalLayout = new QVBoxLayout(centralwidget);
@@ -195,7 +227,7 @@ public:
         toolBox->setObjectName(QString::fromUtf8("toolBox"));
         source_page = new QWidget();
         source_page->setObjectName(QString::fromUtf8("source_page"));
-        source_page->setGeometry(QRect(0, 0, 626, 414));
+        source_page->setGeometry(QRect(0, 0, 626, 393));
         horizontalLayout_21 = new QHBoxLayout(source_page);
         horizontalLayout_21->setObjectName(QString::fromUtf8("horizontalLayout_21"));
         splitter = new QSplitter(source_page);
@@ -207,40 +239,6 @@ public:
         verticalLayout_4->setSpacing(0);
         verticalLayout_4->setContentsMargins(0, 0, 0, 0);
         verticalLayout_4->setObjectName(QString::fromUtf8("verticalLayout_4"));
-        horizontalLayout_7 = new QHBoxLayout();
-        horizontalLayout_7->setSpacing(0);
-        horizontalLayout_7->setObjectName(QString::fromUtf8("horizontalLayout_7"));
-        save4dnifti = new QPushButton(widget_2);
-        save4dnifti->setObjectName(QString::fromUtf8("save4dnifti"));
-        save4dnifti->setMaximumSize(QSize(16777215, 22));
-
-        horizontalLayout_7->addWidget(save4dnifti);
-
-        save_b_table = new QPushButton(widget_2);
-        save_b_table->setObjectName(QString::fromUtf8("save_b_table"));
-        save_b_table->setMaximumSize(QSize(16777215, 22));
-
-        horizontalLayout_7->addWidget(save_b_table);
-
-        save_bvals = new QPushButton(widget_2);
-        save_bvals->setObjectName(QString::fromUtf8("save_bvals"));
-        save_bvals->setMaximumSize(QSize(16777215, 22));
-
-        horizontalLayout_7->addWidget(save_bvals);
-
-        save_bvec = new QPushButton(widget_2);
-        save_bvec->setObjectName(QString::fromUtf8("save_bvec"));
-        save_bvec->setMaximumSize(QSize(16777215, 22));
-
-        horizontalLayout_7->addWidget(save_bvec);
-
-        horizontalSpacer_5 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-
-        horizontalLayout_7->addItem(horizontalSpacer_5);
-
-
-        verticalLayout_4->addLayout(horizontalLayout_7);
-
         b_table = new QTableWidget(widget_2);
         if (b_table->columnCount() < 4)
             b_table->setColumnCount(4);
@@ -321,8 +319,6 @@ public:
         verticalLayout_6->addWidget(z_pos);
 
         splitter->addWidget(source_widget);
-        view_source->raise();
-        z_pos->raise();
 
         horizontalLayout_21->addWidget(splitter);
 
@@ -406,7 +402,7 @@ public:
         toolBox->addItem(page_3, QString::fromUtf8("Step 1: setup brain mask"));
         page = new QWidget();
         page->setObjectName(QString::fromUtf8("page"));
-        page->setGeometry(QRect(0, 0, 626, 414));
+        page->setGeometry(QRect(0, 0, 599, 409));
         page->setMinimumSize(QSize(0, 0));
         verticalLayout_2 = new QVBoxLayout(page);
         verticalLayout_2->setSpacing(3);
@@ -888,10 +884,32 @@ public:
         verticalLayout->addWidget(toolBox);
 
         reconstruction_window->setCentralWidget(centralwidget);
+        menuBar = new QMenuBar(reconstruction_window);
+        menuBar->setObjectName(QString::fromUtf8("menuBar"));
+        menuBar->setGeometry(QRect(0, 0, 626, 21));
+        menuFile = new QMenu(menuBar);
+        menuFile->setObjectName(QString::fromUtf8("menuFile"));
+        menu_Edit = new QMenu(menuBar);
+        menu_Edit->setObjectName(QString::fromUtf8("menu_Edit"));
+        reconstruction_window->setMenuBar(menuBar);
+
+        menuBar->addAction(menuFile->menuAction());
+        menuBar->addAction(menu_Edit->menuAction());
+        menuFile->addAction(actionSave_4D_nifti);
+        menuFile->addAction(actionSave_b_table);
+        menuFile->addAction(actionSave_bvals);
+        menuFile->addAction(actionSave_bvecs);
+        menu_Edit->addAction(actionFlip_x);
+        menu_Edit->addAction(actionFlip_y);
+        menu_Edit->addAction(actionFlip_z);
+        menu_Edit->addAction(actionFlip_xy);
+        menu_Edit->addAction(actionFlip_xz);
+        menu_Edit->addAction(actionFlip_yz);
+        menu_Edit->addAction(actionRotate);
 
         retranslateUi(reconstruction_window);
 
-        toolBox->setCurrentIndex(2);
+        toolBox->setCurrentIndex(0);
         toolBox->layout()->setSpacing(0);
         ODFDim->setCurrentIndex(3);
         ThreadCount->setCurrentIndex(3);
@@ -903,10 +921,17 @@ public:
     void retranslateUi(QMainWindow *reconstruction_window)
     {
         reconstruction_window->setWindowTitle(QApplication::translate("reconstruction_window", "Reconstruction", 0, QApplication::UnicodeUTF8));
-        save4dnifti->setText(QApplication::translate("reconstruction_window", "Save nifti...", 0, QApplication::UnicodeUTF8));
-        save_b_table->setText(QApplication::translate("reconstruction_window", "Save b table...", 0, QApplication::UnicodeUTF8));
-        save_bvals->setText(QApplication::translate("reconstruction_window", "Save bvals...", 0, QApplication::UnicodeUTF8));
-        save_bvec->setText(QApplication::translate("reconstruction_window", "Save bvecs...", 0, QApplication::UnicodeUTF8));
+        actionSave_4D_nifti->setText(QApplication::translate("reconstruction_window", "Save 4D nifti...", 0, QApplication::UnicodeUTF8));
+        actionSave_b_table->setText(QApplication::translate("reconstruction_window", "Save b-table...", 0, QApplication::UnicodeUTF8));
+        actionSave_bvals->setText(QApplication::translate("reconstruction_window", "Save bvals...", 0, QApplication::UnicodeUTF8));
+        actionSave_bvecs->setText(QApplication::translate("reconstruction_window", "Save bvecs...", 0, QApplication::UnicodeUTF8));
+        actionFlip_x->setText(QApplication::translate("reconstruction_window", "Flip x", 0, QApplication::UnicodeUTF8));
+        actionFlip_y->setText(QApplication::translate("reconstruction_window", "Flip y", 0, QApplication::UnicodeUTF8));
+        actionFlip_z->setText(QApplication::translate("reconstruction_window", "Flip z", 0, QApplication::UnicodeUTF8));
+        actionFlip_xy->setText(QApplication::translate("reconstruction_window", "Swap x y", 0, QApplication::UnicodeUTF8));
+        actionFlip_xz->setText(QApplication::translate("reconstruction_window", "Swap x z", 0, QApplication::UnicodeUTF8));
+        actionFlip_yz->setText(QApplication::translate("reconstruction_window", "Swap y z", 0, QApplication::UnicodeUTF8));
+        actionRotate->setText(QApplication::translate("reconstruction_window", "Rotate...", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem = b_table->horizontalHeaderItem(0);
         ___qtablewidgetitem->setText(QApplication::translate("reconstruction_window", "b value", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem1 = b_table->horizontalHeaderItem(1);
@@ -1007,6 +1032,8 @@ public:
         doDTI->setText(QApplication::translate("reconstruction_window", "Run reconstruction", 0, QApplication::UnicodeUTF8));
         doDTI->setDescription(QString());
         toolBox->setItemText(toolBox->indexOf(page), QApplication::translate("reconstruction_window", "Step 2: select reconstruction method", 0, QApplication::UnicodeUTF8));
+        menuFile->setTitle(QApplication::translate("reconstruction_window", "&File", 0, QApplication::UnicodeUTF8));
+        menu_Edit->setTitle(QApplication::translate("reconstruction_window", "&Edit", 0, QApplication::UnicodeUTF8));
     } // retranslateUi
 
 };
