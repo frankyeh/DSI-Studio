@@ -109,7 +109,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->regularization_param->setValue(settings.value("rec_qbi_reg",0.006).toDouble());
     ui->SHOrder->setValue(settings.value("rec_qbi_sh_order",8).toInt());
     ui->hamming_filter->setValue(settings.value("rec_hamming_filter",17).toDouble());
-    ui->edge_factor->setValue(settings.value("rec_hamming_factor",17).toDouble());
+    ui->edge_factor->setValue(settings.value("rec_edge_factor",1.0).toDouble());
 
     ui->odf_sharpening->setCurrentIndex(settings.value("rec_odf_sharpening",0).toInt());
     ui->decon_param->setValue(settings.value("rec_deconvolution_param",3.0).toDouble());

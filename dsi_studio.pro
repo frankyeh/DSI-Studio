@@ -94,7 +94,8 @@ HEADERS += mainwindow.h \
     tracking/vbc_dialog.hpp \
     tracking/tract_report.hpp \
     tracking/color_bar_dialog.hpp \
-    tracking/connectivity_matrix_dialog.h
+    tracking/connectivity_matrix_dialog.h \
+    libs/dsi/rdsi_process.hpp
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
     reconstruction/reconstruction_window.ui \
