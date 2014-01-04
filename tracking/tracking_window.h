@@ -116,13 +116,9 @@ private slots:
     void on_actionSave_Tracts_in_MNI_space_triggered();
     void on_tool6_pressed();
     void on_offset_sliderMoved(int position);
-    void on_offset_value_valueChanged(double arg1);
     void on_contrast_sliderMoved(int position);
-    void on_contrast_value_valueChanged(double arg1);
     void on_gl_offset_sliderMoved(int position);
-    void on_gl_offset_value_valueChanged(double arg1);
     void on_gl_contrast_sliderMoved(int position);
-    void on_gl_contrast_value_valueChanged(double arg1);
     void on_actionManual_Registration_triggered();
     void on_actionTract_Analysis_Report_triggered();
     void on_actionConnectivity_matrix_triggered();
@@ -130,6 +126,10 @@ private slots:
     void on_RAS_toggled(bool checked);
     void on_RAS_clicked();
     void on_actionConnectometry_triggered();
+    void on_contrast_value_valueChanged(double arg1);
+    void on_offset_value_valueChanged(double arg1);
+    void on_gl_contrast_value_valueChanged(double arg1);
+    void on_gl_offset_value_valueChanged(double arg1);
 };
 
 #endif // TRACKING_WINDOW_H

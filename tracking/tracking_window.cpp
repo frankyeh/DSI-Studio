@@ -178,8 +178,6 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         connect(&scene,SIGNAL(need_update()),&scene,SLOT(show_slice()));
         connect(&scene,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
         connect(ui->fa_threshold,SIGNAL(valueChanged(double)),&scene,SLOT(show_slice()));
-        connect(ui->contrast,SIGNAL(valueChanged(int)),&scene,SLOT(show_slice()));
-        connect(ui->offset,SIGNAL(valueChanged(int)),&scene,SLOT(show_slice()));
         connect(ui->show_fiber,SIGNAL(clicked()),&scene,SLOT(show_slice()));
         connect(ui->show_pos,SIGNAL(clicked()),&scene,SLOT(show_slice()));
         connect(ui->show_lr,SIGNAL(clicked()),&scene,SLOT(show_slice()));
@@ -574,8 +572,27 @@ void tracking_window::on_sliceViewBox_currentIndexChanged(int index)
                                              ui->sliceViewBox->currentText()+" as...");
     slice.set_view_name(ui->sliceViewBox->currentText().toLocal8Bit().begin(),
                         ui->overlay->currentText().toLocal8Bit().begin());
-    scene.show_slice();
-    glWidget->updateGL();
+    float range = handle->get_value_range(ui->sliceViewBox->currentText().toLocal8Bit().begin());
+    if(range != 0.0)
+    {
+        ui->offset_value->setMaximum(range);
+        ui->offset_value->setMinimum(-range);
+        ui->offset_value->setSingleStep(range/50.0);
+        ui->gl_offset_value->setMaximum(range);
+        ui->gl_offset_value->setMinimum(-range);
+        ui->gl_offset_value->setSingleStep(range/50.0);
+        ui->contrast_value->setMaximum(range*11.0);
+        ui->contrast_value->setMinimum(range/11.0);
+        ui->contrast_value->setSingleStep(range/50.0);
+        ui->gl_contrast_value->setMaximum(range*11.0);
+        ui->gl_contrast_value->setMinimum(range/11.0);
+        ui->gl_contrast_value->setSingleStep(range/50.0);
+
+        ui->contrast_value->setValue(range);
+        ui->gl_contrast_value->setValue(range);
+        ui->offset_value->setValue(0.0);
+        ui->gl_offset_value->setValue(0.0);
+    }
 }
 
 void tracking_window::on_actionSelect_Tracts_triggered()
@@ -936,45 +953,55 @@ void tracking_window::on_actionSave_Tracts_in_MNI_space_triggered()
 
 void tracking_window::on_offset_sliderMoved(int position)
 {
-    ui->offset_value->setValue((float)position/100.0);
+    ui->offset_value->setValue((float)position*ui->offset_value->maximum()/100.0);
 }
-
-void tracking_window::on_offset_value_valueChanged(double arg1)
+void tracking_window::on_gl_offset_sliderMoved(int position)
 {
-    ui->offset->setValue(arg1*100.0);
+    ui->gl_offset_value->setValue((float)position*ui->offset_value->maximum()/100.0);
 }
 
 void tracking_window::on_contrast_sliderMoved(int position)
 {
-    ui->contrast_value->setValue((float)position/100.0);
+    ui->contrast_value->setValue((position >= 0) ? ui->offset_value->maximum()/(1+(float)position/10.0) :
+                                                   ui->offset_value->maximum()*(1-(float)position/10.0));
+}
+void tracking_window::on_gl_contrast_sliderMoved(int position)
+{
+    ui->gl_contrast_value->setValue((position >= 0) ? ui->offset_value->maximum()/(1+(float)position/10.0) :
+                                                      ui->offset_value->maximum()*(1-(float)position/10.0));
 }
 
-void tracking_window::on_contrast_value_valueChanged(double arg1)
+void tracking_window::on_offset_value_valueChanged(double arg1)
 {
-    ui->contrast->setValue(arg1*100.0);
-}
-
-void tracking_window::on_gl_offset_sliderMoved(int position)
-{
-    ui->gl_offset_value->setValue((float)position/100.0);
+    ui->offset->setValue(arg1*100.0/ui->offset_value->maximum());
+    scene.show_slice();
 }
 
 void tracking_window::on_gl_offset_value_valueChanged(double arg1)
 {
-    ui->gl_offset->setValue(arg1*100.0);
+    ui->gl_offset->setValue(arg1*100.0/ui->offset_value->maximum());
     glWidget->updateGL();
 }
 
-void tracking_window::on_gl_contrast_sliderMoved(int position)
+void tracking_window::on_contrast_value_valueChanged(double arg1)
 {
-     ui->gl_contrast_value->setValue((float)position/100.0);
+    ui->contrast->setValue((arg1 >= ui->offset_value->maximum()) ?
+                           10-arg1*10.0/ui->offset_value->maximum():
+                           ui->offset_value->maximum()*10.0/arg1-10);
+    scene.show_slice();
 }
 
 void tracking_window::on_gl_contrast_value_valueChanged(double arg1)
 {
-     ui->gl_contrast->setValue(arg1*100.0);
-     glWidget->updateGL();
+    ui->gl_contrast->setValue((arg1 >= ui->offset_value->maximum()) ?
+                            10-arg1*10.0/ui->offset_value->maximum():
+                            ui->offset_value->maximum()*10.0/arg1-10);
+    glWidget->updateGL();
 }
+
+
+
+
 void tracking_window::keyPressEvent ( QKeyEvent * event )
 {
     if(copy_target == 0) // glWidget
@@ -1217,3 +1244,6 @@ void tracking_window::on_actionConnectometry_triggered()
     new_mdi->setWindowTitle(this->windowTitle() + " : connectometry mapping");
     new_mdi->showNormal();
 }
+
+
+

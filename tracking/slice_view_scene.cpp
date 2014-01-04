@@ -125,8 +125,8 @@ void slice_view_scene::show_pos(QPainter& painter)
 void slice_view_scene::get_view_image(QImage& new_view_image)
 {
     float display_ratio = cur_tracking_window.ui->zoom->value();
-    float contrast = cur_tracking_window.ui->contrast->value()/100.0;
-    float offset = cur_tracking_window.ui->offset->value()/100.0;
+    float contrast = cur_tracking_window.ui->contrast_value->value();
+    float offset = cur_tracking_window.ui->offset_value->value();
     cur_tracking_window.slice.get_slice(slice_image,contrast,offset);
     QImage qimage((unsigned char*)&*slice_image.begin(),slice_image.width(),slice_image.height(),QImage::Format_RGB32);
     // draw region colors on the image
@@ -303,8 +303,8 @@ void slice_view_scene::show_slice(void)
     }
     else
     {
-        float contrast = cur_tracking_window.ui->contrast->value()/100.0;
-        float offset = cur_tracking_window.ui->offset->value()/100.0;
+        float contrast = cur_tracking_window.ui->contrast_value->value();
+        float offset = cur_tracking_window.ui->offset_value->value();
         unsigned int skip = cur_tracking_window.ui->view_style->currentIndex()-2;
         mosaic_size = std::max((int)1,(int)std::ceil(std::sqrt((float)(cur_tracking_window.slice.geometry[2] >> skip))));
         cur_tracking_window.slice.get_mosaic(mosaic_image,mosaic_size,contrast,offset,skip);

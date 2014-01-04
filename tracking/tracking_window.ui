@@ -194,13 +194,19 @@
         <item>
          <widget class="QSlider" name="gl_contrast">
           <property name="minimum">
-           <number>100</number>
+           <number>-100</number>
           </property>
           <property name="maximum">
-           <number>500</number>
+           <number>100</number>
+          </property>
+          <property name="singleStep">
+           <number>5</number>
           </property>
           <property name="pageStep">
-           <number>50</number>
+           <number>10</number>
+          </property>
+          <property name="value">
+           <number>0</number>
           </property>
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -234,6 +240,9 @@
           </property>
           <property name="maximum">
            <number>100</number>
+          </property>
+          <property name="singleStep">
+           <number>5</number>
           </property>
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -1589,13 +1598,19 @@
           </sizepolicy>
          </property>
          <property name="minimum">
-          <number>100</number>
+          <number>-100</number>
          </property>
          <property name="maximum">
-          <number>500</number>
+          <number>100</number>
+         </property>
+         <property name="singleStep">
+          <number>5</number>
          </property>
          <property name="pageStep">
-          <number>50</number>
+          <number>10</number>
+         </property>
+         <property name="value">
+          <number>0</number>
          </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -1643,7 +1658,7 @@
           <number>100</number>
          </property>
          <property name="singleStep">
-          <number>1</number>
+          <number>5</number>
          </property>
          <property name="pageStep">
           <number>10</number>

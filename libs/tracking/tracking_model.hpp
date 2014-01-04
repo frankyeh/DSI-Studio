@@ -64,6 +64,17 @@ public:
         color |= gray;
         return color;
     }
+    float get_value_range(const std::string& view_name) const
+    {
+        unsigned int view_index = get_name_index(view_name);
+        if(view_index == fib_data.view_item.size())
+            return 0.0;
+        if(fib_data.view_item[view_index].name == "color")
+            return 0.0;
+        return fib_data.view_item[view_index].max_value-
+               fib_data.view_item[view_index].min_value;
+    }
+
     void get_slice(const std::string& view_name,const std::string& overlay_name,
                    unsigned char dim,unsigned int pos,
                    image::color_image& show_image,float contrast,float offset)
@@ -108,8 +119,9 @@ public:
             if(range + 1.0 == 1.0)
                 range = 1.0;
 
-            buf += offset*range-min_value;
-            buf *= 255.9*contrast/range;
+            buf += offset-min_value;
+            if(contrast != 0.0)
+                buf *= 255.99/contrast;
             image::upper_lower_threshold(buf,(float)0.0,(float)255.0);
             std::copy(buf.begin(),buf.end(),show_image.begin());
         }
