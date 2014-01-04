@@ -36,6 +36,16 @@ public:
         }
         voxel.dim = dwi_sum.geometry();
     }
+    void rotate(const std::vector<float>& rotation_matrix)
+    {
+        image::resample(dwi_sum,rotation_matrix);
+        image::resample(mask,rotation_matrix);
+        for (unsigned int index = 0;check_prog(index,dwi_data.size());++index)
+        {
+            image::pointer_image<unsigned short,3> I = image::make_image(voxel.dim,(unsigned short*)dwi_data[index]);
+            image::resample(I,rotation_matrix);
+        }
+    }
 
 public:
     ImageModel(void):thread_count(1) {}

@@ -36,6 +36,7 @@ struct VoxelData
     std::vector<image::vector<3,float> > dir;
     std::vector<short> dir_index;
     float min_odf;
+    float sum_odf;
     float jdet;
     float jacobian[9];
 

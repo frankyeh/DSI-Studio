@@ -165,16 +165,6 @@ struct GeneralizedFA
     }
 };
 
-struct RemoveIsotropicPart
-{
-    float operator()(std::vector<float>& odf)
-    {
-        float min_odf = *std::min_element(odf.begin(),odf.end());
-        std::for_each(odf.begin(),odf.end(),boost::lambda::_1 -= min_odf);
-        return min_odf;
-    }
-};
-
 const unsigned int odf_block_size = 20000;
 struct OutputODF : public BaseProcess
 {
@@ -396,7 +386,7 @@ public:
 struct SaveFA : public BaseProcess
 {
 protected:
-    std::vector<float> gfa,iso;
+    std::vector<float> gfa,iso,sum;
     std::vector<std::vector<float> > fa;
 public:
     virtual void init(Voxel& voxel)
@@ -409,10 +399,13 @@ public:
         gfa.resize(voxel.dim.size());
         iso.clear();
         iso.resize(voxel.dim.size());
+        sum.clear();
+        sum.resize(voxel.dim.size());
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
         iso[data.voxel_index] = data.min_odf;
+        sum[data.voxel_index] = data.sum_odf;
         gfa[data.voxel_index] = GeneralizedFA()(data.odf);
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             fa[index][data.voxel_index] = data.fa[index];
@@ -426,11 +419,13 @@ public:
         {
             mat_writer.write("z0",&voxel.z0,1,1);
             std::for_each(iso.begin(),iso.end(),boost::lambda::_1 /= voxel.z0);
+            std::for_each(sum.begin(),sum.end(),boost::lambda::_1 /= voxel.z0);
             for (unsigned int i = 0;i < voxel.max_fiber_number;++i)
                 std::for_each(fa[i].begin(),fa[i].end(),boost::lambda::_1 /= voxel.z0);
         }
 
         mat_writer.write("iso",&*iso.begin(),1,iso.size());
+        mat_writer.write("sum",&*sum.begin(),1,sum.size());
 
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
         {
@@ -604,6 +599,7 @@ public:
     virtual void run(Voxel& voxel,VoxelData& data)
     {
         data.min_odf = *std::min_element(data.odf.begin(),data.odf.end());
+        data.sum_odf = image::mean(data.odf.begin(),data.odf.end());
         boost::mutex::scoped_lock lock(mutex);
         lm.search(data.odf);
         std::map<float,unsigned short,std::greater<float> >::const_iterator iter = lm.max_table.begin();
