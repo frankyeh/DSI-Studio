@@ -8,7 +8,6 @@ class Dwi2Tensor : public BaseProcess
 {
     std::vector<float> d0;
     std::vector<float> d1;
-    std::vector<float> d2;
     std::vector<float> md;
     std::vector<float> fa;
     std::vector<float> fdir;
@@ -42,8 +41,6 @@ public:
         d0.resize(voxel.dim.size());
         d1.clear();
         d1.resize(voxel.dim.size());
-        d2.clear();
-        d2.resize(voxel.dim.size());
 
         b_count = voxel.q_count-1;
         std::vector<image::vector<3> > b_data(b_count);
@@ -118,10 +115,9 @@ public:
         }
         std::copy(V,V+3,fdir.begin() + data.voxel_index * 3);
         data.fa[0] = fa[data.voxel_index] = get_fa(d[0],d[1],d[2]);
-        md[data.voxel_index] = (d[0]+d[1]+d[2])/3.0;
-        d0[data.voxel_index] = d[0];
-        d1[data.voxel_index] = d[1];
-        d2[data.voxel_index] = d[2];
+        md[data.voxel_index] = 1000.0*(d[0]+d[1]+d[2])/3.0;
+        d0[data.voxel_index] = 1000.0*d[0];
+        d1[data.voxel_index] = 1000.0*(d[1]+d[2])/2.0;
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
@@ -133,10 +129,8 @@ public:
         mat_writer.write("adc",&*md.begin(),1,md.size());
         set_title("axial_dif");
         mat_writer.write("axial_dif",&*d0.begin(),1,d0.size());
-        set_title("radial_dif1");
-        mat_writer.write("radial_dif1",&*d1.begin(),1,d1.size());
-        set_title("radial_dif2");
-        mat_writer.write("radial_dif2",&*d2.begin(),1,d2.size());
+        set_title("radial_dif");
+        mat_writer.write("radial_dif",&*d1.begin(),1,d1.size());
     }
 };
 
