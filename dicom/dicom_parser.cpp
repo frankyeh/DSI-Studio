@@ -356,6 +356,87 @@ bool load_multiple_slice_dicom(QStringList file_list,boost::ptr_vector<DwiHeader
     }
     return true;
 }
+bool load_4d_fdf(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files)
+{
+    for (unsigned int index = 0;check_prog(index,file_list.size());++index)
+    {
+        std::map<std::string,std::string> value_list;
+        {
+            std::ifstream in(file_list[index].toLocal8Bit().begin());
+            std::string line;
+            while(std::getline(in,line))
+            {
+                std::string::size_type pos = 0;
+                if(line.empty() || line[0] == '#' || (pos = line.find('=')) == std::string::npos)
+                    continue;
+                std::istringstream read_line(line);
+                std::string s1,s2,value;
+                read_line >> s1 >> s2;
+                value = line.substr(pos+2,line.length()-pos-3);
+                std::replace(value.begin(),value.end(),',',' ');
+                std::replace(value.begin(),value.end(),'"',' ');
+                std::replace(value.begin(),value.end(),'{',' ');
+                std::replace(value.begin(),value.end(),'}',' ');
+                value_list[s2] = value;
+                if(s2 == "checksum")
+                    break;
+            }
+        }
+        if(value_list["*storage"] != " float ")
+            return false;
+        // allocate all space
+        if(index == 0)
+        {
+            float dwi_num,width,height,depth,fov1,fov2,fov3;
+            if(!(std::istringstream(value_list["array_dim"]) >> dwi_num) ||
+               !(std::istringstream(value_list["matrix[]"]) >> width >> height ) ||
+               !(std::istringstream(value_list["slices"]) >> depth) ||
+               !(std::istringstream(value_list["roi[]"]) >> fov1 >> fov2 >> fov3))
+                return false;
+            for(unsigned int i = 0;i < dwi_num;++i)
+            {
+                dwi_files.push_back(new DwiHeader);
+                dwi_files.back().image.resize(image::geometry<3>(width,height,depth));
+                dwi_files.back().voxel_size[0] = fov1*10.0/width;
+                dwi_files.back().voxel_size[1] = fov2*10.0/height;
+                dwi_files.back().voxel_size[2] = fov3*100.0/depth;
+                dwi_files.back().file_name = value_list["*studyid"];
+                //dwi_files
+            }
+            if(dwi_files.empty())
+                return false;
+        }
+        // get DWI and slice location
+        int dwi_id,slice_id;
+        {
+            float v1,v2;
+            if(!(std::istringstream(value_list["array_index"]) >> v1) ||
+               !(std::istringstream(value_list["slice_no"]) >> v2))
+                return false;
+            dwi_id = v1 - 1.0;
+            slice_id = v2 - 1.0;
+            if(dwi_id < 0 || dwi_id >= dwi_files.size() || slice_id < 0 || slice_id >= dwi_files.front().image.depth())
+                return 0;
+        }
+        // get b_value
+        if(slice_id == 0)
+        {
+            if(!(std::istringstream(value_list["dro"]) >> dwi_files[dwi_id].bvec[0]) ||
+               !(std::istringstream(value_list["dpe"]) >> dwi_files[dwi_id].bvec[1]) ||
+               !(std::istringstream(value_list["dsl"]) >> dwi_files[dwi_id].bvec[2]) ||
+               !(std::istringstream(value_list["bvalue"]) >> dwi_files[dwi_id].bvalue))
+                return false;
+            dwi_files[dwi_id].bvec.normalize();
+        }
+        std::vector<float> buf(dwi_files[dwi_id].image.width()*dwi_files[dwi_id].image.height());
+        std::ifstream in(file_list[index].toLocal8Bit().begin(),std::ifstream::binary);
+        in.seekg(-(int)buf.size()*4,std::ios_base::end);
+        if(!in.read((char*)&*buf.begin(),buf.size()*4))
+            return false;
+        std::copy(buf.begin(),buf.end(),dwi_files[dwi_id].image.begin() + slice_id*dwi_files[dwi_id].image.plane_size());
+    }
+    return true;
+}
 
 bool load_3d_series(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files)
 {
@@ -377,6 +458,10 @@ bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_file
         for(unsigned int index = 0;index < file_list.size();++index)
             load_4d_2dseq(file_list[index].toLocal8Bit().begin(),dwi_files);
         return !dwi_files.empty();
+    }
+    if(QFileInfo(file_list[0]).suffix() == "fdf")
+    {
+        return load_4d_fdf(file_list,dwi_files);
     }
 
     if(file_list.size() == 1 && QFileInfo(file_list[0]).isDir()) // single folder with DICOM files

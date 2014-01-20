@@ -253,7 +253,7 @@ void MainWindow::on_OpenDICOM_clicked()
                                 this,
                                 "Open Images files",
                                 ui->workDir->currentText(),
-                                "Image files (*.dcm *.hdr *.nii *.nii.gz 2dseq subject);;All files (*)" );
+                                "Image files (*.dcm *.hdr *.nii *.nii.gz *.fdf 2dseq subject);;All files (*)" );
     if ( filenames.isEmpty() )
         return;
 
