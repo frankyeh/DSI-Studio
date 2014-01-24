@@ -41,10 +41,10 @@ int ana(int ac, char *av[])
     std::auto_ptr<ODFModel> handle(new ODFModel);
     {
         std::string file_name = vm["source"].as<std::string>();
-        std::cout << "loading " << file_name.c_str() << "..." <<std::endl;
+        std::cout << "loading " << file_name << "..." <<std::endl;
         if(!QFileInfo(file_name.c_str()).exists())
         {
-            std::cout << file_name.c_str() << " does not exist. terminating..." << std::endl;
+            std::cout << file_name << " does not exist. terminating..." << std::endl;
             return 0;
         }
         if (!handle->load_from_file(file_name.c_str()))
@@ -61,15 +61,15 @@ int ana(int ac, char *av[])
 
     std::string file_name = vm["tract"].as<std::string>();
     {
-        std::cout << "loading " << file_name.c_str() << "..." <<std::endl;
+        std::cout << "loading " << file_name << "..." <<std::endl;
         if(!QFileInfo(file_name.c_str()).exists())
         {
-            std::cout << file_name.c_str() << " does not exist. terminating..." << std::endl;
+            std::cout << file_name << " does not exist. terminating..." << std::endl;
             return 0;
         }
         if (!tract_model.load_from_file(file_name.c_str()))
         {
-            std::cout << "Cannot open file " << file_name.c_str() << std::endl;
+            std::cout << "Cannot open file " << file_name << std::endl;
             return 0;
         }
     }

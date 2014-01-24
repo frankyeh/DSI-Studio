@@ -56,7 +56,7 @@ int rec(int ac, char *av[])
     std::auto_ptr<ImageModel> handle(new ImageModel);
     if (!handle->load_from_file(file_name.c_str()))
     {
-        std::cout << "Load src file failed:" << handle->error_msg.c_str() << std::endl;
+        std::cout << "Load src file failed:" << handle->error_msg << std::endl;
         return 1;
     }
     std::cout << "src loaded" <<std::endl;

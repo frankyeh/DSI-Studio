@@ -38,10 +38,10 @@ int exp(int ac, char *av[])
 
     gz_mat_read mat_reader;
     std::string file_name = vm["source"].as<std::string>();
-    std::cout << "loading " << file_name.c_str() << "..." <<std::endl;
+    std::cout << "loading " << file_name << "..." <<std::endl;
     if(!QFileInfo(file_name.c_str()).exists())
     {
-        std::cout << file_name.c_str() << " does not exist. terminating..." << std::endl;
+        std::cout << file_name << " does not exist. terminating..." << std::endl;
         return 0;
     }
     if (!mat_reader.load_from_file(file_name.c_str()))
@@ -115,13 +115,13 @@ int exp(int ac, char *av[])
             nifti_header << fibers;
             nifti_header.set_voxel_size(vs);
             nifti_header.save_to_file(file_name_stat.c_str());
-            std::cout << "write to file " << file_name_stat.c_str() << std::endl;
+            std::cout << "write to file " << file_name_stat << std::endl;
             continue;
         }
         const float* volume = 0;
         if(mat_reader.read(cmd.c_str(),row,col,volume))
         {
-            std::cout << "retriving matrix " << cmd.c_str() << std::endl;
+            std::cout << "retriving matrix " << cmd << std::endl;
             if(row*col != geo.size())
             {
                 std::cout << "The matrix "<< cmd.c_str() <<" is not an image volume" <<std::endl;
@@ -136,7 +136,7 @@ int exp(int ac, char *av[])
             nifti_header << data;
             nifti_header.set_voxel_size(vs);
             nifti_header.save_to_file(file_name_stat.c_str());
-            std::cout << "write to file " << file_name_stat.c_str() << std::endl;
+            std::cout << "write to file " << file_name_stat << std::endl;
             continue;
         }
         std::cout << "Cannot find matrix "<< cmd.c_str() <<" in the file" << file_name.c_str() <<std::endl;

@@ -70,16 +70,16 @@ int trk(int ac, char *av[])
     std::auto_ptr<ODFModel> handle(new ODFModel);
     {
         std::string file_name = vm["source"].as<std::string>();
-        std::cout << "loading " << file_name.c_str() << "..." <<std::endl;
+        std::cout << "loading " << file_name << "..." <<std::endl;
         if(!QFileInfo(file_name.c_str()).exists())
         {
-            std::cout << file_name.c_str() << " does not exist. terminating..." << std::endl;
+            std::cout << file_name << " does not exist. terminating..." << std::endl;
             return 0;
         }
         if (!handle->load_from_file(file_name.c_str()))
         {
-            std::cout << "Open file " << file_name.c_str() << " failed" << std::endl;
-            std::cout << "msg:" << handle->fib_data.error_msg.c_str() << std::endl;
+            std::cout << "Open file " << file_name << " failed" << std::endl;
+            std::cout << "msg:" << handle->fib_data.error_msg << std::endl;
             return 0;
         }
     }
@@ -141,7 +141,7 @@ int trk(int ac, char *av[])
         std::string file_name = vm[roi_names[index]].as<std::string>();
         if(!QFileInfo(file_name.c_str()).exists())
         {
-            std::cout << file_name.c_str() << " does not exist. terminating..." << std::endl;
+            std::cout << file_name << " does not exist. terminating..." << std::endl;
             return 0;
         }
         if(!roi.LoadFromFile(file_name.c_str(),handle->fib_data.trans_to_mni))
@@ -242,14 +242,14 @@ int trk(int ac, char *av[])
             if(cmd == "tdi")
             {
                 file_name_stat += ".nii.gz";
-                std::cout << "export TDI to " << file_name_stat.c_str() << std::endl;
+                std::cout << "export TDI to " << file_name_stat << std::endl;
                 tract_model.save_tdi(file_name_stat.c_str(),false,false);
                 continue;
             }
             if(cmd == "tdi2")
             {
                 file_name_stat += ".nii.gz";
-                std::cout << "export subvoxel TDI to " << file_name_stat.c_str() << std::endl;
+                std::cout << "export subvoxel TDI to " << file_name_stat << std::endl;
                 tract_model.save_tdi(file_name_stat.c_str(),true,false);
                 continue;
             }
