@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Mon Nov 11 14:18:50 2013
+** Created: Fri Jan 31 14:51:44 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -126,6 +126,7 @@ public:
     QAction *actionCopyTrack;
     QAction *actionConnectometry;
     QAction *actionSave_3D_screen_in_high_resolution;
+    QAction *actionSave_All_Regions_As;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QHBoxLayout *horizontalLayout_13;
@@ -520,6 +521,9 @@ public:
         actionSave_3D_screen_in_high_resolution = new QAction(tracking_window);
         actionSave_3D_screen_in_high_resolution->setObjectName(QString::fromUtf8("actionSave_3D_screen_in_high_resolution"));
         actionSave_3D_screen_in_high_resolution->setIcon(icon2);
+        actionSave_All_Regions_As = new QAction(tracking_window);
+        actionSave_All_Regions_As->setObjectName(QString::fromUtf8("actionSave_All_Regions_As"));
+        actionSave_All_Regions_As->setIcon(icon2);
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -586,9 +590,11 @@ public:
 
         gl_contrast = new QSlider(centralwidget);
         gl_contrast->setObjectName(QString::fromUtf8("gl_contrast"));
-        gl_contrast->setMinimum(100);
-        gl_contrast->setMaximum(500);
-        gl_contrast->setPageStep(50);
+        gl_contrast->setMinimum(-100);
+        gl_contrast->setMaximum(100);
+        gl_contrast->setSingleStep(5);
+        gl_contrast->setPageStep(10);
+        gl_contrast->setValue(0);
         gl_contrast->setOrientation(Qt::Horizontal);
 
         horizontalLayout->addWidget(gl_contrast);
@@ -610,6 +616,7 @@ public:
         gl_offset->setObjectName(QString::fromUtf8("gl_offset"));
         gl_offset->setMinimum(-100);
         gl_offset->setMaximum(100);
+        gl_offset->setSingleStep(5);
         gl_offset->setOrientation(Qt::Horizontal);
 
         horizontalLayout->addWidget(gl_offset);
@@ -1217,9 +1224,11 @@ public:
         contrast->setObjectName(QString::fromUtf8("contrast"));
         sizePolicy4.setHeightForWidth(contrast->sizePolicy().hasHeightForWidth());
         contrast->setSizePolicy(sizePolicy4);
-        contrast->setMinimum(100);
-        contrast->setMaximum(500);
-        contrast->setPageStep(50);
+        contrast->setMinimum(-100);
+        contrast->setMaximum(100);
+        contrast->setSingleStep(5);
+        contrast->setPageStep(10);
+        contrast->setValue(0);
         contrast->setOrientation(Qt::Horizontal);
 
         horizontalLayout_14->addWidget(contrast);
@@ -1245,7 +1254,7 @@ public:
         offset->setSizePolicy(sizePolicy4);
         offset->setMinimum(-100);
         offset->setMaximum(100);
-        offset->setSingleStep(1);
+        offset->setSingleStep(5);
         offset->setPageStep(10);
         offset->setOrientation(Qt::Horizontal);
 
@@ -1541,6 +1550,7 @@ public:
         menuRegions->addAction(actionNewRegion);
         menuRegions->addAction(actionOpenRegion);
         menuRegions->addAction(actionSaveRegionAs);
+        menuRegions->addAction(actionSave_All_Regions_As);
         menuRegions->addAction(actionSave_Voxel_Data_As);
         menuRegions->addAction(actionDeleteRegion);
         menuRegions->addAction(actionDeleteRegionAll);
@@ -1782,6 +1792,7 @@ public:
         actionCopyTrack->setText(QApplication::translate("tracking_window", "Copy", 0, QApplication::UnicodeUTF8));
         actionConnectometry->setText(QApplication::translate("tracking_window", "Connectometry...", 0, QApplication::UnicodeUTF8));
         actionSave_3D_screen_in_high_resolution->setText(QApplication::translate("tracking_window", "Save 3D screen in high resolution...", 0, QApplication::UnicodeUTF8));
+        actionSave_All_Regions_As->setText(QApplication::translate("tracking_window", "Save All Regions As...", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)

@@ -59,6 +59,7 @@ public slots:
     void updateRegions(QTableWidgetItem* item);
     void new_region(void);
     void save_region(void);
+    void save_all_regions(void);
     void save_region_info(void);
     void load_region(void);
     void delete_region(void);

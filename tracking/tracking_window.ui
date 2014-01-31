@@ -829,6 +829,7 @@
     <addaction name="actionNewRegion"/>
     <addaction name="actionOpenRegion"/>
     <addaction name="actionSaveRegionAs"/>
+    <addaction name="actionSave_All_Regions_As"/>
     <addaction name="actionSave_Voxel_Data_As"/>
     <addaction name="actionDeleteRegion"/>
     <addaction name="actionDeleteRegionAll"/>
@@ -2987,6 +2988,15 @@
    </property>
    <property name="text">
     <string>Save 3D screen in high resolution...</string>
+   </property>
+  </action>
+  <action name="actionSave_All_Regions_As">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save All Regions As...</string>
    </property>
   </action>
  </widget>

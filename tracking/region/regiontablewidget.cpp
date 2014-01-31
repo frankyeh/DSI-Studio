@@ -473,6 +473,45 @@ void RegionTableWidget::save_region(void)
                                      cur_tracking_window.is_qsdr ? cur_tracking_window.handle->fib_data.trans_to_mni: no_trans);
     item(currentRow(),0)->setText(QFileInfo(filename).baseName());
 }
+void RegionTableWidget::save_all_regions(void)
+{
+    if (regions.empty())
+        return;
+    QSettings settings;
+    QString filename = QFileDialog::getSaveFileName(
+                           this,
+                           "Save region",
+                cur_tracking_window.get_path("region") + "/" + item(currentRow(),0)->text() + "." + settings.value("region_save_type","nii.gz").toString(),
+                           "Region file(*.nii.gz *.nii);;All file types (*)" );
+    if (filename.isEmpty())
+        return;
+    settings.setValue("region_save_type",QFileInfo(filename).completeSuffix());
+    cur_tracking_window.add_path("region",filename);
+
+
+    image::geometry<3> geo = cur_tracking_window.slice.geometry;
+    image::basic_image<unsigned int, 3>mask(geo);
+    for (unsigned int i = 0; i < regions.size(); ++i)
+    for (unsigned int j = 0; j < regions[i].get().size(); ++j)
+    {
+        if (geo.is_valid(regions[i].get()[j][0], regions[i].get()[j][1],regions[i].get()[j][2]))
+            mask[image::pixel_index<3>(regions[i].get()[j][0],
+                                       regions[i].get()[j][1],
+                                       regions[i].get()[j][2], geo).index()] = i+1;
+    }
+
+    gz_nifti header;
+    header.set_voxel_size(cur_tracking_window.slice.voxel_size);
+    if(cur_tracking_window.is_qsdr)
+        header.set_image_transformation(cur_tracking_window.handle->fib_data.trans_to_mni.begin());
+    else
+        image::flip_xy(mask);
+    header << mask;
+    header.save_to_file(filename.toLocal8Bit().begin());
+
+
+}
+
 void RegionTableWidget::save_region_info(void)
 {
     if (currentRow() >= regions.size())
