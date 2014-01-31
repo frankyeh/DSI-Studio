@@ -1308,3 +1308,80 @@ void TractModel::get_connectivity_matrix(const std::vector<std::vector<image::ve
             }
     }
 }
+
+
+
+
+void ConnectivityMatrix::save_to_image(image::color_image& cm,bool log,bool norm)
+{
+    if(matrix.empty())
+        return;
+    cm.resize(image::geometry<2>(matrix.size(),matrix.size()));
+    std::vector<float> values(cm.size());
+    std::copy(connectivity_count.begin(),connectivity_count.end(),values.begin());
+    for(unsigned int index = 0;index < values.size();++index)
+    {
+        if(log)
+            values[index] = std::log(values[index] + 1.0);
+        if(norm && tract_median_length[index] > 0)
+            values[index] /= tract_median_length[index];
+    }
+    image::normalize(values,255.99);
+    for(unsigned int index = 0;index < values.size();++index)
+    {
+        cm[index] = image::rgb_color((unsigned char)values[index],(unsigned char)values[index],(unsigned char)values[index]);
+    }
+}
+
+void ConnectivityMatrix::save_to_file(const char* file_name)
+{
+    image::io::mat_write mat_header(file_name);
+    mat_header.write("connectivity",&*connectivity_count.begin(),matrix.size(),matrix.size());
+    mat_header.write("tract_median_length",&*tract_median_length.begin(),matrix.size(),matrix.size());
+    mat_header.write("tract_mean_length",&*tract_mean_length.begin(),matrix.size(),matrix.size());
+    std::ostringstream out;
+    std::copy(region_name.begin(),region_name.end(),std::ostream_iterator<std::string>(out,"\n"));
+    std::string result(out.str());
+    mat_header.write("name",result.c_str(),1,result.length());
+}
+
+void ConnectivityMatrix::set_regions(const region_table_type& region_table)
+{
+    regions.resize(region_table.size());
+    region_name.resize(region_table.size());
+    region_table_type::const_iterator iter = region_table.begin();
+    region_table_type::const_iterator end = region_table.end();
+    for(unsigned int index = 0;iter != end;++iter,++index)
+    {
+        regions[index] = iter->second.first;
+        region_name[index] = iter->second.second;
+    }
+}
+
+void ConnectivityMatrix::calculate(const TractModel& tract_model)
+{
+    if(regions.size() == 0)
+        return;
+
+    tract_model.get_connectivity_matrix(regions,matrix);
+    connectivity_count.resize(matrix.size()*matrix.size());
+    tract_median_length.resize(matrix.size()*matrix.size());
+    tract_mean_length.resize(matrix.size()*matrix.size());
+
+    for(unsigned int i = 0,pos = 0;i < matrix.size();++i)
+        for(unsigned int j = 0;j < matrix[i].size();++j,++pos)
+        {
+            connectivity_count[pos] = matrix[i][j].count;
+            if(!connectivity_count[pos])
+            {
+                tract_median_length[pos] = 0;
+                tract_mean_length[pos] = 0;
+                continue;
+            }
+            std::nth_element(matrix[i][j].length.begin(),
+                             matrix[i][j].length.begin()+(matrix[i][j].length.size() >> 1),
+                             matrix[i][j].length.end());
+            tract_mean_length[pos] = image::mean(matrix[i][j].length.begin(),matrix[i][j].length.end());
+            tract_median_length[pos] = matrix[i][j].length[matrix[i][j].length.size() >> 1];
+        }
+}

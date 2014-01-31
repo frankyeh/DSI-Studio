@@ -125,8 +125,7 @@ public:
         void SaveToBuffer(image::basic_image<unsigned char, 3>& mask,
                 unsigned char value=255);
 
-        void getSlicePosition(SliceModel* slice, unsigned int pindex, int& x, int& y,
-        int& z);
+        void getSlicePosition(SliceModel* slice, unsigned int pindex, int& x, int& y,int& z);
 
         void makeMeshes(bool smooth);
         bool has_point(const image::vector<3,short>& point);

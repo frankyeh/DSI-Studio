@@ -73,6 +73,40 @@ int ana(int ac, char *av[])
             return 0;
         }
     }
+    if(vm.count("export") && vm["export"].as<std::string>() == std::string("connectivity"))
+    {
+        if (!vm.count("roi"))
+        {
+            std::cout << "No ROI defined for connectivity matrix." << std::endl;
+            return 0;
+        }
+        std::cout << "roi=" << file_name << std::endl;
+
+        /*
+        ROIRegion roi(geometry, voxel_size);
+        std::string file_name = vm["roi"].as<std::string>();
+        if(!QFileInfo(file_name.c_str()).exists())
+        {
+            std::cout << file_name << " does not exist. terminating..." << std::endl;
+            return 0;
+        }
+        if(!roi.LoadFromFile(file_name.c_str(),handle->fib_data.trans_to_mni))
+        {
+            std::cout << "Invalid file format:" << file_name << std::endl;
+            return 0;
+        }
+        if(roi.get().empty())
+        {
+            std::cout << "No region found in " << file_name << std::endl;
+            continue;
+        }
+        */
+
+
+        std::cout << "export connectivity matrix..." << std::endl;
+        return 0;
+    }
+
     if(vm.count("export") && vm["export"].as<std::string>() == std::string("tdi"))
     {
         std::cout << "export tract density images..." << std::endl;

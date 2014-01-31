@@ -6,7 +6,6 @@
 
 class ODFModel;
 class fiber_orientations;
-
 struct connectivity_info{
     unsigned int count;
     std::vector<unsigned int> length;
@@ -16,6 +15,8 @@ struct connectivity_info{
         ++count;
         length.push_back(track.size());
     }
+public:
+
 };
 
 class TractModel{
@@ -132,6 +133,27 @@ public:
         void get_connectivity_matrix(const std::vector<std::vector<image::vector<3,short> > >& regions,
                                      std::vector<std::vector<connectivity_info> >& matrix) const;
 
+};
+
+
+
+
+
+class ConnectivityMatrix{
+public:
+    std::vector<std::vector<connectivity_info> > matrix;
+    std::vector<unsigned int> connectivity_count;
+    std::vector<float> tract_median_length;
+    std::vector<float> tract_mean_length;
+public:
+    typedef std::map<float,std::pair<std::vector<image::vector<3,short> >,std::string> > region_table_type;
+    std::vector<std::vector<image::vector<3,short> > > regions;
+    std::vector<std::string> region_name;
+    void set_regions(const region_table_type& region_table);
+public:
+    void save_to_image(image::color_image& cm,bool log,bool norm);
+    void save_to_file(const char* file_name);
+    void calculate(const TractModel& tract_model);
 };
 
 

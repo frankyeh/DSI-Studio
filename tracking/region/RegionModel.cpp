@@ -89,6 +89,7 @@ bool RegionModel::load(const std::vector<image::vector<3,short> >& seeds, double
         cur_scale *= 2.0;
         image::downsampling(buffer);
     }
+
     image::filter::mean(buffer);
 
     object.reset(new image::march_cube<image::vector<3,float> >(buffer, 20));

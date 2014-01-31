@@ -42,24 +42,24 @@ void connectivity_matrix_dialog::mouse_move(QMouseEvent *mouseEvent)
     QPointF point = ui->graphicsView->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
     int x = std::floor(((float)point.x()) / ui->zoom->value() - 0.5);
     int y = std::floor(((float)point.y()) / ui->zoom->value() - 0.5);
-    if(x >= 0 && y >= 0 && x < region_name.size() && y < region_name.size())
+    if(x >= 0 && y >= 0 && x < data.region_name.size() && y < data.region_name.size())
     {
-        matrix_to_image();
+        data.save_to_image(cm,ui->log->isChecked(),ui->norm->isChecked());
         // line x
-        for(unsigned int x_pos = 0,pos = y*matrix.size();x_pos < matrix.size();++x_pos,++pos)
+        for(unsigned int x_pos = 0,pos = y*data.matrix.size();x_pos < data.matrix.size();++x_pos,++pos)
         {
             cm[pos][2] = (cm[pos][0] >> 1);
             cm[pos][2] += 125;
         }
         // line y
-        for(unsigned int y_pos = 0,pos = x;y_pos < matrix.size();++y_pos,pos += matrix.size())
+        for(unsigned int y_pos = 0,pos = x;y_pos < data.matrix.size();++y_pos,pos += data.matrix.size())
         {
             cm[pos][2] = (cm[pos][0] >> 1);
             cm[pos][2] += 125;
         }
         on_zoom_valueChanged(0);
-        QGraphicsTextItem *x_text = scene.addText(region_name[x].c_str());
-        QGraphicsTextItem *y_text = scene.addText(region_name[y].c_str());
+        QGraphicsTextItem *x_text = scene.addText(data.region_name[x].c_str());
+        QGraphicsTextItem *y_text = scene.addText(data.region_name[y].c_str());
         x_text->moveBy(point.x()-x_text->boundingRect().width()/2,-x_text->boundingRect().height());
         y_text->rotate(270);
         y_text->moveBy(-y_text->boundingRect().height(),point.y()+y_text->boundingRect().width()/2);
@@ -72,34 +72,32 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
 {
     if(cur_tracking_window->tractWidget->tract_models.size() == 0)
         return;
-    typedef std::map<float,std::pair<std::vector<image::vector<3,short> >,std::string> > region_table_type;
-    region_table_type region_table;
+
     image::geometry<3> geo = cur_tracking_window->slice.geometry;
     if(ui->region_list->currentIndex() == 0)
     {
+        ConnectivityMatrix::region_table_type region_table;
         for(unsigned int index = 0;index < cur_tracking_window->regionWidget->regions.size();++index)
         {
             const std::vector<image::vector<3,short> >& cur_region =
                     cur_tracking_window->regionWidget->regions[index].get();
             image::vector<3,float> pos = std::accumulate(cur_region.begin(),cur_region.end(),image::vector<3,float>(0,0,0));
             pos /= cur_region.size();
-
             region_table[pos[0] > (geo[0] >> 1) ? pos[1]-geo[1]:geo[1]-pos[1]] = std::make_pair(cur_region,cur_tracking_window->regionWidget->item(index,0)->text().toLocal8Bit().begin());
+
         }
+        data.set_regions(region_table);
     }
     else  // from atlas
         if(!cur_tracking_window->handle->fib_data.trans_to_mni.empty())
         {
+            ConnectivityMatrix::region_table_type region_table;
             std::vector<image::vector<3,float> > mni_position(geo.size());
             std::vector<image::vector<3,short> > subject_position(geo.size());
             for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))
             {
-                image::vector<3,float> mni;
-                image::vector<3,float>cur_coordinate((const unsigned int*)(index.begin()));
-                image::vector_transformation(cur_coordinate.begin(),
-                                             mni.begin(),
-                                             cur_tracking_window->handle->fib_data.trans_to_mni.begin(),
-                                             image::vdim<3>());
+                image::vector<3,float> mni((const unsigned int*)index.begin());
+                cur_tracking_window->subject2mni(mni);
                 mni_position[index.index()] = mni;
                 subject_position[index.index()] = image::vector<3,short>((const unsigned int*)index.begin());
             }
@@ -135,75 +133,16 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
                     order = mni_avg_pos[1];
                 region_table[order] = std::make_pair(cur_region,region_names[label]);
             }
+            data.set_regions(region_table);
         }
         else
             return;
 
-    if(region_table.size() == 0)
-        return;
-
-    std::vector<std::vector<image::vector<3,short> > > regions(region_table.size());
-    region_name.resize(region_table.size());
-
-    region_table_type::const_iterator iter = region_table.begin();
-    region_table_type::const_iterator end = region_table.end();
-    for(unsigned int index = 0;iter != end;++iter,++index)
-    {
-        regions[index] = iter->second.first;
-        region_name[index] = iter->second.second;
-    }
-
-
-
-    cur_tracking_window->tractWidget->tract_models[cur_tracking_window->tractWidget->currentRow()]
-            ->get_connectivity_matrix(regions,matrix);
-
-    connectivity_count.resize(matrix.size()*matrix.size());
-    tract_median_length.resize(matrix.size()*matrix.size());
-    tract_mean_length.resize(matrix.size()*matrix.size());
-
-    for(unsigned int i = 0,pos = 0;i < matrix.size();++i)
-        for(unsigned int j = 0;j < matrix[i].size();++j,++pos)
-        {
-            connectivity_count[pos] = matrix[i][j].count;
-            if(!connectivity_count[pos])
-            {
-                tract_median_length[pos] = 0;
-                tract_mean_length[pos] = 0;
-                continue;
-            }
-            std::nth_element(matrix[i][j].length.begin(),
-                             matrix[i][j].length.begin()+(matrix[i][j].length.size() >> 1),
-                             matrix[i][j].length.end());
-            tract_mean_length[pos] = image::mean(matrix[i][j].length.begin(),matrix[i][j].length.end());
-            tract_median_length[pos] = matrix[i][j].length[matrix[i][j].length.size() >> 1];
-        }
-
-
-    matrix_to_image();
+    data.calculate(*(cur_tracking_window->tractWidget->tract_models[cur_tracking_window->tractWidget->currentRow()]));
+    data.save_to_image(cm,ui->log->isChecked(),ui->norm->isChecked());
     on_zoom_valueChanged(0);
 }
 
-void connectivity_matrix_dialog::matrix_to_image(void)
-{
-    if(matrix.empty())
-        return;
-    cm.resize(image::geometry<2>(matrix.size(),matrix.size()));
-    std::vector<float> values(cm.size());
-    std::copy(connectivity_count.begin(),connectivity_count.end(),values.begin());
-    for(unsigned int index = 0;index < values.size();++index)
-    {
-        if(ui->log->isChecked())
-            values[index] = std::log(values[index] + 1.0);
-        if(ui->norm->isChecked() && tract_median_length[index] > 0)
-            values[index] /= tract_median_length[index];
-    }
-    image::normalize(values,255.99);
-    for(unsigned int index = 0;index < values.size();++index)
-    {
-        cm[index] = image::rgb_color((unsigned char)values[index],(unsigned char)values[index],(unsigned char)values[index]);
-    }
-}
 
 void connectivity_matrix_dialog::on_zoom_valueChanged(double arg1)
 {
@@ -219,12 +158,12 @@ void connectivity_matrix_dialog::on_zoom_valueChanged(double arg1)
 
 void connectivity_matrix_dialog::on_log_toggled(bool checked)
 {
-    matrix_to_image();
+    data.save_to_image(cm,ui->log->isChecked(),ui->norm->isChecked());
     on_zoom_valueChanged(0);
 }
 void connectivity_matrix_dialog::on_norm_toggled(bool checked)
 {
-    matrix_to_image();
+    data.save_to_image(cm,ui->log->isChecked(),ui->norm->isChecked());
     on_zoom_valueChanged(0);
 }
 
@@ -242,22 +181,14 @@ void connectivity_matrix_dialog::on_save_as_clicked()
     cur_tracking_window->add_path("connectivity_matrix",filename);
     if(QFileInfo(filename).suffix().toLower() == "mat")
     {
-        image::io::mat_write mat_header(filename.toLocal8Bit().begin());
-        mat_header.write("connectivity",&*connectivity_count.begin(),matrix.size(),matrix.size());
-        mat_header.write("tract_median_length",&*tract_median_length.begin(),matrix.size(),matrix.size());
-        mat_header.write("tract_mean_length",&*tract_mean_length.begin(),matrix.size(),matrix.size());
-        std::ostringstream out;
-        std::copy(region_name.begin(),region_name.end(),std::ostream_iterator<std::string>(out,"\n"));
-        std::string result(out.str());
-        mat_header.write("name",result.c_str(),1,result.length());
+        data.save_to_file(filename.toLocal8Bit().begin());
     }
     else
     {
-        matrix_to_image();
+        data.save_to_image(cm,ui->log->isChecked(),ui->norm->isChecked());
         QImage qimage((unsigned char*)&*cm.begin(),cm.width(),cm.height(),QImage::Format_RGB32);
         qimage.save(filename);
     }
-
 }
 
 

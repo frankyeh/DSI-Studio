@@ -18,12 +18,8 @@ class connectivity_matrix_dialog : public QDialog
     image::color_image cm;
     QImage view_image;
     QGraphicsScene scene;
-    std::vector<std::string> region_name;
 public:
-    std::vector<std::vector<connectivity_info> > matrix;
-    std::vector<unsigned int> connectivity_count;
-    std::vector<float> tract_median_length;
-    std::vector<float> tract_mean_length;
+    ConnectivityMatrix data;
 public:
     tracking_window* cur_tracking_window;
     explicit connectivity_matrix_dialog(tracking_window *parent);
@@ -33,7 +29,6 @@ public:
     bool is_graphic_view(QObject *) const;
 private slots:
 
-    void matrix_to_image(void);
     void on_recalculate_clicked();
 
     void on_zoom_valueChanged(double arg1);
