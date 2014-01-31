@@ -25,6 +25,7 @@ int ana(int ac, char *av[])
     ("action", po::value<std::string>(), "ana: analysis")
     ("source", po::value<std::string>(), "assign the .fib file name")
     ("tract", po::value<std::string>(), "assign the .trk file name")
+    ("roi", po::value<std::string>(), "file for ROI regions")
     ("export", po::value<std::string>(), "export additional information (e.g. --export=tdi)")
     ;
 
@@ -80,30 +81,68 @@ int ana(int ac, char *av[])
             std::cout << "No ROI defined for connectivity matrix." << std::endl;
             return 0;
         }
-        std::cout << "roi=" << file_name << std::endl;
-
-        /*
-        ROIRegion roi(geometry, voxel_size);
-        std::string file_name = vm["roi"].as<std::string>();
-        if(!QFileInfo(file_name.c_str()).exists())
+        gz_nifti header;
+        if (!header.load_from_file(vm["roi"].as<std::string>()))
         {
-            std::cout << file_name << " does not exist. terminating..." << std::endl;
+            std::cout << "Cannot open nifti file " << vm["roi"].as<std::string>() << std::endl;
             return 0;
         }
-        if(!roi.LoadFromFile(file_name.c_str(),handle->fib_data.trans_to_mni))
+        std::cout << file_name << " loaded" << std::endl;
+        image::basic_image<unsigned int, 3> from;
+        header >> from;
+        if(header.nif_header.srow_x[0] < 0)
         {
-            std::cout << "Invalid file format:" << file_name << std::endl;
+            if(header.nif_header.srow_y[1] > 0)
+                image::flip_y(from);
+        }
+        else
+            image::flip_xy(from);
+
+        if(from.geometry() != geometry)
+        {
+            std::cout << "The ROI needs to be in the diffusion space." << std::endl;
             return 0;
         }
-        if(roi.get().empty())
+        std::vector<unsigned char> value_map(std::numeric_limits<unsigned short>::max());
+        unsigned int max_value = 0;
+        for (image::pixel_index<3>index; index.is_valid(from.geometry());index.next(from.geometry()))
         {
-            std::cout << "No region found in " << file_name << std::endl;
-            continue;
+            value_map[(unsigned short)from[index.index()]] = 1;
+            max_value = std::max<unsigned short>(from[index.index()],max_value);
         }
-        */
+        value_map.resize(max_value+1);
+        unsigned short region_count = std::accumulate(value_map.begin(),value_map.end(),(unsigned short)0);
+        if(region_count < 2)
+        {
+            std::cout << "The ROI file should contain at least two regions to calculate the connectivity matrix." << std::endl;
+            return 0;
+        }
+        ConnectivityMatrix data;
+        ConnectivityMatrix::region_table_type region_table;
+        for(unsigned int value = 1;value < value_map.size();++value)
+            if(value_map[value])
+            {
+                image::basic_image<unsigned char,3> mask(from.geometry());
+                for(unsigned int i = 0;i < mask.size();++i)
+                    if(from[i] == value)
+                        mask[i] = 1;
+                ROIRegion region(geometry,handle->fib_data.vs);
+                region.LoadFromBuffer(mask);
+                const std::vector<image::vector<3,short> >& cur_region = region.get();
+                image::vector<3,float> pos = std::accumulate(cur_region.begin(),cur_region.end(),image::vector<3,float>(0,0,0));
+                pos /= cur_region.size();
+                std::ostringstream out;
+                out << value_map[value];
+                region_table[pos[0] > (geometry[0] >> 1) ? pos[1]-geometry[1]:geometry[1]-pos[1]] =
+                        std::make_pair(cur_region,out.str());
+            }
 
-
-        std::cout << "export connectivity matrix..." << std::endl;
+        data.set_regions(region_table);
+        data.calculate(tract_model);
+        std::string file_name_stat(file_name);
+        file_name_stat += ".connectivity.mat";
+        std::cout << "export connectivity matrix to " << file_name_stat << std::endl;
+        data.save_to_file(file_name_stat.c_str());
         return 0;
     }
 
