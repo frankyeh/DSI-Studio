@@ -155,9 +155,9 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
             return false;
         // use unsigned int to avoid the nan background problem
         image::basic_image<unsigned int, 3>from;
-        header >> from;
-        if(from.geometry() != geo)// use transformation information
+        if(image::geometry<3>(header.nif_header.dim+1) != geo)// use transformation information
         {
+            header >> from;
             if(trans.empty())
                 return false;
             std::vector<float> t(header.get_transformation(),
@@ -169,15 +169,7 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
             LoadFromBuffer(from,convert);
             return true;
         }
-        // from +x = Right  +y = Anterior +z = Superior
-        // to +x = Left  +y = Posterior +z = Superior
-        if(header.nif_header.srow_x[0] < 0)
-        {
-            if(header.nif_header.srow_y[1] > 0)
-                image::flip_y(from);
-        }
-        else
-            image::flip_xy(from);
+        header.toLPS(from);
         LoadFromBuffer(from);
         float max_value = *std::max_element(from.begin(),from.end());
         if(max_value > 128 && max_value < 0x00FFFFFF)

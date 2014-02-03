@@ -346,27 +346,8 @@ void MainWindow::on_FiberTracking_clicked()
             QMessageBox::information(this,"DSI Studio","Invalid file format",0);
             return;
         }
-        header >> I;
+        header.toLPS(I);
         header.get_image_transformation(trans.begin());
-
-        if(header.nif_header.srow_x[0] < 0)
-        {
-            if(header.nif_header.srow_y[1] > 0)
-            {
-                image::flip_y(I);
-                for(unsigned int index = 4;index < 8;++index)
-                    trans[index] = -trans[index];
-                trans[7] = I.height()-1-trans[7];
-            }
-        }
-        else
-        {
-            image::flip_xy(I);
-            for(unsigned int index = 0;index < 8;++index)
-                trans[index] = -trans[index];
-            trans[3] = I.width()-1-trans[3];
-            trans[7] = I.height()-1-trans[7];
-        }
         // from 0-based to 1-based
         trans[3] += 2.0;
         trans[7] += 2.0;

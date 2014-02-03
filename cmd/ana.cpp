@@ -89,15 +89,7 @@ int ana(int ac, char *av[])
         }
         std::cout << file_name << " loaded" << std::endl;
         image::basic_image<unsigned int, 3> from;
-        header >> from;
-        if(header.nif_header.srow_x[0] < 0)
-        {
-            if(header.nif_header.srow_y[1] > 0)
-                image::flip_y(from);
-        }
-        else
-            image::flip_xy(from);
-
+        header.toLPS(from);
         if(from.geometry() != geometry)
         {
             std::cout << "The ROI needs to be in the diffusion space." << std::endl;

@@ -129,6 +129,13 @@ public:
         io >> source_images;
         init();
     }
+    template<typename loader>
+    void loadLPS(loader& io)
+    {
+        io.get_voxel_size(voxel_size.begin());
+        io.toLPS(source_images);
+        init();
+    }
     void init(void);
 public:
     void get_slice(image::color_image& image,float contrast,float offset) const;

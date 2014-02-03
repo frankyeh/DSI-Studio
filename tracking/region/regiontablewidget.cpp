@@ -254,7 +254,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     if (!header.load_from_file(file_name.toLocal8Bit().begin()))
         return false;
     image::basic_image<unsigned int, 3> from;
-    header >> from;
+    header.toLPS(from);
     std::vector<unsigned char> value_map(std::numeric_limits<unsigned short>::max());
     unsigned int max_value = 0;
     for (image::pixel_index<3>index; index.is_valid(from.geometry());index.next(from.geometry()))
@@ -341,18 +341,6 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         image::matrix::product(inv_trans.begin(),
                                cur_tracking_window.handle->fib_data.trans_to_mni.begin(),
                                convert.begin(),image::dim<4,4>(),image::dim<4,4>());
-    }
-    else
-    {
-        // from +x = Right  +y = Anterior +z = Superior
-        // to +x = Left  +y = Posterior +z = Superior
-        if(header.nif_header.srow_x[0] < 0)
-        {
-            if(header.nif_header.srow_y[1] > 0)
-                image::flip_y(from);
-        }
-        else
-            image::flip_xy(from);
     }
 
     if(!multiple_roi)

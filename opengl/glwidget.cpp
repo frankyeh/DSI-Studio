@@ -1665,15 +1665,7 @@ bool GLWidget::addSlices(QStringList filenames)
     // QSDR loaded, use MNI transformation instead
     if(cur_tracking_window.is_qsdr && files.size() == 1 && nifti.load_from_file(files[0]))
     {
-        new_slice->load(nifti);
-        if(nifti.nif_header.srow_x[0] < 0)
-        {
-            if(nifti.nif_header.srow_y[1] > 0)
-                image::flip_y(new_slice->source_images);
-        }
-        else
-            image::flip_xy(new_slice->source_images);
-
+        new_slice->loadLPS(nifti);
         std::vector<float> t(nifti.get_transformation(),
                              nifti.get_transformation()+12),inv_trans(16);
         convert.resize(16);
@@ -1712,16 +1704,7 @@ bool GLWidget::addSlices(QStringList filenames)
             else
             {
                 if(files.size() == 1 && nifti.load_from_file(files[0]))
-                {
-                    new_slice->load(nifti);
-                    if(nifti.nif_header.srow_x[0] < 0)
-                    {
-                        if(nifti.nif_header.srow_y[1] > 0)
-                            image::flip_y(new_slice->source_images);
-                    }
-                    else
-                        image::flip_xy(new_slice->source_images);
-                }
+                    new_slice->loadLPS(nifti);
                 else
                 {
                     QMessageBox::information(&cur_tracking_window,"DSI Studio","Cannot parse the images",0);

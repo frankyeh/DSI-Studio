@@ -153,15 +153,7 @@ int rec(int ac, char *av[])
             if(header.load_from_file(mask_file.c_str()))
             {
                 image::basic_image<unsigned char,3> external_mask;
-                header >> external_mask;                
-                if(header.nif_header.srow_x[0] < 0)
-                {
-                    if(header.nif_header.srow_y[1] > 0)
-                        image::flip_y(external_mask);
-                }
-                else
-                    image::flip_xy(external_mask);
-
+                header.toLPS(external_mask);
                 if(external_mask.geometry() != handle->voxel.dim)
                     std::cout << "In consistent the mask dimension...using default mask" << std::endl;
                 else

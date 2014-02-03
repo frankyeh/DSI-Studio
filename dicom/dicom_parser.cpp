@@ -117,31 +117,13 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
     {
         gz_nifti grad_header;
         if(grad_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").toLocal8Bit().begin()))
-        {
-            grad_header >> grad_dev;
-            if(grad_header.nif_header.srow_x[0] < 0)
-            {
-                if(grad_header.nif_header.srow_y[1] > 0)
-                    image::flip_y(grad_dev);
-            }
-            else
-                image::flip_xy(grad_dev);
-        }
+            grad_header.toLPS(grad_dev);
     }
     if(QFileInfo(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").exists())
     {
         gz_nifti mask_header;
         if(mask_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").toLocal8Bit().begin()))
-        {
-            mask_header >> mask;
-            if(mask_header.nif_header.srow_x[0] < 0)
-            {
-                if(mask_header.nif_header.srow_y[1] > 0)
-                    image::flip_y(mask);
-            }
-            else
-                image::flip_xy(mask);
-        }
+            mask_header.toLPS(mask);
     }
     {
         float vs[4];
@@ -149,16 +131,8 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
         for(unsigned int index = 0;check_prog(index,analyze_header.dim(4));++index)
         {
             std::auto_ptr<DwiHeader> new_file(new DwiHeader);
-            analyze_header >> new_file->image;
+            analyze_header.toLPS(new_file->image);
             image::lower_threshold(new_file->image,0);
-            if(analyze_header.nif_header.srow_x[0] < 0)
-            {
-                if(analyze_header.nif_header.srow_y[1] > 0)
-                    image::flip_y(new_file->image);
-            }
-            else
-                image::flip_xy(new_file->image);
-
             new_file->file_name = file_name;
             std::ostringstream out;
             out << index;
