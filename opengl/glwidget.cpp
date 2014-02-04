@@ -1688,23 +1688,19 @@ bool GLWidget::addSlices(QStringList filenames)
     }
     else
     {
-        image::io::bruker_2dseq bruker;
-        if(filenames.size() == 1 && QFileInfo(filenames[0]).fileName() == "2dseq" &&
-                bruker.load_from_file(filenames[0].toLocal8Bit().begin()))
-        {
-            new_slice->load(bruker);
-        }
+        if(files.size() == 1 && nifti.load_from_file(files[0]))
+            new_slice->loadLPS(nifti);
         else
         {
-            image::io::volume volume;
-            if(volume.load_from_files(files,files.size()))
-            {
-                new_slice->load(volume);
-            }
+            image::io::bruker_2dseq bruker;
+            if(filenames.size() == 1 && QFileInfo(filenames[0]).fileName() == "2dseq" &&
+                    bruker.load_from_file(filenames[0].toLocal8Bit().begin()))
+                new_slice->load(bruker);
             else
             {
-                if(files.size() == 1 && nifti.load_from_file(files[0]))
-                    new_slice->loadLPS(nifti);
+                image::io::volume volume;
+                if(volume.load_from_files(files,files.size()))
+                    new_slice->load(volume);
                 else
                 {
                     QMessageBox::information(&cur_tracking_window,"DSI Studio","Cannot parse the images",0);
