@@ -630,7 +630,7 @@ void dicom_parser::on_load_bval_clicked()
             this,
             "Open bval",
             QFileInfo(ui->SrcName->text()).absolutePath(),
-            "b-value file (bval *.txt);;All files (*)" );
+            "b-value file (bval *.txt *.bvals);;All files (*)" );
     if(filename.isEmpty())
         return;
     std::ifstream in(filename.toLocal8Bit().begin());
@@ -652,7 +652,7 @@ void dicom_parser::on_load_bvec_clicked()
             this,
             "Open bvec",
             QFileInfo(ui->SrcName->text()).absolutePath(),
-            "b-vector file (bvec *.txt);;All files (*)" );
+            "b-vector file (bvec *.txt *.bvecs);;All files (*)" );
     if(filename.isEmpty())
         return;
     std::ifstream in(filename.toLocal8Bit().begin());

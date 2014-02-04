@@ -113,13 +113,7 @@ public:
             image::basic_image<float,2> buf;
             image::reslicing(fib_data.view_item[view_index].image_data, buf, dim, pos);
             show_image.resize(buf.geometry());
-            float max_value = fib_data.view_item[view_index].max_value;
-            float min_value = fib_data.view_item[view_index].min_value;
-            float range = (max_value-min_value);
-            if(range + 1.0 == 1.0)
-                range = 1.0;
-
-            buf += offset-min_value;
+            buf += offset-fib_data.view_item[view_index].min_value;
             if(contrast != 0.0)
                 buf *= 255.99/contrast;
             image::upper_lower_threshold(buf,(float)0.0,(float)255.0);

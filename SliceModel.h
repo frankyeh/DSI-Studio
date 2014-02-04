@@ -16,6 +16,7 @@ public:
         image::vector<3,float>center_point;
         SliceModel(void);
 public:
+        virtual float get_value_range(void) const = 0;
         virtual void get_slice(image::color_image& image,float contrast,float offset) const = 0;
         virtual image::const_pointer_image<float, 3> get_source(void) const = 0;
 public:
@@ -108,6 +109,7 @@ public:
         overlay_name = overlay_name_;
     }
 public:
+    float get_value_range(void) const;
     void get_slice(image::color_image& image,float contrast,float offset) const;
     image::const_pointer_image<float, 3> get_source(void) const{return source_images;}
     void get_mosaic(image::color_image& image,
@@ -138,6 +140,7 @@ public:
     }
     void init(void);
 public:
+    float get_value_range(void) const;
     void get_slice(image::color_image& image,float contrast,float offset) const;
     image::const_pointer_image<float, 3> get_source(void) const  {return source_images;}
 };

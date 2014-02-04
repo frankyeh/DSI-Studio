@@ -30,6 +30,12 @@ FibSliceModel::FibSliceModel(ODFModel* handle_):handle(handle_)
     //loadImage(fib_data.fib.fa[0],false);
 }
 // ---------------------------------------------------------------------------
+float FibSliceModel::get_value_range(void) const
+{
+    std::pair<float,float> value = image::min_max_value(source_images.begin(),source_images.end());
+    return value.second-value.first;
+}
+// ---------------------------------------------------------------------------
 void FibSliceModel::get_slice(image::color_image& show_image,float contrast,float offset) const
 {
     handle->get_slice(view_name,overlay_name, cur_dim, slice_pos[cur_dim],show_image,contrast,offset);
@@ -68,13 +74,20 @@ void CustomSliceModel::init(void)
         scale = 255.0/scale;
 }
 // ---------------------------------------------------------------------------
+float CustomSliceModel::get_value_range(void) const
+{
+    std::pair<float,float> value = image::min_max_value(source_images.begin(),source_images.end());
+    return value.second-value.first;
+}
+// ---------------------------------------------------------------------------
 void CustomSliceModel::get_slice(image::color_image& show_image,float contrast,float offset) const
 {
     image::basic_image<float,2> buf;
     image::reslicing(source_images, buf, cur_dim, slice_pos[cur_dim]);
     show_image.resize(buf.geometry());
-    buf += offset*(max_value-min_value)-min_value;
-    buf *= scale*contrast;
+    buf += offset-min_value;
+    if(contrast != 0.0)
+        buf *= 255.99/contrast;
     image::upper_lower_threshold(buf,(float)0.0,(float)255.0);
     std::copy(buf.begin(),buf.end(),show_image.begin());
 }
