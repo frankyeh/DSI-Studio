@@ -21,7 +21,8 @@ struct TrackVis
     char scalar_name[10][20];//Name of each scalar. Can not be longer than 20 characters each. Can only store up to 10 names.
     short int n_properties	;//Number of properties saved at each track.
     char property_name[10][20];//Name of each property. Can not be longer than 20 characters each. Can only store up to 10 names.
-    char reserved[508];//Reserved space for future version.
+    float vox_to_ras[4][4];
+    char reserved[444];//Reserved space for future version.
     char voxel_order[4];//Storing order of the original image data. Explained here.
     char pad2[4];//Paddings.
     float image_orientation_patient[6];//Image orientation of the original image. As defined in the DICOM header.
@@ -46,6 +47,7 @@ struct TrackVis
         std::fill((char*)scalar_name,(char*)scalar_name+200,0);
         n_properties = 0;
         std::fill((char*)property_name,(char*)property_name+200,0);
+        std::fill((float*)vox_to_ras,(float*)vox_to_ras+16,(float)0.0);
         std::fill(reserved,reserved+sizeof(reserved),0);
         voxel_order[0] = 'L';
         voxel_order[1] = 'P';
@@ -61,7 +63,7 @@ struct TrackVis
         std::fill(pad1,pad1+2,0);
         std::fill(invert,invert+6,0);
         n_count = 0;
-        version = 1;
+        version = 2;
         hdr_size = 1000;
     }
 };
