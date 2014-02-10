@@ -1671,18 +1671,6 @@ bool GLWidget::addSlices(QStringList filenames)
         convert.resize(16);
         t.resize(16);
         t[15] = 1.0;
-        if(nifti.nif_header.srow_x[0] < 0 || !nifti.is_nii)
-        {
-            t[7] += t[5]*(nifti.height()-1);
-            t[5] = -t[5];
-        }
-        else
-        {
-            t[3] += t[0]*(nifti.width()-1);
-            t[0] = -t[0];
-            t[7] += t[5]*(nifti.height()-1);
-            t[5] = -t[5];
-        }
         image::matrix::inverse(cur_tracking_window.handle->fib_data.trans_to_mni.begin(),inv_trans.begin(),image::dim<4,4>());
         image::matrix::product(inv_trans.begin(),t.begin(),convert.begin(),image::dim<4,4>(),image::dim<4,4>());
     }
