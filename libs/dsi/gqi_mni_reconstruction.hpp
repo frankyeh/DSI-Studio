@@ -11,6 +11,21 @@
 
 extern fa_template fa_template_imp;
 
+struct terminated_class{
+    unsigned int total;
+    unsigned int now;
+    terminated_class(int total_):total(total_),now(0){}
+    bool operator!()
+    {
+        return check_prog(std::min(now++,total-1),total);
+    }
+    ~terminated_class()
+    {
+        check_prog(total,total);
+    }
+};
+
+
 class DWINormalization  : public BaseProcess
 {
 protected:
@@ -79,8 +94,6 @@ public:
 
 
 
-        bool terminated = false;
-        begin_prog("registration");
         if(export_intermediate)
         {
             VG.save_to_file<image::io::nifti>("VG.nii");
@@ -91,9 +104,9 @@ public:
             affine = voxel.qsdr_trans;
         else
         {
-            check_prog(0,3);
+            begin_prog("linear registration");
+            terminated_class terminated(256);
             image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::mutual_information(),terminated);
-            check_prog(1,3);
             affine = image::transformation_matrix<3,float>(arg_min,VF.geometry(),VG.geometry());
             affine.inverse();
         }
@@ -104,7 +117,8 @@ public:
             VFF.save_to_file<image::io::nifti>("VFF.nii");
 
         {
-            check_prog(2,3);
+            begin_prog("normalization");
+            terminated_class terminated(16);
             switch(voxel.reg_method)
             {
                 case 0:
@@ -113,23 +127,23 @@ public:
                 break;
                 case 1:
                     mni.reset(new image::reg::bfnorm_mapping<double,3>(VG.geometry(),image::geometry<3>(12,14,12)));
-                    image::reg::bfnorm(VG,VFF,*mni.get(),terminated,4.0,8);
+                    image::reg::bfnorm(VG,VFF,*mni.get(),terminated);
                 break;
             }
-            check_prog(3,3);
-            //calculate the goodness of fit
+        }
+        {
+            begin_prog("estimating goodness of fit");
+            check_prog(0,1);
             image::basic_image<float,3> y(VG.geometry());
             image::resample(VFF,y,*mni.get());
             if(export_intermediate)
                 y.save_to_file<image::io::nifti>("nVFF.nii");
-
             R2 = image::correlation(VG.begin(),VG.end(),y.begin());
             R2 *= R2;
             std::cout << "R2 = " << R2 << std::endl;
+            check_prog(1,1);
         }
 
-
-        check_prog(2,2);
 
 
         // setup output bounding box
