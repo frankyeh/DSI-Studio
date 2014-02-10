@@ -38,10 +38,13 @@ int src(int ac, char *av[])
     boost::ptr_vector<DwiHeader> dwi_files;
     QStringList file_list;
     if(ext ==".nii" || ext == ".dcm" || ext == "dseq" || ext == "i.gz")
+    {
+        std::cout << "image=" << source.c_str() << std::endl;
         file_list << source.c_str();
+    }
     else
     {
-        // load directory
+        std::cout << "load files in directory " << source.c_str() << std::endl;
         QDir directory = QString(source.c_str());
         if(vm.count("recursive"))
         {
@@ -104,7 +107,7 @@ int src(int ac, char *av[])
         std::cout << "No file readed. Abort." << std::endl;
         return 1;
     }
-    std::cout << "Output src" << std::endl;
+    std::cout << "Output src " << vm["output"].as<std::string>().c_str() << std::endl;
     DwiHeader::output_src(vm["output"].as<std::string>().c_str(),dwi_files,false,false);
     return 0;
 }
