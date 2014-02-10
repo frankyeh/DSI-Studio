@@ -93,6 +93,7 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
     gz_nifti analyze_header;
     if(!analyze_header.load_from_file(file_name))
         return false;
+    std::cout << "loading 4d nifti" << std::endl;
     std::vector<float> bvals,bvecs;
     if(QFileInfo(QFileInfo(file_name).absolutePath() + "/bvals").exists() &&
             QFileInfo(QFileInfo(file_name).absolutePath() + "/bvecs").exists())
@@ -117,13 +118,19 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
     {
         gz_nifti grad_header;
         if(grad_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").toLocal8Bit().begin()))
+        {
             grad_header.toLPS(grad_dev);
+            std::cout << "grad_dev used" << std::endl;
+        }
     }
     if(QFileInfo(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").exists())
     {
         gz_nifti mask_header;
         if(mask_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").toLocal8Bit().begin()))
+        {
             mask_header.toLPS(mask);
+            std::cout << "mask used" << std::endl;
+        }
     }
     {
         float vs[4];
@@ -131,7 +138,7 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
         for(unsigned int index = 0;check_prog(index,analyze_header.dim(4));++index)
         {
             std::auto_ptr<DwiHeader> new_file(new DwiHeader);
-            analyze_header.toLPS(new_file->image);
+            analyze_header.toLPS(new_file->image,false);
             image::lower_threshold(new_file->image,0);
             new_file->file_name = file_name;
             std::ostringstream out;
