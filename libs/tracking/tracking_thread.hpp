@@ -232,8 +232,7 @@ public:
             threads->join_all();
         }
         else
-            threads->add_thread(new boost::thread(&ThreadData::run_thread,this,
-                        new_method(fib),thread_count,thread_count-1,termination_count-total_run_count));
+            threads->add_thread(new boost::thread(&ThreadData::run_thread,this,new_method(fib),thread_count,thread_count-1,termination_count-total_run_count));
 
     }
 };

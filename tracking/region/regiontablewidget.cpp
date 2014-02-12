@@ -321,9 +321,9 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     {
         if(from.geometry() == cur_tracking_window.glWidget->other_slices[index].source_images.geometry())
         {
-            const float* buf = cur_tracking_window.glWidget->mi3s[index].get();
             convert.resize(16);
-            image::create_affine_transformation_matrix(buf, buf + 9,convert.begin(), image::vdim<3>());
+            image::matrix::inverse(cur_tracking_window.glWidget->transform[index].begin(),
+                                   convert.begin(),image::dim<4,4>());
             break;
         }
     }
