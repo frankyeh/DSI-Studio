@@ -147,7 +147,7 @@ int ana(int ac, char *av[])
                 image::vector<3,float> pos = std::accumulate(cur_region.begin(),cur_region.end(),image::vector<3,float>(0,0,0));
                 pos /= cur_region.size();
                 std::ostringstream out;
-                out << "region" << value_map[value];
+                out << "region" << value;
                 region_table[pos[0] > (geometry[0] >> 1) ? pos[1]-geometry[1]:geometry[1]-pos[1]] =
                         std::make_pair(cur_region,out.str());
             }
