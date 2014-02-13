@@ -54,6 +54,7 @@ int ana(int ac, char *av[])
             return 0;
         }
     }
+    bool is_qsdr = !handle->fib_data.trans_to_mni.empty();
     image::geometry<3> geometry = handle->fib_data.dim;
     TractModel tract_model(handle.get());
     float threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(geometry,handle->fib_data.fib.fa[0]));
@@ -73,6 +74,8 @@ int ana(int ac, char *av[])
             std::cout << "Cannot open file " << file_name << std::endl;
             return 0;
         }
+        std::cout << file_name << " loaded" << std::endl;
+
     }
     if(vm.count("export") && vm["export"].as<std::string>() == std::string("connectivity"))
     {
@@ -82,18 +85,35 @@ int ana(int ac, char *av[])
             return 0;
         }
         gz_nifti header;
+        std::cout << "loading " << vm["roi"].as<std::string>() << std::endl;
         if (!header.load_from_file(vm["roi"].as<std::string>()))
         {
             std::cout << "Cannot open nifti file " << vm["roi"].as<std::string>() << std::endl;
             return 0;
         }
-        std::cout << file_name << " loaded" << std::endl;
+        std::cout << "ROI loaded" << std::endl;
         image::basic_image<unsigned int, 3> from;
         header.toLPS(from);
+        std::vector<float> convert;
         if(from.geometry() != geometry)
         {
-            std::cout << "The ROI needs to be in the diffusion space." << std::endl;
-            return 0;
+            if(is_qsdr)
+            {
+                std::vector<float> t(header.get_transformation(),
+                                     header.get_transformation()+12),inv_trans(16);
+                convert.resize(16);
+                t.resize(16);
+                t[15] = 1.0;
+                image::matrix::inverse(t.begin(),inv_trans.begin(),image::dim<4,4>());
+                image::matrix::product(inv_trans.begin(),
+                                       handle->fib_data.trans_to_mni.begin(),
+                                       convert.begin(),image::dim<4,4>(),image::dim<4,4>());
+            }
+            else
+            {
+                std::cout << "The ROI needs to be in the diffusion space." << std::endl;
+                return 0;
+            }
         }
         std::vector<unsigned char> value_map(std::numeric_limits<unsigned short>::max());
         unsigned int max_value = 0;
@@ -119,17 +139,22 @@ int ana(int ac, char *av[])
                     if(from[i] == value)
                         mask[i] = 1;
                 ROIRegion region(geometry,handle->fib_data.vs);
-                region.LoadFromBuffer(mask);
+                if(convert.empty())
+                    region.LoadFromBuffer(mask);
+                else
+                    region.LoadFromBuffer(mask,convert);
                 const std::vector<image::vector<3,short> >& cur_region = region.get();
                 image::vector<3,float> pos = std::accumulate(cur_region.begin(),cur_region.end(),image::vector<3,float>(0,0,0));
                 pos /= cur_region.size();
                 std::ostringstream out;
-                out << value_map[value];
+                out << "region" << value_map[value];
                 region_table[pos[0] > (geometry[0] >> 1) ? pos[1]-geometry[1]:geometry[1]-pos[1]] =
                         std::make_pair(cur_region,out.str());
             }
-
+        std::cout << "total number of regions=" << region_table.size() << std::endl;
+        std::cout << "total number of tracts=" << tract_model.get_tracts().size() << std::endl;
         data.set_regions(region_table);
+        std::cout << "calculating connectivity matrix..." << std::endl;
         data.calculate(tract_model);
         std::string file_name_stat(file_name);
         file_name_stat += ".connectivity.mat";

@@ -1292,11 +1292,14 @@ void TractModel::get_connectivity_matrix(const std::vector<std::vector<image::ve
         std::vector<unsigned char> has_region(regions.size());
         for(unsigned int ptr = 0;ptr < tract_data[index].size();ptr += 3)
         {
-            unsigned int pos = image::pixel_index<3>(std::floor(tract_data[index][ptr]+0.5),
-                                                     std::floor(tract_data[index][ptr+1]+0.5),
-                                                     std::floor(tract_data[index][ptr+2]+0.5),geometry).index();
-            for(unsigned int j = 0;j < region_map[pos].size();++j)
-                has_region[region_map[pos][j]] = 1;
+            image::pixel_index<3> pos(std::floor(tract_data[index][ptr]+0.5),
+                                        std::floor(tract_data[index][ptr+1]+0.5),
+                                        std::floor(tract_data[index][ptr+2]+0.5),geometry);
+            if(!geometry.is_valid(pos))
+                continue;
+            unsigned int pos_index = pos.index();
+            for(unsigned int j = 0;j < region_map[pos_index].size();++j)
+                has_region[region_map[pos_index][j]] = 1;
         }
         std::vector<unsigned int> region_list;
         for(unsigned int i = 0;i < has_region.size();++i)
