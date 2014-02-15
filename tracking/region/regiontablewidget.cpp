@@ -329,7 +329,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     }
 
     if(from.geometry() != cur_tracking_window.slice.geometry &&
-       cur_tracking_window.is_qsdr && convert.empty())// use transformation information
+       !cur_tracking_window.handle->fib_data.trans_to_mni.empty() && convert.empty())// use transformation information
     {
         QMessageBox::information(this,"Warning","The nii file has different image dimension. Transformation will be applied to load the region",0);
         std::vector<float> t(header.get_transformation(),
