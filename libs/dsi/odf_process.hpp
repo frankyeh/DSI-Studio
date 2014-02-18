@@ -58,7 +58,7 @@ public:
             unsigned int from = shell[shell_index];
             unsigned int to = (shell_index + 1 == shell.size() ? b_count:shell[shell_index+1]);
             unsigned int num = to-from;
-            // if there is b0, average them
+            // if b0
             if(shell_index == 0 && voxel.bvalues.front() < 100)
             {
                 trans.resize(num*b_count);
@@ -68,7 +68,6 @@ public:
                 for(unsigned int index = 0;index < num;++index)
                     trans[index+index*b_count] = weighting;
                 total_signals += num;
-
                 continue;
             }
 

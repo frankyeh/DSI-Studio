@@ -77,6 +77,10 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui->QBI->setChecked(true);
         on_QBI_toggled(true);
         break;
+    case 6:
+        ui->HARDI->setChecked(true);
+        on_HARDI_toggled(true);
+        break;
     case 7:
         ui->QDif->setChecked(true);
         on_QDif_toggled(true);
@@ -114,7 +118,8 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->output_mapping->setChecked(settings.value("output_mapping",0).toInt());
     ui->balance_scheme->setChecked(settings.value("balance_scheme",0).toInt());
 
-
+    ui->hardi_bvalue->setValue(settings.value("hardi_bvalue",3000).toDouble());
+    ui->hardi_reg->setValue(settings.value("hardi_reg",0.05).toDouble());
 
 
     on_odf_sharpening_currentIndexChanged(ui->odf_sharpening->currentIndex());
@@ -392,6 +397,17 @@ void reconstruction_window::on_doDTI_clicked()
             doReconstruction(3,index+1 == filenames.size());
         }
         else
+        if(ui->HARDI->isChecked())
+        {
+            params[0] = ui->diffusion_sampling->value();
+            params[1] = ui->hardi_bvalue->value();
+            params[2] = ui->hardi_reg->value();
+            settings.setValue("rec_gqi_sampling",ui->diffusion_sampling->value());
+            settings.setValue("hardi_bvalue",ui->hardi_bvalue->value());
+            settings.setValue("hardi_reg",ui->hardi_reg->value());
+            doReconstruction(6,index+1 == filenames.size());
+        }
+        else
         if(ui->GQI->isChecked() || ui->QDif->isChecked())
         {
             params[0] = ui->diffusion_sampling->value();
@@ -423,6 +439,8 @@ void reconstruction_window::on_DTI_toggled(bool checked)
     ui->output_mapping->setVisible(!checked);
     ui->output_jacobian->setVisible(!checked);
     ui->RecordODF->setVisible(!checked);
+
+    ui->hardi_param->setVisible(!checked);
 }
 
 void reconstruction_window::on_DSI_toggled(bool checked)
@@ -438,6 +456,8 @@ void reconstruction_window::on_DSI_toggled(bool checked)
     ui->output_mapping->setVisible(!checked);
     ui->output_jacobian->setVisible(!checked);
     ui->RecordODF->setVisible(checked);
+
+    ui->hardi_param->setVisible(!checked);
 }
 
 void reconstruction_window::on_QBI_toggled(bool checked)
@@ -453,6 +473,8 @@ void reconstruction_window::on_QBI_toggled(bool checked)
     ui->output_mapping->setVisible(!checked);
     ui->output_jacobian->setVisible(!checked);
     ui->RecordODF->setVisible(checked);
+
+    ui->hardi_param->setVisible(!checked);
 }
 
 void reconstruction_window::on_GQI_toggled(bool checked)
@@ -468,7 +490,26 @@ void reconstruction_window::on_GQI_toggled(bool checked)
     ui->output_mapping->setVisible(!checked);
     ui->output_jacobian->setVisible(!checked);
     ui->RecordODF->setVisible(checked);
+
+    ui->hardi_param->setVisible(!checked);
 }
+void reconstruction_window::on_HARDI_toggled(bool checked)
+{
+    ui->ResolutionBox->setVisible(!checked);
+    ui->ODFSharpening->setVisible(!checked);
+    ui->DSIOption_2->setVisible(!checked);
+    ui->QBIOption_2->setVisible(!checked);
+    ui->GQIOption_2->setVisible(checked);
+
+    ui->AdvancedOptions->setVisible(checked);
+
+    ui->output_mapping->setVisible(!checked);
+    ui->output_jacobian->setVisible(!checked);
+    ui->RecordODF->setVisible(!checked);
+
+    ui->hardi_param->setVisible(checked);
+}
+
 
 void reconstruction_window::on_QDif_toggled(bool checked)
 {
@@ -483,6 +524,8 @@ void reconstruction_window::on_QDif_toggled(bool checked)
     ui->output_mapping->setVisible(checked);
     ui->output_jacobian->setVisible(checked);
     ui->RecordODF->setVisible(checked);
+
+    ui->hardi_param->setVisible(!checked);
 }
 
 
@@ -706,3 +749,4 @@ void reconstruction_window::on_actionRotate_triggered()
 {
 
 }
+

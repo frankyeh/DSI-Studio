@@ -82,6 +82,7 @@ private slots:
     void on_actionFlip_xz_triggered();
     void on_actionFlip_yz_triggered();
     void on_actionRotate_triggered();
+    void on_HARDI_toggled(bool checked);
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

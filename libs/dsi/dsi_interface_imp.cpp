@@ -72,16 +72,20 @@ typedef odf_reco_type<boost::mpl::vector<
 
 
 typedef odf_reco_type<boost::mpl::vector<
-    CorrectB0,
     BalanceScheme,
     QSpace2Odf
 > >::type gqi_process;
 
 typedef boost::mpl::vector<
     ReadDWIData,
-    CorrectB0,
     QSpaceSpectral
 > gqi_spectral_process;
+
+typedef boost::mpl::vector<
+    ReadDWIData,
+    BalanceScheme,
+    SchemeConverter
+> hardi_convert_process;
 
 // for ODF deconvolution
 typedef estimation_type<boost::mpl::vector<
@@ -103,7 +107,6 @@ typedef estimation_type<boost::mpl::vector<
 // for ODF deconvolution
 typedef boost::mpl::vector<
     ReadDWIData,
-    CorrectB0,
     BalanceScheme,
     QSpace2Odf,
     DetermineFiberDirections,
@@ -234,13 +237,13 @@ extern "C"
             if (!image_model->reconstruct<gqi_process>(out.str()))
                 return "reconstruction canceled";
             break;
-            /*
         case 6:
-            out << ".gqi.hardi"<< param_values[0] << ".src";
-            if (!image_model->reconstruct<gqi_adaptor_process>(out.str()))
+            out << ".hardi."<< param_values[0]
+                << ".b" << param_values[1]
+                << ".reg" << param_values[2] << ".src.gz";
+            if (!image_model->reconstruct<hardi_convert_process>(out.str()))
                 return "reconstruction canceled";
             break;
-            */
         case 7:
             // run gqi to get the spin quantity
             if (!image_model->reconstruct<gqi_estimate_response_function>())
@@ -259,6 +262,11 @@ extern "C"
             break;
         }
         output_name = image_model->file_name + out.str();
+    }
+    catch (std::exception& e)
+    {
+        output_name = e.what();
+        return output_name.c_str();
     }
     catch (...)
     {
