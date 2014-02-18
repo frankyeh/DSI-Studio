@@ -88,28 +88,69 @@ bool load_dicom_multi_frame(const char* file_name,boost::ptr_vector<DwiHeader>& 
     return true;
 }
 
+
+void load_bvec(const char* file_name,std::vector<double>& b_table)
+{
+    std::ifstream in(file_name);
+    if(!in)
+        return;
+    std::string line;
+    unsigned int total_line = 0;
+    while(std::getline(in,line))
+    {
+        std::istringstream read_line(line);
+        std::copy(std::istream_iterator<double>(read_line),
+                  std::istream_iterator<double>(),
+                  std::back_inserter(b_table));
+        ++total_line;
+    }
+    if(total_line == 3)
+        image::matrix::transpose(b_table.begin(),image::dyndim(3,b_table.size()/3));
+}
+void load_bval(const char* file_name,std::vector<double>& bval)
+{
+    std::ifstream in(file_name);
+    if(!in)
+        return;
+    std::copy(std::istream_iterator<double>(in),
+              std::istream_iterator<double>(),
+              std::back_inserter(bval));
+}
+
 bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
 {
     gz_nifti analyze_header;
     if(!analyze_header.load_from_file(file_name))
         return false;
     std::cout << "loading 4d nifti" << std::endl;
-    std::vector<float> bvals,bvecs;
-    if(QFileInfo(QFileInfo(file_name).absolutePath() + "/bvals").exists() &&
-            QFileInfo(QFileInfo(file_name).absolutePath() + "/bvecs").exists())
+
+
+    std::vector<double> bvals,bvecs;
     {
-        std::ifstream in1(QString(QFileInfo(file_name).absolutePath() + "/bvals").toLocal8Bit().begin());
-        std::ifstream in2(QString(QFileInfo(file_name).absolutePath() + "/bvecs").toLocal8Bit().begin());
-        std::copy(std::istream_iterator<float>(in1),
-                  std::istream_iterator<float>(),std::back_inserter(bvals));
-        std::copy(std::istream_iterator<float>(in2),
-                  std::istream_iterator<float>(),std::back_inserter(bvecs));
-        if(analyze_header.dim(4) != bvals.size() ||
-           bvals.size()*3 != bvecs.size())
+        QString bval_name,bvec_name;
+        bval_name = QFileInfo(file_name).absolutePath() + "/bvals";
+        if(!QFileInfo(bval_name).exists())
+            bval_name = QFileInfo(file_name).absolutePath() + "/bvals.txt";
+
+        bvec_name = QFileInfo(file_name).absolutePath() + "/bvecs";
+        if(!QFileInfo(bvec_name).exists())
+            bvec_name = QFileInfo(file_name).absolutePath() + "/bvecs.txt";
+
+
+        if(QFileInfo(bval_name).exists() && QFileInfo(bvec_name).exists())
         {
-            bvals.clear();
-            bvecs.clear();
+            load_bval(bval_name.toLocal8Bit().begin(),bvals);
+            load_bvec(bvec_name.toLocal8Bit().begin(),bvecs);
+            if(analyze_header.dim(4) != bvals.size() ||
+               bvals.size()*3 != bvecs.size())
+            {
+                bvals.clear();
+                bvecs.clear();
+            }
+            else
+                std::cout << "bvals and bvecs loaded" << std::endl;
         }
+
     }
 
     image::basic_image<float,4> grad_dev;
@@ -149,9 +190,9 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
             if(!bvals.empty())
             {
                 new_file->bvalue = bvals[index];
-                new_file->bvec[0] = bvecs[index];
-                new_file->bvec[1] = -bvecs[index+bvals.size()];
-                new_file->bvec[2] = bvecs[index+bvals.size()+bvals.size()];
+                new_file->bvec[0] = bvecs[index*3];
+                new_file->bvec[1] = bvecs[index*3+1];
+                new_file->bvec[2] = bvecs[index*3+2];
                 new_file->bvec.normalize();
                 if(new_file->bvalue < 10)
                 {
@@ -640,13 +681,10 @@ void dicom_parser::on_load_bval_clicked()
             "b-value file (bval *.txt *.bvals);;All files (*)" );
     if(filename.isEmpty())
         return;
-    std::ifstream in(filename.toLocal8Bit().begin());
-    if(!in)
+    std::vector<double> bval;
+    load_bval(filename.toLocal8Bit().begin(),bval);
+    if(bval.empty())
         return;
-    std::vector<float> bval;
-    std::copy(std::istream_iterator<double>(in),
-              std::istream_iterator<double>(),
-              std::back_inserter(bval));
     for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
         ui->tableWidget->item(index,1)->setText(QString::number(bval[index]));
 }
@@ -662,22 +700,10 @@ void dicom_parser::on_load_bvec_clicked()
             "b-vector file (bvec *.txt *.bvecs);;All files (*)" );
     if(filename.isEmpty())
         return;
-    std::ifstream in(filename.toLocal8Bit().begin());
-    if(!in)
-        return;
-    std::string line;
     std::vector<double> b_table;
-    unsigned int total_line = 0;
-    while(std::getline(in,line))
-    {
-        std::istringstream read_line(line);
-        std::copy(std::istream_iterator<double>(read_line),
-                  std::istream_iterator<double>(),
-                  std::back_inserter(b_table));
-        ++total_line;
-    }
-    if(total_line == 3)
-        image::matrix::transpose(b_table.begin(),image::dyndim(3,b_table.size()/3));
+    load_bvec(filename.toLocal8Bit().begin(),b_table);
+    if(b_table.empty())
+        return;
     for (unsigned int index = 0,b_index = 0;index < ui->tableWidget->rowCount();++index)
     {
         for(unsigned int j = 0;j < 3 && b_index < b_table.size();++j,++b_index)
