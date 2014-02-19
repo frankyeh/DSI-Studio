@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Fri Jan 31 14:51:44 2014
+** Created: Mon Feb 17 21:26:20 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -98,6 +98,7 @@ public:
     QRadioButton *DTI;
     QRadioButton *DSI;
     QRadioButton *QBI;
+    QRadioButton *HARDI;
     QRadioButton *GQI;
     QRadioButton *QDif;
     QGroupBox *DSIOption_2;
@@ -126,6 +127,14 @@ public:
     QHBoxLayout *horizontalLayout_8;
     QLabel *label_8;
     QSpinBox *mni_resolution;
+    QGroupBox *hardi_param;
+    QHBoxLayout *horizontalLayout_7;
+    QHBoxLayout *horizontalLayout_22;
+    QLabel *label_16;
+    QSpinBox *hardi_bvalue;
+    QHBoxLayout *horizontalLayout_23;
+    QLabel *label_17;
+    QDoubleSpinBox *hardi_reg;
     QHBoxLayout *horizontalLayout_19;
     QPushButton *AdvancedOptions;
     QSpacerItem *horizontalSpacer_6;
@@ -185,7 +194,7 @@ public:
     {
         if (reconstruction_window->objectName().isEmpty())
             reconstruction_window->setObjectName(QString::fromUtf8("reconstruction_window"));
-        reconstruction_window->resize(626, 480);
+        reconstruction_window->resize(669, 521);
         QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         sizePolicy.setHorizontalStretch(0);
         sizePolicy.setVerticalStretch(0);
@@ -227,7 +236,7 @@ public:
         toolBox->setObjectName(QString::fromUtf8("toolBox"));
         source_page = new QWidget();
         source_page->setObjectName(QString::fromUtf8("source_page"));
-        source_page->setGeometry(QRect(0, 0, 626, 393));
+        source_page->setGeometry(QRect(0, 0, 669, 434));
         horizontalLayout_21 = new QHBoxLayout(source_page);
         horizontalLayout_21->setObjectName(QString::fromUtf8("horizontalLayout_21"));
         splitter = new QSplitter(source_page);
@@ -325,7 +334,7 @@ public:
         toolBox->addItem(source_page, QString::fromUtf8("Source Images"));
         page_3 = new QWidget();
         page_3->setObjectName(QString::fromUtf8("page_3"));
-        page_3->setGeometry(QRect(0, 0, 534, 146));
+        page_3->setGeometry(QRect(0, 0, 669, 434));
         gridLayout_2 = new QGridLayout(page_3);
         gridLayout_2->setObjectName(QString::fromUtf8("gridLayout_2"));
         verticalLayout_5 = new QVBoxLayout();
@@ -402,7 +411,7 @@ public:
         toolBox->addItem(page_3, QString::fromUtf8("Step 1: setup brain mask"));
         page = new QWidget();
         page->setObjectName(QString::fromUtf8("page"));
-        page->setGeometry(QRect(0, 0, 599, 409));
+        page->setGeometry(QRect(0, 0, 652, 454));
         page->setMinimumSize(QSize(0, 0));
         verticalLayout_2 = new QVBoxLayout(page);
         verticalLayout_2->setSpacing(3);
@@ -428,6 +437,11 @@ public:
         QBI->setObjectName(QString::fromUtf8("QBI"));
 
         horizontalLayout_2->addWidget(QBI);
+
+        HARDI = new QRadioButton(groupBox);
+        HARDI->setObjectName(QString::fromUtf8("HARDI"));
+
+        horizontalLayout_2->addWidget(HARDI);
 
         GQI = new QRadioButton(groupBox);
         GQI->setObjectName(QString::fromUtf8("GQI"));
@@ -592,6 +606,54 @@ public:
 
 
         verticalLayout_2->addWidget(ResolutionBox);
+
+        hardi_param = new QGroupBox(page);
+        hardi_param->setObjectName(QString::fromUtf8("hardi_param"));
+        horizontalLayout_7 = new QHBoxLayout(hardi_param);
+        horizontalLayout_7->setObjectName(QString::fromUtf8("horizontalLayout_7"));
+        horizontalLayout_22 = new QHBoxLayout();
+        horizontalLayout_22->setObjectName(QString::fromUtf8("horizontalLayout_22"));
+        label_16 = new QLabel(hardi_param);
+        label_16->setObjectName(QString::fromUtf8("label_16"));
+
+        horizontalLayout_22->addWidget(label_16);
+
+        hardi_bvalue = new QSpinBox(hardi_param);
+        hardi_bvalue->setObjectName(QString::fromUtf8("hardi_bvalue"));
+        hardi_bvalue->setMaximumSize(QSize(75, 16777215));
+        hardi_bvalue->setMinimum(1000);
+        hardi_bvalue->setMaximum(8000);
+        hardi_bvalue->setSingleStep(500);
+        hardi_bvalue->setValue(3000);
+
+        horizontalLayout_22->addWidget(hardi_bvalue);
+
+
+        horizontalLayout_7->addLayout(horizontalLayout_22);
+
+        horizontalLayout_23 = new QHBoxLayout();
+        horizontalLayout_23->setObjectName(QString::fromUtf8("horizontalLayout_23"));
+        label_17 = new QLabel(hardi_param);
+        label_17->setObjectName(QString::fromUtf8("label_17"));
+
+        horizontalLayout_23->addWidget(label_17);
+
+        hardi_reg = new QDoubleSpinBox(hardi_param);
+        hardi_reg->setObjectName(QString::fromUtf8("hardi_reg"));
+        hardi_reg->setMaximumSize(QSize(75, 16777215));
+        hardi_reg->setDecimals(3);
+        hardi_reg->setMinimum(0.001);
+        hardi_reg->setMaximum(1);
+        hardi_reg->setSingleStep(0.01);
+        hardi_reg->setValue(0.05);
+
+        horizontalLayout_23->addWidget(hardi_reg);
+
+
+        horizontalLayout_7->addLayout(horizontalLayout_23);
+
+
+        verticalLayout_2->addWidget(hardi_param);
 
         horizontalLayout_19 = new QHBoxLayout();
         horizontalLayout_19->setObjectName(QString::fromUtf8("horizontalLayout_19"));
@@ -886,7 +948,7 @@ public:
         reconstruction_window->setCentralWidget(centralwidget);
         menuBar = new QMenuBar(reconstruction_window);
         menuBar->setObjectName(QString::fromUtf8("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 626, 21));
+        menuBar->setGeometry(QRect(0, 0, 669, 21));
         menuFile = new QMenu(menuBar);
         menuFile->setObjectName(QString::fromUtf8("menuFile"));
         menu_Edit = new QMenu(menuBar);
@@ -909,7 +971,7 @@ public:
 
         retranslateUi(reconstruction_window);
 
-        toolBox->setCurrentIndex(0);
+        toolBox->setCurrentIndex(2);
         toolBox->layout()->setSpacing(0);
         ODFDim->setCurrentIndex(3);
         ThreadCount->setCurrentIndex(3);
@@ -958,6 +1020,7 @@ public:
         DTI->setText(QApplication::translate("reconstruction_window", "DTI", 0, QApplication::UnicodeUTF8));
         DSI->setText(QApplication::translate("reconstruction_window", "DSI", 0, QApplication::UnicodeUTF8));
         QBI->setText(QApplication::translate("reconstruction_window", "QBI", 0, QApplication::UnicodeUTF8));
+        HARDI->setText(QApplication::translate("reconstruction_window", "Convert to HARDI", 0, QApplication::UnicodeUTF8));
         GQI->setText(QApplication::translate("reconstruction_window", "GQI", 0, QApplication::UnicodeUTF8));
         QDif->setText(QApplication::translate("reconstruction_window", "QSDR", 0, QApplication::UnicodeUTF8));
         label_5->setText(QApplication::translate("reconstruction_window", "DSI Hamming filter", 0, QApplication::UnicodeUTF8));
@@ -978,6 +1041,9 @@ public:
         );
         manual_reg->setText(QApplication::translate("reconstruction_window", "...", 0, QApplication::UnicodeUTF8));
         label_8->setText(QApplication::translate("reconstruction_window", "Output Resolution", 0, QApplication::UnicodeUTF8));
+        hardi_param->setTitle(QString());
+        label_16->setText(QApplication::translate("reconstruction_window", "Output b-value", 0, QApplication::UnicodeUTF8));
+        label_17->setText(QApplication::translate("reconstruction_window", "Regularization parameter", 0, QApplication::UnicodeUTF8));
         AdvancedOptions->setText(QApplication::translate("reconstruction_window", "Advanced Options >>", 0, QApplication::UnicodeUTF8));
         ODFSharpening->setTitle(QApplication::translate("reconstruction_window", "ODF Sharpening", 0, QApplication::UnicodeUTF8));
         odf_sharpening->clear();
