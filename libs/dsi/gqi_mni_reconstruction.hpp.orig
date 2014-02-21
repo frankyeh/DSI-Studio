@@ -1,6 +1,5 @@
 #ifndef MNI_RECONSTRUCTION_HPP
 #define MNI_RECONSTRUCTION_HPP
-#include <boost/thread.hpp>
 #include "gqi_process.hpp"
 #include "mapping/fa_template.hpp"
 #include "image/image.hpp"
@@ -12,14 +11,12 @@
 
 extern fa_template fa_template_imp;
 
-struct terminated_class {
+struct terminated_class{
     unsigned int total;
-    mutable unsigned int now;
-    mutable bool terminated;
-    terminated_class(int total_):total(total_),now(0),terminated(false){}
-    bool operator!() const
+    unsigned int now;
+    terminated_class(int total_):total(total_),now(0){}
+    bool operator!()
     {
-        terminated = prog_aborted();
         return check_prog(std::min(now++,total-1),total);
     }
     ~terminated_class()
@@ -61,8 +58,8 @@ public:
     virtual void init(Voxel& voxel)
     {
         if(voxel.vs[0] == 0.0 ||
-                voxel.vs[1] == 0.0 ||
-                voxel.vs[2] == 0.0)
+           voxel.vs[1] == 0.0 ||
+           voxel.vs[2] == 0.0)
             throw std::runtime_error("No spatial information found in src file. Recreate src file or contact developer for assistance");
         bool export_intermediate = false;
         begin_prog("normalization");
@@ -121,40 +118,21 @@ public:
 
         {
             begin_prog("normalization");
+            terminated_class terminated(16);
             switch(voxel.reg_method)
             {
-            case 0:
-                mni.reset(new image::reg::bfnorm_mapping<double,3>(VG.geometry(),image::geometry<3>(7,9,7)));
+                case 0:
+                    mni.reset(new image::reg::bfnorm_mapping<double,3>(VG.geometry(),image::geometry<3>(7,9,7)));
+                    image::reg::bfnorm(VG,VFF,*mni.get(),terminated);
                 break;
-            case 1:
-                mni.reset(new image::reg::bfnorm_mapping<double,3>(VG.geometry(),image::geometry<3>(12,14,12)));
-                break;
-            case 2:
-                mni.reset(new image::reg::bfnorm_mapping<double,3>(VG.geometry(),image::geometry<3>(16,19,14)));
+                case 1://20 minutes average
+                    mni.reset(new image::reg::bfnorm_mapping<double,3>(VG.geometry(),image::geometry<3>(12,14,12)));
+                    image::reg::bfnorm(VG,VFF,*mni.get(),terminated);
+                case 2:
+                    mni.reset(new image::reg::bfnorm_mapping<double,3>(VG.geometry(),image::geometry<3>(16,19,14)));
+                    image::reg::bfnorm(VG,VFF,*mni.get(),terminated);
                 break;
             }
-            // optimization
-            unsigned int thread_count = voxel.image_model->thread_count;
-            image::reg::bfnorm_mrqcof<image::basic_image<float,3>,double>
-                    bf_optimize(VG,VFF,*mni.get(),thread_count);
-
-            terminated_class terminated(16 + 16*VG.depth()/thread_count);
-            // image::reg::bfnorm(VG,VFF,*mni.get(),terminated);
-            for(int iter = 0; iter < 16 && !terminated; ++iter)
-            {
-
-                bf_optimize.start();
-                boost::thread_group threads;
-                for (unsigned int index = 1;index < thread_count;++index)
-                    threads.add_thread(new boost::thread(
-                        &image::reg::bfnorm_mrqcof<image::basic_image<float,3>,double>::run<bool>,
-                                           &bf_optimize,index,boost::ref(terminated.terminated)));
-                bf_optimize.run(0,terminated);
-                threads.join_all();
-                bf_optimize.end();
-            }
-            if(prog_aborted())
-                throw std::runtime_error("Reconstruction canceled");
         }
         {
             begin_prog("estimating goodness of fit");
@@ -216,7 +194,7 @@ public:
             voxel.dim = des_geo;
             voxel.image_model->mask.resize(des_geo);
             std::fill(voxel.image_model->mask.begin(),voxel.image_model->mask.end(),0);
-            for(image::pixel_index<3> index; index.is_valid(des_geo); index.next(des_geo))
+            for(image::pixel_index<3> index;index.is_valid(des_geo);index.next(des_geo))
             {
                 image::vector<3,float> mni_pos(index);
                 mni_pos *= voxel.param[1];
@@ -227,7 +205,7 @@ public:
                 mni_pos += 0.5;
                 mni_pos.floor();
                 if(fa_template_imp.I.geometry().is_valid(mni_pos) &&
-                        fa_template_imp.I.at(mni_pos[0],mni_pos[1],mni_pos[2]) > 0.0)
+                   fa_template_imp.I.at(mni_pos[0],mni_pos[1],mni_pos[2]) > 0.0)
                     voxel.image_model->mask[index.index()] = 1;
             }
         }
@@ -237,7 +215,7 @@ public:
 
         b0_index = -1;
         if(voxel.half_sphere)
-            for(unsigned int index = 0; index < voxel.bvalues.size(); ++index)
+            for(unsigned int index = 0;index < voxel.bvalues.size();++index)
                 if(voxel.bvalues[index] == 0)
                     b0_index = index;
 
@@ -330,7 +308,7 @@ public:
             */
 
             float grad_dev[9];
-            for(unsigned int i = 0; i < 9; ++i)
+            for(unsigned int i = 0;i < 9;++i)
                 trilinear_interpolation.estimate(voxel.grad_dev[i],grad_dev[i]);
             // this grad_dev matrix is rotated
             // add identity matrix
@@ -407,9 +385,9 @@ public:
     float angle_variance;
     double r2_base_function(double theta)
     {
-        if(std::abs(theta) < 0.000001)
-            return 1.0/3.0;
-        return (2*std::cos(theta)+(theta-2.0/theta)*std::sin(theta))/theta/theta;
+            if(std::abs(theta) < 0.000001)
+                    return 1.0/3.0;
+            return (2*std::cos(theta)+(theta-2.0/theta)*std::sin(theta))/theta/theta;
     }
 protected:
     std::vector<image::vector<3,double> > q_vectors_time;
@@ -443,7 +421,7 @@ public:
 
         }
         image::matrix::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
-                                      image::dyndim(data.odf.size(),data.space.size()));
+                                    image::dyndim(data.odf.size(),data.space.size()));
         std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 *= data.jdet);
 
     }

@@ -609,12 +609,17 @@
               <widget class="QComboBox" name="reg_method">
                <item>
                 <property name="text">
-                 <string>SPM norm 7-9-7</string>
+                 <string>norm  7-9-7</string>
                 </property>
                </item>
                <item>
                 <property name="text">
-                 <string>SPM norm 12-14-12</string>
+                 <string>norm 12-14-12</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>norm 16-19-14</string>
                 </property>
                </item>
               </widget>
