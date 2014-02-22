@@ -152,7 +152,16 @@ public:
                 bf_optimize.run(0,terminated);
                 if(thread_count > 1)
                     threads.join_all();
+
                 bf_optimize.end();
+                boost::thread_group threads2;
+                for (unsigned int index = 1;index < thread_count;++index)
+                        threads2.add_thread(new boost::thread(
+                            &image::reg::bfnorm_mrqcof<image::basic_image<float,3>,float>::run2,
+                                           &bf_optimize,index,40));
+                bf_optimize.run2(0,40);
+                if(thread_count > 1)
+                    threads2.join_all();
             }
             if(prog_aborted())
                 throw std::runtime_error("Reconstruction canceled");
