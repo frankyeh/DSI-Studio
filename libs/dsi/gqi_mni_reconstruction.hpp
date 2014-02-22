@@ -32,7 +32,7 @@ struct terminated_class {
 class DWINormalization  : public BaseProcess
 {
 protected:
-    std::auto_ptr<image::reg::bfnorm_mapping<double,3> > mni;
+    std::auto_ptr<image::reg::bfnorm_mapping<float,3> > mni;
     image::geometry<3> src_geo;
     image::geometry<3> des_geo;
     int b0_index;
@@ -46,7 +46,7 @@ protected:
     image::vector<3,int> bounding_box_lower;
     image::vector<3,int> bounding_box_upper;
     image::vector<3,int> des_offset;// = {6,7,11};	// the offset due to bounding box
-    image::vector<3,double> scale;
+    image::vector<3,float> scale;
     double trans_to_mni[16];
 protected:
     float voxel_volume_scale;
@@ -55,7 +55,7 @@ protected:
 protected:
     typedef image::const_pointer_image<unsigned short,3> point_image_type;
     std::vector<point_image_type> ptr_images;
-    std::vector<image::vector<3,double> > q_vectors_time;
+    std::vector<image::vector<3,float> > q_vectors_time;
 
 public:
     virtual void init(Voxel& voxel)
@@ -124,18 +124,18 @@ public:
             switch(voxel.reg_method)
             {
             case 0:
-                mni.reset(new image::reg::bfnorm_mapping<double,3>(VG.geometry(),image::geometry<3>(7,9,7)));
+                mni.reset(new image::reg::bfnorm_mapping<float,3>(VG.geometry(),image::geometry<3>(7,9,7)));
                 break;
             case 1:
-                mni.reset(new image::reg::bfnorm_mapping<double,3>(VG.geometry(),image::geometry<3>(12,14,12)));
+                mni.reset(new image::reg::bfnorm_mapping<float,3>(VG.geometry(),image::geometry<3>(14,18,14)));
                 break;
             case 2:
-                mni.reset(new image::reg::bfnorm_mapping<double,3>(VG.geometry(),image::geometry<3>(16,19,14)));
+                mni.reset(new image::reg::bfnorm_mapping<float,3>(VG.geometry(),image::geometry<3>(21,27,21)));
                 break;
             }
             // optimization
             unsigned int thread_count = voxel.image_model->thread_count;
-            image::reg::bfnorm_mrqcof<image::basic_image<float,3>,double>
+            image::reg::bfnorm_mrqcof<image::basic_image<float,3>,float>
                     bf_optimize(VG,VFF,*mni.get(),thread_count);
 
             terminated_class terminated(16 + 16*VG.depth()/thread_count);
@@ -146,11 +146,12 @@ public:
                 bf_optimize.start();
                 boost::thread_group threads;
                 for (unsigned int index = 1;index < thread_count;++index)
-                    threads.add_thread(new boost::thread(
-                        &image::reg::bfnorm_mrqcof<image::basic_image<float,3>,double>::run<bool>,
+                        threads.add_thread(new boost::thread(
+                            &image::reg::bfnorm_mrqcof<image::basic_image<float,3>,float>::run<bool>,
                                            &bf_optimize,index,boost::ref(terminated.terminated)));
                 bf_optimize.run(0,terminated);
-                threads.join_all();
+                if(thread_count > 1)
+                    threads.join_all();
                 bf_optimize.end();
             }
             if(prog_aborted())

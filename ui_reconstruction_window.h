@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Thu Feb 20 12:16:39 2014
+** Created: Fri Feb 21 17:53:50 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -1037,8 +1037,8 @@ public:
         reg_method->clear();
         reg_method->insertItems(0, QStringList()
          << QApplication::translate("reconstruction_window", "norm  7-9-7", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("reconstruction_window", "norm 12-14-12", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("reconstruction_window", "norm 16-19-14", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("reconstruction_window", "norm 14-18-14", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("reconstruction_window", "norm 21-27-21", 0, QApplication::UnicodeUTF8)
         );
         manual_reg->setText(QApplication::translate("reconstruction_window", "...", 0, QApplication::UnicodeUTF8));
         label_8->setText(QApplication::translate("reconstruction_window", "Output Resolution", 0, QApplication::UnicodeUTF8));
