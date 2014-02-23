@@ -357,15 +357,15 @@ void slice_view_scene::save_slice_as()
         {
             file.set_image_transformation(cur_tracking_window.handle->fib_data.trans_to_mni.begin());
             file << cur_tracking_window.handle->fib_data.view_item[index].image_data;
-            file.save_to_file(filename.toLocal8Bit().begin());
         }
         else
         {
             image::basic_image<float,3> buf(cur_tracking_window.handle->fib_data.view_item[index].image_data);
             image::flip_xy(buf);
             file << buf;
-            file.save_to_file(filename.toLocal8Bit().begin());
         }
+        file.save_to_file(filename.toLocal8Bit().begin());
+
     }
     if(QFileInfo(filename).completeSuffix().toLower() == "mat")
     {

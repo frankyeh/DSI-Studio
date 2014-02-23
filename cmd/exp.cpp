@@ -63,6 +63,9 @@ int exp(int ac, char *av[])
         std::cout << "Cannot find voxel_size matrix in the file" << file_name.c_str() <<std::endl;
         return 0;
     }
+    const float* trans = 0;
+    if(mat_reader.read("trans",row,col,trans))
+        std::cout << "Transformation matrix found." << std::endl;
 
     image::geometry<3> geo(dim_buf[0],dim_buf[1],dim_buf[2]);
     std::string export_option = vm["export"].as<std::string>();
@@ -110,8 +113,14 @@ int exp(int ac, char *av[])
                     if(fib.getFA(index,dir_index))
                         fibers[ptr] = fib.getDir(index,dir_index)[j];
             }
-            image::flip_xy(fibers);
             gz_nifti nifti_header;
+            if(trans) //QSDR condition
+            {
+                nifti_header.set_image_transformation(trans);
+                std::cout << "Output transformation matrix" << std::endl;
+            }
+            else
+                image::flip_xy(fibers);
             nifti_header << fibers;
             nifti_header.set_voxel_size(vs);
             nifti_header.save_to_file(file_name_stat.c_str());
@@ -131,8 +140,15 @@ int exp(int ac, char *av[])
             }
             image::basic_image<float,3> data(geo);
             std::copy(volume,volume+geo.size(),data.begin());
-            image::flip_xy(data);
             gz_nifti nifti_header;
+
+            if(trans) //QSDR condition
+            {
+                nifti_header.set_image_transformation(trans);
+                std::cout << "Output transformation matrix" << std::endl;
+            }
+            else
+                image::flip_xy(data);
             nifti_header << data;
             nifti_header.set_voxel_size(vs);
             nifti_header.save_to_file(file_name_stat.c_str());
