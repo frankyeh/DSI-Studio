@@ -132,7 +132,9 @@ public:
             track_buffer[buffer_back_pos+1] = position[1];
             track_buffer[buffer_back_pos+2] = position[2];
             buffer_back_pos += 3;
-			tracking(ProcessList());
+            if(roi_mgr.is_terminate_point(position))
+                break;
+            tracking(ProcessList());
 			// make sure that the length won't overflow
 			
 		}
@@ -161,7 +163,7 @@ public:
             track_buffer[buffer_front_pos+1] = position[1];
             track_buffer[buffer_front_pos+2] = position[2];
         }
-		while(1);
+        while(!roi_mgr.is_terminate_point(position));
 
         if(smoothing)
         {

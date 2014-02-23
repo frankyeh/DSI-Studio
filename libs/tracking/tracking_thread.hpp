@@ -175,10 +175,14 @@ public:
         case 2: //End
             roi_mgr.add_end_roi(dim,points);
                 break;
+        case 4: //Terminate
+            roi_mgr.add_terminate_roi(dim,points);
+                break;
         case 3: //seed
             for (unsigned int index = 0;index < points.size();++index)
                 seeds.push_back(points[index]);
             break;
+
         }
     }
     TrackingMethod* new_method(const fiber_orientations& fib)

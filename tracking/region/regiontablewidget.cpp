@@ -33,6 +33,7 @@ QWidget *ImageDelegate::createEditor(QWidget *parent,
         comboBox->addItem("ROA");
         comboBox->addItem("End");
         comboBox->addItem("Seed");
+        comboBox->addItem("Terminate");
         connect(comboBox, SIGNAL(activated(int)), this, SLOT(emitCommitData()));
         return comboBox;
     }
@@ -138,12 +139,10 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
     if(color == 0)
     {
         color = (int)ROIColor[regions_index].rgb();
-        if (feature != none_roi_id)
-        {
-            ++regions_index;
-            if (regions_index >= 15)
-                regions_index = 0;
-        }
+        ++regions_index;
+        if (regions_index >= 15)
+            regions_index = 0;
+
     }
     regions.push_back(new ROIRegion(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size));
 
@@ -698,9 +697,7 @@ void RegionTableWidget::setROIs(ThreadData* data)
     }
 
     for (unsigned int index = 0;index < regions.size();++index)
-        if (!regions[index].empty() &&
-                item(index,0)->checkState() == Qt::Checked &&
-                regions[index].regions_feature <= 3) // either roi roa end or seed
+        if (!regions[index].empty() && item(index,0)->checkState() == Qt::Checked)
             data->setRegions(cur_tracking_window.handle->fib_data.dim,regions[index].get(),
                              regions[index].regions_feature);
 }

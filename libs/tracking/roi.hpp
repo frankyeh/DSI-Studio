@@ -60,16 +60,18 @@ public:
 class RoiMgr{
 private:
 	boost::ptr_vector<Roi> inclusive;
-        boost::ptr_vector<Roi> end;
-        std::auto_ptr<Roi> exclusive;
+    boost::ptr_vector<Roi> end;
+    std::auto_ptr<Roi> exclusive;
+    std::auto_ptr<Roi> terminate;
 
 public:
 	void clear(void)
 	{
 		inclusive.clear();
-		exclusive.reset(0);
-                end.clear();
-	}
+        end.clear();
+        exclusive.reset(0);
+        terminate.reset(0);
+    }
 	
         bool is_excluded_point(const image::vector<3,float>& point) const
 	{
@@ -77,6 +79,13 @@ public:
 			return false;
 		return exclusive->havePoint(point[0],point[1],point[2]);
 	}
+        bool is_terminate_point(const image::vector<3,float>& point) const
+    {
+        if(!terminate.get())
+            return false;
+        return terminate->havePoint(point[0],point[1],point[2]);
+    }
+
 
         bool fulfill_end_point(const image::vector<3,float>& point1,
                                const image::vector<3,float>& point2) const
@@ -108,9 +117,11 @@ public:
 
 	bool have_include(const float* track,unsigned int buffer_size) const
 	{
-                for(unsigned int index = 0;index < inclusive.size();++index)
-                    if(!inclusive[index].included(track,buffer_size))
-                        return false;
+        for(unsigned int index = 0;index < inclusive.size();++index)
+            if(!inclusive[index].included(track,buffer_size))
+                return false;
+        if(terminate.get() && !terminate->included(track,buffer_size))
+            return false;
 		return true;
 	}
 
@@ -131,12 +142,20 @@ public:
 
         void add_exclusive_roi(const image::geometry<3>& geo,
                                const std::vector<image::vector<3,short> >& points)
-	{
+        {
 		if(!exclusive.get())
 			exclusive.reset(new Roi(geo));
                 for(unsigned int index = 0;index < points.size();++index)
                         exclusive->addPoint(points[index]);
-	}
+        }
+        void add_terminate_roi(const image::geometry<3>& geo,
+                               const std::vector<image::vector<3,short> >& points)
+        {
+            if(!terminate.get())
+            terminate.reset(new Roi(geo));
+                for(unsigned int index = 0;index < points.size();++index)
+                        terminate->addPoint(points[index]);
+        }
 	
 
 
