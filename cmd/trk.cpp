@@ -45,6 +45,7 @@ int trk(int ac, char *av[])
     ("roa5", po::value<std::string>(), "file for ROA regions")
     ("end", po::value<std::string>(), "file for ending regions")
     ("end2", po::value<std::string>(), "file for ending regions")
+    ("ter", po::value<std::string>(), "file for terminative regions")
     ("seed", po::value<std::string>(), "file for seed regions")
     ("threshold_index", po::value<std::string>(), "index for thresholding")
     ("step_size", po::value<float>()->default_value(1), "the step size in minimeter (default:1)")
@@ -131,10 +132,10 @@ int trk(int ac, char *av[])
 
 
 
-
-    char roi_names[13][5] = {"roi","roi2","roi3","roi4","roi5","roa","roa2","roa3","roa4","roa5","end","end2","seed"};
-    unsigned char type[13] = {0,0,0,0,0,1,1,1,1,1,2,2,3};
-    for(int index = 0;index < 13;++index)
+    const int total_count = 14;
+    char roi_names[total_count][5] = {"roi","roi2","roi3","roi4","roi5","roa","roa2","roa3","roa4","roa5","end","end2","seed","ter"};
+    unsigned char type[total_count] = {0,0,0,0,0,1,1,1,1,1,2,2,3,4};
+    for(int index = 0;index < total_count;++index)
     if (vm.count(roi_names[index]))
     {
         ROIRegion roi(geometry, voxel_size);
