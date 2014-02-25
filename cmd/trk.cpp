@@ -185,7 +185,7 @@ int trk(int ac, char *av[])
         std::cout << "min_length=" << vm["min_length"].as<float>() << std::endl;
         std::cout << "max_length=" << vm["max_length"].as<float>() << std::endl;
         std::cout << "tracking_method=" << (int)tracking_thread.tracking_method << std::endl;
-        std::cout << "initial direction=" << (int)tracking_thread.tracking_method << std::endl;
+        std::cout << "initial direction=" << (int)tracking_thread.initial_direction << std::endl;
         std::cout << "interpolation=" << (int)tracking_thread.interpolation_strategy << std::endl;
         std::cout << "voxelwise=" << (int)tracking_thread.center_seed << std::endl;
         std::cout << "thread_count=" << vm["thread_count"].as<int>() << std::endl;

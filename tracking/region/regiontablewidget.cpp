@@ -33,7 +33,7 @@ QWidget *ImageDelegate::createEditor(QWidget *parent,
         comboBox->addItem("ROA");
         comboBox->addItem("End");
         comboBox->addItem("Seed");
-        comboBox->addItem("Terminate");
+        comboBox->addItem("Terminative");
         connect(comboBox, SIGNAL(activated(int)), this, SLOT(emitCommitData()));
         return comboBox;
     }
