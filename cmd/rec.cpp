@@ -14,7 +14,7 @@ namespace po = boost::program_options;
 /**
  perform reconstruction
  */
-bool load_fa_template();
+std::string get_fa_template_path(void);
 int rec(int ac, char *av[])
 {
     po::options_description rec_desc("reconstruction options");
@@ -23,13 +23,14 @@ int rec(int ac, char *av[])
     ("action", po::value<std::string>(), "rec:diffusion reconstruction trk:fiber tracking")
     ("source", po::value<std::string>(), "assign the .src file name")
     ("mask", po::value<std::string>(), "assign the mask file")
+    ("template", po::value<std::string>(), "assign the template file")
     ("method", po::value<int>(), "reconstruction methods (0:dsi, 1:dti, 2:qbi_frt, 3:qbi_sh, 4:gqi)")
     ("odf_order", po::value<int>()->default_value(8), "set odf dimensions (4:162 direcitons, 5:252 directions, 6:362 directions, 8:642 directions)")
     ("record_odf", po::value<int>()->default_value(0), "output odf information")
     ("output_jac", po::value<int>()->default_value(0), "output jacobian determinant")
     ("output_map", po::value<int>()->default_value(0), "output mapping")
     ("thread", po::value<int>()->default_value(2), "set the multi-thread count --thread=2")
-    ("num_fiber", po::value<int>()->default_value(3), "maximum fibers resolved per voxel, default=3")
+    ("num_fiber", po::value<int>()->default_value(5), "maximum fibers resolved per voxel, default=3")
     ("half_sphere", po::value<int>()->default_value(0), "specific whether half sphere is used")
     ("deconvolution", po::value<int>()->default_value(0), "apply deconvolution")
     ("decomposition", po::value<int>()->default_value(0), "apply decomposition")
@@ -66,6 +67,8 @@ int rec(int ac, char *av[])
 
 
     method_index = vm["method"].as<int>();
+    std::cout << "method=" << method_index << std::endl;
+
     if(method_index == 0) // DSI
         param[0] = 17.0;
     if(method_index == 2)
@@ -82,11 +85,28 @@ int rec(int ac, char *av[])
         param[0] = 1.2;
     if(method_index == 7)
     {
-        if(!load_fa_template())
+        if (vm.count("template"))
         {
-            std::cout << "Cannot find FA template" << std::endl;
-            return -1;
+            std::string fa_file_name = vm["template"].as<std::string>();
+            std::cout << "loading template " << fa_file_name << std::endl;
+            if(!fa_template_imp.load_from_file(fa_file_name.c_str()))
+            {
+                std::cout << "failed to load template " << fa_file_name << std::endl;
+                return -1;
+            }
         }
+        else
+        {
+            std::cout << "loading template..." << std::endl;
+            if(!fa_template_imp.load_from_file(get_fa_template_path().c_str()))
+            {
+                std::string error_str = "Cannot find FMRIB58_FA_1mm.nii.gz at ";
+                error_str += get_fa_template_path();
+                std::cout << error_str << std::endl;
+                return -1;
+            }
+        }
+        std::cout << "template loaded..." << std::endl;
         param[0] = 1.2;
         param[1] = 2.0;
         std::fill(handle->mask.begin(),handle->mask.end(),1.0);
@@ -103,16 +123,30 @@ int rec(int ac, char *av[])
         param[4] = 10;
     }
     if (vm.count("param0"))
+    {
         param[0] = vm["param0"].as<float>();
+        std::cout << "param0=" << param[0] << std::endl;
+    }
     if (vm.count("param1"))
+    {
         param[1] = vm["param1"].as<float>();
+        std::cout << "param1=" << param[1] << std::endl;
+    }
     if (vm.count("param2"))
+    {
         param[2] = vm["param2"].as<float>();
+        std::cout << "param2=" << param[2] << std::endl;
+    }
     if (vm.count("param3"))
+    {
         param[3] = vm["param3"].as<float>();
+        std::cout << "param3=" << param[3] << std::endl;
+    }
     if (vm.count("param4"))
+    {
         param[4] = vm["param4"].as<float>();
-
+        std::cout << "param4=" << param[4] << std::endl;
+    }
 
     handle->thread_count = vm["thread"].as<int>(); //thread count
     handle->voxel.ti.init(vm["odf_order"].as<int>());
@@ -129,7 +163,6 @@ int rec(int ac, char *av[])
 
 
     {
-        std::cout << "method=" << method_index << std::endl;
         std::cout << "odf_order=" << vm["odf_order"].as<int>() << std::endl;
         std::cout << "num_fiber=" << vm["num_fiber"].as<int>() << std::endl;
         if(handle->voxel.need_odf)

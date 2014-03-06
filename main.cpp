@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
+#include <cstdio>
 #include <QApplication>
 #include <QCleanlooksStyle>
 #include <QMetaObject>
@@ -47,18 +48,11 @@ QStringList search_files(QString dir,QString filter)
 
 
 std::string program_base;
-bool load_fa_template(void)
+std::string get_fa_template_path(void)
 {
     std::string fa_template_path = program_base;
     fa_template_path += "FMRIB58_FA_1mm.nii.gz";
-    if(!fa_template_imp.load_from_file(fa_template_path.c_str()))
-    {
-        std::string error_str = "Cannot find FMRIB58_FA_1mm.nii.gz at ";
-        error_str += fa_template_path;
-        QMessageBox::information(0,"Error",error_str.c_str(),0);
-        return false;
-    }
-    return true;
+    return fa_template_path;
 }
 
 int main(int ac, char *av[])
@@ -74,6 +68,7 @@ int main(int ac, char *av[])
 
     if(ac > 2)
     {
+        try
         {
             std::cout << "DSI Studio " << __DATE__ << ", Fang-Cheng Yeh" << std::endl;
 
@@ -113,6 +108,9 @@ int main(int ac, char *av[])
             if(vm["action"].as<std::string>() == std::string("exp"))
                 return exp(ac,av);
         }
+        catch(const std::exception& e ) {
+            std::cerr << e.what() << std::endl;
+        }
         return 1;
     }
 
@@ -124,8 +122,13 @@ int main(int ac, char *av[])
     font.setFamily(QString::fromUtf8("Arial"));
     a.setFont(font);
 
-    if(!load_fa_template())
-        return -1;
+    if(!fa_template_imp.load_from_file(get_fa_template_path().c_str()))
+    {
+        std::string error_str = "Cannot find FMRIB58_FA_1mm.nii.gz at ";
+        error_str += get_fa_template_path();
+        QMessageBox::information(0,"Error",error_str.c_str(),0);
+        return false;
+    }
 
     MainWindow w;
     w.setFont(font);
