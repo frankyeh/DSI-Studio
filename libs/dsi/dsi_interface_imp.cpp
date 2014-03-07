@@ -332,6 +332,7 @@ extern "C"
         {
             error_msg = "Cannot open file ";
             error_msg += file_name;
+            check_prog(0,0);
             return error_msg.c_str();
         }
         if(index == 0)
@@ -360,6 +361,7 @@ extern "C"
             {
                 error_msg += " missing in ";
                 error_msg += file_name;
+                check_prog(0,0);
                 return error_msg.c_str();
             }
             mask.resize(image::geometry<3>(dimension));
@@ -386,6 +388,7 @@ extern "C"
             {
                 error_msg += " missing in ";
                 error_msg += file_name;
+                check_prog(0,0);
                 return error_msg.c_str();
             }
 
@@ -394,6 +397,7 @@ extern "C"
             {
                 error_msg = "Inconsistent dimension in ";
                 error_msg += file_name;
+                check_prog(0,0);
                 return error_msg.c_str();
             }
             for (unsigned int index = 0;index < col;++index,odf_buffer += 3)
@@ -415,6 +419,7 @@ extern "C"
             {
                 error_msg = "Cannot find image information in ";
                 error_msg += file_name;
+                check_prog(0,0);
                 return error_msg.c_str();
             }
             for(unsigned int index = 0;index < mask.size();++index)
@@ -439,6 +444,13 @@ extern "C"
                 odf_bufs_size.push_back(row*col);
             }
         }
+        if(odf_bufs.empty())
+        {
+            error_msg += "No ODF data found in ";
+            error_msg += file_name;
+            check_prog(0,0);
+            return error_msg.c_str();
+        }
         if(index == 0)
         {
             odfs.resize(odf_bufs.size());
@@ -457,6 +469,7 @@ extern "C"
             {
                 error_msg = "Inconsistent mask coverage in ";
                 error_msg += file_name;
+                check_prog(0,0);
                 return error_msg.c_str();
             }
         }
