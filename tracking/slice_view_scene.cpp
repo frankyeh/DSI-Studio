@@ -351,6 +351,7 @@ void slice_view_scene::save_slice_as()
     if(QFileInfo(filename).completeSuffix().toLower() == "nii" ||
             QFileInfo(filename).completeSuffix().toLower() == "nii.gz")
     {
+        image::basic_image<float,3> buf(cur_tracking_window.handle->fib_data.view_item[index].image_data);
         gz_nifti file;
         file.set_voxel_size(cur_tracking_window.slice.voxel_size.begin());
         if(cur_tracking_window.is_qsdr) //QSDR condition
@@ -360,7 +361,6 @@ void slice_view_scene::save_slice_as()
         }
         else
         {
-            image::basic_image<float,3> buf(cur_tracking_window.handle->fib_data.view_item[index].image_data);
             image::flip_xy(buf);
             file << buf;
         }

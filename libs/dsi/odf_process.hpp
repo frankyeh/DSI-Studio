@@ -248,58 +248,6 @@ public:
 };
 
 
-
-struct AccumulateODF : public BaseProcess
-{
-    std::vector<unsigned int> odf_index_map;
-public:
-    virtual void init(Voxel& voxel)
-    {
-        std::vector<std::vector<float> >& odf_data = voxel.template_odfs;
-
-        unsigned int total_count = 0;
-        odf_index_map.resize(voxel.image_model->mask.size());
-        for (unsigned int index = 0;index < voxel.image_model->mask.size();++index)
-            if (voxel.image_model->mask[index])
-            {
-                odf_index_map[index] = total_count;
-                ++total_count;
-            }
-        if(odf_data.empty())
-        {
-            std::vector<unsigned int> size_list;
-            while (1)
-            {
-                if (total_count > odf_block_size)
-                {
-                    size_list.push_back(odf_block_size);
-                    total_count -= odf_block_size;
-                }
-                else
-                {
-                    size_list.push_back(total_count);
-                    break;
-                }
-            }
-            odf_data.resize(size_list.size());
-            for (unsigned int index = 0;index < odf_data.size();++index)
-                odf_data[index].resize(size_list[index]*(voxel.ti.half_vertices_count));
-        }
-
-    }
-    virtual void run(Voxel& voxel,VoxelData& data)
-    {
-        std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 /= voxel.z0);
-        unsigned int odf_index = odf_index_map[data.voxel_index];
-        image::add(voxel.template_odfs[odf_index/odf_block_size].begin() + (odf_index%odf_block_size)*(voxel.ti.half_vertices_count),
-                   voxel.template_odfs[odf_index/odf_block_size].begin() + (odf_index%odf_block_size+1)*(voxel.ti.half_vertices_count),
-                   data.odf.begin());
-    }
-    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
-    {
-    }
-};
-
 struct ODFLoader : public BaseProcess
 {
     std::vector<unsigned char> index_mapping1;
