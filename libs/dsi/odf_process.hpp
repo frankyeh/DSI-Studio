@@ -208,7 +208,7 @@ public:
             catch (...)
             {
                 odf_data.clear();
-                voxel.need_odf = false;
+                throw std::runtime_error("Memoery not enough for creating an ODF containing fib file.");
             }
         }
 
