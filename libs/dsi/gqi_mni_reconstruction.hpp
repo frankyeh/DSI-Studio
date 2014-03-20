@@ -119,6 +119,7 @@ public:
         if(export_intermediate)
             VFF.save_to_file<image::io::nifti>("VFF.nii");
 
+        try
         {
             begin_prog("normalization");
             unsigned int factor = voxel.reg_method + 1;
@@ -155,6 +156,10 @@ public:
             }
             if(prog_aborted())
                 throw std::runtime_error("Reconstruction canceled");
+        }
+        catch(...)
+        {
+            throw std::runtime_error("Registration failed due to memory insufficiency.");
         }
         {
             begin_prog("estimating goodness of fit");
