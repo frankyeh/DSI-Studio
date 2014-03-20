@@ -121,18 +121,8 @@ public:
 
         {
             begin_prog("normalization");
-            switch(voxel.reg_method)
-            {
-            case 0:
-                mni.reset(new image::reg::bfnorm_mapping<float,3>(VG.geometry(),image::geometry<3>(7,9,7)));
-                break;
-            case 1:
-                mni.reset(new image::reg::bfnorm_mapping<float,3>(VG.geometry(),image::geometry<3>(14,18,14)));
-                break;
-            case 2:
-                mni.reset(new image::reg::bfnorm_mapping<float,3>(VG.geometry(),image::geometry<3>(21,27,21)));
-                break;
-            }
+            unsigned int factor = voxel.reg_method + 1;
+            mni.reset(new image::reg::bfnorm_mapping<float,3>(VG.geometry(),image::geometry<3>(factor*7,factor*9,factor*7)));
             // optimization
             unsigned int thread_count = voxel.image_model->thread_count;
             image::reg::bfnorm_mrqcof<image::basic_image<float,3>,float>

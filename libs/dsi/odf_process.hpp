@@ -208,7 +208,7 @@ public:
             catch (...)
             {
                 odf_data.clear();
-                throw std::runtime_error("Memoery not enough for creating an ODF containing fib file.");
+                throw std::runtime_error("Memory not enough for creating an ODF containing fib file.");
             }
         }
 
