@@ -111,8 +111,8 @@ public:
             terminated_class terminated(256);
             image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::mutual_information(),terminated);
             affine = image::transformation_matrix<3,float>(arg_min,VF.geometry(),VG.geometry());
-            affine.inverse();
         }
+        affine.inverse();
         image::basic_image<float,3> VFF(VG.geometry());
         image::resample(VF,VFF,affine);
 
