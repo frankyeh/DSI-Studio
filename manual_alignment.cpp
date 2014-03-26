@@ -56,15 +56,14 @@ manual_alignment::manual_alignment(QWidget *parent,
     ui->axi_slice_pos->setMinimum(0);
     ui->axi_slice_pos->setValue(to.geometry()[2] >> 1);
     timer = new QTimer(this);
-    timer->setInterval(200);
+    timer->setInterval(1000);
 
     connect_arg_update();
     connect(ui->sag_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(ui->cor_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(ui->axi_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
+    connect(ui->blend_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(timer, SIGNAL(timeout()), this, SLOT(check_reg()));
-
-    w = 0.0;
 
     thread_terminated = 0;
     need_update_affine_matrix = true;
@@ -207,7 +206,7 @@ void manual_alignment::slice_pos_moved()
     double ratio =
         std::min((double)(ui->axi_view->width()-10)/(double)warped_from.width(),
                  (double)(ui->axi_view->height()-10)/(double)warped_from.height());
-    float w1 = w;
+    float w1 = ui->blend_pos->value()/10.0;
     float w2 = 1.0-w1;
     w1*= 255.0;
     w2 *= 255.0;
@@ -234,7 +233,7 @@ void manual_alignment::slice_pos_moved()
 
 void manual_alignment::check_reg()
 {
-    if(w > 0.95 && reg_thread.get())
+    if(reg_thread.get())
     {
         disconnect_arg_update();
         ui->tx->setValue(arg.translocation[0]);
@@ -252,9 +251,6 @@ void manual_alignment::check_reg()
         connect_arg_update();
         update_image();
     }
-    w += 0.1;
-    if(w > 1.05)
-        w = 0.0;
     slice_pos_moved();
 }
 
@@ -269,4 +265,15 @@ void manual_alignment::on_buttonBox_accepted()
 void manual_alignment::on_buttonBox_rejected()
 {
     timer->stop();
+}
+
+void manual_alignment::on_rerun_clicked()
+{
+    if(reg_thread.get())
+    {
+        thread_terminated = 1;
+        reg_thread->join();
+    }
+    reg_thread.reset(new boost::thread(run_reg,from,to,&arg,&bnorm_data,&thread_terminated,&progress));
+
 }

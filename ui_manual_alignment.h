@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'manual_alignment.ui'
 **
-** Created: Fri Jan 31 14:51:44 2014
+** Created: Mon Mar 24 12:33:16 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -22,6 +22,7 @@
 #include <QtGui/QHBoxLayout>
 #include <QtGui/QHeaderView>
 #include <QtGui/QLabel>
+#include <QtGui/QPushButton>
 #include <QtGui/QSlider>
 #include <QtGui/QSpacerItem>
 #include <QtGui/QSplitter>
@@ -45,7 +46,7 @@ public:
     QVBoxLayout *verticalLayout_3;
     QGraphicsView *sag_view;
     QSlider *sag_slice_pos;
-    QWidget *widget1;
+    QWidget *layoutWidget;
     QHBoxLayout *horizontalLayout_7;
     QVBoxLayout *verticalLayout_4;
     QGraphicsView *axi_view;
@@ -83,9 +84,12 @@ public:
     QDoubleSpinBox *ry;
     QLabel *label_10;
     QDoubleSpinBox *rz;
+    QHBoxLayout *horizontalLayout_8;
+    QSpacerItem *horizontalSpacer;
+    QPushButton *rerun;
     QSpacerItem *verticalSpacer;
     QHBoxLayout *horizontalLayout;
-    QSpacerItem *horizontalSpacer_2;
+    QSlider *blend_pos;
     QDialogButtonBox *buttonBox;
 
     void setupUi(QDialog *manual_alignment)
@@ -151,9 +155,9 @@ public:
         horizontalLayout_6->addLayout(verticalLayout_3);
 
         splitter->addWidget(horizontalLayoutWidget);
-        widget1 = new QWidget(splitter);
-        widget1->setObjectName(QString::fromUtf8("widget1"));
-        horizontalLayout_7 = new QHBoxLayout(widget1);
+        layoutWidget = new QWidget(splitter);
+        layoutWidget->setObjectName(QString::fromUtf8("layoutWidget"));
+        horizontalLayout_7 = new QHBoxLayout(layoutWidget);
 #ifndef Q_OS_MAC
         horizontalLayout_7->setSpacing(6);
 #endif
@@ -162,12 +166,12 @@ public:
         horizontalLayout_7->setContentsMargins(0, 0, 0, 0);
         verticalLayout_4 = new QVBoxLayout();
         verticalLayout_4->setObjectName(QString::fromUtf8("verticalLayout_4"));
-        axi_view = new QGraphicsView(widget1);
+        axi_view = new QGraphicsView(layoutWidget);
         axi_view->setObjectName(QString::fromUtf8("axi_view"));
 
         verticalLayout_4->addWidget(axi_view);
 
-        axi_slice_pos = new QSlider(widget1);
+        axi_slice_pos = new QSlider(layoutWidget);
         axi_slice_pos->setObjectName(QString::fromUtf8("axi_slice_pos"));
         axi_slice_pos->setOrientation(Qt::Horizontal);
 
@@ -180,7 +184,7 @@ public:
         verticalLayout_5->setSpacing(0);
         verticalLayout_5->setContentsMargins(0, 0, 0, 0);
         verticalLayout_5->setObjectName(QString::fromUtf8("verticalLayout_5"));
-        groupBox = new QGroupBox(widget1);
+        groupBox = new QGroupBox(layoutWidget);
         groupBox->setObjectName(QString::fromUtf8("groupBox"));
         horizontalLayout_2 = new QHBoxLayout(groupBox);
         horizontalLayout_2->setSpacing(0);
@@ -225,7 +229,7 @@ public:
 
         verticalLayout_5->addWidget(groupBox);
 
-        groupBox_2 = new QGroupBox(widget1);
+        groupBox_2 = new QGroupBox(layoutWidget);
         groupBox_2->setObjectName(QString::fromUtf8("groupBox_2"));
         horizontalLayout_3 = new QHBoxLayout(groupBox_2);
         horizontalLayout_3->setSpacing(0);
@@ -270,7 +274,7 @@ public:
 
         verticalLayout_5->addWidget(groupBox_2);
 
-        groupBox_3 = new QGroupBox(widget1);
+        groupBox_3 = new QGroupBox(layoutWidget);
         groupBox_3->setObjectName(QString::fromUtf8("groupBox_3"));
         horizontalLayout_4 = new QHBoxLayout(groupBox_3);
         horizontalLayout_4->setSpacing(0);
@@ -315,7 +319,7 @@ public:
 
         verticalLayout_5->addWidget(groupBox_3);
 
-        groupBox_4 = new QGroupBox(widget1);
+        groupBox_4 = new QGroupBox(layoutWidget);
         groupBox_4->setObjectName(QString::fromUtf8("groupBox_4"));
         horizontalLayout_5 = new QHBoxLayout(groupBox_4);
         horizontalLayout_5->setSpacing(0);
@@ -360,6 +364,20 @@ public:
 
         verticalLayout_5->addWidget(groupBox_4);
 
+        horizontalLayout_8 = new QHBoxLayout();
+        horizontalLayout_8->setObjectName(QString::fromUtf8("horizontalLayout_8"));
+        horizontalSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+        horizontalLayout_8->addItem(horizontalSpacer);
+
+        rerun = new QPushButton(layoutWidget);
+        rerun->setObjectName(QString::fromUtf8("rerun"));
+
+        horizontalLayout_8->addWidget(rerun);
+
+
+        verticalLayout_5->addLayout(horizontalLayout_8);
+
         verticalSpacer = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
 
         verticalLayout_5->addItem(verticalSpacer);
@@ -367,9 +385,13 @@ public:
         horizontalLayout = new QHBoxLayout();
         horizontalLayout->setSpacing(0);
         horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
-        horizontalSpacer_2 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+        blend_pos = new QSlider(layoutWidget);
+        blend_pos->setObjectName(QString::fromUtf8("blend_pos"));
+        blend_pos->setMaximum(10);
+        blend_pos->setPageStep(2);
+        blend_pos->setOrientation(Qt::Horizontal);
 
-        horizontalLayout->addItem(horizontalSpacer_2);
+        horizontalLayout->addWidget(blend_pos);
 
 
         verticalLayout_5->addLayout(horizontalLayout);
@@ -377,7 +399,7 @@ public:
 
         horizontalLayout_7->addLayout(verticalLayout_5);
 
-        splitter->addWidget(widget1);
+        splitter->addWidget(layoutWidget);
 
         verticalLayout_6->addWidget(splitter);
 
@@ -418,6 +440,7 @@ public:
         label_11->setText(QApplication::translate("manual_alignment", "x", 0, QApplication::UnicodeUTF8));
         label_12->setText(QApplication::translate("manual_alignment", "y", 0, QApplication::UnicodeUTF8));
         label_10->setText(QApplication::translate("manual_alignment", "z", 0, QApplication::UnicodeUTF8));
+        rerun->setText(QApplication::translate("manual_alignment", "Re-run", 0, QApplication::UnicodeUTF8));
     } // retranslateUi
 
 };

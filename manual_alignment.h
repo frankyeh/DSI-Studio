@@ -24,7 +24,6 @@ private:
 private:
     unsigned char thread_terminated;
     std::auto_ptr<boost::thread> reg_thread;
-    float w;
     void load_param(void);
 public:
     QTimer* timer;
@@ -48,6 +47,8 @@ private slots:
     void on_buttonBox_accepted();
 
     void on_buttonBox_rejected();
+
+    void on_rerun_clicked();
 
 private:
     Ui::manual_alignment *ui;
