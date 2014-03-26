@@ -98,6 +98,7 @@ public:
             voxel.bvectors[index][0] = table[1];
             voxel.bvectors[index][1] = table[2];
             voxel.bvectors[index][2] = table[3];
+            voxel.bvectors[index].normalize();
             table += 4;
         }
 
