@@ -35,7 +35,7 @@ public:
         in.open(file_name,std::ios::binary);
         return in;
     }
-    void read(void* buf,size_t size)
+    bool read(void* buf,size_t size)
     {
         char title[] = "reading......";
         title[7+(std::clock()/CLOCKS_PER_SEC)%5] = 0;
@@ -43,11 +43,18 @@ public:
         if(handle)
         {
             if (gzread(handle,buf,size) == -1)
+            {
                 close();
+                return false;
+            }
+            return true;
         }
         else
             if(in)
+            {
                 in.read((char*)buf,size);
+                return in;
+            }
     }
     void seek(size_t pos)
     {

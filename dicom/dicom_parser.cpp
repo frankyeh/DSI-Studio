@@ -179,14 +179,14 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
         for(unsigned int index = 0;check_prog(index,analyze_header.dim(4));++index)
         {
             std::auto_ptr<DwiHeader> new_file(new DwiHeader);
-            analyze_header.toLPS(new_file->image,false);
+            if(!analyze_header.toLPS(new_file->image,false))
+                break;
             image::lower_threshold(new_file->image,0);
             new_file->file_name = file_name;
             std::ostringstream out;
             out << index;
             new_file->file_name += out.str();
             std::copy(vs,vs+3,new_file->voxel_size);
-
             if(!bvals.empty())
             {
                 new_file->bvalue = bvals[index];
