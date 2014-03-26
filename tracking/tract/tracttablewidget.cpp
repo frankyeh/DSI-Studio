@@ -95,6 +95,33 @@ void TractTableWidget::addNewTracts(QString tract_name)
     setRowHeight(tract_models.size()-1,22);
     setCurrentCell(tract_models.size()-1,0);
 }
+void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vector<float> > >& greater,
+                             std::vector<std::vector<std::vector<float> > >& lesser)
+{
+    for(unsigned int index = 0;index < lesser.size();++index)
+    {
+        if(lesser[index].empty())
+            continue;
+        int color = std::min<int>((index+1)*50,255);
+        addNewTracts(QString("Lesser_") + QString::number((index+1)*10));
+        tract_models.back()->add_tracts(lesser[index]);
+        tract_models.back()->set_color(image::rgb_color(255,255-color,255-color));
+        item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
+    }
+    for(unsigned int index = 0;index < greater.size();++index)
+    {
+        if(greater[index].empty())
+            continue;
+        int color = std::min<int>((index+1)*50,255);
+        addNewTracts(QString("Greater_") + QString::number((index+1)*10));
+        tract_models.back()->add_tracts(greater[index]);
+        tract_models.back()->set_color(image::rgb_color(255-color,255-color,255));
+        item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
+    }
+    cur_tracking_window.renderWidget->setData("tract_color_style",1);//manual assigned
+    emit need_update();
+}
+
 void TractTableWidget::start_tracking(void)
 {
 

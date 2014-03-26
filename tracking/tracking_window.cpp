@@ -1256,12 +1256,15 @@ void tracking_window::on_actionConnectometry_triggered()
         QMessageBox::information(this,"error",database->error_msg.c_str(),0);
         return;
     }
-    database->handle->connectometry.add_greater_lesser_mapping_for_tracking(database->handle.get());
+    std::vector<std::vector<std::vector<float> > > greater,lesser;
+    database->calculate_individual_affected_tracks(database->handle->connectometry,0.95,greater,lesser);
+    tractWidget->addConnectometryResults(greater,lesser);
+    /*
     tracking_window* new_mdi = new tracking_window((QWidget*)(this->parent()),database->handle.release());
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
     new_mdi->absolute_path = absolute_path;
     new_mdi->setWindowTitle(this->windowTitle() + " : connectometry mapping");
-    new_mdi->showNormal();
+    new_mdi->showNormal();*/
 }
 
 

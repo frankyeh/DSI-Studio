@@ -29,6 +29,8 @@ public:
     std::vector<TractModel*> tract_models;
     unsigned char edit_option;
     void addNewTracts(QString tract_name);
+    void addConnectometryResults(std::vector<std::vector<std::vector<float> > >& greater,
+                                 std::vector<std::vector<std::vector<float> > >& lesser);
     void export_tract_density(image::geometry<3>& dim,
                               image::vector<3,float> vs,
                               std::vector<float>& transformation,bool color,bool endpoint);

@@ -77,6 +77,9 @@ public:
                                            const std::vector<std::string>& files,
                                         std::vector<float>& subject_greater,
                                         std::vector<float>& subject_lesser);
+    void calculate_individual_affected_tracks(fib_data& result,float percentile,
+                                        std::vector<std::vector<std::vector<float> > >& greater,
+                                        std::vector<std::vector<std::vector<float> > >& lesser);
 public:
     void run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& track);
     bool save_track_as(const char* file_name,std::vector<std::vector<float> >& track,unsigned int length_threshold);

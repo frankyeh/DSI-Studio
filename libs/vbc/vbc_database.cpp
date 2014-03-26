@@ -595,6 +595,48 @@ bool vbc_database::save_subject_distribution(float percentile,
     }
     return true;
 }
+void vbc_database::calculate_individual_affected_tracks(fib_data& data,float percentile,
+                                                        std::vector<std::vector<std::vector<float> > >& greater,
+                                                        std::vector<std::vector<std::vector<float> > >& lesser)
+{
+    std::vector<std::vector<float> > greater_tracks;
+    std::vector<std::vector<float> > lesser_tracks;
+    fiber_orientations fib;
+    fib.read(handle->fib_data);
+    fib.threshold = percentile;
+    fib.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);
+    fib.fa = data.greater_ptr;
+    fib.findex = data.greater_dir_ptr;
+    run_track(fib,greater_tracks);
+    fib.fa = data.lesser_ptr;
+    fib.findex = data.lesser_dir_ptr;
+    run_track(fib,lesser_tracks);
+
+    greater.clear();
+    lesser.clear();
+    for(unsigned int index = 0;index < greater_tracks.size();++index)
+    {
+        float length = (float)greater_tracks[index].size()/3.0-1.0;
+        if(length <= 10.0)
+            continue;
+        length -= 10.0;
+        unsigned int pos = std::floor(length/10.0);
+        if(greater.size() <= pos)
+            greater.resize(pos+1);
+        greater[pos].push_back(greater_tracks[index]);
+    }
+    for(unsigned int index = 0;index < lesser_tracks.size();++index)
+    {
+        float length = (float)lesser_tracks[index].size()/3.0-1.0;
+        if(length <= 10.0)
+            continue;
+        length -= 10.0;
+        unsigned int pos = std::floor(length/10.0);
+        if(lesser.size() <= pos)
+            lesser.resize(pos+1);
+        lesser[pos].push_back(lesser_tracks[index]);
+    }
+}
 
 bool vbc_database::calculate_individual_distribution(float percentile,
                                                 unsigned int length_threshold,
