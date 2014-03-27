@@ -51,7 +51,7 @@ public:
     {
 
         half_odf_size = voxel.ti.half_vertices_count;
-        unsigned int b_count = voxel.q_count;
+        unsigned int b_count = voxel.bvalues.size();
         icosa_data.resize(half_odf_size*3);
         for (unsigned int index = 0; index < half_odf_size; ++index)
             std::copy(voxel.ti.vertices[index].begin(),voxel.ti.vertices[index].end(),icosa_data.begin()+index*3);

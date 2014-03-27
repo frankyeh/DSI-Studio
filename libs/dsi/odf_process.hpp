@@ -19,9 +19,9 @@ public:
 class BalanceScheme : public BaseProcess{
     std::vector<float> trans;
     unsigned int new_q_count;
+    unsigned int old_q_count;
 private:
     Voxel* stored_voxel;
-    unsigned int old_q_count;
     std::vector<image::vector<3,float> > old_bvectors;
     std::vector<float> old_bvalues;
 public:
@@ -33,7 +33,7 @@ public:
             return;
         std::vector<unsigned int> shell;
         shell.push_back(0);
-        unsigned int b_count = voxel.q_count;
+        unsigned int b_count = voxel.bvalues.size();
         for(unsigned int index = 1;index < b_count;++index)
         {
             if(std::abs(voxel.bvalues[index]-voxel.bvalues[index-1]) > 100)
@@ -112,8 +112,8 @@ public:
             total_signals += new_dir.half_vertices_count;
         }
 
-        old_q_count = voxel.q_count;
-        voxel.q_count = new_q_count = total_signals;
+        old_q_count = voxel.bvalues.size();
+        new_q_count = total_signals;
         voxel.bvalues.swap(new_bvalues);
         voxel.bvectors.swap(new_bvectors);
         new_bvalues.swap(old_bvalues);
@@ -129,7 +129,6 @@ public:
         if(stored_voxel)
         {
             stored_voxel = 0;
-            voxel.q_count = old_q_count;
             voxel.bvalues = old_bvalues;
             voxel.bvectors = old_bvectors;
         }

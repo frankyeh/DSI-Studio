@@ -102,9 +102,8 @@ public:
             table += 4;
         }
 
-        voxel.q_count = col;
-        dwi_data.resize(voxel.q_count);
-        for (unsigned int index = 0;index < voxel.q_count;++index)
+        dwi_data.resize(voxel.bvalues.size());
+        for (unsigned int index = 0;index < voxel.bvalues.size();++index)
         {
             std::ostringstream out;
             out << "image" << index;
@@ -130,7 +129,7 @@ public:
         // create mask;
         dwi_sum.clear();
         dwi_sum.resize(voxel.dim);
-        for (unsigned int index = 0;index < voxel.q_count;++index)
+        for (unsigned int index = 0;index < voxel.bvalues.size();++index)
             image::add(dwi_sum.begin(),dwi_sum.end(),dwi_data[index]);
 
         float max_value = *std::max_element(dwi_sum.begin(),dwi_sum.end());

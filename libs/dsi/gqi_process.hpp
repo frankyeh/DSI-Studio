@@ -73,18 +73,34 @@ class SchemeConverter : public BaseProcess
 public:
     virtual void init(Voxel& voxel)
     {
+
+        if(!voxel.file_name.empty())
+        {
+            std::ifstream read(voxel.file_name.c_str());
+            std::vector<float> values;
+            std::copy(std::istream_iterator<float>(read),std::istream_iterator<float>(),std::back_inserter(values));
+            for(unsigned int i = 0;i < values.size()/4;++i)
+            {
+                if(values[i*4] == 0.0)
+                    continue;
+                bvalues.push_back(voxel.param[1]);
+                bvectors.push_back(image::vector<3,float>(values[i*4+1],values[i*4+2],values[i*4+3]));
+            }
+        }
+        else
+        {
+            bvalues.resize(voxel.ti.half_vertices_count);
+            bvectors.resize(voxel.ti.half_vertices_count);
+            for (unsigned int index = 0; index < bvectors.size(); ++index)
+                bvectors[index] = voxel.ti.vertices[index];
+            std::fill(bvalues.begin(),bvalues.end(),voxel.param[1]); // set the output b-value
+        }
+
         //allocated output image space
-        dwi.resize(voxel.ti.half_vertices_count);
+        dwi.resize(bvalues.size());
         for(unsigned int index = 0;index < dwi.size();++index)
             dwi[index].resize(voxel.dim.size());
 
-
-        bvalues.resize(voxel.ti.half_vertices_count);
-        bvectors.resize(voxel.ti.half_vertices_count);
-        for (unsigned int index = 0; index < bvectors.size(); ++index)
-            bvectors[index] = voxel.ti.vertices[index];
-
-        std::fill(bvalues.begin(),bvalues.end(),voxel.param[1]); // set the output b-value
 
         from.init(voxel);
         voxel.bvalues.swap(bvalues);

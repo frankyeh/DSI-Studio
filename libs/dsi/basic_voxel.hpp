@@ -56,12 +56,12 @@ private:
 public:
     image::geometry<3> dim;
     image::vector<3> vs;
-    unsigned int q_count;
     std::vector<image::vector<3,float> > bvectors;
     std::vector<float> bvalues;
 public:// parameters;
     tessellated_icosahedron ti;
     const float* param;
+    std::string file_name;
     bool need_odf;
     bool odf_deconvolusion;
     bool odf_decomposition;
@@ -111,7 +111,7 @@ public:
         voxel_data.resize(thread_count);
         for (unsigned int index = 0; index < thread_count; ++index)
         {
-            voxel_data[index].space.resize(q_count);
+            voxel_data[index].space.resize(bvalues.size());
             voxel_data[index].odf.resize(ti.half_vertices_count);
             voxel_data[index].fa.resize(max_fiber_number);
             voxel_data[index].dir_index.resize(max_fiber_number);

@@ -289,7 +289,6 @@ bool output_odfs(const image::basic_image<unsigned char,3>& mni_mask,
     ImageModel image_model;
     image_model.voxel.dim = mni_mask.geometry();
     image_model.voxel.ti = ti;
-    image_model.voxel.q_count = 0;
     image_model.voxel.odf_decomposition = false;
     image_model.voxel.odf_deconvolusion = false;
     image_model.voxel.half_sphere = false;

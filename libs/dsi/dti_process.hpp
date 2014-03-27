@@ -42,7 +42,7 @@ public:
         d1.clear();
         d1.resize(voxel.dim.size());
 
-        b_count = voxel.q_count-1;
+        b_count = voxel.bvalues.size()-1;
         std::vector<image::vector<3> > b_data(b_count);
         //skip null
         std::copy(voxel.bvectors.begin()+1,voxel.bvectors.end(),b_data.begin());
