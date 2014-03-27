@@ -41,7 +41,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     ui->setupUi(this);
     load_src(0);
-    max_source_value = 0.0;
     ui->toolBox->setCurrentIndex(1);
     ui->graphicsView->setScene(&scene);
     ui->view_source->setScene(&source);
@@ -122,10 +121,24 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->hardi_reg->setValue(settings.value("hardi_reg",0.05).toDouble());
 
 
+    max_source_value = *std::max_element(handle->dwi_data.back(),
+                                         handle->dwi_data.back()+handle->dwi_sum.size());
+    ui->brightness->setMaximum(max_source_value);
+    ui->brightness->setMinimum(-max_source_value);
+    ui->brightness->setSingleStep(max_source_value/50.0);
+    ui->contrast->setMaximum(max_source_value*11.0);
+    ui->contrast->setMinimum(max_source_value/11.0);
+    ui->contrast->setSingleStep(max_source_value/50.0);
+    ui->contrast->setValue(max_source_value);
+    ui->brightness->setValue(0.0);
+
+
     on_odf_sharpening_currentIndexChanged(ui->odf_sharpening->currentIndex());
     connect(ui->z_pos,SIGNAL(sliderMoved(int)),this,SLOT(on_b_table_itemSelectionChanged()));
     connect(ui->contrast,SIGNAL(sliderMoved(int)),this,SLOT(on_b_table_itemSelectionChanged()));
     connect(ui->brightness,SIGNAL(sliderMoved(int)),this,SLOT(on_b_table_itemSelectionChanged()));
+
+    on_b_table_itemSelectionChanged();
 }
 void reconstruction_window::load_b_table(void)
 {
@@ -143,25 +156,17 @@ void reconstruction_window::load_b_table(void)
 void reconstruction_window::on_b_table_itemSelectionChanged()
 {
     image::basic_image<float,2> tmp(image::geometry<2>(dim[0],dim[1]));
-    unsigned int offset = ui->z_pos->value()*tmp.size();
     unsigned int b_index = ui->b_table->currentRow();
-    std::copy(handle->dwi_data[b_index] + offset,
-              handle->dwi_data[b_index] + offset + tmp.size(),tmp.begin());
-    max_source_value = std::max<float>(max_source_value,*std::max_element(tmp.begin(),tmp.end()));
-    if(max_source_value + 1.0 != 1.0)
-        image::divide_constant(tmp.begin(),tmp.end(),max_source_value/255.0);
+    std::copy(handle->dwi_data[b_index] + ui->z_pos->value()*tmp.size(),
+              handle->dwi_data[b_index] + ui->z_pos->value()*tmp.size() + tmp.size(),tmp.begin());
 
-    float mean_value = image::mean(tmp.begin(),tmp.end());
-    image::minus_constant(tmp.begin(),tmp.end(),mean_value);
-    image::multiply_constant(tmp.begin(),tmp.end(),ui->contrast->value());
-    image::add_constant(tmp.begin(),tmp.end(),mean_value+ui->brightness->value()*25.5);
-
-    image::upper_lower_threshold(tmp.begin(),tmp.end(),tmp.begin(),0.0f,255.0f);
-
+    tmp += ui->brightness->value();
+    if( ui->contrast->value() != 0.0)
+        tmp *= 255.99/ui->contrast->value();
+    image::upper_lower_threshold(tmp,(float)0.0,(float)255.0);
 
     buffer_source.resize(image::geometry<2>(dim[0],dim[1]));
     std::copy(tmp.begin(),tmp.end(),buffer_source.begin());
-
     source.setSceneRect(0, 0, dim.width()*source_ratio,dim.height()*source_ratio);
     source_image = QImage((unsigned char*)&*buffer_source.begin(),dim.width(),dim.height(),QImage::Format_RGB32).
                     scaled(dim.width()*source_ratio,dim.height()*source_ratio);
@@ -266,7 +271,10 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
         return;
 
     QMessageBox::information(this,"DSI Studio","done!",0);
-    ((MainWindow*)parent())->addFib(msg);
+    if(method_id == 6)
+        ((MainWindow*)parent())->addSrc(msg);
+    else
+        ((MainWindow*)parent())->addFib(msg);
 }
 
 void reconstruction_window::on_SlicePos_sliderMoved(int position)
@@ -750,3 +758,27 @@ void reconstruction_window::on_actionRotate_triggered()
 
 }
 
+
+void reconstruction_window::on_load_b_table_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(
+            this,
+            "Save b-table",
+            QFileInfo(filenames[0]).absolutePath() + "/b_table.txt",
+            "Text files (*.txt);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    handle->voxel.file_name = filename.toLocal8Bit().begin();
+    ui->b_table_label->setText(QFileInfo(filename).baseName());
+}
+
+void reconstruction_window::on_delete_2_clicked()
+{
+    if(handle->dwi_data.size() == 1)
+        return;
+    unsigned int index = ui->b_table->currentRow();
+    ui->b_table->removeRow(index);
+    handle->dwi_data.erase(handle->dwi_data.begin()+index);
+    handle->voxel.bvalues.erase(handle->voxel.bvalues.begin()+index);
+    handle->voxel.bvectors.erase(handle->voxel.bvectors.begin()+index);
+}

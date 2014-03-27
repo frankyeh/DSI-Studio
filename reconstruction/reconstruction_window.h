@@ -83,6 +83,8 @@ private slots:
     void on_actionFlip_yz_triggered();
     void on_actionRotate_triggered();
     void on_HARDI_toggled(bool checked);
+    void on_load_b_table_clicked();
+    void on_delete_2_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

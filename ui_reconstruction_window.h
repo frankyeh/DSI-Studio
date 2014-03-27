@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Fri Feb 21 17:53:50 2014
+** Created: Thu Mar 27 11:00:27 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -135,6 +135,9 @@ public:
     QHBoxLayout *horizontalLayout_23;
     QLabel *label_17;
     QDoubleSpinBox *hardi_reg;
+    QHBoxLayout *horizontalLayout_24;
+    QLabel *b_table_label;
+    QPushButton *load_b_table;
     QHBoxLayout *horizontalLayout_19;
     QPushButton *AdvancedOptions;
     QSpacerItem *horizontalSpacer_6;
@@ -411,7 +414,7 @@ public:
         toolBox->addItem(page_3, QString::fromUtf8("Step 1: setup brain mask"));
         page = new QWidget();
         page->setObjectName(QString::fromUtf8("page"));
-        page->setGeometry(QRect(0, 0, 652, 454));
+        page->setGeometry(QRect(0, 0, 652, 457));
         page->setMinimumSize(QSize(0, 0));
         verticalLayout_2 = new QVBoxLayout(page);
         verticalLayout_2->setSpacing(3);
@@ -651,6 +654,22 @@ public:
 
 
         horizontalLayout_7->addLayout(horizontalLayout_23);
+
+        horizontalLayout_24 = new QHBoxLayout();
+        horizontalLayout_24->setObjectName(QString::fromUtf8("horizontalLayout_24"));
+        b_table_label = new QLabel(hardi_param);
+        b_table_label->setObjectName(QString::fromUtf8("b_table_label"));
+
+        horizontalLayout_24->addWidget(b_table_label);
+
+        load_b_table = new QPushButton(hardi_param);
+        load_b_table->setObjectName(QString::fromUtf8("load_b_table"));
+        load_b_table->setMaximumSize(QSize(32, 16777215));
+
+        horizontalLayout_24->addWidget(load_b_table);
+
+
+        horizontalLayout_7->addLayout(horizontalLayout_24);
 
 
         verticalLayout_2->addWidget(hardi_param);
@@ -1045,6 +1064,8 @@ public:
         hardi_param->setTitle(QString());
         label_16->setText(QApplication::translate("reconstruction_window", "Output b-value", 0, QApplication::UnicodeUTF8));
         label_17->setText(QApplication::translate("reconstruction_window", "Regularization parameter", 0, QApplication::UnicodeUTF8));
+        b_table_label->setText(QApplication::translate("reconstruction_window", "B-table (optional)", 0, QApplication::UnicodeUTF8));
+        load_b_table->setText(QApplication::translate("reconstruction_window", "...", 0, QApplication::UnicodeUTF8));
         AdvancedOptions->setText(QApplication::translate("reconstruction_window", "Advanced Options >>", 0, QApplication::UnicodeUTF8));
         ODFSharpening->setTitle(QApplication::translate("reconstruction_window", "ODF Sharpening", 0, QApplication::UnicodeUTF8));
         odf_sharpening->clear();
