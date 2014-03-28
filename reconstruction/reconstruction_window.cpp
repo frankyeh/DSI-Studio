@@ -50,17 +50,10 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->b_table->setColumnWidth(3,60);
     ui->b_table->setHorizontalHeaderLabels(QStringList() << "b value" << "bx" << "by" << "bz");
 
-    ui->SlicePos->setRange(0,dim[2]-1);
-    ui->SlicePos->setValue((dim[2]-1) >> 1);
-    ui->z_pos->setRange(0,dim[2]-1);
-    ui->z_pos->setValue((dim[2]-1) >> 1);
-
-    ui->x->setMaximum(dim[0]-1);
-    ui->y->setMaximum(dim[1]-1);
-    ui->z->setMaximum(dim[2]-1);
+    update_dimension();
 
     absolute_path = QFileInfo(filenames[0]).absolutePath();
-    source_ratio = std::max(1.0,500/(double)dim.height());
+
 
     switch(settings.value("rec_method_id",4).toInt())
     {
@@ -140,6 +133,18 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     on_b_table_itemSelectionChanged();
 }
+void reconstruction_window::update_dimension(void)
+{
+    ui->SlicePos->setRange(0,handle->voxel.dim[2]-1);
+    ui->SlicePos->setValue((handle->voxel.dim[2]-1) >> 1);
+    ui->z_pos->setRange(0,handle->voxel.dim[2]-1);
+    ui->z_pos->setValue((handle->voxel.dim[2]-1) >> 1);
+    ui->x->setMaximum(handle->voxel.dim[0]-1);
+    ui->y->setMaximum(handle->voxel.dim[1]-1);
+    ui->z->setMaximum(handle->voxel.dim[2]-1);
+    source_ratio = std::max(1.0,500/(double)handle->voxel.dim.height());
+}
+
 void reconstruction_window::load_b_table(void)
 {
     ui->b_table->clear();
@@ -155,7 +160,7 @@ void reconstruction_window::load_b_table(void)
 }
 void reconstruction_window::on_b_table_itemSelectionChanged()
 {
-    image::basic_image<float,2> tmp(image::geometry<2>(dim[0],dim[1]));
+    image::basic_image<float,2> tmp(image::geometry<2>(handle->voxel.dim[0],handle->voxel.dim[1]));
     unsigned int b_index = ui->b_table->currentRow();
     std::copy(handle->dwi_data[b_index] + ui->z_pos->value()*tmp.size(),
               handle->dwi_data[b_index] + ui->z_pos->value()*tmp.size() + tmp.size(),tmp.begin());
@@ -165,6 +170,7 @@ void reconstruction_window::on_b_table_itemSelectionChanged()
         tmp *= 255.99/ui->contrast->value();
     image::upper_lower_threshold(tmp,(float)0.0,(float)255.0);
 
+    image::geometry<3> dim(handle->voxel.dim);
     buffer_source.resize(image::geometry<2>(dim[0],dim[1]));
     std::copy(tmp.begin(),tmp.end(),buffer_source.begin());
     source.setSceneRect(0, 0, dim.width()*source_ratio,dim.height()*source_ratio);
@@ -631,14 +637,14 @@ void reconstruction_window::on_actionSave_4D_nifti_triggered()
     }
     {
         image::geometry<4> nifti_dim;
-        std::copy(dim.begin(),dim.end(),nifti_dim.begin());
+        std::copy(handle->voxel.dim.begin(),handle->voxel.dim.end(),nifti_dim.begin());
         nifti_dim[3] = handle->voxel.bvalues.size();
         image::basic_image<float,4> buffer(nifti_dim);
         for(unsigned int index = 0;index < handle->voxel.bvalues.size();++index)
         {
             std::copy(handle->dwi_data[index],
-                      handle->dwi_data[index]+dim.size(),
-                      buffer.begin() + index*dim.size());
+                      handle->dwi_data[index]+handle->voxel.dim.size(),
+                      buffer.begin() + index*handle->voxel.dim.size());
         }
         image::flip_xy(buffer);
         header << buffer;
@@ -703,7 +709,6 @@ void reconstruction_window::on_actionSave_bvecs_triggered()
 
 void reconstruction_window::update_image(void)
 {
-    dim = handle->voxel.dim;
     image.resize(handle->voxel.dim);
     for(unsigned int index = 0;index < image.size();++index)
         image[index] = handle->dwi_sum[index]*255.0;
@@ -733,7 +738,9 @@ void reconstruction_window::on_actionFlip_z_triggered()
 
 void reconstruction_window::on_actionFlip_xy_triggered()
 {
+    begin_prog("rotating");
     handle->flip(3);
+    update_dimension();
     update_image();
     on_SlicePos_sliderMoved(ui->SlicePos->value());
 }
@@ -741,6 +748,7 @@ void reconstruction_window::on_actionFlip_yz_triggered()
 {
     begin_prog("rotating");
     handle->flip(4);
+    update_dimension();
     update_image();
     on_SlicePos_sliderMoved(ui->SlicePos->value());
 }
@@ -748,6 +756,7 @@ void reconstruction_window::on_actionFlip_xz_triggered()
 {
     begin_prog("rotating");
     handle->flip(5);
+    update_dimension();
     update_image();
     on_SlicePos_sliderMoved(ui->SlicePos->value());
 }
@@ -781,4 +790,13 @@ void reconstruction_window::on_delete_2_clicked()
     handle->dwi_data.erase(handle->dwi_data.begin()+index);
     handle->voxel.bvalues.erase(handle->voxel.bvalues.begin()+index);
     handle->voxel.bvectors.erase(handle->voxel.bvectors.begin()+index);
+}
+
+void reconstruction_window::on_actionTrim_image_triggered()
+{
+    begin_prog("trimming");
+    handle->trim();
+    update_dimension();
+    update_image();
+    on_SlicePos_sliderMoved(ui->SlicePos->value());
 }

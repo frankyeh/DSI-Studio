@@ -46,6 +46,23 @@ public:
             image::resample(I,rotation_matrix);
         }
     }
+    void trim(void)
+    {
+        image::geometry<3> range_min,range_max;
+        image::bounding_box(mask,range_min,range_max,0);
+        for (unsigned int index = 0;check_prog(index,dwi_data.size());++index)
+        {
+            image::pointer_image<unsigned short,3> I = image::make_image(voxel.dim,(unsigned short*)dwi_data[index]);
+            image::basic_image<unsigned short,3> I0 = I;
+            image::crop(I0,range_min,range_max);
+            std::fill(I.begin(),I.end(),0);
+            std::copy(I0.begin(),I0.end(),I.begin());
+        }
+        image::crop(dwi_sum,range_min,range_max);
+        image::crop(mask,range_min,range_max);
+        voxel.dim = mask.geometry();
+
+    }
 
 public:
     ImageModel(void):thread_count(1) {}

@@ -1488,6 +1488,7 @@
     <addaction name="actionFlip_xz"/>
     <addaction name="actionFlip_yz"/>
     <addaction name="actionRotate"/>
+    <addaction name="actionTrim_image"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menu_Edit"/>
@@ -1545,6 +1546,11 @@
   <action name="actionRotate">
    <property name="text">
     <string>Rotate...</string>
+   </property>
+  </action>
+  <action name="actionTrim_image">
+   <property name="text">
+    <string>Trim image</string>
    </property>
   </action>
  </widget>

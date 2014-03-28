@@ -37,13 +37,12 @@ private:
     QImage slice_image;
 private:
     Ui::reconstruction_window *ui;
-    image::geometry<3> dim;
-
     std::auto_ptr<ImageModel> handle;
     float params[5];
     image::basic_image<unsigned char, 3>image;
     image::basic_image<unsigned char, 3>mask;
     bool load_src(int index);
+    void update_dimension(void);
     void update_image(void);
     void doReconstruction(unsigned char method_id,bool prompt);
 private slots:
@@ -85,6 +84,7 @@ private slots:
     void on_HARDI_toggled(bool checked);
     void on_load_b_table_clicked();
     void on_delete_2_clicked();
+    void on_actionTrim_image_triggered();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

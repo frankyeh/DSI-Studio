@@ -118,14 +118,12 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
     {
         std::ifstream in(FileName,std::ios::binary);
         std::vector<image::vector<3,short> > points;
-        while(in)
-        {
-            image::vector<3,float> point;
-            in >> point;
-            point += 0.5;
-            point.floor();
-            points.push_back(image::vector<3,short>(point[0],point[1],point[2]));
-        }
+        std::copy(std::istream_iterator<image::vector<3,short> >(in),
+                  std::istream_iterator<image::vector<3,short> >(),
+                  std::back_inserter(points));
+        image::add_constant(points.begin(),points.end(),0.5);
+        for(unsigned int i = 0;i < points.size();++i)
+            points[i].floor();
         region.swap(points);
         std::sort(region.begin(),region.end());
         return true;
