@@ -63,7 +63,7 @@ public:
         odf_blocks[store_index] = odf;
         odf_block_size[store_index] = size;
     }
-    void initializeODF(const image::geometry<3>& dim,const std::vector<const float*> fa,unsigned int half_odf_size_)
+    void initializeODF(const image::geometry<3>& dim,const float* fa0,unsigned int half_odf_size_)
     {
         half_odf_size = half_odf_size_;
         // handle the odf mappings
@@ -72,7 +72,7 @@ public:
             voxel_index_map.resize(dim);
             for (unsigned int index = 0,j = 0;index < voxel_index_map.size();++index)
             {
-                if (fa[0][index] == 0.0)
+                if (fa0[index] == 0.0)
                 {
                     unsigned int from = j*(half_odf_size);
                     unsigned int to = from + half_odf_size;
@@ -112,7 +112,7 @@ public:
                         }
                     if(!is_odf_zero)
                         for(;voxel_index < odf_block_map1.size();++voxel_index)
-                            if(fa[0][voxel_index] != 0.0)
+                            if(fa0[voxel_index] != 0.0)
                                 break;
                     if(voxel_index >= odf_block_map1.size())
                         break;
@@ -343,7 +343,7 @@ public:
                 }
         }
 
-        odf.initializeODF(dim,fa,half_odf_size);
+        odf.initializeODF(dim,fa[0],half_odf_size);
         if(num_fiber == 0)
             error_msg = "No image data found";
         return num_fiber;

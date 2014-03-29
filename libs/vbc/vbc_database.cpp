@@ -161,19 +161,14 @@ bool vbc_database::sample_odf(gz_mat_read& mat_reader,std::vector<float>& data)
             break;
         subject_odf.setODF(index,odf,row*col);
     }
-    std::vector<const float*> cur_fa(num_fiber);
-    for(unsigned int fib = 0;fib < num_fiber;++fib)
-    {
-        std::ostringstream out;
-        out << "fa" << fib;
-        unsigned int row,col;
-        mat_reader.read(out.str().c_str(),row,col,cur_fa[fib]);
-        if (!cur_fa[fib])
-        {
-            error_msg = "Inconsistent fa number in subject fib file";
-            return false;
-        }
 
+    const float* fa0 = 0;
+    unsigned int row,col;
+    mat_reader.read("fa0",row,col,fa0);
+    if (!fa0)
+    {
+        error_msg = "Invalid file format. Cannot find fa0 matrix in ";
+        return false;
     }
 
     if(!subject_odf.has_odfs())
@@ -181,7 +176,7 @@ bool vbc_database::sample_odf(gz_mat_read& mat_reader,std::vector<float>& data)
         error_msg = "No ODF data in the subject file:";
         return false;
     }
-    subject_odf.initializeODF(dim,cur_fa,half_odf_size);
+    subject_odf.initializeODF(dim,fa0,half_odf_size);
 
     set_title("load data");
     for(unsigned int index = 0;index < si2vi.size();++index)

@@ -55,6 +55,7 @@ public:
                 in.read((char*)buf,size);
                 return in;
             }
+        return false;
     }
     void seek(size_t pos)
     {
