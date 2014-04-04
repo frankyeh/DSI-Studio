@@ -106,14 +106,16 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
     is_qsdr = !handle->fib_data.trans_to_mni.empty();
 
     // setup atlas
-    if(!fa_template_imp.I.empty() && fib_data.vs[0] > 0.5 && !is_qsdr)
+    if(!fa_template_imp.I.empty() &&
+        handle->fib_data.dim[0]*handle->fib_data.vs[0] > 100 &&
+        handle->fib_data.dim[1]*handle->fib_data.vs[1] > 120 &&
+        handle->fib_data.dim[2]*handle->fib_data.vs[2] > 50 && !is_qsdr)
     {
         mi3_arg.scaling[0] = slice.voxel_size[0] / std::fabs(fa_template_imp.tran[0]);
         mi3_arg.scaling[1] = slice.voxel_size[1] / std::fabs(fa_template_imp.tran[5]);
         mi3_arg.scaling[2] = slice.voxel_size[2] / std::fabs(fa_template_imp.tran[10]);
         image::reg::align_center(slice.source_images,fa_template_imp.I,mi3_arg);
         mi3.reset(new manual_alignment(this,slice.source_images,fa_template_imp.I,mi3_arg));
-        is_qsdr = false;
     }
     else
         ui->actionManual_Registration->setEnabled(false);
