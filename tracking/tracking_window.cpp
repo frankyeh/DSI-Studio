@@ -33,7 +33,7 @@ void tracking_window::closeEvent(QCloseEvent *event)
 
 tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handle_release_) :
         QMainWindow(parent),handle(new_handle),handle_release(handle_release_),
-        ui(new Ui::tracking_window),scene(*this,new_handle),slice(new_handle)
+        ui(new Ui::tracking_window),scene(*this,new_handle),slice(new_handle),gLdock(0)
 
 {
 
@@ -54,8 +54,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         ui->dockWidget->setMinimumWidth(0);
         ui->dockWidget_3->setMinimumWidth(0);
         ui->renderingLayout->addWidget(renderWidget = new RenderingTableWidget(*this,ui->renderingWidgetHolder,has_odfs));
-        ui->centralLayout->insertWidget(1,glWidget = new GLWidget(renderWidget->getData("anti_aliasing").toInt(),
-                                                                  *this,renderWidget,ui->centralwidget));
+        ui->main_layout->insertWidget(1,glWidget = new GLWidget(renderWidget->getData("anti_aliasing").toInt(),*this,renderWidget));
         ui->verticalLayout_3->addWidget(regionWidget = new RegionTableWidget(*this,ui->regionDockWidget));
         ui->tractverticalLayout->addWidget(tractWidget = new TractTableWidget(*this,ui->TractWidgetHolder));
         ui->graphicsView->setScene(&scene);
@@ -383,7 +382,6 @@ void tracking_window::subject2mni(image::vector<3>& pos)
 }
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 {
-
     bool has_info = false;
     image::vector<3,float> pos;
     if (event->type() == QEvent::MouseMove)
@@ -920,7 +918,6 @@ void tracking_window::on_actionRestore_window_layout_triggered()
 {
     restoreGeometry(default_geo);
     restoreState(default_state);
-
 }
 
 
@@ -1270,4 +1267,27 @@ void tracking_window::on_actionConnectometry_triggered()
 }
 
 
+void tracking_window::on_restore_3D_window()
+{
+    ui->centralLayout->addWidget(ui->main_widget);
+    delete gLdock;
+    gLdock = 0;
+}
 
+void tracking_window::on_actionFloat_3D_window_triggered()
+{
+    if(!gLdock)
+    {
+        gLdock = new QGLDockWidget(this);
+        int w = ui->main_widget->width();
+        gLdock->setWindowTitle("3D Window");
+        gLdock->setAllowedAreas(Qt::NoDockWidgetArea);
+        gLdock->setWidget(ui->main_widget);
+        gLdock->setFloating(true);
+        gLdock->show();
+        gLdock->resize(w,w);
+        connect(gLdock,SIGNAL(closedSignal()),this,SLOT(on_restore_3D_window()));
+    }
+    else
+        on_restore_3D_window();
+}

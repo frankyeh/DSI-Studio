@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QTreeWidget>
 #include <QGraphicsScene>
+#include <QDockWidget>
 #include <image/image.hpp>
 #include <vector>
 #include "SliceModel.h"
@@ -23,6 +24,21 @@ class manual_alignment;
 class tract_report;
 class color_bar_dialog;
 class connectivity_matrix_dialog;
+class QGLDockWidget : public QDockWidget
+{
+    Q_OBJECT
+public:
+    explicit QGLDockWidget(QWidget *parent = 0, Qt::WindowFlags flags = 0):QDockWidget(parent,flags){;}
+protected:
+    void closeEvent(QCloseEvent *e)
+    {
+        QWidget::closeEvent(e);
+        emit closedSignal();
+    }
+signals:
+    void closedSignal();
+};
+
 class tracking_window : public QMainWindow
 {
     Q_OBJECT
@@ -36,6 +52,7 @@ public:
 
     Ui::tracking_window *ui;
     GLWidget *glWidget;
+    QGLDockWidget* gLdock;
     RegionTableWidget *regionWidget;
     TractTableWidget *tractWidget;
     RenderingTableWidget *renderWidget;
@@ -130,6 +147,8 @@ private slots:
     void on_offset_value_valueChanged(double arg1);
     void on_gl_contrast_value_valueChanged(double arg1);
     void on_gl_offset_value_valueChanged(double arg1);
+    void on_actionFloat_3D_window_triggered();
+    void on_restore_3D_window();
 };
 
 #endif // TRACKING_WINDOW_H
