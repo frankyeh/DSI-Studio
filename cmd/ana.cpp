@@ -36,7 +36,7 @@ int ana(int ac, char *av[])
     }
 
     po::variables_map vm;
-    po::store(po::command_line_parser(ac, av).options(ana_desc).allow_unregistered().run(), vm);
+    po::store(po::command_line_parser(ac, av).options(ana_desc).run(), vm);
     po::notify(vm);
 
     std::auto_ptr<ODFModel> handle(new ODFModel);

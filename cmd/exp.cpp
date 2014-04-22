@@ -33,7 +33,7 @@ int exp(int ac, char *av[])
     }
 
     po::variables_map vm;
-    po::store(po::command_line_parser(ac, av).options(ana_desc).allow_unregistered().run(), vm);
+    po::store(po::command_line_parser(ac, av).options(ana_desc).run(), vm);
     po::notify(vm);
 
     gz_mat_read mat_reader;

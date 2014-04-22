@@ -26,7 +26,7 @@ int src(int ac, char *av[])
         return 1;
     }
     po::variables_map vm;
-    po::store(po::command_line_parser(ac, av).options(rec_desc).allow_unregistered().run(), vm);
+    po::store(po::command_line_parser(ac, av).options(rec_desc).run(), vm);
     po::notify(vm);
 
 
