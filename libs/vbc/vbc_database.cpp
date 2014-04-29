@@ -39,10 +39,7 @@ bool vbc_database::create_database(const char* template_name)
 {
     handle.reset(new ODFModel);
     if(!handle->fib_data.load_from_file(template_name))
-    {
-        error_msg = "Invalid fib file";
         return false;
-    }
     read_template();
     return true;
 }

@@ -181,7 +181,7 @@ void VBCDialog::on_create_data_base_clicked()
         std::auto_ptr<vbc_database> data(new vbc_database);
         if(!data->create_database(ui->skeleton->text().toLocal8Bit().begin()))
         {
-            QMessageBox::information(this,"error","Invalid template file",0);
+            QMessageBox::information(this,"error",data->error_msg.c_str(),0);
             return;
         }
         //instance.permutation_test(output_dir,num_files1,p_value_threshold))
