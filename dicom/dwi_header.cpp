@@ -131,6 +131,20 @@ bool DwiHeader::open(const char* filename)
         if(gvalue && gvalue_length == 8)
             bvalue = gvalue[0];
     }
+    {
+        unsigned int gvalue_length = 0;
+        const char* str = (const char*)header.get_data(0x0020,0x4000,gvalue_length);
+        //B-Value string e.g.  b=2000(0.140,0.134,-0.981)
+        if(str)
+        {
+            std::string b_str(str+2);
+            std::replace(b_str.begin(),b_str.end(),'(',' ');
+            std::replace(b_str.begin(),b_str.end(),')',' ');
+            std::replace(b_str.begin(),b_str.end(),',',' ');
+            std::istringstream in(b_str);
+            in >> bvalue >> bvec[0] >> bvec[1] >> bvec[2];
+        }
+    }
         break;
     }
 
