@@ -100,7 +100,7 @@ int rec(int ac, char *av[])
             std::cout << "loading template..." << std::endl;
             if(!fa_template_imp.load_from_file(get_fa_template_path().c_str()))
             {
-                std::string error_str = "Cannot find FMRIB58_FA_1mm.nii.gz at ";
+                std::string error_str = "Cannot find template file at ";
                 error_str += get_fa_template_path();
                 std::cout << error_str << std::endl;
                 return -1;

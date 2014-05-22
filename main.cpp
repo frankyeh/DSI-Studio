@@ -12,6 +12,7 @@
 #include "boost/program_options.hpp"
 #include "image/image.hpp"
 #include "mapping/fa_template.hpp"
+#include "mapping/atlas.hpp"
 #include <iostream>
 #include <iterator>
 namespace po = boost::program_options;
@@ -21,9 +22,10 @@ int trk(int ac, char *av[]);
 int src(int ac, char *av[]);
 int ana(int ac, char *av[]);
 int exp(int ac, char *av[]);
+int norm(int ac, char *av[]);
 
 fa_template fa_template_imp;
-
+std::vector<atlas> atlas_list;
 void prog_debug(const char* file,const char* fun)
 {
 
@@ -47,24 +49,36 @@ QStringList search_files(QString dir,QString filter)
 }
 
 
-std::string program_base;
 std::string get_fa_template_path(void)
 {
-    std::string fa_template_path = program_base;
-    fa_template_path += "FMRIB58_FA_1mm.nii.gz";
+    std::string fa_template_path = QCoreApplication::applicationDirPath().toLocal8Bit().begin();
+    fa_template_path += "/FMRIB58_FA_1mm.nii.gz";
     return fa_template_path;
+}
+
+void load_atlas(void)
+{
+    QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
+    QStringList atlas_name_list = dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
+    atlas_name_list << dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
+    for(int index = 0;index < atlas_name_list.size();++index)
+    {
+        atlas_list.push_back(atlas());
+        if(!atlas_list.back().load_from_file((dir.absolutePath() + "/" + atlas_name_list[index]).toLocal8Bit().begin()))
+            atlas_list.pop_back();
+        atlas_list.back().name = QFileInfo(atlas_name_list[index]).baseName().toLocal8Bit().begin();
+    }
 }
 
 int main(int ac, char *av[])
 {
-
-    {
-        int pos = 0;
-        for(int index = 0;av[0][index];++index)
-            if(av[0][index] == '\\' || av[0][index] == '/')
-                pos = index;
-        program_base = std::string(&(av[0][0]),&(av[0][0])+pos+1);
-    }
+    QApplication a(ac,av);
+    a.setOrganizationName("LabSolver");
+    a.setApplicationName("DSI Studio");
+    QFont font;
+    font.setFamily(QString::fromUtf8("Arial"));
+    a.setFont(font);
+    QApplication::setStyle(new QCleanlooksStyle);
 
     if(ac > 2)
     {
@@ -107,6 +121,10 @@ int main(int ac, char *av[])
                 return ana(ac,av);
             if(vm["action"].as<std::string>() == std::string("exp"))
                 return exp(ac,av);
+            if(vm["action"].as<std::string>() == std::string("norm"))
+                return norm(ac,av);
+            std::cout << "invalid command, use --help for more detail" << std::endl;
+            return 1;
         }
         catch(const std::exception& e ) {
             std::cerr << e.what() << std::endl;
@@ -114,14 +132,7 @@ int main(int ac, char *av[])
         return 1;
     }
 
-    QApplication::setStyle(new QCleanlooksStyle);
-    QApplication a(ac,av);
-    a.setOrganizationName("LabSolver");
-    a.setApplicationName("DSI Studio");
-    QFont font;
-    font.setFamily(QString::fromUtf8("Arial"));
-    a.setFont(font);
-
+    // load template
     if(!fa_template_imp.load_from_file(get_fa_template_path().c_str()))
     {
         std::string error_str = "Cannot find FMRIB58_FA_1mm.nii.gz at ";
@@ -129,6 +140,8 @@ int main(int ac, char *av[])
         QMessageBox::information(0,"Error",error_str.c_str(),0);
         return false;
     }
+    // load atlas
+    load_atlas();
 
     MainWindow w;
     w.setFont(font);

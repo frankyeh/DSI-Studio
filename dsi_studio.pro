@@ -163,4 +163,5 @@ SOURCES += main.cpp \
     tracking/color_bar_dialog.cpp \
     cmd/exp.cpp \
     tracking/connectivity_matrix_dialog.cpp \
-    libs/dsi/tessellated_icosahedron.cpp
+    libs/dsi/tessellated_icosahedron.cpp \
+    cmd/norm.cpp

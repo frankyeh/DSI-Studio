@@ -24,24 +24,14 @@
 #include "tracking/vbc_dialog.hpp"
 #include "vbc/vbc_database.h"
 
-std::vector<atlas> atlas_list;
-extern std::string program_base;
+extern std::vector<atlas> atlas_list;
 extern std::auto_ptr<QProgressDialog> progressDialog;
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
         ui(new Ui::MainWindow)
 {
     setAcceptDrops(true);
-    QDir dir = QString(program_base.c_str())+ "/atlas";
-    QStringList atlas_name_list = dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
-    atlas_name_list << dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
-    for(int index = 0;index < atlas_name_list.size();++index)
-    {
-        atlas_list.push_back(atlas());
-        if(!atlas_list.back().load_from_file((dir.absolutePath() + "/" + atlas_name_list[index]).toLocal8Bit().begin()))
-            atlas_list.pop_back();
-        atlas_list.back().name = QFileInfo(atlas_name_list[index]).baseName().toLocal8Bit().begin();
-    }
+
 
     progressDialog.reset(new QProgressDialog);
     ui->setupUi(this);
