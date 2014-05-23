@@ -22,7 +22,7 @@ int trk(int ac, char *av[]);
 int src(int ac, char *av[]);
 int ana(int ac, char *av[]);
 int exp(int ac, char *av[]);
-int norm(int ac, char *av[]);
+int atl(int ac, char *av[]);
 
 fa_template fa_template_imp;
 std::vector<atlas> atlas_list;
@@ -121,8 +121,8 @@ int main(int ac, char *av[])
                 return ana(ac,av);
             if(vm["action"].as<std::string>() == std::string("exp"))
                 return exp(ac,av);
-            if(vm["action"].as<std::string>() == std::string("norm"))
-                return norm(ac,av);
+            if(vm["action"].as<std::string>() == std::string("atl"))
+                return atl(ac,av);
             std::cout << "invalid command, use --help for more detail" << std::endl;
             return 1;
         }

@@ -364,12 +364,15 @@ tracking_window::~tracking_window()
 
 void tracking_window::subject2mni(image::vector<3>& pos)
 {
-    if(mi3.get() && mi3->progress == 2)
+    if(mi3.get())
     {
         mi3->T(pos);
-        image::vector<3> result;
-        mi3->bnorm_data(pos,result);
-        pos = result;
+        if(mi3->progress >= 1)
+        {
+            image::vector<3> mni;
+            mi3->bnorm_data(pos,mni);
+            pos = mni;
+        }
         fa_template_imp.to_mni(pos);
     }
     else

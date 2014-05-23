@@ -58,7 +58,6 @@ void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool de
 }
 
 // ---------------------------------------------------------------------------
-extern std::string program_base;
 void ROIRegion::SaveToFile(const char* FileName,const std::vector<float>& trans) {
     std::string file_name(FileName);
     std::string ext;
