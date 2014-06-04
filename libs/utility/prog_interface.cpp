@@ -4,11 +4,9 @@
 #include <memory>
 #include <ctime>
 #include <iostream>
-
+#include <QTime>
 std::auto_ptr<QProgressDialog> progressDialog;
-long cur_time = 0;
-long zero_time = 0;
-const long interval = 500;
+QTime t_total,t_last;
 
         extern "C" void begin_prog(const char* title)
         {
@@ -18,7 +16,7 @@ const long interval = 500;
             progressDialog->setMinimumDuration(0);
             progressDialog->setWindowTitle(title);
             qApp->processEvents();
-            cur_time = zero_time = 0;
+            t_total.start();
         }
 
         extern "C" void set_title(const char* title)
@@ -36,17 +34,16 @@ const long interval = 500;
         }
         extern "C" int check_prog(int now,int total)
         {
-            long now_time = std::clock();
             if(now == total && progressDialog.get())
                 progressDialog.reset(new QProgressDialog("","Abort",0,10,0));
             if(now == 0 || now == total)
-                zero_time = now_time;
-            if(progressDialog.get() && (now_time - cur_time > interval))
+                t_total.start();
+            if(progressDialog.get() && (t_last.elapsed() > 500))
             {
-
+                t_last.start();
                 long expected_sec = 0;
-                if(now != 0 && now_time != zero_time)
-                    expected_sec = ((double)(now_time-zero_time)*(double)(total-now)/(double)now/(double)CLOCKS_PER_SEC);
+                if(now)
+                    expected_sec = ((double)t_total.elapsed()*(double)(total-now)/(double)now/1000.0);
                 if(progressDialog->wasCanceled())
                     return false;
                 progressDialog->setRange(0, total);
@@ -57,9 +54,7 @@ const long interval = 500;
                                                      arg(now).arg(total).arg(expected_sec/60).arg(expected_sec%60));
                 else
                     progressDialog->setLabelText(QString("%1 of %2...").arg(now).arg(total));
-
                 qApp->processEvents();
-                cur_time = std::clock();
             }
             return now < total;
         }
