@@ -121,8 +121,11 @@ int trk(int ac, char *av[])
     {
         termination_count = vm["fiber_count"].as<int>();
         tracking_thread.stop_by_tract = true;
-    }        
-    if (vm.count("seed_count"))
+
+        if (vm.count("seed_count"))
+            tracking_thread.max_seed_count = vm["seed_count"].as<int>();
+    }
+    else
     {
         termination_count = vm["seed_count"].as<int>();
         tracking_thread.stop_by_tract = false;

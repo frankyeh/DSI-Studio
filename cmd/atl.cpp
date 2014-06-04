@@ -212,9 +212,6 @@ int atl(int ac, char *av[])
 
     float out_trans[16];
     image::matrix::product(fa_template_imp.tran.begin(),T_buf,out_trans,image::dyndim(4,4),image::dyndim(4,4));
-    std::copy(out_trans,out_trans+16,std::ostream_iterator<float>(std::cout," "));
-    std::cout << std::endl;
-
     for(unsigned int i = 0;i < atlas_list.size();++i)
     {
         for(unsigned int j = 0;j < atlas_list[i].get_list().size();++j)

@@ -26,6 +26,7 @@ public:
     unsigned char interpolation_strategy;
     unsigned char tracking_method;
     unsigned char initial_direction;
+    unsigned int max_seed_count;
 public:
     ThreadData(void):
         joinning(false),generator(0),uniform_rand(0,1.0),rand_gen(generator,uniform_rand),
@@ -34,7 +35,8 @@ public:
         termination_count(1000),
         interpolation_strategy(0),//trilinear_interpolation
         tracking_method(0),//streamline
-        initial_direction(0)// main direction
+        initial_direction(0),// main direction
+        max_seed_count(0)
     {}
     ~ThreadData(void)
     {
@@ -103,6 +105,7 @@ public:
             while(!joinning &&
                   (!stop_by_tract || tract_count[thread_id] < max_count) &&
                   (stop_by_tract || seed_count[thread_id] < max_count) &&
+                  (max_seed_count == 0 || seed_count[thread_id] < max_seed_count) &&
                   (!center_seed || iteration < seeds.size()))
             {
                 ++seed_count[thread_id];
