@@ -149,6 +149,8 @@ private slots:
     void on_gl_offset_value_valueChanged(double arg1);
     void on_actionFloat_3D_window_triggered();
     void on_restore_3D_window();
+    void on_actionSave_tracking_parameters_triggered();
+    void on_actionLoad_tracking_parameters_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

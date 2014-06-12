@@ -1294,3 +1294,53 @@ void tracking_window::on_actionFloat_3D_window_triggered()
     else
         on_restore_3D_window();
 }
+
+void tracking_window::on_actionSave_tracking_parameters_triggered()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                           this,
+                           "Open Database files",
+                           absolute_path,
+                           "Setting file (*.ini);;All files (*)");
+    if (filename.isEmpty())
+        return;
+    QSettings s(filename, QSettings::IniFormat);
+    s.setValue("fa_threshold",ui->fa_threshold->value());
+    s.setValue("step_size",ui->step_size->value());
+    s.setValue("turning_angle",ui->turning_angle->value());
+    s.setValue("smoothing",ui->smoothing->value());
+    s.setValue("min_length",ui->min_length->value());
+    s.setValue("max_length",ui->max_length->value());
+    s.setValue("tracking_method",ui->tracking_method->currentIndex());
+    s.setValue("seed_plan",ui->seed_plan->currentIndex());
+    s.setValue("initial_direction",ui->initial_direction->currentIndex());
+    s.setValue("interpolation",ui->interpolation->currentIndex());
+    s.setValue("tracking_plan",ui->tracking_plan->currentIndex());
+    s.setValue("track_count",ui->track_count->value());
+    s.setValue("thread_count",ui->thread_count->currentIndex());
+}
+
+void tracking_window::on_actionLoad_tracking_parameters_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(
+                           this,
+                           "Open Database files",
+                           absolute_path,
+                           "Setting file (*.ini);;All files (*)");
+    if (filename.isEmpty())
+        return;
+    QSettings s(filename, QSettings::IniFormat);
+    ui->fa_threshold->setValue(s.value("fa_threshold",0.4).toDouble());
+    ui->step_size->setValue(s.value("step_size",1).toDouble());
+    ui->turning_angle->setValue(s.value("turning_angle",60).toDouble());
+    ui->smoothing->setValue(s.value("smoothing",0.0).toDouble());
+    ui->min_length->setValue(s.value("min_length",0.0).toDouble());
+    ui->max_length->setValue(s.value("max_length",500).toDouble());
+    ui->tracking_method->setCurrentIndex(s.value("tracking_method",0).toInt());
+    ui->seed_plan->setCurrentIndex(s.value("seed_plan",0).toInt());
+    ui->initial_direction->setCurrentIndex(s.value("initial_direction",0).toInt());
+    ui->interpolation->setCurrentIndex(s.value("interpolation",0).toInt());
+    ui->tracking_plan->setCurrentIndex(s.value("tracking_plan",0).toInt());
+    ui->track_count->setValue(s.value("track_count",2000).toInt());
+    ui->thread_count->setCurrentIndex(s.value("thread_count",0).toInt());
+}

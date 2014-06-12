@@ -973,8 +973,6 @@
     <addaction name="actionSave_Left_Right_3D_Image"/>
     <addaction name="actionCopy_to_clipboard"/>
     <addaction name="separator"/>
-    <addaction name="actionManual_Registration"/>
-    <addaction name="separator"/>
     <addaction name="actionRestore_window_layout"/>
     <addaction name="actionFloat_3D_window"/>
    </widget>
@@ -989,11 +987,20 @@
     <addaction name="actionLoad_mapping"/>
     <addaction name="separator"/>
    </widget>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>Tools</string>
+    </property>
+    <addaction name="actionSave_tracking_parameters"/>
+    <addaction name="actionLoad_tracking_parameters"/>
+    <addaction name="actionManual_Registration"/>
+   </widget>
    <addaction name="menu_Edit"/>
    <addaction name="menuRegions"/>
    <addaction name="menuTracts"/>
    <addaction name="menu_Slices"/>
    <addaction name="menu_View"/>
+   <addaction name="menuTools"/>
   </widget>
   <widget class="QDockWidget" name="TractWidgetHolder">
    <property name="sizePolicy">
@@ -3032,6 +3039,24 @@
   <action name="actionFloat_3D_window">
    <property name="text">
     <string>Float 3D window</string>
+   </property>
+  </action>
+  <action name="actionSave_tracking_parameters">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save tracking parameters...</string>
+   </property>
+  </action>
+  <action name="actionLoad_tracking_parameters">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Load tracking parameters...</string>
    </property>
   </action>
  </widget>
