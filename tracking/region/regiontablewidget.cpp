@@ -134,6 +134,8 @@ QColor RegionTableWidget::currentRowColor(void)
     return (unsigned int)regions[currentRow()].show_region.color;
 }
 
+
+
 void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
 {
     if(color == 0)
@@ -702,6 +704,18 @@ void RegionTableWidget::setROIs(ThreadData* data)
                              regions[index].regions_feature);
 }
 
+QString RegionTableWidget::getROIname(void)
+{
+    for (unsigned int index = 0;index < regions.size();++index)
+        if (!regions[index].empty() && item(index,0)->checkState() == Qt::Checked &&
+             regions[index].regions_feature == roi_id)
+                return item(index,0)->text();
+    for (unsigned int index = 0;index < regions.size();++index)
+        if (!regions[index].empty() && item(index,0)->checkState() == Qt::Checked &&
+             regions[index].regions_feature == seed_id)
+                return item(index,0)->text();
+    return "whole_brain";
+}
 
 void RegionTableWidget::do_action(int id)
 {

@@ -126,7 +126,7 @@ void TractTableWidget::start_tracking(void)
 {
 
     ++tract_serial;
-    addNewTracts(QString("Tracts ")+QString::number(tract_serial));
+    addNewTracts(cur_tracking_window.regionWidget->getROIname());
     thread_data.back() = new ThreadData;
     cur_tracking_window.set_tracking_param(*thread_data.back());
     cur_tracking_window.regionWidget->setROIs(thread_data.back());

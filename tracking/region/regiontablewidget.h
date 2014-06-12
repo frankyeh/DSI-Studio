@@ -53,6 +53,7 @@ public:
     bool has_seeding(void);
     void add_region(QString name,unsigned char type,int color = 0);
     void setROIs(ThreadData* data);
+    QString getROIname(void);
 public slots:
     void draw_region(QImage& image);
     void draw_mosaic_region(QImage& image,unsigned int mosaic_size,unsigned int skip);
