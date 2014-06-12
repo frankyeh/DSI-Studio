@@ -678,7 +678,7 @@ void dicom_parser::on_load_bval_clicked()
             this,
             "Open bval",
             QFileInfo(ui->SrcName->text()).absolutePath(),
-            "b-value file (bval *.txt *.bvals);;All files (*)" );
+            "All files (*)" );
     if(filename.isEmpty())
         return;
     std::vector<double> bval;
@@ -697,7 +697,7 @@ void dicom_parser::on_load_bvec_clicked()
             this,
             "Open bvec",
             QFileInfo(ui->SrcName->text()).absolutePath(),
-            "b-vector file (bvec *.txt *.bvecs);;All files (*)" );
+            "All files (*)" );
     if(filename.isEmpty())
         return;
     std::vector<double> b_table;
