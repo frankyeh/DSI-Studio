@@ -1360,6 +1360,8 @@ void ConnectivityMatrix::set_regions(const region_table_type& region_table)
     {
         regions[index] = iter->second.first;
         region_name[index] = iter->second.second;
+        // replace space by _
+        std::replace(region_name[index].begin(),region_name[index].end(),' ','_');
     }
 }
 
