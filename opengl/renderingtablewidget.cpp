@@ -331,12 +331,15 @@ RenderingTableWidget::RenderingTableWidget(tracking_window& cur_tracking_window_
 void RenderingTableWidget::initialize(void)
 {
     // Environment
+
+    openPersistentEditor(treemodel->addItem(TreeModel::environItem,
+        "scale_voxel",QString("Scale with voxel size"),QStringList() << QString("Off") << QString("On"),1));
+
     openPersistentEditor(treemodel->addItem(TreeModel::environItem,
         "pespective",QString("Perspective"),QString("int"),5));
 
     openPersistentEditor(treemodel->addItem(TreeModel::environItem,
         "bkg_color",QString("Background Color"),QString("color"),(int)0x00FFFFFF));
-
 
     openPersistentEditor(treemodel->addItem(TreeModel::environItem,
         "anti_aliasing",QString("Anti-aliasing"),

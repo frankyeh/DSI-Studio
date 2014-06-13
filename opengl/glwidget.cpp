@@ -117,7 +117,7 @@ void GLWidget::set_view(unsigned char view_option)
 {
     // initialize world matrix
     image::matrix::identity(transformation_matrix,image::dim<4,4>());
-    if(cur_tracking_window.slice.voxel_size[0] > 0.0)
+    if(get_param("scale_voxel") && cur_tracking_window.slice.voxel_size[0] > 0.0)
     {
         transformation_matrix[5] = cur_tracking_window.slice.voxel_size[1] / cur_tracking_window.slice.voxel_size[0];
         transformation_matrix[10] = cur_tracking_window.slice.voxel_size[2] / cur_tracking_window.slice.voxel_size[0];
@@ -373,6 +373,12 @@ void GLWidget::paintGL()
         glClearColor((float)((color & 0x00FF0000) >> 16)/255.0,
                      (float)((color & 0x0000FF00) >> 8)/255.0,
                      (float)(color & 0x000000FF)/255.0,1.0f);
+
+        if(scale_voxel != get_param("scale_voxel"))
+        {
+            scale_voxel = get_param("scale_voxel");
+            set_view(0);
+        }
 
         if(get_param("anti_aliasing"))
             glEnable(0x809D/*GL_MULTISAMPLE*/);

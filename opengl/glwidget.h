@@ -109,6 +109,7 @@ class RenderingTableWidget;
      float get_param_float(const char* name);
  private:
      float tract_alpha;
+     unsigned char scale_voxel;
      unsigned char tract_alpha_style;
      unsigned char tract_style;
      unsigned char tract_color_style;
