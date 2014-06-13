@@ -249,6 +249,14 @@ void RegionTableWidget::new_region(void)
 {
     add_region("New Region",roi_id);
 }
+void RegionTableWidget::copy_region(void)
+{
+    unsigned int cur_row = currentRow();
+    add_region(item(cur_row,0)->text(),regions[cur_row].regions_feature);
+    unsigned int color = (unsigned int)regions.back().show_region.color;
+    regions.back() = regions[cur_row];
+    regions.back().show_region.color = color;
+}
 bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 {
     gz_nifti header;

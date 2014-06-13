@@ -860,11 +860,13 @@
     <addaction name="actionSaveRegionAs"/>
     <addaction name="actionSave_All_Regions_As"/>
     <addaction name="actionSave_Voxel_Data_As"/>
-    <addaction name="actionDeleteRegion"/>
-    <addaction name="actionDeleteRegionAll"/>
     <addaction name="separator"/>
     <addaction name="actionCheck_all_regions"/>
     <addaction name="actionUnckech_all_regions"/>
+    <addaction name="separator"/>
+    <addaction name="actionCopy_Region"/>
+    <addaction name="actionDeleteRegion"/>
+    <addaction name="actionDeleteRegionAll"/>
     <addaction name="separator"/>
     <addaction name="menuModify"/>
     <addaction name="actionWhole_brain_seeding"/>
@@ -878,6 +880,10 @@
     <widget class="QMenu" name="menuSave">
      <property name="title">
       <string>Save Index</string>
+     </property>
+     <property name="icon">
+      <iconset resource="../icons.qrc">
+       <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
      </property>
      <addaction name="actionQuantitative_anisotropy_QA"/>
     </widget>
@@ -893,6 +899,10 @@
     <widget class="QMenu" name="menuExport_Tract_Density">
      <property name="title">
       <string>Export Tract Density</string>
+     </property>
+     <property name="icon">
+      <iconset resource="../icons.qrc">
+       <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
      </property>
      <addaction name="actionTDI_Diffusion_Space"/>
      <addaction name="actionTDI_Subvoxel_Diffusion_Space"/>
@@ -910,6 +920,10 @@
      <property name="title">
       <string>Save Tracts</string>
      </property>
+     <property name="icon">
+      <iconset resource="../icons.qrc">
+       <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     </property>
      <addaction name="actionSaveTractAs"/>
      <addaction name="actionSave_Tracts_in_Current_Mapping"/>
      <addaction name="actionSave_Tracts_in_MNI_space"/>
@@ -922,6 +936,9 @@
     <addaction name="menuSave_Tracts"/>
     <addaction name="menuSave"/>
     <addaction name="menuExport_Tract_Density"/>
+    <addaction name="separator"/>
+    <addaction name="actionCheck_all_tracts"/>
+    <addaction name="actionUncheck_all_tracts"/>
     <addaction name="separator"/>
     <addaction name="actionMerge_All"/>
     <addaction name="actionCopyTrack"/>
@@ -2360,7 +2377,7 @@
      <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
    </property>
    <property name="text">
-    <string>&amp;Delete Region</string>
+    <string>&amp;Delete</string>
    </property>
    <property name="font">
     <font>
@@ -2416,7 +2433,7 @@
      <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
    </property>
    <property name="text">
-    <string>Delete All Regions</string>
+    <string>Delete All</string>
    </property>
    <property name="font">
     <font>
@@ -2430,7 +2447,7 @@
      <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
    </property>
    <property name="text">
-    <string>Delete Current</string>
+    <string>Delete</string>
    </property>
    <property name="font">
     <font>
@@ -3000,12 +3017,12 @@
   </action>
   <action name="actionCheck_all_regions">
    <property name="text">
-    <string>Check all regions</string>
+    <string>Check All</string>
    </property>
   </action>
   <action name="actionUnckech_all_regions">
    <property name="text">
-    <string>Uncheck all regions</string>
+    <string>Uncheck All</string>
    </property>
   </action>
   <action name="actionCopyTrack">
@@ -3057,6 +3074,21 @@
    </property>
    <property name="text">
     <string>Load tracking parameters...</string>
+   </property>
+  </action>
+  <action name="actionCheck_all_tracts">
+   <property name="text">
+    <string>Check All</string>
+   </property>
+  </action>
+  <action name="actionUncheck_all_tracts">
+   <property name="text">
+    <string>Uncheck All</string>
+   </property>
+  </action>
+  <action name="actionCopy_Region">
+   <property name="text">
+    <string>Copy</string>
    </property>
   </action>
  </widget>

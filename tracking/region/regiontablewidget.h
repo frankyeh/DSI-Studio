@@ -59,6 +59,7 @@ public slots:
     void draw_mosaic_region(QImage& image,unsigned int mosaic_size,unsigned int skip);
     void updateRegions(QTableWidgetItem* item);
     void new_region(void);
+    void copy_region(void);
     void save_region(void);
     void save_all_regions(void);
     void save_region_info(void);

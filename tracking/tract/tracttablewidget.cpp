@@ -224,6 +224,27 @@ void TractTableWidget::load_tracts(void)
     emit need_update();
 }
 
+void TractTableWidget::check_all(void)
+{
+    for(unsigned int row = 0;row < rowCount();++row)
+    {
+        item(row,0)->setCheckState(Qt::Checked);
+        item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
+    }
+    emit need_update();
+}
+
+void TractTableWidget::uncheck_all(void)
+{
+    for(unsigned int row = 0;row < rowCount();++row)
+    {
+        item(row,0)->setCheckState(Qt::Unchecked);
+        item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
+    }
+    emit need_update();
+}
+
+
 void TractTableWidget::save_all_tracts_as(void)
 {
     if(tract_models.empty())
