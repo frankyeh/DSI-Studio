@@ -41,6 +41,7 @@ public:
         terminated = false;
         ended = false;
         image::reg::linear(from,to,arg_min,reg_type,image::reg::mutual_information(),terminated);
+        ended = true;
     }
 
     const float* get(void) const

@@ -449,7 +449,7 @@ void slice_view_scene::mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseE
 
 void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {
-    if(cur_tracking_window.ui->view_style->currentIndex() > 1)// single slice or 3 slices
+    if(cur_tracking_window.ui->view_style->currentIndex() > 1)// mosaic
         return;
 
     if(mouseEvent->button() == Qt::MidButton)

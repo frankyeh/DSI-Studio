@@ -792,6 +792,8 @@ void tracking_window::on_actionInsert_T1_T2_triggered()
     handle->fib_data.view_item.back().set_scale(
                 glWidget->other_slices.back().source_images.begin(),
                 glWidget->other_slices.back().source_images.end());
+    ui->sliceViewBox->setCurrentIndex(ui->sliceViewBox->count()-1);
+
 }
 
 

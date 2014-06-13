@@ -559,28 +559,6 @@ void GLWidget::paintGL()
 
     if (get_param("show_slice"))
     {
-        if(current_visible_slide)
-        {
-            unsigned int index = current_visible_slide-1;
-            if(!mi3s[index].ended)
-            {
-                slice_contrast = cur_tracking_window.ui->gl_contrast_value->value();
-                slice_offset = cur_tracking_window.ui->gl_offset_value->value();
-                slice_index = current_visible_slide;
-                const float* buf = mi3s[index].get();
-                std::vector<float> inverse_transform(16);
-                image::create_affine_transformation_matrix(buf, buf + 9,inverse_transform.begin(), image::vdim<3>());
-                image::matrix::inverse(inverse_transform.begin(),transform[index].begin(),image::dim<4, 4>());
-                std::fill(other_slices[index].texture_need_update,
-                          other_slices[index].texture_need_update+3,1);
-
-                // update roi image
-                image::resample(other_slices[index].source_images,roi_image[index],inverse_transform);
-            }
-        }
-
-
-
         glEnable(GL_TEXTURE_2D);
         glEnable(GL_COLOR_MATERIAL);
         glDisable(GL_LIGHTING);
@@ -1730,7 +1708,38 @@ bool GLWidget::addSlices(QStringList filenames)
         // update roi image
         image::resample(other_slices.back().source_images,roi_image.back(),inverse_transform);
     }
+    if(!timer.get())
+    {
+        timer.reset(new QTimer());
+        timer->setInterval(200);
+        connect(timer.get(), SIGNAL(timeout()), this, SLOT(check_reg()));
+        timer->start();
+    }
     return true;
+}
+void GLWidget::check_reg(void)
+{
+    bool all_ended = true;
+    for(unsigned int index = 0;index < mi3s.size();++index)
+    {
+        if(!mi3s[index].ended)
+        {
+            all_ended = false;
+            const float* buf = mi3s[index].get();
+            std::vector<float> inverse_transform(16);
+            image::create_affine_transformation_matrix(buf, buf + 9,inverse_transform.begin(), image::vdim<3>());
+            image::matrix::inverse(inverse_transform.begin(),transform[index].begin(),image::dim<4, 4>());
+            std::fill(other_slices[index].texture_need_update,
+                other_slices[index].texture_need_update+3,1);
+                // update roi image
+            image::resample(other_slices[index].source_images,roi_image[index],inverse_transform);
+        }
+    }
+    cur_tracking_window.scene.show_slice();
+    if(all_ended)
+        timer.reset(0);
+    else
+        updateGL();
 }
 
 void GLWidget::delete_slice(int index)
