@@ -240,10 +240,10 @@ public:
             return false;
         std::string output_name = file_name;
         output_name += ext;
+        begin_prog("saving data");
         gz_mat_write mat_writer(output_name.c_str());
         save_to_file(mat_writer);
         voxel.end(mat_writer);
-        check_prog(0,0);
         return true;
     }
 

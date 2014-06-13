@@ -116,7 +116,7 @@ public:
     }
     void write(const void* buf,size_t size)
     {
-        char title[] = "writing......";
+        char title[] = "saving data";
         title[7+(std::clock()/CLOCKS_PER_SEC)%5] = 0;
         ::set_title(title);
         if(handle)

@@ -143,7 +143,7 @@ public:
     }
     void end(gz_mat_write& writer)
     {
-        for (unsigned int index = 0; index < process_list.size(); ++index)
+        for (unsigned int index = 0; check_prog(index,process_list.size()); ++index)
             process_list[index].end(*this,writer);
     }
 
