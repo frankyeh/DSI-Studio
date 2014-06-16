@@ -1,18 +1,24 @@
 #include <QSlider>
 #include <QComboBox>
 #include <QHeaderView>
+#include <QDoubleSpinBox>
+#include <QSpinBox>
+#include <QFile>
+#include <QTextStream>
 #include "renderingtablewidget.h"
 #include "qcolorcombobox.h"
 #include "tracking/tracking_window.h"
 #include "glwidget.h"
 #include <iostream>
+#include <cmath>
 
 
 QWidget *RenderingDelegate::createEditor(QWidget *parent,
         const QStyleOptionViewItem &option,
         const QModelIndex &index) const
 {
-    if (index.data(Qt::UserRole+1).toString() == QString("int"))
+    QString string = index.data(Qt::UserRole+1).toString();
+    if (string == QString("int"))
     {
         QSlider* sd = new QSlider(parent);
         sd->setOrientation(Qt::Horizontal);
@@ -20,7 +26,7 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
         connect(sd, SIGNAL(valueChanged(int)), this, SLOT(emitCommitData()));
         return sd;
     }
-    if (index.data(Qt::UserRole+1).toString() == QString("float"))
+    if (string == QString("slider"))
     {
         QSlider* sd = new QSlider(parent);
         sd->setOrientation(Qt::Horizontal);
@@ -29,19 +35,40 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
         return sd;
     }
 
-    if (index.data(Qt::UserRole+1).toString() == QString("color"))
+    if (string == QString("color"))
     {
         QColorToolButton* sd = new QColorToolButton(parent);
         connect(sd, SIGNAL(clicked()), this, SLOT(emitCommitData()));
         return sd;
     }
-
-    if (index.data(Qt::UserRole+1).toStringList().size() > 1)
+    QStringList string_list = index.data(Qt::UserRole+1).toStringList();
+    if (string_list.size() > 1)
     {
-        QComboBox* cb = new QComboBox(parent);
-        cb->addItems(index.data(Qt::UserRole+1).toStringList());
-        connect(cb, SIGNAL(currentIndexChanged(int)), this, SLOT(emitCommitData()));
-        return cb;
+        if(string_list[0] == QString("float"))
+        {
+            QDoubleSpinBox* dsb = new QDoubleSpinBox(parent);
+            dsb->setMinimum(string_list[1].toDouble());
+            dsb->setMaximum(string_list[2].toDouble());
+            dsb->setSingleStep((dsb->maximum()-dsb->minimum())/20);
+            dsb->setDecimals(std::max<double>((double)0,2-std::log10(dsb->maximum())));
+            connect(dsb, SIGNAL(valueChanged(double)), this, SLOT(emitCommitData()));
+            return dsb;
+        }
+        if(string_list[0] == QString("int"))
+        {
+            QSpinBox* dsb = new QSpinBox(parent);
+            dsb->setMinimum(string_list[1].toInt());
+            dsb->setMaximum(string_list[2].toInt());
+            dsb->setSingleStep((dsb->maximum()-dsb->minimum())/20);
+            connect(dsb, SIGNAL(valueChanged(int)), this, SLOT(emitCommitData()));
+            return dsb;
+        }
+        {
+            QComboBox* cb = new QComboBox(parent);
+            cb->addItems(string_list);
+            connect(cb, SIGNAL(currentIndexChanged(int)), this, SLOT(emitCommitData()));
+            return cb;
+        }
     }
 
     return QItemDelegate::createEditor(parent,option,index);
@@ -51,25 +78,32 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
 void RenderingDelegate::setEditorData(QWidget *editor,
                                       const QModelIndex &index) const
 {
-
-    if (index.data(Qt::UserRole+1).toString() == QString("int"))
+    QString string = index.data(Qt::UserRole+1).toString();
+    if (string == QString("int"))
     {
         ((QSlider*)editor)->setValue(index.data(Qt::UserRole).toInt());
         return;
     }
-    if (index.data(Qt::UserRole+1).toString() == QString("float"))
+    if (string == QString("slider"))
     {
         ((QSlider*)editor)->setValue(index.data(Qt::UserRole).toFloat()*5.0);
         return;
     }
-    if (index.data(Qt::UserRole+1).toString() == QString("color"))
+    if (string == QString("color"))
     {
         ((QColorToolButton*)editor)->setColor(index.data(Qt::UserRole).toInt());
         return;
     }
-    if (index.data(Qt::UserRole+1).toStringList().size() > 1)
+    QStringList string_list = index.data(Qt::UserRole+1).toStringList();
+    if (string_list.size() > 1)
     {
-        ((QComboBox*)editor)->setCurrentIndex(index.data(Qt::UserRole).toInt());
+        if(string_list[0] == QString("float"))
+            ((QDoubleSpinBox*)editor)->setValue(index.data(Qt::UserRole).toFloat());
+        else
+            if(string_list[0] == QString("int"))
+                ((QSpinBox*)editor)->setValue(index.data(Qt::UserRole).toInt());
+            else
+                ((QComboBox*)editor)->setCurrentIndex(index.data(Qt::UserRole).toInt());
         return;
     }
 
@@ -79,30 +113,39 @@ void RenderingDelegate::setEditorData(QWidget *editor,
 void RenderingDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
                                      const QModelIndex &index) const
 {
-    if (index.column() == 1 &&
-            index.data(Qt::UserRole+1).toString() == QString("int"))
+    if(index.column() != 1)
+    {
+        QItemDelegate::setModelData(editor,model,index);
+        return;
+    }
+    QString string = index.data(Qt::UserRole+1).toString();
+    if (string == QString("int"))
     {
         model->setData(index,((QSlider*)editor)->value(),Qt::UserRole);
         return;
     }
-    if (index.column() == 1 &&
-            index.data(Qt::UserRole+1).toString() == QString("float"))
+    if (string == QString("slider"))
     {
         model->setData(index,((QSlider*)editor)->value()/5.0,Qt::UserRole);
         return;
     }
 
-    if (index.column() == 1 &&
-            index.data(Qt::UserRole+1).toString() == QString("color"))
+    if (string == QString("color"))
     {
         model->setData(index,(int)(((QColorToolButton*)editor)->color().rgb()),Qt::UserRole);
         return;
     }
 
-    if (index.column() == 1 &&
-            index.data(Qt::UserRole+1).toStringList().size() > 1)
+    QStringList string_list = index.data(Qt::UserRole+1).toStringList();
+    if (string_list.size() > 1)
     {
-        model->setData(index,((QComboBox*)editor)->currentIndex(),Qt::UserRole);
+        if(string_list[0] == QString("float"))
+            model->setData(index,((QDoubleSpinBox*)editor)->value(),Qt::UserRole);
+        else
+            if(string_list[0] == QString("int"))
+                model->setData(index,((QSpinBox*)editor)->value(),Qt::UserRole);
+            else
+                model->setData(index,((QComboBox*)editor)->currentIndex(),Qt::UserRole);
         return;
     }
     QItemDelegate::setModelData(editor,model,index);
@@ -115,39 +158,30 @@ void RenderingDelegate::emitCommitData()
 
 //---------------------------------
 
-TreeModel::TreeModel(RenderingTableWidget *parent,bool has_odf)
+TreeModel::TreeModel(RenderingTableWidget *parent)
         : QAbstractItemModel(parent)
 {
-    Items[rootItem] = new RenderingItem(QString("Objects"),QString("Options"),0,0);
-    Items[environItem] = new RenderingItem(QString("Environment"),QVariant(),0,Items[rootItem]);
-    Items[sliceItem] = (RenderingItem*)
-        addItem(rootItem,"show_slice",QString("Slice"),
-                QString("check"),Qt::Checked).internalId();
-    Items[tractItem] = (RenderingItem*)
-        addItem(rootItem,"show_tract",QString("Tract"),
-                QString("check"),Qt::Checked).internalId();
-    Items[regionItem] = (RenderingItem*)
-        addItem(rootItem,"show_region",QString("Region"),
-                QString("check"),Qt::Checked).internalId();
-    Items[surfaceItem] = (RenderingItem*)
-        addItem(rootItem,"show_surface",QString("Surface"),
-                QString("check"),Qt::Checked).internalId();
-    if(has_odf)
-        Items[odfItem] = (RenderingItem*)
-            addItem(rootItem,"show_odf",QString("ODF"),
-                    QString("check"),Qt::Checked).internalId();
+    root.reset(new RenderingItem(QString("Objects"),QString("Options"),0,0));
+    root_mapping["Root"] = root.get();
+    root_mapping["Tracking"] = new RenderingItem(QString("Tracking"),QVariant(),0,root.get());
+    root_mapping["Rendering"] = new RenderingItem(QString("Rendering"),QVariant(),0,root.get());
+    root_mapping["Slice"] = (RenderingItem*)addItem("Root","show_slice","Slice",QString("check"),Qt::Checked).internalPointer();
+    root_mapping["Tract"] = (RenderingItem*)addItem("Root","show_tract","Tract",QString("check"),Qt::Checked).internalPointer();
+    root_mapping["Region"] = (RenderingItem*)addItem("Root","show_region","Region",QString("check"),Qt::Checked).internalPointer();
+    root_mapping["Surface"] = (RenderingItem*)addItem("Root","show_surface","Surface",QString("check"),Qt::Checked).internalPointer();
+    root_mapping["ODF"] = (RenderingItem*)addItem("Root","show_odf","ODF",QString("check"),Qt::Checked).internalPointer();
+    root_mapping["Others"] = new RenderingItem(QString("Others"),QVariant(),0,root.get());
 }
 
 TreeModel::~TreeModel()
 {
-    std::map<std::string,RenderingItem*>::const_iterator iter = name_data_mapping.begin();
-    std::map<std::string,RenderingItem*>::const_iterator end = name_data_mapping.end();
+    std::map<QString,RenderingItem*>::const_iterator iter = name_data_mapping.begin();
+    std::map<QString,RenderingItem*>::const_iterator end = name_data_mapping.end();
     QSettings settings;
     settings.beginGroup("Rendering Options");
     for(;iter != end;++iter)
-        settings.setValue(&*iter->first.begin(),iter->second->getValue());
+        settings.setValue(iter->first,iter->second->getValue());
     settings.endGroup();
-    delete Items[rootItem];
 }
 
 int TreeModel::columnCount(const QModelIndex &parent) const
@@ -230,7 +264,7 @@ QVariant TreeModel::headerData(int section, Qt::Orientation orientation,
                                int role) const
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
-        (section) ? Items[rootItem]->title : Items[rootItem]->type;
+        (section) ? root->title : root->type;
     return QVariant();
 }
 
@@ -243,7 +277,7 @@ const
     RenderingItem *parentItem;
 
     if (!parent.isValid())
-        parentItem = Items[rootItem];
+        parentItem = root.get();
     else
         parentItem = static_cast<RenderingItem*>(parent.internalPointer());
 
@@ -262,7 +296,7 @@ QModelIndex TreeModel::parent(const QModelIndex &index) const
     RenderingItem *childItem = static_cast<RenderingItem*>(index.internalPointer());
     RenderingItem *parentItem = childItem->parent();
 
-    if (parentItem == Items[rootItem])
+    if (parentItem == root.get())
         return QModelIndex();
 
     return createIndex(parentItem->row(), 0, parentItem);
@@ -275,47 +309,45 @@ int TreeModel::rowCount(const QModelIndex &parent) const
         return 0;
 
     if (!parent.isValid())
-        parentItem = Items[rootItem];
+        parentItem = root.get();
     else
         parentItem = static_cast<RenderingItem*>(parent.internalPointer());
 
     return parentItem->childCount();
 }
 
-QModelIndex TreeModel::addItem(unsigned char root_index,
-        const char* name,QVariant title, QVariant type, QVariant value)
+QModelIndex TreeModel::addItem(QString root_name,QString id,QVariant title, QVariant type, QVariant value)
 {
-    if(!name_data_mapping[name])
+    RenderingItem* item = 0;
+    if(!name_data_mapping[id])
     {
         QSettings settings;
         settings.beginGroup("Rendering Options");
-        name_data_mapping[name] = new RenderingItem(title,
-            type,settings.value(name,value),Items[root_index]);
-        name_default_values[name] = value;
+        name_data_mapping[id] = item = new RenderingItem(title,type,settings.value(id,value),root_mapping[root_name]);
+        name_default_values[id] = value;
         settings.endGroup();
     }
     else
         std::cout << "Duplicated item name in rending option" << std::endl;
-    return createIndex(Items[root_index]->childCount()-1,1,name_data_mapping[name]);
+    return createIndex(root_mapping[root_name]->childCount()-1,1,name_data_mapping[id]);
 }
 
 void TreeModel::setDefault(void)
 {
-    std::map<std::string,RenderingItem*>::iterator iter = name_data_mapping.begin();
-    std::map<std::string,RenderingItem*>::iterator end = name_data_mapping.end();
-    std::map<std::string,QVariant>::iterator iter2 = name_default_values.begin();
+    std::map<QString,RenderingItem*>::iterator iter = name_data_mapping.begin();
+    std::map<QString,RenderingItem*>::iterator end = name_data_mapping.end();
+    std::map<QString,QVariant>::iterator iter2 = name_default_values.begin();
     for(;iter != end;++iter,++iter2)
         iter->second->value = iter2->second;
 
 }
 
-RenderingTableWidget::RenderingTableWidget(tracking_window& cur_tracking_window_,
-                                           QWidget *parent,bool has_odf_) :
-        QTreeView(parent),cur_tracking_window(cur_tracking_window_),has_odf(has_odf_)
+RenderingTableWidget::RenderingTableWidget(tracking_window& cur_tracking_window_,QWidget *parent) :
+        QTreeView(parent),cur_tracking_window(cur_tracking_window_)
 {
     setItemDelegateForColumn(1,data_delegate = new RenderingDelegate(this));
 
-    setModel(treemodel = new TreeModel(this,has_odf));
+    setModel(treemodel = new TreeModel(this));
     initialize();
 
     header()->setResizeMode(0, QHeaderView::Stretch);
@@ -331,325 +363,40 @@ RenderingTableWidget::RenderingTableWidget(tracking_window& cur_tracking_window_
 void RenderingTableWidget::initialize(void)
 {
     // Environment
-
-    openPersistentEditor(treemodel->addItem(TreeModel::environItem,
-        "scale_voxel",QString("Scale with voxel size"),QStringList() << QString("Off") << QString("On"),1));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::environItem,
-        "pespective",QString("Perspective"),QString("int"),5));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::environItem,
-        "bkg_color",QString("Background Color"),QString("color"),(int)0x00FFFFFF));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::environItem,
-        "anti_aliasing",QString("Anti-aliasing"),
-                                      QStringList() << QString("Off") << QString("On"),0));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::environItem,
-        "line_smooth",QString("Line Smooth"),
-                                      QStringList() << QString("Off") << QString("On"),0));
-    openPersistentEditor(treemodel->addItem(TreeModel::environItem,
-        "point_smooth",QString("Point Smooth"),
-                                      QStringList() << QString("Off") << QString("On"),0));
-    openPersistentEditor(treemodel->addItem(TreeModel::environItem,
-        "poly_smooth",QString("Polygon Smooth"),
-                                      QStringList() << QString("Off") << QString("On"),0));
-
-    // Slice
-    openPersistentEditor(treemodel->addItem(TreeModel::sliceItem,
-        "slice_alpha",QString("Opacity"),QString("float"),10));
-    openPersistentEditor(treemodel->addItem(TreeModel::sliceItem,
-        "slice_mag_filter",QString("Mag Filter"),
-                                                      QStringList()
-                                                      << QString("NEAREST")
-                                                      << QString("LINEAR"),1));
-    openPersistentEditor(treemodel->addItem(TreeModel::sliceItem,
-        "slice_bend1",QString("Blend Func1"),
-                                                      QStringList()
-                                                      << QString("ZERO")
-                                                      << QString("ONE")
-                                                      << QString("DST_COLOR")
-                                                      << QString("ONE_MINUS_DST_COLOR")
-                                                      << QString("SRC_ALPHA")
-                                                      << QString("ONE_MINUS_SRC_ALPHA")
-                                                      << QString("DST_ALPHA")
-                                                      << QString("ONE_MINUS_DST_ALPHA"),4));
-    openPersistentEditor(treemodel->addItem(TreeModel::sliceItem,
-        "slice_bend2",QString("Blend Func2"),
-                                                      QStringList()
-                                                      << QString("ZERO")
-                                                      << QString("ONE")
-                                                      << QString("SRC_COLOR")
-                                                      << QString("ONE_MINUS_DST_COLOR")
-                                                      << QString("SRC_ALPHA")
-                                                      << QString("ONE_MINUS_SRC_ALPHA")
-                                                      << QString("DST_ALPHA")
-                                                      << QString("ONE_MINUS_DST_ALPHA"),5));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
-        "tract_alpha",QString("Opacity"),QString("float"),10));
-    openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
-        "tract_alpha_style",QString("Transparent Style"),
-                                                      QStringList()
-                                                      << QString("Sketch")
-                                                      << QString("Classic"),0));
-    openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
-        "tract_bend1",QString("Blend Func1"),
-                                                      QStringList()
-                                                      << QString("ZERO")
-                                                      << QString("ONE")
-                                                      << QString("DST_COLOR")
-                                                      << QString("ONE_MINUS_DST_COLOR")
-                                                      << QString("SRC_ALPHA")
-                                                      << QString("ONE_MINUS_SRC_ALPHA")
-                                                      << QString("DST_ALPHA")
-                                                      << QString("ONE_MINUS_DST_ALPHA"),4));
-    openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
-        "tract_bend2",QString("Blend Func2"),
-                                                      QStringList()
-                                                      << QString("ZERO")
-                                                      << QString("ONE")
-                                                      << QString("SRC_COLOR")
-                                                      << QString("ONE_MINUS_DST_COLOR")
-                                                      << QString("SRC_ALPHA")
-                                                      << QString("ONE_MINUS_SRC_ALPHA")
-                                                      << QString("DST_ALPHA")
-                                                      << QString("ONE_MINUS_DST_ALPHA"),5));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
-        "tract_style",QString("Style"),QStringList()
-                                       << QString("Line")
-                                       << QString("Tube")
-                                       << QString("End points"),1));
-    openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
-        "tract_color_style",QString("Color"),QStringList()
-                                       << QString("Directional")
-                                       << QString("Assigned")
-                                       << QString("Local index")
-                                       << QString("Averaged index")
-                                       << QString("Averaged Directional"),0));
-    openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
-        "tract_visible_tracts",QString("Visible Tracts"),
-                                                      QStringList()
-                                                      << QString("5,000")
-                                                      << QString("10,000")
-                                                      << QString("25,000")
-                                                      << QString("50,000")
-                                                      << QString("100,000"),2));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
-        "tract_tube_detail",QString("Tube Detail"),
-                                                      QStringList()
-                                                      << QString("Coarse")
-                                                      << QString("Fine")
-                                                      << QString("Finer")
-                                                      << QString("Finest"),1));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
-        "tract_size",QString("Size"),
-                                                      QStringList()
-                                                      << QString("Tube (0.01 voxel)")
-                                                      << QString("Tube (0.02 voxel)")
-                                                      << QString("Tube (0.04 voxel)")
-                                                      << QString("Tube (0.08 voxel)")
-                                                      << QString("Tube (0.1 voxel)")
-                                                      << QString("Tube (0.2 voxel)")
-                                                      << QString("Tube (0.4 voxel)")
-                                                      << QString("Tube (0.6 voxel)")
-                                                      << QString("Tube (0.8 voxel)")
-                                                      ,5));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
-        "end_point_shift",QString("Endpoint Shift"),
-                                                      QStringList()
-                                                      << QString("None")
-                                                      << QString("1 voxel")
-                                                      << QString("2 voxels")
-                                                      << QString("3 voxels")
-                                                      << QString("4 voxels")
-                                                      << QString("5 voxels")
-                                                      << QString("6 voxels")
-                                                      << QString("7 voxels")
-                                                      << QString("8 voxels")
-                                                      << QString("9 voxels")
-                                                      ,0));
-
-
-    openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
-        "tract_light_option",QString("Light"),QStringList()
-                                << QString("One source")
-                                << QString("Two sources")
-                                << QString("Three sources"),2));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
-        "tract_light_dir",QString("Light Direction"),QString("int"),5));
-    openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
-        "tract_light_shading",QString("Light Shading"),QString("int"),6));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
-        "tract_light_diffuse",QString("Light Diffuse"),QString("int"),7));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
-        "tract_light_ambient",QString("Light Ambient"),QString("int"),0));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::tractItem,
-        "tract_emission",QString("Tract Emission"),QString("int"),0));
-
-    // region rednering options
-
-    openPersistentEditor(treemodel->addItem(TreeModel::regionItem,
-        "region_alpha",QString("Opacity"),QString("float"),8));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::regionItem,
-        "region_mesh_smoothed",QString("Mesh Rendering"),QStringList()
-                                                      << QString("Original")
-                                                      << QString("Smoothed"),1));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::regionItem,
-        "region_bend1",QString("Blend Func1"),
-                                                      QStringList()
-                                                      << QString("ZERO")
-                                                      << QString("ONE")
-                                                      << QString("DST_COLOR")
-                                                      << QString("ONE_MINUS_DST_COLOR")
-                                                      << QString("SRC_ALPHA")
-                                                      << QString("ONE_MINUS_SRC_ALPHA")
-                                                      << QString("DST_ALPHA")
-                                                      << QString("ONE_MINUS_DST_ALPHA"),4));
-    openPersistentEditor(treemodel->addItem(TreeModel::regionItem,
-        "region_bend2",QString("Blend Func2"),
-                                                      QStringList()
-                                                      << QString("ZERO")
-                                                      << QString("ONE")
-                                                      << QString("SRC_COLOR")
-                                                      << QString("ONE_MINUS_DST_COLOR")
-                                                      << QString("SRC_ALPHA")
-                                                      << QString("ONE_MINUS_SRC_ALPHA")
-                                                      << QString("DST_ALPHA")
-                                                      << QString("ONE_MINUS_DST_ALPHA"),5));
-
-
-    openPersistentEditor(treemodel->addItem(TreeModel::regionItem,
-        "region_light_option",QString("Light"),QStringList()
-                                                      << QString("One source")
-                                                      << QString("Two sources")
-                                                      << QString("Three sources"),2));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::regionItem,
-        "region_light_dir",QString("Light Direction"),QString("int"),5));
-    openPersistentEditor(treemodel->addItem(TreeModel::regionItem,
-        "region_light_shading",QString("Light Shading"),QString("int"),4));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::regionItem,
-        "region_light_diffuse",QString("Light Diffuse"),QString("int"),6));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::regionItem,
-        "region_light_ambient",QString("Light Ambient"),QString("int"),0));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::regionItem,
-        "region_emission",QString("Emission"),QString("int"),0));
-
-
-    // surface rednering options
-    openPersistentEditor(treemodel->addItem(TreeModel::surfaceItem,
-        "surface_color",QString("Color"),QString("color"),(int)0x00AAAAAA));
-
-
-    openPersistentEditor(treemodel->addItem(TreeModel::surfaceItem,
-        "surface_alpha",QString("Opacity"),QString("float"),5));
-    openPersistentEditor(treemodel->addItem(TreeModel::surfaceItem,
-        "surface_mesh_smoothed",QString("Mesh Rendering"),QStringList()
-                                                      << QString("Original")
-                                                      << QString("Smoothed")
-                                                      << QString("Smoothed2"),0));
-    openPersistentEditor(treemodel->addItem(TreeModel::surfaceItem,
-        "surface_bend1",QString("Blend Func1"),
-                                                      QStringList()
-                                                      << QString("ZERO")
-                                                      << QString("ONE")
-                                                      << QString("DST_COLOR")
-                                                      << QString("ONE_MINUS_DST_COLOR")
-                                                      << QString("SRC_ALPHA")
-                                                      << QString("ONE_MINUS_SRC_ALPHA")
-                                                      << QString("DST_ALPHA")
-                                                      << QString("ONE_MINUS_DST_ALPHA"),4));
-    openPersistentEditor(treemodel->addItem(TreeModel::surfaceItem,
-        "surface_bend2",QString("Blend Func2"),
-                                                      QStringList()
-                                                      << QString("ZERO")
-                                                      << QString("ONE")
-                                                      << QString("SRC_COLOR")
-                                                      << QString("ONE_MINUS_DST_COLOR")
-                                                      << QString("SRC_ALPHA")
-                                                      << QString("ONE_MINUS_SRC_ALPHA")
-                                                      << QString("DST_ALPHA")
-                                                      << QString("ONE_MINUS_DST_ALPHA"),5));
-
-
-    openPersistentEditor(treemodel->addItem(TreeModel::surfaceItem,
-        "surface_light_option",QString("Light"),QStringList()
-                                                      << QString("One source")
-                                                      << QString("Two sources")
-                                                      << QString("Three sources"),2));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::surfaceItem,
-        "surface_light_dir",QString("Light Direction"),QString("int"),5));
-    openPersistentEditor(treemodel->addItem(TreeModel::surfaceItem,
-        "surface_light_shading",QString("Light Shading"),QString("int"),4));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::surfaceItem,
-        "surface_light_diffuse",QString("Light Diffuse"),QString("int"),6));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::surfaceItem,
-        "surface_light_ambient",QString("Light Ambient"),QString("int"),0));
-
-    openPersistentEditor(treemodel->addItem(TreeModel::surfaceItem,
-        "surface_emission",QString("Emission"),QString("int"),0));
-
-    if(has_odf)
+    QFile data(":/data/options.txt");
+    if (!data.open(QIODevice::ReadOnly | QIODevice::Text))
+        return;
+    QTextStream in(&data);
+    while (!in.atEnd())
     {
-        openPersistentEditor(treemodel->addItem(TreeModel::odfItem,
-        "odf_position",QString("Position"),
-                                                      QStringList()
-                                                      << QString("Along Slide")
-                                                      << QString("Slide Intersection")
-                                                      << QString("All"),0));
-        openPersistentEditor(treemodel->addItem(TreeModel::odfItem,
-        "odf_size",QString("Size"),
-                                                      QStringList()
-                                                      << QString("0.5")
-                                                      << QString("1")
-                                                      << QString("1.5")
-                                                      << QString("2")
-                                                      << QString("4")
-                                                      << QString("8")
-                                                      << QString("16"),1));
-
-        openPersistentEditor(treemodel->addItem(TreeModel::odfItem,
-        "odf_skip",QString("Interleaved"),
-                                                      QStringList()
-                                                      << QString("none")
-                                                      << QString("2")
-                                                      << QString("4"),0));
-
-        openPersistentEditor(treemodel->addItem(TreeModel::odfItem,
-        "odf_smoothing",QString("Smoothing"),
-                                                      QStringList()
-                                                      << QString("off")
-                                                      << QString("on"),0));
+        QStringList list = in.readLine().split('/');
+        if(list.size() != 5)
+            continue;
+        QStringList value_list = list[3].split(':');
+        QModelIndex index;
+        if(value_list.size() == 1)
+            index = treemodel->addItem(list[0],list[2],list[1],list[3],list[4].toDouble());
+        else
+            index = treemodel->addItem(list[0],list[2],list[1],value_list,list[4].toDouble());
+        openPersistentEditor(index);
     }
 }
+void RenderingTableWidget::updateData(const char* name,QVariant data)
+{
+    treemodel->updateData(name,data);
+}
+
 void RenderingTableWidget::setData(const char* name,QVariant data)
 {
     collapseAll();
     treemodel->updateData(name,data);
     delete treemodel;
-    setModel(treemodel = new TreeModel(this,has_odf));
+    setModel(treemodel = new TreeModel(this));
     initialize();
     expandAll();
     collapseAll();
     connect(treemodel,SIGNAL(dataChanged(QModelIndex,QModelIndex)),
-            cur_tracking_window.glWidget,SLOT(updateGL()));
+            this,SLOT(dataChanged(QModelIndex,QModelIndex)));
 }
 
 void RenderingTableWidget::setDefault(void)
@@ -657,11 +404,20 @@ void RenderingTableWidget::setDefault(void)
     collapseAll();
     treemodel->setDefault();
     delete treemodel;
-    setModel(treemodel = new TreeModel(this,has_odf));
+    setModel(treemodel = new TreeModel(this));
     initialize();
     expandAll();
     collapseAll();
     connect(treemodel,SIGNAL(dataChanged(QModelIndex,QModelIndex)),
-            cur_tracking_window.glWidget,SLOT(updateGL()));
-}
+            this,SLOT(dataChanged(QModelIndex,QModelIndex)));
 
+}
+void RenderingTableWidget::dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
+{
+    if(((RenderingItem*)bottomRight.internalPointer())->parent()->title == "Tracking")
+    {
+        //std::cout << "Tracking parameter changed" << std::endl;
+    }
+    else
+        cur_tracking_window.glWidget->updateGL();
+}

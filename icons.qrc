@@ -19,4 +19,7 @@
         <file>icons/down.xpm</file>
         <file>icons/up.xpm</file>
     </qresource>
+    <qresource prefix="/data">
+        <file>options.txt</file>
+    </qresource>
 </RCC>

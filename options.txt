@@ -1,0 +1,65 @@
+Tracking/Angular Threshold/turning_angle/int:0:90/60
+Tracking/Step Size(mm)/step_size/float:0.05:10/1.0
+Tracking/Smoothing/smoothing/float:0:0.9/0
+Tracking/Min Length(mm)/min_length/float:0:800/0
+Tracking/Max Length(mm)/max_length/float:0:800/500
+Tracking/Seed Orientation/initial_direction/Primary:Random:All/0
+Tracking/Seed Position/seed_plan/Subvoxel:Voxel Center/0
+Tracking/Direction Interpoation/interpolation/Trilinear:Gaussian radial basis:nearest/0
+Tracking/Tracking Algorithm/tracking_method/Stremline(Euler):RK4:Voxel tracking/0
+Tracking/Terminate if/track_count/int:1:100000000/5000
+Tracking/ /tracking_plan/Seeds:Tracts/0
+Tracking/Thread count/thread_count/int:1:12/1
+Rendering/Scale with voxel size/scale_voxel/Off:On/1
+Rendering/Perspective/pespective/int/5
+Rendering/Background Color/bkg_color/color/16777215
+Rendering/Anti-aliasing/anti_aliasing/Off:On/0
+Rendering/Line Smooth/line_smooth/Off:On/0
+Rendering/Point Smooth/point_smooth/Off:On/0
+Rendering/Polygon Smooth/poly_smooth/Off:On/0
+Slice/Opacity/slice_alpha/slider/10
+Slice/Mag Filter/slice_mag_filter/NEAREST:LINEAR/1
+Slice/Blend Func1/slice_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
+Slice/Blend Func2/slice_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
+Tract/Opacity/tract_alpha/slider/10
+Tract/Transparent Style/tract_alpha_style/Sketch:Classic/0
+Tract/Blend Func1/tract_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
+Tract/Blend Func2/tract_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
+Tract/Style/tract_style/Line:Tube:End points/1
+Tract/Color/tract_color_style/Directional:Assigned:Local index:Averaged index:Averaged Directional/0
+Tract/Visible Tracts/tract_visible_tract/int:5000:100000/25000
+Tract/Tube Detail/tract_tube_detail/Coarse:Fine:Finer:Finest/1
+Tract/Tube Diameter (voxel)/tube_diameter/float:0.01:1/0.2
+Tract/Endpoint Shift/end_point_shift/None:1 voxel:2 voxels:3 voxels:4 voxels:5 voxels:6 voxels:7 voxels:8 voxels:9 voxels/0
+Tract/Light/tract_light_option/One source:Two sources:Three sources/2
+Tract/Light Direction/tract_light_dir/int/5
+Tract/Light Shading/tract_light_shading/int/6
+Tract/Light Diffuse/tract_light_diffuse/int/7
+Tract/Light Ambient/tract_light_ambient/int/0
+Tract/Tract Emission/tract_emission/int/0
+Region/Opacity/region_alpha/slider/8
+Region/Mesh Rendering/region_mesh_smoothed/Original:Smoothed/1
+Region/Blend Func1/region_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
+Region/Blend Func2/region_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
+Region/Light/region_light_option/One source:Two sources:Three sources/2
+Region/Light Direction/region_light_dir/int/5
+Region/Light Shading/region_light_shading/int/4
+Region/Light Diffuse/region_light_diffuse/int/6
+Region/Light Ambient/region_light_ambient/int/0
+Region/Emission/region_emission/int/0
+Surface/Color/surface_color/color/11184800
+Surface/Opacity/surface_alpha/slider/5
+Surface/Mesh Rendering/surface_mesh_smoothed/Original:Smoothed:Smoothed2/0
+Surface/Blend Func1/surface_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
+Surface/Blend Func2/surface_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
+Surface/Light/surface_light_option/One source:Two sources:Three sources/2
+Surface/Light Direction/surface_light_dir/int/5
+Surface/Light Shading/surface_light_shading/int/4
+Surface/Light Diffuse/surface_light_diffuse/int/6
+Surface/Light Ambient/surface_light_ambient/int/0
+Surface/Emission/surface_emission/int/0
+ODF/Position/odf_position/Along Slide:Slide Intersection:All/0
+ODF/Size/odf_size/0.5:1:1.5:2:4:8:16/1
+ODF/Interleaved/odf_skip/none:2:4/0
+ODF/Smoothing/odf_smoothing/off:on/0
+Others/Tract Selection Angle/tract_sel_angle/int:0:90/45

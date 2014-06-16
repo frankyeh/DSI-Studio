@@ -529,7 +529,7 @@ void GLWidget::paintGL()
            get_param("tract_alpha_style") != tract_alpha_style ||
            get_param("tract_style") != tract_style ||
            get_param("tract_color_style") != tract_color_style ||
-           get_param("tract_size") != tube_size ||
+           get_param_float("tube_diameter") != tube_diameter ||
            get_param("tract_tube_detail") != tract_tube_detail ||
            get_param("end_point_shift") != end_point_shift)
         {
@@ -537,7 +537,7 @@ void GLWidget::paintGL()
             tract_alpha_style = get_param("tract_alpha_style");
             tract_style = get_param("tract_style");
             tract_color_style = get_param("tract_color_style");
-            tube_size = get_param("tract_size");
+            tube_diameter = get_param_float("tube_diameter");
             tract_tube_detail = get_param("tract_tube_detail");
             end_point_shift = get_param("end_point_shift");
             makeTracts();
@@ -773,11 +773,9 @@ void GLWidget::makeTracts(void)
     glDeleteLists(tracts, 1);
     glNewList(tracts, GL_COMPILE);
     float alpha = (tract_alpha_style == 0)? tract_alpha/20.0:tract_alpha/10.0;
-    const float radius_option[] = {0.01,0.02,0.04,0.08,0.1,0.2,0.4,0.6,0.8};
     const float detail_option[] = {1.0,0.5,0.25,0.0,0.0};
-    float radius = radius_option[tube_size];
     bool show_end_points = tract_style == 2;
-    float tube_detail = radius*detail_option[tract_tube_detail]*4.0;
+    float tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0;
     float skip_rate = 1.0;
 
     float color_r;
@@ -838,8 +836,7 @@ void GLWidget::makeTracts(void)
     image::vector<3,float> paint_color_f;
     std::vector<float> color;
 
-    unsigned int visible_tracts_list[] = {5000,10000,20000,50000,100000};
-    unsigned int visible_tracts = visible_tracts_list[get_param("tract_visible_tracts")];
+    unsigned int visible_tracts = get_param("tract_visible_tract");
     {
         unsigned int total_tracts = 0;
         for (unsigned int active_tract_index = 0;
@@ -1004,10 +1001,10 @@ void GLWidget::makeTracts(void)
                         normals[6] = -vec_b;
                         normals[7] = vec_ba;
                     }
-                    vec_ab *= radius;
-                    vec_ba *= radius;
-                    vec_a *= radius;
-                    vec_b *= radius;
+                    vec_ab *= tube_diameter;
+                    vec_ba *= tube_diameter;
+                    vec_a *= tube_diameter;
+                    vec_b *= tube_diameter;
 
                     // add point
                     {

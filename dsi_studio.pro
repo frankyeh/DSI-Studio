@@ -165,3 +165,6 @@ SOURCES += main.cpp \
     tracking/connectivity_matrix_dialog.cpp \
     libs/dsi/tessellated_icosahedron.cpp \
     cmd/atl.cpp
+
+OTHER_FILES += \
+    options.txt

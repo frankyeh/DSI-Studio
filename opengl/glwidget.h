@@ -113,7 +113,7 @@ class RenderingTableWidget;
      unsigned char tract_alpha_style;
      unsigned char tract_style;
      unsigned char tract_color_style;
-     unsigned char tube_size;
+     float tube_diameter;
      unsigned char tract_color_contrast;
      unsigned char tract_tube_detail;
      unsigned char end_point_shift;

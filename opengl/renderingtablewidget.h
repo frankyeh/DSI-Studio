@@ -9,6 +9,8 @@
 #include <QSettings>
 #include <map>
 #include <string>
+#include <memory>
+#include <stdexcept>
 
 
 class RenderingDelegate : public QItemDelegate
@@ -70,10 +72,12 @@ class TreeModel : public QAbstractItemModel
 {
     Q_OBJECT
 private:
-    std::map<std::string,RenderingItem*> name_data_mapping;
-    std::map<std::string,QVariant> name_default_values;
+    std::auto_ptr<RenderingItem> root;
+    std::map<QString,RenderingItem*> root_mapping;
+    std::map<QString,RenderingItem*> name_data_mapping;
+    std::map<QString,QVariant> name_default_values;
 public:
-    TreeModel(RenderingTableWidget *parent,bool has_odf);
+    TreeModel(RenderingTableWidget *parent);
     ~TreeModel();
 
     QVariant data(const QModelIndex &index, int role) const;
@@ -88,33 +92,25 @@ public:
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
     int columnCount(const QModelIndex &parent = QModelIndex()) const;
 public:
-    QModelIndex addItem(unsigned char root_index,
-            const char* name,QVariant title, QVariant type, QVariant value);
-    QVariant getData(const char* name)
+    QModelIndex addItem(QString root_name,QString id,QVariant title, QVariant type, QVariant value);
+    QVariant getData(QString name)
     {
-        std::map<std::string,RenderingItem*>::const_iterator iter = name_data_mapping.find(name);
+        std::map<QString,RenderingItem*>::const_iterator iter = name_data_mapping.find(name);
         if(iter == name_data_mapping.end())
-            return QVariant();
+            throw std::runtime_error("Cannot find the setting value");
         return iter->second->value;
     }
-    void updateData(const char* name,QVariant data)
+    void updateData(QString name,QVariant data)
     {
-        std::map<std::string,RenderingItem*>::const_iterator iter = name_data_mapping.find(name);
+        std::map<QString,RenderingItem*>::const_iterator iter = name_data_mapping.find(name);
         if(iter == name_data_mapping.end())
-            return;
+            throw std::runtime_error("Cannot find the setting value");
         iter->second->value = data;
     }
 
     void setDefault(void);
-    enum {rootItem = 0,
-          environItem = 1,
-          sliceItem = 2,
-          tractItem = 3,
-          regionItem = 4,
-          surfaceItem = 5,
-          odfItem = 6};
 private:
-    RenderingItem *Items[7];
+
 };
 class tracking_window;
 class RenderingTableWidget : public QTreeView
@@ -122,18 +118,19 @@ class RenderingTableWidget : public QTreeView
     Q_OBJECT
 private:
     tracking_window& cur_tracking_window;
-    bool has_odf;
 public:
     RenderingDelegate* data_delegate;
     TreeModel* treemodel;
 public:
-    explicit RenderingTableWidget(tracking_window& cur_tracking_window_,
-                                  QWidget *parent,bool has_odf);
+    explicit RenderingTableWidget(tracking_window& cur_tracking_window_,QWidget *parent);
     QVariant getData(const char* name){return treemodel->getData(name);}
+    void updateData(const char* name,QVariant data);
     void setData(const char* name,QVariant data);
+
     void initialize(void);
 public slots:
     void setDefault(void);
+    void dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
 };
 
 #endif // RENDERINGTABLEWIDGET_H

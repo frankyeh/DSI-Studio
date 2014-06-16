@@ -52,8 +52,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
 
         ui->regionDockWidget->setMinimumWidth(0);
         ui->dockWidget->setMinimumWidth(0);
-        ui->dockWidget_3->setMinimumWidth(0);
-        ui->renderingLayout->addWidget(renderWidget = new RenderingTableWidget(*this,ui->renderingWidgetHolder,has_odfs));
+        ui->renderingLayout->addWidget(renderWidget = new RenderingTableWidget(*this,ui->renderingWidgetHolder));
         ui->main_layout->insertWidget(1,glWidget = new GLWidget(renderWidget->getData("anti_aliasing").toInt(),*this,renderWidget));
         ui->verticalLayout_3->addWidget(regionWidget = new RegionTableWidget(*this,ui->regionDockWidget));
         ui->tractverticalLayout->addWidget(tractWidget = new TractTableWidget(*this,ui->TractWidgetHolder));
@@ -68,7 +67,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         for(int index = 0;index < fib_data.fib.index_name.size();++index)
             ui->tracking_index->addItem((fib_data.fib.index_name[index]+" threshold").c_str());
         ui->tracking_index->setCurrentIndex(0);
-        ui->step_size->setValue(fib_data.vs[0]/2.0);
+        this->renderWidget->setData("step_size",fib_data.vs[0]/2.0);
     }
 
     // setup sliders
@@ -318,6 +317,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
             default_state = saveState();
         restoreGeometry(settings.value("geometry").toByteArray());
         restoreState(settings.value("state").toByteArray());
+        /*
         ui->turning_angle->setValue(settings.value("turning_angle",60).toDouble());
         ui->smoothing->setValue(settings.value("smoothing",0.0).toDouble());
         ui->min_length->setValue(settings.value("min_length",0.0).toDouble());
@@ -329,7 +329,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         ui->tracking_plan->setCurrentIndex(settings.value("tracking_plan",0).toInt());
         ui->track_count->setValue(settings.value("track_count",2000).toInt());
         ui->thread_count->setCurrentIndex(settings.value("thread_count",0).toInt());
-
+        */
         ui->glSagCheck->setChecked(settings.value("SagSlice",1).toBool());
         ui->glCorCheck->setChecked(settings.value("CorSlice",1).toBool());
         ui->glAxiCheck->setChecked(settings.value("AxiSlice",1).toBool());
@@ -457,20 +457,20 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 
 void tracking_window::set_tracking_param(ThreadData& tracking_thread)
 {
-
-    tracking_thread.param.step_size = ui->step_size->value();
-    tracking_thread.param.smooth_fraction = ui->smoothing->value();
-    tracking_thread.param.min_points_count3 = 3.0*ui->min_length->value()/tracking_thread.param.step_size;
+    tracking_thread.param.step_size = renderWidget->getData("step_size").toDouble();
+    tracking_thread.param.smooth_fraction = renderWidget->getData("smoothing").toDouble();
+    tracking_thread.param.min_points_count3 = 3.0*renderWidget->getData("min_length").toDouble()/renderWidget->getData("step_size").toDouble();
     if(tracking_thread.param.min_points_count3 < 6)
         tracking_thread.param.min_points_count3 = 6;
     tracking_thread.param.max_points_count3 =
-            std::max<unsigned int>(tracking_thread.param.min_points_count3,3.0*ui->max_length->value()/tracking_thread.param.step_size);
+            std::max<unsigned int>(tracking_thread.param.min_points_count3,
+                                   3.0*renderWidget->getData("max_length").toDouble()/renderWidget->getData("step_size").toDouble());
 
-    tracking_thread.tracking_method = ui->tracking_method->currentIndex();
-    tracking_thread.initial_direction = ui->initial_direction->currentIndex();
-    tracking_thread.interpolation_strategy = ui->interpolation->currentIndex();
-    tracking_thread.stop_by_tract = ui->tracking_plan->currentIndex();
-    tracking_thread.center_seed = ui->seed_plan->currentIndex();
+    tracking_thread.tracking_method = renderWidget->getData("tracking_method").toInt();
+    tracking_thread.initial_direction = renderWidget->getData("initial_direction").toInt();
+    tracking_thread.interpolation_strategy = renderWidget->getData("interpolation").toInt();
+    tracking_thread.stop_by_tract = renderWidget->getData("tracking_plan").toInt();
+    tracking_thread.center_seed = renderWidget->getData("seed_plan").toInt();
 }
 
 void tracking_window::SliderValueChanged(void)
@@ -884,17 +884,17 @@ void tracking_window::on_RenderingQualityBox_currentIndexChanged(int index)
     case 0:
         renderWidget->setData("anti_aliasing",0);
         renderWidget->setData("tract_tube_detail",0);
-        renderWidget->setData("tract_visible_tracts",0);
+        renderWidget->setData("tract_visible_tract",5000);
         break;
     case 1:
         renderWidget->setData("anti_aliasing",0);
         renderWidget->setData("tract_tube_detail",1);
-        renderWidget->setData("tract_visible_tracts",2);
+        renderWidget->setData("tract_visible_tract",25000);
         break;
     case 2:
         renderWidget->setData("anti_aliasing",1);
         renderWidget->setData("tract_tube_detail",3);
-        renderWidget->setData("tract_visible_tracts",4);
+        renderWidget->setData("tract_visible_tract",100000);
         break;
     }
     glWidget->updateGL();
@@ -1313,18 +1313,18 @@ void tracking_window::on_actionSave_tracking_parameters_triggered()
         return;
     QSettings s(filename, QSettings::IniFormat);
     s.setValue("fa_threshold",ui->fa_threshold->value());
-    s.setValue("step_size",ui->step_size->value());
-    s.setValue("turning_angle",ui->turning_angle->value());
-    s.setValue("smoothing",ui->smoothing->value());
-    s.setValue("min_length",ui->min_length->value());
-    s.setValue("max_length",ui->max_length->value());
-    s.setValue("tracking_method",ui->tracking_method->currentIndex());
-    s.setValue("seed_plan",ui->seed_plan->currentIndex());
-    s.setValue("initial_direction",ui->initial_direction->currentIndex());
-    s.setValue("interpolation",ui->interpolation->currentIndex());
-    s.setValue("tracking_plan",ui->tracking_plan->currentIndex());
-    s.setValue("track_count",ui->track_count->value());
-    s.setValue("thread_count",ui->thread_count->currentIndex());
+    s.setValue("step_size",renderWidget->getData("step_size"));
+    s.setValue("turning_angle",renderWidget->getData("turning_angle"));
+    s.setValue("smoothing",renderWidget->getData("smoothing"));
+    s.setValue("min_length",renderWidget->getData("min_length"));
+    s.setValue("max_length",renderWidget->getData("max_length"));
+    s.setValue("tracking_method",renderWidget->getData("tracking_method"));
+    s.setValue("seed_plan",renderWidget->getData("seed_plan"));
+    s.setValue("initial_direction",renderWidget->getData("initial_direction"));
+    s.setValue("interpolation",renderWidget->getData("interpolation"));
+    s.setValue("tracking_plan",renderWidget->getData("tracking_plan"));
+    s.setValue("track_count",renderWidget->getData("track_count"));
+    s.setValue("thread_count",renderWidget->getData("thread_count"));
 }
 
 void tracking_window::on_actionLoad_tracking_parameters_triggered()
@@ -1338,16 +1338,16 @@ void tracking_window::on_actionLoad_tracking_parameters_triggered()
         return;
     QSettings s(filename, QSettings::IniFormat);
     ui->fa_threshold->setValue(s.value("fa_threshold",0.4).toDouble());
-    ui->step_size->setValue(s.value("step_size",1).toDouble());
-    ui->turning_angle->setValue(s.value("turning_angle",60).toDouble());
-    ui->smoothing->setValue(s.value("smoothing",0.0).toDouble());
-    ui->min_length->setValue(s.value("min_length",0.0).toDouble());
-    ui->max_length->setValue(s.value("max_length",500).toDouble());
-    ui->tracking_method->setCurrentIndex(s.value("tracking_method",0).toInt());
-    ui->seed_plan->setCurrentIndex(s.value("seed_plan",0).toInt());
-    ui->initial_direction->setCurrentIndex(s.value("initial_direction",0).toInt());
-    ui->interpolation->setCurrentIndex(s.value("interpolation",0).toInt());
-    ui->tracking_plan->setCurrentIndex(s.value("tracking_plan",0).toInt());
-    ui->track_count->setValue(s.value("track_count",2000).toInt());
-    ui->thread_count->setCurrentIndex(s.value("thread_count",0).toInt());
+    renderWidget->updateData("step_size",s.value("step_size",1));
+    renderWidget->updateData("turning_angle",s.value("turning_angle",60));
+    renderWidget->updateData("smoothing",s.value("smoothing",0.0));
+    renderWidget->updateData("min_length",s.value("min_length",0));
+    renderWidget->updateData("max_length",s.value("max_length",500));
+    renderWidget->updateData("tracking_method",s.value("tracking_method",0));
+    renderWidget->updateData("seed_plan",s.value("seed_plan",0));
+    renderWidget->updateData("initial_direction",s.value("initial_direction",0));
+    renderWidget->updateData("interpolation",s.value("interpolation",0));
+    renderWidget->updateData("tracking_plan",s.value("tracking_plan",0));
+    renderWidget->updateData("track_count",s.value("track_count",5000));
+    renderWidget->setData("thread_count",s.value("thread_count",1));
 }
