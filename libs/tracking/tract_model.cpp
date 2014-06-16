@@ -570,7 +570,7 @@ void TractModel::get_tract_points(std::vector<image::vector<3,short> >& points)
         }
 }
 //---------------------------------------------------------------------------
-void TractModel::select(bool angular_selection,
+void TractModel::select(float select_angle,
                         const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
                         const image::vector<3,float>& from_pos,std::vector<unsigned int>& selected)
 {
@@ -580,6 +580,7 @@ void TractModel::select(bool angular_selection,
     selected.resize(tract_data.size());
     std::fill(selected.begin(),selected.end(),0);
 
+    float select_angle_cos = std::cos(select_angle*3.141592654/180);
     unsigned int total_track_number = tract_data.size();
     for (unsigned int index = 0;index < total_track_number;++index)
     {
@@ -599,12 +600,12 @@ void TractModel::select(bool angular_selection,
                 if (p*from_dir > view_angle &&
                         p*to_dir > view_angle)
                 {
-                    if(angular_selection)
+                    if(select_angle != 0.0)
                     {
                         image::vector<3,float> p1(ptr),p2(ptr-3);
                         p1 -= p2;
                         p1.normalize();
-                        if(std::abs(p1*z_axis) < 0.86)
+                        if(std::abs(p1*z_axis) < select_angle_cos)
                             continue;
                     }
                     selected[index] = ptr - &*tract_data[index].begin();
@@ -687,11 +688,11 @@ void TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select
 
 }
 //---------------------------------------------------------------------------
-void TractModel::cut(bool angular_selection,const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
+void TractModel::cut(float select_angle,const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
                      const image::vector<3,float>& from_pos)
 {
     std::vector<unsigned int> selected;
-    select(angular_selection,from_dir,to_dir,from_pos,selected);
+    select(select_angle,from_dir,to_dir,from_pos,selected);
     std::vector<std::vector<float> > new_tract;
     std::vector<unsigned int> new_tract_color;
 
@@ -711,14 +712,14 @@ void TractModel::cut(bool angular_selection,const image::vector<3,float>& from_d
     redo_size.clear();
 }
 //---------------------------------------------------------------------------
-void TractModel::cull(bool angular_selection,
+void TractModel::cull(float select_angle,
                       const image::vector<3,float>& from_dir,
                       const image::vector<3,float>& to_dir,
                       const image::vector<3,float>& from_pos,
                       bool delete_track)
 {
     std::vector<unsigned int> selected;
-    select(angular_selection,from_dir,to_dir,from_pos,selected);
+    select(select_angle,from_dir,to_dir,from_pos,selected);
     std::vector<unsigned int> tracts_to_delete;
     tracts_to_delete.reserve(100 + (selected.size() >> 4));
     for (unsigned int index = 0;index < selected.size();++index)
@@ -727,12 +728,12 @@ void TractModel::cull(bool angular_selection,
     delete_tracts(tracts_to_delete);
 }
 //---------------------------------------------------------------------------
-void TractModel::paint(bool angular_selection,const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
+void TractModel::paint(float select_angle,const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
                        const image::vector<3,float>& from_pos,
                        unsigned int color)
 {
     std::vector<unsigned int> selected;
-    select(angular_selection,from_dir,to_dir,from_pos,selected);
+    select(select_angle,from_dir,to_dir,from_pos,selected);
     for (unsigned int index = 0;index < selected.size();++index)
         if (selected[index] > 0)
             tract_color[index] = color;

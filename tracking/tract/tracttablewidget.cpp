@@ -79,7 +79,8 @@ void TractTableWidget::addNewTracts(QString tract_name)
     thread_data.push_back(0);
     tract_models.push_back(new TractModel(cur_tracking_window.handle));
     tract_models.back()->get_fib().threshold = cur_tracking_window.ui->fa_threshold->value();
-    tract_models.back()->get_fib().cull_cos_angle = std::cos(cur_tracking_window.ui->turning_angle->value() * 3.1415926 / 180.0);
+    tract_models.back()->get_fib().cull_cos_angle =
+            std::cos(cur_tracking_window.renderWidget->getData("turning_angle").toDouble() * 3.1415926 / 180.0);
 
     setRowCount(tract_models.size());
     QTableWidgetItem *item0 = new QTableWidgetItem(tract_name);
@@ -131,26 +132,10 @@ void TractTableWidget::start_tracking(void)
     cur_tracking_window.set_tracking_param(*thread_data.back());
     cur_tracking_window.regionWidget->setROIs(thread_data.back());
     thread_data.back()->run(tract_models.back()->get_fib(),
-                            cur_tracking_window.ui->thread_count->currentIndex()+1,
-                            cur_tracking_window.ui->track_count->value());
+                            cur_tracking_window.renderWidget->getData("thread_count").toInt(),
+                            cur_tracking_window.renderWidget->getData("track_count").toInt());
     timer->start(1000);
 
-    // record
-    {
-        QSettings settings;
-        settings.setValue("step_size",cur_tracking_window.ui->step_size->value());
-        settings.setValue("turning_angle",cur_tracking_window.ui->turning_angle->value());
-        settings.setValue("smoothing",cur_tracking_window.ui->smoothing->value());
-        settings.setValue("min_length",cur_tracking_window.ui->min_length->value());
-        settings.setValue("max_length",cur_tracking_window.ui->max_length->value());
-        settings.setValue("tracking_method",cur_tracking_window.ui->tracking_method->currentIndex());
-        settings.setValue("seed_plan",cur_tracking_window.ui->seed_plan->currentIndex());
-        settings.setValue("initial_direction",cur_tracking_window.ui->initial_direction->currentIndex());
-        settings.setValue("interpolation",cur_tracking_window.ui->interpolation->currentIndex());
-        settings.setValue("tracking_plan",cur_tracking_window.ui->tracking_plan->currentIndex());
-        settings.setValue("track_count",cur_tracking_window.ui->track_count->value());
-        settings.setValue("thread_count",cur_tracking_window.ui->thread_count->currentIndex());
-    }
 }
 void TractTableWidget::stop_tracking(void)
 {
@@ -732,21 +717,24 @@ void TractTableWidget::edit_tracts(void)
         case 1:
         case 2:
             tract_models[index]->cull(
-                             cur_tracking_window.glWidget->angular_selection,
+                             cur_tracking_window.glWidget->angular_selection ?
+                             cur_tracking_window.renderWidget->getData("tract_sel_angle").toFloat():0.0,
                              cur_tracking_window.glWidget->dir1,
                              cur_tracking_window.glWidget->dir2,
                              cur_tracking_window.glWidget->pos,edit_option == 2);
             break;
         case 3:
             tract_models[index]->cut(
-                             cur_tracking_window.glWidget->angular_selection,
+                        cur_tracking_window.glWidget->angular_selection ?
+                        cur_tracking_window.renderWidget->getData("tract_sel_angle").toFloat():0.0,
                              cur_tracking_window.glWidget->dir1,
                              cur_tracking_window.glWidget->dir2,
                              cur_tracking_window.glWidget->pos);
             break;
         case 4:
             tract_models[index]->paint(
-                             cur_tracking_window.glWidget->angular_selection,
+                        cur_tracking_window.glWidget->angular_selection ?
+                        cur_tracking_window.renderWidget->getData("tract_sel_angle").toFloat():0.0,
                              cur_tracking_window.glWidget->dir1,
                              cur_tracking_window.glWidget->dir2,
                              cur_tracking_window.glWidget->pos,QColorDialog::getColor(Qt::red).rgb());
