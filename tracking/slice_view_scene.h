@@ -12,7 +12,6 @@ class slice_view_scene : public QGraphicsScene
 public:
     slice_view_scene(tracking_window& cur_tracking_window_,ODFModel* handle_):
             sel_mode(0),
-            neurology_convention(false),
             mid_down(false),
             cur_tracking_window(cur_tracking_window_),
             handle(handle_),statusbar(0)
@@ -20,7 +19,6 @@ public:
 
     }
     unsigned char sel_mode;
-    bool neurology_convention;
     QStatusBar* statusbar;
 private:
     tracking_window& cur_tracking_window;

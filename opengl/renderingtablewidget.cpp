@@ -49,7 +49,10 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
             QDoubleSpinBox* dsb = new QDoubleSpinBox(parent);
             dsb->setMinimum(string_list[1].toDouble());
             dsb->setMaximum(string_list[2].toDouble());
-            dsb->setSingleStep((dsb->maximum()-dsb->minimum())/10);
+            if(string_list.size() > 3)
+                dsb->setSingleStep(string_list[3].toDouble());
+            else
+                dsb->setSingleStep((dsb->maximum()-dsb->minimum())/10);
             dsb->setDecimals(std::max<double>((double)0,2-std::log10(dsb->maximum())));
             connect(dsb, SIGNAL(valueChanged(double)), this, SLOT(emitCommitData()));
             return dsb;
@@ -59,7 +62,10 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
             QSpinBox* dsb = new QSpinBox(parent);
             dsb->setMinimum(string_list[1].toInt());
             dsb->setMaximum(string_list[2].toInt());
-            dsb->setSingleStep(std::max<int>(1,(dsb->maximum()-dsb->minimum())/10));
+            if(string_list.size() > 3)
+                dsb->setSingleStep(string_list[3].toInt());
+            else
+                dsb->setSingleStep(std::max<int>(1,(dsb->maximum()-dsb->minimum())/10));
             connect(dsb, SIGNAL(valueChanged(int)), this, SLOT(emitCommitData()));
             return dsb;
         }
@@ -163,13 +169,14 @@ TreeModel::TreeModel(RenderingTableWidget *parent)
 {
     root.reset(new RenderingItem(QString("Objects"),QString("Options"),0,0));
     root_mapping["Root"] = root.get();
-    root_mapping["Tracking"] = new RenderingItem(QString("Tracking"),QVariant(),0,root.get());
-    root_mapping["Rendering"] = new RenderingItem(QString("Rendering"),QVariant(),0,root.get());
-    root_mapping["Slice"] = (RenderingItem*)addItem("Root","show_slice","Slice",QString("check"),Qt::Checked).internalPointer();
-    root_mapping["Tract"] = (RenderingItem*)addItem("Root","show_tract","Tract",QString("check"),Qt::Checked).internalPointer();
-    root_mapping["Region"] = (RenderingItem*)addItem("Root","show_region","Region",QString("check"),Qt::Checked).internalPointer();
-    root_mapping["Surface"] = (RenderingItem*)addItem("Root","show_surface","Surface",QString("check"),Qt::Checked).internalPointer();
-    root_mapping["ODF"] = (RenderingItem*)addItem("Root","show_odf","ODF",QString("check"),Qt::Checked).internalPointer();
+    root_mapping["ROI"] = new RenderingItem(QString("Region Window"),QVariant(),0,root.get());
+    root_mapping["Tracking"] = new RenderingItem(QString("Tracking Parameters"),QVariant(),0,root.get());
+    root_mapping["Rendering"] = new RenderingItem(QString("Background Rendering"),QVariant(),0,root.get());
+    root_mapping["Slice"] = (RenderingItem*)addItem("Root","show_slice","Slice Rendering",QString("check"),Qt::Checked).internalPointer();
+    root_mapping["Tract"] = (RenderingItem*)addItem("Root","show_tract","Tract Rendering",QString("check"),Qt::Checked).internalPointer();
+    root_mapping["Region"] = (RenderingItem*)addItem("Root","show_region","Region Rendering",QString("check"),Qt::Checked).internalPointer();
+    root_mapping["Surface"] = (RenderingItem*)addItem("Root","show_surface","Surface Rendering",QString("check"),Qt::Checked).internalPointer();
+    root_mapping["ODF"] = (RenderingItem*)addItem("Root","show_odf","ODF Rendering",QString("check"),Qt::Checked).internalPointer();
     //root_mapping["Others"] = new RenderingItem(QString("Others"),QVariant(),0,root.get());
 }
 
@@ -223,8 +230,10 @@ bool TreeModel::setData ( const QModelIndex & index, const QVariant & value, int
         if (role == Qt::CheckStateRole &&
             ((RenderingItem*)index.internalPointer())->type == QString("check"))
         {
+            QVariant old_value = ((RenderingItem*)index.internalPointer())->value;
             ((RenderingItem*)index.internalPointer())->value = value;
-            emit dataChanged(index,index);
+            if(old_value != value)
+                emit dataChanged(index,index);
         }
         return true;
     }
@@ -233,8 +242,12 @@ bool TreeModel::setData ( const QModelIndex & index, const QVariant & value, int
         switch(role)
         {
         case Qt::UserRole:
-            ((RenderingItem*)index.internalPointer())->value = value;
-            emit dataChanged(index,index);
+            {
+                QVariant old_value = ((RenderingItem*)index.internalPointer())->value;
+                ((RenderingItem*)index.internalPointer())->value = value;
+                if(old_value != value)
+                    emit dataChanged(index,index);
+            }
             return true;
         case Qt::UserRole+1:
             ((RenderingItem*)index.internalPointer())->type = value;
@@ -381,12 +394,12 @@ void RenderingTableWidget::initialize(void)
         openPersistentEditor(index);
     }
 }
-void RenderingTableWidget::updateData(const char* name,QVariant data)
+void RenderingTableWidget::updateData(QString name,QVariant data)
 {
     treemodel->updateData(name,data);
 }
 
-void RenderingTableWidget::setData(const char* name,QVariant data)
+void RenderingTableWidget::setData(QString name,QVariant data)
 {
     collapseAll();
     treemodel->updateData(name,data);
@@ -395,8 +408,6 @@ void RenderingTableWidget::setData(const char* name,QVariant data)
     initialize();
     expandAll();
     collapseAll();
-    connect(treemodel,SIGNAL(dataChanged(QModelIndex,QModelIndex)),
-            this,SLOT(dataChanged(QModelIndex,QModelIndex)));
 }
 
 void RenderingTableWidget::setDefault(void)
@@ -408,16 +419,20 @@ void RenderingTableWidget::setDefault(void)
     initialize();
     expandAll();
     collapseAll();
-    connect(treemodel,SIGNAL(dataChanged(QModelIndex,QModelIndex)),
-            this,SLOT(dataChanged(QModelIndex,QModelIndex)));
-
+    cur_tracking_window.scene.show_slice();
+    cur_tracking_window.glWidget->updateGL();
 }
 void RenderingTableWidget::dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
 {
-    if(((RenderingItem*)bottomRight.internalPointer())->parent()->title == "Tracking")
+    if(((RenderingItem*)bottomRight.internalPointer())->parent()->title == "Tracking Parameters")
     {
-        //std::cout << "Tracking parameter changed" << std::endl;
+        // do nothing here
     }
+    else
+        if(((RenderingItem*)bottomRight.internalPointer())->parent()->title == "Region Window")
+        {
+            cur_tracking_window.scene.show_slice();
+        }
     else
         cur_tracking_window.glWidget->updateGL();
 }

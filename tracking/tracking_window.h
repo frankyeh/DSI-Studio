@@ -90,6 +90,7 @@ public:
     bool handle_release;
     bool slice_no_update;
     bool eventFilter(QObject *obj, QEvent *event);
+    QVariant operator[](QString name)const;
 public slots:
     void on_SagView_clicked();
     void on_CorView_clicked();
@@ -140,8 +141,6 @@ private slots:
     void on_actionTract_Analysis_Report_triggered();
     void on_actionConnectivity_matrix_triggered();
     void on_zoom_3d_valueChanged(double arg1);
-    void on_RAS_toggled(bool checked);
-    void on_RAS_clicked();
     void on_actionConnectometry_triggered();
     void on_contrast_value_valueChanged(double arg1);
     void on_offset_value_valueChanged(double arg1);

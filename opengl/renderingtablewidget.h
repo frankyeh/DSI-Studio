@@ -123,9 +123,9 @@ public:
     TreeModel* treemodel;
 public:
     explicit RenderingTableWidget(tracking_window& cur_tracking_window_,QWidget *parent);
-    QVariant getData(const char* name){return treemodel->getData(name);}
-    void updateData(const char* name,QVariant data);
-    void setData(const char* name,QVariant data);
+    QVariant getData(QString name){return treemodel->getData(name);}
+    void updateData(QString name,QVariant data);
+    void setData(QString name,QVariant data);
 
     void initialize(void);
 public slots:

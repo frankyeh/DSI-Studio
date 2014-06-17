@@ -32,7 +32,7 @@ void slice_view_scene::show_ruler(QPainter& paint)
         image::vector<2,float> to(tX,tY);
         from -= to;
         float pixel_length = from.length();
-        from /= cur_tracking_window.ui->zoom->value();
+        from /= cur_tracking_window["roi_zoom"].toInt();
         from[0] *= cur_tracking_window.handle->fib_data.vs[0];
         from[1] *= cur_tracking_window.handle->fib_data.vs[1];
         from[2] *= cur_tracking_window.handle->fib_data.vs[2];
@@ -77,7 +77,7 @@ void slice_view_scene::show_fiber(QPainter& painter)
     if (threshold == 0.0)
         threshold = 0.00000001;
     int X,Y,Z;
-    float display_ratio = cur_tracking_window.ui->zoom->value();
+    float display_ratio = cur_tracking_window["roi_zoom"].toInt();
     float r = display_ratio /  3.0;
     float pen_w = display_ratio /  5.0;
     const char dir_x[3] = {1,0,0};
@@ -111,7 +111,7 @@ void slice_view_scene::show_fiber(QPainter& painter)
 void slice_view_scene::show_pos(QPainter& painter)
 {
     int x_pos,y_pos;
-    float display_ratio = cur_tracking_window.ui->zoom->value();
+    float display_ratio = cur_tracking_window["roi_zoom"].toInt();
     cur_tracking_window.slice.get_other_slice_pos(x_pos, y_pos);
     x_pos = ((double)x_pos + 0.5)*display_ratio;
     y_pos = ((double)y_pos + 0.5)*display_ratio;
@@ -124,7 +124,7 @@ void slice_view_scene::show_pos(QPainter& painter)
 
 void slice_view_scene::get_view_image(QImage& new_view_image)
 {
-    float display_ratio = cur_tracking_window.ui->zoom->value();
+    float display_ratio = cur_tracking_window["roi_zoom"].toInt();
     float contrast = cur_tracking_window.ui->contrast_value->value();
     float offset = cur_tracking_window.ui->offset_value->value();
     cur_tracking_window.slice.get_slice(slice_image,contrast,offset);
@@ -135,10 +135,10 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
 
     QPainter painter(&scaled_image);
 
-    if(cur_tracking_window.ui->show_fiber->checkState() == Qt::Checked)
+    if(cur_tracking_window["roi_fiber"].toInt())
         show_fiber(painter);
 
-    if(cur_tracking_window.ui->show_pos->checkState() == Qt::Checked)
+    if(cur_tracking_window["roi_position"].toInt())
         show_pos(painter);
 
 
@@ -146,43 +146,43 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
     bool flip_y = false;
     if(cur_tracking_window.slice.cur_dim != 2)
         flip_y = true;
-    if(neurology_convention)
+    if(cur_tracking_window["orientation_convention"].toInt())
         flip_x = true;
 
     new_view_image = (!flip_x && !flip_y ? scaled_image : scaled_image.mirrored(flip_x,flip_y));
 
-    if(cur_tracking_window.slice.cur_dim && cur_tracking_window.ui->show_lr->checkState() == Qt::Checked)
+    if(cur_tracking_window.slice.cur_dim && cur_tracking_window["roi_label"].toInt())
     {
         QPainter painter(&new_view_image);
         painter.setPen(QPen(QColor(255,255,255)));
         QFont f = font();  // start out with MainWindow's font..
-        f.setPointSize(cur_tracking_window.ui->zoom->value()+10); // and make a bit smaller for legend
+        f.setPointSize(cur_tracking_window["roi_zoom"].toInt()+10); // and make a bit smaller for legend
         painter.setFont(f);
         painter.drawText(5,5,new_view_image.width()-10,new_view_image.height()-10,
-                         neurology_convention ? Qt::AlignTop|Qt::AlignRight: Qt::AlignTop|Qt::AlignLeft,"R");
+                         cur_tracking_window["orientation_convention"].toInt() ? Qt::AlignTop|Qt::AlignRight: Qt::AlignTop|Qt::AlignLeft,"R");
     }
 }
 bool slice_view_scene::get_location(float x,float y,image::vector<3,float>& pos)
 {
     image::geometry<3> geo(cur_tracking_window.slice.geometry);
-    float display_ratio = cur_tracking_window.ui->zoom->value();
+    float display_ratio = cur_tracking_window["roi_zoom"].toInt();
     x /= display_ratio;
     y /= display_ratio;
-    if(cur_tracking_window.ui->view_style->currentIndex() == 0)// single slice
+    if(cur_tracking_window["roi_layout"].toInt() == 0)// single slice
     {
-        if(neurology_convention)
+        if(cur_tracking_window["orientation_convention"].toInt())
             x = (cur_tracking_window.slice.cur_dim ? geo[0]:geo[1])-x;
         if(cur_tracking_window.slice.cur_dim != 2)
             y = geo[2] - y;
         return cur_tracking_window.slice.get3dPosition(x - 0.5,y - 0.5,pos[0], pos[1], pos[2]);
     }
     else
-    if(cur_tracking_window.ui->view_style->currentIndex() == 1)// 3 slice
+    if(cur_tracking_window["roi_layout"].toInt() == 1)// 3 slice
     {
 
         if(mouse_down)
         {
-            if(neurology_convention)
+            if(cur_tracking_window["orientation_convention"].toInt())
             {
                 if(cur_tracking_window.slice.cur_dim == 0)
                     x -= geo[0];
@@ -196,7 +196,7 @@ bool slice_view_scene::get_location(float x,float y,image::vector<3,float>& pos)
         else
         {
             unsigned char new_dim = 0;
-            if(neurology_convention)
+            if(cur_tracking_window["orientation_convention"].toInt())
             {
                 if(x > geo[0])
                 {
@@ -241,7 +241,7 @@ bool slice_view_scene::get_location(float x,float y,image::vector<3,float>& pos)
             cur_tracking_window.slice.cur_dim = new_dim;
         }
 
-        if(neurology_convention)
+        if(cur_tracking_window["orientation_convention"].toInt())
             x = (cur_tracking_window.slice.cur_dim ? geo[0]:geo[1])-x;
         if(cur_tracking_window.slice.cur_dim != 2)
             y = geo[2] - y;
@@ -249,7 +249,7 @@ bool slice_view_scene::get_location(float x,float y,image::vector<3,float>& pos)
     }
     else
     {
-        if(neurology_convention)
+        if(cur_tracking_window["orientation_convention"].toInt())
             return false;
         pos[0] = x*(float)mosaic_size;
         pos[1] = y*(float)mosaic_size;
@@ -263,12 +263,12 @@ bool slice_view_scene::get_location(float x,float y,image::vector<3,float>& pos)
 
 void slice_view_scene::show_slice(void)
 {
-    float display_ratio = cur_tracking_window.ui->zoom->value();
+    float display_ratio = cur_tracking_window["roi_zoom"].toInt();
 
-    if(cur_tracking_window.ui->view_style->currentIndex() == 0)// single slice
+    if(cur_tracking_window["roi_layout"].toInt() == 0)// single slice
         get_view_image(view_image);
     else
-    if(cur_tracking_window.ui->view_style->currentIndex() == 1)// 3 slices
+    if(cur_tracking_window["roi_layout"].toInt() == 1)// 3 slices
     {
         unsigned char old_dim = cur_tracking_window.slice.cur_dim;
         QImage view1,view2,view3;
@@ -282,7 +282,7 @@ void slice_view_scene::show_slice(void)
         view_image = QImage(QSize(view1.width()+view2.width(),view1.height()+view3.height()),QImage::Format_RGB32);
         QPainter painter(&view_image);
         painter.fillRect(0,0,view_image.width(),view_image.height(),QColor(0,0,0));
-        if(neurology_convention)
+        if(cur_tracking_window["orientation_convention"].toInt())
         {
             painter.drawImage(view2.width(),0,view1);
             painter.drawImage(0,0,view2);
@@ -297,21 +297,21 @@ void slice_view_scene::show_slice(void)
         QPen pen(QColor(255,255,255));
         pen.setWidthF(std::max(1.0,display_ratio/4.0));
         painter.setPen(pen);
-        painter.drawLine(neurology_convention ? view2.width() : view1.width(),0,
-                         neurology_convention ? view2.width() : view1.width(),view_image.height());
+        painter.drawLine(cur_tracking_window["orientation_convention"].toInt() ? view2.width() : view1.width(),0,
+                         cur_tracking_window["orientation_convention"].toInt() ? view2.width() : view1.width(),view_image.height());
         painter.drawLine(0,view1.height(),view_image.width(),view1.height());
     }
     else
     {
         float contrast = cur_tracking_window.ui->contrast_value->value();
         float offset = cur_tracking_window.ui->offset_value->value();
-        unsigned int skip = cur_tracking_window.ui->view_style->currentIndex()-2;
+        unsigned int skip = cur_tracking_window["roi_layout"].toInt()-2;
         mosaic_size = std::max((int)1,(int)std::ceil(std::sqrt((float)(cur_tracking_window.slice.geometry[2] >> skip))));
         cur_tracking_window.slice.get_mosaic(mosaic_image,mosaic_size,contrast,offset,skip);
         QImage qimage((unsigned char*)&*mosaic_image.begin(),mosaic_image.width(),mosaic_image.height(),QImage::Format_RGB32);
         cur_tracking_window.regionWidget->draw_mosaic_region(qimage,mosaic_size,skip);
         view_image = qimage.scaled(mosaic_image.width()*display_ratio/(float)mosaic_size,mosaic_image.height()*display_ratio/(float)mosaic_size);
-        if(neurology_convention)
+        if(cur_tracking_window["orientation_convention"].toInt())
         {
             QImage I = view_image;
             view_image = I.mirrored(true,false);
@@ -384,7 +384,7 @@ void slice_view_scene::catch_screen()
     if(filename.isEmpty())
         return;
 
-    if(cur_tracking_window.ui->view_style->currentIndex() != 0)// mosaic
+    if(cur_tracking_window["roi_layout"].toInt() != 0)// mosaic
     {
         view_image.save(filename);
         return;
@@ -393,7 +393,7 @@ void slice_view_scene::catch_screen()
     bool flip_y = false;
     if(cur_tracking_window.slice.cur_dim != 2)
         flip_y = true;
-    if(neurology_convention)
+    if(cur_tracking_window["orientation_convention"].toInt())
         flip_x = true;
 
     QImage output = view_image;
@@ -404,7 +404,7 @@ void slice_view_scene::catch_screen()
 
 void slice_view_scene::copyClipBoard()
 {
-    if(cur_tracking_window.ui->view_style->currentIndex() != 0)// mosaic
+    if(cur_tracking_window["roi_layout"].toInt() != 0)// mosaic
     {
         QApplication::clipboard()->setImage(view_image);
         return;
@@ -432,7 +432,7 @@ void slice_view_scene::mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseE
     else
     if (mouseEvent->button() == Qt::RightButton) // move to slice
     {
-        if(cur_tracking_window.ui->view_style->currentIndex() > 1)// single slice or 3 slices
+        if(cur_tracking_window["roi_layout"].toInt() > 1)// single slice or 3 slices
             return;
         float Y = mouseEvent->scenePos().y();
         float X = mouseEvent->scenePos().x();
@@ -449,7 +449,7 @@ void slice_view_scene::mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseE
 
 void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {
-    if(cur_tracking_window.ui->view_style->currentIndex() > 1)// mosaic
+    if(cur_tracking_window["roi_layout"].toInt() > 1)// mosaic
         return;
 
     if(mouseEvent->button() == Qt::MidButton)
@@ -474,7 +474,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     int x, y, z;
     float Y = mouseEvent->scenePos().y();
     float X = mouseEvent->scenePos().x();
-    float display_ratio = cur_tracking_window.ui->zoom->value();
+    float display_ratio = cur_tracking_window["roi_zoom"].toInt();
 
     image::geometry<3> geo(cur_tracking_window.slice.geometry);
 
@@ -494,9 +494,9 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         }
     }
 
-    if(cur_tracking_window.ui->view_style->currentIndex() == 1)
+    if(cur_tracking_window["roi_layout"].toInt() == 1)
     {
-        if(neurology_convention)
+        if(cur_tracking_window["orientation_convention"].toInt())
         {
             if(cur_tracking_window.slice.cur_dim == 0)
                 X -= geo[0]*display_ratio;
@@ -553,7 +553,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 
 void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {
-    if(cur_tracking_window.ui->view_style->currentIndex() > 1)// single slice
+    if(cur_tracking_window["roi_layout"].toInt() > 1)// single slice
         return;
 
     if (!mouse_down && !mid_down)
@@ -565,7 +565,7 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     image::geometry<3> geo(cur_tracking_window.slice.geometry);
     float Y = mouseEvent->scenePos().y();
     float X = mouseEvent->scenePos().x();
-    float display_ratio = cur_tracking_window.ui->zoom->value();
+    float display_ratio = cur_tracking_window["roi_zoom"].toInt();
 
 
     cX = X;
@@ -582,9 +582,9 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         z = std::floor(pos[2]+0.5);
     }
 
-    if(cur_tracking_window.ui->view_style->currentIndex() == 1)
+    if(cur_tracking_window["roi_layout"].toInt() == 1)
     {
-        if(neurology_convention)
+        if(cur_tracking_window["orientation_convention"].toInt())
         {
             if(cur_tracking_window.slice.cur_dim == 0)
                 X -= geo[0]*display_ratio;
@@ -609,12 +609,12 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         return;
     }
 
-    if(cur_tracking_window.ui->view_style->currentIndex() == 0)
+    if(cur_tracking_window["roi_layout"].toInt() == 0)
         annotated_image = view_image;
     else
     {
         annotated_image = view_image.copy(
-                        neurology_convention ?
+                        cur_tracking_window["orientation_convention"].toInt() ?
                             (cur_tracking_window.slice.cur_dim != 0 ? 0:geo[0]*display_ratio):
                             (cur_tracking_window.slice.cur_dim == 0 ? 0:geo[1]*display_ratio),
                         cur_tracking_window.slice.cur_dim != 2 ? 0:geo[2]*display_ratio,
@@ -677,11 +677,11 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     clear();
     setItemIndexMethod(QGraphicsScene::NoIndex);
 
-    if(cur_tracking_window.ui->view_style->currentIndex() == 1)
+    if(cur_tracking_window["roi_layout"].toInt() == 1)
     {
         QImage temp = view_image;
         QPainter paint(&temp);
-        paint.drawImage(neurology_convention?
+        paint.drawImage(cur_tracking_window["orientation_convention"].toInt()?
                         (cur_tracking_window.slice.cur_dim != 0 ? 0:geo[0]*display_ratio):
                         (cur_tracking_window.slice.cur_dim == 0 ? 0:geo[1]*display_ratio),
                         cur_tracking_window.slice.cur_dim != 2 ? 0:geo[2]*display_ratio,annotated_image);
@@ -695,7 +695,7 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 
 void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {
-    if(cur_tracking_window.ui->view_style->currentIndex() > 1)
+    if(cur_tracking_window["roi_layout"].toInt() > 1)
         return;
 
     if (!mouse_down && !mid_down)
@@ -707,7 +707,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     }
     mouse_down = false;
     image::geometry<3> geo(cur_tracking_window.slice.geometry);
-    float display_ratio = cur_tracking_window.ui->zoom->value();
+    float display_ratio = cur_tracking_window["roi_zoom"].toInt();
 
 
     std::vector<image::vector<3,short> >points;
@@ -751,7 +751,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
             std::vector<QPoint> qpoints(sel_point.size());
             for(unsigned int index = 0;index < sel_point.size();++index)
                 qpoints[index] = QPoint(
-                            !neurology_convention ?
+                            !cur_tracking_window["orientation_convention"].toInt() ?
                                 sel_point[index][0]/display_ratio:(cur_tracking_window.slice.cur_dim ? geo[0]:geo[1]) - sel_point[index][0]/display_ratio,
                             cur_tracking_window.slice.cur_dim == 2 ?
                                 sel_point[index][1]/display_ratio:geo[2] - sel_point[index][1]/display_ratio);
@@ -802,12 +802,12 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     break;
     case 4:
     {
-        if(cur_tracking_window.ui->view_style->currentIndex() == 0)
+        if(cur_tracking_window["roi_layout"].toInt() == 0)
             annotated_image = view_image;
         else
         {
             annotated_image = view_image.copy(
-                        neurology_convention ?
+                        cur_tracking_window["orientation_convention"].toInt() ?
                             (cur_tracking_window.slice.cur_dim != 0 ? 0:geo[0]*display_ratio):
                             (cur_tracking_window.slice.cur_dim == 0 ? 0:geo[1]*display_ratio),
                             cur_tracking_window.slice.cur_dim != 2 ? 0:geo[2]*display_ratio,
@@ -826,11 +826,11 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
 
         clear();
         setItemIndexMethod(QGraphicsScene::NoIndex);
-        if(cur_tracking_window.ui->view_style->currentIndex() == 1)
+        if(cur_tracking_window["roi_layout"].toInt() == 1)
         {
             QImage temp = view_image;
             QPainter paint(&temp);
-            paint.drawImage(neurology_convention ?
+            paint.drawImage(cur_tracking_window["orientation_convention"].toInt() ?
                                 (cur_tracking_window.slice.cur_dim != 0 ? 0:geo[0]*display_ratio) :
                                 (cur_tracking_window.slice.cur_dim == 0 ? 0:geo[1]*display_ratio),
                             cur_tracking_window.slice.cur_dim != 2 ? 0:geo[2]*display_ratio,annotated_image);

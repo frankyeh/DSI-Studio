@@ -1,3 +1,9 @@
+ROI/Orientation Convention/orientation_convention/Radiology:Neurology/0
+ROI/Zoom/roi_zoom/int:1:50:1/8
+ROI/Fibers/roi_fiber/Off:On/1
+ROI/"R" lebel/roi_label/Off:On/1
+ROI/Position Line/roi_position/Off:On/1
+ROI/Slice Layout/roi_layout/Single Slice:3 Slices:Mosaic:Mosaic 2:Mosaic 4/0
 Tracking/Angular Threshold/turning_angle/int:0:90/60
 Tracking/Step Size(mm)/step_size/float:0.05:10/1.0
 Tracking/Smoothing/smoothing/float:0:0.9/0

@@ -31,6 +31,11 @@ void tracking_window::closeEvent(QCloseEvent *event)
     QMainWindow::closeEvent(event);
 }
 
+QVariant tracking_window::operator[](QString name) const
+{
+    return renderWidget->getData(name);
+}
+
 tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handle_release_) :
         QMainWindow(parent),handle(new_handle),handle_release(handle_release_),
         ui(new Ui::tracking_window),scene(*this,new_handle),slice(new_handle),gLdock(0)
@@ -139,8 +144,6 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
 
     // opengl
     {
-        connect(renderWidget->treemodel,SIGNAL(dataChanged(QModelIndex,QModelIndex)),
-                glWidget,SLOT(updateGL()));
         connect(ui->tbDefaultParam,SIGNAL(clicked()),renderWidget,SLOT(setDefault()));
         connect(ui->tbDefaultParam,SIGNAL(clicked()),glWidget,SLOT(updateGL()));
 
@@ -178,13 +181,6 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         connect(&scene,SIGNAL(need_update()),&scene,SLOT(show_slice()));
         connect(&scene,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
         connect(ui->fa_threshold,SIGNAL(valueChanged(double)),&scene,SLOT(show_slice()));
-        connect(ui->show_fiber,SIGNAL(clicked()),&scene,SLOT(show_slice()));
-        connect(ui->show_pos,SIGNAL(clicked()),&scene,SLOT(show_slice()));
-        connect(ui->show_lr,SIGNAL(clicked()),&scene,SLOT(show_slice()));
-
-        connect(ui->zoom,SIGNAL(valueChanged(double)),&scene,SLOT(show_slice()));
-        connect(ui->zoom,SIGNAL(valueChanged(double)),&scene,SLOT(center()));
-
 
         connect(ui->actionAxial_View,SIGNAL(triggered()),this,SLOT(on_AxiView_clicked()));
         connect(ui->actionCoronal_View,SIGNAL(triggered()),this,SLOT(on_CorView_clicked()));
@@ -205,13 +201,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
 
         connect(regionWidget,SIGNAL(need_update()),&scene,SLOT(show_slice()));
         connect(regionWidget,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
-
-
-
         connect(ui->whole_brain,SIGNAL(clicked()),regionWidget,SLOT(whole_brain()));
-
-        connect(ui->view_style,SIGNAL(currentIndexChanged(int)),&scene,SLOT(show_slice()));
-
         //atlas
         connect(ui->addRegionFromAtlas,SIGNAL(clicked()),regionWidget,SLOT(add_atlas()));
 
@@ -334,9 +324,6 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         ui->glCorCheck->setChecked(settings.value("CorSlice",1).toBool());
         ui->glAxiCheck->setChecked(settings.value("AxiSlice",1).toBool());
         ui->RenderingQualityBox->setCurrentIndex(settings.value("RenderingQuality",1).toInt());
-
-        ui->view_style->setCurrentIndex((settings.value("view_style",0).toInt()));
-        ui->RAS->setChecked(settings.value("RAS",0).toBool());
     }
 
     {
@@ -346,7 +333,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
     }
 
     on_glAxiView_clicked();
-    if(scene.neurology_convention)
+    if(renderWidget->getData("orientation_convention").toInt() == 1)
         on_glAxiView_clicked();
     qApp->installEventFilter(this);
 }
@@ -357,8 +344,6 @@ tracking_window::~tracking_window()
     QSettings settings;
     settings.setValue("geometry", saveGeometry());
     settings.setValue("state", saveState());
-    settings.setValue("view_style",ui->view_style->currentIndex());
-    settings.setValue("RAS",ui->RAS->isChecked()? 1:0);
     tractWidget->delete_all_tract();
     delete ui;
     if(handle_release)
@@ -480,7 +465,7 @@ void tracking_window::SliderValueChanged(void)
             ui->CorSlider->value(),
             ui->AxiSlider->value()))
     {
-        if(ui->view_style->currentIndex() <= 1)
+        if(renderWidget->getData("roi_layout").toInt() <= 1)
             scene.show_slice();
         if(glWidget->current_visible_slide == 0)
             glWidget->updateGL();
@@ -507,7 +492,7 @@ void tracking_window::glSliderValueChanged(void)
 void tracking_window::on_AxiView_clicked()
 {
     slice.cur_dim = 2;
-    if(ui->view_style->currentIndex() == 0)
+    if(renderWidget->getData("roi_layout").toInt() == 0)
         scene.show_slice();
     scene.setFocus();
 }
@@ -515,7 +500,7 @@ void tracking_window::on_AxiView_clicked()
 void tracking_window::on_CorView_clicked()
 {
     slice.cur_dim = 1;
-    if(ui->view_style->currentIndex() == 0)
+    if(renderWidget->getData("roi_layout").toInt() == 0)
         scene.show_slice();
     scene.setFocus();
 }
@@ -523,7 +508,7 @@ void tracking_window::on_CorView_clicked()
 void tracking_window::on_SagView_clicked()
 {
     slice.cur_dim = 0;
-    if(ui->view_style->currentIndex() == 0)
+    if(renderWidget->getData("roi_layout").toInt() == 0)
         scene.show_slice();
     scene.setFocus();
 }
@@ -1227,20 +1212,6 @@ QString tracking_window::get_path(const std::string& id)
 void tracking_window::add_path(const std::string& id,QString filename)
 {
     path_map[id] = QFileInfo(filename).absolutePath();
-}
-
-void tracking_window::on_RAS_toggled(bool checked)
-{
-    scene.neurology_convention = ui->RAS->isChecked();
-    scene.show_slice();
-}
-
-void tracking_window::on_RAS_clicked()
-{
-    if(scene.neurology_convention)
-        QMessageBox::information(this,"DSI Studio","Switch to neurology orientation. The RIGHT side of the image is the RIGHT side of the patient",0);
-    else
-        QMessageBox::information(this,"DSI Studio","Switch to radiology orientation. The RIGHT side of the image is the LEFT side of the patient",0);
 }
 
 void tracking_window::on_actionConnectometry_triggered()

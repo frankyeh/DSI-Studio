@@ -80,7 +80,7 @@ void TractTableWidget::addNewTracts(QString tract_name)
     tract_models.push_back(new TractModel(cur_tracking_window.handle));
     tract_models.back()->get_fib().threshold = cur_tracking_window.ui->fa_threshold->value();
     tract_models.back()->get_fib().cull_cos_angle =
-            std::cos(cur_tracking_window.renderWidget->getData("turning_angle").toDouble() * 3.1415926 / 180.0);
+            std::cos(cur_tracking_window["turning_angle"].toDouble() * 3.1415926 / 180.0);
 
     setRowCount(tract_models.size());
     QTableWidgetItem *item0 = new QTableWidgetItem(tract_name);
@@ -132,8 +132,8 @@ void TractTableWidget::start_tracking(void)
     cur_tracking_window.set_tracking_param(*thread_data.back());
     cur_tracking_window.regionWidget->setROIs(thread_data.back());
     thread_data.back()->run(tract_models.back()->get_fib(),
-                            cur_tracking_window.renderWidget->getData("thread_count").toInt(),
-                            cur_tracking_window.renderWidget->getData("track_count").toInt());
+                            cur_tracking_window["thread_count"].toInt(),
+                            cur_tracking_window["track_count"].toInt());
     timer->start(1000);
 
 }
@@ -718,7 +718,7 @@ void TractTableWidget::edit_tracts(void)
         case 2:
             tract_models[index]->cull(
                              cur_tracking_window.glWidget->angular_selection ?
-                             cur_tracking_window.renderWidget->getData("tract_sel_angle").toFloat():0.0,
+                             cur_tracking_window["tract_sel_angle"].toFloat():0.0,
                              cur_tracking_window.glWidget->dir1,
                              cur_tracking_window.glWidget->dir2,
                              cur_tracking_window.glWidget->pos,edit_option == 2);
@@ -726,7 +726,7 @@ void TractTableWidget::edit_tracts(void)
         case 3:
             tract_models[index]->cut(
                         cur_tracking_window.glWidget->angular_selection ?
-                        cur_tracking_window.renderWidget->getData("tract_sel_angle").toFloat():0.0,
+                        cur_tracking_window["tract_sel_angle"].toFloat():0.0,
                              cur_tracking_window.glWidget->dir1,
                              cur_tracking_window.glWidget->dir2,
                              cur_tracking_window.glWidget->pos);
@@ -734,7 +734,7 @@ void TractTableWidget::edit_tracts(void)
         case 4:
             tract_models[index]->paint(
                         cur_tracking_window.glWidget->angular_selection ?
-                        cur_tracking_window.renderWidget->getData("tract_sel_angle").toFloat():0.0,
+                        cur_tracking_window["tract_sel_angle"].toFloat():0.0,
                              cur_tracking_window.glWidget->dir1,
                              cur_tracking_window.glWidget->dir2,
                              cur_tracking_window.glWidget->pos,QColorDialog::getColor(Qt::red).rgb());
