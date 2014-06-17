@@ -18,6 +18,20 @@ struct compare_qstring{
     }
 };
 
+QString get_src_name(QString file_name)
+{
+    image::io::dicom header;
+    if (header.load_from_file(file_name.toLocal8Bit().begin()))
+    {
+        std::string Person;
+        header.get_patient(Person);
+        return QFileInfo(file_name).absolutePath() + "/" + &*Person.begin() + ".src.gz";
+
+    }
+    else
+        return file_name+".src.gz";
+}
+
 dicom_parser::dicom_parser(QStringList file_list,QWidget *parent) :
         QDialog(parent),
         ui(new Ui::dicom_parser)
@@ -29,17 +43,13 @@ dicom_parser::dicom_parser(QStringList file_list,QWidget *parent) :
 
     if (!dwi_files.empty())
     {
+        ui->SrcName->setText(get_src_name(file_list[0]));
         image::io::dicom header;
         if (header.load_from_file(file_list[0].toLocal8Bit().begin()))
         {
-            std::string Person;
-            header.get_patient(Person);
-            ui->SrcName->setText(cur_path + "/" + &*Person.begin() + ".src.gz");
             slice_orientation.resize(9);
             header.get_image_orientation(slice_orientation.begin());
         }
-        else
-            ui->SrcName->setText(cur_path + "/" + QFileInfo(file_list[0]).baseName()+".src.gz");
     }
 }
 void dicom_parser::set_name(QString name)
@@ -492,7 +502,6 @@ bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_file
         QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
         if(dicom_file_list.empty())
             return false;
-        begin_prog(file_list[0].toLocal8Bit().begin());
         for (unsigned int index = 0;index < dicom_file_list.size();++index)
             dicom_file_list[index] = file_list[0] + "/" + dicom_file_list[index];
         return load_all_files(dicom_file_list,dwi_files);
