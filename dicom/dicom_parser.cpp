@@ -492,7 +492,6 @@ bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_file
         QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
         if(dicom_file_list.empty())
             return false;
-        boost::ptr_vector<DwiHeader> dwi_files;
         begin_prog(file_list[0].toLocal8Bit().begin());
         for (unsigned int index = 0;index < dicom_file_list.size();++index)
             dicom_file_list[index] = file_list[0] + "/" + dicom_file_list[index];
