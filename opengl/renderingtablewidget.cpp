@@ -13,6 +13,40 @@
 #include <cmath>
 
 
+void RenderingItem::setValue(QVariant new_value)
+{
+    if(value == new_value)
+        return;
+    value = new_value;
+    if(!GUI)
+        return;
+    if(QString(GUI->metaObject()->className()) == "QSlider")
+    {
+        QSlider *slider = (QSlider*)GUI;
+        if(slider->maximum() == 10) // int
+            slider->setValue(new_value.toInt());
+        else
+            slider->setValue(new_value.toFloat()*5.0);
+    }
+    if(QString(GUI->metaObject()->className()) == "QColorToolButton")
+    {
+        ((QColorToolButton*)GUI)->setColor(new_value.toInt());
+    }
+    if(QString(GUI->metaObject()->className()) == "QDoubleSpinBox")
+    {
+        ((QDoubleSpinBox*)GUI)->setValue(new_value.toFloat());
+    }
+    if(QString(GUI->metaObject()->className()) == "QSpinBox")
+    {
+        ((QSpinBox*)GUI)->setValue(new_value.toInt());
+
+    }
+    if(QString(GUI->metaObject()->className()) == "QComboBox")
+    {
+        ((QComboBox*)GUI)->setCurrentIndex(new_value.toInt());
+    }
+}
+
 QWidget *RenderingDelegate::createEditor(QWidget *parent,
         const QStyleOptionViewItem &option,
         const QModelIndex &index) const
@@ -24,6 +58,7 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
         sd->setOrientation(Qt::Horizontal);
         sd->setRange(0,10);
         connect(sd, SIGNAL(valueChanged(int)), this, SLOT(emitCommitData()));
+        ((RenderingItem*)index.internalPointer())->GUI = sd;
         return sd;
     }
     if (string == QString("slider"))
@@ -32,6 +67,7 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
         sd->setOrientation(Qt::Horizontal);
         sd->setRange(0,50);
         connect(sd, SIGNAL(valueChanged(int)), this, SLOT(emitCommitData()));
+        ((RenderingItem*)index.internalPointer())->GUI = sd;
         return sd;
     }
 
@@ -39,6 +75,7 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
     {
         QColorToolButton* sd = new QColorToolButton(parent);
         connect(sd, SIGNAL(clicked()), this, SLOT(emitCommitData()));
+        ((RenderingItem*)index.internalPointer())->GUI = sd;
         return sd;
     }
     QStringList string_list = index.data(Qt::UserRole+1).toStringList();
@@ -55,6 +92,7 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
                 dsb->setSingleStep((dsb->maximum()-dsb->minimum())/10);
             dsb->setDecimals(std::max<double>((double)0,2-std::log10(dsb->maximum())));
             connect(dsb, SIGNAL(valueChanged(double)), this, SLOT(emitCommitData()));
+            ((RenderingItem*)index.internalPointer())->GUI = dsb;
             return dsb;
         }
         if(string_list[0] == QString("int"))
@@ -67,12 +105,14 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
             else
                 dsb->setSingleStep(std::max<int>(1,(dsb->maximum()-dsb->minimum())/10));
             connect(dsb, SIGNAL(valueChanged(int)), this, SLOT(emitCommitData()));
+            ((RenderingItem*)index.internalPointer())->GUI = dsb;
             return dsb;
         }
         {
             QComboBox* cb = new QComboBox(parent);
             cb->addItems(string_list);
             connect(cb, SIGNAL(currentIndexChanged(int)), this, SLOT(emitCommitData()));
+            ((RenderingItem*)index.internalPointer())->GUI = cb;
             return cb;
         }
     }
@@ -351,7 +391,7 @@ void TreeModel::setDefault(void)
     std::map<QString,RenderingItem*>::iterator end = name_data_mapping.end();
     std::map<QString,QVariant>::iterator iter2 = name_default_values.begin();
     for(;iter != end;++iter,++iter2)
-        iter->second->value = iter2->second;
+        iter->second->setValue(iter2->second);
 
 }
 
@@ -394,33 +434,9 @@ void RenderingTableWidget::initialize(void)
         openPersistentEditor(index);
     }
 }
-void RenderingTableWidget::updateData(QString name,QVariant data)
-{
-    treemodel->updateData(name,data);
-}
-
-void RenderingTableWidget::setData(QString name,QVariant data)
-{
-    collapseAll();
-    treemodel->updateData(name,data);
-    delete treemodel;
-    setModel(treemodel = new TreeModel(this));
-    initialize();
-    expandAll();
-    collapseAll();
-}
-
 void RenderingTableWidget::setDefault(void)
 {
-    collapseAll();
     treemodel->setDefault();
-    delete treemodel;
-    setModel(treemodel = new TreeModel(this));
-    initialize();
-    expandAll();
-    collapseAll();
-    cur_tracking_window.scene.show_slice();
-    cur_tracking_window.glWidget->updateGL();
 }
 void RenderingTableWidget::dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
 {

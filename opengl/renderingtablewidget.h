@@ -38,7 +38,7 @@ class RenderingItem
  {
  public:
     RenderingItem(QVariant title_, QVariant type_, QVariant value_, RenderingItem *parent = 0):
-            parentItem(parent),title(title_),type(type_),value(value_)
+        parentItem(parent),title(title_),type(type_),value(value_),GUI(0)
     {
         if(parent)
             parent->appendChild(this);
@@ -59,10 +59,12 @@ class RenderingItem
      RenderingItem *parent(void) {return parentItem;}
      void setParent(RenderingItem *parentItem_) {parentItem = parentItem_;}
      QVariant getValue() const{return value;}
+     void setValue(QVariant new_value);
  private:
      QList<RenderingItem*> childItems;
      RenderingItem *parentItem;
  public:
+     QObject* GUI;
      QVariant title,type,value;
 
  };
@@ -105,7 +107,7 @@ public:
         std::map<QString,RenderingItem*>::const_iterator iter = name_data_mapping.find(name);
         if(iter == name_data_mapping.end())
             throw std::runtime_error("Cannot find the setting value");
-        iter->second->value = data;
+        iter->second->setValue(data);
     }
 
     void setDefault(void);
@@ -124,9 +126,7 @@ public:
 public:
     explicit RenderingTableWidget(tracking_window& cur_tracking_window_,QWidget *parent);
     QVariant getData(QString name){return treemodel->getData(name);}
-    void updateData(QString name,QVariant data);
-    void setData(QString name,QVariant data);
-
+    void setData(QString name,QVariant data){treemodel->updateData(name,data);}
     void initialize(void);
 public slots:
     void setDefault(void);

@@ -69,7 +69,6 @@ public slots:
     void undo_tracts(void);
     void redo_tracts(void);
     void trim_tracts(void);
-    void stop_tracking(void);
     void assign_colors(void);
     void move_up(void);
     void move_down(void);

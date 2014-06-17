@@ -137,15 +137,6 @@ void TractTableWidget::start_tracking(void)
     timer->start(1000);
 
 }
-void TractTableWidget::stop_tracking(void)
-{
-    timer->stop();
-    for(unsigned int index = 0;index < thread_data.size();++index)
-    {
-        delete thread_data[index];
-        thread_data[index] = 0;
-    }
-}
 
 void TractTableWidget::fetch_tracts(void)
 {

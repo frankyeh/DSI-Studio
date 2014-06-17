@@ -145,6 +145,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
     // opengl
     {
         connect(ui->tbDefaultParam,SIGNAL(clicked()),renderWidget,SLOT(setDefault()));
+        connect(ui->tbDefaultParam,SIGNAL(clicked()),&scene,SLOT(show_slice()));
         connect(ui->tbDefaultParam,SIGNAL(clicked()),glWidget,SLOT(updateGL()));
 
         connect(ui->glSagSlider,SIGNAL(valueChanged(int)),this,SLOT(glSliderValueChanged()));
@@ -249,7 +250,6 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
     // tracts
     {
         connect(ui->perform_tracking,SIGNAL(clicked()),tractWidget,SLOT(start_tracking()));
-        connect(ui->stopTracking,SIGNAL(clicked()),tractWidget,SLOT(stop_tracking()));
 
         connect(tractWidget,SIGNAL(need_update()),glWidget,SLOT(makeTracts()));
         connect(tractWidget,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
@@ -1309,16 +1309,17 @@ void tracking_window::on_actionLoad_tracking_parameters_triggered()
         return;
     QSettings s(filename, QSettings::IniFormat);
     ui->fa_threshold->setValue(s.value("fa_threshold",0.4).toDouble());
-    renderWidget->updateData("step_size",s.value("step_size",1));
-    renderWidget->updateData("turning_angle",s.value("turning_angle",60));
-    renderWidget->updateData("smoothing",s.value("smoothing",0.0));
-    renderWidget->updateData("min_length",s.value("min_length",0));
-    renderWidget->updateData("max_length",s.value("max_length",500));
-    renderWidget->updateData("tracking_method",s.value("tracking_method",0));
-    renderWidget->updateData("seed_plan",s.value("seed_plan",0));
-    renderWidget->updateData("initial_direction",s.value("initial_direction",0));
-    renderWidget->updateData("interpolation",s.value("interpolation",0));
-    renderWidget->updateData("tracking_plan",s.value("tracking_plan",0));
-    renderWidget->updateData("track_count",s.value("track_count",5000));
+    renderWidget->setData("step_size",s.value("step_size",1));
+    renderWidget->setData("turning_angle",s.value("turning_angle",60));
+    renderWidget->setData("smoothing",s.value("smoothing",0.0));
+    renderWidget->setData("min_length",s.value("min_length",0));
+    renderWidget->setData("max_length",s.value("max_length",500));
+    renderWidget->setData("tracking_method",s.value("tracking_method",0));
+    renderWidget->setData("seed_plan",s.value("seed_plan",0));
+    renderWidget->setData("initial_direction",s.value("initial_direction",0));
+    renderWidget->setData("interpolation",s.value("interpolation",0));
+    renderWidget->setData("tracking_plan",s.value("tracking_plan",0));
+    renderWidget->setData("track_count",s.value("track_count",5000));
     renderWidget->setData("thread_count",s.value("thread_count",1));
 }
+
