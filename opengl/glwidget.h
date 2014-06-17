@@ -119,7 +119,7 @@ class RenderingTableWidget;
      unsigned char end_point_shift;
      unsigned char odf_position;
      unsigned char odf_skip;
-     unsigned char odf_size;
+     float odf_scale;
      float slice_contrast;
      float slice_offset;
      unsigned char slice_index;

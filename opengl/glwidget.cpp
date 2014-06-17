@@ -419,13 +419,13 @@ void GLWidget::paintGL()
         float fa_threshold = cur_tracking_window.ui->fa_threshold->value();
         if(odf_position != get_param("odf_position") ||
            odf_skip != get_param("odf_skip") ||
-           odf_size != get_param("odf_size") ||
+           odf_scale != get_param("odf_scale") ||
            (get_param("odf_position") == 0 && (odf_dim != slice.cur_dim || odf_slide_pos != slice.slice_pos[slice.cur_dim]))||
             get_param("odf_position") == 1)
         {
             odf_position = get_param("odf_position");
             odf_skip = get_param("odf_skip");
-            odf_size = get_param("odf_size");
+            odf_scale = get_param("odf_scale");
             odf_points.clear();
         }
 
@@ -704,8 +704,7 @@ void GLWidget::add_odf(image::pixel_index<3> pos)
             handle->fib_data.fib.get_odf_data(pos.index());
     if(!odf_buffer)
         return;
-    static float size_set[] = {0.5,1.0,1.5,2.0,4.0,8.0,16.0,32.0};
-    float scaling = size_set[odf_size]*2.0/max_fa;
+    float scaling = odf_scale/max_fa;
     unsigned int odf_dim = cur_tracking_window.odf_size;
     unsigned int half_odf = odf_dim >> 1;
     odf_points.resize(odf_points.size()+odf_dim);
@@ -1034,7 +1033,7 @@ void GLWidget::makeTracts(void)
                             myglColor(cur_color,alpha);
                             glNormal3f(-vec_n[0],-vec_n[1],-vec_n[2]);
                             image::vector<3,float> shift(vec_n);
-                            shift *= -end_point_shift;
+                            shift *= -(int)end_point_shift;
                             for (unsigned int k = 0;k < 8;++k)
                             {
                                 image::vector<3,float> cur_point = points[end_sequence[k]];
@@ -1082,7 +1081,7 @@ void GLWidget::makeTracts(void)
                                 myglColor(cur_color,alpha);
                                 glNormal3fv(vec_n.begin());
                                 image::vector<3,float> shift(vec_n);
-                                shift *= end_point_shift;
+                                shift *= (int)end_point_shift;
                                 for (int k = 7;k >= 0;--k)
                                 {
                                     image::vector<3,float> cur_point = points[end_sequence[k]];

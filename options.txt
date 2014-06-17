@@ -30,13 +30,14 @@ Tract/Color/tract_color_style/Directional:Assigned:Local index:Averaged index:Av
 Tract/Visible Tracts/tract_visible_tract/int:5000:100000/25000
 Tract/Tube Detail/tract_tube_detail/Coarse:Fine:Finer:Finest/1
 Tract/Tube Diameter (voxel)/tube_diameter/float:0.01:1/0.2
-Tract/Endpoint Shift/end_point_shift/None:1 voxel:2 voxels:3 voxels:4 voxels:5 voxels:6 voxels:7 voxels:8 voxels:9 voxels/0
+Tract/Endpoint Shift (voxel)/end_point_shift/int:0:10/0
 Tract/Light/tract_light_option/One source:Two sources:Three sources/2
 Tract/Light Direction/tract_light_dir/int/5
 Tract/Light Shading/tract_light_shading/int/6
 Tract/Light Diffuse/tract_light_diffuse/int/7
 Tract/Light Ambient/tract_light_ambient/int/0
 Tract/Tract Emission/tract_emission/int/0
+Tract/Tract Selection Angle/tract_sel_angle/int:0:90/45
 Region/Opacity/region_alpha/slider/8
 Region/Mesh Rendering/region_mesh_smoothed/Original:Smoothed/1
 Region/Blend Func1/region_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
@@ -59,7 +60,6 @@ Surface/Light Diffuse/surface_light_diffuse/int/6
 Surface/Light Ambient/surface_light_ambient/int/0
 Surface/Emission/surface_emission/int/0
 ODF/Position/odf_position/Along Slide:Slide Intersection:All/0
-ODF/Size/odf_size/0.5:1:1.5:2:4:8:16/1
+ODF/Size/odf_scale/float:1:32/2
 ODF/Interleaved/odf_skip/none:2:4/0
 ODF/Smoothing/odf_smoothing/off:on/0
-Others/Tract Selection Angle/tract_sel_angle/int:0:90/45

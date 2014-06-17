@@ -49,7 +49,7 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
             QDoubleSpinBox* dsb = new QDoubleSpinBox(parent);
             dsb->setMinimum(string_list[1].toDouble());
             dsb->setMaximum(string_list[2].toDouble());
-            dsb->setSingleStep((dsb->maximum()-dsb->minimum())/20);
+            dsb->setSingleStep((dsb->maximum()-dsb->minimum())/10);
             dsb->setDecimals(std::max<double>((double)0,2-std::log10(dsb->maximum())));
             connect(dsb, SIGNAL(valueChanged(double)), this, SLOT(emitCommitData()));
             return dsb;
@@ -59,7 +59,7 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
             QSpinBox* dsb = new QSpinBox(parent);
             dsb->setMinimum(string_list[1].toInt());
             dsb->setMaximum(string_list[2].toInt());
-            dsb->setSingleStep((dsb->maximum()-dsb->minimum())/20);
+            dsb->setSingleStep(std::max<int>(1,(dsb->maximum()-dsb->minimum())/10));
             connect(dsb, SIGNAL(valueChanged(int)), this, SLOT(emitCommitData()));
             return dsb;
         }
@@ -170,7 +170,7 @@ TreeModel::TreeModel(RenderingTableWidget *parent)
     root_mapping["Region"] = (RenderingItem*)addItem("Root","show_region","Region",QString("check"),Qt::Checked).internalPointer();
     root_mapping["Surface"] = (RenderingItem*)addItem("Root","show_surface","Surface",QString("check"),Qt::Checked).internalPointer();
     root_mapping["ODF"] = (RenderingItem*)addItem("Root","show_odf","ODF",QString("check"),Qt::Checked).internalPointer();
-    root_mapping["Others"] = new RenderingItem(QString("Others"),QVariant(),0,root.get());
+    //root_mapping["Others"] = new RenderingItem(QString("Others"),QVariant(),0,root.get());
 }
 
 TreeModel::~TreeModel()
