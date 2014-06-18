@@ -50,6 +50,16 @@ public: // rendering options
             back_thread_id = rhs.back_thread_id;
             return *this;
         }
+        void swap(ROIRegion & rhs) {
+            region.swap(rhs.region);
+            geo.swap(rhs.geo);
+            std::swap(vs,rhs.vs);
+            std::swap(regions_feature,rhs.regions_feature);
+            show_region.swap(rhs.show_region);
+            std::swap(modified,rhs.modified);
+            std::swap(has_back_thread,rhs.has_back_thread);
+            std::swap(back_thread_id,rhs.back_thread_id);
+        }
 
         ROIRegion(const image::geometry<3>& geo_, const image::vector<3>& vs_)
             : geo(geo_), vs(vs_),has_back_thread(false),modified(false){}

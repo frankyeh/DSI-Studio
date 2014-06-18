@@ -3,6 +3,7 @@
 #include <QMessageBox>
 #include <QClipboard>
 #include <QSettings>
+#include <QTableWidgetItem>
 #include "regiontablewidget.h"
 #include "tracking/tracking_window.h"
 #include "tracking_static_link.h"
@@ -134,8 +135,6 @@ QColor RegionTableWidget::currentRowColor(void)
     return (unsigned int)regions[currentRow()].show_region.color;
 }
 
-
-
 void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
 {
     if(color == 0)
@@ -160,7 +159,6 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
 
     setRowCount(regions.size());
 
-    // the name item
     QTableWidgetItem *item0 = new QTableWidgetItem(name);
 
     setItem(regions.size()-1, 0, item0);
@@ -173,13 +171,12 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
     setItem(regions.size()-1, 2, item2);
     item2->setData(Qt::ForegroundRole,QBrush(Qt::white));
     item2->setData(Qt::UserRole,color);
-    setRowHeight(regions.size()-1,22);
-
 
     openPersistentEditor(item1);
     openPersistentEditor(item2);
     item0->setCheckState(Qt::Checked);
 
+    setRowHeight(regions.size()-1,22);
     setCurrentCell(regions.size()-1,0);
 
 }
@@ -457,6 +454,60 @@ void RegionTableWidget::uncheck_all(void)
     {
         item(row,0)->setCheckState(Qt::Unchecked);
         item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
+    }
+    emit need_update();
+}
+
+void RegionTableWidget::move_up(void)
+{
+    if(currentRow())
+    {
+        regions[currentRow()].swap(regions[currentRow()-1]);
+
+        QString name = item(currentRow()-1,0)->text();
+        item(currentRow()-1,0)->setText(item(currentRow(),0)->text());
+        item(currentRow(),0)->setText(name);
+
+        closePersistentEditor(item(currentRow()-1,1));
+        closePersistentEditor(item(currentRow(),1));
+        closePersistentEditor(item(currentRow()-1,2));
+        closePersistentEditor(item(currentRow(),2));
+        item(currentRow()-1,1)->setData(Qt::DisplayRole,regions[currentRow()-1].regions_feature);
+        item(currentRow(),1)->setData(Qt::DisplayRole,regions[currentRow()].regions_feature);
+        item(currentRow()-1,2)->setData(Qt::UserRole,regions[currentRow()-1].show_region.color.color);
+        item(currentRow(),2)->setData(Qt::UserRole,regions[currentRow()].show_region.color.color);
+        openPersistentEditor(item(currentRow()-1,1));
+        openPersistentEditor(item(currentRow(),1));
+        openPersistentEditor(item(currentRow()-1,2));
+        openPersistentEditor(item(currentRow(),2));
+        setCurrentCell(currentRow()-1,0);
+    }
+    emit need_update();
+}
+
+void RegionTableWidget::move_down(void)
+{
+    if(currentRow()+1 < regions.size())
+    {
+        regions[currentRow()].swap(regions[currentRow()+1]);
+
+        QString name = item(currentRow()+1,0)->text();
+        item(currentRow()+1,0)->setText(item(currentRow(),0)->text());
+        item(currentRow(),0)->setText(name);
+
+        closePersistentEditor(item(currentRow()+1,1));
+        closePersistentEditor(item(currentRow(),1));
+        closePersistentEditor(item(currentRow()+1,2));
+        closePersistentEditor(item(currentRow(),2));
+        item(currentRow()+1,1)->setData(Qt::DisplayRole,regions[currentRow()+1].regions_feature);
+        item(currentRow(),1)->setData(Qt::DisplayRole,regions[currentRow()].regions_feature);
+        item(currentRow()+1,2)->setData(Qt::UserRole,regions[currentRow()+1].show_region.color.color);
+        item(currentRow(),2)->setData(Qt::UserRole,regions[currentRow()].show_region.color.color);
+        openPersistentEditor(item(currentRow()+1,1));
+        openPersistentEditor(item(currentRow(),1));
+        openPersistentEditor(item(currentRow()+1,2));
+        openPersistentEditor(item(currentRow(),2));
+        setCurrentCell(currentRow()+1,0);
     }
     emit need_update();
 }

@@ -231,7 +231,8 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         connect(ui->actionWhole_brain_seeding,SIGNAL(triggered()),regionWidget,SLOT(whole_brain()));
         connect(ui->actionRegion_statistics,SIGNAL(triggered()),regionWidget,SLOT(show_statistics()));
 
-
+        connect(ui->region_up,SIGNAL(clicked()),regionWidget,SLOT(move_up()));
+        connect(ui->region_down,SIGNAL(clicked()),regionWidget,SLOT(move_down()));
     }
     // tracts
     {

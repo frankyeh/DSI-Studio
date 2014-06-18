@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Wed Jun 18 10:01:21 2014
+** Created: Wed Jun 18 10:42:22 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -177,7 +177,11 @@ public:
     QToolButton *tbSaveRegion;
     QToolButton *tbDeleteRegion;
     QToolButton *whole_brain;
+    QToolButton *region_up;
+    QToolButton *region_down;
+    QFrame *line_3;
     QToolButton *addRegionFromAtlas;
+    QFrame *line;
     QPushButton *perform_tracking;
     QSpacerItem *horizontalSpacer;
     QFrame *line_5;
@@ -770,7 +774,7 @@ public:
         sizePolicy4.setVerticalStretch(1);
         sizePolicy4.setHeightForWidth(regionDockWidget->sizePolicy().hasHeightForWidth());
         regionDockWidget->setSizePolicy(sizePolicy4);
-        regionDockWidget->setMinimumSize(QSize(311, 48));
+        regionDockWidget->setMinimumSize(QSize(318, 48));
         regionDockWidget->setMaximumSize(QSize(600, 524287));
         QFont font1;
         font1.setBold(false);
@@ -822,12 +826,44 @@ public:
 
         horizontalLayout_16->addWidget(whole_brain);
 
+        region_up = new QToolButton(dockWidgetContents_4);
+        region_up->setObjectName(QString::fromUtf8("region_up"));
+        region_up->setMaximumSize(QSize(23, 22));
+        QIcon icon9;
+        icon9.addFile(QString::fromUtf8(":/icons/icons/up.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        region_up->setIcon(icon9);
+
+        horizontalLayout_16->addWidget(region_up);
+
+        region_down = new QToolButton(dockWidgetContents_4);
+        region_down->setObjectName(QString::fromUtf8("region_down"));
+        region_down->setMaximumSize(QSize(23, 22));
+        QIcon icon10;
+        icon10.addFile(QString::fromUtf8(":/icons/icons/down.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        region_down->setIcon(icon10);
+
+        horizontalLayout_16->addWidget(region_down);
+
+        line_3 = new QFrame(dockWidgetContents_4);
+        line_3->setObjectName(QString::fromUtf8("line_3"));
+        line_3->setFrameShape(QFrame::VLine);
+        line_3->setFrameShadow(QFrame::Sunken);
+
+        horizontalLayout_16->addWidget(line_3);
+
         addRegionFromAtlas = new QToolButton(dockWidgetContents_4);
         addRegionFromAtlas->setObjectName(QString::fromUtf8("addRegionFromAtlas"));
         addRegionFromAtlas->setMaximumSize(QSize(16777215, 22));
         addRegionFromAtlas->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 
         horizontalLayout_16->addWidget(addRegionFromAtlas);
+
+        line = new QFrame(dockWidgetContents_4);
+        line->setObjectName(QString::fromUtf8("line"));
+        line->setFrameShape(QFrame::VLine);
+        line->setFrameShadow(QFrame::Sunken);
+
+        horizontalLayout_16->addWidget(line);
 
         perform_tracking = new QPushButton(dockWidgetContents_4);
         perform_tracking->setObjectName(QString::fromUtf8("perform_tracking"));
@@ -842,9 +878,9 @@ public:
         font2.setBold(true);
         font2.setWeight(75);
         perform_tracking->setFont(font2);
-        QIcon icon9;
-        icon9.addFile(QString::fromUtf8(":/icons/icons/run.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        perform_tracking->setIcon(icon9);
+        QIcon icon11;
+        icon11.addFile(QString::fromUtf8(":/icons/icons/run.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        perform_tracking->setIcon(icon11);
 
         horizontalLayout_16->addWidget(perform_tracking);
 
@@ -985,9 +1021,9 @@ public:
         save_all_tracks = new QToolButton(dockWidgetContents_5);
         save_all_tracks->setObjectName(QString::fromUtf8("save_all_tracks"));
         save_all_tracks->setMaximumSize(QSize(23, 22));
-        QIcon icon10;
-        icon10.addFile(QString::fromUtf8(":/icons/icons/save_all.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        save_all_tracks->setIcon(icon10);
+        QIcon icon12;
+        icon12.addFile(QString::fromUtf8(":/icons/icons/save_all.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        save_all_tracks->setIcon(icon12);
 
         horizontalLayout_15->addWidget(save_all_tracks);
 
@@ -1008,18 +1044,14 @@ public:
         track_up = new QToolButton(dockWidgetContents_5);
         track_up->setObjectName(QString::fromUtf8("track_up"));
         track_up->setMaximumSize(QSize(23, 22));
-        QIcon icon11;
-        icon11.addFile(QString::fromUtf8(":/icons/icons/up.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        track_up->setIcon(icon11);
+        track_up->setIcon(icon9);
 
         horizontalLayout_15->addWidget(track_up);
 
         track_down = new QToolButton(dockWidgetContents_5);
         track_down->setObjectName(QString::fromUtf8("track_down"));
         track_down->setMaximumSize(QSize(23, 22));
-        QIcon icon12;
-        icon12.addFile(QString::fromUtf8(":/icons/icons/down.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        track_down->setIcon(icon12);
+        track_down->setIcon(icon10);
 
         horizontalLayout_15->addWidget(track_down);
 
@@ -1579,6 +1611,8 @@ public:
         whole_brain->setToolTip(QApplication::translate("tracking_window", "Whole brain seeding", 0, QApplication::UnicodeUTF8));
 #endif // QT_NO_TOOLTIP
         whole_brain->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
+        region_up->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
+        region_down->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
         addRegionFromAtlas->setText(QApplication::translate("tracking_window", "Atlas...", 0, QApplication::UnicodeUTF8));
         perform_tracking->setText(QApplication::translate("tracking_window", "Run Tracking", 0, QApplication::UnicodeUTF8));
         renderingWidgetHolder->setWindowTitle(QApplication::translate("tracking_window", "Options", 0, QApplication::UnicodeUTF8));

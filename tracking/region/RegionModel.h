@@ -13,11 +13,17 @@ public:
         std::vector<std::vector<unsigned int> > sorted_index;
         void sortIndices(void);
 public:
-	float alpha;
-	image::rgb_color color;
-	RegionModel(void) {
+        float alpha;
+        image::rgb_color color;
+        RegionModel(void) {
                 alpha = 0.6;
 		color = (unsigned int)0x00FFFFFF;
+        }
+        void swap(RegionModel& rhs) {
+                std::swap(alpha,rhs.alpha);
+                std::swap(color,rhs.color);
+                std::swap(object,rhs.object);
+                sorted_index.swap(rhs.sorted_index);
         }
 	const RegionModel& operator = (const RegionModel & rhs);
         // bool load_from_file(const char* file_name);

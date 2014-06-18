@@ -71,7 +71,8 @@ public slots:
     void show_statistics(void);
     void check_all(void);
     void uncheck_all(void);
-
+    void move_up(void);
+    void move_down(void);
     // actions
     void action_smoothing(void){do_action(0);}
     void action_erosion(void){do_action(1);}
