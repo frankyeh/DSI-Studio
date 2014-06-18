@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Wed Jun 18 00:40:48 2014
+** Created: Wed Jun 18 10:01:21 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -177,11 +177,10 @@ public:
     QToolButton *tbSaveRegion;
     QToolButton *tbDeleteRegion;
     QToolButton *whole_brain;
-    QFrame *line_5;
-    QComboBox *atlasListBox;
-    QComboBox *atlasComboBox;
     QToolButton *addRegionFromAtlas;
-    QSpacerItem *horizontalSpacer_5;
+    QPushButton *perform_tracking;
+    QSpacerItem *horizontalSpacer;
+    QFrame *line_5;
     QDockWidget *renderingWidgetHolder;
     QWidget *dockWidgetContents_2;
     QVBoxLayout *renderingLayout;
@@ -219,8 +218,6 @@ public:
     QDockWidget *dockWidget;
     QWidget *dockWidgetContents;
     QVBoxLayout *verticalLayout;
-    QHBoxLayout *horizontalLayout_7;
-    QVBoxLayout *verticalLayout_2;
     QHBoxLayout *horizontalLayout_4;
     QToolButton *tool0;
     QToolButton *tool1;
@@ -238,7 +235,6 @@ public:
     QLabel *label_8;
     QDoubleSpinBox *offset_value;
     QSlider *offset;
-    QPushButton *perform_tracking;
     QGraphicsView *graphicsView;
     QHBoxLayout *horizontalLayout_2;
     QToolButton *SagView;
@@ -774,7 +770,7 @@ public:
         sizePolicy4.setVerticalStretch(1);
         sizePolicy4.setHeightForWidth(regionDockWidget->sizePolicy().hasHeightForWidth());
         regionDockWidget->setSizePolicy(sizePolicy4);
-        regionDockWidget->setMinimumSize(QSize(311, 46));
+        regionDockWidget->setMinimumSize(QSize(311, 48));
         regionDockWidget->setMaximumSize(QSize(600, 524287));
         QFont font1;
         font1.setBold(false);
@@ -826,45 +822,42 @@ public:
 
         horizontalLayout_16->addWidget(whole_brain);
 
+        addRegionFromAtlas = new QToolButton(dockWidgetContents_4);
+        addRegionFromAtlas->setObjectName(QString::fromUtf8("addRegionFromAtlas"));
+        addRegionFromAtlas->setMaximumSize(QSize(16777215, 22));
+        addRegionFromAtlas->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+
+        horizontalLayout_16->addWidget(addRegionFromAtlas);
+
+        perform_tracking = new QPushButton(dockWidgetContents_4);
+        perform_tracking->setObjectName(QString::fromUtf8("perform_tracking"));
+        QSizePolicy sizePolicy5(QSizePolicy::Preferred, QSizePolicy::Fixed);
+        sizePolicy5.setHorizontalStretch(0);
+        sizePolicy5.setVerticalStretch(0);
+        sizePolicy5.setHeightForWidth(perform_tracking->sizePolicy().hasHeightForWidth());
+        perform_tracking->setSizePolicy(sizePolicy5);
+        perform_tracking->setMaximumSize(QSize(16777215, 22));
+        QFont font2;
+        font2.setPointSize(8);
+        font2.setBold(true);
+        font2.setWeight(75);
+        perform_tracking->setFont(font2);
+        QIcon icon9;
+        icon9.addFile(QString::fromUtf8(":/icons/icons/run.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        perform_tracking->setIcon(icon9);
+
+        horizontalLayout_16->addWidget(perform_tracking);
+
+        horizontalSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+        horizontalLayout_16->addItem(horizontalSpacer);
+
         line_5 = new QFrame(dockWidgetContents_4);
         line_5->setObjectName(QString::fromUtf8("line_5"));
         line_5->setFrameShape(QFrame::VLine);
         line_5->setFrameShadow(QFrame::Sunken);
 
         horizontalLayout_16->addWidget(line_5);
-
-        atlasListBox = new QComboBox(dockWidgetContents_4);
-        atlasListBox->setObjectName(QString::fromUtf8("atlasListBox"));
-        QSizePolicy sizePolicy5(QSizePolicy::Expanding, QSizePolicy::Fixed);
-        sizePolicy5.setHorizontalStretch(0);
-        sizePolicy5.setVerticalStretch(0);
-        sizePolicy5.setHeightForWidth(atlasListBox->sizePolicy().hasHeightForWidth());
-        atlasListBox->setSizePolicy(sizePolicy5);
-        atlasListBox->setMaximumSize(QSize(16777215, 22));
-        atlasListBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLength);
-
-        horizontalLayout_16->addWidget(atlasListBox);
-
-        atlasComboBox = new QComboBox(dockWidgetContents_4);
-        atlasComboBox->setObjectName(QString::fromUtf8("atlasComboBox"));
-        sizePolicy5.setHeightForWidth(atlasComboBox->sizePolicy().hasHeightForWidth());
-        atlasComboBox->setSizePolicy(sizePolicy5);
-        atlasComboBox->setMaximumSize(QSize(16777215, 22));
-        atlasComboBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLength);
-
-        horizontalLayout_16->addWidget(atlasComboBox);
-
-        addRegionFromAtlas = new QToolButton(dockWidgetContents_4);
-        addRegionFromAtlas->setObjectName(QString::fromUtf8("addRegionFromAtlas"));
-        addRegionFromAtlas->setMaximumSize(QSize(16777215, 22));
-        addRegionFromAtlas->setIcon(icon5);
-        addRegionFromAtlas->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-
-        horizontalLayout_16->addWidget(addRegionFromAtlas);
-
-        horizontalSpacer_5 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-
-        horizontalLayout_16->addItem(horizontalSpacer_5);
 
 
         verticalLayout_3->addLayout(horizontalLayout_16);
@@ -992,9 +985,9 @@ public:
         save_all_tracks = new QToolButton(dockWidgetContents_5);
         save_all_tracks->setObjectName(QString::fromUtf8("save_all_tracks"));
         save_all_tracks->setMaximumSize(QSize(23, 22));
-        QIcon icon9;
-        icon9.addFile(QString::fromUtf8(":/icons/icons/save_all.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        save_all_tracks->setIcon(icon9);
+        QIcon icon10;
+        icon10.addFile(QString::fromUtf8(":/icons/icons/save_all.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        save_all_tracks->setIcon(icon10);
 
         horizontalLayout_15->addWidget(save_all_tracks);
 
@@ -1015,18 +1008,18 @@ public:
         track_up = new QToolButton(dockWidgetContents_5);
         track_up->setObjectName(QString::fromUtf8("track_up"));
         track_up->setMaximumSize(QSize(23, 22));
-        QIcon icon10;
-        icon10.addFile(QString::fromUtf8(":/icons/icons/up.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        track_up->setIcon(icon10);
+        QIcon icon11;
+        icon11.addFile(QString::fromUtf8(":/icons/icons/up.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        track_up->setIcon(icon11);
 
         horizontalLayout_15->addWidget(track_up);
 
         track_down = new QToolButton(dockWidgetContents_5);
         track_down->setObjectName(QString::fromUtf8("track_down"));
         track_down->setMaximumSize(QSize(23, 22));
-        QIcon icon11;
-        icon11.addFile(QString::fromUtf8(":/icons/icons/down.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        track_down->setIcon(icon11);
+        QIcon icon12;
+        icon12.addFile(QString::fromUtf8(":/icons/icons/down.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        track_down->setIcon(icon12);
 
         horizontalLayout_15->addWidget(track_down);
 
@@ -1055,22 +1048,15 @@ public:
         verticalLayout->setSpacing(0);
         verticalLayout->setContentsMargins(0, 0, 0, 0);
         verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
-        horizontalLayout_7 = new QHBoxLayout();
-        horizontalLayout_7->setSpacing(0);
-        horizontalLayout_7->setObjectName(QString::fromUtf8("horizontalLayout_7"));
-        horizontalLayout_7->setContentsMargins(-1, -1, 0, -1);
-        verticalLayout_2 = new QVBoxLayout();
-        verticalLayout_2->setSpacing(0);
-        verticalLayout_2->setObjectName(QString::fromUtf8("verticalLayout_2"));
         horizontalLayout_4 = new QHBoxLayout();
         horizontalLayout_4->setSpacing(0);
         horizontalLayout_4->setObjectName(QString::fromUtf8("horizontalLayout_4"));
         tool0 = new QToolButton(dockWidgetContents);
         tool0->setObjectName(QString::fromUtf8("tool0"));
         tool0->setMaximumSize(QSize(23, 22));
-        QIcon icon12;
-        icon12.addFile(QString::fromUtf8(":/icons/icons/rec.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        tool0->setIcon(icon12);
+        QIcon icon13;
+        icon13.addFile(QString::fromUtf8(":/icons/icons/rec.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        tool0->setIcon(icon13);
         tool0->setIconSize(QSize(16, 16));
         tool0->setCheckable(true);
         tool0->setChecked(true);
@@ -1081,9 +1067,9 @@ public:
         tool1 = new QToolButton(dockWidgetContents);
         tool1->setObjectName(QString::fromUtf8("tool1"));
         tool1->setMaximumSize(QSize(23, 22));
-        QIcon icon13;
-        icon13.addFile(QString::fromUtf8(":/icons/icons/curves.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        tool1->setIcon(icon13);
+        QIcon icon14;
+        icon14.addFile(QString::fromUtf8(":/icons/icons/curves.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        tool1->setIcon(icon14);
         tool1->setIconSize(QSize(16, 16));
         tool1->setCheckable(true);
         tool1->setChecked(false);
@@ -1094,9 +1080,9 @@ public:
         tool4 = new QToolButton(dockWidgetContents);
         tool4->setObjectName(QString::fromUtf8("tool4"));
         tool4->setMaximumSize(QSize(23, 22));
-        QIcon icon14;
-        icon14.addFile(QString::fromUtf8(":/icons/icons/poly.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        tool4->setIcon(icon14);
+        QIcon icon15;
+        icon15.addFile(QString::fromUtf8(":/icons/icons/poly.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        tool4->setIcon(icon15);
         tool4->setCheckable(true);
         tool4->setAutoExclusive(true);
 
@@ -1105,9 +1091,9 @@ public:
         tool2 = new QToolButton(dockWidgetContents);
         tool2->setObjectName(QString::fromUtf8("tool2"));
         tool2->setMaximumSize(QSize(23, 22));
-        QIcon icon15;
-        icon15.addFile(QString::fromUtf8(":/icons/icons/ball.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        tool2->setIcon(icon15);
+        QIcon icon16;
+        icon16.addFile(QString::fromUtf8(":/icons/icons/ball.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        tool2->setIcon(icon16);
         tool2->setIconSize(QSize(16, 16));
         tool2->setCheckable(true);
         tool2->setAutoExclusive(true);
@@ -1117,9 +1103,9 @@ public:
         tool3 = new QToolButton(dockWidgetContents);
         tool3->setObjectName(QString::fromUtf8("tool3"));
         tool3->setMaximumSize(QSize(23, 22));
-        QIcon icon16;
-        icon16.addFile(QString::fromUtf8(":/icons/icons/cubic.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        tool3->setIcon(icon16);
+        QIcon icon17;
+        icon17.addFile(QString::fromUtf8(":/icons/icons/cubic.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        tool3->setIcon(icon17);
         tool3->setIconSize(QSize(16, 16));
         tool3->setCheckable(true);
         tool3->setAutoExclusive(true);
@@ -1145,11 +1131,8 @@ public:
 
         sliceViewBox = new QComboBox(dockWidgetContents);
         sliceViewBox->setObjectName(QString::fromUtf8("sliceViewBox"));
-        QSizePolicy sizePolicy9(QSizePolicy::Preferred, QSizePolicy::Fixed);
-        sizePolicy9.setHorizontalStretch(0);
-        sizePolicy9.setVerticalStretch(0);
-        sizePolicy9.setHeightForWidth(sliceViewBox->sizePolicy().hasHeightForWidth());
-        sliceViewBox->setSizePolicy(sizePolicy9);
+        sizePolicy5.setHeightForWidth(sliceViewBox->sizePolicy().hasHeightForWidth());
+        sliceViewBox->setSizePolicy(sizePolicy5);
         sliceViewBox->setMaximumSize(QSize(16777215, 22));
         sliceViewBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLength);
 
@@ -1157,15 +1140,15 @@ public:
 
         overlay = new QComboBox(dockWidgetContents);
         overlay->setObjectName(QString::fromUtf8("overlay"));
-        sizePolicy9.setHeightForWidth(overlay->sizePolicy().hasHeightForWidth());
-        overlay->setSizePolicy(sizePolicy9);
+        sizePolicy5.setHeightForWidth(overlay->sizePolicy().hasHeightForWidth());
+        overlay->setSizePolicy(sizePolicy5);
         overlay->setMaximumSize(QSize(16777215, 22));
         overlay->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLength);
 
         horizontalLayout_4->addWidget(overlay);
 
 
-        verticalLayout_2->addLayout(horizontalLayout_4);
+        verticalLayout->addLayout(horizontalLayout_4);
 
         horizontalLayout_14 = new QHBoxLayout();
         horizontalLayout_14->setSpacing(0);
@@ -1187,8 +1170,11 @@ public:
 
         contrast = new QSlider(dockWidgetContents);
         contrast->setObjectName(QString::fromUtf8("contrast"));
-        sizePolicy5.setHeightForWidth(contrast->sizePolicy().hasHeightForWidth());
-        contrast->setSizePolicy(sizePolicy5);
+        QSizePolicy sizePolicy9(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        sizePolicy9.setHorizontalStretch(0);
+        sizePolicy9.setVerticalStretch(0);
+        sizePolicy9.setHeightForWidth(contrast->sizePolicy().hasHeightForWidth());
+        contrast->setSizePolicy(sizePolicy9);
         contrast->setMinimum(-100);
         contrast->setMaximum(100);
         contrast->setSingleStep(5);
@@ -1215,8 +1201,8 @@ public:
 
         offset = new QSlider(dockWidgetContents);
         offset->setObjectName(QString::fromUtf8("offset"));
-        sizePolicy5.setHeightForWidth(offset->sizePolicy().hasHeightForWidth());
-        offset->setSizePolicy(sizePolicy5);
+        sizePolicy9.setHeightForWidth(offset->sizePolicy().hasHeightForWidth());
+        offset->setSizePolicy(sizePolicy9);
         offset->setMinimum(-100);
         offset->setMaximum(100);
         offset->setSingleStep(5);
@@ -1226,24 +1212,7 @@ public:
         horizontalLayout_14->addWidget(offset);
 
 
-        verticalLayout_2->addLayout(horizontalLayout_14);
-
-
-        horizontalLayout_7->addLayout(verticalLayout_2);
-
-        perform_tracking = new QPushButton(dockWidgetContents);
-        perform_tracking->setObjectName(QString::fromUtf8("perform_tracking"));
-        sizePolicy9.setHeightForWidth(perform_tracking->sizePolicy().hasHeightForWidth());
-        perform_tracking->setSizePolicy(sizePolicy9);
-        perform_tracking->setMaximumSize(QSize(16777215, 60));
-        QIcon icon17;
-        icon17.addFile(QString::fromUtf8(":/icons/icons/run.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        perform_tracking->setIcon(icon17);
-
-        horizontalLayout_7->addWidget(perform_tracking);
-
-
-        verticalLayout->addLayout(horizontalLayout_7);
+        verticalLayout->addLayout(horizontalLayout_14);
 
         graphicsView = new QGraphicsView(dockWidgetContents);
         graphicsView->setObjectName(QString::fromUtf8("graphicsView"));
@@ -1610,7 +1579,8 @@ public:
         whole_brain->setToolTip(QApplication::translate("tracking_window", "Whole brain seeding", 0, QApplication::UnicodeUTF8));
 #endif // QT_NO_TOOLTIP
         whole_brain->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
-        addRegionFromAtlas->setText(QApplication::translate("tracking_window", "Add", 0, QApplication::UnicodeUTF8));
+        addRegionFromAtlas->setText(QApplication::translate("tracking_window", "Atlas...", 0, QApplication::UnicodeUTF8));
+        perform_tracking->setText(QApplication::translate("tracking_window", "Run Tracking", 0, QApplication::UnicodeUTF8));
         renderingWidgetHolder->setWindowTitle(QApplication::translate("tracking_window", "Options", 0, QApplication::UnicodeUTF8));
         tbDefaultParam->setText(QApplication::translate("tracking_window", "Set All To Default", 0, QApplication::UnicodeUTF8));
         RenderingQualityBox->clear();
@@ -1671,7 +1641,6 @@ public:
         label_6->setText(QApplication::translate("tracking_window", "Contrast", 0, QApplication::UnicodeUTF8));
         contrast_value->setPrefix(QString());
         label_8->setText(QApplication::translate("tracking_window", "Offset", 0, QApplication::UnicodeUTF8));
-        perform_tracking->setText(QApplication::translate("tracking_window", "Tracking", 0, QApplication::UnicodeUTF8));
 #ifndef QT_NO_TOOLTIP
         SagView->setToolTip(QApplication::translate("tracking_window", "Sagittal view", 0, QApplication::UnicodeUTF8));
 #endif // QT_NO_TOOLTIP

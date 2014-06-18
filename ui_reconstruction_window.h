@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Thu Mar 27 11:00:27 2014
+** Created: Tue Jun 17 21:57:13 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -55,14 +55,19 @@ public:
     QAction *actionFlip_xz;
     QAction *actionFlip_yz;
     QAction *actionRotate;
+    QAction *actionTrim_image;
     QWidget *centralwidget;
     QVBoxLayout *verticalLayout;
     QToolBox *toolBox;
     QWidget *source_page;
-    QHBoxLayout *horizontalLayout_21;
+    QHBoxLayout *horizontalLayout_25;
     QSplitter *splitter;
     QWidget *widget_2;
     QVBoxLayout *verticalLayout_4;
+    QVBoxLayout *verticalLayout_8;
+    QHBoxLayout *horizontalLayout_21;
+    QPushButton *delete_2;
+    QSpacerItem *horizontalSpacer_5;
     QTableWidget *b_table;
     QWidget *source_widget;
     QVBoxLayout *verticalLayout_6;
@@ -229,6 +234,8 @@ public:
         actionFlip_yz->setObjectName(QString::fromUtf8("actionFlip_yz"));
         actionRotate = new QAction(reconstruction_window);
         actionRotate->setObjectName(QString::fromUtf8("actionRotate"));
+        actionTrim_image = new QAction(reconstruction_window);
+        actionTrim_image->setObjectName(QString::fromUtf8("actionTrim_image"));
         centralwidget = new QWidget(reconstruction_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         verticalLayout = new QVBoxLayout(centralwidget);
@@ -240,8 +247,8 @@ public:
         source_page = new QWidget();
         source_page->setObjectName(QString::fromUtf8("source_page"));
         source_page->setGeometry(QRect(0, 0, 669, 434));
-        horizontalLayout_21 = new QHBoxLayout(source_page);
-        horizontalLayout_21->setObjectName(QString::fromUtf8("horizontalLayout_21"));
+        horizontalLayout_25 = new QHBoxLayout(source_page);
+        horizontalLayout_25->setObjectName(QString::fromUtf8("horizontalLayout_25"));
         splitter = new QSplitter(source_page);
         splitter->setObjectName(QString::fromUtf8("splitter"));
         splitter->setOrientation(Qt::Horizontal);
@@ -251,6 +258,25 @@ public:
         verticalLayout_4->setSpacing(0);
         verticalLayout_4->setContentsMargins(0, 0, 0, 0);
         verticalLayout_4->setObjectName(QString::fromUtf8("verticalLayout_4"));
+        verticalLayout_8 = new QVBoxLayout();
+        verticalLayout_8->setSpacing(0);
+        verticalLayout_8->setObjectName(QString::fromUtf8("verticalLayout_8"));
+        horizontalLayout_21 = new QHBoxLayout();
+        horizontalLayout_21->setSpacing(0);
+        horizontalLayout_21->setObjectName(QString::fromUtf8("horizontalLayout_21"));
+        delete_2 = new QPushButton(widget_2);
+        delete_2->setObjectName(QString::fromUtf8("delete_2"));
+        delete_2->setMaximumSize(QSize(100, 19));
+
+        horizontalLayout_21->addWidget(delete_2);
+
+        horizontalSpacer_5 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+        horizontalLayout_21->addItem(horizontalSpacer_5);
+
+
+        verticalLayout_8->addLayout(horizontalLayout_21);
+
         b_table = new QTableWidget(widget_2);
         if (b_table->columnCount() < 4)
             b_table->setColumnCount(4);
@@ -266,7 +292,10 @@ public:
         b_table->setSelectionMode(QAbstractItemView::SingleSelection);
         b_table->setSelectionBehavior(QAbstractItemView::SelectRows);
 
-        verticalLayout_4->addWidget(b_table);
+        verticalLayout_8->addWidget(b_table);
+
+
+        verticalLayout_4->addLayout(verticalLayout_8);
 
         splitter->addWidget(widget_2);
         source_widget = new QWidget(splitter);
@@ -332,7 +361,7 @@ public:
 
         splitter->addWidget(source_widget);
 
-        horizontalLayout_21->addWidget(splitter);
+        horizontalLayout_25->addWidget(splitter);
 
         toolBox->addItem(source_page, QString::fromUtf8("Source Images"));
         page_3 = new QWidget();
@@ -987,10 +1016,11 @@ public:
         menu_Edit->addAction(actionFlip_xz);
         menu_Edit->addAction(actionFlip_yz);
         menu_Edit->addAction(actionRotate);
+        menu_Edit->addAction(actionTrim_image);
 
         retranslateUi(reconstruction_window);
 
-        toolBox->setCurrentIndex(2);
+        toolBox->setCurrentIndex(0);
         toolBox->layout()->setSpacing(0);
         ODFDim->setCurrentIndex(3);
         ThreadCount->setCurrentIndex(3);
@@ -1013,6 +1043,8 @@ public:
         actionFlip_xz->setText(QApplication::translate("reconstruction_window", "Swap x z", 0, QApplication::UnicodeUTF8));
         actionFlip_yz->setText(QApplication::translate("reconstruction_window", "Swap y z", 0, QApplication::UnicodeUTF8));
         actionRotate->setText(QApplication::translate("reconstruction_window", "Rotate...", 0, QApplication::UnicodeUTF8));
+        actionTrim_image->setText(QApplication::translate("reconstruction_window", "Trim image", 0, QApplication::UnicodeUTF8));
+        delete_2->setText(QApplication::translate("reconstruction_window", "Delete", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem = b_table->horizontalHeaderItem(0);
         ___qtablewidgetitem->setText(QApplication::translate("reconstruction_window", "b value", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem1 = b_table->horizontalHeaderItem(1);
