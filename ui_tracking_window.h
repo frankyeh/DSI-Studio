@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Wed Jun 18 00:35:11 2014
+** Created: Wed Jun 18 00:40:48 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -145,14 +145,12 @@ public:
     QToolButton *isosurfaceButton;
     QComboBox *surfaceStyle;
     QHBoxLayout *horizontalLayout;
-    QSpacerItem *horizontalSpacer_8;
     QLabel *label_16;
     QDoubleSpinBox *gl_contrast_value;
     QSlider *gl_contrast;
     QLabel *label_17;
     QDoubleSpinBox *gl_offset_value;
     QSlider *gl_offset;
-    QSpacerItem *horizontalSpacer;
     QToolButton *move3Dwindow;
     QHBoxLayout *centralLayout2;
     QCheckBox *glSagCheck;
@@ -570,18 +568,24 @@ public:
         horizontalLayout = new QHBoxLayout();
         horizontalLayout->setSpacing(0);
         horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
-        horizontalSpacer_8 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-
-        horizontalLayout->addItem(horizontalSpacer_8);
-
         label_16 = new QLabel(main_widget);
         label_16->setObjectName(QString::fromUtf8("label_16"));
+        QSizePolicy sizePolicy1(QSizePolicy::Fixed, QSizePolicy::Preferred);
+        sizePolicy1.setHorizontalStretch(0);
+        sizePolicy1.setVerticalStretch(0);
+        sizePolicy1.setHeightForWidth(label_16->sizePolicy().hasHeightForWidth());
+        label_16->setSizePolicy(sizePolicy1);
         label_16->setMaximumSize(QSize(16777215, 22));
 
         horizontalLayout->addWidget(label_16);
 
         gl_contrast_value = new QDoubleSpinBox(main_widget);
         gl_contrast_value->setObjectName(QString::fromUtf8("gl_contrast_value"));
+        QSizePolicy sizePolicy2(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        sizePolicy2.setHorizontalStretch(0);
+        sizePolicy2.setVerticalStretch(0);
+        sizePolicy2.setHeightForWidth(gl_contrast_value->sizePolicy().hasHeightForWidth());
+        gl_contrast_value->setSizePolicy(sizePolicy2);
         gl_contrast_value->setMaximumSize(QSize(16777215, 22));
         gl_contrast_value->setMinimum(1);
         gl_contrast_value->setMaximum(5);
@@ -604,12 +608,16 @@ public:
 
         label_17 = new QLabel(main_widget);
         label_17->setObjectName(QString::fromUtf8("label_17"));
+        sizePolicy1.setHeightForWidth(label_17->sizePolicy().hasHeightForWidth());
+        label_17->setSizePolicy(sizePolicy1);
         label_17->setMaximumSize(QSize(16777215, 22));
 
         horizontalLayout->addWidget(label_17);
 
         gl_offset_value = new QDoubleSpinBox(main_widget);
         gl_offset_value->setObjectName(QString::fromUtf8("gl_offset_value"));
+        sizePolicy2.setHeightForWidth(gl_offset_value->sizePolicy().hasHeightForWidth());
+        gl_offset_value->setSizePolicy(sizePolicy2);
         gl_offset_value->setMaximumSize(QSize(16777215, 22));
         gl_offset_value->setMinimum(-1);
         gl_offset_value->setMaximum(1);
@@ -630,10 +638,6 @@ public:
 
         horizontalLayout_13->addLayout(horizontalLayout);
 
-        horizontalSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-
-        horizontalLayout_13->addItem(horizontalSpacer);
-
         move3Dwindow = new QToolButton(main_widget);
         move3Dwindow->setObjectName(QString::fromUtf8("move3Dwindow"));
         move3Dwindow->setMaximumSize(QSize(22, 22));
@@ -651,11 +655,8 @@ public:
         centralLayout2->setObjectName(QString::fromUtf8("centralLayout2"));
         glSagCheck = new QCheckBox(main_widget);
         glSagCheck->setObjectName(QString::fromUtf8("glSagCheck"));
-        QSizePolicy sizePolicy1(QSizePolicy::Fixed, QSizePolicy::Fixed);
-        sizePolicy1.setHorizontalStretch(0);
-        sizePolicy1.setVerticalStretch(0);
-        sizePolicy1.setHeightForWidth(glSagCheck->sizePolicy().hasHeightForWidth());
-        glSagCheck->setSizePolicy(sizePolicy1);
+        sizePolicy2.setHeightForWidth(glSagCheck->sizePolicy().hasHeightForWidth());
+        glSagCheck->setSizePolicy(sizePolicy2);
         glSagCheck->setMinimumSize(QSize(16, 0));
 
         centralLayout2->addWidget(glSagCheck);
@@ -671,11 +672,11 @@ public:
 
         glSagBox = new QSpinBox(main_widget);
         glSagBox->setObjectName(QString::fromUtf8("glSagBox"));
-        QSizePolicy sizePolicy2(QSizePolicy::Maximum, QSizePolicy::Fixed);
-        sizePolicy2.setHorizontalStretch(0);
-        sizePolicy2.setVerticalStretch(0);
-        sizePolicy2.setHeightForWidth(glSagBox->sizePolicy().hasHeightForWidth());
-        glSagBox->setSizePolicy(sizePolicy2);
+        QSizePolicy sizePolicy3(QSizePolicy::Maximum, QSizePolicy::Fixed);
+        sizePolicy3.setHorizontalStretch(0);
+        sizePolicy3.setVerticalStretch(0);
+        sizePolicy3.setHeightForWidth(glSagBox->sizePolicy().hasHeightForWidth());
+        glSagBox->setSizePolicy(sizePolicy3);
 
         centralLayout2->addWidget(glSagBox);
 
@@ -687,8 +688,8 @@ public:
 
         glCorCheck = new QCheckBox(main_widget);
         glCorCheck->setObjectName(QString::fromUtf8("glCorCheck"));
-        sizePolicy1.setHeightForWidth(glCorCheck->sizePolicy().hasHeightForWidth());
-        glCorCheck->setSizePolicy(sizePolicy1);
+        sizePolicy2.setHeightForWidth(glCorCheck->sizePolicy().hasHeightForWidth());
+        glCorCheck->setSizePolicy(sizePolicy2);
         glCorCheck->setMinimumSize(QSize(16, 0));
 
         centralLayout2->addWidget(glCorCheck);
@@ -702,8 +703,8 @@ public:
 
         glCorBox = new QSpinBox(main_widget);
         glCorBox->setObjectName(QString::fromUtf8("glCorBox"));
-        sizePolicy2.setHeightForWidth(glCorBox->sizePolicy().hasHeightForWidth());
-        glCorBox->setSizePolicy(sizePolicy2);
+        sizePolicy3.setHeightForWidth(glCorBox->sizePolicy().hasHeightForWidth());
+        glCorBox->setSizePolicy(sizePolicy3);
 
         centralLayout2->addWidget(glCorBox);
 
@@ -715,8 +716,8 @@ public:
 
         glAxiCheck = new QCheckBox(main_widget);
         glAxiCheck->setObjectName(QString::fromUtf8("glAxiCheck"));
-        sizePolicy1.setHeightForWidth(glAxiCheck->sizePolicy().hasHeightForWidth());
-        glAxiCheck->setSizePolicy(sizePolicy1);
+        sizePolicy2.setHeightForWidth(glAxiCheck->sizePolicy().hasHeightForWidth());
+        glAxiCheck->setSizePolicy(sizePolicy2);
         glAxiCheck->setMinimumSize(QSize(16, 0));
 
         centralLayout2->addWidget(glAxiCheck);
@@ -731,8 +732,8 @@ public:
 
         glAxiBox = new QSpinBox(main_widget);
         glAxiBox->setObjectName(QString::fromUtf8("glAxiBox"));
-        sizePolicy2.setHeightForWidth(glAxiBox->sizePolicy().hasHeightForWidth());
-        glAxiBox->setSizePolicy(sizePolicy2);
+        sizePolicy3.setHeightForWidth(glAxiBox->sizePolicy().hasHeightForWidth());
+        glAxiBox->setSizePolicy(sizePolicy3);
 
         centralLayout2->addWidget(glAxiBox);
 
@@ -768,11 +769,11 @@ public:
         tracking_window->setStatusBar(statusbar);
         regionDockWidget = new QDockWidget(tracking_window);
         regionDockWidget->setObjectName(QString::fromUtf8("regionDockWidget"));
-        QSizePolicy sizePolicy3(QSizePolicy::Preferred, QSizePolicy::Preferred);
-        sizePolicy3.setHorizontalStretch(0);
-        sizePolicy3.setVerticalStretch(1);
-        sizePolicy3.setHeightForWidth(regionDockWidget->sizePolicy().hasHeightForWidth());
-        regionDockWidget->setSizePolicy(sizePolicy3);
+        QSizePolicy sizePolicy4(QSizePolicy::Preferred, QSizePolicy::Preferred);
+        sizePolicy4.setHorizontalStretch(0);
+        sizePolicy4.setVerticalStretch(1);
+        sizePolicy4.setHeightForWidth(regionDockWidget->sizePolicy().hasHeightForWidth());
+        regionDockWidget->setSizePolicy(sizePolicy4);
         regionDockWidget->setMinimumSize(QSize(311, 46));
         regionDockWidget->setMaximumSize(QSize(600, 524287));
         QFont font1;
@@ -818,8 +819,8 @@ public:
 
         whole_brain = new QToolButton(dockWidgetContents_4);
         whole_brain->setObjectName(QString::fromUtf8("whole_brain"));
-        sizePolicy1.setHeightForWidth(whole_brain->sizePolicy().hasHeightForWidth());
-        whole_brain->setSizePolicy(sizePolicy1);
+        sizePolicy2.setHeightForWidth(whole_brain->sizePolicy().hasHeightForWidth());
+        whole_brain->setSizePolicy(sizePolicy2);
         whole_brain->setMaximumSize(QSize(23, 22));
         whole_brain->setIcon(icon4);
 
@@ -834,11 +835,11 @@ public:
 
         atlasListBox = new QComboBox(dockWidgetContents_4);
         atlasListBox->setObjectName(QString::fromUtf8("atlasListBox"));
-        QSizePolicy sizePolicy4(QSizePolicy::Expanding, QSizePolicy::Fixed);
-        sizePolicy4.setHorizontalStretch(0);
-        sizePolicy4.setVerticalStretch(0);
-        sizePolicy4.setHeightForWidth(atlasListBox->sizePolicy().hasHeightForWidth());
-        atlasListBox->setSizePolicy(sizePolicy4);
+        QSizePolicy sizePolicy5(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        sizePolicy5.setHorizontalStretch(0);
+        sizePolicy5.setVerticalStretch(0);
+        sizePolicy5.setHeightForWidth(atlasListBox->sizePolicy().hasHeightForWidth());
+        atlasListBox->setSizePolicy(sizePolicy5);
         atlasListBox->setMaximumSize(QSize(16777215, 22));
         atlasListBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLength);
 
@@ -846,8 +847,8 @@ public:
 
         atlasComboBox = new QComboBox(dockWidgetContents_4);
         atlasComboBox->setObjectName(QString::fromUtf8("atlasComboBox"));
-        sizePolicy4.setHeightForWidth(atlasComboBox->sizePolicy().hasHeightForWidth());
-        atlasComboBox->setSizePolicy(sizePolicy4);
+        sizePolicy5.setHeightForWidth(atlasComboBox->sizePolicy().hasHeightForWidth());
+        atlasComboBox->setSizePolicy(sizePolicy5);
         atlasComboBox->setMaximumSize(QSize(16777215, 22));
         atlasComboBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLength);
 
@@ -872,11 +873,11 @@ public:
         tracking_window->addDockWidget(static_cast<Qt::DockWidgetArea>(1), regionDockWidget);
         renderingWidgetHolder = new QDockWidget(tracking_window);
         renderingWidgetHolder->setObjectName(QString::fromUtf8("renderingWidgetHolder"));
-        QSizePolicy sizePolicy5(QSizePolicy::Maximum, QSizePolicy::Preferred);
-        sizePolicy5.setHorizontalStretch(0);
-        sizePolicy5.setVerticalStretch(0);
-        sizePolicy5.setHeightForWidth(renderingWidgetHolder->sizePolicy().hasHeightForWidth());
-        renderingWidgetHolder->setSizePolicy(sizePolicy5);
+        QSizePolicy sizePolicy6(QSizePolicy::Maximum, QSizePolicy::Preferred);
+        sizePolicy6.setHorizontalStretch(0);
+        sizePolicy6.setVerticalStretch(0);
+        sizePolicy6.setHeightForWidth(renderingWidgetHolder->sizePolicy().hasHeightForWidth());
+        renderingWidgetHolder->setSizePolicy(sizePolicy6);
         renderingWidgetHolder->setMinimumSize(QSize(211, 46));
         dockWidgetContents_2 = new QWidget();
         dockWidgetContents_2->setObjectName(QString::fromUtf8("dockWidgetContents_2"));
@@ -916,11 +917,11 @@ public:
         menuBar = new QMenuBar(tracking_window);
         menuBar->setObjectName(QString::fromUtf8("menuBar"));
         menuBar->setGeometry(QRect(0, 0, 1559, 21));
-        QSizePolicy sizePolicy6(QSizePolicy::Preferred, QSizePolicy::Minimum);
-        sizePolicy6.setHorizontalStretch(0);
-        sizePolicy6.setVerticalStretch(0);
-        sizePolicy6.setHeightForWidth(menuBar->sizePolicy().hasHeightForWidth());
-        menuBar->setSizePolicy(sizePolicy6);
+        QSizePolicy sizePolicy7(QSizePolicy::Preferred, QSizePolicy::Minimum);
+        sizePolicy7.setHorizontalStretch(0);
+        sizePolicy7.setVerticalStretch(0);
+        sizePolicy7.setHeightForWidth(menuBar->sizePolicy().hasHeightForWidth());
+        menuBar->setSizePolicy(sizePolicy7);
         menuBar->setFont(font);
         menuBar->setDefaultUp(false);
         menuBar->setNativeMenuBar(false);
@@ -954,8 +955,8 @@ public:
         tracking_window->setMenuBar(menuBar);
         TractWidgetHolder = new QDockWidget(tracking_window);
         TractWidgetHolder->setObjectName(QString::fromUtf8("TractWidgetHolder"));
-        sizePolicy5.setHeightForWidth(TractWidgetHolder->sizePolicy().hasHeightForWidth());
-        TractWidgetHolder->setSizePolicy(sizePolicy5);
+        sizePolicy6.setHeightForWidth(TractWidgetHolder->sizePolicy().hasHeightForWidth());
+        TractWidgetHolder->setSizePolicy(sizePolicy6);
         TractWidgetHolder->setMinimumSize(QSize(146, 46));
         TractWidgetHolder->setMaximumSize(QSize(524287, 524287));
         dockWidgetContents_5 = new QWidget();
@@ -1040,11 +1041,11 @@ public:
         tracking_window->addDockWidget(static_cast<Qt::DockWidgetArea>(2), TractWidgetHolder);
         dockWidget = new QDockWidget(tracking_window);
         dockWidget->setObjectName(QString::fromUtf8("dockWidget"));
-        QSizePolicy sizePolicy7(QSizePolicy::Maximum, QSizePolicy::Expanding);
-        sizePolicy7.setHorizontalStretch(0);
-        sizePolicy7.setVerticalStretch(1);
-        sizePolicy7.setHeightForWidth(dockWidget->sizePolicy().hasHeightForWidth());
-        dockWidget->setSizePolicy(sizePolicy7);
+        QSizePolicy sizePolicy8(QSizePolicy::Maximum, QSizePolicy::Expanding);
+        sizePolicy8.setHorizontalStretch(0);
+        sizePolicy8.setVerticalStretch(1);
+        sizePolicy8.setHeightForWidth(dockWidget->sizePolicy().hasHeightForWidth());
+        dockWidget->setSizePolicy(sizePolicy8);
         dockWidget->setMinimumSize(QSize(499, 233));
         dockWidget->setFloating(false);
         dockWidget->setFeatures(QDockWidget::AllDockWidgetFeatures);
@@ -1144,11 +1145,11 @@ public:
 
         sliceViewBox = new QComboBox(dockWidgetContents);
         sliceViewBox->setObjectName(QString::fromUtf8("sliceViewBox"));
-        QSizePolicy sizePolicy8(QSizePolicy::Preferred, QSizePolicy::Fixed);
-        sizePolicy8.setHorizontalStretch(0);
-        sizePolicy8.setVerticalStretch(0);
-        sizePolicy8.setHeightForWidth(sliceViewBox->sizePolicy().hasHeightForWidth());
-        sliceViewBox->setSizePolicy(sizePolicy8);
+        QSizePolicy sizePolicy9(QSizePolicy::Preferred, QSizePolicy::Fixed);
+        sizePolicy9.setHorizontalStretch(0);
+        sizePolicy9.setVerticalStretch(0);
+        sizePolicy9.setHeightForWidth(sliceViewBox->sizePolicy().hasHeightForWidth());
+        sliceViewBox->setSizePolicy(sizePolicy9);
         sliceViewBox->setMaximumSize(QSize(16777215, 22));
         sliceViewBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLength);
 
@@ -1156,8 +1157,8 @@ public:
 
         overlay = new QComboBox(dockWidgetContents);
         overlay->setObjectName(QString::fromUtf8("overlay"));
-        sizePolicy8.setHeightForWidth(overlay->sizePolicy().hasHeightForWidth());
-        overlay->setSizePolicy(sizePolicy8);
+        sizePolicy9.setHeightForWidth(overlay->sizePolicy().hasHeightForWidth());
+        overlay->setSizePolicy(sizePolicy9);
         overlay->setMaximumSize(QSize(16777215, 22));
         overlay->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLength);
 
@@ -1171,8 +1172,8 @@ public:
         horizontalLayout_14->setObjectName(QString::fromUtf8("horizontalLayout_14"));
         label_6 = new QLabel(dockWidgetContents);
         label_6->setObjectName(QString::fromUtf8("label_6"));
-        sizePolicy5.setHeightForWidth(label_6->sizePolicy().hasHeightForWidth());
-        label_6->setSizePolicy(sizePolicy5);
+        sizePolicy6.setHeightForWidth(label_6->sizePolicy().hasHeightForWidth());
+        label_6->setSizePolicy(sizePolicy6);
 
         horizontalLayout_14->addWidget(label_6);
 
@@ -1186,8 +1187,8 @@ public:
 
         contrast = new QSlider(dockWidgetContents);
         contrast->setObjectName(QString::fromUtf8("contrast"));
-        sizePolicy4.setHeightForWidth(contrast->sizePolicy().hasHeightForWidth());
-        contrast->setSizePolicy(sizePolicy4);
+        sizePolicy5.setHeightForWidth(contrast->sizePolicy().hasHeightForWidth());
+        contrast->setSizePolicy(sizePolicy5);
         contrast->setMinimum(-100);
         contrast->setMaximum(100);
         contrast->setSingleStep(5);
@@ -1199,8 +1200,8 @@ public:
 
         label_8 = new QLabel(dockWidgetContents);
         label_8->setObjectName(QString::fromUtf8("label_8"));
-        sizePolicy5.setHeightForWidth(label_8->sizePolicy().hasHeightForWidth());
-        label_8->setSizePolicy(sizePolicy5);
+        sizePolicy6.setHeightForWidth(label_8->sizePolicy().hasHeightForWidth());
+        label_8->setSizePolicy(sizePolicy6);
 
         horizontalLayout_14->addWidget(label_8);
 
@@ -1214,8 +1215,8 @@ public:
 
         offset = new QSlider(dockWidgetContents);
         offset->setObjectName(QString::fromUtf8("offset"));
-        sizePolicy4.setHeightForWidth(offset->sizePolicy().hasHeightForWidth());
-        offset->setSizePolicy(sizePolicy4);
+        sizePolicy5.setHeightForWidth(offset->sizePolicy().hasHeightForWidth());
+        offset->setSizePolicy(sizePolicy5);
         offset->setMinimum(-100);
         offset->setMaximum(100);
         offset->setSingleStep(5);
@@ -1232,8 +1233,8 @@ public:
 
         perform_tracking = new QPushButton(dockWidgetContents);
         perform_tracking->setObjectName(QString::fromUtf8("perform_tracking"));
-        sizePolicy8.setHeightForWidth(perform_tracking->sizePolicy().hasHeightForWidth());
-        perform_tracking->setSizePolicy(sizePolicy8);
+        sizePolicy9.setHeightForWidth(perform_tracking->sizePolicy().hasHeightForWidth());
+        perform_tracking->setSizePolicy(sizePolicy9);
         perform_tracking->setMaximumSize(QSize(16777215, 60));
         QIcon icon17;
         icon17.addFile(QString::fromUtf8(":/icons/icons/run.xpm"), QSize(), QIcon::Normal, QIcon::Off);
