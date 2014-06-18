@@ -416,7 +416,7 @@ void GLWidget::paintGL()
         get_param("show_odf"))
     {
         SliceModel& slice = cur_tracking_window.slice;
-        float fa_threshold = cur_tracking_window.ui->fa_threshold->value();
+        float fa_threshold = cur_tracking_window["fa_threshold"].toFloat();
         if(odf_position != get_param("odf_position") ||
            odf_skip != get_param("odf_skip") ||
            odf_scale != get_param("odf_scale") ||

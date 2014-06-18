@@ -91,6 +91,8 @@ public:
     bool slice_no_update;
     bool eventFilter(QObject *obj, QEvent *event);
     QVariant operator[](QString name)const;
+    void on_tracking_index_currentIndexChanged(int index);
+
 public slots:
     void on_SagView_clicked();
     void on_CorView_clicked();
@@ -126,7 +128,6 @@ private slots:
     void glSliderValueChanged(void);
 
 
-    void on_tracking_index_currentIndexChanged(int index);
     void on_actionSave_Endpoints_in_Current_Mapping_triggered();
     void on_deleteSlice_clicked();
     void on_tool5_pressed();
@@ -150,6 +151,7 @@ private slots:
     void on_restore_3D_window();
     void on_actionSave_tracking_parameters_triggered();
     void on_actionLoad_tracking_parameters_triggered();
+    void on_tbDefaultParam_clicked();
 };
 
 #endif // TRACKING_WINDOW_H

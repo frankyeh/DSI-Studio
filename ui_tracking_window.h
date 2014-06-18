@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Tue Jun 17 15:49:52 2014
+** Created: Tue Jun 17 21:01:44 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -239,7 +239,6 @@ public:
     QDoubleSpinBox *offset_value;
     QSlider *offset;
     QPushButton *perform_tracking;
-    QToolButton *stopTracking;
     QGraphicsView *graphicsView;
     QHBoxLayout *horizontalLayout_2;
     QToolButton *SagView;
@@ -248,9 +247,6 @@ public:
     QSlider *CorSlider;
     QToolButton *AxiView;
     QSlider *AxiSlider;
-    QHBoxLayout *horizontalLayout_3;
-    QComboBox *tracking_index;
-    QDoubleSpinBox *fa_threshold;
 
     void setupUi(QMainWindow *tracking_window)
     {
@@ -1053,6 +1049,7 @@ public:
         horizontalLayout_7->setObjectName(QString::fromUtf8("horizontalLayout_7"));
         horizontalLayout_7->setContentsMargins(-1, -1, 0, -1);
         verticalLayout_2 = new QVBoxLayout();
+        verticalLayout_2->setSpacing(0);
         verticalLayout_2->setObjectName(QString::fromUtf8("verticalLayout_2"));
         horizontalLayout_4 = new QHBoxLayout();
         horizontalLayout_4->setSpacing(0);
@@ -1232,12 +1229,6 @@ public:
 
         horizontalLayout_7->addWidget(perform_tracking);
 
-        stopTracking = new QToolButton(dockWidgetContents);
-        stopTracking->setObjectName(QString::fromUtf8("stopTracking"));
-        stopTracking->setMaximumSize(QSize(16777215, 60));
-
-        horizontalLayout_7->addWidget(stopTracking);
-
 
         verticalLayout->addLayout(horizontalLayout_7);
 
@@ -1290,27 +1281,6 @@ public:
 
 
         verticalLayout->addLayout(horizontalLayout_2);
-
-        horizontalLayout_3 = new QHBoxLayout();
-        horizontalLayout_3->setSpacing(0);
-        horizontalLayout_3->setObjectName(QString::fromUtf8("horizontalLayout_3"));
-        tracking_index = new QComboBox(dockWidgetContents);
-        tracking_index->setObjectName(QString::fromUtf8("tracking_index"));
-
-        horizontalLayout_3->addWidget(tracking_index);
-
-        fa_threshold = new QDoubleSpinBox(dockWidgetContents);
-        fa_threshold->setObjectName(QString::fromUtf8("fa_threshold"));
-        sizePolicy8.setHeightForWidth(fa_threshold->sizePolicy().hasHeightForWidth());
-        fa_threshold->setSizePolicy(sizePolicy8);
-        fa_threshold->setDecimals(5);
-        fa_threshold->setMaximum(99.99);
-        fa_threshold->setSingleStep(0.01);
-
-        horizontalLayout_3->addWidget(fa_threshold);
-
-
-        verticalLayout->addLayout(horizontalLayout_3);
 
         dockWidget->setWidget(dockWidgetContents);
         tracking_window->addDockWidget(static_cast<Qt::DockWidgetArea>(1), dockWidget);
@@ -1684,7 +1654,6 @@ public:
         contrast_value->setPrefix(QString());
         label_8->setText(QApplication::translate("tracking_window", "Offset", 0, QApplication::UnicodeUTF8));
         perform_tracking->setText(QApplication::translate("tracking_window", "Tracking", 0, QApplication::UnicodeUTF8));
-        stopTracking->setText(QApplication::translate("tracking_window", "Stop", 0, QApplication::UnicodeUTF8));
 #ifndef QT_NO_TOOLTIP
         SagView->setToolTip(QApplication::translate("tracking_window", "Sagittal view", 0, QApplication::UnicodeUTF8));
 #endif // QT_NO_TOOLTIP

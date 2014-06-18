@@ -46,6 +46,27 @@ void RenderingItem::setValue(QVariant new_value)
         ((QComboBox*)GUI)->setCurrentIndex(new_value.toInt());
     }
 }
+void RenderingItem::setMinMax(float min,float max,float step)
+{
+    if(!GUI)
+        return;
+    if(QString(GUI->metaObject()->className()) == "QDoubleSpinBox")
+    {
+        ((QDoubleSpinBox*)GUI)->setMaximum(max);
+        ((QDoubleSpinBox*)GUI)->setMinimum(min);
+        ((QDoubleSpinBox*)GUI)->setSingleStep(step);
+    }
+}
+void RenderingItem::setList(QStringList list)
+{
+    if(!GUI)
+        return;
+    if(QString(GUI->metaObject()->className()) == "QComboBox")
+    {
+        ((QComboBox*)GUI)->clear();
+        ((QComboBox*)GUI)->addItems(list);
+    }
+}
 
 QWidget *RenderingDelegate::createEditor(QWidget *parent,
         const QStyleOptionViewItem &option,
@@ -79,7 +100,7 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
         return sd;
     }
     QStringList string_list = index.data(Qt::UserRole+1).toStringList();
-    if (string_list.size() > 1)
+    if (string_list.size() >= 1)
     {
         if(string_list[0] == QString("float"))
         {
@@ -90,7 +111,10 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
                 dsb->setSingleStep(string_list[3].toDouble());
             else
                 dsb->setSingleStep((dsb->maximum()-dsb->minimum())/10);
-            dsb->setDecimals(std::max<double>((double)0,2-std::log10(dsb->maximum())));
+            if(string_list.size() > 4)
+                dsb->setDecimals(string_list[4].toDouble());
+            else
+                dsb->setDecimals(std::max<double>((double)0,4-std::log10(dsb->maximum())));
             connect(dsb, SIGNAL(valueChanged(double)), this, SLOT(emitCommitData()));
             ((RenderingItem*)index.internalPointer())->GUI = dsb;
             return dsb;
@@ -207,17 +231,17 @@ void RenderingDelegate::emitCommitData()
 TreeModel::TreeModel(RenderingTableWidget *parent)
         : QAbstractItemModel(parent)
 {
-    root.reset(new RenderingItem(QString("Objects"),QString("Options"),0,0));
+    root.reset(new RenderingItem("Objects","","root",0,0));
     root_mapping["Root"] = root.get();
-    root_mapping["ROI"] = new RenderingItem(QString("Region Window"),QVariant(),0,root.get());
-    root_mapping["Tracking"] = new RenderingItem(QString("Tracking Parameters"),QVariant(),0,root.get());
-    root_mapping["Rendering"] = new RenderingItem(QString("Background Rendering"),QVariant(),0,root.get());
+    root_mapping["ROI"] = new RenderingItem("Region Window","","ROI",0,root.get());
+    root_mapping["Tracking"] = new RenderingItem("Tracking Parameters","","Tracking",0,root.get());
+    root_mapping["Rendering"] = new RenderingItem("Background Rendering","","Rendering",0,root.get());
     root_mapping["Slice"] = (RenderingItem*)addItem("Root","show_slice","Slice Rendering",QString("check"),Qt::Checked).internalPointer();
     root_mapping["Tract"] = (RenderingItem*)addItem("Root","show_tract","Tract Rendering",QString("check"),Qt::Checked).internalPointer();
     root_mapping["Region"] = (RenderingItem*)addItem("Root","show_region","Region Rendering",QString("check"),Qt::Checked).internalPointer();
     root_mapping["Surface"] = (RenderingItem*)addItem("Root","show_surface","Surface Rendering",QString("check"),Qt::Checked).internalPointer();
     root_mapping["ODF"] = (RenderingItem*)addItem("Root","show_odf","ODF Rendering",QString("check"),Qt::Checked).internalPointer();
-    //root_mapping["Others"] = new RenderingItem(QString("Others"),QVariant(),0,root.get());
+
 }
 
 TreeModel::~TreeModel()
@@ -371,12 +395,11 @@ int TreeModel::rowCount(const QModelIndex &parent) const
 
 QModelIndex TreeModel::addItem(QString root_name,QString id,QVariant title, QVariant type, QVariant value)
 {
-    RenderingItem* item = 0;
     if(!name_data_mapping[id])
     {
         QSettings settings;
         settings.beginGroup("Rendering Options");
-        name_data_mapping[id] = item = new RenderingItem(title,type,settings.value(id,value),root_mapping[root_name]);
+        name_data_mapping[id] = new RenderingItem(title,type,id,settings.value(id,value),root_mapping[root_name]);
         name_default_values[id] = value;
         settings.endGroup();
     }
@@ -440,15 +463,19 @@ void RenderingTableWidget::setDefault(void)
 }
 void RenderingTableWidget::dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
 {
-    if(((RenderingItem*)bottomRight.internalPointer())->parent()->title == "Tracking Parameters")
+    if(((RenderingItem*)bottomRight.internalPointer())->id == "tracking_index")
     {
-        // do nothing here
+        cur_tracking_window.on_tracking_index_currentIndexChanged(((RenderingItem*)bottomRight.internalPointer())->value.toInt());
+        cur_tracking_window.scene.show_slice();
+        return;
     }
-    else
-        if(((RenderingItem*)bottomRight.internalPointer())->parent()->title == "Region Window")
-        {
-            cur_tracking_window.scene.show_slice();
-        }
+
+    if(((RenderingItem*)bottomRight.internalPointer())->id == "fa_threshold" ||
+       ((RenderingItem*)bottomRight.internalPointer())->parent()->id == QString("ROI"))
+    {
+        cur_tracking_window.scene.show_slice();
+        return;
+    }
     else
         cur_tracking_window.glWidget->updateGL();
 }

@@ -564,7 +564,7 @@ void RegionTableWidget::delete_all_region(void)
 void RegionTableWidget::whole_brain_points(std::vector<image::vector<3,short> >& points)
 {
     image::geometry<3> geo = cur_tracking_window.slice.geometry;
-    float threshold = cur_tracking_window.ui->fa_threshold->value();
+    float threshold = cur_tracking_window["fa_threshold"].toFloat();
     for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))
     {
         image::vector<3,short> pos(index);
@@ -770,7 +770,7 @@ void RegionTableWidget::do_action(int id)
         break;
     case 8: //
         {
-            float threshold = cur_tracking_window.ui->fa_threshold->value();
+            float threshold = cur_tracking_window["fa_threshold"].toFloat();
             for(int index = 0;index < cur_region.size();)
             {
                 image::vector<3,short> point(cur_region.get()[index]);

@@ -8,9 +8,14 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 #CONFIG += console
 TARGET = dsi_studio
 TEMPLATE = app
+
+win32* {
+#change to the directory that contains boost library
 INCLUDEPATH += C:/frank/myprog/include
+}
 
 win32-g++ {
+
 LIBS += -L. -lboost_thread-mgw45-mt-1_45.dll \
      -L. -lboost_program_options-mgw45-mt-1_45.dll
 }
@@ -24,9 +29,12 @@ LIBS += -lboost_thread \
 }
 
 mac{
-LIBS += -L/opt/local/lib -lboost_system \
-        -L/opt/local/lib -lboost_thread \
-        -L/opt/local/lib -lboost_program_options
+
+#change to the directory that contains boost library
+INCLUDEPATH += /Users/frank/boost/include
+LIBS += -L/Users/frank/boost/lib -lboost_system \
+        -L/Users/frank/boost/lib -lboost_thread \
+        -L/Users/frank/boost/lib -lboost_program_options
 }
 
 

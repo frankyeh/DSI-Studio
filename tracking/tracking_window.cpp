@@ -69,10 +69,13 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
 
     // setup fa threshold
     {
+        QStringList tracking_index_list;
         for(int index = 0;index < fib_data.fib.index_name.size();++index)
-            ui->tracking_index->addItem((fib_data.fib.index_name[index]+" threshold").c_str());
-        ui->tracking_index->setCurrentIndex(0);
-        this->renderWidget->setData("step_size",fib_data.vs[0]/2.0);
+            tracking_index_list.push_back((fib_data.fib.index_name[index]+" threshold").c_str());
+
+        renderWidget->setList("tracking_index",tracking_index_list);
+        renderWidget->setData("tracking_index",0);
+        renderWidget->setData("step_size",fib_data.vs[0]/2.0);
     }
 
     // setup sliders
@@ -144,10 +147,6 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
 
     // opengl
     {
-        connect(ui->tbDefaultParam,SIGNAL(clicked()),renderWidget,SLOT(setDefault()));
-        connect(ui->tbDefaultParam,SIGNAL(clicked()),&scene,SLOT(show_slice()));
-        connect(ui->tbDefaultParam,SIGNAL(clicked()),glWidget,SLOT(updateGL()));
-
         connect(ui->glSagSlider,SIGNAL(valueChanged(int)),this,SLOT(glSliderValueChanged()));
         connect(ui->glCorSlider,SIGNAL(valueChanged(int)),this,SLOT(glSliderValueChanged()));
         connect(ui->glAxiSlider,SIGNAL(valueChanged(int)),this,SLOT(glSliderValueChanged()));
@@ -181,7 +180,6 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
 
         connect(&scene,SIGNAL(need_update()),&scene,SLOT(show_slice()));
         connect(&scene,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
-        connect(ui->fa_threshold,SIGNAL(valueChanged(double)),&scene,SLOT(show_slice()));
 
         connect(ui->actionAxial_View,SIGNAL(triggered()),this,SLOT(on_AxiView_clicked()));
         connect(ui->actionCoronal_View,SIGNAL(triggered()),this,SLOT(on_CorView_clicked()));
@@ -920,20 +918,18 @@ void tracking_window::on_actionRestore_window_layout_triggered()
 void tracking_window::on_tracking_index_currentIndexChanged(int index)
 {
     handle->fib_data.fib.set_tracking_index(index);
-    if(ui->tracking_index->currentText().contains("greater") ||
-       ui->tracking_index->currentText().contains("lesser")) // connectometry
+    if(renderWidget->getData("tracking_index").toString().contains("greater") ||
+       renderWidget->getData("tracking_index").toString().contains("lesser")) // connectometry
     {
-        ui->fa_threshold->setRange(0.5,1.0);
-        ui->fa_threshold->setValue(0.75);
-        ui->fa_threshold->setSingleStep(0.05);
+        renderWidget->setMinMax("fa_threshold",0.5,1.0,0.01);
+        renderWidget->setData("fa_threshold",0.75);
     }
     else
     {
         float max_value = *std::max_element(handle->fib_data.fib.fa[0],handle->fib_data.fib.fa[0]+handle->fib_data.fib.dim.size());
-        ui->fa_threshold->setRange(0.0,max_value*1.1);
-        ui->fa_threshold->setValue(0.6*image::segmentation::otsu_threshold(image::make_image(handle->fib_data.fib.dim,
-                                                                                             handle->fib_data.fib.fa[0])));
-        ui->fa_threshold->setSingleStep(max_value/50.0);    
+        renderWidget->setMinMax("fa_threshold",0.0,max_value*1.1,max_value/50.0);
+        renderWidget->setData("fa_threshold",0.6*image::segmentation::otsu_threshold(image::make_image(handle->fib_data.fib.dim,
+                                                                                                       handle->fib_data.fib.fa[0])));
     }
 }
 
@@ -1283,7 +1279,8 @@ void tracking_window::on_actionSave_tracking_parameters_triggered()
     if (filename.isEmpty())
         return;
     QSettings s(filename, QSettings::IniFormat);
-    s.setValue("fa_threshold",ui->fa_threshold->value());
+    s.setValue("tracking_index",renderWidget->getData("tracking_index"));
+    s.setValue("fa_threshold",renderWidget->getData("fa_threshold"));
     s.setValue("step_size",renderWidget->getData("step_size"));
     s.setValue("turning_angle",renderWidget->getData("turning_angle"));
     s.setValue("smoothing",renderWidget->getData("smoothing"));
@@ -1308,7 +1305,8 @@ void tracking_window::on_actionLoad_tracking_parameters_triggered()
     if (filename.isEmpty())
         return;
     QSettings s(filename, QSettings::IniFormat);
-    ui->fa_threshold->setValue(s.value("fa_threshold",0.4).toDouble());
+    renderWidget->setData("tracking_index",s.value("tracking_index",0));
+    renderWidget->setData("fa_threshold",s.value("fa_threshold",0.4));
     renderWidget->setData("step_size",s.value("step_size",1));
     renderWidget->setData("turning_angle",s.value("turning_angle",60));
     renderWidget->setData("smoothing",s.value("smoothing",0.0));
@@ -1323,3 +1321,12 @@ void tracking_window::on_actionLoad_tracking_parameters_triggered()
     renderWidget->setData("thread_count",s.value("thread_count",1));
 }
 
+
+void tracking_window::on_tbDefaultParam_clicked()
+{
+    renderWidget->setDefault();
+    renderWidget->setData("tracking_index",0);
+    on_tracking_index_currentIndexChanged(0);
+    scene.show_slice();
+    glWidget->updateGL();
+}

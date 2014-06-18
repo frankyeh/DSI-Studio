@@ -37,8 +37,8 @@ private slots:
 class RenderingItem
  {
  public:
-    RenderingItem(QVariant title_, QVariant type_, QVariant value_, RenderingItem *parent = 0):
-        parentItem(parent),title(title_),type(type_),value(value_),GUI(0)
+    RenderingItem(QVariant title_, QVariant type_, QString id_,QVariant value_, RenderingItem *parent = 0):
+        parentItem(parent),title(title_),type(type_),id(id_),value(value_),GUI(0)
     {
         if(parent)
             parent->appendChild(this);
@@ -60,11 +60,15 @@ class RenderingItem
      void setParent(RenderingItem *parentItem_) {parentItem = parentItem_;}
      QVariant getValue() const{return value;}
      void setValue(QVariant new_value);
+     void setMinMax(float min,float max,float step);
+     void setList(QStringList list);
+
  private:
      QList<RenderingItem*> childItems;
      RenderingItem *parentItem;
  public:
      QObject* GUI;
+     QString id;
      QVariant title,type,value;
 
  };
@@ -102,12 +106,12 @@ public:
             throw std::runtime_error("Cannot find the setting value");
         return iter->second->value;
     }
-    void updateData(QString name,QVariant data)
+    RenderingItem& operator[](QString name)
     {
         std::map<QString,RenderingItem*>::const_iterator iter = name_data_mapping.find(name);
         if(iter == name_data_mapping.end())
             throw std::runtime_error("Cannot find the setting value");
-        iter->second->setValue(data);
+        return *(iter->second);
     }
 
     void setDefault(void);
@@ -126,7 +130,10 @@ public:
 public:
     explicit RenderingTableWidget(tracking_window& cur_tracking_window_,QWidget *parent);
     QVariant getData(QString name){return treemodel->getData(name);}
-    void setData(QString name,QVariant data){treemodel->updateData(name,data);}
+    void setData(QString name,QVariant data){(*treemodel)[name].setValue(data);}
+    void setMinMax(QString name,float min,float max,float step){(*treemodel)[name].setMinMax(min,max,step);}
+    void setList(QString name,QStringList list){(*treemodel)[name].setList(list);}
+
     void initialize(void);
 public slots:
     void setDefault(void);

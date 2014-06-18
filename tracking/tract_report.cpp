@@ -95,7 +95,7 @@ void tract_report::on_refresh_report_clicked()
     }
     ui->report_widget->xAxis->setRange(min_x,max_x);
     ui->report_widget->yAxis->setRange(ui->report_index->currentIndex() ? 0 :
-            cur_tracking_window->ui->fa_threshold->value(), max_y);
+            (*cur_tracking_window)["fa_threshold"].toFloat(), max_y);
     if(ui->report_legend->checkState() == Qt::Checked)
     {
         ui->report_widget->legend->setVisible(true);
