@@ -1,3 +1,5 @@
+#include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 #include <QFileDialog>
 #include <QContextMenuEvent>
 #include <QMessageBox>
@@ -269,6 +271,9 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     gz_nifti header;
     if (!header.load_from_file(file_name.toLocal8Bit().begin()))
         return false;
+
+
+
     image::basic_image<unsigned int, 3> from;
     header.toLPS(from);
     std::vector<unsigned char> value_map(std::numeric_limits<unsigned short>::max());
@@ -367,14 +372,28 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
             region.LoadFromBuffer(from);
         else
             region.LoadFromBuffer(from,convert);
-        max_value = *std::max_element(from.begin(),from.end());
-        if(max_value > 128 && max_value < 0x00FFFFFF)
-        {
-            region.show_region.color = max_value;
-            add_region(QFileInfo(file_name).baseName(),roi_id,0xFF000000 | max_value);
-        }
-        else
-            add_region(QFileInfo(file_name).baseName(),roi_id);
+
+        int color = 0;
+        int type = roi_id;
+
+        try{
+            std::vector<std::string> info;
+            boost::split(info,header.nif_header.descrip,boost::is_any_of(";"));
+            for(unsigned int index = 0;index < info.size();++index)
+            {
+                std::vector<std::string> name_value;
+                boost::split(name_value,info[index],boost::is_any_of("="));
+                if(name_value.size() != 2)
+                    continue;
+                if(name_value[0] == "color")
+                    color = boost::lexical_cast<int>(name_value[1]);
+                if(name_value[0] == "roi")
+                    type = boost::lexical_cast<int>(name_value[1]);
+            }
+        }catch(...){}
+
+        region.show_region.color = max_value;
+        add_region(QFileInfo(file_name).baseName(),type,0xFF000000 | color);
 
         regions.back().assign(region.get());
         item(currentRow(),0)->setCheckState(Qt::Checked);

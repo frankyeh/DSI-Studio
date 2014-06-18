@@ -10,14 +10,14 @@
 // ---------------------------------------------------------------------------
 void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool del)
 {
-    for(unsigned int index = 0;index < points.size();)
-       if (!geo.is_valid(points[index][0], points[index][1], points[index][2]))
+    for(unsigned int index = 0; index < points.size();)
+        if (!geo.is_valid(points[index][0], points[index][1], points[index][2]))
         {
             points[index] = points.back();
             points.pop_back();
         }
-    else
-        ++index;
+        else
+            ++index;
     if(points.empty())
         return;
     std::sort(points.begin(),points.end());
@@ -29,9 +29,9 @@ void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool de
         {
             std::vector<image::vector<3,short> > union_points(region.size()+points.size());
             std::vector<image::vector<3,short> >::iterator it =
-            std::set_union(region.begin(),region.end(),
-                       points.begin(),points.end(),
-                       union_points.begin());
+                std::set_union(region.begin(),region.end(),
+                               points.begin(),points.end(),
+                               union_points.begin());
             union_points.resize(it-union_points.begin());
             region.swap(union_points);
         }
@@ -48,8 +48,8 @@ void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool de
 
         std::vector<image::vector<3,short> > remain_points(region.size());
         it = std::set_difference(region.begin(),region.end(),
-                            intersect_points.begin(),intersect_points.end(),
-                            remain_points.begin());
+                                 intersect_points.begin(),intersect_points.end(),
+                                 remain_points.begin());
         remain_points.resize(it-remain_points.begin());
         region.swap(remain_points);
     }
@@ -65,40 +65,46 @@ void ROIRegion::SaveToFile(const char* FileName,const std::vector<float>& trans)
         ext = std::string(file_name.end()-4,file_name.end());
 
     if (ext == std::string(".txt")) {
-                std::ofstream out(FileName,std::ios::binary);
-		std::copy(region.begin(), region.end(),
-                        std::ostream_iterator<image::vector<3,short> >(out, "\n"));
-	}
-        else if (ext == std::string(".mat")) {
-                image::basic_image<unsigned char, 3>mask(geo);
-                for (unsigned int index = 0; index < region.size(); ++index) {
-                        if (geo.is_valid(region[index][0], region[index][1],
-                                region[index][2]))
-                                mask[image::pixel_index<3>(region[index][0], region[index][1],
-                                region[index][2], geo).index()] = 255;
-                }
-                image::io::mat_write header(FileName);
-                header << mask;
+        std::ofstream out(FileName,std::ios::binary);
+        std::copy(region.begin(), region.end(),
+                  std::ostream_iterator<image::vector<3,short> >(out, "\n"));
+    }
+    else if (ext == std::string(".mat")) {
+        image::basic_image<unsigned char, 3>mask(geo);
+        for (unsigned int index = 0; index < region.size(); ++index) {
+            if (geo.is_valid(region[index][0], region[index][1],
+                             region[index][2]))
+                mask[image::pixel_index<3>(region[index][0], region[index][1],
+                                           region[index][2], geo).index()] = 255;
         }
-        else if (ext == std::string(".nii") || ext == std::string("i.gz"))
-        {
-            unsigned int color = show_region.color.color & 0x00FFFFFF;
+        image::io::mat_write header(FileName);
+        header << mask;
+    }
+    else if (ext == std::string(".nii") || ext == std::string("i.gz"))
+    {
+        unsigned int color = show_region.color.color & 0x00FFFFFF;
         image::basic_image<unsigned int, 3>mask(geo);
-                for (unsigned int index = 0; index < region.size(); ++index) {
-                        if (geo.is_valid(region[index][0], region[index][1],
-				region[index][2]))
-				mask[image::pixel_index<3>(region[index][0], region[index][1],
-                region[index][2], geo).index()] = color;
-		}
-                gz_nifti header;
-                header.set_voxel_size(vs.begin());
-                if(!trans.empty())
-                    header.set_image_transformation(trans.begin());
-                else
-                    image::flip_xy(mask);
-                header << mask;
-                header.save_to_file(FileName);
-	}
+        for (unsigned int index = 0; index < region.size(); ++index) {
+            if (geo.is_valid(region[index][0], region[index][1],
+                             region[index][2]))
+                mask[image::pixel_index<3>(region[index][0], region[index][1],
+                                           region[index][2], geo).index()] = 1;
+        }
+        gz_nifti header;
+        header.set_voxel_size(vs.begin());
+        // output color information and roi information
+        std::ostringstream out;
+        out << "color=" << color << ";roi=" << (int)regions_feature;
+        std::string tmp = out.str();
+        std::copy(tmp.begin(),tmp.begin() + std::min<int>(102,tmp.length()),
+                  header.nif_header.descrip);
+        if(!trans.empty())
+            header.set_image_transformation(trans.begin());
+        else
+            image::flip_xy(mask);
+        header << mask;
+        header.save_to_file(FileName);
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -134,7 +140,7 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
         if(from.geometry() != geo)
             return false;
         std::vector<image::vector<3,short> > points;
-        for (image::pixel_index<3>index; index.is_valid(from.geometry());index.next(from.geometry()))
+        for (image::pixel_index<3>index; index.is_valid(from.geometry()); index.next(from.geometry()))
             if (from[index.index()])
                 points.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
         region.swap(points);
@@ -165,9 +171,7 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
         }
         header.toLPS(from);
         LoadFromBuffer(from);
-        float max_value = *std::max_element(from.begin(),from.end());
-        if(max_value > 128 && max_value < 0x00FFFFFF)
-            show_region.color = (unsigned int)max_value;
+
         return true;
     }
     return false;
@@ -184,7 +188,7 @@ void updateMesh(unsigned int id,image::geometry<3> geo,
     {
         if (geo.is_valid(region[index][0], region[index][1], region[index][2]))
             mask[image::pixel_index<3>(region[index][0], region[index][1],
-            region[index][2], geo).index()] = 200;
+                                       region[index][2], geo).index()] = 200;
     }
     if(smooth)
         image::filter::gaussian(mask);
@@ -251,21 +255,21 @@ void ROIRegion::makeMeshes(bool smooth)
 }
 // ---------------------------------------------------------------------------
 void ROIRegion::SaveToBuffer(image::basic_image<unsigned char, 3>& mask,
-	unsigned char value) {
-	mask.resize(geo);
-	std::fill(mask.begin(), mask.end(), 0);
-        for (unsigned int index = 0; index < region.size(); ++index) {
-		if (geo.is_valid(region[index][0], region[index][1], region[index][2]))
-			mask[image::pixel_index<3>(region[index][0], region[index][1],
-			region[index][2], geo).index()] = value;
-	}
+                             unsigned char value) {
+    mask.resize(geo);
+    std::fill(mask.begin(), mask.end(), 0);
+    for (unsigned int index = 0; index < region.size(); ++index) {
+        if (geo.is_valid(region[index][0], region[index][1], region[index][2]))
+            mask[image::pixel_index<3>(region[index][0], region[index][1],
+                                       region[index][2], geo).index()] = value;
+    }
 }
 
 // ---------------------------------------------------------------------------
 void ROIRegion::getSlicePosition(SliceModel* slice, unsigned int pindex, int& x, int& y,
-	int& z) {
-	slice->getSlicePosition(region[pindex].x(), region[pindex].y(),
-		region[pindex].z(), x, y, z);
+                                 int& z) {
+    slice->getSlicePosition(region[pindex].x(), region[pindex].y(),
+                            region[pindex].z(), x, y, z);
 }
 // ---------------------------------------------------------------------------
 bool ROIRegion::has_point(const image::vector<3,short>& point)
@@ -275,17 +279,17 @@ bool ROIRegion::has_point(const image::vector<3,short>& point)
 // ---------------------------------------------------------------------------
 bool ROIRegion::has_points(const std::vector<image::vector<3,short> >& points)
 {
-    for(unsigned int index = 0;index < points.size();++index)
+    for(unsigned int index = 0; index < points.size(); ++index)
         if(has_point(points[index]))
             return true;
     return false;
 }
 // ---------------------------------------------------------------------------
 void ROIRegion::Flip(unsigned int dimension) {
-	modified = true;
-        for (unsigned int index = 0; index < region.size(); ++index)
-		region[index][dimension] = ((short)geo[dimension]) -
-			region[index][dimension] - 1;
+    modified = true;
+    for (unsigned int index = 0; index < region.size(); ++index)
+        region[index][dimension] = ((short)geo[dimension]) -
+                                   region[index][dimension] - 1;
 }
 
 // ---------------------------------------------------------------------------
@@ -293,7 +297,7 @@ void ROIRegion::shift(const image::vector<3,short>& dx) {
     image::vector<3,float> shift(dx);
     show_region.move_object(shift);
     for (unsigned int index = 0; index < region.size(); ++index)
-		region[index] += dx;
+        region[index] += dx;
 }
 
 void ROIRegion::get_quantitative_data(ODFModel* handle,std::vector<float>& data)
@@ -324,13 +328,13 @@ void ROIRegion::get_quantitative_data(ODFModel* handle,std::vector<float>& data)
         pos_index.push_back(image::pixel_index<3>(region[index][0],region[index][1],region[index][2],geo).index());
 
     for(int data_index = 0;
-        data_index < handle->fib_data.view_item.size();++data_index)
+            data_index < handle->fib_data.view_item.size(); ++data_index)
     {
         if(data_index > 0 && data_index < handle->fib_data.other_mapping_index)
             continue;
         float sum = 0.0,sum2 = 0.0;
         image::const_pointer_image<float, 3> I(handle->fib_data.view_item[data_index].image_data);
-        for(unsigned int index = 0;index < pos_index.size();++index)
+        for(unsigned int index = 0; index < pos_index.size(); ++index)
         {
             float value = I[pos_index[index]];
             sum += value;
