@@ -21,6 +21,7 @@
 #include "connectivity_matrix_dialog.h"
 #include "mapping/atlas.hpp"
 #include "mapping/fa_template.hpp"
+#include "tracking/atlasdialog.h"
 
 extern std::vector<atlas> atlas_list;
 extern fa_template fa_template_imp;
@@ -38,7 +39,7 @@ QVariant tracking_window::operator[](QString name) const
 
 tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handle_release_) :
         QMainWindow(parent),handle(new_handle),handle_release(handle_release_),
-        ui(new Ui::tracking_window),scene(*this,new_handle),slice(new_handle),gLdock(0)
+        ui(new Ui::tracking_window),scene(*this,new_handle),slice(new_handle),gLdock(0),atlas_dialog(0)
 
 {
 
@@ -117,8 +118,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
     else
         ui->actionManual_Registration->setEnabled(false);
     ui->actionConnectometry->setEnabled(handle->fib_data.fib.has_odfs() && is_qsdr);
-    for(int index = 0;index < atlas_list.size();++index)
-        ui->atlasListBox->addItem(atlas_list[index].name.c_str());
+
 
 
     {
@@ -192,9 +192,6 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         connect(regionWidget,SIGNAL(need_update()),&scene,SLOT(show_slice()));
         connect(regionWidget,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
         connect(ui->whole_brain,SIGNAL(clicked()),regionWidget,SLOT(whole_brain()));
-        //atlas
-        connect(ui->addRegionFromAtlas,SIGNAL(clicked()),regionWidget,SLOT(add_atlas()));
-
 
         connect(ui->actionNewRegion,SIGNAL(triggered()),regionWidget,SLOT(new_region()));
         connect(ui->actionOpenRegion,SIGNAL(triggered()),regionWidget,SLOT(load_region()));
@@ -408,8 +405,13 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
                 .arg(std::floor(mni[0]*10.0+0.5)/10.0)
                 .arg(std::floor(mni[1]*10.0+0.5)/10.0)
                 .arg(std::floor(mni[2]*10.0+0.5)/10.0);
+        unsigned int atlas_index = atlas_dialog ? atlas_dialog->index() : 0;
         if(!atlas_list.empty())
-          status += atlas_list[ui->atlasListBox->currentIndex()].get_label_name_at(mni).c_str();
+        {
+            status += atlas_list[atlas_index].name.c_str();
+            status += ":";
+            status += atlas_list[atlas_index].get_label_name_at(mni).c_str();
+        }
     }
     status += " ";
     std::vector<float> data;
@@ -889,12 +891,6 @@ void tracking_window::on_actionCopy_to_clipboard_triggered()
     }
 }
 
-void tracking_window::on_atlasListBox_currentIndexChanged(int atlas_index)
-{
-    ui->atlasComboBox->clear();
-    for (unsigned int index = 0; index < atlas_list[atlas_index].get_list().size(); ++index)
-        ui->atlasComboBox->addItem(atlas_list[atlas_index].get_list()[index].c_str());
-}
 
 void tracking_window::on_actionRestore_window_layout_triggered()
 {
@@ -1342,4 +1338,15 @@ void tracking_window::on_actionLoad_Rendering_Parameters_triggered()
         if(s.contains(param_list[index]))
             renderWidget->setData(param_list[index],s.value(param_list[index]));
     glWidget->updateGL();
+}
+
+void tracking_window::on_addRegionFromAtlas_clicked()
+{
+    if(!atlas_dialog)
+    {
+        atlas_dialog = new AtlasDialog(this);
+        connect(atlas_dialog,SIGNAL(need_update()),&scene,SLOT(show_slice()));
+        connect(atlas_dialog,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
+    }
+    atlas_dialog->show();
 }

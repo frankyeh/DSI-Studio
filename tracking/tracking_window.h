@@ -24,6 +24,7 @@ class manual_alignment;
 class tract_report;
 class color_bar_dialog;
 class connectivity_matrix_dialog;
+class AtlasDialog;
 class QGLDockWidget : public QDockWidget
 {
     Q_OBJECT
@@ -56,6 +57,7 @@ public:
     RegionTableWidget *regionWidget;
     TractTableWidget *tractWidget;
     RenderingTableWidget *renderWidget;
+    AtlasDialog* atlas_dialog;
     slice_view_scene scene;
 
     // For clipboard
@@ -99,7 +101,6 @@ public slots:
     void on_AxiView_clicked();
 private slots:
     void on_actionRestore_window_layout_triggered();
-    void on_atlasListBox_currentIndexChanged(int index);
     void on_actionCopy_to_clipboard_triggered();
     void on_RenderingQualityBox_currentIndexChanged(int index);
     void on_actionSave_Tracts_in_Current_Mapping_triggered();
@@ -154,6 +155,7 @@ private slots:
     void on_tbDefaultParam_clicked();
     void on_actionSave_Rendering_Parameters_triggered();
     void on_actionLoad_Rendering_Parameters_triggered();
+    void on_addRegionFromAtlas_clicked();
 };
 
 #endif // TRACKING_WINDOW_H

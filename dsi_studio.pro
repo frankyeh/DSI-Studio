@@ -102,7 +102,8 @@ HEADERS += mainwindow.h \
     tracking/vbc_dialog.hpp \
     tracking/tract_report.hpp \
     tracking/color_bar_dialog.hpp \
-    tracking/connectivity_matrix_dialog.h
+    tracking/connectivity_matrix_dialog.h \
+    tracking/atlasdialog.h
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
     reconstruction/reconstruction_window.ui \
@@ -114,7 +115,8 @@ FORMS += mainwindow.ui \
     tracking/vbc_dialog.ui \
     tracking/tract_report.ui \
     tracking/color_bar_dialog.ui \
-    tracking/connectivity_matrix_dialog.ui
+    tracking/connectivity_matrix_dialog.ui \
+    tracking/atlasdialog.ui
 RESOURCES += \
     icons.qrc
 SOURCES += main.cpp \
@@ -172,7 +174,8 @@ SOURCES += main.cpp \
     cmd/exp.cpp \
     tracking/connectivity_matrix_dialog.cpp \
     libs/dsi/tessellated_icosahedron.cpp \
-    cmd/atl.cpp
+    cmd/atl.cpp \
+    tracking/atlasdialog.cpp
 
 OTHER_FILES += \
     options.txt
