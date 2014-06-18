@@ -84,7 +84,7 @@ void ImageDelegate::emitCommitData()
 
 
 RegionTableWidget::RegionTableWidget(tracking_window& cur_tracking_window_,QWidget *parent):
-        QTableWidget(parent),cur_tracking_window(cur_tracking_window_),regions_index(0)
+        QTableWidget(parent),cur_tracking_window(cur_tracking_window_)
 {
     setColumnCount(3);
     setColumnWidth(0,140);
@@ -140,11 +140,21 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
 {
     if(color == 0)
     {
-        color = (int)ROIColor[regions_index].rgb();
-        ++regions_index;
-        if (regions_index >= 15)
-            regions_index = 0;
-
+        std::vector<unsigned char> color_count(15);
+        for(unsigned int index = 0;index < regions.size();++index)
+        {
+            for(unsigned int i = 0;i < 15;++i)
+                if(regions[index].show_region.color.color == (int)ROIColor[i].rgb())
+                    ++color_count[i];
+        }
+        for(unsigned int i = 0;i < 15;++i)
+            if(color_count[i] == 0)
+            {
+                color = ROIColor[i].rgb();
+                break;
+            }
+        if(color == 0)
+            color = ROIColor[std::min_element(color_count.begin(),color_count.end())-color_count.begin()].rgb();
     }
     regions.push_back(new ROIRegion(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size));
 
@@ -557,7 +567,6 @@ void RegionTableWidget::delete_all_region(void)
 {
     setRowCount(0);
     regions.clear();
-    regions_index = 0;
     emit need_update();
 }
 
@@ -655,27 +664,6 @@ void RegionTableWidget::show_statistics(void)
 
 extern std::vector<float> mni_fa0_template_tran;
 extern image::basic_image<float,3> mni_fa0_template;
-
-void RegionTableWidget::add_atlas(void)
-{
-    if(cur_tracking_window.handle->fib_data.trans_to_mni.empty())
-        return;
-    int atlas_index = cur_tracking_window.ui->atlasListBox->currentIndex();
-    std::vector<image::vector<3,short> > points;
-    unsigned short label = cur_tracking_window.ui->atlasComboBox->currentIndex();
-    image::geometry<3> geo = cur_tracking_window.slice.geometry;
-    for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))
-    {
-        image::vector<3,float> mni((const unsigned int*)(index.begin()));
-        cur_tracking_window.subject2mni(mni);
-        if (!atlas_list[atlas_index].is_labeled_as(mni, label))
-                continue;
-        points.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
-    }
-    add_region(cur_tracking_window.ui->atlasComboBox->currentText(),roi_id);
-    add_points(points,false);
-    emit need_update();
-}
 
 void RegionTableWidget::add_points(std::vector<image::vector<3,short> >& points,bool erase)
 {

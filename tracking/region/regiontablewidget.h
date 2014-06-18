@@ -37,7 +37,6 @@ protected:
     void contextMenuEvent ( QContextMenuEvent * event );
 private:
     tracking_window& cur_tracking_window;
-    unsigned char regions_index;
     void do_action(int id);
     void whole_brain_points(std::vector<image::vector<3,short> >& points);
     bool load_multiple_roi_nii(QString file_name);
@@ -68,7 +67,6 @@ public slots:
     void delete_all_region(void);
     void add_points(std::vector<image::vector<3,short> >& points,bool erase);
     void check_check_status(int,int);
-    void add_atlas(void);
     void whole_brain(void);
     void show_statistics(void);
     void check_all(void);
