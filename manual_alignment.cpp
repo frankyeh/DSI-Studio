@@ -5,29 +5,26 @@
 typedef image::reg::mutual_information cost_func;
 void run_reg(const image::basic_image<float,3>& from,
              const image::basic_image<float,3>& to,
-             image::affine_transform<3,float>* arg_min,
-             image::reg::bfnorm_mapping<double,3>* bnorm_data,
-             unsigned char* terminated,
-             unsigned char* progress)
+             reg_data* data)
 {
-    *progress = 0;
-    image::reg::linear(from,to,*arg_min,image::reg::affine,cost_func(),*terminated);
-    if(*terminated)
+    data->progress = 0;
+    image::reg::linear(from,to,data->arg,data->reg_type,cost_func(),data->terminated);
+    if(data->terminated)
         return;
-    image::transformation_matrix<3,float> affine(*arg_min,from.geometry(),to.geometry());
+    image::transformation_matrix<3,float> affine(data->arg,from.geometry(),to.geometry());
     affine.inverse();
-    *progress = 1;
+    data->progress = 1;
     image::basic_image<float,3> new_from(to.geometry());
     image::resample(from,new_from,affine);
-    image::reg::bfnorm(new_from,to,*bnorm_data,*terminated);
-    if(!(*terminated))
-        *progress = 2;
+    image::reg::bfnorm(new_from,to,data->bnorm_data,data->terminated);
+    if(!(data->terminated))
+        data->progress = 2;
 }
 manual_alignment::manual_alignment(QWidget *parent,
                                    image::basic_image<float,3> from_,
                                    image::basic_image<float,3> to_,
-                                   const image::affine_transform<3,float>& arg_) :
-    QDialog(parent),ui(new Ui::manual_alignment),arg(arg_),bnorm_data(to_.geometry(),image::geometry<3>(7,9,7))
+                                   const image::affine_transform<3,float>& arg_,int reg_type_) :
+    QDialog(parent),ui(new Ui::manual_alignment),data(to_.geometry(),arg_,reg_type_)
 {
     from.swap(from_);
     to.swap(to_);
@@ -39,9 +36,17 @@ manual_alignment::manual_alignment(QWidget *parent,
     image::normalize(to,1.0);
 
     ui->setupUi(this);
+    if(reg_type_ == image::reg::rigid_body)
+    {
+        ui->scaling_group->hide();
+        ui->tilting_group->hide();
+    }
+
     ui->sag_view->setScene(&scene[0]);
     ui->cor_view->setScene(&scene[1]);
     ui->axi_view->setScene(&scene[2]);
+
+
 
     load_param();
     update_image();
@@ -65,9 +70,9 @@ manual_alignment::manual_alignment(QWidget *parent,
     connect(ui->blend_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(timer, SIGNAL(timeout()), this, SLOT(check_reg()));
 
-    thread_terminated = 0;
     need_update_affine_matrix = true;
-    reg_thread.reset(new boost::thread(run_reg,from,to,&arg,&bnorm_data,&thread_terminated,&progress));
+    reg_thread.reset(
+                new boost::thread(run_reg,boost::ref(from),boost::ref(to),&data));
 
 }
 
@@ -110,7 +115,7 @@ manual_alignment::~manual_alignment()
     if(reg_thread.get())
     {
         timer->stop();
-        thread_terminated = 1;
+        data.terminated = 1;
         reg_thread->join();
     }
     delete ui;
@@ -120,48 +125,48 @@ void manual_alignment::load_param(void)
     // translocation
     ui->tx->setMaximum(from.geometry()[0]/2);
     ui->tx->setMinimum(-from.geometry()[0]/2);
-    ui->tx->setValue(arg.translocation[0]);
+    ui->tx->setValue(data.arg.translocation[0]);
     ui->ty->setMaximum(from.geometry()[1]/2);
     ui->ty->setMinimum(-from.geometry()[1]/2);
-    ui->ty->setValue(arg.translocation[1]);
+    ui->ty->setValue(data.arg.translocation[1]);
     ui->tz->setMaximum(from.geometry()[2]/2);
     ui->tz->setMinimum(-from.geometry()[2]/2);
-    ui->tz->setValue(arg.translocation[2]);
+    ui->tz->setValue(data.arg.translocation[2]);
     // rotation
     ui->rx->setMaximum(3.14159265358979323846*0.2);
     ui->rx->setMinimum(-3.14159265358979323846*0.2);
-    ui->rx->setValue(arg.rotation[0]);
+    ui->rx->setValue(data.arg.rotation[0]);
     ui->ry->setMaximum(3.14159265358979323846*0.2);
     ui->ry->setMinimum(-3.14159265358979323846*0.2);
-    ui->ry->setValue(arg.rotation[1]);
+    ui->ry->setValue(data.arg.rotation[1]);
     ui->rz->setMaximum(3.14159265358979323846*0.2);
     ui->rz->setMinimum(-3.14159265358979323846*0.2);
-    ui->rz->setValue(arg.rotation[2]);
+    ui->rz->setValue(data.arg.rotation[2]);
     //scaling
-    ui->sx->setMaximum(arg.scaling[0]*2.0);
-    ui->sx->setMinimum(arg.scaling[0]/2.0);
-    ui->sx->setValue(arg.scaling[0]);
-    ui->sy->setMaximum(arg.scaling[1]*2.0);
-    ui->sy->setMinimum(arg.scaling[1]/2.0);
-    ui->sy->setValue(arg.scaling[1]);
-    ui->sz->setMaximum(arg.scaling[2]*2.0);
-    ui->sz->setMinimum(arg.scaling[2]/2.0);
-    ui->sz->setValue(arg.scaling[2]);
+    ui->sx->setMaximum(data.arg.scaling[0]*2.0);
+    ui->sx->setMinimum(data.arg.scaling[0]/2.0);
+    ui->sx->setValue(data.arg.scaling[0]);
+    ui->sy->setMaximum(data.arg.scaling[1]*2.0);
+    ui->sy->setMinimum(data.arg.scaling[1]/2.0);
+    ui->sy->setValue(data.arg.scaling[1]);
+    ui->sz->setMaximum(data.arg.scaling[2]*2.0);
+    ui->sz->setMinimum(data.arg.scaling[2]/2.0);
+    ui->sz->setValue(data.arg.scaling[2]);
     //tilting
     ui->xy->setMaximum(1);
     ui->xy->setMinimum(-1);
-    ui->xy->setValue(arg.affine[0]);
+    ui->xy->setValue(data.arg.affine[0]);
     ui->xz->setMaximum(1);
     ui->xz->setMinimum(-1);
-    ui->xz->setValue(arg.affine[1]);
+    ui->xz->setValue(data.arg.affine[1]);
     ui->yz->setMaximum(1);
     ui->yz->setMinimum(-1);
-    ui->yz->setValue(arg.affine[2]);
+    ui->yz->setValue(data.arg.affine[2]);
 
 }
 void manual_alignment::update_affine(void)
 {
-    T = image::transformation_matrix<3,float>(arg,from.geometry(),to.geometry());
+    T = image::transformation_matrix<3,float>(data.arg,from.geometry(),to.geometry());
     iT = T;
     iT.inverse();
 }
@@ -175,21 +180,21 @@ void manual_alignment::update_image(void)
 }
 void manual_alignment::param_changed()
 {
-    arg.translocation[0] = ui->tx->value();
-    arg.translocation[1] = ui->ty->value();
-    arg.translocation[2] = ui->tz->value();
+    data.arg.translocation[0] = ui->tx->value();
+    data.arg.translocation[1] = ui->ty->value();
+    data.arg.translocation[2] = ui->tz->value();
 
-    arg.rotation[0] = ui->rx->value();
-    arg.rotation[1] = ui->ry->value();
-    arg.rotation[2] = ui->rz->value();
+    data.arg.rotation[0] = ui->rx->value();
+    data.arg.rotation[1] = ui->ry->value();
+    data.arg.rotation[2] = ui->rz->value();
 
-    arg.scaling[0] = ui->sx->value();
-    arg.scaling[1] = ui->sy->value();
-    arg.scaling[2] = ui->sz->value();
+    data.arg.scaling[0] = ui->sx->value();
+    data.arg.scaling[1] = ui->sy->value();
+    data.arg.scaling[2] = ui->sz->value();
 
-    arg.affine[0] = ui->xy->value();
-    arg.affine[1] = ui->xz->value();
-    arg.affine[2] = ui->yz->value();
+    data.arg.affine[0] = ui->xy->value();
+    data.arg.affine[1] = ui->xz->value();
+    data.arg.affine[2] = ui->yz->value();
 
     update_image();
     slice_pos_moved();
@@ -236,18 +241,18 @@ void manual_alignment::check_reg()
     if(reg_thread.get())
     {
         disconnect_arg_update();
-        ui->tx->setValue(arg.translocation[0]);
-        ui->ty->setValue(arg.translocation[1]);
-        ui->tz->setValue(arg.translocation[2]);
-        ui->rx->setValue(arg.rotation[0]);
-        ui->ry->setValue(arg.rotation[1]);
-        ui->rz->setValue(arg.rotation[2]);
-        ui->sx->setValue(arg.scaling[0]);
-        ui->sy->setValue(arg.scaling[1]);
-        ui->sz->setValue(arg.scaling[2]);
-        ui->xy->setValue(arg.affine[0]);
-        ui->xz->setValue(arg.affine[1]);
-        ui->yz->setValue(arg.affine[2]);
+        ui->tx->setValue(data.arg.translocation[0]);
+        ui->ty->setValue(data.arg.translocation[1]);
+        ui->tz->setValue(data.arg.translocation[2]);
+        ui->rx->setValue(data.arg.rotation[0]);
+        ui->ry->setValue(data.arg.rotation[1]);
+        ui->rz->setValue(data.arg.rotation[2]);
+        ui->sx->setValue(data.arg.scaling[0]);
+        ui->sy->setValue(data.arg.scaling[1]);
+        ui->sz->setValue(data.arg.scaling[2]);
+        ui->xy->setValue(data.arg.affine[0]);
+        ui->xz->setValue(data.arg.affine[1]);
+        ui->yz->setValue(data.arg.affine[2]);
         connect_arg_update();
         update_image();
     }
@@ -271,9 +276,9 @@ void manual_alignment::on_rerun_clicked()
 {
     if(reg_thread.get())
     {
-        thread_terminated = 1;
+        data.terminated = 1;
         reg_thread->join();
     }
-    reg_thread.reset(new boost::thread(run_reg,from,to,&arg,&bnorm_data,&thread_terminated,&progress));
+    reg_thread.reset(new boost::thread(run_reg,from,to,&data));
 
 }

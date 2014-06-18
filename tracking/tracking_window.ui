@@ -946,8 +946,10 @@
     <addaction name="actionNewRegion"/>
     <addaction name="actionOpenRegion"/>
     <addaction name="actionSaveRegionAs"/>
-    <addaction name="actionSave_All_Regions_As"/>
     <addaction name="actionSave_Voxel_Data_As"/>
+    <addaction name="separator"/>
+    <addaction name="actionSave_All_Regions_As"/>
+    <addaction name="actionSave_All_Regions_As_Multiple_Files"/>
     <addaction name="separator"/>
     <addaction name="actionCheck_all_regions"/>
     <addaction name="actionUnckech_all_regions"/>
@@ -2542,6 +2544,15 @@
    </property>
    <property name="text">
     <string>Load Rendering Parameters...</string>
+   </property>
+  </action>
+  <action name="actionSave_All_Regions_As_Multiple_Files">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save All Regions As Multiple Files...</string>
    </property>
   </action>
  </widget>

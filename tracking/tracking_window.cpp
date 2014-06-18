@@ -197,6 +197,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         connect(ui->actionOpenRegion,SIGNAL(triggered()),regionWidget,SLOT(load_region()));
         connect(ui->actionSaveRegionAs,SIGNAL(triggered()),regionWidget,SLOT(save_region()));
         connect(ui->actionSave_All_Regions_As,SIGNAL(triggered()),regionWidget,SLOT(save_all_regions()));
+        connect(ui->actionSave_All_Regions_As_Multiple_Files,SIGNAL(triggered()),regionWidget,SLOT(save_all_regions_to_dir()));
         connect(ui->actionSave_Voxel_Data_As,SIGNAL(triggered()),regionWidget,SLOT(save_region_info()));
         connect(ui->actionDeleteRegion,SIGNAL(triggered()),regionWidget,SLOT(delete_region()));
         connect(ui->actionDeleteRegionAll,SIGNAL(triggered()),regionWidget,SLOT(delete_all_region()));
@@ -342,10 +343,10 @@ void tracking_window::subject2mni(image::vector<3>& pos)
     if(mi3.get())
     {
         mi3->T(pos);
-        if(mi3->progress >= 1)
+        if(mi3->data.progress >= 1)
         {
             image::vector<3> mni;
-            mi3->bnorm_data(pos,mni);
+            mi3->data.bnorm_data(pos,mni);
             pos = mni;
         }
         fa_template_imp.to_mni(pos);
@@ -394,7 +395,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
         handle->fib_data.trans_to_mni.resize(16);
         image::create_affine_transformation_matrix(mi3->T.get(),mi3->T.get() + 9,handle->fib_data.trans_to_mni.begin(),image::vdim<3>());
         fa_template_imp.add_transformation(handle->fib_data.trans_to_mni);
-        if(mi3->progress >= 1)
+        if(mi3->data.progress >= 1)
             mi3->need_update_affine_matrix = false;
     }
 

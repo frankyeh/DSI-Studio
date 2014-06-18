@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'atlasdialog.ui'
 **
-** Created: Wed Jun 18 10:01:59 2014
+** Created: Wed Jun 18 14:51:00 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -51,6 +51,7 @@ public:
 
         region_list = new QListView(AtlasDialog);
         region_list->setObjectName(QString::fromUtf8("region_list"));
+        region_list->setSelectionMode(QAbstractItemView::MultiSelection);
         region_list->setSelectionBehavior(QAbstractItemView::SelectRows);
 
         verticalLayout->addWidget(region_list);

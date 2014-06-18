@@ -285,13 +285,13 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
 
 void reconstruction_window::on_SlicePos_sliderMoved(int position)
 {
-    if (!image.size())
+    if (!dwi.size())
         return;
-    buffer.resize(image::geometry<2>(image.width(),image.height()));
+    buffer.resize(image::geometry<2>(dwi.width(),dwi.height()));
     unsigned int offset = position*buffer.size();
-    std::copy(image.begin() + offset,image.begin()+ offset + buffer.size(),buffer.begin());
+    std::copy(dwi.begin() + offset,dwi.begin()+ offset + buffer.size(),buffer.begin());
 
-    unsigned char* slice_image_ptr = &*image.begin() + buffer.size()* position;
+    unsigned char* slice_image_ptr = &*dwi.begin() + buffer.size()* position;
     unsigned char* slice_mask = &*handle->mask.begin() + buffer.size()* position;
     for (unsigned int index = 0; index < buffer.size(); ++index)
     {
@@ -303,13 +303,13 @@ void reconstruction_window::on_SlicePos_sliderMoved(int position)
     }
 
     double ratio = std::max(1.0,
-        std::min((double)ui->graphicsView->width()/(double)image.width(),
-                 (double)ui->graphicsView->height()/(double)image.height()));
-    scene.setSceneRect(0, 0, image.width()*ratio,image.height()*ratio);
-    slice_image = QImage((unsigned char*)&*buffer.begin(),image.width(),image.height(),QImage::Format_RGB32).
-                    scaled(image.width()*ratio,image.height()*ratio);
+        std::min((double)ui->graphicsView->width()/(double)dwi.width(),
+                 (double)ui->graphicsView->height()/(double)dwi.height()));
+    scene.setSceneRect(0, 0, dwi.width()*ratio,dwi.height()*ratio);
+    slice_image = QImage((unsigned char*)&*buffer.begin(),dwi.width(),dwi.height(),QImage::Format_RGB32).
+                    scaled(dwi.width()*ratio,dwi.height()*ratio);
     scene.clear();
-    scene.addRect(0, 0, image.width()*ratio,image.height()*ratio,QPen(),slice_image);
+    scene.addRect(0, 0, dwi.width()*ratio,dwi.height()*ratio,QPen(),slice_image);
 }
 
 void reconstruction_window::on_erosion_clicked()
@@ -340,12 +340,12 @@ void reconstruction_window::on_thresholding_clicked()
 {
     bool ok;
     int threshold = QInputDialog::getInt(this,"DSI Studio","Please assign the threshold",
-                                         (int)image::segmentation::otsu_threshold(image),
-                                         (int)*std::min_element(image.begin(),image.end()),
-                                         (int)*std::max_element(image.begin(),image.end()),1,&ok);
+                                         (int)image::segmentation::otsu_threshold(dwi),
+                                         (int)*std::min_element(dwi.begin(),dwi.end()),
+                                         (int)*std::max_element(dwi.begin(),dwi.end()),1,&ok);
     if (!ok)
         return;
-    image::threshold(image,handle->mask,threshold);
+    image::threshold(dwi,handle->mask,threshold);
     on_SlicePos_sliderMoved(ui->SlicePos->value());
 }
 
@@ -358,7 +358,7 @@ void reconstruction_window::on_load_mask_clicked()
             "Mask files (*.txt *.nii *.nii.gz *.hdr);;All files (*)" );
     if(filename.isEmpty())
         return;
-    ROIRegion region(image.geometry(),handle->voxel.vs);
+    ROIRegion region(dwi.geometry(),handle->voxel.vs);
     std::vector<float> trans;
     region.LoadFromFile(filename.toLocal8Bit().begin(),trans);
     region.SaveToBuffer(handle->mask);
@@ -375,7 +375,7 @@ void reconstruction_window::on_save_mask_clicked()
             "Text files (*.txt);;Nifti file(*.nii.gz *.nii)" );
     if(filename.isEmpty())
         return;
-    ROIRegion region(image.geometry(),handle->voxel.vs);
+    ROIRegion region(dwi.geometry(),handle->voxel.vs);
     region.LoadFromBuffer(handle->mask);
     std::vector<float> trans;
     region.SaveToFile(filename.toLocal8Bit().begin(),trans);
@@ -547,7 +547,7 @@ void reconstruction_window::on_remove_background_clicked()
 {
     for(int index = 0;index < handle->mask.size();++index)
         if(handle->mask[index] == 0)
-            image[index] = 0;
+            dwi[index] = 0;
 
     for(int index = 0;index < handle->dwi_data.size();++index)
     {
@@ -579,13 +579,13 @@ void reconstruction_window::on_manual_reg_clicked()
     arg.scaling[0] = handle->voxel.vs[0];
     arg.scaling[1] = handle->voxel.vs[1];
     arg.scaling[2] = handle->voxel.vs[2];
-    image::vector<3,double> mF = image::reg::center_of_mass(image);
+    image::vector<3,double> mF = image::reg::center_of_mass(dwi);
     image::vector<3,double> mG = image::reg::center_of_mass(fa_template_imp.I);
 
     arg.translocation[0] = mG[0]-mF[0]*arg.scaling[0];
     arg.translocation[1] = mG[1]-mF[1]*arg.scaling[1];
     arg.translocation[2] = mG[2]-mF[2]*arg.scaling[2];
-    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,image,fa_template_imp.I,arg));
+    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,fa_template_imp.I,arg));
     manual->timer->start();
     if(manual->exec() == QDialog::Accepted)
         handle->voxel.qsdr_trans = manual->T;
@@ -709,9 +709,9 @@ void reconstruction_window::on_actionSave_bvecs_triggered()
 
 void reconstruction_window::update_image(void)
 {
-    image.resize(handle->voxel.dim);
-    for(unsigned int index = 0;index < image.size();++index)
-        image[index] = handle->dwi_sum[index]*255.0;
+    dwi.resize(handle->voxel.dim);
+    for(unsigned int index = 0;index < dwi.size();++index)
+        dwi[index] = handle->dwi_sum[index]*255.0;
     load_b_table();
 }
 
@@ -764,6 +764,31 @@ void reconstruction_window::on_actionFlip_xz_triggered()
 
 void reconstruction_window::on_actionRotate_triggered()
 {
+    image::affine_transform<3,float> arg;
+    arg.scaling[0] = handle->voxel.vs[0];
+    arg.scaling[1] = handle->voxel.vs[1];
+    arg.scaling[2] = handle->voxel.vs[2];
+    image::vector<3,double> mF = image::reg::center_of_mass(dwi);
+    image::vector<3,double> mG = image::reg::center_of_mass(fa_template_imp.I);
+
+    arg.translocation[0] = mG[0]-mF[0]*arg.scaling[0];
+    arg.translocation[1] = mG[1]-mF[1]*arg.scaling[1];
+    arg.translocation[2] = mG[2]-mF[2]*arg.scaling[2];
+    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,fa_template_imp.I,arg,image::reg::rigid_body));
+    manual->timer->start();
+    if(manual->exec() != QDialog::Accepted)
+        return;
+
+    image::geometry<3> out(fa_template_imp.I.width()/handle->voxel.vs[0],
+                           fa_template_imp.I.height()/handle->voxel.vs[0],
+                           fa_template_imp.I.depth()/handle->voxel.vs[0]);
+    image::transformation_matrix<3,float> affine = manual->iT;
+    image::multiply_constant(affine.data,affine.data+9,handle->voxel.vs[0]);
+    begin_prog("rotating");
+    handle->rotate(out,affine);
+    update_dimension();
+    update_image();
+    on_SlicePos_sliderMoved(ui->SlicePos->value());
 
 }
 

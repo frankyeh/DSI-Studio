@@ -61,6 +61,7 @@ public slots:
     void copy_region(void);
     void save_region(void);
     void save_all_regions(void);
+    void save_all_regions_to_dir(void);
     void save_region_info(void);
     void load_region(void);
     void delete_region(void);

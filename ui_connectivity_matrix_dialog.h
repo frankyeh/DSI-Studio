@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'connectivity_matrix_dialog.ui'
 **
-** Created: Wed Jun 18 10:01:59 2014
+** Created: Wed Jun 18 14:51:00 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!

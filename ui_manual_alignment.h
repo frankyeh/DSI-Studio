@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'manual_alignment.ui'
 **
-** Created: Wed Jun 18 10:01:59 2014
+** Created: Wed Jun 18 15:30:27 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -60,7 +60,7 @@ public:
     QDoubleSpinBox *ty;
     QLabel *label;
     QDoubleSpinBox *tz;
-    QGroupBox *groupBox_2;
+    QGroupBox *scaling_group;
     QHBoxLayout *horizontalLayout_3;
     QLabel *label_6;
     QDoubleSpinBox *sx;
@@ -68,7 +68,7 @@ public:
     QDoubleSpinBox *sy;
     QLabel *label_5;
     QDoubleSpinBox *sz;
-    QGroupBox *groupBox_3;
+    QGroupBox *tilting_group;
     QHBoxLayout *horizontalLayout_4;
     QLabel *label_8;
     QDoubleSpinBox *xy;
@@ -229,95 +229,95 @@ public:
 
         verticalLayout_5->addWidget(groupBox);
 
-        groupBox_2 = new QGroupBox(layoutWidget);
-        groupBox_2->setObjectName(QString::fromUtf8("groupBox_2"));
-        horizontalLayout_3 = new QHBoxLayout(groupBox_2);
+        scaling_group = new QGroupBox(layoutWidget);
+        scaling_group->setObjectName(QString::fromUtf8("scaling_group"));
+        horizontalLayout_3 = new QHBoxLayout(scaling_group);
         horizontalLayout_3->setSpacing(0);
         horizontalLayout_3->setContentsMargins(0, 0, 0, 0);
         horizontalLayout_3->setObjectName(QString::fromUtf8("horizontalLayout_3"));
-        label_6 = new QLabel(groupBox_2);
+        label_6 = new QLabel(scaling_group);
         label_6->setObjectName(QString::fromUtf8("label_6"));
         label_6->setAlignment(Qt::AlignCenter);
 
         horizontalLayout_3->addWidget(label_6);
 
-        sx = new QDoubleSpinBox(groupBox_2);
+        sx = new QDoubleSpinBox(scaling_group);
         sx->setObjectName(QString::fromUtf8("sx"));
         sx->setSingleStep(0.05);
 
         horizontalLayout_3->addWidget(sx);
 
-        label_4 = new QLabel(groupBox_2);
+        label_4 = new QLabel(scaling_group);
         label_4->setObjectName(QString::fromUtf8("label_4"));
         label_4->setAlignment(Qt::AlignCenter);
 
         horizontalLayout_3->addWidget(label_4);
 
-        sy = new QDoubleSpinBox(groupBox_2);
+        sy = new QDoubleSpinBox(scaling_group);
         sy->setObjectName(QString::fromUtf8("sy"));
         sy->setSingleStep(0.05);
 
         horizontalLayout_3->addWidget(sy);
 
-        label_5 = new QLabel(groupBox_2);
+        label_5 = new QLabel(scaling_group);
         label_5->setObjectName(QString::fromUtf8("label_5"));
         label_5->setAlignment(Qt::AlignCenter);
 
         horizontalLayout_3->addWidget(label_5);
 
-        sz = new QDoubleSpinBox(groupBox_2);
+        sz = new QDoubleSpinBox(scaling_group);
         sz->setObjectName(QString::fromUtf8("sz"));
         sz->setSingleStep(0.05);
 
         horizontalLayout_3->addWidget(sz);
 
 
-        verticalLayout_5->addWidget(groupBox_2);
+        verticalLayout_5->addWidget(scaling_group);
 
-        groupBox_3 = new QGroupBox(layoutWidget);
-        groupBox_3->setObjectName(QString::fromUtf8("groupBox_3"));
-        horizontalLayout_4 = new QHBoxLayout(groupBox_3);
+        tilting_group = new QGroupBox(layoutWidget);
+        tilting_group->setObjectName(QString::fromUtf8("tilting_group"));
+        horizontalLayout_4 = new QHBoxLayout(tilting_group);
         horizontalLayout_4->setSpacing(0);
         horizontalLayout_4->setContentsMargins(0, 0, 0, 0);
         horizontalLayout_4->setObjectName(QString::fromUtf8("horizontalLayout_4"));
-        label_8 = new QLabel(groupBox_3);
+        label_8 = new QLabel(tilting_group);
         label_8->setObjectName(QString::fromUtf8("label_8"));
         label_8->setAlignment(Qt::AlignCenter);
 
         horizontalLayout_4->addWidget(label_8);
 
-        xy = new QDoubleSpinBox(groupBox_3);
+        xy = new QDoubleSpinBox(tilting_group);
         xy->setObjectName(QString::fromUtf8("xy"));
         xy->setSingleStep(0.05);
 
         horizontalLayout_4->addWidget(xy);
 
-        label_7 = new QLabel(groupBox_3);
+        label_7 = new QLabel(tilting_group);
         label_7->setObjectName(QString::fromUtf8("label_7"));
         label_7->setAlignment(Qt::AlignCenter);
 
         horizontalLayout_4->addWidget(label_7);
 
-        xz = new QDoubleSpinBox(groupBox_3);
+        xz = new QDoubleSpinBox(tilting_group);
         xz->setObjectName(QString::fromUtf8("xz"));
         xz->setSingleStep(0.05);
 
         horizontalLayout_4->addWidget(xz);
 
-        label_9 = new QLabel(groupBox_3);
+        label_9 = new QLabel(tilting_group);
         label_9->setObjectName(QString::fromUtf8("label_9"));
         label_9->setAlignment(Qt::AlignCenter);
 
         horizontalLayout_4->addWidget(label_9);
 
-        yz = new QDoubleSpinBox(groupBox_3);
+        yz = new QDoubleSpinBox(tilting_group);
         yz->setObjectName(QString::fromUtf8("yz"));
         yz->setSingleStep(0.05);
 
         horizontalLayout_4->addWidget(yz);
 
 
-        verticalLayout_5->addWidget(groupBox_3);
+        verticalLayout_5->addWidget(tilting_group);
 
         groupBox_4 = new QGroupBox(layoutWidget);
         groupBox_4->setObjectName(QString::fromUtf8("groupBox_4"));
@@ -428,11 +428,11 @@ public:
         label_2->setText(QApplication::translate("manual_alignment", "x", 0, QApplication::UnicodeUTF8));
         label_3->setText(QApplication::translate("manual_alignment", "y", 0, QApplication::UnicodeUTF8));
         label->setText(QApplication::translate("manual_alignment", "z", 0, QApplication::UnicodeUTF8));
-        groupBox_2->setTitle(QApplication::translate("manual_alignment", "Scaling", 0, QApplication::UnicodeUTF8));
+        scaling_group->setTitle(QApplication::translate("manual_alignment", "Scaling", 0, QApplication::UnicodeUTF8));
         label_6->setText(QApplication::translate("manual_alignment", "x", 0, QApplication::UnicodeUTF8));
         label_4->setText(QApplication::translate("manual_alignment", "y", 0, QApplication::UnicodeUTF8));
         label_5->setText(QApplication::translate("manual_alignment", "z", 0, QApplication::UnicodeUTF8));
-        groupBox_3->setTitle(QApplication::translate("manual_alignment", "Tilting", 0, QApplication::UnicodeUTF8));
+        tilting_group->setTitle(QApplication::translate("manual_alignment", "Tilting", 0, QApplication::UnicodeUTF8));
         label_8->setText(QApplication::translate("manual_alignment", "xy", 0, QApplication::UnicodeUTF8));
         label_7->setText(QApplication::translate("manual_alignment", "xz", 0, QApplication::UnicodeUTF8));
         label_9->setText(QApplication::translate("manual_alignment", "yz", 0, QApplication::UnicodeUTF8));

@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Wed Jun 18 10:42:22 2014
+** Created: Wed Jun 18 14:51:00 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -134,6 +134,7 @@ public:
     QAction *actionCopy_Region;
     QAction *actionSave_Rendering_Parameters;
     QAction *actionLoad_Rendering_Parameters;
+    QAction *actionSave_All_Regions_As_Multiple_Files;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QWidget *main_widget;
@@ -515,6 +516,11 @@ public:
         actionLoad_Rendering_Parameters = new QAction(tracking_window);
         actionLoad_Rendering_Parameters->setObjectName(QString::fromUtf8("actionLoad_Rendering_Parameters"));
         actionLoad_Rendering_Parameters->setIcon(icon1);
+        actionSave_All_Regions_As_Multiple_Files = new QAction(tracking_window);
+        actionSave_All_Regions_As_Multiple_Files->setObjectName(QString::fromUtf8("actionSave_All_Regions_As_Multiple_Files"));
+        QIcon icon7;
+        icon7.addFile(QString::fromUtf8(":/icons/icons/save_all.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        actionSave_All_Regions_As_Multiple_Files->setIcon(icon7);
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -641,9 +647,9 @@ public:
         move3Dwindow = new QToolButton(main_widget);
         move3Dwindow->setObjectName(QString::fromUtf8("move3Dwindow"));
         move3Dwindow->setMaximumSize(QSize(22, 22));
-        QIcon icon7;
-        icon7.addFile(QString::fromUtf8(":/icons/icons/move.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        move3Dwindow->setIcon(icon7);
+        QIcon icon8;
+        icon8.addFile(QString::fromUtf8(":/icons/icons/move.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        move3Dwindow->setIcon(icon8);
 
         horizontalLayout_13->addWidget(move3Dwindow);
 
@@ -664,9 +670,9 @@ public:
         glSagView = new QToolButton(main_widget);
         glSagView->setObjectName(QString::fromUtf8("glSagView"));
         glSagView->setMaximumSize(QSize(22, 22));
-        QIcon icon8;
-        icon8.addFile(QString::fromUtf8(":/icons/icons/sag.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        glSagView->setIcon(icon8);
+        QIcon icon9;
+        icon9.addFile(QString::fromUtf8(":/icons/icons/sag.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        glSagView->setIcon(icon9);
 
         centralLayout2->addWidget(glSagView);
 
@@ -829,18 +835,18 @@ public:
         region_up = new QToolButton(dockWidgetContents_4);
         region_up->setObjectName(QString::fromUtf8("region_up"));
         region_up->setMaximumSize(QSize(23, 22));
-        QIcon icon9;
-        icon9.addFile(QString::fromUtf8(":/icons/icons/up.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        region_up->setIcon(icon9);
+        QIcon icon10;
+        icon10.addFile(QString::fromUtf8(":/icons/icons/up.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        region_up->setIcon(icon10);
 
         horizontalLayout_16->addWidget(region_up);
 
         region_down = new QToolButton(dockWidgetContents_4);
         region_down->setObjectName(QString::fromUtf8("region_down"));
         region_down->setMaximumSize(QSize(23, 22));
-        QIcon icon10;
-        icon10.addFile(QString::fromUtf8(":/icons/icons/down.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        region_down->setIcon(icon10);
+        QIcon icon11;
+        icon11.addFile(QString::fromUtf8(":/icons/icons/down.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        region_down->setIcon(icon11);
 
         horizontalLayout_16->addWidget(region_down);
 
@@ -878,9 +884,9 @@ public:
         font2.setBold(true);
         font2.setWeight(75);
         perform_tracking->setFont(font2);
-        QIcon icon11;
-        icon11.addFile(QString::fromUtf8(":/icons/icons/run.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        perform_tracking->setIcon(icon11);
+        QIcon icon12;
+        icon12.addFile(QString::fromUtf8(":/icons/icons/run.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        perform_tracking->setIcon(icon12);
 
         horizontalLayout_16->addWidget(perform_tracking);
 
@@ -1021,9 +1027,7 @@ public:
         save_all_tracks = new QToolButton(dockWidgetContents_5);
         save_all_tracks->setObjectName(QString::fromUtf8("save_all_tracks"));
         save_all_tracks->setMaximumSize(QSize(23, 22));
-        QIcon icon12;
-        icon12.addFile(QString::fromUtf8(":/icons/icons/save_all.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        save_all_tracks->setIcon(icon12);
+        save_all_tracks->setIcon(icon7);
 
         horizontalLayout_15->addWidget(save_all_tracks);
 
@@ -1044,14 +1048,14 @@ public:
         track_up = new QToolButton(dockWidgetContents_5);
         track_up->setObjectName(QString::fromUtf8("track_up"));
         track_up->setMaximumSize(QSize(23, 22));
-        track_up->setIcon(icon9);
+        track_up->setIcon(icon10);
 
         horizontalLayout_15->addWidget(track_up);
 
         track_down = new QToolButton(dockWidgetContents_5);
         track_down->setObjectName(QString::fromUtf8("track_down"));
         track_down->setMaximumSize(QSize(23, 22));
-        track_down->setIcon(icon10);
+        track_down->setIcon(icon11);
 
         horizontalLayout_15->addWidget(track_down);
 
@@ -1155,7 +1159,7 @@ public:
         tool5 = new QToolButton(dockWidgetContents);
         tool5->setObjectName(QString::fromUtf8("tool5"));
         tool5->setMaximumSize(QSize(23, 22));
-        tool5->setIcon(icon7);
+        tool5->setIcon(icon8);
         tool5->setCheckable(true);
         tool5->setAutoExclusive(true);
 
@@ -1257,7 +1261,7 @@ public:
         SagView = new QToolButton(dockWidgetContents);
         SagView->setObjectName(QString::fromUtf8("SagView"));
         SagView->setMaximumSize(QSize(23, 22));
-        SagView->setIcon(icon8);
+        SagView->setIcon(icon9);
 
         horizontalLayout_2->addWidget(SagView);
 
@@ -1308,8 +1312,10 @@ public:
         menuRegions->addAction(actionNewRegion);
         menuRegions->addAction(actionOpenRegion);
         menuRegions->addAction(actionSaveRegionAs);
-        menuRegions->addAction(actionSave_All_Regions_As);
         menuRegions->addAction(actionSave_Voxel_Data_As);
+        menuRegions->addSeparator();
+        menuRegions->addAction(actionSave_All_Regions_As);
+        menuRegions->addAction(actionSave_All_Regions_As_Multiple_Files);
         menuRegions->addSeparator();
         menuRegions->addAction(actionCheck_all_regions);
         menuRegions->addAction(actionUnckech_all_regions);
@@ -1566,6 +1572,7 @@ public:
         actionCopy_Region->setText(QApplication::translate("tracking_window", "Copy", 0, QApplication::UnicodeUTF8));
         actionSave_Rendering_Parameters->setText(QApplication::translate("tracking_window", "Save Rendering Parameters", 0, QApplication::UnicodeUTF8));
         actionLoad_Rendering_Parameters->setText(QApplication::translate("tracking_window", "Load Rendering Parameters...", 0, QApplication::UnicodeUTF8));
+        actionSave_All_Regions_As_Multiple_Files->setText(QApplication::translate("tracking_window", "Save All Regions As Multiple Files...", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)

@@ -550,6 +550,29 @@ void RegionTableWidget::save_region(void)
                                      cur_tracking_window.is_qsdr ? cur_tracking_window.handle->fib_data.trans_to_mni: no_trans);
     item(currentRow(),0)->setText(QFileInfo(filename).baseName());
 }
+void RegionTableWidget::save_all_regions_to_dir(void)
+{
+    if (regions.empty())
+        return;
+    QString dir = QFileDialog::getExistingDirectory(
+                                this,
+                                "Open directory",cur_tracking_window.get_path("region"));
+    if(dir.isEmpty())
+        return;
+    cur_tracking_window.add_path("region",dir);
+    begin_prog("save files...");
+    for(unsigned int index = 0;check_prog(index,rowCount());++index)
+        if (item(index,0)->checkState() == Qt::Checked) // either roi roa end or seed
+        {
+            std::vector<float> no_trans;
+            std::string filename = dir.toLocal8Bit().begin();
+            filename  += "/";
+            filename  += item(index,0)->text().toLocal8Bit().begin();
+            filename  += ".nii.gz";
+            regions[index].SaveToFile(filename.c_str(),
+                                         cur_tracking_window.is_qsdr ? cur_tracking_window.handle->fib_data.trans_to_mni: no_trans);
+        }
+}
 void RegionTableWidget::save_all_regions(void)
 {
     if (regions.empty())

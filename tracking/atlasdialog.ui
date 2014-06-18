@@ -22,6 +22,9 @@
    </item>
    <item>
     <widget class="QListView" name="region_list">
+     <property name="selectionMode">
+      <enum>QAbstractItemView::MultiSelection</enum>
+     </property>
      <property name="selectionBehavior">
       <enum>QAbstractItemView::SelectRows</enum>
      </property>

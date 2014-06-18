@@ -36,15 +36,34 @@ public:
         }
         voxel.dim = dwi_sum.geometry();
     }
-    void rotate(const std::vector<float>& rotation_matrix)
+    void rotate(image::geometry<3> new_geo,image::transformation_matrix<3,float>& affine)
     {
-        image::resample(dwi_sum,rotation_matrix);
-        image::resample(mask,rotation_matrix);
+        if(new_geo.size() > mask.size())
+            new_geo[2] = mask.size()/new_geo.plane_size();
+        image::basic_image<float,3> tmp(new_geo);
+        image::resample(dwi_sum,tmp,affine);
+        dwi_sum = tmp;
+        image::resample(mask,tmp,affine);
+        mask = tmp;
         for (unsigned int index = 0;check_prog(index,dwi_data.size());++index)
         {
             image::pointer_image<unsigned short,3> I = image::make_image(voxel.dim,(unsigned short*)dwi_data[index]);
-            image::resample(I,rotation_matrix);
+            image::resample(I,tmp,affine);
+            I.resize(new_geo);
+            std::copy(tmp.begin(),tmp.end(),I.begin());
         }
+        // rotate b-table
+        float iT[9];
+        image::matrix::inverse(affine.scaling_rotation,iT,image::dim<3,3>());
+        for (unsigned int index = 0;index < voxel.bvalues.size();++index)
+        {
+            image::vector<3> tmp;
+            image::vector_rotation(voxel.bvectors[index].begin(),tmp.begin(),iT,image::vdim<3>());
+            tmp.normalize();
+            voxel.bvectors[index] = tmp;
+        }
+        image::morphology::smoothing(mask);
+        voxel.dim = new_geo;
     }
     void trim(void)
     {
