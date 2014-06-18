@@ -361,11 +361,6 @@ void GLWidget::paintGL()
         glLoadIdentity();
         my_gluLookAt(0,0,-200.0*perspective,0,0,0,0,-1.0,0);
     }
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
-    //glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-
 
     {
 
@@ -373,6 +368,7 @@ void GLWidget::paintGL()
         glClearColor((float)((color & 0x00FF0000) >> 16)/255.0,
                      (float)((color & 0x0000FF00) >> 8)/255.0,
                      (float)(color & 0x000000FF)/255.0,1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         if(scale_voxel != get_param("scale_voxel"))
         {

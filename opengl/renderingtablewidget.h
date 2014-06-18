@@ -113,6 +113,16 @@ public:
             throw std::runtime_error("Cannot find the setting value");
         return *(iter->second);
     }
+    QStringList getChildren(QString root_name)
+    {
+        QStringList result;
+        RenderingItem* parent = root_mapping[root_name];
+        if(!parent)
+            throw std::runtime_error("Cannot find the root node");
+        for(unsigned int index = 0;index < parent->childCount();++index)
+            result.push_back(parent->child(index)->id);
+        return result;
+    }
 
     void setDefault(void);
 private:
@@ -133,7 +143,7 @@ public:
     void setData(QString name,QVariant data){(*treemodel)[name].setValue(data);}
     void setMinMax(QString name,float min,float max,float step){(*treemodel)[name].setMinMax(min,max,step);}
     void setList(QString name,QStringList list){(*treemodel)[name].setList(list);}
-
+    QStringList getChildren(QString root_name){return treemodel->getChildren(root_name);}
     void initialize(void);
 public slots:
     void setDefault(void);

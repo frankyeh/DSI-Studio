@@ -152,6 +152,8 @@ private slots:
     void on_actionSave_tracking_parameters_triggered();
     void on_actionLoad_tracking_parameters_triggered();
     void on_tbDefaultParam_clicked();
+    void on_actionSave_Rendering_Parameters_triggered();
+    void on_actionLoad_Rendering_Parameters_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

@@ -1262,52 +1262,32 @@ void tracking_window::on_actionSave_tracking_parameters_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
                            this,
-                           "Open Database files",
+                           "Save INI files",
                            absolute_path,
                            "Setting file (*.ini);;All files (*)");
     if (filename.isEmpty())
         return;
     QSettings s(filename, QSettings::IniFormat);
-    s.setValue("tracking_index",renderWidget->getData("tracking_index"));
-    s.setValue("fa_threshold",renderWidget->getData("fa_threshold"));
-    s.setValue("step_size",renderWidget->getData("step_size"));
-    s.setValue("turning_angle",renderWidget->getData("turning_angle"));
-    s.setValue("smoothing",renderWidget->getData("smoothing"));
-    s.setValue("min_length",renderWidget->getData("min_length"));
-    s.setValue("max_length",renderWidget->getData("max_length"));
-    s.setValue("tracking_method",renderWidget->getData("tracking_method"));
-    s.setValue("seed_plan",renderWidget->getData("seed_plan"));
-    s.setValue("initial_direction",renderWidget->getData("initial_direction"));
-    s.setValue("interpolation",renderWidget->getData("interpolation"));
-    s.setValue("tracking_plan",renderWidget->getData("tracking_plan"));
-    s.setValue("track_count",renderWidget->getData("track_count"));
-    s.setValue("thread_count",renderWidget->getData("thread_count"));
+    QStringList param_list = renderWidget->getChildren("Tracking");
+    for(unsigned int index = 0;index < param_list.size();++index)
+        s.setValue(param_list[index],renderWidget->getData(param_list[index]));
+
 }
 
 void tracking_window::on_actionLoad_tracking_parameters_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
                            this,
-                           "Open Database files",
+                           "Open INI files",
                            absolute_path,
                            "Setting file (*.ini);;All files (*)");
     if (filename.isEmpty())
         return;
     QSettings s(filename, QSettings::IniFormat);
-    renderWidget->setData("tracking_index",s.value("tracking_index",0));
-    renderWidget->setData("fa_threshold",s.value("fa_threshold",0.4));
-    renderWidget->setData("step_size",s.value("step_size",1));
-    renderWidget->setData("turning_angle",s.value("turning_angle",60));
-    renderWidget->setData("smoothing",s.value("smoothing",0.0));
-    renderWidget->setData("min_length",s.value("min_length",0));
-    renderWidget->setData("max_length",s.value("max_length",500));
-    renderWidget->setData("tracking_method",s.value("tracking_method",0));
-    renderWidget->setData("seed_plan",s.value("seed_plan",0));
-    renderWidget->setData("initial_direction",s.value("initial_direction",0));
-    renderWidget->setData("interpolation",s.value("interpolation",0));
-    renderWidget->setData("tracking_plan",s.value("tracking_plan",0));
-    renderWidget->setData("track_count",s.value("track_count",5000));
-    renderWidget->setData("thread_count",s.value("thread_count",1));
+    QStringList param_list = renderWidget->getChildren("Tracking");
+    for(unsigned int index = 0;index < param_list.size();++index)
+        if(s.contains(param_list[index]))
+            renderWidget->setData(param_list[index],s.value(param_list[index]));
 }
 
 
@@ -1317,5 +1297,49 @@ void tracking_window::on_tbDefaultParam_clicked()
     renderWidget->setData("tracking_index",0);
     on_tracking_index_currentIndexChanged(0);
     scene.show_slice();
+    glWidget->updateGL();
+}
+
+void tracking_window::on_actionSave_Rendering_Parameters_triggered()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                           this,
+                           "Save INI files",
+                           absolute_path,
+                           "Setting file (*.ini);;All files (*)");
+    if (filename.isEmpty())
+        return;
+    QSettings s(filename, QSettings::IniFormat);
+    QStringList param_list;
+    param_list += renderWidget->getChildren("Rendering");
+    param_list += renderWidget->getChildren("Slice");
+    param_list += renderWidget->getChildren("Tract");
+    param_list += renderWidget->getChildren("Region");
+    param_list += renderWidget->getChildren("Surface");
+    param_list += renderWidget->getChildren("ODF");
+    for(unsigned int index = 0;index < param_list.size();++index)
+        s.setValue(param_list[index],renderWidget->getData(param_list[index]));
+}
+
+void tracking_window::on_actionLoad_Rendering_Parameters_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(
+                           this,
+                           "Open INI files",
+                           absolute_path,
+                           "Setting file (*.ini);;All files (*)");
+    if (filename.isEmpty())
+        return;
+    QSettings s(filename, QSettings::IniFormat);
+    QStringList param_list;
+    param_list += renderWidget->getChildren("Rendering");
+    param_list += renderWidget->getChildren("Slice");
+    param_list += renderWidget->getChildren("Tract");
+    param_list += renderWidget->getChildren("Region");
+    param_list += renderWidget->getChildren("Surface");
+    param_list += renderWidget->getChildren("ODF");
+    for(unsigned int index = 0;index < param_list.size();++index)
+        if(s.contains(param_list[index]))
+            renderWidget->setData(param_list[index],s.value(param_list[index]));
     glWidget->updateGL();
 }

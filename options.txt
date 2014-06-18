@@ -20,7 +20,7 @@ Tracking/ /tracking_plan/Seeds:Tracts/0
 Tracking/Thread count/thread_count/int:1:12:1/1
 Rendering/Scale with voxel size/scale_voxel/Off:On/1
 Rendering/Perspective/pespective/int/5
-Rendering/Background Color/bkg_color/color/16777215
+Rendering/Background Color/bkg_color/color/-1
 Rendering/Anti-aliasing/anti_aliasing/Off:On/0
 Rendering/Line Smooth/line_smooth/Off:On/0
 Rendering/Point Smooth/point_smooth/Off:On/0

@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Tue Jun 17 21:01:44 2014
+** Created: Tue Jun 17 22:52:53 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -1401,6 +1401,7 @@ public:
         menu_Slices->addSeparator();
         menuTools->addAction(actionSave_tracking_parameters);
         menuTools->addAction(actionLoad_tracking_parameters);
+        menuTools->addSeparator();
         menuTools->addAction(actionManual_Registration);
 
         retranslateUi(tracking_window);
@@ -1612,7 +1613,7 @@ public:
         menu_Edit->setTitle(QApplication::translate("tracking_window", "&Edit", 0, QApplication::UnicodeUTF8));
         menu_View->setTitle(QApplication::translate("tracking_window", "&View", 0, QApplication::UnicodeUTF8));
         menu_Slices->setTitle(QApplication::translate("tracking_window", "&Slices", 0, QApplication::UnicodeUTF8));
-        menuTools->setTitle(QApplication::translate("tracking_window", "Tools", 0, QApplication::UnicodeUTF8));
+        menuTools->setTitle(QApplication::translate("tracking_window", "Options", 0, QApplication::UnicodeUTF8));
         TractWidgetHolder->setWindowTitle(QApplication::translate("tracking_window", "Fiber Tracts", 0, QApplication::UnicodeUTF8));
         tbOpenTract->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
         tbSaveTract->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
