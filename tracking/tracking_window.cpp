@@ -67,16 +67,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         color_bar.reset(new color_bar_dialog(this));
     }
 
-    // setup fa threshold
-    {
-        QStringList tracking_index_list;
-        for(int index = 0;index < fib_data.fib.index_name.size();++index)
-            tracking_index_list.push_back((fib_data.fib.index_name[index]+" threshold").c_str());
 
-        renderWidget->setList("tracking_index",tracking_index_list);
-        renderWidget->setData("tracking_index",0);
-        renderWidget->setData("step_size",fib_data.vs[0]/2.0);
-    }
 
     // setup sliders
     {
@@ -305,19 +296,6 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
             default_state = saveState();
         restoreGeometry(settings.value("geometry").toByteArray());
         restoreState(settings.value("state").toByteArray());
-        /*
-        ui->turning_angle->setValue(settings.value("turning_angle",60).toDouble());
-        ui->smoothing->setValue(settings.value("smoothing",0.0).toDouble());
-        ui->min_length->setValue(settings.value("min_length",0.0).toDouble());
-        ui->max_length->setValue(settings.value("max_length",500).toDouble());
-        ui->tracking_method->setCurrentIndex(settings.value("tracking_method",0).toInt());
-        ui->seed_plan->setCurrentIndex(settings.value("seed_plan",0).toInt());
-        ui->initial_direction->setCurrentIndex(settings.value("initial_direction",0).toInt());
-        ui->interpolation->setCurrentIndex(settings.value("interpolation",0).toInt());
-        ui->tracking_plan->setCurrentIndex(settings.value("tracking_plan",0).toInt());
-        ui->track_count->setValue(settings.value("track_count",2000).toInt());
-        ui->thread_count->setCurrentIndex(settings.value("thread_count",0).toInt());
-        */
         ui->glSagCheck->setChecked(settings.value("SagSlice",1).toBool());
         ui->glCorCheck->setChecked(settings.value("CorSlice",1).toBool());
         ui->glAxiCheck->setChecked(settings.value("AxiSlice",1).toBool());
@@ -328,6 +306,17 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         scene.center();
         slice_no_update = false;
         copy_target = 0;
+    }
+
+    // setup fa threshold
+    {
+        QStringList tracking_index_list;
+        for(int index = 0;index < fib_data.fib.index_name.size();++index)
+            tracking_index_list.push_back(fib_data.fib.index_name[index].c_str());
+
+        renderWidget->setList("tracking_index",tracking_index_list);
+        renderWidget->setData("tracking_index",0);
+        renderWidget->setData("step_size",fib_data.vs[0]/2.0);
     }
 
     on_glAxiView_clicked();
@@ -1244,7 +1233,7 @@ void tracking_window::on_actionConnectometry_triggered()
 }
 
 
-void tracking_window::on_restore_3D_window()
+void tracking_window::restore_3D_window()
 {
     ui->centralLayout->addWidget(ui->main_widget);
     delete gLdock;
@@ -1263,10 +1252,10 @@ void tracking_window::on_actionFloat_3D_window_triggered()
         gLdock->setFloating(true);
         gLdock->show();
         gLdock->resize(w,w);
-        connect(gLdock,SIGNAL(closedSignal()),this,SLOT(on_restore_3D_window()));
+        connect(gLdock,SIGNAL(closedSignal()),this,SLOT(restore_3D_window()));
     }
     else
-        on_restore_3D_window();
+        restore_3D_window();
 }
 
 void tracking_window::on_actionSave_tracking_parameters_triggered()
