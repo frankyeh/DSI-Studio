@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'mainwindow.ui'
 **
-** Created: Fri Jan 31 14:51:44 2014
+** Created: Wed Jun 18 00:37:11 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -68,7 +68,7 @@ public:
     {
         if (MainWindow->objectName().isEmpty())
             MainWindow->setObjectName(QString::fromUtf8("MainWindow"));
-        MainWindow->resize(885, 616);
+        MainWindow->resize(731, 548);
         QFont font;
         font.setFamily(QString::fromUtf8("Arial"));
         MainWindow->setFont(font);
@@ -86,12 +86,19 @@ public:
         verticalLayout_3->setSpacing(0);
         verticalLayout_3->setContentsMargins(0, 0, 0, 0);
         verticalLayout_3->setObjectName(QString::fromUtf8("verticalLayout_3"));
+        verticalLayout_3->setSizeConstraint(QLayout::SetDefaultConstraint);
         verticalLayout_4 = new QVBoxLayout();
         verticalLayout_4->setSpacing(6);
         verticalLayout_4->setObjectName(QString::fromUtf8("verticalLayout_4"));
+        verticalLayout_4->setSizeConstraint(QLayout::SetDefaultConstraint);
         verticalLayout_4->setContentsMargins(-1, 0, -1, -1);
         label_3 = new QLabel(centralWidget);
         label_3->setObjectName(QString::fromUtf8("label_3"));
+        QSizePolicy sizePolicy1(QSizePolicy::Maximum, QSizePolicy::Preferred);
+        sizePolicy1.setHorizontalStretch(0);
+        sizePolicy1.setVerticalStretch(0);
+        sizePolicy1.setHeightForWidth(label_3->sizePolicy().hasHeightForWidth());
+        label_3->setSizePolicy(sizePolicy1);
 
         verticalLayout_4->addWidget(label_3);
 
@@ -103,6 +110,12 @@ public:
         QTableWidgetItem *__qtablewidgetitem1 = new QTableWidgetItem();
         recentSrc->setHorizontalHeaderItem(1, __qtablewidgetitem1);
         recentSrc->setObjectName(QString::fromUtf8("recentSrc"));
+        QSizePolicy sizePolicy2(QSizePolicy::Preferred, QSizePolicy::Expanding);
+        sizePolicy2.setHorizontalStretch(0);
+        sizePolicy2.setVerticalStretch(0);
+        sizePolicy2.setHeightForWidth(recentSrc->sizePolicy().hasHeightForWidth());
+        recentSrc->setSizePolicy(sizePolicy2);
+        recentSrc->setMaximumSize(QSize(16777215, 16777215));
         recentSrc->setSelectionMode(QAbstractItemView::SingleSelection);
         recentSrc->setSelectionBehavior(QAbstractItemView::SelectRows);
 
@@ -110,6 +123,8 @@ public:
 
         label_2 = new QLabel(centralWidget);
         label_2->setObjectName(QString::fromUtf8("label_2"));
+        sizePolicy1.setHeightForWidth(label_2->sizePolicy().hasHeightForWidth());
+        label_2->setSizePolicy(sizePolicy1);
 
         verticalLayout_4->addWidget(label_2);
 
@@ -121,6 +136,9 @@ public:
         QTableWidgetItem *__qtablewidgetitem3 = new QTableWidgetItem();
         recentFib->setHorizontalHeaderItem(1, __qtablewidgetitem3);
         recentFib->setObjectName(QString::fromUtf8("recentFib"));
+        sizePolicy2.setHeightForWidth(recentFib->sizePolicy().hasHeightForWidth());
+        recentFib->setSizePolicy(sizePolicy2);
+        recentFib->setMaximumSize(QSize(16777215, 16777215));
         recentFib->setSelectionMode(QAbstractItemView::SingleSelection);
         recentFib->setSelectionBehavior(QAbstractItemView::SelectRows);
 
@@ -131,22 +149,24 @@ public:
         horizontalLayout_2->setObjectName(QString::fromUtf8("horizontalLayout_2"));
         label = new QLabel(centralWidget);
         label->setObjectName(QString::fromUtf8("label"));
-        QSizePolicy sizePolicy1(QSizePolicy::Minimum, QSizePolicy::Preferred);
-        sizePolicy1.setHorizontalStretch(0);
-        sizePolicy1.setVerticalStretch(0);
-        sizePolicy1.setHeightForWidth(label->sizePolicy().hasHeightForWidth());
-        label->setSizePolicy(sizePolicy1);
+        QSizePolicy sizePolicy3(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        sizePolicy3.setHorizontalStretch(0);
+        sizePolicy3.setVerticalStretch(0);
+        sizePolicy3.setHeightForWidth(label->sizePolicy().hasHeightForWidth());
+        label->setSizePolicy(sizePolicy3);
 
         horizontalLayout_2->addWidget(label);
 
         workDir = new QComboBox(centralWidget);
         workDir->setObjectName(QString::fromUtf8("workDir"));
-        QSizePolicy sizePolicy2(QSizePolicy::Expanding, QSizePolicy::Fixed);
-        sizePolicy2.setHorizontalStretch(0);
-        sizePolicy2.setVerticalStretch(0);
-        sizePolicy2.setHeightForWidth(workDir->sizePolicy().hasHeightForWidth());
-        workDir->setSizePolicy(sizePolicy2);
-        workDir->setEditable(true);
+        QSizePolicy sizePolicy4(QSizePolicy::Preferred, QSizePolicy::Fixed);
+        sizePolicy4.setHorizontalStretch(0);
+        sizePolicy4.setVerticalStretch(0);
+        sizePolicy4.setHeightForWidth(workDir->sizePolicy().hasHeightForWidth());
+        workDir->setSizePolicy(sizePolicy4);
+        workDir->setMaximumSize(QSize(16777215, 16777215));
+        workDir->setEditable(false);
+        workDir->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLength);
 
         horizontalLayout_2->addWidget(workDir);
 
@@ -168,11 +188,8 @@ public:
         MainWindow->setCentralWidget(centralWidget);
         dockWidget = new QDockWidget(MainWindow);
         dockWidget->setObjectName(QString::fromUtf8("dockWidget"));
-        QSizePolicy sizePolicy3(QSizePolicy::Preferred, QSizePolicy::Expanding);
-        sizePolicy3.setHorizontalStretch(0);
-        sizePolicy3.setVerticalStretch(0);
-        sizePolicy3.setHeightForWidth(dockWidget->sizePolicy().hasHeightForWidth());
-        dockWidget->setSizePolicy(sizePolicy3);
+        sizePolicy2.setHeightForWidth(dockWidget->sizePolicy().hasHeightForWidth());
+        dockWidget->setSizePolicy(sizePolicy2);
         dockWidgetContents = new QWidget();
         dockWidgetContents->setObjectName(QString::fromUtf8("dockWidgetContents"));
         verticalLayout_2 = new QVBoxLayout(dockWidgetContents);
@@ -199,8 +216,8 @@ public:
         dockWidget_3 = new QDockWidget(MainWindow);
         dockWidget_3->setObjectName(QString::fromUtf8("dockWidget_3"));
         dockWidget_3->setEnabled(true);
-        sizePolicy3.setHeightForWidth(dockWidget_3->sizePolicy().hasHeightForWidth());
-        dockWidget_3->setSizePolicy(sizePolicy3);
+        sizePolicy2.setHeightForWidth(dockWidget_3->sizePolicy().hasHeightForWidth());
+        dockWidget_3->setSizePolicy(sizePolicy2);
         dockWidget_3->setFloating(false);
         dockWidgetContents_3 = new QWidget();
         dockWidgetContents_3->setObjectName(QString::fromUtf8("dockWidgetContents_3"));
@@ -227,8 +244,8 @@ public:
         MainWindow->addDockWidget(static_cast<Qt::DockWidgetArea>(1), dockWidget_3);
         dockWidget_2 = new QDockWidget(MainWindow);
         dockWidget_2->setObjectName(QString::fromUtf8("dockWidget_2"));
-        sizePolicy3.setHeightForWidth(dockWidget_2->sizePolicy().hasHeightForWidth());
-        dockWidget_2->setSizePolicy(sizePolicy3);
+        sizePolicy2.setHeightForWidth(dockWidget_2->sizePolicy().hasHeightForWidth());
+        dockWidget_2->setSizePolicy(sizePolicy2);
         dockWidgetContents_2 = new QWidget();
         dockWidgetContents_2->setObjectName(QString::fromUtf8("dockWidgetContents_2"));
         verticalLayout = new QVBoxLayout(dockWidgetContents_2);
@@ -269,6 +286,9 @@ public:
         MainWindow->addDockWidget(static_cast<Qt::DockWidgetArea>(1), dockWidget_2);
 
         retranslateUi(MainWindow);
+
+        workDir->setCurrentIndex(-1);
+
 
         QMetaObject::connectSlotsByName(MainWindow);
     } // setupUi

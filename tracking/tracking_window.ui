@@ -703,6 +703,9 @@
            <height>22</height>
           </size>
          </property>
+         <property name="sizeAdjustPolicy">
+          <enum>QComboBox::AdjustToMinimumContentsLength</enum>
+         </property>
         </widget>
        </item>
        <item>
@@ -718,6 +721,9 @@
            <width>16777215</width>
            <height>22</height>
           </size>
+         </property>
+         <property name="sizeAdjustPolicy">
+          <enum>QComboBox::AdjustToMinimumContentsLength</enum>
          </property>
         </widget>
        </item>
@@ -1512,6 +1518,9 @@
                <height>22</height>
               </size>
              </property>
+             <property name="sizeAdjustPolicy">
+              <enum>QComboBox::AdjustToMinimumContentsLength</enum>
+             </property>
             </widget>
            </item>
            <item>
@@ -1527,6 +1536,9 @@
                <width>16777215</width>
                <height>22</height>
               </size>
+             </property>
+             <property name="sizeAdjustPolicy">
+              <enum>QComboBox::AdjustToMinimumContentsLength</enum>
              </property>
              <item>
               <property name="text">

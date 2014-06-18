@@ -145,7 +145,7 @@ int main(int ac, char *av[])
 
     MainWindow w;
     w.setFont(font);
-    w.showMaximized();
+    w.show();
     w.setWindowTitle(QString("DSI Studio ") + __DATE__ + " build");
     return a.exec();
 }

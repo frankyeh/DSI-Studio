@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Tue Jun 17 22:52:53 2014
+** Created: Wed Jun 18 00:35:11 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -132,6 +132,8 @@ public:
     QAction *actionCheck_all_tracts;
     QAction *actionUncheck_all_tracts;
     QAction *actionCopy_Region;
+    QAction *actionSave_Rendering_Parameters;
+    QAction *actionLoad_Rendering_Parameters;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QWidget *main_widget;
@@ -509,6 +511,12 @@ public:
         actionUncheck_all_tracts->setObjectName(QString::fromUtf8("actionUncheck_all_tracts"));
         actionCopy_Region = new QAction(tracking_window);
         actionCopy_Region->setObjectName(QString::fromUtf8("actionCopy_Region"));
+        actionSave_Rendering_Parameters = new QAction(tracking_window);
+        actionSave_Rendering_Parameters->setObjectName(QString::fromUtf8("actionSave_Rendering_Parameters"));
+        actionSave_Rendering_Parameters->setIcon(icon2);
+        actionLoad_Rendering_Parameters = new QAction(tracking_window);
+        actionLoad_Rendering_Parameters->setObjectName(QString::fromUtf8("actionLoad_Rendering_Parameters"));
+        actionLoad_Rendering_Parameters->setIcon(icon1);
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -832,6 +840,7 @@ public:
         sizePolicy4.setHeightForWidth(atlasListBox->sizePolicy().hasHeightForWidth());
         atlasListBox->setSizePolicy(sizePolicy4);
         atlasListBox->setMaximumSize(QSize(16777215, 22));
+        atlasListBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLength);
 
         horizontalLayout_16->addWidget(atlasListBox);
 
@@ -840,6 +849,7 @@ public:
         sizePolicy4.setHeightForWidth(atlasComboBox->sizePolicy().hasHeightForWidth());
         atlasComboBox->setSizePolicy(sizePolicy4);
         atlasComboBox->setMaximumSize(QSize(16777215, 22));
+        atlasComboBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLength);
 
         horizontalLayout_16->addWidget(atlasComboBox);
 
@@ -1140,6 +1150,7 @@ public:
         sizePolicy8.setHeightForWidth(sliceViewBox->sizePolicy().hasHeightForWidth());
         sliceViewBox->setSizePolicy(sizePolicy8);
         sliceViewBox->setMaximumSize(QSize(16777215, 22));
+        sliceViewBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLength);
 
         horizontalLayout_4->addWidget(sliceViewBox);
 
@@ -1148,6 +1159,7 @@ public:
         sizePolicy8.setHeightForWidth(overlay->sizePolicy().hasHeightForWidth());
         overlay->setSizePolicy(sizePolicy8);
         overlay->setMaximumSize(QSize(16777215, 22));
+        overlay->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLength);
 
         horizontalLayout_4->addWidget(overlay);
 
@@ -1401,6 +1413,8 @@ public:
         menu_Slices->addSeparator();
         menuTools->addAction(actionSave_tracking_parameters);
         menuTools->addAction(actionLoad_tracking_parameters);
+        menuTools->addAction(actionSave_Rendering_Parameters);
+        menuTools->addAction(actionLoad_Rendering_Parameters);
         menuTools->addSeparator();
         menuTools->addAction(actionManual_Registration);
 
@@ -1543,11 +1557,13 @@ public:
         actionSave_3D_screen_in_high_resolution->setText(QApplication::translate("tracking_window", "Save 3D screen in high resolution...", 0, QApplication::UnicodeUTF8));
         actionSave_All_Regions_As->setText(QApplication::translate("tracking_window", "Save All Regions As...", 0, QApplication::UnicodeUTF8));
         actionFloat_3D_window->setText(QApplication::translate("tracking_window", "Float 3D window", 0, QApplication::UnicodeUTF8));
-        actionSave_tracking_parameters->setText(QApplication::translate("tracking_window", "Save tracking parameters...", 0, QApplication::UnicodeUTF8));
-        actionLoad_tracking_parameters->setText(QApplication::translate("tracking_window", "Load tracking parameters...", 0, QApplication::UnicodeUTF8));
+        actionSave_tracking_parameters->setText(QApplication::translate("tracking_window", "Save Tracking Parameters....", 0, QApplication::UnicodeUTF8));
+        actionLoad_tracking_parameters->setText(QApplication::translate("tracking_window", "Load Tracking Parameters", 0, QApplication::UnicodeUTF8));
         actionCheck_all_tracts->setText(QApplication::translate("tracking_window", "Check All", 0, QApplication::UnicodeUTF8));
         actionUncheck_all_tracts->setText(QApplication::translate("tracking_window", "Uncheck All", 0, QApplication::UnicodeUTF8));
         actionCopy_Region->setText(QApplication::translate("tracking_window", "Copy", 0, QApplication::UnicodeUTF8));
+        actionSave_Rendering_Parameters->setText(QApplication::translate("tracking_window", "Save Rendering Parameters", 0, QApplication::UnicodeUTF8));
+        actionLoad_Rendering_Parameters->setText(QApplication::translate("tracking_window", "Load Rendering Parameters...", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)
