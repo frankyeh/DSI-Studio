@@ -13,6 +13,7 @@ public:
     slice_view_scene(tracking_window& cur_tracking_window_,ODFModel* handle_):
             sel_mode(0),
             mid_down(false),
+            mouse_down(false),
             cur_tracking_window(cur_tracking_window_),
             handle(handle_),statusbar(0)
     {
