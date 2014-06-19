@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'mainwindow.ui'
 **
-** Created: Wed Jun 18 14:51:00 2014
+** Created: Wed Jun 18 22:31:53 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -68,7 +68,7 @@ public:
     {
         if (MainWindow->objectName().isEmpty())
             MainWindow->setObjectName(QString::fromUtf8("MainWindow"));
-        MainWindow->resize(731, 548);
+        MainWindow->resize(862, 590);
         QFont font;
         font.setFamily(QString::fromUtf8("Arial"));
         MainWindow->setFont(font);

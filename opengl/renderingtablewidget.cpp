@@ -439,7 +439,7 @@ RenderingTableWidget::RenderingTableWidget(tracking_window& cur_tracking_window_
     header()->setStretchLastSection(false);
     header()->resizeSection(0, 150);
     header()->resizeSection(1, 100);
-    //header()->hide();
+    header()->hide();
     expandAll();
     collapseAll();
 

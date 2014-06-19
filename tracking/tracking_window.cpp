@@ -1345,10 +1345,10 @@ void tracking_window::on_addRegionFromAtlas_clicked()
 void tracking_window::on_actionRestore_Settings_triggered()
 {
     renderWidget->setDefault("Rendering");
-    renderWidget->setDefault("Slice");
-    renderWidget->setDefault("Tract");
-    renderWidget->setDefault("Region");
-    renderWidget->setDefault("Surface");
-    renderWidget->setDefault("ODF");
+    renderWidget->setDefault("show_slice");
+    renderWidget->setDefault("show_tract");
+    renderWidget->setDefault("show_region");
+    renderWidget->setDefault("show_surface");
+    renderWidget->setDefault("show_odf");
     glWidget->updateGL();
 }
