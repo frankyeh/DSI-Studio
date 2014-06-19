@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Wed Jun 18 22:31:53 2014
+** Created: Thu Jun 19 01:01:52 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -540,7 +540,7 @@ public:
         SliceModality = new QComboBox(main_widget);
         SliceModality->setObjectName(QString::fromUtf8("SliceModality"));
         SliceModality->setMaximumSize(QSize(16777215, 22));
-        SliceModality->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+        SliceModality->setSizeAdjustPolicy(QComboBox::AdjustToContentsOnFirstShow);
 
         horizontalLayout_13->addWidget(SliceModality);
 
@@ -568,7 +568,7 @@ public:
         surfaceStyle = new QComboBox(main_widget);
         surfaceStyle->setObjectName(QString::fromUtf8("surfaceStyle"));
         surfaceStyle->setMaximumSize(QSize(16777215, 22));
-        surfaceStyle->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+        surfaceStyle->setSizeAdjustPolicy(QComboBox::AdjustToContentsOnFirstShow);
 
         horizontalLayout_13->addWidget(surfaceStyle);
 

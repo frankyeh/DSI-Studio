@@ -64,7 +64,7 @@
             </size>
            </property>
            <property name="sizeAdjustPolicy">
-            <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
+            <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
            </property>
            <item>
             <property name="text">
@@ -132,7 +132,7 @@
             </size>
            </property>
            <property name="sizeAdjustPolicy">
-            <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
+            <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
            </property>
            <item>
             <property name="text">
