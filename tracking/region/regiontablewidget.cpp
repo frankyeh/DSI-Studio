@@ -100,7 +100,7 @@ RegionTableWidget::RegionTableWidget(tracking_window& cur_tracking_window_,QWidg
     setSelectionBehavior(QAbstractItemView::SelectRows);
     setSelectionMode(QAbstractItemView::SingleSelection);
     setAlternatingRowColors(true);
-    setStyleSheet("QTableView {selection-background-color: #AAAAAA; selection-color: #4444FF;}");
+    setStyleSheet("QTableView {selection-background-color: #AAAAFF; selection-color: #000000;}");
     horizontalHeader()->setResizeMode(0,QHeaderView::Stretch);
     horizontalHeader()->setResizeMode(1,QHeaderView::Fixed);
     horizontalHeader()->setResizeMode(2,QHeaderView::Fixed);

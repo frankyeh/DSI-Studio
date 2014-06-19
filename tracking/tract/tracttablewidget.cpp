@@ -39,7 +39,7 @@ TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget
     setSelectionBehavior(QAbstractItemView::SelectRows);
     setSelectionMode(QAbstractItemView::SingleSelection);
     setAlternatingRowColors(true);
-    setStyleSheet("QTableView {selection-background-color: #AAAAAA; selection-color: #4444FF;}");
+    setStyleSheet("QTableView {selection-background-color: #AAAAFF; selection-color: #000000;}");
 
     QObject::connect(this,SIGNAL(cellClicked(int,int)),this,SLOT(check_check_status(int,int)));
 
