@@ -63,6 +63,9 @@
              <height>22</height>
             </size>
            </property>
+           <property name="sizeAdjustPolicy">
+            <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
+           </property>
            <item>
             <property name="text">
              <string>Diffusion</string>
@@ -127,6 +130,9 @@
              <width>16777215</width>
              <height>22</height>
             </size>
+           </property>
+           <property name="sizeAdjustPolicy">
+            <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
            </property>
            <item>
             <property name="text">
@@ -827,66 +833,7 @@
       <number>0</number>
      </property>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_8">
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_6">
-         <property name="spacing">
-          <number>0</number>
-         </property>
-         <item>
-          <widget class="QToolButton" name="tbDefaultParam">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>22</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Set All To Default</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="RenderingQualityBox">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>22</height>
-            </size>
-           </property>
-           <item>
-            <property name="text">
-             <string>Best Performance</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Default</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Highest Quality</string>
-            </property>
-           </item>
-          </widget>
-         </item>
-         <item>
-          <spacer name="horizontalSpacer_2">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-        </layout>
-       </item>
-      </layout>
+      <layout class="QHBoxLayout" name="horizontalLayout_8"/>
      </item>
     </layout>
    </widget>
@@ -1103,6 +1050,7 @@
     <addaction name="actionSave_Rendering_Parameters"/>
     <addaction name="actionLoad_Rendering_Parameters"/>
     <addaction name="separator"/>
+    <addaction name="actionRestore_Settings"/>
     <addaction name="actionManual_Registration"/>
    </widget>
    <addaction name="menu_Edit"/>
@@ -1542,7 +1490,7 @@
           </size>
          </property>
          <property name="sizeAdjustPolicy">
-          <enum>QComboBox::AdjustToMinimumContentsLength</enum>
+          <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
          </property>
         </widget>
        </item>
@@ -1561,7 +1509,7 @@
           </size>
          </property>
          <property name="sizeAdjustPolicy">
-          <enum>QComboBox::AdjustToMinimumContentsLength</enum>
+          <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
          </property>
          <item>
           <property name="text">
@@ -2553,6 +2501,11 @@
    </property>
    <property name="text">
     <string>Save All Regions As Multiple Files...</string>
+   </property>
+  </action>
+  <action name="actionRestore_Settings">
+   <property name="text">
+    <string>Restore Rendering Settings</string>
    </property>
   </action>
  </widget>

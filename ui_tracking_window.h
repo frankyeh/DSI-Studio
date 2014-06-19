@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Wed Jun 18 14:51:00 2014
+** Created: Wed Jun 18 21:12:40 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -135,6 +135,7 @@ public:
     QAction *actionSave_Rendering_Parameters;
     QAction *actionLoad_Rendering_Parameters;
     QAction *actionSave_All_Regions_As_Multiple_Files;
+    QAction *actionRestore_Settings;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QWidget *main_widget;
@@ -190,10 +191,6 @@ public:
     QWidget *dockWidgetContents_2;
     QVBoxLayout *renderingLayout;
     QHBoxLayout *horizontalLayout_8;
-    QHBoxLayout *horizontalLayout_6;
-    QToolButton *tbDefaultParam;
-    QComboBox *RenderingQualityBox;
-    QSpacerItem *horizontalSpacer_2;
     QMenuBar *menuBar;
     QMenu *menuRegions;
     QMenu *menuModify;
@@ -521,6 +518,8 @@ public:
         QIcon icon7;
         icon7.addFile(QString::fromUtf8(":/icons/icons/save_all.xpm"), QSize(), QIcon::Normal, QIcon::Off);
         actionSave_All_Regions_As_Multiple_Files->setIcon(icon7);
+        actionRestore_Settings = new QAction(tracking_window);
+        actionRestore_Settings->setObjectName(QString::fromUtf8("actionRestore_Settings"));
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -541,6 +540,7 @@ public:
         SliceModality = new QComboBox(main_widget);
         SliceModality->setObjectName(QString::fromUtf8("SliceModality"));
         SliceModality->setMaximumSize(QSize(16777215, 22));
+        SliceModality->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
 
         horizontalLayout_13->addWidget(SliceModality);
 
@@ -568,6 +568,7 @@ public:
         surfaceStyle = new QComboBox(main_widget);
         surfaceStyle->setObjectName(QString::fromUtf8("surfaceStyle"));
         surfaceStyle->setMaximumSize(QSize(16777215, 22));
+        surfaceStyle->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
 
         horizontalLayout_13->addWidget(surfaceStyle);
 
@@ -922,28 +923,6 @@ public:
         renderingLayout->setObjectName(QString::fromUtf8("renderingLayout"));
         horizontalLayout_8 = new QHBoxLayout();
         horizontalLayout_8->setObjectName(QString::fromUtf8("horizontalLayout_8"));
-        horizontalLayout_6 = new QHBoxLayout();
-        horizontalLayout_6->setSpacing(0);
-        horizontalLayout_6->setObjectName(QString::fromUtf8("horizontalLayout_6"));
-        tbDefaultParam = new QToolButton(dockWidgetContents_2);
-        tbDefaultParam->setObjectName(QString::fromUtf8("tbDefaultParam"));
-        tbDefaultParam->setMaximumSize(QSize(16777215, 22));
-
-        horizontalLayout_6->addWidget(tbDefaultParam);
-
-        RenderingQualityBox = new QComboBox(dockWidgetContents_2);
-        RenderingQualityBox->setObjectName(QString::fromUtf8("RenderingQualityBox"));
-        RenderingQualityBox->setMaximumSize(QSize(16777215, 22));
-
-        horizontalLayout_6->addWidget(RenderingQualityBox);
-
-        horizontalSpacer_2 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-
-        horizontalLayout_6->addItem(horizontalSpacer_2);
-
-
-        horizontalLayout_8->addLayout(horizontalLayout_6);
-
 
         renderingLayout->addLayout(horizontalLayout_8);
 
@@ -1170,7 +1149,7 @@ public:
         sizePolicy5.setHeightForWidth(sliceViewBox->sizePolicy().hasHeightForWidth());
         sliceViewBox->setSizePolicy(sizePolicy5);
         sliceViewBox->setMaximumSize(QSize(16777215, 22));
-        sliceViewBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLength);
+        sliceViewBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
 
         horizontalLayout_4->addWidget(sliceViewBox);
 
@@ -1179,7 +1158,7 @@ public:
         sizePolicy5.setHeightForWidth(overlay->sizePolicy().hasHeightForWidth());
         overlay->setSizePolicy(sizePolicy5);
         overlay->setMaximumSize(QSize(16777215, 22));
-        overlay->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLength);
+        overlay->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
 
         horizontalLayout_4->addWidget(overlay);
 
@@ -1424,6 +1403,7 @@ public:
         menuTools->addAction(actionSave_Rendering_Parameters);
         menuTools->addAction(actionLoad_Rendering_Parameters);
         menuTools->addSeparator();
+        menuTools->addAction(actionRestore_Settings);
         menuTools->addAction(actionManual_Registration);
 
         retranslateUi(tracking_window);
@@ -1573,6 +1553,7 @@ public:
         actionSave_Rendering_Parameters->setText(QApplication::translate("tracking_window", "Save Rendering Parameters", 0, QApplication::UnicodeUTF8));
         actionLoad_Rendering_Parameters->setText(QApplication::translate("tracking_window", "Load Rendering Parameters...", 0, QApplication::UnicodeUTF8));
         actionSave_All_Regions_As_Multiple_Files->setText(QApplication::translate("tracking_window", "Save All Regions As Multiple Files...", 0, QApplication::UnicodeUTF8));
+        actionRestore_Settings->setText(QApplication::translate("tracking_window", "Restore Rendering Settings", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)
@@ -1623,13 +1604,6 @@ public:
         addRegionFromAtlas->setText(QApplication::translate("tracking_window", "Atlas...", 0, QApplication::UnicodeUTF8));
         perform_tracking->setText(QApplication::translate("tracking_window", "Run Tracking", 0, QApplication::UnicodeUTF8));
         renderingWidgetHolder->setWindowTitle(QApplication::translate("tracking_window", "Options", 0, QApplication::UnicodeUTF8));
-        tbDefaultParam->setText(QApplication::translate("tracking_window", "Set All To Default", 0, QApplication::UnicodeUTF8));
-        RenderingQualityBox->clear();
-        RenderingQualityBox->insertItems(0, QStringList()
-         << QApplication::translate("tracking_window", "Best Performance", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("tracking_window", "Default", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("tracking_window", "Highest Quality", 0, QApplication::UnicodeUTF8)
-        );
         menuRegions->setTitle(QApplication::translate("tracking_window", "&Regions", 0, QApplication::UnicodeUTF8));
         menuModify->setTitle(QApplication::translate("tracking_window", "Modify Current Region", 0, QApplication::UnicodeUTF8));
         menuTracts->setTitle(QApplication::translate("tracking_window", "Tr&acts", 0, QApplication::UnicodeUTF8));

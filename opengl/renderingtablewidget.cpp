@@ -78,6 +78,7 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
         QSlider* sd = new QSlider(parent);
         sd->setOrientation(Qt::Horizontal);
         sd->setRange(0,10);
+        sd->setMaximumWidth(100);
         connect(sd, SIGNAL(valueChanged(int)), this, SLOT(emitCommitData()));
         ((RenderingItem*)index.internalPointer())->GUI = sd;
         return sd;
@@ -87,6 +88,7 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
         QSlider* sd = new QSlider(parent);
         sd->setOrientation(Qt::Horizontal);
         sd->setRange(0,50);
+        sd->setMaximumWidth(100);
         connect(sd, SIGNAL(valueChanged(int)), this, SLOT(emitCommitData()));
         ((RenderingItem*)index.internalPointer())->GUI = sd;
         return sd;
@@ -95,6 +97,7 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
     if (string == QString("color"))
     {
         QColorToolButton* sd = new QColorToolButton(parent);
+        sd->setMaximumWidth(100);
         connect(sd, SIGNAL(clicked()), this, SLOT(emitCommitData()));
         ((RenderingItem*)index.internalPointer())->GUI = sd;
         return sd;
@@ -116,6 +119,7 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
             else
                 dsb->setDecimals(std::max<double>((double)0,4-std::log10(dsb->maximum())));
             connect(dsb, SIGNAL(valueChanged(double)), this, SLOT(emitCommitData()));
+            dsb->setMaximumWidth(100);
             ((RenderingItem*)index.internalPointer())->GUI = dsb;
             return dsb;
         }
@@ -128,6 +132,7 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
                 dsb->setSingleStep(string_list[3].toInt());
             else
                 dsb->setSingleStep(std::max<int>(1,(dsb->maximum()-dsb->minimum())/10));
+            dsb->setMaximumWidth(100);
             connect(dsb, SIGNAL(valueChanged(int)), this, SLOT(emitCommitData()));
             ((RenderingItem*)index.internalPointer())->GUI = dsb;
             return dsb;
@@ -135,6 +140,8 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
         {
             QComboBox* cb = new QComboBox(parent);
             cb->addItems(string_list);
+            cb->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+            cb->setMaximumWidth(100);
             connect(cb, SIGNAL(currentIndexChanged(int)), this, SLOT(emitCommitData()));
             ((RenderingItem*)index.internalPointer())->GUI = cb;
             return cb;
@@ -408,12 +415,13 @@ QModelIndex TreeModel::addItem(QString root_name,QString id,QVariant title, QVar
     return createIndex(root_mapping[root_name]->childCount()-1,1,name_data_mapping[id]);
 }
 
-void TreeModel::setDefault(void)
+void TreeModel::setDefault(QString parent_id)
 {
     std::map<QString,RenderingItem*>::iterator iter = name_data_mapping.begin();
     std::map<QString,RenderingItem*>::iterator end = name_data_mapping.end();
     std::map<QString,QVariant>::iterator iter2 = name_default_values.begin();
     for(;iter != end;++iter,++iter2)
+        if(iter->second->parent() && iter->second->parent()->id == parent_id)
         iter->second->setValue(iter2->second);
 
 }
@@ -422,15 +430,16 @@ RenderingTableWidget::RenderingTableWidget(tracking_window& cur_tracking_window_
         QTreeView(parent),cur_tracking_window(cur_tracking_window_)
 {
     setItemDelegateForColumn(1,data_delegate = new RenderingDelegate(this));
-
     setModel(treemodel = new TreeModel(this));
     initialize();
 
+
     header()->setResizeMode(0, QHeaderView::Stretch);
-    header()->setResizeMode(1, QHeaderView::Stretch);
+    header()->setResizeMode(1, QHeaderView::Fixed);
+    header()->setStretchLastSection(false);
     header()->resizeSection(0, 150);
-    header()->resizeSection(1, 150);
-    header()->hide();
+    header()->resizeSection(1, 100);
+    //header()->hide();
     expandAll();
     collapseAll();
 
@@ -457,9 +466,9 @@ void RenderingTableWidget::initialize(void)
         openPersistentEditor(index);
     }
 }
-void RenderingTableWidget::setDefault(void)
+void RenderingTableWidget::setDefault(QString parent_id)
 {
-    treemodel->setDefault();
+    treemodel->setDefault(parent_id);
 }
 void RenderingTableWidget::dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
 {

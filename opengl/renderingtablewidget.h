@@ -124,7 +124,7 @@ public:
         return result;
     }
 
-    void setDefault(void);
+    void setDefault(QString);
 private:
 
 };
@@ -146,7 +146,7 @@ public:
     QStringList getChildren(QString root_name){return treemodel->getChildren(root_name);}
     void initialize(void);
 public slots:
-    void setDefault(void);
+    void setDefault(QString parent_id);
     void dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
 };
 

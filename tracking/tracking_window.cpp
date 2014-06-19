@@ -298,7 +298,6 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         ui->glSagCheck->setChecked(settings.value("SagSlice",1).toBool());
         ui->glCorCheck->setChecked(settings.value("CorSlice",1).toBool());
         ui->glAxiCheck->setChecked(settings.value("AxiSlice",1).toBool());
-        ui->RenderingQualityBox->setCurrentIndex(settings.value("RenderingQuality",1).toInt());
     }
 
     {
@@ -1288,16 +1287,6 @@ void tracking_window::on_actionLoad_tracking_parameters_triggered()
             renderWidget->setData(param_list[index],s.value(param_list[index]));
 }
 
-
-void tracking_window::on_tbDefaultParam_clicked()
-{
-    renderWidget->setDefault();
-    renderWidget->setData("tracking_index",0);
-    on_tracking_index_currentIndexChanged(0);
-    scene.show_slice();
-    glWidget->updateGL();
-}
-
 void tracking_window::on_actionSave_Rendering_Parameters_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
@@ -1351,4 +1340,15 @@ void tracking_window::on_addRegionFromAtlas_clicked()
         connect(atlas_dialog,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
     }
     atlas_dialog->show();
+}
+
+void tracking_window::on_actionRestore_Settings_triggered()
+{
+    renderWidget->setDefault("Rendering");
+    renderWidget->setDefault("Slice");
+    renderWidget->setDefault("Tract");
+    renderWidget->setDefault("Region");
+    renderWidget->setDefault("Surface");
+    renderWidget->setDefault("ODF");
+    glWidget->updateGL();
 }

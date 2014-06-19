@@ -152,10 +152,10 @@ private slots:
     void restore_3D_window();
     void on_actionSave_tracking_parameters_triggered();
     void on_actionLoad_tracking_parameters_triggered();
-    void on_tbDefaultParam_clicked();
     void on_actionSave_Rendering_Parameters_triggered();
     void on_actionLoad_Rendering_Parameters_triggered();
     void on_addRegionFromAtlas_clicked();
+    void on_actionRestore_Settings_triggered();
 };
 
 #endif // TRACKING_WINDOW_H
