@@ -165,6 +165,8 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
         color |= 0x00333333;
     }
     regions.push_back(new ROIRegion(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size));
+    regions.back().show_region.color = color;
+    regions.back().regions_feature = feature;
 
     setRowCount(regions.size());
 
@@ -269,9 +271,9 @@ void RegionTableWidget::copy_region(void)
 {
     unsigned int cur_row = currentRow();
     add_region(item(cur_row,0)->text(),regions[cur_row].regions_feature);
-    unsigned int color = (unsigned int)regions.back().show_region.color;
+    unsigned int color = regions.back().show_region.color.color;
     regions.back() = regions[cur_row];
-    regions.back().show_region.color = color;
+    regions.back().show_region.color.color = color;
 }
 bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 {
@@ -456,8 +458,7 @@ void RegionTableWidget::load_region(void)
             QMessageBox::information(this,"error","Unknown file format",0);
             return;
         }
-        add_region(QFileInfo(filenames[index]).baseName(),roi_id,
-                   (region.show_region.color == image::rgb_color(0x00FFFFFF)) ? 0 : (int)(0xFF000000 | region.show_region.color.color));
+        add_region(QFileInfo(filenames[index]).baseName(),roi_id,region.show_region.color.color);
         regions.back().assign(region.get());
 
     }
