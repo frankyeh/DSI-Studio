@@ -238,7 +238,7 @@ void TractTableWidget::save_all_tracts_as(void)
                 cur_tracking_window.get_path("track") + "/" +
                 item(currentRow(),0)->text().replace(':','_') + "." +
                 settings.value("track_file_extension","txt").toString(),
-                "Tract files (*.txt *.trk *.mat);;All files (*)");
+                "Tract files (*.trk);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
     settings.setValue("track_file_extension",QFileInfo(filename).suffix());
@@ -813,7 +813,7 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
                     this,
                     "Save as",
                     cur_tracking_window.get_path("track")+"/" + item(currentRow(),0)->text(),
-                    "NIFTI files (*.nii.gz *.nii);;MAT File (*.mat);;");
+                    "NIFTI files (*.nii.gz);;MAT File (*.mat);;");
         if(filename.isEmpty())
             return;
         cur_tracking_window.add_path("track",filename);

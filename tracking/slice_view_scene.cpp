@@ -338,7 +338,7 @@ void slice_view_scene::save_slice_as()
                 "Save as",
                 cur_tracking_window.get_path("slice") + "/" +
                 cur_tracking_window.handle->fib_data.view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str(),
-                "NIFTI files (*.nii.gz *.nii);;MAT File (*.mat);;");
+                "NIFTI files (*.nii.gz);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("region",filename);

@@ -744,7 +744,7 @@ void dicom_parser::on_pushButton_clicked()
     QString filename = QFileDialog::getSaveFileName(
             this,"Save file",
             ui->SrcName->text(),
-            "Src files (*.src *.src.gz)" );
+            "Src files (*.src.gz);;All files (*)" );
     if(filename.length())
         ui->SrcName->setText(filename);
 }

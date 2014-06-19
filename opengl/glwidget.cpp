@@ -1847,7 +1847,7 @@ void GLWidget::catchScreen(void)
                this,
                "Save Images files",
                cur_tracking_window.get_path("catch_screen"),
-               "PNG files (*.png );;BMP files (*.bmp);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
+               "PNG files (*.png);;BMP files (*.bmp);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("catch_screen",filename);
@@ -1874,7 +1874,7 @@ void GLWidget::catchScreen2(void)
             this,
             "Save Images files",
             cur_tracking_window.get_path("catch_screen"),
-            "PNG files (*.png );;BMP files (*.bmp);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
+            "PNG files (*.png);;BMP files (*.bmp);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("catch_screen",filename);
@@ -1891,7 +1891,7 @@ void GLWidget::saveLeftRight3DImage(void)
             this,
             "Assign image name",
             cur_tracking_window.get_path("catch_screen"),
-            "BMP files (*.bmp);;PNG files (*.png );;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
+            "BMP files (*.bmp);;PNG files (*.png);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("catch_screen",filename);
@@ -1929,7 +1929,7 @@ void GLWidget::saveRotationSeries(void)
             this,
             "Assign image name",
             cur_tracking_window.get_path("catch_screen"),
-            "BMP files (*.bmp);;PNG files (*.png );;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
+            "BMP files (*.bmp);;PNG files (*.png);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("catch_screen",filename);

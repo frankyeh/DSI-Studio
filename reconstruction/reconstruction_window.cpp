@@ -372,7 +372,7 @@ void reconstruction_window::on_save_mask_clicked()
             this,
             "Save region",
             absolute_path+"/mask.txt",
-            "Text files (*.txt);;Nifti file(*.nii.gz *.nii)" );
+            "Text files (*.txt);;Nifti file(*.nii.gz)" );
     if(filename.isEmpty())
         return;
     ROIRegion region(dwi.geometry(),handle->voxel.vs);
@@ -677,7 +677,7 @@ void reconstruction_window::on_actionSave_bvals_triggered()
                                 this,
                                 "Save b table as...",
                                 QFileInfo(filenames[0]).absolutePath() + "/bvals",
-                                "Text files (*.txt  *)" );
+                                "Text files (*)" );
     if ( filename.isEmpty() )
         return;
     std::ofstream out(filename.toLocal8Bit().begin());
@@ -695,7 +695,7 @@ void reconstruction_window::on_actionSave_bvecs_triggered()
                                 this,
                                 "Save b table as...",
                                 QFileInfo(filenames[0]).absolutePath() + "/bvecs",
-                                "Text files (*.txt *)" );
+                                "Text files (*)" );
     if ( filename.isEmpty() )
         return;
     std::ofstream out(filename.toLocal8Bit().begin());
