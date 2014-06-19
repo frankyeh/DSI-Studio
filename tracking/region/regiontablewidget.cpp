@@ -179,7 +179,7 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
     item1->setData(Qt::ForegroundRole,QBrush(Qt::white));
     setItem(regions.size()-1, 2, item2);
     item2->setData(Qt::ForegroundRole,QBrush(Qt::white));
-    item2->setData(Qt::UserRole,color);
+    item2->setData(Qt::UserRole,0xFF000000 | color);
 
     openPersistentEditor(item1);
     openPersistentEditor(item2);
@@ -400,7 +400,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         }catch(...){}
 
         region.show_region.color = max_value;
-        add_region(QFileInfo(file_name).baseName(),type,0xFF000000 | color);
+        add_region(QFileInfo(file_name).baseName(),type,color);
 
         regions.back().assign(region.get());
         item(currentRow(),0)->setCheckState(Qt::Checked);
