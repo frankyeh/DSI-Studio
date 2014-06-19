@@ -431,6 +431,7 @@ RenderingTableWidget::RenderingTableWidget(tracking_window& cur_tracking_window_
 {
     setItemDelegateForColumn(1,data_delegate = new RenderingDelegate(this));
     setAlternatingRowColors(true);
+
     setModel(treemodel = new TreeModel(this));
     initialize();
 

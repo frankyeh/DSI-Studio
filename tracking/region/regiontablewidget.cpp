@@ -100,7 +100,7 @@ RegionTableWidget::RegionTableWidget(tracking_window& cur_tracking_window_,QWidg
     setSelectionBehavior(QAbstractItemView::SelectRows);
     setSelectionMode(QAbstractItemView::SingleSelection);
     setAlternatingRowColors(true);
-
+    setStyleSheet("QTableView {selection-background-color: #AAAAAA; selection-color: #4444FF;}");
     horizontalHeader()->setResizeMode(0,QHeaderView::Stretch);
     horizontalHeader()->setResizeMode(1,QHeaderView::Fixed);
     horizontalHeader()->setResizeMode(2,QHeaderView::Fixed);
@@ -151,7 +151,7 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
         for(unsigned int index = 0;index < regions.size();++index)
         {
             for(unsigned int i = 0;i < 15;++i)
-                if(regions[index].show_region.color.color == (int)ROIColor[i].rgb())
+                if(regions[index].show_region.color.color == ((int)ROIColor[i].rgb() | 0x00333333))
                     ++color_count[i];
         }
         for(unsigned int i = 0;i < 15;++i)
@@ -162,6 +162,7 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
             }
         if(color == 0)
             color = ROIColor[std::min_element(color_count.begin(),color_count.end())-color_count.begin()].rgb();
+        color |= 0x00333333;
     }
     regions.push_back(new ROIRegion(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size));
 
