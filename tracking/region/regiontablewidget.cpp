@@ -99,6 +99,12 @@ RegionTableWidget::RegionTableWidget(tracking_window& cur_tracking_window_,QWidg
     setHorizontalHeaderLabels(header);
     setSelectionBehavior(QAbstractItemView::SelectRows);
     setSelectionMode(QAbstractItemView::SingleSelection);
+    setAlternatingRowColors(true);
+
+    horizontalHeader()->setResizeMode(0,QHeaderView::Stretch);
+    horizontalHeader()->setResizeMode(1,QHeaderView::Fixed);
+    horizontalHeader()->setResizeMode(2,QHeaderView::Fixed);
+
     setItemDelegate(new ImageDelegate(this));
 
     QObject::connect(this,SIGNAL(cellClicked(int,int)),this,SLOT(check_check_status(int,int)));

@@ -28,13 +28,17 @@ TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget
     setColumnWidth(1,50);
     setColumnWidth(2,50);
     setColumnWidth(3,50);
-
+    horizontalHeader()->setResizeMode(0,QHeaderView::Stretch);
+    horizontalHeader()->setResizeMode(1,QHeaderView::Fixed);
+    horizontalHeader()->setResizeMode(2,QHeaderView::Fixed);
+    horizontalHeader()->setResizeMode(3,QHeaderView::Fixed);
 
     QStringList header;
     header << "Name" << "Tracts" << "Deleted" << "Seeds";
     setHorizontalHeaderLabels(header);
     setSelectionBehavior(QAbstractItemView::SelectRows);
     setSelectionMode(QAbstractItemView::SingleSelection);
+    setAlternatingRowColors(true);
 
     QObject::connect(this,SIGNAL(cellClicked(int,int)),this,SLOT(check_check_status(int,int)));
 

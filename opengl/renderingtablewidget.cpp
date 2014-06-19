@@ -430,9 +430,9 @@ RenderingTableWidget::RenderingTableWidget(tracking_window& cur_tracking_window_
         QTreeView(parent),cur_tracking_window(cur_tracking_window_)
 {
     setItemDelegateForColumn(1,data_delegate = new RenderingDelegate(this));
+    setAlternatingRowColors(true);
     setModel(treemodel = new TreeModel(this));
     initialize();
-
 
     header()->setResizeMode(0, QHeaderView::Stretch);
     header()->setResizeMode(1, QHeaderView::Fixed);
