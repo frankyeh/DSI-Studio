@@ -557,7 +557,7 @@ void RegionTableWidget::save_region(void)
 // fix the Qt double extension bug here
     if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
     {
-        filename = QFileInfo(filename).absolutePath() + QFileInfo(filename).baseName() + ".nii.gz";
+        filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
         settings.setValue("region_save_type","nii.gz");
     }
 #endif
@@ -607,7 +607,7 @@ void RegionTableWidget::save_all_regions(void)
 // fix the Qt double extension bug here
     if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
     {
-        filename = QFileInfo(filename).absolutePath() + QFileInfo(filename).baseName() + ".nii.gz";
+        filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
         settings.setValue("region_save_type","nii.gz");
     }
 #endif
