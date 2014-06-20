@@ -551,13 +551,16 @@ void RegionTableWidget::save_region(void)
                 "NIFTI file(*.nii.gz *.nii);;Text file(*.txt);;MAT file (*.mat);;All files(*)" );
     if (filename.isEmpty())
         return;
-#ifdef __APPLE__
-// fix the Qt double extension bug here
-if(QFileInfo(filename).completeSuffix() == "nii.gz")
-    filename = QFileInfo(filename).absolutePath() + QFileInfo(filename).baseName() + ".nii.gz";
-#endif
     settings.setValue("region_save_type",QFileInfo(filename).completeSuffix());
     cur_tracking_window.add_path("region",filename);
+#ifdef __APPLE__
+// fix the Qt double extension bug here
+    if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
+    {
+        filename = QFileInfo(filename).absolutePath() + QFileInfo(filename).baseName() + ".nii.gz";
+        settings.setValue("region_save_type","nii.gz");
+    }
+#endif
     std::vector<float> no_trans;
     regions[currentRow()].SaveToFile(filename.toLocal8Bit().begin(),
                                      cur_tracking_window.is_qsdr ? cur_tracking_window.handle->fib_data.trans_to_mni: no_trans);
@@ -598,13 +601,17 @@ void RegionTableWidget::save_all_regions(void)
                            "Region file(*.nii.gz *.nii);;All file types (*)" );
     if (filename.isEmpty())
         return;
-#ifdef __APPLE__
-// fix the Qt double extension bug here
-if(QFileInfo(filename).completeSuffix() == "nii.gz")
-    filename = QFileInfo(filename).absolutePath() + QFileInfo(filename).baseName() + ".nii.gz";
-#endif
     settings.setValue("region_save_type",QFileInfo(filename).completeSuffix());
     cur_tracking_window.add_path("region",filename);
+#ifdef __APPLE__
+// fix the Qt double extension bug here
+    if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
+    {
+        filename = QFileInfo(filename).absolutePath() + QFileInfo(filename).baseName() + ".nii.gz";
+        settings.setValue("region_save_type","nii.gz");
+    }
+#endif
+
 
 
     image::geometry<3> geo = cur_tracking_window.slice.geometry;

@@ -749,7 +749,7 @@ void dicom_parser::on_pushButton_clicked()
         return;
 #ifdef __APPLE__
 // fix the Qt double extension bug here
-if(QFileInfo(filename).completeSuffix() == "src.gz")
+if(QFileInfo(filename).completeSuffix().contains(".src.gz"))
     filename = QFileInfo(filename).absolutePath() + QFileInfo(filename).baseName() + ".src.gz";
 #endif
     ui->SrcName->setText(filename);

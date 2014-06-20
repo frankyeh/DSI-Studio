@@ -377,7 +377,7 @@ void reconstruction_window::on_save_mask_clicked()
         return;
     #ifdef __APPLE__
     // fix the Qt double extension bug here
-    if(QFileInfo(filename).completeSuffix() == "nii.gz")
+    if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
         filename = QFileInfo(filename).absolutePath() + QFileInfo(filename).baseName() + ".nii.gz";
     #endif
     ROIRegion region(dwi.geometry(),handle->voxel.vs);

@@ -820,7 +820,7 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
             return;
 #ifdef __APPLE__
 // fix the Qt double extension bug here
-if(QFileInfo(filename).completeSuffix() == "nii.gz")
+if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
     filename = QFileInfo(filename).absolutePath() + QFileInfo(filename).baseName() + ".nii.gz";
 #endif
         cur_tracking_window.add_path("track",filename);
