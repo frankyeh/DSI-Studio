@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Thu Jun 19 01:01:52 2014
+** Created: Thu Jun 19 20:31:33 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -231,6 +231,8 @@ public:
     QComboBox *sliceViewBox;
     QComboBox *overlay;
     QHBoxLayout *horizontalLayout_14;
+    QToolButton *zoom_in;
+    QToolButton *zoom_out;
     QLabel *label_6;
     QDoubleSpinBox *contrast_value;
     QSlider *contrast;
@@ -1168,6 +1170,20 @@ public:
         horizontalLayout_14 = new QHBoxLayout();
         horizontalLayout_14->setSpacing(0);
         horizontalLayout_14->setObjectName(QString::fromUtf8("horizontalLayout_14"));
+        zoom_in = new QToolButton(dockWidgetContents);
+        zoom_in->setObjectName(QString::fromUtf8("zoom_in"));
+        zoom_in->setMinimumSize(QSize(23, 22));
+        zoom_in->setMaximumSize(QSize(23, 22));
+
+        horizontalLayout_14->addWidget(zoom_in);
+
+        zoom_out = new QToolButton(dockWidgetContents);
+        zoom_out->setObjectName(QString::fromUtf8("zoom_out"));
+        zoom_out->setMinimumSize(QSize(23, 22));
+        zoom_out->setMaximumSize(QSize(23, 22));
+
+        horizontalLayout_14->addWidget(zoom_out);
+
         label_6 = new QLabel(dockWidgetContents);
         label_6->setObjectName(QString::fromUtf8("label_6"));
         sizePolicy6.setHeightForWidth(label_6->sizePolicy().hasHeightForWidth());
@@ -1653,6 +1669,8 @@ public:
         overlay->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "No overlay", 0, QApplication::UnicodeUTF8)
         );
+        zoom_in->setText(QApplication::translate("tracking_window", "+", 0, QApplication::UnicodeUTF8));
+        zoom_out->setText(QApplication::translate("tracking_window", "-", 0, QApplication::UnicodeUTF8));
         label_6->setText(QApplication::translate("tracking_window", "Contrast", 0, QApplication::UnicodeUTF8));
         contrast_value->setPrefix(QString());
         label_8->setText(QApplication::translate("tracking_window", "Offset", 0, QApplication::UnicodeUTF8));
