@@ -143,9 +143,14 @@ void VBCDialog::on_select_output_file_clicked()
                                  this,
                                  "Save file",
                                  "",
-                                 "FIB file (*.fib);;All files (*)");
+                                 "FIB file (*.fib.src);;All files (*)");
     if(filename.isEmpty())
         return;
+#ifdef __APPLE__
+// fix the Qt double extension bug here
+if(QFileInfo(filename).completeSuffix() == "fib.gz")
+    filename = QFileInfo(filename).absolutePath() + QFileInfo(filename).baseName() + ".fib.gz";
+#endif
     ui->output_file_name->setText(filename);
 }
 void VBCDialog::on_open_skeleton_clicked()

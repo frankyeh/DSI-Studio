@@ -1526,6 +1526,44 @@
         <number>0</number>
        </property>
        <item>
+        <widget class="QToolButton" name="zoom_in">
+         <property name="minimumSize">
+          <size>
+           <width>23</width>
+           <height>22</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>23</width>
+           <height>22</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>+</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="zoom_out">
+         <property name="minimumSize">
+          <size>
+           <width>23</width>
+           <height>22</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>23</width>
+           <height>22</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>-</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QLabel" name="label_6">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">

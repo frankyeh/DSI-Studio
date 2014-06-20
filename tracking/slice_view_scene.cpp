@@ -341,6 +341,12 @@ void slice_view_scene::save_slice_as()
                 "NIFTI files (*.nii.gz);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
+#ifdef __APPLE__
+// fix the Qt double extension bug here
+if(QFileInfo(filename).completeSuffix() == "nii.gz")
+    filename = QFileInfo(filename).absolutePath() + QFileInfo(filename).baseName() + ".nii.gz";
+#endif
+
     cur_tracking_window.add_path("region",filename);
 
     int index = cur_tracking_window.handle->get_name_index(

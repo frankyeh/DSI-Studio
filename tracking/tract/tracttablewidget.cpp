@@ -403,8 +403,8 @@ void TractTableWidget::save_tracts_as(void)
                 "Save tracts as",
                 cur_tracking_window.get_path("track") + "/" +
                 item(currentRow(),0)->text().replace(':','_') + "."+
-                settings.value("track_file_extension","txt").toString(),
-                 "Tract files (*.txt *.trk *.mat);;All files (*)");
+                settings.value("track_file_extension","trk").toString(),
+                 "Tract files (*.trk);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
     settings.setValue("track_file_extension",QFileInfo(filename).suffix());
@@ -422,7 +422,7 @@ void TractTableWidget::save_end_point_as(void)
                 this,
                 "Save end points as",
                 cur_tracking_window.get_path("track") + "/" + item(currentRow(),0)->text().replace(':','_') + "endpoint.txt",
-                "Tract files (*.txt *.mat);;All files (*)");
+                "Tract files (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("track",filename);
@@ -435,11 +435,13 @@ void TractTableWidget::saveTransformedTracts(const float* transform)
     if(currentRow() >= tract_models.size())
         return;
     QString filename;
+    QSettings settings;
     filename = QFileDialog::getSaveFileName(
                 this,
                 "Save tracts as",
-                cur_tracking_window.get_path("track") + "/" + item(currentRow(),0)->text() + ".txt",
-                 "Tract files (*.txt *.trk *.mat);;All files (*)");
+                cur_tracking_window.get_path("track") + "/" + item(currentRow(),0)->text() + "." +
+                settings.value("track_file_extension","trk").toString(),
+                 "Tract files (*.trk);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("track",filename);
@@ -458,7 +460,7 @@ void TractTableWidget::saveTransformedEndpoints(const float* transform)
                 this,
                 "Save end_point as",
                 cur_tracking_window.get_path("track") + "/" + item(currentRow(),0)->text() + ".txt",
-                "Tract files (*.txt *.mat);;All files (*)");
+                "Tract files (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("track",filename);
@@ -571,7 +573,7 @@ void TractTableWidget::save_fa_as(void)
                 this,
                 "Save QA as",
                 cur_tracking_window.get_path("track") + "/" + item(currentRow(),0)->text() + "_qa.txt",
-                "Text files (*.txt);;All files|(*)");
+                "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("track",filename);
@@ -792,7 +794,7 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
                 this,
                 "Save Images files",
                 cur_tracking_window.get_path("track")+"/" + item(currentRow(),0)->text(),
-                "BMP files (*.bmp);;PNG files (*.png );;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
+                "BMP files (*.bmp);;PNG files (*.png);;JPEG files (*.jpg);;TIFF Files (*.tif);;All files (*)");
         if(filename.isEmpty())
             return;
         cur_tracking_window.add_path("track",filename);
@@ -813,9 +815,14 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
                     this,
                     "Save as",
                     cur_tracking_window.get_path("track")+"/" + item(currentRow(),0)->text(),
-                    "NIFTI files (*.nii.gz);;MAT File (*.mat);;");
+                    "NIFTI files (*.nii.gz *.nii);;MAT File (*.mat);;");
         if(filename.isEmpty())
             return;
+#ifdef __APPLE__
+// fix the Qt double extension bug here
+if(QFileInfo(filename).completeSuffix() == "nii.gz")
+    filename = QFileInfo(filename).absolutePath() + QFileInfo(filename).baseName() + ".nii.gz";
+#endif
         cur_tracking_window.add_path("track",filename);
         image::basic_image<unsigned int,3> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)

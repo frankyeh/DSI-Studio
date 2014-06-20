@@ -156,6 +156,8 @@ private slots:
     void on_actionLoad_Rendering_Parameters_triggered();
     void on_addRegionFromAtlas_clicked();
     void on_actionRestore_Settings_triggered();
+    void on_zoom_in_clicked();
+    void on_zoom_out_clicked();
 };
 
 #endif // TRACKING_WINDOW_H

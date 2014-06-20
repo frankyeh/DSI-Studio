@@ -301,7 +301,6 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
     }
 
     {
-        scene.center();
         slice_no_update = false;
         copy_target = 0;
     }
@@ -315,6 +314,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         renderWidget->setList("tracking_index",tracking_index_list);
         renderWidget->setData("tracking_index",0);
         renderWidget->setData("step_size",fib_data.vs[0]/2.0);
+        scene.center();
     }
 
     on_glAxiView_clicked();
@@ -1351,4 +1351,14 @@ void tracking_window::on_actionRestore_Settings_triggered()
     renderWidget->setDefault("show_surface");
     renderWidget->setDefault("show_odf");
     glWidget->updateGL();
+}
+
+void tracking_window::on_zoom_in_clicked()
+{
+    renderWidget->setData("roi_zoom",renderWidget->getData("roi_zoom").toInt()+1);
+}
+
+void tracking_window::on_zoom_out_clicked()
+{
+    renderWidget->setData("roi_zoom",std::max<int>(1,renderWidget->getData("roi_zoom").toInt()-1));
 }

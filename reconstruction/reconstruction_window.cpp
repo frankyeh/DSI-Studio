@@ -375,6 +375,11 @@ void reconstruction_window::on_save_mask_clicked()
             "Text files (*.txt);;Nifti file(*.nii.gz)" );
     if(filename.isEmpty())
         return;
+    #ifdef __APPLE__
+    // fix the Qt double extension bug here
+    if(QFileInfo(filename).completeSuffix() == "nii.gz")
+        filename = QFileInfo(filename).absolutePath() + QFileInfo(filename).baseName() + ".nii.gz";
+    #endif
     ROIRegion region(dwi.geometry(),handle->voxel.vs);
     region.LoadFromBuffer(handle->mask);
     std::vector<float> trans;
