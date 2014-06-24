@@ -1,6 +1,11 @@
 #ifndef BASIC_PROCESS_HPP
 #define BASIC_PROCESS_HPP
 #include "image/image.hpp"
+
+extern char fib_dx[80];
+extern char fib_dy[80];
+extern char fib_dz[80];
+
 struct LocateVoxel{
 
 public:
@@ -16,29 +21,23 @@ public:
         std::vector<unsigned int> next_voxels_index;
         std::vector<float> voxel_angle;
         // assume isotropic
-        int radius = 2;
-        int radius2 = 6;
-        for(char z = -radius;z <= radius;++z)
-            for(char y = -radius;y <= radius;++y)
-                for(char x = -radius;x <= radius;++x)
-                {
-                    if((x == 0 && y == 0 && z == 0) ||
-                            x*x+y*y+z*z > radius2)
-                        continue;
-                    image::vector<3,float> dis(x,y,z);
-                    image::vector<3,short> pos(cur_pos);
-                    pos += dis;
-                    if(!info.fib.dim.is_valid(pos))
-                        continue;
-                    dis.normalize();
-                    float angle_cos = dis*info.dir;
-                    if(angle_cos < info.fib.cull_cos_angle)
-                        continue;
-                    next_voxels_pos.push_back(pos);
-                    next_voxels_index.push_back(image::pixel_index<3>(pos[0],pos[1],pos[2],info.fib.dim).index());
-                    next_voxels_dir.push_back(dis);
-                    voxel_angle.push_back(angle_cos);
-                }
+
+        for(unsigned int index = 0;index < 80;++index)
+        {
+            image::vector<3,float> dis(fib_dx[index],fib_dy[index],fib_dz[index]);
+            image::vector<3,short> pos(cur_pos);
+            pos += dis;
+            if(!info.fib.dim.is_valid(pos))
+                continue;
+            dis.normalize();
+            float angle_cos = dis*info.dir;
+            if(angle_cos < info.fib.cull_cos_angle)
+                continue;
+            next_voxels_pos.push_back(pos);
+            next_voxels_index.push_back(image::pixel_index<3>(pos[0],pos[1],pos[2],info.fib.dim).index());
+            next_voxels_dir.push_back(dis);
+            voxel_angle.push_back(angle_cos);
+        }
 
         char max_i;
         char max_j;

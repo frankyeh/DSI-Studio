@@ -10,7 +10,9 @@
 #include "tessellated_icosahedron.hpp"
 #include "gzip_interface.hpp"
 #include "prog_interface_static_link.h"
-
+extern char fib_dx[80];
+extern char fib_dy[80];
+extern char fib_dz[80];
 struct ImageModel;
 struct VoxelParam;
 class Voxel;
@@ -79,6 +81,9 @@ public:
     bool output_jacobian;
     bool output_mapping;
     image::vector<3,int> csf_pos1,csf_pos2;
+public: // user in fib evaluation
+    std::vector<image::basic_image<float,3> > fib_fa;
+    std::vector<image::basic_image<image::vector<3>,3> > fib_dir;
 public:
     float z0;
     // other information for second pass processing
@@ -152,15 +157,48 @@ public:
         return &process_list[index];
     }
 public:
-    /*
-    bool read(std::ifstream& in)
+
+    void flip_fib_dir(bool x,bool y,bool z)
     {
-        std::vector<unsigned short> pixel_data(q_count);
-        if (!in.read((char*)&*pixel_data.begin(),pixel_data.size() << 1)) // << 1 for unsigned short = 2 byte
-            return false;
-        std::copy(pixel_data.begin(),pixel_data.end(),space.begin());
-        return true;
-    }*/
+        for(unsigned int i = 0;i < fib_dir.size();++i)
+            for(unsigned int j = 0;j < dim.size();++j)
+            {
+                if(x)
+                    fib_dir[i][j][0] = -fib_dir[i][j][0];
+                if(y)
+                    fib_dir[i][j][1] = -fib_dir[i][j][1];
+                if(z)
+                    fib_dir[i][j][2] = -fib_dir[i][j][2];
+            }
+    }
+
+    unsigned int evaluate_fib(void) const
+    {
+        unsigned char num_fib = fib_fa.size();
+        unsigned int connection_count = 0;
+        float otsu = image::segmentation::otsu_threshold(image::make_image(dim,&*fib_fa[0].begin()))*0.6;
+        for(image::pixel_index<3> index;index.is_valid(dim);index.next(dim))
+            if(fib_fa[0][index.index()] > otsu)
+            {
+                for(unsigned int i = 0;i < 40;++i)
+                {
+                    image::vector<3,short> pos(index[0] + fib_dx[i],index[1] + fib_dy[i],index[2] + fib_dz[i]);
+                    if(!dim.is_valid(pos))
+                        continue;
+                    image::pixel_index<3> other_index(pos[0],pos[1],pos[2],dim);
+                    if(fib_fa[0][other_index.index()] < otsu)
+                        continue;
+                    image::vector<3,float> dis(fib_dx[i],fib_dy[i],fib_dz[i]);
+                    dis.normalize();
+                    for(unsigned char fib1 = 0;fib1 < num_fib;++fib1)
+                        if(fib_fa[fib1][index.index()] > otsu && std::abs(fib_dir[fib1][index.index()]*dis) > 0.8665)
+                        for(unsigned char fib2 = 0;fib2 < num_fib;++fib2)
+                            if(fib_fa[fib2][other_index.index()] > otsu && std::abs(fib_dir[fib2][other_index.index()]*dis) > 0.8665)
+                                ++connection_count;
+                }
+            }
+        return connection_count;
+    }
 };
 
 

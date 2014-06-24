@@ -31,6 +31,14 @@ private:
 public:
     virtual void init(Voxel& voxel)
     {
+        voxel.fib_fa.clear();
+        voxel.fib_dir.clear();
+        voxel.fib_fa.resize(1);
+        voxel.fib_dir.resize(1);
+        voxel.fib_fa[0].resize(voxel.dim);
+        voxel.fib_dir[0].resize(voxel.dim);
+
+
         fa.clear();
         fa.resize(voxel.dim.size());
         fdir.clear();
@@ -114,7 +122,8 @@ public:
             d[2] = 0.0;
         }
         std::copy(V,V+3,fdir.begin() + data.voxel_index * 3);
-        data.fa[0] = fa[data.voxel_index] = get_fa(d[0],d[1],d[2]);
+        voxel.fib_fa[0][data.voxel_index] = data.fa[0] = fa[data.voxel_index] = get_fa(d[0],d[1],d[2]);
+        voxel.fib_dir[0][data.voxel_index] = image::vector<3>(V[0],V[1],V[2]);
         md[data.voxel_index] = 1000.0*(d[0]+d[1]+d[2])/3.0;
         d0[data.voxel_index] = 1000.0*d[0];
         d1[data.voxel_index] = 1000.0*(d[1]+d[2])/2.0;

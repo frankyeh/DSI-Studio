@@ -239,6 +239,7 @@ public:
     template<typename ProcessType>
     bool reconstruct(void)
     {
+        begin_prog("reconstruction");
         voxel.image_model = this;
         voxel.CreateProcesses<ProcessType>();
         voxel.init(thread_count);

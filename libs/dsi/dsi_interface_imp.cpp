@@ -176,6 +176,51 @@ extern "C"
                         << "_" << image_model->voxel.odf_xyz[2];
             }
         }
+        // correct for b-table orientation
+        {
+            set_title("checking b-table");
+            image_model->voxel.max_fiber_number = 1;
+            image_model->reconstruct<dti_process>();
+            unsigned int cur_score = image_model->voxel.evaluate_fib();
+            image_model->voxel.flip_fib_dir(true,false,false);
+            unsigned int flip_x_score = image_model->voxel.evaluate_fib();
+            image_model->voxel.flip_fib_dir(true,true,false);
+            unsigned int flip_y_score = image_model->voxel.evaluate_fib();
+            image_model->voxel.flip_fib_dir(false,true,true);
+            unsigned int flip_z_score = image_model->voxel.evaluate_fib();
+
+            std::cout << cur_score << std::endl;
+            std::cout << flip_x_score << std::endl;
+            std::cout << flip_y_score << std::endl;
+            std::cout << flip_z_score << std::endl;
+
+
+            if(flip_x_score > cur_score &&
+               flip_x_score > flip_y_score && flip_x_score > flip_z_score)
+            {
+                std::cout << "b-table flipped x" << std::endl;
+                for(unsigned int index = 0;index < image_model->voxel.bvectors.size();++index)
+                    image_model->voxel.bvectors[index][0] = -image_model->voxel.bvectors[index][0];
+            }
+            if(flip_y_score > cur_score &&
+               flip_y_score > flip_x_score && flip_y_score > flip_z_score)
+            {
+                std::cout << "b-table flipped y" << std::endl;
+                for(unsigned int index = 0;index < image_model->voxel.bvectors.size();++index)
+                    image_model->voxel.bvectors[index][1] = -image_model->voxel.bvectors[index][1];
+            }
+            if(flip_z_score > cur_score &&
+               flip_z_score > flip_y_score && flip_z_score > flip_x_score)
+            {
+                std::cout << "b-table flipped z" << std::endl;
+                for(unsigned int index = 0;index < image_model->voxel.bvectors.size();++index)
+                    image_model->voxel.bvectors[index][2] = -image_model->voxel.bvectors[index][2];
+            }
+
+        }
+
+
+
         switch (method_id)
         {
         case 0: //DSI local max
