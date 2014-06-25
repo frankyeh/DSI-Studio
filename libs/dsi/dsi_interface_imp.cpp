@@ -180,7 +180,6 @@ extern "C"
         if(image_model->voxel.check_btable)
         {
             set_title("checking b-table");
-            image_model->voxel.max_fiber_number = 1;
             image_model->reconstruct<dti_process>();
             unsigned int cur_score = image_model->voxel.evaluate_fib();
             image_model->voxel.flip_fib_dir(true,false,false);
