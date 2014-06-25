@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>669</width>
-    <height>521</height>
+    <width>554</width>
+    <height>542</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -41,7 +41,7 @@
     <item>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -51,8 +51,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>669</width>
-         <height>434</height>
+         <width>554</width>
+         <height>455</height>
         </rect>
        </property>
        <attribute name="label">
@@ -246,8 +246,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>669</width>
-         <height>434</height>
+         <width>554</width>
+         <height>455</height>
         </rect>
        </property>
        <attribute name="label">
@@ -355,8 +355,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>652</width>
-         <height>457</height>
+         <width>537</width>
+         <height>515</height>
         </rect>
        </property>
        <property name="minimumSize">
@@ -858,9 +858,9 @@
              <property name="title">
               <string>ODF Sharpening</string>
              </property>
-             <layout class="QHBoxLayout" name="horizontalLayout_17">
+             <layout class="QVBoxLayout" name="verticalLayout_10">
               <property name="spacing">
-               <number>0</number>
+               <number>6</number>
               </property>
               <property name="topMargin">
                <number>0</number>
@@ -999,20 +999,20 @@
                   </property>
                  </widget>
                 </item>
+                <item>
+                 <spacer name="horizontalSpacer_7">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>40</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
                </layout>
-              </item>
-              <item>
-               <spacer name="horizontalSpacer_3">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
               </item>
               <item>
                <layout class="QHBoxLayout" name="xyz">
@@ -1058,80 +1058,93 @@
                      </item>
                     </widget>
                    </item>
+                   <item>
+                    <widget class="QWidget" name="ODFSelection" native="true">
+                     <layout class="QHBoxLayout" name="horizontalLayout_15">
+                      <property name="spacing">
+                       <number>0</number>
+                      </property>
+                      <property name="leftMargin">
+                       <number>7</number>
+                      </property>
+                      <property name="topMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="rightMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="bottomMargin">
+                       <number>0</number>
+                      </property>
+                      <item>
+                       <widget class="QLabel" name="label_10">
+                        <property name="minimumSize">
+                         <size>
+                          <width>20</width>
+                          <height>0</height>
+                         </size>
+                        </property>
+                        <property name="maximumSize">
+                         <size>
+                          <width>60</width>
+                          <height>16777215</height>
+                         </size>
+                        </property>
+                        <property name="text">
+                         <string>at (x,y,z)=</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QSpinBox" name="x">
+                        <property name="maximumSize">
+                         <size>
+                          <width>35</width>
+                          <height>16777215</height>
+                         </size>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QSpinBox" name="y">
+                        <property name="maximumSize">
+                         <size>
+                          <width>35</width>
+                          <height>16777215</height>
+                         </size>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QSpinBox" name="z">
+                        <property name="maximumSize">
+                         <size>
+                          <width>35</width>
+                          <height>16777215</height>
+                         </size>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <spacer name="horizontalSpacer_3">
+                        <property name="orientation">
+                         <enum>Qt::Horizontal</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>40</width>
+                          <height>20</height>
+                         </size>
+                        </property>
+                       </spacer>
+                      </item>
+                     </layout>
+                    </widget>
+                   </item>
                   </layout>
                  </widget>
                 </item>
                </layout>
-              </item>
-              <item>
-               <widget class="QWidget" name="ODFSelection" native="true">
-                <layout class="QHBoxLayout" name="horizontalLayout_15">
-                 <property name="spacing">
-                  <number>0</number>
-                 </property>
-                 <property name="leftMargin">
-                  <number>7</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>0</number>
-                 </property>
-                 <item>
-                  <widget class="QLabel" name="label_10">
-                   <property name="minimumSize">
-                    <size>
-                     <width>20</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>60</width>
-                     <height>16777215</height>
-                    </size>
-                   </property>
-                   <property name="text">
-                    <string>at (x,y,z)=</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QSpinBox" name="x">
-                   <property name="maximumSize">
-                    <size>
-                     <width>35</width>
-                     <height>16777215</height>
-                    </size>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QSpinBox" name="y">
-                   <property name="maximumSize">
-                    <size>
-                     <width>35</width>
-                     <height>16777215</height>
-                    </size>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QSpinBox" name="z">
-                   <property name="maximumSize">
-                    <size>
-                     <width>35</width>
-                     <height>16777215</height>
-                    </size>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
               </item>
              </layout>
             </widget>
@@ -1151,7 +1164,7 @@
               <item>
                <widget class="QCheckBox" name="RecordODF">
                 <property name="text">
-                 <string>Complete ODFs</string>
+                 <string>ODFs</string>
                 </property>
                </widget>
               </item>
@@ -1188,9 +1201,9 @@
            <item>
             <widget class="QGroupBox" name="groupBox_2">
              <property name="title">
-              <string>ODF Processing</string>
+              <string>Others</string>
              </property>
-             <layout class="QHBoxLayout" name="horizontalLayout_18">
+             <layout class="QVBoxLayout" name="verticalLayout_9">
               <property name="topMargin">
                <number>0</number>
               </property>
@@ -1198,115 +1211,149 @@
                <number>6</number>
               </property>
               <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_6">
+               <layout class="QHBoxLayout" name="horizontalLayout_17">
+                <property name="rightMargin">
+                 <number>0</number>
+                </property>
                 <item>
-                 <widget class="QLabel" name="label_3">
-                  <property name="text">
-                   <string>Number of fibers resolved</string>
-                  </property>
-                 </widget>
+                 <layout class="QHBoxLayout" name="horizontalLayout_3">
+                  <item>
+                   <widget class="QLabel" name="label_2">
+                    <property name="text">
+                     <string>ODF Tessellation</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QComboBox" name="ODFDim">
+                    <property name="maximumSize">
+                     <size>
+                      <width>75</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
+                    <property name="currentIndex">
+                     <number>3</number>
+                    </property>
+                    <item>
+                     <property name="text">
+                      <string>4-fold</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>5-fold</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>6-fold</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>8-fold</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>10-fold</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>12-fold</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>16-fold</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>20-fold</string>
+                     </property>
+                    </item>
+                   </widget>
+                  </item>
+                 </layout>
                 </item>
                 <item>
-                 <widget class="QSpinBox" name="NumOfFibers">
-                  <property name="maximumSize">
-                   <size>
-                    <width>75</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="minimum">
-                   <number>3</number>
-                  </property>
-                  <property name="maximum">
-                   <number>20</number>
-                  </property>
-                  <property name="value">
-                   <number>5</number>
-                  </property>
-                 </widget>
+                 <layout class="QHBoxLayout" name="horizontalLayout_6">
+                  <item>
+                   <widget class="QLabel" name="label_3">
+                    <property name="text">
+                     <string>Number of fibers resolved</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QSpinBox" name="NumOfFibers">
+                    <property name="maximumSize">
+                     <size>
+                      <width>75</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
+                    <property name="minimum">
+                     <number>3</number>
+                    </property>
+                    <property name="maximum">
+                     <number>20</number>
+                    </property>
+                    <property name="value">
+                     <number>5</number>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
                 </item>
                </layout>
               </item>
               <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_3">
+               <layout class="QHBoxLayout" name="horizontalLayout_18">
                 <item>
-                 <widget class="QLabel" name="label_2">
+                 <spacer name="horizontalSpacer_8">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>40</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+                <item>
+                 <widget class="QCheckBox" name="check_btable">
                   <property name="text">
-                   <string>ODF Tessellation</string>
+                   <string>Check btable</string>
+                  </property>
+                  <property name="checked">
+                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QComboBox" name="ODFDim">
-                  <property name="maximumSize">
-                   <size>
-                    <width>75</width>
-                    <height>16777215</height>
-                   </size>
+                 <widget class="QCheckBox" name="balance_scheme">
+                  <property name="text">
+                   <string>Balance scheme</string>
                   </property>
-                  <property name="currentIndex">
-                   <number>3</number>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QCheckBox" name="HalfSphere">
+                  <property name="text">
+                   <string>Half-sphere scheme</string>
                   </property>
-                  <item>
-                   <property name="text">
-                    <string>4-fold</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>5-fold</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>6-fold</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>8-fold</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>10-fold</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>12-fold</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>16-fold</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>20-fold</string>
-                   </property>
-                  </item>
+                  <property name="checked">
+                   <bool>false</bool>
+                  </property>
                  </widget>
                 </item>
                </layout>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="balance_scheme">
-                <property name="text">
-                 <string>Balance scheme</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="HalfSphere">
-                <property name="text">
-                 <string>Half-sphere scheme</string>
-                </property>
-                <property name="checked">
-                 <bool>false</bool>
-                </property>
-               </widget>
               </item>
              </layout>
             </widget>
@@ -1464,7 +1511,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>669</width>
+     <width>554</width>
      <height>21</height>
     </rect>
    </property>

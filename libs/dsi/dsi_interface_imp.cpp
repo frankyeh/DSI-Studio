@@ -177,6 +177,7 @@ extern "C"
             }
         }
         // correct for b-table orientation
+        if(image_model->voxel.check_btable)
         {
             set_title("checking b-table");
             image_model->voxel.max_fiber_number = 1;

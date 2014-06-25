@@ -109,6 +109,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->output_jacobian->setChecked(settings.value("output_jacobian",0).toInt());
     ui->output_mapping->setChecked(settings.value("output_mapping",0).toInt());
     ui->balance_scheme->setChecked(settings.value("balance_scheme",0).toInt());
+    ui->check_btable->setChecked(settings.value("check_btable",1).toInt());
 
     ui->hardi_bvalue->setValue(settings.value("hardi_bvalue",3000).toDouble());
     ui->hardi_reg->setValue(settings.value("hardi_reg",0.05).toDouble());
@@ -244,6 +245,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     settings.setValue("output_jacobian",ui->output_jacobian->isChecked() ? 1 : 0);
     settings.setValue("output_mapping",ui->output_mapping->isChecked() ? 1 : 0);
     settings.setValue("balance_scheme",ui->balance_scheme->isChecked() ? 1 : 0);
+    settings.setValue("check_btable",ui->check_btable->isChecked() ? 1 : 0);
 
 
 
@@ -262,6 +264,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.reg_method = ui->reg_method->currentIndex();
 
     handle->voxel.scheme_balance = ui->balance_scheme->isChecked();
+    handle->voxel.check_btable = ui->check_btable->isChecked();
 
     handle->voxel.need_odf = ui->RecordODF->isChecked() ? 1 : 0;
     handle->voxel.output_jacobian = ui->output_jacobian->isChecked() ? 1 : 0;

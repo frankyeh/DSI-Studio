@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Wed Jun 18 22:31:53 2014
+** Created: Tue Jun 24 23:17:54 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -149,7 +149,7 @@ public:
     QWidget *AdvancedWidget;
     QVBoxLayout *verticalLayout_7;
     QGroupBox *ODFSharpening;
-    QHBoxLayout *horizontalLayout_17;
+    QVBoxLayout *verticalLayout_10;
     QHBoxLayout *horizontalLayout_14;
     QComboBox *odf_sharpening;
     QWidget *decom_panel;
@@ -159,7 +159,7 @@ public:
     QLabel *label_11;
     QSpinBox *decom_m;
     QDoubleSpinBox *decon_param;
-    QSpacerItem *horizontalSpacer_3;
+    QSpacerItem *horizontalSpacer_7;
     QHBoxLayout *xyz;
     QWidget *xyz_widget;
     QHBoxLayout *horizontalLayout_4;
@@ -171,6 +171,7 @@ public:
     QSpinBox *x;
     QSpinBox *y;
     QSpinBox *z;
+    QSpacerItem *horizontalSpacer_3;
     QGroupBox *Output;
     QHBoxLayout *horizontalLayout_16;
     QCheckBox *RecordODF;
@@ -178,13 +179,17 @@ public:
     QCheckBox *output_jacobian;
     QSpacerItem *horizontalSpacer_4;
     QGroupBox *groupBox_2;
-    QHBoxLayout *horizontalLayout_18;
-    QHBoxLayout *horizontalLayout_6;
-    QLabel *label_3;
-    QSpinBox *NumOfFibers;
+    QVBoxLayout *verticalLayout_9;
+    QHBoxLayout *horizontalLayout_17;
     QHBoxLayout *horizontalLayout_3;
     QLabel *label_2;
     QComboBox *ODFDim;
+    QHBoxLayout *horizontalLayout_6;
+    QLabel *label_3;
+    QSpinBox *NumOfFibers;
+    QHBoxLayout *horizontalLayout_18;
+    QSpacerItem *horizontalSpacer_8;
+    QCheckBox *check_btable;
     QCheckBox *balance_scheme;
     QCheckBox *HalfSphere;
     QSpacerItem *verticalSpacer;
@@ -202,7 +207,7 @@ public:
     {
         if (reconstruction_window->objectName().isEmpty())
             reconstruction_window->setObjectName(QString::fromUtf8("reconstruction_window"));
-        reconstruction_window->resize(669, 521);
+        reconstruction_window->resize(554, 542);
         QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         sizePolicy.setHorizontalStretch(0);
         sizePolicy.setVerticalStretch(0);
@@ -246,7 +251,7 @@ public:
         toolBox->setObjectName(QString::fromUtf8("toolBox"));
         source_page = new QWidget();
         source_page->setObjectName(QString::fromUtf8("source_page"));
-        source_page->setGeometry(QRect(0, 0, 669, 434));
+        source_page->setGeometry(QRect(0, 0, 554, 455));
         horizontalLayout_25 = new QHBoxLayout(source_page);
         horizontalLayout_25->setObjectName(QString::fromUtf8("horizontalLayout_25"));
         splitter = new QSplitter(source_page);
@@ -366,7 +371,7 @@ public:
         toolBox->addItem(source_page, QString::fromUtf8("Source Images"));
         page_3 = new QWidget();
         page_3->setObjectName(QString::fromUtf8("page_3"));
-        page_3->setGeometry(QRect(0, 0, 669, 434));
+        page_3->setGeometry(QRect(0, 0, 554, 455));
         gridLayout_2 = new QGridLayout(page_3);
         gridLayout_2->setObjectName(QString::fromUtf8("gridLayout_2"));
         verticalLayout_5 = new QVBoxLayout();
@@ -443,7 +448,7 @@ public:
         toolBox->addItem(page_3, QString::fromUtf8("Step 1: setup brain mask"));
         page = new QWidget();
         page->setObjectName(QString::fromUtf8("page"));
-        page->setGeometry(QRect(0, 0, 652, 457));
+        page->setGeometry(QRect(0, 0, 537, 515));
         page->setMinimumSize(QSize(0, 0));
         verticalLayout_2 = new QVBoxLayout(page);
         verticalLayout_2->setSpacing(3);
@@ -730,10 +735,10 @@ public:
         verticalLayout_7->setObjectName(QString::fromUtf8("verticalLayout_7"));
         ODFSharpening = new QGroupBox(AdvancedWidget);
         ODFSharpening->setObjectName(QString::fromUtf8("ODFSharpening"));
-        horizontalLayout_17 = new QHBoxLayout(ODFSharpening);
-        horizontalLayout_17->setSpacing(0);
-        horizontalLayout_17->setObjectName(QString::fromUtf8("horizontalLayout_17"));
-        horizontalLayout_17->setContentsMargins(-1, 0, -1, 6);
+        verticalLayout_10 = new QVBoxLayout(ODFSharpening);
+        verticalLayout_10->setSpacing(6);
+        verticalLayout_10->setObjectName(QString::fromUtf8("verticalLayout_10"));
+        verticalLayout_10->setContentsMargins(-1, 0, -1, 6);
         horizontalLayout_14 = new QHBoxLayout();
         horizontalLayout_14->setSpacing(0);
         horizontalLayout_14->setObjectName(QString::fromUtf8("horizontalLayout_14"));
@@ -793,12 +798,12 @@ public:
 
         horizontalLayout_14->addWidget(decon_param);
 
+        horizontalSpacer_7 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
-        horizontalLayout_17->addLayout(horizontalLayout_14);
+        horizontalLayout_14->addItem(horizontalSpacer_7);
 
-        horizontalSpacer_3 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
-        horizontalLayout_17->addItem(horizontalSpacer_3);
+        verticalLayout_10->addLayout(horizontalLayout_14);
 
         xyz = new QHBoxLayout();
         xyz->setSpacing(0);
@@ -821,13 +826,7 @@ public:
 
         horizontalLayout_4->addWidget(RFSelection);
 
-
-        xyz->addWidget(xyz_widget);
-
-
-        horizontalLayout_17->addLayout(xyz);
-
-        ODFSelection = new QWidget(ODFSharpening);
+        ODFSelection = new QWidget(xyz_widget);
         ODFSelection->setObjectName(QString::fromUtf8("ODFSelection"));
         horizontalLayout_15 = new QHBoxLayout(ODFSelection);
         horizontalLayout_15->setSpacing(0);
@@ -858,8 +857,18 @@ public:
 
         horizontalLayout_15->addWidget(z);
 
+        horizontalSpacer_3 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
-        horizontalLayout_17->addWidget(ODFSelection);
+        horizontalLayout_15->addItem(horizontalSpacer_3);
+
+
+        horizontalLayout_4->addWidget(ODFSelection);
+
+
+        xyz->addWidget(xyz_widget);
+
+
+        verticalLayout_10->addLayout(xyz);
 
 
         verticalLayout_7->addWidget(ODFSharpening);
@@ -893,9 +902,28 @@ public:
 
         groupBox_2 = new QGroupBox(AdvancedWidget);
         groupBox_2->setObjectName(QString::fromUtf8("groupBox_2"));
-        horizontalLayout_18 = new QHBoxLayout(groupBox_2);
-        horizontalLayout_18->setObjectName(QString::fromUtf8("horizontalLayout_18"));
-        horizontalLayout_18->setContentsMargins(-1, 0, -1, 6);
+        verticalLayout_9 = new QVBoxLayout(groupBox_2);
+        verticalLayout_9->setObjectName(QString::fromUtf8("verticalLayout_9"));
+        verticalLayout_9->setContentsMargins(-1, 0, -1, 6);
+        horizontalLayout_17 = new QHBoxLayout();
+        horizontalLayout_17->setObjectName(QString::fromUtf8("horizontalLayout_17"));
+        horizontalLayout_17->setContentsMargins(-1, -1, 0, -1);
+        horizontalLayout_3 = new QHBoxLayout();
+        horizontalLayout_3->setObjectName(QString::fromUtf8("horizontalLayout_3"));
+        label_2 = new QLabel(groupBox_2);
+        label_2->setObjectName(QString::fromUtf8("label_2"));
+
+        horizontalLayout_3->addWidget(label_2);
+
+        ODFDim = new QComboBox(groupBox_2);
+        ODFDim->setObjectName(QString::fromUtf8("ODFDim"));
+        ODFDim->setMaximumSize(QSize(75, 16777215));
+
+        horizontalLayout_3->addWidget(ODFDim);
+
+
+        horizontalLayout_17->addLayout(horizontalLayout_3);
+
         horizontalLayout_6 = new QHBoxLayout();
         horizontalLayout_6->setObjectName(QString::fromUtf8("horizontalLayout_6"));
         label_3 = new QLabel(groupBox_2);
@@ -913,23 +941,22 @@ public:
         horizontalLayout_6->addWidget(NumOfFibers);
 
 
-        horizontalLayout_18->addLayout(horizontalLayout_6);
-
-        horizontalLayout_3 = new QHBoxLayout();
-        horizontalLayout_3->setObjectName(QString::fromUtf8("horizontalLayout_3"));
-        label_2 = new QLabel(groupBox_2);
-        label_2->setObjectName(QString::fromUtf8("label_2"));
-
-        horizontalLayout_3->addWidget(label_2);
-
-        ODFDim = new QComboBox(groupBox_2);
-        ODFDim->setObjectName(QString::fromUtf8("ODFDim"));
-        ODFDim->setMaximumSize(QSize(75, 16777215));
-
-        horizontalLayout_3->addWidget(ODFDim);
+        horizontalLayout_17->addLayout(horizontalLayout_6);
 
 
-        horizontalLayout_18->addLayout(horizontalLayout_3);
+        verticalLayout_9->addLayout(horizontalLayout_17);
+
+        horizontalLayout_18 = new QHBoxLayout();
+        horizontalLayout_18->setObjectName(QString::fromUtf8("horizontalLayout_18"));
+        horizontalSpacer_8 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+        horizontalLayout_18->addItem(horizontalSpacer_8);
+
+        check_btable = new QCheckBox(groupBox_2);
+        check_btable->setObjectName(QString::fromUtf8("check_btable"));
+        check_btable->setChecked(true);
+
+        horizontalLayout_18->addWidget(check_btable);
 
         balance_scheme = new QCheckBox(groupBox_2);
         balance_scheme->setObjectName(QString::fromUtf8("balance_scheme"));
@@ -941,6 +968,9 @@ public:
         HalfSphere->setChecked(false);
 
         horizontalLayout_18->addWidget(HalfSphere);
+
+
+        verticalLayout_9->addLayout(horizontalLayout_18);
 
 
         verticalLayout_7->addWidget(groupBox_2);
@@ -996,7 +1026,7 @@ public:
         reconstruction_window->setCentralWidget(centralwidget);
         menuBar = new QMenuBar(reconstruction_window);
         menuBar->setObjectName(QString::fromUtf8("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 669, 21));
+        menuBar->setGeometry(QRect(0, 0, 554, 21));
         menuFile = new QMenu(menuBar);
         menuFile->setObjectName(QString::fromUtf8("menuFile"));
         menu_Edit = new QMenu(menuBar);
@@ -1020,7 +1050,7 @@ public:
 
         retranslateUi(reconstruction_window);
 
-        toolBox->setCurrentIndex(1);
+        toolBox->setCurrentIndex(2);
         toolBox->layout()->setSpacing(0);
         ODFDim->setCurrentIndex(3);
         ThreadCount->setCurrentIndex(3);
@@ -1116,11 +1146,10 @@ public:
         );
         label_10->setText(QApplication::translate("reconstruction_window", "at (x,y,z)=", 0, QApplication::UnicodeUTF8));
         Output->setTitle(QApplication::translate("reconstruction_window", "Output", 0, QApplication::UnicodeUTF8));
-        RecordODF->setText(QApplication::translate("reconstruction_window", "Complete ODFs", 0, QApplication::UnicodeUTF8));
+        RecordODF->setText(QApplication::translate("reconstruction_window", "ODFs", 0, QApplication::UnicodeUTF8));
         output_mapping->setText(QApplication::translate("reconstruction_window", "Spatial mapping", 0, QApplication::UnicodeUTF8));
         output_jacobian->setText(QApplication::translate("reconstruction_window", "Jacobian determinant", 0, QApplication::UnicodeUTF8));
-        groupBox_2->setTitle(QApplication::translate("reconstruction_window", "ODF Processing", 0, QApplication::UnicodeUTF8));
-        label_3->setText(QApplication::translate("reconstruction_window", "Number of fibers resolved", 0, QApplication::UnicodeUTF8));
+        groupBox_2->setTitle(QApplication::translate("reconstruction_window", "Others", 0, QApplication::UnicodeUTF8));
         label_2->setText(QApplication::translate("reconstruction_window", "ODF Tessellation", 0, QApplication::UnicodeUTF8));
         ODFDim->clear();
         ODFDim->insertItems(0, QStringList()
@@ -1133,6 +1162,8 @@ public:
          << QApplication::translate("reconstruction_window", "16-fold", 0, QApplication::UnicodeUTF8)
          << QApplication::translate("reconstruction_window", "20-fold", 0, QApplication::UnicodeUTF8)
         );
+        label_3->setText(QApplication::translate("reconstruction_window", "Number of fibers resolved", 0, QApplication::UnicodeUTF8));
+        check_btable->setText(QApplication::translate("reconstruction_window", "Check btable", 0, QApplication::UnicodeUTF8));
         balance_scheme->setText(QApplication::translate("reconstruction_window", "Balance scheme", 0, QApplication::UnicodeUTF8));
         HalfSphere->setText(QApplication::translate("reconstruction_window", "Half-sphere scheme", 0, QApplication::UnicodeUTF8));
         label_9->setText(QApplication::translate("reconstruction_window", "Parallel reconstruction:", 0, QApplication::UnicodeUTF8));
