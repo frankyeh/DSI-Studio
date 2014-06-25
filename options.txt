@@ -9,8 +9,8 @@ Tracking/Threshold/fa_threshold/float:0:1:0.01:5/0.2
 Tracking/Angular Threshold/turning_angle/int:0:90:5/60
 Tracking/Step Size(mm)/step_size/float:0.05:10:0.1:2/1.0
 Tracking/Smoothing/smoothing/float:0:0.99:0.1:2/0
-Tracking/Min Length(mm)/min_length/float:0:800:50:1/0
-Tracking/Max Length(mm)/max_length/float:0:800:50:1/500
+Tracking/Min Length(mm)/min_length/float:0:800:50:1/10
+Tracking/Max Length(mm)/max_length/float:0:800:50:1/300
 Tracking/Seed Orientation/initial_direction/Primary:Random:All/0
 Tracking/Seed Position/seed_plan/Subvoxel:Voxel Center/0
 Tracking/Direction Interpoation/interpolation/Trilinear:Gaussian radial basis:nearest/0
