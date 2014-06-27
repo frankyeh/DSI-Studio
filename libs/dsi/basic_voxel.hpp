@@ -10,9 +10,6 @@
 #include "tessellated_icosahedron.hpp"
 #include "gzip_interface.hpp"
 #include "prog_interface_static_link.h"
-extern char fib_dx[80];
-extern char fib_dy[80];
-extern char fib_dz[80];
 struct ImageModel;
 struct VoxelParam;
 class Voxel;
@@ -177,19 +174,22 @@ public:
     {
         unsigned char num_fib = fib_fa.size();
         unsigned int connection_count = 0;
+        char dx[13] = {1,0,0,1,1,0, 1, 1, 0, 1,-1, 1, 1};
+        char dy[13] = {0,1,0,1,0,1,-1, 0, 1, 1, 1,-1, 1};
+        char dz[13] = {0,0,1,0,1,1, 0,-1,-1, 1, 1, 1,-1};
         float otsu = image::segmentation::otsu_threshold(image::make_image(dim,&*fib_fa[0].begin()))*0.6;
         for(image::pixel_index<3> index;index.is_valid(dim);index.next(dim))
             if(fib_fa[0][index.index()] > otsu)
             {
-                for(unsigned int i = 0;i < 40;++i)
+                for(unsigned int i = 0;i < 13;++i)
                 {
-                    image::vector<3,short> pos(index[0] + fib_dx[i],index[1] + fib_dy[i],index[2] + fib_dz[i]);
+                    image::vector<3,short> pos(index[0] + dx[i],index[1] + dy[i],index[2] + dz[i]);
                     if(!dim.is_valid(pos))
                         continue;
                     image::pixel_index<3> other_index(pos[0],pos[1],pos[2],dim);
                     if(fib_fa[0][other_index.index()] < otsu)
                         continue;
-                    image::vector<3,float> dis(fib_dx[i],fib_dy[i],fib_dz[i]);
+                    image::vector<3,float> dis(dx[i],dy[i],dz[i]);
                     dis.normalize();
                     for(unsigned char fib1 = 0;fib1 < num_fib;++fib1)
                         if(fib_fa[fib1][index.index()] > otsu && std::abs(fib_dir[fib1][index.index()]*dis) > 0.8665)
