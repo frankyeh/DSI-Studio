@@ -557,7 +557,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>318</width>
+     <width>393</width>
      <height>48</height>
     </size>
    </property>
@@ -777,6 +777,19 @@
          <property name="icon">
           <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="stop_tracking">
+         <property name="maximumSize">
+          <size>
+           <width>30</width>
+           <height>22</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Stop</string>
          </property>
         </widget>
        </item>

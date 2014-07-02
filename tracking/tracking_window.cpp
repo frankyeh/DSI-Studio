@@ -238,6 +238,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
     // tracts
     {
         connect(ui->perform_tracking,SIGNAL(clicked()),tractWidget,SLOT(start_tracking()));
+        connect(ui->stop_tracking,SIGNAL(clicked()),tractWidget,SLOT(stop_tracking()));
 
         connect(tractWidget,SIGNAL(need_update()),glWidget,SLOT(makeTracts()));
         connect(tractWidget,SIGNAL(need_update()),glWidget,SLOT(updateGL()));

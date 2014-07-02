@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Thu Jun 19 20:31:33 2014
+** Created: Tue Jul 1 21:23:21 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -185,6 +185,7 @@ public:
     QToolButton *addRegionFromAtlas;
     QFrame *line;
     QPushButton *perform_tracking;
+    QPushButton *stop_tracking;
     QSpacerItem *horizontalSpacer;
     QFrame *line_5;
     QDockWidget *renderingWidgetHolder;
@@ -783,7 +784,7 @@ public:
         sizePolicy4.setVerticalStretch(1);
         sizePolicy4.setHeightForWidth(regionDockWidget->sizePolicy().hasHeightForWidth());
         regionDockWidget->setSizePolicy(sizePolicy4);
-        regionDockWidget->setMinimumSize(QSize(318, 48));
+        regionDockWidget->setMinimumSize(QSize(393, 48));
         regionDockWidget->setMaximumSize(QSize(600, 524287));
         QFont font1;
         font1.setBold(false);
@@ -892,6 +893,12 @@ public:
         perform_tracking->setIcon(icon12);
 
         horizontalLayout_16->addWidget(perform_tracking);
+
+        stop_tracking = new QPushButton(dockWidgetContents_4);
+        stop_tracking->setObjectName(QString::fromUtf8("stop_tracking"));
+        stop_tracking->setMaximumSize(QSize(30, 22));
+
+        horizontalLayout_16->addWidget(stop_tracking);
 
         horizontalSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
@@ -1619,6 +1626,7 @@ public:
         region_down->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
         addRegionFromAtlas->setText(QApplication::translate("tracking_window", "Atlas...", 0, QApplication::UnicodeUTF8));
         perform_tracking->setText(QApplication::translate("tracking_window", "Run Tracking", 0, QApplication::UnicodeUTF8));
+        stop_tracking->setText(QApplication::translate("tracking_window", "Stop", 0, QApplication::UnicodeUTF8));
         renderingWidgetHolder->setWindowTitle(QApplication::translate("tracking_window", "Options", 0, QApplication::UnicodeUTF8));
         menuRegions->setTitle(QApplication::translate("tracking_window", "&Regions", 0, QApplication::UnicodeUTF8));
         menuModify->setTitle(QApplication::translate("tracking_window", "Modify Current Region", 0, QApplication::UnicodeUTF8));
