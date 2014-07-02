@@ -446,10 +446,10 @@ void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vect
     tracking_thread.tracking_method = 0;// streamline fiber tracking
     tracking_thread.initial_direction = 2;// all directions
     tracking_thread.interpolation_strategy = 0; // trilinear interpolation
-    tracking_thread.stop_by_tract = 1;// stop by tract
-    tracking_thread.center_seed = 1;// center seeded
+    tracking_thread.stop_by_tract = 0;// stop by seed
+    tracking_thread.center_seed = 0;// subvoxel seeding
     tracking_thread.setRegions(fib.dim,seed,3);
-    tracking_thread.run(fib,1,seed.size()*10,true);
+    tracking_thread.run(fib,1,seed.size()*100,true);
     tracks.swap(tracking_thread.track_buffer);
 }
 bool vbc_database::save_track_as(const char* file_name,std::vector<std::vector<float> >& track,unsigned int length_threshold)
