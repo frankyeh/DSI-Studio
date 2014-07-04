@@ -905,6 +905,7 @@
     </widget>
     <addaction name="actionNewRegion"/>
     <addaction name="actionOpenRegion"/>
+    <addaction name="separator"/>
     <addaction name="actionSaveRegionAs"/>
     <addaction name="actionSave_Voxel_Data_As"/>
     <addaction name="separator"/>
@@ -930,7 +931,7 @@
     </property>
     <widget class="QMenu" name="menuSave">
      <property name="title">
-      <string>Save Index</string>
+      <string>Save Along Tract Index</string>
      </property>
      <property name="icon">
       <iconset resource="../icons.qrc">
@@ -949,7 +950,7 @@
     </widget>
     <widget class="QMenu" name="menuExport_Tract_Density">
      <property name="title">
-      <string>Export Tract Density</string>
+      <string>Save Tract Density</string>
      </property>
      <property name="icon">
       <iconset resource="../icons.qrc">
@@ -976,14 +977,18 @@
        <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
      </property>
      <addaction name="actionSaveTractAs"/>
+     <addaction name="separator"/>
+     <addaction name="actionSave_All_Tracts_As"/>
+     <addaction name="actionSave_All_Tracts_As_Multiple_Files"/>
+     <addaction name="separator"/>
      <addaction name="actionSave_Tracts_in_Current_Mapping"/>
      <addaction name="actionSave_Tracts_in_MNI_space"/>
-     <addaction name="actionSave_All_Tracts_As"/>
      <addaction name="separator"/>
      <addaction name="actionSave_End_Points_As"/>
      <addaction name="actionSave_Endpoints_in_Current_Mapping"/>
     </widget>
     <addaction name="actionOpenTract"/>
+    <addaction name="separator"/>
     <addaction name="menuSave_Tracts"/>
     <addaction name="menuSave"/>
     <addaction name="menuExport_Tract_Density"/>
@@ -2408,7 +2413,7 @@
   <action name="actionSave_All_Tracts_As">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
    </property>
    <property name="text">
     <string>Save All Tracts As...</string>
@@ -2484,7 +2489,7 @@
   <action name="actionSave_All_Regions_As">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
    </property>
    <property name="text">
     <string>Save All Regions As...</string>
@@ -2561,8 +2566,21 @@
    </property>
   </action>
   <action name="actionMerge_All_2">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/add.xpm</normaloff>:/icons/icons/add.xpm</iconset>
+   </property>
    <property name="text">
     <string>Merge All</string>
+   </property>
+  </action>
+  <action name="actionSave_All_Tracts_As_Multiple_Files">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save All Tracts As Multiple Files...</string>
    </property>
   </action>
  </widget>

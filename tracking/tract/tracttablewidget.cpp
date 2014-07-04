@@ -232,6 +232,27 @@ void TractTableWidget::uncheck_all(void)
 }
 
 
+void TractTableWidget::save_all_tracts_to_dir(void)
+{
+    if (tract_models.empty())
+        return;
+    QString dir = QFileDialog::getExistingDirectory(
+                                this,
+                                "Open directory",cur_tracking_window.get_path("track"));
+    if(dir.isEmpty())
+        return;
+    cur_tracking_window.add_path("track",dir);
+    begin_prog("save files...");
+    for(unsigned int index = 0;check_prog(index,rowCount());++index)
+        if (item(index,0)->checkState() == Qt::Checked && tract_models[index]->get_visible_track_count())
+        {
+            std::string filename = dir.toLocal8Bit().begin();
+            filename  += "/";
+            filename  += item(index,0)->text().toLocal8Bit().begin();
+            filename  += ".trk";
+            tract_models[index]->save_tracts_to_file(filename.c_str());
+        }
+}
 void TractTableWidget::save_all_tracts_as(void)
 {
     if(tract_models.empty())

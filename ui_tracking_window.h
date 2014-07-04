@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Thu Jul 3 23:51:30 2014
+** Created: Fri Jul 4 00:01:29 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -137,6 +137,7 @@ public:
     QAction *actionSave_All_Regions_As_Multiple_Files;
     QAction *actionRestore_Settings;
     QAction *actionMerge_All_2;
+    QAction *actionSave_All_Tracts_As_Multiple_Files;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QWidget *main_widget;
@@ -468,7 +469,9 @@ public:
         actionOpen_Cluster_Labels->setIcon(icon1);
         actionSave_All_Tracts_As = new QAction(tracking_window);
         actionSave_All_Tracts_As->setObjectName(QString::fromUtf8("actionSave_All_Tracts_As"));
-        actionSave_All_Tracts_As->setIcon(icon2);
+        QIcon icon7;
+        icon7.addFile(QString::fromUtf8(":/icons/icons/save_all.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        actionSave_All_Tracts_As->setIcon(icon7);
         actionSave_Left_Right_3D_Image = new QAction(tracking_window);
         actionSave_Left_Right_3D_Image->setObjectName(QString::fromUtf8("actionSave_Left_Right_3D_Image"));
         actionSave_Left_Right_3D_Image->setIcon(icon2);
@@ -496,7 +499,7 @@ public:
         actionSave_3D_screen_in_high_resolution->setIcon(icon2);
         actionSave_All_Regions_As = new QAction(tracking_window);
         actionSave_All_Regions_As->setObjectName(QString::fromUtf8("actionSave_All_Regions_As"));
-        actionSave_All_Regions_As->setIcon(icon2);
+        actionSave_All_Regions_As->setIcon(icon7);
         actionFloat_3D_window = new QAction(tracking_window);
         actionFloat_3D_window->setObjectName(QString::fromUtf8("actionFloat_3D_window"));
         actionSave_tracking_parameters = new QAction(tracking_window);
@@ -519,13 +522,15 @@ public:
         actionLoad_Rendering_Parameters->setIcon(icon1);
         actionSave_All_Regions_As_Multiple_Files = new QAction(tracking_window);
         actionSave_All_Regions_As_Multiple_Files->setObjectName(QString::fromUtf8("actionSave_All_Regions_As_Multiple_Files"));
-        QIcon icon7;
-        icon7.addFile(QString::fromUtf8(":/icons/icons/save_all.xpm"), QSize(), QIcon::Normal, QIcon::Off);
         actionSave_All_Regions_As_Multiple_Files->setIcon(icon7);
         actionRestore_Settings = new QAction(tracking_window);
         actionRestore_Settings->setObjectName(QString::fromUtf8("actionRestore_Settings"));
         actionMerge_All_2 = new QAction(tracking_window);
         actionMerge_All_2->setObjectName(QString::fromUtf8("actionMerge_All_2"));
+        actionMerge_All_2->setIcon(icon5);
+        actionSave_All_Tracts_As_Multiple_Files = new QAction(tracking_window);
+        actionSave_All_Tracts_As_Multiple_Files->setObjectName(QString::fromUtf8("actionSave_All_Tracts_As_Multiple_Files"));
+        actionSave_All_Tracts_As_Multiple_Files->setIcon(icon7);
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -1316,6 +1321,7 @@ public:
         menuBar->addAction(menuTools->menuAction());
         menuRegions->addAction(actionNewRegion);
         menuRegions->addAction(actionOpenRegion);
+        menuRegions->addSeparator();
         menuRegions->addAction(actionSaveRegionAs);
         menuRegions->addAction(actionSave_Voxel_Data_As);
         menuRegions->addSeparator();
@@ -1352,6 +1358,7 @@ public:
         menuModify->addAction(actionDefragment);
         menuModify->addAction(actionThreshold);
         menuTracts->addAction(actionOpenTract);
+        menuTracts->addSeparator();
         menuTracts->addAction(menuSave_Tracts->menuAction());
         menuTracts->addAction(menuSave->menuAction());
         menuTracts->addAction(menuExport_Tract_Density->menuAction());
@@ -1386,9 +1393,12 @@ public:
         menuTract_Color->addAction(actionOpen_Colors);
         menuTract_Color->addAction(actionSave_Tracts_Colors_As);
         menuSave_Tracts->addAction(actionSaveTractAs);
+        menuSave_Tracts->addSeparator();
+        menuSave_Tracts->addAction(actionSave_All_Tracts_As);
+        menuSave_Tracts->addAction(actionSave_All_Tracts_As_Multiple_Files);
+        menuSave_Tracts->addSeparator();
         menuSave_Tracts->addAction(actionSave_Tracts_in_Current_Mapping);
         menuSave_Tracts->addAction(actionSave_Tracts_in_MNI_space);
-        menuSave_Tracts->addAction(actionSave_All_Tracts_As);
         menuSave_Tracts->addSeparator();
         menuSave_Tracts->addAction(actionSave_End_Points_As);
         menuSave_Tracts->addAction(actionSave_Endpoints_in_Current_Mapping);
@@ -1582,6 +1592,7 @@ public:
         actionSave_All_Regions_As_Multiple_Files->setText(QApplication::translate("tracking_window", "Save All Regions As Multiple Files...", 0, QApplication::UnicodeUTF8));
         actionRestore_Settings->setText(QApplication::translate("tracking_window", "Restore Rendering Settings", 0, QApplication::UnicodeUTF8));
         actionMerge_All_2->setText(QApplication::translate("tracking_window", "Merge All", 0, QApplication::UnicodeUTF8));
+        actionSave_All_Tracts_As_Multiple_Files->setText(QApplication::translate("tracking_window", "Save All Tracts As Multiple Files...", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)
@@ -1636,9 +1647,9 @@ public:
         menuRegions->setTitle(QApplication::translate("tracking_window", "&Regions", 0, QApplication::UnicodeUTF8));
         menuModify->setTitle(QApplication::translate("tracking_window", "Modify Current Region", 0, QApplication::UnicodeUTF8));
         menuTracts->setTitle(QApplication::translate("tracking_window", "Tr&acts", 0, QApplication::UnicodeUTF8));
-        menuSave->setTitle(QApplication::translate("tracking_window", "Save Index", 0, QApplication::UnicodeUTF8));
+        menuSave->setTitle(QApplication::translate("tracking_window", "Save Along Tract Index", 0, QApplication::UnicodeUTF8));
         menuClustering->setTitle(QApplication::translate("tracking_window", "Clustering", 0, QApplication::UnicodeUTF8));
-        menuExport_Tract_Density->setTitle(QApplication::translate("tracking_window", "Export Tract Density", 0, QApplication::UnicodeUTF8));
+        menuExport_Tract_Density->setTitle(QApplication::translate("tracking_window", "Save Tract Density", 0, QApplication::UnicodeUTF8));
         menuTract_Color->setTitle(QApplication::translate("tracking_window", "Tract Color", 0, QApplication::UnicodeUTF8));
         menuSave_Tracts->setTitle(QApplication::translate("tracking_window", "Save Tracts", 0, QApplication::UnicodeUTF8));
         menu_Edit->setTitle(QApplication::translate("tracking_window", "&Edit", 0, QApplication::UnicodeUTF8));
