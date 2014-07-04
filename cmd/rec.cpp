@@ -24,6 +24,7 @@ int rec(int ac, char *av[])
     ("source", po::value<std::string>(), "assign the .src file name")
     ("mask", po::value<std::string>(), "assign the mask file")
     ("template", po::value<std::string>(), "assign the template file")
+    ("affine", po::value<std::string>(), "assign the rotation matrix")
     ("method", po::value<int>(), "reconstruction methods (0:dsi, 1:dti, 2:qbi_frt, 3:qbi_sh, 4:gqi)")
     ("odf_order", po::value<int>()->default_value(8), "set odf dimensions (4:162 direcitons, 5:252 directions, 6:362 directions, 8:642 directions)")
     ("record_odf", po::value<int>()->default_value(0), "output odf information")
@@ -62,6 +63,23 @@ int rec(int ac, char *av[])
         return 1;
     }
     std::cout << "src loaded" <<std::endl;
+
+    // apply affine transformation
+    if (vm.count("affine"))
+    {
+        std::cout << "reading transformation matrix" <<std::endl;
+        std::vector<float> T((std::istream_iterator<float>(std::ifstream(vm["affine"].as<std::string>().c_str()))),
+                             (std::istream_iterator<float>()));
+        if(T.size() != 12)
+        {
+            std::cout << "Invalid transfformation matrix." <<std::endl;
+            return 1;
+        }
+        image::transformation_matrix<3,float> affine;
+        affine.load_from_transform(T.begin());
+        std::cout << "rotating images" << std::endl;
+        handle->rotate(handle->voxel.dim,affine);
+    }
 
     float param[4] = {0,0,0,0};
     int method_index = 0;
