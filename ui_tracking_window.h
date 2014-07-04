@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Tue Jul 1 21:23:21 2014
+** Created: Thu Jul 3 23:51:30 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -136,6 +136,7 @@ public:
     QAction *actionLoad_Rendering_Parameters;
     QAction *actionSave_All_Regions_As_Multiple_Files;
     QAction *actionRestore_Settings;
+    QAction *actionMerge_All_2;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QWidget *main_widget;
@@ -523,6 +524,8 @@ public:
         actionSave_All_Regions_As_Multiple_Files->setIcon(icon7);
         actionRestore_Settings = new QAction(tracking_window);
         actionRestore_Settings->setObjectName(QString::fromUtf8("actionRestore_Settings"));
+        actionMerge_All_2 = new QAction(tracking_window);
+        actionMerge_All_2->setObjectName(QString::fromUtf8("actionMerge_All_2"));
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -1322,6 +1325,7 @@ public:
         menuRegions->addAction(actionCheck_all_regions);
         menuRegions->addAction(actionUnckech_all_regions);
         menuRegions->addSeparator();
+        menuRegions->addAction(actionMerge_All_2);
         menuRegions->addAction(actionCopy_Region);
         menuRegions->addAction(actionDeleteRegion);
         menuRegions->addAction(actionDeleteRegionAll);
@@ -1577,6 +1581,7 @@ public:
         actionLoad_Rendering_Parameters->setText(QApplication::translate("tracking_window", "Load Rendering Parameters...", 0, QApplication::UnicodeUTF8));
         actionSave_All_Regions_As_Multiple_Files->setText(QApplication::translate("tracking_window", "Save All Regions As Multiple Files...", 0, QApplication::UnicodeUTF8));
         actionRestore_Settings->setText(QApplication::translate("tracking_window", "Restore Rendering Settings", 0, QApplication::UnicodeUTF8));
+        actionMerge_All_2->setText(QApplication::translate("tracking_window", "Merge All", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)

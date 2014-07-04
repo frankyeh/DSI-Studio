@@ -100,6 +100,11 @@ public: // rendering options
                 begin(void) const {return region.begin();}
 
 public:
+        void add(const ROIRegion & rhs)
+        {
+            std::vector<image::vector<3,short> > tmp(rhs.region);
+            add_points(tmp,false);
+        }
         void add_points(std::vector<image::vector<3,short> >& points,bool del);
         void SaveToFile(const char* FileName,const std::vector<float>& trans);
         bool LoadFromFile(const char* FileName,const std::vector<float>& trans);

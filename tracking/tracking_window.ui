@@ -914,6 +914,7 @@
     <addaction name="actionCheck_all_regions"/>
     <addaction name="actionUnckech_all_regions"/>
     <addaction name="separator"/>
+    <addaction name="actionMerge_All_2"/>
     <addaction name="actionCopy_Region"/>
     <addaction name="actionDeleteRegion"/>
     <addaction name="actionDeleteRegionAll"/>
@@ -2557,6 +2558,11 @@
   <action name="actionRestore_Settings">
    <property name="text">
     <string>Restore Rendering Settings</string>
+   </property>
+  </action>
+  <action name="actionMerge_All_2">
+   <property name="text">
+    <string>Merge All</string>
    </property>
   </action>
  </widget>

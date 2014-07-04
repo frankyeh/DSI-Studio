@@ -101,9 +101,6 @@ RegionTableWidget::RegionTableWidget(tracking_window& cur_tracking_window_,QWidg
     setSelectionMode(QAbstractItemView::SingleSelection);
     setAlternatingRowColors(true);
     setStyleSheet("QTableView {selection-background-color: #AAAAFF; selection-color: #000000;}");
-    horizontalHeader()->setResizeMode(0,QHeaderView::Stretch);
-    horizontalHeader()->setResizeMode(1,QHeaderView::Fixed);
-    horizontalHeader()->setResizeMode(2,QHeaderView::Fixed);
 
     setItemDelegate(new ImageDelegate(this));
 
@@ -465,6 +462,24 @@ void RegionTableWidget::load_region(void)
     emit need_update();
 }
 
+void RegionTableWidget::merge_all(void)
+{
+    std::vector<unsigned int> merge_list;
+    for(int index = 0;index < regions.size();++index)
+        if(item(index,0)->checkState() == Qt::Checked)
+            merge_list.push_back(index);
+    if(merge_list.size() <= 1)
+        return;
+
+    for(int index = merge_list.size()-1;index >= 1;--index)
+    {
+        regions[merge_list[0]].add(regions[merge_list[index]]);
+        regions.erase(regions.begin()+merge_list[index]);
+        removeRow(merge_list[index]);
+    }
+    emit need_update();
+}
+
 void RegionTableWidget::check_all(void)
 {
     for(unsigned int row = 0;row < rowCount();++row)
@@ -677,7 +692,7 @@ void RegionTableWidget::delete_region(void)
     if (currentRow() >= regions.size())
         return;
     regions.erase(regions.begin()+currentRow());
-    this->removeRow(currentRow());
+    removeRow(currentRow());
     emit need_update();
 }
 
