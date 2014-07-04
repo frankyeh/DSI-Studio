@@ -68,7 +68,8 @@ int rec(int ac, char *av[])
     if (vm.count("affine"))
     {
         std::cout << "reading transformation matrix" <<std::endl;
-        std::vector<float> T((std::istream_iterator<float>(std::ifstream(vm["affine"].as<std::string>().c_str()))),
+        std::ifstream in(vm["affine"].as<std::string>().c_str());
+        std::vector<float> T((std::istream_iterator<float>(in)),
                              (std::istream_iterator<float>()));
         if(T.size() != 12)
         {
