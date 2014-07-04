@@ -183,6 +183,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
 
 
         connect(ui->overlay,SIGNAL(currentIndexChanged(int)),this,SLOT(on_sliceViewBox_currentIndexChanged(int)));
+        connect(ui->sliceViewBox,SIGNAL(currentIndexChanged(int)),&scene,SLOT(show_slice()));
 
     }
 
@@ -225,6 +226,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         connect(ui->actionDilation,SIGNAL(triggered()),regionWidget,SLOT(action_dilation()));
         connect(ui->actionNegate,SIGNAL(triggered()),regionWidget,SLOT(action_negate()));
         connect(ui->actionDefragment,SIGNAL(triggered()),regionWidget,SLOT(action_defragment()));
+        connect(ui->actionMerge_All_2,SIGNAL(triggered()),regionWidget,SLOT(merge_all()));
 
         connect(ui->actionCheck_all_regions,SIGNAL(triggered()),regionWidget,SLOT(check_all()));
         connect(ui->actionUnckech_all_regions,SIGNAL(triggered()),regionWidget,SLOT(uncheck_all()));
