@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1559</width>
+    <width>1176</width>
     <height>424</height>
    </rect>
   </property>
@@ -729,6 +729,12 @@
        </item>
        <item>
         <widget class="QToolButton" name="addRegionFromAtlas">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="maximumSize">
           <size>
            <width>16777215</width>
@@ -744,56 +750,6 @@
         </widget>
        </item>
        <item>
-        <widget class="Line" name="line">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="perform_tracking">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="font">
-          <font>
-           <pointsize>8</pointsize>
-           <weight>75</weight>
-           <bold>true</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>Run Tracking</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="stop_tracking">
-         <property name="maximumSize">
-          <size>
-           <width>30</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Stop</string>
-         </property>
-        </widget>
-       </item>
-       <item>
         <spacer name="horizontalSpacer">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -805,13 +761,6 @@
           </size>
          </property>
         </spacer>
-       </item>
-       <item>
-        <widget class="Line" name="line_5">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-        </widget>
        </item>
       </layout>
      </item>
@@ -856,7 +805,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1559</width>
+     <width>1176</width>
      <height>21</height>
     </rect>
    </property>
@@ -1081,15 +1030,15 @@
   </widget>
   <widget class="QDockWidget" name="TractWidgetHolder">
    <property name="sizePolicy">
-    <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
      <horstretch>0</horstretch>
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
    <property name="minimumSize">
     <size>
-     <width>146</width>
-     <height>46</height>
+     <width>0</width>
+     <height>84</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -1113,138 +1062,208 @@
       <number>0</number>
      </property>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_15">
+      <layout class="QVBoxLayout" name="verticalLayout_2">
        <property name="spacing">
         <number>0</number>
        </property>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <property name="spacing">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QToolButton" name="tbOpenTract">
+           <property name="maximumSize">
+            <size>
+             <width>23</width>
+             <height>22</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>...</string>
+           </property>
+           <property name="icon">
+            <iconset resource="../icons.qrc">
+             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="tbSaveTract">
+           <property name="maximumSize">
+            <size>
+             <width>23</width>
+             <height>22</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>...</string>
+           </property>
+           <property name="icon">
+            <iconset resource="../icons.qrc">
+             <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="save_all_tracks">
+           <property name="maximumSize">
+            <size>
+             <width>23</width>
+             <height>22</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>...</string>
+           </property>
+           <property name="icon">
+            <iconset resource="../icons.qrc">
+             <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="tbDeleteTract">
+           <property name="maximumSize">
+            <size>
+             <width>23</width>
+             <height>22</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>...</string>
+           </property>
+           <property name="icon">
+            <iconset resource="../icons.qrc">
+             <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="Line" name="line_4">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="track_up">
+           <property name="maximumSize">
+            <size>
+             <width>23</width>
+             <height>22</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>...</string>
+           </property>
+           <property name="icon">
+            <iconset resource="../icons.qrc">
+             <normaloff>:/icons/icons/up.xpm</normaloff>:/icons/icons/up.xpm</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="track_down">
+           <property name="maximumSize">
+            <size>
+             <width>23</width>
+             <height>22</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>...</string>
+           </property>
+           <property name="icon">
+            <iconset resource="../icons.qrc">
+             <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_5">
+         <property name="spacing">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QPushButton" name="perform_tracking">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>22</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>8</pointsize>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Run Tracking</string>
+           </property>
+           <property name="icon">
+            <iconset resource="../icons.qrc">
+             <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="stop_tracking">
+           <property name="maximumSize">
+            <size>
+             <width>30</width>
+             <height>22</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Stop</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_3">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
        <item>
         <widget class="Line" name="line_9">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
          </property>
         </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="tbOpenTract">
-         <property name="maximumSize">
-          <size>
-           <width>23</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>...</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="tbSaveTract">
-         <property name="maximumSize">
-          <size>
-           <width>23</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>...</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="save_all_tracks">
-         <property name="maximumSize">
-          <size>
-           <width>23</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>...</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="tbDeleteTract">
-         <property name="maximumSize">
-          <size>
-           <width>23</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>...</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="Line" name="line_2">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="track_up">
-         <property name="maximumSize">
-          <size>
-           <width>23</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>...</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/up.xpm</normaloff>:/icons/icons/up.xpm</iconset>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="track_down">
-         <property name="maximumSize">
-          <size>
-           <width>23</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>...</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <spacer name="horizontalSpacer_4">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
        </item>
       </layout>
      </item>

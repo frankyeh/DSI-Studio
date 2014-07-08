@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Fri Jul 4 00:01:29 2014
+** Created: Tue Jul 8 14:08:14 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -185,11 +185,7 @@ public:
     QToolButton *region_down;
     QFrame *line_3;
     QToolButton *addRegionFromAtlas;
-    QFrame *line;
-    QPushButton *perform_tracking;
-    QPushButton *stop_tracking;
     QSpacerItem *horizontalSpacer;
-    QFrame *line_5;
     QDockWidget *renderingWidgetHolder;
     QWidget *dockWidgetContents_2;
     QVBoxLayout *renderingLayout;
@@ -210,16 +206,21 @@ public:
     QDockWidget *TractWidgetHolder;
     QWidget *dockWidgetContents_5;
     QVBoxLayout *tractverticalLayout;
-    QHBoxLayout *horizontalLayout_15;
-    QFrame *line_9;
+    QVBoxLayout *verticalLayout_2;
+    QHBoxLayout *horizontalLayout_3;
     QToolButton *tbOpenTract;
     QToolButton *tbSaveTract;
     QToolButton *save_all_tracks;
     QToolButton *tbDeleteTract;
-    QFrame *line_2;
+    QFrame *line_4;
     QToolButton *track_up;
     QToolButton *track_down;
-    QSpacerItem *horizontalSpacer_4;
+    QSpacerItem *horizontalSpacer_2;
+    QHBoxLayout *horizontalLayout_5;
+    QPushButton *perform_tracking;
+    QPushButton *stop_tracking;
+    QSpacerItem *horizontalSpacer_3;
+    QFrame *line_9;
     QDockWidget *dockWidget;
     QWidget *dockWidgetContents;
     QVBoxLayout *verticalLayout;
@@ -255,7 +256,7 @@ public:
     {
         if (tracking_window->objectName().isEmpty())
             tracking_window->setObjectName(QString::fromUtf8("tracking_window"));
-        tracking_window->resize(1559, 424);
+        tracking_window->resize(1176, 424);
         QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         sizePolicy.setHorizontalStretch(0);
         sizePolicy.setVerticalStretch(0);
@@ -871,53 +872,19 @@ public:
 
         addRegionFromAtlas = new QToolButton(dockWidgetContents_4);
         addRegionFromAtlas->setObjectName(QString::fromUtf8("addRegionFromAtlas"));
+        QSizePolicy sizePolicy5(QSizePolicy::Preferred, QSizePolicy::Fixed);
+        sizePolicy5.setHorizontalStretch(0);
+        sizePolicy5.setVerticalStretch(0);
+        sizePolicy5.setHeightForWidth(addRegionFromAtlas->sizePolicy().hasHeightForWidth());
+        addRegionFromAtlas->setSizePolicy(sizePolicy5);
         addRegionFromAtlas->setMaximumSize(QSize(16777215, 22));
         addRegionFromAtlas->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 
         horizontalLayout_16->addWidget(addRegionFromAtlas);
 
-        line = new QFrame(dockWidgetContents_4);
-        line->setObjectName(QString::fromUtf8("line"));
-        line->setFrameShape(QFrame::VLine);
-        line->setFrameShadow(QFrame::Sunken);
-
-        horizontalLayout_16->addWidget(line);
-
-        perform_tracking = new QPushButton(dockWidgetContents_4);
-        perform_tracking->setObjectName(QString::fromUtf8("perform_tracking"));
-        QSizePolicy sizePolicy5(QSizePolicy::Preferred, QSizePolicy::Fixed);
-        sizePolicy5.setHorizontalStretch(0);
-        sizePolicy5.setVerticalStretch(0);
-        sizePolicy5.setHeightForWidth(perform_tracking->sizePolicy().hasHeightForWidth());
-        perform_tracking->setSizePolicy(sizePolicy5);
-        perform_tracking->setMaximumSize(QSize(16777215, 22));
-        QFont font2;
-        font2.setPointSize(8);
-        font2.setBold(true);
-        font2.setWeight(75);
-        perform_tracking->setFont(font2);
-        QIcon icon12;
-        icon12.addFile(QString::fromUtf8(":/icons/icons/run.xpm"), QSize(), QIcon::Normal, QIcon::Off);
-        perform_tracking->setIcon(icon12);
-
-        horizontalLayout_16->addWidget(perform_tracking);
-
-        stop_tracking = new QPushButton(dockWidgetContents_4);
-        stop_tracking->setObjectName(QString::fromUtf8("stop_tracking"));
-        stop_tracking->setMaximumSize(QSize(30, 22));
-
-        horizontalLayout_16->addWidget(stop_tracking);
-
         horizontalSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
         horizontalLayout_16->addItem(horizontalSpacer);
-
-        line_5 = new QFrame(dockWidgetContents_4);
-        line_5->setObjectName(QString::fromUtf8("line_5"));
-        line_5->setFrameShape(QFrame::VLine);
-        line_5->setFrameShadow(QFrame::Sunken);
-
-        horizontalLayout_16->addWidget(line_5);
 
 
         verticalLayout_3->addLayout(horizontalLayout_16);
@@ -947,7 +914,7 @@ public:
         tracking_window->addDockWidget(static_cast<Qt::DockWidgetArea>(2), renderingWidgetHolder);
         menuBar = new QMenuBar(tracking_window);
         menuBar->setObjectName(QString::fromUtf8("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 1559, 21));
+        menuBar->setGeometry(QRect(0, 0, 1176, 21));
         QSizePolicy sizePolicy7(QSizePolicy::Preferred, QSizePolicy::Minimum);
         sizePolicy7.setHorizontalStretch(0);
         sizePolicy7.setVerticalStretch(0);
@@ -986,9 +953,9 @@ public:
         tracking_window->setMenuBar(menuBar);
         TractWidgetHolder = new QDockWidget(tracking_window);
         TractWidgetHolder->setObjectName(QString::fromUtf8("TractWidgetHolder"));
-        sizePolicy6.setHeightForWidth(TractWidgetHolder->sizePolicy().hasHeightForWidth());
-        TractWidgetHolder->setSizePolicy(sizePolicy6);
-        TractWidgetHolder->setMinimumSize(QSize(146, 46));
+        sizePolicy.setHeightForWidth(TractWidgetHolder->sizePolicy().hasHeightForWidth());
+        TractWidgetHolder->setSizePolicy(sizePolicy);
+        TractWidgetHolder->setMinimumSize(QSize(0, 84));
         TractWidgetHolder->setMaximumSize(QSize(524287, 524287));
         dockWidgetContents_5 = new QWidget();
         dockWidgetContents_5->setObjectName(QString::fromUtf8("dockWidgetContents_5"));
@@ -996,71 +963,109 @@ public:
         tractverticalLayout->setSpacing(0);
         tractverticalLayout->setContentsMargins(0, 0, 0, 0);
         tractverticalLayout->setObjectName(QString::fromUtf8("tractverticalLayout"));
-        horizontalLayout_15 = new QHBoxLayout();
-        horizontalLayout_15->setSpacing(0);
-        horizontalLayout_15->setObjectName(QString::fromUtf8("horizontalLayout_15"));
-        line_9 = new QFrame(dockWidgetContents_5);
-        line_9->setObjectName(QString::fromUtf8("line_9"));
-        line_9->setFrameShape(QFrame::VLine);
-        line_9->setFrameShadow(QFrame::Sunken);
-
-        horizontalLayout_15->addWidget(line_9);
-
+        verticalLayout_2 = new QVBoxLayout();
+        verticalLayout_2->setSpacing(0);
+        verticalLayout_2->setObjectName(QString::fromUtf8("verticalLayout_2"));
+        horizontalLayout_3 = new QHBoxLayout();
+        horizontalLayout_3->setSpacing(0);
+        horizontalLayout_3->setObjectName(QString::fromUtf8("horizontalLayout_3"));
         tbOpenTract = new QToolButton(dockWidgetContents_5);
         tbOpenTract->setObjectName(QString::fromUtf8("tbOpenTract"));
         tbOpenTract->setMaximumSize(QSize(23, 22));
         tbOpenTract->setIcon(icon1);
 
-        horizontalLayout_15->addWidget(tbOpenTract);
+        horizontalLayout_3->addWidget(tbOpenTract);
 
         tbSaveTract = new QToolButton(dockWidgetContents_5);
         tbSaveTract->setObjectName(QString::fromUtf8("tbSaveTract"));
         tbSaveTract->setMaximumSize(QSize(23, 22));
         tbSaveTract->setIcon(icon2);
 
-        horizontalLayout_15->addWidget(tbSaveTract);
+        horizontalLayout_3->addWidget(tbSaveTract);
 
         save_all_tracks = new QToolButton(dockWidgetContents_5);
         save_all_tracks->setObjectName(QString::fromUtf8("save_all_tracks"));
         save_all_tracks->setMaximumSize(QSize(23, 22));
         save_all_tracks->setIcon(icon7);
 
-        horizontalLayout_15->addWidget(save_all_tracks);
+        horizontalLayout_3->addWidget(save_all_tracks);
 
         tbDeleteTract = new QToolButton(dockWidgetContents_5);
         tbDeleteTract->setObjectName(QString::fromUtf8("tbDeleteTract"));
         tbDeleteTract->setMaximumSize(QSize(23, 22));
         tbDeleteTract->setIcon(icon3);
 
-        horizontalLayout_15->addWidget(tbDeleteTract);
+        horizontalLayout_3->addWidget(tbDeleteTract);
 
-        line_2 = new QFrame(dockWidgetContents_5);
-        line_2->setObjectName(QString::fromUtf8("line_2"));
-        line_2->setFrameShape(QFrame::VLine);
-        line_2->setFrameShadow(QFrame::Sunken);
+        line_4 = new QFrame(dockWidgetContents_5);
+        line_4->setObjectName(QString::fromUtf8("line_4"));
+        line_4->setFrameShape(QFrame::VLine);
+        line_4->setFrameShadow(QFrame::Sunken);
 
-        horizontalLayout_15->addWidget(line_2);
+        horizontalLayout_3->addWidget(line_4);
 
         track_up = new QToolButton(dockWidgetContents_5);
         track_up->setObjectName(QString::fromUtf8("track_up"));
         track_up->setMaximumSize(QSize(23, 22));
         track_up->setIcon(icon10);
 
-        horizontalLayout_15->addWidget(track_up);
+        horizontalLayout_3->addWidget(track_up);
 
         track_down = new QToolButton(dockWidgetContents_5);
         track_down->setObjectName(QString::fromUtf8("track_down"));
         track_down->setMaximumSize(QSize(23, 22));
         track_down->setIcon(icon11);
 
-        horizontalLayout_15->addWidget(track_down);
+        horizontalLayout_3->addWidget(track_down);
 
-        horizontalSpacer_4 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+        horizontalSpacer_2 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
-        horizontalLayout_15->addItem(horizontalSpacer_4);
+        horizontalLayout_3->addItem(horizontalSpacer_2);
 
 
-        tractverticalLayout->addLayout(horizontalLayout_15);
+        verticalLayout_2->addLayout(horizontalLayout_3);
+
+        horizontalLayout_5 = new QHBoxLayout();
+        horizontalLayout_5->setSpacing(0);
+        horizontalLayout_5->setObjectName(QString::fromUtf8("horizontalLayout_5"));
+        perform_tracking = new QPushButton(dockWidgetContents_5);
+        perform_tracking->setObjectName(QString::fromUtf8("perform_tracking"));
+        sizePolicy5.setHeightForWidth(perform_tracking->sizePolicy().hasHeightForWidth());
+        perform_tracking->setSizePolicy(sizePolicy5);
+        perform_tracking->setMaximumSize(QSize(16777215, 22));
+        QFont font2;
+        font2.setPointSize(8);
+        font2.setBold(true);
+        font2.setWeight(75);
+        perform_tracking->setFont(font2);
+        QIcon icon12;
+        icon12.addFile(QString::fromUtf8(":/icons/icons/run.xpm"), QSize(), QIcon::Normal, QIcon::Off);
+        perform_tracking->setIcon(icon12);
+
+        horizontalLayout_5->addWidget(perform_tracking);
+
+        stop_tracking = new QPushButton(dockWidgetContents_5);
+        stop_tracking->setObjectName(QString::fromUtf8("stop_tracking"));
+        stop_tracking->setMaximumSize(QSize(30, 22));
+
+        horizontalLayout_5->addWidget(stop_tracking);
+
+        horizontalSpacer_3 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+        horizontalLayout_5->addItem(horizontalSpacer_3);
+
+
+        verticalLayout_2->addLayout(horizontalLayout_5);
+
+        line_9 = new QFrame(dockWidgetContents_5);
+        line_9->setObjectName(QString::fromUtf8("line_9"));
+        line_9->setFrameShape(QFrame::VLine);
+        line_9->setFrameShadow(QFrame::Sunken);
+
+        verticalLayout_2->addWidget(line_9);
+
+
+        tractverticalLayout->addLayout(verticalLayout_2);
 
         TractWidgetHolder->setWidget(dockWidgetContents_5);
         tracking_window->addDockWidget(static_cast<Qt::DockWidgetArea>(2), TractWidgetHolder);
@@ -1641,8 +1646,6 @@ public:
         region_up->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
         region_down->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
         addRegionFromAtlas->setText(QApplication::translate("tracking_window", "Atlas...", 0, QApplication::UnicodeUTF8));
-        perform_tracking->setText(QApplication::translate("tracking_window", "Run Tracking", 0, QApplication::UnicodeUTF8));
-        stop_tracking->setText(QApplication::translate("tracking_window", "Stop", 0, QApplication::UnicodeUTF8));
         renderingWidgetHolder->setWindowTitle(QApplication::translate("tracking_window", "Options", 0, QApplication::UnicodeUTF8));
         menuRegions->setTitle(QApplication::translate("tracking_window", "&Regions", 0, QApplication::UnicodeUTF8));
         menuModify->setTitle(QApplication::translate("tracking_window", "Modify Current Region", 0, QApplication::UnicodeUTF8));
@@ -1663,6 +1666,8 @@ public:
         tbDeleteTract->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
         track_up->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
         track_down->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
+        perform_tracking->setText(QApplication::translate("tracking_window", "Run Tracking", 0, QApplication::UnicodeUTF8));
+        stop_tracking->setText(QApplication::translate("tracking_window", "Stop", 0, QApplication::UnicodeUTF8));
         dockWidget->setWindowTitle(QApplication::translate("tracking_window", "Region Window", 0, QApplication::UnicodeUTF8));
 #ifndef QT_NO_TOOLTIP
         tool0->setToolTip(QApplication::translate("tracking_window", "Rectangle seeding", 0, QApplication::UnicodeUTF8));
