@@ -85,6 +85,7 @@ private slots:
     void on_load_b_table_clicked();
     void on_delete_2_clicked();
     void on_actionTrim_image_triggered();
+    void on_diffusion_sampling_valueChanged(double arg1);
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

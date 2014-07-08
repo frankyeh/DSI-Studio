@@ -198,21 +198,24 @@ public:
             throw std::runtime_error("Correct B0 failed. Two b0 images found in src file");
 
 
-        const unsigned int num_spec = 40;
-        const float spec_bandwidth = 0.05;
+        float diffusion_time = voxel.param[1];
+        float diffusion_length = std::sqrt(6.0*3.0*diffusion_time); // sqrt(6Dt)
         dis.clear();
         cdf.clear();
         sinc_ql.clear();
         sinc_ql_cdf.clear();
-        dis.resize(num_spec);
-        cdf.resize(num_spec);
-        sinc_ql.resize(num_spec);
-        sinc_ql_cdf.resize(num_spec);
+        const int max_length = 50; // 50 microns
+        dis.resize(max_length);
+        cdf.resize(max_length);
+        sinc_ql.resize(max_length);
+        sinc_ql_cdf.resize(max_length);
         unsigned int odf_size = voxel.ti.half_vertices_count;
-        float sigma = 0.0;
-        float delta = spec_bandwidth/100.0;
-        for(unsigned int n = 0;n < num_spec;++n)
+        for(unsigned int n = 0;n < max_length;++n) // from 0 micron to 49 microns
         {
+            // calculate the diffusion length ratio
+            float sigma = ((float)n)/diffusion_length;
+            float delta = 0.001/diffusion_length;
+
             sinc_ql[n].resize(odf_size*voxel.bvalues.size());
             sinc_ql_cdf[n].resize(odf_size*voxel.bvalues.size());
             dis[n].resize(voxel.dim.size());
@@ -222,7 +225,7 @@ public:
                 for (unsigned int i = 0; i < voxel.bvalues.size(); ++i,++index)
                     sinc_ql[n][index] = voxel.bvectors[i]*
                                  image::vector<3,float>(voxel.ti.vertices[j])*
-                                   std::sqrt(voxel.bvalues[i]*0.01506); // £^G£_
+                                   std::sqrt(voxel.bvalues[i]*0.018); // £^G£_
 
             for (unsigned int index = 0; index < sinc_ql_cdf[n].size(); ++index)
                 sinc_ql_cdf[n][index] = voxel.r2_weighted ?
@@ -235,7 +238,6 @@ public:
                              (sigma-delta)*base_function(sinc_ql[n][index]*(sigma-delta)))/delta:
                               ((sigma+delta)*boost::math::sinc_pi(sinc_ql[n][index]*(sigma+delta))-
                                (sigma-delta)*boost::math::sinc_pi(sinc_ql[n][index]*(sigma-delta)))/delta;
-            sigma += spec_bandwidth;
         }
     }
     virtual void run(Voxel& voxel, VoxelData& data)
@@ -251,6 +253,9 @@ public:
             image::matrix::vector_product(&*sinc_ql_cdf[index].begin(),&*data.space.begin(),&*data.odf.begin(),
                                         image::dyndim(data.odf.size(),data.space.size()));
             cdf[index][data.voxel_index] = image::mean(data.odf.begin(),data.odf.end());
+            // make sure that cdf is increamental
+            if(index && cdf[index][data.voxel_index] < cdf[index-1][data.voxel_index])
+                cdf[index][data.voxel_index] = cdf[index-1][data.voxel_index];
 
         }
     }
@@ -259,21 +264,14 @@ public:
         for(unsigned int index = 0;index < sinc_ql.size();++index)
         {
             std::ostringstream out;
-            if(index < 10)
-                out << "dis0" << index;
-            else
-                out << "dis" << index;
+            out << "pdf_" << index << "um";
             mat_writer.write(out.str().c_str(),&*dis[index].begin(),1,dis[index].size());
 
         }
         for(unsigned int index = 0;index < sinc_ql.size();++index)
         {
-            image::divide(cdf[index],cdf.back());
             std::ostringstream out;
-            if(index < 10)
-                out << "cdf0" << index;
-            else
-                out << "cdf" << index;
+            out << "cdf_" << index << "um";
             mat_writer.write(out.str().c_str(),&*cdf[index].begin(),1,cdf[index].size());
         }
         mat_writer.write("fa0",&*dis[0].begin(),1,dis[0].size());

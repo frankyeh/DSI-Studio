@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Tue Jun 24 23:17:54 2014
+** Created: Mon Jul 7 16:55:41 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -121,6 +121,12 @@ public:
     QGroupBox *GQIOption_2;
     QHBoxLayout *GQIOption;
     QLabel *label_7;
+    QWidget *gqi_spectral;
+    QHBoxLayout *horizontalLayout_26;
+    QSpacerItem *horizontalSpacer_9;
+    QLabel *label_19;
+    QDoubleSpinBox *diffusion_time;
+    QLabel *label_18;
     QDoubleSpinBox *diffusion_sampling;
     QComboBox *ODFDef;
     QGroupBox *ResolutionBox;
@@ -251,7 +257,7 @@ public:
         toolBox->setObjectName(QString::fromUtf8("toolBox"));
         source_page = new QWidget();
         source_page->setObjectName(QString::fromUtf8("source_page"));
-        source_page->setGeometry(QRect(0, 0, 554, 455));
+        source_page->setGeometry(QRect(0, 0, 267, 130));
         horizontalLayout_25 = new QHBoxLayout(source_page);
         horizontalLayout_25->setObjectName(QString::fromUtf8("horizontalLayout_25"));
         splitter = new QSplitter(source_page);
@@ -371,7 +377,7 @@ public:
         toolBox->addItem(source_page, QString::fromUtf8("Source Images"));
         page_3 = new QWidget();
         page_3->setObjectName(QString::fromUtf8("page_3"));
-        page_3->setGeometry(QRect(0, 0, 554, 455));
+        page_3->setGeometry(QRect(0, 0, 534, 146));
         gridLayout_2 = new QGridLayout(page_3);
         gridLayout_2->setObjectName(QString::fromUtf8("gridLayout_2"));
         verticalLayout_5 = new QVBoxLayout();
@@ -574,6 +580,37 @@ public:
         label_7->setObjectName(QString::fromUtf8("label_7"));
 
         GQIOption->addWidget(label_7);
+
+        gqi_spectral = new QWidget(GQIOption_2);
+        gqi_spectral->setObjectName(QString::fromUtf8("gqi_spectral"));
+        horizontalLayout_26 = new QHBoxLayout(gqi_spectral);
+        horizontalLayout_26->setSpacing(0);
+        horizontalLayout_26->setContentsMargins(0, 0, 0, 0);
+        horizontalLayout_26->setObjectName(QString::fromUtf8("horizontalLayout_26"));
+        horizontalSpacer_9 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+        horizontalLayout_26->addItem(horizontalSpacer_9);
+
+        label_19 = new QLabel(gqi_spectral);
+        label_19->setObjectName(QString::fromUtf8("label_19"));
+
+        horizontalLayout_26->addWidget(label_19);
+
+        diffusion_time = new QDoubleSpinBox(gqi_spectral);
+        diffusion_time->setObjectName(QString::fromUtf8("diffusion_time"));
+        diffusion_time->setMaximum(200);
+        diffusion_time->setSingleStep(2);
+        diffusion_time->setValue(80);
+
+        horizontalLayout_26->addWidget(diffusion_time);
+
+        label_18 = new QLabel(gqi_spectral);
+        label_18->setObjectName(QString::fromUtf8("label_18"));
+
+        horizontalLayout_26->addWidget(label_18);
+
+
+        GQIOption->addWidget(gqi_spectral);
 
         diffusion_sampling = new QDoubleSpinBox(GQIOption_2);
         diffusion_sampling->setObjectName(QString::fromUtf8("diffusion_sampling"));
@@ -1108,6 +1145,8 @@ public:
         label->setText(QApplication::translate("reconstruction_window", "SH order", 0, QApplication::UnicodeUTF8));
         label_6->setText(QApplication::translate("reconstruction_window", "QBI Regularization", 0, QApplication::UnicodeUTF8));
         label_7->setText(QApplication::translate("reconstruction_window", "Diffusion sampling length ratio", 0, QApplication::UnicodeUTF8));
+        label_19->setText(QApplication::translate("reconstruction_window", "diffusion time:", 0, QApplication::UnicodeUTF8));
+        label_18->setText(QApplication::translate("reconstruction_window", "ms", 0, QApplication::UnicodeUTF8));
         ODFDef->clear();
         ODFDef->insertItems(0, QStringList()
          << QApplication::translate("reconstruction_window", "No distance weighting", 0, QApplication::UnicodeUTF8)

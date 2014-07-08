@@ -49,6 +49,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->b_table->setColumnWidth(2,60);
     ui->b_table->setColumnWidth(3,60);
     ui->b_table->setHorizontalHeaderLabels(QStringList() << "b value" << "bx" << "by" << "bz");
+    ui->gqi_spectral->hide();
 
     update_dimension();
 
@@ -433,10 +434,11 @@ void reconstruction_window::on_doDTI_clicked()
         if(ui->GQI->isChecked() || ui->QDif->isChecked())
         {
             params[0] = ui->diffusion_sampling->value();
+            if(params[0] == 0.0)
+                params[1] = ui->diffusion_time->value();
             settings.setValue("rec_gqi_sampling",ui->diffusion_sampling->value());
             if(ui->QDif->isChecked())
             {
-                params[1] = ui->mni_resolution->value();
                 settings.setValue("rec_mni_resolution",params[1]);
                 doReconstruction(7,index+1 == filenames.size());
             }
@@ -832,4 +834,12 @@ void reconstruction_window::on_actionTrim_image_triggered()
     update_dimension();
     update_image();
     on_SlicePos_sliderMoved(ui->SlicePos->value());
+}
+
+void reconstruction_window::on_diffusion_sampling_valueChanged(double arg1)
+{
+    if(arg1 == 0.0)
+        ui->gqi_spectral->show();
+    else
+        ui->gqi_spectral->hide();
 }

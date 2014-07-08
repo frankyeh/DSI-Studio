@@ -343,6 +343,6 @@ void ROIRegion::get_quantitative_data(ODFModel* handle,std::vector<float>& data)
         sum /= pos_index.size();
         sum2 /= pos_index.size();
         data.push_back(sum);
-        data.push_back(std::sqrt(sum2-sum*sum));
+        data.push_back(std::sqrt(std::max<float>(0.0,sum2-sum*sum)));
     }
 }
