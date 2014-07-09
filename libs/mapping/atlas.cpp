@@ -141,7 +141,10 @@ std::string atlas::get_label_name_at(const image::vector<3,float>& mni_space) co
 
 bool atlas::is_labeled_as(const image::vector<3,float>& mni_space,short label_name_index) const
 {
-    short l = get_label_at(mni_space);
+    return label_matched(get_label_at(mni_space),label_name_index);
+}
+bool atlas::label_matched(short l,short label_name_index) const
+{
     if(index2label.empty())
         return label_name_index >= label_num.size() ? false:l == label_num[label_name_index];
     if(l >= index2label.size())

@@ -91,25 +91,29 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
     else  // from atlas
         if(!cur_tracking_window->handle->fib_data.trans_to_mni.empty())
         {
+            unsigned int atlas_index = ui->region_list->currentIndex()-1;
             ConnectivityMatrix::region_table_type region_table;
             std::vector<image::vector<3,float> > mni_position(geo.size());
             std::vector<image::vector<3,short> > subject_position(geo.size());
+            std::vector<short> atlas_label(geo.size());
+
             for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))
             {
                 image::vector<3,float> mni((const unsigned int*)index.begin());
                 cur_tracking_window->subject2mni(mni);
                 mni_position[index.index()] = mni;
                 subject_position[index.index()] = image::vector<3,short>((const unsigned int*)index.begin());
+                atlas_label[index.index()] = atlas_list[atlas_index].get_label_at(mni);
             }
-
-            unsigned int atlas_index = ui->region_list->currentIndex()-1;
+            begin_prog("calculating");
             for (unsigned int label = 0; label < atlas_list[atlas_index].get_list().size(); ++label)
             {
+                check_prog(label,atlas_list[atlas_index].get_list().size());
                 std::vector<image::vector<3,short> > cur_region;
                 image::vector<3,float> mni_avg_pos;
                 float min_x = 200,max_x = -200;
                 for(unsigned int pos = 0;pos < subject_position.size();++pos)
-                    if (atlas_list[atlas_index].is_labeled_as(mni_position[pos], label))
+                    if (atlas_list[atlas_index].label_matched(atlas_label[pos], label))
                     {
                         cur_region.push_back(subject_position[pos]);
                         mni_avg_pos += mni_position[pos];
@@ -133,12 +137,14 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
                     order = mni_avg_pos[1];
                 region_table[order] = std::make_pair(cur_region,region_names[label]);
             }
+            check_prog(0,0);
             data.set_regions(region_table);
         }
         else
             return;
 
-    data.calculate(*(cur_tracking_window->tractWidget->tract_models[cur_tracking_window->tractWidget->currentRow()]));
+    data.calculate(*(cur_tracking_window->tractWidget->tract_models[cur_tracking_window->tractWidget->currentRow()]),
+                   ui->end_only->currentIndex());
     data.save_to_image(cm,ui->log->isChecked(),ui->norm->isChecked());
     on_zoom_valueChanged(0);
 }

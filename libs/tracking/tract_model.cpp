@@ -1263,7 +1263,8 @@ double TractModel::get_spin_volume(void)
 }
 
 void TractModel::get_connectivity_matrix(const std::vector<std::vector<image::vector<3,short> > >& regions,
-                                         std::vector<std::vector<connectivity_info> >& matrix) const
+                                         std::vector<std::vector<connectivity_info> >& matrix,
+                                         bool use_end_only) const
 {
     matrix.clear();
     matrix.resize(regions.size());
@@ -1290,6 +1291,8 @@ void TractModel::get_connectivity_matrix(const std::vector<std::vector<image::ve
 
     for(unsigned int index = 0;index < tract_data.size();++index)
     {
+        if(tract_data[index].size() < 6)
+            continue;
         std::vector<unsigned char> has_region(regions.size());
         for(unsigned int ptr = 0;ptr < tract_data[index].size();ptr += 3)
         {
@@ -1301,6 +1304,8 @@ void TractModel::get_connectivity_matrix(const std::vector<std::vector<image::ve
             unsigned int pos_index = pos.index();
             for(unsigned int j = 0;j < region_map[pos_index].size();++j)
                 has_region[region_map[pos_index][j]] = 1;
+            if(!ptr && use_end_only)
+                ptr = tract_data[index].size()-6;
         }
         std::vector<unsigned int> region_list;
         for(unsigned int i = 0;i < has_region.size();++i)
@@ -1366,12 +1371,12 @@ void ConnectivityMatrix::set_regions(const region_table_type& region_table)
     }
 }
 
-void ConnectivityMatrix::calculate(const TractModel& tract_model)
+void ConnectivityMatrix::calculate(const TractModel& tract_model,bool use_end_only)
 {
     if(regions.size() == 0)
         return;
 
-    tract_model.get_connectivity_matrix(regions,matrix);
+    tract_model.get_connectivity_matrix(regions,matrix,use_end_only);
     connectivity_count.resize(matrix.size()*matrix.size());
     tract_median_length.resize(matrix.size()*matrix.size());
     tract_mean_length.resize(matrix.size()*matrix.size());

@@ -131,7 +131,8 @@ public:
 public:
 
         void get_connectivity_matrix(const std::vector<std::vector<image::vector<3,short> > >& regions,
-                                     std::vector<std::vector<connectivity_info> >& matrix) const;
+                                     std::vector<std::vector<connectivity_info> >& matrix,
+                                     bool use_end_only) const;
 
 };
 
@@ -153,7 +154,7 @@ public:
 public:
     void save_to_image(image::color_image& cm,bool log,bool norm);
     void save_to_file(const char* file_name);
-    void calculate(const TractModel& tract_model);
+    void calculate(const TractModel& tract_model,bool use_end_only);
 };
 
 

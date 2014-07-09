@@ -22,6 +22,7 @@ public:
     short get_label_at(const image::vector<3,float>& mni_space)  const;
     std::string get_label_name_at(const image::vector<3,float>& mni_space) const;
     bool is_labeled_as(const image::vector<3,float>& mni_space,short label) const;
+    bool label_matched(short image_label,short region_label) const;
 };
 
 #endif // ATLAS_HPP
