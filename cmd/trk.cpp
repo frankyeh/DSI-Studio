@@ -54,6 +54,7 @@ int trk(int ac, char *av[])
     ("smoothing", po::value<float>()->default_value(0), "smoothing fiber tracts, from 0 to 1. (default:0)")
     ("min_length", po::value<float>()->default_value(10), "minimum fiber length in minimeter (default:10)")
     ("max_length", po::value<float>()->default_value(500), "maximum fiber length in minimeter (default:500)")
+    ("random_seed", po::value<int>()->default_value(0), "use timer as the random seed")
     ("fiber_count", po::value<int>(), "terminate tracking if fiber count is reached (default:10000)")
     ("seed_count", po::value<int>(), "terminate tracking if seeding count is reached  (default:10000)")
     ;
@@ -102,7 +103,7 @@ int trk(int ac, char *av[])
     const float *fa0 = handle->fib_data.fib.fa[0];
 
 
-    ThreadData tracking_thread;
+    ThreadData tracking_thread(vm["random_seed"].as<int>());
     tracking_thread.param.step_size = vm["step_size"].as<float>();
     tracking_thread.param.smooth_fraction = vm["smoothing"].as<float>();
     tracking_thread.param.min_points_count3 = 3.0* vm["min_length"].as<float>()/tracking_thread.param.step_size;

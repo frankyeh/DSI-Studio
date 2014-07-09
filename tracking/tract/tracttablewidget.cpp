@@ -129,7 +129,7 @@ void TractTableWidget::start_tracking(void)
 
     ++tract_serial;
     addNewTracts(cur_tracking_window.regionWidget->getROIname());
-    thread_data.back() = new ThreadData;
+    thread_data.back() = new ThreadData(cur_tracking_window["random_seed"].toInt());
     cur_tracking_window.set_tracking_param(*thread_data.back());
     cur_tracking_window.regionWidget->setROIs(thread_data.back());
     thread_data.back()->run(tract_models.back()->get_fib(),

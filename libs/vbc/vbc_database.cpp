@@ -438,7 +438,7 @@ void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vect
         tracks.clear();
         return;
     }
-    ThreadData tracking_thread;
+    ThreadData tracking_thread(0);
     tracking_thread.param.step_size = fib.vs[0];
     tracking_thread.param.smooth_fraction = 0;
     tracking_thread.param.min_points_count3 = 6;

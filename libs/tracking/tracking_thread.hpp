@@ -28,8 +28,11 @@ public:
     unsigned char initial_direction;
     unsigned int max_seed_count;
 public:
-    ThreadData(void):
-        joinning(false),generator(0),uniform_rand(0,1.0),rand_gen(generator,uniform_rand),
+    ThreadData(bool random_seed):
+        joinning(false),
+        generator(random_seed ? std::time(0):0),
+        uniform_rand(0,1.0),
+        rand_gen(generator,uniform_rand),
         stop_by_tract(true),
         center_seed(false),
         termination_count(1000),
