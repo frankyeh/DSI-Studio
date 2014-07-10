@@ -51,8 +51,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>267</width>
-         <height>130</height>
+         <width>554</width>
+         <height>455</height>
         </rect>
        </property>
        <attribute name="label">
@@ -246,8 +246,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>534</width>
-         <height>146</height>
+         <width>554</width>
+         <height>455</height>
         </rect>
        </property>
        <attribute name="label">
@@ -354,7 +354,7 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>0</y>
+         <y>-60</y>
          <width>537</width>
          <height>515</height>
         </rect>
@@ -1460,71 +1460,21 @@
            <item>
             <widget class="QLabel" name="label_9">
              <property name="text">
-              <string>Parallel reconstruction:</string>
+              <string>multi-thread:</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QComboBox" name="ThreadCount">
-             <property name="maximumSize">
-              <size>
-               <width>75</width>
-               <height>16777215</height>
-              </size>
+            <widget class="QSpinBox" name="ThreadCount">
+             <property name="minimum">
+              <number>1</number>
              </property>
-             <property name="currentIndex">
-              <number>3</number>
+             <property name="maximum">
+              <number>100</number>
              </property>
-             <item>
-              <property name="text">
-               <string>Off</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>2 threads</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>3 threads</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>4 threads</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>5 threads</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>6 threads</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>7 threads</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>8 threads</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>9 threads</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>10 threads</string>
-              </property>
-             </item>
+             <property name="value">
+              <number>4</number>
+             </property>
             </widget>
            </item>
            <item>

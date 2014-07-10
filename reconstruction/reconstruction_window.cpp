@@ -84,10 +84,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         break;
     }
     ui->AdvancedWidget->setVisible(false);
-
-    ui->ThreadCount->setCurrentIndex(settings.value("rec_thread_count",0).toInt());
-
-
+    ui->ThreadCount->setValue(settings.value("rec_thread_num",2).toInt());
     ui->HalfSphere->setChecked(settings.value("rec_half_sphere",0).toInt());
     ui->NumOfFibers->setValue(settings.value("rec_num_fiber",5).toInt());
     ui->ODFDef->setCurrentIndex(settings.value("rec_gqi_def",0).toInt());
@@ -234,7 +231,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
 
 
     settings.setValue("rec_method_id",method_id);
-    settings.setValue("rec_thread_count",ui->ThreadCount->currentIndex());
+    settings.setValue("rec_thread_num",ui->ThreadCount->value());
     settings.setValue("rec_odf_sharpening",ui->odf_sharpening->currentIndex());
     settings.setValue("rec_half_sphere",ui->HalfSphere->isChecked() ? 1 : 0);
     settings.setValue("rec_num_fiber",ui->NumOfFibers->value());
@@ -252,7 +249,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
 
     begin_prog("reconstructing");
     int odf_order[8] = {4, 5, 6, 8, 10, 12, 16, 20};
-    handle->thread_count = ui->ThreadCount->currentIndex() + 1;
+    handle->thread_count = ui->ThreadCount->value();
     handle->voxel.ti.init(odf_order[ui->ODFDim->currentIndex()]);
     handle->voxel.odf_deconvolusion = ui->odf_sharpening->currentIndex() == 1 ? 1 : 0;
     handle->voxel.odf_decomposition = ui->odf_sharpening->currentIndex() == 2 ? 1 : 0;

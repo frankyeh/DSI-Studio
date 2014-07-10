@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Mon Jul 7 16:55:41 2014
+** Created: Thu Jul 10 14:52:00 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -203,7 +203,7 @@ public:
     QHBoxLayout *horizontalLayout_20;
     QSpacerItem *horizontalSpacer;
     QLabel *label_9;
-    QComboBox *ThreadCount;
+    QSpinBox *ThreadCount;
     QCommandLinkButton *doDTI;
     QMenuBar *menuBar;
     QMenu *menuFile;
@@ -257,7 +257,7 @@ public:
         toolBox->setObjectName(QString::fromUtf8("toolBox"));
         source_page = new QWidget();
         source_page->setObjectName(QString::fromUtf8("source_page"));
-        source_page->setGeometry(QRect(0, 0, 267, 130));
+        source_page->setGeometry(QRect(0, 0, 554, 455));
         horizontalLayout_25 = new QHBoxLayout(source_page);
         horizontalLayout_25->setObjectName(QString::fromUtf8("horizontalLayout_25"));
         splitter = new QSplitter(source_page);
@@ -377,7 +377,7 @@ public:
         toolBox->addItem(source_page, QString::fromUtf8("Source Images"));
         page_3 = new QWidget();
         page_3->setObjectName(QString::fromUtf8("page_3"));
-        page_3->setGeometry(QRect(0, 0, 534, 146));
+        page_3->setGeometry(QRect(0, 0, 554, 455));
         gridLayout_2 = new QGridLayout(page_3);
         gridLayout_2->setObjectName(QString::fromUtf8("gridLayout_2"));
         verticalLayout_5 = new QVBoxLayout();
@@ -454,7 +454,7 @@ public:
         toolBox->addItem(page_3, QString::fromUtf8("Step 1: setup brain mask"));
         page = new QWidget();
         page->setObjectName(QString::fromUtf8("page"));
-        page->setGeometry(QRect(0, 0, 537, 515));
+        page->setGeometry(QRect(0, -60, 537, 515));
         page->setMinimumSize(QSize(0, 0));
         verticalLayout_2 = new QVBoxLayout(page);
         verticalLayout_2->setSpacing(3);
@@ -1039,9 +1039,11 @@ public:
 
         horizontalLayout_20->addWidget(label_9);
 
-        ThreadCount = new QComboBox(widget);
+        ThreadCount = new QSpinBox(widget);
         ThreadCount->setObjectName(QString::fromUtf8("ThreadCount"));
-        ThreadCount->setMaximumSize(QSize(75, 16777215));
+        ThreadCount->setMinimum(1);
+        ThreadCount->setMaximum(100);
+        ThreadCount->setValue(4);
 
         horizontalLayout_20->addWidget(ThreadCount);
 
@@ -1090,7 +1092,6 @@ public:
         toolBox->setCurrentIndex(2);
         toolBox->layout()->setSpacing(0);
         ODFDim->setCurrentIndex(3);
-        ThreadCount->setCurrentIndex(3);
 
 
         QMetaObject::connectSlotsByName(reconstruction_window);
@@ -1206,19 +1207,6 @@ public:
         balance_scheme->setText(QApplication::translate("reconstruction_window", "Balance scheme", 0, QApplication::UnicodeUTF8));
         HalfSphere->setText(QApplication::translate("reconstruction_window", "Half-sphere scheme", 0, QApplication::UnicodeUTF8));
         label_9->setText(QApplication::translate("reconstruction_window", "Parallel reconstruction:", 0, QApplication::UnicodeUTF8));
-        ThreadCount->clear();
-        ThreadCount->insertItems(0, QStringList()
-         << QApplication::translate("reconstruction_window", "Off", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("reconstruction_window", "2 threads", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("reconstruction_window", "3 threads", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("reconstruction_window", "4 threads", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("reconstruction_window", "5 threads", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("reconstruction_window", "6 threads", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("reconstruction_window", "7 threads", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("reconstruction_window", "8 threads", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("reconstruction_window", "9 threads", 0, QApplication::UnicodeUTF8)
-         << QApplication::translate("reconstruction_window", "10 threads", 0, QApplication::UnicodeUTF8)
-        );
         doDTI->setText(QApplication::translate("reconstruction_window", "Run reconstruction", 0, QApplication::UnicodeUTF8));
         doDTI->setDescription(QString());
         toolBox->setItemText(toolBox->indexOf(page), QApplication::translate("reconstruction_window", "Step 2: select reconstruction method", 0, QApplication::UnicodeUTF8));
