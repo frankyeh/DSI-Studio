@@ -197,10 +197,10 @@ public:
         {
             image::threshold(dwi_sum,mask,image::segmentation::otsu_threshold(dwi_sum)*0.8,1,0);
             check_prog(1,3);
-            image::morphology::recursive_smoothing(mask);
+            image::morphology::recursive_smoothing(mask,10);
             check_prog(2,3);
             image::morphology::defragment(mask);
-            image::morphology::recursive_smoothing(mask);
+            image::morphology::recursive_smoothing(mask,10);
         }
         check_prog(3,3);
         return true;
