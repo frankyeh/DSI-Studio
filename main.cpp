@@ -51,13 +51,14 @@ QStringList search_files(QString dir,QString filter)
 
 std::string get_fa_template_path(void)
 {
-    std::string fa_template_path = "FMRIB58_FA_1mm.nii.gz";
+    std::string fa_template_path = QCoreApplication::applicationDirPath().toLocal8Bit().begin();
+    fa_template_path += "/FMRIB58_FA_1mm.nii.gz";
     return fa_template_path;
 }
 
 void load_atlas(void)
 {
-    QDir dir = QString("atlas");
+    QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
     QStringList atlas_name_list = dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
     atlas_name_list << dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
     for(int index = 0;index < atlas_name_list.size();++index)
@@ -71,6 +72,8 @@ void load_atlas(void)
 
 int main(int ac, char *av[])
 {
+
+
     if(ac > 2)
     {
         try
@@ -122,7 +125,6 @@ int main(int ac, char *av[])
         }
         return 1;
     }
-
     QApplication a(ac,av);
     a.setOrganizationName("LabSolver");
     a.setApplicationName("DSI Studio");
@@ -130,10 +132,11 @@ int main(int ac, char *av[])
     font.setFamily(QString::fromUtf8("Arial"));
     a.setFont(font);
     QApplication::setStyle(new QCleanlooksStyle);
+
     // load template
     if(!fa_template_imp.load_from_file(get_fa_template_path().c_str()))
     {
-        std::string error_str = "Cannot find FMRIB58_FA_1mm.nii.gz";
+        std::string error_str = "Cannot find ";
         error_str += get_fa_template_path();
         QMessageBox::information(0,"Error",error_str.c_str(),0);
         return false;
