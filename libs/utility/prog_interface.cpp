@@ -7,16 +7,23 @@
 #include <QTime>
 std::auto_ptr<QProgressDialog> progressDialog;
 QTime t_total,t_last;
+bool lock_dialog = false;
 
-        extern "C" void begin_prog(const char* title)
+        extern "C" void begin_prog(const char* title,bool lock)
         {
             if(!progressDialog.get())
                 return;
-            progressDialog.reset(new QProgressDialog("initializing...","Abort",0,10,0));
-            progressDialog->setMinimumDuration(0);
+            lock_dialog = lock;
+            progressDialog->show();
             progressDialog->setWindowTitle(title);
             qApp->processEvents();
             t_total.start();
+        }
+        extern "C" void end_prog(void)
+        {
+            lock_dialog = false;
+            if(progressDialog.get())
+                progressDialog.reset(new QProgressDialog("","Abort",0,10,0));
         }
 
         extern "C" void set_title(const char* title)
@@ -34,7 +41,7 @@ QTime t_total,t_last;
         }
         extern "C" int check_prog(int now,int total)
         {
-            if(now == total && progressDialog.get())
+            if(now == total && progressDialog.get() && !lock_dialog)
                 progressDialog.reset(new QProgressDialog("","Abort",0,10,0));
             if(now == 0 || now == total)
                 t_total.start();

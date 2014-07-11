@@ -247,7 +247,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
 
 
 
-    begin_prog("reconstructing");
+    begin_prog("run reconstruction",true);
     int odf_order[8] = {4, 5, 6, 8, 10, 12, 16, 20};
     handle->thread_count = ui->ThreadCount->value();
     handle->voxel.ti.init(odf_order[ui->ODFDim->currentIndex()]);
@@ -269,6 +269,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.output_mapping = ui->output_mapping->isChecked() ? 1 : 0;
 
     const char* msg = (const char*)reconstruction(handle.get(), method_id, params);
+    end_prog();
     if (!QFileInfo(msg).exists())
     {
         QMessageBox::information(this,"error",msg,0);
@@ -277,7 +278,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     if(!prompt)
         return;
 
-    QMessageBox::information(this,"DSI Studio","done!",0);
+    QMessageBox::information(this,"DSI Studio","FIB file created.",0);
     if(method_id == 6)
         ((MainWindow*)parent())->addSrc(msg);
     else

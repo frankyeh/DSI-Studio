@@ -594,6 +594,7 @@ void dicom_parser::on_buttonBox_accepted()
         ((MainWindow*)parent())->addSrc(ui->SrcName->text()+".gz");
     else
         ((MainWindow*)parent())->addSrc(ui->SrcName->text());
+    QMessageBox::information(this,"DSI Studio","SRC file created",0);
     close();
 }
 
