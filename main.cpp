@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <QApplication>
 #include <QCleanlooksStyle>
+#include <QMacStyle>
 #include <QMetaObject>
 #include <QMetaMethod>
 #include <QMessageBox>
@@ -135,7 +136,7 @@ int main(int ac, char *av[])
     QFont font;
     font.setFamily(QString::fromUtf8("Arial"));
     a.setFont(font);
-    QApplication::setStyle(new QCleanlooksStyle);
+    //QApplication::setStyle(new QMacStyle);
 
     // load template
     if(!fa_template_imp.load_from_file(get_fa_template_path().c_str()))

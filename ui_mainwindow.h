@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'mainwindow.ui'
 **
-** Created: Wed Jun 18 22:31:53 2014
+** Created: Fri Jul 11 12:20:59 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -16,12 +16,13 @@
 #include <QtGui/QButtonGroup>
 #include <QtGui/QComboBox>
 #include <QtGui/QCommandLinkButton>
-#include <QtGui/QDockWidget>
 #include <QtGui/QHBoxLayout>
 #include <QtGui/QHeaderView>
 #include <QtGui/QLabel>
 #include <QtGui/QMainWindow>
+#include <QtGui/QSpacerItem>
 #include <QtGui/QTableWidget>
+#include <QtGui/QToolBox>
 #include <QtGui/QToolButton>
 #include <QtGui/QVBoxLayout>
 #include <QtGui/QWidget>
@@ -32,8 +33,35 @@ class Ui_MainWindow
 {
 public:
     QWidget *centralWidget;
+    QHBoxLayout *horizontalLayout;
+    QToolBox *toolBox;
+    QWidget *page;
+    QVBoxLayout *verticalLayout_6;
+    QCommandLinkButton *OpenDICOM;
+    QCommandLinkButton *Reconstruction;
+    QCommandLinkButton *FiberTracking;
+    QSpacerItem *verticalSpacer_4;
+    QWidget *page_2;
+    QVBoxLayout *verticalLayout_7;
+    QCommandLinkButton *averagefib;
+    QCommandLinkButton *vbc;
+    QCommandLinkButton *connectometry;
+    QSpacerItem *verticalSpacer_3;
+    QWidget *page_3;
+    QVBoxLayout *verticalLayout_8;
+    QCommandLinkButton *RenameDICOM;
+    QCommandLinkButton *RenameDICOMDir;
+    QCommandLinkButton *batch_src;
+    QCommandLinkButton *batch_reconstruction;
+    QSpacerItem *verticalSpacer_2;
+    QWidget *page_4;
+    QVBoxLayout *verticalLayout_9;
+    QCommandLinkButton *view_image;
+    QCommandLinkButton *simulateMRI;
+    QSpacerItem *verticalSpacer;
+    QWidget *widget;
     QVBoxLayout *verticalLayout_3;
-    QVBoxLayout *verticalLayout_4;
+    QVBoxLayout *verticalLayout_2;
     QLabel *label_3;
     QTableWidget *recentSrc;
     QLabel *label_2;
@@ -42,33 +70,12 @@ public:
     QLabel *label;
     QComboBox *workDir;
     QToolButton *browseDir;
-    QDockWidget *dockWidget;
-    QWidget *dockWidgetContents;
-    QVBoxLayout *verticalLayout_2;
-    QCommandLinkButton *OpenDICOM;
-    QCommandLinkButton *Reconstruction;
-    QCommandLinkButton *FiberTracking;
-    QDockWidget *dockWidget_3;
-    QWidget *dockWidgetContents_3;
-    QVBoxLayout *verticalLayout_5;
-    QCommandLinkButton *averagefib;
-    QCommandLinkButton *vbc;
-    QCommandLinkButton *connectometry;
-    QDockWidget *dockWidget_2;
-    QWidget *dockWidgetContents_2;
-    QVBoxLayout *verticalLayout;
-    QCommandLinkButton *RenameDICOM;
-    QCommandLinkButton *RenameDICOMDir;
-    QCommandLinkButton *batch_src;
-    QCommandLinkButton *batch_reconstruction;
-    QCommandLinkButton *view_image;
-    QCommandLinkButton *simulateMRI;
 
     void setupUi(QMainWindow *MainWindow)
     {
         if (MainWindow->objectName().isEmpty())
             MainWindow->setObjectName(QString::fromUtf8("MainWindow"));
-        MainWindow->resize(862, 590);
+        MainWindow->resize(832, 464);
         QFont font;
         font.setFamily(QString::fromUtf8("Arial"));
         MainWindow->setFont(font);
@@ -82,17 +89,136 @@ public:
         sizePolicy.setVerticalStretch(0);
         sizePolicy.setHeightForWidth(centralWidget->sizePolicy().hasHeightForWidth());
         centralWidget->setSizePolicy(sizePolicy);
-        verticalLayout_3 = new QVBoxLayout(centralWidget);
+        horizontalLayout = new QHBoxLayout(centralWidget);
+        horizontalLayout->setSpacing(0);
+        horizontalLayout->setContentsMargins(0, 0, 0, 0);
+        horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
+        toolBox = new QToolBox(centralWidget);
+        toolBox->setObjectName(QString::fromUtf8("toolBox"));
+        toolBox->setMaximumSize(QSize(300, 16777215));
+        page = new QWidget();
+        page->setObjectName(QString::fromUtf8("page"));
+        page->setGeometry(QRect(0, 0, 300, 376));
+        verticalLayout_6 = new QVBoxLayout(page);
+        verticalLayout_6->setSpacing(0);
+        verticalLayout_6->setContentsMargins(0, 0, 0, 0);
+        verticalLayout_6->setObjectName(QString::fromUtf8("verticalLayout_6"));
+        OpenDICOM = new QCommandLinkButton(page);
+        OpenDICOM->setObjectName(QString::fromUtf8("OpenDICOM"));
+
+        verticalLayout_6->addWidget(OpenDICOM);
+
+        Reconstruction = new QCommandLinkButton(page);
+        Reconstruction->setObjectName(QString::fromUtf8("Reconstruction"));
+
+        verticalLayout_6->addWidget(Reconstruction);
+
+        FiberTracking = new QCommandLinkButton(page);
+        FiberTracking->setObjectName(QString::fromUtf8("FiberTracking"));
+
+        verticalLayout_6->addWidget(FiberTracking);
+
+        verticalSpacer_4 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+        verticalLayout_6->addItem(verticalSpacer_4);
+
+        toolBox->addItem(page, QString::fromUtf8("Diffusion MRI Tractography"));
+        page_2 = new QWidget();
+        page_2->setObjectName(QString::fromUtf8("page_2"));
+        page_2->setGeometry(QRect(0, 0, 300, 376));
+        verticalLayout_7 = new QVBoxLayout(page_2);
+        verticalLayout_7->setSpacing(0);
+        verticalLayout_7->setContentsMargins(0, 0, 0, 0);
+        verticalLayout_7->setObjectName(QString::fromUtf8("verticalLayout_7"));
+        averagefib = new QCommandLinkButton(page_2);
+        averagefib->setObjectName(QString::fromUtf8("averagefib"));
+
+        verticalLayout_7->addWidget(averagefib);
+
+        vbc = new QCommandLinkButton(page_2);
+        vbc->setObjectName(QString::fromUtf8("vbc"));
+
+        verticalLayout_7->addWidget(vbc);
+
+        connectometry = new QCommandLinkButton(page_2);
+        connectometry->setObjectName(QString::fromUtf8("connectometry"));
+
+        verticalLayout_7->addWidget(connectometry);
+
+        verticalSpacer_3 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+        verticalLayout_7->addItem(verticalSpacer_3);
+
+        toolBox->addItem(page_2, QString::fromUtf8("Diffusion MRI Connectometry"));
+        page_3 = new QWidget();
+        page_3->setObjectName(QString::fromUtf8("page_3"));
+        page_3->setGeometry(QRect(0, 0, 300, 376));
+        verticalLayout_8 = new QVBoxLayout(page_3);
+        verticalLayout_8->setSpacing(0);
+        verticalLayout_8->setContentsMargins(0, 0, 0, 0);
+        verticalLayout_8->setObjectName(QString::fromUtf8("verticalLayout_8"));
+        RenameDICOM = new QCommandLinkButton(page_3);
+        RenameDICOM->setObjectName(QString::fromUtf8("RenameDICOM"));
+
+        verticalLayout_8->addWidget(RenameDICOM);
+
+        RenameDICOMDir = new QCommandLinkButton(page_3);
+        RenameDICOMDir->setObjectName(QString::fromUtf8("RenameDICOMDir"));
+
+        verticalLayout_8->addWidget(RenameDICOMDir);
+
+        batch_src = new QCommandLinkButton(page_3);
+        batch_src->setObjectName(QString::fromUtf8("batch_src"));
+
+        verticalLayout_8->addWidget(batch_src);
+
+        batch_reconstruction = new QCommandLinkButton(page_3);
+        batch_reconstruction->setObjectName(QString::fromUtf8("batch_reconstruction"));
+
+        verticalLayout_8->addWidget(batch_reconstruction);
+
+        verticalSpacer_2 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+        verticalLayout_8->addItem(verticalSpacer_2);
+
+        toolBox->addItem(page_3, QString::fromUtf8("Tools: batch processing"));
+        page_4 = new QWidget();
+        page_4->setObjectName(QString::fromUtf8("page_4"));
+        page_4->setGeometry(QRect(0, 0, 300, 376));
+        verticalLayout_9 = new QVBoxLayout(page_4);
+        verticalLayout_9->setSpacing(0);
+        verticalLayout_9->setContentsMargins(0, 0, 0, 0);
+        verticalLayout_9->setObjectName(QString::fromUtf8("verticalLayout_9"));
+        view_image = new QCommandLinkButton(page_4);
+        view_image->setObjectName(QString::fromUtf8("view_image"));
+
+        verticalLayout_9->addWidget(view_image);
+
+        simulateMRI = new QCommandLinkButton(page_4);
+        simulateMRI->setObjectName(QString::fromUtf8("simulateMRI"));
+
+        verticalLayout_9->addWidget(simulateMRI);
+
+        verticalSpacer = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+        verticalLayout_9->addItem(verticalSpacer);
+
+        toolBox->addItem(page_4, QString::fromUtf8("Tools: others"));
+
+        horizontalLayout->addWidget(toolBox);
+
+        widget = new QWidget(centralWidget);
+        widget->setObjectName(QString::fromUtf8("widget"));
+        sizePolicy.setHeightForWidth(widget->sizePolicy().hasHeightForWidth());
+        widget->setSizePolicy(sizePolicy);
+        verticalLayout_3 = new QVBoxLayout(widget);
         verticalLayout_3->setSpacing(0);
         verticalLayout_3->setContentsMargins(0, 0, 0, 0);
         verticalLayout_3->setObjectName(QString::fromUtf8("verticalLayout_3"));
-        verticalLayout_3->setSizeConstraint(QLayout::SetDefaultConstraint);
-        verticalLayout_4 = new QVBoxLayout();
-        verticalLayout_4->setSpacing(6);
-        verticalLayout_4->setObjectName(QString::fromUtf8("verticalLayout_4"));
-        verticalLayout_4->setSizeConstraint(QLayout::SetDefaultConstraint);
-        verticalLayout_4->setContentsMargins(-1, 0, -1, -1);
-        label_3 = new QLabel(centralWidget);
+        verticalLayout_2 = new QVBoxLayout();
+        verticalLayout_2->setSpacing(6);
+        verticalLayout_2->setObjectName(QString::fromUtf8("verticalLayout_2"));
+        label_3 = new QLabel(widget);
         label_3->setObjectName(QString::fromUtf8("label_3"));
         QSizePolicy sizePolicy1(QSizePolicy::Maximum, QSizePolicy::Preferred);
         sizePolicy1.setHorizontalStretch(0);
@@ -100,9 +226,9 @@ public:
         sizePolicy1.setHeightForWidth(label_3->sizePolicy().hasHeightForWidth());
         label_3->setSizePolicy(sizePolicy1);
 
-        verticalLayout_4->addWidget(label_3);
+        verticalLayout_2->addWidget(label_3);
 
-        recentSrc = new QTableWidget(centralWidget);
+        recentSrc = new QTableWidget(widget);
         if (recentSrc->columnCount() < 2)
             recentSrc->setColumnCount(2);
         QTableWidgetItem *__qtablewidgetitem = new QTableWidgetItem();
@@ -119,16 +245,16 @@ public:
         recentSrc->setSelectionMode(QAbstractItemView::SingleSelection);
         recentSrc->setSelectionBehavior(QAbstractItemView::SelectRows);
 
-        verticalLayout_4->addWidget(recentSrc);
+        verticalLayout_2->addWidget(recentSrc);
 
-        label_2 = new QLabel(centralWidget);
+        label_2 = new QLabel(widget);
         label_2->setObjectName(QString::fromUtf8("label_2"));
         sizePolicy1.setHeightForWidth(label_2->sizePolicy().hasHeightForWidth());
         label_2->setSizePolicy(sizePolicy1);
 
-        verticalLayout_4->addWidget(label_2);
+        verticalLayout_2->addWidget(label_2);
 
-        recentFib = new QTableWidget(centralWidget);
+        recentFib = new QTableWidget(widget);
         if (recentFib->columnCount() < 2)
             recentFib->setColumnCount(2);
         QTableWidgetItem *__qtablewidgetitem2 = new QTableWidgetItem();
@@ -142,12 +268,12 @@ public:
         recentFib->setSelectionMode(QAbstractItemView::SingleSelection);
         recentFib->setSelectionBehavior(QAbstractItemView::SelectRows);
 
-        verticalLayout_4->addWidget(recentFib);
+        verticalLayout_2->addWidget(recentFib);
 
         horizontalLayout_2 = new QHBoxLayout();
         horizontalLayout_2->setSpacing(6);
         horizontalLayout_2->setObjectName(QString::fromUtf8("horizontalLayout_2"));
-        label = new QLabel(centralWidget);
+        label = new QLabel(widget);
         label->setObjectName(QString::fromUtf8("label"));
         QSizePolicy sizePolicy3(QSizePolicy::Fixed, QSizePolicy::Fixed);
         sizePolicy3.setHorizontalStretch(0);
@@ -157,7 +283,7 @@ public:
 
         horizontalLayout_2->addWidget(label);
 
-        workDir = new QComboBox(centralWidget);
+        workDir = new QComboBox(widget);
         workDir->setObjectName(QString::fromUtf8("workDir"));
         QSizePolicy sizePolicy4(QSizePolicy::Preferred, QSizePolicy::Fixed);
         sizePolicy4.setHorizontalStretch(0);
@@ -170,7 +296,7 @@ public:
 
         horizontalLayout_2->addWidget(workDir);
 
-        browseDir = new QToolButton(centralWidget);
+        browseDir = new QToolButton(widget);
         browseDir->setObjectName(QString::fromUtf8("browseDir"));
         QIcon icon1;
         icon1.addFile(QString::fromUtf8(":/icons/icons/open.xpm"), QSize(), QIcon::Normal, QIcon::Off);
@@ -180,113 +306,20 @@ public:
         horizontalLayout_2->addWidget(browseDir);
 
 
-        verticalLayout_4->addLayout(horizontalLayout_2);
+        verticalLayout_2->addLayout(horizontalLayout_2);
 
 
-        verticalLayout_3->addLayout(verticalLayout_4);
+        verticalLayout_3->addLayout(verticalLayout_2);
+
+
+        horizontalLayout->addWidget(widget);
 
         MainWindow->setCentralWidget(centralWidget);
-        dockWidget = new QDockWidget(MainWindow);
-        dockWidget->setObjectName(QString::fromUtf8("dockWidget"));
-        sizePolicy2.setHeightForWidth(dockWidget->sizePolicy().hasHeightForWidth());
-        dockWidget->setSizePolicy(sizePolicy2);
-        dockWidgetContents = new QWidget();
-        dockWidgetContents->setObjectName(QString::fromUtf8("dockWidgetContents"));
-        verticalLayout_2 = new QVBoxLayout(dockWidgetContents);
-        verticalLayout_2->setSpacing(4);
-        verticalLayout_2->setContentsMargins(4, 4, 4, 4);
-        verticalLayout_2->setObjectName(QString::fromUtf8("verticalLayout_2"));
-        OpenDICOM = new QCommandLinkButton(dockWidgetContents);
-        OpenDICOM->setObjectName(QString::fromUtf8("OpenDICOM"));
-
-        verticalLayout_2->addWidget(OpenDICOM);
-
-        Reconstruction = new QCommandLinkButton(dockWidgetContents);
-        Reconstruction->setObjectName(QString::fromUtf8("Reconstruction"));
-
-        verticalLayout_2->addWidget(Reconstruction);
-
-        FiberTracking = new QCommandLinkButton(dockWidgetContents);
-        FiberTracking->setObjectName(QString::fromUtf8("FiberTracking"));
-
-        verticalLayout_2->addWidget(FiberTracking);
-
-        dockWidget->setWidget(dockWidgetContents);
-        MainWindow->addDockWidget(static_cast<Qt::DockWidgetArea>(1), dockWidget);
-        dockWidget_3 = new QDockWidget(MainWindow);
-        dockWidget_3->setObjectName(QString::fromUtf8("dockWidget_3"));
-        dockWidget_3->setEnabled(true);
-        sizePolicy2.setHeightForWidth(dockWidget_3->sizePolicy().hasHeightForWidth());
-        dockWidget_3->setSizePolicy(sizePolicy2);
-        dockWidget_3->setFloating(false);
-        dockWidgetContents_3 = new QWidget();
-        dockWidgetContents_3->setObjectName(QString::fromUtf8("dockWidgetContents_3"));
-        verticalLayout_5 = new QVBoxLayout(dockWidgetContents_3);
-        verticalLayout_5->setSpacing(4);
-        verticalLayout_5->setContentsMargins(4, 4, 4, 4);
-        verticalLayout_5->setObjectName(QString::fromUtf8("verticalLayout_5"));
-        averagefib = new QCommandLinkButton(dockWidgetContents_3);
-        averagefib->setObjectName(QString::fromUtf8("averagefib"));
-
-        verticalLayout_5->addWidget(averagefib);
-
-        vbc = new QCommandLinkButton(dockWidgetContents_3);
-        vbc->setObjectName(QString::fromUtf8("vbc"));
-
-        verticalLayout_5->addWidget(vbc);
-
-        connectometry = new QCommandLinkButton(dockWidgetContents_3);
-        connectometry->setObjectName(QString::fromUtf8("connectometry"));
-
-        verticalLayout_5->addWidget(connectometry);
-
-        dockWidget_3->setWidget(dockWidgetContents_3);
-        MainWindow->addDockWidget(static_cast<Qt::DockWidgetArea>(1), dockWidget_3);
-        dockWidget_2 = new QDockWidget(MainWindow);
-        dockWidget_2->setObjectName(QString::fromUtf8("dockWidget_2"));
-        sizePolicy2.setHeightForWidth(dockWidget_2->sizePolicy().hasHeightForWidth());
-        dockWidget_2->setSizePolicy(sizePolicy2);
-        dockWidgetContents_2 = new QWidget();
-        dockWidgetContents_2->setObjectName(QString::fromUtf8("dockWidgetContents_2"));
-        verticalLayout = new QVBoxLayout(dockWidgetContents_2);
-        verticalLayout->setSpacing(4);
-        verticalLayout->setContentsMargins(4, 4, 4, 4);
-        verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
-        RenameDICOM = new QCommandLinkButton(dockWidgetContents_2);
-        RenameDICOM->setObjectName(QString::fromUtf8("RenameDICOM"));
-
-        verticalLayout->addWidget(RenameDICOM);
-
-        RenameDICOMDir = new QCommandLinkButton(dockWidgetContents_2);
-        RenameDICOMDir->setObjectName(QString::fromUtf8("RenameDICOMDir"));
-
-        verticalLayout->addWidget(RenameDICOMDir);
-
-        batch_src = new QCommandLinkButton(dockWidgetContents_2);
-        batch_src->setObjectName(QString::fromUtf8("batch_src"));
-
-        verticalLayout->addWidget(batch_src);
-
-        batch_reconstruction = new QCommandLinkButton(dockWidgetContents_2);
-        batch_reconstruction->setObjectName(QString::fromUtf8("batch_reconstruction"));
-
-        verticalLayout->addWidget(batch_reconstruction);
-
-        view_image = new QCommandLinkButton(dockWidgetContents_2);
-        view_image->setObjectName(QString::fromUtf8("view_image"));
-
-        verticalLayout->addWidget(view_image);
-
-        simulateMRI = new QCommandLinkButton(dockWidgetContents_2);
-        simulateMRI->setObjectName(QString::fromUtf8("simulateMRI"));
-
-        verticalLayout->addWidget(simulateMRI);
-
-        dockWidget_2->setWidget(dockWidgetContents_2);
-        MainWindow->addDockWidget(static_cast<Qt::DockWidgetArea>(1), dockWidget_2);
 
         retranslateUi(MainWindow);
 
+        toolBox->setCurrentIndex(0);
+        toolBox->layout()->setSpacing(0);
         workDir->setCurrentIndex(-1);
 
 
@@ -296,6 +329,37 @@ public:
     void retranslateUi(QMainWindow *MainWindow)
     {
         MainWindow->setWindowTitle(QApplication::translate("MainWindow", "DSI Studio", 0, QApplication::UnicodeUTF8));
+        OpenDICOM->setText(QApplication::translate("MainWindow", "STEP1: Open Source Images", 0, QApplication::UnicodeUTF8));
+        OpenDICOM->setDescription(QApplication::translate("MainWindow", "Open diffusion MR images to create .src file\n"
+"(DICOM, NIFTI, Bruker 2dseq, Varian fdf) ", 0, QApplication::UnicodeUTF8));
+        Reconstruction->setText(QApplication::translate("MainWindow", "STEP2: Reconstruction", 0, QApplication::UnicodeUTF8));
+        Reconstruction->setDescription(QApplication::translate("MainWindow", "Open .src file to do reconstructiong\n"
+"(DTI, QBI, DSI, GQI, or QSDR)", 0, QApplication::UnicodeUTF8));
+        FiberTracking->setText(QApplication::translate("MainWindow", "STEP3: Fiber tracking", 0, QApplication::UnicodeUTF8));
+        FiberTracking->setDescription(QApplication::translate("MainWindow", "Open .fib file to perform fiber tracking and analysis\n"
+"(track-specific analysis, connectivity matrix) \n"
+"", 0, QApplication::UnicodeUTF8));
+        toolBox->setItemText(toolBox->indexOf(page), QApplication::translate("MainWindow", "Diffusion MRI Tractography", 0, QApplication::UnicodeUTF8));
+        averagefib->setText(QApplication::translate("MainWindow", "STEP1: Create template/skeleton", 0, QApplication::UnicodeUTF8));
+        averagefib->setDescription(QApplication::translate("MainWindow", "Average the ODFs to create a tempalte or skeleton. You need to use QSDR to reconstruct src files and check \"output ODF\" in the reconstruction", 0, QApplication::UnicodeUTF8));
+        vbc->setText(QApplication::translate("MainWindow", "STEP2: Create connectometry database", 0, QApplication::UnicodeUTF8));
+        vbc->setDescription(QApplication::translate("MainWindow", "Load a group of subjects to create a connectometry dataset", 0, QApplication::UnicodeUTF8));
+        connectometry->setText(QApplication::translate("MainWindow", "STEP3: Connectometry Analysis ", 0, QApplication::UnicodeUTF8));
+        toolBox->setItemText(toolBox->indexOf(page_2), QApplication::translate("MainWindow", "Diffusion MRI Connectometry", 0, QApplication::UnicodeUTF8));
+        RenameDICOM->setText(QApplication::translate("MainWindow", "Rename DICOM Files", 0, QApplication::UnicodeUTF8));
+        RenameDICOM->setDescription(QApplication::translate("MainWindow", "Sort and rename DICOM files according to their sequences", 0, QApplication::UnicodeUTF8));
+        RenameDICOMDir->setText(QApplication::translate("MainWindow", "Rename DICOM Files", 0, QApplication::UnicodeUTF8));
+        RenameDICOMDir->setDescription(QApplication::translate("MainWindow", "Select a directory containinng DICOM files and rename them by their sequence", 0, QApplication::UnicodeUTF8));
+        batch_src->setText(QApplication::translate("MainWindow", "Create SRC files ", 0, QApplication::UnicodeUTF8));
+        batch_src->setDescription(QApplication::translate("MainWindow", "Select a root directory that contains multiple subdirectory and generate an SRC file for each of them.", 0, QApplication::UnicodeUTF8));
+        batch_reconstruction->setText(QApplication::translate("MainWindow", "Batch SRC Reconstruction", 0, QApplication::UnicodeUTF8));
+        batch_reconstruction->setDescription(QApplication::translate("MainWindow", "Select a directory that contains SRC files in the subdirectories and performan reconstruction.", 0, QApplication::UnicodeUTF8));
+        toolBox->setItemText(toolBox->indexOf(page_3), QApplication::translate("MainWindow", "Tools: batch processing", 0, QApplication::UnicodeUTF8));
+        view_image->setText(QApplication::translate("MainWindow", "View Images (NIFTI/DICOM/2dseq)", 0, QApplication::UnicodeUTF8));
+        view_image->setDescription(QApplication::translate("MainWindow", "Open image and header information", 0, QApplication::UnicodeUTF8));
+        simulateMRI->setText(QApplication::translate("MainWindow", "Diffusion MRI Simulation", 0, QApplication::UnicodeUTF8));
+        simulateMRI->setDescription(QApplication::translate("MainWindow", "Simulate diffusion images using the given b-table", 0, QApplication::UnicodeUTF8));
+        toolBox->setItemText(toolBox->indexOf(page_4), QApplication::translate("MainWindow", "Tools: others", 0, QApplication::UnicodeUTF8));
         label_3->setText(QApplication::translate("MainWindow", "Recent src files: double click to open", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem = recentSrc->horizontalHeaderItem(0);
         ___qtablewidgetitem->setText(QApplication::translate("MainWindow", "File Name", 0, QApplication::UnicodeUTF8));
@@ -308,31 +372,6 @@ public:
         ___qtablewidgetitem3->setText(QApplication::translate("MainWindow", "Directory", 0, QApplication::UnicodeUTF8));
         label->setText(QApplication::translate("MainWindow", "Working Directory", 0, QApplication::UnicodeUTF8));
         browseDir->setText(QApplication::translate("MainWindow", "Browse...", 0, QApplication::UnicodeUTF8));
-        dockWidget->setWindowTitle(QApplication::translate("MainWindow", "Diffusion MR Fiber Tracking", 0, QApplication::UnicodeUTF8));
-        OpenDICOM->setText(QApplication::translate("MainWindow", "STEP1: Open Source Images", 0, QApplication::UnicodeUTF8));
-        OpenDICOM->setDescription(QApplication::translate("MainWindow", "Open DICOM, NIFTI files to create .src file", 0, QApplication::UnicodeUTF8));
-        Reconstruction->setText(QApplication::translate("MainWindow", "STEP2: Reconstruction", 0, QApplication::UnicodeUTF8));
-        Reconstruction->setDescription(QApplication::translate("MainWindow", "Open .src file to reconstruct DTI, QBI, DSI, or GQI", 0, QApplication::UnicodeUTF8));
-        FiberTracking->setText(QApplication::translate("MainWindow", "STEP3: Fiber tracking", 0, QApplication::UnicodeUTF8));
-        FiberTracking->setDescription(QApplication::translate("MainWindow", "Open .fib file to perform fiber tracking", 0, QApplication::UnicodeUTF8));
-        dockWidget_3->setWindowTitle(QApplication::translate("MainWindow", "Diffusion MRI Connectometry", 0, QApplication::UnicodeUTF8));
-        averagefib->setText(QApplication::translate("MainWindow", "STEP1: Create skeleton", 0, QApplication::UnicodeUTF8));
-        averagefib->setDescription(QApplication::translate("MainWindow", "Average the SDFs/ODFs to create a local tract skeleton.", 0, QApplication::UnicodeUTF8));
-        vbc->setText(QApplication::translate("MainWindow", "STEP2: Create connectometry database", 0, QApplication::UnicodeUTF8));
-        vbc->setDescription(QApplication::translate("MainWindow", "Load a group of subjects SDFs to create a connectometry dataset", 0, QApplication::UnicodeUTF8));
-        connectometry->setText(QApplication::translate("MainWindow", "STEP3: Connectometry Analysis ", 0, QApplication::UnicodeUTF8));
-        dockWidget_2->setWindowTitle(QApplication::translate("MainWindow", "Tools", 0, QApplication::UnicodeUTF8));
-        RenameDICOM->setText(QApplication::translate("MainWindow", "Rename DICOM Files", 0, QApplication::UnicodeUTF8));
-        RenameDICOM->setDescription(QApplication::translate("MainWindow", "Separate files according to their acquisition sequences", 0, QApplication::UnicodeUTF8));
-        RenameDICOMDir->setText(QApplication::translate("MainWindow", "Rename DICOM Files", 0, QApplication::UnicodeUTF8));
-        RenameDICOMDir->setDescription(QApplication::translate("MainWindow", "Apply to all subdirectoires", 0, QApplication::UnicodeUTF8));
-        batch_src->setText(QApplication::translate("MainWindow", "Batch creating SRC files", 0, QApplication::UnicodeUTF8));
-        batch_src->setDescription(QApplication::translate("MainWindow", "Generate src file for each subdirectory", 0, QApplication::UnicodeUTF8));
-        batch_reconstruction->setText(QApplication::translate("MainWindow", "Batch Reconstruction", 0, QApplication::UnicodeUTF8));
-        batch_reconstruction->setDescription(QApplication::translate("MainWindow", "Select a directory that contains src file in the subdirectories", 0, QApplication::UnicodeUTF8));
-        view_image->setText(QApplication::translate("MainWindow", "View Images (NIFTI/DICOM/2dseq)", 0, QApplication::UnicodeUTF8));
-        simulateMRI->setText(QApplication::translate("MainWindow", "Diffusion MRI Simulation", 0, QApplication::UnicodeUTF8));
-        simulateMRI->setDescription(QApplication::translate("MainWindow", "Simulate diffusion images using the given b-table", 0, QApplication::UnicodeUTF8));
     } // retranslateUi
 
 };

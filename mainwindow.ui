@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>862</width>
-    <height>590</height>
+    <width>832</width>
+    <height>464</height>
    </rect>
   </property>
   <property name="font">
@@ -29,368 +29,455 @@
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
-   <layout class="QVBoxLayout" name="verticalLayout_3">
+   <layout class="QHBoxLayout" name="horizontalLayout">
     <property name="spacing">
      <number>0</number>
-    </property>
-    <property name="sizeConstraint">
-     <enum>QLayout::SetDefaultConstraint</enum>
     </property>
     <property name="margin">
      <number>0</number>
     </property>
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout_4">
-      <property name="spacing">
-       <number>6</number>
+     <widget class="QToolBox" name="toolBox">
+      <property name="maximumSize">
+       <size>
+        <width>300</width>
+        <height>16777215</height>
+       </size>
       </property>
-      <property name="sizeConstraint">
-       <enum>QLayout::SetDefaultConstraint</enum>
-      </property>
-      <property name="topMargin">
+      <property name="currentIndex">
        <number>0</number>
       </property>
-      <item>
-       <widget class="QLabel" name="label_3">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
+      <property name="tabSpacing">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="page">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>300</width>
+         <height>376</height>
+        </rect>
+       </property>
+       <attribute name="label">
+        <string>Diffusion MRI Tractography</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_6">
+        <property name="spacing">
+         <number>0</number>
         </property>
-        <property name="text">
-         <string>Recent src files: double click to open</string>
+        <property name="margin">
+         <number>0</number>
         </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QTableWidget" name="recentSrc">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="selectionMode">
-         <enum>QAbstractItemView::SingleSelection</enum>
-        </property>
-        <property name="selectionBehavior">
-         <enum>QAbstractItemView::SelectRows</enum>
-        </property>
-        <column>
-         <property name="text">
-          <string>File Name</string>
-         </property>
-        </column>
-        <column>
-         <property name="text">
-          <string>Directory</string>
-         </property>
-        </column>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="label_2">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>Recent fib files: double click to open</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QTableWidget" name="recentFib">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="selectionMode">
-         <enum>QAbstractItemView::SingleSelection</enum>
-        </property>
-        <property name="selectionBehavior">
-         <enum>QAbstractItemView::SelectRows</enum>
-        </property>
-        <column>
-         <property name="text">
-          <string>File Name</string>
-         </property>
-        </column>
-        <column>
-         <property name="text">
-          <string>Directory</string>
-         </property>
-        </column>
-       </widget>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_2">
         <item>
-         <widget class="QLabel" name="label">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
+         <widget class="QCommandLinkButton" name="OpenDICOM">
           <property name="text">
-           <string>Working Directory</string>
+           <string>STEP1: Open Source Images</string>
+          </property>
+          <property name="description">
+           <string>Open diffusion MR images to create .src file
+(DICOM, NIFTI, Bruker 2dseq, Varian fdf) </string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QComboBox" name="workDir">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
+         <widget class="QCommandLinkButton" name="Reconstruction">
+          <property name="text">
+           <string>STEP2: Reconstruction</string>
           </property>
-          <property name="maximumSize">
+          <property name="description">
+           <string>Open .src file to do reconstructiong
+(DTI, QBI, DSI, GQI, or QSDR)</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="FiberTracking">
+          <property name="text">
+           <string>STEP3: Fiber tracking</string>
+          </property>
+          <property name="description">
+           <string>Open .fib file to perform fiber tracking and analysis
+(track-specific analysis, connectivity matrix) 
+</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_4">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
            <size>
-            <width>16777215</width>
-            <height>16777215</height>
+            <width>20</width>
+            <height>40</height>
            </size>
           </property>
-          <property name="editable">
-           <bool>false</bool>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="page_2">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>300</width>
+         <height>376</height>
+        </rect>
+       </property>
+       <attribute name="label">
+        <string>Diffusion MRI Connectometry</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_7">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="margin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QCommandLinkButton" name="averagefib">
+          <property name="text">
+           <string>STEP1: Create template/skeleton</string>
           </property>
-          <property name="currentIndex">
-           <number>-1</number>
-          </property>
-          <property name="sizeAdjustPolicy">
-           <enum>QComboBox::AdjustToMinimumContentsLength</enum>
+          <property name="description">
+           <string>Average the ODFs to create a tempalte or skeleton. You need to use QSDR to reconstruct src files and check &quot;output ODF&quot; in the reconstruction</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QToolButton" name="browseDir">
+         <widget class="QCommandLinkButton" name="vbc">
           <property name="text">
-           <string>Browse...</string>
+           <string>STEP2: Create connectometry database</string>
           </property>
-          <property name="icon">
-           <iconset resource="icons.qrc">
-            <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-          </property>
-          <property name="toolButtonStyle">
-           <enum>Qt::ToolButtonTextBesideIcon</enum>
+          <property name="description">
+           <string>Load a group of subjects to create a connectometry dataset</string>
           </property>
          </widget>
         </item>
+        <item>
+         <widget class="QCommandLinkButton" name="connectometry">
+          <property name="text">
+           <string>STEP3: Connectometry Analysis </string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
        </layout>
-      </item>
-     </layout>
+      </widget>
+      <widget class="QWidget" name="page_3">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>300</width>
+         <height>376</height>
+        </rect>
+       </property>
+       <attribute name="label">
+        <string>Tools: batch processing</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_8">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="margin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QCommandLinkButton" name="RenameDICOM">
+          <property name="text">
+           <string>Rename DICOM Files</string>
+          </property>
+          <property name="description">
+           <string>Sort and rename DICOM files according to their sequences</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="RenameDICOMDir">
+          <property name="text">
+           <string>Rename DICOM Files</string>
+          </property>
+          <property name="description">
+           <string>Select a directory containinng DICOM files and rename them by their sequence</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="batch_src">
+          <property name="text">
+           <string>Create SRC files </string>
+          </property>
+          <property name="description">
+           <string>Select a root directory that contains multiple subdirectory and generate an SRC file for each of them.</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="batch_reconstruction">
+          <property name="text">
+           <string>Batch SRC Reconstruction</string>
+          </property>
+          <property name="description">
+           <string>Select a directory that contains SRC files in the subdirectories and performan reconstruction.</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="page_4">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>300</width>
+         <height>376</height>
+        </rect>
+       </property>
+       <attribute name="label">
+        <string>Tools: others</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_9">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="margin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QCommandLinkButton" name="view_image">
+          <property name="text">
+           <string>View Images (NIFTI/DICOM/2dseq)</string>
+          </property>
+          <property name="description">
+           <string>Open image and header information</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="simulateMRI">
+          <property name="text">
+           <string>Diffusion MRI Simulation</string>
+          </property>
+          <property name="description">
+           <string>Simulate diffusion images using the given b-table</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+    <item>
+     <widget class="QWidget" name="widget" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <property name="margin">
+        <number>0</number>
+       </property>
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <item>
+          <widget class="QLabel" name="label_3">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Recent src files: double click to open</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QTableWidget" name="recentSrc">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="selectionMode">
+            <enum>QAbstractItemView::SingleSelection</enum>
+           </property>
+           <property name="selectionBehavior">
+            <enum>QAbstractItemView::SelectRows</enum>
+           </property>
+           <column>
+            <property name="text">
+             <string>File Name</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Directory</string>
+            </property>
+           </column>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_2">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Recent fib files: double click to open</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QTableWidget" name="recentFib">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="selectionMode">
+            <enum>QAbstractItemView::SingleSelection</enum>
+           </property>
+           <property name="selectionBehavior">
+            <enum>QAbstractItemView::SelectRows</enum>
+           </property>
+           <column>
+            <property name="text">
+             <string>File Name</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Directory</string>
+            </property>
+           </column>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <item>
+            <widget class="QLabel" name="label">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Working Directory</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="workDir">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="editable">
+              <bool>false</bool>
+             </property>
+             <property name="currentIndex">
+              <number>-1</number>
+             </property>
+             <property name="sizeAdjustPolicy">
+              <enum>QComboBox::AdjustToMinimumContentsLength</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QToolButton" name="browseDir">
+             <property name="text">
+              <string>Browse...</string>
+             </property>
+             <property name="icon">
+              <iconset resource="icons.qrc">
+               <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+             </property>
+             <property name="toolButtonStyle">
+              <enum>Qt::ToolButtonTextBesideIcon</enum>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
     </item>
    </layout>
-  </widget>
-  <widget class="QDockWidget" name="dockWidget">
-   <property name="sizePolicy">
-    <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-     <horstretch>0</horstretch>
-     <verstretch>0</verstretch>
-    </sizepolicy>
-   </property>
-   <property name="windowTitle">
-    <string>Diffusion MR Fiber Tracking</string>
-   </property>
-   <attribute name="dockWidgetArea">
-    <number>1</number>
-   </attribute>
-   <widget class="QWidget" name="dockWidgetContents">
-    <layout class="QVBoxLayout" name="verticalLayout_2">
-     <property name="spacing">
-      <number>4</number>
-     </property>
-     <property name="margin">
-      <number>4</number>
-     </property>
-     <item>
-      <widget class="QCommandLinkButton" name="OpenDICOM">
-       <property name="text">
-        <string>STEP1: Open Source Images</string>
-       </property>
-       <property name="description">
-        <string>Open DICOM, NIFTI files to create .src file</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCommandLinkButton" name="Reconstruction">
-       <property name="text">
-        <string>STEP2: Reconstruction</string>
-       </property>
-       <property name="description">
-        <string>Open .src file to reconstruct DTI, QBI, DSI, or GQI</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCommandLinkButton" name="FiberTracking">
-       <property name="text">
-        <string>STEP3: Fiber tracking</string>
-       </property>
-       <property name="description">
-        <string>Open .fib file to perform fiber tracking</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
-  </widget>
-  <widget class="QDockWidget" name="dockWidget_3">
-   <property name="enabled">
-    <bool>true</bool>
-   </property>
-   <property name="sizePolicy">
-    <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-     <horstretch>0</horstretch>
-     <verstretch>0</verstretch>
-    </sizepolicy>
-   </property>
-   <property name="floating">
-    <bool>false</bool>
-   </property>
-   <property name="windowTitle">
-    <string>Diffusion MRI Connectometry</string>
-   </property>
-   <attribute name="dockWidgetArea">
-    <number>1</number>
-   </attribute>
-   <widget class="QWidget" name="dockWidgetContents_3">
-    <layout class="QVBoxLayout" name="verticalLayout_5">
-     <property name="spacing">
-      <number>4</number>
-     </property>
-     <property name="margin">
-      <number>4</number>
-     </property>
-     <item>
-      <widget class="QCommandLinkButton" name="averagefib">
-       <property name="text">
-        <string>STEP1: Create skeleton</string>
-       </property>
-       <property name="description">
-        <string>Average the SDFs/ODFs to create a local tract skeleton.</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCommandLinkButton" name="vbc">
-       <property name="text">
-        <string>STEP2: Create connectometry database</string>
-       </property>
-       <property name="description">
-        <string>Load a group of subjects SDFs to create a connectometry dataset</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCommandLinkButton" name="connectometry">
-       <property name="text">
-        <string>STEP3: Connectometry Analysis </string>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
-  </widget>
-  <widget class="QDockWidget" name="dockWidget_2">
-   <property name="sizePolicy">
-    <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-     <horstretch>0</horstretch>
-     <verstretch>0</verstretch>
-    </sizepolicy>
-   </property>
-   <property name="windowTitle">
-    <string>Tools</string>
-   </property>
-   <attribute name="dockWidgetArea">
-    <number>1</number>
-   </attribute>
-   <widget class="QWidget" name="dockWidgetContents_2">
-    <layout class="QVBoxLayout" name="verticalLayout">
-     <property name="spacing">
-      <number>4</number>
-     </property>
-     <property name="margin">
-      <number>4</number>
-     </property>
-     <item>
-      <widget class="QCommandLinkButton" name="RenameDICOM">
-       <property name="text">
-        <string>Rename DICOM Files</string>
-       </property>
-       <property name="description">
-        <string>Separate files according to their acquisition sequences</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCommandLinkButton" name="RenameDICOMDir">
-       <property name="text">
-        <string>Rename DICOM Files</string>
-       </property>
-       <property name="description">
-        <string>Apply to all subdirectoires</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCommandLinkButton" name="batch_src">
-       <property name="text">
-        <string>Batch creating SRC files</string>
-       </property>
-       <property name="description">
-        <string>Generate src file for each subdirectory</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCommandLinkButton" name="batch_reconstruction">
-       <property name="text">
-        <string>Batch Reconstruction</string>
-       </property>
-       <property name="description">
-        <string>Select a directory that contains src file in the subdirectories</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCommandLinkButton" name="view_image">
-       <property name="text">
-        <string>View Images (NIFTI/DICOM/2dseq)</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCommandLinkButton" name="simulateMRI">
-       <property name="text">
-        <string>Diffusion MRI Simulation</string>
-       </property>
-       <property name="description">
-        <string>Simulate diffusion images using the given b-table</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
