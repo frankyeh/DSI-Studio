@@ -76,6 +76,10 @@ int main(int ac, char *av[])
 
     if(ac > 2)
     {
+        QCoreApplication cmd(ac,av);
+        cmd.setOrganizationName("LabSolver");
+        cmd.setApplicationName("DSI Studio");
+
         try
         {
             std::cout << "DSI Studio " << __DATE__ << ", Fang-Cheng Yeh" << std::endl;
