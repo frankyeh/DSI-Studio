@@ -42,7 +42,11 @@ bool lock_dialog = false;
         extern "C" int check_prog(int now,int total)
         {
             if(now == total && progressDialog.get() && !lock_dialog)
+            {
                 progressDialog.reset(new QProgressDialog("","Abort",0,10,0));
+                qApp->processEvents();
+                return false;
+            }
             if(now == 0 || now == total)
                 t_total.start();
             if(progressDialog.get() && (t_last.elapsed() > 500))
