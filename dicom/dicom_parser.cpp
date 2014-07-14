@@ -274,7 +274,7 @@ bool load_4d_2dseq(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files
     if(dwi_files.size() && dwi_files.back().image.geometry() !=
             image::geometry<3>(buf_image.width(),buf_image.height(),buf_image.depth()))
         return false;
-    image::lower_threshold(buf_image,0);
+    image::lower_threshold(buf_image,0.0);
     image::normalize(buf_image,32767.0);
     std::istringstream bvalue(method_file["PVM_DwEffBval"]);
     std::istringstream bvec(method_file["PVM_DwGradVec"]);
