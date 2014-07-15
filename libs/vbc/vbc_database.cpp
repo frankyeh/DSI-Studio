@@ -439,7 +439,7 @@ void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vect
         return;
     }
     ThreadData tracking_thread(0);
-    tracking_thread.param.step_size = fib.vs[0];
+    tracking_thread.param.step_size = 1.0; // fixed 1 mm
     tracking_thread.param.smooth_fraction = 0;
     tracking_thread.param.min_points_count3 = 6;
     tracking_thread.param.max_points_count3 = std::max<unsigned int>(6,3.0*500/tracking_thread.param.step_size);
@@ -491,6 +491,8 @@ void cal_hist(const std::vector<std::vector<float> >& track,std::vector<unsigned
     }
 }
 
+/*
+
 void hist_to_dist(const std::vector<unsigned int>& count,
                   std::vector<float>& dist)
 {
@@ -513,16 +515,16 @@ void dist_to_cdf(std::vector<float>& dist)
     }
 }
 
+*/
 
 
 void vbc_database::calculate_subject_distribution(float percentile,const fib_data& data,
-                                                  std::vector<float>& subject_greater,
-                                                  std::vector<float>& subject_lesser)
+                                                  std::vector<unsigned int>& subject_greater,
+                                                  std::vector<unsigned int>& subject_lesser)
 {
     // calculate subject fiber distribution
     std::vector<std::vector<float> > tracks;
-    std::vector<unsigned int> dist_greater(200);
-    std::vector<unsigned int> dist_lesser(200);
+
     fiber_orientations fib;
     fib.read(handle->fib_data);
     fib.threshold = percentile;
@@ -532,17 +534,19 @@ void vbc_database::calculate_subject_distribution(float percentile,const fib_dat
     fib.findex = data.greater_dir_ptr;
 
     run_track(fib,tracks);
-    cal_hist(tracks,dist_greater);
+    subject_greater.clear();
+    subject_greater.resize(200);
+    cal_hist(tracks,subject_greater);
 
 
     fib.fa = data.lesser_ptr;
     fib.findex = data.lesser_dir_ptr;
 
     run_track(fib,tracks);
-    cal_hist(tracks,dist_lesser);
+    subject_lesser.clear();
+    subject_lesser.resize(200);
+    cal_hist(tracks,subject_lesser);
 
-    hist_to_dist(dist_greater,subject_greater);
-    hist_to_dist(dist_lesser,subject_lesser);
 }
 
 bool vbc_database::save_subject_distribution(float percentile,
@@ -633,13 +637,16 @@ void vbc_database::calculate_individual_affected_tracks(fib_data& data,float per
 bool vbc_database::calculate_individual_distribution(float percentile,
                                                 unsigned int length_threshold,
                                                 const std::vector<std::string>& files,
-                                                std::vector<float>& subject_greater,
-                                                std::vector<float>& subject_lesser)
+                                                std::vector<unsigned int>& subject_greater,
+                                                std::vector<unsigned int>& subject_lesser)
 {
     begin_prog("processing");
     std::vector<std::vector<float> > tracks;
-    std::vector<unsigned int> dist_greater(200);
-    std::vector<unsigned int> dist_lesser(200);
+    subject_greater.clear();
+    subject_greater.resize(200);
+    subject_lesser.clear();
+    subject_lesser.resize(200);
+
     fib_data data;
     fiber_orientations fib;
     fib.read(handle->fib_data);
@@ -677,7 +684,7 @@ bool vbc_database::calculate_individual_distribution(float percentile,
                 return false;
             }
         }
-        cal_hist(tracks,dist_greater);
+        cal_hist(tracks,subject_greater);
 
         fib.fa = data.lesser_ptr;
         fib.findex = data.lesser_dir_ptr;
@@ -693,10 +700,8 @@ bool vbc_database::calculate_individual_distribution(float percentile,
                 return false;
             }
         }
-        cal_hist(tracks,dist_lesser);
+        cal_hist(tracks,subject_lesser);
     }
-    hist_to_dist(dist_greater,subject_greater);
-    hist_to_dist(dist_lesser,subject_lesser);
     return true;
 }
 
@@ -924,40 +929,40 @@ void vbc_database::calculate_null_group_multithread(unsigned int id,
 }
 
 void vbc_database::calculate_null_trend_distribution(float sqrt_var_S,float percentile,
-                                               std::vector<float>& subject_greater,
-                                               std::vector<float>& subject_lesser)
+                                               std::vector<unsigned int>& subject_greater,
+                                               std::vector<unsigned int>& subject_lesser)
 {
     begin_prog("processing");
-    std::vector<unsigned int> dist_greater(200);
-    std::vector<unsigned int> dist_lesser(200);
+    subject_greater.clear();
+    subject_greater.resize(200);
+    subject_lesser.clear();
+    subject_lesser.resize(200);
     boost::thread_group threads;
     unsigned int total_count = 0;
     for(unsigned int index = 0;index < 6;++index)
         threads.add_thread(new boost::thread(&vbc_database::calculate_null_trend_multithread,
-                                             this,index,sqrt_var_S,percentile,dist_greater,dist_lesser,false,&total_count));
-    calculate_null_trend_multithread(6,sqrt_var_S,percentile,dist_greater,dist_lesser,true,&total_count);
+                                             this,index,sqrt_var_S,percentile,subject_greater,subject_lesser,false,&total_count));
+    calculate_null_trend_multithread(6,sqrt_var_S,percentile,subject_greater,subject_lesser,true,&total_count);
     threads.join_all();
-    hist_to_dist(dist_greater,subject_greater);
-    hist_to_dist(dist_lesser,subject_lesser);
     check_prog(0,0);
 }
 
 void vbc_database::calculate_null_group_distribution(const std::vector<int>& label,float dif,
-                                               std::vector<float>& subject_greater,
-                                               std::vector<float>& subject_lesser)
+                                                     std::vector<unsigned int>& subject_greater,
+                                                     std::vector<unsigned int>& subject_lesser)
 {
     begin_prog("processing");
-    std::vector<unsigned int> dist_greater(200);
-    std::vector<unsigned int> dist_lesser(200);
+    subject_greater.clear();
+    subject_greater.resize(200);
+    subject_lesser.clear();
+    subject_lesser.resize(200);
     boost::thread_group threads;
     unsigned int total_count = 0;
     for(unsigned int index = 0;index < 6;++index)
         threads.add_thread(new boost::thread(&vbc_database::calculate_null_group_multithread,
-                                             this,index,label,dif,dist_greater,dist_lesser,false,&total_count));
-    calculate_null_group_multithread(6,label,dif,dist_greater,dist_lesser,true,&total_count);
+                                             this,index,label,dif,subject_greater,subject_lesser,false,&total_count));
+    calculate_null_group_multithread(6,label,dif,subject_greater,subject_lesser,true,&total_count);
     threads.join_all();
-    hist_to_dist(dist_greater,subject_greater);
-    hist_to_dist(dist_lesser,subject_lesser);
     check_prog(0,0);
 }
 

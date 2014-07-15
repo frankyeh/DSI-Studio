@@ -18,7 +18,7 @@ private:
     QImage vbc_slice_image;
     unsigned int vbc_slice_pos;
     fib_data cur_subject_fib;
-    std::vector<std::vector<float> > dist;
+    std::vector<std::vector<unsigned int> > dist;
     std::vector<std::vector<float> > fdr;
 
 

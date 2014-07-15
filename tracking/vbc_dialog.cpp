@@ -185,7 +185,7 @@ void vbc_dialog::show_report()
     ui->null_dist->clearGraphs();
     if(dist.empty())
         return;
-    std::vector<std::vector<float> > vbc_data;
+    std::vector<std::vector<unsigned int> > vbc_data;
     char legends[4][60] = {"null greater","null lesser","greater","lesser"};
     std::vector<const char*> legend;
 
@@ -209,6 +209,13 @@ void vbc_dialog::show_report()
         vbc_data.push_back(dist[3]);
         legend.push_back(legends[3]);
     }
+
+    // normalize
+    float max_y1 = *std::max_element(dist[0].begin(),dist[0].end());
+    float max_y2 = *std::max_element(dist[1].begin(),dist[1].end());
+    float max_y3 = *std::max_element(dist[2].begin(),dist[2].end());
+    float max_y4 = *std::max_element(dist[3].begin(),dist[3].end());
+
 
     if(vbc_data.empty())
         return;
@@ -247,7 +254,7 @@ void vbc_dialog::show_report()
     }
 
     ui->null_dist->xAxis->setRange(ui->span_from->value(),ui->span_to->value());
-    ui->null_dist->yAxis->setRange(0,ui->max_prob->value());
+    ui->null_dist->yAxis->setRange(0,std::max<float>(std::max<float>(max_y1,max_y2),std::max<float>(max_y3,max_y4))*1.1);
     ui->null_dist->legend->setVisible(true);
     QFont legendFont = font();  // start out with MainWindow's font..
     legendFont.setPointSize(9); // and make a bit smaller for legend
@@ -508,15 +515,32 @@ void vbc_dialog::on_FDR_analysis_clicked()
     {
         fdr.clear();
         fdr.resize(2);
+        fdr[0].resize(dist[0].size());
+        fdr[1].resize(dist[0].size());
+        float sum1 = std::accumulate(dist[0].begin(),dist[0].end(),0.0);
+        float sum2 = std::accumulate(dist[1].begin(),dist[1].end(),0.0);
+        float sum3 = std::accumulate(dist[2].begin(),dist[2].end(),0.0);
+        float sum4 = std::accumulate(dist[3].begin(),dist[3].end(),0.0);
+
+        // if the null distribution get more findings due to scan parameter differences
+        if(sum1 + sum2 > (sum3 + sum4) * 2.0)
+        {
+            // then normalize it!
+            image::multiply_constant(dist[0].begin(),dist[0].end(),sum1/sum1);
+            image::multiply_constant(dist[1].begin(),dist[1].end(),sum1/sum2);
+            image::multiply_constant(dist[2].begin(),dist[2].end(),sum1/sum3);
+            image::multiply_constant(dist[3].begin(),dist[3].end(),sum1/sum4);
+        }
+
         std::vector<double> sum(4);
-        for(unsigned int index = 0;index < dist[0].size();++index)
+        for(int index = dist[0].size()-1;index >= 0;--index)
         {
             for(unsigned int j = 0;j < 4;++j)
                 sum[j] += dist[j][index];
-            if(sum[2] < 1.0)
-                fdr[0].push_back((1.0-sum[0])/(1.0-sum[2]));
-            if(sum[3] < 1.0)
-                fdr[1].push_back((1.0-sum[1])/(1.0-sum[3]));
+            if(sum[2] > 0.0)
+                fdr[0][index] = sum[0]/sum[2];
+            if(sum[3] > 0.0)
+                fdr[1][index] = sum[1]/sum[3];
         }
         show_report();
         show_dis_table();

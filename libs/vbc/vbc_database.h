@@ -75,8 +75,8 @@ public:
     bool calculate_individual_distribution(float percentile,
                                            unsigned int length_threshold,
                                            const std::vector<std::string>& files,
-                                        std::vector<float>& subject_greater,
-                                        std::vector<float>& subject_lesser);
+                                        std::vector<unsigned int>& subject_greater,
+                                        std::vector<unsigned int>& subject_lesser);
     void calculate_individual_affected_tracks(fib_data& result,float percentile,
                                         std::vector<std::vector<std::vector<float> > >& greater,
                                         std::vector<std::vector<std::vector<float> > >& lesser);
@@ -85,8 +85,8 @@ public:
     bool save_track_as(const char* file_name,std::vector<std::vector<float> >& track,unsigned int length_threshold);
     void calculate_subject_distribution(float percentile,
                                         const fib_data& data,
-                                        std::vector<float>& subject_greater,
-                                        std::vector<float>& subject_lesser);
+                                        std::vector<unsigned int>& subject_greater,
+                                        std::vector<unsigned int>& subject_lesser);
     bool save_subject_distribution(float percentile,
                                    unsigned int length_threshold,
                                    const char* file_name,
@@ -100,11 +100,11 @@ public:
 
 
     void calculate_null_trend_distribution(float sqrt_var_S,float percentile,
-                                                   std::vector<float>& subject_greater,
-                                                   std::vector<float>& subject_lesser);
+                                                   std::vector<unsigned int>& subject_greater,
+                                                   std::vector<unsigned int>& subject_lesser);
     void calculate_null_group_distribution(const std::vector<int>& label,float dif,
-                                                   std::vector<float>& subject_greater,
-                                                   std::vector<float>& subject_lesser);
+                                                   std::vector<unsigned int>& subject_greater,
+                                                   std::vector<unsigned int>& subject_lesser);
 private:
     void calculate_null_trend_multithread(unsigned int id,float sqrt_var_S,float percentile,
                                           std::vector<unsigned int>& dist_greater,
