@@ -156,7 +156,7 @@ int ana(int ac, char *av[])
         std::cout << "total number of tracts=" << tract_model.get_tracts().size() << std::endl;
         data.set_regions(region_table);
         std::cout << "calculating connectivity matrix..." << std::endl;
-        bool use_end_only = (vm["source"].as<std::string>() == "end");
+        bool use_end_only = (vm["connectivity"].as<std::string>() == "end");
         std::cout << "count connectivity by " << (use_end_only ? "ending":"passing") << std::endl;
         data.calculate(tract_model,use_end_only);
         std::string file_name_stat(file_name);
