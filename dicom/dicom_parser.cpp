@@ -553,6 +553,8 @@ void dicom_parser::load_files(QStringList file_list)
         double max_b = 0;
         for(unsigned int index = last_index;index < dwi_files.size();++index)
         {
+            if(dwi_files[index].get_bvalue() < 100)
+                dwi_files[index].set_bvalue(0);
             ui->tableWidget->setItem(index, 0, new QTableWidgetItem(QFileInfo(dwi_files[index].file_name.data()).fileName()));
             ui->tableWidget->setItem(index, 1, new QTableWidgetItem(QString::number(dwi_files[index].get_bvalue())));
             ui->tableWidget->setItem(index, 2, new QTableWidgetItem(QString::number(dwi_files[index].get_bvec()[0])));

@@ -437,6 +437,7 @@ void reconstruction_window::on_doDTI_clicked()
             settings.setValue("rec_gqi_sampling",ui->diffusion_sampling->value());
             if(ui->QDif->isChecked())
             {
+                params[1] = ui->mni_resolution->value();
                 settings.setValue("rec_mni_resolution",params[1]);
                 doReconstruction(7,index+1 == filenames.size());
             }
