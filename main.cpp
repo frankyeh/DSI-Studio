@@ -127,8 +127,13 @@ int main(int ac, char *av[])
             return 1;
         }
         catch(const std::exception& e ) {
-            std::cerr << e.what() << std::endl;
+            std::cout << e.what() << std::endl;
         }
+        catch(...)
+        {
+            std::cout << "unknown error occured" << std::endl;
+        }
+
         return 1;
     }
     QApplication a(ac,av);

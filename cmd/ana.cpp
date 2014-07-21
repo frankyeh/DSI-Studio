@@ -26,7 +26,7 @@ int ana(int ac, char *av[])
     ("source", po::value<std::string>(), "assign the .fib file name")
     ("tract", po::value<std::string>(), "assign the .trk file name")
     ("roi", po::value<std::string>(), "file for ROI regions")
-    ("connectivity", po::value<std::string>()->default_value("pass"), "count connectivity by passing or ending")
+    ("end", po::value<std::string>(), "file for END regions")
     ("export", po::value<std::string>(), "export additional information (e.g. --export=tdi)")
     ;
 
@@ -80,19 +80,34 @@ int ana(int ac, char *av[])
     }
     if(vm.count("export") && vm["export"].as<std::string>() == std::string("connectivity"))
     {
-        if (!vm.count("roi"))
+        bool use_end_only = false;
+        std::string roi_file_name;
+        if (vm.count("roi"))
         {
-            std::cout << "No ROI defined for connectivity matrix." << std::endl;
+            roi_file_name = vm["roi"].as<std::string>();
+            use_end_only = false;
+            std::cout << "roi=" << roi_file_name << std::endl;
+        }
+        if (vm.count("end"))
+        {
+            roi_file_name = vm["end"].as<std::string>();
+            use_end_only = true;
+            std::cout << "end=" << roi_file_name << std::endl;
+        }
+
+        if (roi_file_name.empty())
+        {
+            std::cout << "No ROI or END region defined for connectivity matrix." << std::endl;
             return 0;
         }
         gz_nifti header;
-        std::cout << "loading " << vm["roi"].as<std::string>() << std::endl;
-        if (!header.load_from_file(vm["roi"].as<std::string>()))
+        std::cout << "loading " << roi_file_name << std::endl;
+        if (!header.load_from_file(roi_file_name))
         {
-            std::cout << "Cannot open nifti file " << vm["roi"].as<std::string>() << std::endl;
+            std::cout << "Cannot open nifti file " << roi_file_name << std::endl;
             return 0;
         }
-        std::cout << "ROI loaded" << std::endl;
+        std::cout << "region loaded" << std::endl;
         image::basic_image<unsigned int, 3> from;
         header.toLPS(from);
         std::vector<float> convert;
@@ -156,8 +171,7 @@ int ana(int ac, char *av[])
         std::cout << "total number of tracts=" << tract_model.get_tracts().size() << std::endl;
         data.set_regions(region_table);
         std::cout << "calculating connectivity matrix..." << std::endl;
-        bool use_end_only = (vm["connectivity"].as<std::string>() == "end");
-        std::cout << "count connectivity by " << (use_end_only ? "ending":"passing") << std::endl;
+        std::cout << "Count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
         data.calculate(tract_model,use_end_only);
         std::string file_name_stat(file_name);
         file_name_stat += ".connectivity.mat";
