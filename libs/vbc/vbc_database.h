@@ -23,6 +23,132 @@ public:
     void add_greater_lesser_mapping_for_tracking(ODFModel* fib_file);
 };
 
+
+
+/*
+    float y[] = {1,2,2,2,3};
+    float X[] = {1,1,1,
+                  1,2,8,
+                  1,3,27,
+                  1,4,64,
+                  1,5,125};
+
+    float b[3]={0,0,0};
+    float t[3]={0,0,0};
+    // b = 0.896551724, 0.33646813, 0.002089864
+    multiple_regression<float> m;
+    m.set_variables(X,3,5);
+    m.regress(y,b,t);
+ */
+template<typename value_type>
+class multiple_regression{
+    // the subject data are stored in each row
+    std::vector<value_type> X,Xt,XtX;
+    std::vector<value_type> X_cov;
+    std::vector<int> piv;
+    unsigned int feature_count;
+    unsigned int subject_count;
+public:
+    multiple_regression(void){}
+    template<typename iterator>
+    bool set_variables(iterator X_,
+                       unsigned int feature_count_,
+                       unsigned int subject_count_)
+    {
+        feature_count = feature_count_;
+        subject_count = subject_count_;
+        X.resize(feature_count*subject_count);
+        std::copy(X_,X_+X.size(),X.begin());
+        Xt.resize(X.size());
+        image::matrix::transpose(&*X.begin(),&*Xt.begin(),image::dyndim(subject_count,feature_count));
+
+        XtX.resize(feature_count*feature_count); // trans(x)*y    p by p
+        image::matrix::product_transpose(&*Xt.begin(),&*Xt.begin(),
+                                         &*XtX.begin(),
+                                         image::dyndim(feature_count,subject_count),
+                                         image::dyndim(feature_count,subject_count));
+        piv.resize(feature_count);
+        image::matrix::lu_decomposition(&*XtX.begin(),&*piv.begin(),image::dyndim(feature_count,feature_count));
+
+
+        // calculate the covariance
+        {
+            X_cov = Xt;
+            std::vector<value_type> c(feature_count),d(feature_count);
+            if(!image::matrix::lq_decomposition(&*X_cov.begin(),&*c.begin(),&*d.begin(),image::dyndim(feature_count,subject_count)))
+                return false;
+            image::matrix::lq_get_l(&*X_cov.begin(),&*d.begin(),&*X_cov.begin(),
+                                    image::dyndim(feature_count,subject_count));
+        }
+
+
+        // make l a squre matrix, get rid of the zero part
+        for(unsigned int row = 1,pos = subject_count,pos2 = feature_count;row < feature_count;++row,pos += subject_count,pos2 += feature_count)
+            std::copy(X_cov.begin() + pos,X_cov.begin() + pos + feature_count,X_cov.begin() + pos2);
+
+        image::matrix::inverse_lower(&*X_cov.begin(),image::dyndim(feature_count,feature_count));
+
+        image::square(X_cov.begin(),X_cov.begin()+feature_count*feature_count);
+
+        // sum column wise
+        for(unsigned int row = 1,pos = feature_count;row < feature_count;++row,pos += feature_count)
+            image::add(X_cov.begin(),X_cov.begin()+feature_count,X_cov.begin()+pos);
+        image::square_root(X_cov.begin(),X_cov.begin()+feature_count);
+
+        std::vector<value_type> new_X_cov(X_cov.begin(),X_cov.begin()+feature_count);
+        new_X_cov.swap(X_cov);
+        return true;
+    }
+    /*
+     *       y0       x00 ...x0p
+     *       y1       x10 ...x1p    b0
+     *     [ :  ] = [  :        ][  :  ]
+     *       :         :            bp
+     *       yn       xn0 ...xnp
+     *
+     **/
+
+    template<typename iterator1,typename iterator2,typename iterator3>
+    void regress(iterator1 y,iterator2 b,iterator3 t) const
+    {
+        std::vector<value_type> xty(feature_count); // trans(x)*y    p by 1
+        image::matrix::vector_product(&*Xt.begin(),y,&*xty.begin(),image::dyndim(feature_count,subject_count));
+        image::matrix::lu_solve(&*XtX.begin(),&*piv.begin(),&*xty.begin(),b,
+                                image::dyndim(feature_count,feature_count));
+
+        // calculate residual
+        std::vector<value_type> y_(subject_count);
+        image::matrix::left_vector_product(&*Xt.begin(),b,&*y_.begin(),image::dyndim(feature_count,subject_count));
+        image::minus(y_.begin(),y_.end(),y);
+        image::square(y_);
+        value_type rmse = std::sqrt(std::accumulate(y_.begin(),y_.end(),0.0)/(subject_count-feature_count));
+
+        for(unsigned int index = 0;index < feature_count;++index)
+            t[index] = b[index]/X_cov[index]/rmse;
+    }
+
+};
+
+struct stat_model{
+    unsigned int type;
+
+public: // group
+    std::vector<int> label;
+    unsigned int group1_count,group2_count;
+public: // trend
+    std::vector<float> data;
+public: // multiple regression
+    std::vector<unsigned int> subject_index;
+    std::vector<double> X;
+    unsigned int feature_count;
+    unsigned int study_feature;
+    multiple_regression<double> mr;
+public:
+    bool resample(const stat_model& rhs,const std::vector<unsigned int>& permu);
+    bool pre_process(void);
+    double operator()(const std::vector<double>& population) const;
+};
+
 class vbc_database
 {
 public:
@@ -83,39 +209,34 @@ public:
 public:
     void run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& track);
     bool save_track_as(const char* file_name,std::vector<std::vector<float> >& track,unsigned int length_threshold);
-    void calculate_subject_distribution(float percentile,
-                                        const fib_data& data,
-                                        std::vector<unsigned int>& subject_greater,
-                                        std::vector<unsigned int>& subject_lesser);
+
     bool save_subject_distribution(float percentile,
                                    unsigned int length_threshold,
                                    const char* file_name,
                                    const fib_data& data);
 
 public:
-    double get_trend_std(const std::vector<float>& data);
-    void trend_analysis(const std::vector<float>& data,fib_data& result);
-    void group_analysis(const std::vector<int>& label,fib_data& data);
-    void trend_analysis(float sqrt_var_S,const std::vector<unsigned int>& permu,fib_data& result);
-
-
-    void calculate_null_trend_distribution(float sqrt_var_S,float percentile,
-                                                   std::vector<unsigned int>& subject_greater,
-                                                   std::vector<unsigned int>& subject_lesser);
-    void calculate_null_group_distribution(const std::vector<int>& label,float dif,
-                                                   std::vector<unsigned int>& subject_greater,
-                                                   std::vector<unsigned int>& subject_lesser);
+    void calculate_spm(const stat_model& info,fib_data& data,const std::vector<unsigned int>& permu);
+    void calculate_subject_distribution(float percentile,
+                                        const fib_data& data,
+                                        std::vector<unsigned int>& subject_greater,
+                                        std::vector<unsigned int>& subject_lesser);
+public:
+    unsigned int permutation_count;
+    float t_threshold;
+    void calculate_length_dist_multithread(unsigned int id,const stat_model& info,bool,
+                                          std::vector<unsigned int>& dist_greater,
+                                          std::vector<unsigned int>& dist_lesser,
+                                          bool progress,
+                                          unsigned int* total_count);
+    void calculate_length_distribution(const stat_model& info,
+                                       std::vector<unsigned int>& subject_greater_null,
+                                       std::vector<unsigned int>& subject_lesser_null,
+                                       std::vector<unsigned int>& subject_greater,
+                                       std::vector<unsigned int>& subject_lesser,
+                                       unsigned int thread_count);
 private:
-    void calculate_null_trend_multithread(unsigned int id,float sqrt_var_S,float percentile,
-                                          std::vector<unsigned int>& dist_greater,
-                                          std::vector<unsigned int>& dist_lesser,
-                                          bool progress,
-                                          unsigned int* total_count);
-    void calculate_null_group_multithread(unsigned int id,const std::vector<int>& label,float dif,
-                                          std::vector<unsigned int>& dist_greater,
-                                          std::vector<unsigned int>& dist_lesser,
-                                          bool progress,
-                                          unsigned int* total_count);
+
 
 public:
 };

@@ -29,6 +29,8 @@ private:
 public:
     QString work_dir;
     std::auto_ptr<vbc_database> vbc;
+    stat_model mr;
+    void calculate_FDR(void);
     explicit vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_);
     ~vbc_dialog();
     bool eventFilter(QObject *obj, QEvent *event);
@@ -38,10 +40,6 @@ private slots:
     void on_subject_list_itemSelectionChanged();
 
     void on_save_vbc_dist_clicked();
-
-    void on_view_dif_map_clicked();
-
-    void on_toggled(bool checked);
 
     void show_report();
 
@@ -53,9 +51,15 @@ private slots:
 
     void on_FDR_analysis_clicked();
 
-    void on_pushButton_2_clicked();
-
     void on_buttonBox_accepted();
+
+    void on_tabWidget_currentChanged(int index);
+
+    void on_open_mr_files_clicked();
+
+    void on_run_mr_analysis_clicked();
+
+    void on_view_mr_result_clicked();
 
 private:
     Ui::vbc_dialog *ui;

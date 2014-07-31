@@ -30,25 +30,16 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
     ui->AxiSlider->setMinimum(0);
     ui->AxiSlider->setValue(vbc->handle->fib_data.dim[2] >> 1);
 
-
-    connect(ui->Individual,SIGNAL(toggled(bool)),this,SLOT(on_toggled(bool)));
-    connect(ui->Trend,SIGNAL(toggled(bool)),this,SLOT(on_toggled(bool)));
-    connect(ui->Group,SIGNAL(toggled(bool)),this,SLOT(on_toggled(bool)));
-
     // dist report
     connect(ui->line_width,SIGNAL(valueChanged(int)),this,SLOT(show_report()));
-    connect(ui->span_from,SIGNAL(valueChanged(int)),this,SLOT(show_report()));
     connect(ui->span_to,SIGNAL(valueChanged(int)),this,SLOT(show_report()));
-    connect(ui->max_prob,SIGNAL(valueChanged(double)),this,SLOT(show_report()));
     connect(ui->show_null_greater,SIGNAL(toggled(bool)),this,SLOT(show_report()));
     connect(ui->show_null_lesser,SIGNAL(toggled(bool)),this,SLOT(show_report()));
     connect(ui->show_greater,SIGNAL(toggled(bool)),this,SLOT(show_report()));
     connect(ui->show_lesser,SIGNAL(toggled(bool)),this,SLOT(show_report()));
 
     connect(ui->line_width_2,SIGNAL(valueChanged(int)),this,SLOT(show_fdr_report()));
-    connect(ui->span_from_2,SIGNAL(valueChanged(int)),this,SLOT(show_fdr_report()));
     connect(ui->span_to_2,SIGNAL(valueChanged(int)),this,SLOT(show_fdr_report()));
-    connect(ui->max_prob_2,SIGNAL(valueChanged(double)),this,SLOT(show_fdr_report()));
     connect(ui->show_greater_2,SIGNAL(toggled(bool)),this,SLOT(show_fdr_report()));
     connect(ui->show_lesser_2,SIGNAL(toggled(bool)),this,SLOT(show_fdr_report()));
 
@@ -57,9 +48,8 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
     connect(ui->zoom,SIGNAL(valueChanged(double)),this,SLOT(on_subject_list_itemSelectionChanged()));
 
     ui->subject_list->selectRow(0);
-    ui->FDR_widget->hide();
-    on_toggled(true);
     qApp->installEventFilter(this);
+
 }
 
 vbc_dialog::~vbc_dialog()
@@ -167,9 +157,10 @@ void vbc_dialog::show_fdr_report()
         ui->fdr_dist->graph()->setData(x, y);
         ui->fdr_dist->graph()->setName(QString(legend[i]));
     }
-
-    ui->fdr_dist->xAxis->setRange(ui->span_from_2->value(),ui->span_to_2->value());
-    ui->fdr_dist->yAxis->setRange(0,ui->max_prob_2->value());
+    ui->fdr_dist->xAxis->setLabel("mm");
+    ui->fdr_dist->yAxis->setLabel("FDR");
+    ui->fdr_dist->xAxis->setRange(2,ui->span_to_2->value());
+    ui->fdr_dist->yAxis->setRange(0,1.0);
     ui->fdr_dist->legend->setVisible(true);
     QFont legendFont = font();  // start out with MainWindow's font..
     legendFont.setPointSize(9); // and make a bit smaller for legend
@@ -253,7 +244,9 @@ void vbc_dialog::show_report()
         ui->null_dist->graph()->setName(QString(legend[i]));
     }
 
-    ui->null_dist->xAxis->setRange(ui->span_from->value(),ui->span_to->value());
+    ui->null_dist->xAxis->setLabel("mm");
+    ui->null_dist->yAxis->setLabel("count");
+    ui->null_dist->xAxis->setRange(2,ui->span_to->value());
     ui->null_dist->yAxis->setRange(0,std::max<float>(std::max<float>(max_y1,max_y2),std::max<float>(max_y3,max_y4))*1.1);
     ui->null_dist->legend->setVisible(true);
     QFont legendFont = font();  // start out with MainWindow's font..
@@ -279,7 +272,7 @@ void vbc_dialog::show_dis_table(void)
     ui->dist_table->setColumnWidth(7,150);
     ui->dist_table->setColumnWidth(8,150);
     ui->dist_table->setHorizontalHeaderLabels(
-                QStringList() << "span" << "null greater pdf" << "null greater cdf" <<
+                QStringList() << "length (mm)" << "null greater pdf" << "null greater cdf" <<
                                             "null lesser pdf" << "null lesser cdf" <<
                                             "greater pdf" << "greater cdf" <<
                                             "lesser pdf" << "lesser cdf");
@@ -310,7 +303,7 @@ void vbc_dialog::show_fdr_table(void)
     ui->fdr_table->setColumnWidth(1,150);
     ui->fdr_table->setColumnWidth(2,150);
     ui->fdr_table->setHorizontalHeaderLabels(
-                QStringList() << "span" << "FDR greater" << "FDR lesser");
+                QStringList() << "length (mm)" << "FDR greater" << "FDR lesser");
 
     ui->fdr_table->setRowCount(100);
     for(unsigned int index = 0;index < 100;++index)
@@ -365,115 +358,55 @@ void vbc_dialog::on_save_fdr_dist_clicked()
 }
 
 
-void vbc_dialog::on_toggled(bool checked)
-{
-    if(ui->Trend->isChecked())
-    {
-        ui->open_instruction->setText("Open the value text file");
-        ui->p_label->setText("Alpha");
-        ui->percentile_rank->setValue(0.25);
-    }
-    if(ui->Group->isChecked())
-    {
-        ui->open_instruction->setText("Open the label text file");
-        ui->p_label->setText("Alpha");
-        ui->percentile_rank->setValue(0.25);
-    }
-
-    if(ui->Individual->isChecked())
-    {
-        ui->open_instruction->setText("Open all subjects data");
-        ui->p_label->setText("Percentile");
-        ui->percentile_rank->setValue(0.05);
-    }
-    ui->file_name_widget->hide();
-    filename.clear();
-}
-
-
 
 void vbc_dialog::on_open_files_clicked()
 {
-    if(ui->Individual->isChecked())
-    {
-        filename = QFileDialog::getOpenFileNames(
-                                    this,
-                    "Select subject fib file for analysis",
-                    work_dir,"Fib files (*.fib.gz);;All files (*)" );
-        if (filename.isEmpty())
-            return;
-        ui->show_file_name->setText(QString("Subject files:")+QFileInfo(filename[0]).fileName()+"...etc.");
-    }
-    if(ui->Group->isChecked())
-    {
-        QString filename1 = QFileDialog::getOpenFileName(
-                                    this,
-                                "Select a value text file for analysis",
-                                work_dir,"Text files (*.txt);;All files (*)" );
-        if (filename1.isEmpty())
-            return;
-        filename.clear();
-        filename.append(filename1);
-        ui->show_file_name->setText(QString("Value source:")+QFileInfo(filename[0]).fileName());
-    }
-    if(ui->Trend->isChecked())
-    {
-        QString filename1 = QFileDialog::getOpenFileName(
-                                    this,
-                                "Select a label text file for analysis",
-                                work_dir,"Text files (*.txt);;All files (*)" );
-        if (filename1.isEmpty())
-            return;
-        filename.clear();
-        filename.append(filename1);
-        ui->show_file_name->setText(QString("Label source:")+QFileInfo(filename[0]).fileName());
-    }
+    filename = QFileDialog::getOpenFileNames(
+                                this,
+                "Select subject fib file for analysis",
+                work_dir,"Fib files (*.fib.gz);;All files (*)" );
+    if (filename.isEmpty())
+        return;
+    ui->show_file_name->setText(QString("Subject files:")+QFileInfo(filename[0]).fileName()+"...etc.");
     ui->file_name_widget->show();
 }
 
 void vbc_dialog::on_FDR_analysis_clicked()
 {
-    if (filename.isEmpty())
-    {
-        QMessageBox::information(this,"Error","Please assign files in STEP2");
-        return;
-    }
-
     dist.clear();
     dist.resize(4);
 
-    if(ui->Individual->isChecked())
+    std::vector<std::string> individal_file_names;
+    for(unsigned int index = 0;index < filename.size();++index)
+        individal_file_names.push_back(filename[index].toLocal8Bit().begin());
+
+    if(!vbc->calculate_individual_distribution(1.0-ui->percentile_rank->value(),
+                                         0, //output_tracks ? ui->length_threshold->value():0,
+                                         individal_file_names,dist[2],dist[3]))
     {
-        std::vector<std::string> individal_file_names;
-        for(unsigned int index = 0;index < filename.size();++index)
-            individal_file_names.push_back(filename[index].toLocal8Bit().begin());
-
-        if(!vbc->calculate_individual_distribution(1.0-ui->percentile_rank->value(),
-                                             0, //output_tracks ? ui->length_threshold->value():0,
-                                             individal_file_names,dist[2],dist[3]))
-        {
-            QMessageBox::information(this,"error",vbc->error_msg.c_str(),0);
-            return;
-        }
-
-        ui->result_label1->setText(QString::number(100.0*vbc->total_greater/vbc->total) +
-                                   "% orientations in study group > " +
-                                   QString::number(ui->percentile_rank->value()) + " rank.");
-        ui->result_label2->setText(QString::number(100.0*vbc->total_lesser/vbc->total) +
-                                   "% orientations in study group < " +
-                                   QString::number(ui->percentile_rank->value()) + " rank.");
-
-        individal_file_names.clear();
-        vbc->calculate_individual_distribution(1.0-ui->percentile_rank->value(),0,individal_file_names,dist[0],dist[1]);
-
-        ui->result_label3->setText(QString::number(100.0*vbc->total_greater/vbc->total) +
-                                   "% orientations in control group > " +
-                                   QString::number(ui->percentile_rank->value()) + " rank.");
-        ui->result_label4->setText(QString::number(100.0*vbc->total_lesser/vbc->total) +
-                                   "% orientations in control group < " +
-                                   QString::number(ui->percentile_rank->value()) + " rank.");
-
+        QMessageBox::information(this,"error",vbc->error_msg.c_str(),0);
+        return;
     }
+
+    ui->result_label1->setText(QString::number(100.0*vbc->total_greater/vbc->total) +
+                               "% orientations in study group > " +
+                               QString::number(ui->percentile_rank->value()) + " rank.");
+    ui->result_label2->setText(QString::number(100.0*vbc->total_lesser/vbc->total) +
+                               "% orientations in study group < " +
+                               QString::number(ui->percentile_rank->value()) + " rank.");
+
+    individal_file_names.clear();
+    vbc->calculate_individual_distribution(1.0-ui->percentile_rank->value(),0,individal_file_names,dist[0],dist[1]);
+
+    ui->result_label3->setText(QString::number(100.0*vbc->total_greater/vbc->total) +
+                               "% orientations in control group > " +
+                               QString::number(ui->percentile_rank->value()) + " rank.");
+    ui->result_label4->setText(QString::number(100.0*vbc->total_lesser/vbc->total) +
+                               "% orientations in control group < " +
+                               QString::number(ui->percentile_rank->value()) + " rank.");
+
+    calculate_FDR();
+    /*
     if(ui->Trend->isChecked())
     {
         std::ifstream in(filename[0].toLocal8Bit().begin());
@@ -511,7 +444,13 @@ void vbc_dialog::on_FDR_analysis_clicked()
         cur_subject_fib.add_greater_lesser_mapping_for_tracking(vbc->handle.get());
         vbc->calculate_null_group_distribution(data,1.0-ui->percentile_rank->value(),dist[0],dist[1]);
     }
+    */
 
+
+}
+
+void vbc_dialog::calculate_FDR(void)
+{
     {
         fdr.clear();
         fdr.resize(2);
@@ -538,9 +477,14 @@ void vbc_dialog::on_FDR_analysis_clicked()
             for(unsigned int j = 0;j < 4;++j)
                 sum[j] += dist[j][index];
             if(sum[2] > 0.0)
-                fdr[0][index] = sum[0]/sum[2];
+                fdr[0][index] = std::min(1.0,sum[0]/sum[2]);
+            else
+                fdr[0][index] = 1.0;
             if(sum[3] > 0.0)
-                fdr[1][index] = sum[1]/sum[3];
+                fdr[1][index] = std::min(1.0,sum[1]/sum[3]);
+            else
+                fdr[1][index] = 1.0;
+
         }
         show_report();
         show_dis_table();
@@ -550,142 +494,130 @@ void vbc_dialog::on_FDR_analysis_clicked()
     }
 }
 
-
-void vbc_dialog::on_view_dif_map_clicked()
-{
-    if(ui->Individual->isChecked())
-    {
-        QString filename1 = QFileDialog::getOpenFileName(
-                                    this,
-                    "Select subject fib file for analysis",
-                    work_dir,"Fib files (*.fib.gz);;All files (*)" );
-        if (filename1.isEmpty())
-            return;
-        if(!vbc->single_subject_analysis(filename1.toLocal8Bit().begin(),1.0-ui->percentile_rank->value(),cur_subject_fib))
-        {
-            QMessageBox::information(this,"error",vbc->error_msg.c_str(),0);
-            return;
-        }
-        if (filename.isEmpty())
-            filename << filename1;
-    }
-    else
-    if (filename.isEmpty())
-    {
-        QMessageBox::information(this,"Error","Please assign files in STEP2");
-        return;
-    }
-
-
-    if(ui->Trend->isChecked())
-    {
-        std::ifstream in(filename[0].toLocal8Bit().begin());
-        std::vector<float> data;
-        std::copy(std::istream_iterator<float>(in),
-                  std::istream_iterator<float>(),std::back_inserter(data));
-
-        if(data.size() != vbc->subject_count())
-        {
-            QMessageBox::information(this,"error","The number of data does not mactch the subject count",0);
-            return;
-        }
-        vbc->trend_analysis(data,cur_subject_fib);
-
-    }
-
-    if(ui->Group->isChecked())
-    {
-        std::ifstream in(filename[0].toLocal8Bit().begin());
-        std::vector<int> data;
-        std::copy(std::istream_iterator<int>(in),
-                  std::istream_iterator<int>(),std::back_inserter(data));
-
-        if(data.size() != vbc->subject_count())
-        {
-            QMessageBox::information(this,"error","The number of data does not mactch the subject count",0);
-            return;
-        }
-        vbc->group_analysis(data,cur_subject_fib);
-    }
-
-    cur_subject_fib.add_greater_lesser_mapping_for_tracking(vbc->handle.get());
-    tracking_window* new_mdi = new tracking_window(this,vbc->handle.get(),false);
-    new_mdi->setAttribute(Qt::WA_DeleteOnClose);
-    new_mdi->absolute_path = QFileInfo(filename[0]).absolutePath();
-    new_mdi->setWindowTitle(filename[0] + ": Connectometry mapping");
-    new_mdi->showNormal();
-
-}
-
-void vbc_dialog::on_pushButton_2_clicked()
-{
-    if (filename.isEmpty())
-    {
-        QMessageBox::information(this,"Error","Please assign files in STEP2");
-        return;
-    }
-    bool okay = false;
-    unsigned int length_threshold = QInputDialog::getInteger(this,"Assign value","Threshold for track length",30,1,200,10,&okay);
-    if(!okay)
-        return;
-    if(ui->Individual->isChecked())
-    {
-        std::vector<std::string> individal_file_names;
-        for(unsigned int index = 0;index < filename.size();++index)
-            individal_file_names.push_back(filename[index].toLocal8Bit().begin());
-        if(!vbc->calculate_individual_distribution(1.0-ui->percentile_rank->value(),length_threshold,
-                                             individal_file_names,dist[2],dist[3]))
-        {
-            QMessageBox::information(this,"error",vbc->error_msg.c_str(),0);
-            return;
-        }
-    }
-    if(ui->Trend->isChecked())
-    {
-        std::ifstream in(filename[0].toLocal8Bit().begin());
-        std::vector<float> data;
-        std::copy(std::istream_iterator<float>(in),
-                  std::istream_iterator<float>(),std::back_inserter(data));
-
-        if(data.size() != vbc->subject_count())
-        {
-            QMessageBox::information(this,"error","The number of data does not mactch the subject count",0);
-            return;
-        }
-        vbc->trend_analysis(data,cur_subject_fib);
-
-        if(!vbc->save_subject_distribution(1.0-ui->percentile_rank->value(),length_threshold,
-                                           filename[0].toLocal8Bit().begin(),cur_subject_fib))
-        {
-            QMessageBox::information(this,"error",vbc->error_msg.c_str(),0);
-            return;
-        }
-    }
-
-    if(ui->Group->isChecked())
-    {
-        std::ifstream in(filename[0].toLocal8Bit().begin());
-        std::vector<int> data;
-        std::copy(std::istream_iterator<int>(in),
-                  std::istream_iterator<int>(),std::back_inserter(data));
-
-        if(data.size() != vbc->subject_count())
-        {
-            QMessageBox::information(this,"error","The number of data does not mactch the subject count",0);
-            return;
-        }
-        vbc->group_analysis(data,cur_subject_fib);
-        if(!vbc->save_subject_distribution(1.0-ui->percentile_rank->value(),length_threshold,
-                                           filename[0].toLocal8Bit().begin(),cur_subject_fib))
-        {
-            QMessageBox::information(this,"error",vbc->error_msg.c_str(),0);
-            return;
-        }
-    }
-    QMessageBox::information(this,"Done","Data saved!",0);
-}
-
 void vbc_dialog::on_buttonBox_accepted()
 {
     close();
+}
+
+void vbc_dialog::on_tabWidget_currentChanged(int index)
+{
+    if(index == 2)
+        ui->FDR_widget->hide();
+    else
+        ui->FDR_widget->show();
+}
+
+void vbc_dialog::on_open_mr_files_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(
+                this,
+                "Open demographics",
+                work_dir,
+                "Text file (*.txt);;All files (*)");
+    if(filename.isEmpty())
+        return;
+
+    std::ifstream in(filename.toLocal8Bit().begin());
+    std::string line;
+    std::vector<std::string> titles;
+    // read title
+    {
+        std::getline(in,line);
+        std::istringstream str(line);
+        std::copy(std::istream_iterator<std::string>(str),
+                  std::istream_iterator<std::string>(),std::back_inserter(titles));
+        mr.feature_count = titles.size()+1; // additional one for intercept
+    }
+    mr.X.clear();
+    mr.subject_index.clear();
+    for(unsigned int index = 0;index < vbc->subject_count() && std::getline(in,line);++index)
+    {
+        std::istringstream str(line);
+        std::vector<std::string> values;
+        std::copy(std::istream_iterator<std::string>(str),
+                  std::istream_iterator<std::string>(),std::back_inserter(values));
+        if(values.size() != titles.size())
+        {
+            QMessageBox::information(this,"Error",QString("Cannot parse:") + line.c_str(),0);
+            return;
+        }
+        std::vector<double> x(titles.size());
+        bool ok = true;
+        for(unsigned int j = 0;j < x.size();++j)
+        {
+            x[j] = QString(values[j].c_str()).toDouble(&ok);
+            if(!ok)
+                break;
+        }
+        if(!ok)
+            continue;
+        mr.subject_index.push_back(index);
+        mr.X.push_back(1); // for the intercep
+        for(unsigned int j = 0;j < x.size();++j)
+            mr.X.push_back(x[j]);
+    }
+
+
+    QStringList t;
+    t << "Subject ID";
+    for(unsigned int index = 0;index < titles.size();++index)
+        t << titles[index].c_str();
+    ui->foi->clear();
+    ui->foi->addItems(t);
+    ui->foi->removeItem(0);
+    ui->foi->setCurrentIndex(ui->foi->count()-1);
+    ui->subject_demo->clear();
+    ui->subject_demo->setColumnCount(titles.size()+1);
+    ui->subject_demo->setHorizontalHeaderLabels(t);
+    ui->subject_demo->setRowCount(vbc->subject_count());
+    for(unsigned int row = 0,subject_id = 0,index = 0;row < ui->subject_demo->rowCount();++row)
+    {
+        ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->subject_name(row).c_str())));
+        if(subject_id < mr.subject_index.size() && mr.subject_index[subject_id] == row)
+        {
+            ++index;// skip intercep
+            for(unsigned int col = 1;col < ui->subject_demo->columnCount();++col,++index)
+                ui->subject_demo->setItem(row,col,new QTableWidgetItem(QString::number(mr.X[index])));
+            ++subject_id;
+        }
+        else
+            for(unsigned int col = 1;col < ui->subject_demo->columnCount();++col)
+                ui->subject_demo->setItem(row,col,new QTableWidgetItem("-"));
+
+    }
+    mr.type = 1; // multiple regression
+    if(!mr.pre_process())
+    {
+        QMessageBox::information(this,"Error","Dependant features found in the demographics",0);
+        ui->run_mr_analysis->setEnabled(false);
+        return;
+    }
+    ui->run_mr_analysis->setEnabled(true);
+    ui->view_mr_result->setEnabled(true);
+}
+
+void vbc_dialog::on_run_mr_analysis_clicked()
+{
+    dist.clear();
+    dist.resize(4);
+    mr.study_feature = ui->foi->currentIndex()+1;
+    begin_prog("calculating");
+    vbc->permutation_count = ui->mr_permutation->value();
+    vbc->t_threshold = ui->t_threshold->value();
+    vbc->calculate_length_distribution(mr,dist[0],dist[1],dist[2],dist[3],ui->multithread->value());
+    calculate_FDR();
+}
+
+void vbc_dialog::on_view_mr_result_clicked()
+{
+    begin_prog("loading");
+    mr.study_feature = ui->foi->currentIndex()+1;
+    vbc->calculate_spm(mr,cur_subject_fib,mr.subject_index);
+    cur_subject_fib.add_greater_lesser_mapping_for_tracking(vbc->handle.get());
+    tracking_window* new_mdi = new tracking_window(this,vbc->handle.get(),false);
+    new_mdi->setAttribute(Qt::WA_DeleteOnClose);
+    new_mdi->absolute_path = work_dir;
+    new_mdi->setWindowTitle(QString("Connectometry mapping on ") + ui->foi->currentText());
+    new_mdi->showNormal();
+    check_prog(0,0);
 }
