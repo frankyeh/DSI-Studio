@@ -9,6 +9,7 @@
 #include "prog_interface_static_link.h"
 #include "libs/tracking/tracking_model.hpp"
 #include "gzip_interface.hpp"
+#include "mapping/atlas.hpp"
 
 
 struct TrackVis
@@ -1354,6 +1355,45 @@ void ConnectivityMatrix::save_to_file(const char* file_name)
     std::copy(region_name.begin(),region_name.end(),std::ostream_iterator<std::string>(out,"\n"));
     std::string result(out.str());
     mat_header.write("name",result.c_str(),1,result.length());
+}
+
+void ConnectivityMatrix::set_atlas(const atlas& data,const image::basic_image<image::vector<3,float>,3 >& mni_position)
+{
+    image::geometry<3> geo(mni_position.geometry());
+    region_table_type region_table;
+    image::vector<3> null;
+    for (unsigned int label = 0; label < data.get_list().size(); ++label)
+    {
+        std::vector<image::vector<3,short> > cur_region;
+        image::vector<3,float> mni_avg_pos;
+        float min_x = 200,max_x = -200;
+        for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))
+            if (mni_position[index.index()] != null &&
+                data.label_matched(data.get_label_at(mni_position[index.index()]),label))
+            {
+                cur_region.push_back(image::vector<3,short>(index.begin()));
+                mni_avg_pos += mni_position[index.index()];
+                float x = mni_position[index.index()][0];
+                if(x > max_x)
+                   max_x = x;
+                if(x < min_x)
+                   min_x = x;
+            }
+        if(cur_region.empty())
+            continue;
+        mni_avg_pos /= cur_region.size();
+        const std::vector<std::string>& region_names = data.get_list();
+        float order;
+        if(mni_avg_pos[0] > 0)
+            order = 500.0-mni_avg_pos[1];
+        else
+            order = mni_avg_pos[1]-500.0;
+        // is at middle?
+        if((max_x-min_x)/8.0 > std::fabs(mni_avg_pos[0]))
+            order = mni_avg_pos[1];
+        region_table[order] = std::make_pair(cur_region,region_names[label]);
+    }
+    set_regions(region_table);
 }
 
 void ConnectivityMatrix::set_regions(const region_table_type& region_table)

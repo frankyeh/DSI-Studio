@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'connectivity_matrix_dialog.ui'
 **
-** Created: Tue Jul 8 23:17:54 2014
+** Created: Thu Jul 31 22:02:51 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -57,7 +57,7 @@ public:
     {
         if (connectivity_matrix_dialog->objectName().isEmpty())
             connectivity_matrix_dialog->setObjectName(QString::fromUtf8("connectivity_matrix_dialog"));
-        connectivity_matrix_dialog->resize(467, 480);
+        connectivity_matrix_dialog->resize(495, 480);
         verticalLayout = new QVBoxLayout(connectivity_matrix_dialog);
         verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
         horizontalLayout = new QHBoxLayout();
@@ -165,6 +165,9 @@ public:
         retranslateUi(connectivity_matrix_dialog);
         QObject::connect(buttonBox, SIGNAL(accepted()), connectivity_matrix_dialog, SLOT(accept()));
         QObject::connect(buttonBox, SIGNAL(rejected()), connectivity_matrix_dialog, SLOT(reject()));
+
+        end_only->setCurrentIndex(1);
+
 
         QMetaObject::connectSlotsByName(connectivity_matrix_dialog);
     } // setupUi

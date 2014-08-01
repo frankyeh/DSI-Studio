@@ -16,14 +16,9 @@ connectivity_matrix_dialog::connectivity_matrix_dialog(tracking_window *parent) 
     ui->setupUi(this);
     ui->graphicsView->setScene(&scene);
     // atlas
-
-    ui->region_list->addItem("ROIs");
     for(int index = 0;index < atlas_list.size();++index)
         ui->region_list->addItem(atlas_list[index].name.c_str());
-    if(cur_tracking_window->regionWidget->regions.size() > 1)
-        ui->region_list->setCurrentIndex(0);
-    else
-        ui->region_list->setCurrentIndex(1);
+    ui->region_list->setCurrentIndex(0);
     on_recalculate_clicked();
 
 }
@@ -72,77 +67,19 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
 {
     if(cur_tracking_window->tractWidget->tract_models.size() == 0)
         return;
-
     image::geometry<3> geo = cur_tracking_window->slice.geometry;
-    if(ui->region_list->currentIndex() == 0)
-    {
-        ConnectivityMatrix::region_table_type region_table;
-        for(unsigned int index = 0;index < cur_tracking_window->regionWidget->regions.size();++index)
+    if(cur_tracking_window->handle->fib_data.trans_to_mni.empty())
+        return;
+    image::basic_image<image::vector<3,float>,3 > mni_position(geo);
+    const FiberDirection& fib = cur_tracking_window->handle->fib_data.fib;
+    for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))
+        if(fib.getFA(index.index(),0))
         {
-            const std::vector<image::vector<3,short> >& cur_region =
-                    cur_tracking_window->regionWidget->regions[index].get();
-            image::vector<3,float> pos = std::accumulate(cur_region.begin(),cur_region.end(),image::vector<3,float>(0,0,0));
-            pos /= cur_region.size();
-            region_table[pos[0] > (geo[0] >> 1) ? pos[1]-geo[1]:geo[1]-pos[1]] = std::make_pair(cur_region,cur_tracking_window->regionWidget->item(index,0)->text().toLocal8Bit().begin());
-
+            image::vector<3,float> mni((const unsigned int*)index.begin());
+            cur_tracking_window->subject2mni(mni);
+            mni_position[index.index()] = mni;
         }
-        data.set_regions(region_table);
-    }
-    else  // from atlas
-        if(!cur_tracking_window->handle->fib_data.trans_to_mni.empty())
-        {
-            unsigned int atlas_index = ui->region_list->currentIndex()-1;
-            ConnectivityMatrix::region_table_type region_table;
-            std::vector<image::vector<3,float> > mni_position(geo.size());
-            std::vector<image::vector<3,short> > subject_position(geo.size());
-            std::vector<short> atlas_label(geo.size());
-
-            for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))
-            {
-                image::vector<3,float> mni((const unsigned int*)index.begin());
-                cur_tracking_window->subject2mni(mni);
-                mni_position[index.index()] = mni;
-                subject_position[index.index()] = image::vector<3,short>((const unsigned int*)index.begin());
-                atlas_label[index.index()] = atlas_list[atlas_index].get_label_at(mni);
-            }
-            begin_prog("calculating");
-            for (unsigned int label = 0; label < atlas_list[atlas_index].get_list().size(); ++label)
-            {
-                check_prog(label,atlas_list[atlas_index].get_list().size());
-                std::vector<image::vector<3,short> > cur_region;
-                image::vector<3,float> mni_avg_pos;
-                float min_x = 200,max_x = -200;
-                for(unsigned int pos = 0;pos < subject_position.size();++pos)
-                    if (atlas_list[atlas_index].label_matched(atlas_label[pos], label))
-                    {
-                        cur_region.push_back(subject_position[pos]);
-                        mni_avg_pos += mni_position[pos];
-                        if(mni_position[pos][0] > max_x)
-                           max_x = mni_position[pos][0];
-                        if(mni_position[pos][0] < min_x)
-                           min_x = mni_position[pos][0];
-                    }
-                if(cur_region.empty())
-                    continue;
-                mni_avg_pos /= cur_region.size();
-                const std::vector<std::string>& region_names = atlas_list[atlas_index].get_list();
-                float order;
-                if(mni_avg_pos[0] > 0)
-                    order = 500.0-mni_avg_pos[1];
-                else
-                    order = mni_avg_pos[1]-500.0;
-
-                // is at middle?
-                if((max_x-min_x)/8.0 > std::fabs(mni_avg_pos[0]))
-                    order = mni_avg_pos[1];
-                region_table[order] = std::make_pair(cur_region,region_names[label]);
-            }
-            check_prog(0,0);
-            data.set_regions(region_table);
-        }
-        else
-            return;
-
+    data.set_atlas(atlas_list[ui->region_list->currentIndex()],mni_position);
     data.calculate(*(cur_tracking_window->tractWidget->tract_models[cur_tracking_window->tractWidget->currentRow()]),
                    ui->end_only->currentIndex());
     data.save_to_image(cm,ui->log->isChecked(),ui->norm->isChecked());

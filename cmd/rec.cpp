@@ -108,25 +108,14 @@ int rec(int ac, char *av[])
         if (vm.count("template"))
         {
             std::string fa_file_name = vm["template"].as<std::string>();
-            std::cout << "loading template " << fa_file_name << std::endl;
             if(!fa_template_imp.load_from_file(fa_file_name.c_str()))
-            {
-                std::cout << "failed to load template " << fa_file_name << std::endl;
                 return -1;
-            }
         }
         else
         {
-            std::cout << "loading template..." << std::endl;
             if(!fa_template_imp.load_from_file(get_fa_template_path().c_str()))
-            {
-                std::string error_str = "Cannot find template file ";
-                error_str += get_fa_template_path();
-                std::cout << error_str << std::endl;
                 return -1;
-            }
         }
-        std::cout << "template loaded..." << std::endl;
         param[0] = 1.2;
         param[1] = 2.0;
         std::fill(handle->mask.begin(),handle->mask.end(),1.0);

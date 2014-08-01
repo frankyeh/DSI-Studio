@@ -4,6 +4,7 @@
 bool fa_template::load_from_file(const char* file_name)
 {
     gz_nifti read;
+    std::cout << "loading template " << file_name << std::endl;
     if(read.load_from_file(file_name))
     {
         read >> I;
@@ -25,6 +26,7 @@ bool fa_template::load_from_file(const char* file_name)
             image::flip_xy(I);
         return true;
     }
+    std::cout << "Failed to load template file " << file_name << std::endl;
     return false;
 }
 

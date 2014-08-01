@@ -11,6 +11,119 @@ namespace po = boost::program_options;
 extern fa_template fa_template_imp;
 extern std::vector<atlas> atlas_list;
 std::string get_fa_template_path(void);
+
+bool atl_load_atlas(std::string atlas_name)
+{
+    std::cout << "loading atlas..." << std::endl;
+    std::replace(atlas_name.begin(),atlas_name.end(),',',' ');
+    std::istringstream in(atlas_name);
+    std::vector<std::string> name_list;
+    std::copy(std::istream_iterator<std::string>(in),
+              std::istream_iterator<std::string>(),std::back_inserter(name_list));
+
+    for(unsigned int index = 0;index < name_list.size();++index)
+    {
+        std::string atlas_path = QCoreApplication::applicationDirPath().toLocal8Bit().begin();
+        atlas_path += "/atlas/";
+        atlas_path += name_list[index];
+        atlas_path += ".nii.gz";
+        atlas_list.push_back(atlas());
+        if(!atlas_list.back().load_from_file(atlas_path.c_str()))
+        {
+            std::cout << "Cannot load atlas " << atlas_path << std::endl;
+            return false;
+        }
+        std::cout << name_list[index] << " loaded." << std::endl;
+        atlas_list.back().name = name_list[index];
+
+    }
+    return true;
+}
+void atl_get_mapping(image::basic_image<float,3>& from,
+                     const image::vector<3>& vs,
+                     unsigned int factor,
+                     unsigned int thread_count,
+                     image::basic_image<image::vector<3>,3>& mapping,
+                     float* out_trans)
+{
+    std::cout << "perform image registration..." << std::endl;
+    image::basic_image<float,3>& to = fa_template_imp.I;
+    image::affine_transform<3,float> arg;
+    arg.scaling[0] = vs[0] / std::fabs(fa_template_imp.tran[0]);
+    arg.scaling[1] = vs[1] / std::fabs(fa_template_imp.tran[5]);
+    arg.scaling[2] = vs[2] / std::fabs(fa_template_imp.tran[10]);
+    image::reg::align_center(from,to,arg);
+
+    image::filter::gaussian(from);
+    from -= image::segmentation::otsu_threshold(from);
+    image::lower_threshold(from,0.0);
+
+    image::normalize(from,1.0);
+    image::normalize(to,1.0);
+
+    bool terminated = false;
+    std::cout << "perform linear registration..." << std::endl;
+    image::reg::linear(from,to,arg,image::reg::affine,image::reg::mutual_information(),terminated);
+    image::transformation_matrix<3,float> T(arg,from.geometry(),to.geometry()),iT(arg,from.geometry(),to.geometry());
+    iT.inverse();
+
+
+    // output linear registration
+    float T_buf[16];
+    T.save_to_transform(T_buf);
+    T_buf[15] = 1.0;
+    std::copy(T_buf,T_buf+4,std::ostream_iterator<float>(std::cout," "));
+    std::cout << std::endl;
+    std::copy(T_buf+4,T_buf+8,std::ostream_iterator<float>(std::cout," "));
+    std::cout << std::endl;
+    std::copy(T_buf+8,T_buf+12,std::ostream_iterator<float>(std::cout," "));
+    std::cout << std::endl;
+
+
+    image::basic_image<float,3> new_from(to.geometry());
+    image::resample(from,new_from,iT);
+
+
+    std::cout << "perform nonlinear registration..." << std::endl;
+    //image::reg::bfnorm(new_from,to,*bnorm_data,*terminated);
+
+    std::cout << "order=" << factor << std::endl;
+    std::cout << "thread count=" << thread_count << std::endl;
+
+    image::reg::bfnorm_mapping<float,3> mni(new_from.geometry(),image::geometry<3>(factor*7,factor*9,factor*7));
+    image::reg::bfnorm_mrqcof<image::basic_image<float,3>,float> bf_optimize(new_from,to,mni,thread_count);
+    for(int iter = 0; iter < 16; ++iter)
+    {
+        bf_optimize.start();
+        boost::thread_group threads;
+        for (unsigned int index = 1;index < thread_count;++index)
+                threads.add_thread(new boost::thread(
+                    &image::reg::bfnorm_mrqcof<image::basic_image<float,3>,float>::run<bool>,&bf_optimize,index,boost::ref(terminated)));
+        bf_optimize.run(0,terminated);
+        if(thread_count > 1)
+            threads.join_all();
+        bf_optimize.end();
+        boost::thread_group threads2;
+        for (unsigned int index = 1;index < thread_count;++index)
+                threads2.add_thread(new boost::thread(
+                    &image::reg::bfnorm_mrqcof<image::basic_image<float,3>,float>::run2,&bf_optimize,index,40));
+        bf_optimize.run2(0,40);
+        if(thread_count > 1)
+            threads2.join_all();
+    }
+
+    mapping.resize(from.geometry());
+    for(image::pixel_index<3> index;from.geometry().is_valid(index);index.next(from.geometry()))
+    {
+        image::vector<3,float> pos;
+        T(index,pos);// from -> new_from
+        mni(pos,mapping[index.index()]); // new_from -> to
+        fa_template_imp.to_mni(mapping[index.index()]);
+    }
+    image::matrix::product(fa_template_imp.tran.begin(),T_buf,out_trans,image::dyndim(4,4),image::dyndim(4,4));
+}
+
+
 int atl(int ac, char *av[])
 {
     po::options_description norm_desc("fiber tracking options");
@@ -61,40 +174,9 @@ int atl(int ac, char *av[])
     }
 
 
-    std::cout << "loading template..." << std::endl;
-    if(!fa_template_imp.load_from_file(get_fa_template_path().c_str()))
-    {
-        std::string error_str = "Cannot find template file ";
-        error_str += get_fa_template_path();
-        std::cout << error_str << std::endl;
+    if(!fa_template_imp.load_from_file(get_fa_template_path().c_str()) ||
+       !atl_load_atlas(vm["atlas"].as<std::string>()))
         return -1;
-    }
-    std::cout << "loading atlas..." << std::endl;
-    {
-        std::string atlas_name = vm["atlas"].as<std::string>();
-        std::replace(atlas_name.begin(),atlas_name.end(),',',' ');
-        std::istringstream in(atlas_name);
-        std::vector<std::string> name_list;
-        std::copy(std::istream_iterator<std::string>(in),
-                  std::istream_iterator<std::string>(),std::back_inserter(name_list));
-
-        for(unsigned int index = 0;index < name_list.size();++index)
-        {
-            std::string atlas_path = QCoreApplication::applicationDirPath().toLocal8Bit().begin();
-            atlas_path += "/atlas/";
-            atlas_path += name_list[index];
-            atlas_path += ".nii.gz";
-            atlas_list.push_back(atlas());
-            if(!atlas_list.back().load_from_file(atlas_path.c_str()))
-            {
-                std::cout << "Cannot load atlas " << atlas_path << std::endl;
-                return 0;
-            }
-            std::cout << name_list[index] << " loaded." << std::endl;
-            atlas_list.back().name = name_list[index];
-
-        }
-    }
 
 
     const float* trans = 0;
@@ -132,86 +214,15 @@ int atl(int ac, char *av[])
         return 0;
     }
 
-
-    std::cout << "perform image registration..." << std::endl;
     image::basic_image<float,3> from(fa0,image::geometry<3>(dim[0],dim[1],dim[2]));
-    image::basic_image<float,3>& to = fa_template_imp.I;
-    image::affine_transform<3,float> arg;
-    arg.scaling[0] = vs[0] / std::fabs(fa_template_imp.tran[0]);
-    arg.scaling[1] = vs[1] / std::fabs(fa_template_imp.tran[5]);
-    arg.scaling[2] = vs[2] / std::fabs(fa_template_imp.tran[10]);
-    image::reg::align_center(from,to,arg);
-
-    image::filter::gaussian(from);
-    from -= image::segmentation::otsu_threshold(from);
-    image::lower_threshold(from,0.0);
-
-    image::normalize(from,1.0);
-    image::normalize(to,1.0);
-
-    bool terminated = false;
-    std::cout << "perform linear registration..." << std::endl;
-    image::reg::linear(from,to,arg,image::reg::affine,image::reg::mutual_information(),terminated);
-    image::transformation_matrix<3,float> T(arg,from.geometry(),to.geometry()),iT(arg,from.geometry(),to.geometry());
-    iT.inverse();
-
-
-    // output linear registration
-    float T_buf[16];
-    T.save_to_transform(T_buf);
-    T_buf[15] = 1.0;
-    std::copy(T_buf,T_buf+4,std::ostream_iterator<float>(std::cout," "));
-    std::cout << std::endl;
-    std::copy(T_buf+4,T_buf+8,std::ostream_iterator<float>(std::cout," "));
-    std::cout << std::endl;
-    std::copy(T_buf+8,T_buf+12,std::ostream_iterator<float>(std::cout," "));
-    std::cout << std::endl;
-
-
-    image::basic_image<float,3> new_from(to.geometry());
-    image::resample(from,new_from,iT);
-
-
-    std::cout << "perform nonlinear registration..." << std::endl;
-    //image::reg::bfnorm(new_from,to,*bnorm_data,*terminated);
+    image::basic_image<image::vector<3>,3> mapping;
     unsigned int factor = vm["order"].as<int>() + 1;
     unsigned int thread_count = vm["thread_count"].as<int>();
-    std::cout << "order=" << vm["order"].as<int>() << std::endl;
-    std::cout << "thread count=" << thread_count << std::endl;
-
-    image::reg::bfnorm_mapping<float,3> mni(new_from.geometry(),image::geometry<3>(factor*7,factor*9,factor*7));
-    image::reg::bfnorm_mrqcof<image::basic_image<float,3>,float> bf_optimize(new_from,to,mni,thread_count);
-    for(int iter = 0; iter < 16; ++iter)
-    {
-        bf_optimize.start();
-        boost::thread_group threads;
-        for (unsigned int index = 1;index < thread_count;++index)
-                threads.add_thread(new boost::thread(
-                    &image::reg::bfnorm_mrqcof<image::basic_image<float,3>,float>::run<bool>,&bf_optimize,index,boost::ref(terminated)));
-        bf_optimize.run(0,terminated);
-        if(thread_count > 1)
-            threads.join_all();
-        bf_optimize.end();
-        boost::thread_group threads2;
-        for (unsigned int index = 1;index < thread_count;++index)
-                threads2.add_thread(new boost::thread(
-                    &image::reg::bfnorm_mrqcof<image::basic_image<float,3>,float>::run2,&bf_optimize,index,40));
-        bf_optimize.run2(0,40);
-        if(thread_count > 1)
-            threads2.join_all();
-    }
-
-    image::basic_image<image::vector<3>,3> mapping(from.geometry());
-    for(image::pixel_index<3> index;from.geometry().is_valid(index);index.next(from.geometry()))
-    {
-        image::vector<3,float> pos;
-        T(index,pos);// from -> new_from
-        mni(pos,mapping[index.index()]); // new_from -> to
-        fa_template_imp.to_mni(mapping[index.index()]);
-    }
-
+    image::vector<3> vs_(vs);
     float out_trans[16];
-    image::matrix::product(fa_template_imp.tran.begin(),T_buf,out_trans,image::dyndim(4,4),image::dyndim(4,4));
+    atl_get_mapping(from,vs_,factor,thread_count,mapping,out_trans);
+
+
     for(unsigned int i = 0;i < atlas_list.size();++i)
     {
         for(unsigned int j = 0;j < atlas_list[i].get_list().size();++j)
