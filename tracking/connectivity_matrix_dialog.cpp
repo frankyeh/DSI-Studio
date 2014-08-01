@@ -73,7 +73,7 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
     image::basic_image<image::vector<3,float>,3 > mni_position(geo);
     const FiberDirection& fib = cur_tracking_window->handle->fib_data.fib;
     for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))
-        if(fib.getFA(index.index(),0))
+        if(fib.getFA(index.index(),0) > 0)
         {
             image::vector<3,float> mni((const unsigned int*)index.begin());
             cur_tracking_window->subject2mni(mni);

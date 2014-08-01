@@ -114,12 +114,13 @@ void atl_get_mapping(image::basic_image<float,3>& from,
 
     mapping.resize(from.geometry());
     for(image::pixel_index<3> index;from.geometry().is_valid(index);index.next(from.geometry()))
-    {
-        image::vector<3,float> pos;
-        T(index,pos);// from -> new_from
-        mni(pos,mapping[index.index()]); // new_from -> to
-        fa_template_imp.to_mni(mapping[index.index()]);
-    }
+        if(from[index.index()] > 0)
+        {
+            image::vector<3,float> pos;
+            T(index,pos);// from -> new_from
+            mni(pos,mapping[index.index()]); // new_from -> to
+            fa_template_imp.to_mni(mapping[index.index()]);
+        }
     image::matrix::product(fa_template_imp.tran.begin(),T_buf,out_trans,image::dyndim(4,4),image::dyndim(4,4));
 }
 

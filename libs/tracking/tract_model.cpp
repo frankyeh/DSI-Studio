@@ -1362,36 +1362,17 @@ void ConnectivityMatrix::set_atlas(const atlas& data,const image::basic_image<im
     image::geometry<3> geo(mni_position.geometry());
     region_table_type region_table;
     image::vector<3> null;
-    for (unsigned int label = 0; label < data.get_list().size(); ++label)
+    std::vector<float> atlas_region_order;
+    data.calculate_order(atlas_region_order);
+    for (unsigned int label_index = 0; label_index < data.get_list().size(); ++label_index)
     {
         std::vector<image::vector<3,short> > cur_region;
-        image::vector<3,float> mni_avg_pos;
-        float min_x = 200,max_x = -200;
         for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))
-            if (mni_position[index.index()] != null &&
-                data.label_matched(data.get_label_at(mni_position[index.index()]),label))
-            {
+            if(mni_position[index.index()] != null &&
+               data.label_matched(data.get_label_at(mni_position[index.index()]),label_index))
                 cur_region.push_back(image::vector<3,short>(index.begin()));
-                mni_avg_pos += mni_position[index.index()];
-                float x = mni_position[index.index()][0];
-                if(x > max_x)
-                   max_x = x;
-                if(x < min_x)
-                   min_x = x;
-            }
-        if(cur_region.empty())
-            continue;
-        mni_avg_pos /= cur_region.size();
-        const std::vector<std::string>& region_names = data.get_list();
-        float order;
-        if(mni_avg_pos[0] > 0)
-            order = 500.0-mni_avg_pos[1];
-        else
-            order = mni_avg_pos[1]-500.0;
-        // is at middle?
-        if((max_x-min_x)/8.0 > std::fabs(mni_avg_pos[0]))
-            order = mni_avg_pos[1];
-        region_table[order] = std::make_pair(cur_region,region_names[label]);
+        if(!cur_region.empty())
+            region_table[atlas_region_order[label_index]] = std::make_pair(cur_region,data.get_list()[label_index]);
     }
     set_regions(region_table);
 }

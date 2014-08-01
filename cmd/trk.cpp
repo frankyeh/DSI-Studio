@@ -11,7 +11,19 @@
 #include "libs/tracking/tracking_thread.hpp"
 #include "libs/tracking/tracking_model.hpp"
 #include "libs/gzip_interface.hpp"
+#include "mapping/fa_template.hpp"
+#include "mapping/atlas.hpp"
 
+std::string get_fa_template_path(void);
+bool atl_load_atlas(const std::string atlas_name);
+void atl_get_mapping(image::basic_image<float,3>& from,
+                     const image::vector<3>& vs,
+                     unsigned int factor,
+                     unsigned int thread_count,
+                     image::basic_image<image::vector<3>,3>& mapping,
+                     float* out_trans);
+extern fa_template fa_template_imp;
+extern std::vector<atlas> atlas_list;
 namespace po = boost::program_options;
 
 // test example
@@ -33,6 +45,7 @@ int trk(int ac, char *av[])
     ("thread_count", po::value<int>()->default_value(1), "number of thread (default:1)")
     ("output", po::value<std::string>(), "output file name")
     ("export", po::value<std::string>(), "export additional information (e.g. --export=stat,tdi)")
+    ("connectivity", po::value<std::string>(), "export connectivity")
     ("roi", po::value<std::string>(), "file for ROI regions")
     ("roi2", po::value<std::string>(), "file for the second ROI regions")
     ("roi3", po::value<std::string>(), "file for the third ROI regions")
@@ -232,6 +245,49 @@ int trk(int ac, char *av[])
     std::cout << "output file:" << file_name << std::endl;
     tract_model.save_tracts_to_file(file_name.c_str());
 
+
+    if(vm.count("connectivity") &&
+       fa_template_imp.load_from_file(get_fa_template_path().c_str()) &&
+       atl_load_atlas(vm["connectivity"].as<std::string>()))
+    {
+        bool use_end_only = true;
+        image::basic_image<image::vector<3>,3> mapping(geometry);
+        if(handle->fib_data.trans_to_mni.empty())// not qsdr do registration here
+        {
+            image::basic_image<float,3> from(fa0,geometry);
+            unsigned int factor = 1; // 7-9-7
+            unsigned int thread_count = vm["thread_count"].as<int>();
+            float out_trans[16];
+            atl_get_mapping(from,voxel_size,factor,thread_count,mapping,out_trans);
+        }
+        else
+        {
+            for(image::pixel_index<3> index;mapping.geometry().is_valid(index);index.next(mapping.geometry()))
+                if(fa0[index.index()] > 0)
+                {
+                    image::vector<3> pos(index.begin());
+                    image::vector_transformation(pos.begin(),mapping[index.index()].begin(),
+                                             handle->fib_data.trans_to_mni,image::vdim<3>());
+                }
+        }
+
+        for(unsigned int index = 0;index < atlas_list.size();++index)
+        {
+            std::cout << "calculating connectivity matrix for atlas:"<< atlas_list[index].name << std::endl;
+            ConnectivityMatrix data;
+            data.set_atlas(atlas_list[index],mapping);
+            std::cout << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
+            data.calculate(tract_model,use_end_only);
+            std::string file_name_stat(file_name);
+            file_name_stat += ".";
+            file_name_stat += atlas_list[index].name;
+            file_name_stat += ".mat";
+            std::cout << "export connectivity matrix to " << file_name_stat << std::endl;
+            data.save_to_file(file_name_stat.c_str());
+
+        }
+    }
+
     if(vm.count("export"))
     {
         std::string export_option = vm["export"].as<std::string>();
@@ -278,6 +334,7 @@ int trk(int ac, char *av[])
                 tract_model.save_fa_to_file(file_name_stat.c_str());
                 continue;
             }
+
             if(handle->get_name_index(cmd) != handle->fib_data.view_item.size())
                 tract_model.save_data_to_file(file_name_stat.c_str(),cmd);
             else

@@ -58,6 +58,7 @@ bool atlas::load_from_file(const char* file_name)
         for (int i = 0;iter != end;++iter,++i)
         {
             labels.push_back(iter->first);
+            label_num.push_back(label_num.size());// dummy
             label2index.push_back(std::vector<unsigned int>(iter->second.begin(),iter->second.end()));
             for(int j = 0;j < label2index.back().size();++j)
                 index2label[label2index[i][j]].push_back(i);
@@ -65,7 +66,7 @@ bool atlas::load_from_file(const char* file_name)
     }
     else
     {
-        std::vector<unsigned char> hist(1+*std::max_element(I.begin(),I.end()));
+        std::vector<unsigned short> hist(1+*std::max_element(I.begin(),I.end()));
         for(int index = 0;index < I.size();++index)
             hist[I[index]] = 1;
 
@@ -126,8 +127,13 @@ short atlas::get_label_at(const image::vector<3,float>& mni_space) const
 std::string atlas::get_label_name_at(const image::vector<3,float>& mni_space) const
 {
     short l = get_label_at(mni_space);
+    if(!l)
+        return std::string();
     if(index2label.empty())
-        return l >= labels.size() ? std::string() : labels[l];
+    {
+        unsigned int pos = std::find(label_num.begin(),label_num.end(),l)-label_num.begin();
+        return pos >= labels.size() ? std::string() : labels[pos];
+    }
     if(l >= index2label.size())
         return std::string();
     std::string result;
@@ -150,4 +156,48 @@ bool atlas::label_matched(short l,short label_name_index) const
     if(l >= index2label.size())
         return false;
     return std::find(index2label[l].begin(),index2label[l].end(),label_name_index) != index2label[l].end();
+}
+void atlas::calculate_order(std::vector<float>& order) const
+{
+    if(!index2label.empty())
+    {
+        order.resize(labels.size());
+        for(unsigned int index = 0;index < order.size();++index)
+            order[index] = index;
+        return;
+    }
+    //setBoundingBox(-78,-112,-50,78,76,85,1.0);
+    std::vector<image::vector<3> > mean(label_num.size());
+    std::vector<unsigned int> count(label_num.size());
+    std::vector<float> max_x(label_num.size()),min_x(label_num.size());
+    std::vector<unsigned short> index_map(*std::max_element(label_num.begin(),label_num.end())+1);
+    for(unsigned short index = 0;index < label_num.size();++index)
+        index_map[label_num[index]] = index;
+    for(float z = -50;z < 85;z += 1.0)
+        for(float y = -112;y < 76;y += 1.0)
+            for(float x = -78;x < 78;x += 1.0)
+                {
+                    image::vector<3> pos(x,y,z);
+                    short label = get_label_at(pos);
+                    if(!label || label >= index_map.size())
+                        continue;
+                    unsigned int label_index = index_map[label];
+                    count[label_index]++;
+                    mean[label_index] += pos;
+                    if(x > max_x[label_index])
+                        max_x[label_index] = x;
+                    if(x < min_x[label_index])
+                        min_x[label_index] = x;
+                }
+    order.resize(label_num.size());
+    for(int index = 0;index < label_num.size();++index)
+    {
+        if(count[index])
+            mean[index] /= count[index];
+        // separate left right first
+        order[index] = (mean[index][0] > 0) ? 500.0-mean[index][1]:mean[index][1]-500.0;
+        // is at middle?
+        if((max_x[index]-min_x[index])/8.0 > std::fabs(mean[index][0]))
+            order[index] = mean[index][1];
+    }
 }
