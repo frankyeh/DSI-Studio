@@ -16,9 +16,13 @@ connectivity_matrix_dialog::connectivity_matrix_dialog(tracking_window *parent) 
     ui->setupUi(this);
     ui->graphicsView->setScene(&scene);
     // atlas
+    ui->region_list->addItem("ROIs");
     for(int index = 0;index < atlas_list.size();++index)
         ui->region_list->addItem(atlas_list[index].name.c_str());
-    ui->region_list->setCurrentIndex(0);
+    if(cur_tracking_window->regionWidget->regions.size() > 1)
+        ui->region_list->setCurrentIndex(0);
+    else
+        ui->region_list->setCurrentIndex(1);
     on_recalculate_clicked();
 
 }
@@ -68,18 +72,35 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
     if(cur_tracking_window->tractWidget->tract_models.size() == 0)
         return;
     image::geometry<3> geo = cur_tracking_window->slice.geometry;
-    if(cur_tracking_window->handle->fib_data.trans_to_mni.empty())
-        return;
-    image::basic_image<image::vector<3,float>,3 > mni_position(geo);
-    const FiberDirection& fib = cur_tracking_window->handle->fib_data.fib;
-    for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))
-        if(fib.getFA(index.index(),0) > 0)
+
+    if(ui->region_list->currentIndex() == 0)
         {
-            image::vector<3,float> mni((const unsigned int*)index.begin());
-            cur_tracking_window->subject2mni(mni);
-            mni_position[index.index()] = mni;
+            ConnectivityMatrix::region_table_type region_table;
+            for(unsigned int index = 0;index < cur_tracking_window->regionWidget->regions.size();++index)
+            {
+                const std::vector<image::vector<3,short> >& cur_region =
+                        cur_tracking_window->regionWidget->regions[index].get();
+                image::vector<3,float> pos = std::accumulate(cur_region.begin(),cur_region.end(),image::vector<3,float>(0,0,0));
+                pos /= cur_region.size();
+                region_table[pos[0] > (geo[0] >> 1) ? pos[1]-geo[1]:geo[1]-pos[1]] = std::make_pair(cur_region,cur_tracking_window->regionWidget->item(index,0)->text().toLocal8Bit().begin());
+            }
+            data.set_regions(region_table);
         }
-    data.set_atlas(atlas_list[ui->region_list->currentIndex()],mni_position);
+    else
+    {
+        if(cur_tracking_window->handle->fib_data.trans_to_mni.empty())
+            return;
+        image::basic_image<image::vector<3,float>,3 > mni_position(geo);
+        const FiberDirection& fib = cur_tracking_window->handle->fib_data.fib;
+        for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))
+            if(fib.getFA(index.index(),0) > 0)
+            {
+                image::vector<3,float> mni((const unsigned int*)index.begin());
+                cur_tracking_window->subject2mni(mni);
+                mni_position[index.index()] = mni;
+            }
+        data.set_atlas(atlas_list[ui->region_list->currentIndex()-1],mni_position);
+    }
     data.calculate(*(cur_tracking_window->tractWidget->tract_models[cur_tracking_window->tractWidget->currentRow()]),
                    ui->end_only->currentIndex());
     data.save_to_image(cm,ui->log->isChecked(),ui->norm->isChecked());
