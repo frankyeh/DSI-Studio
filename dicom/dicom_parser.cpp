@@ -8,6 +8,7 @@
 #include "mainwindow.h"
 #include "prog_interface_static_link.h"
 #include "libs/gzip_interface.hpp"
+#include "motion_dialog.hpp"
 
 struct compare_qstring{
     bool operator()(const QString& lhs,const QString& rhs)
@@ -776,6 +777,16 @@ void dicom_parser::on_upperDir_clicked()
                          QFileInfo(ui->SrcName->text()).fileName());
 }
 
+void dicom_parser::update_b_table(void)
+{
+    for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
+    {
+        ui->tableWidget->item(index,2)->setText(QString::number(dwi_files[index].bvec[0]));
+        ui->tableWidget->item(index,3)->setText(QString::number(dwi_files[index].bvec[1]));
+        ui->tableWidget->item(index,4)->setText(QString::number(dwi_files[index].bvec[2]));
+    }
+}
+
 void dicom_parser::on_apply_slice_orientation_clicked()
 {
     if(slice_orientation.empty())
@@ -793,3 +804,21 @@ void dicom_parser::on_apply_slice_orientation_clicked()
     }
 }
 
+
+void dicom_parser::on_motion_correction_clicked()
+{
+    unsigned int b0_count = 0;
+    for(unsigned int index = 0;index < dwi_files.size();++index)
+        if(dwi_files[index].get_bvalue() < 100)
+            ++b0_count;
+    if(b0_count <= 1)
+    {
+        QMessageBox::information(this,"Error","No extra b0 image found for motion detection.");
+        return;
+    }
+
+    motion_dialog* md = new motion_dialog(this,dwi_files);
+    md->setAttribute(Qt::WA_DeleteOnClose);
+    md->show();
+
+}

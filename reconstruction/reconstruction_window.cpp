@@ -588,12 +588,7 @@ void reconstruction_window::on_manual_reg_clicked()
     arg.scaling[0] = handle->voxel.vs[0];
     arg.scaling[1] = handle->voxel.vs[1];
     arg.scaling[2] = handle->voxel.vs[2];
-    image::vector<3,double> mF = image::reg::center_of_mass(dwi);
-    image::vector<3,double> mG = image::reg::center_of_mass(fa_template_imp.I);
-
-    arg.translocation[0] = mG[0]-mF[0]*arg.scaling[0];
-    arg.translocation[1] = mG[1]-mF[1]*arg.scaling[1];
-    arg.translocation[2] = mG[2]-mF[2]*arg.scaling[2];
+    image::reg::align_center(dwi,fa_template_imp.I,arg);
     std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,fa_template_imp.I,arg));
     manual->timer->start();
     if(manual->exec() == QDialog::Accepted)
@@ -777,12 +772,7 @@ void reconstruction_window::on_actionRotate_triggered()
     arg.scaling[0] = handle->voxel.vs[0];
     arg.scaling[1] = handle->voxel.vs[1];
     arg.scaling[2] = handle->voxel.vs[2];
-    image::vector<3,double> mF = image::reg::center_of_mass(dwi);
-    image::vector<3,double> mG = image::reg::center_of_mass(fa_template_imp.I);
-
-    arg.translocation[0] = mG[0]-mF[0]*arg.scaling[0];
-    arg.translocation[1] = mG[1]-mF[1]*arg.scaling[1];
-    arg.translocation[2] = mG[2]-mF[2]*arg.scaling[2];
+    image::reg::align_center(dwi,fa_template_imp.I,arg);
     std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,fa_template_imp.I,arg,image::reg::rigid_body));
     manual->timer->start();
     if(manual->exec() != QDialog::Accepted)

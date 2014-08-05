@@ -17,6 +17,7 @@ public:
     explicit dicom_parser(QStringList file_list,QWidget *parent = 0);
     ~dicom_parser();
     void set_name(QString name);
+    void update_b_table(void);
 private:
     Ui::dicom_parser *ui;
     QString cur_path;
@@ -39,6 +40,7 @@ private slots:
     void on_buttonBox_accepted();
     void on_load_bval_clicked();
     void on_load_bvec_clicked();
+    void on_motion_correction_clicked();
 };
 
 #endif // DICOM_PARSER_H

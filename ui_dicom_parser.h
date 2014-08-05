@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'dicom_parser.ui'
 **
-** Created: Wed Jun 18 22:31:53 2014
+** Created: Mon Aug 4 21:37:43 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -50,6 +50,7 @@ public:
     QToolButton *toolButton_5;
     QToolButton *toolButton_6;
     QToolButton *toolButton_7;
+    QToolButton *motion_correction;
     QSpacerItem *horizontalSpacer;
     QTableWidget *tableWidget;
     QHBoxLayout *horizontalLayout_2;
@@ -150,6 +151,11 @@ public:
 
         horizontalLayout_4->addWidget(toolButton_7);
 
+        motion_correction = new QToolButton(dicom_parser);
+        motion_correction->setObjectName(QString::fromUtf8("motion_correction"));
+
+        horizontalLayout_4->addWidget(motion_correction);
+
         horizontalSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
         horizontalLayout_4->addItem(horizontalSpacer);
@@ -247,6 +253,7 @@ public:
         toolButton_5->setText(QApplication::translate("dicom_parser", "Switch bx by", 0, QApplication::UnicodeUTF8));
         toolButton_6->setText(QApplication::translate("dicom_parser", "Switch bx bz", 0, QApplication::UnicodeUTF8));
         toolButton_7->setText(QApplication::translate("dicom_parser", "Switch by bz", 0, QApplication::UnicodeUTF8));
+        motion_correction->setText(QApplication::translate("dicom_parser", "Detect motion...", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem = tableWidget->horizontalHeaderItem(0);
         ___qtablewidgetitem->setText(QApplication::translate("dicom_parser", "File Name", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem1 = tableWidget->horizontalHeaderItem(1);

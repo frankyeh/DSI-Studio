@@ -12,7 +12,10 @@ bool lock_dialog = false;
         extern "C" void begin_prog(const char* title,bool lock)
         {
             if(!progressDialog.get())
+            {
+                std::cout << title << std::endl;
                 return;
+            }
             lock_dialog = lock;
             progressDialog->show();
             progressDialog->setWindowTitle(title);
