@@ -400,7 +400,7 @@ struct ViewItem
 class FibData
 {
 public:
-    std::string error_msg;
+    std::string error_msg,report;
     gz_mat_read mat_reader;
     FiberDirection fib;
 public:
@@ -423,6 +423,12 @@ public:
         {
             error_msg = "Cannot open file";
             return false;
+        }
+        {
+            unsigned int row,col;
+            const char* report_buf = 0;
+            if(mat_reader.read("report",row,col,report_buf))
+                report = std::string(report_buf,report_buf+row*col);
         }
         if(!fib.add_data(mat_reader))
         {

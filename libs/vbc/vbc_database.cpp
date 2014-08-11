@@ -241,6 +241,12 @@ bool vbc_database::load_subject_files(const std::vector<std::string>& file_names
         mat_reader.read("R2",row,col,value);
         if(value)
             R2[subject_index] = *value;
+        if(subject_index == 0)
+        {
+            const char* report_buf = 0;
+            if(mat_reader.read("report",row,col,report_buf))
+                subject_report = std::string(report_buf,report_buf+row*col);
+        }
     }
     subject_names = subject_names_;
     return true;
@@ -258,7 +264,8 @@ void vbc_database::save_subject_data(const char* output_name) const
     }
     gz_mat_read& mat_source = handle->fib_data.mat_reader;
     for(unsigned int index = 0;index < mat_source.size();++index)
-        matfile.write(mat_source[index]);
+        if(mat_source[index].get_name() != "report")
+            matfile.write(mat_source[index]);
     for(unsigned int index = 0;check_prog(index,subject_qa.size());++index)
     {
         std::ostringstream out;
@@ -273,6 +280,13 @@ void vbc_database::save_subject_data(const char* output_name) const
     }
     matfile.write("subject_names",name_string.c_str(),1,name_string.size());
     matfile.write("R2",&*R2.begin(),1,R2.size());
+
+    {
+        std::ostringstream out;
+        out << "A total of " << num_subjects << " subjects were included in the connectometry database." << subject_report.c_str();
+        std::string report = out.str();
+        matfile.write("report",&*report.c_str(),1,report.length());
+    }
     begin_prog("output data");
 }
 

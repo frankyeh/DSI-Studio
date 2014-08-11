@@ -171,6 +171,7 @@ public:
     bool create_database(const char* templat_name);
     bool load_database(const char* database_name);
 private:// database information
+    std::string subject_report;
     std::vector<std::string> subject_names;
     unsigned int num_subjects;
     // 0: subject index 1:findex 2.s_index (fa > 0)

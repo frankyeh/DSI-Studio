@@ -19,6 +19,7 @@ public:
     RoiMgr roi_mgr;
     std::vector<image::vector<3,short> > seeds;
 public:
+    std::ostringstream report;
     TrackingParam param;
     bool stop_by_tract;
     bool center_seed;
@@ -212,6 +213,22 @@ public:
 
     void run(const fiber_orientations& fib,unsigned int thread_count,unsigned int termination_count,bool wait = false)
     {
+        report.clear();
+        report.str("");
+        report << " A deterministic fiber tracking algorithm (Yeh, et al. PLoS ONE 8(11): e80713) was used."
+               << " The anistropy threshold was " << fib.threshold << "."
+               << " The angular threshold was " << (int)std::floor(std::acos(fib.cull_cos_angle)*180/3.1415926 + 0.5) << " degrees."
+               << " The step size was " << param.step_size << " mm.";
+
+        if(param.smooth_fraction != 0.0)
+            report << " The fiber trajectories were smoothed by averaging the propagation direction with "
+                   << (int)std::floor(param.smooth_fraction * 100.0+0.5) << "% of the previous direction.";
+
+        if(param.min_points_count3 != 6)
+            report << " Tracks with length less than "
+                   << (int)std::floor(param.min_points_count3 * fib.vs[0]+0.5) << " mm were discarded.";
+
+
         // to ensure consistency, seed initialization with all orientation only fits with single thread
         if(initial_direction == 2)
             thread_count = 1;
@@ -244,6 +261,7 @@ public:
         else
             threads->add_thread(new boost::thread(&ThreadData::run_thread,this,new_method(fib),thread_count,thread_count-1,termination_count-total_run_count));
 
+        report << " A total of " << termination_count << (stop_by_tract ? " tracts were calculated.":" seeds were placed.");
     }
 };
 #endif // TRACKING_THREAD_HPP

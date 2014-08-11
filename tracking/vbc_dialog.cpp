@@ -501,7 +501,7 @@ void vbc_dialog::on_buttonBox_accepted()
 
 void vbc_dialog::on_tabWidget_currentChanged(int index)
 {
-    if(index == 2)
+    if(index == 3)
         ui->FDR_widget->hide();
     else
         ui->FDR_widget->show();

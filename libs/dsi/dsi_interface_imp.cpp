@@ -143,6 +143,15 @@ extern "C"
     static std::string output_name;
     try
     {
+        image_model->voxel.recon_report.clear();
+        image_model->voxel.recon_report.str("");
+        image_model->voxel.recon_report
+            << " The in-plane resolution was " << image_model->voxel.vs[0] << " mm."
+            << " The slice thickness was " << image_model->voxel.vs[2] << " mm."
+            << " A total of " << image_model->voxel.bvalues.size()-(image_model->voxel.bvalues.front() == 0 ? 1:0)
+            << " diffusion sampling directions were acquired."
+            << " The b-value was " << image_model->voxel.bvalues.back() << " s/mm2.";
+
         image_model->voxel.param = param_values;
         std::ostringstream out;
         if(method_id != 1) // not DTI
@@ -218,6 +227,8 @@ extern "C"
         switch (method_id)
         {
         case 0: //DSI local max
+            image_model->voxel.recon_report <<
+            " The diffusion data were reconstructed using diffusion spectrum imaging (Wedeen et al. MRM, 2005) with a Hanning filter of " << (int)param_values[0] << ".";
             if (image_model->voxel.odf_deconvolusion || image_model->voxel.odf_decomposition)
             {
                 if (!image_model->reconstruct<dsi_estimate_response_function>())
@@ -229,6 +240,7 @@ extern "C"
                 return "reconstruction canceled";
             break;
         case 1://DTI
+            image_model->voxel.recon_report << " The diffusion tensor was calculated.";
             out << ".dti.fib.gz";
             image_model->voxel.max_fiber_number = 1;
             if (!image_model->reconstruct<dti_process>(out.str()))
@@ -236,6 +248,7 @@ extern "C"
             break;
 
         case 2://QBI
+            image_model->voxel.recon_report << " The diffusion data was reconstructed using q-ball imaging (Tuch, MRM 2004).";
             if (image_model->voxel.odf_deconvolusion || image_model->voxel.odf_decomposition)
             {
                 if (!image_model->reconstruct<qbi_estimate_response_function>())
@@ -247,6 +260,7 @@ extern "C"
                 return "reconstruction canceled";
             break;
         case 3://QBI
+            image_model->voxel.recon_report << " The diffusion data was reconstructed using spherical-harmonic-based q-ball imaging (Descoteaux et al., MRM 2007).";
             if (image_model->voxel.odf_deconvolusion || image_model->voxel.odf_decomposition)
             {
                 if (!image_model->reconstruct<qbi_sh_estimate_response_function>())
@@ -261,22 +275,30 @@ extern "C"
         case 4://GQI
             if(param_values[0] == 0.0) // spectral analysis
             {
+                image_model->voxel.recon_report <<
+                " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, 2010).";
                 out << (image_model->voxel.r2_weighted ? ".gqi2.spec.fib.gz":".gqi.spec.fib.gz");
                 if (!image_model->reconstruct<gqi_spectral_process>(out.str()))
                     return "reconstruction canceled";
                 break;
             }
+            image_model->voxel.recon_report <<
+            " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, 2010) with a diffusion sampling length ratio of " << (float)param_values[0] << ".";
             if (image_model->voxel.odf_deconvolusion || image_model->voxel.odf_decomposition)
             {
                 if (!image_model->reconstruct<gqi_estimate_response_function>())
                     return "reconstruction calceled";
                 begin_prog("calculating");
             }
+            if(image_model->voxel.r2_weighted)
+                image_model->voxel.recon_report << " The ODF calculation was weighted by the square of the diffuion displacement.";
             out << (image_model->voxel.r2_weighted ? ".gqi2.":".gqi.") << param_values[0] << ".fib.gz";
             if (!image_model->reconstruct<gqi_process>(out.str()))
                 return "reconstruction canceled";
             break;
         case 6:
+            image_model->voxel.recon_report
+                    << " The diffusion data were converted to HARDI using generalized q-sampling method with a regularization parameter of " << param_values[2] << ".";
             out << ".hardi."<< param_values[0]
                 << ".b" << param_values[1]
                 << ".reg" << param_values[2] << ".src.gz";
@@ -284,6 +306,9 @@ extern "C"
                 return "reconstruction canceled";
             break;
         case 7:
+            image_model->voxel.recon_report
+            << " The diffusion data were reconstructed using q-space diffeomorphic reconstruction (Yeh et al. Neuroimage, 2011) with a diffusion sampling length ratio of "
+            << (float)param_values[0] << ". The output resolution was " << param_values[1] << " mm.";
             // run gqi to get the spin quantity
             if (!image_model->reconstruct<gqi_estimate_response_function>())
                 return "reconstruction calceled";
@@ -322,10 +347,13 @@ bool output_odfs(const image::basic_image<unsigned char,3>& mni_mask,
                  const tessellated_icosahedron& ti,
                  const float* vs,
                  const float* mni,
+                 const std::string& report,
                  bool record_odf = true)
 {
     begin_prog("output");
     ImageModel image_model;
+    if(report.length())
+        image_model.voxel.report = report.c_str();
     image_model.voxel.dim = mni_mask.geometry();
     image_model.voxel.ti = ti;
     image_model.voxel.odf_decomposition = false;
@@ -352,7 +380,7 @@ extern "C"
                      const char* const * file_names,
                      unsigned int num_files)
 {
-    static std::string error_msg;
+    static std::string error_msg,report;
     tessellated_icosahedron ti;
     float vs[3];
     image::basic_image<unsigned char,3> mask;
@@ -375,6 +403,11 @@ extern "C"
         }
         if(index == 0)
         {
+            {
+                const char* report_buf = 0;
+                if(reader.read("report",row,col,report_buf))
+                    report = std::string(report_buf,report_buf+row*col);
+            }
             const float* odf_buffer;
             const short* face_buffer;
             const unsigned short* dimension;
@@ -521,8 +554,11 @@ extern "C"
         for (unsigned int j = 0;j < odfs[odf_index].size();++j)
             odfs[odf_index][j] /= (double)num_files;
 
-    output_odfs(mask,out_name,".mean.odf.fib.gz",odfs,ti,vs,mni);
-    output_odfs(mask,out_name,".mean.fib.gz",odfs,ti,vs,mni,false);
+    std::ostringstream out;
+    out << report.c_str() << " A group average template was constructed from a total of " << num_files << " subjects.";
+    report = out.str();
+    output_odfs(mask,out_name,".mean.odf.fib.gz",odfs,ti,vs,mni,report);
+    output_odfs(mask,out_name,".mean.fib.gz",odfs,ti,vs,mni,report,false);
     return 0;
 }
 

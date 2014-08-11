@@ -41,7 +41,7 @@
     <item>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -75,7 +75,7 @@
             <item>
              <layout class="QVBoxLayout" name="verticalLayout_8">
               <property name="spacing">
-               <number>0</number>
+               <number>6</number>
               </property>
               <item>
                <layout class="QHBoxLayout" name="horizontalLayout_21">
@@ -111,33 +111,64 @@
                </layout>
               </item>
               <item>
-               <widget class="QTableWidget" name="b_table">
-                <property name="selectionMode">
-                 <enum>QAbstractItemView::SingleSelection</enum>
+               <widget class="QWidget" name="widget_3" native="true">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>0</height>
+                 </size>
                 </property>
-                <property name="selectionBehavior">
-                 <enum>QAbstractItemView::SelectRows</enum>
-                </property>
-                <column>
-                 <property name="text">
-                  <string>b value</string>
+                <layout class="QVBoxLayout" name="verticalLayout_11">
+                 <property name="spacing">
+                  <number>0</number>
                  </property>
-                </column>
-                <column>
-                 <property name="text">
-                  <string>bx</string>
+                 <property name="margin">
+                  <number>0</number>
                  </property>
-                </column>
-                <column>
-                 <property name="text">
-                  <string>by</string>
-                 </property>
-                </column>
-                <column>
-                 <property name="text">
-                  <string>bz</string>
-                 </property>
-                </column>
+                 <item>
+                  <widget class="QSplitter" name="splitter_2">
+                   <property name="orientation">
+                    <enum>Qt::Vertical</enum>
+                   </property>
+                   <widget class="QTableWidget" name="b_table">
+                    <property name="selectionMode">
+                     <enum>QAbstractItemView::SingleSelection</enum>
+                    </property>
+                    <property name="selectionBehavior">
+                     <enum>QAbstractItemView::SelectRows</enum>
+                    </property>
+                    <column>
+                     <property name="text">
+                      <string>b value</string>
+                     </property>
+                    </column>
+                    <column>
+                     <property name="text">
+                      <string>bx</string>
+                     </property>
+                    </column>
+                    <column>
+                     <property name="text">
+                      <string>by</string>
+                     </property>
+                    </column>
+                    <column>
+                     <property name="text">
+                      <string>bz</string>
+                     </property>
+                    </column>
+                   </widget>
+                   <widget class="QTextBrowser" name="report">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                   </widget>
+                  </widget>
+                 </item>
+                </layout>
                </widget>
               </item>
              </layout>
@@ -354,7 +385,7 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>-60</y>
+         <y>0</y>
          <width>537</width>
          <height>515</height>
         </rect>

@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Tue Jul 8 14:08:14 2014
+** Created: Mon Aug 11 12:47:06 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -138,6 +138,9 @@ public:
     QAction *actionRestore_Settings;
     QAction *actionMerge_All_2;
     QAction *actionSave_All_Tracts_As_Multiple_Files;
+    QAction *actionView_FIB_Content;
+    QAction *actionPublish_or_perish;
+    QAction *actionMethod_Report;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QWidget *main_widget;
@@ -532,6 +535,12 @@ public:
         actionSave_All_Tracts_As_Multiple_Files = new QAction(tracking_window);
         actionSave_All_Tracts_As_Multiple_Files->setObjectName(QString::fromUtf8("actionSave_All_Tracts_As_Multiple_Files"));
         actionSave_All_Tracts_As_Multiple_Files->setIcon(icon7);
+        actionView_FIB_Content = new QAction(tracking_window);
+        actionView_FIB_Content->setObjectName(QString::fromUtf8("actionView_FIB_Content"));
+        actionPublish_or_perish = new QAction(tracking_window);
+        actionPublish_or_perish->setObjectName(QString::fromUtf8("actionPublish_or_perish"));
+        actionMethod_Report = new QAction(tracking_window);
+        actionMethod_Report->setObjectName(QString::fromUtf8("actionMethod_Report"));
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -955,7 +964,7 @@ public:
         TractWidgetHolder->setObjectName(QString::fromUtf8("TractWidgetHolder"));
         sizePolicy.setHeightForWidth(TractWidgetHolder->sizePolicy().hasHeightForWidth());
         TractWidgetHolder->setSizePolicy(sizePolicy);
-        TractWidgetHolder->setMinimumSize(QSize(0, 84));
+        TractWidgetHolder->setMinimumSize(QSize(145, 84));
         TractWidgetHolder->setMaximumSize(QSize(524287, 524287));
         dockWidgetContents_5 = new QWidget();
         dockWidgetContents_5->setObjectName(QString::fromUtf8("dockWidgetContents_5"));
@@ -1382,6 +1391,7 @@ public:
         menuTracts->addAction(menuTract_Color->menuAction());
         menuTracts->addAction(menuClustering->menuAction());
         menuTracts->addSeparator();
+        menuTracts->addAction(actionMethod_Report);
         menuTracts->addAction(actionTract_Analysis_Report);
         menuTracts->addAction(actionConnectivity_matrix);
         menuTracts->addAction(actionConnectometry);
@@ -1447,6 +1457,7 @@ public:
         menuTools->addSeparator();
         menuTools->addAction(actionRestore_Settings);
         menuTools->addAction(actionManual_Registration);
+        menuTools->addAction(actionView_FIB_Content);
 
         retranslateUi(tracking_window);
         QObject::connect(tbNewRegion, SIGNAL(clicked()), actionNewRegion, SLOT(trigger()));
@@ -1598,6 +1609,9 @@ public:
         actionRestore_Settings->setText(QApplication::translate("tracking_window", "Restore Rendering Settings", 0, QApplication::UnicodeUTF8));
         actionMerge_All_2->setText(QApplication::translate("tracking_window", "Merge All", 0, QApplication::UnicodeUTF8));
         actionSave_All_Tracts_As_Multiple_Files->setText(QApplication::translate("tracking_window", "Save All Tracts As Multiple Files...", 0, QApplication::UnicodeUTF8));
+        actionView_FIB_Content->setText(QApplication::translate("tracking_window", "View FIB Content", 0, QApplication::UnicodeUTF8));
+        actionPublish_or_perish->setText(QApplication::translate("tracking_window", "Publish or perish...", 0, QApplication::UnicodeUTF8));
+        actionMethod_Report->setText(QApplication::translate("tracking_window", "Method Report...", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)

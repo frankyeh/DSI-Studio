@@ -5,6 +5,21 @@
 #include "dwi_header.hpp"
 #include "gzip_interface.hpp"
 #include "prog_interface_static_link.h"
+
+void get_report_from_dicom(const image::io::dicom& header,std::string& report)
+{
+    std::string manu,make,seq;
+    header.get_text(0x0008,0x0070,manu);//Manufacturer
+    header.get_text(0x0008,0x1090,make);
+    header.get_text(0x0018,0x1030,seq);
+    std::replace(manu.begin(),manu.end(),' ',(char)0);
+    std::ostringstream out;
+    out << " The diffusion images were acquired on a " << manu.c_str() << " " << make.c_str()
+        << " scanner. A " << seq.c_str() << " sequence was used to acquired diffusion images."
+        << " TE=" << header.get_float(0x0018,0x0081) << " ms, and TR=" << header.get_float(0x0018,0x0080)  << " ms.";
+    report += out.str();
+}
+
 bool DwiHeader::open(const char* filename)
 {
     image::io::dicom header;
@@ -12,6 +27,7 @@ bool DwiHeader::open(const char* filename)
     {
         header >> image;
         header.get_voxel_size(voxel_size);
+        get_report_from_dicom(header,report);
     }
     else
     {
@@ -187,26 +203,6 @@ if (sort_and_merge)
     }
 }
 */
-int get_slice_pile(boost::ptr_vector<DwiHeader>& dwi_files)
-{
-    unsigned int slice_pile = 1; // pile up the slices into an image volume
-    // in case of slice number = 1, it is highly possible that the images are not mosaic
-    // so we have to find out the exact slice number
-    if (dwi_files.front().image.geometry()[2] == 1)
-    {
-        float b = dwi_files[0].get_bvalue();
-        float bx = dwi_files[0].get_bvec()[0];
-        float by = dwi_files[0].get_bvec()[1];
-        float bz = dwi_files[0].get_bvec()[2];
-        for (;slice_pile < dwi_files.size();++slice_pile)
-            if (b != dwi_files[slice_pile].get_bvalue() ||
-                    bx != dwi_files[slice_pile].get_bvec()[0] ||
-                    by != dwi_files[slice_pile].get_bvec()[1] ||
-                    bz != dwi_files[slice_pile].get_bvec()[2])
-                break;
-    }
-    return slice_pile;
-}
 
 void sort_dwi(boost::ptr_vector<DwiHeader>& dwi_files)
 {
@@ -351,20 +347,18 @@ void correct_t2(boost::ptr_vector<DwiHeader>& dwi_files)
     }
 }
 // upsampling 1: upsampling 2: downsampling
-bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi_files,int upsampling,bool topdown)
+bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi_files,int upsampling)
 {
+    if(dwi_files.empty())
+        return false;
     sort_dwi(dwi_files);
-    unsigned int slice_pile = get_slice_pile(dwi_files);
-    if (slice_pile == 1) // Siemens Mosaic
-        correct_t2(dwi_files);
+    correct_t2(dwi_files);
 
     gz_mat_write write_mat(di_file);
     if(!write_mat)
         return false;
 
     image::geometry<3> geo = dwi_files.front().image.geometry();
-    if (slice_pile > 1)
-        geo[2] = slice_pile;
 
     //store dimension
     unsigned int output_size = 0;
@@ -378,7 +372,7 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
         output_size = dimension[0]*dimension[1]*dimension[2];
         write_mat.write("dimension",dimension,1,3);
     }
-    //store dimension
+    //store voxel size
     {
         float voxel_size[3];
         std::copy(dwi_files.front().voxel_size,dwi_files.front().voxel_size+3,voxel_size);
@@ -389,56 +383,34 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
         write_mat.write("voxel_size",voxel_size,1,3);
     }
 
+
     //store images
     begin_prog("Save Files");
-    for (unsigned int index = 0,id = 0;check_prog(index,dwi_files.size());index+=slice_pile,++id)
+    for (unsigned int index = 0;check_prog(index,dwi_files.size());++index)
     {
         // avoid negative values
         image::lower_threshold(dwi_files[index].image,(short)0);
         std::ostringstream name;
         image::basic_image<short,3> buffer;
         const unsigned short* ptr = 0;
-        name << "image" << id;
-        if (slice_pile == 1) // Siemens Mosaic
+        name << "image" << index;
+        ptr = (const unsigned short*)dwi_files[index].begin();
+        if(upsampling)
         {
-            if(topdown)
-                image::flip_z(dwi_files[index].image);
-            ptr = (const unsigned short*)dwi_files[index].begin();
-            if(upsampling)
-            {
-                buffer.resize(geo);
-                std::copy(ptr,ptr+geo.size(),buffer.begin());
-                if(upsampling == 1)
-                    image::upsampling(buffer);
-                else
-                    image::downsampling(buffer);
-                ptr = (const unsigned short*)&*buffer.begin();
-            }
-
-        }
-        else
-        {
-            // GE
             buffer.resize(geo);
-            for (unsigned int z = 0;z < slice_pile;++z)
-                std::copy(dwi_files[index+z].begin(),
-                          dwi_files[index+z].begin() + dwi_files[index+z].size(),
-                          buffer.begin() + z * dwi_files[index+z].size());
-            if(topdown)
-                image::flip_z(buffer);
+            std::copy(ptr,ptr+geo.size(),buffer.begin());
             if(upsampling == 1)
                 image::upsampling(buffer);
-            if(upsampling == 2)
+            else
                 image::downsampling(buffer);
             ptr = (const unsigned short*)&*buffer.begin();
         }
         write_mat.write(name.str().c_str(),ptr,1,output_size);
-
     }
     // store bvec file
     {
         std::vector<float> b_table;
-        for (unsigned int index = 0;index < dwi_files.size();index+=slice_pile)
+        for (unsigned int index = 0;index < dwi_files.size();++index)
         {
             b_table.push_back(dwi_files[index].get_bvalue());
             std::copy(dwi_files[index].get_bvec(),dwi_files[index].get_bvec()+3,std::back_inserter(b_table));
@@ -450,5 +422,7 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
         write_mat.write("grad_dev",&*dwi_files[0].grad_dev.begin(),dwi_files[0].grad_dev.size()/9,9);
     if(!dwi_files[0].mask.empty())
         write_mat.write("mask",&*dwi_files[0].mask.begin(),1,dwi_files[0].mask.size());
+    if(!dwi_files.front().report.empty())
+        write_mat.write("report",dwi_files.front().report.c_str(),1,dwi_files.front().report.length());
     return true;
 }

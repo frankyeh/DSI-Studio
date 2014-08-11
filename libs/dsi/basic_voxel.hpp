@@ -57,6 +57,8 @@ public:
     image::vector<3> vs;
     std::vector<image::vector<3,float> > bvectors;
     std::vector<float> bvalues;
+    std::string report;
+    std::ostringstream recon_report;
 public:// parameters;
     tessellated_icosahedron ti;
     const float* param;

@@ -19,6 +19,8 @@ struct compare_qstring{
     }
 };
 
+void get_report_from_dicom(const image::io::dicom& header,std::string& report_);
+
 QString get_src_name(QString file_name)
 {
     image::io::dicom header;
@@ -32,6 +34,8 @@ QString get_src_name(QString file_name)
     else
         return file_name+".src.gz";
 }
+
+
 
 dicom_parser::dicom_parser(QStringList file_list,QWidget *parent) :
         QDialog(parent),
@@ -80,6 +84,8 @@ bool load_dicom_multi_frame(const char* file_name,boost::ptr_vector<DwiHeader>& 
         for(unsigned int index = 0;check_prog(index,num_gradient);++index)
         {
             std::auto_ptr<DwiHeader> new_file(new DwiHeader);
+            if(index == 0)
+                get_report_from_dicom(dicom_header,new_file->report);
             new_file->image.resize(image::geometry<3>(buf_image.width(),buf_image.height(),slice_num));
 
             for(unsigned int j = 0;j < slice_num;++j)
@@ -282,6 +288,8 @@ bool load_4d_2dseq(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files
     for (unsigned int index = 0;index < buf_image.geometry()[3];++index)
     {
         std::auto_ptr<DwiHeader> new_file(new DwiHeader);
+        if(index == 0)
+            new_file->report = "The diffusion images were acquired on a Bruker scanner.";
         new_file->image.resize(image::geometry<3>(buf_image.width(),buf_image.height(),buf_image.depth()));
 
         std::copy(buf_image.begin()+index*new_file->image.size(),
@@ -438,6 +446,7 @@ bool load_4d_fdf(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files)
             }
             if(dwi_files.empty())
                 return false;
+            dwi_files.back().report = " The diffusion images were acquired on a Varian scanner.";
         }
         // get DWI and slice location
         int dwi_id,slice_id;
@@ -589,8 +598,7 @@ void dicom_parser::on_buttonBox_accepted()
 
     DwiHeader::output_src(ui->SrcName->text().toLocal8Bit().begin(),
                           dwi_files,
-                          ui->upsampling->currentIndex(),
-                          ui->topdown->checkState() == Qt::Checked);
+                          ui->upsampling->currentIndex());
 
     dwi_files.clear();
     if(QFileInfo(ui->SrcName->text()).suffix() != "gz")

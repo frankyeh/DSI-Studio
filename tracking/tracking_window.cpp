@@ -278,6 +278,9 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
         connect(ui->actionSave_All_Tracts_As,SIGNAL(triggered()),tractWidget,SLOT(save_all_tracts_as()));
         connect(ui->actionSave_All_Tracts_As_Multiple_Files,SIGNAL(triggered()),tractWidget,SLOT(save_all_tracts_to_dir()));
 
+
+
+        connect(ui->actionMethod_Report,SIGNAL(triggered()),tractWidget,SLOT(show_method()));
         connect(ui->actionQuantitative_anisotropy_QA,SIGNAL(triggered()),tractWidget,SLOT(save_fa_as()));
         connect(ui->actionSave_End_Points_As,SIGNAL(triggered()),tractWidget,SLOT(save_end_point_as()));
         connect(ui->actionStatistics,SIGNAL(triggered()),tractWidget,SLOT(show_tracts_statistics()));
@@ -1370,4 +1373,10 @@ void tracking_window::on_zoom_out_clicked()
     renderWidget->setData("roi_zoom",std::max<int>(1,renderWidget->getData("roi_zoom").toInt()-1));
     scene.center();
     scene.show_slice();
+}
+
+void show_info_dialog(QWidget *parent,const std::string& title,const std::string& result);
+void tracking_window::on_actionView_FIB_Content_triggered()
+{
+    show_info_dialog(this,"FIB content",handle->fib_data.report);
 }

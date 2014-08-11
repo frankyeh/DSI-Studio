@@ -18,6 +18,32 @@
 #include "libs/gzip_interface.hpp"
 #include "tract_cluster.hpp"
 
+void show_info_dialog(QWidget *parent,const std::string& title,const std::string& result)
+{
+    QMessageBox msgBox;
+    msgBox.setText(title.c_str());
+    msgBox.setInformativeText(result.c_str());
+    msgBox.setStandardButtons(QMessageBox::Ok|QMessageBox::Save);
+    msgBox.setDefaultButton(QMessageBox::Ok);
+    QPushButton *copyButton = msgBox.addButton("Copy To Clipboard", QMessageBox::ActionRole);
+
+
+    if(msgBox.exec() == QMessageBox::Save)
+    {
+        QString filename;
+        filename = QFileDialog::getSaveFileName(
+                    parent,
+                    "Save as","info.txt",
+                    "Text files (*.txt);;All files|(*)");
+        if(filename.isEmpty())
+            return;
+        std::ofstream out(filename.toLocal8Bit().begin());
+        out << result.c_str();
+    }
+    if (msgBox.clickedButton() == copyButton)
+        QApplication::clipboard()->setText(result.c_str());
+}
+
 
 TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget *parent) :
     QTableWidget(parent),cur_tracking_window(cur_tracking_window_),
@@ -135,6 +161,7 @@ void TractTableWidget::start_tracking(void)
     thread_data.back()->run(tract_models.back()->get_fib(),
                             cur_tracking_window["thread_count"].toInt(),
                             cur_tracking_window["track_count"].toInt());
+    tract_models.back()->report = thread_data.back()->report.str();
     timer->start(1000);
 }
 
@@ -565,30 +592,18 @@ void TractTableWidget::show_tracts_statistics(void)
         }
         result = out.str();
     }
-    QMessageBox msgBox;
-    msgBox.setText("Tract Statistics");
-    msgBox.setInformativeText(result.c_str());
-    msgBox.setStandardButtons(QMessageBox::Ok|QMessageBox::Save);
-    msgBox.setDefaultButton(QMessageBox::Ok);
-    QPushButton *copyButton = msgBox.addButton("Copy To Clipboard", QMessageBox::ActionRole);
 
+    show_info_dialog(this,"Tract Statistics",result);
 
-    if(msgBox.exec() == QMessageBox::Save)
-    {
-        QString filename;
-        filename = QFileDialog::getSaveFileName(
-                    this,
-                    "Save satistics as",
-                    cur_tracking_window.get_path("track") + +"/" + item(currentRow(),0)->text() + "_stat.txt",
-                    "Text files (*.txt);;All files|(*)");
-        if(filename.isEmpty())
-            return;
-        cur_tracking_window.add_path("track",filename);
-        std::ofstream out(filename.toLocal8Bit().begin());
-        out << result.c_str();
-    }
-    if (msgBox.clickedButton() == copyButton)
-        QApplication::clipboard()->setText(result.c_str());
+}
+
+void TractTableWidget::show_method(void)
+{
+    std::ostringstream out;
+    out << cur_tracking_window.handle->fib_data.report.c_str();
+    if(currentRow() < tract_models.size())
+        out << tract_models[currentRow()]->report.c_str() << std::endl;
+    show_info_dialog(this,"Methods",out.str());
 }
 
 void TractTableWidget::save_fa_as(void)

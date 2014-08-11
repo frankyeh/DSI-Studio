@@ -75,6 +75,7 @@ public slots:
     void move_up(void);
     void move_down(void);
     void show_tracts_statistics(void);
+    void show_method(void);
 
 };
 

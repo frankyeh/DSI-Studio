@@ -111,6 +111,10 @@ public:
         else
             std::copy(voxel_size,voxel_size+3,voxel.vs.begin());
 
+        const char* report_buf = 0;
+        if(mat_reader.read("report",row,col,report_buf))
+            voxel.report = std::string(report_buf,report_buf+row*col);
+
         if (dim_ptr[0]*dim_ptr[1]*dim_ptr[2] <= 0)
         {
             error_msg = "Invalid dimension setting";
@@ -264,6 +268,9 @@ public:
         gz_mat_write mat_writer(output_name.c_str());
         save_to_file(mat_writer);
         voxel.end(mat_writer);
+        std::string final_report = voxel.report.c_str();
+        final_report += voxel.recon_report.str();
+        mat_writer.write("report",final_report.c_str(),1,final_report.length());
         return true;
     }
 

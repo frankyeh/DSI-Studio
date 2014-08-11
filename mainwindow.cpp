@@ -569,7 +569,7 @@ void MainWindow::on_batch_src_clicked()
             if(prog_aborted())
                 break;
             QString output = dir + "/" + QFileInfo(get_src_name(dicom_file_list[0])).baseName()+".src.gz";
-            DwiHeader::output_src(output.toLocal8Bit().begin(),dwi_files,false,false);
+            DwiHeader::output_src(output.toLocal8Bit().begin(),dwi_files,0);
         }
     }
 }

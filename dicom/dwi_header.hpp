@@ -11,7 +11,7 @@ class DwiHeader : public boost::noncopyable
 {
 	typedef std::vector<short>::iterator image_iterator;
 public:
-        std::string file_name;
+        std::string file_name,report;
         image::basic_image<short,3> image;
 	float te;
 public:// for HCP dataset
@@ -67,7 +67,7 @@ public:
 			   bvalue == rhs.bvalue;
 	}
     public:
-        static bool output_src(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files,int upsampling,bool topdown);
+        static bool output_src(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files,int upsampling);
 };
 
 #endif//DWI_HEADER_HPP

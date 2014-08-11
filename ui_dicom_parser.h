@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'dicom_parser.ui'
 **
-** Created: Mon Aug 4 21:37:43 2014
+** Created: Mon Aug 11 16:57:47 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -14,7 +14,6 @@
 #include <QtGui/QAction>
 #include <QtGui/QApplication>
 #include <QtGui/QButtonGroup>
-#include <QtGui/QCheckBox>
 #include <QtGui/QComboBox>
 #include <QtGui/QDialog>
 #include <QtGui/QDialogButtonBox>
@@ -55,7 +54,6 @@ public:
     QTableWidget *tableWidget;
     QHBoxLayout *horizontalLayout_2;
     QComboBox *upsampling;
-    QCheckBox *topdown;
     QLabel *label;
     QLineEdit *SrcName;
     QPushButton *upperDir;
@@ -190,11 +188,6 @@ public:
 
         horizontalLayout_2->addWidget(upsampling);
 
-        topdown = new QCheckBox(dicom_parser);
-        topdown->setObjectName(QString::fromUtf8("topdown"));
-
-        horizontalLayout_2->addWidget(topdown);
-
         label = new QLabel(dicom_parser);
         label->setObjectName(QString::fromUtf8("label"));
         label->setFrameShape(QFrame::NoFrame);
@@ -270,7 +263,6 @@ public:
          << QApplication::translate("dicom_parser", "upsampling 2", 0, QApplication::UnicodeUTF8)
          << QApplication::translate("dicom_parser", "downsampling 2", 0, QApplication::UnicodeUTF8)
         );
-        topdown->setText(QApplication::translate("dicom_parser", "top-down slices", 0, QApplication::UnicodeUTF8));
         label->setText(QApplication::translate("dicom_parser", "Output file:", 0, QApplication::UnicodeUTF8));
         upperDir->setText(QApplication::translate("dicom_parser", "Upper Directory", 0, QApplication::UnicodeUTF8));
         pushButton->setText(QApplication::translate("dicom_parser", "&Browse...", 0, QApplication::UnicodeUTF8));

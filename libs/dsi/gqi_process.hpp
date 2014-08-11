@@ -125,6 +125,9 @@ public:
 
         total_negative_value = 0;
         total_value = 0;
+
+        voxel.recon_report
+                << " The converted HARDI has a total of " << dwi.size() << " diffusion sampling directions.";
     }
 
     virtual void run(Voxel& voxel, VoxelData& data)
@@ -149,7 +152,8 @@ public:
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
-        std::cout << "percentage of negative value = " << (float)100.0*total_negative_value/(float)total_value << std::endl;
+        voxel.recon_report
+                << " The percentage of the negative signals was " << (float)100.0*total_negative_value/(float)total_value << "%.";
         std::vector<float> b_table(4); // space for b0
         for (unsigned int index = 0;index < bvectors.size();++index)
         {

@@ -956,6 +956,7 @@
     <addaction name="menuTract_Color"/>
     <addaction name="menuClustering"/>
     <addaction name="separator"/>
+    <addaction name="actionMethod_Report"/>
     <addaction name="actionTract_Analysis_Report"/>
     <addaction name="actionConnectivity_matrix"/>
     <addaction name="actionConnectometry"/>
@@ -1020,6 +1021,7 @@
     <addaction name="separator"/>
     <addaction name="actionRestore_Settings"/>
     <addaction name="actionManual_Registration"/>
+    <addaction name="actionView_FIB_Content"/>
    </widget>
    <addaction name="menu_Edit"/>
    <addaction name="menuRegions"/>
@@ -1037,7 +1039,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
+     <width>145</width>
      <height>84</height>
     </size>
    </property>
@@ -2600,6 +2602,21 @@
    </property>
    <property name="text">
     <string>Save All Tracts As Multiple Files...</string>
+   </property>
+  </action>
+  <action name="actionView_FIB_Content">
+   <property name="text">
+    <string>View FIB Content</string>
+   </property>
+  </action>
+  <action name="actionPublish_or_perish">
+   <property name="text">
+    <string>Publish or perish...</string>
+   </property>
+  </action>
+  <action name="actionMethod_Report">
+   <property name="text">
+    <string>Method Report...</string>
    </property>
   </action>
  </widget>

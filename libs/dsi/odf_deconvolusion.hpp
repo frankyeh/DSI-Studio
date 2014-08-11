@@ -60,11 +60,7 @@ protected:
 	float specificity_error_percentage;
 	// for iterative deconvolution
     std::vector<float> AA;
-    unsigned int iteration;
-
-
     unsigned int half_odf_size;
-
     double inner_angle(double cos_value)
     {
         double abs_cos = std::abs(cos_value);
@@ -157,7 +153,7 @@ public:
 
         if (!voxel.odf_deconvolusion)
             return;
-
+        voxel.recon_report << "Diffusion ODF deconvolution (Yeh et al, Neuroimage, 2011) was conducted using a regularization parameter of " << voxel.param[2];
         std::for_each(voxel.response_function.begin(),voxel.response_function.end(),
                       boost::lambda::_1 /= (std::accumulate(voxel.response_function.begin(),voxel.response_function.end(),0.0)
                                             /((double)voxel.response_function.size())));
@@ -166,7 +162,6 @@ public:
         
 
         half_odf_size = voxel.ti.half_vertices_count;
-        iteration = std::floor(voxel.param[3]+0.5);
         estimate_Rt(voxel);
 
         A.resize(half_odf_size*half_odf_size);

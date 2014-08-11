@@ -112,6 +112,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->hardi_bvalue->setValue(settings.value("hardi_bvalue",3000).toDouble());
     ui->hardi_reg->setValue(settings.value("hardi_reg",0.05).toDouble());
 
+    ui->report->setText(handle->voxel.report.c_str());
 
     max_source_value = *std::max_element(handle->dwi_data.back(),
                                          handle->dwi_data.back()+handle->dwi_sum.size());
