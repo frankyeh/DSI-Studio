@@ -1,6 +1,5 @@
 #include "image/image.hpp"
 #include "slice_view_scene.h"
-#include "tracking_static_link.h"
 #include <QGraphicsSceneMouseEvent>
 #include <QPainter>
 #include <QFileDialog>
@@ -33,9 +32,9 @@ void slice_view_scene::show_ruler(QPainter& paint)
         from -= to;
         float pixel_length = from.length();
         from /= cur_tracking_window["roi_zoom"].toInt();
-        from[0] *= cur_tracking_window.handle->fib_data.vs[0];
-        from[1] *= cur_tracking_window.handle->fib_data.vs[1];
-        from[2] *= cur_tracking_window.handle->fib_data.vs[2];
+        from[0] *= cur_tracking_window.handle->vs[0];
+        from[1] *= cur_tracking_window.handle->vs[1];
+        from[2] *= cur_tracking_window.handle->vs[2];
         float length = from.length();
         float precision = std::pow(10.0,std::floor(std::log10((double)length))-1);
         float tic_dis = std::pow(10.0,std::floor(std::log10((double)50.0*length/pixel_length)));
@@ -83,7 +82,7 @@ void slice_view_scene::show_fiber(QPainter& painter)
     const char dir_x[3] = {1,0,0};
     const char dir_y[3] = {2,2,1};
 
-    const FibData& fib_data = handle->fib_data;
+    const FibData& fib_data = *(cur_tracking_window.handle);
     for (unsigned int y = 0; y < slice_image.height(); ++y)
         for (unsigned int x = 0; x < slice_image.width(); ++x)
             if (cur_tracking_window.slice.get3dPosition(x, y, X, Y, Z))
@@ -337,7 +336,7 @@ void slice_view_scene::save_slice_as()
                 0,
                 "Save as",
                 cur_tracking_window.get_path("slice") + "/" +
-                cur_tracking_window.handle->fib_data.view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str(),
+                cur_tracking_window.handle->view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str(),
                 "NIFTI files (*.nii.gz);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -351,19 +350,19 @@ if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
 
     int index = cur_tracking_window.handle->get_name_index(
                 cur_tracking_window.ui->sliceViewBox->currentText().toLocal8Bit().begin());
-    if(index >= cur_tracking_window.handle->fib_data.view_item.size())
+    if(index >= cur_tracking_window.handle->view_item.size())
         return;
 
     if(QFileInfo(filename).completeSuffix().toLower() == "nii" ||
             QFileInfo(filename).completeSuffix().toLower() == "nii.gz")
     {
-        image::basic_image<float,3> buf(cur_tracking_window.handle->fib_data.view_item[index].image_data);
+        image::basic_image<float,3> buf(cur_tracking_window.handle->view_item[index].image_data);
         gz_nifti file;
         file.set_voxel_size(cur_tracking_window.slice.voxel_size.begin());
         if(cur_tracking_window.is_qsdr) //QSDR condition
         {
-            file.set_image_transformation(cur_tracking_window.handle->fib_data.trans_to_mni.begin());
-            file << cur_tracking_window.handle->fib_data.view_item[index].image_data;
+            file.set_image_transformation(cur_tracking_window.handle->trans_to_mni.begin());
+            file << cur_tracking_window.handle->view_item[index].image_data;
         }
         else
         {
@@ -376,7 +375,7 @@ if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
     if(QFileInfo(filename).completeSuffix().toLower() == "mat")
     {
         image::io::mat_write file(filename.toLocal8Bit().begin());
-        file << cur_tracking_window.handle->fib_data.view_item[index].image_data;
+        file << cur_tracking_window.handle->view_item[index].image_data;
     }
 
 }

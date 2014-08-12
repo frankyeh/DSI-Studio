@@ -11,8 +11,7 @@ color_bar_dialog::color_bar_dialog(QWidget *parent) :
     ui(new Ui::color_bar_dialog)
 {
     ui->setupUi(this);
-    ODFModel* odf_model = (ODFModel*)cur_tracking_window->handle;
-    FibData& fib_data = odf_model->fib_data;
+    FibData& fib_data = *(FibData*)cur_tracking_window->handle;
     ui->tract_color_index->addItem((cur_tracking_window->is_dti) ? "fa":"qa");
     for (int index = fib_data.other_mapping_index; index < fib_data.view_item.size(); ++index)
         ui->tract_color_index->addItem(fib_data.view_item[index].name.c_str());
@@ -44,9 +43,9 @@ color_bar_dialog::~color_bar_dialog()
 
 void color_bar_dialog::on_tract_color_index_currentIndexChanged(int index)
 {
-    unsigned int item_index = index ? index+cur_tracking_window->handle->fib_data.other_mapping_index-1:0;
-    float max_value = cur_tracking_window->handle->fib_data.view_item[item_index].max_value;
-    float min_value = cur_tracking_window->handle->fib_data.view_item[item_index].min_value;
+    unsigned int item_index = index ? index+cur_tracking_window->handle->other_mapping_index-1:0;
+    float max_value = cur_tracking_window->handle->view_item[item_index].max_value;
+    float min_value = cur_tracking_window->handle->view_item[item_index].min_value;
     float decimal = std::floor(2.0-std::log10(max_value));
     float scale = std::pow(10.0,(double)decimal);
     if(decimal < 1.0)

@@ -65,12 +65,10 @@ HEADERS += mainwindow.h \
     libs/dsi/basic_voxel.hpp \
     libs/dsi_interface_static_link.h \
     SliceModel.h \
-    libs/tracking_static_link.h \
     tracking/tracking_window.h \
     reconstruction/reconstruction_window.h \
     tracking/slice_view_scene.h \
     opengl/glwidget.h \
-    libs/tracking/tracking_model.hpp \
     libs/tracking/tracking_method.hpp \
     libs/tracking/roi.hpp \
     libs/tracking/interpolation_process.hpp \
@@ -128,7 +126,6 @@ SOURCES += main.cpp \
     libs/utility/prog_interface.cpp \
     libs/dsi/sample_model.cpp \
     libs/dsi/dsi_interface_imp.cpp \
-    libs/tracking/tracking_interface_imp.cpp \
     libs/tracking/interpolation_process.cpp \
     libs/tracking/tract_cluster.cpp \
     SliceModel.cpp \

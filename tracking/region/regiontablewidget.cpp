@@ -8,7 +8,6 @@
 #include <QTableWidgetItem>
 #include "regiontablewidget.h"
 #include "tracking/tracking_window.h"
-#include "tracking_static_link.h"
 #include "qcolorcombobox.h"
 #include "ui_tracking_window.h"
 #include "mapping/atlas.hpp"
@@ -356,7 +355,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     }
 
     if(from.geometry() != cur_tracking_window.slice.geometry &&
-       !cur_tracking_window.handle->fib_data.trans_to_mni.empty() && convert.empty())// use transformation information
+       !cur_tracking_window.handle->trans_to_mni.empty() && convert.empty())// use transformation information
     {
         QMessageBox::information(this,"Warning","The nii file has different image dimension. Transformation will be applied to load the region",0);
         std::vector<float> t(header.get_transformation(),
@@ -366,7 +365,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         t[15] = 1.0;
         image::matrix::inverse(t.begin(),inv_trans.begin(),image::dim<4,4>());
         image::matrix::product(inv_trans.begin(),
-                               cur_tracking_window.handle->fib_data.trans_to_mni.begin(),
+                               cur_tracking_window.handle->trans_to_mni.begin(),
                                convert.begin(),image::dim<4,4>(),image::dim<4,4>());
     }
 
@@ -450,7 +449,7 @@ void RegionTableWidget::load_region(void)
 
         ROIRegion region(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size);
         if(!region.LoadFromFile(filenames[index].toLocal8Bit().begin(),
-                cur_tracking_window.handle->fib_data.trans_to_mni))
+                cur_tracking_window.handle->trans_to_mni))
         {
             QMessageBox::information(this,"error","Unknown file format",0);
             return;
@@ -578,7 +577,7 @@ void RegionTableWidget::save_region(void)
 #endif
     std::vector<float> no_trans;
     regions[currentRow()].SaveToFile(filename.toLocal8Bit().begin(),
-                                     cur_tracking_window.is_qsdr ? cur_tracking_window.handle->fib_data.trans_to_mni: no_trans);
+                                     cur_tracking_window.is_qsdr ? cur_tracking_window.handle->trans_to_mni: no_trans);
     item(currentRow(),0)->setText(QFileInfo(filename).baseName());
 }
 void RegionTableWidget::save_all_regions_to_dir(void)
@@ -601,7 +600,7 @@ void RegionTableWidget::save_all_regions_to_dir(void)
             filename  += item(index,0)->text().toLocal8Bit().begin();
             filename  += ".nii.gz";
             regions[index].SaveToFile(filename.c_str(),
-                                         cur_tracking_window.is_qsdr ? cur_tracking_window.handle->fib_data.trans_to_mni: no_trans);
+                                         cur_tracking_window.is_qsdr ? cur_tracking_window.handle->trans_to_mni: no_trans);
         }
 }
 void RegionTableWidget::save_all_regions(void)
@@ -643,7 +642,7 @@ void RegionTableWidget::save_all_regions(void)
     gz_nifti header;
     header.set_voxel_size(cur_tracking_window.slice.voxel_size);
     if(cur_tracking_window.is_qsdr)
-        header.set_image_transformation(cur_tracking_window.handle->fib_data.trans_to_mni.begin());
+        header.set_image_transformation(cur_tracking_window.handle->trans_to_mni.begin());
     else
         image::flip_xy(mask);
     header << mask;
@@ -667,12 +666,12 @@ void RegionTableWidget::save_region_info(void)
 
     std::ofstream out(filename.toLocal8Bit().begin());
     out << "x\ty\tz";
-    for(unsigned int index = 0;index < cur_tracking_window.handle->fib_data.fib.num_fiber;++index)
+    for(unsigned int index = 0;index < cur_tracking_window.handle->fib.num_fiber;++index)
             out << "\tdx" << index << "\tdy" << index << "\tdz" << index;
 
-    for(unsigned int index = 0;index < cur_tracking_window.handle->fib_data.view_item.size();++index)
-        if(cur_tracking_window.handle->fib_data.view_item[index].name != "color")
-            out << "\t" << cur_tracking_window.handle->fib_data.view_item[index].name;
+    for(unsigned int index = 0;index < cur_tracking_window.handle->view_item.size();++index)
+        if(cur_tracking_window.handle->view_item[index].name != "color")
+            out << "\t" << cur_tracking_window.handle->view_item[index].name;
 
     out << std::endl;
     for(int index = 0;index < regions[currentRow()].get().size();++index)
@@ -710,7 +709,7 @@ void RegionTableWidget::whole_brain_points(std::vector<image::vector<3,short> >&
     for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))
     {
         image::vector<3,short> pos(index);
-        if(cur_tracking_window.handle->fib_data.fib.fa[0][index.index()] > threshold)
+        if(cur_tracking_window.handle->fib.fa[0][index.index()] > threshold)
             points.push_back(pos);
     }
 }
@@ -824,12 +823,12 @@ void RegionTableWidget::setROIs(ThreadData* data)
     {
         std::vector<image::vector<3,short> > points;
         whole_brain_points(points);
-        data->setRegions(cur_tracking_window.handle->fib_data.dim,points,seed_id);
+        data->setRegions(cur_tracking_window.handle->dim,points,seed_id);
     }
 
     for (unsigned int index = 0;index < regions.size();++index)
         if (!regions[index].empty() && item(index,0)->checkState() == Qt::Checked)
-            data->setRegions(cur_tracking_window.handle->fib_data.dim,regions[index].get(),
+            data->setRegions(cur_tracking_window.handle->dim,regions[index].get(),
                              regions[index].regions_feature);
 }
 

@@ -8,7 +8,7 @@
 #include <boost/thread/thread.hpp>
 #include "roi.hpp"
 #include "tracking_method.hpp"
-#include "tracking_model.hpp"
+#include "fib_data.hpp"
 #include "tract_model.hpp"
 
 

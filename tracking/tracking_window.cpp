@@ -5,7 +5,6 @@
 #include <QClipboard>
 #include "tracking_window.h"
 #include "ui_tracking_window.h"
-#include "tracking_static_link.h"
 #include "opengl/glwidget.h"
 #include "opengl/renderingtablewidget.h"
 #include "region/regiontablewidget.h"
@@ -13,12 +12,12 @@
 #include <QScrollBar>
 #include <QMouseEvent>
 #include <QMessageBox>
-#include "tracking_model.hpp"
-#include "libs/tracking/tracking_model.hpp"
+#include "fib_data.hpp"
 #include "manual_alignment.h"
 #include "tract_report.hpp"
 #include "color_bar_dialog.hpp"
 #include "connectivity_matrix_dialog.h"
+#include "vbc/vbc_database.h"
 #include "mapping/atlas.hpp"
 #include "mapping/fa_template.hpp"
 #include "tracking/atlasdialog.h"
@@ -37,14 +36,12 @@ QVariant tracking_window::operator[](QString name) const
     return renderWidget->getData(name);
 }
 
-tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handle_release_) :
+tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle_release_) :
         QMainWindow(parent),handle(new_handle),handle_release(handle_release_),
-        ui(new Ui::tracking_window),scene(*this,new_handle),slice(new_handle),gLdock(0),atlas_dialog(0)
+        ui(new Ui::tracking_window),scene(*this),slice(new_handle),gLdock(0),atlas_dialog(0)
 
 {
-
-    ODFModel* odf_model = (ODFModel*)handle;
-    FibData& fib_data = odf_model->fib_data;
+    FibData& fib_data = *new_handle;
 
     odf_size = fib_data.fib.odf_table.size();
     odf_face_size = fib_data.fib.odf_faces.size();
@@ -101,13 +98,13 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
            ui->overlay->hide();
     }
 
-    is_qsdr = !handle->fib_data.trans_to_mni.empty();
+    is_qsdr = !handle->trans_to_mni.empty();
 
     // setup atlas
     if(!fa_template_imp.I.empty() &&
-        handle->fib_data.dim[0]*handle->fib_data.vs[0] > 100 &&
-        handle->fib_data.dim[1]*handle->fib_data.vs[1] > 120 &&
-        handle->fib_data.dim[2]*handle->fib_data.vs[2] > 50 && !is_qsdr)
+        handle->dim[0]*handle->vs[0] > 100 &&
+        handle->dim[1]*handle->vs[1] > 120 &&
+        handle->dim[2]*handle->vs[2] > 50 && !is_qsdr)
     {
         mi3_arg.scaling[0] = slice.voxel_size[0] / std::fabs(fa_template_imp.tran[0]);
         mi3_arg.scaling[1] = slice.voxel_size[1] / std::fabs(fa_template_imp.tran[5]);
@@ -117,7 +114,7 @@ tracking_window::tracking_window(QWidget *parent,ODFModel* new_handle,bool handl
     }
     else
         ui->actionManual_Registration->setEnabled(false);
-    ui->actionConnectometry->setEnabled(handle->fib_data.fib.has_odfs() && is_qsdr);
+    ui->actionConnectometry->setEnabled(handle->fib.has_odfs() && is_qsdr);
 
 
 
@@ -359,10 +356,10 @@ void tracking_window::subject2mni(image::vector<3>& pos)
         fa_template_imp.to_mni(pos);
     }
     else
-    if(!handle->fib_data.trans_to_mni.empty())
+    if(!handle->trans_to_mni.empty())
     {
         image::vector<3> mni;
-        image::vector_transformation(pos.begin(),mni.begin(), handle->fib_data.trans_to_mni,image::vdim<3>());
+        image::vector_transformation(pos.begin(),mni.begin(), handle->trans_to_mni,image::vdim<3>());
         pos = mni;
     }
 }
@@ -399,14 +396,14 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     if(mi3.get() && mi3->need_update_affine_matrix)
     {
         mi3->update_affine();
-        handle->fib_data.trans_to_mni.resize(16);
-        image::create_affine_transformation_matrix(mi3->T.get(),mi3->T.get() + 9,handle->fib_data.trans_to_mni.begin(),image::vdim<3>());
-        fa_template_imp.add_transformation(handle->fib_data.trans_to_mni);
+        handle->trans_to_mni.resize(16);
+        image::create_affine_transformation_matrix(mi3->T.get(),mi3->T.get() + 9,handle->trans_to_mni.begin(),image::vdim<3>());
+        fa_template_imp.add_transformation(handle->trans_to_mni);
         if(mi3->data.progress >= 1)
             mi3->need_update_affine_matrix = false;
     }
 
-    if(!handle->fib_data.trans_to_mni.empty())
+    if(!handle->trans_to_mni.empty())
     {
         image::vector<3,float> mni(pos);
         subject2mni(mni);
@@ -425,10 +422,10 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     status += " ";
     std::vector<float> data;
     handle->get_voxel_information(std::floor(pos[0] + 0.5), std::floor(pos[1] + 0.5), std::floor(pos[2] + 0.5), data);
-    for(unsigned int index = 0,data_index = 0;index < handle->fib_data.view_item.size() && data_index < data.size();++index)
-        if(handle->fib_data.view_item[index].name != "color")
+    for(unsigned int index = 0,data_index = 0;index < handle->view_item.size() && data_index < data.size();++index)
+        if(handle->view_item[index].name != "color")
         {
-            status += handle->fib_data.view_item[index].name.c_str();
+            status += handle->view_item[index].name.c_str();
             status += QString("=%1 ").arg(data[data_index]);
             ++data_index;
         }
@@ -767,12 +764,12 @@ void tracking_window::on_actionInsert_T1_T2_triggered()
     ui->SliceModality->addItem(QFileInfo(filenames[0]).baseName());
     ui->SliceModality->setCurrentIndex(glWidget->other_slices.size());
     ui->sliceViewBox->addItem(QFileInfo(filenames[0]).baseName().toLocal8Bit().begin());
-    handle->fib_data.view_item.push_back(handle->fib_data.view_item[0]);
-    handle->fib_data.view_item.back().name = QFileInfo(filenames[0]).baseName().toLocal8Bit().begin();
-    handle->fib_data.view_item.back().is_overlay = false;
-    handle->fib_data.view_item.back().image_data = image::make_image(glWidget->roi_image.back().geometry(),
+    handle->view_item.push_back(handle->view_item[0]);
+    handle->view_item.back().name = QFileInfo(filenames[0]).baseName().toLocal8Bit().begin();
+    handle->view_item.back().is_overlay = false;
+    handle->view_item.back().image_data = image::make_image(glWidget->roi_image.back().geometry(),
                                                                      glWidget->roi_image_buf.back());
-    handle->fib_data.view_item.back().set_scale(
+    handle->view_item.back().set_scale(
                 glWidget->other_slices.back().source_images.begin(),
                 glWidget->other_slices.back().source_images.end());
     ui->sliceViewBox->setCurrentIndex(ui->sliceViewBox->count()-1);
@@ -911,20 +908,11 @@ void tracking_window::on_actionRestore_window_layout_triggered()
 
 void tracking_window::on_tracking_index_currentIndexChanged(int index)
 {
-    handle->fib_data.fib.set_tracking_index(index);
-    if(renderWidget->getData("tracking_index").toString().contains("greater") ||
-       renderWidget->getData("tracking_index").toString().contains("lesser")) // connectometry
-    {
-        renderWidget->setMinMax("fa_threshold",0.5,1.0,0.01);
-        renderWidget->setData("fa_threshold",0.75);
-    }
-    else
-    {
-        float max_value = *std::max_element(handle->fib_data.fib.fa[0],handle->fib_data.fib.fa[0]+handle->fib_data.fib.dim.size());
-        renderWidget->setMinMax("fa_threshold",0.0,max_value*1.1,max_value/50.0);
-        renderWidget->setData("fa_threshold",0.6*image::segmentation::otsu_threshold(image::make_image(handle->fib_data.fib.dim,
-                                                                                                       handle->fib_data.fib.fa[0])));
-    }
+    handle->fib.set_tracking_index(index);
+    float max_value = *std::max_element(handle->fib.fa[0],handle->fib.fa[0]+handle->fib.dim.size());
+    renderWidget->setMinMax("fa_threshold",0.0,max_value*1.1,max_value/50.0);
+    renderWidget->setData("fa_threshold",0.6*image::segmentation::otsu_threshold(image::make_image(handle->fib.dim,
+                                                                                                   handle->fib.fa[0])));
 }
 
 
@@ -933,11 +921,11 @@ void tracking_window::on_deleteSlice_clicked()
     if(ui->SliceModality->currentIndex() == 0)
         return;
     int index = ui->SliceModality->currentIndex();
-    unsigned int view_item_index = handle->fib_data.view_item.size()-glWidget->mi3s.size()+index-1;
+    unsigned int view_item_index = handle->view_item.size()-glWidget->mi3s.size()+index-1;
     if(ui->sliceViewBox->currentIndex() == view_item_index)
         ui->sliceViewBox->setCurrentIndex(0);
     ui->sliceViewBox->removeItem(view_item_index);
-    handle->fib_data.view_item.erase(handle->fib_data.view_item.begin()+view_item_index);
+    handle->view_item.erase(handle->view_item.begin()+view_item_index);
     ui->SliceModality->setCurrentIndex(0);
     glWidget->delete_slice(index-1);
     ui->SliceModality->removeItem(index);
@@ -948,9 +936,9 @@ void tracking_window::on_deleteSlice_clicked()
 
 void tracking_window::on_actionSave_Tracts_in_MNI_space_triggered()
 {
-    if(handle->fib_data.trans_to_mni.empty())
+    if(handle->trans_to_mni.empty())
         return;
-    tractWidget->saveTransformedTracts(&*(handle->fib_data.trans_to_mni.begin()));
+    tractWidget->saveTransformedTracts(&*(handle->trans_to_mni.begin()));
 }
 
 
@@ -1214,20 +1202,20 @@ void tracking_window::on_actionConnectometry_triggered()
     if (filename.isEmpty())
         return;
 
-    std::auto_ptr<vbc_database> database(new vbc_database);
-    database.reset(new vbc_database);
-    if(!database->load_database(filename.toLocal8Bit().begin()))
+    vbc_database database;
+    fib_data spm;
+    if(!database.load_database(filename.toLocal8Bit().begin()))
     {
         QMessageBox::information(this,"Error","Invalid database format",0);
         return;
     }
-    if(!database->single_subject_analysis(this->windowTitle().toLocal8Bit().begin(),0.95,database->handle->connectometry))
+    if(!database.single_subject_analysis(this->windowTitle().toLocal8Bit().begin(),0.95,spm))
     {
-        QMessageBox::information(this,"error",database->error_msg.c_str(),0);
+        QMessageBox::information(this,"error",database.error_msg.c_str(),0);
         return;
     }
     std::vector<std::vector<std::vector<float> > > greater,lesser;
-    database->calculate_individual_affected_tracks(database->handle->connectometry,0.95,greater,lesser);
+    database.calculate_individual_affected_tracks(spm,0.95,greater,lesser);
     tractWidget->addConnectometryResults(greater,lesser);
     /*
     tracking_window* new_mdi = new tracking_window((QWidget*)(this->parent()),database->handle.release());
@@ -1378,5 +1366,5 @@ void tracking_window::on_zoom_out_clicked()
 void show_info_dialog(QWidget *parent,const std::string& title,const std::string& result);
 void tracking_window::on_actionView_FIB_Content_triggered()
 {
-    show_info_dialog(this,"FIB content",handle->fib_data.report);
+    show_info_dialog(this,"FIB content",handle->report);
 }

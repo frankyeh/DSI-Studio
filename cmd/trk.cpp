@@ -5,11 +5,10 @@
 #include "image/image.hpp"
 #include "boost/program_options.hpp"
 #include <boost/exception/diagnostic_information.hpp>
-#include "tracking_static_link.h"
 #include "tracking/region/Regions.h"
 #include "libs/tracking/tract_model.hpp"
 #include "libs/tracking/tracking_thread.hpp"
-#include "libs/tracking/tracking_model.hpp"
+#include "fib_data.hpp"
 #include "libs/gzip_interface.hpp"
 #include "mapping/fa_template.hpp"
 #include "mapping/atlas.hpp"
@@ -82,7 +81,7 @@ int trk(int ac, char *av[])
     po::store(po::command_line_parser(ac, av).options(trk_desc).run(), vm);
     po::notify(vm);
 
-    std::auto_ptr<ODFModel> handle(new ODFModel);
+    std::auto_ptr<FibData> handle(new FibData);
     {
         std::string file_name = vm["source"].as<std::string>();
         std::cout << "loading " << file_name << "..." <<std::endl;
@@ -94,14 +93,14 @@ int trk(int ac, char *av[])
         if (!handle->load_from_file(file_name.c_str()))
         {
             std::cout << "Open file " << file_name << " failed" << std::endl;
-            std::cout << "msg:" << handle->fib_data.error_msg << std::endl;
+            std::cout << "msg:" << handle->error_msg << std::endl;
             return 0;
         }
     }
     if (vm.count("threshold_index"))
     {
         std::cout << "setting index to " << vm["threshold_index"].as<std::string>() << std::endl;
-        if(!handle->fib_data.fib.set_tracking_index(vm["threshold_index"].as<std::string>()))
+        if(!handle->fib.set_tracking_index(vm["threshold_index"].as<std::string>()))
         {
             std::cout << "failed...cannot find the index" << std::endl;
             return 0;
@@ -111,9 +110,9 @@ int trk(int ac, char *av[])
 
 
 
-    image::geometry<3> geometry = handle->fib_data.dim;
-    image::vector<3> voxel_size = handle->fib_data.vs;
-    const float *fa0 = handle->fib_data.fib.fa[0];
+    image::geometry<3> geometry = handle->dim;
+    image::vector<3> voxel_size = handle->vs;
+    const float *fa0 = handle->fib.fa[0];
 
 
     ThreadData tracking_thread(vm["random_seed"].as<int>());
@@ -162,7 +161,7 @@ int trk(int ac, char *av[])
             std::cout << file_name << " does not exist. terminating..." << std::endl;
             return 0;
         }
-        if(!roi.LoadFromFile(file_name.c_str(),handle->fib_data.trans_to_mni))
+        if(!roi.LoadFromFile(file_name.c_str(),handle->trans_to_mni))
         {
             std::cout << "Invalid file format:" << file_name << std::endl;
             return 0;    
@@ -252,7 +251,7 @@ int trk(int ac, char *av[])
     {
         bool use_end_only = true;
         image::basic_image<image::vector<3>,3> mapping(geometry);
-        if(handle->fib_data.trans_to_mni.empty())// not qsdr do registration here
+        if(handle->trans_to_mni.empty())// not qsdr do registration here
         {
             image::basic_image<float,3> from(fa0,geometry);
             unsigned int factor = 1; // 7-9-7
@@ -267,7 +266,7 @@ int trk(int ac, char *av[])
                 {
                     image::vector<3> pos(index.begin());
                     image::vector_transformation(pos.begin(),mapping[index.index()].begin(),
-                                             handle->fib_data.trans_to_mni,image::vdim<3>());
+                                             handle->trans_to_mni,image::vdim<3>());
                 }
         }
 
@@ -335,7 +334,7 @@ int trk(int ac, char *av[])
                 continue;
             }
 
-            if(handle->get_name_index(cmd) != handle->fib_data.view_item.size())
+            if(handle->get_name_index(cmd) != handle->view_item.size())
                 tract_model.save_data_to_file(file_name_stat.c_str(),cmd);
             else
             {

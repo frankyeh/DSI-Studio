@@ -4,11 +4,10 @@
 #include <string>
 #include "image/image.hpp"
 #include "boost/program_options.hpp"
-#include "tracking_static_link.h"
 #include "tracking/region/Regions.h"
 #include "libs/tracking/tract_model.hpp"
 #include "libs/tracking/tracking_thread.hpp"
-#include "libs/tracking/tracking_model.hpp"
+#include "fib_data.hpp"
 #include "libs/gzip_interface.hpp"
 
 namespace po = boost::program_options;

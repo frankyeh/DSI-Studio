@@ -9,7 +9,7 @@ class vbc_dialog;
 }
 
 class tracking_window;
-class ODFModel;
+class FibData;
 class vbc_dialog : public QDialog
 {
     Q_OBJECT

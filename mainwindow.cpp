@@ -11,7 +11,6 @@
 #include "reconstruction/reconstruction_window.h"
 #include "dsi_interface_static_link.h"
 #include "prog_interface_static_link.h"
-#include "tracking_static_link.h"
 #include "tracking/tracking_window.h"
 #include "mainwindow.h"
 #include "dicom/dicom_parser.h"
@@ -192,10 +191,10 @@ void MainWindow::loadFib(QString filename)
     std::string file_name = filename.toLocal8Bit().begin();
     begin_prog("load fib");
     check_prog(0,1);
-    std::auto_ptr<ODFModel> new_handle(new ODFModel);
+    std::auto_ptr<FibData> new_handle(new FibData);
     if (!new_handle->load_from_file(&*file_name.begin()))
     {
-        QMessageBox::information(this,"error",new_handle->fib_data.error_msg.c_str(),0);
+        QMessageBox::information(this,"error",new_handle->error_msg.c_str(),0);
         return;
     }
     tracking_window* new_mdi = new tracking_window(this,new_handle.release());

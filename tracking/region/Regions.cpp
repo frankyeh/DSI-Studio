@@ -3,7 +3,7 @@
 #include <iterator>
 #include "Regions.h"
 #include "SliceModel.h"
-#include "libs/tracking/tracking_model.hpp"
+#include "fib_data.hpp"
 #include "libs/gzip_interface.hpp"
 
 
@@ -300,7 +300,7 @@ void ROIRegion::shift(const image::vector<3,short>& dx) {
         region[index] += dx;
 }
 
-void ROIRegion::get_quantitative_data(ODFModel* handle,std::vector<float>& data)
+void ROIRegion::get_quantitative_data(FibData* handle,std::vector<float>& data)
 {
     data.push_back(region.size()); //number of voxels
     data.push_back(region.size()*vs[0]*vs[1]*vs[2]); //volume (mm^3)
@@ -328,12 +328,12 @@ void ROIRegion::get_quantitative_data(ODFModel* handle,std::vector<float>& data)
         pos_index.push_back(image::pixel_index<3>(region[index][0],region[index][1],region[index][2],geo).index());
 
     for(int data_index = 0;
-            data_index < handle->fib_data.view_item.size(); ++data_index)
+            data_index < handle->view_item.size(); ++data_index)
     {
-        if(data_index > 0 && data_index < handle->fib_data.other_mapping_index)
+        if(data_index > 0 && data_index < handle->other_mapping_index)
             continue;
         float sum = 0.0,sum2 = 0.0;
-        image::const_pointer_image<float, 3> I(handle->fib_data.view_item[data_index].image_data);
+        image::const_pointer_image<float, 3> I(handle->view_item[data_index].image_data);
         for(unsigned int index = 0; index < pos_index.size(); ++index)
         {
             float value = I[pos_index[index]];

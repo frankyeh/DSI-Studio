@@ -5,9 +5,8 @@
 #include <set>
 #include <map>
 #include "tract_model.hpp"
-#include "tracking_static_link.h"
 #include "prog_interface_static_link.h"
-#include "libs/tracking/tracking_model.hpp"
+#include "fib_data.hpp"
 #include "gzip_interface.hpp"
 #include "mapping/atlas.hpp"
 
@@ -69,9 +68,9 @@ struct TrackVis
     }
 };
 //---------------------------------------------------------------------------
-TractModel::TractModel(ODFModel* handle_):handle(handle_),geometry(handle_->fib_data.dim),vs(handle_->fib_data.vs),fib(new fiber_orientations)
+TractModel::TractModel(FibData* handle_):handle(handle_),geometry(handle_->dim),vs(handle_->vs),fib(new fiber_orientations)
 {
-    fib->read(handle_->fib_data);
+    fib->read(*handle_);
 }
 //---------------------------------------------------------------------------
 void TractModel::add(const TractModel& rhs)
@@ -227,7 +226,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                         std::copy((const float*)&*buf.begin() + index,
                                   (const float*)&*buf.begin() + end,
                                   loaded_tract_data.back().begin());
-                        image::divide_constant(loaded_tract_data.back().begin(),loaded_tract_data.back().end(),handle->fib_data.vs[0]);
+                        image::divide_constant(loaded_tract_data.back().begin(),loaded_tract_data.back().end(),handle->vs[0]);
                         index = end+3;
                     }
 
@@ -1025,9 +1024,9 @@ void TractModel::get_quantitative_data(std::vector<float>& data)
 
     // output mean and std of each index
     for(int data_index = 0;
-        data_index < handle->fib_data.view_item.size();++data_index)
+        data_index < handle->view_item.size();++data_index)
     {
-        if(data_index > 0 && data_index < handle->fib_data.other_mapping_index)
+        if(data_index > 0 && data_index < handle->other_mapping_index)
             continue;
 
         float sum_data = 0.0;
@@ -1061,7 +1060,7 @@ void TractModel::get_quantitative_info(std::string& result)
     std::ostringstream out;
     std::vector<std::string> titles;
     std::vector<float> data;
-    out << handle->fib_data.report.c_str() << report.c_str() << std::endl;
+    out << handle->report.c_str() << report.c_str() << std::endl;
     titles.push_back("number of tracts");
     titles.push_back("tract length mean(mm)");
     titles.push_back("tract length sd(mm)");
@@ -1171,11 +1170,11 @@ void TractModel::get_tract_data(unsigned int fiber_index,
                     std::vector<float>& data)
 {
     data.clear();
-    if(index_num >= handle->fib_data.view_item.size())
+    if(index_num >= handle->view_item.size())
         return;
     data.resize(tract_data[fiber_index].size()/3);
     for (unsigned int data_index = 0,index = 0;index < tract_data[fiber_index].size();index += 3,++data_index)
-        image::linear_estimate(handle->fib_data.view_item[index_num].image_data,&(tract_data[fiber_index][index]),data[data_index]);
+        image::linear_estimate(handle->view_item[index_num].image_data,&(tract_data[fiber_index][index]),data[data_index]);
 }
 
 void TractModel::get_tracts_data(
@@ -1184,11 +1183,40 @@ void TractModel::get_tracts_data(
 {
     data.clear();
     unsigned int index_num = handle->get_name_index(index_name);
-    if(index_num == handle->fib_data.view_item.size())
+    if(index_num == handle->view_item.size())
         return;
     data.resize(tract_data.size());
     for (unsigned int i = 0;i < tract_data.size();++i)
         get_tract_data(i,index_num,data[i]);
+}
+
+template<typename input_iterator,typename output_iterator>
+void gradient(input_iterator from,input_iterator to,output_iterator out)
+{
+    if(from == to)
+        return;
+    --to;
+    if(from == to)
+        return;
+    *out = *(from+1);
+    *out -= *(from);
+    output_iterator last = out + (to-from);
+    *last = *to;
+    *last -= *(to-1);
+    input_iterator pre_from = from;
+    ++from;
+    ++out;
+    input_iterator next_from = from;
+    ++next_from;
+    for(;from != to;++out)
+    {
+        *out = *(next_from);
+        *out -= *(pre_from);
+        *out /= 2.0;
+        pre_from = from;
+        from = next_from;
+        ++next_from;
+    }
 }
 
 void TractModel::get_tract_fa(unsigned int fiber_index,std::vector<float>& data)

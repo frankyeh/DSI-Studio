@@ -9,7 +9,7 @@
 #include <boost/thread/thread.hpp>
 
 
-class ODFModel;
+class FibData;
 class fiber_orientations;
 class TractModel;
 
@@ -19,8 +19,8 @@ struct fib_data{
     std::vector<const float*> greater_ptr,lesser_ptr;
     std::vector<const short*> greater_dir_ptr,lesser_dir_ptr;
 public:
-    void initialize(ODFModel* fib_file);
-    void add_greater_lesser_mapping_for_tracking(ODFModel* fib_file);
+    void initialize(FibData* fib_file);
+    void add_greater_lesser_mapping_for_tracking(FibData* fib_file);
 };
 
 
@@ -152,7 +152,7 @@ public:
 class vbc_database
 {
 public:
-    std::auto_ptr<ODFModel> handle;
+    std::auto_ptr<FibData> handle;
     mutable std::string error_msg;
     vbc_database();
 private:// template information

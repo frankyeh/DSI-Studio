@@ -95,14 +95,14 @@ public:
         }
 };
 
-class ODFModel;
+class FibData;
 class FibSliceModel : public SliceModel{
 public:
-    ODFModel* handle;
+    FibData* handle;
     image::const_pointer_image<float,3> source_images;
     std::string view_name,overlay_name;
 public:
-    FibSliceModel(ODFModel* new_handle);
+    FibSliceModel(FibData* new_handle);
     void set_view_name(const std::string& view_name_,const std::string& overlay_name_)
     {
         view_name = view_name_;

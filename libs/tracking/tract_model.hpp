@@ -4,7 +4,7 @@
 #include <iosfwd>
 #include "image/image.hpp"
 
-class ODFModel;
+class FibData;
 class fiber_orientations;
 struct connectivity_info{
     unsigned int count;
@@ -23,7 +23,7 @@ class TractModel{
 public:
     std::string report;
 private:
-        ODFModel* handle;
+        FibData* handle;
         image::geometry<3> geometry;
         image::vector<3> vs;
         std::auto_ptr<fiber_orientations> fib;
@@ -50,7 +50,7 @@ private:
         void delete_tracts(const std::vector<unsigned int>& tracts_to_delete);
         void select_tracts(const std::vector<unsigned int>& tracts_to_select);
 public:
-        TractModel(ODFModel* handle_);
+        TractModel(FibData* handle_);
         const TractModel& operator=(const TractModel& rhs)
         {
             geometry = rhs.geometry;

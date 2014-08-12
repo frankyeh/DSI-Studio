@@ -13,9 +13,7 @@ tract_report::tract_report(QWidget *parent) :
 {
     ui->setupUi(this);
     ui->report_index->addItem((cur_tracking_window->is_dti) ? "fa":"qa");
-    ODFModel* odf_model = (ODFModel*)cur_tracking_window->handle;
-    FibData& fib_data = odf_model->fib_data;
-
+    FibData& fib_data = *(FibData*)cur_tracking_window->handle;
     for (int index = fib_data.other_mapping_index; index < fib_data.view_item.size(); ++index)
         ui->report_index->addItem(fib_data.view_item[index].name.c_str());
 

@@ -8,13 +8,12 @@
 #include <math.h>
 #include <vector>
 #include "glwidget.h"
-#include "tracking_static_link.h"
 #include "tracking/tracking_window.h"
 #include "ui_tracking_window.h"
 #include "renderingtablewidget.h"
 #include "tracking/region/regiontablewidget.h"
 #include "SliceModel.h"
-#include "libs/tracking/tracking_model.hpp"
+#include "fib_data.hpp"
 #include "tracking/color_bar_dialog.hpp"
 
 GLenum BlendFunc1[] = {GL_ZERO,GL_ONE,GL_DST_COLOR,
@@ -425,7 +424,7 @@ void GLWidget::paintGL()
             odf_points.clear();
         }
 
-        ODFModel* handle = cur_tracking_window.handle;
+        FibData* handle = cur_tracking_window.handle;
         unsigned char skip_mask_set[3] = {0,1,3};
         unsigned char mask = skip_mask_set[odf_skip];
         if(odf_points.empty())
@@ -445,7 +444,7 @@ void GLWidget::paintGL()
                     if (!slice.get3dPosition(index[0],index[1],x,y,z))
                         continue;
                     image::pixel_index<3> pos(x,y,z,slice.geometry);
-                    if (handle->fib_data.fib.getFA(pos.index(),0) <= fa_threshold)
+                    if (handle->fib.getFA(pos.index(),0) <= fa_threshold)
                         continue;
                     add_odf(pos);
                 }
@@ -459,7 +458,7 @@ void GLWidget::paintGL()
             for(image::pixel_index<3> index;index.is_valid(slice.geometry);index.next(slice.geometry))
             {
                 if(((index[0] & mask) | (index[1] & mask) | (index[2] & mask)) ||
-                   handle->fib_data.fib.getFA(index.index(),0) <= fa_threshold)
+                   handle->fib.getFA(index.index(),0) <= fa_threshold)
                     continue;
                 add_odf(index);
             }
@@ -470,9 +469,9 @@ void GLWidget::paintGL()
             for (unsigned int index = 0; index <
                  cur_tracking_window.odf_size; ++index)
             {
-                odf_colors.push_back(std::abs(get_odf_direction(handle, index)[0]));
-                odf_colors.push_back(std::abs(get_odf_direction(handle, index)[1]));
-                odf_colors.push_back(std::abs(get_odf_direction(handle, index)[2]));
+                odf_colors.push_back(std::abs(handle->fib.odf_table[index][0]));
+                odf_colors.push_back(std::abs(handle->fib.odf_table[index][1]));
+                odf_colors.push_back(std::abs(handle->fib.odf_table[index][2]));
             }
         }
         glEnable(GL_COLOR_MATERIAL);
@@ -489,7 +488,7 @@ void GLWidget::paintGL()
             glVertexPointer(3, GL_FLOAT, 0, (float*)&odf_points[base_index]);
             glColorPointer(3, GL_FLOAT, 0, (float*)&odf_colors.front());
             glDrawElements(GL_TRIANGLES, face_size,
-                           GL_UNSIGNED_SHORT,get_odf_faces(handle,0));
+                           GL_UNSIGNED_SHORT,handle->fib.odf_faces[0].begin());
         }
         glPopMatrix();
         glDisable(GL_COLOR_MATERIAL);
@@ -695,9 +694,9 @@ void GLWidget::paintGL()
 
 void GLWidget::add_odf(image::pixel_index<3> pos)
 {
-    ODFModel* handle = cur_tracking_window.handle;
+    FibData* handle = cur_tracking_window.handle;
     const float* odf_buffer =
-            handle->fib_data.fib.get_odf_data(pos.index());
+            handle->fib.get_odf_data(pos.index());
     if(!odf_buffer)
         return;
     float scaling = odf_scale/max_fa;
@@ -718,7 +717,7 @@ void GLWidget::add_odf(image::pixel_index<3> pos)
         new_odf_buffer.resize(half_odf);
         std::copy(odf_buffer,odf_buffer+half_odf,new_odf_buffer.begin());
         std::vector<image::vector<3,unsigned short> >& odf_faces =
-                handle->fib_data.fib.odf_faces;
+                handle->fib.odf_faces;
         for(int index = 0;index < odf_faces.size();++index)
         {
             unsigned short f1 = odf_faces[index][0];
@@ -746,7 +745,7 @@ void GLWidget::add_odf(image::pixel_index<3> pos)
 
     for(unsigned int index = 0;index < half_odf;++index,++iter)
     {
-        image::vector<3,float> displacement(get_odf_direction(handle, index));
+        image::vector<3,float> displacement(handle->fib.odf_table[index]);
         displacement *= (odf_buffer[index]-odf_min)*scaling;
         *(iter) += displacement;
         *(iter+half_odf) -= displacement;
@@ -785,7 +784,7 @@ void GLWidget::makeTracts(void)
     if (tract_color_style > 1 && tract_color_style <= 3)
     {
         if(tract_color_index > 0)
-            color_item_index = cur_tracking_window.handle->fib_data.other_mapping_index+tract_color_index-1;
+            color_item_index = cur_tracking_window.handle->other_mapping_index+tract_color_index-1;
         if(tract_color_style == 3)// mean value
         {
             for (unsigned int active_tract_index = 0;
@@ -1647,7 +1646,7 @@ bool GLWidget::addSlices(QStringList filenames)
         convert.resize(16);
         t.resize(16);
         t[15] = 1.0;
-        image::matrix::inverse(cur_tracking_window.handle->fib_data.trans_to_mni.begin(),inv_trans.begin(),image::dim<4,4>());
+        image::matrix::inverse(cur_tracking_window.handle->trans_to_mni.begin(),inv_trans.begin(),image::dim<4,4>());
         image::matrix::product(inv_trans.begin(),t.begin(),convert.begin(),image::dim<4,4>(),image::dim<4,4>());
     }
     else
@@ -1684,7 +1683,7 @@ bool GLWidget::addSlices(QStringList filenames)
 
     mi3s.push_back(new LinearMapping<image::const_pointer_image<float,3> >);
     current_visible_slide = mi3s.size();
-    roi_image.push_back(new image::basic_image<float,3>(cur_tracking_window.handle->fib_data.dim));
+    roi_image.push_back(new image::basic_image<float,3>(cur_tracking_window.handle->dim));
     roi_image_buf.push_back(&*roi_image.back().begin());
 
     if(convert.empty())

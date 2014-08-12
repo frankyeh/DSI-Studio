@@ -88,10 +88,10 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
         }
     else
     {
-        if(cur_tracking_window->handle->fib_data.trans_to_mni.empty())
+        if(cur_tracking_window->handle->trans_to_mni.empty())
             return;
         image::basic_image<image::vector<3,float>,3 > mni_position(geo);
-        const FiberDirection& fib = cur_tracking_window->handle->fib_data.fib;
+        const FiberDirection& fib = cur_tracking_window->handle->fib;
         for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))
             if(fib.getFA(index.index(),0) > 0)
             {

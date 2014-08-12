@@ -4,11 +4,10 @@
 #include <string>
 #include "image/image.hpp"
 #include "boost/program_options.hpp"
-#include "tracking_static_link.h"
 #include "tracking/region/Regions.h"
 #include "libs/tracking/tract_model.hpp"
 #include "libs/tracking/tracking_thread.hpp"
-#include "libs/tracking/tracking_model.hpp"
+#include "fib_data.hpp"
 #include "libs/gzip_interface.hpp"
 
 namespace po = boost::program_options;
@@ -40,7 +39,7 @@ int ana(int ac, char *av[])
     po::store(po::command_line_parser(ac, av).options(ana_desc).run(), vm);
     po::notify(vm);
 
-    std::auto_ptr<ODFModel> handle(new ODFModel);
+    std::auto_ptr<FibData> handle(new FibData);
     {
         std::string file_name = vm["source"].as<std::string>();
         std::cout << "loading " << file_name << "..." <<std::endl;
@@ -55,10 +54,10 @@ int ana(int ac, char *av[])
             return 0;
         }
     }
-    bool is_qsdr = !handle->fib_data.trans_to_mni.empty();
-    image::geometry<3> geometry = handle->fib_data.dim;
+    bool is_qsdr = !handle->trans_to_mni.empty();
+    image::geometry<3> geometry = handle->dim;
     TractModel tract_model(handle.get());
-    float threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(geometry,handle->fib_data.fib.fa[0]));
+    float threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(geometry,handle->fib.fa[0]));
     tract_model.get_fib().threshold = threshold;
     tract_model.get_fib().cull_cos_angle = std::cos(60.0*3.1415926/180.0);
 
@@ -122,7 +121,7 @@ int ana(int ac, char *av[])
                 t[15] = 1.0;
                 image::matrix::inverse(t.begin(),inv_trans.begin(),image::dim<4,4>());
                 image::matrix::product(inv_trans.begin(),
-                                       handle->fib_data.trans_to_mni.begin(),
+                                       handle->trans_to_mni.begin(),
                                        convert.begin(),image::dim<4,4>(),image::dim<4,4>());
             }
             else
@@ -154,7 +153,7 @@ int ana(int ac, char *av[])
                 for(unsigned int i = 0;i < mask.size();++i)
                     if(from[i] == value)
                         mask[i] = 1;
-                ROIRegion region(geometry,handle->fib_data.vs);
+                ROIRegion region(geometry,handle->vs);
                 if(convert.empty())
                     region.LoadFromBuffer(mask);
                 else
@@ -217,7 +216,7 @@ int ana(int ac, char *av[])
         in >> report_tag >> index_name >> profile_dir >> bandwidth;
         std::vector<float> values,data_profile;
         // check index
-        if(index_name != "qa" && index_name != "fa" &&  handle->get_name_index(index_name) == handle->fib_data.view_item.size())
+        if(index_name != "qa" && index_name != "fa" &&  handle->get_name_index(index_name) == handle->view_item.size())
         {
             std::cout << "cannot find index name:" << index_name << std::endl;
             return 0;

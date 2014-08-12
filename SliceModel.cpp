@@ -2,7 +2,7 @@
 #include <string>
 #include "SliceModel.h"
 #include "prog_interface_static_link.h"
-#include "libs/tracking/tracking_model.hpp"
+#include "fib_data.hpp"
 // ---------------------------------------------------------------------------
 SliceModel::SliceModel(void):cur_dim(2)
 {
@@ -14,10 +14,10 @@ SliceModel::SliceModel(void):cur_dim(2)
     texture_need_update[2] = true;
 }
 
-FibSliceModel::FibSliceModel(ODFModel* handle_):handle(handle_)
+FibSliceModel::FibSliceModel(FibData* handle_):handle(handle_)
 {
     // already setup the geometry and source image
-    FibData& fib_data = handle->fib_data;
+    FibData& fib_data = *handle;
     geometry = fib_data.dim;
     voxel_size = fib_data.vs;
     source_images = image::make_image(geometry,fib_data.fib.fa[0]);

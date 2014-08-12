@@ -13,7 +13,6 @@
 #include "opengl/glwidget.h"
 #include "../region/regiontablewidget.h"
 #include "ui_tracking_window.h"
-#include "tracking_static_link.h"
 #include "opengl/renderingtablewidget.h"
 #include "libs/gzip_interface.hpp"
 #include "tract_cluster.hpp"
@@ -600,7 +599,7 @@ void TractTableWidget::show_tracts_statistics(void)
 void TractTableWidget::show_method(void)
 {
     std::ostringstream out;
-    out << cur_tracking_window.handle->fib_data.report.c_str();
+    out << cur_tracking_window.handle->report.c_str();
     if(currentRow() < tract_models.size())
         out << tract_models[currentRow()]->report.c_str() << std::endl;
     show_info_dialog(this,"Methods",out.str());

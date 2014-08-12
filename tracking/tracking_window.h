@@ -11,7 +11,7 @@
 #include "slice_view_scene.h"
 #include "tract/tracttablewidget.h"
 #include "libs/coreg/linear.hpp"
-class ODFModel;
+class FibData;
 class RenderingTableWidget;
 class RegionTableWidget;
 
@@ -48,7 +48,7 @@ protected:
     void keyPressEvent ( QKeyEvent * event );
 
 public:
-    explicit tracking_window(QWidget *parent,ODFModel* handle,bool handle_release_ = true);
+    explicit tracking_window(QWidget *parent,FibData* handle,bool handle_release_ = true);
     ~tracking_window();
 
     Ui::tracking_window *ui;
@@ -87,7 +87,7 @@ public:
     void add_path(const std::string& id,QString filename);
 public:
     QString absolute_path;
-    ODFModel* handle;
+    FibData* handle;
     FibSliceModel slice;
     bool handle_release;
     bool slice_no_update;

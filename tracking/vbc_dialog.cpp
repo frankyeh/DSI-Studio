@@ -26,9 +26,9 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
         ui->subject_list->setItem(index,1, new QTableWidgetItem(QString::number(0)));
         ui->subject_list->setItem(index,2, new QTableWidgetItem(QString::number(vbc->subject_R2(index))));
     }
-    ui->AxiSlider->setMaximum(vbc->handle->fib_data.dim[2]-1);
+    ui->AxiSlider->setMaximum(vbc->handle->dim[2]-1);
     ui->AxiSlider->setMinimum(0);
-    ui->AxiSlider->setValue(vbc->handle->fib_data.dim[2] >> 1);
+    ui->AxiSlider->setValue(vbc->handle->dim[2] >> 1);
 
     // dist report
     connect(ui->line_width,SIGNAL(valueChanged(int)),this,SLOT(show_report()));
@@ -69,7 +69,7 @@ bool vbc_dialog::eventFilter(QObject *obj, QEvent *event)
     pos[0] =  ((float)point.x()) / ui->zoom->value() - 0.5;
     pos[1] =  ((float)point.y()) / ui->zoom->value() - 0.5;
     pos[2] = ui->AxiSlider->value();
-    if(!vbc->handle->fib_data.dim.is_valid(pos))
+    if(!vbc->handle->dim.is_valid(pos))
         return true;
     ui->coordinate->setText(QString("(%1,%2,%3)").arg(pos[0]).arg(pos[1]).arg(pos[2]));
 
@@ -77,7 +77,7 @@ bool vbc_dialog::eventFilter(QObject *obj, QEvent *event)
     std::vector<float> vbc_data;
     vbc->get_data_at(
             image::pixel_index<3>(std::floor(pos[0] + 0.5), std::floor(pos[1] + 0.5), std::floor(pos[2] + 0.5),
-                                  vbc->handle->fib_data.dim).index(),0,vbc_data);
+                                  vbc->handle->dim).index(),0,vbc_data);
     if(!vbc_data.empty())
     {
         for(unsigned int index = 0;index < vbc->subject_count();++index)

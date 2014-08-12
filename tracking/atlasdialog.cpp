@@ -29,7 +29,7 @@ unsigned int AtlasDialog::index(void)
 
 void AtlasDialog::on_add_atlas_clicked()
 {
-    if(cur_tracking_window.handle->fib_data.trans_to_mni.empty())
+    if(cur_tracking_window.handle->trans_to_mni.empty())
         return;
     int atlas_index = ui->atlasListBox->currentIndex();
     QModelIndexList indexes = ui->region_list->selectionModel()->selectedRows();

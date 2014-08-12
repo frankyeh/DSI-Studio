@@ -3,7 +3,7 @@
 #include <boost/thread.hpp>
 #include <boost/math/distributions/students_t.hpp>
 #include "vbc_database.h"
-#include "libs/tracking/tracking_model.hpp"
+#include "fib_data.hpp"
 #include "libs/tracking/tract_model.hpp"
 #include "libs/tracking/tracking_thread.hpp"
 
@@ -15,14 +15,14 @@ vbc_database::vbc_database():handle(0),num_subjects(0)
 
 void vbc_database::read_template(void)
 {
-    dim = (handle->fib_data.dim);
-    num_fiber = handle->fib_data.fib.fa.size();
+    dim = (handle->dim);
+    num_fiber = handle->fib.fa.size();
     findex.resize(num_fiber);
     fa.resize(num_fiber);
     for(unsigned int index = 0;index < num_fiber;++index)
     {
-        findex[index] = handle->fib_data.fib.findex[index];
-        fa[index] = handle->fib_data.fib.fa[index];
+        findex[index] = handle->fib.findex[index];
+        fa[index] = handle->fib.fa[index];
     }
     fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(dim,fa[0]));
     vi2si.resize(dim.size());
@@ -34,21 +34,21 @@ void vbc_database::read_template(void)
             si2vi.push_back(index);
         }
     }
-    vertices = handle->fib_data.fib.odf_table;
+    vertices = handle->fib.odf_table;
     half_odf_size = vertices.size()/2;
 }
 bool vbc_database::create_database(const char* template_name)
 {
-    handle.reset(new ODFModel);
-    if(!handle->fib_data.load_from_file(template_name))
+    handle.reset(new FibData);
+    if(!handle->load_from_file(template_name))
         return false;
     read_template();
     return true;
 }
 bool vbc_database::load_database(const char* database_name)
 {
-    handle.reset(new ODFModel);
-    if(!handle->fib_data.load_from_file(database_name))
+    handle.reset(new FibData);
+    if(!handle->load_from_file(database_name))
     {
         error_msg = "Invalid fib file";
         return false;
@@ -57,7 +57,7 @@ bool vbc_database::load_database(const char* database_name)
     // read databse data
 
     // does it contain subject info?
-    gz_mat_read& matfile = handle->fib_data.mat_reader;
+    gz_mat_read& matfile = handle->mat_reader;
     subject_qa.clear();
     subject_qa_buffer.clear();
     unsigned int row,col;
@@ -262,7 +262,7 @@ void vbc_database::save_subject_data(const char* output_name) const
         error_msg = "Cannot output file";
         return;
     }
-    gz_mat_read& mat_source = handle->fib_data.mat_reader;
+    gz_mat_read& mat_source = handle->mat_reader;
     for(unsigned int index = 0;index < mat_source.size();++index)
         if(mat_source[index].get_name() != "report")
             matfile.write(mat_source[index]);
@@ -314,10 +314,10 @@ bool vbc_database::get_odf_profile(const char* file_name,std::vector<float>& cur
 }
 
 
-void fib_data::initialize(ODFModel* handle)
+void fib_data::initialize(FibData* handle)
 {
-    unsigned char num_fiber = handle->fib_data.fib.num_fiber;
-    image::geometry<3> dim(handle->fib_data.dim);
+    unsigned char num_fiber = handle->fib.num_fiber;
+    image::geometry<3> dim(handle->dim);
     greater.resize(num_fiber);
     lesser.resize(num_fiber);
     greater_dir.resize(num_fiber);
@@ -349,34 +349,34 @@ void fib_data::initialize(ODFModel* handle)
     }
 }
 
-void fib_data::add_greater_lesser_mapping_for_tracking(ODFModel* handle)
+void fib_data::add_greater_lesser_mapping_for_tracking(FibData* handle)
 {
 
     unsigned int greater_index_id =
-            std::find(handle->fib_data.fib.index_name.begin(),
-                      handle->fib_data.fib.index_name.end(),
-                      "greater")-handle->fib_data.fib.index_name.begin();
-    if(greater_index_id == handle->fib_data.fib.index_name.size())
+            std::find(handle->fib.index_name.begin(),
+                      handle->fib.index_name.end(),
+                      "greater")-handle->fib.index_name.begin();
+    if(greater_index_id == handle->fib.index_name.size())
     {
-        handle->fib_data.fib.index_name.push_back("greater");
-        handle->fib_data.fib.index_data.push_back(std::vector<const float*>());
-        handle->fib_data.fib.index_data_dir.push_back(std::vector<const short*>());
+        handle->fib.index_name.push_back("greater");
+        handle->fib.index_data.push_back(std::vector<const float*>());
+        handle->fib.index_data_dir.push_back(std::vector<const short*>());
     }
-    handle->fib_data.fib.index_data[greater_index_id] = greater_ptr;
-    handle->fib_data.fib.index_data_dir[greater_index_id] = greater_dir_ptr;
+    handle->fib.index_data[greater_index_id] = greater_ptr;
+    handle->fib.index_data_dir[greater_index_id] = greater_dir_ptr;
 
     unsigned int lesser_index_id =
-            std::find(handle->fib_data.fib.index_name.begin(),
-                      handle->fib_data.fib.index_name.end(),
-                      "lesser")-handle->fib_data.fib.index_name.begin();
-    if(lesser_index_id == handle->fib_data.fib.index_name.size())
+            std::find(handle->fib.index_name.begin(),
+                      handle->fib.index_name.end(),
+                      "lesser")-handle->fib.index_name.begin();
+    if(lesser_index_id == handle->fib.index_name.size())
     {
-        handle->fib_data.fib.index_name.push_back("lesser");
-        handle->fib_data.fib.index_data.push_back(std::vector<const float*>());
-        handle->fib_data.fib.index_data_dir.push_back(std::vector<const short*>());
+        handle->fib.index_name.push_back("lesser");
+        handle->fib.index_data.push_back(std::vector<const float*>());
+        handle->fib.index_data_dir.push_back(std::vector<const short*>());
     }
-    handle->fib_data.fib.index_data[lesser_index_id] = lesser_ptr;
-    handle->fib_data.fib.index_data_dir[lesser_index_id] = lesser_dir_ptr;
+    handle->fib.index_data[lesser_index_id] = lesser_ptr;
+    handle->fib.index_data_dir[lesser_index_id] = lesser_dir_ptr;
 }
 
 
@@ -546,7 +546,7 @@ bool vbc_database::save_subject_distribution(float percentile,
 {
     std::vector<std::vector<float> > tracks;
     fiber_orientations fib;
-    fib.read(handle->fib_data);
+    fib.read(*handle);
     fib.threshold = percentile;
     fib.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);
 
@@ -588,7 +588,7 @@ void vbc_database::calculate_individual_affected_tracks(fib_data& data,float per
     std::vector<std::vector<float> > greater_tracks;
     std::vector<std::vector<float> > lesser_tracks;
     fiber_orientations fib;
-    fib.read(handle->fib_data);
+    fib.read(*handle);
     fib.threshold = percentile;
     fib.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);
     fib.fa = data.greater_ptr;
@@ -639,7 +639,7 @@ bool vbc_database::calculate_individual_distribution(float percentile,
 
     fib_data data;
     fiber_orientations fib;
-    fib.read(handle->fib_data);
+    fib.read(*handle);
     fib.threshold = percentile;
     fib.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);
     total_greater = 0;
@@ -825,7 +825,7 @@ void vbc_database::calculate_subject_distribution(float percentile,const fib_dat
     std::vector<std::vector<float> > tracks;
 
     fiber_orientations fib;
-    fib.read(handle->fib_data);
+    fib.read(*handle);
     fib.threshold = percentile;
     fib.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);
 
@@ -858,7 +858,7 @@ void vbc_database::calculate_length_dist_multithread(unsigned int id,
 {
     fib_data data;
     fiber_orientations fib;
-    fib.read(handle->fib_data);
+    fib.read(*handle);
     fib.threshold = t_threshold;
     fib.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);
 
