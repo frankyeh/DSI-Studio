@@ -2,6 +2,7 @@
 #define VBC_DIALOG_HPP
 #include <QDialog>
 #include <QGraphicsScene>
+#include <QTimer>
 #include "image/image.hpp"
 #include "vbc/vbc_database.h"
 namespace Ui {
@@ -18,19 +19,16 @@ private:
     QImage vbc_slice_image;
     unsigned int vbc_slice_pos;
     fib_data cur_subject_fib;
-    std::vector<std::vector<unsigned int> > dist;
-    std::vector<std::vector<float> > fdr;
-
-
     void show_dis_table(void);
-    void show_fdr_table(void);
-private:
-    QStringList filename;
 public:
     QString work_dir;
+    std::vector<std::string> file_names;
+public:
     std::auto_ptr<vbc_database> vbc;
     stat_model mr;
-    void calculate_FDR(void);
+    std::vector<std::vector<float> > individual_data;
+    std::auto_ptr<QTimer> timer;
+
     explicit vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_);
     ~vbc_dialog();
     bool eventFilter(QObject *obj, QEvent *event);
@@ -49,18 +47,22 @@ private slots:
 
     void on_open_files_clicked();
 
-    void on_FDR_analysis_clicked();
-
-    void on_buttonBox_accepted();
-
-    void on_tabWidget_currentChanged(int index);
-
     void on_open_mr_files_clicked();
-
-    void on_run_mr_analysis_clicked();
 
     void on_view_mr_result_clicked();
 
+    void on_rb_individual_analysis_clicked();
+
+    void on_rb_group_difference_clicked();
+
+    void on_rb_multiple_regression_clicked();
+
+    void on_rb_paired_difference_clicked();
+
+    void on_run_clicked();
+
+public slots:
+    void calculate_FDR(void);
 private:
     Ui::vbc_dialog *ui;
 };

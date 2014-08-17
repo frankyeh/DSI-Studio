@@ -17,30 +17,18 @@ bool lock_dialog = false;
                 return;
             }
             lock_dialog = lock;
+            progressDialog.reset(new QProgressDialog);
             progressDialog->show();
             progressDialog->setWindowTitle(title);
             qApp->processEvents();
             t_total.start();
         }
-        extern "C" void end_prog(void)
-        {
-            lock_dialog = false;
-            if(progressDialog.get())
-                progressDialog.reset(new QProgressDialog("","Abort",0,10,0));
-        }
-
         extern "C" void set_title(const char* title)
         {
             if(!progressDialog.get())
                 return;
             progressDialog->setWindowTitle(title);
             qApp->processEvents();
-        }
-
-        extern "C" void can_cancel(int cancel)
-        {
-            if(cancel && progressDialog.get())
-                progressDialog->setCancelButtonText("&Cancel");
         }
         extern "C" int check_prog(int now,int total)
         {

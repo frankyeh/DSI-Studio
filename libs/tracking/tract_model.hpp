@@ -21,7 +21,7 @@ public:
 
 class TractModel{
 public:
-    std::string report;
+        std::string report;
 private:
         FibData* handle;
         image::geometry<3> geometry;
@@ -78,6 +78,7 @@ public:
 
         void release_tracts(std::vector<std::vector<float> >& released_tracks);
         void add_tracts(std::vector<std::vector<float> >& new_tracks);
+        void add_tracts(std::vector<std::vector<float> >& new_tracks,unsigned int length_threshold);
         void cull(float select_angle,
                   const image::vector<3,float>& from_dir,
                   const image::vector<3,float>& to_dir,
@@ -104,6 +105,7 @@ public:
         
         const std::vector<float>& get_tract(unsigned int index) const{return tract_data[index];}
         const std::vector<std::vector<float> >& get_tracts(void) const{return tract_data;}
+        std::vector<std::vector<float> >& get_tracts(void) {return tract_data;}
         unsigned int get_tract_color(unsigned int index) const{return tract_color[index];}
         unsigned int get_tract_length(unsigned int index) const{return tract_data[index].size();}
         void get_density_map(image::basic_image<unsigned int,3>& mapping,

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>554</width>
-    <height>542</height>
+    <width>597</width>
+    <height>560</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -41,7 +41,7 @@
     <item>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -51,8 +51,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>554</width>
-         <height>455</height>
+         <width>597</width>
+         <height>473</height>
         </rect>
        </property>
        <attribute name="label">
@@ -277,8 +277,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>554</width>
-         <height>455</height>
+         <width>597</width>
+         <height>473</height>
         </rect>
        </property>
        <attribute name="label">
@@ -385,8 +385,8 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>0</y>
-         <width>537</width>
+         <y>-12</y>
+         <width>580</width>
          <height>515</height>
         </rect>
        </property>
@@ -1544,13 +1544,13 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>554</width>
+     <width>597</width>
      <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
-     <string>&amp;File</string>
+     <string>File</string>
     </property>
     <addaction name="actionSave_4D_nifti"/>
     <addaction name="actionSave_b_table"/>

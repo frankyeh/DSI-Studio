@@ -386,7 +386,6 @@ extern "C"
     image::basic_image<unsigned char,3> mask;
     std::vector<std::vector<float> > odfs;
     begin_prog("averaging");
-    can_cancel(true);
     unsigned int half_vertex_count = 0;
     unsigned int row,col;
     float mni[16]={0};

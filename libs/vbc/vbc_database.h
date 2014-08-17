@@ -7,6 +7,8 @@
 #include "prog_interface_static_link.h"
 #include <boost/math/distributions/normal.hpp>
 #include <boost/thread/thread.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
+#include "libs/tracking/tract_model.hpp"
 
 
 class FibData;
@@ -153,8 +155,10 @@ class vbc_database
 {
 public:
     std::auto_ptr<FibData> handle;
+    std::string report;
     mutable std::string error_msg;
     vbc_database();
+    ~vbc_database(){clear_thread();}
 private:// template information
     image::geometry<3> dim;
     unsigned int num_fiber;
@@ -188,54 +192,46 @@ public:
     void save_subject_data(const char* output_name) const;
     void get_data_at(unsigned int index,unsigned int fib,std::vector<float>& data) const;
     void get_subject_slice(unsigned int subject_index,unsigned int z_pos,image::basic_image<float,2>& slice) const;
+    bool calculate_individual_affected_tracks(const char* file_name,
+                                              std::vector<std::vector<std::vector<float> > >& greater,
+                                              std::vector<std::vector<std::vector<float> > >& lesser);
+
 private: // single subject analysis result
-
     bool get_odf_profile(const char* file_name,std::vector<float>& cur_subject_data);
-public:
-    unsigned int total_greater;
-    unsigned int total_lesser;
-    unsigned int total;
-    void single_subject_analysis(const float* cur_subject_data,float percentile,fib_data& result);
-    bool single_subject_analysis(const char* filename,float percentile,fib_data& result);
-    //bool single_subject_paired_analysis(const char* file_name1,const char* file_name2);
-public:
-    bool calculate_individual_distribution(float percentile,
-                                           unsigned int length_threshold,
-                                           const std::vector<std::string>& files,
-                                        std::vector<unsigned int>& subject_greater,
-                                        std::vector<unsigned int>& subject_lesser);
-    void calculate_individual_affected_tracks(fib_data& result,float percentile,
-                                        std::vector<std::vector<std::vector<float> > >& greater,
-                                        std::vector<std::vector<std::vector<float> > >& lesser);
-public:
     void run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& track);
-    bool save_track_as(const char* file_name,std::vector<std::vector<float> >& track,unsigned int length_threshold);
 
-    bool save_subject_distribution(float percentile,
-                                   unsigned int length_threshold,
-                                   const char* file_name,
-                                   const fib_data& data);
 
-public:
-    void calculate_spm(const stat_model& info,fib_data& data,const std::vector<unsigned int>& permu);
-    void calculate_subject_distribution(float percentile,
-                                        const fib_data& data,
-                                        std::vector<unsigned int>& subject_greater,
-                                        std::vector<unsigned int>& subject_lesser);
-public:
+public:// for FDR analysis
+    std::auto_ptr<boost::thread_group> threads;
+    std::vector<unsigned int> subject_greater_null;
+    std::vector<unsigned int> subject_lesser_null;
+    std::vector<unsigned int> subject_greater;
+    std::vector<unsigned int> subject_lesser;
+    std::vector<float> fdr_greater,fdr_lesser;
+    unsigned int total_count,total_count_null;
     unsigned int permutation_count;
-    float t_threshold;
-    void calculate_length_dist_multithread(unsigned int id,const stat_model& info,bool,
-                                          std::vector<unsigned int>& dist_greater,
-                                          std::vector<unsigned int>& dist_lesser,
-                                          bool progress,
-                                          unsigned int* total_count);
-    void calculate_length_distribution(const stat_model& info,
-                                       std::vector<unsigned int>& subject_greater_null,
-                                       std::vector<unsigned int>& subject_lesser_null,
-                                       std::vector<unsigned int>& subject_greater,
-                                       std::vector<unsigned int>& subject_lesser,
-                                       unsigned int thread_count);
+    bool terminated;
+public:
+    std::vector<std::string> trk_file_names;
+    unsigned int length_threshold;
+    boost::mutex lock_greater_tracks,lock_lesser_tracks;
+    boost::ptr_vector<TractModel> greater_tracks;
+    boost::ptr_vector<TractModel> lesser_tracks;
+    void save_tracks_files(void);
+public:// routine for calculate SPM
+    void calculate_percentile(const float* cur_subject_data,
+                              const std::vector<unsigned int>& resample,fib_data& data);
+    void calculate_spm(const stat_model& info,fib_data& data,const std::vector<unsigned int>& permu);
+public:// Individual analysis
+    std::vector<std::vector<float> > individual_data;
+    bool read_subject_data(const std::vector<std::string>& files,std::vector<std::vector<float> >& data);
+public:// Multiple regression
+    stat_model model;
+    float tracking_threshold;
+    void run_permutation_multithread(unsigned int id);
+    void run_permutation(unsigned int thread_count);
+    void calculate_FDR(void);
+    void clear_thread(void);
 private:
 
 

@@ -270,7 +270,6 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.output_mapping = ui->output_mapping->isChecked() ? 1 : 0;
 
     const char* msg = (const char*)reconstruction(handle.get(), method_id, params);
-    end_prog();
     if (!QFileInfo(msg).exists())
     {
         QMessageBox::information(this,"error",msg,0);

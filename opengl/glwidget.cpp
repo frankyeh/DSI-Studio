@@ -696,7 +696,7 @@ void GLWidget::add_odf(image::pixel_index<3> pos)
 {
     FibData* handle = cur_tracking_window.handle;
     const float* odf_buffer =
-            handle->fib.get_odf_data(pos.index());
+            handle->get_odf_data(pos.index());
     if(!odf_buffer)
         return;
     float scaling = odf_scale/max_fa;
@@ -1960,7 +1960,6 @@ void GLWidget::saveRotationSeries(void)
     makeCurrent();
     std::vector<float> m(transformation_matrix,transformation_matrix+16);
     begin_prog("save images");
-    ::can_cancel(true);
     for(unsigned int index = 0;check_prog(index,360);index += angle)
     {
         glPushMatrix();

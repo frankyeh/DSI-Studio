@@ -9,6 +9,7 @@
 #include "fib_data.hpp"
 #include "gzip_interface.hpp"
 #include "mapping/atlas.hpp"
+#include "gzip_interface.hpp"
 
 
 struct TrackVis
@@ -96,40 +97,16 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     std::string file_name(file_name_);
     std::vector<std::vector<float> > loaded_tract_data;
     std::vector<unsigned int> loaded_tract_cluster;
-    if (file_name.find(".txt") != std::string::npos)
-    {
-        std::ifstream in(file_name_);
-        if (!in)
-            return false;
-        std::string line;
-        in.seekg(0,std::ios::end);
-        unsigned int total = in.tellg();
-        in.seekg(0,std::ios::beg);
-        begin_prog("loading");
-        while (std::getline(in,line))
-        {
-            check_prog(in.tellg(),total);
-            loaded_tract_data.push_back(std::vector<float>());
-            std::istringstream in(line);
-            std::copy(std::istream_iterator<float>(in),
-                      std::istream_iterator<float>(),std::back_inserter(loaded_tract_data.back()));
-            if (loaded_tract_data.back().size() < 6)
-            {
-                if(loaded_tract_data.back().size() == 1)// cluster info
-                    loaded_tract_cluster.push_back(loaded_tract_data.back()[0]);
-                loaded_tract_data.pop_back();
-                continue;
-            }
-        }
 
-    }
-    else
-        //trackvis
-        if (file_name.find(".trk") != std::string::npos)
+    std::string ext;
+    if(file_name.length() > 4)
+        ext = std::string(file_name.end()-4,file_name.end());
+
+    if(ext == std::string(".trk") || ext == std::string("k.gz"))
         {
             TrackVis trk;
-            std::ifstream in(file_name_,std::ios::binary);
-            if (!in)
+            gz_istream in;
+            if (!in.open(file_name_))
                 return false;
             in.read((char*)&trk,1000);
             //if (geo != geometry)
@@ -163,7 +140,35 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
             }
         }
         else
-            if (file_name.find(".mat") != std::string::npos)
+        if (ext == std::string(".txt"))
+        {
+            std::ifstream in(file_name_);
+            if (!in)
+                return false;
+            std::string line;
+            in.seekg(0,std::ios::end);
+            unsigned int total = in.tellg();
+            in.seekg(0,std::ios::beg);
+            begin_prog("loading");
+            while (std::getline(in,line))
+            {
+                check_prog(in.tellg(),total);
+                loaded_tract_data.push_back(std::vector<float>());
+                std::istringstream in(line);
+                std::copy(std::istream_iterator<float>(in),
+                          std::istream_iterator<float>(),std::back_inserter(loaded_tract_data.back()));
+                if (loaded_tract_data.back().size() < 6)
+                {
+                    if(loaded_tract_data.back().size() == 1)// cluster info
+                        loaded_tract_cluster.push_back(loaded_tract_data.back()[0]);
+                    loaded_tract_data.pop_back();
+                    continue;
+                }
+            }
+
+        }
+        else
+            if (ext == std::string(".mat"))
             {
                 gz_mat_read in;
                 if(!in.load_from_file(file_name_))
@@ -188,7 +193,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                 }
             }
     else
-                if (file_name.find(".tck") != std::string::npos)
+                if (ext == std::string(".tck"))
                 {
                     unsigned int offset = 0;
                     {
@@ -292,26 +297,16 @@ bool TractModel::save_data_to_file(const char* file_name,const std::string& inde
 bool TractModel::save_tracts_to_file(const char* file_name_)
 {
     std::string file_name(file_name_);
-    if (file_name.find(".txt") != std::string::npos)
-    {
-        std::ofstream out(file_name_,std::ios::binary);
-        if (!out)
-            return false;
-        begin_prog("saving");
-        for (unsigned int i = 0;check_prog(i,tract_data.size());++i)
-        {
-            std::copy(tract_data[i].begin(),
-                      tract_data[i].end(),
-                      std::ostream_iterator<float>(out," "));
-            out << std::endl;
-        }
-        return true;
-    }
+    std::string ext;
+    if(file_name.length() > 4)
+        ext = std::string(file_name.end()-4,file_name.end());
 
-    if (file_name.find(".trk") != std::string::npos)
+    if (ext == std::string(".trk") || ext == std::string("k.gz"))
     {
-        std::ofstream out(file_name_,std::ios::binary);
-        if (!out)
+        if(ext == std::string(".trk"))
+            file_name += ".gz";
+        gz_ostream out;
+        if (!out.open(file_name.c_str()))
             return false;
         {
             TrackVis trk;
@@ -338,7 +333,22 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         }
         return true;
     }
-    if (file_name.find(".mat") != std::string::npos)
+    if (ext == std::string(".txt"))
+    {
+        std::ofstream out(file_name_,std::ios::binary);
+        if (!out)
+            return false;
+        begin_prog("saving");
+        for (unsigned int i = 0;check_prog(i,tract_data.size());++i)
+        {
+            std::copy(tract_data[i].begin(),
+                      tract_data[i].end(),
+                      std::ostream_iterator<float>(out," "));
+            out << std::endl;
+        }
+        return true;
+    }
+    if (ext == std::string(".mat"))
     {
         image::io::mat_write out(file_name.c_str());
         if(!out)
@@ -386,6 +396,7 @@ bool TractModel::save_all(const char* file_name_,const std::vector<TractModel*>&
         std::ofstream out(file_name_,std::ios::binary);
         if (!out)
             return false;
+        begin_prog("saving");
         {
             TrackVis trk;
             trk.init(all[0]->geometry,all[0]->vs);
@@ -396,7 +407,6 @@ bool TractModel::save_all(const char* file_name_,const std::vector<TractModel*>&
             out.write((const char*)&trk,1000);
 
         }
-        begin_prog("saving");
         for(unsigned int index = 0;check_prog(index,all.size());++index)
         for (unsigned int i = 0;i < all[index]->tract_data.size();++i)
         {
@@ -867,6 +877,20 @@ void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract)
     for (unsigned int index = 0;index < new_tract.size();++index)
     {
         if (new_tract[index].empty())
+            continue;
+        tract_data.push_back(std::vector<float>());
+        tract_data.back().swap(new_tract[index]);
+        tract_color.push_back(def_color);
+    }
+}
+
+void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract, unsigned int length_threshold)
+{
+    tract_data.reserve(tract_data.size()+new_tract.size()/2.0);
+    image::rgb_color def_color(200,100,30);
+    for (unsigned int index = 0;index < new_tract.size();++index)
+    {
+        if (new_tract[index].size()/3-1 < length_threshold)
             continue;
         tract_data.push_back(std::vector<float>());
         tract_data.back().swap(new_tract[index]);

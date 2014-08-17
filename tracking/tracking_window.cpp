@@ -45,7 +45,7 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
 
     odf_size = fib_data.fib.odf_table.size();
     odf_face_size = fib_data.fib.odf_faces.size();
-    has_odfs = fib_data.fib.has_odfs() ? 1:0;
+    has_odfs = fib_data.has_odfs() ? 1:0;
     // check whether first index is "fa0"
     is_dti = (fib_data.view_item[0].name[0] == 'f');
 
@@ -114,7 +114,7 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
     }
     else
         ui->actionManual_Registration->setEnabled(false);
-    ui->actionConnectometry->setEnabled(handle->fib.has_odfs() && is_qsdr);
+    ui->actionConnectometry->setEnabled(handle->has_odfs() && is_qsdr);
 
 
 
@@ -1203,19 +1203,18 @@ void tracking_window::on_actionConnectometry_triggered()
         return;
 
     vbc_database database;
-    fib_data spm;
     if(!database.load_database(filename.toLocal8Bit().begin()))
     {
         QMessageBox::information(this,"Error","Invalid database format",0);
         return;
     }
-    if(!database.single_subject_analysis(this->windowTitle().toLocal8Bit().begin(),0.95,spm))
+    database.tracking_threshold = 0.95;
+    std::vector<std::vector<std::vector<float> > > greater,lesser;
+    if(!database.calculate_individual_affected_tracks(windowTitle().toLocal8Bit().begin(),greater,lesser))
     {
         QMessageBox::information(this,"error",database.error_msg.c_str(),0);
         return;
     }
-    std::vector<std::vector<std::vector<float> > > greater,lesser;
-    database.calculate_individual_affected_tracks(spm,0.95,greater,lesser);
     tractWidget->addConnectometryResults(greater,lesser);
     /*
     tracking_window* new_mdi = new tracking_window((QWidget*)(this->parent()),database->handle.release());

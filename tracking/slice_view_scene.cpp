@@ -88,7 +88,7 @@ void slice_view_scene::show_fiber(QPainter& painter)
             if (cur_tracking_window.slice.get3dPosition(x, y, X, Y, Z))
             {
                 image::pixel_index<3> pos(X,Y,Z,fib_data.dim);
-                if (pos.index() >= fib_data.total_size || fib_data.fib.getFA(pos.index(),0) == 0.0)
+                if (pos.index() >= fib_data.dim.size() || fib_data.fib.getFA(pos.index(),0) == 0.0)
                     continue;
                 for (char fiber = 2; fiber >= 0; --fiber)
                     if(fib_data.fib.getFA(pos.index(),fiber) > threshold)
