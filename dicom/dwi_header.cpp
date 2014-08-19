@@ -346,6 +346,64 @@ void correct_t2(boost::ptr_vector<DwiHeader>& dwi_files)
             ++index;
     }
 }
+
+void get_report(const std::vector<float>& bvalues,image::vector<3> vs,std::string& report)
+{
+    std::ostringstream out;
+    std::vector<unsigned int> shell;
+    if(bvalues.front() != 0.0)
+        shell.push_back(0);
+    for(unsigned int index = 1;index < bvalues.size();++index)
+    {
+        if(std::abs(bvalues[index]-bvalues[index-1]) > 100)
+            shell.push_back(index);
+    }
+    if(shell.size() > 5)
+    {
+        out << " The diffusion images were acquired using a diffusion spectrum imaging scheme."
+            << " A total of " << bvalues.size()-(bvalues.front() == 0 ? 1:0)
+            << " diffusion sampling were acquired."
+            << " The maximum b-value was " << bvalues.back() << " s/mm2.";
+    }
+    else
+    if(shell.size() > 1)
+    {
+        out << " The diffusion images were acquired using a multishell scheme."
+            << " The b-values were ";
+        for(unsigned int index = 0;index < shell.size();++index)
+        {
+            if(index > 0)
+            {
+                if(index == shell.size()-1)
+                    out << " and ";
+                else
+                    out << " ,";
+            }
+            out << bvalues[shell[index]];
+        }
+        out << ".";
+
+        out << " The number of diffusion sampling directions were ";
+        for(unsigned int index = 0;index < shell.size()-1;++index)
+            out << shell[index+1] - shell[index] << ", ";
+        out << "and " << bvalues.size()-shell.back() << ".";
+    }
+    else
+        if(shell.size() == 1)
+        {
+            out << " The diffusion images were acquired using a single-shell scheme."
+                << " A total of " << bvalues.size()-(bvalues.front() == 0 ? 1:0)
+                << " diffusion sampling directions were acquired."
+                << " The b-value was " << bvalues.back() << ".";
+        }
+
+    out << " The in-plane resolution was " << vs[0] << " mm."
+        << " The slice thickness was " << vs[2] << " mm.";
+    report = out.str();
+}
+
+
+
 // upsampling 1: upsampling 2: downsampling
 bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi_files,int upsampling)
 {
@@ -422,7 +480,18 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
         write_mat.write("grad_dev",&*dwi_files[0].grad_dev.begin(),dwi_files[0].grad_dev.size()/9,9);
     if(!dwi_files[0].mask.empty())
         write_mat.write("mask",&*dwi_files[0].mask.begin(),1,dwi_files[0].mask.size());
-    if(!dwi_files.front().report.empty())
-        write_mat.write("report",dwi_files.front().report.c_str(),1,dwi_files.front().report.length());
+
+
+    std::string report1 = dwi_files.front().report;
+    std::string report2;
+    {
+        std::vector<float> bvalues;
+        for (unsigned int index = 0;index < dwi_files.size();++index)
+            bvalues.push_back(dwi_files[index].get_bvalue());
+        image::vector<3> vs(dwi_files.front().voxel_size);
+        get_report(bvalues,vs,report2);
+    }
+    report1 += report2;
+    write_mat.write("report",report1.c_str(),1,report1.length());
     return true;
 }

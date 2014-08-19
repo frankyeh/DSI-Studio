@@ -5,7 +5,7 @@
 #include "gqi_process.hpp"
 #include "image/image.hpp"
 
-
+void get_report(const std::vector<float>& bvalues,image::vector<3> vs,std::string& report);
 struct ImageModel
 {
 public:
@@ -111,10 +111,6 @@ public:
         else
             std::copy(voxel_size,voxel_size+3,voxel.vs.begin());
 
-        const char* report_buf = 0;
-        if(mat_reader.read("report",row,col,report_buf))
-            voxel.report = std::string(report_buf,report_buf+row*col);
-
         if (dim_ptr[0]*dim_ptr[1]*dim_ptr[2] <= 0)
         {
             error_msg = "Invalid dimension setting";
@@ -141,6 +137,12 @@ public:
             voxel.bvectors[index].normalize();
             table += 4;
         }
+
+        const char* report_buf = 0;
+        if(mat_reader.read("report",row,col,report_buf))
+            voxel.report = std::string(report_buf,report_buf+row*col);
+        else
+            get_report(voxel.bvalues,voxel.vs,voxel.report);
 
         dwi_data.resize(voxel.bvalues.size());
         for (unsigned int index = 0;index < voxel.bvalues.size();++index)

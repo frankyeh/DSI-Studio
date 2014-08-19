@@ -145,13 +145,6 @@ extern "C"
     {
         image_model->voxel.recon_report.clear();
         image_model->voxel.recon_report.str("");
-        image_model->voxel.recon_report
-            << " The in-plane resolution was " << image_model->voxel.vs[0] << " mm."
-            << " The slice thickness was " << image_model->voxel.vs[2] << " mm."
-            << " A total of " << image_model->voxel.bvalues.size()-(image_model->voxel.bvalues.front() == 0 ? 1:0)
-            << " diffusion sampling directions were acquired."
-            << " The b-value was " << image_model->voxel.bvalues.back() << " s/mm2.";
-
         image_model->voxel.param = param_values;
         std::ostringstream out;
         if(method_id != 1) // not DTI
