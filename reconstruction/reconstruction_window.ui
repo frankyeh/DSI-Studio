@@ -51,8 +51,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>597</width>
-         <height>473</height>
+         <width>267</width>
+         <height>195</height>
         </rect>
        </property>
        <attribute name="label">
@@ -277,8 +277,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>597</width>
-         <height>473</height>
+         <width>534</width>
+         <height>146</height>
         </rect>
        </property>
        <attribute name="label">
@@ -385,9 +385,9 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>-12</y>
+         <y>0</y>
          <width>580</width>
-         <height>515</height>
+         <height>487</height>
         </rect>
        </property>
        <property name="minimumSize">
@@ -1391,50 +1391,6 @@
                    </widget>
                   </item>
                  </layout>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_18">
-                <item>
-                 <spacer name="horizontalSpacer_8">
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>40</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-                <item>
-                 <widget class="QCheckBox" name="check_btable">
-                  <property name="text">
-                   <string>Check btable</string>
-                  </property>
-                  <property name="checked">
-                   <bool>true</bool>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QCheckBox" name="balance_scheme">
-                  <property name="text">
-                   <string>Balance scheme</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QCheckBox" name="HalfSphere">
-                  <property name="text">
-                   <string>Half-sphere scheme</string>
-                  </property>
-                  <property name="checked">
-                   <bool>false</bool>
-                  </property>
-                 </widget>
                 </item>
                </layout>
               </item>

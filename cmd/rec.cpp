@@ -164,14 +164,9 @@ int rec(int ac, char *av[])
     handle->voxel.output_mapping = vm["output_map"].as<int>();
     handle->voxel.odf_deconvolusion = vm["deconvolution"].as<int>();
     handle->voxel.odf_decomposition = vm["decomposition"].as<int>();
-    handle->voxel.half_sphere = vm["half_sphere"].as<int>();
     handle->voxel.max_fiber_number = vm["num_fiber"].as<int>();
     handle->voxel.r2_weighted = vm["r2_weighted"].as<int>();
     handle->voxel.reg_method = vm["reg_method"].as<int>();
-    handle->voxel.scheme_balance = vm["scheme_balance"].as<int>();
-    handle->voxel.check_btable = vm["check_btable"].as<int>();
-
-
 
     {
         std::cout << "odf_order=" << vm["odf_order"].as<int>() << std::endl;
@@ -182,8 +177,6 @@ int rec(int ac, char *av[])
             std::cout << "apply deconvolution" << std::endl;
         if(handle->voxel.odf_decomposition)
             std::cout << "apply decomposition" << std::endl;
-        if(handle->voxel.half_sphere)
-            std::cout << "half sphere is used" << std::endl;
         if(handle->voxel.r2_weighted && method_index == 4)
             std::cout << "r2 weighted is used for GQI" << std::endl;
     }

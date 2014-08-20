@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Tue Aug 12 21:26:25 2014
+** Created: Wed Aug 20 14:14:19 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -198,11 +198,6 @@ public:
     QHBoxLayout *horizontalLayout_6;
     QLabel *label_3;
     QSpinBox *NumOfFibers;
-    QHBoxLayout *horizontalLayout_18;
-    QSpacerItem *horizontalSpacer_8;
-    QCheckBox *check_btable;
-    QCheckBox *balance_scheme;
-    QCheckBox *HalfSphere;
     QSpacerItem *verticalSpacer;
     QWidget *widget;
     QHBoxLayout *horizontalLayout_20;
@@ -262,7 +257,7 @@ public:
         toolBox->setObjectName(QString::fromUtf8("toolBox"));
         source_page = new QWidget();
         source_page->setObjectName(QString::fromUtf8("source_page"));
-        source_page->setGeometry(QRect(0, 0, 597, 473));
+        source_page->setGeometry(QRect(0, 0, 267, 195));
         horizontalLayout_25 = new QHBoxLayout(source_page);
         horizontalLayout_25->setObjectName(QString::fromUtf8("horizontalLayout_25"));
         splitter = new QSplitter(source_page);
@@ -401,7 +396,7 @@ public:
         toolBox->addItem(source_page, QString::fromUtf8("Source Images"));
         page_3 = new QWidget();
         page_3->setObjectName(QString::fromUtf8("page_3"));
-        page_3->setGeometry(QRect(0, 0, 597, 473));
+        page_3->setGeometry(QRect(0, 0, 534, 146));
         gridLayout_2 = new QGridLayout(page_3);
         gridLayout_2->setObjectName(QString::fromUtf8("gridLayout_2"));
         verticalLayout_5 = new QVBoxLayout();
@@ -478,7 +473,7 @@ public:
         toolBox->addItem(page_3, QString::fromUtf8("Step 1: setup brain mask"));
         page = new QWidget();
         page->setObjectName(QString::fromUtf8("page"));
-        page->setGeometry(QRect(0, -12, 580, 515));
+        page->setGeometry(QRect(0, 0, 580, 487));
         page->setMinimumSize(QSize(0, 0));
         verticalLayout_2 = new QVBoxLayout(page);
         verticalLayout_2->setSpacing(3);
@@ -1007,32 +1002,6 @@ public:
 
         verticalLayout_9->addLayout(horizontalLayout_17);
 
-        horizontalLayout_18 = new QHBoxLayout();
-        horizontalLayout_18->setObjectName(QString::fromUtf8("horizontalLayout_18"));
-        horizontalSpacer_8 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-
-        horizontalLayout_18->addItem(horizontalSpacer_8);
-
-        check_btable = new QCheckBox(groupBox_2);
-        check_btable->setObjectName(QString::fromUtf8("check_btable"));
-        check_btable->setChecked(true);
-
-        horizontalLayout_18->addWidget(check_btable);
-
-        balance_scheme = new QCheckBox(groupBox_2);
-        balance_scheme->setObjectName(QString::fromUtf8("balance_scheme"));
-
-        horizontalLayout_18->addWidget(balance_scheme);
-
-        HalfSphere = new QCheckBox(groupBox_2);
-        HalfSphere->setObjectName(QString::fromUtf8("HalfSphere"));
-        HalfSphere->setChecked(false);
-
-        horizontalLayout_18->addWidget(HalfSphere);
-
-
-        verticalLayout_9->addLayout(horizontalLayout_18);
-
 
         verticalLayout_7->addWidget(groupBox_2);
 
@@ -1227,9 +1196,6 @@ public:
          << QApplication::translate("reconstruction_window", "20-fold", 0, QApplication::UnicodeUTF8)
         );
         label_3->setText(QApplication::translate("reconstruction_window", "Number of fibers resolved", 0, QApplication::UnicodeUTF8));
-        check_btable->setText(QApplication::translate("reconstruction_window", "Check btable", 0, QApplication::UnicodeUTF8));
-        balance_scheme->setText(QApplication::translate("reconstruction_window", "Balance scheme", 0, QApplication::UnicodeUTF8));
-        HalfSphere->setText(QApplication::translate("reconstruction_window", "Half-sphere scheme", 0, QApplication::UnicodeUTF8));
         label_9->setText(QApplication::translate("reconstruction_window", "multi-thread:", 0, QApplication::UnicodeUTF8));
         doDTI->setText(QApplication::translate("reconstruction_window", "Run reconstruction", 0, QApplication::UnicodeUTF8));
         doDTI->setDescription(QString());

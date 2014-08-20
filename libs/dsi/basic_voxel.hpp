@@ -81,7 +81,6 @@ public:
     bool output_mapping;
     image::vector<3,int> csf_pos1,csf_pos2;
 public: // user in fib evaluation
-    bool check_btable;
     std::vector<image::basic_image<float,3> > fib_fa;
     std::vector<image::basic_image<image::vector<3>,3> > fib_dir;
 public:

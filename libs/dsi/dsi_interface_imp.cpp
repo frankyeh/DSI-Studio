@@ -143,10 +143,38 @@ extern "C"
     static std::string output_name;
     try
     {
+        {
+            std::vector<unsigned int> shell;
+            if(image_model->voxel.bvalues.front() != 0.0)
+                shell.push_back(0);
+            for(unsigned int index = 1;index < image_model->voxel.bvalues.size();++index)
+                if(std::abs(image_model->voxel.bvalues[index]-image_model->voxel.bvalues[index-1]) > 100)
+                    shell.push_back(index);
+
+            image_model->voxel.half_sphere =
+                    (method_id == 7 || method_id == 4) &&
+                    (shell.size() > 5) && (shell[1] - shell[0] <= 3);
+            image_model->voxel.scheme_balance =
+                    (method_id == 7 || method_id == 4) &&
+                    (shell.size() <= 5) && !shell.empty() &&
+                    image_model->voxel.bvalues.size()-shell.back() < 100;
+        }
+
+
         image_model->voxel.recon_report.clear();
         image_model->voxel.recon_report.str("");
         image_model->voxel.param = param_values;
         std::ostringstream out;
+        if(method_id == 1) // DTI
+        {
+            image_model->voxel.need_odf = 0;
+            image_model->voxel.output_jacobian = 0;
+            image_model->voxel.output_mapping = 0;
+            image_model->voxel.scheme_balance = 0;
+            image_model->voxel.half_sphere = 0;
+            image_model->voxel.odf_deconvolusion = 0;
+            image_model->voxel.odf_decomposition = 0;
+        }
         if(method_id != 1) // not DTI
         {
             out << ".odf" << image_model->voxel.ti.fold;// odf_order
@@ -179,7 +207,6 @@ extern "C"
             }
         }
         // correct for b-table orientation
-        if(image_model->voxel.check_btable)
         {
             set_title("checking b-table");
             image_model->reconstruct<dti_process>();

@@ -41,6 +41,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     ui->setupUi(this);
     load_src(0);
+
     ui->toolBox->setCurrentIndex(1);
     ui->graphicsView->setScene(&scene);
     ui->view_source->setScene(&source);
@@ -85,7 +86,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     }
     ui->AdvancedWidget->setVisible(false);
     ui->ThreadCount->setValue(settings.value("rec_thread_num",2).toInt());
-    ui->HalfSphere->setChecked(settings.value("rec_half_sphere",0).toInt());
     ui->NumOfFibers->setValue(settings.value("rec_num_fiber",5).toInt());
     ui->ODFDef->setCurrentIndex(settings.value("rec_gqi_def",0).toInt());
     ui->reg_method->setCurrentIndex(settings.value("rec_reg_method",1).toInt());
@@ -106,8 +106,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->RecordODF->setChecked(settings.value("rec_record_odf",0).toInt());
     ui->output_jacobian->setChecked(settings.value("output_jacobian",0).toInt());
     ui->output_mapping->setChecked(settings.value("output_mapping",0).toInt());
-    ui->balance_scheme->setChecked(settings.value("balance_scheme",0).toInt());
-    ui->check_btable->setChecked(settings.value("check_btable",1).toInt());
 
     ui->hardi_bvalue->setValue(settings.value("hardi_bvalue",3000).toDouble());
     ui->hardi_reg->setValue(settings.value("hardi_reg",0.05).toDouble());
@@ -207,6 +205,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
 {
     if(!handle.get())
         return;
+
     if(method_id == 7)
         std::fill(handle->mask.begin(),handle->mask.end(),1.0);
     else
@@ -229,12 +228,9 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
         settings.setValue("rec_decom_m",params[4]);
     }
 
-
-
     settings.setValue("rec_method_id",method_id);
     settings.setValue("rec_thread_num",ui->ThreadCount->value());
     settings.setValue("rec_odf_sharpening",ui->odf_sharpening->currentIndex());
-    settings.setValue("rec_half_sphere",ui->HalfSphere->isChecked() ? 1 : 0);
     settings.setValue("rec_num_fiber",ui->NumOfFibers->value());
     settings.setValue("rec_gqi_def",ui->ODFDef->currentIndex());
     settings.setValue("rec_reg_method",ui->reg_method->currentIndex());
@@ -243,10 +239,6 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     settings.setValue("rec_record_odf",ui->RecordODF->isChecked() ? 1 : 0);
     settings.setValue("output_jacobian",ui->output_jacobian->isChecked() ? 1 : 0);
     settings.setValue("output_mapping",ui->output_mapping->isChecked() ? 1 : 0);
-    settings.setValue("balance_scheme",ui->balance_scheme->isChecked() ? 1 : 0);
-    settings.setValue("check_btable",ui->check_btable->isChecked() ? 1 : 0);
-
-
 
     begin_prog("run reconstruction",true);
     int odf_order[8] = {4, 5, 6, 8, 10, 12, 16, 20};
@@ -257,13 +249,9 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.odf_xyz[0] = ui->x->value();
     handle->voxel.odf_xyz[1] = ui->y->value();
     handle->voxel.odf_xyz[2] = ui->z->value();
-    handle->voxel.half_sphere = ui->HalfSphere->isChecked() ? 1 : 0;
     handle->voxel.max_fiber_number = ui->NumOfFibers->value();
     handle->voxel.r2_weighted = ui->ODFDef->currentIndex();
     handle->voxel.reg_method = ui->reg_method->currentIndex();
-
-    handle->voxel.scheme_balance = ui->balance_scheme->isChecked();
-    handle->voxel.check_btable = ui->check_btable->isChecked();
 
     handle->voxel.need_odf = ui->RecordODF->isChecked() ? 1 : 0;
     handle->voxel.output_jacobian = ui->output_jacobian->isChecked() ? 1 : 0;
@@ -464,6 +452,7 @@ void reconstruction_window::on_DTI_toggled(bool checked)
     ui->RecordODF->setVisible(!checked);
 
     ui->hardi_param->setVisible(!checked);
+
 }
 
 void reconstruction_window::on_DSI_toggled(bool checked)
@@ -515,6 +504,7 @@ void reconstruction_window::on_GQI_toggled(bool checked)
     ui->RecordODF->setVisible(checked);
 
     ui->hardi_param->setVisible(!checked);
+
 }
 void reconstruction_window::on_HARDI_toggled(bool checked)
 {
@@ -549,6 +539,7 @@ void reconstruction_window::on_QDif_toggled(bool checked)
     ui->RecordODF->setVisible(checked);
 
     ui->hardi_param->setVisible(!checked);
+
 }
 
 
