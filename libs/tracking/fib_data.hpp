@@ -15,7 +15,7 @@ private:
     image::basic_image<unsigned int,3> voxel_index_map;
     std::vector<const float*> odf_blocks;
     std::vector<unsigned int> odf_block_size;
-    image::basic_image<unsigned char,3> odf_block_map1;
+    image::basic_image<unsigned int,3> odf_block_map1;
     image::basic_image<unsigned int,3> odf_block_map2;
     unsigned int half_odf_size;
 public:
