@@ -81,8 +81,8 @@ public:
     bool output_mapping;
     image::vector<3,int> csf_pos1,csf_pos2;
 public: // user in fib evaluation
-    std::vector<image::basic_image<float,3> > fib_fa;
-    std::vector<image::basic_image<image::vector<3>,3> > fib_dir;
+    std::vector<float> fib_fa;
+    std::vector<float> fib_dir;
 public:
     float z0;
     // other information for second pass processing
@@ -159,47 +159,15 @@ public:
 
     void flip_fib_dir(bool x,bool y,bool z)
     {
-        for(unsigned int i = 0;i < fib_dir.size();++i)
-            for(unsigned int j = 0;j < dim.size();++j)
-            {
-                if(x)
-                    fib_dir[i][j][0] = -fib_dir[i][j][0];
-                if(y)
-                    fib_dir[i][j][1] = -fib_dir[i][j][1];
-                if(z)
-                    fib_dir[i][j][2] = -fib_dir[i][j][2];
-            }
-    }
-
-    unsigned int evaluate_fib(void) const
-    {
-        unsigned char num_fib = fib_fa.size();
-        unsigned int connection_count = 0;
-        char dx[13] = {1,0,0,1,1,0, 1, 1, 0, 1,-1, 1, 1};
-        char dy[13] = {0,1,0,1,0,1,-1, 0, 1, 1, 1,-1, 1};
-        char dz[13] = {0,0,1,0,1,1, 0,-1,-1, 1, 1, 1,-1};
-        float otsu = image::segmentation::otsu_threshold(image::make_image(dim,&*fib_fa[0].begin()))*0.6;
-        for(image::pixel_index<3> index;index.is_valid(dim);index.next(dim))
-            if(fib_fa[0][index.index()] > otsu)
-            {
-                for(unsigned int i = 0;i < 13;++i)
-                {
-                    image::vector<3,short> pos(index[0] + dx[i],index[1] + dy[i],index[2] + dz[i]);
-                    if(!dim.is_valid(pos))
-                        continue;
-                    image::pixel_index<3> other_index(pos[0],pos[1],pos[2],dim);
-                    if(fib_fa[0][other_index.index()] < otsu)
-                        continue;
-                    image::vector<3,float> dis(dx[i],dy[i],dz[i]);
-                    dis.normalize();
-                    for(unsigned char fib1 = 0;fib1 < num_fib;++fib1)
-                        if(fib_fa[fib1][index.index()] > otsu && std::abs(fib_dir[fib1][index.index()]*dis) > 0.8665)
-                        for(unsigned char fib2 = 0;fib2 < num_fib;++fib2)
-                            if(fib_fa[fib2][other_index.index()] > otsu && std::abs(fib_dir[fib2][other_index.index()]*dis) > 0.8665)
-                                ++connection_count;
-                }
-            }
-        return connection_count;
+        for(unsigned int j = 0;j < fib_dir.size();j += 3)
+        {
+            if(x)
+                fib_dir[j] = -fib_dir[j];
+            if(y)
+                fib_dir[j+1] = -fib_dir[j+1];
+            if(z)
+                fib_dir[j+2] = -fib_dir[j+2];
+        }
     }
 };
 

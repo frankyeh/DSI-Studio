@@ -136,6 +136,73 @@ typedef boost::mpl::vector<
 > reprocess_odf;
 
 
+std::pair<unsigned int,unsigned int> evaluate_fib(
+        const image::geometry<3>& dim,
+        const std::vector<const float*>& fib_fa,
+        const std::vector<const float*>& fib_dir)
+{
+    unsigned char num_fib = fib_fa.size();
+    char dx[13] = {1,0,0,1,1,0, 1, 1, 0, 1,-1, 1, 1};
+    char dy[13] = {0,1,0,1,0,1,-1, 0, 1, 1, 1,-1, 1};
+    char dz[13] = {0,0,1,0,1,1, 0,-1,-1, 1, 1, 1,-1};
+    std::vector<image::vector<3> > dis(13);
+    for(unsigned int i = 0;i < 13;++i)
+    {
+        dis[i] = image::vector<3>(dx[i],dy[i],dz[i]);
+        dis[i].normalize();
+    }
+    float otsu = image::segmentation::otsu_threshold(image::make_image(dim,fib_fa[0]))*0.6;
+    std::vector<std::vector<unsigned char> > connected(fib_fa.size());
+    for(unsigned int index = 0;index < connected.size();++index)
+        connected[index].resize(dim.size());
+    for(image::pixel_index<3> index;index.is_valid(dim);index.next(dim))
+    {
+        if(fib_fa[0][index.index()] <= otsu)
+            continue;
+        unsigned int index3 = index.index()+index.index()+index.index();
+        for(unsigned char fib1 = 0;fib1 < num_fib;++fib1)
+        {
+            if(fib_fa[fib1][index.index()] <= otsu)
+                break;
+            for(unsigned int j = 0;j < 2;++j)
+            for(unsigned int i = 0;i < 13;++i)
+            {
+                image::vector<3,int> pos;
+                pos = j ? image::vector<3,int>(index[0] + dx[i],index[1] + dy[i],index[2] + dz[i])
+                          :image::vector<3,int>(index[0] - dx[i],index[1] - dy[i],index[2] - dz[i]);
+                if(!dim.is_valid(pos))
+                    continue;
+                image::pixel_index<3> other_index(pos[0],pos[1],pos[2],dim);
+                unsigned int other_index3 = other_index.index()+other_index.index()+other_index.index();
+                if(std::abs(image::vector<3>(fib_dir[fib1] + index3)*dis[i]) <= 0.8665)
+                    continue;
+                for(unsigned char fib2 = 0;fib2 < num_fib;++fib2)
+                    if(fib_fa[fib2][other_index.index()] > otsu &&
+                            std::abs(image::vector<3>(fib_dir[fib2] + other_index3)*dis[i]) > 0.8665)
+                    {
+                        connected[fib1][index.index()] = 1;
+                        connected[fib2][other_index.index()] = 1;
+                    }
+            }
+        }
+    }
+    unsigned int no_connection_count = 0;
+    unsigned int connection_count = 0;
+    for(image::pixel_index<3> index;index.is_valid(dim);index.next(dim))
+    {
+        for(unsigned int i = 0;i < num_fib;++i)
+            if(fib_fa[i][index.index()] > otsu)
+            {
+                if(connected[i][index.index()])
+                    ++connection_count;
+                else
+                    ++no_connection_count;
+            }
+    }
+
+    return std::make_pair(connection_count,no_connection_count);
+}
+
 
 extern "C"
     const char* reconstruction(ImageModel* image_model,unsigned int method_id,const float* param_values)
@@ -210,14 +277,17 @@ extern "C"
         {
             set_title("checking b-table");
             image_model->reconstruct<dti_process>();
-            unsigned int cur_score = image_model->voxel.evaluate_fib();
+            std::vector<const float*> fib_fa(1);
+            std::vector<const float*> fib_dir(1);
+            fib_fa[0] = &*image_model->voxel.fib_fa.begin();
+            fib_dir[0] = &*image_model->voxel.fib_dir.begin();
+            unsigned int cur_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
             image_model->voxel.flip_fib_dir(true,false,false);
-            unsigned int flip_x_score = image_model->voxel.evaluate_fib();
+            unsigned int flip_x_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
             image_model->voxel.flip_fib_dir(true,true,false);
-            unsigned int flip_y_score = image_model->voxel.evaluate_fib();
+            unsigned int flip_y_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
             image_model->voxel.flip_fib_dir(false,true,true);
-            unsigned int flip_z_score = image_model->voxel.evaluate_fib();
-
+            unsigned int flip_z_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
             if(flip_x_score > cur_score &&
                flip_x_score > flip_y_score && flip_x_score > flip_z_score)
             {

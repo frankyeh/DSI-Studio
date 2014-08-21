@@ -159,6 +159,7 @@ private slots:
     void on_zoom_in_clicked();
     void on_zoom_out_clicked();
     void on_actionView_FIB_Content_triggered();
+    void on_actionQuality_Assessment_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

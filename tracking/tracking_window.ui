@@ -1022,6 +1022,7 @@
     <addaction name="actionRestore_Settings"/>
     <addaction name="actionManual_Registration"/>
     <addaction name="actionView_FIB_Content"/>
+    <addaction name="actionQuality_Assessment"/>
    </widget>
    <addaction name="menu_Edit"/>
    <addaction name="menuRegions"/>
@@ -2606,7 +2607,7 @@
   </action>
   <action name="actionView_FIB_Content">
    <property name="text">
-    <string>View FIB Content</string>
+    <string>View FIB Content...</string>
    </property>
   </action>
   <action name="actionPublish_or_perish">
@@ -2617,6 +2618,11 @@
   <action name="actionMethod_Report">
    <property name="text">
     <string>Method Report...</string>
+   </property>
+  </action>
+  <action name="actionQuality_Assessment">
+   <property name="text">
+    <string>Quality Assessment...</string>
    </property>
   </action>
  </widget>

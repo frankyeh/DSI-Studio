@@ -9,9 +9,6 @@ class Dwi2Tensor : public BaseProcess
     std::vector<float> d0;
     std::vector<float> d1;
     std::vector<float> md;
-    std::vector<float> fa;
-    std::vector<float> fdir;
-
     float get_fa(float l1,float l2,float l3)
     {
         float ll = (l1+l2+l3)/3.0;
@@ -32,17 +29,10 @@ public:
     virtual void init(Voxel& voxel)
     {
         voxel.fib_fa.clear();
+        voxel.fib_fa.resize(voxel.dim.size());
         voxel.fib_dir.clear();
-        voxel.fib_fa.resize(1);
-        voxel.fib_dir.resize(1);
-        voxel.fib_fa[0].resize(voxel.dim);
-        voxel.fib_dir[0].resize(voxel.dim);
+        voxel.fib_dir.resize(voxel.dim.size()*3);
 
-
-        fa.clear();
-        fa.resize(voxel.dim.size());
-        fdir.clear();
-        fdir.resize(voxel.dim.size()*3);
         md.clear();
         md.resize(voxel.dim.size());
         d0.clear();
@@ -121,24 +111,18 @@ public:
             d[1] = 0.0;
             d[2] = 0.0;
         }
-        std::copy(V,V+3,fdir.begin() + data.voxel_index * 3);
-        voxel.fib_fa[0][data.voxel_index] = data.fa[0] = fa[data.voxel_index] = get_fa(d[0],d[1],d[2]);
-        voxel.fib_dir[0][data.voxel_index] = image::vector<3>(V[0],V[1],V[2]);
+        std::copy(V,V+3,voxel.fib_dir.begin() + data.voxel_index + data.voxel_index + data.voxel_index);
+        data.fa[0] = voxel.fib_fa[data.voxel_index] = get_fa(d[0],d[1],d[2]);
         md[data.voxel_index] = 1000.0*(d[0]+d[1]+d[2])/3.0;
         d0[data.voxel_index] = 1000.0*d[0];
         d1[data.voxel_index] = 1000.0*(d[1]+d[2])/2.0;
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
-        set_title("fa");
-        mat_writer.write("fa0",&*fa.begin(),1,fa.size());
-        set_title("dir0");
-        mat_writer.write("dir0",&*fdir.begin(),1,fdir.size());
-        set_title("adc");
+        mat_writer.write("fa0",&*voxel.fib_fa.begin(),1,voxel.fib_fa.size());
+        mat_writer.write("dir0",&*voxel.fib_dir.begin(),1,voxel.fib_dir.size());
         mat_writer.write("adc",&*md.begin(),1,md.size());
-        set_title("axial_dif");
         mat_writer.write("axial_dif",&*d0.begin(),1,d0.size());
-        set_title("radial_dif");
         mat_writer.write("radial_dif",&*d1.begin(),1,d1.size());
     }
 };

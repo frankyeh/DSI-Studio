@@ -1367,3 +1367,31 @@ void tracking_window::on_actionView_FIB_Content_triggered()
 {
     show_info_dialog(this,"FIB content",handle->report);
 }
+
+std::pair<unsigned int,unsigned int> evaluate_fib(
+        const image::geometry<3>& dim,
+        const std::vector<const float*>& fib_fa,
+        const std::vector<const float*>& fib_dir);
+void tracking_window::on_actionQuality_Assessment_triggered()
+{
+    std::vector<std::vector<float> > fib_dir(handle->fib.num_fiber);
+    std::vector<const float*> fib_dir_ptr(handle->fib.num_fiber);
+    for(unsigned int i = 0;i < fib_dir.size();++i)
+    {
+        fib_dir[i].resize(handle->dim.size()*3);
+        fib_dir_ptr[i] = &*fib_dir[i].begin();
+        for(unsigned int j = 0,index = 0;j < fib_dir[i].size();j += 3,++index)
+        {
+            const float* v = handle->fib.getDir(index,i);
+            fib_dir[i][j] = v[0];
+            fib_dir[i][j+1] = v[1];
+            fib_dir[i][j+2] = v[2];
+        }
+    }
+    std::pair<unsigned int,unsigned int> result = evaluate_fib(handle->fib.dim,handle->fib.fa,fib_dir_ptr);
+    std::ostringstream out;
+    out << "Number of connected fibers: " << result.first << std::endl;
+    out << "Number of disconnected fibers: " << result.second << std::endl;
+    out << "Error ratio: " << 100.0*(float)result.second/(float)result.first << "%" << std::endl;
+    show_info_dialog(this,"Quality assessment",out.str().c_str());
+}
