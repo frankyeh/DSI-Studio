@@ -593,3 +593,17 @@ void vbc_dialog::on_run_clicked()
     connect(timer.get(), SIGNAL(timeout()), this, SLOT(calculate_FDR()));
     timer->start();
 }
+
+void vbc_dialog::on_save_name_list_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                this,
+                "Save name list",
+                work_dir + "/name.txt",
+                "Report file (*.txt);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    std::ofstream out(filename.toLocal8Bit().begin());
+    for(unsigned int index = 0;index < vbc->subject_count();++index)
+        out << vbc->subject_name(index) << std::endl;
+}

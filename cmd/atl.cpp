@@ -124,6 +124,51 @@ void atl_get_mapping(image::basic_image<float,3>& from,
     image::matrix::product(fa_template_imp.tran.begin(),T_buf,out_trans,image::dyndim(4,4),image::dyndim(4,4));
 }
 
+void atl_save_mapping(const std::string& file_name,const image::geometry<3>& geo,
+                      const image::basic_image<image::vector<3>,3>& mapping,const float* trans,const float* vs)
+{
+    for(unsigned int i = 0;i < atlas_list.size();++i)
+    {
+        std::string base_name = file_name;
+        base_name += ".";
+        base_name += atlas_list[i].name;
+        image::basic_image<short,3> all_roi(geo);
+        for(unsigned int j = 0;j < atlas_list[i].get_list().size();++j)
+        {
+            std::string output = base_name;
+            output += ".";
+            output += atlas_list[i].get_list()[j];
+            output += ".nii.gz";
+
+            image::basic_image<unsigned char,3> roi(geo);
+            for(unsigned int k = 0;k < mapping.size();++k)
+                if (atlas_list[i].is_labeled_as(mapping[k], j))
+                {
+                    roi[k] = 1;
+                    all_roi[k] = atlas_list[i].get_label_at(mapping[k]);
+                }
+            image::io::nifti out;
+            out.set_voxel_size(vs);
+            if(trans)
+                out.set_image_transformation(trans);
+            else
+                image::flip_xy(roi);
+            out << roi;
+            out.save_to_file(output.c_str());
+            std::cout << "save " << output << std::endl;
+        }
+        base_name += ".nii.gz";
+        image::io::nifti out;
+        out.set_voxel_size(vs);
+        if(trans)
+            out.set_image_transformation(trans);
+        else
+            image::flip_xy(all_roi);
+        out << all_roi;
+        out.save_to_file(base_name.c_str());
+        std::cout << "save " << base_name << std::endl;
+    }
+}
 
 int atl(int ac, char *av[])
 {
@@ -173,6 +218,7 @@ int atl(int ac, char *av[])
         std::cout << "Invalid file format" << std::endl;
         return 0;
     }
+    image::geometry<3> geo(dim);
 
 
     if(!fa_template_imp.load_from_file(get_fa_template_path().c_str()) ||
@@ -185,67 +231,23 @@ int atl(int ac, char *av[])
     if(mat_reader.read("trans",row,col,trans))
     {
         std::cout << "Transformation matrix found." << std::endl;
-        image::geometry<3> qsdr_geo(dim);
-        for(unsigned int i = 0;i < atlas_list.size();++i)
+        image::basic_image<image::vector<3>,3> mapping(geo);
+        for(image::pixel_index<3> index;geo.is_valid(index);index.next(geo))
         {
-            for(unsigned int j = 0;j < atlas_list[i].get_list().size();++j)
-            {
-                std::string output = file_name;
-                output += ".";
-                output += atlas_list[i].name;
-                output += ".";
-                output += atlas_list[i].get_list()[j];
-                output += ".nii.gz";
-                image::basic_image<unsigned char,3> roi(qsdr_geo);
-                for(image::pixel_index<3> index;qsdr_geo.is_valid(index);index.next(qsdr_geo))
-                {
-                    image::vector<3,float> pos(index),mni;
-                    image::vector_transformation(pos.begin(),mni.begin(),trans,image::vdim<3>());
-                    if (atlas_list[i].is_labeled_as(mni, j))
-                        roi[index.index()] = 1;
-                }
-                image::io::nifti out;
-                out.set_voxel_size(vs);
-                out.set_image_transformation(trans);
-                out << roi;
-                out.save_to_file(output.c_str());
-                std::cout << "save " << output << std::endl;
-            }
+            image::vector<3,float> pos(index),mni;
+            image::vector_transformation(pos.begin(),mni.begin(),trans,image::vdim<3>());
+            mapping[index.index()] = mni;
         }
+        atl_save_mapping(file_name,geo,mapping,trans,vs);
         return 0;
     }
 
-    image::basic_image<float,3> from(fa0,image::geometry<3>(dim[0],dim[1],dim[2]));
+    image::basic_image<float,3> from(fa0,geo);
     image::basic_image<image::vector<3>,3> mapping;
     unsigned int factor = vm["order"].as<int>() + 1;
     unsigned int thread_count = vm["thread_count"].as<int>();
     image::vector<3> vs_(vs);
     float out_trans[16];
     atl_get_mapping(from,vs_,factor,thread_count,mapping,out_trans);
-
-
-    for(unsigned int i = 0;i < atlas_list.size();++i)
-    {
-        for(unsigned int j = 0;j < atlas_list[i].get_list().size();++j)
-        {
-            std::string output = file_name;
-            output += ".";
-            output += atlas_list[i].name;
-            output += ".";
-            output += atlas_list[i].get_list()[j];
-            output += ".nii.gz";
-
-            image::basic_image<unsigned char,3> roi(from.geometry());
-            for(unsigned int k = 0;k < from.size();++k)
-                if (atlas_list[i].is_labeled_as(mapping[k], j))
-                    roi[k] = 1;
-            image::io::nifti out;
-            out.set_voxel_size(vs);
-            out.set_image_transformation(out_trans);
-            image::flip_xy(roi);
-            out << roi;
-            out.save_to_file(output.c_str());
-            std::cout << "save " << output << std::endl;
-        }
-    }
+    atl_save_mapping(file_name,geo,mapping,0,vs);
 }
