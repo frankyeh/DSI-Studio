@@ -157,6 +157,13 @@ void atl_save_mapping(const std::string& file_name,const image::geometry<3>& geo
             out.save_to_file(output.c_str());
             std::cout << "save " << output << std::endl;
         }
+        {
+            std::string label_name = base_name;
+            label_name += ".txt";
+            std::ofstream txt_out(label_name.c_str());
+            for(unsigned int j = 0;j < atlas_list[i].get_list().size();++j)
+                txt_out << atlas_list[i].get_num()[j] << " " << atlas_list[i].get_list()[j] << std::endl;
+        }
         base_name += ".nii.gz";
         image::io::nifti out;
         out.set_voxel_size(vs);

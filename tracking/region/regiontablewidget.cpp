@@ -306,7 +306,11 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     std::map<short,std::string> label_map;
     if(multiple_roi)
     {
-        QString label_file = QFileInfo(file_name).absolutePath()+"/"+QFileInfo(file_name).baseName()+".txt";
+        QString base_name = QFileInfo(file_name).completeBaseName();
+        if(QFileInfo(base_name).suffix().toLower() == "nii")
+            base_name = QFileInfo(base_name).completeBaseName();
+        QString label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".txt";
+        std::cout << label_file.toLocal8Bit().begin() << std::endl;
         if(!QFileInfo(label_file).exists())
         {
             QMessageBox msgBox;
@@ -418,8 +422,9 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
                 region.LoadFromBuffer(mask);
             else
                 region.LoadFromBuffer(mask,convert);
-            QString name = (label_map.find(value) == label_map.end() ? QString::number(value):label_map[value].c_str());
-            add_region(QFileInfo(file_name).baseName()+"_"+name,roi_id);
+            QString name = (label_map.find(value) == label_map.end() ?
+                                QString("roi_") + QString::number(value):QString(label_map[value].c_str()));
+            add_region(name,roi_id);
             regions.back().assign(region.get());
             item(currentRow(),0)->setCheckState(Qt::Unchecked);
             item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
