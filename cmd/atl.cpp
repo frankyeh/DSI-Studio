@@ -125,7 +125,8 @@ void atl_get_mapping(image::basic_image<float,3>& from,
 }
 
 void atl_save_mapping(const std::string& file_name,const image::geometry<3>& geo,
-                      const image::basic_image<image::vector<3>,3>& mapping,const float* trans,const float* vs)
+                      const image::basic_image<image::vector<3>,3>& mapping,const float* trans,const float* vs,
+                      bool multiple)
 {
     for(unsigned int i = 0;i < atlas_list.size();++i)
     {
@@ -147,15 +148,18 @@ void atl_save_mapping(const std::string& file_name,const image::geometry<3>& geo
                     roi[k] = 1;
                     all_roi[k] = atlas_list[i].get_label_at(mapping[k]);
                 }
-            image::io::nifti out;
-            out.set_voxel_size(vs);
-            if(trans)
-                out.set_image_transformation(trans);
-            else
-                image::flip_xy(roi);
-            out << roi;
-            out.save_to_file(output.c_str());
-            std::cout << "save " << output << std::endl;
+            if(multiple)
+            {
+                image::io::nifti out;
+                out.set_voxel_size(vs);
+                if(trans)
+                    out.set_image_transformation(trans);
+                else
+                    image::flip_xy(roi);
+                out << roi;
+                out.save_to_file(output.c_str());
+                std::cout << "save " << output << std::endl;
+            }
         }
         {
             std::string label_name = base_name;
@@ -187,6 +191,7 @@ int atl(int ac, char *av[])
     ("order", po::value<int>()->default_value(0), "normalization order (0~3)")
     ("thread_count", po::value<int>()->default_value(4), "thread count")
     ("atlas", po::value<std::string>(), "atlas name")
+    ("output", po::value<std::string>()->default_value("multiple"), "output files")
     ;
 
     if(!ac)
@@ -245,7 +250,7 @@ int atl(int ac, char *av[])
             image::vector_transformation(pos.begin(),mni.begin(),trans,image::vdim<3>());
             mapping[index.index()] = mni;
         }
-        atl_save_mapping(file_name,geo,mapping,trans,vs);
+        atl_save_mapping(file_name,geo,mapping,trans,vs,vm["output"].as<std::string>() == "multiple");
         return 0;
     }
 
@@ -256,5 +261,5 @@ int atl(int ac, char *av[])
     image::vector<3> vs_(vs);
     float out_trans[16];
     atl_get_mapping(from,vs_,factor,thread_count,mapping,out_trans);
-    atl_save_mapping(file_name,geo,mapping,0,vs);
+    atl_save_mapping(file_name,geo,mapping,0,vs,vm["output"].as<std::string>() == "multiple");
 }
