@@ -1,9 +1,7 @@
 #ifndef MNI_RECONSTRUCTION_HPP
 #define MNI_RECONSTRUCTION_HPP
-#include <boost/thread.hpp>
 #include "gqi_process.hpp"
 #include "mapping/fa_template.hpp"
-#include "image/image.hpp"
 #include "basic_voxel.hpp"
 #include "basic_process.hpp"
 #include "odf_decomposition.hpp"
@@ -124,36 +122,8 @@ public:
             begin_prog("normalization");
             unsigned int factor = voxel.reg_method + 1;
             mni.reset(new image::reg::bfnorm_mapping<float,3>(VG.geometry(),image::geometry<3>(factor*7,factor*9,factor*7)));
-            // optimization
-            unsigned int thread_count = voxel.image_model->thread_count;
-            image::reg::bfnorm_mrqcof<image::basic_image<float,3>,float>
-                    bf_optimize(VG,VFF,*mni.get(),thread_count);
-
-            terminated_class terminated(16 + 16*VG.depth()/thread_count);
-            // image::reg::bfnorm(VG,VFF,*mni.get(),terminated);
-            for(int iter = 0; iter < 16 && !terminated; ++iter)
-            {
-
-                bf_optimize.start();
-                boost::thread_group threads;
-                for (unsigned int index = 1;index < thread_count;++index)
-                        threads.add_thread(new boost::thread(
-                            &image::reg::bfnorm_mrqcof<image::basic_image<float,3>,float>::run<bool>,
-                                           &bf_optimize,index,boost::ref(terminated.terminated)));
-                bf_optimize.run(0,terminated);
-                if(thread_count > 1)
-                    threads.join_all();
-
-                bf_optimize.end();
-                boost::thread_group threads2;
-                for (unsigned int index = 1;index < thread_count;++index)
-                        threads2.add_thread(new boost::thread(
-                            &image::reg::bfnorm_mrqcof<image::basic_image<float,3>,float>::run2,
-                                           &bf_optimize,index,40));
-                bf_optimize.run2(0,40);
-                if(thread_count > 1)
-                    threads2.join_all();
-            }
+            terminated_class terminated(17);
+            multi_thread_reg(*mni.get(),VG,VFF,voxel.image_model->thread_count,terminated);
             if(prog_aborted())
                 throw std::runtime_error("Reconstruction canceled");
         }

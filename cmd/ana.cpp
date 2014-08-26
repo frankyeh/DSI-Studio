@@ -163,8 +163,8 @@ int ana(int ac, char *av[])
                 pos /= cur_region.size();
                 std::ostringstream out;
                 out << "region" << value;
-                region_table[pos[0] > (geometry[0] >> 1) ? pos[1]-geometry[1]:geometry[1]-pos[1]] =
-                        std::make_pair(cur_region,out.str());
+                region_table.insert(std::make_pair(pos[0] > (geometry[0] >> 1) ? pos[1]-geometry[1]:geometry[1]-pos[1],
+                                    std::make_pair(cur_region,out.str())));
             }
         std::cout << "total number of regions=" << region_table.size() << std::endl;
         std::cout << "total number of tracts=" << tract_model.get_tracts().size() << std::endl;

@@ -40,6 +40,7 @@ bool atl_load_atlas(std::string atlas_name)
     return true;
 }
 void atl_get_mapping(image::basic_image<float,3>& from,
+                     image::basic_image<float,3>& to,
                      const image::vector<3>& vs,
                      unsigned int factor,
                      unsigned int thread_count,
@@ -47,7 +48,6 @@ void atl_get_mapping(image::basic_image<float,3>& from,
                      float* out_trans)
 {
     std::cout << "perform image registration..." << std::endl;
-    image::basic_image<float,3>& to = fa_template_imp.I;
     image::affine_transform<3,float> arg;
     arg.scaling[0] = vs[0] / std::fabs(fa_template_imp.tran[0]);
     arg.scaling[1] = vs[1] / std::fabs(fa_template_imp.tran[5]);
@@ -91,27 +91,7 @@ void atl_get_mapping(image::basic_image<float,3>& from,
     std::cout << "thread count=" << thread_count << std::endl;
 
     image::reg::bfnorm_mapping<float,3> mni(new_from.geometry(),image::geometry<3>(factor*7,factor*9,factor*7));
-    image::reg::bfnorm_mrqcof<image::basic_image<float,3>,float> bf_optimize(new_from,to,mni,thread_count);
-    for(int iter = 0; iter < 16; ++iter)
-    {
-        bf_optimize.start();
-        boost::thread_group threads;
-        for (unsigned int index = 1;index < thread_count;++index)
-                threads.add_thread(new boost::thread(
-                    &image::reg::bfnorm_mrqcof<image::basic_image<float,3>,float>::run<bool>,&bf_optimize,index,boost::ref(terminated)));
-        bf_optimize.run(0,terminated);
-        if(thread_count > 1)
-            threads.join_all();
-        bf_optimize.end();
-        boost::thread_group threads2;
-        for (unsigned int index = 1;index < thread_count;++index)
-                threads2.add_thread(new boost::thread(
-                    &image::reg::bfnorm_mrqcof<image::basic_image<float,3>,float>::run2,&bf_optimize,index,40));
-        bf_optimize.run2(0,40);
-        if(thread_count > 1)
-            threads2.join_all();
-    }
-
+    multi_thread_reg(mni,new_from,to,thread_count,terminated);
     mapping.resize(from.geometry());
     for(image::pixel_index<3> index;from.geometry().is_valid(index);index.next(from.geometry()))
         if(from[index.index()] > 0)
@@ -260,6 +240,6 @@ int atl(int ac, char *av[])
     unsigned int thread_count = vm["thread_count"].as<int>();
     image::vector<3> vs_(vs);
     float out_trans[16];
-    atl_get_mapping(from,vs_,factor,thread_count,mapping,out_trans);
+    atl_get_mapping(from,fa_template_imp.I,vs_,factor,thread_count,mapping,out_trans);
     atl_save_mapping(file_name,geo,mapping,0,vs,vm["output"].as<std::string>() == "multiple");
 }

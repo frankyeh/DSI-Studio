@@ -575,12 +575,7 @@ void reconstruction_window::on_zoom_out_clicked()
 extern fa_template fa_template_imp;
 void reconstruction_window::on_manual_reg_clicked()
 {
-    image::affine_transform<3,float> arg;
-    arg.scaling[0] = handle->voxel.vs[0];
-    arg.scaling[1] = handle->voxel.vs[1];
-    arg.scaling[2] = handle->voxel.vs[2];
-    image::reg::align_center(dwi,fa_template_imp.I,arg);
-    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,fa_template_imp.I,arg));
+    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,fa_template_imp.I,handle->voxel.vs));
     manual->timer->start();
     if(manual->exec() == QDialog::Accepted)
         handle->voxel.qsdr_trans = manual->T;
@@ -759,12 +754,7 @@ void reconstruction_window::on_actionFlip_xz_triggered()
 
 void reconstruction_window::on_actionRotate_triggered()
 {
-    image::affine_transform<3,float> arg;
-    arg.scaling[0] = handle->voxel.vs[0];
-    arg.scaling[1] = handle->voxel.vs[1];
-    arg.scaling[2] = handle->voxel.vs[2];
-    image::reg::align_center(dwi,fa_template_imp.I,arg);
-    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,fa_template_imp.I,arg,image::reg::rigid_body));
+    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,fa_template_imp.I,handle->voxel.vs,image::reg::rigid_body));
     manual->timer->start();
     if(manual->exec() != QDialog::Accepted)
         return;

@@ -473,9 +473,9 @@ bool TractModel::load_tracts_color_from_file(const char* file_name)
     std::ifstream in(file_name);
     if (!in)
         return false;
-    std::vector<int> colors;
-    std::copy(std::istream_iterator<int>(in),
-              std::istream_iterator<int>(),
+    std::vector<float> colors;
+    std::copy(std::istream_iterator<float>(in),
+              std::istream_iterator<float>(),
               std::back_inserter(colors));
     std::copy(colors.begin(),
               colors.begin()+std::min(colors.size(),tract_color.size()),
@@ -490,7 +490,7 @@ bool TractModel::save_tracts_color_to_file(const char* file_name)
         return false;
     std::copy(tract_color.begin(),
               tract_color.end(),
-              std::ostream_iterator<int>(out," "));
+              std::ostream_iterator<float>(out," "));
     return out;
 }
 
@@ -1424,8 +1424,8 @@ void ConnectivityMatrix::set_atlas(const atlas& data,const image::basic_image<im
             if(mni_position[index.index()] != null &&
                data.label_matched(data.get_label_at(mni_position[index.index()]),label_index))
                 cur_region.push_back(image::vector<3,short>(index.begin()));
-        if(!cur_region.empty())
-            region_table[atlas_region_order[label_index]] = std::make_pair(cur_region,data.get_list()[label_index]);
+        region_table.insert(std::make_pair(atlas_region_order[label_index],
+                                               std::make_pair(cur_region,data.get_list()[label_index])));
     }
     set_regions(region_table);
 }

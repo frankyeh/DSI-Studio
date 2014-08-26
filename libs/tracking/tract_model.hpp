@@ -152,7 +152,7 @@ public:
     std::vector<float> tract_median_length;
     std::vector<float> tract_mean_length;
 public:
-    typedef std::map<float,std::pair<std::vector<image::vector<3,short> >,std::string> > region_table_type;
+    typedef std::multimap<float,std::pair<std::vector<image::vector<3,short> >,std::string> > region_table_type;
     std::vector<std::vector<image::vector<3,short> > > regions;
     std::vector<std::string> region_name;
     void set_atlas(const atlas& data,const image::basic_image<image::vector<3,float>,3 >& mni_position);

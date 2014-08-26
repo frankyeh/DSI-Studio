@@ -13,19 +13,18 @@ class manual_alignment;
 }
 
 struct reg_data{
-    reg_data(const image::geometry<3>& geo,
-                   const image::affine_transform<3,float>& arg_,
-                   int reg_type_):bnorm_data(geo,image::geometry<3>(7,9,7)),arg(arg_),reg_type(reg_type_)
+    reg_data(const image::geometry<3>& geo,int reg_type_):
+        bnorm_data(geo,image::geometry<3>(7,9,7)),reg_type(reg_type_)
     {
         terminated = false;
         progress = 0;
     }
-
-    int reg_type;
     image::reg::bfnorm_mapping<double,3> bnorm_data;
+    image::affine_transform<3,float> arg;
+    int reg_type;
     unsigned char terminated;
     unsigned char progress;
-    image::affine_transform<3,float> arg;
+
 };
 
 class manual_alignment : public QDialog
@@ -33,6 +32,7 @@ class manual_alignment : public QDialog
     Q_OBJECT
 private:
     image::basic_image<float,3> from,to,warped_from;
+    image::vector<3> vs;
     QGraphicsScene scene[3];
     image::color_image buffer[3];
     QImage slice_image[3];
@@ -48,8 +48,7 @@ public:
     explicit manual_alignment(QWidget *parent,
         image::basic_image<float,3> from_,
         image::basic_image<float,3> to_,
-        const image::affine_transform<3,float>& arg,
-                              int reg_type = image::reg::affine);
+        const image::vector<3>& vs,int reg_type = image::reg::affine);
     ~manual_alignment();
     void connect_arg_update();
     void disconnect_arg_update();

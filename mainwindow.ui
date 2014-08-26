@@ -45,7 +45,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -143,7 +143,7 @@
            <string>STEP1: Create template/skeleton</string>
           </property>
           <property name="description">
-           <string>Average the ODFs to create a tempalte or skeleton. You need to use QSDR to reconstruct src files and check &quot;output ODF&quot; in the reconstruction</string>
+           <string>Average the ODFs to create a template or skeleton. You need to use QSDR to reconstruct src files and check &quot;output ODF&quot; in the reconstruction.</string>
           </property>
          </widget>
         </item>
@@ -184,8 +184,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>300</width>
-         <height>376</height>
+         <width>182</width>
+         <height>420</height>
         </rect>
        </property>
        <attribute name="label">
@@ -258,8 +258,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>300</width>
-         <height>376</height>
+         <width>232</width>
+         <height>155</height>
         </rect>
        </property>
        <attribute name="label">

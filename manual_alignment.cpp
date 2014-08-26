@@ -3,38 +3,47 @@
 #include "tracking/tracking_window.h"
 
 typedef image::reg::mutual_information cost_func;
-void run_reg(const image::basic_image<float,3>& from,
-             const image::basic_image<float,3>& to,
-             reg_data* data)
+
+
+void run_reg(image::basic_image<float,3>& from,
+             image::basic_image<float,3>& to,
+             image::vector<3> vs,
+             reg_data& data)
 {
-    data->progress = 0;
-    image::reg::linear(from,to,data->arg,data->reg_type,cost_func(),data->terminated);
-    if(data->terminated)
-        return;
-    image::transformation_matrix<3,float> affine(data->arg,from.geometry(),to.geometry());
-    affine.inverse();
-    data->progress = 1;
-    image::basic_image<float,3> new_from(to.geometry());
-    image::resample(from,new_from,affine);
-    image::reg::bfnorm(new_from,to,data->bnorm_data,data->terminated);
-    if(!(data->terminated))
-        data->progress = 2;
-}
-manual_alignment::manual_alignment(QWidget *parent,
-                                   image::basic_image<float,3> from_,
-                                   image::basic_image<float,3> to_,
-                                   const image::affine_transform<3,float>& arg_,int reg_type_) :
-    QDialog(parent),ui(new Ui::manual_alignment),data(to_.geometry(),arg_,reg_type_)
-{
-    from.swap(from_);
-    to.swap(to_);
+    data.arg.scaling[0] = vs[0];
+    data.arg.scaling[1] = vs[1];
+    data.arg.scaling[2] = vs[2];
+    image::reg::align_center(from,to,data.arg);
+
     image::filter::gaussian(from);
     from -= image::segmentation::otsu_threshold(from);
     image::lower_threshold(from,0.0);
-
     image::normalize(from,1.0);
     image::normalize(to,1.0);
 
+    data.progress = 0;
+    image::reg::linear(from,to,data.arg,data.reg_type,cost_func(),data.terminated);
+    if(data.terminated)
+        return;
+    image::transformation_matrix<3,float> affine(data.arg,from.geometry(),to.geometry());
+    affine.inverse();
+    data.progress = 1;
+    image::basic_image<float,3> new_from(to.geometry());
+    image::resample(from,new_from,affine);
+    image::reg::bfnorm(new_from,to,data.bnorm_data,data.terminated);
+    if(!(data.terminated))
+        data.progress = 2;
+}
+
+manual_alignment::manual_alignment(QWidget *parent,
+                                   image::basic_image<float,3> from_,
+                                   image::basic_image<float,3> to_,const image::vector<3>& vs_,int reg_type_) :
+    QDialog(parent),ui(new Ui::manual_alignment),data(to_.geometry(),reg_type_),vs(vs_)
+{
+    from.swap(from_);
+    to.swap(to_);
+    reg_thread.reset(
+                new boost::thread(run_reg,boost::ref(from),boost::ref(to),vs,boost::ref(data)));
     ui->setupUi(this);
     if(reg_type_ == image::reg::rigid_body)
     {
@@ -71,8 +80,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     connect(timer, SIGNAL(timeout()), this, SLOT(check_reg()));
 
     need_update_affine_matrix = true;
-    reg_thread.reset(
-                new boost::thread(run_reg,boost::ref(from),boost::ref(to),&data));
+
 
 }
 
@@ -279,6 +287,6 @@ void manual_alignment::on_rerun_clicked()
         data.terminated = 1;
         reg_thread->join();
     }
-    reg_thread.reset(new boost::thread(run_reg,from,to,&data));
+    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),vs,boost::ref(data)));
 
 }

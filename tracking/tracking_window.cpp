@@ -106,11 +106,7 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         handle->dim[1]*handle->vs[1] > 120 &&
         handle->dim[2]*handle->vs[2] > 50 && !is_qsdr)
     {
-        mi3_arg.scaling[0] = slice.voxel_size[0] / std::fabs(fa_template_imp.tran[0]);
-        mi3_arg.scaling[1] = slice.voxel_size[1] / std::fabs(fa_template_imp.tran[5]);
-        mi3_arg.scaling[2] = slice.voxel_size[2] / std::fabs(fa_template_imp.tran[10]);
-        image::reg::align_center(slice.source_images,fa_template_imp.I,mi3_arg);
-        mi3.reset(new manual_alignment(this,slice.source_images,fa_template_imp.I,mi3_arg));
+        mi3.reset(new manual_alignment(this,slice.source_images,fa_template_imp.I,handle->vs));
     }
     else
         ui->actionManual_Registration->setEnabled(false);
@@ -1167,6 +1163,8 @@ void tracking_window::on_actionConnectivity_matrix_triggered()
         QMessageBox::information(this,"DSI Studio","Run fiber tracking first",0);
         return;
     }
+    if(mi3->data.progress < 1)
+        QMessageBox::information(this,"Connectivity matrix","The background registration is still running. The matrix is subject to change.",0);
     connectivity_matrix.reset(new connectivity_matrix_dialog(this));
     connectivity_matrix->show();
 }
