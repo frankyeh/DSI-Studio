@@ -138,8 +138,8 @@ typedef boost::mpl::vector<
 
 std::pair<unsigned int,unsigned int> evaluate_fib(
         const image::geometry<3>& dim,
-        const std::vector<const float*>& fib_fa,
-        const std::vector<const float*>& fib_dir)
+        const std::vector<std::vector<float> >& fib_fa,
+        const std::vector<std::vector<float> >& fib_dir)
 {
     unsigned char num_fib = fib_fa.size();
     char dx[13] = {1,0,0,1,1,0, 1, 1, 0, 1,-1, 1, 1};
@@ -151,7 +151,7 @@ std::pair<unsigned int,unsigned int> evaluate_fib(
         dis[i] = image::vector<3>(dx[i],dy[i],dz[i]);
         dis[i].normalize();
     }
-    float otsu = image::segmentation::otsu_threshold(image::make_image(dim,fib_fa[0]))*0.6;
+    float otsu = image::segmentation::otsu_threshold(fib_fa[0])*0.6;
     std::vector<std::vector<unsigned char> > connected(fib_fa.size());
     for(unsigned int index = 0;index < connected.size();++index)
         connected[index].resize(dim.size());
@@ -174,11 +174,11 @@ std::pair<unsigned int,unsigned int> evaluate_fib(
                     continue;
                 image::pixel_index<3> other_index(pos[0],pos[1],pos[2],dim);
                 unsigned int other_index3 = other_index.index()+other_index.index()+other_index.index();
-                if(std::abs(image::vector<3>(fib_dir[fib1] + index3)*dis[i]) <= 0.8665)
+                if(std::abs(image::vector<3>(&fib_dir[fib1][index3])*dis[i]) <= 0.8665)
                     continue;
                 for(unsigned char fib2 = 0;fib2 < num_fib;++fib2)
                     if(fib_fa[fib2][other_index.index()] > otsu &&
-                            std::abs(image::vector<3>(fib_dir[fib2] + other_index3)*dis[i]) > 0.8665)
+                            std::abs(image::vector<3>(&fib_dir[fib2][other_index3])*dis[i]) > 0.8665)
                     {
                         connected[fib1][index.index()] = 1;
                         connected[fib2][other_index.index()] = 1;
@@ -203,6 +203,18 @@ std::pair<unsigned int,unsigned int> evaluate_fib(
     return std::make_pair(connection_count,no_connection_count);
 }
 
+void flip_fib_dir(std::vector<float>& fib_dir,bool x,bool y,bool z)
+{
+    for(unsigned int j = 0;j+2 < fib_dir.size();j += 3)
+    {
+        if(x)
+            fib_dir[j] = -fib_dir[j];
+        if(y)
+            fib_dir[j+1] = -fib_dir[j+1];
+        if(z)
+            fib_dir[j+2] = -fib_dir[j+2];
+    }
+}
 
 extern "C"
     const char* reconstruction(ImageModel* image_model,unsigned int method_id,const float* param_values)
@@ -274,19 +286,20 @@ extern "C"
             }
         }
         // correct for b-table orientation
+
         {
             set_title("checking b-table");
             image_model->reconstruct<dti_process>();
-            std::vector<const float*> fib_fa(1);
-            std::vector<const float*> fib_dir(1);
-            fib_fa[0] = &*image_model->voxel.fib_fa.begin();
-            fib_dir[0] = &*image_model->voxel.fib_dir.begin();
+            std::vector<std::vector<float> > fib_fa(1);
+            std::vector<std::vector<float> > fib_dir(1);
+            fib_fa[0].swap(image_model->voxel.fib_fa);
+            fib_dir[0].swap(image_model->voxel.fib_dir);
             unsigned int cur_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
-            image_model->voxel.flip_fib_dir(true,false,false);
+            flip_fib_dir(fib_dir[0],true,false,false);
             unsigned int flip_x_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
-            image_model->voxel.flip_fib_dir(true,true,false);
+            flip_fib_dir(fib_dir[0],true,true,false);
             unsigned int flip_y_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
-            image_model->voxel.flip_fib_dir(false,true,true);
+            flip_fib_dir(fib_dir[0],false,true,true);
             unsigned int flip_z_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
             if(flip_x_score > cur_score &&
                flip_x_score > flip_y_score && flip_x_score > flip_z_score)
@@ -311,6 +324,7 @@ extern "C"
             }
 
         }
+
 
 
 

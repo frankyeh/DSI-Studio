@@ -155,20 +155,6 @@ public:
     {
         return &process_list[index];
     }
-public:
-
-    void flip_fib_dir(bool x,bool y,bool z)
-    {
-        for(unsigned int j = 0;j < fib_dir.size();j += 3)
-        {
-            if(x)
-                fib_dir[j] = -fib_dir[j];
-            if(y)
-                fib_dir[j+1] = -fib_dir[j+1];
-            if(z)
-                fib_dir[j+2] = -fib_dir[j+2];
-        }
-    }
 };
 
 
