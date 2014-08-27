@@ -22,6 +22,7 @@ connectivity_matrix_dialog::connectivity_matrix_dialog(tracking_window *parent) 
     if(cur_tracking_window->regionWidget->regions.size() > 1)
         ui->region_list->setCurrentIndex(0);
     else
+        if(!atlas_list.empty())
         ui->region_list->setCurrentIndex(1);
     on_recalculate_clicked();
 

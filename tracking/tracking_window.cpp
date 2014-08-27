@@ -1163,6 +1163,8 @@ void tracking_window::on_actionConnectivity_matrix_triggered()
         QMessageBox::information(this,"DSI Studio","Run fiber tracking first",0);
         return;
     }
+    if(atlas_list.empty())
+        QMessageBox::information(0,"Error",QString("DSI Studio cannot find atlas files in ")+QCoreApplication::applicationDirPath()+ "/atlas",0);
     if(mi3->data.progress < 1)
         QMessageBox::information(this,"Connectivity matrix","The background registration is still running. The matrix is subject to change.",0);
     connectivity_matrix.reset(new connectivity_matrix_dialog(this));
