@@ -198,7 +198,7 @@ public:
 
 private: // single subject analysis result
     bool get_odf_profile(const char* file_name,std::vector<float>& cur_subject_data);
-    void run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& track);
+    void run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& track,float seed_ratio = 1.0);
 
 
 public:// for FDR analysis

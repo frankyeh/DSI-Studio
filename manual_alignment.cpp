@@ -42,8 +42,7 @@ manual_alignment::manual_alignment(QWidget *parent,
 {
     from.swap(from_);
     to.swap(to_);
-    reg_thread.reset(
-                new boost::thread(run_reg,boost::ref(from),boost::ref(to),vs,boost::ref(data)));
+    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),vs,boost::ref(data)));
     ui->setupUi(this);
     if(reg_type_ == image::reg::rigid_body)
     {

@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'vbc_dialog.ui'
 **
-** Created: Sun Aug 17 01:30:24 2014
+** Created: Tue Aug 26 22:21:56 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -49,6 +49,9 @@ public:
     QToolBox *toolBox;
     QWidget *page;
     QVBoxLayout *verticalLayout_24;
+    QHBoxLayout *horizontalLayout_4;
+    QPushButton *save_name_list;
+    QSpacerItem *horizontalSpacer;
     QSplitter *splitter;
     QWidget *widget_3;
     QVBoxLayout *verticalLayout_6;
@@ -163,12 +166,28 @@ public:
         page->setGeometry(QRect(0, 0, 583, 368));
         verticalLayout_24 = new QVBoxLayout(page);
         verticalLayout_24->setObjectName(QString::fromUtf8("verticalLayout_24"));
+        horizontalLayout_4 = new QHBoxLayout();
+        horizontalLayout_4->setObjectName(QString::fromUtf8("horizontalLayout_4"));
+        save_name_list = new QPushButton(page);
+        save_name_list->setObjectName(QString::fromUtf8("save_name_list"));
+
+        horizontalLayout_4->addWidget(save_name_list);
+
+        horizontalSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+        horizontalLayout_4->addItem(horizontalSpacer);
+
+
+        verticalLayout_24->addLayout(horizontalLayout_4);
+
         splitter = new QSplitter(page);
         splitter->setObjectName(QString::fromUtf8("splitter"));
         splitter->setOrientation(Qt::Vertical);
         widget_3 = new QWidget(splitter);
         widget_3->setObjectName(QString::fromUtf8("widget_3"));
         verticalLayout_6 = new QVBoxLayout(widget_3);
+        verticalLayout_6->setSpacing(0);
+        verticalLayout_6->setContentsMargins(0, 0, 0, 0);
         verticalLayout_6->setObjectName(QString::fromUtf8("verticalLayout_6"));
         splitter_5 = new QSplitter(widget_3);
         splitter_5->setObjectName(QString::fromUtf8("splitter_5"));
@@ -714,6 +733,7 @@ public:
     void retranslateUi(QDialog *vbc_dialog)
     {
         vbc_dialog->setWindowTitle(QApplication::translate("vbc_dialog", "Connectometry", 0, QApplication::UnicodeUTF8));
+        save_name_list->setText(QApplication::translate("vbc_dialog", "Save name list...", 0, QApplication::UnicodeUTF8));
         label_13->setText(QApplication::translate("vbc_dialog", "Zoom", 0, QApplication::UnicodeUTF8));
         coordinate->setText(QApplication::translate("vbc_dialog", "(x,y,z)", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem = subject_list->horizontalHeaderItem(0);

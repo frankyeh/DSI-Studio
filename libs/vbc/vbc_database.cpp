@@ -381,7 +381,7 @@ void fib_data::add_greater_lesser_mapping_for_tracking(FibData* handle)
 
 
 
-void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& tracks)
+void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& tracks,float seed_ratio)
 {
     std::vector<image::vector<3,short> > seed;
     for(image::pixel_index<3> index;index.is_valid(dim);index.next(dim))
@@ -392,18 +392,18 @@ void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vect
         tracks.clear();
         return;
     }
-    ThreadData tracking_thread(true);// random seed
+    ThreadData tracking_thread(false);
     tracking_thread.param.step_size = 1.0; // fixed 1 mm
     tracking_thread.param.smooth_fraction = 0;
     tracking_thread.param.min_points_count3 = 6;
     tracking_thread.param.max_points_count3 = std::max<unsigned int>(6,3.0*500/tracking_thread.param.step_size);
     tracking_thread.tracking_method = 0;// streamline fiber tracking
-    tracking_thread.initial_direction = 1;// random directions
+    tracking_thread.initial_direction = 0;// main directions
     tracking_thread.interpolation_strategy = 0; // trilinear interpolation
     tracking_thread.stop_by_tract = 0;// stop by seed
     tracking_thread.center_seed = 0;// subvoxel seeding
     tracking_thread.setRegions(fib.dim,seed,3);
-    tracking_thread.run(fib,1,seed.size(),true);
+    tracking_thread.run(fib,1,seed.size()*seed_ratio,true);
     tracking_thread.track_buffer.swap(tracks);
 }
 
@@ -696,78 +696,80 @@ void vbc_database::run_permutation_multithread(unsigned int id)
 
     std::vector<std::vector<float> > tracks;
     bool null = true;
+    unsigned int num_subject = std::max<int>(1,individual_data.size());
     while(total_count < permutation_count && !terminated)
     {
-        unsigned int subject_id = 0;
         if(null)
             ++total_count_null;
         else
             ++total_count;
 
-        // multiple regression or group analysis
-        if(individual_data.empty())
+        for(unsigned int subject_id = 0;subject_id < num_subject && !terminated;++subject_id)
         {
-            std::vector<unsigned int> permu(model.subject_index.size());
+            // multiple regression or group analysis
+            if(individual_data.empty())
             {
-                stat_model resampled_info;
-                unsigned int trial = 0;
-                std::vector<unsigned int> ind(permu.size());
-                do
+                std::vector<unsigned int> permu(model.subject_index.size());
                 {
-                    if(trial > 100)
-                        throw std::runtime_error("Invalid subject demographics for multiple regression");
-                    ++trial;
-                    for(unsigned int index = 0;index < permu.size();++index)
-                        permu[index] = model.subject_index[ind[index] = rand_gen()];
-                }while(!resampled_info.resample(model,ind));
-                if(null)
-                    std::random_shuffle(permu.begin(),permu.end(),rand_gen);
-                calculate_spm(resampled_info,data,permu);
+                    stat_model resampled_info;
+                    unsigned int trial = 0;
+                    std::vector<unsigned int> ind(permu.size());
+                    do
+                    {
+                        if(trial > 100)
+                            throw std::runtime_error("Invalid subject demographics for multiple regression");
+                        ++trial;
+                        for(unsigned int index = 0;index < permu.size();++index)
+                            permu[index] = model.subject_index[ind[index] = rand_gen()];
+                    }while(!resampled_info.resample(model,ind));
+                    if(null)
+                        std::random_shuffle(permu.begin(),permu.end(),rand_gen);
+                    calculate_spm(resampled_info,data,permu);
+                }
             }
-        }
-        else
-        // indivividual analysis
-        {
-            subject_id = rand_gen(individual_data.size());
-            std::vector<unsigned int> resample(subject_qa.size());
-            for(unsigned int index = 0;index < resample.size();++index)
-                resample[index] = rand_gen(resample.size());
-            if(null)
-                calculate_percentile(subject_qa[rand_gen(subject_qa.size())],resample,data);
             else
-                calculate_percentile(&(individual_data[subject_id][0]),resample,data);
-        }
-
-
-        fib.fa = data.lesser_ptr;
-        fib.findex = data.lesser_dir_ptr;
-        run_track(fib,tracks);
-        if(null)
-            cal_hist(tracks,subject_lesser_null);
-        else
-        {
-            cal_hist(tracks,subject_lesser);
+            // indivividual analysis
             {
-                boost::mutex::scoped_lock lock(lock_lesser_tracks);
-                lesser_tracks[subject_id].add_tracts(tracks,length_threshold);
-                tracks.clear();
+                std::vector<unsigned int> resample(200);
+                for(unsigned int index = 0;index < resample.size();++index)
+                    resample[index] = rand_gen(subject_qa.size());
+                if(null)
+                    calculate_percentile(subject_qa[rand_gen(subject_qa.size())],resample,data);
+                else
+                    calculate_percentile(&(individual_data[subject_id][0]),resample,data);
             }
-        }
 
-        fib.fa = data.greater_ptr;
-        fib.findex = data.greater_dir_ptr;
-        run_track(fib,tracks);
-        if(null)
-            cal_hist(tracks,subject_greater_null);
-        else
-        {
-            cal_hist(tracks,subject_greater);
+
+            fib.fa = data.lesser_ptr;
+            fib.findex = data.lesser_dir_ptr;
+            run_track(fib,tracks,50.0/permutation_count);
+            if(null)
+                cal_hist(tracks,subject_lesser_null);
+            else
             {
-                boost::mutex::scoped_lock lock(lock_greater_tracks);
-                greater_tracks[subject_id].add_tracts(tracks,length_threshold);
-                tracks.clear();
+                cal_hist(tracks,subject_lesser);
+                {
+                    boost::mutex::scoped_lock lock(lock_lesser_tracks);
+                    lesser_tracks[subject_id].add_tracts(tracks,length_threshold);
+                    tracks.clear();
+                }
             }
-        }
+
+            fib.fa = data.greater_ptr;
+            fib.findex = data.greater_dir_ptr;
+            run_track(fib,tracks,50.0/permutation_count);
+            if(null)
+                cal_hist(tracks,subject_greater_null);
+            else
+            {
+                cal_hist(tracks,subject_greater);
+                {
+                    boost::mutex::scoped_lock lock(lock_greater_tracks);
+                    greater_tracks[subject_id].add_tracts(tracks,length_threshold);
+                    tracks.clear();
+                }
+            }
+            }
 
         null = !null;
     }
@@ -788,7 +790,7 @@ void vbc_database::save_tracks_files(void)
         throw std::runtime_error("Please assign file name for saving trk files.");
     for(unsigned int index = 0;index < greater_tracks.size();++index)
     {
-        if(fdr_greater[length_threshold] < 0.5 && fdr_greater[length_threshold] != 0.0)
+        if(fdr_greater[length_threshold] < 0.05 && fdr_greater[length_threshold] != 0.0)
         {
             std::ostringstream out1;
             out1 << trk_file_names[index] << ".greater" << length_threshold << ".trk.gz";
@@ -801,7 +803,7 @@ void vbc_database::save_tracks_files(void)
             }
             greater_tracks[index].save_tracts_to_file(out1.str().c_str());
         }
-        if(fdr_lesser[length_threshold] < 0.5 && fdr_lesser[length_threshold] != 0.0)
+        if(fdr_lesser[length_threshold] < 0.05 && fdr_lesser[length_threshold] != 0.0)
         {
             std::ostringstream out2;
             out2 << trk_file_names[index] << ".lesser" << length_threshold << ".trk.gz";
