@@ -1373,16 +1373,17 @@ void tracking_window::on_actionView_FIB_Content_triggered()
 
 std::pair<unsigned int,unsigned int> evaluate_fib(
         const image::geometry<3>& dim,
-        const std::vector<const float*>& fib_fa,
-        const std::vector<const float*>& fib_dir);
+        const std::vector<std::vector<float> >& fib_fa,
+        const std::vector<std::vector<float> >& fib_dir);
 void tracking_window::on_actionQuality_Assessment_triggered()
 {
+    std::vector<std::vector<float> > fib_fa(handle->fib.num_fiber);
     std::vector<std::vector<float> > fib_dir(handle->fib.num_fiber);
-    std::vector<const float*> fib_dir_ptr(handle->fib.num_fiber);
-    for(unsigned int i = 0;i < fib_dir.size();++i)
+    for(unsigned int i = 0;i < fib_fa.size();++i)
     {
+        fib_fa[i].resize(handle->dim.size());
+        std::copy(handle->fib.fa[i],handle->fib.fa[i]+handle->dim.size(),fib_fa[i].begin());
         fib_dir[i].resize(handle->dim.size()*3);
-        fib_dir_ptr[i] = &*fib_dir[i].begin();
         for(unsigned int j = 0,index = 0;j < fib_dir[i].size();j += 3,++index)
         {
             const float* v = handle->fib.getDir(index,i);
@@ -1391,7 +1392,7 @@ void tracking_window::on_actionQuality_Assessment_triggered()
             fib_dir[i][j+2] = v[2];
         }
     }
-    std::pair<unsigned int,unsigned int> result = evaluate_fib(handle->fib.dim,handle->fib.fa,fib_dir_ptr);
+    std::pair<unsigned int,unsigned int> result = evaluate_fib(handle->fib.dim,fib_fa,fib_dir);
     std::ostringstream out;
     out << "Number of connected fibers: " << result.first << std::endl;
     out << "Number of disconnected fibers: " << result.second << std::endl;
