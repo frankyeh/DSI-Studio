@@ -366,79 +366,97 @@ void vbc_dialog::on_open_mr_files_clicked()
         return;
     file_names.clear();
     file_names.push_back(filename.toLocal8Bit().begin());
-    std::ifstream in(filename.toLocal8Bit().begin());
-    std::string line;
-    std::vector<std::string> titles;
-    // read title
+
+    mr.clear();
+
+    if(ui->rb_multiple_regression->isChecked())
     {
-        std::getline(in,line);
-        std::istringstream str(line);
-        std::copy(std::istream_iterator<std::string>(str),
-                  std::istream_iterator<std::string>(),std::back_inserter(titles));
-        mr.feature_count = titles.size()+1; // additional one for intercept
-    }
-    mr.X.clear();
-    mr.subject_index.clear();
-    for(unsigned int index = 0;index < vbc->subject_count() && std::getline(in,line);++index)
-    {
-        std::istringstream str(line);
-        std::vector<std::string> values;
-        std::copy(std::istream_iterator<std::string>(str),
-                  std::istream_iterator<std::string>(),std::back_inserter(values));
-        if(values.size() != titles.size())
+        mr.type = 1;
+        std::ifstream in(filename.toLocal8Bit().begin());
+        std::string line;
+        std::vector<std::string> titles;
+        // read title
         {
-            QMessageBox::information(this,"Error",QString("Cannot parse:") + line.c_str(),0);
-            return;
+            std::getline(in,line);
+            std::istringstream str(line);
+            std::copy(std::istream_iterator<std::string>(str),
+                      std::istream_iterator<std::string>(),std::back_inserter(titles));
+            mr.feature_count = titles.size()+1; // additional one for intercept
         }
-        std::vector<double> x(titles.size());
-        bool ok = true;
-        for(unsigned int j = 0;j < x.size();++j)
+        for(unsigned int index = 0;index < vbc->subject_count() && std::getline(in,line);++index)
         {
-            x[j] = QString(values[j].c_str()).toDouble(&ok);
+            std::istringstream str(line);
+            std::vector<std::string> values;
+            std::copy(std::istream_iterator<std::string>(str),
+                      std::istream_iterator<std::string>(),std::back_inserter(values));
+            if(values.size() != titles.size())
+            {
+                QMessageBox::information(this,"Error",QString("Cannot parse:") + line.c_str(),0);
+                return;
+            }
+            std::vector<double> x(titles.size());
+            bool ok = true;
+            for(unsigned int j = 0;j < x.size();++j)
+            {
+                x[j] = QString(values[j].c_str()).toDouble(&ok);
+                if(!ok)
+                    break;
+            }
             if(!ok)
-                break;
+                continue;
+            mr.subject_index.push_back(index);
+            mr.X.push_back(1); // for the intercep
+            for(unsigned int j = 0;j < x.size();++j)
+                mr.X.push_back(x[j]);
         }
-        if(!ok)
-            continue;
-        mr.subject_index.push_back(index);
-        mr.X.push_back(1); // for the intercep
-        for(unsigned int j = 0;j < x.size();++j)
-            mr.X.push_back(x[j]);
+        QStringList t;
+        t << "Subject ID";
+        for(unsigned int index = 0;index < titles.size();++index)
+            t << titles[index].c_str();
+        ui->foi->clear();
+        ui->foi->addItems(t);
+        ui->foi->removeItem(0);
+        ui->foi->setCurrentIndex(ui->foi->count()-1);
+        ui->foi_widget->show();
+        ui->subject_demo->setColumnCount(titles.size()+1);
+        ui->subject_demo->setHorizontalHeaderLabels(t);
+    }
+    if(ui->rb_group_difference->isChecked())
+    {
+        mr.type = 0;
+        std::ifstream in(filename.toLocal8Bit().begin());
+        std::copy(std::istream_iterator<int>(in),
+                  std::istream_iterator<int>(),std::back_inserter(mr.label));
+        ui->subject_demo->setColumnCount(2);
+        ui->subject_demo->setHorizontalHeaderLabels(QStringList() << "Subject ID" << "Group ID");
     }
 
-
-    QStringList t;
-    t << "Subject ID";
-    for(unsigned int index = 0;index < titles.size();++index)
-        t << titles[index].c_str();
-    ui->foi->clear();
-    ui->foi->addItems(t);
-    ui->foi->removeItem(0);
-    ui->foi->setCurrentIndex(ui->foi->count()-1);
-    ui->foi_widget->show();
     ui->subject_demo->clear();
-    ui->subject_demo->setColumnCount(titles.size()+1);
-    ui->subject_demo->setHorizontalHeaderLabels(t);
     ui->subject_demo->setRowCount(vbc->subject_count());
     for(unsigned int row = 0,subject_id = 0,index = 0;row < ui->subject_demo->rowCount();++row)
     {
         ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->subject_name(row).c_str())));
-        if(subject_id < mr.subject_index.size() && mr.subject_index[subject_id] == row)
-        {
-            ++index;// skip intercep
-            for(unsigned int col = 1;col < ui->subject_demo->columnCount();++col,++index)
-                ui->subject_demo->setItem(row,col,new QTableWidgetItem(QString::number(mr.X[index])));
-            ++subject_id;
-        }
-        else
-            for(unsigned int col = 1;col < ui->subject_demo->columnCount();++col)
-                ui->subject_demo->setItem(row,col,new QTableWidgetItem("-"));
 
+
+        if(ui->rb_multiple_regression->isChecked())
+        {
+            if(subject_id < mr.subject_index.size() && mr.subject_index[subject_id] == row)
+            {
+                ++index;// skip intercep
+                for(unsigned int col = 1;col < ui->subject_demo->columnCount();++col,++index)
+                    ui->subject_demo->setItem(row,col,new QTableWidgetItem(QString::number(mr.X[index])));
+                ++subject_id;
+            }
+            else
+                for(unsigned int col = 1;col < ui->subject_demo->columnCount();++col)
+                    ui->subject_demo->setItem(row,col,new QTableWidgetItem("-"));
+        }
+        if(ui->rb_group_difference->isChecked())
+            ui->subject_demo->setItem(row,1,new QTableWidgetItem(QString::number(mr.label[row])));
     }
-    mr.type = 1; // multiple regression
     if(!mr.pre_process())
     {
-        QMessageBox::information(this,"Error","Dependant features found in the demographics",0);
+        QMessageBox::information(this,"Error","Invalid subjet information for statistical analysis",0);
         ui->run->setEnabled(false);
         return;
     }
@@ -476,9 +494,10 @@ void vbc_dialog::on_rb_individual_analysis_clicked()
 void vbc_dialog::on_rb_group_difference_clicked()
 {
     ui->percentile_rank_group->hide();
-    ui->z_threshold_group->hide();
+    ui->z_threshold_group->show();
     ui->individual_demo->hide();
-    ui->multiple_regression_demo->hide();
+    ui->multiple_regression_demo->show();
+    ui->regression_feature->hide();
 }
 
 void vbc_dialog::on_rb_multiple_regression_clicked()
@@ -487,6 +506,7 @@ void vbc_dialog::on_rb_multiple_regression_clicked()
     ui->z_threshold_group->show();
     ui->individual_demo->hide();
     ui->multiple_regression_demo->show();
+    ui->regression_feature->show();
 }
 
 void vbc_dialog::on_rb_paired_difference_clicked()
@@ -494,7 +514,8 @@ void vbc_dialog::on_rb_paired_difference_clicked()
     ui->percentile_rank_group->hide();
     ui->z_threshold_group->hide();
     ui->individual_demo->hide();
-    ui->multiple_regression_demo->hide();
+    ui->multiple_regression_demo->show();
+    ui->regression_feature->show();
 }
 
 void vbc_dialog::calculate_FDR(void)
@@ -520,20 +541,36 @@ void vbc_dialog::calculate_FDR(void)
     if(!vbc->report.empty())
         report += vbc->report.c_str();
 
+    if(ui->rb_individual_analysis->isChecked())
     {
         std::ostringstream out;
-
-        if(vbc->fdr_greater[vbc->length_threshold] >= 0.5)
-            out << " The analysis results showed no tracks with significant anisotropy increase.";
+        if(vbc->fdr_greater[vbc->length_threshold] >= 0.05)
+            out << " The analysis results showed no tracks with significant increase in anisotropy.";
         else
-            out << " The analysis results showed tracks with increased anisotropy, and the FDR of these tracks was " << vbc->fdr_greater[vbc->length_threshold] << ".";
+            out << " The analysis results showed tracks with increased anisotropy, and the FDR was " << vbc->fdr_greater[vbc->length_threshold] << ".";
 
-        if(vbc->fdr_lesser[vbc->length_threshold] >= 0.5)
-            out << " The analysis results showed no tracks with significant anisotropy decrease.";
+        if(vbc->fdr_lesser[vbc->length_threshold] >= 0.05)
+            out << " The analysis results showed no tracks with significant decrease in anisotropy.";
         else
-            out << " The analysis results showed tracks with decreased anisotropy, and the FDR of these tracks was " << vbc->fdr_lesser[vbc->length_threshold] << ".";
+            out << " The analysis results showed tracks with decreased anisotropy, and the FDR was " << vbc->fdr_lesser[vbc->length_threshold] << ".";
         report += out.str().c_str();
     }
+    if(ui->rb_group_difference->isChecked())
+    {
+        std::ostringstream out;
+        if(vbc->fdr_greater[vbc->length_threshold] >= 0.05)
+            out << " The analysis results showed that there is no tracks in group 0 with significantly increased anisotropy.";
+        else
+            out << " The analysis results showed tracks with increased anisotropy in group 0, and the FDR was " << vbc->fdr_greater[vbc->length_threshold] << ".";
+
+        if(vbc->fdr_lesser[vbc->length_threshold] >= 0.05)
+            out << " The analysis results showed that there is no tracks in group 1 with significantly increased anisotropy.";
+        else
+            out << " The analysis results showed tracks with increased anisotropy in group 1, and the FDR was " << vbc->fdr_lesser[vbc->length_threshold] << ".";
+        report += out.str().c_str();
+    }
+
+
     ui->textBrowser->setText(report);
 }
 void vbc_dialog::on_run_clicked()
@@ -544,6 +581,7 @@ void vbc_dialog::on_run_clicked()
         timer->stop();
         timer.reset(0);
         ui->progressBar->setValue(0);
+        ui->run->setText("Run");
         return;
     }
     ui->run->setText("Stop");
@@ -559,6 +597,16 @@ void vbc_dialog::on_run_clicked()
         out << " The diffusion data of the patients were compared with "
             << vbc->subject_count() << " normal subjects, and percentile rank was calculated for each fiber direction.";
         out << " A percentile threshold of " << ui->percentile->value() << " was used to select fiber orientations with deviant condition.";
+    }
+    if(ui->rb_group_difference->isChecked())
+    {
+        vbc->tracking_threshold = ui->t_threshold->value();
+        vbc->individual_data.clear();
+        vbc->model = mr;
+
+        out << "\nDiffusion MRI connectometry was conducted to compare group differences."
+            << " A T-threshold of " << ui->t_threshold->value() << " was used to select fiber directions with substantial difference in anisotropy.";
+        file_names[0] += ".group";
     }
     if(ui->rb_multiple_regression->isChecked())
     {

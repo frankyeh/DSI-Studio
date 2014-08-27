@@ -487,36 +487,48 @@ bool stat_model::pre_process(void)
             if(label[index])
                 ++group2_count;
         group1_count = label.size()-group2_count;
-        return true;
+        return group2_count > 3 && group1_count > 3;
     case 1: // multiple regression
         return mr.set_variables(&*X.begin(),feature_count,X.size()/feature_count);
     }
     return false;
 }
-bool stat_model::resample(const stat_model& rhs,const std::vector<unsigned int>& permu)
+bool stat_model::resample(const stat_model& rhs,std::vector<unsigned int>& permu,bool null)
 {
     type = rhs.type;
-    switch(type)
+    feature_count = rhs.feature_count;
+    study_feature = rhs.study_feature;
+    unsigned int trial = 0;
+    do
     {
-    case 0: // group
-        label.reserve(permu.size());
-        for(unsigned int index = 0;index < permu.size();++index)
-            label[index] = rhs.label[permu[index]];
-        return pre_process();
-    case 1: // multiple regression
+        if(trial > 100)
+            throw std::runtime_error("Invalid subject demographics for multiple regression");
+        ++trial;
+
+        switch(type)
         {
-            feature_count = rhs.feature_count;
-            study_feature = rhs.study_feature;
+        case 0: // group
+            permu.resize(rhs.label.size());
+            label.resize(rhs.label.size());
+            for(unsigned int index = 0;index < rhs.label.size();++index)
+                label[index] = rhs.label[permu[index] = rhs.rand_gen(rhs.label.size())];
+            break;
+        case 1: // multiple regression
+            permu.resize(rhs.subject_index.size());
             X.resize(rhs.X.size());
-            for(unsigned int index = 0,pos = 0;index < permu.size();++index,pos += feature_count)
+            for(unsigned int index = 0,pos = 0;index < rhs.subject_index.size();++index,pos += feature_count)
             {
-                unsigned int p = permu[index];
-                std::copy(rhs.X.begin()+p*feature_count,rhs.X.begin()+p*feature_count+feature_count,X.begin()+pos);
+                unsigned int subject_index_index = rhs.rand_gen(rhs.subject_index.size());
+                permu[index] = rhs.subject_index[subject_index_index];
+                std::copy(rhs.X.begin()+subject_index_index*feature_count,
+                          rhs.X.begin()+subject_index_index*feature_count+feature_count,X.begin()+pos);
             }
-            return pre_process();
+            break;
         }
-    }
-    return false;
+    }while(!pre_process());
+    if(null)
+        std::random_shuffle(permu.begin(),permu.end(),rhs.rand_gen);
+    return true;
 }
 
 double stat_model::operator()(const std::vector<double>& population) const
@@ -531,12 +543,13 @@ double stat_model::operator()(const std::vector<double>& population) const
         double sum_sq1 = 0.0;
         double sum_sq2 = 0.0;
         for(unsigned int index = 0;index < population.size();++index)
-            if(label[index]) // group 2
+            if(label[index]) // group 1
             {
                 sum2 += population[index];
                 sum_sq2 += population[index]*population[index];
             }
             else
+                // group 0
             {
                 sum1 += population[index];
                 sum_sq1 += population[index]*population[index];
@@ -549,6 +562,7 @@ double stat_model::operator()(const std::vector<double>& population) const
         v *= v;
         v /= (v1*v1/(((double)group1_count)-1.0) + v2*v2/(((double)group2_count)-1.0));
         t_stat = (mean1 - mean2) / std::sqrt(v1+v2);
+        // t_stat > 0 if group 0 > group 1
         }
         break;
     case 1: // multiple regression
@@ -647,14 +661,14 @@ void vbc_database::calculate_spm(const stat_model& info,fib_data& data,const std
                 continue;
             double t_stat = info(selected_population);
 
-            if(t_stat > 0.0) // group 1 > group 2
+            if(t_stat > 0.0) // group 0 > group 1
             {
                 unsigned char fib_count = greater_fib_count[cur_index];
                 data.greater[fib_count][cur_index] = t_stat;
                 data.greater_dir[fib_count][cur_index] = findex[fib][cur_index];
                 ++greater_fib_count[cur_index];
             }
-            if(t_stat < 0.0) // group 1 < group 2
+            if(t_stat < 0.0) // group 0 < group 1
             {
                 unsigned char fib_count = lesser_fib_count[cur_index];
                 data.lesser[fib_count][cur_index] = -t_stat;
@@ -688,12 +702,6 @@ void vbc_database::run_permutation_multithread(unsigned int id)
     fib.read(*handle);
     fib.threshold = tracking_threshold;
     fib.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);
-
-    boost::mt19937 generator(id);
-    boost::uniform_int<int> uniform_rand(0,individual_data.empty() ? model.subject_index.size()-1:individual_data.size()-1);
-    boost::variate_generator<boost::mt19937&, boost::uniform_int<int> > rand_gen(generator,uniform_rand);
-
-
     std::vector<std::vector<float> > tracks;
     bool null = true;
     unsigned int num_subject = std::max<int>(1,individual_data.size());
@@ -709,32 +717,27 @@ void vbc_database::run_permutation_multithread(unsigned int id)
             // multiple regression or group analysis
             if(individual_data.empty())
             {
-                std::vector<unsigned int> permu(model.subject_index.size());
+                std::vector<unsigned int> permu;
+                stat_model resampled_info;
                 {
-                    stat_model resampled_info;
-                    unsigned int trial = 0;
-                    std::vector<unsigned int> ind(permu.size());
-                    do
-                    {
-                        if(trial > 100)
-                            throw std::runtime_error("Invalid subject demographics for multiple regression");
-                        ++trial;
-                        for(unsigned int index = 0;index < permu.size();++index)
-                            permu[index] = model.subject_index[ind[index] = rand_gen()];
-                    }while(!resampled_info.resample(model,ind));
-                    if(null)
-                        std::random_shuffle(permu.begin(),permu.end(),rand_gen);
-                    calculate_spm(resampled_info,data,permu);
+                    boost::mutex::scoped_lock lock(lock_resampling);
+                    resampled_info.resample(model,permu,null);
                 }
+                calculate_spm(resampled_info,data,permu);
             }
             else
             // indivividual analysis
             {
                 std::vector<unsigned int> resample(200);
-                for(unsigned int index = 0;index < resample.size();++index)
-                    resample[index] = rand_gen(subject_qa.size());
+                unsigned int random_subject_id = 0;
+                {
+                    boost::mutex::scoped_lock lock(lock_resampling);
+                    random_subject_id = model.rand_gen(subject_qa.size());
+                    for(unsigned int index = 0;index < resample.size();++index)
+                        resample[index] = model.rand_gen(subject_qa.size());
+                }
                 if(null)
-                    calculate_percentile(subject_qa[rand_gen(subject_qa.size())],resample,data);
+                    calculate_percentile(subject_qa[random_subject_id],resample,data);
                 else
                     calculate_percentile(&(individual_data[subject_id][0]),resample,data);
             }
@@ -836,6 +839,7 @@ void vbc_database::run_permutation(unsigned int thread_count)
     fdr_lesser.clear();
     fdr_lesser.resize(200);
 
+    model.generator.seed(0);
     total_count_null = 0;
     total_count = 0;
     greater_tracks.clear();

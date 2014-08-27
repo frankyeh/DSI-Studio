@@ -301,6 +301,11 @@ extern "C"
             unsigned int flip_y_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
             flip_fib_dir(fib_dir[0],false,true,true);
             unsigned int flip_z_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
+            std::cout << cur_score << std::endl;
+            std::cout << flip_x_score << std::endl;
+            std::cout << flip_y_score << std::endl;
+            std::cout << flip_z_score << std::endl;
+
             if(flip_x_score > cur_score &&
                flip_x_score > flip_y_score && flip_x_score > flip_z_score)
             {

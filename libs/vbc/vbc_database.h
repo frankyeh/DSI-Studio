@@ -5,6 +5,7 @@
 #include "image/image.hpp"
 #include "gzip_interface.hpp"
 #include "prog_interface_static_link.h"
+#include <boost/random.hpp>
 #include <boost/math/distributions/normal.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
@@ -131,14 +132,18 @@ public:
 
 };
 
-struct stat_model{
+class stat_model{
+public:
+    mutable boost::mt19937 generator;
+    mutable boost::uniform_int<int> uniform_rand;
+    mutable boost::variate_generator<boost::mt19937&, boost::uniform_int<int> > rand_gen;
+public:
+    stat_model(void):generator(0),uniform_rand(),rand_gen(generator,uniform_rand){}
+public:
     unsigned int type;
-
 public: // group
     std::vector<int> label;
     unsigned int group1_count,group2_count;
-public: // trend
-    std::vector<float> data;
 public: // multiple regression
     std::vector<unsigned int> subject_index;
     std::vector<double> X;
@@ -146,9 +151,28 @@ public: // multiple regression
     unsigned int study_feature;
     multiple_regression<double> mr;
 public:
-    bool resample(const stat_model& rhs,const std::vector<unsigned int>& permu);
+    bool resample(const stat_model& rhs,std::vector<unsigned int>& permu,bool null);
     bool pre_process(void);
     double operator()(const std::vector<double>& population) const;
+    void clear(void)
+    {
+        label.clear();
+        subject_index.clear();
+        X.clear();
+    }
+    const stat_model& operator=(const stat_model& rhs)
+    {
+        type = rhs.type;
+        label = rhs.label;
+        group1_count = rhs.group1_count;
+        group2_count = rhs.group2_count;
+        subject_index = rhs.subject_index;
+        X = rhs.X;
+        feature_count = rhs.feature_count;
+        study_feature = rhs.study_feature;
+        mr = rhs.mr;
+        return *this;
+    }
 };
 
 class vbc_database
@@ -214,7 +238,7 @@ public:// for FDR analysis
 public:
     std::vector<std::string> trk_file_names;
     unsigned int length_threshold;
-    boost::mutex lock_greater_tracks,lock_lesser_tracks;
+    boost::mutex lock_resampling,lock_greater_tracks,lock_lesser_tracks;
     boost::ptr_vector<TractModel> greater_tracks;
     boost::ptr_vector<TractModel> lesser_tracks;
     void save_tracks_files(void);

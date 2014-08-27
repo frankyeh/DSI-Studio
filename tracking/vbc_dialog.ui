@@ -21,7 +21,7 @@
    <item>
     <widget class="QToolBox" name="toolBox">
      <property name="currentIndex">
-      <number>1</number>
+      <number>2</number>
      </property>
      <property name="tabSpacing">
       <number>0</number>
@@ -215,7 +215,7 @@
           <item>
            <widget class="QRadioButton" name="rb_group_difference">
             <property name="enabled">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
             <property name="text">
              <string>Group difference (e.g. to study connectivity difference between male and female)</string>
@@ -555,8 +555,14 @@
              </spacer>
             </item>
             <item>
-             <widget class="QWidget" name="foi_widget" native="true">
-              <layout class="QHBoxLayout" name="horizontalLayout_7">
+             <widget class="QWidget" name="regression_feature" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_6">
                <property name="spacing">
                 <number>0</number>
                </property>
@@ -573,6 +579,18 @@
                <item>
                 <widget class="QComboBox" name="foi"/>
                </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QWidget" name="foi_widget" native="true">
+              <layout class="QHBoxLayout" name="horizontalLayout_7">
+               <property name="spacing">
+                <number>0</number>
+               </property>
+               <property name="margin">
+                <number>0</number>
+               </property>
               </layout>
              </widget>
             </item>
