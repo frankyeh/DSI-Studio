@@ -1326,6 +1326,11 @@ void tracking_window::on_actionLoad_Rendering_Parameters_triggered()
 
 void tracking_window::on_addRegionFromAtlas_clicked()
 {
+    if(atlas_list.empty())
+    {
+        QMessageBox::information(0,"Error",QString("DSI Studio cannot find atlas files in ")+QCoreApplication::applicationDirPath()+ "/atlas",0);
+        return;
+    }
     if(!atlas_dialog)
     {
         atlas_dialog = new AtlasDialog(this);
