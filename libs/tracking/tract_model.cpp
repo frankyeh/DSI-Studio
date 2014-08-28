@@ -477,9 +477,13 @@ bool TractModel::load_tracts_color_from_file(const char* file_name)
     std::copy(std::istream_iterator<float>(in),
               std::istream_iterator<float>(),
               std::back_inserter(colors));
-    std::copy(colors.begin(),
-              colors.begin()+std::min(colors.size(),tract_color.size()),
-              tract_color.begin());
+    if(colors.size() <= tract_color.size())
+        std::copy(colors.begin(),colors.begin()+colors.size(),tract_color.begin());
+    if(colors.size()/3 <= tract_color.size())
+        for(unsigned int index = 0,pos = 0;pos+2 < colors.size();++index,pos += 3)
+            tract_color[index] = image::rgb_color(std::min<int>(colors[pos],255),
+                                                  std::min<int>(colors[pos+1],255),
+                                                  std::min<int>(colors[pos+2],255));
     return true;
 }
 //---------------------------------------------------------------------------
@@ -488,9 +492,12 @@ bool TractModel::save_tracts_color_to_file(const char* file_name)
     std::ofstream out(file_name);
     if (!out)
         return false;
-    std::copy(tract_color.begin(),
-              tract_color.end(),
-              std::ostream_iterator<float>(out," "));
+    for(unsigned int index = 0;index < tract_color.size();++index)
+    {
+        image::rgb_color color;
+        color.color = tract_color[index];
+        out << (int)color.r << " " << (int)color.g << " " << (int)color.b << std::endl;
+    }
     return out;
 }
 
