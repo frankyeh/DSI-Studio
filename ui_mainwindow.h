@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'mainwindow.ui'
 **
-** Created: Tue Aug 12 21:26:25 2014
+** Created: Wed Aug 27 21:36:48 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -152,7 +152,7 @@ public:
         toolBox->addItem(page_2, QString::fromUtf8("Diffusion MRI Connectometry"));
         page_3 = new QWidget();
         page_3->setObjectName(QString::fromUtf8("page_3"));
-        page_3->setGeometry(QRect(0, 0, 300, 376));
+        page_3->setGeometry(QRect(0, 0, 182, 420));
         verticalLayout_8 = new QVBoxLayout(page_3);
         verticalLayout_8->setSpacing(0);
         verticalLayout_8->setContentsMargins(0, 0, 0, 0);
@@ -184,7 +184,7 @@ public:
         toolBox->addItem(page_3, QString::fromUtf8("Tools: batch processing"));
         page_4 = new QWidget();
         page_4->setObjectName(QString::fromUtf8("page_4"));
-        page_4->setGeometry(QRect(0, 0, 300, 376));
+        page_4->setGeometry(QRect(0, 0, 232, 155));
         verticalLayout_9 = new QVBoxLayout(page_4);
         verticalLayout_9->setSpacing(0);
         verticalLayout_9->setContentsMargins(0, 0, 0, 0);
@@ -318,7 +318,7 @@ public:
 
         retranslateUi(MainWindow);
 
-        toolBox->setCurrentIndex(0);
+        toolBox->setCurrentIndex(1);
         toolBox->layout()->setSpacing(0);
         workDir->setCurrentIndex(-1);
 
@@ -341,7 +341,7 @@ public:
 "", 0, QApplication::UnicodeUTF8));
         toolBox->setItemText(toolBox->indexOf(page), QApplication::translate("MainWindow", "Diffusion MRI Tractography", 0, QApplication::UnicodeUTF8));
         averagefib->setText(QApplication::translate("MainWindow", "STEP1: Create template/skeleton", 0, QApplication::UnicodeUTF8));
-        averagefib->setDescription(QApplication::translate("MainWindow", "Average the ODFs to create a tempalte or skeleton. You need to use QSDR to reconstruct src files and check \"output ODF\" in the reconstruction", 0, QApplication::UnicodeUTF8));
+        averagefib->setDescription(QApplication::translate("MainWindow", "Average the ODFs to create a template or skeleton. You need to use QSDR to reconstruct src files and check \"output ODF\" in the reconstruction.", 0, QApplication::UnicodeUTF8));
         vbc->setText(QApplication::translate("MainWindow", "STEP2: Create connectometry database", 0, QApplication::UnicodeUTF8));
         vbc->setDescription(QApplication::translate("MainWindow", "Load a group of subjects to create a connectometry dataset", 0, QApplication::UnicodeUTF8));
         connectometry->setText(QApplication::translate("MainWindow", "STEP3: Connectometry Analysis ", 0, QApplication::UnicodeUTF8));

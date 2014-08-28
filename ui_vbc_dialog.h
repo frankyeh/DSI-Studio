@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'vbc_dialog.ui'
 **
-** Created: Tue Aug 26 22:21:56 2014
+** Created: Wed Aug 27 21:36:49 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -109,10 +109,12 @@ public:
     QToolButton *open_mr_files;
     QLabel *open_instruction_2;
     QSpacerItem *horizontalSpacer_4;
-    QWidget *foi_widget;
-    QHBoxLayout *horizontalLayout_7;
+    QWidget *regression_feature;
+    QHBoxLayout *horizontalLayout_6;
     QLabel *label_6;
     QComboBox *foi;
+    QWidget *foi_widget;
+    QHBoxLayout *horizontalLayout_7;
     QTableWidget *subject_demo;
     QWidget *page_3;
     QVBoxLayout *verticalLayout_7;
@@ -283,7 +285,7 @@ public:
 
         rb_group_difference = new QRadioButton(groupBox_4);
         rb_group_difference->setObjectName(QString::fromUtf8("rb_group_difference"));
-        rb_group_difference->setEnabled(false);
+        rb_group_difference->setEnabled(true);
 
         verticalLayout_21->addWidget(rb_group_difference);
 
@@ -480,22 +482,32 @@ public:
 
         horizontalLayout_10->addItem(horizontalSpacer_4);
 
+        regression_feature = new QWidget(multiple_regression_demo);
+        regression_feature->setObjectName(QString::fromUtf8("regression_feature"));
+        regression_feature->setMinimumSize(QSize(0, 0));
+        horizontalLayout_6 = new QHBoxLayout(regression_feature);
+        horizontalLayout_6->setSpacing(0);
+        horizontalLayout_6->setContentsMargins(0, 0, 0, 0);
+        horizontalLayout_6->setObjectName(QString::fromUtf8("horizontalLayout_6"));
+        label_6 = new QLabel(regression_feature);
+        label_6->setObjectName(QString::fromUtf8("label_6"));
+
+        horizontalLayout_6->addWidget(label_6);
+
+        foi = new QComboBox(regression_feature);
+        foi->setObjectName(QString::fromUtf8("foi"));
+
+        horizontalLayout_6->addWidget(foi);
+
+
+        horizontalLayout_10->addWidget(regression_feature);
+
         foi_widget = new QWidget(multiple_regression_demo);
         foi_widget->setObjectName(QString::fromUtf8("foi_widget"));
         horizontalLayout_7 = new QHBoxLayout(foi_widget);
         horizontalLayout_7->setSpacing(0);
         horizontalLayout_7->setContentsMargins(0, 0, 0, 0);
         horizontalLayout_7->setObjectName(QString::fromUtf8("horizontalLayout_7"));
-        label_6 = new QLabel(foi_widget);
-        label_6->setObjectName(QString::fromUtf8("label_6"));
-
-        horizontalLayout_7->addWidget(label_6);
-
-        foi = new QComboBox(foi_widget);
-        foi->setObjectName(QString::fromUtf8("foi"));
-
-        horizontalLayout_7->addWidget(foi);
-
 
         horizontalLayout_10->addWidget(foi_widget);
 
@@ -722,7 +734,7 @@ public:
 
         retranslateUi(vbc_dialog);
 
-        toolBox->setCurrentIndex(1);
+        toolBox->setCurrentIndex(2);
         toolBox->layout()->setSpacing(0);
         tabWidget_2->setCurrentIndex(0);
 

@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Tue Aug 12 21:26:25 2014
+** Created: Wed Aug 27 21:36:48 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -141,6 +141,7 @@ public:
     QAction *actionView_FIB_Content;
     QAction *actionPublish_or_perish;
     QAction *actionMethod_Report;
+    QAction *actionQuality_Assessment;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QWidget *main_widget;
@@ -541,6 +542,8 @@ public:
         actionPublish_or_perish->setObjectName(QString::fromUtf8("actionPublish_or_perish"));
         actionMethod_Report = new QAction(tracking_window);
         actionMethod_Report->setObjectName(QString::fromUtf8("actionMethod_Report"));
+        actionQuality_Assessment = new QAction(tracking_window);
+        actionQuality_Assessment->setObjectName(QString::fromUtf8("actionQuality_Assessment"));
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -1458,6 +1461,7 @@ public:
         menuTools->addAction(actionRestore_Settings);
         menuTools->addAction(actionManual_Registration);
         menuTools->addAction(actionView_FIB_Content);
+        menuTools->addAction(actionQuality_Assessment);
 
         retranslateUi(tracking_window);
         QObject::connect(tbNewRegion, SIGNAL(clicked()), actionNewRegion, SLOT(trigger()));
@@ -1609,9 +1613,10 @@ public:
         actionRestore_Settings->setText(QApplication::translate("tracking_window", "Restore Rendering Settings", 0, QApplication::UnicodeUTF8));
         actionMerge_All_2->setText(QApplication::translate("tracking_window", "Merge All", 0, QApplication::UnicodeUTF8));
         actionSave_All_Tracts_As_Multiple_Files->setText(QApplication::translate("tracking_window", "Save All Tracts As Multiple Files...", 0, QApplication::UnicodeUTF8));
-        actionView_FIB_Content->setText(QApplication::translate("tracking_window", "View FIB Content", 0, QApplication::UnicodeUTF8));
+        actionView_FIB_Content->setText(QApplication::translate("tracking_window", "View FIB Content...", 0, QApplication::UnicodeUTF8));
         actionPublish_or_perish->setText(QApplication::translate("tracking_window", "Publish or perish...", 0, QApplication::UnicodeUTF8));
         actionMethod_Report->setText(QApplication::translate("tracking_window", "Method Report...", 0, QApplication::UnicodeUTF8));
+        actionQuality_Assessment->setText(QApplication::translate("tracking_window", "Quality Assessment...", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)
