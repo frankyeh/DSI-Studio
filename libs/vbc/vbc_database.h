@@ -145,7 +145,6 @@ public: // group
     std::vector<int> label;
     unsigned int group1_count,group2_count;
 public: // multiple regression
-    std::vector<unsigned int> subject_index;
     std::vector<double> X;
     unsigned int feature_count;
     unsigned int study_feature;
@@ -157,7 +156,6 @@ public:
     void clear(void)
     {
         label.clear();
-        subject_index.clear();
         X.clear();
     }
     const stat_model& operator=(const stat_model& rhs)
@@ -166,7 +164,6 @@ public:
         label = rhs.label;
         group1_count = rhs.group1_count;
         group2_count = rhs.group2_count;
-        subject_index = rhs.subject_index;
         X = rhs.X;
         feature_count = rhs.feature_count;
         study_feature = rhs.study_feature;

@@ -287,7 +287,6 @@ void vbc_database::save_subject_data(const char* output_name) const
         std::string report = out.str();
         matfile.write("report",&*report.c_str(),1,report.length());
     }
-    begin_prog("output data");
 }
 
 bool vbc_database::get_odf_profile(const char* file_name,std::vector<float>& cur_subject_data)
@@ -514,14 +513,13 @@ bool stat_model::resample(const stat_model& rhs,std::vector<unsigned int>& permu
                 label[index] = rhs.label[permu[index] = rhs.rand_gen(rhs.label.size())];
             break;
         case 1: // multiple regression
-            permu.resize(rhs.subject_index.size());
+            permu.resize(rhs.X.size()/rhs.feature_count);
             X.resize(rhs.X.size());
-            for(unsigned int index = 0,pos = 0;index < rhs.subject_index.size();++index,pos += feature_count)
+            for(unsigned int index = 0,pos = 0;index < permu.size();++index,pos += feature_count)
             {
-                unsigned int subject_index_index = rhs.rand_gen(rhs.subject_index.size());
-                permu[index] = rhs.subject_index[subject_index_index];
-                std::copy(rhs.X.begin()+subject_index_index*feature_count,
-                          rhs.X.begin()+subject_index_index*feature_count+feature_count,X.begin()+pos);
+                permu[index] = rhs.rand_gen(permu.size());
+                std::copy(rhs.X.begin()+permu[index]*feature_count,
+                          rhs.X.begin()+permu[index]*feature_count+feature_count,X.begin()+pos);
             }
             break;
         }

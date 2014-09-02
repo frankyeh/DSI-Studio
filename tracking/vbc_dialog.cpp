@@ -369,6 +369,7 @@ void vbc_dialog::on_open_mr_files_clicked()
 
     mr.clear();
 
+    ui->subject_demo->clear();
     if(ui->rb_multiple_regression->isChecked())
     {
         mr.type = 1;
@@ -386,29 +387,20 @@ void vbc_dialog::on_open_mr_files_clicked()
         for(unsigned int index = 0;index < vbc->subject_count() && std::getline(in,line);++index)
         {
             std::istringstream str(line);
-            std::vector<std::string> values;
-            std::copy(std::istream_iterator<std::string>(str),
-                      std::istream_iterator<std::string>(),std::back_inserter(values));
+            std::vector<double> values;
+            std::copy(std::istream_iterator<double>(str),
+                      std::istream_iterator<double>(),std::back_inserter(values));
             if(values.size() != titles.size())
             {
                 QMessageBox::information(this,"Error",QString("Cannot parse:") + line.c_str(),0);
                 return;
             }
-            std::vector<double> x(titles.size());
-            bool ok = true;
-            for(unsigned int j = 0;j < x.size();++j)
-            {
-                x[j] = QString(values[j].c_str()).toDouble(&ok);
-                if(!ok)
-                    break;
-            }
-            if(!ok)
-                continue;
-            mr.subject_index.push_back(index);
             mr.X.push_back(1); // for the intercep
-            for(unsigned int j = 0;j < x.size();++j)
-                mr.X.push_back(x[j]);
+            for(unsigned int j = 0;j < values.size();++j)
+                mr.X.push_back(values[j]);
         }
+        if(mr.X.size()/mr.feature_count != vbc->subject_count())
+            QMessageBox::information(this,"Warning","Subject number mismatch");
         QStringList t;
         t << "Subject ID";
         for(unsigned int index = 0;index < titles.size();++index)
@@ -427,29 +419,22 @@ void vbc_dialog::on_open_mr_files_clicked()
         std::ifstream in(filename.toLocal8Bit().begin());
         std::copy(std::istream_iterator<int>(in),
                   std::istream_iterator<int>(),std::back_inserter(mr.label));
+        if(mr.label.size() != vbc->subject_count())
+            QMessageBox::information(this,"Warning","Subject number mismatch");
         ui->subject_demo->setColumnCount(2);
         ui->subject_demo->setHorizontalHeaderLabels(QStringList() << "Subject ID" << "Group ID");
     }
 
-    ui->subject_demo->clear();
+
     ui->subject_demo->setRowCount(vbc->subject_count());
-    for(unsigned int row = 0,subject_id = 0,index = 0;row < ui->subject_demo->rowCount();++row)
+    for(unsigned int row = 0,index = 0;row < ui->subject_demo->rowCount();++row)
     {
         ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->subject_name(row).c_str())));
-
-
         if(ui->rb_multiple_regression->isChecked())
         {
-            if(subject_id < mr.subject_index.size() && mr.subject_index[subject_id] == row)
-            {
-                ++index;// skip intercep
-                for(unsigned int col = 1;col < ui->subject_demo->columnCount();++col,++index)
-                    ui->subject_demo->setItem(row,col,new QTableWidgetItem(QString::number(mr.X[index])));
-                ++subject_id;
-            }
-            else
-                for(unsigned int col = 1;col < ui->subject_demo->columnCount();++col)
-                    ui->subject_demo->setItem(row,col,new QTableWidgetItem("-"));
+            ++index;// skip intercep
+            for(unsigned int col = 1;col < ui->subject_demo->columnCount();++col,++index)
+                ui->subject_demo->setItem(row,col,new QTableWidgetItem(QString::number(mr.X[index])));
         }
         if(ui->rb_group_difference->isChecked())
             ui->subject_demo->setItem(row,1,new QTableWidgetItem(QString::number(mr.label[row])));
@@ -465,6 +450,7 @@ void vbc_dialog::on_open_mr_files_clicked()
 
 void vbc_dialog::on_view_mr_result_clicked()
 {
+    /*
     begin_prog("loading");
     mr.study_feature = ui->foi->currentIndex()+1;
     vbc->calculate_spm(mr,cur_subject_fib,mr.subject_index);
@@ -481,6 +467,7 @@ void vbc_dialog::on_view_mr_result_clicked()
     new_mdi->setWindowTitle(QString("Connectometry mapping"));
     new_mdi->showNormal();
     check_prog(0,0);
+    */
 }
 
 void vbc_dialog::on_rb_individual_analysis_clicked()
