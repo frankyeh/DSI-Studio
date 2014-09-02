@@ -536,6 +536,7 @@ void MainWindow::on_warpImage_clicked()
 }
 */
 bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files);
+bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files);
 QString get_src_name(QString file_name);
 void MainWindow::on_batch_src_clicked()
 {
@@ -550,23 +551,33 @@ void MainWindow::on_batch_src_clicked()
         QStringList dir_list;
         dir_list << dir;
         begin_prog("batch creating src");
-        for(unsigned int i = 0;check_prog(i,dir_list.size());++i)
+        for(unsigned int i = 0;check_prog(i,dir_list.size()) && !prog_aborted();++i)
         {
             QDir cur_dir = dir_list[i];
             QStringList new_list = cur_dir.entryList(QStringList(""),QDir::AllDirs|QDir::NoDotAndDotDot);
             for(unsigned int index = 0;index < new_list.size();++index)
                 dir_list << cur_dir.absolutePath() + "/" + new_list[index];
 
+
+            boost::ptr_vector<DwiHeader> dwi_files;
+
+
+            if(QFileInfo(dir_list[i] + "/data.nii.gz").exists() &&
+               QFileInfo(dir_list[i] + "/bvals").exists() &&
+               QFileInfo(dir_list[i] + "/bvecs").exists() &&
+               load_4d_nii(QString(dir_list[i] + "/data.nii.gz").toLocal8Bit().begin(),dwi_files))
+            {
+                DwiHeader::output_src(QString(dir_list[i] + "/data.src.gz").toLocal8Bit().begin(),dwi_files,0);
+                continue;
+            }
+
             QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
             if(dicom_file_list.empty())
                 continue;
             for (unsigned int index = 0;index < dicom_file_list.size();++index)
                 dicom_file_list[index] = dir_list[i] + "/" + dicom_file_list[index];
-            boost::ptr_vector<DwiHeader> dwi_files;
             if(!load_all_files(dicom_file_list,dwi_files))
                 continue;
-            if(prog_aborted())
-                break;
             QString output = dir + "/" + QFileInfo(get_src_name(dicom_file_list[0])).baseName()+".src.gz";
             DwiHeader::output_src(output.toLocal8Bit().begin(),dwi_files,0);
         }
