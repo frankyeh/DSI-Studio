@@ -52,6 +52,8 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->workDir->addItems(settings.value("WORK_PATH").toStringList());
     else
         ui->workDir->addItem(QDir::currentPath());
+
+    ui->toolBox->setCurrentIndex(0);
 }
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {
