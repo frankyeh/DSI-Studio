@@ -234,7 +234,7 @@ public:// for FDR analysis
     bool terminated;
 public:
     std::vector<std::string> trk_file_names;
-    unsigned int length_threshold;
+    unsigned int length_threshold,pruning;
     boost::mutex lock_resampling,lock_greater_tracks,lock_lesser_tracks;
     boost::ptr_vector<TractModel> greater_tracks;
     boost::ptr_vector<TractModel> lesser_tracks;

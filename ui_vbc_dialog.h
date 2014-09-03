@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'vbc_dialog.ui'
 **
-** Created: Tue Sep 2 17:34:56 2014
+** Created: Wed Sep 3 11:53:03 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -80,11 +80,6 @@ public:
     QHBoxLayout *percentile_rank_layout;
     QLabel *label_5;
     QDoubleSpinBox *percentile;
-    QGroupBox *z_threshold_group;
-    QVBoxLayout *verticalLayout_3;
-    QHBoxLayout *horizontalLayout_13;
-    QLabel *p_label_2;
-    QDoubleSpinBox *t_threshold;
     QGroupBox *groupBox_8;
     QVBoxLayout *verticalLayout_18;
     QHBoxLayout *horizontalLayout_12;
@@ -93,6 +88,9 @@ public:
     QHBoxLayout *horizontalLayout;
     QLabel *label_3;
     QSpinBox *length_threshold;
+    QHBoxLayout *horizontalLayout_8;
+    QLabel *label_7;
+    QSpinBox *pruning;
     QSpacerItem *verticalSpacer_2;
     QWidget *page_4;
     QVBoxLayout *verticalLayout_19;
@@ -318,10 +316,10 @@ public:
         percentile->setObjectName(QString::fromUtf8("percentile"));
         percentile->setMaximumSize(QSize(75, 16777215));
         percentile->setDecimals(3);
-        percentile->setMinimum(0.5);
+        percentile->setMinimum(0);
         percentile->setMaximum(1);
         percentile->setSingleStep(0.01);
-        percentile->setValue(0.95);
+        percentile->setValue(0.02);
 
         percentile_rank_layout->addWidget(percentile);
 
@@ -330,35 +328,6 @@ public:
 
 
         verticalLayout_23->addWidget(percentile_rank_group);
-
-        z_threshold_group = new QGroupBox(page_2);
-        z_threshold_group->setObjectName(QString::fromUtf8("z_threshold_group"));
-        verticalLayout_3 = new QVBoxLayout(z_threshold_group);
-        verticalLayout_3->setSpacing(0);
-        verticalLayout_3->setObjectName(QString::fromUtf8("verticalLayout_3"));
-        horizontalLayout_13 = new QHBoxLayout();
-        horizontalLayout_13->setObjectName(QString::fromUtf8("horizontalLayout_13"));
-        p_label_2 = new QLabel(z_threshold_group);
-        p_label_2->setObjectName(QString::fromUtf8("p_label_2"));
-
-        horizontalLayout_13->addWidget(p_label_2);
-
-        t_threshold = new QDoubleSpinBox(z_threshold_group);
-        t_threshold->setObjectName(QString::fromUtf8("t_threshold"));
-        t_threshold->setMaximumSize(QSize(75, 16777215));
-        t_threshold->setDecimals(2);
-        t_threshold->setMinimum(1);
-        t_threshold->setMaximum(100);
-        t_threshold->setSingleStep(0.5);
-        t_threshold->setValue(3);
-
-        horizontalLayout_13->addWidget(t_threshold);
-
-
-        verticalLayout_3->addLayout(horizontalLayout_13);
-
-
-        verticalLayout_23->addWidget(z_threshold_group);
 
         groupBox_8 = new QGroupBox(page_2);
         groupBox_8->setObjectName(QString::fromUtf8("groupBox_8"));
@@ -376,10 +345,10 @@ public:
         mr_permutation = new QSpinBox(groupBox_8);
         mr_permutation->setObjectName(QString::fromUtf8("mr_permutation"));
         mr_permutation->setMaximumSize(QSize(75, 16777215));
-        mr_permutation->setMinimum(100);
+        mr_permutation->setMinimum(50);
         mr_permutation->setMaximum(10000);
         mr_permutation->setSingleStep(100);
-        mr_permutation->setValue(1000);
+        mr_permutation->setValue(500);
 
         horizontalLayout_12->addWidget(mr_permutation);
 
@@ -404,6 +373,24 @@ public:
 
 
         verticalLayout_18->addLayout(horizontalLayout);
+
+        horizontalLayout_8 = new QHBoxLayout();
+        horizontalLayout_8->setObjectName(QString::fromUtf8("horizontalLayout_8"));
+        label_7 = new QLabel(groupBox_8);
+        label_7->setObjectName(QString::fromUtf8("label_7"));
+
+        horizontalLayout_8->addWidget(label_7);
+
+        pruning = new QSpinBox(groupBox_8);
+        pruning->setObjectName(QString::fromUtf8("pruning"));
+        pruning->setMaximumSize(QSize(75, 16777215));
+        pruning->setMaximum(100);
+        pruning->setValue(10);
+
+        horizontalLayout_8->addWidget(pruning);
+
+
+        verticalLayout_18->addLayout(horizontalLayout_8);
 
 
         verticalLayout_23->addWidget(groupBox_8);
@@ -734,7 +721,7 @@ public:
 
         retranslateUi(vbc_dialog);
 
-        toolBox->setCurrentIndex(2);
+        toolBox->setCurrentIndex(1);
         toolBox->layout()->setSpacing(0);
         tabWidget_2->setCurrentIndex(0);
 
@@ -761,12 +748,11 @@ public:
         rb_paired_difference->setText(QApplication::translate("vbc_dialog", "Paired difference (e.g. to study connectivity difference before and after a treatment)", 0, QApplication::UnicodeUTF8));
         rb_individual_analysis->setText(QApplication::translate("vbc_dialog", "Individual Analysis (e.g. to study the affected pathways of each stroke patient)", 0, QApplication::UnicodeUTF8));
         percentile_rank_group->setTitle(QString());
-        label_5->setText(QApplication::translate("vbc_dialog", "Percentile", 0, QApplication::UnicodeUTF8));
-        z_threshold_group->setTitle(QString());
-        p_label_2->setText(QApplication::translate("vbc_dialog", "T threshold", 0, QApplication::UnicodeUTF8));
+        label_5->setText(QApplication::translate("vbc_dialog", "p-value or percentile threshold", 0, QApplication::UnicodeUTF8));
         groupBox_8->setTitle(QString());
         label_4->setText(QApplication::translate("vbc_dialog", "Permutation Count", 0, QApplication::UnicodeUTF8));
         label_3->setText(QApplication::translate("vbc_dialog", "Length Threshold (mm)", 0, QApplication::UnicodeUTF8));
+        label_7->setText(QApplication::translate("vbc_dialog", "Track Pruning (iterations)", 0, QApplication::UnicodeUTF8));
         toolBox->setItemText(toolBox->indexOf(page_2), QApplication::translate("vbc_dialog", "STEP1: Select analysis model", 0, QApplication::UnicodeUTF8));
         individual_demo->setTitle(QString());
         open_files->setText(QApplication::translate("vbc_dialog", "...", 0, QApplication::UnicodeUTF8));

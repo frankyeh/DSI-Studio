@@ -743,7 +743,7 @@ void vbc_database::run_permutation_multithread(unsigned int id)
 
             fib.fa = data.lesser_ptr;
             fib.findex = data.lesser_dir_ptr;
-            run_track(fib,tracks,50.0/permutation_count);
+            run_track(fib,tracks,10.0/permutation_count);
             if(null)
                 cal_hist(tracks,subject_lesser_null);
             else
@@ -758,7 +758,7 @@ void vbc_database::run_permutation_multithread(unsigned int id)
 
             fib.fa = data.greater_ptr;
             fib.findex = data.greater_dir_ptr;
-            run_track(fib,tracks,50.0/permutation_count);
+            run_track(fib,tracks,10.0/permutation_count);
             if(null)
                 cal_hist(tracks,subject_greater_null);
             else
@@ -791,31 +791,37 @@ void vbc_database::save_tracks_files(void)
         throw std::runtime_error("Please assign file name for saving trk files.");
     for(unsigned int index = 0;index < greater_tracks.size();++index)
     {
-        if(fdr_greater[length_threshold] < 0.05 && fdr_greater[length_threshold] != 0.0)
+        if(fdr_greater[length_threshold] < 0.05)
         {
-            std::ostringstream out1;
-            out1 << trk_file_names[index] << ".greater" << length_threshold << ".trk.gz";
-            while(1)
+            for(unsigned int j = 0;j < pruning;++j)
             {
                 unsigned int track_count = greater_tracks[index].get_visible_track_count();
                 greater_tracks[index].trim();
                 if(track_count == greater_tracks[index].get_visible_track_count())
                     break;
             }
-            greater_tracks[index].save_tracts_to_file(out1.str().c_str());
+            if(greater_tracks[index].get_visible_track_count())
+            {
+                std::ostringstream out1;
+                out1 << trk_file_names[index] << ".greater" << length_threshold << ".trk.gz";
+                greater_tracks[index].save_tracts_to_file(out1.str().c_str());
+            }
         }
-        if(fdr_lesser[length_threshold] < 0.05 && fdr_lesser[length_threshold] != 0.0)
+        if(fdr_lesser[length_threshold] < 0.05)
         {
-            std::ostringstream out2;
-            out2 << trk_file_names[index] << ".lesser" << length_threshold << ".trk.gz";
-            while(1)
+            for(unsigned int j = 0;j < pruning;++j)
             {
                 unsigned int track_count = lesser_tracks[index].get_visible_track_count();
                 lesser_tracks[index].trim();
                 if(track_count == lesser_tracks[index].get_visible_track_count())
                     break;
             }
-            lesser_tracks[index].save_tracts_to_file(out2.str().c_str());
+            if(lesser_tracks[index].get_visible_track_count())
+            {
+                std::ostringstream out2;
+                out2 << trk_file_names[index] << ".lesser" << length_threshold << ".trk.gz";
+                lesser_tracks[index].save_tracts_to_file(out2.str().c_str());
+            }
         }
     }
 }

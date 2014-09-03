@@ -2,6 +2,7 @@
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QStringListModel>
+#include <boost/math/distributions/students_t.hpp>
 #include "vbc_dialog.hpp"
 #include "ui_vbc_dialog.h"
 #include "ui_tracking_window.h"
@@ -190,6 +191,8 @@ void vbc_dialog::show_fdr_report()
 
 void vbc_dialog::show_report()
 {
+    if(vbc->subject_greater_null.empty())
+        return;
     ui->null_dist->clearGraphs();
     std::vector<std::vector<unsigned int> > vbc_data;
     char legends[4][60] = {"null greater","null lesser","greater","lesser"};
@@ -404,7 +407,11 @@ void vbc_dialog::on_open_mr_files_clicked()
         QStringList t;
         t << "Subject ID";
         for(unsigned int index = 0;index < titles.size();++index)
+        {
+            std::replace(titles[index].begin(),titles[index].end(),'/','_');
+            std::replace(titles[index].begin(),titles[index].end(),'\\','_');
             t << titles[index].c_str();
+        }
         ui->foi->clear();
         ui->foi->addItems(t);
         ui->foi->removeItem(0);
@@ -472,16 +479,12 @@ void vbc_dialog::on_view_mr_result_clicked()
 
 void vbc_dialog::on_rb_individual_analysis_clicked()
 {
-    ui->percentile_rank_group->show();
-    ui->z_threshold_group->hide();
     ui->individual_demo->show();
     ui->multiple_regression_demo->hide();
 }
 
 void vbc_dialog::on_rb_group_difference_clicked()
 {
-    ui->percentile_rank_group->hide();
-    ui->z_threshold_group->show();
     ui->individual_demo->hide();
     ui->multiple_regression_demo->show();
     ui->regression_feature->hide();
@@ -489,8 +492,6 @@ void vbc_dialog::on_rb_group_difference_clicked()
 
 void vbc_dialog::on_rb_multiple_regression_clicked()
 {
-    ui->percentile_rank_group->hide();
-    ui->z_threshold_group->show();
     ui->individual_demo->hide();
     ui->multiple_regression_demo->show();
     ui->regression_feature->show();
@@ -498,8 +499,6 @@ void vbc_dialog::on_rb_multiple_regression_clicked()
 
 void vbc_dialog::on_rb_paired_difference_clicked()
 {
-    ui->percentile_rank_group->hide();
-    ui->z_threshold_group->hide();
     ui->individual_demo->hide();
     ui->multiple_regression_demo->show();
     ui->regression_feature->show();
@@ -507,17 +506,6 @@ void vbc_dialog::on_rb_paired_difference_clicked()
 
 void vbc_dialog::calculate_FDR(void)
 {
-    if(vbc->total_count >= vbc->permutation_count)
-    {
-        timer->stop();
-        vbc->save_tracks_files();
-        QMessageBox::information(this,"Finished","Trk files saved.",0);
-        ui->run->setText("Run");
-        ui->progressBar->setValue(100);
-        timer.reset(0);
-    }
-    else
-        ui->progressBar->setValue(100*vbc->total_count/vbc->permutation_count);
     vbc->calculate_FDR();
     show_report();
     show_dis_table();
@@ -542,6 +530,24 @@ void vbc_dialog::calculate_FDR(void)
             out << " The analysis results showed tracks with decreased anisotropy, and the FDR was " << vbc->fdr_lesser[vbc->length_threshold] << ".";
         report += out.str().c_str();
     }
+    if(ui->rb_multiple_regression->isChecked())
+    {
+        std::ostringstream out;
+        if(vbc->fdr_greater[vbc->length_threshold] >= 0.05)
+            out << " The analysis results showed that there is no tracks with significantly increased anisotropy due to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
+        else
+            out << " The analysis results showed tracks with increased anisotropy due to "
+                << ui->foi->currentText().toLocal8Bit().begin()
+                << ", and the FDR was " << vbc->fdr_greater[vbc->length_threshold] << ".";
+
+        if(vbc->fdr_lesser[vbc->length_threshold] >= 0.05)
+            out << " The analysis results showed that there is no tracks with significantly decreased anisotropy due to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
+        else
+            out << " The analysis results showed tracks with decreased anisotropy due to "
+                << ui->foi->currentText().toLocal8Bit().begin()
+                << ", and the FDR was " << vbc->fdr_lesser[vbc->length_threshold] << ".";
+        report += out.str().c_str();
+    }
     if(ui->rb_group_difference->isChecked())
     {
         std::ostringstream out;
@@ -559,6 +565,24 @@ void vbc_dialog::calculate_FDR(void)
 
 
     ui->textBrowser->setText(report);
+
+    if(vbc->total_count >= vbc->permutation_count)
+    {
+        timer->stop();
+        vbc->save_tracks_files();
+
+        {
+            std::ofstream out((vbc->trk_file_names[0]+".report.txt").c_str());
+            out << report.toLocal8Bit().begin() << std::endl;
+        }
+
+        QMessageBox::information(this,"Finished","Trk files saved.",0);
+        ui->run->setText("Run");
+        ui->progressBar->setValue(100);
+        timer.reset(0);
+    }
+    else
+        ui->progressBar->setValue(100*vbc->total_count/vbc->permutation_count);
 }
 void vbc_dialog::on_run_clicked()
 {
@@ -572,11 +596,16 @@ void vbc_dialog::on_run_clicked()
         return;
     }
     ui->run->setText("Stop");
-
+    ui->span_to->setValue(ui->length_threshold->value()*2);
     std::ostringstream out;
+    vbc->permutation_count = ui->mr_permutation->value();
+    vbc->length_threshold = ui->length_threshold->value();
+    vbc->pruning = ui->pruning->value();
+    vbc->trk_file_names = file_names;
+
     if(ui->rb_individual_analysis->isChecked())
     {
-        vbc->tracking_threshold = ui->percentile->value();
+        vbc->tracking_threshold = 1.0-ui->percentile->value();
         vbc->individual_data = individual_data;
 
         out << "\nDiffusion MRI connectometry was conducted to identify affected pathway in "
@@ -587,42 +616,37 @@ void vbc_dialog::on_run_clicked()
     }
     if(ui->rb_group_difference->isChecked())
     {
-        vbc->tracking_threshold = ui->t_threshold->value();
+        boost::math::students_t::students_t_distribution dist(vbc->subject_count()-2);
+        vbc->tracking_threshold = boost::math::quantile(boost::math::complement(dist,ui->percentile->value()));
         vbc->individual_data.clear();
         vbc->model = mr;
-
         out << "\nDiffusion MRI connectometry was conducted to compare group differences."
-            << " A T-threshold of " << ui->t_threshold->value() << " was used to select fiber directions with substantial difference in anisotropy.";
-        file_names[0] += ".group";
+            << " A p-value threshold of " << ui->percentile->value() << " was used to select fiber directions with substantial difference in anisotropy.";
+        vbc->trk_file_names[0] += ".group";
     }
     if(ui->rb_multiple_regression->isChecked())
     {
-        vbc->tracking_threshold = ui->t_threshold->value();
+        boost::math::students_t::students_t_distribution dist(vbc->subject_count()-mr.feature_count-1);
+        vbc->tracking_threshold = boost::math::quantile(boost::math::complement(dist,ui->percentile->value()));
         mr.study_feature = ui->foi->currentIndex()+1;
         vbc->individual_data.clear();
         vbc->model = mr;
-
         out << "\nDiffusion MRI connectometry was conducted using a multiple regression model considering ";
         for(unsigned int index = 0;index < (int)ui->foi->count()-1;++index)
             out << ui->foi->itemText(index).toLower().toLocal8Bit().begin() << ", ";
         out << "and " << ui->foi->itemText(ui->foi->count()-1).toLower().toLocal8Bit().begin() << ".";
-        out << " A T-threshold of " << ui->t_threshold->value()
+        out << " A p-value threshold of " << ui->percentile->value()
             << " was used to select fiber directions correlated with "
             << ui->foi->currentText().toLower().toLocal8Bit().begin() << ".";
-        file_names[0] += ".";
-        file_names[0] += ui->foi->currentText().toLower().toLocal8Bit().begin();
+        vbc->trk_file_names[0] += ".";
+        vbc->trk_file_names[0] += ui->foi->currentText().toLower().toLocal8Bit().begin();
     }
     out << " A deterministic fiber tracking algorithm was conducted to connect these fiber orientations, and a length threshold of "
         << ui->length_threshold->value() << " mm was used to select tracks.";
     out << " The false discovery rate was calculated using a total of " << ui->mr_permutation->value() << " randomized permutations.";
 
     vbc->report = out.str().c_str();
-    vbc->permutation_count = ui->mr_permutation->value();
-    vbc->length_threshold = ui->length_threshold->value();
-    vbc->trk_file_names = file_names;
     vbc->run_permutation(ui->multithread->value());
-
-    ui->span_to->setValue(ui->length_threshold->value()*2);
     timer.reset(new QTimer(this));
     timer->setInterval(1000);
     connect(timer.get(), SIGNAL(timeout()), this, SLOT(calculate_FDR()));

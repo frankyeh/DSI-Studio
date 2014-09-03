@@ -21,7 +21,7 @@
    <item>
     <widget class="QToolBox" name="toolBox">
      <property name="currentIndex">
-      <number>2</number>
+      <number>1</number>
      </property>
      <property name="tabSpacing">
       <number>0</number>
@@ -253,7 +253,7 @@
             <item>
              <widget class="QLabel" name="label_5">
               <property name="text">
-               <string>Percentile</string>
+               <string>p-value or percentile threshold</string>
               </property>
              </widget>
             </item>
@@ -269,7 +269,7 @@
                <number>3</number>
               </property>
               <property name="minimum">
-               <double>0.500000000000000</double>
+               <double>0.000000000000000</double>
               </property>
               <property name="maximum">
                <double>1.000000000000000</double>
@@ -278,55 +278,7 @@
                <double>0.010000000000000</double>
               </property>
               <property name="value">
-               <double>0.950000000000000</double>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QGroupBox" name="z_threshold_group">
-         <property name="title">
-          <string/>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_3">
-          <property name="spacing">
-           <number>0</number>
-          </property>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_13">
-            <item>
-             <widget class="QLabel" name="p_label_2">
-              <property name="text">
-               <string>T threshold</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QDoubleSpinBox" name="t_threshold">
-              <property name="maximumSize">
-               <size>
-                <width>75</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="decimals">
-               <number>2</number>
-              </property>
-              <property name="minimum">
-               <double>1.000000000000000</double>
-              </property>
-              <property name="maximum">
-               <double>100.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.500000000000000</double>
-              </property>
-              <property name="value">
-               <double>3.000000000000000</double>
+               <double>0.020000000000000</double>
               </property>
              </widget>
             </item>
@@ -368,7 +320,7 @@
                </size>
               </property>
               <property name="minimum">
-               <number>100</number>
+               <number>50</number>
               </property>
               <property name="maximum">
                <number>10000</number>
@@ -377,7 +329,7 @@
                <number>100</number>
               </property>
               <property name="value">
-               <number>1000</number>
+               <number>500</number>
               </property>
              </widget>
             </item>
@@ -408,6 +360,33 @@
               </property>
               <property name="value">
                <number>40</number>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_8">
+            <item>
+             <widget class="QLabel" name="label_7">
+              <property name="text">
+               <string>Track Pruning (iterations)</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="pruning">
+              <property name="maximumSize">
+               <size>
+                <width>75</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="maximum">
+               <number>100</number>
+              </property>
+              <property name="value">
+               <number>10</number>
               </property>
              </widget>
             </item>
