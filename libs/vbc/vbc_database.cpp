@@ -264,7 +264,8 @@ void vbc_database::save_subject_data(const char* output_name) const
     }
     gz_mat_read& mat_source = handle->mat_reader;
     for(unsigned int index = 0;index < mat_source.size();++index)
-        if(mat_source[index].get_name() != "report")
+        if(mat_source[index].get_name() != "report" &&
+           mat_source[index].get_name().find("subject") != 0)
             matfile.write(mat_source[index]);
     for(unsigned int index = 0;check_prog(index,subject_qa.size());++index)
     {

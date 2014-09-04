@@ -26,6 +26,10 @@ VBCDialog::VBCDialog(QWidget *parent,bool create_db_) :
         ui->create_data_base->setText("Create skeleton");
     }
 
+    QDir cur_dir(QApplication::applicationDirPath());
+    QStringList file_list = cur_dir.entryList(QStringList("*.fib.gz"),QDir::Files);
+    if(!file_list.empty())
+        ui->skeleton->setText(QApplication::applicationDirPath() + "/"+ file_list[0]);
 }
 
 VBCDialog::~VBCDialog()
@@ -58,6 +62,10 @@ void VBCDialog::on_group1open_clicked()
         return;
     group << filenames;
     update_list();
+    if(create_db)
+        ui->output_file_name->setText(QFileInfo(filenames[0]).absolutePath() + "/connectometry.db.fib.gz");
+    else
+        ui->output_file_name->setText(QFileInfo(filenames[0]).absolutePath() + "/template.fib.gz");
 }
 
 void VBCDialog::on_group1delete_clicked()
@@ -163,8 +171,6 @@ void VBCDialog::on_open_skeleton_clicked()
     if(filename.isEmpty())
         return;
     ui->skeleton->setText(filename);
-    if(ui->output_file_name->text().isEmpty())
-        ui->output_file_name->setText(filename + ".db.fib.gz");
 }
 
 void VBCDialog::on_create_data_base_clicked()

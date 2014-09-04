@@ -38,13 +38,15 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
                                                << "null greater pdf" << "null lesser pdf"
                                                << "greater pdf" << "lesser pdf");
 
-
+    bool check_quality = false;
     ui->subject_list->setRowCount(vbc->subject_count());
     for(unsigned int index = 0;index < vbc->subject_count();++index)
     {
         ui->subject_list->setItem(index,0, new QTableWidgetItem(QString(vbc->subject_name(index).c_str())));
         ui->subject_list->setItem(index,1, new QTableWidgetItem(QString::number(0)));
         ui->subject_list->setItem(index,2, new QTableWidgetItem(QString::number(vbc->subject_R2(index))));
+        if(vbc->subject_R2(index) < 0.5)
+            check_quality = true;
     }
     ui->AxiSlider->setMaximum(vbc->handle->dim[2]-1);
     ui->AxiSlider->setMinimum(0);
@@ -72,6 +74,8 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
     on_rb_multiple_regression_clicked();
     qApp->installEventFilter(this);
 
+    if(check_quality)
+        QMessageBox::information(this,"Warning","The connectometry database contains low goodness-of-fit data. You may need to verify the data quality.");
 }
 
 vbc_dialog::~vbc_dialog()
