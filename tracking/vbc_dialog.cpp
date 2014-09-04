@@ -621,7 +621,7 @@ void vbc_dialog::on_run_clicked()
     }
     if(ui->rb_group_difference->isChecked())
     {
-        boost::math::students_t::students_t_distribution dist(vbc->subject_count()-2);
+        boost::math::students_t dist(vbc->subject_count()-2);
         vbc->tracking_threshold = boost::math::quantile(boost::math::complement(dist,ui->percentile->value()));
         vbc->individual_data.clear();
         vbc->model = mr;
@@ -631,7 +631,7 @@ void vbc_dialog::on_run_clicked()
     }
     if(ui->rb_multiple_regression->isChecked())
     {
-        boost::math::students_t::students_t_distribution dist(vbc->subject_count()-mr.feature_count-1);
+        boost::math::students_t dist(vbc->subject_count()-mr.feature_count-1);
         vbc->tracking_threshold = boost::math::quantile(boost::math::complement(dist,ui->percentile->value()));
         mr.study_feature = ui->foi->currentIndex()+1;
         vbc->individual_data.clear();
