@@ -43,6 +43,7 @@ int rec(int ac, char *av[])
     ("param1", po::value<float>(), "set parameters")
     ("param2", po::value<float>(), "set parameters")
     ("param3", po::value<float>(), "set parameters")
+    ("flip", po::value<std::string>(), "flip image volume")
     ;
 
     if(!ac)
@@ -63,7 +64,16 @@ int rec(int ac, char *av[])
         return 1;
     }
     std::cout << "src loaded" <<std::endl;
-
+    if (vm.count("flip"))
+    {
+        std::string flip_seq = vm["flip"].as<std::string>();
+        for(unsigned int index = 0;index < flip_seq.length();++index)
+            if(flip_seq[index] >= '0' && flip_seq[index] <= '5')
+            {
+                handle->flip(flip_seq[index]-'0');
+                std::cout << "Flip image volume:" << (int)flip_seq[index]-'0' << std::endl;
+            }
+    }
     // apply affine transformation
     if (vm.count("affine"))
     {
