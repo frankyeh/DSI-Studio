@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'vbc_dialog.ui'
 **
-** Created: Wed Sep 3 11:53:03 2014
+** Created: Wed Sep 3 21:28:17 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -80,7 +80,11 @@ public:
     QHBoxLayout *percentile_rank_layout;
     QLabel *label_5;
     QDoubleSpinBox *percentile;
-    QGroupBox *groupBox_8;
+    QLabel *label_8;
+    QHBoxLayout *horizontalLayout_11;
+    QPushButton *advanced_options;
+    QSpacerItem *horizontalSpacer_3;
+    QGroupBox *advanced_options_box;
     QVBoxLayout *verticalLayout_18;
     QHBoxLayout *horizontalLayout_12;
     QLabel *label_4;
@@ -315,7 +319,7 @@ public:
         percentile = new QDoubleSpinBox(percentile_rank_group);
         percentile->setObjectName(QString::fromUtf8("percentile"));
         percentile->setMaximumSize(QSize(75, 16777215));
-        percentile->setDecimals(3);
+        percentile->setDecimals(4);
         percentile->setMinimum(0);
         percentile->setMaximum(1);
         percentile->setSingleStep(0.01);
@@ -326,23 +330,42 @@ public:
 
         verticalLayout_2->addLayout(percentile_rank_layout);
 
+        label_8 = new QLabel(percentile_rank_group);
+        label_8->setObjectName(QString::fromUtf8("label_8"));
+
+        verticalLayout_2->addWidget(label_8);
+
 
         verticalLayout_23->addWidget(percentile_rank_group);
 
-        groupBox_8 = new QGroupBox(page_2);
-        groupBox_8->setObjectName(QString::fromUtf8("groupBox_8"));
-        groupBox_8->setMaximumSize(QSize(16777215, 16777215));
-        verticalLayout_18 = new QVBoxLayout(groupBox_8);
+        horizontalLayout_11 = new QHBoxLayout();
+        horizontalLayout_11->setObjectName(QString::fromUtf8("horizontalLayout_11"));
+        advanced_options = new QPushButton(page_2);
+        advanced_options->setObjectName(QString::fromUtf8("advanced_options"));
+
+        horizontalLayout_11->addWidget(advanced_options);
+
+        horizontalSpacer_3 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+        horizontalLayout_11->addItem(horizontalSpacer_3);
+
+
+        verticalLayout_23->addLayout(horizontalLayout_11);
+
+        advanced_options_box = new QGroupBox(page_2);
+        advanced_options_box->setObjectName(QString::fromUtf8("advanced_options_box"));
+        advanced_options_box->setMaximumSize(QSize(16777215, 16777215));
+        verticalLayout_18 = new QVBoxLayout(advanced_options_box);
         verticalLayout_18->setSpacing(0);
         verticalLayout_18->setObjectName(QString::fromUtf8("verticalLayout_18"));
         horizontalLayout_12 = new QHBoxLayout();
         horizontalLayout_12->setObjectName(QString::fromUtf8("horizontalLayout_12"));
-        label_4 = new QLabel(groupBox_8);
+        label_4 = new QLabel(advanced_options_box);
         label_4->setObjectName(QString::fromUtf8("label_4"));
 
         horizontalLayout_12->addWidget(label_4);
 
-        mr_permutation = new QSpinBox(groupBox_8);
+        mr_permutation = new QSpinBox(advanced_options_box);
         mr_permutation->setObjectName(QString::fromUtf8("mr_permutation"));
         mr_permutation->setMaximumSize(QSize(75, 16777215));
         mr_permutation->setMinimum(50);
@@ -357,12 +380,12 @@ public:
 
         horizontalLayout = new QHBoxLayout();
         horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
-        label_3 = new QLabel(groupBox_8);
+        label_3 = new QLabel(advanced_options_box);
         label_3->setObjectName(QString::fromUtf8("label_3"));
 
         horizontalLayout->addWidget(label_3);
 
-        length_threshold = new QSpinBox(groupBox_8);
+        length_threshold = new QSpinBox(advanced_options_box);
         length_threshold->setObjectName(QString::fromUtf8("length_threshold"));
         length_threshold->setMaximumSize(QSize(75, 16777215));
         length_threshold->setMinimum(10);
@@ -376,12 +399,12 @@ public:
 
         horizontalLayout_8 = new QHBoxLayout();
         horizontalLayout_8->setObjectName(QString::fromUtf8("horizontalLayout_8"));
-        label_7 = new QLabel(groupBox_8);
+        label_7 = new QLabel(advanced_options_box);
         label_7->setObjectName(QString::fromUtf8("label_7"));
 
         horizontalLayout_8->addWidget(label_7);
 
-        pruning = new QSpinBox(groupBox_8);
+        pruning = new QSpinBox(advanced_options_box);
         pruning->setObjectName(QString::fromUtf8("pruning"));
         pruning->setMaximumSize(QSize(75, 16777215));
         pruning->setMaximum(100);
@@ -393,7 +416,7 @@ public:
         verticalLayout_18->addLayout(horizontalLayout_8);
 
 
-        verticalLayout_23->addWidget(groupBox_8);
+        verticalLayout_23->addWidget(advanced_options_box);
 
         verticalSpacer_2 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
 
@@ -749,7 +772,9 @@ public:
         rb_individual_analysis->setText(QApplication::translate("vbc_dialog", "Individual Analysis (e.g. to study the affected pathways of each stroke patient)", 0, QApplication::UnicodeUTF8));
         percentile_rank_group->setTitle(QString());
         label_5->setText(QApplication::translate("vbc_dialog", "p-value or percentile threshold", 0, QApplication::UnicodeUTF8));
-        groupBox_8->setTitle(QString());
+        label_8->setText(QApplication::translate("vbc_dialog", "0.05: week difference   0.01: moderate difference   0.002: strong difference", 0, QApplication::UnicodeUTF8));
+        advanced_options->setText(QApplication::translate("vbc_dialog", "Advanced options...", 0, QApplication::UnicodeUTF8));
+        advanced_options_box->setTitle(QString());
         label_4->setText(QApplication::translate("vbc_dialog", "Permutation Count", 0, QApplication::UnicodeUTF8));
         label_3->setText(QApplication::translate("vbc_dialog", "Length Threshold (mm)", 0, QApplication::UnicodeUTF8));
         label_7->setText(QApplication::translate("vbc_dialog", "Track Pruning (iterations)", 0, QApplication::UnicodeUTF8));

@@ -266,7 +266,7 @@
                </size>
               </property>
               <property name="decimals">
-               <number>3</number>
+               <number>4</number>
               </property>
               <property name="minimum">
                <double>0.000000000000000</double>
@@ -284,11 +284,42 @@
             </item>
            </layout>
           </item>
+          <item>
+           <widget class="QLabel" name="label_8">
+            <property name="text">
+             <string>0.05: week difference   0.01: moderate difference   0.002: strong difference</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
        <item>
-        <widget class="QGroupBox" name="groupBox_8">
+        <layout class="QHBoxLayout" name="horizontalLayout_11">
+         <item>
+          <widget class="QPushButton" name="advanced_options">
+           <property name="text">
+            <string>Advanced options...</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_3">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="advanced_options_box">
          <property name="maximumSize">
           <size>
            <width>16777215</width>

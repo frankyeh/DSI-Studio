@@ -791,7 +791,7 @@ void vbc_database::save_tracks_files(void)
         throw std::runtime_error("Please assign file name for saving trk files.");
     for(unsigned int index = 0;index < greater_tracks.size();++index)
     {
-        if(fdr_greater[length_threshold] < 0.05)
+        if(fdr_greater[length_threshold] < 0.2)
         {
             for(unsigned int j = 0;j < pruning;++j)
             {
@@ -807,7 +807,7 @@ void vbc_database::save_tracks_files(void)
                 greater_tracks[index].save_tracts_to_file(out1.str().c_str());
             }
         }
-        if(fdr_lesser[length_threshold] < 0.05)
+        if(fdr_lesser[length_threshold] < 0.2)
         {
             for(unsigned int j = 0;j < pruning;++j)
             {

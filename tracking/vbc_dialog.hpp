@@ -63,6 +63,8 @@ private slots:
 
     void on_save_name_list_clicked();
 
+    void on_advanced_options_clicked();
+
 public slots:
     void calculate_FDR(void);
 private:

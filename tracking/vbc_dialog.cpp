@@ -68,6 +68,7 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
     ui->subject_list->selectRow(0);
     ui->toolBox->setCurrentIndex(1);
     ui->foi_widget->hide();
+    ui->advanced_options_box->hide();
     on_rb_multiple_regression_clicked();
     qApp->installEventFilter(this);
 
@@ -519,12 +520,12 @@ void vbc_dialog::calculate_FDR(void)
     if(ui->rb_individual_analysis->isChecked())
     {
         std::ostringstream out;
-        if(vbc->fdr_greater[vbc->length_threshold] >= 0.05)
+        if(vbc->fdr_greater[vbc->length_threshold] >= 0.2)
             out << " The analysis results showed no tracks with significant increase in anisotropy.";
         else
             out << " The analysis results showed tracks with increased anisotropy, and the FDR was " << vbc->fdr_greater[vbc->length_threshold] << ".";
 
-        if(vbc->fdr_lesser[vbc->length_threshold] >= 0.05)
+        if(vbc->fdr_lesser[vbc->length_threshold] >= 0.2)
             out << " The analysis results showed no tracks with significant decrease in anisotropy.";
         else
             out << " The analysis results showed tracks with decreased anisotropy, and the FDR was " << vbc->fdr_lesser[vbc->length_threshold] << ".";
@@ -533,14 +534,14 @@ void vbc_dialog::calculate_FDR(void)
     if(ui->rb_multiple_regression->isChecked())
     {
         std::ostringstream out;
-        if(vbc->fdr_greater[vbc->length_threshold] >= 0.05)
+        if(vbc->fdr_greater[vbc->length_threshold] >= 0.2)
             out << " The analysis results showed that there is no tracks with significantly increased anisotropy due to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
         else
             out << " The analysis results showed tracks with increased anisotropy due to "
                 << ui->foi->currentText().toLocal8Bit().begin()
                 << ", and the FDR was " << vbc->fdr_greater[vbc->length_threshold] << ".";
 
-        if(vbc->fdr_lesser[vbc->length_threshold] >= 0.05)
+        if(vbc->fdr_lesser[vbc->length_threshold] >= 0.2)
             out << " The analysis results showed that there is no tracks with significantly decreased anisotropy due to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
         else
             out << " The analysis results showed tracks with decreased anisotropy due to "
@@ -551,12 +552,12 @@ void vbc_dialog::calculate_FDR(void)
     if(ui->rb_group_difference->isChecked())
     {
         std::ostringstream out;
-        if(vbc->fdr_greater[vbc->length_threshold] >= 0.05)
+        if(vbc->fdr_greater[vbc->length_threshold] >= 0.2)
             out << " The analysis results showed that there is no tracks in group 0 with significantly increased anisotropy.";
         else
             out << " The analysis results showed tracks with increased anisotropy in group 0, and the FDR was " << vbc->fdr_greater[vbc->length_threshold] << ".";
 
-        if(vbc->fdr_lesser[vbc->length_threshold] >= 0.05)
+        if(vbc->fdr_lesser[vbc->length_threshold] >= 0.2)
             out << " The analysis results showed that there is no tracks in group 1 with significantly increased anisotropy.";
         else
             out << " The analysis results showed tracks with increased anisotropy in group 1, and the FDR was " << vbc->fdr_lesser[vbc->length_threshold] << ".";
@@ -665,4 +666,12 @@ void vbc_dialog::on_save_name_list_clicked()
     std::ofstream out(filename.toLocal8Bit().begin());
     for(unsigned int index = 0;index < vbc->subject_count();++index)
         out << vbc->subject_name(index) << std::endl;
+}
+
+void vbc_dialog::on_advanced_options_clicked()
+{
+    if(ui->advanced_options_box->isHidden())
+        ui->advanced_options_box->show();
+    else
+        ui->advanced_options_box->hide();
 }
