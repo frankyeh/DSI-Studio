@@ -61,7 +61,7 @@ void ImageDelegate::setEditorData(QWidget *editor,
         {
             image::rgb_color color((unsigned int)(index.data(Qt::UserRole).toInt()));
             ((QColorToolButton*)editor)->setColor(
-                QColor(color.r,color.g,color.b,color.a));
+                QColor(color.r,color.g,color.b));
         }
         else
             return QItemDelegate::setEditorData(editor,index);

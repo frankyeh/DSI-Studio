@@ -1,4 +1,5 @@
 #include <QColorDialog>
+#include <QPainter>
 #include "qcolorcombobox.h"
 
 QColor QColorComboBox::color() const
@@ -30,9 +31,15 @@ QColor QColorToolButton::color() const
 void QColorToolButton::setColor(QColor color)
  {
     selected_color = color;
-    QPalette newPalette = palette();
-    newPalette.setColor(QPalette::Button, color);
-    setPalette(newPalette);
+    QPixmap pixmap(22,22);
+    QPainter painter(&pixmap);
+    painter.setPen(color);
+    painter.setBrush(color);
+    painter.drawRect(0,0,22,22);
+    QIcon icon;
+    icon.addPixmap(pixmap);
+    setIcon(icon);
+    setToolButtonStyle(Qt::ToolButtonIconOnly);
 }
 void QColorToolButton::mouseReleaseEvent ( QMouseEvent * e )
 {
