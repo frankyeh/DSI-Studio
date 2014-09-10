@@ -252,7 +252,7 @@ void RegionTableWidget::draw_mosaic_region(QImage& qimage,unsigned int mosaic_si
                 continue;
             X += shift_x[Z >> skip];
             Y += shift_y[Z >> skip];
-            if(X >= qimage.width() || Y >= qimage.height())
+            if(X < 0 || Y < 0 || X >= qimage.width() || Y >= qimage.height())
                 continue;
             qimage.setPixel(X,Y,(unsigned int)qimage.pixel(X,Y) | cur_color);
         }
