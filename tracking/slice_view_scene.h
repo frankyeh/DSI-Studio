@@ -27,8 +27,7 @@ private:
 public:
     unsigned int mosaic_size;
     bool get_location(float x,float y,image::vector<3,float>& pos);
-private:
-    // record the mouse press points
+public:    // record the mouse press points
     std::vector<image::vector<3,short> >sel_coord;
     std::vector<image::vector<2,short> >sel_point;
     int cur_region;

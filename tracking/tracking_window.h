@@ -94,7 +94,7 @@ public:
     bool eventFilter(QObject *obj, QEvent *event);
     QVariant operator[](QString name)const;
     void on_tracking_index_currentIndexChanged(int index);
-
+    void add_slices(QStringList filenames,QString name);
 public slots:
     void on_SagView_clicked();
     void on_CorView_clicked();

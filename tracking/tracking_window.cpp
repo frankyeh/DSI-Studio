@@ -84,7 +84,6 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         ui->glCorBox->setValue(slice.slice_pos[1]);
         ui->glAxiBox->setValue(slice.slice_pos[2]);
         slice_no_update = false;
-        on_SliceModality_currentIndexChanged(0);
 
         for (unsigned int index = 0;index < fib_data.view_item.size(); ++index)
         {
@@ -92,13 +91,24 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
             if(fib_data.view_item[index].is_overlay)
                 ui->overlay->addItem(fib_data.view_item[index].name.c_str());
         }
-        ui->sliceViewBox->setCurrentIndex(0);
-        ui->overlay->setCurrentIndex(0);
-        if(ui->overlay->count() == 1)
-           ui->overlay->hide();
     }
 
     is_qsdr = !handle->trans_to_mni.empty();
+    if(is_qsdr)
+    {
+        QStringList wm,t1;
+        wm << QCoreApplication::applicationDirPath() + "/mni_icbm152_wm_tal_nlin_asym_09a.nii.gz";
+        t1 << QCoreApplication::applicationDirPath() + "/mni_icbm152_t1_tal_nlin_asym_09a.nii.gz";
+        if(QFileInfo(t1[0]).exists())
+            add_slices(t1,"T1w");
+        if(QFileInfo(wm[0]).exists())
+        {
+            add_slices(wm,"wm");
+            glWidget->current_visible_slide = glWidget->other_slices.size();
+            glWidget->addSurface();
+            glWidget->current_visible_slide = 0;
+        }
+    }
 
     // setup atlas
     if(!fa_template_imp.I.empty() &&
@@ -154,6 +164,7 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         connect(ui->actionSave_mapping,SIGNAL(triggered()),glWidget,SLOT(saveMapping()));
         connect(ui->actionSave_Rotation_Images,SIGNAL(triggered()),glWidget,SLOT(saveRotationSeries()));
         connect(ui->actionSave_Left_Right_3D_Image,SIGNAL(triggered()),glWidget,SLOT(saveLeftRight3DImage()));
+        connect(ui->actionSave_3D_screen_in_3_views,SIGNAL(triggered()),glWidget,SLOT(save3ViewImage()));
     }
     // scene view
     {
@@ -321,6 +332,13 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
     on_glAxiView_clicked();
     if(renderWidget->getData("orientation_convention").toInt() == 1)
         on_glAxiView_clicked();
+
+    ui->sliceViewBox->setCurrentIndex(0);
+    ui->overlay->setCurrentIndex(0);
+    on_SliceModality_currentIndexChanged(0);
+    if(ui->overlay->count() == 1)
+       ui->overlay->hide();
+
     qApp->installEventFilter(this);
 }
 
@@ -748,32 +766,35 @@ void tracking_window::on_actionTracts_to_seeds_triggered()
     glWidget->updateGL();
 }
 
-void tracking_window::on_actionInsert_T1_T2_triggered()
+void tracking_window::add_slices(QStringList filenames,QString name)
 {
-    QStringList filenames = QFileDialog::getOpenFileNames(
-        this,
-        "Open Images files",get_path("t1_path"),
-        "Image files (*.dcm *.hdr *.nii *.nii.gz 2dseq);;All files (*)" );
-    if( filenames.isEmpty() || !glWidget->addSlices(filenames))
+    if(!glWidget->addSlices(filenames))
         return;
-    add_path("t1_path",filenames[0]);
-    ui->SliceModality->addItem(QFileInfo(filenames[0]).baseName());
-    ui->SliceModality->setCurrentIndex(glWidget->other_slices.size());
-    ui->sliceViewBox->addItem(QFileInfo(filenames[0]).baseName().toLocal8Bit().begin());
+    ui->SliceModality->addItem(name);
+    ui->sliceViewBox->addItem(name);
     handle->view_item.push_back(handle->view_item[0]);
-    handle->view_item.back().name = QFileInfo(filenames[0]).baseName().toLocal8Bit().begin();
+    handle->view_item.back().name = name.toLocal8Bit().begin();
     handle->view_item.back().is_overlay = false;
     handle->view_item.back().image_data = image::make_image(glWidget->roi_image.back().geometry(),
                                                                      glWidget->roi_image_buf.back());
     handle->view_item.back().set_scale(
                 glWidget->other_slices.back().source_images.begin(),
                 glWidget->other_slices.back().source_images.end());
-    ui->sliceViewBox->setCurrentIndex(ui->sliceViewBox->count()-1);
-
 }
 
-
-
+void tracking_window::on_actionInsert_T1_T2_triggered()
+{
+    QStringList filenames = QFileDialog::getOpenFileNames(
+        this,
+        "Open Images files",get_path("t1_path"),
+        "Image files (*.dcm *.hdr *.nii *.nii.gz 2dseq);;All files (*)" );
+    if( filenames.isEmpty())
+        return;
+    add_path("t1_path",filenames[0]);
+    add_slices(filenames,QFileInfo(filenames[0]).baseName());
+    ui->SliceModality->setCurrentIndex(glWidget->other_slices.size());
+    ui->sliceViewBox->setCurrentIndex(ui->sliceViewBox->count()-1);
+}
 
 
 bool ask_TDI_options(int& rec,int& rec2)

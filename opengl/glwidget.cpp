@@ -1755,6 +1755,7 @@ void GLWidget::addSurface(void)
                                (SliceModel*)&cur_tracking_window.slice;
 
     float threshold = image::segmentation::otsu_threshold(active_slice->get_source());
+    /*
     bool ok;
     threshold = QInputDialog::getDouble(this,
         "DSI Studio","Threshold:", threshold,
@@ -1762,7 +1763,7 @@ void GLWidget::addSurface(void)
         *std::max_element(active_slice->get_source().begin(),active_slice->get_source().end()),
         4, &ok);
     if (!ok)
-        return;
+        return;*/
     {
         surface.reset(new RegionModel);
         image::basic_image<float, 3> crop_image(active_slice->get_source());
@@ -1884,6 +1885,42 @@ void GLWidget::catchScreen2(void)
     makeCurrent();
     resizeGL(old_width,old_height);
 }
+void GLWidget::save3ViewImage(void)
+{
+    QString filename = QFileDialog::getSaveFileName(
+            this,
+            "Assign image name",
+            cur_tracking_window.get_path("catch_screen"),
+            "BMP files (*.bmp);;PNG files (*.png);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    cur_tracking_window.add_path("catch_screen",filename);
+    makeCurrent();
+    set_view_flip = false;
+    set_view(0);
+    updateGL();
+    updateGL();
+    QImage image0 = grabFrameBuffer();
+    set_view_flip = true;
+    set_view(1);
+    updateGL();
+    updateGL();
+    QImage image1 = grabFrameBuffer();
+    set_view_flip = true;
+    set_view(2);
+    updateGL();
+    updateGL();
+    QImage image2 = grabFrameBuffer();
+    QImage image3 = cur_tracking_window.scene.view_image.scaledToWidth(image0.width()).convertToFormat(QImage::Format_ARGB32);
+    QImage all(image0.width()*2,image0.height()*2,QImage::Format_ARGB32);
+    QPainter painter(&all);
+    painter.drawImage(0,0,image0);
+    painter.drawImage(image0.width(),0,image1);
+    painter.drawImage(image0.width(),image0.height(),image2);
+    painter.drawImage(0,image0.height(),image3);
+    all.save(filename);
+}
+
 void GLWidget::saveLeftRight3DImage(void)
 {
     QString filename = QFileDialog::getSaveFileName(
