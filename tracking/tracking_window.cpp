@@ -102,12 +102,7 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         if(QFileInfo(t1[0]).exists())
             add_slices(t1,"T1w");
         if(QFileInfo(wm[0]).exists())
-        {
             add_slices(wm,"wm");
-            glWidget->current_visible_slide = glWidget->other_slices.size();
-            glWidget->addSurface();
-            glWidget->current_visible_slide = 0;
-        }
     }
 
     // setup atlas
