@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'mainwindow.ui'
 **
-** Created: Tue Sep 2 17:34:56 2014
+** Created: Tue Sep 23 18:21:13 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -152,7 +152,7 @@ public:
         toolBox->addItem(page_2, QString::fromUtf8("Diffusion MRI Connectometry"));
         page_3 = new QWidget();
         page_3->setObjectName(QString::fromUtf8("page_3"));
-        page_3->setGeometry(QRect(0, 0, 182, 420));
+        page_3->setGeometry(QRect(0, 0, 300, 376));
         verticalLayout_8 = new QVBoxLayout(page_3);
         verticalLayout_8->setSpacing(0);
         verticalLayout_8->setContentsMargins(0, 0, 0, 0);
@@ -184,7 +184,7 @@ public:
         toolBox->addItem(page_3, QString::fromUtf8("Tools: batch processing"));
         page_4 = new QWidget();
         page_4->setObjectName(QString::fromUtf8("page_4"));
-        page_4->setGeometry(QRect(0, 0, 232, 155));
+        page_4->setGeometry(QRect(0, 0, 300, 376));
         verticalLayout_9 = new QVBoxLayout(page_4);
         verticalLayout_9->setSpacing(0);
         verticalLayout_9->setContentsMargins(0, 0, 0, 0);
@@ -318,7 +318,7 @@ public:
 
         retranslateUi(MainWindow);
 
-        toolBox->setCurrentIndex(1);
+        toolBox->setCurrentIndex(0);
         toolBox->layout()->setSpacing(0);
         workDir->setCurrentIndex(-1);
 

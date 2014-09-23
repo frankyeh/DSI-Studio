@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Tue Sep 2 17:34:56 2014
+** Created: Tue Sep 23 18:21:13 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -142,6 +142,7 @@ public:
     QAction *actionPublish_or_perish;
     QAction *actionMethod_Report;
     QAction *actionQuality_Assessment;
+    QAction *actionSave_3D_screen_in_3_views;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QWidget *main_widget;
@@ -544,6 +545,9 @@ public:
         actionMethod_Report->setObjectName(QString::fromUtf8("actionMethod_Report"));
         actionQuality_Assessment = new QAction(tracking_window);
         actionQuality_Assessment->setObjectName(QString::fromUtf8("actionQuality_Assessment"));
+        actionSave_3D_screen_in_3_views = new QAction(tracking_window);
+        actionSave_3D_screen_in_3_views->setObjectName(QString::fromUtf8("actionSave_3D_screen_in_3_views"));
+        actionSave_3D_screen_in_3_views->setIcon(icon2);
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -1438,6 +1442,7 @@ public:
         menu_View->addAction(actionSave_Camera);
         menu_View->addSeparator();
         menu_View->addAction(actionSave_Screen);
+        menu_View->addAction(actionSave_3D_screen_in_3_views);
         menu_View->addAction(actionSave_3D_screen_in_high_resolution);
         menu_View->addAction(actionSave_ROI_Screen);
         menu_View->addAction(actionSave_Anisotrpy_Map_as);
@@ -1617,6 +1622,7 @@ public:
         actionPublish_or_perish->setText(QApplication::translate("tracking_window", "Publish or perish...", 0, QApplication::UnicodeUTF8));
         actionMethod_Report->setText(QApplication::translate("tracking_window", "Method Report...", 0, QApplication::UnicodeUTF8));
         actionQuality_Assessment->setText(QApplication::translate("tracking_window", "Quality Assessment...", 0, QApplication::UnicodeUTF8));
+        actionSave_3D_screen_in_3_views->setText(QApplication::translate("tracking_window", "Save 3D screen in 3 views...", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)

@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Mon Sep 22 17:03:30 2014
+** Created: Tue Sep 23 18:21:13 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -257,7 +257,7 @@ public:
         toolBox->setObjectName(QString::fromUtf8("toolBox"));
         source_page = new QWidget();
         source_page->setObjectName(QString::fromUtf8("source_page"));
-        source_page->setGeometry(QRect(0, 0, 267, 195));
+        source_page->setGeometry(QRect(0, 0, 597, 473));
         horizontalLayout_25 = new QHBoxLayout(source_page);
         horizontalLayout_25->setObjectName(QString::fromUtf8("horizontalLayout_25"));
         splitter = new QSplitter(source_page);
@@ -396,7 +396,7 @@ public:
         toolBox->addItem(source_page, QString::fromUtf8("Source Images"));
         page_3 = new QWidget();
         page_3->setObjectName(QString::fromUtf8("page_3"));
-        page_3->setGeometry(QRect(0, 0, 534, 146));
+        page_3->setGeometry(QRect(0, 0, 597, 473));
         gridLayout_2 = new QGridLayout(page_3);
         gridLayout_2->setObjectName(QString::fromUtf8("gridLayout_2"));
         verticalLayout_5 = new QVBoxLayout();
@@ -735,7 +735,7 @@ public:
         hardi_reg->setObjectName(QString::fromUtf8("hardi_reg"));
         hardi_reg->setMaximumSize(QSize(75, 16777215));
         hardi_reg->setDecimals(4);
-        hardi_reg->setMinimum(0.001);
+        hardi_reg->setMinimum(0.0001);
         hardi_reg->setMaximum(1);
         hardi_reg->setSingleStep(0.01);
         hardi_reg->setValue(0.05);
