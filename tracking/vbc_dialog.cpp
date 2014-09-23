@@ -45,7 +45,7 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
         ui->subject_list->setItem(index,0, new QTableWidgetItem(QString(vbc->subject_name(index).c_str())));
         ui->subject_list->setItem(index,1, new QTableWidgetItem(QString::number(0)));
         ui->subject_list->setItem(index,2, new QTableWidgetItem(QString::number(vbc->subject_R2(index))));
-        if(vbc->subject_R2(index) < 0.5)
+        if(vbc->subject_R2(index) < 0.4)
             check_quality = true;
     }
     ui->AxiSlider->setMaximum(vbc->handle->dim[2]-1);

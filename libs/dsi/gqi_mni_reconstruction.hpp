@@ -104,6 +104,7 @@ public:
         {
             VG.save_to_file<image::io::nifti>("VG.nii.gz");
             VF.save_to_file<image::io::nifti>("VF.nii.gz");
+            VF2.save_to_file<image::io::nifti>("VF2.nii.gz");
         }
 
         if(voxel.qsdr_trans.data[0] != 0.0) // has manual reg data
