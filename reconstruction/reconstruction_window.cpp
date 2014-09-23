@@ -611,6 +611,22 @@ void reconstruction_window::on_AdvancedOptions_clicked()
 
 void reconstruction_window::on_actionSave_4D_nifti_triggered()
 {
+    if(filenames.size() > 1)
+    {
+        for(int index = 0;check_prog(index,filenames.size());++index)
+        {
+            ImageModel model;
+            if (!model.load_from_file(filenames[index].toLocal8Bit().begin()))
+            {
+                QMessageBox::information(this,"error",QString("Cannot open ") +
+                    filenames[index] + " : " +handle->error_msg.c_str(),0);
+                check_prog(0,0);
+                return;
+            }
+            model.save_to_nii((filenames[index]+".nii.gz").toLocal8Bit().begin());
+        }
+        return;
+    }
     QString filename = QFileDialog::getSaveFileName(
                                 this,
                                 "Save image as...",
@@ -618,28 +634,7 @@ void reconstruction_window::on_actionSave_4D_nifti_triggered()
                                 "All files (*)" );
     if ( filename.isEmpty() )
         return;
-    gz_nifti header;
-    {
-        float vs[4];
-        std::copy(handle->voxel.vs.begin(),handle->voxel.vs.end(),vs);
-        vs[3] = 1.0;
-        header.set_voxel_size(vs);
-    }
-    {
-        image::geometry<4> nifti_dim;
-        std::copy(handle->voxel.dim.begin(),handle->voxel.dim.end(),nifti_dim.begin());
-        nifti_dim[3] = handle->voxel.bvalues.size();
-        image::basic_image<float,4> buffer(nifti_dim);
-        for(unsigned int index = 0;index < handle->voxel.bvalues.size();++index)
-        {
-            std::copy(handle->dwi_data[index],
-                      handle->dwi_data[index]+handle->voxel.dim.size(),
-                      buffer.begin() + index*handle->voxel.dim.size());
-        }
-        image::flip_xy(buffer);
-        header << buffer;
-        header.save_to_file(filename.toLocal8Bit().begin());
-    }
+    handle->save_to_nii(filename.toLocal8Bit().begin());
 }
 
 void reconstruction_window::on_actionSave_b_table_triggered()
@@ -651,14 +646,7 @@ void reconstruction_window::on_actionSave_b_table_triggered()
                                 "Text files (*.txt)" );
     if ( filename.isEmpty() )
         return;
-    std::ofstream out(filename.toLocal8Bit().begin());
-    for(unsigned int index = 0;index < handle->voxel.bvalues.size();++index)
-    {
-        out << handle->voxel.bvalues[index] << " "
-            << handle->voxel.bvectors[index][0] << " "
-            << handle->voxel.bvectors[index][1] << " "
-            << handle->voxel.bvectors[index][2] << std::endl;
-    }
+    handle->save_b_table(filename.toLocal8Bit().begin());
 }
 
 void reconstruction_window::on_actionSave_bvals_triggered()
@@ -670,13 +658,7 @@ void reconstruction_window::on_actionSave_bvals_triggered()
                                 "Text files (*)" );
     if ( filename.isEmpty() )
         return;
-    std::ofstream out(filename.toLocal8Bit().begin());
-    for(unsigned int index = 0;index < handle->voxel.bvalues.size();++index)
-    {
-        if(index)
-            out << " ";
-        out << handle->voxel.bvalues[index];
-    }
+    handle->save_bval(filename.toLocal8Bit().begin());
 }
 
 void reconstruction_window::on_actionSave_bvecs_triggered()
@@ -688,13 +670,7 @@ void reconstruction_window::on_actionSave_bvecs_triggered()
                                 "Text files (*)" );
     if ( filename.isEmpty() )
         return;
-    std::ofstream out(filename.toLocal8Bit().begin());
-    for(unsigned int index = 0;index < handle->voxel.bvalues.size();++index)
-    {
-        out << handle->voxel.bvectors[index][0] << " "
-            << handle->voxel.bvectors[index][1] << " "
-            << handle->voxel.bvectors[index][2] << std::endl;
-    }
+    handle->save_bvec(filename.toLocal8Bit().begin());
 }
 
 void reconstruction_window::update_image(void)

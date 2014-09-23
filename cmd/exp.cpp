@@ -6,6 +6,7 @@
 #include "boost/program_options.hpp"
 #include "tracking/region/Regions.h"
 #include "libs/tracking/tract_model.hpp"
+#include "libs/dsi/image_model.hpp"
 #include "libs/tracking/tracking_thread.hpp"
 #include "fib_data.hpp"
 #include "libs/gzip_interface.hpp"
@@ -34,6 +35,27 @@ int exp(int ac, char *av[])
     po::variables_map vm;
     po::store(po::command_line_parser(ac, av).options(ana_desc).run(), vm);
     po::notify(vm);
+
+
+    if(vm["export"].as<std::string>() == "4dnii")
+    {
+        std::string file_name = vm["source"].as<std::string>();
+        ImageModel handle;
+        if(!handle.load_from_file(file_name.c_str()))
+        {
+            std::cout << handle.error_msg << std::endl;
+            return 1;
+        }
+        std::cout << "exporting " << vm["export"].as<std::string>()+".nii.gz" << std::endl;
+        handle.save_to_nii((file_name+".nii.gz").c_str());
+        std::cout << "exporting " << vm["export"].as<std::string>()+".b_table.txt" << std::endl;
+        handle.save_b_table((file_name+".b_table.txt").c_str());
+        std::cout << "exporting " << vm["export"].as<std::string>()+".bvec" << std::endl;
+        handle.save_bvec((file_name+".bvec").c_str());
+        std::cout << "exporting " << vm["export"].as<std::string>()+".bval" << std::endl;
+        handle.save_bval((file_name+".bval").c_str());
+        return 1;
+    }
 
     gz_mat_read mat_reader;
     std::string file_name = vm["source"].as<std::string>();
