@@ -42,7 +42,19 @@ public:
         ::set_title(title);
         if(handle)
         {
-            if (gzread(handle,buf,size) == -1)
+
+            const size_t block_size = 524288000;// 500mb
+            while(size > block_size)
+            {
+                if(gzread(handle,buf,block_size) <= 0)
+                {
+                    close();
+                    return false;
+                }
+                size -= block_size;
+                buf = (char*)buf + block_size;
+            }
+            if (gzread(handle,buf,size) <= 0)
             {
                 close();
                 return false;
@@ -121,7 +133,18 @@ public:
         ::set_title(title);
         if(handle)
         {
-            if(gzwrite(handle,buf,size) == -1)
+            const size_t block_size = 524288000;// 500mb
+            while(size > block_size)
+            {
+                if(gzwrite(handle,buf,block_size) <= 0)
+                {
+                    close();
+                    throw std::runtime_error("Cannot output gz file");
+                }
+                size -= block_size;
+                buf = (const char*)buf + block_size;
+            }
+            if(gzwrite(handle,buf,size) <= 0)
                 close();
         }
         else

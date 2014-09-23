@@ -654,7 +654,7 @@ extern "C"
             odfs[odf_index][j] /= (double)num_files;
 
     std::ostringstream out;
-    out << report.c_str() << " A group average template was constructed from a total of " << num_files << " subjects.";
+    out << "A group average template was constructed from a total of " << num_files << " subjects." << report.c_str();
     report = out.str();
     output_odfs(mask,out_name,".mean.odf.fib.gz",odfs,ti,vs,mni,report);
     output_odfs(mask,out_name,".mean.fib.gz",odfs,ti,vs,mni,report,false);
