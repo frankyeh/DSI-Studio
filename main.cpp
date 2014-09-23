@@ -53,7 +53,7 @@ QStringList search_files(QString dir,QString filter)
 std::string get_fa_template_path(void)
 {
     std::string fa_template_path = QCoreApplication::applicationDirPath().toLocal8Bit().begin();
-    fa_template_path += "/FMRIB58_FA_1mm.nii.gz";
+    fa_template_path += "/HCP488_QA.nii.gz";
     return fa_template_path;
 }
 

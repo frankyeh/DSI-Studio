@@ -57,6 +57,7 @@ public:
     image::vector<3> vs;
     std::vector<image::vector<3,float> > bvectors;
     std::vector<float> bvalues;
+    image::basic_image<float,3> dwi_sum;
     std::string report;
     std::ostringstream recon_report;
 public:// parameters;
@@ -80,6 +81,7 @@ public:
     bool output_jacobian;
     bool output_mapping;
     image::vector<3,int> csf_pos1,csf_pos2;
+    double R2;
 public: // user in fib evaluation
     std::vector<float> fib_fa;
     std::vector<float> fib_dir;

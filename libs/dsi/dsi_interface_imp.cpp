@@ -303,6 +303,7 @@ extern "C"
                 std::cout << "b-table flipped x" << std::endl;
                 for(unsigned int index = 0;index < image_model->voxel.bvectors.size();++index)
                     image_model->voxel.bvectors[index][0] = -image_model->voxel.bvectors[index][0];
+                out << ".fx";
             }
             if(flip_y_score > cur_score &&
                flip_y_score > flip_x_score && flip_y_score > flip_z_score)
@@ -310,6 +311,7 @@ extern "C"
                 std::cout << "b-table flipped y" << std::endl;
                 for(unsigned int index = 0;index < image_model->voxel.bvectors.size();++index)
                     image_model->voxel.bvectors[index][1] = -image_model->voxel.bvectors[index][1];
+                out << ".fy";
             }
             if(flip_z_score > cur_score &&
                flip_z_score > flip_y_score && flip_z_score > flip_x_score)
@@ -317,6 +319,7 @@ extern "C"
                 std::cout << "b-table flipped z" << std::endl;
                 for(unsigned int index = 0;index < image_model->voxel.bvectors.size();++index)
                     image_model->voxel.bvectors[index][2] = -image_model->voxel.bvectors[index][2];
+                out << ".fz";
             }
 
         }
@@ -336,14 +339,14 @@ extern "C"
                 begin_prog("calculating");
             }
             out << ".dsi."<< (int)param_values[0] << ".fib.gz";
-            if (!image_model->reconstruct<dsi_process>(out.str()))
+            if (!image_model->reconstruct<dsi_process>())
                 return "reconstruction canceled";
             break;
         case 1://DTI
             image_model->voxel.recon_report << " The diffusion tensor was calculated.";
             out << ".dti.fib.gz";
             image_model->voxel.max_fiber_number = 1;
-            if (!image_model->reconstruct<dti_process>(out.str()))
+            if (!image_model->reconstruct<dti_process>())
                 return "reconstruction canceled";
             break;
 
@@ -356,7 +359,7 @@ extern "C"
                 begin_prog("calculating");
             }
             out << ".qbi."<< param_values[0] << "_" << param_values[1] << ".fib.gz";
-            if (!image_model->reconstruct<qbi_process>(out.str()))
+            if (!image_model->reconstruct<qbi_process>())
                 return "reconstruction canceled";
             break;
         case 3://QBI
@@ -368,7 +371,7 @@ extern "C"
                 begin_prog("calculating");
             }
             out << ".qbi.sh"<< (int) param_values[1] << "." << param_values[0] << ".fib.gz";
-            if (!image_model->reconstruct<qbi_sh_process>(out.str()))
+            if (!image_model->reconstruct<qbi_sh_process>())
                 return "reconstruction canceled";
             break;
 
@@ -378,7 +381,7 @@ extern "C"
                 image_model->voxel.recon_report <<
                 " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, 2010).";
                 out << (image_model->voxel.r2_weighted ? ".gqi2.spec.fib.gz":".gqi.spec.fib.gz");
-                if (!image_model->reconstruct<gqi_spectral_process>(out.str()))
+                if (!image_model->reconstruct<gqi_spectral_process>())
                     return "reconstruction canceled";
                 break;
             }
@@ -393,7 +396,7 @@ extern "C"
             if(image_model->voxel.r2_weighted)
                 image_model->voxel.recon_report << " The ODF calculation was weighted by the square of the diffuion displacement.";
             out << (image_model->voxel.r2_weighted ? ".gqi2.":".gqi.") << param_values[0] << ".fib.gz";
-            if (!image_model->reconstruct<gqi_process>(out.str()))
+            if (!image_model->reconstruct<gqi_process>())
                 return "reconstruction canceled";
             break;
         case 6:
@@ -402,7 +405,7 @@ extern "C"
             out << ".hardi."<< param_values[0]
                 << ".b" << param_values[1]
                 << ".reg" << param_values[2] << ".src.gz";
-            if (!image_model->reconstruct<hardi_convert_process>(out.str()))
+            if (!image_model->reconstruct<hardi_convert_process>())
                 return "reconstruction canceled";
             break;
         case 7:
@@ -419,12 +422,13 @@ extern "C"
                 out << ".jac";
             if(image_model->voxel.output_mapping)
                 out << ".map";
-            out << ".fib.gz";
             begin_prog("deforming");
-            if (!image_model->reconstruct<gqi_mni_process>(out.str()))
+            if (!image_model->reconstruct<gqi_mni_process>())
                 return "reconstruction canceled";
+            out << ".R" << (int)std::floor(image_model->voxel.R2*100.0) << ".fib.gz";
             break;
         }
+        image_model->save_fib(out.str());
         output_name = image_model->file_name + out.str();
     }
     catch (std::exception& e)
@@ -468,8 +472,9 @@ bool output_odfs(const image::basic_image<unsigned char,3>& mni_mask,
     image_model.file_name = out_name;
     image_model.mask = mni_mask;
     std::copy(vs,vs+3,image_model.voxel.vs.begin());
-    if (prog_aborted() || !image_model.reconstruct<reprocess_odf>(ext))
+    if (prog_aborted() || !image_model.reconstruct<reprocess_odf>())
         return false;
+    image_model.save_fib(ext);
     image_model.voxel.template_odfs.swap(odfs);
     return true;
 }

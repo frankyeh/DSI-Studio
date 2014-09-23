@@ -37,9 +37,8 @@ protected:
 protected:
     image::transformation_matrix<3,float> affine;
 protected:
-    image::basic_image<float,3> VG,VF;
+    image::basic_image<float,3> VG,VF,VF2;
     double VGvs[3];
-    double R2;
 protected:
     image::vector<3,int> bounding_box_lower;
     image::vector<3,int> bounding_box_upper;
@@ -67,15 +66,21 @@ public:
 
         VG = fa_template_imp.I;
         VF = voxel.qa_map;
+        VF2 = voxel.dwi_sum;
+
 
         image::filter::gaussian(VF);
+        image::filter::gaussian(VF2);
         VF -= image::segmentation::otsu_threshold(VF);
+        VF2 -= image::segmentation::otsu_threshold(VF2);
         image::lower_threshold(VF,0.0);
+        image::lower_threshold(VF2,0.0);
 
         src_geo = VF.geometry();
 
-        image::normalize(VF,1.0);
         image::normalize(VG,1.0);
+        image::normalize(VF,1.0);
+        image::normalize(VF2,1.0);
 
 
         VGvs[0] = std::fabs(fa_template_imp.tran[0]);
@@ -97,8 +102,8 @@ public:
 
         if(export_intermediate)
         {
-            VG.save_to_file<image::io::nifti>("VG.nii");
-            VF.save_to_file<image::io::nifti>("VF.nii");
+            VG.save_to_file<image::io::nifti>("VG.nii.gz");
+            VF.save_to_file<image::io::nifti>("VF.nii.gz");
         }
 
         if(voxel.qsdr_trans.data[0] != 0.0) // has manual reg data
@@ -107,15 +112,37 @@ public:
         {
             begin_prog("linear registration");
             terminated_class terminated(256);
-            image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::mutual_information(),terminated);
+            image::reg::linear(VF2,VG,arg_min,image::reg::affine,image::reg::mutual_information(),terminated);
             affine = image::transformation_matrix<3,float>(arg_min,VF.geometry(),VG.geometry());
         }
         affine.inverse();
         image::basic_image<float,3> VFF(VG.geometry());
         image::resample(VF,VFF,affine);
 
+        //linear regression
+        {
+            std::vector<float> x,y;
+            x.reserve(VG.size());
+            y.reserve(VG.size());
+            for(unsigned int index = 0;index < VG.size();++index)
+                if(VG[index] > 0)
+                {
+                    x.push_back(VFF[index]);
+                    y.push_back(VG[index]);
+                }
+            std::pair<double,double> r = image::linear_regression(x.begin(),x.end(),y.begin());
+            image::multiply_constant(VFF,r.first);
+            image::add_constant(VFF,r.second);
+            image::lower_threshold(VFF,0.0);
+            for(unsigned int index = 0;index < VG.size();++index)
+                if(VG[index] == 0)
+                    VFF[index] = 0;
+
+        }
+
+
         if(export_intermediate)
-            VFF.save_to_file<image::io::nifti>("VFF.nii");
+            VFF.save_to_file<image::io::nifti>("VFF.nii.gz");
 
         try
         {
@@ -133,15 +160,30 @@ public:
         }
         {
             begin_prog("estimating goodness of fit");
-            check_prog(0,1);
-            image::basic_image<float,3> y(VG.geometry());
-            image::resample(VFF,y,*mni.get());
-            if(export_intermediate)
-                y.save_to_file<image::io::nifti>("nVFF.nii");
-            R2 = image::correlation(VG.begin(),VG.end(),y.begin());
-            R2 *= R2;
-            std::cout << "R2 = " << R2 << std::endl;
+            std::vector<float> x,y;
+            x.reserve(VG.size());
+            y.reserve(VG.size());
+            for (image::pixel_index<3> index;check_prog(index.index(),VG.size());index.next(VG.geometry()))
+                if(VG[index.index()] > 0)
+                {
+                    image::vector<3,double> pos;
+                    (*mni.get())(index,pos);
+                    float value = 0.0;
+                    image::linear_estimate(VFF,pos,value);
+                    x.push_back(VG[index.index()]);
+                    y.push_back(value);
+                }
+
+            voxel.R2 = image::correlation(x.begin(),x.end(),y.begin());
+            voxel.R2 *= voxel.R2;
+            std::cout << "R2 = " << voxel.R2 << std::endl;
             check_prog(1,1);
+            if(export_intermediate)
+            {
+                image::basic_image<float,3> VFFF(VG.geometry());
+                image::resample(VFF,VFFF,*mni.get());
+                VFFF.save_to_file<image::io::nifti>("VFFF.nii.gz");
+            }
         }
 
 
@@ -340,7 +382,7 @@ public:
             mat_writer.write("mz",&*mz.begin(),1,mz.size());
         }
         mat_writer.write("trans",&*trans_to_mni,4,4);
-        mat_writer.write("R2",&R2,1,1);
+        mat_writer.write("R2",&voxel.R2,1,1);
     }
 
 };

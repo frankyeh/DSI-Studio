@@ -14,7 +14,6 @@ public:
     std::string file_name,error_msg;
     gz_mat_read mat_reader;
     std::vector<const unsigned short*> dwi_data;
-    image::basic_image<float,3> dwi_sum;
     image::basic_image<unsigned char,3> mask;
 public:
     // 0: x  1: y  2: z
@@ -27,22 +26,22 @@ public:
         else
             for (unsigned int index = 0;index < voxel.bvectors.size();++index)
                 std::swap(voxel.bvectors[index][type%3],voxel.bvectors[index][(type+1)%3]);
-        image::flip(dwi_sum,type);
+        image::flip(voxel.dwi_sum,type);
         image::flip(mask,type);
         for (unsigned int index = 0;check_prog(index,dwi_data.size());++index)
         {
             image::pointer_image<unsigned short,3> I = image::make_image(voxel.dim,(unsigned short*)dwi_data[index]);
             image::flip(I,type);
         }
-        voxel.dim = dwi_sum.geometry();
+        voxel.dim = voxel.dwi_sum.geometry();
     }
     void rotate(image::geometry<3> new_geo,image::transformation_matrix<3,float>& affine)
     {
         if(new_geo.size() > mask.size())
             new_geo[2] = mask.size()/new_geo.plane_size();
         image::basic_image<float,3> tmp(new_geo);
-        image::resample(dwi_sum,tmp,affine);
-        dwi_sum = tmp;
+        image::resample(voxel.dwi_sum,tmp,affine);
+        voxel.dwi_sum = tmp;
         image::resample(mask,tmp,affine);
         mask = tmp;
         for (unsigned int index = 0;check_prog(index,dwi_data.size());++index)
@@ -77,7 +76,7 @@ public:
             std::fill(I.begin(),I.end(),0);
             std::copy(I0.begin(),I0.end(),I.begin());
         }
-        image::crop(dwi_sum,range_min,range_max);
+        image::crop(voxel.dwi_sum,range_min,range_max);
         image::crop(mask,range_min,range_max);
         voxel.dim = mask.geometry();
 
@@ -224,27 +223,27 @@ public:
         }
 
         // create mask;
-        dwi_sum.clear();
-        dwi_sum.resize(voxel.dim);
+        voxel.dwi_sum.clear();
+        voxel.dwi_sum.resize(voxel.dim);
         for (unsigned int index = 0;index < voxel.bvalues.size();++index)
-            image::add(dwi_sum.begin(),dwi_sum.end(),dwi_data[index]);
+            image::add(voxel.dwi_sum.begin(),voxel.dwi_sum.end(),dwi_data[index]);
 
-        float max_value = *std::max_element(dwi_sum.begin(),dwi_sum.end());
+        float max_value = *std::max_element(voxel.dwi_sum.begin(),voxel.dwi_sum.end());
         float min_value = max_value;
-        for (unsigned int index = 0;index < dwi_sum.size();++index)
-            if (dwi_sum[index] < min_value && dwi_sum[index] > 0)
-                min_value = dwi_sum[index];
+        for (unsigned int index = 0;index < voxel.dwi_sum.size();++index)
+            if (voxel.dwi_sum[index] < min_value && voxel.dwi_sum[index] > 0)
+                min_value = voxel.dwi_sum[index];
 
 
         ::set_title("creating mask");
         check_prog(0,3);
-        image::minus_constant(dwi_sum,min_value);
-        image::lower_threshold(dwi_sum,0.0f);
-        image::normalize(dwi_sum,1.0);
-        image::add_constant(dwi_sum,1.0);
-        image::log(dwi_sum);
-        image::divide_constant(dwi_sum,0.301);
-        image::upper_threshold(dwi_sum,1.0f);
+        image::minus_constant(voxel.dwi_sum,min_value);
+        image::lower_threshold(voxel.dwi_sum,0.0f);
+        image::normalize(voxel.dwi_sum,1.0);
+        image::add_constant(voxel.dwi_sum,1.0);
+        image::log(voxel.dwi_sum);
+        image::divide_constant(voxel.dwi_sum,0.301);
+        image::upper_threshold(voxel.dwi_sum,1.0f);
 
 
         const unsigned char* mask_ptr = 0;
@@ -256,7 +255,7 @@ public:
         }
         else
         {
-            image::threshold(dwi_sum,mask,image::segmentation::otsu_threshold(dwi_sum)*0.8,1,0);
+            image::threshold(voxel.dwi_sum,mask,image::segmentation::otsu_threshold(voxel.dwi_sum)*0.8,1,0);
             check_prog(1,3);
             image::morphology::recursive_smoothing(mask,10);
             check_prog(2,3);
@@ -314,11 +313,8 @@ public:
     }
 
 
-    template<typename ProcessType>
-    bool reconstruct(const std::string& ext)
+    void save_fib(const std::string& ext)
     {
-        if (!reconstruct<ProcessType>())
-            return false;
         std::string output_name = file_name;
         output_name += ext;
         begin_prog("saving data");
@@ -328,7 +324,6 @@ public:
         std::string final_report = voxel.report.c_str();
         final_report += voxel.recon_report.str();
         mat_writer.write("report",final_report.c_str(),1,final_report.length());
-        return true;
     }
 
 };

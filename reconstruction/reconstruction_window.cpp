@@ -113,7 +113,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->report->setText(handle->voxel.report.c_str());
 
     max_source_value = *std::max_element(handle->dwi_data.back(),
-                                         handle->dwi_data.back()+handle->dwi_sum.size());
+                                         handle->dwi_data.back()+handle->voxel.dim.size());
     ui->brightness->setMaximum(max_source_value);
     ui->brightness->setMinimum(-max_source_value);
     ui->brightness->setSingleStep(max_source_value/50.0);
@@ -677,7 +677,7 @@ void reconstruction_window::update_image(void)
 {
     dwi.resize(handle->voxel.dim);
     for(unsigned int index = 0;index < dwi.size();++index)
-        dwi[index] = handle->dwi_sum[index]*255.0;
+        dwi[index] = handle->voxel.dwi_sum[index]*255.0;
     load_b_table();
 }
 
