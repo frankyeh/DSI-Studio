@@ -132,13 +132,11 @@ public:
                     y.push_back(VG[index]);
                 }
             std::pair<double,double> r = image::linear_regression(x.begin(),x.end(),y.begin());
-            image::multiply_constant(VFF,r.first);
-            image::add_constant(VFF,r.second);
-            image::lower_threshold(VFF,0.0);
             for(unsigned int index = 0;index < VG.size();++index)
-                if(VG[index] == 0)
+                if(VG[index] > 0)
+                    VFF[index] = std::max<float>(0,VFF[index]*r.first+r.second);
+                else
                     VFF[index] = 0;
-
         }
 
 
