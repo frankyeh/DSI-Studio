@@ -347,17 +347,29 @@ void correct_t2(boost::ptr_vector<DwiHeader>& dwi_files)
     }
 }
 
+void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell)
+{
+    float b_value_step = 0;
+    if(bvalues.front() != 0.0)
+    {
+        shell.push_back(0);
+        b_value_step = bvalues.front()/2.0;
+    }
+    else
+    {
+        b_value_step = bvalues[1]/2.0;
+        shell.push_back(1);
+    }
+    for(unsigned int index = shell.back()+1;index < bvalues.size();++index)
+        if(std::abs(bvalues[index]-bvalues[shell.back()]) > b_value_step)
+            shell.push_back(index);
+}
+
 void get_report(const std::vector<float>& bvalues,image::vector<3> vs,std::string& report)
 {
     std::ostringstream out;
     std::vector<unsigned int> shell;
-    if(bvalues.front() != 0.0)
-        shell.push_back(0);
-    for(unsigned int index = 1;index < bvalues.size();++index)
-    {
-        if(std::abs(bvalues[index]-bvalues[index-1]) > 100)
-            shell.push_back(index);
-    }
+    calculate_shell(bvalues,shell);
     if(shell.size() > 5)
     {
         out << " The diffusion images were acquired using a diffusion spectrum imaging scheme."

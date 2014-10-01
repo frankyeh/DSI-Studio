@@ -212,6 +212,8 @@ void flip_fib_dir(std::vector<float>& fib_dir,bool x,bool y,bool z)
     }
 }
 
+void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
+
 extern "C"
     const char* reconstruction(ImageModel* image_model,unsigned int method_id,const float* param_values)
 {
@@ -220,19 +222,17 @@ extern "C"
     {
         {
             std::vector<unsigned int> shell;
-            if(image_model->voxel.bvalues.front() != 0.0)
-                shell.push_back(0);
-            for(unsigned int index = 1;index < image_model->voxel.bvalues.size();++index)
-                if(std::abs(image_model->voxel.bvalues[index]-image_model->voxel.bvalues[index-1]) > 100)
-                    shell.push_back(index);
-
+            calculate_shell(image_model->voxel.bvalues,shell);
             image_model->voxel.half_sphere =
                     (method_id == 7 || method_id == 4) &&
                     (shell.size() > 5) && (shell[1] - shell[0] <= 3);
-            image_model->voxel.scheme_balance =
+            if(!image_model->voxel.half_sphere)
+            {
+                image_model->voxel.scheme_balance =
                     (method_id == 7 || method_id == 4) &&
                     (shell.size() <= 5) && !shell.empty() &&
                     image_model->voxel.bvalues.size()-shell.back() < 100;
+            }
         }
 
 

@@ -16,6 +16,7 @@ public:
     virtual void end(Voxel&,gz_mat_write& mat_writer) {}
 };
 
+void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 class BalanceScheme : public BaseProcess{
     std::vector<float> trans;
     unsigned int new_q_count;
@@ -31,15 +32,10 @@ public:
     {
         if(!voxel.scheme_balance)
             return;
-        std::vector<unsigned int> shell;
-        shell.push_back(0);
         unsigned int b_count = voxel.bvalues.size();
-        for(unsigned int index = 1;index < b_count;++index)
-        {
-            if(std::abs(voxel.bvalues[index]-voxel.bvalues[index-1]) > 100)
-                shell.push_back(index);
-        }
-        if(shell.size() > 4) // more than 3 shell
+        std::vector<unsigned int> shell;
+        calculate_shell(voxel.bvalues,shell);
+        if(shell.size() > 5) // more than 3 shell
         {
             voxel.scheme_balance = false;
             return;
@@ -53,23 +49,22 @@ public:
         std::vector<image::vector<3,float> > new_bvectors;
         std::vector<float> new_bvalues;
 
+        // if b0
+        if(voxel.bvalues.front() == 0.0)
+        {
+            trans.resize(b_count);
+            trans[0] = 1;
+            new_bvectors.resize(1);
+            new_bvalues.resize(1);
+            total_signals += 1;
+        }
+
         for(unsigned int shell_index = 0;shell_index < shell.size();++shell_index)
         {
             unsigned int from = shell[shell_index];
             unsigned int to = (shell_index + 1 == shell.size() ? b_count:shell[shell_index+1]);
             unsigned int num = to-from;
-            // if b0
-            if(shell_index == 0 && voxel.bvalues.front() < 100)
-            {
-                trans.resize(num*b_count);
-                new_bvectors.resize(num);
-                new_bvalues.resize(num);
-                float weighting = 1.0/(float)num;
-                for(unsigned int index = 0;index < num;++index)
-                    trans[index+index*b_count] = weighting;
-                total_signals += num;
-                continue;
-            }
+
 
             //calculate averaged angle distance
             double averaged_angle = 0.0;
@@ -96,17 +91,18 @@ public:
             for(unsigned int i = 0; i < new_dir.half_vertices_count;++i)
             {
                 std::vector<double> t(b_count);
+                double effective_b = 0.0;
                 for(unsigned int j = from;j < to;++j)
                 {
                     double angle = std::acos(std::min<double>(1.0,std::fabs(new_dir.vertices[i]*voxel.bvectors[j])));
                     angle/=averaged_angle;
                     t[j] = std::exp(-2.0*angle*angle); // if the angle == 1, then weighting = 0.135
+                    effective_b += t[j]*voxel.bvalues[j];
                 }
-                double w = avg_b/1000.0;
-                w /= std::accumulate(t.begin(),t.end(),0.0);
-                std::for_each(t.begin(),t.end(),boost::lambda::_1 *= w);
+                double sum_t = std::accumulate(t.begin(),t.end(),0.0);
+                std::for_each(t.begin(),t.end(),boost::lambda::_1 *= (avg_b/1000.0/sum_t));
                 std::copy(t.begin(),t.end(),trans.begin() + trans_old_size + i * b_count);
-                new_bvalues.push_back(avg_b);
+                new_bvalues.push_back(effective_b/sum_t);
                 new_bvectors.push_back(new_dir.vertices[i]);
             }
             total_signals += new_dir.half_vertices_count;
