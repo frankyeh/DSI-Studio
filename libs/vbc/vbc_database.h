@@ -229,12 +229,14 @@ public:// for FDR analysis
     std::vector<unsigned int> subject_greater;
     std::vector<unsigned int> subject_lesser;
     std::vector<float> fdr_greater,fdr_lesser;
+    unsigned int fdr_greater_length,fdr_lesser_length;
     unsigned int total_count,total_count_null;
     unsigned int permutation_count;
     bool terminated;
 public:
     std::vector<std::string> trk_file_names;
-    unsigned int length_threshold,pruning;
+    unsigned int pruning;
+    float fdr_threshold;
     boost::mutex lock_resampling,lock_greater_tracks,lock_lesser_tracks;
     boost::ptr_vector<TractModel> greater_tracks;
     boost::ptr_vector<TractModel> lesser_tracks;
