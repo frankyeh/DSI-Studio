@@ -40,7 +40,8 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 {
 
     ui->setupUi(this);
-    load_src(0);
+    if(!load_src(0))
+        throw std::runtime_error("Cannot load src file");
 
     ui->toolBox->setCurrentIndex(1);
     ui->graphicsView->setScene(&scene);
