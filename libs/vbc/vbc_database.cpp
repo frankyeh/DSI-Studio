@@ -82,7 +82,7 @@ bool vbc_database::load_database(const char* database_name)
         {
             std::istringstream in(str);
             for(unsigned int index = 0;in && index < num_subjects;++index)
-                in >> subject_names[index];
+                std::getline(in,subject_names[index]);
         }
         const float* r2_values = 0;
         matfile.read("R2",row,col,r2_values);

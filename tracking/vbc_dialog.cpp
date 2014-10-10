@@ -521,7 +521,7 @@ void vbc_dialog::on_rb_individual_analysis_clicked()
     ui->percentage_dif->hide();
     ui->percentage_label->show();
     ui->threshold_label->setText("percentile");
-    ui->explaination->setText("50%:physiological difference, 10%:psychiatric diseases, 2%: neurological diseases");
+    ui->explaination->setText("25~50%:physiological difference, 5~25%:psychiatric diseases, 0~5%: neurological diseases");
 }
 
 void vbc_dialog::on_rb_group_difference_clicked()
@@ -536,7 +536,7 @@ void vbc_dialog::on_rb_group_difference_clicked()
     ui->percentage_dif->show();
     ui->percentage_label->show();
     ui->threshold_label->setText("percentage difference");
-    ui->explaination->setText("5%:physiological difference, 25%:psychiatric diseases, 50%: neurological diseases");
+    ui->explaination->setText("0~5%:physiological difference, 5~25%:psychiatric diseases, 25%~100%: neurological diseases");
 }
 
 void vbc_dialog::on_rb_multiple_regression_clicked()
@@ -568,7 +568,7 @@ void vbc_dialog::on_rb_paired_difference_clicked()
     ui->percentage_dif->show();
     ui->percentage_label->show();
     ui->threshold_label->setText("percentage difference");
-    ui->explaination->setText("5%:physiological difference, 25%:psychiatric diseases, 50%: neurological diseases");
+    ui->explaination->setText("0~5%:physiological difference, 5~25%:psychiatric diseases, 25%~100%: neurological diseases");
 }
 
 void vbc_dialog::calculate_FDR(void)
