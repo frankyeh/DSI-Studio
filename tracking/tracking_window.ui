@@ -959,7 +959,6 @@
     <addaction name="actionMethod_Report"/>
     <addaction name="actionTract_Analysis_Report"/>
     <addaction name="actionConnectivity_matrix"/>
-    <addaction name="actionConnectometry"/>
     <addaction name="actionStatistics"/>
    </widget>
    <widget class="QMenu" name="menu_Edit">

@@ -402,20 +402,7 @@ void RenameDICOMToDir(QString FileName, QString ToDir)
     ToDir += ImageName;
     QFile(FileName).rename(FileName,ToDir);
 }
-void RenameDICOMUnderDirToDir(QString Dir, QString ToDir, bool include_sub)
-{
-    if(include_sub)
-    {
-        QStringList dirs = QDir(Dir).entryList(QStringList("*"),
-                                                QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
-        for(int index = 0;index < dirs.size();++index)
-            RenameDICOMUnderDirToDir(Dir + "/" + dirs[index],ToDir,true);
-    }
-    QStringList files = QDir(Dir).entryList(QStringList("*"),
-                            QDir::Files | QDir::NoSymLinks);
-    for(int index = 0;index < files.size();++index)
-        RenameDICOMToDir(Dir + "/" + files[index],ToDir);
-}
+
 
 
 void MainWindow::on_RenameDICOM_clicked()
@@ -457,6 +444,19 @@ void MainWindow::on_simulateMRI_clicked()
     (new Simulation(this,ui->workDir->currentText()))->show();
 }
 
+QStringList GetSubDir(QString Dir)
+{
+    QStringList sub_dirs;
+    QStringList dirs = QDir(Dir).entryList(QStringList("*"),
+                                            QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
+    sub_dirs << Dir;
+    for(int index = 0;index < dirs.size();++index)
+    {
+        QString new_dir = Dir + "/" + dirs[index];
+        sub_dirs << GetSubDir(new_dir);
+    }
+    return sub_dirs;
+}
 void MainWindow::on_RenameDICOMDir_clicked()
 {
     QString path =
@@ -464,7 +464,18 @@ void MainWindow::on_RenameDICOMDir_clicked()
                                           ui->workDir->currentText());
     if ( path.isEmpty() )
         return;
-    RenameDICOMUnderDirToDir(path,path,true);
+    QStringList dirs = GetSubDir(path);
+    for(unsigned int index = 0;check_prog(index,dirs.size());++index)
+    {
+        QStringList files = QDir(dirs[index]).entryList(QStringList("*"),
+                                    QDir::Files | QDir::NoSymLinks);
+        set_title(QFileInfo(dirs[index]).baseName().toLocal8Bit().begin());
+        for(unsigned int j = 0;j < files.size() && check_prog(index,dirs.size());++j)
+        {
+            set_title(files[j].toLocal8Bit().begin());
+            RenameDICOMToDir(dirs[index] + "/" + files[j],path);
+        }
+    }
 }
 
 void MainWindow::on_vbc_clicked()
@@ -540,6 +551,7 @@ void MainWindow::on_warpImage_clicked()
 bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files);
 bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files);
 QString get_src_name(QString file_name);
+
 void MainWindow::on_batch_src_clicked()
 {
     QString dir = QFileDialog::getExistingDirectory(
@@ -553,6 +565,8 @@ void MainWindow::on_batch_src_clicked()
         QStringList dir_list;
         dir_list << dir;
         begin_prog("batch creating src");
+        bool all = false;
+        bool choice = false;
         for(unsigned int i = 0;check_prog(i,dir_list.size()) && !prog_aborted();++i)
         {
             QDir cur_dir = dir_list[i];
@@ -578,10 +592,35 @@ void MainWindow::on_batch_src_clicked()
                 continue;
             for (unsigned int index = 0;index < dicom_file_list.size();++index)
                 dicom_file_list[index] = dir_list[i] + "/" + dicom_file_list[index];
-            if(!load_all_files(dicom_file_list,dwi_files))
-                continue;
-            QString output = dir + "/" + QFileInfo(get_src_name(dicom_file_list[0])).baseName()+".src.gz";
-            DwiHeader::output_src(output.toLocal8Bit().begin(),dwi_files,0);
+            QString output = dir_list[i] + "/" + QFileInfo(get_src_name(dicom_file_list[0])).baseName()+".src.gz";
+            if(QFileInfo(output).exists())
+            {
+                if(!all)
+                {
+                    QMessageBox msgBox;
+                    msgBox.setText(QString("Existing SRC file ") + output);
+                    msgBox.setInformativeText("Overwrite?");
+                    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::YesToAll | QMessageBox::No | QMessageBox::NoAll);
+                    msgBox.setDefaultButton(QMessageBox::Save);
+                    switch(msgBox.exec())
+                    {
+                    case QMessageBox::YesToAll:
+                        all = true;
+                    case QMessageBox::Yes:
+                        choice = true;
+                        break;
+                    case QMessageBox::NoAll:
+                        all = true;
+                    case QMessageBox::No:
+                        choice = false;
+                        break;
+                    }
+                }
+                if(!choice)
+                    continue;
+            }
+            if(load_all_files(dicom_file_list,dwi_files) && !prog_aborted())
+                DwiHeader::output_src(output.toLocal8Bit().begin(),dwi_files,0);
         }
     }
 }

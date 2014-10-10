@@ -421,7 +421,7 @@ void cal_hist(const std::vector<std::vector<float> >& track,std::vector<unsigned
                 ++dist.back();
     }
 }
-
+/*
 bool vbc_database::calculate_individual_affected_tracks(const char* file_name,
                                                         std::vector<std::vector<std::vector<float> > >& greater,
                                                         std::vector<std::vector<std::vector<float> > >& lesser)
@@ -476,6 +476,7 @@ bool vbc_database::calculate_individual_affected_tracks(const char* file_name,
     }
     return true;
 }
+*/
 
 bool stat_model::pre_process(void)
 {
@@ -490,6 +491,10 @@ bool stat_model::pre_process(void)
         return group2_count > 3 && group1_count > 3;
     case 1: // multiple regression
         return mr.set_variables(&*X.begin(),feature_count,X.size()/feature_count);
+    case 2:
+        return true;
+    case 3: // paired
+        return pre.size() == post.size() && !pre.empty();
     }
     return false;
 }
@@ -512,6 +517,8 @@ bool stat_model::resample(const stat_model& rhs,std::vector<unsigned int>& permu
             label.resize(rhs.label.size());
             for(unsigned int index = 0;index < rhs.label.size();++index)
                 label[index] = rhs.label[permu[index] = rhs.rand_gen(rhs.label.size())];
+            if(null)
+                std::random_shuffle(permu.begin(),permu.end(),rhs.rand_gen);
             break;
         case 1: // multiple regression
             permu.resize(rhs.X.size()/rhs.feature_count);
@@ -522,23 +529,39 @@ bool stat_model::resample(const stat_model& rhs,std::vector<unsigned int>& permu
                 std::copy(rhs.X.begin()+permu[index]*feature_count,
                           rhs.X.begin()+permu[index]*feature_count+feature_count,X.begin()+pos);
             }
+            if(null)
+                std::random_shuffle(permu.begin(),permu.end(),rhs.rand_gen);
+            break;
+        case 3: // paired
+            pre.resize(rhs.pre.size());
+            post.resize(rhs.post.size());
+            for(unsigned int index = 0;index < rhs.pre.size();++index)
+            {
+                unsigned int sel = rhs.rand_gen(rhs.pre.size());
+                pre[index] = rhs.pre[sel];
+                post[index] = rhs.post[sel];
+                if(null && rhs.rand_gen(2) == 1)
+                    std::swap(pre[index],post[index]);
+            }
+            permu.clear();
+            std::copy(pre.begin(),pre.end(),std::back_inserter(permu));
+            std::copy(post.begin(),post.end(),std::back_inserter(permu));
             break;
         }
     }while(!pre_process());
-    if(null)
-        std::random_shuffle(permu.begin(),permu.end(),rhs.rand_gen);
+
     return true;
 }
 
-double stat_model::operator()(const std::vector<double>& population) const
+double stat_model::operator()(const std::vector<double>& population,unsigned int pos) const
 {
-    double result = 0.0;
+
     switch(type)
     {
     case 0: // group
         {
-        double sum1 = 0.0;
-        double sum2 = 0.0;
+        float sum1 = 0.0;
+        float sum2 = 0.0;
         for(unsigned int index = 0;index < population.size();++index)
             if(label[index]) // group 1
                 sum2 += population[index];
@@ -547,88 +570,46 @@ double stat_model::operator()(const std::vector<double>& population) const
                 sum1 += population[index];
         float mean1 = sum1/((double)group1_count);
         float mean2 = sum2/((double)group2_count);
-        result = (mean1 + mean2);
+        float result = (mean1 + mean2);
         if(result != 0.0)
             result = (mean1 - mean2) / result;
+        return result;
         }
         break;
     case 1: // multiple regression
         {
-        std::vector<double> b(feature_count),t(feature_count);
+            std::vector<double> b(feature_count),t(feature_count);
             mr.regress(&*population.begin(),&*b.begin(),&*t.begin());
-            result = t[study_feature];
+            return t[study_feature];
+        }
+        break;
+    case 2: // individual
+        {
+            float value = individual_data[pos];
+            if(value == 0.0)
+                return 0.0;
+            int rank = 0;
+            for(unsigned int index = 0;index < population.size();++index)
+                if(value > population[index])
+                    ++rank;
+            return (rank > (population.size() >> 1)) ?
+                                (double)rank/(double)population.size():
+                                (double)(rank-(int)population.size())/(double)population.size();
+        }
+        break;
+    case 3: // paired
+        {
+            unsigned int half_size = population.size() >> 1;
+            float g1 = std::accumulate(population.begin(),population.begin()+half_size,0.0);
+            float g2 = std::accumulate(population.begin()+half_size,population.end(),0.0);
+            return (g1-g2)/(g1+g2);
         }
         break;
     }
 
-    return result;
+    return 0.0;
 }
 
-void vbc_database::calculate_percentile(const float* cur_subject_data,const std::vector<unsigned int>& resample,fib_data& data)
-{
-    data.initialize(handle.get());
-    std::vector<unsigned char> greater_fib_count(dim.size()),lesser_fib_count(dim.size());
-    std::vector<float> population;
-
-    for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
-    {
-        unsigned int cur_index = si2vi[s_index];
-        for(unsigned int fib = 0,fib_offset = 0;
-            fib < num_fiber && fa[fib][cur_index] > fiber_threshold;
-                ++fib,fib_offset+=si2vi.size())
-        {
-            unsigned int pos = s_index + fib_offset;
-            float cur_value = cur_subject_data[pos];
-            if(cur_value == 0.0)
-                continue;
-
-            population.clear();
-            if(resample.empty())
-            {
-                for(unsigned int subject_id = 0;subject_id < subject_qa.size();++subject_id)
-                {
-                    float value = subject_qa[subject_id][pos];
-                    if(value != 0.0)
-                        population.push_back(value);
-                }
-            }
-            else
-            {
-                for(unsigned int subject_id = 0;subject_id < subject_qa.size();++subject_id)
-                {
-                    float value = subject_qa[resample[subject_id]][pos];
-                    if(value != 0.0)
-                        population.push_back(value);
-                }
-            }
-            unsigned int greater_rank = 0;
-            unsigned int lesser_rank = 0;
-            for(unsigned int subject_id = 0;subject_id < population.size();++subject_id)
-            {
-                if(cur_value > population[subject_id])
-                    ++greater_rank;
-                if(cur_value < population[subject_id])
-                    ++lesser_rank;
-            }
-            if(population.empty())
-                continue;
-            if(greater_rank > (population.size() >> 1)) // greater
-            {
-                unsigned char fib_count = greater_fib_count[cur_index];
-                data.greater[fib_count][cur_index] = (double)greater_rank/population.size();
-                data.greater_dir[fib_count][cur_index] = findex[fib][cur_index];
-                ++greater_fib_count[cur_index];
-            }
-            if(lesser_rank > (population.size() >> 1)) // lesser
-            {
-                unsigned char fib_count = lesser_fib_count[cur_index];
-                data.lesser[fib_count][cur_index] = (double)lesser_rank/population.size();
-                data.lesser_dir[fib_count][cur_index] = findex[fib][cur_index];
-                ++lesser_fib_count[cur_index];
-            }
-        }
-    }
-}
 void vbc_database::calculate_spm(const stat_model& info,fib_data& data,const std::vector<unsigned int>& permu)
 {
     data.initialize(handle.get());
@@ -646,7 +627,7 @@ void vbc_database::calculate_spm(const stat_model& info,fib_data& data,const std
 
             if(std::find(selected_population.begin(),selected_population.end(),0.0) != selected_population.end())
                 continue;
-            double result = info(selected_population);
+            double result = info(selected_population,pos);
 
             if(result > 0.0) // group 0 > group 1
             {
@@ -654,6 +635,12 @@ void vbc_database::calculate_spm(const stat_model& info,fib_data& data,const std
                 data.greater[fib_count][cur_index] = result;
                 data.greater_dir[fib_count][cur_index] = findex[fib][cur_index];
                 ++greater_fib_count[cur_index];
+                for(char j = fib_count;j;--j)
+                    if(data.greater[j][cur_index] > data.greater[j-1][cur_index])
+                    {
+                        std::swap(data.greater[j][cur_index],data.greater[j-1][cur_index]);
+                        std::swap(data.greater_dir[j][cur_index],data.greater_dir[j-1][cur_index]);
+                    }
             }
             if(result < 0.0) // group 0 < group 1
             {
@@ -661,6 +648,12 @@ void vbc_database::calculate_spm(const stat_model& info,fib_data& data,const std
                 data.lesser[fib_count][cur_index] = -result;
                 data.lesser_dir[fib_count][cur_index] = findex[fib][cur_index];
                 ++lesser_fib_count[cur_index];
+                for(char j = fib_count;j;--j)
+                    if(data.lesser[j][cur_index] > data.lesser[j-1][cur_index])
+                    {
+                        std::swap(data.lesser[j][cur_index],data.lesser[j-1][cur_index]);
+                        std::swap(data.lesser_dir[j][cur_index],data.lesser_dir[j-1][cur_index]);
+                    }
             }
         }
     }
@@ -691,7 +684,7 @@ void vbc_database::run_permutation_multithread(unsigned int id)
     fib.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);
     std::vector<std::vector<float> > tracks;
     bool null = true;
-    unsigned int num_subject = std::max<int>(1,individual_data.size());
+    unsigned int num_subject = (model.type == 2 ? individual_data.size():1);
     while(total_count < permutation_count && !terminated)
     {
         if(null)
@@ -701,34 +694,41 @@ void vbc_database::run_permutation_multithread(unsigned int id)
 
         for(unsigned int subject_id = 0;subject_id < num_subject && !terminated;++subject_id)
         {
-            // multiple regression or group analysis
-            if(individual_data.empty())
+            switch(model.type)
             {
-                std::vector<unsigned int> permu;
-                stat_model resampled_info;
+            case 0: // grouop
+            case 1: // mr
+            case 3: // paired
                 {
-                    boost::mutex::scoped_lock lock(lock_resampling);
-                    resampled_info.resample(model,permu,null);
+                    std::vector<unsigned int> permu;
+                    stat_model resampled_info;
+                    {
+                        boost::mutex::scoped_lock lock(lock_resampling);
+                        resampled_info.resample(model,permu,null);
+                    }
+                    calculate_spm(resampled_info,data,permu);
                 }
-                calculate_spm(resampled_info,data,permu);
-            }
-            else
-            // indivividual analysis
-            {
-                std::vector<unsigned int> resample(200);
-                unsigned int random_subject_id = 0;
+                break;
+            case 2: // individual
                 {
-                    boost::mutex::scoped_lock lock(lock_resampling);
-                    random_subject_id = model.rand_gen(subject_qa.size());
-                    for(unsigned int index = 0;index < resample.size();++index)
-                        resample[index] = model.rand_gen(subject_qa.size());
-                }
-                if(null)
-                    calculate_percentile(subject_qa[random_subject_id],resample,data);
-                else
-                    calculate_percentile(&(individual_data[subject_id][0]),resample,data);
-            }
+                    std::vector<unsigned int> permu(200);
+                    unsigned int random_subject_id = 0;
+                    {
+                        boost::mutex::scoped_lock lock(lock_resampling);
+                        random_subject_id = model.rand_gen(subject_qa.size());
+                        for(unsigned int index = 0;index < permu.size();++index)
+                            permu[index] = model.rand_gen(subject_qa.size());
+                    }
+                    stat_model resampled_info = model;
+                    if(null)
+                        resampled_info.individual_data = subject_qa[random_subject_id];
+                    else
+                        resampled_info.individual_data = &(individual_data[subject_id][0]);
 
+                    calculate_spm(resampled_info,data,permu);
+                }
+                break;
+            }
 
             fib.fa = data.lesser_ptr;
             fib.findex = data.lesser_dir_ptr;
@@ -773,17 +773,18 @@ void vbc_database::clear_thread(void)
         threads.reset(0);
     }
 }
-void vbc_database::save_tracks_files(void)
+void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
 {
     threads->join_all();
     if(trk_file_names.size() != greater_tracks.size())
         throw std::runtime_error("Please assign file name for saving trk files.");
+    saved_file_name.clear();
     for(unsigned int index = 0;index < greater_tracks.size();++index)
     {
-        if(fdr_greater_length)
+        if(fdr_greater[length_threshold] < 0.5)
         {
             TractModel tracks(handle.get());
-            tracks.add_tracts(greater_tracks[index].get_tracts(),fdr_greater_length);
+            tracks.add_tracts(greater_tracks[index].get_tracts(),length_threshold);
             for(unsigned int j = 0;j < pruning;++j)
             {
                 unsigned int track_count = tracks.get_visible_track_count();
@@ -794,14 +795,17 @@ void vbc_database::save_tracks_files(void)
             if(tracks.get_visible_track_count())
             {
                 std::ostringstream out1;
-                out1 << trk_file_names[index] << ".greater" << fdr_greater_length << ".trk.gz";
+                out1 << trk_file_names[index] << ".greater" << length_threshold << ".trk.gz";
                 tracks.save_tracts_to_file(out1.str().c_str());
+                saved_file_name.push_back(out1.str().c_str());
             }
+            greater_tracks[index] = tracks;
         }
-        if(fdr_lesser_length)
+
+        if(fdr_lesser[length_threshold] < 0.5)
         {
             TractModel tracks(handle.get());
-            tracks.add_tracts(lesser_tracks[index].get_tracts(),fdr_lesser_length);
+            tracks.add_tracts(lesser_tracks[index].get_tracts(),length_threshold);
             for(unsigned int j = 0;j < pruning;++j)
             {
                 unsigned int track_count = tracks.get_visible_track_count();
@@ -812,8 +816,9 @@ void vbc_database::save_tracks_files(void)
             if(tracks.get_visible_track_count())
             {
                 std::ostringstream out1;
-                out1 << trk_file_names[index] << ".lesser" << fdr_lesser_length << ".trk.gz";
+                out1 << trk_file_names[index] << ".lesser" << length_threshold << ".trk.gz";
                 tracks.save_tracts_to_file(out1.str().c_str());
+                saved_file_name.push_back(out1.str().c_str());
             }
         }
 
@@ -842,7 +847,7 @@ void vbc_database::run_permutation(unsigned int thread_count)
     total_count = 0;
     greater_tracks.clear();
     lesser_tracks.clear();
-    unsigned int num_subjects = individual_data.empty() ? 1 : individual_data.size();
+    unsigned int num_subjects = (model.type == 2 ? individual_data.size():1);
     for(unsigned int index = 0;index < num_subjects;++index)
     {
         greater_tracks.push_back(new TractModel(handle.get()));
@@ -854,31 +859,18 @@ void vbc_database::run_permutation(unsigned int thread_count)
 }
 void vbc_database::calculate_FDR(void)
 {
-    float sum1 = std::accumulate(subject_greater_null.begin(),subject_greater_null.end(),0.0);
-    float sum2 = std::accumulate(subject_lesser_null.begin(),subject_lesser_null.end(),0.0);
-    float sum3 = std::accumulate(subject_greater.begin(),subject_greater.end(),0.0);
-    float sum4 = std::accumulate(subject_lesser.begin(),subject_lesser.end(),0.0);
-
-
     double sum_greater_null = 0;
     double sum_lesser_null = 0;
     double sum_greater = 0;
     double sum_lesser = 0;
-
-    fdr_greater_length = 0;
-    fdr_lesser_length = 0;
     for(int index = subject_greater_null.size()-1;index >= 0;--index)
     {
         sum_greater_null += subject_greater_null[index];
         sum_lesser_null += subject_lesser_null[index];
         sum_greater += subject_greater[index];
         sum_lesser += subject_lesser[index];
-        fdr_greater[index] = (sum_greater > 0.0 && sum1 > 0.0) ? std::min(1.0,sum3*sum_greater_null/sum1/sum_greater) : 1.0;
-        fdr_lesser[index] = (sum_lesser > 0.0 && sum2 > 0.0) ? std::min(1.0,sum4*sum_lesser_null/sum2/sum_lesser): 1.0;
-        if(fdr_greater[index] < fdr_threshold)
-            fdr_greater_length = index;
-        if(fdr_lesser[index] < fdr_threshold)
-            fdr_lesser_length = index;
+        fdr_greater[index] = (sum_greater > 0.0) ? std::min(1.0,sum_greater_null/sum_greater) : 1.0;
+        fdr_lesser[index] = (sum_lesser > 0.0) ? std::min(1.0,sum_lesser_null/sum_lesser): 1.0;
     }
 
 }

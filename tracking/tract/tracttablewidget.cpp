@@ -204,15 +204,9 @@ void TractTableWidget::stop_tracking(void)
     }
 
 }
-
-void TractTableWidget::load_tracts(void)
+void TractTableWidget::load_tracts(QStringList filenames)
 {
-    QStringList filenames = QFileDialog::getOpenFileNames(
-            this,
-            "Load tracts as",
-            cur_tracking_window.get_path("track"),
-            "Tract files (*.txt *.trk *.trk.gz *.tck);;All files (*)");
-    if(!filenames.size())
+    if(filenames.empty())
         return;
     cur_tracking_window.add_path("track",filenames[0]);
     for(unsigned int index = 0;index < filenames.size();++index)
@@ -220,8 +214,12 @@ void TractTableWidget::load_tracts(void)
         QString filename = filenames[index];
         if(!filename.size())
             continue;
+        QString label = QFileInfo(filename).fileName();
+        label.remove(".trk");
+        label.remove(".gz");
+        label.remove(".txt");
         std::string sfilename = filename.toLocal8Bit().begin();
-        addNewTracts(QFileInfo(filename).baseName());
+        addNewTracts(label);
         tract_models.back()->load_from_file(&*sfilename.begin(),false);
         if(tract_models.back()->get_cluster_info().empty()) // not multiple cluster file
         {
@@ -231,10 +229,20 @@ void TractTableWidget::load_tracts(void)
         {
             std::vector<unsigned int> labels;
             labels.swap(tract_models.back()->get_cluster_info());
-            load_cluster_label(labels,QFileInfo(filename).baseName());
+            load_cluster_label(labels,label);
         }
     }
     emit need_update();
+}
+
+void TractTableWidget::load_tracts(void)
+{
+    load_tracts(QFileDialog::getOpenFileNames(
+            this,
+            "Load tracts as",
+            cur_tracking_window.get_path("track"),
+            "Tract files (*.txt *.trk *.trk.gz *.tck);;All files (*)"));
+
 }
 
 void TractTableWidget::check_all(void)

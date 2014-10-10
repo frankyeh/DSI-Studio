@@ -36,6 +36,7 @@ public:
                               std::vector<float>& transformation,bool color,bool endpoint);
     void saveTransformedTracts(const float* transform);
     void saveTransformedEndpoints(const float* transform);
+    void load_tracts(QStringList filenames);
 signals:
     void need_update(void);
 private:

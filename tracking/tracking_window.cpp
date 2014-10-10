@@ -1208,39 +1208,6 @@ void tracking_window::add_path(const std::string& id,QString filename)
     path_map[id] = QFileInfo(filename).absolutePath();
 }
 
-void tracking_window::on_actionConnectometry_triggered()
-{
-    QString filename = QFileDialog::getOpenFileName(
-                           this,
-                           "Open Database files",
-                           absolute_path,
-                           "Database files (*.db.fib.gz);;All files (*)");
-    if (filename.isEmpty())
-        return;
-
-    vbc_database database;
-    if(!database.load_database(filename.toLocal8Bit().begin()))
-    {
-        QMessageBox::information(this,"Error","Invalid database format",0);
-        return;
-    }
-    database.tracking_threshold = 0.95;
-    std::vector<std::vector<std::vector<float> > > greater,lesser;
-    if(!database.calculate_individual_affected_tracks(windowTitle().toLocal8Bit().begin(),greater,lesser))
-    {
-        QMessageBox::information(this,"error",database.error_msg.c_str(),0);
-        return;
-    }
-    tractWidget->addConnectometryResults(greater,lesser);
-    /*
-    tracking_window* new_mdi = new tracking_window((QWidget*)(this->parent()),database->handle.release());
-    new_mdi->setAttribute(Qt::WA_DeleteOnClose);
-    new_mdi->absolute_path = absolute_path;
-    new_mdi->setWindowTitle(this->windowTitle() + " : connectometry mapping");
-    new_mdi->showNormal();*/
-}
-
-
 void tracking_window::restore_3D_window()
 {
     ui->centralLayout->addWidget(ui->main_widget);

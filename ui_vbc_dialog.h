@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'vbc_dialog.ui'
 **
-** Created: Wed Oct 1 00:14:28 2014
+** Created: Fri Oct 10 00:28:22 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -79,12 +79,11 @@ public:
     QVBoxLayout *verticalLayout_2;
     QHBoxLayout *percentile_rank_layout;
     QLabel *threshold_label;
-    QDoubleSpinBox *percentage_dif;
+    QSpinBox *percentage_dif;
     QDoubleSpinBox *t_threshold;
     QDoubleSpinBox *percentile;
-    QHBoxLayout *horizontalLayout;
-    QLabel *label_3;
-    QDoubleSpinBox *FDR;
+    QLabel *percentage_label;
+    QLabel *explaination;
     QHBoxLayout *horizontalLayout_11;
     QPushButton *advanced_options;
     QSpacerItem *horizontalSpacer_3;
@@ -96,6 +95,9 @@ public:
     QHBoxLayout *horizontalLayout_8;
     QLabel *label_7;
     QSpinBox *pruning;
+    QHBoxLayout *horizontalLayout;
+    QLabel *label_3;
+    QSpinBox *length_threshold;
     QSpacerItem *verticalSpacer_2;
     QWidget *page_4;
     QVBoxLayout *verticalLayout_19;
@@ -123,8 +125,9 @@ public:
     QVBoxLayout *verticalLayout_7;
     QTabWidget *tabWidget_2;
     QWidget *tab;
-    QVBoxLayout *verticalLayout_4;
+    QVBoxLayout *verticalLayout_3;
     QHBoxLayout *horizontalLayout_16;
+    QCheckBox *view_legend;
     QCheckBox *show_null_greater;
     QCheckBox *show_null_lesser;
     QCheckBox *show_greater;
@@ -133,9 +136,14 @@ public:
     QCheckBox *show_greater_2;
     QLabel *label;
     QSpinBox *span_to;
+    QWidget *widget_5;
     QHBoxLayout *horizontalLayout_2;
+    QSplitter *splitter_2;
+    QWidget *widget;
+    QHBoxLayout *horizontalLayout_13;
     QCustomPlot *null_dist;
     QCustomPlot *fdr_dist;
+    QTextBrowser *textBrowser;
     QWidget *tab_2;
     QVBoxLayout *verticalLayout_10;
     QHBoxLayout *horizontalLayout_5;
@@ -143,14 +151,12 @@ public:
     QToolButton *save_fdr_dist;
     QSpacerItem *horizontalSpacer_2;
     QTableWidget *dist_table;
-    QWidget *tab_3;
-    QVBoxLayout *verticalLayout_5;
-    QTextBrowser *textBrowser;
     QHBoxLayout *horizontalLayout_3;
     QProgressBar *progressBar;
     QSpinBox *multithread;
     QLabel *label_2;
     QPushButton *run;
+    QPushButton *show_result;
     QWidget *widget_2;
     QVBoxLayout *verticalLayout_9;
 
@@ -158,7 +164,7 @@ public:
     {
         if (vbc_dialog->objectName().isEmpty())
             vbc_dialog->setObjectName(QString::fromUtf8("vbc_dialog"));
-        vbc_dialog->resize(601, 476);
+        vbc_dialog->resize(713, 476);
         QIcon icon;
         icon.addFile(QString::fromUtf8(":/icons/icons/axial.xpm"), QSize(), QIcon::Normal, QIcon::Off);
         vbc_dialog->setWindowIcon(icon);
@@ -168,7 +174,7 @@ public:
         toolBox->setObjectName(QString::fromUtf8("toolBox"));
         page = new QWidget();
         page->setObjectName(QString::fromUtf8("page"));
-        page->setGeometry(QRect(0, 0, 583, 368));
+        page->setGeometry(QRect(0, 0, 695, 368));
         verticalLayout_24 = new QVBoxLayout(page);
         verticalLayout_24->setObjectName(QString::fromUtf8("verticalLayout_24"));
         horizontalLayout_4 = new QHBoxLayout();
@@ -273,7 +279,7 @@ public:
         toolBox->addItem(page, QString::fromUtf8("Source Data"));
         page_2 = new QWidget();
         page_2->setObjectName(QString::fromUtf8("page_2"));
-        page_2->setGeometry(QRect(0, 0, 583, 368));
+        page_2->setGeometry(QRect(0, 0, 695, 368));
         verticalLayout_23 = new QVBoxLayout(page_2);
         verticalLayout_23->setObjectName(QString::fromUtf8("verticalLayout_23"));
         groupBox_4 = new QGroupBox(page_2);
@@ -294,7 +300,7 @@ public:
 
         rb_paired_difference = new QRadioButton(groupBox_4);
         rb_paired_difference->setObjectName(QString::fromUtf8("rb_paired_difference"));
-        rb_paired_difference->setEnabled(false);
+        rb_paired_difference->setEnabled(true);
 
         verticalLayout_21->addWidget(rb_paired_difference);
 
@@ -317,56 +323,51 @@ public:
 
         percentile_rank_layout->addWidget(threshold_label);
 
-        percentage_dif = new QDoubleSpinBox(percentile_rank_group);
+        percentage_dif = new QSpinBox(percentile_rank_group);
         percentage_dif->setObjectName(QString::fromUtf8("percentage_dif"));
-        percentage_dif->setMaximumSize(QSize(75, 16777215));
-        percentage_dif->setMaximum(1);
-        percentage_dif->setSingleStep(0.1);
-        percentage_dif->setValue(0.05);
+        percentage_dif->setMaximumSize(QSize(50, 16777215));
+        percentage_dif->setMaximum(200);
+        percentage_dif->setValue(25);
 
         percentile_rank_layout->addWidget(percentage_dif);
 
         t_threshold = new QDoubleSpinBox(percentile_rank_group);
         t_threshold->setObjectName(QString::fromUtf8("t_threshold"));
-        t_threshold->setMaximumSize(QSize(75, 16777215));
+        t_threshold->setMaximumSize(QSize(50, 16777215));
         t_threshold->setMaximum(5);
         t_threshold->setSingleStep(1);
-        t_threshold->setValue(1);
+        t_threshold->setValue(2);
 
         percentile_rank_layout->addWidget(t_threshold);
 
         percentile = new QDoubleSpinBox(percentile_rank_group);
         percentile->setObjectName(QString::fromUtf8("percentile"));
-        percentile->setMaximumSize(QSize(75, 16777215));
-        percentile->setDecimals(4);
+        percentile->setMaximumSize(QSize(50, 16777215));
+        percentile->setDecimals(2);
         percentile->setMinimum(0);
-        percentile->setMaximum(1);
-        percentile->setSingleStep(0.01);
-        percentile->setValue(0.02);
+        percentile->setMaximum(100);
+        percentile->setSingleStep(1);
+        percentile->setValue(2);
 
         percentile_rank_layout->addWidget(percentile);
+
+        percentage_label = new QLabel(percentile_rank_group);
+        percentage_label->setObjectName(QString::fromUtf8("percentage_label"));
+        QSizePolicy sizePolicy1(QSizePolicy::Maximum, QSizePolicy::Preferred);
+        sizePolicy1.setHorizontalStretch(0);
+        sizePolicy1.setVerticalStretch(0);
+        sizePolicy1.setHeightForWidth(percentage_label->sizePolicy().hasHeightForWidth());
+        percentage_label->setSizePolicy(sizePolicy1);
+
+        percentile_rank_layout->addWidget(percentage_label);
 
 
         verticalLayout_2->addLayout(percentile_rank_layout);
 
-        horizontalLayout = new QHBoxLayout();
-        horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
-        label_3 = new QLabel(percentile_rank_group);
-        label_3->setObjectName(QString::fromUtf8("label_3"));
+        explaination = new QLabel(percentile_rank_group);
+        explaination->setObjectName(QString::fromUtf8("explaination"));
 
-        horizontalLayout->addWidget(label_3);
-
-        FDR = new QDoubleSpinBox(percentile_rank_group);
-        FDR->setObjectName(QString::fromUtf8("FDR"));
-        FDR->setMaximumSize(QSize(75, 16777215));
-        FDR->setMaximum(0.5);
-        FDR->setSingleStep(0.01);
-        FDR->setValue(0.05);
-
-        horizontalLayout->addWidget(FDR);
-
-
-        verticalLayout_2->addLayout(horizontalLayout);
+        verticalLayout_2->addWidget(explaination);
 
 
         verticalLayout_23->addWidget(percentile_rank_group);
@@ -422,12 +423,31 @@ public:
         pruning->setObjectName(QString::fromUtf8("pruning"));
         pruning->setMaximumSize(QSize(75, 16777215));
         pruning->setMaximum(100);
-        pruning->setValue(10);
+        pruning->setValue(3);
 
         horizontalLayout_8->addWidget(pruning);
 
 
         verticalLayout_18->addLayout(horizontalLayout_8);
+
+        horizontalLayout = new QHBoxLayout();
+        horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
+        label_3 = new QLabel(advanced_options_box);
+        label_3->setObjectName(QString::fromUtf8("label_3"));
+
+        horizontalLayout->addWidget(label_3);
+
+        length_threshold = new QSpinBox(advanced_options_box);
+        length_threshold->setObjectName(QString::fromUtf8("length_threshold"));
+        length_threshold->setMaximumSize(QSize(75, 16777215));
+        length_threshold->setMinimum(10);
+        length_threshold->setMaximum(200);
+        length_threshold->setValue(40);
+
+        horizontalLayout->addWidget(length_threshold);
+
+
+        verticalLayout_18->addLayout(horizontalLayout);
 
 
         verticalLayout_23->addWidget(advanced_options_box);
@@ -439,13 +459,14 @@ public:
         toolBox->addItem(page_2, QString::fromUtf8("STEP1: Select analysis model"));
         page_4 = new QWidget();
         page_4->setObjectName(QString::fromUtf8("page_4"));
-        page_4->setGeometry(QRect(0, 0, 583, 368));
+        page_4->setGeometry(QRect(0, 0, 695, 368));
         verticalLayout_19 = new QVBoxLayout(page_4);
         verticalLayout_19->setObjectName(QString::fromUtf8("verticalLayout_19"));
         individual_demo = new QGroupBox(page_4);
         individual_demo->setObjectName(QString::fromUtf8("individual_demo"));
         verticalLayout_14 = new QVBoxLayout(individual_demo);
         verticalLayout_14->setSpacing(0);
+        verticalLayout_14->setContentsMargins(0, 0, 0, 0);
         verticalLayout_14->setObjectName(QString::fromUtf8("verticalLayout_14"));
         horizontalLayout_9 = new QHBoxLayout();
         horizontalLayout_9->setObjectName(QString::fromUtf8("horizontalLayout_9"));
@@ -470,23 +491,24 @@ public:
 
         verticalLayout_14->addLayout(horizontalLayout_9);
 
-        individual_list = new QListView(individual_demo);
-        individual_list->setObjectName(QString::fromUtf8("individual_list"));
-
-        verticalLayout_14->addWidget(individual_list);
-
 
         verticalLayout_19->addWidget(individual_demo);
 
+        individual_list = new QListView(page_4);
+        individual_list->setObjectName(QString::fromUtf8("individual_list"));
+
+        verticalLayout_19->addWidget(individual_list);
+
         multiple_regression_demo = new QGroupBox(page_4);
         multiple_regression_demo->setObjectName(QString::fromUtf8("multiple_regression_demo"));
-        QSizePolicy sizePolicy1(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        sizePolicy1.setHorizontalStretch(0);
-        sizePolicy1.setVerticalStretch(0);
-        sizePolicy1.setHeightForWidth(multiple_regression_demo->sizePolicy().hasHeightForWidth());
-        multiple_regression_demo->setSizePolicy(sizePolicy1);
+        QSizePolicy sizePolicy2(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        sizePolicy2.setHorizontalStretch(0);
+        sizePolicy2.setVerticalStretch(0);
+        sizePolicy2.setHeightForWidth(multiple_regression_demo->sizePolicy().hasHeightForWidth());
+        multiple_regression_demo->setSizePolicy(sizePolicy2);
         verticalLayout_17 = new QVBoxLayout(multiple_regression_demo);
         verticalLayout_17->setSpacing(0);
+        verticalLayout_17->setContentsMargins(0, 0, 0, 0);
         verticalLayout_17->setObjectName(QString::fromUtf8("verticalLayout_17"));
         horizontalLayout_10 = new QHBoxLayout();
         horizontalLayout_10->setObjectName(QString::fromUtf8("horizontalLayout_10"));
@@ -538,7 +560,10 @@ public:
 
         verticalLayout_17->addLayout(horizontalLayout_10);
 
-        subject_demo = new QTableWidget(multiple_regression_demo);
+
+        verticalLayout_19->addWidget(multiple_regression_demo);
+
+        subject_demo = new QTableWidget(page_4);
         if (subject_demo->columnCount() < 1)
             subject_demo->setColumnCount(1);
         QTableWidgetItem *__qtablewidgetitem3 = new QTableWidgetItem();
@@ -554,25 +579,28 @@ public:
         subject_demo->setSortingEnabled(true);
         subject_demo->setRowCount(0);
 
-        verticalLayout_17->addWidget(subject_demo);
-
-
-        verticalLayout_19->addWidget(multiple_regression_demo);
+        verticalLayout_19->addWidget(subject_demo);
 
         toolBox->addItem(page_4, QString::fromUtf8("STEP2: Provide demographics"));
         page_3 = new QWidget();
         page_3->setObjectName(QString::fromUtf8("page_3"));
-        page_3->setGeometry(QRect(0, 0, 583, 368));
+        page_3->setGeometry(QRect(0, 0, 695, 368));
         verticalLayout_7 = new QVBoxLayout(page_3);
         verticalLayout_7->setObjectName(QString::fromUtf8("verticalLayout_7"));
         tabWidget_2 = new QTabWidget(page_3);
         tabWidget_2->setObjectName(QString::fromUtf8("tabWidget_2"));
         tab = new QWidget();
         tab->setObjectName(QString::fromUtf8("tab"));
-        verticalLayout_4 = new QVBoxLayout(tab);
-        verticalLayout_4->setObjectName(QString::fromUtf8("verticalLayout_4"));
+        verticalLayout_3 = new QVBoxLayout(tab);
+        verticalLayout_3->setObjectName(QString::fromUtf8("verticalLayout_3"));
         horizontalLayout_16 = new QHBoxLayout();
         horizontalLayout_16->setObjectName(QString::fromUtf8("horizontalLayout_16"));
+        view_legend = new QCheckBox(tab);
+        view_legend->setObjectName(QString::fromUtf8("view_legend"));
+        view_legend->setChecked(true);
+
+        horizontalLayout_16->addWidget(view_legend);
+
         show_null_greater = new QCheckBox(tab);
         show_null_greater->setObjectName(QString::fromUtf8("show_null_greater"));
         show_null_greater->setChecked(true);
@@ -621,30 +649,60 @@ public:
         horizontalLayout_16->addWidget(span_to);
 
 
-        verticalLayout_4->addLayout(horizontalLayout_16);
+        verticalLayout_3->addLayout(horizontalLayout_16);
 
-        horizontalLayout_2 = new QHBoxLayout();
+        widget_5 = new QWidget(tab);
+        widget_5->setObjectName(QString::fromUtf8("widget_5"));
+        QSizePolicy sizePolicy3(QSizePolicy::Preferred, QSizePolicy::Expanding);
+        sizePolicy3.setHorizontalStretch(0);
+        sizePolicy3.setVerticalStretch(0);
+        sizePolicy3.setHeightForWidth(widget_5->sizePolicy().hasHeightForWidth());
+        widget_5->setSizePolicy(sizePolicy3);
+        widget_5->setMinimumSize(QSize(0, 100));
+        horizontalLayout_2 = new QHBoxLayout(widget_5);
+        horizontalLayout_2->setContentsMargins(0, 0, 0, 0);
         horizontalLayout_2->setObjectName(QString::fromUtf8("horizontalLayout_2"));
-        horizontalLayout_2->setContentsMargins(-1, -1, 0, -1);
-        null_dist = new QCustomPlot(tab);
+        splitter_2 = new QSplitter(widget_5);
+        splitter_2->setObjectName(QString::fromUtf8("splitter_2"));
+        splitter_2->setOrientation(Qt::Horizontal);
+        widget = new QWidget(splitter_2);
+        widget->setObjectName(QString::fromUtf8("widget"));
+        QSizePolicy sizePolicy4(QSizePolicy::Preferred, QSizePolicy::Preferred);
+        sizePolicy4.setHorizontalStretch(0);
+        sizePolicy4.setVerticalStretch(0);
+        sizePolicy4.setHeightForWidth(widget->sizePolicy().hasHeightForWidth());
+        widget->setSizePolicy(sizePolicy4);
+        widget->setMinimumSize(QSize(0, 0));
+        horizontalLayout_13 = new QHBoxLayout(widget);
+        horizontalLayout_13->setSpacing(0);
+        horizontalLayout_13->setContentsMargins(0, 0, 0, 0);
+        horizontalLayout_13->setObjectName(QString::fromUtf8("horizontalLayout_13"));
+        null_dist = new QCustomPlot(widget);
         null_dist->setObjectName(QString::fromUtf8("null_dist"));
-        QSizePolicy sizePolicy2(QSizePolicy::Expanding, QSizePolicy::Expanding);
-        sizePolicy2.setHorizontalStretch(0);
-        sizePolicy2.setVerticalStretch(0);
-        sizePolicy2.setHeightForWidth(null_dist->sizePolicy().hasHeightForWidth());
-        null_dist->setSizePolicy(sizePolicy2);
+        sizePolicy4.setHeightForWidth(null_dist->sizePolicy().hasHeightForWidth());
+        null_dist->setSizePolicy(sizePolicy4);
 
-        horizontalLayout_2->addWidget(null_dist);
+        horizontalLayout_13->addWidget(null_dist);
 
-        fdr_dist = new QCustomPlot(tab);
+        fdr_dist = new QCustomPlot(widget);
         fdr_dist->setObjectName(QString::fromUtf8("fdr_dist"));
-        sizePolicy2.setHeightForWidth(fdr_dist->sizePolicy().hasHeightForWidth());
-        fdr_dist->setSizePolicy(sizePolicy2);
+        sizePolicy4.setHeightForWidth(fdr_dist->sizePolicy().hasHeightForWidth());
+        fdr_dist->setSizePolicy(sizePolicy4);
 
-        horizontalLayout_2->addWidget(fdr_dist);
+        horizontalLayout_13->addWidget(fdr_dist);
+
+        splitter_2->addWidget(widget);
+        textBrowser = new QTextBrowser(splitter_2);
+        textBrowser->setObjectName(QString::fromUtf8("textBrowser"));
+        sizePolicy4.setHeightForWidth(textBrowser->sizePolicy().hasHeightForWidth());
+        textBrowser->setSizePolicy(sizePolicy4);
+        textBrowser->setMaximumSize(QSize(300, 65525));
+        splitter_2->addWidget(textBrowser);
+
+        horizontalLayout_2->addWidget(splitter_2);
 
 
-        verticalLayout_4->addLayout(horizontalLayout_2);
+        verticalLayout_3->addWidget(widget_5);
 
         tabWidget_2->addTab(tab, QString());
         tab_2 = new QWidget();
@@ -689,25 +747,12 @@ public:
         QTableWidgetItem *__qtablewidgetitem7 = new QTableWidgetItem();
         dist_table->setHorizontalHeaderItem(3, __qtablewidgetitem7);
         dist_table->setObjectName(QString::fromUtf8("dist_table"));
-        QSizePolicy sizePolicy3(QSizePolicy::Preferred, QSizePolicy::Expanding);
-        sizePolicy3.setHorizontalStretch(0);
-        sizePolicy3.setVerticalStretch(0);
         sizePolicy3.setHeightForWidth(dist_table->sizePolicy().hasHeightForWidth());
         dist_table->setSizePolicy(sizePolicy3);
 
         verticalLayout_10->addWidget(dist_table);
 
         tabWidget_2->addTab(tab_2, QString());
-        tab_3 = new QWidget();
-        tab_3->setObjectName(QString::fromUtf8("tab_3"));
-        verticalLayout_5 = new QVBoxLayout(tab_3);
-        verticalLayout_5->setObjectName(QString::fromUtf8("verticalLayout_5"));
-        textBrowser = new QTextBrowser(tab_3);
-        textBrowser->setObjectName(QString::fromUtf8("textBrowser"));
-
-        verticalLayout_5->addWidget(textBrowser);
-
-        tabWidget_2->addTab(tab_3, QString());
 
         verticalLayout_7->addWidget(tabWidget_2);
 
@@ -739,6 +784,11 @@ public:
         run->setEnabled(false);
 
         horizontalLayout_3->addWidget(run);
+
+        show_result = new QPushButton(page_3);
+        show_result->setObjectName(QString::fromUtf8("show_result"));
+
+        horizontalLayout_3->addWidget(show_result);
 
 
         verticalLayout_7->addLayout(horizontalLayout_3);
@@ -780,17 +830,19 @@ public:
         ___qtablewidgetitem2->setText(QApplication::translate("vbc_dialog", "R2", 0, QApplication::UnicodeUTF8));
         toolBox->setItemText(toolBox->indexOf(page), QApplication::translate("vbc_dialog", "Source Data", 0, QApplication::UnicodeUTF8));
         groupBox_4->setTitle(QApplication::translate("vbc_dialog", "Model", 0, QApplication::UnicodeUTF8));
-        rb_multiple_regression->setText(QApplication::translate("vbc_dialog", "Multiple Regression: (e.g. to study connectivity change due to aging or IQ difference)", 0, QApplication::UnicodeUTF8));
+        rb_multiple_regression->setText(QApplication::translate("vbc_dialog", "Multipler regression: (e.g. to study connectivity change due to aging or IQ difference)", 0, QApplication::UnicodeUTF8));
         rb_group_difference->setText(QApplication::translate("vbc_dialog", "Group difference (e.g. to study connectivity difference between male and female)", 0, QApplication::UnicodeUTF8));
         rb_paired_difference->setText(QApplication::translate("vbc_dialog", "Paired difference (e.g. to study connectivity difference before and after a treatment)", 0, QApplication::UnicodeUTF8));
-        rb_individual_analysis->setText(QApplication::translate("vbc_dialog", "Individual Analysis (e.g. to study the affected pathways of each stroke patient)", 0, QApplication::UnicodeUTF8));
+        rb_individual_analysis->setText(QApplication::translate("vbc_dialog", "Individual analysis (e.g. to study the affected pathways of each stroke patient)", 0, QApplication::UnicodeUTF8));
         percentile_rank_group->setTitle(QString());
-        threshold_label->setText(QApplication::translate("vbc_dialog", "percentile threshold", 0, QApplication::UnicodeUTF8));
-        label_3->setText(QApplication::translate("vbc_dialog", "FDR control", 0, QApplication::UnicodeUTF8));
+        threshold_label->setText(QApplication::translate("vbc_dialog", "Percentile Threshold", 0, QApplication::UnicodeUTF8));
+        percentage_label->setText(QApplication::translate("vbc_dialog", "%", 0, QApplication::UnicodeUTF8));
+        explaination->setText(QString());
         advanced_options->setText(QApplication::translate("vbc_dialog", "Advanced options...", 0, QApplication::UnicodeUTF8));
         advanced_options_box->setTitle(QString());
         label_4->setText(QApplication::translate("vbc_dialog", "Permutation Count", 0, QApplication::UnicodeUTF8));
-        label_7->setText(QApplication::translate("vbc_dialog", "Track Pruning (iterations)", 0, QApplication::UnicodeUTF8));
+        label_7->setText(QApplication::translate("vbc_dialog", "Track Pruning (Iterations)", 0, QApplication::UnicodeUTF8));
+        label_3->setText(QApplication::translate("vbc_dialog", "Minimum Track Length (mm)", 0, QApplication::UnicodeUTF8));
         toolBox->setItemText(toolBox->indexOf(page_2), QApplication::translate("vbc_dialog", "STEP1: Select analysis model", 0, QApplication::UnicodeUTF8));
         individual_demo->setTitle(QString());
         open_files->setText(QApplication::translate("vbc_dialog", "...", 0, QApplication::UnicodeUTF8));
@@ -802,6 +854,7 @@ public:
         QTableWidgetItem *___qtablewidgetitem3 = subject_demo->horizontalHeaderItem(0);
         ___qtablewidgetitem3->setText(QApplication::translate("vbc_dialog", "Subject ID", 0, QApplication::UnicodeUTF8));
         toolBox->setItemText(toolBox->indexOf(page_4), QApplication::translate("vbc_dialog", "STEP2: Provide demographics", 0, QApplication::UnicodeUTF8));
+        view_legend->setText(QApplication::translate("vbc_dialog", "legend", 0, QApplication::UnicodeUTF8));
         show_null_greater->setText(QApplication::translate("vbc_dialog", "null greater", 0, QApplication::UnicodeUTF8));
         show_null_lesser->setText(QApplication::translate("vbc_dialog", "null lesser", 0, QApplication::UnicodeUTF8));
         show_greater->setText(QApplication::translate("vbc_dialog", "greater", 0, QApplication::UnicodeUTF8));
@@ -809,7 +862,7 @@ public:
         show_lesser_2->setText(QApplication::translate("vbc_dialog", "FDR lesser", 0, QApplication::UnicodeUTF8));
         show_greater_2->setText(QApplication::translate("vbc_dialog", "FDR greater", 0, QApplication::UnicodeUTF8));
         label->setText(QApplication::translate("vbc_dialog", "max x:", 0, QApplication::UnicodeUTF8));
-        tabWidget_2->setTabText(tabWidget_2->indexOf(tab), QApplication::translate("vbc_dialog", "Plot", 0, QApplication::UnicodeUTF8));
+        tabWidget_2->setTabText(tabWidget_2->indexOf(tab), QApplication::translate("vbc_dialog", "Plot and Report", 0, QApplication::UnicodeUTF8));
         save_vbc_dist->setText(QApplication::translate("vbc_dialog", "...", 0, QApplication::UnicodeUTF8));
         save_fdr_dist->setText(QApplication::translate("vbc_dialog", "...", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem4 = dist_table->horizontalHeaderItem(0);
@@ -821,9 +874,9 @@ public:
         QTableWidgetItem *___qtablewidgetitem7 = dist_table->horizontalHeaderItem(3);
         ___qtablewidgetitem7->setText(QApplication::translate("vbc_dialog", "FDR", 0, QApplication::UnicodeUTF8));
         tabWidget_2->setTabText(tabWidget_2->indexOf(tab_2), QApplication::translate("vbc_dialog", "Data", 0, QApplication::UnicodeUTF8));
-        tabWidget_2->setTabText(tabWidget_2->indexOf(tab_3), QApplication::translate("vbc_dialog", "Report", 0, QApplication::UnicodeUTF8));
         label_2->setText(QApplication::translate("vbc_dialog", "multi-thread", 0, QApplication::UnicodeUTF8));
         run->setText(QApplication::translate("vbc_dialog", "Run", 0, QApplication::UnicodeUTF8));
+        show_result->setText(QApplication::translate("vbc_dialog", "Show Results", 0, QApplication::UnicodeUTF8));
         toolBox->setItemText(toolBox->indexOf(page_3), QApplication::translate("vbc_dialog", "STEP3: Run connectometry analysis", 0, QApplication::UnicodeUTF8));
     } // retranslateUi
 

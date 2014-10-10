@@ -45,7 +45,7 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
         ui->subject_list->setItem(index,0, new QTableWidgetItem(QString(vbc->subject_name(index).c_str())));
         ui->subject_list->setItem(index,1, new QTableWidgetItem(QString::number(0)));
         ui->subject_list->setItem(index,2, new QTableWidgetItem(QString::number(vbc->subject_R2(index))));
-        if(vbc->subject_R2(index) < 0.4)
+        if(vbc->subject_R2(index) < 0.3)
             check_quality = true;
     }
     ui->AxiSlider->setMaximum(vbc->handle->dim[2]-1);
@@ -55,6 +55,7 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
     // dist report
     connect(ui->span_to,SIGNAL(valueChanged(int)),this,SLOT(show_report()));
     connect(ui->span_to,SIGNAL(valueChanged(int)),this,SLOT(show_fdr_report()));
+    connect(ui->view_legend,SIGNAL(toggled(bool)),this,SLOT(show_report()));
     connect(ui->show_null_greater,SIGNAL(toggled(bool)),this,SLOT(show_report()));
     connect(ui->show_null_lesser,SIGNAL(toggled(bool)),this,SLOT(show_report()));
     connect(ui->show_greater,SIGNAL(toggled(bool)),this,SLOT(show_report()));
@@ -70,6 +71,7 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
     ui->subject_list->selectRow(0);
     ui->toolBox->setCurrentIndex(1);
     ui->foi_widget->hide();
+    ui->show_result->hide();
     ui->advanced_options_box->hide();
     on_rb_multiple_regression_clicked();
     qApp->installEventFilter(this);
@@ -184,7 +186,7 @@ void vbc_dialog::show_fdr_report()
     ui->fdr_dist->yAxis->setLabel("FDR");
     ui->fdr_dist->xAxis->setRange(2,ui->span_to->value());
     ui->fdr_dist->yAxis->setRange(0,1.0);
-    ui->fdr_dist->legend->setVisible(true);
+    ui->fdr_dist->legend->setVisible(ui->view_legend->isChecked());
     QFont legendFont = font();  // start out with MainWindow's font..
     legendFont.setPointSize(9); // and make a bit smaller for legend
     ui->fdr_dist->legend->setFont(legendFont);
@@ -270,7 +272,7 @@ void vbc_dialog::show_report()
     ui->null_dist->yAxis->setLabel("count");
     ui->null_dist->xAxis->setRange(4,ui->span_to->value());
     ui->null_dist->yAxis->setRange(0,std::max<float>(std::max<float>(max_y1,max_y2),std::max<float>(max_y3,max_y4))*1.1);
-    ui->null_dist->legend->setVisible(true);
+    ui->null_dist->legend->setVisible(ui->view_legend->isChecked());
     QFont legendFont = font();  // start out with MainWindow's font..
     legendFont.setPointSize(9); // and make a bit smaller for legend
     ui->null_dist->legend->setFont(legendFont);
@@ -352,13 +354,20 @@ void vbc_dialog::on_open_files_clicked()
         filenames << QFileInfo(file_name[index]).baseName();
         file_names.push_back(file_name[index].toLocal8Bit().begin());
     }
-    ((QStringListModel*)ui->individual_list->model())->setStringList(filenames);
 
-    if(!vbc->read_subject_data(file_names,individual_data))
+    std::vector<std::vector<float> > new_individual_data;
+    if(!vbc->read_subject_data(file_names,new_individual_data))
     {
         QMessageBox::information(this,"error",vbc->error_msg.c_str(),0);
         return;
     }
+    individual_data.swap(new_individual_data);
+    if(ui->rb_individual_analysis->isChecked())
+    {
+        mr.type = 2;
+        ((QStringListModel*)ui->individual_list->model())->setStringList(filenames);
+    }
+
     ui->run->setEnabled(true);
 }
 
@@ -424,6 +433,14 @@ void vbc_dialog::on_open_mr_files_clicked()
         ui->foi_widget->show();
         ui->subject_demo->setColumnCount(titles.size()+1);
         ui->subject_demo->setHorizontalHeaderLabels(t);
+        ui->subject_demo->setRowCount(vbc->subject_count());
+        for(unsigned int row = 0,index = 0;row < ui->subject_demo->rowCount();++row)
+        {
+            ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->subject_name(row).c_str())));
+            ++index;// skip intercep
+            for(unsigned int col = 1;col < ui->subject_demo->columnCount();++col,++index)
+                ui->subject_demo->setItem(row,col,new QTableWidgetItem(QString::number(mr.X[index])));
+        }
     }
     if(ui->rb_group_difference->isChecked())
     {
@@ -435,22 +452,48 @@ void vbc_dialog::on_open_mr_files_clicked()
             QMessageBox::information(this,"Warning","Subject number mismatch");
         ui->subject_demo->setColumnCount(2);
         ui->subject_demo->setHorizontalHeaderLabels(QStringList() << "Subject ID" << "Group ID");
-    }
-
-
-    ui->subject_demo->setRowCount(vbc->subject_count());
-    for(unsigned int row = 0,index = 0;row < ui->subject_demo->rowCount();++row)
-    {
-        ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->subject_name(row).c_str())));
-        if(ui->rb_multiple_regression->isChecked())
+        ui->subject_demo->setRowCount(vbc->subject_count());
+        for(unsigned int row = 0;row < ui->subject_demo->rowCount();++row)
         {
-            ++index;// skip intercep
-            for(unsigned int col = 1;col < ui->subject_demo->columnCount();++col,++index)
-                ui->subject_demo->setItem(row,col,new QTableWidgetItem(QString::number(mr.X[index])));
-        }
-        if(ui->rb_group_difference->isChecked())
+            ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->subject_name(row).c_str())));
             ui->subject_demo->setItem(row,1,new QTableWidgetItem(QString::number(mr.label[row])));
+        }
     }
+    if(ui->rb_paired_difference->isChecked())
+    {
+        mr.type = 3;
+        mr.pre.clear();
+        mr.post.clear();
+        std::ifstream in(filename.toLocal8Bit().begin());
+        std::vector<int> label;
+        std::copy(std::istream_iterator<int>(in),
+                  std::istream_iterator<int>(),std::back_inserter(label));
+        if(label.size() != vbc->subject_count())
+            QMessageBox::information(this,"Warning","Subject number mismatch");
+
+        for(unsigned int i = 0;i < label.size() && i < vbc->subject_count();++i)
+            if(label[i] > 0)
+            {
+                for(unsigned int j = 0;j < label.size() && j < vbc->subject_count();++j)
+                    if(label[j] == -label[i])
+                    {
+                        mr.pre.push_back(i);
+                        mr.post.push_back(j);
+                    }
+
+            }
+        ui->subject_demo->setColumnCount(2);
+        ui->subject_demo->setHorizontalHeaderLabels(QStringList() << "Subject ID" << "Matched ID");
+        ui->subject_demo->setRowCount(mr.pre.size());
+        for(unsigned int row = 0;row < ui->subject_demo->rowCount();++row)
+        {
+            ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->subject_name(mr.pre[row]).c_str())));
+            ui->subject_demo->setItem(row,1,new QTableWidgetItem(QString(vbc->subject_name(mr.post[row]).c_str())));
+        }
+    }
+
+
+
     if(!mr.pre_process())
     {
         QMessageBox::information(this,"Error","Invalid subjet information for statistical analysis",0);
@@ -462,67 +505,70 @@ void vbc_dialog::on_open_mr_files_clicked()
 
 void vbc_dialog::on_view_mr_result_clicked()
 {
-    /*
-    begin_prog("loading");
-    mr.study_feature = ui->foi->currentIndex()+1;
-    vbc->calculate_spm(mr,cur_subject_fib,mr.subject_index);
-    std::auto_ptr<FibData> new_data(new FibData);
-    *(new_data.get()) = *(vbc->handle);
-    std::ostringstream out;
-    out << " Diffusion MRI connectometry was conducted to study the effect of "
-        << " on diffusion ODF. The multiple regression includes";
-    new_data->report += out.str();
-    cur_subject_fib.add_greater_lesser_mapping_for_tracking(new_data.get());
-    tracking_window* new_mdi = new tracking_window(this,new_data.release());
-    new_mdi->setAttribute(Qt::WA_DeleteOnClose);
-    new_mdi->absolute_path = work_dir;
-    new_mdi->setWindowTitle(QString("Connectometry mapping"));
-    new_mdi->showNormal();
-    check_prog(0,0);
-    */
+
 }
 
 void vbc_dialog::on_rb_individual_analysis_clicked()
 {
     ui->individual_demo->show();
+    ui->individual_list->show();
+
     ui->multiple_regression_demo->hide();
+    ui->subject_demo->hide();
+
     ui->percentile->show();
     ui->t_threshold->hide();
     ui->percentage_dif->hide();
+    ui->percentage_label->show();
     ui->threshold_label->setText("percentile");
+    ui->explaination->setText("50%:physiological difference, 10%:psychiatric diseases, 2%: neurological diseases");
 }
 
 void vbc_dialog::on_rb_group_difference_clicked()
 {
     ui->individual_demo->hide();
+    ui->individual_list->hide();
     ui->multiple_regression_demo->show();
+    ui->subject_demo->show();
     ui->regression_feature->hide();
     ui->percentile->hide();
     ui->t_threshold->hide();
     ui->percentage_dif->show();
+    ui->percentage_label->show();
     ui->threshold_label->setText("percentage difference");
+    ui->explaination->setText("5%:physiological difference, 25%:psychiatric diseases, 50%: neurological diseases");
 }
 
 void vbc_dialog::on_rb_multiple_regression_clicked()
 {
     ui->individual_demo->hide();
+    ui->individual_list->hide();
+
     ui->multiple_regression_demo->show();
+    ui->subject_demo->show();
+
     ui->regression_feature->show();
     ui->percentile->hide();
     ui->t_threshold->show();
     ui->percentage_dif->hide();
+    ui->percentage_label->hide();
     ui->threshold_label->setText("t threshold");
+    ui->explaination->setText("1:physiological difference, 2:psychiatric diseases, 3: neurological diseases");
 }
 
 void vbc_dialog::on_rb_paired_difference_clicked()
 {
     ui->individual_demo->hide();
+    ui->individual_list->hide();
     ui->multiple_regression_demo->show();
-    ui->regression_feature->show();
+    ui->subject_demo->show();
+    ui->regression_feature->hide();
     ui->percentile->hide();
     ui->t_threshold->hide();
     ui->percentage_dif->show();
+    ui->percentage_label->show();
     ui->threshold_label->setText("percentage difference");
+    ui->explaination->setText("5%:physiological difference, 25%:psychiatric diseases, 50%: neurological diseases");
 }
 
 void vbc_dialog::calculate_FDR(void)
@@ -531,64 +577,68 @@ void vbc_dialog::calculate_FDR(void)
     show_report();
     show_dis_table();
     show_fdr_report();
-    QString report;
+    report.clear();
     if(!vbc->handle->report.empty())
         report = vbc->handle->report.c_str();
     if(!vbc->report.empty())
         report += vbc->report.c_str();
-
     if(ui->rb_individual_analysis->isChecked())
     {
         std::ostringstream out;
-        if(vbc->fdr_greater_length == 0)
+        if(vbc->fdr_greater[vbc->length_threshold] > 0.5)
             out << " The analysis results showed no tracks with significant increase in anisotropy.";
         else
-            out << " The analysis results showed tracks with increased anisotropy.";
+            out << " The analysis results showed tracks with increased anisotropy with an FDR of "
+                << vbc->fdr_greater[vbc->length_threshold] << ".";
 
-        if(vbc->fdr_lesser_length == 0)
+        if(vbc->fdr_lesser[vbc->length_threshold] > 0.5)
             out << " The analysis results showed no tracks with significant decrease in anisotropy.";
         else
-            out << " The analysis results showed tracks with decreased anisotropy.";
+            out << " The analysis results showed tracks with decreased anisotropy with an FDR of "
+                << vbc->fdr_lesser[vbc->length_threshold] << ".";
         report += out.str().c_str();
     }
     if(ui->rb_multiple_regression->isChecked())
     {
         std::ostringstream out;
-        if(vbc->fdr_greater_length == 0)
+        if(vbc->fdr_greater[vbc->length_threshold] > 0.5)
             out << " The analysis results showed that there is no tracks with significantly increased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
         else
             out << " The analysis results showed tracks with increased anisotropy related to "
-                << ui->foi->currentText().toLocal8Bit().begin() << ".";
+                << ui->foi->currentText().toLocal8Bit().begin() << " with an FDR of "
+                << vbc->fdr_greater[vbc->length_threshold] << ".";
 
-        if(vbc->fdr_lesser_length == 0)
+        if(vbc->fdr_lesser[vbc->length_threshold] > 0.5)
             out << " The analysis results showed that there is no tracks with significantly decreased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
         else
             out << " The analysis results showed tracks with decreased anisotropy related to "
-                << ui->foi->currentText().toLocal8Bit().begin() << ".";
+                << ui->foi->currentText().toLocal8Bit().begin() << " with an FDR of "
+                << vbc->fdr_lesser[vbc->length_threshold] << ".";
         report += out.str().c_str();
     }
-    if(ui->rb_group_difference->isChecked())
+    if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
     {
         std::ostringstream out;
-        if(vbc->fdr_greater_length == 0)
+        if(vbc->fdr_greater[vbc->length_threshold] > 0.5)
             out << " The analysis results showed that there is no tracks in group 0 with significantly increased anisotropy.";
         else
-            out << " The analysis results showed tracks with increased anisotropy in group 0.";
+            out << " The analysis results showed tracks with increased anisotropy in group 0 with an FDR of "
+                << vbc->fdr_greater[vbc->length_threshold] << ".";
 
-        if(vbc->fdr_lesser_length == 0)
+        if(vbc->fdr_lesser[vbc->length_threshold] > 0.5)
             out << " The analysis results showed that there is no tracks in group 1 with significantly increased anisotropy.";
         else
-            out << " The analysis results showed tracks with increased anisotropy in group 1.";
+            out << " The analysis results showed tracks with increased anisotropy in group 1 with an FDR of "
+                << vbc->fdr_lesser[vbc->length_threshold] << ".";
         report += out.str().c_str();
     }
-
 
     ui->textBrowser->setText(report);
 
     if(vbc->total_count >= vbc->permutation_count)
     {
         timer->stop();
-        vbc->save_tracks_files();
+        vbc->save_tracks_files(saved_file_name);
 
         {
             std::ofstream out((vbc->trk_file_names[0]+".report.txt").c_str());
@@ -599,6 +649,7 @@ void vbc_dialog::calculate_FDR(void)
         ui->run->setText("Run");
         ui->progressBar->setValue(100);
         timer.reset(0);
+        ui->show_result->show();
     }
     else
         ui->progressBar->setValue(100*vbc->total_count/vbc->permutation_count);
@@ -614,40 +665,53 @@ void vbc_dialog::on_run_clicked()
         ui->run->setText("Run");
         return;
     }
+    ui->show_result->hide();
     ui->run->setText("Stop");
     ui->span_to->setValue(80);
     std::ostringstream out;
     vbc->permutation_count = ui->mr_permutation->value();
-    vbc->fdr_threshold = ui->FDR->value();
+    vbc->length_threshold = ui->length_threshold->value();
     vbc->pruning = ui->pruning->value();
     vbc->trk_file_names = file_names;
+    vbc->model = mr;
+    vbc->individual_data.clear();
 
     if(ui->rb_individual_analysis->isChecked())
     {
-        vbc->tracking_threshold = 1.0-ui->percentile->value();
+        vbc->tracking_threshold = 1.0-(float)ui->percentile->value()*0.01;
         vbc->individual_data = individual_data;
-
         out << "\nDiffusion MRI connectometry was conducted to identify affected pathway in "
             << vbc->individual_data.size() << " study patients.";
         out << " The diffusion data of the patients were compared with "
             << vbc->subject_count() << " normal subjects, and percentile rank was calculated for each fiber direction.";
-        out << " A percentile rank threshold of " << ui->percentile->value() << " was used to select fiber orientations with deviant condition.";
+        out << " A percentile rank threshold of " << ui->percentile->value() << "% was used to select fiber orientations with deviant condition.";
+        for(unsigned int index = 0;index < vbc->trk_file_names.size();++index)
+        {
+            vbc->trk_file_names[index] += ".ind.p";
+            vbc->trk_file_names[index] += QString::number(ui->percentile->value()).toLocal8Bit().begin();
+        }
     }
     if(ui->rb_group_difference->isChecked())
     {
-        vbc->tracking_threshold = ui->percentage_dif->value();
-        vbc->individual_data.clear();
-        vbc->model = mr;
+        vbc->tracking_threshold = (float)ui->percentage_dif->value()*0.01;
         out << "\nDiffusion MRI connectometry was conducted to compare group differences."
-            << " A threshold of " << ui->percentage_dif->value()*100.0 << "% difference was used to select fiber directions with substantial difference in anisotropy.";
-        vbc->trk_file_names[0] += ".group";
+            << " A threshold of " << ui->percentage_dif->value() << "% difference was used to select fiber directions with substantial difference in anisotropy.";
+        vbc->trk_file_names[0] += ".group.p";
+        vbc->trk_file_names[0] += QString::number(ui->percentage_dif->value()).toLocal8Bit().begin();
+
+    }
+    if(ui->rb_paired_difference->isChecked())
+    {
+        vbc->tracking_threshold = (float)ui->percentage_dif->value()*0.01;
+        out << "\nDiffusion MRI connectometry was conducted to compare paired group differences."
+            << " A threshold of " << ui->percentage_dif->value() << "% difference was used to select fiber directions with substantial difference in anisotropy.";
+        vbc->trk_file_names[0] += ".paired.p";
+        vbc->trk_file_names[0] += QString::number(ui->percentage_dif->value()).toLocal8Bit().begin();
     }
     if(ui->rb_multiple_regression->isChecked())
     {
         vbc->tracking_threshold = ui->t_threshold->value();
-        mr.study_feature = ui->foi->currentIndex()+1;
-        vbc->individual_data.clear();
-        vbc->model = mr;
+        vbc->model.study_feature = ui->foi->currentIndex()+1;
         out << "\nDiffusion MRI connectometry was conducted using a multiple regression model considering ";
         for(unsigned int index = 0;index < (int)ui->foi->count()-1;++index)
             out << ui->foi->itemText(index).toLower().toLocal8Bit().begin() << ", ";
@@ -657,6 +721,8 @@ void vbc_dialog::on_run_clicked()
             << ui->foi->currentText().toLower().toLocal8Bit().begin() << ".";
         vbc->trk_file_names[0] += ".";
         vbc->trk_file_names[0] += ui->foi->currentText().toLower().toLocal8Bit().begin();
+        vbc->trk_file_names[0] += ".t";
+        vbc->trk_file_names[0] += QString::number(ui->t_threshold->value()).toLocal8Bit().begin();
     }
     out << " A deterministic fiber tracking algorithm was conducted to connect these fiber orientations.";
     out << " The false discovery rate control was calculated using a total of " << ui->mr_permutation->value() << " randomized permutations.";
@@ -689,4 +755,26 @@ void vbc_dialog::on_advanced_options_clicked()
         ui->advanced_options_box->show();
     else
         ui->advanced_options_box->hide();
+}
+
+void vbc_dialog::on_show_result_clicked()
+{
+
+    std::auto_ptr<FibData> new_data(new FibData);
+    *(new_data.get()) = *(vbc->handle);
+    std::ostringstream out;
+    out << report.toLocal8Bit().begin();
+    new_data->report += out.str();
+
+    tracking_window* new_mdi = new tracking_window(this,new_data.release());
+    new_mdi->setAttribute(Qt::WA_DeleteOnClose);
+    new_mdi->absolute_path = work_dir;
+    new_mdi->setWindowTitle(QString("Connectometry mapping"));
+    new_mdi->showNormal();
+
+    QStringList filenames;
+    for(unsigned int index = 0;index < saved_file_name.size();++index)
+        filenames << saved_file_name[index].c_str();
+    new_mdi->tractWidget->load_tracts(filenames);
+
 }

@@ -149,10 +149,14 @@ public: // multiple regression
     unsigned int feature_count;
     unsigned int study_feature;
     multiple_regression<double> mr;
+public: // individual
+    const float* individual_data;
+public: // paired
+    std::vector<unsigned int> pre,post;
 public:
     bool resample(const stat_model& rhs,std::vector<unsigned int>& permu,bool null);
     bool pre_process(void);
-    double operator()(const std::vector<double>& population) const;
+    double operator()(const std::vector<double>& population,unsigned int pos) const;
     void clear(void)
     {
         label.clear();
@@ -168,6 +172,9 @@ public:
         feature_count = rhs.feature_count;
         study_feature = rhs.study_feature;
         mr = rhs.mr;
+        individual_data = rhs.individual_data;
+        pre = rhs.pre;
+        post = rhs.post;
         return *this;
     }
 };
@@ -213,9 +220,9 @@ public:
     void save_subject_data(const char* output_name) const;
     void get_data_at(unsigned int index,unsigned int fib,std::vector<float>& data) const;
     void get_subject_slice(unsigned int subject_index,unsigned int z_pos,image::basic_image<float,2>& slice) const;
-    bool calculate_individual_affected_tracks(const char* file_name,
-                                              std::vector<std::vector<std::vector<float> > >& greater,
-                                              std::vector<std::vector<std::vector<float> > >& lesser);
+    //bool calculate_individual_affected_tracks(const char* file_name,
+    //                                          std::vector<std::vector<std::vector<float> > >& greater,
+    //                                          std::vector<std::vector<std::vector<float> > >& lesser);
 
 private: // single subject analysis result
     bool get_odf_profile(const char* file_name,std::vector<float>& cur_subject_data);
@@ -229,21 +236,18 @@ public:// for FDR analysis
     std::vector<unsigned int> subject_greater;
     std::vector<unsigned int> subject_lesser;
     std::vector<float> fdr_greater,fdr_lesser;
-    unsigned int fdr_greater_length,fdr_lesser_length;
     unsigned int total_count,total_count_null;
     unsigned int permutation_count;
     bool terminated;
 public:
     std::vector<std::string> trk_file_names;
     unsigned int pruning;
-    float fdr_threshold;
+    unsigned int length_threshold;
     boost::mutex lock_resampling,lock_greater_tracks,lock_lesser_tracks;
     boost::ptr_vector<TractModel> greater_tracks;
     boost::ptr_vector<TractModel> lesser_tracks;
-    void save_tracks_files(void);
+    void save_tracks_files(std::vector<std::string>&);
 public:// routine for calculate SPM
-    void calculate_percentile(const float* cur_subject_data,
-                              const std::vector<unsigned int>& resample,fib_data& data);
     void calculate_spm(const stat_model& info,fib_data& data,const std::vector<unsigned int>& permu);
 public:// Individual analysis
     std::vector<std::vector<float> > individual_data;

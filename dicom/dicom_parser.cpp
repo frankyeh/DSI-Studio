@@ -43,7 +43,6 @@ dicom_parser::dicom_parser(QStringList file_list,QWidget *parent) :
 {
     ui->setupUi(this);
     cur_path = QFileInfo(file_list[0]).absolutePath();
-    std::sort(file_list.begin(),file_list.end(),compare_qstring());
     load_files(file_list);
 
     if (!dwi_files.empty())
@@ -325,53 +324,73 @@ bool load_multiple_slice_dicom(QStringList file_list,boost::ptr_vector<DwiHeader
     if(!dicom_header2.load_from_file(file_list[1].toLocal8Bit().begin()))
         return false;
     float s1 = dicom_header.get_slice_location();
-    if(s1 == dicom_header2.get_slice_location()) // iterater b-value first
+    bool iterate_slice_first = true;
+    unsigned int slice_num = 2;
+    unsigned int b_num = 2;
+    if(s1 == 0.0) // no slice locaton information
     {
-        unsigned int b_num = 2;
-        for (;b_num < file_list.size();++b_num)
+        DwiHeader dwi1,dwi2;
+        dwi1.open(file_list[0].toLocal8Bit().begin());
+        dwi2.open(file_list[1].toLocal8Bit().begin());
+        if(dwi1.bvec == dwi2.bvec && dwi1.bvalue == dwi2.bvalue) // iterater slice first
         {
-            if(!dicom_header2.load_from_file(file_list[b_num].toLocal8Bit().begin()))
-                return false;
-            if(dicom_header2.get_slice_location() != s1)
-                break;
+            for (;slice_num < file_list.size();++slice_num)
+            {
+                DwiHeader dwi;
+                if(!dwi.open(file_list[slice_num].toLocal8Bit().begin()))
+                    return false;
+                if(dwi1.bvec != dwi.bvec || dwi1.bvalue != dwi.bvalue)
+                    break;
+            }
+            geo[2] = slice_num;
+            iterate_slice_first = true;
         }
-        geo[2] = file_list.size()/b_num;
-
-        for (unsigned int index = 0,b_index = 0,slice_index = 0;
-                    check_prog(index,file_list.size());++index)
+        else
+        // iterate b first
         {
-            if(!dicom_header2.load_from_file(file_list[index].toLocal8Bit().begin()))
-                return false;
-            if(slice_index == 0)
+            for (;b_num < file_list.size();++b_num)
             {
-                dwi_files.push_back(new DwiHeader);
-                dwi_files.back().open(file_list[index].toLocal8Bit().begin());
-                dwi_files.back().image.resize(geo);
-                dwi_files.back().file_name = file_list[index].toLocal8Bit().begin();
-                dicom_header.get_voxel_size(dwi_files.back().voxel_size);
+                DwiHeader dwi;
+                if(!dwi.open(file_list[b_num].toLocal8Bit().begin()))
+                    return false;
+                if(dwi1.bvec == dwi.bvec && dwi1.bvalue == dwi.bvalue)
+                    break;
             }
-            dicom_header2.save_to_buffer(
-                    dwi_files[b_index].image.begin() + slice_index*geo.plane_size(),geo.plane_size());
-            ++b_index;
-            if(b_index >= b_num)
-            {
-                b_index = 0;
-                ++slice_index;
-            }
+            geo[2] = file_list.size()/b_num;
+            iterate_slice_first = false;
         }
     }
     else
-    // iterater slice first
     {
-        unsigned int slice_num = 2;
-        for (;slice_num < file_list.size();++slice_num)
+        if(s1 == dicom_header2.get_slice_location()) // iterater b-value first
         {
-            if(!dicom_header2.load_from_file(file_list[slice_num].toLocal8Bit().begin()))
-                return false;
-            if(dicom_header2.get_slice_location() == s1)
-                break;
+            for (;b_num < file_list.size();++b_num)
+            {
+                if(!dicom_header2.load_from_file(file_list[b_num].toLocal8Bit().begin()))
+                    return false;
+                if(dicom_header2.get_slice_location() != s1)
+                    break;
+            }
+            geo[2] = file_list.size()/b_num;
+            iterate_slice_first = false;
         }
-        geo[2] = slice_num;
+        else
+        // iterater slice first
+        {
+            for (;slice_num < file_list.size();++slice_num)
+            {
+                if(!dicom_header2.load_from_file(file_list[slice_num].toLocal8Bit().begin()))
+                    return false;
+                if(dicom_header2.get_slice_location() == s1)
+                    break;
+            }
+            geo[2] = slice_num;
+            iterate_slice_first = true;
+        }
+    }
+
+    if(iterate_slice_first)
+    {
         for (unsigned int index = 0,b_index = 0,slice_index = 0;
                     check_prog(index,file_list.size());++index)
         {
@@ -392,6 +411,31 @@ bool load_multiple_slice_dicom(QStringList file_list,boost::ptr_vector<DwiHeader
             {
                 slice_index = 0;
                 ++b_index;
+            }
+        }
+    }
+    else
+    {
+        for (unsigned int index = 0,b_index = 0,slice_index = 0;
+                    check_prog(index,file_list.size());++index)
+        {
+            if(!dicom_header2.load_from_file(file_list[index].toLocal8Bit().begin()))
+                return false;
+            if(slice_index == 0)
+            {
+                dwi_files.push_back(new DwiHeader);
+                dwi_files.back().open(file_list[index].toLocal8Bit().begin());
+                dwi_files.back().image.resize(geo);
+                dwi_files.back().file_name = file_list[index].toLocal8Bit().begin();
+                dicom_header.get_voxel_size(dwi_files.back().voxel_size);
+            }
+            dicom_header2.save_to_buffer(
+                    dwi_files[b_index].image.begin() + slice_index*geo.plane_size(),geo.plane_size());
+            ++b_index;
+            if(b_index >= b_num)
+            {
+                b_index = 0;
+                ++slice_index;
             }
         }
     }
@@ -535,7 +579,7 @@ bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_file
             return false;
          return !dwi_files.empty();
     }
-
+    std::sort(file_list.begin(),file_list.end(),compare_qstring());
     if(load_multiple_slice_dicom(file_list,dwi_files))
         return !dwi_files.empty();
 

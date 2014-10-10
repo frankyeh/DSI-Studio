@@ -143,7 +143,6 @@ private slots:
     void on_actionTract_Analysis_Report_triggered();
     void on_actionConnectivity_matrix_triggered();
     void on_zoom_3d_valueChanged(double arg1);
-    void on_actionConnectometry_triggered();
     void on_contrast_value_valueChanged(double arg1);
     void on_offset_value_valueChanged(double arg1);
     void on_gl_contrast_value_valueChanged(double arg1);

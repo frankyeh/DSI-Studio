@@ -22,13 +22,14 @@ private:
     void show_dis_table(void);
 public:
     QString work_dir;
-    std::vector<std::string> file_names;
+    std::vector<std::string> file_names,saved_file_name;
 public:
     std::auto_ptr<vbc_database> vbc;
     stat_model mr;
     std::vector<std::vector<float> > individual_data;
     std::auto_ptr<QTimer> timer;
-
+    QString report;
+    std::auto_ptr<tracking_window> result_window;
     explicit vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_);
     ~vbc_dialog();
     bool eventFilter(QObject *obj, QEvent *event);
@@ -64,6 +65,8 @@ private slots:
     void on_save_name_list_clicked();
 
     void on_advanced_options_clicked();
+
+    void on_show_result_clicked();
 
 public slots:
     void calculate_FDR(void);

@@ -172,6 +172,8 @@ bool DwiHeader::open(const char* filename)
     image::vector_rotation(bvec.begin(),cbvec.begin(),A,image::vdim<3>());
     bvec = cbvec;
     bvec.normalize();
+    if(bvalue == 0.0)
+        bvec[0] = bvec[1] = bvec[2] = 0.0;
     return true;
 }
 
