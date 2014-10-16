@@ -586,13 +586,13 @@ void vbc_dialog::calculate_FDR(void)
     {
         std::ostringstream out;
         if(vbc->fdr_greater[vbc->length_threshold] > 0.5)
-            out << " The analysis results showed no tracks with significant increase in anisotropy.";
+            out << " The analysis results showed no track with significant increase in anisotropy.";
         else
             out << " The analysis results showed tracks with increased anisotropy with an FDR of "
                 << vbc->fdr_greater[vbc->length_threshold] << ".";
 
         if(vbc->fdr_lesser[vbc->length_threshold] > 0.5)
-            out << " The analysis results showed no tracks with significant decrease in anisotropy.";
+            out << " The analysis results showed no track with significant decrease in anisotropy.";
         else
             out << " The analysis results showed tracks with decreased anisotropy with an FDR of "
                 << vbc->fdr_lesser[vbc->length_threshold] << ".";
@@ -602,14 +602,14 @@ void vbc_dialog::calculate_FDR(void)
     {
         std::ostringstream out;
         if(vbc->fdr_greater[vbc->length_threshold] > 0.5)
-            out << " The analysis results showed that there is no tracks with significantly increased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
+            out << " The analysis results showed that there is no track with significantly increased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
         else
             out << " The analysis results showed tracks with increased anisotropy related to "
                 << ui->foi->currentText().toLocal8Bit().begin() << " with an FDR of "
                 << vbc->fdr_greater[vbc->length_threshold] << ".";
 
         if(vbc->fdr_lesser[vbc->length_threshold] > 0.5)
-            out << " The analysis results showed that there is no tracks with significantly decreased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
+            out << " The analysis results showed that there is no track with significantly decreased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
         else
             out << " The analysis results showed tracks with decreased anisotropy related to "
                 << ui->foi->currentText().toLocal8Bit().begin() << " with an FDR of "
@@ -620,13 +620,13 @@ void vbc_dialog::calculate_FDR(void)
     {
         std::ostringstream out;
         if(vbc->fdr_greater[vbc->length_threshold] > 0.5)
-            out << " The analysis results showed that there is no tracks in group 0 with significantly increased anisotropy.";
+            out << " The analysis results showed that there is no track in group 0 with significantly increased anisotropy.";
         else
             out << " The analysis results showed tracks with increased anisotropy in group 0 with an FDR of "
                 << vbc->fdr_greater[vbc->length_threshold] << ".";
 
         if(vbc->fdr_lesser[vbc->length_threshold] > 0.5)
-            out << " The analysis results showed that there is no tracks in group 1 with significantly increased anisotropy.";
+            out << " The analysis results showed that there is no track in group 1 with significantly increased anisotropy.";
         else
             out << " The analysis results showed tracks with increased anisotropy in group 1 with an FDR of "
                 << vbc->fdr_lesser[vbc->length_threshold] << ".";
@@ -680,7 +680,7 @@ void vbc_dialog::on_run_clicked()
     {
         vbc->tracking_threshold = 1.0-(float)ui->percentile->value()*0.01;
         vbc->individual_data = individual_data;
-        out << "\nDiffusion MRI connectometry was conducted to identify affected pathway in "
+        out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted to identify affected pathway in "
             << vbc->individual_data.size() << " study patients.";
         out << " The diffusion data of the patients were compared with "
             << vbc->subject_count() << " normal subjects, and percentile rank was calculated for each fiber direction.";
@@ -694,7 +694,8 @@ void vbc_dialog::on_run_clicked()
     if(ui->rb_group_difference->isChecked())
     {
         vbc->tracking_threshold = (float)ui->percentage_dif->value()*0.01;
-        out << "\nDiffusion MRI connectometry was conducted to compare group differences."
+        out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted to compare group differences."
+            << " The group difference was quantified using percentage measurement (i.e. (d1-d2)/(d1+d2) x %), where d1 and d2 are the group averages of the spin distribution function (SDF)."
             << " A threshold of " << ui->percentage_dif->value() << "% difference was used to select fiber directions with substantial difference in anisotropy.";
         vbc->trk_file_names[0] += ".group.p";
         vbc->trk_file_names[0] += QString::number(ui->percentage_dif->value()).toLocal8Bit().begin();
@@ -703,7 +704,7 @@ void vbc_dialog::on_run_clicked()
     if(ui->rb_paired_difference->isChecked())
     {
         vbc->tracking_threshold = (float)ui->percentage_dif->value()*0.01;
-        out << "\nDiffusion MRI connectometry was conducted to compare paired group differences."
+        out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted to compare paired group differences."
             << " A threshold of " << ui->percentage_dif->value() << "% difference was used to select fiber directions with substantial difference in anisotropy.";
         vbc->trk_file_names[0] += ".paired.p";
         vbc->trk_file_names[0] += QString::number(ui->percentage_dif->value()).toLocal8Bit().begin();
@@ -712,7 +713,7 @@ void vbc_dialog::on_run_clicked()
     {
         vbc->tracking_threshold = ui->t_threshold->value();
         vbc->model.study_feature = ui->foi->currentIndex()+1;
-        out << "\nDiffusion MRI connectometry was conducted using a multiple regression model considering ";
+        out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted using a multiple regression model considering ";
         for(unsigned int index = 0;index < (int)ui->foi->count()-1;++index)
             out << ui->foi->itemText(index).toLower().toLocal8Bit().begin() << ", ";
         out << "and " << ui->foi->itemText(ui->foi->count()-1).toLower().toLocal8Bit().begin() << ".";
@@ -724,8 +725,11 @@ void vbc_dialog::on_run_clicked()
         vbc->trk_file_names[0] += ".t";
         vbc->trk_file_names[0] += QString::number(ui->t_threshold->value()).toLocal8Bit().begin();
     }
-    out << " A deterministic fiber tracking algorithm was conducted to connect these fiber orientations.";
-    out << " The false discovery rate control was calculated using a total of " << ui->mr_permutation->value() << " randomized permutations.";
+    out << " A deterministic fiber tracking algorithm (Yeh, et al. PLoS ONE 8(11): e80713) was conducted to connect these fiber directions, and tracks with connected length greater than " <<
+        ui->length_threshold->value() << " mm were collected.";
+    out << " To estimate the false discovery rate, a total of "
+        << ui->mr_permutation->value()
+        << "randomized permutations were applied to the group label to obtain the null distribution of the track length.";
 
     vbc->report = out.str().c_str();
     vbc->run_permutation(ui->multithread->value());
