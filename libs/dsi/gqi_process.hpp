@@ -180,11 +180,73 @@ public:
 class QSpaceSpectral  : public BaseProcess
 {
 public:
+    static const int max_length = 50; // 50 microns
     std::vector<unsigned int> b0_images;
-    std::vector<std::vector<float> > sinc_ql;
-    std::vector<std::vector<float> > sinc_ql_cdf;
-    std::vector<std::vector<float> > cdf;
-    std::vector<std::vector<float> > dis;
+    std::vector<std::vector<float> > cdf,dis,cdfw,disw;
+    double sinint(double x)
+    {
+        bool sgn = x > 0;
+        x = std::fabs(x);
+        double eps = 1e-15;
+        double x2 = x*x;
+        double si;
+        if(x == 0.0)
+            return 0.0;
+        if(x <= 16.0)
+        {
+            double xr = x;
+            si = x;
+            for(unsigned int k = 1;k <= 40;++k)
+            {
+                si += (xr *= -0.5*(double)(2*k-1)/(double)k/(double)(4*k*(k+1)+1)*x2);
+                if(std::fabs(xr) < std::fabs(si)*eps)
+                    break;
+            }
+            return sgn ? si:-si;
+        }
+
+        if(x <= 32.0)
+        {
+            unsigned int m = std::floor(47.2+0.82*x);
+            std::vector<double> bj(m+1);
+            double xa1 = 0.0;
+            double xa0 = 1.0e-100;
+            for(unsigned int k=m;k>=1;--k)
+            {
+                double xa = 4.0*(double)k*xa0/x-xa1;
+                bj[k-1] = xa;
+                xa1 = xa0;
+                xa0 = xa;
+            }
+            double xs = bj[0];
+            for(unsigned int k=3;k <= m;k += 2)
+                xs += 2.0*bj[k-1];
+            for(unsigned int k=0;k < m;++k)
+                bj[k] /= xs;
+            double xr = 1.0;
+            double xg1 = bj[0];
+            for(int k=2;k <= m;++k)
+                xg1 += bj[k-1]*(xr *= 0.25*(2*k-3)*(2*k-3)/((k-1)*(2*k-1)*(2*k-1))*x);
+            xr = 1.0;
+            double xg2 = bj[0];
+            for(int k=2;k <= m;++k)
+                xg2 += bj[k-1]*(xr *= 0.25*(2*k-5)*(2*k-5)/((k-1)*(2*k-3)*(2*k-3))*x);
+            si = x*std::cos(x/2.0)*xg1+2.0*std::sin(x/2.0)*xg2-std::sin(x);
+            return sgn ? si:-si;
+        }
+
+        double xr = 1.0;
+        double xf = 1.0;
+        for(unsigned int k=1;k <= 9;++k)
+            xf += (xr *= -2.0*k*(2*k-1)/x2);
+        xr = 1.0/x;
+        double xg = xr;
+        for(unsigned int k=1;k <= 8;++k)
+            xg += (xr *= -2.0*(2*k+1)*k/x2);
+        si = 1.570796326794897-xf*std::cos(x)/x-xg*std::sin(x)/x;
+        return sgn ? si:-si;
+    }
+
     double base_function(double theta)
     {
         if(std::abs(theta) < 0.000001)
@@ -201,62 +263,46 @@ public:
         if(b0_images.size() > 1)
             throw std::runtime_error("Correct B0 failed. Two b0 images found in src file");
 
-
         float diffusion_time = voxel.param[1];
         float diffusion_length = std::sqrt(6.0*3.0*diffusion_time); // sqrt(6Dt)
         dis.clear();
         cdf.clear();
-        sinc_ql.clear();
-        sinc_ql_cdf.clear();
-        const int max_length = 50; // 50 microns
+        disw.clear();
+        cdfw.clear();
         dis.resize(max_length);
         cdf.resize(max_length);
-        sinc_ql.resize(max_length);
-        sinc_ql_cdf.resize(max_length);
-        unsigned int odf_size = voxel.ti.half_vertices_count;
+        disw.resize(max_length);
+        cdfw.resize(max_length);
         for(unsigned int n = 0;n < max_length;++n) // from 0 micron to 49 microns
         {
             // calculate the diffusion length ratio
             float sigma = ((float)n)/diffusion_length;
-            float delta = 0.001/diffusion_length;
 
-            sinc_ql[n].resize(odf_size*voxel.bvalues.size());
-            sinc_ql_cdf[n].resize(odf_size*voxel.bvalues.size());
             dis[n].resize(voxel.dim.size());
             cdf[n].resize(voxel.dim.size());
-            // calculate reconstruction matrix
-            for (unsigned int j = 0,index = 0; j < odf_size; ++j)
-                for (unsigned int i = 0; i < voxel.bvalues.size(); ++i,++index)
-                    sinc_ql[n][index] = voxel.bvectors[i]*
-                                 image::vector<3,float>(voxel.ti.vertices[j])*
-                                   std::sqrt(voxel.bvalues[i]*0.018); // £^G£_
 
-            for (unsigned int index = 0; index < sinc_ql_cdf[n].size(); ++index)
-                sinc_ql_cdf[n][index] = voxel.r2_weighted ?
-                            base_function(sinc_ql[n][index]*sigma)*sigma:
-                            boost::math::sinc_pi(sinc_ql[n][index]*sigma)*sigma;
-
-            for (unsigned int index = 0; index < sinc_ql[n].size(); ++index)
-                sinc_ql[n][index] = voxel.r2_weighted ?
-                             ((sigma+delta)*base_function(sinc_ql[n][index]*(sigma+delta))-
-                             (sigma-delta)*base_function(sinc_ql[n][index]*(sigma-delta)))/delta:
-                              ((sigma+delta)*boost::math::sinc_pi(sinc_ql[n][index]*(sigma+delta))-
-                               (sigma-delta)*boost::math::sinc_pi(sinc_ql[n][index]*(sigma-delta)))/delta;
+            disw[n].resize(voxel.bvalues.size());
+            cdfw[n].resize(voxel.bvalues.size());
+            for(unsigned int index = 0;index < voxel.bvalues.size();++index)
+            {
+                // 2pi*L*q = sigma*sqrt(6D*b_value)
+                double lq_2pi = sigma*std::sqrt(voxel.bvalues[index]*0.018);
+                disw[n][index] = boost::math::sinc_pi(lq_2pi);
+                cdfw[n][index] = (voxel.bvalues[index] == 0.0 ?
+                                 sigma : sinint(lq_2pi)/std::sqrt(voxel.bvalues[index]*0.018));
+            }
         }
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
         if(b0_images.size() == 1 && voxel.half_sphere)
             data.space[b0_images.front()] /= 2.0;
-        for(unsigned int index = 0;index < sinc_ql.size();++index)
+        for(unsigned int index = 0;index < max_length;++index)
         {
-            image::matrix::vector_product(&*sinc_ql[index].begin(),&*data.space.begin(),&*data.odf.begin(),
-                                        image::dyndim(data.odf.size(),data.space.size()));
-            dis[index][data.voxel_index] = std::max<float>(0.0,image::mean(data.odf.begin(),data.odf.end()));
-
-            image::matrix::vector_product(&*sinc_ql_cdf[index].begin(),&*data.space.begin(),&*data.odf.begin(),
-                                        image::dyndim(data.odf.size(),data.space.size()));
-            cdf[index][data.voxel_index] = image::mean(data.odf.begin(),data.odf.end());
+            dis[index][data.voxel_index] =
+                    image::vec::dot(data.space.begin(),data.space.end(),disw[index].begin());
+            cdf[index][data.voxel_index] =
+                    image::vec::dot(data.space.begin(),data.space.end(),cdfw[index].begin());
             // make sure that cdf is increamental
             if(index && cdf[index][data.voxel_index] < cdf[index-1][data.voxel_index])
                 cdf[index][data.voxel_index] = cdf[index-1][data.voxel_index];
@@ -265,14 +311,14 @@ public:
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
-        for(unsigned int index = 0;index < sinc_ql.size();++index)
+        for(unsigned int index = 0;index < max_length;++index)
         {
             std::ostringstream out;
             out << "pdf_" << index << "um";
             mat_writer.write(out.str().c_str(),&*dis[index].begin(),1,dis[index].size());
 
         }
-        for(unsigned int index = 0;index < sinc_ql.size();++index)
+        for(unsigned int index = 0;index < max_length;++index)
         {
             std::ostringstream out;
             out << "cdf_" << index << "um";
