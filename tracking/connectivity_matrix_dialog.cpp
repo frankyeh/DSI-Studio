@@ -63,6 +63,15 @@ void connectivity_matrix_dialog::mouse_move(QMouseEvent *mouseEvent)
         x_text->moveBy(point.x()-x_text->boundingRect().width()/2,-x_text->boundingRect().height());
         y_text->rotate(270);
         y_text->moveBy(-y_text->boundingRect().height(),point.y()+y_text->boundingRect().width()/2);
+        unsigned int index = x+y*data.matrix.size();
+        if(index < data.connectivity_count.size())
+        {
+            QGraphicsTextItem *value_text =
+                    scene.addText(QString("count:%1 length:%2").
+                                  arg(data.connectivity_count[index]).
+                                  arg(data.tract_mean_length[index]));
+            value_text->moveBy(0,-x_text->boundingRect().height()-value_text->boundingRect().height());
+        }
     }
 
 }
