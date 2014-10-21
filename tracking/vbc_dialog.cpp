@@ -384,54 +384,58 @@ void vbc_dialog::on_open_mr_files_clicked()
     file_names.clear();
     file_names.push_back(filename.toLocal8Bit().begin());
 
-    mr.clear();
+    std::vector<std::string> items;
+    std::ifstream in(filename.toLocal8Bit().begin());
+    std::copy(std::istream_iterator<std::string>(in),
+              std::istream_iterator<std::string>(),std::back_inserter(items));
 
-    ui->subject_demo->clear();
+
+    mr.clear();
     if(ui->rb_multiple_regression->isChecked())
     {
-        mr.type = 1;
-        std::ifstream in(filename.toLocal8Bit().begin());
-        std::string line;
-        std::vector<std::string> titles;
-        // read title
+        unsigned int feature_count = items.size()/(vbc->subject_count()+1);
+        if(feature_count*(vbc->subject_count()+1) != items.size())
         {
-            std::getline(in,line);
-            std::istringstream str(line);
-            std::copy(std::istream_iterator<std::string>(str),
-                      std::istream_iterator<std::string>(),std::back_inserter(titles));
-            mr.feature_count = titles.size()+1; // additional one for intercept
+            QMessageBox::information(this,"Warning",
+                                     QString("Subject number mismatch. text file=%1 database=%2").
+                                     arg(items.size()/feature_count-1).arg(vbc->subject_count()));
+            return;
         }
-        for(unsigned int index = 0;index < vbc->subject_count() && std::getline(in,line);++index)
+        std::vector<double> X;
+        for(unsigned int i = 0,index = 0;i < vbc->subject_count();++i)
         {
-            std::istringstream str(line);
-            std::vector<double> values;
-            std::copy(std::istream_iterator<double>(str),
-                      std::istream_iterator<double>(),std::back_inserter(values));
-            if(values.size() != titles.size())
+            bool ok = false;
+            X.push_back(1); // for the intercep
+            for(unsigned int j = 0;j < feature_count;++j,++index)
             {
-                QMessageBox::information(this,"Error",QString("Cannot parse:") + line.c_str(),0);
-                return;
+                X.push_back(QString(items[index+feature_count].c_str()).toDouble(&ok));
+                if(!ok)
+                {
+                    QMessageBox::information(this,"Error",QString("Cannot parse '") +
+                                             QString(items[index+feature_count].c_str()) +
+                                             QString("' at subject%1 feature%2.").arg(i+1).arg(j+1),0);
+                    return;
+                }
             }
-            mr.X.push_back(1); // for the intercep
-            for(unsigned int j = 0;j < values.size();++j)
-                mr.X.push_back(values[j]);
         }
-        if(mr.X.size()/mr.feature_count != vbc->subject_count())
-            QMessageBox::information(this,"Warning","Subject number mismatch");
+        mr.type = 1;
+        mr.X = X;
+        mr.feature_count = feature_count+1; // additional one for intercept
         QStringList t;
         t << "Subject ID";
-        for(unsigned int index = 0;index < titles.size();++index)
+        for(unsigned int index = 0;index < feature_count;++index)
         {
-            std::replace(titles[index].begin(),titles[index].end(),'/','_');
-            std::replace(titles[index].begin(),titles[index].end(),'\\','_');
-            t << titles[index].c_str();
+            std::replace(items[index].begin(),items[index].end(),'/','_');
+            std::replace(items[index].begin(),items[index].end(),'\\','_');
+            t << items[index].c_str();
         }
         ui->foi->clear();
         ui->foi->addItems(t);
         ui->foi->removeItem(0);
         ui->foi->setCurrentIndex(ui->foi->count()-1);
         ui->foi_widget->show();
-        ui->subject_demo->setColumnCount(titles.size()+1);
+        ui->subject_demo->clear();
+        ui->subject_demo->setColumnCount(feature_count+1);
         ui->subject_demo->setHorizontalHeaderLabels(t);
         ui->subject_demo->setRowCount(vbc->subject_count());
         for(unsigned int row = 0,index = 0;row < ui->subject_demo->rowCount();++row)
@@ -444,12 +448,34 @@ void vbc_dialog::on_open_mr_files_clicked()
     }
     if(ui->rb_group_difference->isChecked())
     {
+        if(vbc->subject_count() != items.size() &&
+           vbc->subject_count()+1 != items.size())
+        {
+            QMessageBox::information(this,"Warning",
+                                     QString("Subject number mismatch. text file=%1 database=%2").
+                                     arg(items.size()).arg(vbc->subject_count()));
+            return;
+        }
+        if(vbc->subject_count()+1 == items.size())
+            items.erase(items.begin());
+
+        std::vector<int> label;
+        for(unsigned int i = 0;i < vbc->subject_count();++i)
+        {
+            bool ok = false;
+            label.push_back(QString(items[i].c_str()).toInt(&ok));
+            if(!ok)
+            {
+                QMessageBox::information(this,"Error",QString("Cannot parse ") +
+                                             QString(items[i].c_str()) +
+                                             QString(" at subject%1").arg(i+1),0);
+                return;
+            }
+        }
+
         mr.type = 0;
-        std::ifstream in(filename.toLocal8Bit().begin());
-        std::copy(std::istream_iterator<int>(in),
-                  std::istream_iterator<int>(),std::back_inserter(mr.label));
-        if(mr.label.size() != vbc->subject_count())
-            QMessageBox::information(this,"Warning","Subject number mismatch");
+        mr.label = label;
+        ui->subject_demo->clear();
         ui->subject_demo->setColumnCount(2);
         ui->subject_demo->setHorizontalHeaderLabels(QStringList() << "Subject ID" << "Group ID");
         ui->subject_demo->setRowCount(vbc->subject_count());
@@ -461,16 +487,34 @@ void vbc_dialog::on_open_mr_files_clicked()
     }
     if(ui->rb_paired_difference->isChecked())
     {
+        if(vbc->subject_count() != items.size() &&
+           vbc->subject_count()+1 != items.size())
+        {
+            QMessageBox::information(this,"Warning",
+                                     QString("Subject number mismatch. text file=%1 database=%2").
+                                     arg(items.size()).arg(vbc->subject_count()));
+            return;
+        }
+        if(vbc->subject_count()+1 == items.size())
+            items.erase(items.begin());
+
+        std::vector<int> label;
+        for(unsigned int i = 0;i < vbc->subject_count();++i)
+        {
+            bool ok = false;
+            label.push_back(QString(items[i].c_str()).toInt(&ok));
+            if(!ok)
+            {
+                QMessageBox::information(this,"Error",QString("Cannot parse ") +
+                                             QString(items[i].c_str()) +
+                                             QString(" at subject%1").arg(i+1),0);
+                return;
+            }
+        }
+
         mr.type = 3;
         mr.pre.clear();
         mr.post.clear();
-        std::ifstream in(filename.toLocal8Bit().begin());
-        std::vector<int> label;
-        std::copy(std::istream_iterator<int>(in),
-                  std::istream_iterator<int>(),std::back_inserter(label));
-        if(label.size() != vbc->subject_count())
-            QMessageBox::information(this,"Warning","Subject number mismatch");
-
         for(unsigned int i = 0;i < label.size() && i < vbc->subject_count();++i)
             if(label[i] > 0)
             {
@@ -480,8 +524,8 @@ void vbc_dialog::on_open_mr_files_clicked()
                         mr.pre.push_back(i);
                         mr.post.push_back(j);
                     }
-
             }
+        ui->subject_demo->clear();
         ui->subject_demo->setColumnCount(2);
         ui->subject_demo->setHorizontalHeaderLabels(QStringList() << "Subject ID" << "Matched ID");
         ui->subject_demo->setRowCount(mr.pre.size());
@@ -501,11 +545,6 @@ void vbc_dialog::on_open_mr_files_clicked()
         return;
     }
     ui->run->setEnabled(true);
-}
-
-void vbc_dialog::on_view_mr_result_clicked()
-{
-
 }
 
 void vbc_dialog::on_rb_individual_analysis_clicked()
@@ -553,7 +592,7 @@ void vbc_dialog::on_rb_multiple_regression_clicked()
     ui->percentage_dif->hide();
     ui->percentage_label->hide();
     ui->threshold_label->setText("t threshold");
-    ui->explaination->setText("1:physiological difference, 2:psychiatric diseases, 3: neurological diseases");
+    ui->explaination->setText("<1.5:physiological difference, 1.5~2.5:psychiatric diseases, >2.5: neurological diseases");
 }
 
 void vbc_dialog::on_rb_paired_difference_clicked()

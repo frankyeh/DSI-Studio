@@ -50,8 +50,6 @@ private slots:
 
     void on_open_mr_files_clicked();
 
-    void on_view_mr_result_clicked();
-
     void on_rb_individual_analysis_clicked();
 
     void on_rb_group_difference_clicked();
