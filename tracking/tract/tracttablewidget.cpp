@@ -491,6 +491,46 @@ void TractTableWidget::save_end_point_as(void)
     tract_models[currentRow()]->save_end_points(&*sfilename.begin());
 }
 
+void TractTableWidget::save_end_point_in_mni(void)
+{
+    if(currentRow() >= tract_models.size())
+        return;
+    QString filename;
+    filename = QFileDialog::getSaveFileName(
+                this,
+                "Save end points as",
+                cur_tracking_window.get_path("track") + "/" + item(currentRow(),0)->text().replace(':','_') + "endpoint.txt",
+                "Tract files (*.txt);;MAT files (*.mat);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    cur_tracking_window.add_path("track",filename);
+    std::vector<image::vector<3,float> > points;
+    std::vector<float> buffer;
+    tract_models[currentRow()]->get_end_points(points);
+    for(unsigned int index = 0;index < points.size();++index)
+    {
+        cur_tracking_window.subject2mni(points[index]);
+        buffer.push_back(points[index][0]);
+        buffer.push_back(points[index][1]);
+        buffer.push_back(points[index][2]);
+    }
+
+    if (QFileInfo(filename).suffix().toLower() == "txt")
+    {
+        std::ofstream out(filename.toLocal8Bit().begin(),std::ios::out);
+        if (!out)
+            return;
+        std::copy(buffer.begin(),buffer.end(),std::ostream_iterator<float>(out," "));
+    }
+    if (QFileInfo(filename).suffix().toLower() == "mat")
+    {
+        image::io::mat_write out(filename.toLocal8Bit().begin());
+        if(!out)
+            return;
+        out.write("end_points",(const float*)&*buffer.begin(),3,buffer.size()/3);
+    }
+}
+
 void TractTableWidget::saveTransformedTracts(const float* transform)
 {
     if(currentRow() >= tract_models.size())

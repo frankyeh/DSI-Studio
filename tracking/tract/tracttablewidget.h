@@ -63,6 +63,7 @@ public slots:
     void save_all_tracts_as(void);
     void save_all_tracts_to_dir(void);
     void save_end_point_as(void);
+    void save_end_point_in_mni(void);
     void merge_all(void);
     void copy_track(void);
     void delete_tract(void);

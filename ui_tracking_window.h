@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Fri Oct 10 01:17:57 2014
+** Created: Mon Oct 20 22:29:36 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -143,6 +143,7 @@ public:
     QAction *actionMethod_Report;
     QAction *actionQuality_Assessment;
     QAction *actionSave_3D_screen_in_3_views;
+    QAction *actionSave_Enpoints_In_MNI_Space;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QWidget *main_widget;
@@ -548,6 +549,9 @@ public:
         actionSave_3D_screen_in_3_views = new QAction(tracking_window);
         actionSave_3D_screen_in_3_views->setObjectName(QString::fromUtf8("actionSave_3D_screen_in_3_views"));
         actionSave_3D_screen_in_3_views->setIcon(icon2);
+        actionSave_Enpoints_In_MNI_Space = new QAction(tracking_window);
+        actionSave_Enpoints_In_MNI_Space->setObjectName(QString::fromUtf8("actionSave_Enpoints_In_MNI_Space"));
+        actionSave_Enpoints_In_MNI_Space->setIcon(icon2);
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -1423,6 +1427,7 @@ public:
         menuSave_Tracts->addSeparator();
         menuSave_Tracts->addAction(actionSave_End_Points_As);
         menuSave_Tracts->addAction(actionSave_Endpoints_in_Current_Mapping);
+        menuSave_Tracts->addAction(actionSave_Enpoints_In_MNI_Space);
         menu_Edit->addAction(actionUndo);
         menu_Edit->addAction(actionRedo);
         menu_Edit->addSeparator();
@@ -1622,6 +1627,7 @@ public:
         actionMethod_Report->setText(QApplication::translate("tracking_window", "Method Report...", 0, QApplication::UnicodeUTF8));
         actionQuality_Assessment->setText(QApplication::translate("tracking_window", "Quality Assessment...", 0, QApplication::UnicodeUTF8));
         actionSave_3D_screen_in_3_views->setText(QApplication::translate("tracking_window", "Save 3D screen in 3 views...", 0, QApplication::UnicodeUTF8));
+        actionSave_Enpoints_In_MNI_Space->setText(QApplication::translate("tracking_window", "Save Enpoints In MNI Space...", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)

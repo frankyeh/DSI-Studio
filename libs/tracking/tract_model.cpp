@@ -559,6 +559,17 @@ void TractModel::save_end_points(const char* file_name_) const
 
 }
 //---------------------------------------------------------------------------
+void TractModel::get_end_points(std::vector<image::vector<3,float> >& points)
+{
+    for (unsigned int index = 0;index < tract_data.size();++index)
+    {
+        if (tract_data[index].size() < 3)
+            return;
+        points.push_back(image::vector<3,float>(&tract_data[index][0]));
+        points.push_back(image::vector<3,float>(&tract_data[index][tract_data[index].size()-3]));
+    }
+}
+//---------------------------------------------------------------------------
 void TractModel::get_end_points(std::vector<image::vector<3,short> >& points)
 {
     for (unsigned int index = 0;index < tract_data.size();++index)

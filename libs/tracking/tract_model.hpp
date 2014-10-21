@@ -97,6 +97,7 @@ public:
         void trim(void);
 
 
+        void get_end_points(std::vector<image::vector<3,float> >& points);
         void get_end_points(std::vector<image::vector<3,short> >& points);
         void get_tract_points(std::vector<image::vector<3,short> >& points);
 
