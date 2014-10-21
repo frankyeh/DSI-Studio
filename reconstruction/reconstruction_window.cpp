@@ -89,7 +89,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->ThreadCount->setValue(settings.value("rec_thread_num",2).toInt());
     ui->NumOfFibers->setValue(settings.value("rec_num_fiber",5).toInt());
     ui->ODFDef->setCurrentIndex(settings.value("rec_gqi_def",0).toInt());
-    ui->reg_method->setCurrentIndex(settings.value("rec_reg_method",1).toInt());
+    ui->reg_method->setCurrentIndex(settings.value("rec_reg_method",0).toInt());
 
     ui->diffusion_sampling->setValue(settings.value("rec_gqi_sampling",1.25).toDouble());
     ui->regularization_param->setValue(settings.value("rec_qbi_reg",0.006).toDouble());
