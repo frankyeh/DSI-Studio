@@ -154,6 +154,7 @@ public: // individual
 public: // paired
     std::vector<unsigned int> pre,post;
 public:
+    void remove_subject(unsigned int index);
     bool resample(const stat_model& rhs,std::vector<unsigned int>& permu,bool null);
     bool pre_process(void);
     double operator()(const std::vector<double>& population,unsigned int pos) const;
@@ -212,6 +213,7 @@ private:// database information
     std::vector<float> R2;
     bool sample_odf(gz_mat_read& mat_reader,std::vector<float>& data);
 public:
+    void remove_subject(unsigned int index);
     unsigned int subject_count(void)const{return num_subjects;}
     const std::string& subject_name(unsigned int index)const{return subject_names[index];}
     float subject_R2(unsigned int index)const{return R2[index];}
@@ -241,6 +243,8 @@ public:// for FDR analysis
     bool terminated;
 public:
     std::vector<std::string> trk_file_names;
+    std::vector<image::vector<3,short> > roi;
+    unsigned char roi_type;
     unsigned int pruning;
     unsigned int length_threshold;
     boost::mutex lock_resampling,lock_greater_tracks,lock_lesser_tracks;

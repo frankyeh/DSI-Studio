@@ -9,7 +9,7 @@
 
 
 
-vbc_database::vbc_database():handle(0),num_subjects(0)
+vbc_database::vbc_database():handle(0),num_subjects(0),roi_type(0)
 {
 }
 
@@ -151,6 +151,18 @@ bool vbc_database::is_consistent(gz_mat_read& mat_reader) const
     }
     return true;
 }
+void vbc_database::remove_subject(unsigned int index)
+{
+    if(num_subjects <= 1)
+        return;
+    subject_names.erase(subject_names.begin()+index);
+    if(!subject_qa_buffer.empty())
+        subject_qa_buffer.erase(subject_qa_buffer.begin()+index);
+    subject_qa.erase(subject_qa.begin()+index);
+    R2.erase(R2.begin()+index);
+    --num_subjects;
+}
+
 bool vbc_database::sample_odf(gz_mat_read& mat_reader,std::vector<float>& data)
 {
     ODFData subject_odf;
@@ -402,7 +414,11 @@ void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vect
     tracking_thread.interpolation_strategy = 0; // trilinear interpolation
     tracking_thread.stop_by_tract = 0;// stop by seed
     tracking_thread.center_seed = 0;// subvoxel seeding
+    if(roi.empty() || roi_type != 3)
     tracking_thread.setRegions(fib.dim,seed,3);
+    if(!roi.empty())
+        tracking_thread.setRegions(fib.dim,roi,roi_type);
+
     tracking_thread.run(fib,1,seed.size()*seed_ratio,true);
     tracking_thread.track_buffer.swap(tracks);
 }
@@ -498,6 +514,15 @@ bool stat_model::pre_process(void)
     }
     return false;
 }
+void stat_model::remove_subject(unsigned int index)
+{
+    if(!label.empty())
+        label.erase(label.begin()+index);
+    if(!X.empty())
+        X.erase(X.begin()+index*feature_count,X.begin()+(index+1)*feature_count);
+    pre_process();
+}
+
 bool stat_model::resample(const stat_model& rhs,std::vector<unsigned int>& permu,bool null)
 {
     type = rhs.type;

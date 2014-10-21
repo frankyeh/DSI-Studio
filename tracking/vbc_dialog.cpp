@@ -8,6 +8,7 @@
 #include "ui_tracking_window.h"
 #include "tracking_window.h"
 #include "tract/tracttablewidget.h"
+extern std::vector<atlas> atlas_list;
 
 vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) :
     QDialog(parent),vbc(vbc_ptr),work_dir(work_dir_),
@@ -52,6 +53,9 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
     ui->AxiSlider->setMinimum(0);
     ui->AxiSlider->setValue(vbc->handle->dim[2] >> 1);
 
+    for(int index = 0; index < atlas_list.size(); ++index)
+        ui->atlas_box->addItem(atlas_list[index].name.c_str());
+
     // dist report
     connect(ui->span_to,SIGNAL(valueChanged(int)),this,SLOT(show_report()));
     connect(ui->span_to,SIGNAL(valueChanged(int)),this,SLOT(show_fdr_report()));
@@ -73,6 +77,7 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
     ui->foi_widget->hide();
     ui->show_result->hide();
     ui->advanced_options_box->hide();
+    ui->ROI_widget->hide();
     on_rb_multiple_regression_clicked();
     qApp->installEventFilter(this);
 
@@ -396,9 +401,7 @@ void vbc_dialog::on_open_mr_files_clicked()
         unsigned int feature_count = items.size()/(vbc->subject_count()+1);
         if(feature_count*(vbc->subject_count()+1) != items.size())
         {
-            QMessageBox::information(this,"Warning",
-                                     QString("Subject number mismatch. text file=%1 database=%2").
-                                     arg(items.size()/feature_count-1).arg(vbc->subject_count()));
+            QMessageBox::information(this,"Warning",QString("Subject number mismatch."));
             return;
         }
         std::vector<double> X;
@@ -715,6 +718,8 @@ void vbc_dialog::on_run_clicked()
     vbc->model = mr;
     vbc->individual_data.clear();
 
+
+
     if(ui->rb_individual_analysis->isChecked())
     {
         vbc->tracking_threshold = 1.0-(float)ui->percentile->value()*0.01;
@@ -756,7 +761,7 @@ void vbc_dialog::on_run_clicked()
         for(unsigned int index = 0;index < (int)ui->foi->count()-1;++index)
             out << ui->foi->itemText(index).toLower().toLocal8Bit().begin() << ", ";
         out << "and " << ui->foi->itemText(ui->foi->count()-1).toLower().toLocal8Bit().begin() << ".";
-        out << " A T threshold of " << ui->t_threshold->value()
+        out << " A t-score threshold of " << ui->t_threshold->value()
             << " was used to select fiber directions correlated with "
             << ui->foi->currentText().toLower().toLocal8Bit().begin() << ".";
         vbc->trk_file_names[0] += ".";
@@ -764,11 +769,40 @@ void vbc_dialog::on_run_clicked()
         vbc->trk_file_names[0] += ".t";
         vbc->trk_file_names[0] += QString::number(ui->t_threshold->value()).toLocal8Bit().begin();
     }
-    out << " A deterministic fiber tracking algorithm (Yeh, et al. PLoS ONE 8(11): e80713) was conducted to connect these fiber directions, and tracks with connected length greater than " <<
+
+    out << " A deterministic fiber tracking algorithm (Yeh, et al. PLoS ONE 8(11): e80713) was conducted to connect these fiber directions, and tracks with length greater than " <<
         ui->length_threshold->value() << " mm were collected.";
+
+    // load region
+    vbc->roi.clear();
+    if(ui->roi_file->isChecked() || ui->roi_atlas->isChecked())
+    {
+        unsigned short label = ui->atlas_region_box->currentIndex();
+        image::geometry<3> geo = vbc->handle->dim;
+        for (image::pixel_index<3>index; index.is_valid(geo); index.next(geo))
+        {
+            image::vector<3> pos((const unsigned int*)(index.begin()));
+            image::vector<3> mni;
+            image::vector_transformation(pos.begin(),mni.begin(), vbc->handle->trans_to_mni,image::vdim<3>());
+            if(ui->roi_file->isChecked() && !study_region.is_labeled_as(mni,label))
+                continue;
+            if(ui->roi_atlas->isChecked() &&
+                    !atlas_list[ui->atlas_box->currentIndex()].is_labeled_as(mni, label))
+                continue;
+            vbc->roi.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
+        }
+        vbc->roi_type = ui->region_type->currentIndex();
+        out << " The fiber tracking was conducted with "
+            << ui->atlas_region_box->currentText().toLocal8Bit().begin() << " in "
+            << ui->atlas_box->currentText().toLocal8Bit().begin() << " used as the "
+            << ui->region_type->currentText().toLocal8Bit().begin() << " to map tracts with substantial difference.";
+    }
+    else
+        out << " A whole brain fiber tracking was conducted to map tracts with substantial difference.";
+
     out << " To estimate the false discovery rate, a total of "
         << ui->mr_permutation->value()
-        << "randomized permutations were applied to the group label to obtain the null distribution of the track length.";
+        << " randomized permutations were applied to the group label to obtain the null distribution of the track length.";
 
     vbc->report = out.str().c_str();
     vbc->run_permutation(ui->multithread->value());
@@ -802,22 +836,109 @@ void vbc_dialog::on_advanced_options_clicked()
 
 void vbc_dialog::on_show_result_clicked()
 {
-
     std::auto_ptr<FibData> new_data(new FibData);
     *(new_data.get()) = *(vbc->handle);
-    std::ostringstream out;
-    out << report.toLocal8Bit().begin();
-    new_data->report += out.str();
-
-    tracking_window* new_mdi = new tracking_window(this,new_data.release());
-    new_mdi->setAttribute(Qt::WA_DeleteOnClose);
-    new_mdi->absolute_path = work_dir;
-    new_mdi->setWindowTitle(QString("Connectometry mapping"));
-    new_mdi->showNormal();
-
+    if(!report.isEmpty())
+    {
+        std::ostringstream out;
+        out << report.toLocal8Bit().begin();
+        new_data->report += out.str();
+    }
+    tracking_window* current_tracking_window = new tracking_window(this,new_data.release());
+    current_tracking_window->setAttribute(Qt::WA_DeleteOnClose);
+    current_tracking_window->absolute_path = work_dir;
+    current_tracking_window->setWindowTitle(QString("Connectometry mapping"));
+    current_tracking_window->showNormal();
+    current_tracking_window->tractWidget->delete_all_tract();
     QStringList filenames;
     for(unsigned int index = 0;index < saved_file_name.size();++index)
         filenames << saved_file_name[index].c_str();
-    new_mdi->tractWidget->load_tracts(filenames);
+    current_tracking_window->tractWidget->load_tracts(filenames);
 
+}
+
+void vbc_dialog::on_roi_whole_brain_toggled(bool checked)
+{
+    if(checked)
+        ui->ROI_widget->hide();
+}
+
+void vbc_dialog::on_roi_file_toggled(bool checked)
+{
+    if(checked)
+    {
+        QString openfilename = QFileDialog::getOpenFileName(
+                    this,
+                    "Load ROI from file",
+                    work_dir + "/roi.nii.gz",
+                    "Report file (*.txt *.nii *.nii.gz);;All files (*)");
+        if(openfilename.isEmpty())
+        {
+            ui->roi_whole_brain->setChecked(true);
+            return;
+        }
+        if(!study_region.load_from_file(openfilename.toLocal8Bit().begin()))
+        {
+            QMessageBox::information(this,"Error","Invalid nifti file format",0);
+            ui->roi_whole_brain->setChecked(true);
+            return;
+        }
+        ui->roi_file->setText(QString("Assigned by file:") + QFileInfo(openfilename).completeBaseName());
+        ui->ROI_widget->show();
+        ui->atlas_box->hide();
+        ui->atlas_region_box->clear();
+        for (unsigned int index = 0; index < study_region.get_list().size(); ++index)
+            ui->atlas_region_box->addItem(study_region.get_list()[index].c_str());
+        ui->atlas_region_box->show();
+    }
+    else
+        ui->roi_file->setText(QString("Assigned by file"));
+}
+
+void vbc_dialog::on_atlas_box_currentIndexChanged(int i)
+{
+    ui->atlas_region_box->clear();
+    for (unsigned int index = 0; index < atlas_list[i].get_list().size(); ++index)
+        ui->atlas_region_box->addItem(atlas_list[i].get_list()[index].c_str());
+}
+
+void vbc_dialog::on_roi_atlas_toggled(bool checked)
+{
+    if(checked)
+    {
+        ui->ROI_widget->show();
+        ui->atlas_box->show();
+        ui->atlas_region_box->show();
+    }
+}
+
+
+
+void vbc_dialog::on_remove_subject_clicked()
+{
+    if(ui->rb_group_difference->isChecked() || ui->rb_multiple_regression->isChecked())
+    if(ui->subject_demo->currentRow() >= 0 && vbc->subject_count() > 1)
+    {
+        unsigned int index = ui->subject_demo->currentRow();
+        vbc->remove_subject(index);
+        mr.remove_subject(index);
+        ui->subject_demo->removeRow(index);
+        ui->subject_list->removeRow(index);
+    }
+}
+
+void vbc_dialog::on_remove_sel_subject_clicked()
+{
+    if(ui->subject_list->currentRow() >= 0 && vbc->subject_count() > 1)
+    {
+        unsigned int index = ui->subject_list->currentRow();
+        ui->subject_list->removeRow(index);
+        vbc->remove_subject(index);
+        if(ui->subject_demo->rowCount() > 1 &&
+          (ui->rb_group_difference->isChecked() || ui->rb_multiple_regression->isChecked()))
+        {
+            ui->subject_demo->removeRow(index);
+            mr.remove_subject(index);
+        }
+    }
 }

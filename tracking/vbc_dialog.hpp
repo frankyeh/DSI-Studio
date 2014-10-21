@@ -5,6 +5,7 @@
 #include <QTimer>
 #include "image/image.hpp"
 #include "vbc/vbc_database.h"
+#include "atlas.hpp"
 namespace Ui {
 class vbc_dialog;
 }
@@ -29,7 +30,7 @@ public:
     std::vector<std::vector<float> > individual_data;
     std::auto_ptr<QTimer> timer;
     QString report;
-    std::auto_ptr<tracking_window> result_window;
+    atlas study_region;
     explicit vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_);
     ~vbc_dialog();
     bool eventFilter(QObject *obj, QEvent *event);
@@ -65,6 +66,18 @@ private slots:
     void on_advanced_options_clicked();
 
     void on_show_result_clicked();
+
+    void on_roi_whole_brain_toggled(bool checked);
+
+    void on_roi_file_toggled(bool checked);
+
+    void on_roi_atlas_toggled(bool checked);
+
+    void on_atlas_box_currentIndexChanged(int index);
+
+    void on_remove_subject_clicked();
+
+    void on_remove_sel_subject_clicked();
 
 public slots:
     void calculate_FDR(void);
