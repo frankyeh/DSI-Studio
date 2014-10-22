@@ -739,7 +739,7 @@ void vbc_dialog::on_run_clicked()
     {
         vbc->tracking_threshold = (float)ui->percentage_dif->value()*0.01;
         out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted to compare group differences."
-            << " The group difference was quantified using percentage measurement (i.e. (d1-d2)/(d1+d2) x %), where d1 and d2 are the group averages of the spin distribution function (SDF)."
+            << " The group difference was quantified using percentage measurement (i.e. 2*(d1-d2)/(d1+d2) x %), where d1 and d2 are the group averages of the spin distribution function (SDF)."
             << " A threshold of " << ui->percentage_dif->value() << "% difference was used to select fiber directions with substantial difference in anisotropy.";
         vbc->trk_file_names[0] += ".group.p";
         vbc->trk_file_names[0] += QString::number(ui->percentage_dif->value()).toLocal8Bit().begin();
