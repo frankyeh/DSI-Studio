@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'vbc_dialog.ui'
 **
-** Created: Tue Oct 21 17:41:27 2014
+** Created: Wed Oct 22 00:05:49 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -344,8 +344,10 @@ public:
         groupBox->setObjectName(QString::fromUtf8("groupBox"));
         verticalLayout_4 = new QVBoxLayout(groupBox);
         verticalLayout_4->setSpacing(0);
+#ifndef Q_OS_MAC
+        verticalLayout_4->setContentsMargins(9, 9, 9, 9);
+#endif
         verticalLayout_4->setObjectName(QString::fromUtf8("verticalLayout_4"));
-        verticalLayout_4->setContentsMargins(9, 0, 9, 9);
         percentile_rank_layout = new QHBoxLayout();
         percentile_rank_layout->setObjectName(QString::fromUtf8("percentile_rank_layout"));
         threshold_label = new QLabel(groupBox);
@@ -930,10 +932,10 @@ public:
         toolBox->setItemText(toolBox->indexOf(page), QApplication::translate("vbc_dialog", "Source Data", 0, QApplication::UnicodeUTF8));
         groupBox_4->setTitle(QApplication::translate("vbc_dialog", "Model", 0, QApplication::UnicodeUTF8));
         rb_multiple_regression->setText(QApplication::translate("vbc_dialog", "Multipler regression: (e.g. to study connectivity change due to aging or IQ difference)", 0, QApplication::UnicodeUTF8));
-        rb_group_difference->setText(QApplication::translate("vbc_dialog", "Group difference (e.g. to study connectivity difference between male and female)", 0, QApplication::UnicodeUTF8));
+        rb_group_difference->setText(QApplication::translate("vbc_dialog", "Group difference (e.g. to study connectivity difference between male and female groups)", 0, QApplication::UnicodeUTF8));
         rb_paired_difference->setText(QApplication::translate("vbc_dialog", "Paired difference (e.g. to study connectivity difference before and after a treatment)", 0, QApplication::UnicodeUTF8));
-        rb_individual_analysis->setText(QApplication::translate("vbc_dialog", "Individual analysis (e.g. to study the affected pathways of each stroke patient)", 0, QApplication::UnicodeUTF8));
-        groupBox->setTitle(QApplication::translate("vbc_dialog", "Option", 0, QApplication::UnicodeUTF8));
+        rb_individual_analysis->setText(QApplication::translate("vbc_dialog", "Individual analysis (e.g. to study the affected pathways of each patient)", 0, QApplication::UnicodeUTF8));
+        groupBox->setTitle(QString());
         threshold_label->setText(QApplication::translate("vbc_dialog", "Percentile Threshold", 0, QApplication::UnicodeUTF8));
         percentage_label->setText(QApplication::translate("vbc_dialog", "%", 0, QApplication::UnicodeUTF8));
         explaination->setText(QString());
@@ -951,9 +953,9 @@ public:
         );
         advanced_options->setText(QApplication::translate("vbc_dialog", "Advanced options...", 0, QApplication::UnicodeUTF8));
         advanced_options_box->setTitle(QString());
-        label_4->setText(QApplication::translate("vbc_dialog", "Permutation Count", 0, QApplication::UnicodeUTF8));
-        label_7->setText(QApplication::translate("vbc_dialog", "Track Pruning (Iterations)", 0, QApplication::UnicodeUTF8));
-        label_3->setText(QApplication::translate("vbc_dialog", "Minimum Track Length (mm)", 0, QApplication::UnicodeUTF8));
+        label_4->setText(QApplication::translate("vbc_dialog", "Permutation count.", 0, QApplication::UnicodeUTF8));
+        label_7->setText(QApplication::translate("vbc_dialog", "Track pruning (iterations).", 0, QApplication::UnicodeUTF8));
+        label_3->setText(QApplication::translate("vbc_dialog", "Minimum track length (mm)", 0, QApplication::UnicodeUTF8));
         toolBox->setItemText(toolBox->indexOf(page_2), QApplication::translate("vbc_dialog", "STEP1: Select analysis model", 0, QApplication::UnicodeUTF8));
         individual_demo->setTitle(QString());
         open_files->setText(QApplication::translate("vbc_dialog", "...", 0, QApplication::UnicodeUTF8));

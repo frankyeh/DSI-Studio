@@ -102,7 +102,6 @@ public slots:
 private slots:
     void on_actionRestore_window_layout_triggered();
     void on_actionCopy_to_clipboard_triggered();
-    void on_RenderingQualityBox_currentIndexChanged(int index);
     void on_actionSave_Tracts_in_Current_Mapping_triggered();
     void on_actionTDI_Import_Slice_Space_triggered();
     void on_actionTDI_Subvoxel_Diffusion_Space_triggered();

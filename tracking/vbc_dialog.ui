@@ -238,7 +238,7 @@
                 <bool>true</bool>
                </property>
                <property name="text">
-                <string>Group difference (e.g. to study connectivity difference between male and female)</string>
+                <string>Group difference (e.g. to study connectivity difference between male and female groups)</string>
                </property>
               </widget>
              </item>
@@ -255,7 +255,7 @@
              <item>
               <widget class="QRadioButton" name="rb_individual_analysis">
                <property name="text">
-                <string>Individual analysis (e.g. to study the affected pathways of each stroke patient)</string>
+                <string>Individual analysis (e.g. to study the affected pathways of each patient)</string>
                </property>
               </widget>
              </item>
@@ -265,22 +265,13 @@
           <item>
            <widget class="QGroupBox" name="groupBox">
             <property name="title">
-             <string>Option</string>
+             <string/>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_4">
              <property name="spacing">
               <number>0</number>
              </property>
-             <property name="leftMargin">
-              <number>9</number>
-             </property>
-             <property name="topMargin">
-              <number>0</number>
-             </property>
-             <property name="rightMargin">
-              <number>9</number>
-             </property>
-             <property name="bottomMargin">
+             <property name="margin">
               <number>9</number>
              </property>
              <item>
@@ -523,7 +514,7 @@
                <item>
                 <widget class="QLabel" name="label_4">
                  <property name="text">
-                  <string>Permutation Count</string>
+                  <string>Permutation count.</string>
                  </property>
                 </widget>
                </item>
@@ -556,7 +547,7 @@
                <item>
                 <widget class="QLabel" name="label_7">
                  <property name="text">
-                  <string>Track Pruning (Iterations)</string>
+                  <string>Track pruning (iterations).</string>
                  </property>
                 </widget>
                </item>
@@ -583,7 +574,7 @@
                <item>
                 <widget class="QLabel" name="label_3">
                  <property name="text">
-                  <string>Minimum Track Length (mm)</string>
+                  <string>Minimum track length (mm)</string>
                  </property>
                 </widget>
                </item>

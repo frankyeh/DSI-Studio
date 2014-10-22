@@ -31,6 +31,7 @@ public:
     std::auto_ptr<QTimer> timer;
     QString report;
     atlas study_region;
+    QString study_region_file_name;
     explicit vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_);
     ~vbc_dialog();
     bool eventFilter(QObject *obj, QEvent *event);

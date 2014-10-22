@@ -595,7 +595,7 @@ double stat_model::operator()(const std::vector<double>& population,unsigned int
                 sum1 += population[index];
         float mean1 = sum1/((double)group1_count);
         float mean2 = sum2/((double)group2_count);
-        float result = (mean1 + mean2);
+        float result = (mean1 + mean2)/2.0;
         if(result != 0.0)
             result = (mean1 - mean2) / result;
         return result;
@@ -627,7 +627,7 @@ double stat_model::operator()(const std::vector<double>& population,unsigned int
             unsigned int half_size = population.size() >> 1;
             float g1 = std::accumulate(population.begin(),population.begin()+half_size,0.0);
             float g2 = std::accumulate(population.begin()+half_size,population.end(),0.0);
-            return (g1-g2)/(g1+g2);
+            return 2.0*(g1-g2)/(g1+g2);
         }
         break;
     }

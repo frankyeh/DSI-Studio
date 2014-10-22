@@ -395,7 +395,7 @@ void get_report(const std::vector<float>& bvalues,image::vector<3> vs,std::strin
             }
             out << bvalues[shell[index]];
         }
-        out << ".";
+        out << " s/mm2.";
 
         out << " The number of diffusion sampling directions were ";
         for(unsigned int index = 0;index < shell.size()-1;++index)
@@ -408,7 +408,7 @@ void get_report(const std::vector<float>& bvalues,image::vector<3> vs,std::strin
             out << " The diffusion images were acquired using a single-shell scheme."
                 << " A total of " << bvalues.size()-(bvalues.front() == 0 ? 1:0)
                 << " diffusion sampling directions were acquired."
-                << " The b-value was " << bvalues.back() << ".";
+                << " The b-value was " << bvalues.back() << " s/mm2.";
         }
 
     out << " The in-plane resolution was " << vs[0] << " mm."

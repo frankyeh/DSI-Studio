@@ -562,7 +562,7 @@ void vbc_dialog::on_rb_individual_analysis_clicked()
     ui->t_threshold->hide();
     ui->percentage_dif->hide();
     ui->percentage_label->show();
-    ui->threshold_label->setText("percentile");
+    ui->threshold_label->setText("Percentile");
     ui->explaination->setText("25~50%:physiological difference, 5~25%:psychiatric diseases, 0~5%: neurological diseases");
 }
 
@@ -577,8 +577,8 @@ void vbc_dialog::on_rb_group_difference_clicked()
     ui->t_threshold->hide();
     ui->percentage_dif->show();
     ui->percentage_label->show();
-    ui->threshold_label->setText("percentage difference");
-    ui->explaination->setText("0~5%:physiological difference, 5~25%:psychiatric diseases, 25%~100%: neurological diseases");
+    ui->threshold_label->setText("Percentage difference");
+    ui->explaination->setText("0~10%:physiological difference, 10~40%:psychiatric diseases, 40%~100%: neurological diseases");
 }
 
 void vbc_dialog::on_rb_multiple_regression_clicked()
@@ -594,7 +594,7 @@ void vbc_dialog::on_rb_multiple_regression_clicked()
     ui->t_threshold->show();
     ui->percentage_dif->hide();
     ui->percentage_label->hide();
-    ui->threshold_label->setText("t threshold");
+    ui->threshold_label->setText("T threshold");
     ui->explaination->setText("<1.5:physiological difference, 1.5~2.5:psychiatric diseases, >2.5: neurological diseases");
 }
 
@@ -609,8 +609,8 @@ void vbc_dialog::on_rb_paired_difference_clicked()
     ui->t_threshold->hide();
     ui->percentage_dif->show();
     ui->percentage_label->show();
-    ui->threshold_label->setText("percentage difference");
-    ui->explaination->setText("0~5%:physiological difference, 5~25%:psychiatric diseases, 25%~100%: neurological diseases");
+    ui->threshold_label->setText("Percentage difference");
+    ui->explaination->setText("0~10%:physiological difference, 10~40%:psychiatric diseases, 40%~100%: neurological diseases");
 }
 
 void vbc_dialog::calculate_FDR(void)
@@ -770,8 +770,7 @@ void vbc_dialog::on_run_clicked()
         vbc->trk_file_names[0] += QString::number(ui->t_threshold->value()).toLocal8Bit().begin();
     }
 
-    out << " A deterministic fiber tracking algorithm (Yeh, et al. PLoS ONE 8(11): e80713) was conducted to connect these fiber directions, and tracks with length greater than " <<
-        ui->length_threshold->value() << " mm were collected.";
+    out << " A deterministic fiber tracking algorithm (Yeh, et al. PLoS ONE 8(11): e80713) was conducted to connect these fiber directions";
 
     // load region
     vbc->roi.clear();
@@ -792,14 +791,18 @@ void vbc_dialog::on_run_clicked()
             vbc->roi.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
         }
         vbc->roi_type = ui->region_type->currentIndex();
-        out << " The fiber tracking was conducted with "
-            << ui->atlas_region_box->currentText().toLocal8Bit().begin() << " in "
-            << ui->atlas_box->currentText().toLocal8Bit().begin() << " used as the "
-            << ui->region_type->currentText().toLocal8Bit().begin() << " to map tracts with substantial difference.";
+        out << " using ";
+        if(ui->roi_atlas->isChecked())
+            out << ui->atlas_region_box->currentText().toLocal8Bit().begin() << " ("
+                << ui->atlas_box->currentText().toLocal8Bit().begin() << " atlas)";
+        else
+            out << study_region_file_name.toLocal8Bit().begin();
+        out << " as the " << ui->region_type->currentText().toLocal8Bit().begin() << ".";
     }
     else
-        out << " A whole brain fiber tracking was conducted to map tracts with substantial difference.";
-
+        out << " in whole brain regions.";
+    out << " Tracks with length greater than " <<
+            ui->length_threshold->value() << " mm were collected.";
     out << " To estimate the false discovery rate, a total of "
         << ui->mr_permutation->value()
         << " randomized permutations were applied to the group label to obtain the null distribution of the track length.";
@@ -883,7 +886,8 @@ void vbc_dialog::on_roi_file_toggled(bool checked)
             ui->roi_whole_brain->setChecked(true);
             return;
         }
-        ui->roi_file->setText(QString("Assigned by file:") + QFileInfo(openfilename).completeBaseName());
+        study_region_file_name = QFileInfo(openfilename).completeBaseName();
+        ui->roi_file->setText(QString("Assigned by file:") + study_region_file_name);
         ui->ROI_widget->show();
         ui->atlas_box->hide();
         ui->atlas_region_box->clear();

@@ -866,33 +866,6 @@ void tracking_window::on_actionSave_Endpoints_in_Current_Mapping_triggered()
     tractWidget->saveTransformedEndpoints(&*tr.begin());
 }
 
-void tracking_window::on_RenderingQualityBox_currentIndexChanged(int index)
-{
-    if(slice_no_update)
-        return;
-    QSettings settings;
-    settings.setValue("RenderingQuality",index);
-    switch(index)
-    {
-    case 0:
-        renderWidget->setData("anti_aliasing",0);
-        renderWidget->setData("tract_tube_detail",0);
-        renderWidget->setData("tract_visible_tract",5000);
-        break;
-    case 1:
-        renderWidget->setData("anti_aliasing",0);
-        renderWidget->setData("tract_tube_detail",1);
-        renderWidget->setData("tract_visible_tract",25000);
-        break;
-    case 2:
-        renderWidget->setData("anti_aliasing",1);
-        renderWidget->setData("tract_tube_detail",3);
-        renderWidget->setData("tract_visible_tract",100000);
-        break;
-    }
-    glWidget->updateGL();
-}
-
 void tracking_window::on_actionCopy_to_clipboard_triggered()
 {
     switch(copy_target)
