@@ -972,8 +972,9 @@
     <addaction name="actionSelect_Tracts"/>
     <addaction name="actionDelete"/>
     <addaction name="actionTrim"/>
-    <addaction name="actionCut"/>
     <addaction name="actionPaint"/>
+    <addaction name="actionCut"/>
+    <addaction name="actionCut_by_slice"/>
     <addaction name="separator"/>
     <addaction name="actionMove_Object"/>
    </widget>
@@ -2642,6 +2643,11 @@
    </property>
    <property name="text">
     <string>Save Enpoints In MNI Space...</string>
+   </property>
+  </action>
+  <action name="actionCut_by_slice">
+   <property name="text">
+    <string>Cut by slice</string>
    </property>
   </action>
  </widget>

@@ -86,6 +86,7 @@ public:
                   bool delete_track);
         void cut(float select_angle,const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
                   const image::vector<3,float>& from_pos);
+        void cut_by_slice(unsigned int dim, unsigned int pos,bool greater);
         void paint(float select_angle,const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
                   const image::vector<3,float>& from_pos,
                   unsigned int color);

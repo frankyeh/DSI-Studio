@@ -264,6 +264,8 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         connect(ui->actionUndo,SIGNAL(triggered()),tractWidget,SLOT(undo_tracts()));
         connect(ui->actionRedo,SIGNAL(triggered()),tractWidget,SLOT(redo_tracts()));
         connect(ui->actionTrim,SIGNAL(triggered()),tractWidget,SLOT(trim_tracts()));
+        connect(ui->actionCut_by_slice,SIGNAL(triggered()),tractWidget,SLOT(cut_by_slice()));
+
 
         connect(ui->actionSet_Color,SIGNAL(triggered()),tractWidget,SLOT(set_color()));
 

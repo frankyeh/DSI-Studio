@@ -70,6 +70,7 @@ public slots:
     void delete_all_tract(void);
     void edit_tracts(void);
     void undo_tracts(void);
+    void cut_by_slice(void);
     void redo_tracts(void);
     void trim_tracts(void);
     void assign_colors(void);

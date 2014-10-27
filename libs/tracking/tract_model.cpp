@@ -739,6 +739,43 @@ void TractModel::cut(float select_angle,const image::vector<3,float>& from_dir,c
     }
     redo_size.clear();
 }
+void TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater)
+{
+    std::vector<std::vector<float> > new_tract;
+    std::vector<unsigned int> new_tract_color;
+    for(unsigned int i = 0;i < tract_data.size();++i)
+    {
+        bool adding = false;
+        for(unsigned int j = 0;j < tract_data[i].size();j += 3)
+        {
+            if(tract_data[i][j+dim] < pos ^ greater)
+            {
+                adding = false;
+                continue;
+            }
+            if(!adding)
+            {
+                new_tract.push_back(std::vector<float>());
+                new_tract_color.push_back(tract_color[i]);
+                adding = true;
+            }
+            new_tract.back().push_back(tract_data[i][j]);
+            new_tract.back().push_back(tract_data[i][j+1]);
+            new_tract.back().push_back(tract_data[i][j+2]);
+        }
+    }
+    tract_data.clear();
+    tract_color.clear();
+    for (unsigned int index = 0;index < new_tract.size();++index)
+    if(new_tract[index].size() >= 6)
+        {
+            tract_data.push_back(std::vector<float>());
+            tract_data.back().swap(new_tract[index]);
+            tract_color.push_back(new_tract_color[index]);
+        }
+    redo_size.clear();
+}
+
 //---------------------------------------------------------------------------
 void TractModel::cull(float select_angle,
                       const image::vector<3,float>& from_dir,

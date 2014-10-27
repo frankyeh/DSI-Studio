@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Tue Oct 21 17:41:27 2014
+** Created: Fri Oct 24 10:38:32 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -144,6 +144,7 @@ public:
     QAction *actionQuality_Assessment;
     QAction *actionSave_3D_screen_in_3_views;
     QAction *actionSave_Enpoints_In_MNI_Space;
+    QAction *actionCut_by_slice;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QWidget *main_widget;
@@ -552,6 +553,8 @@ public:
         actionSave_Enpoints_In_MNI_Space = new QAction(tracking_window);
         actionSave_Enpoints_In_MNI_Space->setObjectName(QString::fromUtf8("actionSave_Enpoints_In_MNI_Space"));
         actionSave_Enpoints_In_MNI_Space->setIcon(icon2);
+        actionCut_by_slice = new QAction(tracking_window);
+        actionCut_by_slice->setObjectName(QString::fromUtf8("actionCut_by_slice"));
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -1434,8 +1437,9 @@ public:
         menu_Edit->addAction(actionSelect_Tracts);
         menu_Edit->addAction(actionDelete);
         menu_Edit->addAction(actionTrim);
-        menu_Edit->addAction(actionCut);
         menu_Edit->addAction(actionPaint);
+        menu_Edit->addAction(actionCut);
+        menu_Edit->addAction(actionCut_by_slice);
         menu_Edit->addSeparator();
         menu_Edit->addAction(actionMove_Object);
         menu_View->addAction(actionSagittal_view);
@@ -1628,6 +1632,7 @@ public:
         actionQuality_Assessment->setText(QApplication::translate("tracking_window", "Quality Assessment...", 0, QApplication::UnicodeUTF8));
         actionSave_3D_screen_in_3_views->setText(QApplication::translate("tracking_window", "Save 3D screen in 3 views...", 0, QApplication::UnicodeUTF8));
         actionSave_Enpoints_In_MNI_Space->setText(QApplication::translate("tracking_window", "Save Enpoints In MNI Space...", 0, QApplication::UnicodeUTF8));
+        actionCut_by_slice->setText(QApplication::translate("tracking_window", "Cut by slice", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)

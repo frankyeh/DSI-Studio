@@ -846,6 +846,20 @@ void TractTableWidget::undo_tracts(void)
     }
     emit need_update();
 }
+void TractTableWidget::cut_by_slice(void)
+{
+    for(unsigned int index = 0;index < tract_models.size();++index)
+    {
+        if(item(index,0)->checkState() != Qt::Checked)
+            continue;
+        tract_models[index]->cut_by_slice(cur_tracking_window.slice.cur_dim,
+                                          cur_tracking_window.slice.slice_pos[cur_tracking_window.slice.cur_dim],
+                                          cur_tracking_window.glWidget->set_view_flip);
+        item(index,1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
+        item(index,2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
+    }
+    emit need_update();
+}
 
 void TractTableWidget::redo_tracts(void)
 {
