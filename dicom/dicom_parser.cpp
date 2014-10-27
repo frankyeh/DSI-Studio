@@ -189,12 +189,33 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
             std::cout << "mask used" << std::endl;
         }
     }
+    // check data range
+    float max_value = 0.0;
+    for(unsigned int index = 0;check_prog(index,analyze_header.dim(4));++index)
+    {
+        std::auto_ptr<DwiHeader> new_file(new DwiHeader);
+        image::basic_image<float,3> data;
+        if(!analyze_header.toLPS(data,false))
+            break;
+        max_value = std::max<float>(max_value,*std::max_element(data.begin(),data.end()));
+    }
+    if(!analyze_header.load_from_file(file_name))
+        return false;
     {
         float vs[4];
         analyze_header.get_voxel_size(vs);
         for(unsigned int index = 0;check_prog(index,analyze_header.dim(4));++index)
         {
             std::auto_ptr<DwiHeader> new_file(new DwiHeader);
+            if(max_value > 32768 || (max_value > 0.0 && max_value < 10.0))
+            {
+                image::basic_image<float,3> data;
+                if(!analyze_header.toLPS(data,false))
+                    break;
+                data *= 32767.0/max_value;
+                new_file->image = data;
+            }
+            else
             if(!analyze_header.toLPS(new_file->image,false))
                 break;
             image::lower_threshold(new_file->image,0);
