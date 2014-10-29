@@ -306,7 +306,9 @@ public:
             // make sure that cdf is increamental
             if(index && cdf[index][data.voxel_index] < cdf[index-1][data.voxel_index])
                 cdf[index][data.voxel_index] = cdf[index-1][data.voxel_index];
-
+            // make sure that dis is positive
+            if(dis[index][data.voxel_index] < 0.0)
+                dis[index][data.voxel_index] = 0.0;
         }
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
