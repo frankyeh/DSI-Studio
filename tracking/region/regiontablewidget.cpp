@@ -141,7 +141,7 @@ QColor RegionTableWidget::currentRowColor(void)
 
 void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
 {
-    if(color == 0)
+    if(color == 0x00FFFFFF)
     {
         std::vector<unsigned char> color_count(15);
         for(unsigned int index = 0;index < regions.size();++index)
