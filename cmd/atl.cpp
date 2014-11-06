@@ -6,11 +6,18 @@
 #include "mapping/fa_template.hpp"
 #include "libs/gzip_interface.hpp"
 #include "mapping/atlas.hpp"
+#include "manual_alignment.h"
 
 namespace po = boost::program_options;
 extern fa_template fa_template_imp;
 extern std::vector<atlas> atlas_list;
 std::string get_fa_template_path(void);
+
+void run_reg(image::basic_image<float,3>& from,
+             image::basic_image<float,3>& to,
+             image::vector<3> vs,
+             reg_data& data,
+             unsigned int thread_count);
 
 bool atl_load_atlas(std::string atlas_name)
 {
@@ -44,64 +51,20 @@ void atl_get_mapping(image::basic_image<float,3>& from,
                      const image::vector<3>& vs,
                      unsigned int factor,
                      unsigned int thread_count,
-                     image::basic_image<image::vector<3>,3>& mapping,
-                     float* out_trans)
+                     image::basic_image<image::vector<3>,3>& mapping)
 {
-    std::cout << "perform image registration..." << std::endl;
-    image::affine_transform<3,float> arg;
-    arg.scaling[0] = vs[0] / std::fabs(fa_template_imp.tran[0]);
-    arg.scaling[1] = vs[1] / std::fabs(fa_template_imp.tran[5]);
-    arg.scaling[2] = vs[2] / std::fabs(fa_template_imp.tran[10]);
-    image::reg::align_center(from,to,arg);
-
-    image::filter::gaussian(from);
-    from -= image::segmentation::otsu_threshold(from);
-    image::lower_threshold(from,0.0);
-
-    image::normalize(from,1.0);
-    image::normalize(to,1.0);
-
-    bool terminated = false;
-    std::cout << "perform linear registration..." << std::endl;
-    image::reg::linear(from,to,arg,image::reg::affine,image::reg::mutual_information(),terminated);
-    image::transformation_matrix<3,float> T(arg,from.geometry(),to.geometry()),iT(arg,from.geometry(),to.geometry());
-    iT.inverse();
-
-
-    // output linear registration
-    float T_buf[16];
-    T.save_to_transform(T_buf);
-    T_buf[15] = 1.0;
-    std::copy(T_buf,T_buf+4,std::ostream_iterator<float>(std::cout," "));
-    std::cout << std::endl;
-    std::copy(T_buf+4,T_buf+8,std::ostream_iterator<float>(std::cout," "));
-    std::cout << std::endl;
-    std::copy(T_buf+8,T_buf+12,std::ostream_iterator<float>(std::cout," "));
-    std::cout << std::endl;
-
-
-    image::basic_image<float,3> new_from(to.geometry());
-    image::resample(from,new_from,iT);
-
-
-    std::cout << "perform nonlinear registration..." << std::endl;
-    //image::reg::bfnorm(new_from,to,*bnorm_data,*terminated);
-
-    std::cout << "order=" << factor << std::endl;
-    std::cout << "thread count=" << thread_count << std::endl;
-
-    image::reg::bfnorm_mapping<float,3> mni(new_from.geometry(),image::geometry<3>(factor*7,factor*9,factor*7));
-    multi_thread_reg(mni,new_from,to,thread_count,terminated);
+    reg_data data(to.geometry(),image::reg::affine,factor);
+    run_reg(from,to,image::vector<3>(vs),data,thread_count);
+    image::transformation_matrix<3,float> T(data.arg,from.geometry(),to.geometry());
     mapping.resize(from.geometry());
     for(image::pixel_index<3> index;from.geometry().is_valid(index);index.next(from.geometry()))
         if(from[index.index()] > 0)
         {
             image::vector<3,float> pos;
             T(index,pos);// from -> new_from
-            mni(pos,mapping[index.index()]); // new_from -> to
+            data.bnorm_data(pos,mapping[index.index()]);
             fa_template_imp.to_mni(mapping[index.index()]);
         }
-    image::matrix::product(fa_template_imp.tran.begin(),T_buf,out_trans,image::dyndim(4,4),image::dyndim(4,4));
 }
 
 void atl_save_mapping(const std::string& file_name,const image::geometry<3>& geo,
@@ -239,7 +202,6 @@ int atl(int ac, char *av[])
     unsigned int factor = vm["order"].as<int>() + 1;
     unsigned int thread_count = vm["thread_count"].as<int>();
     image::vector<3> vs_(vs);
-    float out_trans[16];
-    atl_get_mapping(from,fa_template_imp.I,vs_,factor,thread_count,mapping,out_trans);
+    atl_get_mapping(from,fa_template_imp.I,vs_,factor,thread_count,mapping);
     atl_save_mapping(file_name,geo,mapping,0,vs,vm["output"].as<std::string>() == "multiple");
 }

@@ -15,10 +15,12 @@
 #include "manual_alignment.h"
 std::string get_fa_template_path(void);
 bool atl_load_atlas(const std::string atlas_name);
-void run_reg(image::basic_image<float,3>& from,
-             image::basic_image<float,3>& to,
-             image::vector<3> vs,
-             reg_data& data);
+void atl_get_mapping(image::basic_image<float,3>& from,
+                     image::basic_image<float,3>& to,
+                     const image::vector<3>& vs,
+                     unsigned int factor,
+                     unsigned int thread_count,
+                     image::basic_image<image::vector<3>,3>& mapping);
 extern fa_template fa_template_imp;
 extern std::vector<atlas> atlas_list;
 namespace po = boost::program_options;
@@ -253,18 +255,8 @@ int trk(int ac, char *av[])
         {
             image::basic_image<float,3> from(fa0,geometry);
             image::basic_image<float,3> to(fa_template_imp.I);
-            reg_data data(to.geometry(),image::reg::affine);
-            run_reg(from,to,image::vector<3>(voxel_size),data);
-            image::transformation_matrix<3,float> T(data.arg,from.geometry(),to.geometry());
-            for (image::pixel_index<3>index; index.is_valid(geometry);index.next(geometry))
-                if(fa0[index.index()] > 0)
-                {
-                    image::vector<3> mni((const unsigned int*)index.begin()),new_mni;
-                    T(mni);
-                    data.bnorm_data(mni,new_mni);
-                    fa_template_imp.to_mni(new_mni);
-                    mapping[index.index()] = new_mni;
-                }
+            image::vector<3> vs(voxel_size);
+            atl_get_mapping(from,to,vs,1/*7-9-7*/,1/*thread_count*/,mapping);
         }
         else
         {

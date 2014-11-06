@@ -1,6 +1,7 @@
 #include "manual_alignment.h"
 #include "ui_manual_alignment.h"
 #include "tracking/tracking_window.h"
+#include "fa_template.hpp"
 
 typedef image::reg::mutual_information cost_func;
 
@@ -8,7 +9,8 @@ typedef image::reg::mutual_information cost_func;
 void run_reg(image::basic_image<float,3>& from,
              image::basic_image<float,3>& to,
              image::vector<3> vs,
-             reg_data& data)
+             reg_data& data,
+             unsigned int thread_count)
 {
     data.arg.scaling[0] = vs[0];
     data.arg.scaling[1] = vs[1];
@@ -30,7 +32,10 @@ void run_reg(image::basic_image<float,3>& from,
     data.progress = 1;
     image::basic_image<float,3> new_from(to.geometry());
     image::resample(from,new_from,affine);
-    image::reg::bfnorm(new_from,to,data.bnorm_data,data.terminated);
+    if(thread_count == 1)
+        image::reg::bfnorm(new_from,to,data.bnorm_data,data.terminated);
+    else
+        multi_thread_reg(data.bnorm_data,new_from,to,thread_count,data.terminated);
     if(!(data.terminated))
         data.progress = 2;
 }
@@ -42,7 +47,7 @@ manual_alignment::manual_alignment(QWidget *parent,
 {
     from.swap(from_);
     to.swap(to_);
-    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),vs,boost::ref(data)));
+    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),vs,boost::ref(data),1));
     ui->setupUi(this);
     if(reg_type_ == image::reg::rigid_body)
     {
@@ -286,6 +291,6 @@ void manual_alignment::on_rerun_clicked()
         data.terminated = 1;
         reg_thread->join();
     }
-    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),vs,boost::ref(data)));
+    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),vs,boost::ref(data),1));
 
 }

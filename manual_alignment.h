@@ -13,13 +13,13 @@ class manual_alignment;
 }
 
 struct reg_data{
-    reg_data(const image::geometry<3>& geo,int reg_type_):
-        bnorm_data(geo,image::geometry<3>(7,9,7)),reg_type(reg_type_)
+    reg_data(const image::geometry<3>& geo,int reg_type_,unsigned int factor = 1):
+        bnorm_data(geo,image::geometry<3>(7*factor,9*factor,7*factor)),reg_type(reg_type_)
     {
         terminated = false;
         progress = 0;
     }
-    image::reg::bfnorm_mapping<double,3> bnorm_data;
+    image::reg::bfnorm_mapping<float,3> bnorm_data;
     image::affine_transform<3,float> arg;
     int reg_type;
     unsigned char terminated;
