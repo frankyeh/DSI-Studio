@@ -300,7 +300,6 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     std::string ext;
     if(file_name.length() > 4)
         ext = std::string(file_name.end()-4,file_name.end());
-
     if (ext == std::string(".trk") || ext == std::string("k.gz"))
     {
         if(ext == std::string(".trk"))
@@ -314,7 +313,8 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
             trk.n_count = tract_data.size();
             out.write((const char*)&trk,1000);
         }
-        for (unsigned int i = 0;i < tract_data.size();++i)
+        begin_prog("saving");
+        for (unsigned int i = 0;check_prog(i,tract_data.size());++i)
         {
             int n_point = tract_data[i].size()/3;
             std::vector<float> buffer(tract_data[i].size());
@@ -373,7 +373,11 @@ bool TractModel::save_all(const char* file_name_,const std::vector<TractModel*>&
     if(all.empty())
         return false;
     std::string file_name(file_name_);
-    if (file_name.find(".txt") != std::string::npos)
+    std::string ext;
+    if(file_name.length() > 4)
+        ext = std::string(file_name.end()-4,file_name.end());
+
+    if (ext == std::string(".txt"))
     {
         std::ofstream out(file_name_,std::ios::binary);
         if (!out)
@@ -391,10 +395,10 @@ bool TractModel::save_all(const char* file_name_,const std::vector<TractModel*>&
         return true;
     }
 
-    if (file_name.find(".trk") != std::string::npos)
+    if (ext == std::string(".trk") || ext == std::string("k.gz"))
     {
-        std::ofstream out(file_name_,std::ios::binary);
-        if (!out)
+        gz_ostream out;
+        if (!out.open(file_name_))
             return false;
         begin_prog("saving");
         {
@@ -429,7 +433,7 @@ bool TractModel::save_all(const char* file_name_,const std::vector<TractModel*>&
         return true;
     }
 
-    if (file_name.find(".mat") != std::string::npos)
+    if (ext == std::string(".mat"))
     {
         image::io::mat_write out(file_name.c_str());
         if(!out)

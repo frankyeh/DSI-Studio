@@ -302,7 +302,7 @@ void TractTableWidget::save_all_tracts_as(void)
                 "Tract files (*.trk *.trk.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
-    settings.setValue("track_file_extension",QFileInfo(filename).suffix());
+    settings.setValue("track_file_extension",QFileInfo(filename).completeSuffix());
     cur_tracking_window.add_path("track",filename);
     std::string sfilename = filename.toLocal8Bit().begin();
     TractModel::save_all(&*sfilename.begin(),tract_models);
@@ -468,7 +468,7 @@ void TractTableWidget::save_tracts_as(void)
                  "Tract files (*.trk *.trk.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
-    settings.setValue("track_file_extension",QFileInfo(filename).suffix());
+    settings.setValue("track_file_extension",QFileInfo(filename).completeSuffix());
     cur_tracking_window.add_path("track",filename);
     std::string sfilename = filename.toLocal8Bit().begin();
     tract_models[currentRow()]->save_tracts_to_file(&*sfilename.begin());
@@ -774,12 +774,22 @@ void TractTableWidget::move_down(void)
 
 void TractTableWidget::delete_tract(void)
 {
+    if(is_running())
+    {
+        QMessageBox::information(this,"Error","Please wait for the termination of data processing",0);
+        return;
+    }
     delete_row(currentRow());
     emit need_update();
 }
 
 void TractTableWidget::delete_all_tract(void)
 {
+    if(is_running())
+    {
+        QMessageBox::information(this,"Error","Please wait for the termination of data processing",0);
+        return;
+    }
     setRowCount(0);
     for(unsigned int index = 0;index < tract_models.size();++index)
     {
