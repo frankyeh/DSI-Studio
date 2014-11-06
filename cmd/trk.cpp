@@ -15,9 +15,7 @@
 #include "manual_alignment.h"
 std::string get_fa_template_path(void);
 bool atl_load_atlas(const std::string atlas_name);
-void atl_get_mapping(image::basic_image<float,3>& from,
-                     image::basic_image<float,3>& to,
-                     const image::vector<3>& vs,
+bool atl_get_mapping(gz_mat_read& mat_reader,
                      unsigned int factor,
                      unsigned int thread_count,
                      image::basic_image<image::vector<3>,3>& mapping);
@@ -245,30 +243,11 @@ int trk(int ac, char *av[])
     tract_model.save_tracts_to_file(file_name.c_str());
 
 
-    if(vm.count("connectivity") &&
-       fa_template_imp.load_from_file(get_fa_template_path().c_str()) &&
-       atl_load_atlas(vm["connectivity"].as<std::string>()))
+    if(vm.count("connectivity") && atl_load_atlas(vm["connectivity"].as<std::string>()))
     {
         bool use_end_only = true;
-        image::basic_image<image::vector<3>,3> mapping(geometry);
-        if(handle->trans_to_mni.empty())// not qsdr do registration here
-        {
-            image::basic_image<float,3> from(fa0,geometry);
-            image::basic_image<float,3> to(fa_template_imp.I);
-            image::vector<3> vs(voxel_size);
-            atl_get_mapping(from,to,vs,1/*7-9-7*/,1/*thread_count*/,mapping);
-        }
-        else
-        {
-            for(image::pixel_index<3> index;mapping.geometry().is_valid(index);index.next(mapping.geometry()))
-                if(fa0[index.index()] > 0)
-                {
-                    image::vector<3> pos(index.begin());
-                    image::vector_transformation(pos.begin(),mapping[index.index()].begin(),
-                                             handle->trans_to_mni,image::vdim<3>());
-                }
-        }
-
+        image::basic_image<image::vector<3>,3> mapping;
+        if(atl_get_mapping(handle->mat_reader,1/*7-9-7*/,1/*thread_count*/,mapping))
         for(unsigned int index = 0;index < atlas_list.size();++index)
         {
             std::cout << "calculating connectivity matrix for atlas:"<< atlas_list[index].name << std::endl;

@@ -142,7 +142,7 @@ QColor RegionTableWidget::currentRowColor(void)
 
 void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
 {
-    if(color == 0x00FFFFFF)
+    if(color == 0x00FFFFFF || !color)
     {
         std::vector<unsigned char> color_count(color_n);
         for(unsigned int index = 0;index < regions.size();++index)
@@ -151,16 +151,7 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
                 if(regions[index].show_region.color.color == ((int)ROIColor[i].rgb() | 0x00333333))
                     ++color_count[i];
         }
-        color = 0;
-        for(unsigned int i = 0;i < color_n;++i)
-            if(!color_count[i])
-            {
-                color = ROIColor[i].rgb();
-                break;
-            }
-        if(!color)
-            color = ROIColor[std::min_element(color_count.begin(),color_count.end())-color_count.begin()].rgb();
-        color |= 0x00333333;
+        color = 0x00333333 | ROIColor[std::min_element(color_count.begin(),color_count.end())-color_count.begin()].rgb();
     }
     regions.push_back(new ROIRegion(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size));
     regions.back().show_region.color = color;

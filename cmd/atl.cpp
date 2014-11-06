@@ -46,25 +46,56 @@ bool atl_load_atlas(std::string atlas_name)
     }
     return true;
 }
-void atl_get_mapping(image::basic_image<float,3>& from,
-                     image::basic_image<float,3>& to,
-                     const image::vector<3>& vs,
+bool atl_get_mapping(gz_mat_read& mat_reader,
                      unsigned int factor,
                      unsigned int thread_count,
                      image::basic_image<image::vector<3>,3>& mapping)
 {
-    reg_data data(to.geometry(),image::reg::affine,factor);
-    run_reg(from,to,image::vector<3>(vs),data,thread_count);
-    image::transformation_matrix<3,float> T(data.arg,from.geometry(),to.geometry());
-    mapping.resize(from.geometry());
-    for(image::pixel_index<3> index;from.geometry().is_valid(index);index.next(from.geometry()))
-        if(from[index.index()] > 0)
+    unsigned int col,row;
+    const unsigned short* dim = 0;
+    const float* vs = 0;
+    const float* fa0 = 0;
+    if(!mat_reader.read("dimension",row,col,dim) ||
+       !mat_reader.read("voxel_size",row,col,vs) ||
+       !mat_reader.read("fa0",row,col,fa0))
+    {
+        std::cout << "Invalid file format" << std::endl;
+        return false;
+    }
+    image::geometry<3> geo(dim);
+
+    if(fa_template_imp.I.empty() && !fa_template_imp.load_from_file(get_fa_template_path().c_str()))
+        return false;
+    //QSDR
+    const float* trans = 0;
+    mapping.resize(geo);
+    if(mat_reader.read("trans",row,col,trans))
+    {
+        std::cout << "Transformation matrix found." << std::endl;
+        for(image::pixel_index<3> index;geo.is_valid(index);index.next(geo))
         {
-            image::vector<3,float> pos;
-            T(index,pos);// from -> new_from
-            data.bnorm_data(pos,mapping[index.index()]);
-            fa_template_imp.to_mni(mapping[index.index()]);
+            image::vector<3,float> pos(index),mni;
+            image::vector_transformation(pos.begin(),mni.begin(),trans,image::vdim<3>());
+            mapping[index.index()] = mni;
         }
+    }
+    else
+    {
+        image::basic_image<float,3> from(fa0,geo);
+        reg_data data(fa_template_imp.I.geometry(),image::reg::affine,factor);
+        run_reg(from,fa_template_imp.I,image::vector<3>(vs),data,thread_count);
+        image::transformation_matrix<3,float> T(data.arg,from.geometry(),fa_template_imp.I.geometry());
+        mapping.resize(from.geometry());
+        for(image::pixel_index<3> index;from.geometry().is_valid(index);index.next(from.geometry()))
+            if(from[index.index()] > 0)
+            {
+                image::vector<3,float> pos;
+                T(index,pos);// from -> new_from
+                data.bnorm_data(pos,mapping[index.index()]);
+                fa_template_imp.to_mni(mapping[index.index()]);
+            }
+    }
+    return true;
 }
 
 void atl_save_mapping(const std::string& file_name,const image::geometry<3>& geo,
@@ -132,7 +163,7 @@ int atl(int ac, char *av[])
     ("action", po::value<std::string>(), "atl: output atlas")
     ("source", po::value<std::string>(), "assign the .fib file name")
     ("order", po::value<int>()->default_value(0), "normalization order (0~3)")
-    ("thread_count", po::value<int>()->default_value(4), "thread count")
+    ("thread_count", po::value<int>()->default_value(1), "thread count")
     ("atlas", po::value<std::string>(), "atlas name")
     ("output", po::value<std::string>()->default_value("multiple"), "output files")
     ;
@@ -162,46 +193,27 @@ int atl(int ac, char *av[])
         return 0;
     }
 
+    if(!atl_load_atlas(vm["atlas"].as<std::string>()))
+        return false;
+
+    unsigned int factor = vm["order"].as<int>() + 1;
+    unsigned int thread_count = vm["thread_count"].as<int>();
+    std::cout << "Reg order = " << factor << std::endl;
+    std::cout << "Thread count = " << thread_count << std::endl;
+
+    const float *trans = 0;
     unsigned int col,row;
     const unsigned short* dim = 0;
     const float* vs = 0;
-    const float* fa0 = 0;
     if(!mat_reader.read("dimension",row,col,dim) ||
-       !mat_reader.read("voxel_size",row,col,vs) ||
-       !mat_reader.read("fa0",row,col,fa0))
+       !mat_reader.read("voxel_size",row,col,vs))
     {
         std::cout << "Invalid file format" << std::endl;
-        return 0;
+        return false;
     }
-    image::geometry<3> geo(dim);
-
-
-    if(!fa_template_imp.load_from_file(get_fa_template_path().c_str()) ||
-       !atl_load_atlas(vm["atlas"].as<std::string>()))
-        return -1;
-
-
-    const float* trans = 0;
-    //QSDR
-    if(mat_reader.read("trans",row,col,trans))
-    {
-        std::cout << "Transformation matrix found." << std::endl;
-        image::basic_image<image::vector<3>,3> mapping(geo);
-        for(image::pixel_index<3> index;geo.is_valid(index);index.next(geo))
-        {
-            image::vector<3,float> pos(index),mni;
-            image::vector_transformation(pos.begin(),mni.begin(),trans,image::vdim<3>());
-            mapping[index.index()] = mni;
-        }
-        atl_save_mapping(file_name,geo,mapping,trans,vs,vm["output"].as<std::string>() == "multiple");
-        return 0;
-    }
-
-    image::basic_image<float,3> from(fa0,geo);
+    mat_reader.read("trans",row,col,trans);
     image::basic_image<image::vector<3>,3> mapping;
-    unsigned int factor = vm["order"].as<int>() + 1;
-    unsigned int thread_count = vm["thread_count"].as<int>();
-    image::vector<3> vs_(vs);
-    atl_get_mapping(from,fa_template_imp.I,vs_,factor,thread_count,mapping);
-    atl_save_mapping(file_name,geo,mapping,0,vs,vm["output"].as<std::string>() == "multiple");
+    if(!atl_get_mapping(mat_reader,factor,thread_count,mapping))
+        return false;
+    atl_save_mapping(file_name,image::geometry<3>(dim),mapping,trans,vs,vm["output"].as<std::string>() == "multiple");
 }
