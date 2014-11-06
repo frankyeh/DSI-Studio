@@ -17,7 +17,8 @@
 extern std::vector<atlas> atlas_list;
 extern fa_template fa_template_imp;
 
-QColor ROIColor[15] =
+const unsigned int color_n = 15;
+QColor ROIColor[color_n] =
 {
     Qt::red, Qt::green, Qt::blue, Qt::yellow, Qt::magenta, Qt::cyan,  Qt::gray,
     Qt::darkRed,Qt::darkGreen, Qt::darkBlue, Qt::darkYellow,  Qt::darkMagenta, Qt::darkCyan,
@@ -143,20 +144,21 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
 {
     if(color == 0x00FFFFFF)
     {
-        std::vector<unsigned char> color_count(15);
+        std::vector<unsigned char> color_count(color_n);
         for(unsigned int index = 0;index < regions.size();++index)
         {
-            for(unsigned int i = 0;i < 15;++i)
+            for(unsigned int i = 0;i < color_n;++i)
                 if(regions[index].show_region.color.color == ((int)ROIColor[i].rgb() | 0x00333333))
                     ++color_count[i];
         }
-        for(unsigned int i = 0;i < 15;++i)
-            if(color_count[i] == 0)
+        color = 0;
+        for(unsigned int i = 0;i < color_n;++i)
+            if(!color_count[i])
             {
                 color = ROIColor[i].rgb();
                 break;
             }
-        if(color == 0)
+        if(!color)
             color = ROIColor[std::min_element(color_count.begin(),color_count.end())-color_count.begin()].rgb();
         color |= 0x00333333;
     }
