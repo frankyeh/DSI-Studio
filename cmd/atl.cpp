@@ -30,6 +30,12 @@ bool atl_load_atlas(std::string atlas_name)
 
     for(unsigned int index = 0;index < name_list.size();++index)
     {
+        bool has_atlas = false;
+        for(unsigned int i = 0;i < atlas_list.size();++i)
+            if(atlas_list[i].name == name_list[index])
+                has_atlas = true;
+        if(has_atlas)
+            continue;
         std::string atlas_path = QCoreApplication::applicationDirPath().toLocal8Bit().begin();
         atlas_path += "/atlas/";
         atlas_path += name_list[index];

@@ -43,6 +43,7 @@ int trk(int ac, char *av[])
     ("output", po::value<std::string>(), "output file name")
     ("export", po::value<std::string>(), "export additional information (e.g. --export=stat,tdi)")
     ("connectivity", po::value<std::string>(), "export connectivity")
+    ("connectivity_type", po::value<std::string>()->default_value("end"), "specify connectivity calculation approach")
     ("roi", po::value<std::string>(), "file for ROI regions")
     ("roi2", po::value<std::string>(), "file for the second ROI regions")
     ("roi3", po::value<std::string>(), "file for the third ROI regions")
@@ -110,6 +111,7 @@ int trk(int ac, char *av[])
 
     image::geometry<3> geometry = handle->dim;
     image::vector<3> voxel_size = handle->vs;
+    image::basic_image<image::vector<3>,3> mapping;
     const float *fa0 = handle->fib.fa[0];
 
 
@@ -154,15 +156,42 @@ int trk(int ac, char *av[])
     {
         ROIRegion roi(geometry, voxel_size);
         std::string file_name = vm[roi_names[index]].as<std::string>();
-        if(!QFileInfo(file_name.c_str()).exists())
+        if(file_name.find(':') != std::string::npos &&
+           file_name.find(':') != 1)
         {
-            std::cout << file_name << " does not exist. terminating..." << std::endl;
-            return 0;
+            std::string atlas_name = file_name.substr(0,file_name.find(':'));
+            std::string region_name = file_name.substr(file_name.find(':')+1);
+            std::cout << "Loading " << region_name << " from " << atlas_name << " atlas" << std::endl;
+            if(!atl_load_atlas(atlas_name))
+                return 0;
+            if(mapping.empty() && !atl_get_mapping(handle->mat_reader,1/*7-9-7*/,1/*thread_count*/,mapping))
+                return 0;
+            image::vector<3> null;
+            std::vector<image::vector<3,short> > cur_region;
+            for(unsigned int i = 0;i < atlas_list.size();++i)
+                if(atlas_list[i].name == atlas_name)
+                    for (unsigned int label_index = 0; label_index < atlas_list[i].get_list().size(); ++label_index)
+                        if(atlas_list[i].get_list()[label_index] == region_name)
+                    {
+                        for (image::pixel_index<3>index; index.is_valid(mapping.geometry());index.next(mapping.geometry()))
+                            if(mapping[index.index()] != null &&
+                                atlas_list[i].label_matched(atlas_list[i].get_label_at(mapping[index.index()]),label_index))
+                                cur_region.push_back(image::vector<3,short>(index.begin()));
+                    }
+            roi.add_points(cur_region,false);
         }
-        if(!roi.LoadFromFile(file_name.c_str(),handle->trans_to_mni))
+        else
         {
-            std::cout << "Invalid file format:" << file_name << std::endl;
-            return 0;    
+            if(!QFileInfo(file_name.c_str()).exists())
+            {
+                std::cout << file_name << " does not exist. terminating..." << std::endl;
+                return 0;
+            }
+            if(!roi.LoadFromFile(file_name.c_str(),handle->trans_to_mni))
+            {
+                std::cout << "Invalid file format:" << file_name << std::endl;
+                return 0;
+            }
         }
         if(roi.get().empty())
         {
@@ -243,11 +272,14 @@ int trk(int ac, char *av[])
     tract_model.save_tracts_to_file(file_name.c_str());
 
 
-    if(vm.count("connectivity") && atl_load_atlas(vm["connectivity"].as<std::string>()))
+    if(vm.count("connectivity"))
     {
-        bool use_end_only = true;
-        image::basic_image<image::vector<3>,3> mapping;
-        if(atl_get_mapping(handle->mat_reader,1/*7-9-7*/,1/*thread_count*/,mapping))
+        bool use_end_only = (vm["connectivity_type"].as<std::string>() == "end");
+        atlas_list.clear(); // some atlas may be loaded in ROI
+        if(mapping.empty() && !atl_get_mapping(handle->mat_reader,1/*7-9-7*/,1/*thread_count*/,mapping))
+            return false;
+
+        if(atl_load_atlas(vm["connectivity"].as<std::string>()))
         for(unsigned int index = 0;index < atlas_list.size();++index)
         {
             std::cout << "calculating connectivity matrix for atlas:"<< atlas_list[index].name << std::endl;
