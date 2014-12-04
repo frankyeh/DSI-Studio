@@ -131,7 +131,7 @@ bool vbc_database::is_consistent(gz_mat_read& mat_reader) const
     mat_reader.read("odf_vertices",row,col,odf_buffer);
     if (!odf_buffer)
     {
-        error_msg = "Invalid subject data format in ";
+        error_msg = "No odf_vertices matrix in ";
         return false;
     }
     if(col != vertices.size())
@@ -186,7 +186,11 @@ bool vbc_database::sample_odf(gz_mat_read& mat_reader,std::vector<float>& data)
         error_msg = "Invalid file format. Cannot find fa0 matrix in ";
         return false;
     }
-
+    if(*std::max_element(fa0,fa0+row*col) == 0)
+    {
+        error_msg = "Invalid file format. No image data in ";
+        return false;
+    }
     if(!subject_odf.has_odfs())
     {
         error_msg = "No ODF data in the subject file:";
@@ -251,8 +255,13 @@ bool vbc_database::load_subject_files(const std::vector<std::string>& file_names
         const float* value= 0;
         unsigned int row,col;
         mat_reader.read("R2",row,col,value);
-        if(value)
-            R2[subject_index] = *value;
+        if(!value || *value != *value)
+        {
+            error_msg = "Invalid R2 value in ";
+            error_msg += file_names[subject_index];
+            return false;
+        }
+        R2[subject_index] = *value;
         if(subject_index == 0)
         {
             const char* report_buf = 0;
@@ -824,6 +833,12 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
                 tracks.save_tracts_to_file(out1.str().c_str());
                 saved_file_name.push_back(out1.str().c_str());
             }
+            else
+            {
+                std::ostringstream out1;
+                out1 << trk_file_names[index] << ".greater" << length_threshold << ".no_trk.txt";
+                std::ofstream(out1.str().c_str());
+            }
             greater_tracks[index] = tracks;
         }
 
@@ -844,6 +859,12 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
                 out1 << trk_file_names[index] << ".lesser" << length_threshold << ".trk.gz";
                 tracks.save_tracts_to_file(out1.str().c_str());
                 saved_file_name.push_back(out1.str().c_str());
+            }
+            else
+            {
+                std::ostringstream out1;
+                out1 << trk_file_names[index] << ".lesser" << length_threshold << ".no_trk.txt";
+                std::ofstream(out1.str().c_str());
             }
         }
 
