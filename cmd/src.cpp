@@ -8,6 +8,8 @@
 
 namespace po = boost::program_options;
 QStringList search_files(QString dir,QString filter);
+void load_bval(const char* file_name,std::vector<double>& bval);
+void load_bvec(const char* file_name,std::vector<double>& b_table);
 bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files);
 int src(int ac, char *av[])
 {
@@ -18,6 +20,8 @@ int src(int ac, char *av[])
     ("source", po::value<std::string>(), "assign the directory for the dicom files")
     ("recursive", po::value<std::string>(), "search subdirectories")
     ("b_table", po::value<std::string>(), "assign the b-table")
+    ("bval", po::value<std::string>(), "assign the b value")
+    ("bvec", po::value<std::string>(), "assign the b vector")
     ("output", po::value<std::string>(), "assign the output filename")
     ;
     if(!ac)
@@ -91,7 +95,7 @@ int src(int ac, char *av[])
         }
         if(b_table.size() != dwi_files.size()*4)
         {
-            std::cout << "Mismatch between b-table and the loaded image" << std::endl;
+            std::cout << "Mismatch between b-table and the loaded images" << std::endl;
             return -1;
         }
         for(unsigned int index = 0,b_index = 0;index < dwi_files.size();++index,b_index += 4)
@@ -101,7 +105,29 @@ int src(int ac, char *av[])
         }
         std::cout << "B-table " << table_file_name << " loaded" << std::endl;
     }
-
+    if(vm.count("bval") && vm.count("bvec"))
+    {
+        std::vector<double> bval,bvec;
+        std::cout << "load bval=" << vm["bval"].as<std::string>() << std::endl;
+        std::cout << "load bvec=" << vm["bvec"].as<std::string>() << std::endl;
+        load_bval(vm["bval"].as<std::string>().c_str(),bval);
+        load_bvec(vm["bvec"].as<std::string>().c_str(),bvec);
+        if(bval.size() != dwi_files.size())
+        {
+            std::cout << "Mismatch between bval file and the loaded images" << std::endl;
+            return -1;
+        }
+        if(bvec.size() != dwi_files.size()*3)
+        {
+            std::cout << "Mismatch between bvec file and the loaded images" << std::endl;
+            return -1;
+        }
+        for(unsigned int index = 0;index < dwi_files.size();++index)
+        {
+            dwi_files[index].set_bvalue(bval[index]);
+            dwi_files[index].set_bvec(bvec[index*3],bvec[index*3+1],bvec[index*3+2]);
+        }
+    }
     if(dwi_files.empty())
     {
         std::cout << "No file readed. Abort." << std::endl;
