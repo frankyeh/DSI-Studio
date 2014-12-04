@@ -360,6 +360,11 @@ struct ViewItem
     {
         max_value = *std::max_element(from,to);
         min_value = *std::min_element(from,to);
+        if(max_value == min_value)
+        {
+            min_value = 0;
+            max_value = 1;
+        }
     }
 };
 
