@@ -19,7 +19,7 @@ private:
     QGraphicsScene vbc_scene;
     QImage vbc_slice_image;
     unsigned int vbc_slice_pos;
-    fib_data cur_subject_fib;
+    std::auto_ptr<fib_data> result_fib;
     void show_dis_table(void);
 public:
     QString work_dir;

@@ -49,7 +49,7 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
         if(vbc->subject_R2(index) < 0.3)
         {
             if(check_quality.empty())
-                check_quality = "Low r2 value found in subject(s):";
+                check_quality = "Low R2 value found in subject(s):";
             std::ostringstream out;
             out << " #" << index+1 << " " << vbc->subject_name(index);
             check_quality += out.str();
