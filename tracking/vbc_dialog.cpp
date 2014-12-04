@@ -39,15 +39,30 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
                                                << "null greater pdf" << "null lesser pdf"
                                                << "greater pdf" << "lesser pdf");
 
-    bool check_quality = false;
     ui->subject_list->setRowCount(vbc->subject_count());
+    std::string check_quality,bad_r2;
     for(unsigned int index = 0;index < vbc->subject_count();++index)
     {
         ui->subject_list->setItem(index,0, new QTableWidgetItem(QString(vbc->subject_name(index).c_str())));
         ui->subject_list->setItem(index,1, new QTableWidgetItem(QString::number(0)));
         ui->subject_list->setItem(index,2, new QTableWidgetItem(QString::number(vbc->subject_R2(index))));
         if(vbc->subject_R2(index) < 0.3)
-            check_quality = true;
+        {
+            if(check_quality.empty())
+                check_quality = "Low r2 value found in subject(s):";
+            std::ostringstream out;
+            out << " #" << index+1 << " " << vbc->subject_name(index);
+            check_quality += out.str();
+        }
+        if(vbc->subject_R2(index) != vbc->subject_R2(index))
+        {
+            if(bad_r2.empty())
+                bad_r2 = "Invalid data found in subject(s):";
+            std::ostringstream out;
+            out << " #" << index+1 << " " << vbc->subject_name(index);
+            bad_r2 += out.str();
+        }
+
     }
     ui->AxiSlider->setMaximum(vbc->handle->dim[2]-1);
     ui->AxiSlider->setMinimum(0);
@@ -81,8 +96,11 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
     on_rb_multiple_regression_clicked();
     qApp->installEventFilter(this);
 
-    if(check_quality)
-        QMessageBox::information(this,"Warning","The connectometry database contains low goodness-of-fit data. You may need to verify the data quality.");
+    if(!check_quality.empty())
+        QMessageBox::information(this,"Warning",check_quality.c_str());
+    if(!bad_r2.empty())
+        QMessageBox::information(this,"Warning",bad_r2.c_str());
+
 }
 
 vbc_dialog::~vbc_dialog()
@@ -846,6 +864,34 @@ void vbc_dialog::on_show_result_clicked()
         std::ostringstream out;
         out << report.toLocal8Bit().begin();
         new_data->report += out.str();
+    }
+    if(vbc->model.type != 2) // not individual
+    {
+        result_fib.reset(new fib_data);
+        std::vector<unsigned int> permu(vbc->subject_count());
+        for(unsigned int index = 0;index < permu.size();++index)
+            permu[index] = index;
+        vbc->calculate_spm(vbc->model,*result_fib.get(),permu);
+        for(unsigned int index = 0;index < new_data->dim.size();++index)
+        {
+            if(result_fib->lesser[0][index] < vbc->tracking_threshold)
+                result_fib->lesser[0][index] = 0;
+            if(result_fib->greater[0][index] < vbc->tracking_threshold)
+                result_fib->greater[0][index] = 0;
+        }
+        new_data->view_item.push_back(ViewItem());
+        new_data->view_item.back().name = "lesser";
+        new_data->view_item.back().image_data = image::make_image(new_data->dim,result_fib->lesser_ptr[0]);
+        new_data->view_item.back().is_overlay = true;
+        new_data->view_item.back().set_scale(result_fib->lesser_ptr[0],
+                                             result_fib->lesser_ptr[0]+new_data->dim.size());
+        new_data->view_item.push_back(ViewItem());
+        new_data->view_item.back().name = "greater";
+        new_data->view_item.back().image_data = image::make_image(new_data->dim,result_fib->greater_ptr[0]);
+        new_data->view_item.back().is_overlay = true;
+        new_data->view_item.back().set_scale(result_fib->greater_ptr[0],
+                                             result_fib->greater_ptr[0]+new_data->dim.size());
+
     }
     tracking_window* current_tracking_window = new tracking_window(this,new_data.release());
     current_tracking_window->setAttribute(Qt::WA_DeleteOnClose);
