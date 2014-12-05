@@ -133,6 +133,19 @@ int src(int ac, char *av[])
         std::cout << "No file readed. Abort." << std::endl;
         return 1;
     }
+
+    double max_b = 0;
+    for(unsigned int index = 0;index < dwi_files.size();++index)
+    {
+        if(dwi_files[index].get_bvalue() < 100)
+            dwi_files[index].set_bvalue(0);
+        max_b = std::max(max_b,(double)dwi_files[index].get_bvalue());
+    }
+    if(max_b == 0.0)
+    {
+        std::cout << "Cannot find b-table from the header. You may need to load an external b-table using--b_table or --bval and --bvec." << std::endl;
+        return 1;
+    }
     std::cout << "Output src " << vm["output"].as<std::string>().c_str() << std::endl;
     DwiHeader::output_src(vm["output"].as<std::string>().c_str(),dwi_files,0);
     return 0;

@@ -147,11 +147,16 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
         bval_name = QFileInfo(file_name).absolutePath() + "/bvals";
         if(!QFileInfo(bval_name).exists())
             bval_name = QFileInfo(file_name).absolutePath() + "/bvals.txt";
+        if(!QFileInfo(bval_name).exists())
+            bval_name = QFileInfo(file_name).absolutePath() + "//" +
+                        QFileInfo(file_name).baseName() + ".bval";
 
         bvec_name = QFileInfo(file_name).absolutePath() + "/bvecs";
         if(!QFileInfo(bvec_name).exists())
             bvec_name = QFileInfo(file_name).absolutePath() + "/bvecs.txt";
-
+        if(!QFileInfo(bvec_name).exists())
+            bvec_name = QFileInfo(file_name).absolutePath() + "//" +
+                        QFileInfo(file_name).baseName() + ".bvec";
 
         if(QFileInfo(bval_name).exists() && QFileInfo(bvec_name).exists())
         {
