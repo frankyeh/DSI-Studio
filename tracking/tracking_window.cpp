@@ -827,7 +827,8 @@ void tracking_window::on_actionTDI_Diffusion_Space_triggered()
 void tracking_window::on_actionTDI_Subvoxel_Diffusion_Space_triggered()
 {
     std::vector<float> tr(16);
-    tr[0] = tr[5] = tr[10] = tr[15] = 4.0;
+    tr[0] = tr[5] = tr[10] = 4.0;
+    tr[15] = 1.0;
     image::geometry<3> new_geo(slice.geometry[0]*4,slice.geometry[1]*4,slice.geometry[2]*4);
     image::vector<3,float> new_vs(slice.voxel_size);
     new_vs /= 4.0;

@@ -184,7 +184,7 @@ int ana(int ac, char *av[])
         std::cout << "export tract density images..." << std::endl;
         std::string file_name_stat(file_name);
         file_name_stat += ".tdi.nii.gz";
-        tract_model.save_tdi(file_name_stat.c_str(),false,false);
+        tract_model.save_tdi(file_name_stat.c_str(),false,false,handle->trans_to_mni);
         return 0;
     }
     if(vm.count("export") && vm["export"].as<std::string>() == std::string("tdi2"))
@@ -192,7 +192,7 @@ int ana(int ac, char *av[])
         std::cout << "export tract density images in subvoxel resolution..." << std::endl;
         std::string file_name_stat(file_name);
         file_name_stat += ".tdi2.nii.gz";
-        tract_model.save_tdi(file_name_stat.c_str(),true,false);
+        tract_model.save_tdi(file_name_stat.c_str(),true,false,handle->trans_to_mni);
         return 0;
     }
     if(vm.count("export") && vm["export"].as<std::string>() == std::string("stat"))

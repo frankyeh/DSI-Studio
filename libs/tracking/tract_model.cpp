@@ -1036,7 +1036,7 @@ void TractModel::get_density_map(
     }
 }
 
-void TractModel::save_tdi(const char* file_name,bool sub_voxel,bool endpoint)
+void TractModel::save_tdi(const char* file_name,bool sub_voxel,bool endpoint,const std::vector<float>& trans)
 {
     std::vector<float> tr(16);
     tr[0] = tr[5] = tr[10] = tr[15] = (sub_voxel ? 4.0:1.0);
@@ -1052,9 +1052,23 @@ void TractModel::save_tdi(const char* file_name,bool sub_voxel,bool endpoint)
 
     get_density_map(tdi,tr,endpoint);
     gz_nifti nii_header;
-    image::flip_xy(tdi);
-    nii_header << tdi;
     nii_header.set_voxel_size(new_vs.begin());
+    if(trans.empty())
+        image::flip_xy(tdi);
+    else
+    {
+        if(sub_voxel)
+        {
+            std::vector<float> new_trans(trans);
+            new_trans[0] /= 4.0;
+            new_trans[4] /= 4.0;
+            new_trans[8] /= 4.0;
+            nii_header.set_image_transformation(new_trans.begin());
+        }
+        else
+            nii_header.set_image_transformation(trans.begin());
+    }
+    nii_header << tdi;
     nii_header.save_to_file(file_name);
 
 }

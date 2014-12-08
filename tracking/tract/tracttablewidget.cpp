@@ -948,9 +948,17 @@ if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
                 QFileInfo(filename).completeSuffix().toLower() == "nii.gz")
         {
             gz_nifti nii_header;
-            image::flip_xy(tdi);
-            nii_header << tdi;
             nii_header.set_voxel_size(vs.begin());
+            if(cur_tracking_window.is_qsdr) //QSDR condition
+            {
+                std::vector<float> new_trans(transformation),trans(16);
+                image::matrix::inverse(transformation.begin(),new_trans.begin(),image::dyndim(4,4));
+                image::matrix::product(cur_tracking_window.handle->trans_to_mni.begin(),new_trans.begin(),trans.begin(),image::dyndim(4,4),image::dyndim(4,4));
+                nii_header.set_image_transformation(trans.begin());
+            }
+            else
+                image::flip_xy(tdi);
+            nii_header << tdi;
             nii_header.save_to_file(filename.toLocal8Bit().begin());
         }
         else

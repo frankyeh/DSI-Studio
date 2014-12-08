@@ -313,14 +313,14 @@ int trk(int ac, char *av[])
             {
                 file_name_stat += ".nii.gz";
                 std::cout << "export TDI to " << file_name_stat << std::endl;
-                tract_model.save_tdi(file_name_stat.c_str(),false,false);
+                tract_model.save_tdi(file_name_stat.c_str(),false,false,handle->trans_to_mni);
                 continue;
             }
             if(cmd == "tdi2")
             {
                 file_name_stat += ".nii.gz";
                 std::cout << "export subvoxel TDI to " << file_name_stat << std::endl;
-                tract_model.save_tdi(file_name_stat.c_str(),true,false);
+                tract_model.save_tdi(file_name_stat.c_str(),true,false,handle->trans_to_mni);
                 continue;
             }
 
