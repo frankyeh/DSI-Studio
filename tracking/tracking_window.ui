@@ -1016,10 +1016,11 @@
     <property name="title">
      <string>Options</string>
     </property>
-    <addaction name="actionSave_tracking_parameters"/>
     <addaction name="actionLoad_tracking_parameters"/>
-    <addaction name="actionSave_Rendering_Parameters"/>
+    <addaction name="actionSave_tracking_parameters"/>
+    <addaction name="separator"/>
     <addaction name="actionLoad_Rendering_Parameters"/>
+    <addaction name="actionSave_Rendering_Parameters"/>
     <addaction name="separator"/>
     <addaction name="actionRestore_Settings"/>
     <addaction name="actionManual_Registration"/>
