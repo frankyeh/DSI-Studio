@@ -58,6 +58,8 @@ int src(int ac, char *av[])
         else
         {
             file_list = directory.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
+            if(file_list.empty())
+                file_list = directory.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
             for (unsigned int index = 0;index < file_list.size();++index)
                 file_list[index] = QString(source.c_str()) + "/" + file_list[index];
         }

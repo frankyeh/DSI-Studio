@@ -605,11 +605,22 @@ bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_file
             return false;
          return !dwi_files.empty();
     }
+
     std::sort(file_list.begin(),file_list.end(),compare_qstring());
     if(load_multiple_slice_dicom(file_list,dwi_files))
         return !dwi_files.empty();
 
-    return load_3d_series(file_list,dwi_files);
+    if(load_3d_series(file_list,dwi_files))
+        return !dwi_files.empty();
+
+    // multiple 4d nii
+    for(unsigned int index = 0;index < file_list.size();++index)
+    {
+        if(!load_dicom_multi_frame(file_list[index].toLocal8Bit().begin(),dwi_files) &&
+           !load_4d_nii(file_list[index].toLocal8Bit().begin(),dwi_files))
+            return false;
+    }
+    return !dwi_files.empty();
 }
 
 void dicom_parser::load_files(QStringList file_list)
@@ -775,8 +786,9 @@ void dicom_parser::on_load_bval_clicked()
     load_bval(filename.toLocal8Bit().begin(),bval);
     if(bval.empty())
         return;
-    for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
-        ui->tableWidget->item(index,1)->setText(QString::number(bval[index]));
+    for (int index = ui->tableWidget->rowCount()-1,
+             index2 = bval.size()-1;index >= 0 && index2 >= 0;--index,--index2)
+        ui->tableWidget->item(index,1)->setText(QString::number(bval[index2]));
 }
 
 
@@ -794,9 +806,10 @@ void dicom_parser::on_load_bvec_clicked()
     load_bvec(filename.toLocal8Bit().begin(),b_table);
     if(b_table.empty())
         return;
-    for (unsigned int index = 0,b_index = 0;index < ui->tableWidget->rowCount();++index)
+    for (int index = ui->tableWidget->rowCount()-1,
+             b_index = b_table.size()-1;index >=0 && b_index >=0 ;--index)
     {
-        for(unsigned int j = 0;j < 3 && b_index < b_table.size();++j,++b_index)
+        for(int j = 2;j >= 0 && b_index >=0;--j,--b_index)
             ui->tableWidget->item(index,j+2)->setText(QString::number(b_table[b_index]));
     }
 }
