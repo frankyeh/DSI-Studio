@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'dicom_parser.ui'
 **
-** Created: Sun Dec 7 22:56:57 2014
+** Created: Wed Dec 10 15:04:50 2014
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -262,6 +262,7 @@ public:
          << QApplication::translate("dicom_parser", "No upsampling", 0, QApplication::UnicodeUTF8)
          << QApplication::translate("dicom_parser", "upsampling 2", 0, QApplication::UnicodeUTF8)
          << QApplication::translate("dicom_parser", "downsampling 2", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("dicom_parser", "upsampling 4", 0, QApplication::UnicodeUTF8)
         );
         label->setText(QApplication::translate("dicom_parser", "Output file:", 0, QApplication::UnicodeUTF8));
         upperDir->setText(QApplication::translate("dicom_parser", "Upper Directory", 0, QApplication::UnicodeUTF8));

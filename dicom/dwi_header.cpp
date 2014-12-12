@@ -437,10 +437,12 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
     {
         short dimension[3];
         std::copy(geo.begin(),geo.end(),dimension);
-        if(upsampling == 1)
+        if(upsampling == 1) // upsampling 2
             std::for_each(dimension,dimension+3,boost::lambda::_1 <<= 1);
-        if(upsampling == 2)
+        if(upsampling == 2) // downsampling 2
             std::for_each(dimension,dimension+3,boost::lambda::_1 >>= 1);
+        if(upsampling == 3) // upsampling 4
+            std::for_each(dimension,dimension+3,boost::lambda::_1 <<= 2);
         output_size = dimension[0]*dimension[1]*dimension[2];
         write_mat.write("dimension",dimension,1,3);
     }
@@ -448,10 +450,12 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
     {
         float voxel_size[3];
         std::copy(dwi_files.front().voxel_size,dwi_files.front().voxel_size+3,voxel_size);
-        if(upsampling == 1)
+        if(upsampling == 1) // upsampling 2
             std::for_each(voxel_size,voxel_size+3,boost::lambda::_1 /= 2.0);
-        if(upsampling == 2)
+        if(upsampling == 2) // downsampling 2
             std::for_each(voxel_size,voxel_size+3,boost::lambda::_1 *= 2.0);
+        if(upsampling == 3) // upsampling 4
+            std::for_each(voxel_size,voxel_size+3,boost::lambda::_1 /= 4.0);
         write_mat.write("voxel_size",voxel_size,1,3);
     }
 
@@ -473,8 +477,13 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
             std::copy(ptr,ptr+geo.size(),buffer.begin());
             if(upsampling == 1)
                 image::upsampling(buffer);
-            else
+            if(upsampling == 2)
                 image::downsampling(buffer);
+            if(upsampling == 3)
+            {
+                image::upsampling(buffer);
+                image::upsampling(buffer);
+            }
             ptr = (const unsigned short*)&*buffer.begin();
         }
         write_mat.write(name.str().c_str(),ptr,1,output_size);

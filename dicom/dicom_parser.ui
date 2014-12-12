@@ -221,6 +221,11 @@
            <string>downsampling 2</string>
           </property>
          </item>
+         <item>
+          <property name="text">
+           <string>upsampling 4</string>
+          </property>
+         </item>
         </widget>
        </item>
        <item>
