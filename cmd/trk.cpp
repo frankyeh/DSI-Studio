@@ -140,7 +140,10 @@ int trk(int ac, char *av[])
     }
     else
     {
-        termination_count = vm["seed_count"].as<int>();
+        if (vm.count("seed_count"))
+            termination_count = vm["seed_count"].as<int>();
+        else
+            termination_count = 1000000;
         tracking_thread.stop_by_tract = false;
     }
     std::cout << (tracking_thread.stop_by_tract ? "fiber_count=" : "seed_count=") <<

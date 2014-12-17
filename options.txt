@@ -26,11 +26,11 @@ Rendering/Anti-aliasing/anti_aliasing/Off:On/0
 Rendering/Line Smooth/line_smooth/Off:On/0
 Rendering/Point Smooth/point_smooth/Off:On/0
 Rendering/Polygon Smooth/poly_smooth/Off:On/0
-Slice/Opacity/slice_alpha/slider/10
+Slice/Opacity/slice_alpha/float:0:1:0.1:2/1
 Slice/Mag Filter/slice_mag_filter/NEAREST:LINEAR/1
 Slice/Blend Func1/slice_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
 Slice/Blend Func2/slice_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
-Tract/Opacity/tract_alpha/slider/10
+Tract/Opacity/tract_alpha/float:0:1:0.1:2/1
 Tract/Transparent Style/tract_alpha_style/Sketch:Classic/0
 Tract/Blend Func1/tract_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
 Tract/Blend Func2/tract_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
@@ -47,7 +47,7 @@ Tract/Light Diffuse/tract_light_diffuse/int/7
 Tract/Light Ambient/tract_light_ambient/int/0
 Tract/Tract Emission/tract_emission/int/0
 Tract/Tract Selection Angle/tract_sel_angle/int:0:90:5/45
-Region/Opacity/region_alpha/slider/8
+Region/Opacity/region_alpha/float:0:1:0.1:2/0.8
 Region/Mesh Rendering/region_mesh_smoothed/Original:Smoothed/1
 Region/Blend Func1/region_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
 Region/Blend Func2/region_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
@@ -58,7 +58,7 @@ Region/Light Diffuse/region_light_diffuse/int/6
 Region/Light Ambient/region_light_ambient/int/0
 Region/Emission/region_emission/int/0
 Surface/Color/surface_color/color/11184800
-Surface/Opacity/surface_alpha/slider/5
+Surface/Opacity/surface_alpha/float:0:1:0.1:2/0.5
 Surface/Mesh Rendering/surface_mesh_smoothed/Original:Smoothed:Smoothed2/0
 Surface/Blend Func1/surface_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
 Surface/Blend Func2/surface_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5

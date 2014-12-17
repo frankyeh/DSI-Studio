@@ -537,7 +537,7 @@ void GLWidget::paintGL()
             end_point_shift = get_param("end_point_shift");
             makeTracts();
         }
-        if(get_param_float("tract_alpha") != 10.0)
+        if(get_param_float("tract_alpha") != 1.0)
         {
             glEnable(GL_BLEND);
             glBlendFunc (BlendFunc1[get_param("tract_bend1")],
@@ -563,7 +563,7 @@ void GLWidget::paintGL()
         glEnable(GL_TEXTURE_2D);
         glEnable(GL_COLOR_MATERIAL);
         glDisable(GL_LIGHTING);
-        float alpha = get_param_float("slice_alpha")/10.0;
+        float alpha = get_param_float("slice_alpha");
         handleAlpha(image::rgb_color(0,0,0,255),
                         alpha,get_param("slice_bend1"),get_param("slice_bend2"));
         glDepthMask((alpha == 1.0));
@@ -650,7 +650,7 @@ void GLWidget::paintGL()
 
         setupMaterial((float)(get_param("region_emission"))/10.0);
 
-        float alpha = get_param_float("region_alpha")/10.0;
+        float alpha = get_param_float("region_alpha");
         unsigned char cur_view = (alpha == 1.0 ? 0 : getCurView(transformation_matrix));
         for(unsigned int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
             if(cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked)
@@ -678,7 +678,7 @@ void GLWidget::paintGL()
         glMultMatrixf(transformation_matrix);
         setupMaterial((float)(get_param("surface_emission"))/10.0);
 
-        float alpha = get_param_float("surface_alpha")/10.0;
+        float alpha = get_param_float("surface_alpha");
         surface->color = (unsigned int)get_param("surface_color");
         surface->color.a = 255;
         unsigned char cur_view = (alpha == 1.0 ? 0 : getCurView(transformation_matrix));
@@ -766,7 +766,7 @@ void GLWidget::makeTracts(void)
     makeCurrent();
     glDeleteLists(tracts, 1);
     glNewList(tracts, GL_COMPILE);
-    float alpha = (tract_alpha_style == 0)? tract_alpha/20.0:tract_alpha/10.0;
+    float alpha = (tract_alpha_style == 0)? tract_alpha/2.0:tract_alpha;
     const float detail_option[] = {1.0,0.5,0.25,0.0,0.0};
     bool show_end_points = tract_style == 2;
     float tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0;
