@@ -40,13 +40,9 @@ private slots:
 
     void on_subject_list_itemSelectionChanged();
 
-    void on_save_vbc_dist_clicked();
-
     void show_report();
 
     void show_fdr_report();
-
-    void on_save_fdr_dist_clicked();
 
     void on_open_files_clicked();
 
@@ -64,8 +60,6 @@ private slots:
 
     void on_save_name_list_clicked();
 
-    void on_advanced_options_clicked();
-
     void on_show_result_clicked();
 
     void on_roi_whole_brain_toggled(bool checked);
@@ -79,6 +73,18 @@ private slots:
     void on_remove_subject_clicked();
 
     void on_remove_sel_subject_clicked();
+
+    void on_toolBox_currentChanged(int index);
+
+    void on_x_pos_valueChanged(int arg1);
+
+    void on_y_pos_valueChanged(int arg1);
+
+    void on_z_pos_valueChanged(int arg1);
+
+    void on_scatter_valueChanged(int arg1);
+
+    void on_save_report_clicked();
 
 public slots:
     void calculate_FDR(void);

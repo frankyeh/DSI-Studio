@@ -144,5 +144,5 @@ void tract_report::on_save_image_clicked()
     if(QFileInfo(filename).completeSuffix().toLower() == "png")
         ui->report_widget->savePng(filename);
     if(QFileInfo(filename).completeSuffix().toLower() == "pdf")
-        ui->report_widget->savePdf(filename);
+        ui->report_widget->savePdf(filename,true);
 }

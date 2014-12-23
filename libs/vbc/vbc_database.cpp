@@ -889,6 +889,7 @@ void vbc_database::run_permutation(unsigned int thread_count)
     fdr_lesser.resize(200);
 
     model.generator.seed(0);
+    std::srand(0);
     total_count_null = 0;
     total_count = 0;
     greater_tracks.clear();

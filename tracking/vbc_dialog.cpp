@@ -67,6 +67,9 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
     ui->AxiSlider->setMaximum(vbc->handle->dim[2]-1);
     ui->AxiSlider->setMinimum(0);
     ui->AxiSlider->setValue(vbc->handle->dim[2] >> 1);
+    ui->x_pos->setMaximum(vbc->handle->dim[0]-1);
+    ui->y_pos->setMaximum(vbc->handle->dim[1]-1);
+    ui->z_pos->setMaximum(vbc->handle->dim[2]-1);
 
     for(int index = 0; index < atlas_list.size(); ++index)
         ui->atlas_box->addItem(atlas_list[index].name.c_str());
@@ -91,7 +94,6 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
     ui->toolBox->setCurrentIndex(1);
     ui->foi_widget->hide();
     ui->show_result->hide();
-    ui->advanced_options_box->hide();
     ui->ROI_widget->hide();
     on_rb_multiple_regression_clicked();
     qApp->installEventFilter(this);
@@ -124,45 +126,11 @@ bool vbc_dialog::eventFilter(QObject *obj, QEvent *event)
         return true;
     ui->coordinate->setText(QString("(%1,%2,%3)").arg(pos[0]).arg(pos[1]).arg(pos[2]));
 
-    // show data
-    std::vector<float> vbc_data;
-    vbc->get_data_at(
-            image::pixel_index<3>(std::floor(pos[0] + 0.5), std::floor(pos[1] + 0.5), std::floor(pos[2] + 0.5),
-                                  vbc->handle->dim).index(),0,vbc_data);
-    if(!vbc_data.empty())
-    {
-        for(unsigned int index = 0;index < vbc->subject_count();++index)
-            ui->subject_list->item(index,1)->setText(QString::number(vbc_data[index]));
+    ui->x_pos->setValue(std::floor(pos[0] + 0.5));
+    ui->y_pos->setValue(std::floor(pos[1] + 0.5));
+    ui->z_pos->setValue(std::floor(pos[2] + 0.5));
 
-        vbc_data.erase(std::remove(vbc_data.begin(),vbc_data.end(),0.0),vbc_data.end());
-        if(!vbc_data.empty())
-        {
-            float max_y = *std::max_element(vbc_data.begin(),vbc_data.end());
-            std::vector<unsigned int> hist;
-            image::histogram(vbc_data,hist,0,max_y,20);
-            QVector<double> x(hist.size()+1),y(hist.size()+1);
-            unsigned int max_hist = 0;
-            for(unsigned int j = 0;j < hist.size();++j)
-            {
-                x[j] = max_y*(float)j/(float)hist.size();
-                y[j] = hist[j];
-                max_hist = std::max<unsigned int>(max_hist,hist[j]);
-            }
-            x.back() = max_y*(hist.size()+1)/hist.size();
-            y.back() = 0;
-            ui->vbc_report->clearGraphs();
-            ui->vbc_report->addGraph();
-            QPen pen;
-            pen.setColor(QColor(20,20,100,200));
-            ui->vbc_report->graph(0)->setLineStyle(QCPGraph::lsLine);
-            ui->vbc_report->graph(0)->setPen(pen);
-            ui->vbc_report->graph(0)->setData(x, y);
 
-            ui->vbc_report->xAxis->setRange(0,x.back());
-            ui->vbc_report->yAxis->setRange(0,max_hist);
-            ui->vbc_report->replot();
-            }
-    }
     return true;
 }
 
@@ -209,6 +177,14 @@ void vbc_dialog::show_fdr_report()
     ui->fdr_dist->yAxis->setLabel("FDR");
     ui->fdr_dist->xAxis->setRange(2,ui->span_to->value());
     ui->fdr_dist->yAxis->setRange(0,1.0);
+    ui->fdr_dist->xAxis->setGrid(false);
+    ui->fdr_dist->yAxis->setGrid(false);
+    ui->fdr_dist->xAxis2->setVisible(true);
+    ui->fdr_dist->xAxis2->setTicks(false);
+    ui->fdr_dist->xAxis2->setTickLabels(false);
+    ui->fdr_dist->yAxis2->setVisible(true);
+    ui->fdr_dist->yAxis2->setTicks(false);
+    ui->fdr_dist->yAxis2->setTickLabels(false);
     ui->fdr_dist->legend->setVisible(ui->view_legend->isChecked());
     QFont legendFont = font();  // start out with MainWindow's font..
     legendFont.setPointSize(9); // and make a bit smaller for legend
@@ -295,6 +271,14 @@ void vbc_dialog::show_report()
     ui->null_dist->yAxis->setLabel("count");
     ui->null_dist->xAxis->setRange(4,ui->span_to->value());
     ui->null_dist->yAxis->setRange(0,std::max<float>(std::max<float>(max_y1,max_y2),std::max<float>(max_y3,max_y4))*1.1);
+    ui->null_dist->xAxis->setGrid(false);
+    ui->null_dist->yAxis->setGrid(false);
+    ui->null_dist->xAxis2->setVisible(true);
+    ui->null_dist->xAxis2->setTicks(false);
+    ui->null_dist->xAxis2->setTickLabels(false);
+    ui->null_dist->yAxis2->setVisible(true);
+    ui->null_dist->yAxis2->setTicks(false);
+    ui->null_dist->yAxis2->setTickLabels(false);
     ui->null_dist->legend->setVisible(ui->view_legend->isChecked());
     QFont legendFont = font();  // start out with MainWindow's font..
     legendFont.setPointSize(9); // and make a bit smaller for legend
@@ -335,32 +319,6 @@ void vbc_dialog::on_subject_list_itemSelectionChanged()
     vbc_scene.addRect(0, 0, vbc_slice_image.width(),vbc_slice_image.height(),QPen(),vbc_slice_image);
     vbc_slice_pos = ui->AxiSlider->value();
 }
-
-void vbc_dialog::on_save_vbc_dist_clicked()
-{
-    QString filename = QFileDialog::getSaveFileName(
-                this,
-                "Save report as",
-                work_dir + "/dist_report.txt",
-                "Report file (*.txt);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    ui->null_dist->saveTxt(filename);
-}
-
-void vbc_dialog::on_save_fdr_dist_clicked()
-{
-    QString filename = QFileDialog::getSaveFileName(
-                this,
-                "Save report as",
-                work_dir + "/fdr_report.txt",
-                "Report file (*.txt);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    ui->fdr_dist->saveTxt(filename);
-}
-
-
 
 void vbc_dialog::on_open_files_clicked()
 {
@@ -698,12 +656,16 @@ void vbc_dialog::calculate_FDR(void)
     if(vbc->total_count >= vbc->permutation_count)
     {
         timer->stop();
+        // save trk files
         vbc->save_tracks_files(saved_file_name);
-
-        {
-            std::ofstream out((vbc->trk_file_names[0]+".report.txt").c_str());
-            out << report.toLocal8Bit().begin() << std::endl;
-        }
+        // save report in text
+        std::ofstream out((vbc->trk_file_names[0]+".report.txt").c_str());
+        out << report.toLocal8Bit().begin() << std::endl;
+        // save pdf plot and value txt
+        ui->fdr_dist->savePdf((vbc->trk_file_names[0]+".fdr.pdf").c_str(),true,300,300);
+        ui->null_dist->savePdf((vbc->trk_file_names[0]+".dist.pdf").c_str(),true,300,300);
+        ui->fdr_dist->saveTxt((vbc->trk_file_names[0]+".fdr_value.txt").c_str());
+        ui->null_dist->saveTxt((vbc->trk_file_names[0]+".dist_value.txt").c_str());
 
         QMessageBox::information(this,"Finished","Trk files saved.",0);
         ui->run->setText("Run");
@@ -847,14 +809,6 @@ void vbc_dialog::on_save_name_list_clicked()
         out << vbc->subject_name(index) << std::endl;
 }
 
-void vbc_dialog::on_advanced_options_clicked()
-{
-    if(ui->advanced_options_box->isHidden())
-        ui->advanced_options_box->show();
-    else
-        ui->advanced_options_box->hide();
-}
-
 void vbc_dialog::on_show_result_clicked()
 {
     std::auto_ptr<FibData> new_data(new FibData);
@@ -991,4 +945,126 @@ void vbc_dialog::on_remove_sel_subject_clicked()
             mr.remove_subject(index);
         }
     }
+}
+
+void vbc_dialog::on_toolBox_currentChanged(int index)
+{
+    if(index > 1 && !ui->run->isEnabled())
+    {
+        QMessageBox::information(this,"Missing information","Please provide patient information in STEP1 before going to STEP2 and 3",0);
+        ui->toolBox->setCurrentIndex(1);
+    }
+}
+
+void vbc_dialog::on_x_pos_valueChanged(int arg1)
+{
+    // show data
+    std::vector<float> vbc_data;
+    vbc->get_data_at(
+            image::pixel_index<3>(ui->x_pos->value(),
+                                  ui->y_pos->value(),
+                                  ui->z_pos->value(),
+                                  vbc->handle->dim).index(),0,vbc_data);
+    if(vbc_data.empty())
+        return;
+    if(ui->run->isEnabled() && ui->rb_multiple_regression->isChecked())
+    {
+        QVector<double> variables(vbc->subject_count());
+        for(unsigned int i = 0;i < vbc->subject_count();++i)
+            variables[i] = mr.X[i*mr.feature_count+ui->foi->currentIndex()+1];
+
+        QVector<double> y(vbc->subject_count());
+        std::copy(vbc_data.begin(),vbc_data.end(),y.begin());
+
+        ui->vbc_report->clearGraphs();
+        ui->vbc_report->addGraph();
+        ui->vbc_report->graph(0)->setLineStyle(QCPGraph::lsNone);
+        ui->vbc_report->graph(0)->setScatterStyle(QCP::ScatterStyle(ui->scatter->value()));
+        ui->vbc_report->graph(0)->setData(variables, y);
+        float min_x = *std::min_element(variables.begin(),variables.end());
+        float max_x = *std::max_element(variables.begin(),variables.end());
+        float min_y = *std::min_element(vbc_data.begin(),vbc_data.end());
+        float max_y = *std::max_element(vbc_data.begin(),vbc_data.end());
+
+        ui->vbc_report->xAxis->setRange(min_x-(max_x-min_x)*0.1,
+                                        max_x+(max_x-min_x)*0.1);
+        ui->vbc_report->xAxis->setLabel(ui->foi->currentText());
+        ui->vbc_report->yAxis->setRange(min_y-(max_y-min_y)*0.1,
+                                        max_y+(max_y-min_y)*0.1);
+        ui->vbc_report->yAxis->setLabel("QA");
+
+    }
+    else
+    {
+        for(unsigned int index = 0;index < vbc->subject_count();++index)
+            ui->subject_list->item(index,1)->setText(QString::number(vbc_data[index]));
+
+        vbc_data.erase(std::remove(vbc_data.begin(),vbc_data.end(),0.0),vbc_data.end());
+        float max_y = *std::max_element(vbc_data.begin(),vbc_data.end());
+        std::vector<unsigned int> hist;
+        image::histogram(vbc_data,hist,0,max_y,20);
+        QVector<double> x(hist.size()+1),y(hist.size()+1);
+        unsigned int max_hist = 0;
+        for(unsigned int j = 0;j < hist.size();++j)
+        {
+            x[j] = max_y*(float)j/(float)hist.size();
+            y[j] = hist[j];
+            max_hist = std::max<unsigned int>(max_hist,hist[j]);
+        }
+        x.back() = max_y*(hist.size()+1)/hist.size();
+        y.back() = 0;
+        ui->vbc_report->clearGraphs();
+        ui->vbc_report->addGraph();
+        QPen pen;
+        pen.setColor(QColor(20,20,100,200));
+        ui->vbc_report->graph(0)->setLineStyle(QCPGraph::lsLine);
+        ui->vbc_report->graph(0)->setPen(pen);
+        ui->vbc_report->graph(0)->setData(x, y);
+        ui->vbc_report->xAxis->setRange(0,x.back());
+        ui->vbc_report->yAxis->setRange(0,max_hist);
+    }
+
+    ui->vbc_report->xAxis2->setVisible(true);
+    ui->vbc_report->xAxis2->setTicks(false);
+    ui->vbc_report->xAxis2->setTickLabels(false);
+    ui->vbc_report->yAxis2->setVisible(true);
+    ui->vbc_report->yAxis2->setTicks(false);
+    ui->vbc_report->yAxis2->setTickLabels(false);
+
+    ui->vbc_report->xAxis->setGrid(false);
+    ui->vbc_report->yAxis->setGrid(false);
+    ui->vbc_report->replot();
+
+}
+
+void vbc_dialog::on_y_pos_valueChanged(int arg1)
+{
+    on_x_pos_valueChanged(0);
+}
+
+void vbc_dialog::on_z_pos_valueChanged(int arg1)
+{
+    on_x_pos_valueChanged(0);
+}
+
+void vbc_dialog::on_scatter_valueChanged(int arg1)
+{
+    on_x_pos_valueChanged(0);
+}
+
+void vbc_dialog::on_save_report_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                this,
+                "Save report as",
+                work_dir + "/report.jpg",
+                "JPEC file (*.jpg);;BMP file (*.bmp);;PDF file (*.pdf);;PNG file (*.png);;All files (*)");
+    if(QFileInfo(filename).completeSuffix().toLower() == "jpg")
+        ui->vbc_report->saveJpg(filename);
+    if(QFileInfo(filename).completeSuffix().toLower() == "bmp")
+        ui->vbc_report->saveBmp(filename);
+    if(QFileInfo(filename).completeSuffix().toLower() == "png")
+        ui->vbc_report->savePng(filename);
+    if(QFileInfo(filename).completeSuffix().toLower() == "pdf")
+        ui->vbc_report->savePdf(filename,true,300,300);
 }
