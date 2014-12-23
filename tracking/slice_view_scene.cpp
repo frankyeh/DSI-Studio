@@ -2,6 +2,7 @@
 #include "slice_view_scene.h"
 #include <QGraphicsSceneMouseEvent>
 #include <QPainter>
+#include <QSettings>
 #include <QFileDialog>
 #include <QClipboard>
 #include <QMessageBox>
@@ -382,12 +383,17 @@ if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
 
 void slice_view_scene::catch_screen()
 {
+    QSettings settings;
     QString filename = QFileDialog::getSaveFileName(
             0,"Save Images files",
-            cur_tracking_window.absolute_path,
-            "PNG files (*.png);;BMP files (*.bmp);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
+                cur_tracking_window.get_path("track") + "/" +
+                cur_tracking_window.handle->view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str()+"."+
+                settings.value("slice_image_extension","jpg").toString(),
+                "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
+    cur_tracking_window.add_path("slice_image",filename);
+    settings.setValue("slice_image_extension",QFileInfo(filename).completeSuffix());
 
     if(cur_tracking_window["roi_layout"].toInt() != 0)// mosaic
     {

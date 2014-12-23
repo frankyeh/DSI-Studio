@@ -3,6 +3,7 @@
 #include <QtGui>
 #include <QMessageBox>
 #include <QInputDialog>
+#include <QSettings>
 #include <QTimer>
 #include <QClipboard>
 #include <math.h>
@@ -1843,14 +1844,17 @@ void GLWidget::copyToClipboard(void)
 
 void GLWidget::catchScreen(void)
 {
+    QSettings settings;
     QString filename = QFileDialog::getSaveFileName(
                this,
                "Save Images files",
-               cur_tracking_window.get_path("catch_screen"),
-               "PNG files (*.png);;BMP files (*.bmp);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
+               cur_tracking_window.get_path("catch_screen") + "/image." +
+                settings.value("catch_screen_extension","jpg").toString(),
+               "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("catch_screen",filename);
+    settings.setValue("catch_screen_extension",QFileInfo(filename).completeSuffix());
     updateGL();
     grabFrameBuffer().save(filename);
 }
@@ -1870,14 +1874,17 @@ void GLWidget::catchScreen2(void)
         QMessageBox::information(this,"Error","Invalid image dimension",0);
         return;
     }
+    QSettings settings;
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Save Images files",
-            cur_tracking_window.get_path("catch_screen"),
-            "PNG files (*.png);;BMP files (*.bmp);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
+            cur_tracking_window.get_path("catch_screen") + "/image." +
+            settings.value("catch_screen_extension","jpg").toString(),
+            "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("catch_screen",filename);
+    settings.setValue("catch_screen_extension",QFileInfo(filename).completeSuffix());
     updateGL();
     int old_width = width;
     int old_height = height;
@@ -1887,14 +1894,17 @@ void GLWidget::catchScreen2(void)
 }
 void GLWidget::save3ViewImage(void)
 {
+    QSettings settings;
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Assign image name",
-            cur_tracking_window.get_path("catch_screen"),
-            "BMP files (*.bmp);;PNG files (*.png);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
+            cur_tracking_window.get_path("catch_screen") + "/image." +
+            settings.value("catch_screen_extension","jpg").toString(),
+            "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("catch_screen",filename);
+    settings.setValue("catch_screen_extension",QFileInfo(filename).completeSuffix());
     makeCurrent();
     set_view_flip = false;
     set_view(0);
@@ -1927,7 +1937,7 @@ void GLWidget::saveLeftRight3DImage(void)
             this,
             "Assign image name",
             cur_tracking_window.get_path("catch_screen"),
-            "BMP files (*.bmp);;PNG files (*.png);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
+            "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("catch_screen",filename);
@@ -1965,7 +1975,7 @@ void GLWidget::saveRotationSeries(void)
             this,
             "Assign image name",
             cur_tracking_window.get_path("catch_screen"),
-            "BMP files (*.bmp);;PNG files (*.png);;JPEG File (*.jpg);;TIFF File (*.tif);;All files (*)");
+            "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
     cur_tracking_window.add_path("catch_screen",filename);

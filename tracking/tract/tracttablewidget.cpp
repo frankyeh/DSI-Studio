@@ -907,7 +907,7 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
                 this,
                 "Save Images files",
                 cur_tracking_window.get_path("track")+"/" + item(currentRow(),0)->text(),
-                "BMP files (*.bmp);;PNG files (*.png);;JPEG files (*.jpg);;TIFF Files (*.tif);;All files (*)");
+                "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
         if(filename.isEmpty())
             return;
         cur_tracking_window.add_path("track",filename);
