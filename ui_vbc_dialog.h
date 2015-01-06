@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'vbc_dialog.ui'
 **
-** Created: Mon Dec 22 01:28:17 2014
+** Created: Sun Jan 4 22:45:49 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -141,12 +141,12 @@ public:
     QComboBox *region_type;
     QGroupBox *advanced_options_box;
     QVBoxLayout *verticalLayout_18;
+    QHBoxLayout *horizontalLayout_5;
+    QLabel *label_7;
+    QDoubleSpinBox *seeding_density;
     QHBoxLayout *horizontalLayout_12;
     QLabel *label_4;
     QSpinBox *mr_permutation;
-    QHBoxLayout *horizontalLayout_8;
-    QLabel *label_7;
-    QSpinBox *pruning;
     QHBoxLayout *horizontalLayout;
     QLabel *label_3;
     QSpinBox *length_threshold;
@@ -703,6 +703,28 @@ public:
         verticalLayout_18 = new QVBoxLayout(advanced_options_box);
         verticalLayout_18->setSpacing(0);
         verticalLayout_18->setObjectName(QString::fromUtf8("verticalLayout_18"));
+        horizontalLayout_5 = new QHBoxLayout();
+        horizontalLayout_5->setObjectName(QString::fromUtf8("horizontalLayout_5"));
+        horizontalLayout_5->setContentsMargins(-1, 0, -1, -1);
+        label_7 = new QLabel(advanced_options_box);
+        label_7->setObjectName(QString::fromUtf8("label_7"));
+
+        horizontalLayout_5->addWidget(label_7);
+
+        seeding_density = new QDoubleSpinBox(advanced_options_box);
+        seeding_density->setObjectName(QString::fromUtf8("seeding_density"));
+        seeding_density->setMaximumSize(QSize(75, 16777215));
+        seeding_density->setDecimals(1);
+        seeding_density->setMinimum(1);
+        seeding_density->setMaximum(100);
+        seeding_density->setSingleStep(0.5);
+        seeding_density->setValue(10);
+
+        horizontalLayout_5->addWidget(seeding_density);
+
+
+        verticalLayout_18->addLayout(horizontalLayout_5);
+
         horizontalLayout_12 = new QHBoxLayout();
         horizontalLayout_12->setObjectName(QString::fromUtf8("horizontalLayout_12"));
         label_4 = new QLabel(advanced_options_box);
@@ -716,30 +738,12 @@ public:
         mr_permutation->setMinimum(50);
         mr_permutation->setMaximum(10000);
         mr_permutation->setSingleStep(100);
-        mr_permutation->setValue(2000);
+        mr_permutation->setValue(1000);
 
         horizontalLayout_12->addWidget(mr_permutation);
 
 
         verticalLayout_18->addLayout(horizontalLayout_12);
-
-        horizontalLayout_8 = new QHBoxLayout();
-        horizontalLayout_8->setObjectName(QString::fromUtf8("horizontalLayout_8"));
-        label_7 = new QLabel(advanced_options_box);
-        label_7->setObjectName(QString::fromUtf8("label_7"));
-
-        horizontalLayout_8->addWidget(label_7);
-
-        pruning = new QSpinBox(advanced_options_box);
-        pruning->setObjectName(QString::fromUtf8("pruning"));
-        pruning->setMaximumSize(QSize(75, 16777215));
-        pruning->setMaximum(100);
-        pruning->setValue(3);
-
-        horizontalLayout_8->addWidget(pruning);
-
-
-        verticalLayout_18->addLayout(horizontalLayout_8);
 
         horizontalLayout = new QHBoxLayout();
         horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
@@ -1026,8 +1030,8 @@ public:
          << QApplication::translate("vbc_dialog", "Seed", 0, QApplication::UnicodeUTF8)
         );
         advanced_options_box->setTitle(QApplication::translate("vbc_dialog", "Advanced options", 0, QApplication::UnicodeUTF8));
+        label_7->setText(QApplication::translate("vbc_dialog", "Seeding density (seeds/mm^3)", 0, QApplication::UnicodeUTF8));
         label_4->setText(QApplication::translate("vbc_dialog", "Permutation count.", 0, QApplication::UnicodeUTF8));
-        label_7->setText(QApplication::translate("vbc_dialog", "Track pruning (iterations).", 0, QApplication::UnicodeUTF8));
         label_3->setText(QApplication::translate("vbc_dialog", "Minimum track length (mm)", 0, QApplication::UnicodeUTF8));
         toolBox->setItemText(toolBox->indexOf(page_2), QApplication::translate("vbc_dialog", "STEP2: Setup parameters", 0, QApplication::UnicodeUTF8));
         view_legend->setText(QApplication::translate("vbc_dialog", "legend", 0, QApplication::UnicodeUTF8));

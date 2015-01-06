@@ -108,7 +108,6 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
 vbc_dialog::~vbc_dialog()
 {
     qApp->removeEventFilter(this);
-
     delete ui;
 }
 
@@ -328,6 +327,7 @@ void vbc_dialog::on_open_files_clicked()
                 work_dir,"Fib files (*.fib.gz);;All files (*)" );
     if (file_name.isEmpty())
         return;
+    model.reset(new stat_model);
     QStringList filenames;
     file_names.clear();
     for(unsigned int index = 0;index < file_name.size();++index)
@@ -345,7 +345,7 @@ void vbc_dialog::on_open_files_clicked()
     individual_data.swap(new_individual_data);
     if(ui->rb_individual_analysis->isChecked())
     {
-        mr.type = 2;
+        model->type = 2;
         ((QStringListModel*)ui->individual_list->model())->setStringList(filenames);
     }
 
@@ -362,6 +362,7 @@ void vbc_dialog::on_open_mr_files_clicked()
                 "Text file (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
+    model.reset(new stat_model);
     file_names.clear();
     file_names.push_back(filename.toLocal8Bit().begin());
 
@@ -371,7 +372,6 @@ void vbc_dialog::on_open_mr_files_clicked()
               std::istream_iterator<std::string>(),std::back_inserter(items));
 
 
-    mr.clear();
     if(ui->rb_multiple_regression->isChecked())
     {
         unsigned int feature_count = items.size()/(vbc->subject_count()+1);
@@ -397,9 +397,9 @@ void vbc_dialog::on_open_mr_files_clicked()
                 }
             }
         }
-        mr.type = 1;
-        mr.X = X;
-        mr.feature_count = feature_count+1; // additional one for intercept
+        model->type = 1;
+        model->X = X;
+        model->feature_count = feature_count+1; // additional one for intercept
         QStringList t;
         t << "Subject ID";
         for(unsigned int index = 0;index < feature_count;++index)
@@ -422,7 +422,7 @@ void vbc_dialog::on_open_mr_files_clicked()
             ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->subject_name(row).c_str())));
             ++index;// skip intercep
             for(unsigned int col = 1;col < ui->subject_demo->columnCount();++col,++index)
-                ui->subject_demo->setItem(row,col,new QTableWidgetItem(QString::number(mr.X[index])));
+                ui->subject_demo->setItem(row,col,new QTableWidgetItem(QString::number(model->X[index])));
         }
     }
     if(ui->rb_group_difference->isChecked())
@@ -452,8 +452,8 @@ void vbc_dialog::on_open_mr_files_clicked()
             }
         }
 
-        mr.type = 0;
-        mr.label = label;
+        model->type = 0;
+        model->label = label;
         ui->subject_demo->clear();
         ui->subject_demo->setColumnCount(2);
         ui->subject_demo->setHorizontalHeaderLabels(QStringList() << "Subject ID" << "Group ID");
@@ -461,7 +461,7 @@ void vbc_dialog::on_open_mr_files_clicked()
         for(unsigned int row = 0;row < ui->subject_demo->rowCount();++row)
         {
             ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->subject_name(row).c_str())));
-            ui->subject_demo->setItem(row,1,new QTableWidgetItem(QString::number(mr.label[row])));
+            ui->subject_demo->setItem(row,1,new QTableWidgetItem(QString::number(model->label[row])));
         }
     }
     if(ui->rb_paired_difference->isChecked())
@@ -491,33 +491,33 @@ void vbc_dialog::on_open_mr_files_clicked()
             }
         }
 
-        mr.type = 3;
-        mr.pre.clear();
-        mr.post.clear();
+        model->type = 3;
+        model->pre.clear();
+        model->post.clear();
         for(unsigned int i = 0;i < label.size() && i < vbc->subject_count();++i)
             if(label[i] > 0)
             {
                 for(unsigned int j = 0;j < label.size() && j < vbc->subject_count();++j)
                     if(label[j] == -label[i])
                     {
-                        mr.pre.push_back(i);
-                        mr.post.push_back(j);
+                        model->pre.push_back(i);
+                        model->post.push_back(j);
                     }
             }
         ui->subject_demo->clear();
         ui->subject_demo->setColumnCount(2);
         ui->subject_demo->setHorizontalHeaderLabels(QStringList() << "Subject ID" << "Matched ID");
-        ui->subject_demo->setRowCount(mr.pre.size());
+        ui->subject_demo->setRowCount(model->pre.size());
         for(unsigned int row = 0;row < ui->subject_demo->rowCount();++row)
         {
-            ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->subject_name(mr.pre[row]).c_str())));
-            ui->subject_demo->setItem(row,1,new QTableWidgetItem(QString(vbc->subject_name(mr.post[row]).c_str())));
+            ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->subject_name(model->pre[row]).c_str())));
+            ui->subject_demo->setItem(row,1,new QTableWidgetItem(QString(vbc->subject_name(model->post[row]).c_str())));
         }
     }
 
 
 
-    if(!mr.pre_process())
+    if(!model->pre_process())
     {
         QMessageBox::information(this,"Error","Invalid subjet information for statistical analysis",0);
         ui->run->setEnabled(false);
@@ -693,9 +693,10 @@ void vbc_dialog::on_run_clicked()
     std::ostringstream out;
     vbc->permutation_count = ui->mr_permutation->value();
     vbc->length_threshold = ui->length_threshold->value();
-    vbc->pruning = ui->pruning->value();
+    vbc->seeding_density = ui->seeding_density->value();
     vbc->trk_file_names = file_names;
-    vbc->model = mr;
+    vbc->model.reset(new stat_model);
+    *(vbc->model.get()) = *(model.get());
     vbc->individual_data.clear();
 
 
@@ -736,7 +737,7 @@ void vbc_dialog::on_run_clicked()
     if(ui->rb_multiple_regression->isChecked())
     {
         vbc->tracking_threshold = ui->t_threshold->value();
-        vbc->model.study_feature = ui->foi->currentIndex()+1;
+        vbc->model->study_feature = ui->foi->currentIndex()+1;
         out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted using a multiple regression model considering ";
         for(unsigned int index = 0;index < (int)ui->foi->count()-1;++index)
             out << ui->foi->itemText(index).toLower().toLocal8Bit().begin() << ", ";
@@ -783,6 +784,9 @@ void vbc_dialog::on_run_clicked()
         out << " in whole brain regions.";
     out << " Tracks with length greater than " <<
             ui->length_threshold->value() << " mm were collected.";
+    out << " The seeding density was " <<
+            ui->seeding_density->value() << " seed(s) per mm^3.";
+
     out << " To estimate the false discovery rate, a total of "
         << ui->mr_permutation->value()
         << " randomized permutations were applied to the group label to obtain the null distribution of the track length.";
@@ -819,20 +823,13 @@ void vbc_dialog::on_show_result_clicked()
         out << report.toLocal8Bit().begin();
         new_data->report += out.str();
     }
-    if(vbc->model.type != 2) // not individual
+    if(vbc->model->type != 2) // not individual
     {
         result_fib.reset(new fib_data);
-        std::vector<unsigned int> permu(vbc->subject_count());
-        for(unsigned int index = 0;index < permu.size();++index)
-            permu[index] = index;
-        vbc->calculate_spm(vbc->model,*result_fib.get(),permu);
-        for(unsigned int index = 0;index < new_data->dim.size();++index)
-        {
-            if(result_fib->lesser[0][index] < vbc->tracking_threshold)
-                result_fib->lesser[0][index] = 0;
-            if(result_fib->greater[0][index] < vbc->tracking_threshold)
-                result_fib->greater[0][index] = 0;
-        }
+        stat_model info;
+        std::vector<unsigned int> permu;
+        info.resample(*(vbc->model.get()),permu,false,false);
+        vbc->calculate_spm(*result_fib.get(),info,permu);
         new_data->view_item.push_back(ViewItem());
         new_data->view_item.back().name = "lesser";
         new_data->view_item.back().image_data = image::make_image(new_data->dim,result_fib->lesser_ptr[0]);
@@ -925,7 +922,7 @@ void vbc_dialog::on_remove_subject_clicked()
     {
         unsigned int index = ui->subject_demo->currentRow();
         vbc->remove_subject(index);
-        mr.remove_subject(index);
+        model->remove_subject(index);
         ui->subject_demo->removeRow(index);
         ui->subject_list->removeRow(index);
     }
@@ -942,7 +939,7 @@ void vbc_dialog::on_remove_sel_subject_clicked()
           (ui->rb_group_difference->isChecked() || ui->rb_multiple_regression->isChecked()))
         {
             ui->subject_demo->removeRow(index);
-            mr.remove_subject(index);
+            model->remove_subject(index);
         }
     }
 }
@@ -971,7 +968,7 @@ void vbc_dialog::on_x_pos_valueChanged(int arg1)
     {
         QVector<double> variables(vbc->subject_count());
         for(unsigned int i = 0;i < vbc->subject_count();++i)
-            variables[i] = mr.X[i*mr.feature_count+ui->foi->currentIndex()+1];
+            variables[i] = model->X[i*model->feature_count+ui->foi->currentIndex()+1];
 
         QVector<double> y(vbc->subject_count());
         std::copy(vbc_data.begin(),vbc_data.end(),y.begin());

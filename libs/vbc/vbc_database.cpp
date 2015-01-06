@@ -400,6 +400,16 @@ void fib_data::add_greater_lesser_mapping_for_tracking(FibData* handle)
     handle->fib.index_data_dir[lesser_index_id] = lesser_dir_ptr;
 }
 
+void fib_data::write_lesser(fiber_orientations& fib) const
+{
+    fib.fa = lesser_ptr;
+    fib.findex = lesser_dir_ptr;
+}
+void fib_data::write_greater(fiber_orientations& fib) const
+{
+    fib.fa = greater_ptr;
+    fib.findex = greater_dir_ptr;
+}
 
 
 void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& tracks,float seed_ratio)
@@ -408,7 +418,7 @@ void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vect
     for(image::pixel_index<3> index;index.is_valid(dim);index.next(dim))
         if(fib.fa[0][index.index()] > fib.threshold)
             seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
-    if(seed.empty())
+    if(seed.empty() || seed.size()*seed_ratio < 1.0)
     {
         tracks.clear();
         return;
@@ -532,7 +542,7 @@ void stat_model::remove_subject(unsigned int index)
     pre_process();
 }
 
-bool stat_model::resample(const stat_model& rhs,std::vector<unsigned int>& permu,bool null)
+bool stat_model::resample(stat_model& rhs,std::vector<unsigned int>& permu,bool null,bool boostrap)
 {
     type = rhs.type;
     feature_count = rhs.feature_count;
@@ -550,7 +560,7 @@ bool stat_model::resample(const stat_model& rhs,std::vector<unsigned int>& permu
             permu.resize(rhs.label.size());
             label.resize(rhs.label.size());
             for(unsigned int index = 0;index < rhs.label.size();++index)
-                label[index] = rhs.label[permu[index] = rhs.rand_gen(rhs.label.size())];
+                label[index] = rhs.label[permu[index] = (boostrap ? rhs.rand_gen(rhs.label.size()) : index)];
             if(null)
                 std::random_shuffle(permu.begin(),permu.end(),rhs.rand_gen);
             break;
@@ -559,7 +569,7 @@ bool stat_model::resample(const stat_model& rhs,std::vector<unsigned int>& permu
             X.resize(rhs.X.size());
             for(unsigned int index = 0,pos = 0;index < permu.size();++index,pos += feature_count)
             {
-                permu[index] = rhs.rand_gen(permu.size());
+                permu[index] = boostrap ? rhs.rand_gen(permu.size()):index;
                 std::copy(rhs.X.begin()+permu[index]*feature_count,
                           rhs.X.begin()+permu[index]*feature_count+feature_count,X.begin()+pos);
             }
@@ -571,7 +581,7 @@ bool stat_model::resample(const stat_model& rhs,std::vector<unsigned int>& permu
             post.resize(rhs.post.size());
             for(unsigned int index = 0;index < rhs.pre.size();++index)
             {
-                unsigned int sel = rhs.rand_gen(rhs.pre.size());
+                unsigned int sel = boostrap ? rhs.rand_gen(rhs.pre.size()) : index;
                 pre[index] = rhs.pre[sel];
                 post[index] = rhs.post[sel];
                 if(null && rhs.rand_gen(2) == 1)
@@ -644,7 +654,7 @@ double stat_model::operator()(const std::vector<double>& population,unsigned int
     return 0.0;
 }
 
-void vbc_database::calculate_spm(const stat_model& info,fib_data& data,const std::vector<unsigned int>& permu)
+void vbc_database::calculate_spm(fib_data& data,stat_model& info,std::vector<unsigned int>& permu)
 {
     data.initialize(handle.get());
     std::vector<double> selected_population(permu.size());
@@ -716,86 +726,127 @@ void vbc_database::run_permutation_multithread(unsigned int id)
     fib.read(*handle);
     fib.threshold = tracking_threshold;
     fib.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);
+    float total_track_count = seeding_density*fib.vs[0]*fib.vs[1]*fib.vs[2];
     std::vector<std::vector<float> > tracks;
-    bool null = true;
-    unsigned int num_subject = (model.type == 2 ? individual_data.size():1);
-    while(total_count < permutation_count && !terminated)
-    {
-        if(null)
-            ++total_count_null;
-        else
-            ++total_count;
 
-        for(unsigned int subject_id = 0;subject_id < num_subject && !terminated;++subject_id)
+    if(model->type == 2) // individual
+    {
+        if(id == 0)
+        for(unsigned int subject_id = 0;subject_id < individual_data.size() && !terminated;++subject_id)
         {
-            switch(model.type)
+            std::vector<unsigned int> permu(subject_qa.size());
+            for(unsigned int index = 0;index < permu.size();++index)
+                permu[index] = index;
+            stat_model info;
+            info.type = 2;
+            info.individual_data = &(individual_data[subject_id][0]);
+            calculate_spm(spm_maps[subject_id],info,permu);
+        }
+
+        bool null = true;
+        while(total_count < permutation_count && !terminated)
+        {
+            if(null)
+                ++total_count_null;
+            else
+                ++total_count;
+
+            for(unsigned int subject_id = 0;subject_id < individual_data.size() && !terminated;++subject_id)
             {
-            case 0: // grouop
-            case 1: // mr
-            case 3: // paired
+                std::vector<unsigned int> permu(200);
+                stat_model info;
                 {
-                    std::vector<unsigned int> permu;
-                    stat_model resampled_info;
-                    {
-                        boost::mutex::scoped_lock lock(lock_resampling);
-                        resampled_info.resample(model,permu,null);
-                    }
-                    calculate_spm(resampled_info,data,permu);
-                }
-                break;
-            case 2: // individual
-                {
-                    std::vector<unsigned int> permu(200);
                     unsigned int random_subject_id = 0;
                     {
                         boost::mutex::scoped_lock lock(lock_resampling);
-                        random_subject_id = model.rand_gen(subject_qa.size());
+                        random_subject_id = model->rand_gen(subject_qa.size());
                         for(unsigned int index = 0;index < permu.size();++index)
-                            permu[index] = model.rand_gen(subject_qa.size());
+                            permu[index] = model->rand_gen(subject_qa.size());
                     }
-                    stat_model resampled_info = model;
+                    info.type = model->type;
                     if(null)
-                        resampled_info.individual_data = subject_qa[random_subject_id];
+                        info.individual_data = subject_qa[random_subject_id];
                     else
-                        resampled_info.individual_data = &(individual_data[subject_id][0]);
-
-                    calculate_spm(resampled_info,data,permu);
+                        info.individual_data = &(individual_data[subject_id][0]);
                 }
-                break;
-            }
-
-            fib.fa = data.lesser_ptr;
-            fib.findex = data.lesser_dir_ptr;
-            run_track(fib,tracks,10.0/permutation_count);
-            if(null)
-                cal_hist(tracks,subject_lesser_null);
-            else
-            {
-                cal_hist(tracks,subject_lesser);
+                calculate_spm(data,info,permu);
+                data.write_lesser(fib);
+                run_track(fib,tracks,total_track_count/permutation_count);
+                if(null)
+                    cal_hist(tracks,subject_lesser_null);
+                else
                 {
-                    boost::mutex::scoped_lock lock(lock_lesser_tracks);
-                    lesser_tracks[subject_id].add_tracts(tracks,40);
-                    tracks.clear();
+                    cal_hist(tracks,subject_lesser);
+                    {
+                        boost::mutex::scoped_lock lock(lock_lesser_tracks);
+                        lesser_tracks[subject_id].add_tracts(tracks,length_threshold);
+                        tracks.clear();
+                    }
                 }
-            }
 
-            fib.fa = data.greater_ptr;
-            fib.findex = data.greater_dir_ptr;
-            run_track(fib,tracks,10.0/permutation_count);
-            if(null)
-                cal_hist(tracks,subject_greater_null);
-            else
-            {
-                cal_hist(tracks,subject_greater);
+                data.write_greater(fib);
+                run_track(fib,tracks,total_track_count/permutation_count);
+                if(null)
+                    cal_hist(tracks,subject_greater_null);
+                else
                 {
-                    boost::mutex::scoped_lock lock(lock_greater_tracks);
-                    greater_tracks[subject_id].add_tracts(tracks,40);
-                    tracks.clear();
+                    cal_hist(tracks,subject_greater);
+                    {
+                        boost::mutex::scoped_lock lock(lock_greater_tracks);
+                        greater_tracks[subject_id].add_tracts(tracks,length_threshold);
+                        tracks.clear();
+                    }
                 }
-            }
-            }
+                }
 
-        null = !null;
+            null = !null;
+        }
+    }
+    else
+    {
+        if(id == 0)
+        {
+            std::vector<unsigned int> permu;
+            stat_model info;
+            {
+                boost::mutex::scoped_lock lock(lock_resampling);
+                info.resample(*model.get(),permu,false,false);
+            }
+            calculate_spm(spm_maps[0],info,permu);
+            spm_maps[0].write_lesser(fib);
+            run_track(fib,tracks,total_track_count);
+            lesser_tracks[0].add_tracts(tracks,length_threshold);
+            spm_maps[0].write_greater(fib);
+            run_track(fib,tracks,total_track_count);
+            greater_tracks[0].add_tracts(tracks,length_threshold);
+        }
+
+
+        bool null = true;
+        while(total_count < permutation_count && !terminated)
+        {
+            if(null)
+                ++total_count_null;
+            else
+                ++total_count;
+            std::vector<unsigned int> permu;
+            stat_model info;
+            {
+                boost::mutex::scoped_lock lock(lock_resampling);
+                info.resample(*model.get(),permu,null,!null);
+            }
+            calculate_spm(data,info,permu);
+
+            data.write_lesser(fib);
+            run_track(fib,tracks,total_track_count/permutation_count);
+            cal_hist(tracks,(null) ? subject_lesser_null : subject_lesser);
+
+            data.write_greater(fib);
+            run_track(fib,tracks,total_track_count/permutation_count);
+            cal_hist(tracks,(null) ? subject_greater_null : subject_greater);
+
+            null = !null;
+        }
     }
 }
 void vbc_database::clear_thread(void)
@@ -819,19 +870,37 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
         {
             TractModel tracks(handle.get());
             tracks.add_tracts(greater_tracks[index].get_tracts(),length_threshold);
-            for(unsigned int j = 0;j < pruning;++j)
-            {
-                unsigned int track_count = tracks.get_visible_track_count();
-                tracks.trim();
-                if(track_count == tracks.get_visible_track_count())
-                    break;
-            }
             if(tracks.get_visible_track_count())
             {
-                std::ostringstream out1;
-                out1 << trk_file_names[index] << ".greater" << length_threshold << ".trk.gz";
-                tracks.save_tracts_to_file(out1.str().c_str());
-                saved_file_name.push_back(out1.str().c_str());
+                {
+                    std::ostringstream out1;
+                    out1 << trk_file_names[index] << ".greater" << length_threshold << ".trk.gz";
+                    tracks.save_tracts_to_file(out1.str().c_str());
+                    saved_file_name.push_back(out1.str().c_str());
+                }
+
+                {
+                    std::ostringstream out1;
+                    out1 << trk_file_names[index] << ".greater.fib.gz";
+                    gz_mat_write mat_write(out1.str().c_str());
+                    for(unsigned int i = 0;i < handle->mat_reader.size();++i)
+                    {
+                        std::string name = handle->mat_reader.name(i);
+                        if(name == "dimension" || name == "voxel_size" ||
+                                name == "odf_vertices" || name == "odf_faces" || name == "trans")
+                            mat_write.write(handle->mat_reader[i]);
+                        if(name == "fa0")
+                            mat_write.write("qa_map",handle->fib.fa[0],1,handle->dim.size());
+                    }
+                    for(unsigned int i = 0;i < spm_maps[index].greater_ptr.size();++i)
+                    {
+                        std::ostringstream out1,out2;
+                        out1 << "fa" << i;
+                        out2 << "index" << i;
+                        mat_write.write(out1.str().c_str(),spm_maps[index].greater_ptr[i],1,handle->dim.size());
+                        mat_write.write(out2.str().c_str(),spm_maps[index].greater_dir_ptr[i],1,handle->dim.size());
+                    }
+                }
             }
             else
             {
@@ -846,19 +915,36 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
         {
             TractModel tracks(handle.get());
             tracks.add_tracts(lesser_tracks[index].get_tracts(),length_threshold);
-            for(unsigned int j = 0;j < pruning;++j)
-            {
-                unsigned int track_count = tracks.get_visible_track_count();
-                tracks.trim();
-                if(track_count == tracks.get_visible_track_count())
-                    break;
-            }
             if(tracks.get_visible_track_count())
             {
-                std::ostringstream out1;
-                out1 << trk_file_names[index] << ".lesser" << length_threshold << ".trk.gz";
-                tracks.save_tracts_to_file(out1.str().c_str());
-                saved_file_name.push_back(out1.str().c_str());
+                {
+                    std::ostringstream out1;
+                    out1 << trk_file_names[index] << ".lesser" << length_threshold << ".trk.gz";
+                    tracks.save_tracts_to_file(out1.str().c_str());
+                    saved_file_name.push_back(out1.str().c_str());
+                }
+                {
+                    std::ostringstream out1;
+                    out1 << trk_file_names[index] << ".lesser.fib.gz";
+                    gz_mat_write mat_write(out1.str().c_str());
+                    for(unsigned int i = 0;i < handle->mat_reader.size();++i)
+                    {
+                        std::string name = handle->mat_reader.name(i);
+                        if(name == "dimension" || name == "voxel_size" ||
+                                name == "odf_vertices" || name == "odf_faces" || name == "trans")
+                            mat_write.write(handle->mat_reader[i]);
+                        if(name == "fa0")
+                            mat_write.write("qa_map",handle->fib.fa[0],1,handle->dim.size());
+                    }
+                    for(unsigned int i = 0;i < spm_maps[index].greater_ptr.size();++i)
+                    {
+                        std::ostringstream out1,out2;
+                        out1 << "fa" << i;
+                        out2 << "index" << i;
+                        mat_write.write(out1.str().c_str(),spm_maps[index].lesser_ptr[i],1,handle->dim.size());
+                        mat_write.write(out2.str().c_str(),spm_maps[index].lesser_dir_ptr[i],1,handle->dim.size());
+                    }
+                }
             }
             else
             {
@@ -888,17 +974,19 @@ void vbc_database::run_permutation(unsigned int thread_count)
     fdr_lesser.clear();
     fdr_lesser.resize(200);
 
-    model.generator.seed(0);
+    model->generator.seed(0);
     std::srand(0);
     total_count_null = 0;
     total_count = 0;
     greater_tracks.clear();
     lesser_tracks.clear();
-    unsigned int num_subjects = (model.type == 2 ? individual_data.size():1);
+    spm_maps.clear();
+    unsigned int num_subjects = (model->type == 2 ? individual_data.size():1);
     for(unsigned int index = 0;index < num_subjects;++index)
     {
         greater_tracks.push_back(new TractModel(handle.get()));
         lesser_tracks.push_back(new TractModel(handle.get()));
+        spm_maps.push_back(new fib_data);
     }
     threads.reset(new boost::thread_group);
     for(unsigned int index = 0;index < thread_count;++index)

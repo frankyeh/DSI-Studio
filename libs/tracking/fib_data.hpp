@@ -710,7 +710,6 @@ public:
         findex = fib_data.fib.findex;
         dir = fib_data.fib.dir;
     }
-
     bool get_dir(unsigned int space_index,
                          const image::vector<3,float>& dir, // reference direction, should be unit vector
                          image::vector<3,float>& main_dir) const

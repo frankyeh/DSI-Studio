@@ -867,31 +867,35 @@ void TractModel::trim(void)
     unsigned int depth = label.depth();
     unsigned int wh = width*height;
     std::fill(label.begin(),label.end(),no_fiber_label);
+    int shift[8] = {0,1,width,wh,1+width,1+wh,width+wh,1+width+wh};
     for (unsigned int index = 0;index < total_track_number;++index)
     {
         const float* ptr = &*tract_data[index].begin();
         const float* end = ptr + tract_data[index].size();
         for (;ptr < end;ptr += 3)
         {
-            int x = std::floor(*ptr+0.5);
-            if (x < 0 || x >= width)
+            int x = *ptr;
+            if (x <= 0 || x >= width)
                 continue;
-            int y = std::floor(*(ptr+1)+0.5);
-            if (y < 0 || y >= height)
+            int y = *(ptr+1);
+            if (y <= 0 || y >= height)
                 continue;
-            int z = std::floor(*(ptr+2)+0.5);
-            if (z < 0 || z >= depth)
+            int z = *(ptr+2);
+            if (z <= 0 || z >= depth)
                 continue;
-            unsigned int pixel_index = z*wh+y*width+x;
-            if (pixel_index >= label.size())
-                continue;
-            unsigned int cur_label = label[pixel_index];
-            if (cur_label == have_multiple_fiber_label || cur_label == index)
-                continue;
-            if (cur_label == no_fiber_label)
-                label[pixel_index] = index;
-            else
-                label[pixel_index] = have_multiple_fiber_label;
+            for(unsigned int i = 0;i < 8;++i)
+            {
+                unsigned int pixel_index = z*wh+y*width+x+shift[i];
+                if (pixel_index >= label.size())
+                    continue;
+                unsigned int cur_label = label[pixel_index];
+                if (cur_label == have_multiple_fiber_label || cur_label == index)
+                    continue;
+                if (cur_label == no_fiber_label)
+                    label[pixel_index] = index;
+                else
+                    label[pixel_index] = have_multiple_fiber_label;
+            }
         }
     }
 

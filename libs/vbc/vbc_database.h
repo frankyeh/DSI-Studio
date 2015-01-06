@@ -24,6 +24,8 @@ struct fib_data{
 public:
     void initialize(FibData* fib_file);
     void add_greater_lesser_mapping_for_tracking(FibData* fib_file);
+    void write_lesser(fiber_orientations& fib) const;
+    void write_greater(fiber_orientations& fib) const;
 };
 
 
@@ -134,11 +136,9 @@ public:
 
 class stat_model{
 public:
-    mutable boost::mt19937 generator;
-    mutable boost::uniform_int<int> uniform_rand;
-    mutable boost::variate_generator<boost::mt19937&, boost::uniform_int<int> > rand_gen;
-public:
-    stat_model(void):generator(0),uniform_rand(),rand_gen(generator,uniform_rand){}
+    boost::mt19937 generator;
+    boost::uniform_int<int> uniform_rand;
+    boost::variate_generator<boost::mt19937&, boost::uniform_int<int> > rand_gen;
 public:
     unsigned int type;
 public: // group
@@ -154,8 +154,11 @@ public: // individual
 public: // paired
     std::vector<unsigned int> pre,post;
 public:
+    stat_model(void):
+        generator(0),uniform_rand(),rand_gen(generator,uniform_rand),individual_data(0){}
+public:
     void remove_subject(unsigned int index);
-    bool resample(const stat_model& rhs,std::vector<unsigned int>& permu,bool null);
+    bool resample(stat_model& rhs,std::vector<unsigned int>& permu,bool null,bool boostrap);
     bool pre_process(void);
     double operator()(const std::vector<double>& population,unsigned int pos) const;
     void clear(void)
@@ -245,19 +248,20 @@ public:
     std::vector<std::string> trk_file_names;
     std::vector<image::vector<3,short> > roi;
     unsigned char roi_type;
-    unsigned int pruning;
     unsigned int length_threshold;
+    float seeding_density;
     boost::mutex lock_resampling,lock_greater_tracks,lock_lesser_tracks;
     boost::ptr_vector<TractModel> greater_tracks;
     boost::ptr_vector<TractModel> lesser_tracks;
+    boost::ptr_vector<fib_data> spm_maps;
     void save_tracks_files(std::vector<std::string>&);
 public:// routine for calculate SPM
-    void calculate_spm(const stat_model& info,fib_data& data,const std::vector<unsigned int>& permu);
+    void calculate_spm(fib_data& data,stat_model& info,std::vector<unsigned int>& permu);
 public:// Individual analysis
     std::vector<std::vector<float> > individual_data;
     bool read_subject_data(const std::vector<std::string>& files,std::vector<std::vector<float> >& data);
 public:// Multiple regression
-    stat_model model;
+    std::auto_ptr<stat_model> model;
     float tracking_threshold;
     void run_permutation_multithread(unsigned int id);
     void run_permutation(unsigned int thread_count);

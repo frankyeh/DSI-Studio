@@ -26,7 +26,7 @@ public:
     std::vector<std::string> file_names,saved_file_name;
 public:
     std::auto_ptr<vbc_database> vbc;
-    stat_model mr;
+    std::auto_ptr<stat_model> model;
     std::vector<std::vector<float> > individual_data;
     std::auto_ptr<QTimer> timer;
     QString report;
