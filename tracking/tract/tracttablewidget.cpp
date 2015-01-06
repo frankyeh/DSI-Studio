@@ -419,7 +419,7 @@ void TractTableWidget::clustering(int method_id)
     int rec = msgBox.exec();
     if(rec == QMessageBox::Yes)
     {
-        unsigned int cluster_count = method_id ? handle->get_cluster_count() : 30;
+        unsigned int cluster_count = method_id ? handle->get_cluster_count() : std::min<float>(handle->get_cluster_count(),30);
         std::vector<std::vector<float> > tracts;
         tract_models[currentRow()]->release_tracts(tracts);
         delete_row(currentRow());
