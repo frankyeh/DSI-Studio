@@ -143,8 +143,6 @@ public:
             voxel_data[thread_index].voxel_index = voxel_index;
             for (int index = 0; index < process_list.size(); ++index)
                 process_list[index].run(*this,voxel_data[thread_index]);
-            if(prog_aborted())
-                break;
         }
     }
     void end(gz_mat_write& writer)
