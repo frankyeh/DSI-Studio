@@ -236,7 +236,7 @@ void vbc_dialog::show_report()
 
     unsigned int x_size = 0;
     for(unsigned int i = 0;i < vbc_data.size();++i)
-        x_size = std::max<unsigned int>(x_size,vbc_data[i].size());
+        x_size = std::max<unsigned int>(x_size,vbc_data[i].size()-1);
     if(x_size == 0)
         return;
     QVector<double> x(x_size);
@@ -247,8 +247,8 @@ void vbc_dialog::show_report()
     {
         x[j] = (float)j;
         for(unsigned int i = 0; i < vbc_data.size(); ++i)
-            if(j < vbc_data[i].size())
-                y[i][j] = vbc_data[i][j];
+            if(j+1 < vbc_data[i].size())
+                y[i][j] = vbc_data[i][j+1];
     }
     QPen pen;
     QColor color[4];
@@ -268,7 +268,7 @@ void vbc_dialog::show_report()
 
     ui->null_dist->xAxis->setLabel("mm");
     ui->null_dist->yAxis->setLabel("count");
-    ui->null_dist->xAxis->setRange(4,ui->span_to->value());
+    ui->null_dist->xAxis->setRange(0,ui->span_to->value());
     ui->null_dist->yAxis->setRange(0,std::max<float>(std::max<float>(max_y1,max_y2),std::max<float>(max_y3,max_y4))*1.1);
     ui->null_dist->xAxis->setGrid(false);
     ui->null_dist->yAxis->setGrid(false);
@@ -662,8 +662,33 @@ void vbc_dialog::calculate_FDR(void)
         std::ofstream out((vbc->trk_file_names[0]+".report.txt").c_str());
         out << report.toLocal8Bit().begin() << std::endl;
         // save pdf plot and value txt
-        ui->fdr_dist->savePdf((vbc->trk_file_names[0]+".fdr.pdf").c_str(),true,300,300);
-        ui->null_dist->savePdf((vbc->trk_file_names[0]+".dist.pdf").c_str(),true,300,300);
+        ui->show_null_greater->setChecked(true);
+        ui->show_greater->setChecked(true);
+        ui->show_null_lesser->setChecked(false);
+        ui->show_lesser->setChecked(false);
+        ui->null_dist->savePdf((vbc->trk_file_names[0]+".greater.dist.pdf").c_str(),true,300,300);
+
+        ui->show_null_greater->setChecked(false);
+        ui->show_greater->setChecked(false);
+        ui->show_null_lesser->setChecked(true);
+        ui->show_lesser->setChecked(true);
+        ui->null_dist->savePdf((vbc->trk_file_names[0]+".lesser.dist.pdf").c_str(),true,300,300);
+
+        ui->show_greater_2->setChecked(true);
+        ui->show_lesser_2->setChecked(false);
+        ui->fdr_dist->savePdf((vbc->trk_file_names[0]+".greater.fdr.pdf").c_str(),true,300,300);
+
+        ui->show_greater_2->setChecked(false);
+        ui->show_lesser_2->setChecked(true);
+        ui->fdr_dist->savePdf((vbc->trk_file_names[0]+".lesser.fdr.pdf").c_str(),true,300,300);
+
+
+        // restore all checked status
+        ui->show_null_greater->setChecked(true);
+        ui->show_greater->setChecked(true);
+        ui->show_greater_2->setChecked(true);
+
+
         ui->fdr_dist->saveTxt((vbc->trk_file_names[0]+".fdr_value.txt").c_str());
         ui->null_dist->saveTxt((vbc->trk_file_names[0]+".dist_value.txt").c_str());
 
@@ -1055,7 +1080,7 @@ void vbc_dialog::on_save_report_clicked()
                 this,
                 "Save report as",
                 work_dir + "/report.jpg",
-                "JPEC file (*.jpg);;BMP file (*.bmp);;PDF file (*.pdf);;PNG file (*.png);;All files (*)");
+                "JPEC file (*.jpg);;BMP file (*.bmp);;PDF file (*.pdf);;PNG file (*.png);;TXT file (*.txt);;All files (*)");
     if(QFileInfo(filename).completeSuffix().toLower() == "jpg")
         ui->vbc_report->saveJpg(filename);
     if(QFileInfo(filename).completeSuffix().toLower() == "bmp")
@@ -1064,4 +1089,6 @@ void vbc_dialog::on_save_report_clicked()
         ui->vbc_report->savePng(filename);
     if(QFileInfo(filename).completeSuffix().toLower() == "pdf")
         ui->vbc_report->savePdf(filename,true,300,300);
+    if(QFileInfo(filename).completeSuffix().toLower() == "txt")
+        ui->vbc_report->saveTxt(filename);
 }
