@@ -9,7 +9,7 @@
 
 
 
-vbc_database::vbc_database():handle(0),num_subjects(0),roi_type(0)
+vbc_database::vbc_database():handle(0),num_subjects(0),roi_type(0),normalize_qa(true)
 {
 }
 
@@ -59,6 +59,7 @@ bool vbc_database::load_database(const char* database_name)
     // does it contain subject info?
     gz_mat_read& matfile = handle->mat_reader;
     subject_qa.clear();
+    subject_qa_max.clear();
     subject_qa_buffer.clear();
     unsigned int row,col;
     for(unsigned int index = 0;1;++index)
@@ -70,6 +71,9 @@ bool vbc_database::load_database(const char* database_name)
         if (!buf)
             break;
         subject_qa.push_back(buf);
+        subject_qa_max.push_back(*std::max_element(buf,buf+col*row));
+        if(subject_qa_max.back() == 0.0)
+            subject_qa_max.back() = 1.0;
     }
     num_subjects = subject_qa.size();
     subject_names.resize(num_subjects);
@@ -121,6 +125,10 @@ void vbc_database::get_data_at(unsigned int index,unsigned int fib,std::vector<f
     unsigned int s_index = vi2si[index];
     unsigned int fib_offset = fib*si2vi.size();
     data.resize(num_subjects);
+    if(normalize_qa)
+        for(unsigned int index = 0;index < num_subjects;++index)
+            data[index] = subject_qa[index][s_index+fib_offset]/subject_qa_max[index];
+    else
     for(unsigned int index = 0;index < num_subjects;++index)
         data[index] = subject_qa[index][s_index+fib_offset];
 }
@@ -629,7 +637,7 @@ double stat_model::operator()(const std::vector<double>& population,unsigned int
         break;
     case 2: // individual
         {
-            float value = individual_data[pos];
+            float value = individual_data[pos]/individual_data_max;
             if(value == 0.0)
                 return 0.0;
             int rank = 0;
@@ -666,8 +674,12 @@ void vbc_database::calculate_spm(fib_data& data,stat_model& info,std::vector<uns
                 ++fib,fib_offset+=si2vi.size())
         {
             unsigned int pos = s_index + fib_offset;
-            for(unsigned int index = 0;index < permu.size();++index)
-                selected_population[index] = subject_qa[permu[index]][pos];
+            if(normalize_qa)
+                for(unsigned int index = 0;index < permu.size();++index)
+                    selected_population[index] = subject_qa[permu[index]][pos]/subject_qa_max[permu[index]];
+            else
+                for(unsigned int index = 0;index < permu.size();++index)
+                    selected_population[index] = subject_qa[permu[index]][pos];
 
             if(std::find(selected_population.begin(),selected_population.end(),0.0) != selected_population.end())
                 continue;
@@ -740,6 +752,8 @@ void vbc_database::run_permutation_multithread(unsigned int id)
             stat_model info;
             info.type = 2;
             info.individual_data = &(individual_data[subject_id][0]);
+            info.individual_data_max = individual_data_max[subject_id];
+
             calculate_spm(spm_maps[subject_id],info,permu);
         }
 
@@ -765,9 +779,15 @@ void vbc_database::run_permutation_multithread(unsigned int id)
                     }
                     info.type = model->type;
                     if(null)
+                    {
                         info.individual_data = subject_qa[random_subject_id];
+                        info.individual_data_max = subject_qa_max[random_subject_id];
+                    }
                     else
+                    {
                         info.individual_data = &(individual_data[subject_id][0]);
+                        info.individual_data_max = individual_data_max[subject_id];
+                    }
                 }
                 calculate_spm(data,info,permu);
                 data.write_lesser(fib);

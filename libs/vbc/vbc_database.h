@@ -151,6 +151,7 @@ public: // multiple regression
     multiple_regression<double> mr;
 public: // individual
     const float* individual_data;
+    float individual_data_max;
 public: // paired
     std::vector<unsigned int> pre,post;
 public:
@@ -206,14 +207,16 @@ private:// template information
 public:
     bool create_database(const char* templat_name);
     bool load_database(const char* database_name);
-private:// database information
+public:// database information
     std::string subject_report;
     std::vector<std::string> subject_names;
     unsigned int num_subjects;
     // 0: subject index 1:findex 2.s_index (fa > 0)
     std::vector<std::vector<float> > subject_qa_buffer;
     std::vector<const float*> subject_qa;
+    std::vector<float> subject_qa_max;
     std::vector<float> R2;
+    bool normalize_qa;
     bool sample_odf(gz_mat_read& mat_reader,std::vector<float>& data);
 public:
     void remove_subject(unsigned int index);
@@ -259,6 +262,7 @@ public:// routine for calculate SPM
     void calculate_spm(fib_data& data,stat_model& info,std::vector<unsigned int>& permu);
 public:// Individual analysis
     std::vector<std::vector<float> > individual_data;
+    std::vector<float> individual_data_max;
     bool read_subject_data(const std::vector<std::string>& files,std::vector<std::vector<float> >& data);
 public:// Multiple regression
     std::auto_ptr<stat_model> model;

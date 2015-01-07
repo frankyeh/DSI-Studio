@@ -720,6 +720,7 @@ void vbc_dialog::on_run_clicked()
     vbc->length_threshold = ui->length_threshold->value();
     vbc->seeding_density = ui->seeding_density->value();
     vbc->trk_file_names = file_names;
+    vbc->normalize_qa = ui->normalize_qa->isChecked();
     vbc->model.reset(new stat_model);
     *(vbc->model.get()) = *(model.get());
     vbc->individual_data.clear();
@@ -730,6 +731,9 @@ void vbc_dialog::on_run_clicked()
     {
         vbc->tracking_threshold = 1.0-(float)ui->percentile->value()*0.01;
         vbc->individual_data = individual_data;
+        vbc->individual_data_max.resize(vbc->individual_data.size());
+        for(unsigned int index = 0;index < vbc->individual_data.size();++index)
+            vbc->individual_data_max[index] = *std::max_element(vbc->individual_data[index].begin(),vbc->individual_data[index].end());
         out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted to identify affected pathway in "
             << vbc->individual_data.size() << " study patients.";
         out << " The diffusion data of the patients were compared with "

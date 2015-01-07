@@ -933,6 +933,16 @@
                </item>
               </layout>
              </item>
+             <item>
+              <widget class="QCheckBox" name="normalize_qa">
+               <property name="text">
+                <string>normalize QA using its maximum value (uncheck this in neurological diseases)</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
             </layout>
            </widget>
           </item>

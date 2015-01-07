@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'vbc_dialog.ui'
 **
-** Created: Sun Jan 4 22:45:49 2015
+** Created: Tue Jan 6 23:43:25 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -150,6 +150,7 @@ public:
     QHBoxLayout *horizontalLayout;
     QLabel *label_3;
     QSpinBox *length_threshold;
+    QCheckBox *normalize_qa;
     QSpacerItem *verticalSpacer_2;
     QWidget *page_3;
     QVBoxLayout *verticalLayout_7;
@@ -764,6 +765,12 @@ public:
 
         verticalLayout_18->addLayout(horizontalLayout);
 
+        normalize_qa = new QCheckBox(advanced_options_box);
+        normalize_qa->setObjectName(QString::fromUtf8("normalize_qa"));
+        normalize_qa->setChecked(true);
+
+        verticalLayout_18->addWidget(normalize_qa);
+
 
         verticalLayout_23->addWidget(advanced_options_box);
 
@@ -1033,6 +1040,7 @@ public:
         label_7->setText(QApplication::translate("vbc_dialog", "Seeding density (seeds/mm^3)", 0, QApplication::UnicodeUTF8));
         label_4->setText(QApplication::translate("vbc_dialog", "Permutation count.", 0, QApplication::UnicodeUTF8));
         label_3->setText(QApplication::translate("vbc_dialog", "Minimum track length (mm)", 0, QApplication::UnicodeUTF8));
+        normalize_qa->setText(QApplication::translate("vbc_dialog", "normalize QA using its maximum value (uncheck this in neurological diseases)", 0, QApplication::UnicodeUTF8));
         toolBox->setItemText(toolBox->indexOf(page_2), QApplication::translate("vbc_dialog", "STEP2: Setup parameters", 0, QApplication::UnicodeUTF8));
         view_legend->setText(QApplication::translate("vbc_dialog", "legend", 0, QApplication::UnicodeUTF8));
         show_null_greater->setText(QApplication::translate("vbc_dialog", "null greater", 0, QApplication::UnicodeUTF8));
