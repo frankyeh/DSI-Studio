@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'vbc_dialog.ui'
 **
-** Created: Tue Jan 6 23:43:25 2015
+** Created: Thu Jan 15 21:23:20 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -83,6 +83,7 @@ public:
     QVBoxLayout *verticalLayout_6;
     QHBoxLayout *horizontalLayout_4;
     QPushButton *save_name_list;
+    QPushButton *save_R2;
     QToolButton *remove_sel_subject;
     QSpacerItem *horizontalSpacer;
     QTableWidget *subject_list;
@@ -107,6 +108,7 @@ public:
     QToolButton *open_mr_files;
     QLabel *open_instruction_2;
     QPushButton *remove_subject;
+    QToolButton *remove_subject2;
     QSpacerItem *horizontalSpacer_4;
     QWidget *foi_widget;
     QHBoxLayout *horizontalLayout_7;
@@ -356,6 +358,11 @@ public:
 
         horizontalLayout_4->addWidget(save_name_list);
 
+        save_R2 = new QPushButton(widget_6);
+        save_R2->setObjectName(QString::fromUtf8("save_R2"));
+
+        horizontalLayout_4->addWidget(save_R2);
+
         remove_sel_subject = new QToolButton(widget_6);
         remove_sel_subject->setObjectName(QString::fromUtf8("remove_sel_subject"));
         QIcon icon2;
@@ -505,6 +512,13 @@ public:
         remove_subject->setIcon(icon2);
 
         horizontalLayout_10->addWidget(remove_subject);
+
+        remove_subject2 = new QToolButton(multiple_regression_demo);
+        remove_subject2->setObjectName(QString::fromUtf8("remove_subject2"));
+        remove_subject2->setIcon(icon2);
+        remove_subject2->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+
+        horizontalLayout_10->addWidget(remove_subject2);
 
         horizontalSpacer_4 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
@@ -977,7 +991,7 @@ public:
 
         retranslateUi(vbc_dialog);
 
-        toolBox->setCurrentIndex(2);
+        toolBox->setCurrentIndex(0);
         toolBox->layout()->setSpacing(0);
         tabWidget_2->setCurrentIndex(0);
 
@@ -996,6 +1010,7 @@ public:
         label_11->setText(QApplication::translate("vbc_dialog", "scatter style", 0, QApplication::UnicodeUTF8));
         save_report->setText(QApplication::translate("vbc_dialog", "...", 0, QApplication::UnicodeUTF8));
         save_name_list->setText(QApplication::translate("vbc_dialog", "Save name list...", 0, QApplication::UnicodeUTF8));
+        save_R2->setText(QApplication::translate("vbc_dialog", "Save R2...", 0, QApplication::UnicodeUTF8));
         remove_sel_subject->setText(QApplication::translate("vbc_dialog", "Remove selected subject", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem = subject_list->horizontalHeaderItem(0);
         ___qtablewidgetitem->setText(QApplication::translate("vbc_dialog", "Subject ID", 0, QApplication::UnicodeUTF8));
@@ -1016,6 +1031,7 @@ public:
         open_mr_files->setText(QApplication::translate("vbc_dialog", "...", 0, QApplication::UnicodeUTF8));
         open_instruction_2->setText(QApplication::translate("vbc_dialog", "Open subjects' demographics.", 0, QApplication::UnicodeUTF8));
         remove_subject->setText(QApplication::translate("vbc_dialog", "Remove selected subject", 0, QApplication::UnicodeUTF8));
+        remove_subject2->setText(QApplication::translate("vbc_dialog", "Remove subject with a specific value", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem3 = subject_demo->horizontalHeaderItem(0);
         ___qtablewidgetitem3->setText(QApplication::translate("vbc_dialog", "Subject ID", 0, QApplication::UnicodeUTF8));
         toolBox->setItemText(toolBox->indexOf(page_4), QApplication::translate("vbc_dialog", "STEP1: Select analysis model and provide patient information", 0, QApplication::UnicodeUTF8));

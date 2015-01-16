@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'color_bar_dialog.ui'
 **
-** Created: Tue Jan 6 23:43:25 2015
+** Created: Thu Jan 15 21:23:20 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!

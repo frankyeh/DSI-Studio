@@ -86,6 +86,10 @@ private slots:
 
     void on_save_report_clicked();
 
+    void on_remove_subject2_clicked();
+
+    void on_save_R2_clicked();
+
 public slots:
     void calculate_FDR(void);
 private:

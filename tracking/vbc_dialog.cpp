@@ -502,7 +502,7 @@ void vbc_dialog::on_open_mr_files_clicked()
                     {
                         model->pre.push_back(i);
                         model->post.push_back(j);
-                    }
+                    } 
             }
         ui->subject_demo->clear();
         ui->subject_demo->setColumnCount(2);
@@ -540,6 +540,7 @@ void vbc_dialog::on_rb_individual_analysis_clicked()
     ui->percentage_label->show();
     ui->threshold_label->setText("Percentile");
     ui->explaination->setText("25~50%:physiological difference, 5~25%:psychiatric diseases, 0~5%: neurological diseases");
+    ui->remove_subject2->hide();
 }
 
 void vbc_dialog::on_rb_group_difference_clicked()
@@ -555,6 +556,7 @@ void vbc_dialog::on_rb_group_difference_clicked()
     ui->percentage_label->show();
     ui->threshold_label->setText("Percentage difference");
     ui->explaination->setText("0~10%:physiological difference, 10~40%:psychiatric diseases, 40%~100%: neurological diseases");
+    ui->remove_subject2->hide();
 }
 
 void vbc_dialog::on_rb_multiple_regression_clicked()
@@ -572,6 +574,7 @@ void vbc_dialog::on_rb_multiple_regression_clicked()
     ui->percentage_label->hide();
     ui->threshold_label->setText("T threshold");
     ui->explaination->setText("<1.5:physiological difference, 1.5~2.5:psychiatric diseases, >2.5: neurological diseases");
+    ui->remove_subject2->show();
 }
 
 void vbc_dialog::on_rb_paired_difference_clicked()
@@ -587,6 +590,7 @@ void vbc_dialog::on_rb_paired_difference_clicked()
     ui->percentage_label->show();
     ui->threshold_label->setText("Percentage difference");
     ui->explaination->setText("0~10%:physiological difference, 10~40%:psychiatric diseases, 40%~100%: neurological diseases");
+    ui->remove_subject2->hide();
 }
 
 void vbc_dialog::calculate_FDR(void)
@@ -956,6 +960,49 @@ void vbc_dialog::on_remove_subject_clicked()
         ui->subject_list->removeRow(index);
     }
 }
+void vbc_dialog::on_remove_subject2_clicked()
+{
+    if(!ui->run->isEnabled())
+        return;
+    bool ok;
+    int value = QInputDialog::getInteger(this,
+                                         "Remove subject(s)",
+                                         "Remove subject(s) with any field matching this value:",999,-2147483647,2147483647,1,&ok);
+    if (!ok)
+        return;
+
+    std::vector<unsigned int> remove_list;
+    std::string remove_list_str;
+    for(unsigned int index = 0;index < vbc->subject_count();++index)
+    {
+        for(unsigned int j = 1;j < model->feature_count;++j)
+        {
+            if(model->X[index*model->feature_count + j] == value)
+            {
+                remove_list.push_back(index);
+                if(!remove_list_str.empty())
+                    remove_list_str += ", ";
+                remove_list_str += vbc->subject_name(index);
+            }
+        }
+    }
+    if(remove_list.empty())
+    {
+        QMessageBox::information(this,"Remove subject(s)","No subject matches the value.",0,0);
+        return;
+    }
+    while(!remove_list.empty())
+    {
+        vbc->remove_subject(remove_list.back());
+        model->remove_subject(remove_list.back());
+        ui->subject_demo->removeRow(remove_list.back());
+        ui->subject_list->removeRow(remove_list.back());
+        remove_list.pop_back();
+    }
+    remove_list_str += " removed.";
+    QMessageBox::information(this,"Remove subject(s)",remove_list_str.c_str(),0,0);
+}
+
 
 void vbc_dialog::on_remove_sel_subject_clicked()
 {
@@ -1095,4 +1142,18 @@ void vbc_dialog::on_save_report_clicked()
         ui->vbc_report->savePdf(filename,true,300,300);
     if(QFileInfo(filename).completeSuffix().toLower() == "txt")
         ui->vbc_report->saveTxt(filename);
+}
+
+
+void vbc_dialog::on_save_R2_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                this,
+                "Save R2 values",
+                work_dir + "/R2.txt",
+                "Report file (*.txt);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    std::ofstream out(filename.toLocal8Bit().begin());
+    std::copy(vbc->R2.begin(),vbc->R2.end(),std::ostream_iterator<float>(out,"\n"));
 }

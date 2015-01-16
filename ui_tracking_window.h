@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Tue Jan 6 23:43:25 2015
+** Created: Thu Jan 15 21:23:19 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -1590,10 +1590,10 @@ public:
         actionThreshold->setText(QApplication::translate("tracking_window", "Threshold", 0, QApplication::UnicodeUTF8));
         actionRedo->setText(QApplication::translate("tracking_window", "Redo", 0, QApplication::UnicodeUTF8));
         actionRedo->setShortcut(QApplication::translate("tracking_window", "Ctrl+Y", 0, QApplication::UnicodeUTF8));
-        actionCopy_to_clipboard->setText(QApplication::translate("tracking_window", "Copy to clipboard", 0, QApplication::UnicodeUTF8));
+        actionCopy_to_clipboard->setText(QApplication::translate("tracking_window", "Copy to Clipboard", 0, QApplication::UnicodeUTF8));
         actionCopy_to_clipboard->setShortcut(QApplication::translate("tracking_window", "Ctrl+C", 0, QApplication::UnicodeUTF8));
         actionSave_Anisotrpy_Map_as->setText(QApplication::translate("tracking_window", "Save anisotrpy map As...", 0, QApplication::UnicodeUTF8));
-        actionRestore_window_layout->setText(QApplication::translate("tracking_window", "Restore window layout", 0, QApplication::UnicodeUTF8));
+        actionRestore_window_layout->setText(QApplication::translate("tracking_window", "Restore Window Layout ", 0, QApplication::UnicodeUTF8));
         actionSave_Endpoints_in_Current_Mapping->setText(QApplication::translate("tracking_window", "Save Endpoints InT1/T2 space...", 0, QApplication::UnicodeUTF8));
         actionMove_Object->setText(QApplication::translate("tracking_window", "Move Object", 0, QApplication::UnicodeUTF8));
         actionMove_Object->setShortcut(QApplication::translate("tracking_window", "Ctrl+A", 0, QApplication::UnicodeUTF8));
@@ -1613,9 +1613,9 @@ public:
         actionUnckech_all_regions->setText(QApplication::translate("tracking_window", "Uncheck All", 0, QApplication::UnicodeUTF8));
         actionCopyTrack->setText(QApplication::translate("tracking_window", "Copy", 0, QApplication::UnicodeUTF8));
         actionConnectometry->setText(QApplication::translate("tracking_window", "Connectometry...", 0, QApplication::UnicodeUTF8));
-        actionSave_3D_screen_in_high_resolution->setText(QApplication::translate("tracking_window", "Save 3D screen in high resolution...", 0, QApplication::UnicodeUTF8));
+        actionSave_3D_screen_in_high_resolution->setText(QApplication::translate("tracking_window", "Save 3D Screen in High Resolution..", 0, QApplication::UnicodeUTF8));
         actionSave_All_Regions_As->setText(QApplication::translate("tracking_window", "Save All Regions As...", 0, QApplication::UnicodeUTF8));
-        actionFloat_3D_window->setText(QApplication::translate("tracking_window", "Float 3D window", 0, QApplication::UnicodeUTF8));
+        actionFloat_3D_window->setText(QApplication::translate("tracking_window", "Float 3D Window", 0, QApplication::UnicodeUTF8));
         actionSave_tracking_parameters->setText(QApplication::translate("tracking_window", "Save Tracking Parameters....", 0, QApplication::UnicodeUTF8));
         actionLoad_tracking_parameters->setText(QApplication::translate("tracking_window", "Load Tracking Parameters", 0, QApplication::UnicodeUTF8));
         actionCheck_all_tracts->setText(QApplication::translate("tracking_window", "Check All", 0, QApplication::UnicodeUTF8));
@@ -1631,7 +1631,7 @@ public:
         actionPublish_or_perish->setText(QApplication::translate("tracking_window", "Publish or perish...", 0, QApplication::UnicodeUTF8));
         actionMethod_Report->setText(QApplication::translate("tracking_window", "Method Report...", 0, QApplication::UnicodeUTF8));
         actionQuality_Assessment->setText(QApplication::translate("tracking_window", "Quality Assessment...", 0, QApplication::UnicodeUTF8));
-        actionSave_3D_screen_in_3_views->setText(QApplication::translate("tracking_window", "Save 3D screen in 3 views...", 0, QApplication::UnicodeUTF8));
+        actionSave_3D_screen_in_3_views->setText(QApplication::translate("tracking_window", "Save 3D Screen in 3 Views..", 0, QApplication::UnicodeUTF8));
         actionSave_Enpoints_In_MNI_Space->setText(QApplication::translate("tracking_window", "Save Enpoints In MNI Space...", 0, QApplication::UnicodeUTF8));
         actionCut_by_slice->setText(QApplication::translate("tracking_window", "Cut by slice", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
