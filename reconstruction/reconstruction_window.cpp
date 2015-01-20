@@ -286,7 +286,7 @@ void reconstruction_window::on_SlicePos_sliderMoved(int position)
     unsigned char* slice_mask = &*handle->mask.begin() + buffer.size()* position;
     for (unsigned int index = 0; index < buffer.size(); ++index)
     {
-        unsigned char value = slice_image_ptr[index];
+        unsigned char value = slice_image_ptr[index]*0.8;
         if (slice_mask[index])
             buffer[index] = image::rgb_color(255, value, value);
         else
