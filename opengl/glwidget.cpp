@@ -1756,7 +1756,6 @@ void GLWidget::addSurface(void)
                                (SliceModel*)&cur_tracking_window.slice;
 
     float threshold = image::segmentation::otsu_threshold(active_slice->get_source());
-    /*
     bool ok;
     threshold = QInputDialog::getDouble(this,
         "DSI Studio","Threshold:", threshold,
@@ -1764,7 +1763,7 @@ void GLWidget::addSurface(void)
         *std::max_element(active_slice->get_source().begin(),active_slice->get_source().end()),
         4, &ok);
     if (!ok)
-        return;*/
+        return;
     {
         surface.reset(new RegionModel);
         image::basic_image<float, 3> crop_image(active_slice->get_source());
