@@ -212,7 +212,7 @@ int rec(int ac, char *av[])
     }    
 
     std::cout << "start reconstruction..." <<std::endl;
-    const char* msg = reconstruction(handle.get(),method_index,param);
+    const char* msg = reconstruction(handle.get(),method_index,param,vm["check_btable"].as<int>());
     if (!msg)
         std::cout << "Reconstruction finished:" << msg << std::endl;
     return 0;

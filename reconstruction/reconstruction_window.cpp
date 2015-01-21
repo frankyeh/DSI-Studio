@@ -107,6 +107,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->RecordODF->setChecked(settings.value("rec_record_odf",0).toInt());
     ui->output_jacobian->setChecked(settings.value("output_jacobian",0).toInt());
     ui->output_mapping->setChecked(settings.value("output_mapping",0).toInt());
+    ui->check_btable->setChecked(settings.value("check_btable",1).toInt());
 
     ui->hardi_bvalue->setValue(settings.value("hardi_bvalue",3000).toDouble());
     ui->hardi_reg->setValue(settings.value("hardi_reg",0.05).toDouble());
@@ -240,6 +241,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     settings.setValue("rec_record_odf",ui->RecordODF->isChecked() ? 1 : 0);
     settings.setValue("output_jacobian",ui->output_jacobian->isChecked() ? 1 : 0);
     settings.setValue("output_mapping",ui->output_mapping->isChecked() ? 1 : 0);
+    settings.setValue("check_btable",ui->check_btable->isChecked() ? 1 : 0);
 
     begin_prog("run reconstruction",true);
     int odf_order[8] = {4, 5, 6, 8, 10, 12, 16, 20};
@@ -258,7 +260,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.output_jacobian = ui->output_jacobian->isChecked() ? 1 : 0;
     handle->voxel.output_mapping = ui->output_mapping->isChecked() ? 1 : 0;
 
-    const char* msg = (const char*)reconstruction(handle.get(), method_id, params);
+    const char* msg = (const char*)reconstruction(handle.get(), method_id, params,ui->check_btable->isChecked());
     if (!QFileInfo(msg).exists())
     {
         QMessageBox::information(this,"error",msg,0);

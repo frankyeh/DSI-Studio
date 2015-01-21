@@ -214,8 +214,7 @@ void flip_fib_dir(std::vector<float>& fib_dir,bool x,bool y,bool z)
 
 void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 
-extern "C"
-    const char* reconstruction(ImageModel* image_model,unsigned int method_id,const float* param_values)
+const char* reconstruction(ImageModel* image_model,unsigned int method_id,const float* param_values,bool check_b_table)
 {
     static std::string output_name;
     try
@@ -282,7 +281,7 @@ extern "C"
             }
         }
         // correct for b-table orientation
-
+        if(check_b_table)
         {
             set_title("checking b-table");
             image_model->reconstruct<dti_process>();
@@ -480,10 +479,7 @@ bool output_odfs(const image::basic_image<unsigned char,3>& mni_mask,
 }
 
 
-extern "C"
-    const char* odf_average(const char* out_name,
-                     const char* const * file_names,
-                     unsigned int num_files)
+const char* odf_average(const char* out_name,const char* const * file_names,unsigned int num_files)
 {
     static std::string error_msg,report;
     tessellated_icosahedron ti;

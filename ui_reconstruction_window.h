@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Thu Jan 15 21:23:19 2015
+** Created: Wed Jan 21 17:16:20 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -201,6 +201,7 @@ public:
     QSpacerItem *verticalSpacer;
     QWidget *widget;
     QHBoxLayout *horizontalLayout_20;
+    QCheckBox *check_btable;
     QSpacerItem *horizontalSpacer;
     QLabel *label_9;
     QSpinBox *ThreadCount;
@@ -257,7 +258,7 @@ public:
         toolBox->setObjectName(QString::fromUtf8("toolBox"));
         source_page = new QWidget();
         source_page->setObjectName(QString::fromUtf8("source_page"));
-        source_page->setGeometry(QRect(0, 0, 597, 473));
+        source_page->setGeometry(QRect(0, 0, 267, 195));
         horizontalLayout_25 = new QHBoxLayout(source_page);
         horizontalLayout_25->setObjectName(QString::fromUtf8("horizontalLayout_25"));
         splitter = new QSplitter(source_page);
@@ -473,7 +474,7 @@ public:
         toolBox->addItem(page_3, QString::fromUtf8("Step 1: setup brain mask"));
         page = new QWidget();
         page->setObjectName(QString::fromUtf8("page"));
-        page->setGeometry(QRect(0, 0, 580, 487));
+        page->setGeometry(QRect(0, -14, 580, 487));
         page->setMinimumSize(QSize(0, 0));
         verticalLayout_2 = new QVBoxLayout(page);
         verticalLayout_2->setSpacing(3);
@@ -1023,6 +1024,12 @@ public:
         horizontalLayout_20->setSpacing(0);
         horizontalLayout_20->setContentsMargins(0, 0, 0, 0);
         horizontalLayout_20->setObjectName(QString::fromUtf8("horizontalLayout_20"));
+        check_btable = new QCheckBox(widget);
+        check_btable->setObjectName(QString::fromUtf8("check_btable"));
+        check_btable->setChecked(true);
+
+        horizontalLayout_20->addWidget(check_btable);
+
         horizontalSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
         horizontalLayout_20->addItem(horizontalSpacer);
@@ -1196,6 +1203,7 @@ public:
          << QApplication::translate("reconstruction_window", "20-fold", 0, QApplication::UnicodeUTF8)
         );
         label_3->setText(QApplication::translate("reconstruction_window", "Number of fibers resolved", 0, QApplication::UnicodeUTF8));
+        check_btable->setText(QApplication::translate("reconstruction_window", "check b-table", 0, QApplication::UnicodeUTF8));
         label_9->setText(QApplication::translate("reconstruction_window", "multi-thread:", 0, QApplication::UnicodeUTF8));
         doDTI->setText(QApplication::translate("reconstruction_window", "Run reconstruction", 0, QApplication::UnicodeUTF8));
         doDTI->setDescription(QString());
