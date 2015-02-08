@@ -20,6 +20,7 @@ public:
     std::vector<image::vector<3,short> > seeds;
 public:
     std::ostringstream report;
+    std::string seed_report;
     TrackingParam param;
     bool stop_by_tract;
     bool center_seed;
@@ -215,10 +216,12 @@ public:
     {
         report.clear();
         report.str("");
-        report << "\nA deterministic fiber tracking algorithm (Yeh, et al. PLoS ONE 8(11): e80713) was used."
-               << " The anistropy threshold was " << fib.threshold << "."
+        report << "\nA deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was used."
+               << seed_report
+               << " The anisotropy threshold was " << fib.threshold << "."
                << " The angular threshold was " << (int)std::floor(std::acos(fib.cull_cos_angle)*180/3.1415926 + 0.5) << " degrees."
                << " The step size was " << param.step_size << " mm.";
+
 
         if(param.smooth_fraction != 0.0)
             report << " The fiber trajectories were smoothed by averaging the propagation direction with "

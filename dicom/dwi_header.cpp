@@ -13,9 +13,10 @@ void get_report_from_dicom(const image::io::dicom& header,std::string& report)
     header.get_text(0x0008,0x1090,make);
     header.get_text(0x0018,0x1030,seq);
     std::replace(manu.begin(),manu.end(),' ',(char)0);
+    make.erase(std::remove(make.begin(),make.end(),' '),make.end());
     std::ostringstream out;
     out << " The diffusion images were acquired on a " << manu.c_str() << " " << make.c_str()
-        << " scanner. A " << seq.c_str() << " sequence was used to acquired diffusion images."
+        << " scanner using a " << seq.c_str() << " sequence."
         << " TE=" << header.get_float(0x0018,0x0081) << " ms, and TR=" << header.get_float(0x0018,0x0080)  << " ms.";
     report += out.str();
 }
@@ -374,16 +375,14 @@ void get_report(const std::vector<float>& bvalues,image::vector<3> vs,std::strin
     calculate_shell(bvalues,shell);
     if(shell.size() > 5)
     {
-        out << " The diffusion images were acquired using a diffusion spectrum imaging scheme."
-            << " A total of " << bvalues.size()-(bvalues.front() == 0 ? 1:0)
+        out << " A diffusion spectrum imaging scheme was used, and a total of " << bvalues.size()-(bvalues.front() == 0 ? 1:0)
             << " diffusion sampling were acquired."
             << " The maximum b-value was " << bvalues.back() << " s/mm2.";
     }
     else
     if(shell.size() > 1)
     {
-        out << " The diffusion images were acquired using a multishell scheme."
-            << " The b-values were ";
+        out << " A multishell diffusion scheme was used, and the b-values were ";
         for(unsigned int index = 0;index < shell.size();++index)
         {
             if(index > 0)
@@ -405,8 +404,7 @@ void get_report(const std::vector<float>& bvalues,image::vector<3> vs,std::strin
     else
         if(shell.size() == 1)
         {
-            out << " The diffusion images were acquired using a single-shell scheme."
-                << " A total of " << bvalues.size()-(bvalues.front() == 0 ? 1:0)
+            out << " A single-shell diffusion scheme was used, and a total of " << bvalues.size()-(bvalues.front() == 0 ? 1:0)
                 << " diffusion sampling directions were acquired."
                 << " The b-value was " << bvalues.back() << " s/mm2.";
         }

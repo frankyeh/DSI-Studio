@@ -320,6 +320,22 @@
           </layout>
          </item>
          <item>
+          <widget class="QToolButton" name="auto_rotate">
+           <property name="maximumSize">
+            <size>
+             <width>22</width>
+             <height>22</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>&lt;|&gt;</string>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QToolButton" name="move3Dwindow">
            <property name="maximumSize">
             <size>
@@ -985,6 +1001,7 @@
     <addaction name="actionSagittal_view"/>
     <addaction name="actionCoronal_View"/>
     <addaction name="actionAxial_View"/>
+    <addaction name="actionAuto_Rotate"/>
     <addaction name="separator"/>
     <addaction name="actionLoad_Camera"/>
     <addaction name="actionSave_Camera"/>
@@ -1008,8 +1025,8 @@
     <addaction name="actionInsert_T1_T2"/>
     <addaction name="actionAdd_surface"/>
     <addaction name="separator"/>
-    <addaction name="actionSave_mapping"/>
     <addaction name="actionLoad_mapping"/>
+    <addaction name="actionSave_mapping"/>
     <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuTools">
@@ -2220,7 +2237,7 @@
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Insert T1/T2...</string>
+    <string>Insert T1w/T2w images...</string>
    </property>
   </action>
   <action name="actionAdd_surface">
@@ -2649,6 +2666,14 @@
   <action name="actionCut_by_slice">
    <property name="text">
     <string>Cut by slice</string>
+   </property>
+  </action>
+  <action name="actionAuto_Rotate">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Auto Rotate</string>
    </property>
   </action>
  </widget>

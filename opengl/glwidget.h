@@ -1,6 +1,7 @@
 #ifndef GLWIDGET_H
 #define GLWIDGET_H
 #include <QTimer>
+#include <QTime>
 #define NOMINMAX
 #include <memory>
 #include "QtOpenGL/QGLWidget"
@@ -47,6 +48,8 @@ class RenderingTableWidget;
      void select_object(void);
  public:// other slices
      std::auto_ptr<QTimer> timer;
+     QTime time;
+     int last_time;
      boost::ptr_vector<CustomSliceModel> other_slices;
      boost::ptr_vector<LinearMapping<image::const_pointer_image<float,3> > > mi3s;
      std::vector<std::vector<float> > transform;
@@ -87,6 +90,7 @@ class RenderingTableWidget;
      void loadMapping(void);
      void copyToClipboard(void);
      void check_reg(void);
+     void rotate(void);
  signals:
      void edited(void);
      void region_edited(void);

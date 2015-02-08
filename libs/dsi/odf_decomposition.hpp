@@ -164,7 +164,7 @@ public:
     {
         if (!voxel.odf_decomposition)
             return;
-        voxel.recon_report << "Diffusion ODF decomposition (Yeh et al, PLoS ONE 8(10): e75747, 2013) was conducted using a decomposition fraction of " << voxel.param[3];
+        voxel.recon_report << "Diffusion ODF decomposition (Yeh et al., PLoS ONE 8(10): e75747, 2013) was conducted using a decomposition fraction of " << voxel.param[3];
         decomposition_fraction = voxel.param[3];
         m = std::max<int>(voxel.param[4],voxel.max_fiber_number);
         fiber_ratio.resize(voxel.dim.size());

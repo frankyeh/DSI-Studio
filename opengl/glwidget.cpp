@@ -2024,4 +2024,15 @@ void GLWidget::saveRotationSeries(void)
     std::copy(m.begin(),m.end(),transformation_matrix);
     updateGL();
 }
-
+void GLWidget::rotate(void)
+{
+    int now_time = time.elapsed();
+    glPushMatrix();
+    glLoadIdentity();
+    glRotated((now_time-last_time)/100.0,0,1.0,0.0);
+    glMultMatrixf(transformation_matrix);
+    glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
+    glPopMatrix();
+    updateGL();
+    last_time = now_time;
+}

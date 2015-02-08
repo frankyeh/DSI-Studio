@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Wed Jan 21 17:16:20 2015
+** Created: Sun Feb 8 08:17:54 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -145,6 +145,7 @@ public:
     QAction *actionSave_3D_screen_in_3_views;
     QAction *actionSave_Enpoints_In_MNI_Space;
     QAction *actionCut_by_slice;
+    QAction *actionAuto_Rotate;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QWidget *main_widget;
@@ -162,6 +163,7 @@ public:
     QLabel *label_17;
     QDoubleSpinBox *gl_offset_value;
     QSlider *gl_offset;
+    QToolButton *auto_rotate;
     QToolButton *move3Dwindow;
     QHBoxLayout *centralLayout2;
     QCheckBox *glSagCheck;
@@ -555,6 +557,9 @@ public:
         actionSave_Enpoints_In_MNI_Space->setIcon(icon2);
         actionCut_by_slice = new QAction(tracking_window);
         actionCut_by_slice->setObjectName(QString::fromUtf8("actionCut_by_slice"));
+        actionAuto_Rotate = new QAction(tracking_window);
+        actionAuto_Rotate->setObjectName(QString::fromUtf8("actionAuto_Rotate"));
+        actionAuto_Rotate->setCheckable(true);
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -679,6 +684,13 @@ public:
 
 
         horizontalLayout_13->addLayout(horizontalLayout);
+
+        auto_rotate = new QToolButton(main_widget);
+        auto_rotate->setObjectName(QString::fromUtf8("auto_rotate"));
+        auto_rotate->setMaximumSize(QSize(22, 22));
+        auto_rotate->setCheckable(true);
+
+        horizontalLayout_13->addWidget(auto_rotate);
 
         move3Dwindow = new QToolButton(main_widget);
         move3Dwindow->setObjectName(QString::fromUtf8("move3Dwindow"));
@@ -1445,6 +1457,7 @@ public:
         menu_View->addAction(actionSagittal_view);
         menu_View->addAction(actionCoronal_View);
         menu_View->addAction(actionAxial_View);
+        menu_View->addAction(actionAuto_Rotate);
         menu_View->addSeparator();
         menu_View->addAction(actionLoad_Camera);
         menu_View->addAction(actionSave_Camera);
@@ -1463,8 +1476,8 @@ public:
         menu_Slices->addAction(actionInsert_T1_T2);
         menu_Slices->addAction(actionAdd_surface);
         menu_Slices->addSeparator();
-        menu_Slices->addAction(actionSave_mapping);
         menu_Slices->addAction(actionLoad_mapping);
+        menu_Slices->addAction(actionSave_mapping);
         menu_Slices->addSeparator();
         menuTools->addAction(actionLoad_tracking_parameters);
         menuTools->addAction(actionSave_tracking_parameters);
@@ -1571,7 +1584,7 @@ public:
         actionSave_Rotation_Images->setText(QApplication::translate("tracking_window", "Save Rotation Images...", 0, QApplication::UnicodeUTF8));
         actionPaint->setText(QApplication::translate("tracking_window", "Paint", 0, QApplication::UnicodeUTF8));
         actionPaint->setShortcut(QApplication::translate("tracking_window", "Ctrl+P", 0, QApplication::UnicodeUTF8));
-        actionInsert_T1_T2->setText(QApplication::translate("tracking_window", "Insert T1/T2...", 0, QApplication::UnicodeUTF8));
+        actionInsert_T1_T2->setText(QApplication::translate("tracking_window", "Insert T1w/T2w images...", 0, QApplication::UnicodeUTF8));
         actionAdd_surface->setText(QApplication::translate("tracking_window", "Add Isosurface", 0, QApplication::UnicodeUTF8));
         actionSave_mapping->setText(QApplication::translate("tracking_window", "Save Mapping...", 0, QApplication::UnicodeUTF8));
         actionLoad_mapping->setText(QApplication::translate("tracking_window", "Load Mapping...", 0, QApplication::UnicodeUTF8));
@@ -1634,6 +1647,7 @@ public:
         actionSave_3D_screen_in_3_views->setText(QApplication::translate("tracking_window", "Save 3D Screen in 3 Views..", 0, QApplication::UnicodeUTF8));
         actionSave_Enpoints_In_MNI_Space->setText(QApplication::translate("tracking_window", "Save Enpoints In MNI Space...", 0, QApplication::UnicodeUTF8));
         actionCut_by_slice->setText(QApplication::translate("tracking_window", "Cut by slice", 0, QApplication::UnicodeUTF8));
+        actionAuto_Rotate->setText(QApplication::translate("tracking_window", "Auto Rotate", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)
@@ -1653,6 +1667,7 @@ public:
         );
         label_16->setText(QApplication::translate("tracking_window", "Contrast", 0, QApplication::UnicodeUTF8));
         label_17->setText(QApplication::translate("tracking_window", "Offset", 0, QApplication::UnicodeUTF8));
+        auto_rotate->setText(QApplication::translate("tracking_window", "<|>", 0, QApplication::UnicodeUTF8));
         move3Dwindow->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
         glSagCheck->setText(QString());
 #ifndef QT_NO_TOOLTIP

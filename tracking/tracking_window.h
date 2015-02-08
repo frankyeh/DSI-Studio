@@ -63,7 +63,7 @@ public:
     // For clipboard
     unsigned int copy_target;
 public:
-
+    std::auto_ptr<QTimer> timer;
     unsigned int odf_size;
     unsigned int odf_face_size;
     unsigned char has_odfs;
@@ -158,6 +158,8 @@ private slots:
     void on_zoom_out_clicked();
     void on_actionView_FIB_Content_triggered();
     void on_actionQuality_Assessment_triggered();
+    void on_actionAuto_Rotate_triggered(bool checked);
+    void on_auto_rotate_toggled(bool checked);
 };
 
 #endif // TRACKING_WINDOW_H

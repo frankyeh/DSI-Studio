@@ -784,7 +784,7 @@ void vbc_dialog::on_run_clicked()
         vbc->trk_file_names[0] += QString::number(ui->t_threshold->value()).toLocal8Bit().begin();
     }
 
-    out << " A deterministic fiber tracking algorithm (Yeh, et al. PLoS ONE 8(11): e80713) was conducted to connect these fiber directions";
+    out << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was conducted to connect these fiber directions";
 
     // load region
     vbc->roi.clear();

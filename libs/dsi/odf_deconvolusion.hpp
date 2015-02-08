@@ -153,7 +153,7 @@ public:
 
         if (!voxel.odf_deconvolusion)
             return;
-        voxel.recon_report << "Diffusion ODF deconvolution (Yeh et al, Neuroimage, 2011) was conducted using a regularization parameter of " << voxel.param[2];
+        voxel.recon_report << "Diffusion ODF deconvolution (Yeh et al., Neuroimage, 2011) was conducted using a regularization parameter of " << voxel.param[2];
         std::for_each(voxel.response_function.begin(),voxel.response_function.end(),
                       boost::lambda::_1 /= (std::accumulate(voxel.response_function.begin(),voxel.response_function.end(),0.0)
                                             /((double)voxel.response_function.size())));

@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'atlasdialog.ui'
 **
-** Created: Wed Jan 21 17:16:21 2015
+** Created: Sun Feb 8 07:38:35 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!

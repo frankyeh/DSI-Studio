@@ -731,6 +731,8 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
 
         std::fill(slice.texture_need_update,
                   slice.texture_need_update+3,1);
+
+        ui->sliceViewBox->setCurrentIndex(0);
     }
     slice_no_update = false;
 
@@ -1360,4 +1362,28 @@ void tracking_window::on_actionQuality_Assessment_triggered()
     out << "Number of disconnected fibers: " << result.second << std::endl;
     out << "Error ratio: " << 100.0*(float)result.second/(float)result.first << "%" << std::endl;
     show_info_dialog(this,"Quality assessment",out.str().c_str());
+}
+
+void tracking_window::on_actionAuto_Rotate_triggered(bool checked)
+{
+    if(checked)
+        {
+            glWidget->time.start();
+            glWidget->last_time = glWidget->time.elapsed();
+            timer.reset(new QTimer());
+            timer->setInterval(1);
+            connect(timer.get(), SIGNAL(timeout()), glWidget, SLOT(rotate()));
+            timer->start();
+        }
+    else
+        timer->stop();
+    if(ui->auto_rotate->isChecked() != checked)
+        ui->auto_rotate->setChecked(checked);
+}
+
+void tracking_window::on_auto_rotate_toggled(bool checked)
+{
+    if(ui->actionAuto_Rotate->isChecked() != checked)
+        ui->actionAuto_Rotate->setChecked(checked);
+    on_actionAuto_Rotate_triggered(checked);
 }

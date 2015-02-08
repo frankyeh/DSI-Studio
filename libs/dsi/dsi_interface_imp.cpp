@@ -409,7 +409,7 @@ const char* reconstruction(ImageModel* image_model,unsigned int method_id,const 
             break;
         case 7:
             image_model->voxel.recon_report
-            << " The diffusion data were reconstructed using q-space diffeomorphic reconstruction (Yeh et al. Neuroimage, 2011) with a diffusion sampling length ratio of "
+            << " The diffusion data were reconstructed using q-space diffeomorphic reconstruction (Yeh et al., Neuroimage, 2011) with a diffusion sampling length ratio of "
             << (float)param_values[0] << ". The output resolution was " << param_values[1] << " mm.";
             // run gqi to get the spin quantity
             if (!image_model->reconstruct<gqi_estimate_response_function>())
