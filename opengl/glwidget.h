@@ -134,7 +134,7 @@ class RenderingTableWidget;
      float transformation_matrix[16];
      float current_scale;
      bool set_view_flip;
-
+     void get3View(QImage& I,unsigned int type);
  };
 
 #endif // GLWIDGET_H

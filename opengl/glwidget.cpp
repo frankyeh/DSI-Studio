@@ -1406,8 +1406,6 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
 }
 void GLWidget::mouseReleaseEvent(QMouseEvent *event)
 {
-    //set as copytarget
-    cur_tracking_window.copy_target =0;
     makeCurrent();
     if(!editing_option)
         return;
@@ -1891,19 +1889,8 @@ void GLWidget::catchScreen2(void)
     makeCurrent();
     resizeGL(old_width,old_height);
 }
-void GLWidget::save3ViewImage(void)
+void GLWidget::get3View(QImage& I,unsigned int type)
 {
-    QSettings settings;
-    QString filename = QFileDialog::getSaveFileName(
-            this,
-            "Assign image name",
-            cur_tracking_window.get_path("catch_screen") + "/image." +
-            settings.value("catch_screen_extension","jpg").toString(),
-            "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    cur_tracking_window.add_path("catch_screen",filename);
-    settings.setValue("catch_screen_extension",QFileInfo(filename).completeSuffix());
     makeCurrent();
     set_view_flip = false;
     set_view(0);
@@ -1921,12 +1908,51 @@ void GLWidget::save3ViewImage(void)
     updateGL();
     QImage image2 = grabFrameBuffer();
     QImage image3 = cur_tracking_window.scene.view_image.scaledToWidth(image0.width()).convertToFormat(QImage::Format_ARGB32);
-    QImage all(image0.width()*2,image0.height()*2,QImage::Format_ARGB32);
-    QPainter painter(&all);
-    painter.drawImage(0,0,image0);
-    painter.drawImage(image0.width(),0,image1);
-    painter.drawImage(image0.width(),image0.height(),image2);
-    painter.drawImage(0,image0.height(),image3);
+    if(type == 0)
+    {
+        QImage all(image0.width()*2,image0.height()*2,QImage::Format_ARGB32);
+        QPainter painter(&all);
+        painter.drawImage(0,0,image0);
+        painter.drawImage(image0.width(),0,image1);
+        painter.drawImage(image0.width(),image0.height(),image2);
+        painter.drawImage(0,image0.height(),image3);
+        I = all;
+    }
+    if(type == 1) // horizontal
+    {
+        QImage all(image0.width()*3,image0.height(),QImage::Format_ARGB32);
+        QPainter painter(&all);
+        painter.drawImage(0,0,image0);
+        painter.drawImage(image0.width(),0,image1);
+        painter.drawImage(image0.width()*2,0,image2);
+        I = all;
+    }
+    if(type == 2)
+    {
+        QImage all(image0.width(),image0.height()*3,QImage::Format_ARGB32);
+        QPainter painter(&all);
+        painter.drawImage(0,0,image0);
+        painter.drawImage(0,image0.height(),image1);
+        painter.drawImage(0,image0.height()*2,image2);
+        I = all;
+    }
+}
+
+void GLWidget::save3ViewImage(void)
+{
+    QSettings settings;
+    QString filename = QFileDialog::getSaveFileName(
+            this,
+            "Assign image name",
+            cur_tracking_window.get_path("catch_screen") + "/image." +
+            settings.value("catch_screen_extension","jpg").toString(),
+            "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    cur_tracking_window.add_path("catch_screen",filename);
+    settings.setValue("catch_screen_extension",QFileInfo(filename).completeSuffix());
+    QImage all;
+    get3View(all,0);
     all.save(filename);
 }
 

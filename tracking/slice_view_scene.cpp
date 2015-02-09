@@ -468,7 +468,6 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         mid_down = true;
         return;
     }
-    cur_tracking_window.copy_target = 1;
     if(cur_tracking_window.regionWidget->regions.empty())
     {
         cur_tracking_window.regionWidget->new_region();

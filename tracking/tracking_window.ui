@@ -998,6 +998,17 @@
     <property name="title">
      <string>&amp;View</string>
     </property>
+    <widget class="QMenu" name="menuCopy_to_Clipboard">
+     <property name="title">
+      <string>Copy to Clipboard</string>
+     </property>
+     <addaction name="action3D_Screen"/>
+     <addaction name="action3D_Screen_3_Views"/>
+     <addaction name="action3D_Screen_3_Views_Horizontal"/>
+     <addaction name="action3D_Screen_3_Views_Vertical"/>
+     <addaction name="actionROI"/>
+     <addaction name="actionTrack_Report"/>
+    </widget>
     <addaction name="actionSagittal_view"/>
     <addaction name="actionCoronal_View"/>
     <addaction name="actionAxial_View"/>
@@ -1009,12 +1020,13 @@
     <addaction name="actionSave_Screen"/>
     <addaction name="actionSave_3D_screen_in_3_views"/>
     <addaction name="actionSave_3D_screen_in_high_resolution"/>
-    <addaction name="actionSave_ROI_Screen"/>
-    <addaction name="actionSave_Anisotrpy_Map_as"/>
     <addaction name="actionSave_Rotation_Images"/>
     <addaction name="actionSave_Left_Right_3D_Image"/>
-    <addaction name="actionCopy_to_clipboard"/>
     <addaction name="separator"/>
+    <addaction name="actionSave_ROI_Screen"/>
+    <addaction name="actionSave_Anisotrpy_Map_as"/>
+    <addaction name="separator"/>
+    <addaction name="menuCopy_to_Clipboard"/>
     <addaction name="actionRestore_window_layout"/>
     <addaction name="actionFloat_3D_window"/>
    </widget>
@@ -2368,14 +2380,6 @@
     <string>Ctrl+Y</string>
    </property>
   </action>
-  <action name="actionCopy_to_clipboard">
-   <property name="text">
-    <string>Copy to Clipboard</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+C</string>
-   </property>
-  </action>
   <action name="actionSave_Anisotrpy_Map_as">
    <property name="icon">
     <iconset resource="../icons.qrc">
@@ -2674,6 +2678,45 @@
    </property>
    <property name="text">
     <string>Auto Rotate</string>
+   </property>
+  </action>
+  <action name="action3D_Screen">
+   <property name="text">
+    <string>3D Screen</string>
+   </property>
+  </action>
+  <action name="actionSave_3D_Screen_in_3_Horizontal_Views">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save 3D Screen in 3 Horizontal Views...</string>
+   </property>
+  </action>
+  <action name="action3D_Screen_3_Views">
+   <property name="text">
+    <string>3D Screen 3 Views</string>
+   </property>
+  </action>
+  <action name="action3D_Screen_3_Views_Horizontal">
+   <property name="text">
+    <string>3D Screen 3 Views Horizontal</string>
+   </property>
+  </action>
+  <action name="action3D_Screen_3_Views_Vertical">
+   <property name="text">
+    <string>3D Screen 3 Views Vertical</string>
+   </property>
+  </action>
+  <action name="actionROI">
+   <property name="text">
+    <string>ROI</string>
+   </property>
+  </action>
+  <action name="actionTrack_Report">
+   <property name="text">
+    <string>Track Report</string>
    </property>
   </action>
  </widget>

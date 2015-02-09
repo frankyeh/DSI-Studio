@@ -312,7 +312,6 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
 
     {
         slice_no_update = false;
-        copy_target = 0;
     }
 
     // setup fa threshold
@@ -384,14 +383,12 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
         if (obj == glWidget)
         {
             has_info = glWidget->get_mouse_pos(static_cast<QMouseEvent*>(event),pos);
-            copy_target = 0;
         }
         if (obj->parent() == ui->graphicsView)
         {
             QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
             QPointF point = ui->graphicsView->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
             has_info = scene.get_location(point.x(),point.y(),pos);
-            copy_target = 1;
         }
         // for connectivity matrix
         if(connectivity_matrix.get() && connectivity_matrix->is_graphic_view(obj->parent()))
@@ -871,23 +868,6 @@ void tracking_window::on_actionSave_Endpoints_in_Current_Mapping_triggered()
     tractWidget->saveTransformedEndpoints(&*tr.begin());
 }
 
-void tracking_window::on_actionCopy_to_clipboard_triggered()
-{
-    switch(copy_target)
-    {
-    case 0:
-        glWidget->copyToClipboard();
-        return;
-    case 1:
-        scene.copyClipBoard();
-        return;
-    case 2:
-        if(tact_report_imp.get())
-            tact_report_imp->copyToClipboard();
-        return;
-    }
-}
-
 
 void tracking_window::on_actionRestore_window_layout_triggered()
 {
@@ -986,34 +966,33 @@ void tracking_window::on_gl_contrast_value_valueChanged(double arg1)
 
 void tracking_window::keyPressEvent ( QKeyEvent * event )
 {
-    if(copy_target == 0) // glWidget
+    switch(event->key())
     {
-        switch(event->key())
-        {
         case Qt::Key_Q:
-            ui->glSagSlider->setValue(ui->glSagSlider->value()+1);
+            ui->SagSlider->setValue(ui->SagSlider->value()+1);
             event->accept();
             break;
         case Qt::Key_A:
-            ui->glSagSlider->setValue(ui->glSagSlider->value()-1);
+            ui->SagSlider->setValue(ui->SagSlider->value()-1);
             event->accept();
             break;
         case Qt::Key_W:
-            ui->glCorSlider->setValue(ui->glCorSlider->value()+1);
+            ui->CorSlider->setValue(ui->CorSlider->value()+1);
             event->accept();
             break;
         case Qt::Key_S:
-            ui->glCorSlider->setValue(ui->glCorSlider->value()-1);
+            ui->CorSlider->setValue(ui->CorSlider->value()-1);
             event->accept();
             break;
         case Qt::Key_E:
-            ui->glAxiSlider->setValue(ui->glAxiSlider->value()+1);
+            ui->AxiSlider->setValue(ui->AxiSlider->value()+1);
             event->accept();
             break;
         case Qt::Key_D:
-            ui->glAxiSlider->setValue(ui->glAxiSlider->value()-1);
+            ui->AxiSlider->setValue(ui->AxiSlider->value()-1);
             event->accept();
             break;
+
         case Qt::Key_Left:
             glWidget->move_by(-1,0);
             break;
@@ -1043,53 +1022,7 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
             glWidget->set_view(2);
             glWidget->updateGL();
             break;*/
-        }
     }
-    else
-    {
-        switch(event->key())
-        {
-        case Qt::Key_Q:
-            ui->SagSlider->setValue(ui->SagSlider->value()+1);
-            event->accept();
-            break;
-        case Qt::Key_A:
-            ui->SagSlider->setValue(ui->SagSlider->value()-1);
-            event->accept();
-            break;
-        case Qt::Key_W:
-            ui->CorSlider->setValue(ui->CorSlider->value()+1);
-            event->accept();
-            break;
-        case Qt::Key_S:
-            ui->CorSlider->setValue(ui->CorSlider->value()-1);
-            event->accept();
-            break;
-        case Qt::Key_E:
-            ui->AxiSlider->setValue(ui->AxiSlider->value()+1);
-            event->accept();
-            break;
-        case Qt::Key_D:
-            ui->AxiSlider->setValue(ui->AxiSlider->value()-1);
-            event->accept();
-            break;
-            /*
-        case Qt::Key_Z:
-            on_SagView_clicked();
-            event->accept();
-            break;
-        case Qt::Key_X:
-            on_CorView_clicked();
-            event->accept();
-            break;
-        case Qt::Key_C:
-            on_AxiView_clicked();
-            event->accept();
-            break;*/
-        }
-
-    }
-
 
     if(event->key() >= Qt::Key_1 && event->key() <= Qt::Key_9)
     {
@@ -1386,4 +1319,41 @@ void tracking_window::on_auto_rotate_toggled(bool checked)
     if(ui->actionAuto_Rotate->isChecked() != checked)
         ui->actionAuto_Rotate->setChecked(checked);
     on_actionAuto_Rotate_triggered(checked);
+}
+
+void tracking_window::on_action3D_Screen_triggered()
+{
+    glWidget->copyToClipboard();
+}
+
+void tracking_window::on_action3D_Screen_3_Views_triggered()
+{
+    QImage all;
+    glWidget->get3View(all,0);
+    QApplication::clipboard()->setImage(all);
+}
+
+void tracking_window::on_action3D_Screen_3_Views_Horizontal_triggered()
+{
+    QImage all;
+    glWidget->get3View(all,1);
+    QApplication::clipboard()->setImage(all);
+}
+
+void tracking_window::on_action3D_Screen_3_Views_Vertical_triggered()
+{
+    QImage all;
+    glWidget->get3View(all,2);
+    QApplication::clipboard()->setImage(all);
+}
+
+void tracking_window::on_actionROI_triggered()
+{
+    scene.copyClipBoard();
+}
+
+void tracking_window::on_actionTrack_Report_triggered()
+{
+    if(tact_report_imp.get())
+                tact_report_imp->copyToClipboard();
 }

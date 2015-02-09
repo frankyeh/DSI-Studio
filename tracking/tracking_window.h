@@ -59,9 +59,6 @@ public:
     RenderingTableWidget *renderWidget;
     AtlasDialog* atlas_dialog;
     slice_view_scene scene;
-
-    // For clipboard
-    unsigned int copy_target;
 public:
     std::auto_ptr<QTimer> timer;
     unsigned int odf_size;
@@ -101,7 +98,6 @@ public slots:
     void on_AxiView_clicked();
 private slots:
     void on_actionRestore_window_layout_triggered();
-    void on_actionCopy_to_clipboard_triggered();
     void on_actionSave_Tracts_in_Current_Mapping_triggered();
     void on_actionTDI_Import_Slice_Space_triggered();
     void on_actionTDI_Subvoxel_Diffusion_Space_triggered();
@@ -160,6 +156,12 @@ private slots:
     void on_actionQuality_Assessment_triggered();
     void on_actionAuto_Rotate_triggered(bool checked);
     void on_auto_rotate_toggled(bool checked);
+    void on_action3D_Screen_triggered();
+    void on_action3D_Screen_3_Views_triggered();
+    void on_action3D_Screen_3_Views_Horizontal_triggered();
+    void on_action3D_Screen_3_Views_Vertical_triggered();
+    void on_actionROI_triggered();
+    void on_actionTrack_Report_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

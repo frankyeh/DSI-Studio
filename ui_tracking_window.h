@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Sun Feb 8 08:17:54 2015
+** Created: Mon Feb 9 19:34:11 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -103,7 +103,6 @@ public:
     QAction *actionSave_Tracts_in_Current_Mapping;
     QAction *actionThreshold;
     QAction *actionRedo;
-    QAction *actionCopy_to_clipboard;
     QAction *actionSave_Anisotrpy_Map_as;
     QAction *actionRestore_window_layout;
     QAction *actionSave_Endpoints_in_Current_Mapping;
@@ -146,6 +145,13 @@ public:
     QAction *actionSave_Enpoints_In_MNI_Space;
     QAction *actionCut_by_slice;
     QAction *actionAuto_Rotate;
+    QAction *action3D_Screen;
+    QAction *actionSave_3D_Screen_in_3_Horizontal_Views;
+    QAction *action3D_Screen_3_Views;
+    QAction *action3D_Screen_3_Views_Horizontal;
+    QAction *action3D_Screen_3_Views_Vertical;
+    QAction *actionROI;
+    QAction *actionTrack_Report;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QWidget *main_widget;
@@ -210,6 +216,7 @@ public:
     QMenu *menuSave_Tracts;
     QMenu *menu_Edit;
     QMenu *menu_View;
+    QMenu *menuCopy_to_Clipboard;
     QMenu *menu_Slices;
     QMenu *menuTools;
     QDockWidget *TractWidgetHolder;
@@ -450,8 +457,6 @@ public:
         actionThreshold->setObjectName(QString::fromUtf8("actionThreshold"));
         actionRedo = new QAction(tracking_window);
         actionRedo->setObjectName(QString::fromUtf8("actionRedo"));
-        actionCopy_to_clipboard = new QAction(tracking_window);
-        actionCopy_to_clipboard->setObjectName(QString::fromUtf8("actionCopy_to_clipboard"));
         actionSave_Anisotrpy_Map_as = new QAction(tracking_window);
         actionSave_Anisotrpy_Map_as->setObjectName(QString::fromUtf8("actionSave_Anisotrpy_Map_as"));
         actionSave_Anisotrpy_Map_as->setIcon(icon2);
@@ -560,6 +565,21 @@ public:
         actionAuto_Rotate = new QAction(tracking_window);
         actionAuto_Rotate->setObjectName(QString::fromUtf8("actionAuto_Rotate"));
         actionAuto_Rotate->setCheckable(true);
+        action3D_Screen = new QAction(tracking_window);
+        action3D_Screen->setObjectName(QString::fromUtf8("action3D_Screen"));
+        actionSave_3D_Screen_in_3_Horizontal_Views = new QAction(tracking_window);
+        actionSave_3D_Screen_in_3_Horizontal_Views->setObjectName(QString::fromUtf8("actionSave_3D_Screen_in_3_Horizontal_Views"));
+        actionSave_3D_Screen_in_3_Horizontal_Views->setIcon(icon2);
+        action3D_Screen_3_Views = new QAction(tracking_window);
+        action3D_Screen_3_Views->setObjectName(QString::fromUtf8("action3D_Screen_3_Views"));
+        action3D_Screen_3_Views_Horizontal = new QAction(tracking_window);
+        action3D_Screen_3_Views_Horizontal->setObjectName(QString::fromUtf8("action3D_Screen_3_Views_Horizontal"));
+        action3D_Screen_3_Views_Vertical = new QAction(tracking_window);
+        action3D_Screen_3_Views_Vertical->setObjectName(QString::fromUtf8("action3D_Screen_3_Views_Vertical"));
+        actionROI = new QAction(tracking_window);
+        actionROI->setObjectName(QString::fromUtf8("actionROI"));
+        actionTrack_Report = new QAction(tracking_window);
+        actionTrack_Report->setObjectName(QString::fromUtf8("actionTrack_Report"));
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -981,6 +1001,8 @@ public:
         menu_Edit->setObjectName(QString::fromUtf8("menu_Edit"));
         menu_View = new QMenu(menuBar);
         menu_View->setObjectName(QString::fromUtf8("menu_View"));
+        menuCopy_to_Clipboard = new QMenu(menu_View);
+        menuCopy_to_Clipboard->setObjectName(QString::fromUtf8("menuCopy_to_Clipboard"));
         menu_Slices = new QMenu(menuBar);
         menu_Slices->setObjectName(QString::fromUtf8("menu_Slices"));
         menuTools = new QMenu(menuBar);
@@ -1465,14 +1487,21 @@ public:
         menu_View->addAction(actionSave_Screen);
         menu_View->addAction(actionSave_3D_screen_in_3_views);
         menu_View->addAction(actionSave_3D_screen_in_high_resolution);
-        menu_View->addAction(actionSave_ROI_Screen);
-        menu_View->addAction(actionSave_Anisotrpy_Map_as);
         menu_View->addAction(actionSave_Rotation_Images);
         menu_View->addAction(actionSave_Left_Right_3D_Image);
-        menu_View->addAction(actionCopy_to_clipboard);
         menu_View->addSeparator();
+        menu_View->addAction(actionSave_ROI_Screen);
+        menu_View->addAction(actionSave_Anisotrpy_Map_as);
+        menu_View->addSeparator();
+        menu_View->addAction(menuCopy_to_Clipboard->menuAction());
         menu_View->addAction(actionRestore_window_layout);
         menu_View->addAction(actionFloat_3D_window);
+        menuCopy_to_Clipboard->addAction(action3D_Screen);
+        menuCopy_to_Clipboard->addAction(action3D_Screen_3_Views);
+        menuCopy_to_Clipboard->addAction(action3D_Screen_3_Views_Horizontal);
+        menuCopy_to_Clipboard->addAction(action3D_Screen_3_Views_Vertical);
+        menuCopy_to_Clipboard->addAction(actionROI);
+        menuCopy_to_Clipboard->addAction(actionTrack_Report);
         menu_Slices->addAction(actionInsert_T1_T2);
         menu_Slices->addAction(actionAdd_surface);
         menu_Slices->addSeparator();
@@ -1603,8 +1632,6 @@ public:
         actionThreshold->setText(QApplication::translate("tracking_window", "Threshold", 0, QApplication::UnicodeUTF8));
         actionRedo->setText(QApplication::translate("tracking_window", "Redo", 0, QApplication::UnicodeUTF8));
         actionRedo->setShortcut(QApplication::translate("tracking_window", "Ctrl+Y", 0, QApplication::UnicodeUTF8));
-        actionCopy_to_clipboard->setText(QApplication::translate("tracking_window", "Copy to Clipboard", 0, QApplication::UnicodeUTF8));
-        actionCopy_to_clipboard->setShortcut(QApplication::translate("tracking_window", "Ctrl+C", 0, QApplication::UnicodeUTF8));
         actionSave_Anisotrpy_Map_as->setText(QApplication::translate("tracking_window", "Save anisotrpy map As...", 0, QApplication::UnicodeUTF8));
         actionRestore_window_layout->setText(QApplication::translate("tracking_window", "Restore Window Layout ", 0, QApplication::UnicodeUTF8));
         actionSave_Endpoints_in_Current_Mapping->setText(QApplication::translate("tracking_window", "Save Endpoints InT1/T2 space...", 0, QApplication::UnicodeUTF8));
@@ -1648,6 +1675,13 @@ public:
         actionSave_Enpoints_In_MNI_Space->setText(QApplication::translate("tracking_window", "Save Enpoints In MNI Space...", 0, QApplication::UnicodeUTF8));
         actionCut_by_slice->setText(QApplication::translate("tracking_window", "Cut by slice", 0, QApplication::UnicodeUTF8));
         actionAuto_Rotate->setText(QApplication::translate("tracking_window", "Auto Rotate", 0, QApplication::UnicodeUTF8));
+        action3D_Screen->setText(QApplication::translate("tracking_window", "3D Screen", 0, QApplication::UnicodeUTF8));
+        actionSave_3D_Screen_in_3_Horizontal_Views->setText(QApplication::translate("tracking_window", "Save 3D Screen in 3 Horizontal Views...", 0, QApplication::UnicodeUTF8));
+        action3D_Screen_3_Views->setText(QApplication::translate("tracking_window", "3D Screen 3 Views", 0, QApplication::UnicodeUTF8));
+        action3D_Screen_3_Views_Horizontal->setText(QApplication::translate("tracking_window", "3D Screen 3 Views Horizontal", 0, QApplication::UnicodeUTF8));
+        action3D_Screen_3_Views_Vertical->setText(QApplication::translate("tracking_window", "3D Screen 3 Views Vertical", 0, QApplication::UnicodeUTF8));
+        actionROI->setText(QApplication::translate("tracking_window", "ROI", 0, QApplication::UnicodeUTF8));
+        actionTrack_Report->setText(QApplication::translate("tracking_window", "Track Report", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)
@@ -1708,6 +1742,7 @@ public:
         menuSave_Tracts->setTitle(QApplication::translate("tracking_window", "Save Tracts", 0, QApplication::UnicodeUTF8));
         menu_Edit->setTitle(QApplication::translate("tracking_window", "&Edit", 0, QApplication::UnicodeUTF8));
         menu_View->setTitle(QApplication::translate("tracking_window", "&View", 0, QApplication::UnicodeUTF8));
+        menuCopy_to_Clipboard->setTitle(QApplication::translate("tracking_window", "Copy to Clipboard", 0, QApplication::UnicodeUTF8));
         menu_Slices->setTitle(QApplication::translate("tracking_window", "&Slices", 0, QApplication::UnicodeUTF8));
         menuTools->setTitle(QApplication::translate("tracking_window", "Options", 0, QApplication::UnicodeUTF8));
         TractWidgetHolder->setWindowTitle(QApplication::translate("tracking_window", "Fiber Tracts", 0, QApplication::UnicodeUTF8));

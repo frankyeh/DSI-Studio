@@ -107,7 +107,6 @@ void tract_report::on_refresh_report_clicked()
         ui->report_widget->legend->setVisible(false);
 
     ui->report_widget->replot();
-    cur_tracking_window->copy_target = 2;
 }
 
 void tract_report::on_save_report_clicked()
