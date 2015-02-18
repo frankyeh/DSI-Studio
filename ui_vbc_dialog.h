@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'vbc_dialog.ui'
 **
-** Created: Mon Feb 9 19:34:11 2015
+** Created: Wed Feb 18 17:27:38 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -324,7 +324,7 @@ public:
         scatter = new QSpinBox(widget_9);
         scatter->setObjectName(QString::fromUtf8("scatter"));
         scatter->setMaximum(15);
-        scatter->setValue(4);
+        scatter->setValue(5);
 
         horizontalLayout_14->addWidget(scatter);
 
@@ -781,7 +781,8 @@ public:
 
         normalize_qa = new QCheckBox(advanced_options_box);
         normalize_qa->setObjectName(QString::fromUtf8("normalize_qa"));
-        normalize_qa->setChecked(true);
+        normalize_qa->setEnabled(true);
+        normalize_qa->setChecked(false);
 
         verticalLayout_18->addWidget(normalize_qa);
 
@@ -991,7 +992,7 @@ public:
 
         retranslateUi(vbc_dialog);
 
-        toolBox->setCurrentIndex(0);
+        toolBox->setCurrentIndex(2);
         toolBox->layout()->setSpacing(0);
         tabWidget_2->setCurrentIndex(0);
 
@@ -1056,7 +1057,7 @@ public:
         label_7->setText(QApplication::translate("vbc_dialog", "Seeding density (seeds/mm^3)", 0, QApplication::UnicodeUTF8));
         label_4->setText(QApplication::translate("vbc_dialog", "Permutation count.", 0, QApplication::UnicodeUTF8));
         label_3->setText(QApplication::translate("vbc_dialog", "Minimum track length (mm)", 0, QApplication::UnicodeUTF8));
-        normalize_qa->setText(QApplication::translate("vbc_dialog", "normalize QA using its maximum value (uncheck this in neurological diseases)", 0, QApplication::UnicodeUTF8));
+        normalize_qa->setText(QApplication::translate("vbc_dialog", "normalize QA using its maximum value", 0, QApplication::UnicodeUTF8));
         toolBox->setItemText(toolBox->indexOf(page_2), QApplication::translate("vbc_dialog", "STEP2: Setup parameters", 0, QApplication::UnicodeUTF8));
         view_legend->setText(QApplication::translate("vbc_dialog", "legend", 0, QApplication::UnicodeUTF8));
         show_null_greater->setText(QApplication::translate("vbc_dialog", "null greater", 0, QApplication::UnicodeUTF8));
