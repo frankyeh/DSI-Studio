@@ -78,11 +78,18 @@ void slice_view_scene::show_fiber(QPainter& painter)
         threshold = 0.00000001;
     int X,Y,Z;
     float display_ratio = cur_tracking_window["roi_zoom"].toInt();
-    float r = display_ratio /  3.0;
-    float pen_w = display_ratio /  5.0;
     const char dir_x[3] = {1,0,0};
     const char dir_y[3] = {2,2,1};
 
+    int fiber_color = cur_tracking_window["roi_fiber_color"].toInt();
+    float pen_w = display_ratio * cur_tracking_window["roi_fiber_width"].toFloat();
+    float r = display_ratio * cur_tracking_window["roi_fiber_length"].toFloat();
+    if(fiber_color)
+    {
+        QPen pen(QColor(255,0,0));
+        pen.setWidthF(pen_w);
+        painter.setPen(pen);
+    }
     const FibData& fib_data = *(cur_tracking_window.handle);
     for (unsigned int y = 0; y < slice_image.height(); ++y)
         for (unsigned int x = 0; x < slice_image.width(); ++x)
@@ -95,9 +102,12 @@ void slice_view_scene::show_fiber(QPainter& painter)
                     if(fib_data.fib.getFA(pos.index(),fiber) > threshold)
                     {
                         const float* dir_ptr = fib_data.fib.getDir(pos.index(),fiber);
-                        QPen pen(QColor(std::abs(dir_ptr[0]) * 255.0,std::abs(dir_ptr[1]) * 255.0, std::abs(dir_ptr[2]) * 255.0));
-                        pen.setWidthF(pen_w);
-                        painter.setPen(pen);
+                        if(!fiber_color)
+                        {
+                            QPen pen(QColor(std::abs(dir_ptr[0]) * 255.0,std::abs(dir_ptr[1]) * 255.0, std::abs(dir_ptr[2]) * 255.0));
+                            pen.setWidthF(pen_w);
+                            painter.setPen(pen);
+                        }
                         float dx = r * dir_ptr[dir_x[cur_tracking_window.slice.cur_dim]] + 0.5;
                         float dy = r * dir_ptr[dir_y[cur_tracking_window.slice.cur_dim]] + 0.5;
                         painter.drawLine(
