@@ -27,7 +27,7 @@
       <item>
        <widget class="QToolBox" name="toolBox">
         <property name="currentIndex">
-         <number>0</number>
+         <number>2</number>
         </property>
         <property name="tabSpacing">
          <number>0</number>
@@ -195,7 +195,7 @@
                           <number>15</number>
                          </property>
                          <property name="value">
-                          <number>4</number>
+                          <number>5</number>
                          </property>
                         </widget>
                        </item>
@@ -956,11 +956,14 @@
              </item>
              <item>
               <widget class="QCheckBox" name="normalize_qa">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
                <property name="text">
-                <string>normalize QA using its maximum value (uncheck this in neurological diseases)</string>
+                <string>normalize QA using its maximum value</string>
                </property>
                <property name="checked">
-                <bool>true</bool>
+                <bool>false</bool>
                </property>
               </widget>
              </item>

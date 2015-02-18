@@ -894,7 +894,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
             {
                 {
                     std::ostringstream out1;
-                    out1 << trk_file_names[index] << ".greater" << length_threshold << ".trk.gz";
+                    out1 << trk_file_names[index] << ".greater.trk.gz";
                     tracks.save_tracts_to_file(out1.str().c_str());
                     saved_file_name.push_back(out1.str().c_str());
                 }
@@ -925,7 +925,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
             else
             {
                 std::ostringstream out1;
-                out1 << trk_file_names[index] << ".greater" << length_threshold << ".no_trk.txt";
+                out1 << trk_file_names[index] << ".greater.no_trk.txt";
                 std::ofstream(out1.str().c_str());
             }
             greater_tracks[index] = tracks;
@@ -939,7 +939,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
             {
                 {
                     std::ostringstream out1;
-                    out1 << trk_file_names[index] << ".lesser" << length_threshold << ".trk.gz";
+                    out1 << trk_file_names[index] << ".lesser.trk.gz";
                     tracks.save_tracts_to_file(out1.str().c_str());
                     saved_file_name.push_back(out1.str().c_str());
                 }
@@ -969,7 +969,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
             else
             {
                 std::ostringstream out1;
-                out1 << trk_file_names[index] << ".lesser" << length_threshold << ".no_trk.txt";
+                out1 << trk_file_names[index] << ".lesser.no_trk.txt";
                 std::ofstream(out1.str().c_str());
             }
         }

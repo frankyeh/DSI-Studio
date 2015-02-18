@@ -239,31 +239,35 @@ void vbc_dialog::show_report()
         x_size = std::max<unsigned int>(x_size,vbc_data[i].size()-1);
     if(x_size == 0)
         return;
-    QVector<double> x(x_size);
+    QVector<double> x(x_size),x2(x_size);
     std::vector<QVector<double> > y(vbc_data.size());
     for(unsigned int i = 0;i < vbc_data.size();++i)
         y[i].resize(x_size);
     for(unsigned int j = 0;j < x_size;++j)
     {
-        x[j] = (float)j;
+        x[j] = (float)j-0.2;
+        x2[j] = (float)j+0.2;
         for(unsigned int i = 0; i < vbc_data.size(); ++i)
             if(j+1 < vbc_data[i].size())
                 y[i][j] = vbc_data[i][j+1];
     }
-    QPen pen;
     QColor color[4];
     color[0] = QColor(20,20,100,200);
     color[1] = QColor(100,20,20,200);
     color[2] = QColor(20,100,20,200);
     color[3] = QColor(20,100,100,200);
+    ui->null_dist->clearPlottables();
+
     for(unsigned int i = 0; i < vbc_data.size(); ++i)
     {
-        ui->null_dist->addGraph();
-        pen.setColor(color[i]);
-        ui->null_dist->graph()->setLineStyle(QCPGraph::lsLine);
-        ui->null_dist->graph()->setPen(pen);
-        ui->null_dist->graph()->setData(x, y[i]);
-        ui->null_dist->graph()->setName(QString(legend[i]));
+        QCPBars *bars1 = new QCPBars(ui->null_dist->xAxis, ui->null_dist->yAxis);
+        ui->null_dist->addPlottable(bars1);
+        bars1->setData((i%2) ? x: x2, y[i]);
+        bars1->setWidth(0.4);
+        bars1->setPen(Qt::NoPen);
+        bars1->setBrush(color[i]);
+        bars1->setName(QString(legend[i]));
+
     }
 
     ui->null_dist->xAxis->setLabel("mm");
@@ -729,7 +733,14 @@ void vbc_dialog::on_run_clicked()
     *(vbc->model.get()) = *(model.get());
     vbc->individual_data.clear();
 
-
+    std::string parameter_str;
+    {
+        std::ostringstream out;
+        if(ui->normalize_qa->isChecked())
+            out << ".nqa";
+        out << ".l" << ui->length_threshold->value() << ".s" << ui->seeding_density->value() << ".p" << ui->mr_permutation->value();
+        parameter_str = out.str();
+    }
 
     if(ui->rb_individual_analysis->isChecked())
     {
@@ -745,6 +756,7 @@ void vbc_dialog::on_run_clicked()
         out << " A percentile rank threshold of " << ui->percentile->value() << "% was used to select fiber orientations with deviant condition.";
         for(unsigned int index = 0;index < vbc->trk_file_names.size();++index)
         {
+            vbc->trk_file_names[index] += parameter_str;
             vbc->trk_file_names[index] += ".ind.p";
             vbc->trk_file_names[index] += QString::number(ui->percentile->value()).toLocal8Bit().begin();
         }
@@ -755,6 +767,7 @@ void vbc_dialog::on_run_clicked()
         out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted to compare group differences."
             << " The group difference was quantified using percentage measurement (i.e. 2*(d1-d2)/(d1+d2) x %), where d1 and d2 are the group averages of the spin distribution function (SDF)."
             << " A threshold of " << ui->percentage_dif->value() << "% difference was used to select fiber directions with substantial difference in anisotropy.";
+        vbc->trk_file_names[0] += parameter_str;
         vbc->trk_file_names[0] += ".group.p";
         vbc->trk_file_names[0] += QString::number(ui->percentage_dif->value()).toLocal8Bit().begin();
 
@@ -764,6 +777,7 @@ void vbc_dialog::on_run_clicked()
         vbc->tracking_threshold = (float)ui->percentage_dif->value()*0.01;
         out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted to compare paired group differences."
             << " A threshold of " << ui->percentage_dif->value() << "% difference was used to select fiber directions with substantial difference in anisotropy.";
+        vbc->trk_file_names[0] += parameter_str;
         vbc->trk_file_names[0] += ".paired.p";
         vbc->trk_file_names[0] += QString::number(ui->percentage_dif->value()).toLocal8Bit().begin();
     }
@@ -778,6 +792,7 @@ void vbc_dialog::on_run_clicked()
         out << " A t-score threshold of " << ui->t_threshold->value()
             << " was used to select fiber directions correlated with "
             << ui->foi->currentText().toLower().toLocal8Bit().begin() << ".";
+        vbc->trk_file_names[0] += parameter_str;
         vbc->trk_file_names[0] += ".";
         vbc->trk_file_names[0] += ui->foi->currentText().toLower().toLocal8Bit().begin();
         vbc->trk_file_names[0] += ".t";
@@ -1062,8 +1077,7 @@ void vbc_dialog::on_x_pos_valueChanged(int arg1)
         ui->vbc_report->xAxis->setRange(min_x-(max_x-min_x)*0.1,
                                         max_x+(max_x-min_x)*0.1);
         ui->vbc_report->xAxis->setLabel(ui->foi->currentText());
-        ui->vbc_report->yAxis->setRange(min_y-(max_y-min_y)*0.1,
-                                        max_y+(max_y-min_y)*0.1);
+        ui->vbc_report->yAxis->setRange(0,max_y+(max_y-min_y)*0.1);
         ui->vbc_report->yAxis->setLabel("QA");
 
     }
