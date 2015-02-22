@@ -312,21 +312,20 @@ int trk(int ac, char *av[])
             file_name_stat += ".";
             file_name_stat += cmd;
             // export statistics
-            if(cmd == "tdi")
+            if(cmd == "tdi" || cmd == "tdi_end")
             {
                 file_name_stat += ".nii.gz";
                 std::cout << "export TDI to " << file_name_stat << std::endl;
-                tract_model.save_tdi(file_name_stat.c_str(),false,false,handle->trans_to_mni);
+                tract_model.save_tdi(file_name_stat.c_str(),false,cmd == "tdi_end",handle->trans_to_mni);
                 continue;
             }
-            if(cmd == "tdi2")
+            if(cmd == "tdi2" || cmd == "tdi2_end")
             {
                 file_name_stat += ".nii.gz";
                 std::cout << "export subvoxel TDI to " << file_name_stat << std::endl;
-                tract_model.save_tdi(file_name_stat.c_str(),true,false,handle->trans_to_mni);
+                tract_model.save_tdi(file_name_stat.c_str(),true,cmd == "tdi2_end",handle->trans_to_mni);
                 continue;
             }
-
 
             file_name_stat += ".txt";
 
