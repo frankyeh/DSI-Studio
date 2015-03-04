@@ -166,6 +166,11 @@
          <string>count</string>
         </property>
        </item>
+       <item>
+        <property name="text">
+         <string>ncount</string>
+        </property>
+       </item>
       </widget>
      </item>
      <item>

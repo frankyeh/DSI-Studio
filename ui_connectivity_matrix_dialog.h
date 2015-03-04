@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'connectivity_matrix_dialog.ui'
 **
-** Created: Wed Feb 18 17:27:39 2015
+** Created: Tue Mar 3 19:52:48 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -14,7 +14,6 @@
 #include <QtGui/QAction>
 #include <QtGui/QApplication>
 #include <QtGui/QButtonGroup>
-#include <QtGui/QCheckBox>
 #include <QtGui/QComboBox>
 #include <QtGui/QDialog>
 #include <QtGui/QDialogButtonBox>
@@ -47,8 +46,8 @@ public:
     QHBoxLayout *horizontalLayout_2;
     QLabel *label;
     QDoubleSpinBox *zoom;
-    QCheckBox *log;
-    QCheckBox *norm;
+    QLabel *label_4;
+    QComboBox *matrix_value;
     QSpacerItem *horizontalSpacer_2;
     QGraphicsView *graphicsView;
     QDialogButtonBox *buttonBox;
@@ -57,7 +56,7 @@ public:
     {
         if (connectivity_matrix_dialog->objectName().isEmpty())
             connectivity_matrix_dialog->setObjectName(QString::fromUtf8("connectivity_matrix_dialog"));
-        connectivity_matrix_dialog->resize(495, 480);
+        connectivity_matrix_dialog->resize(513, 429);
         verticalLayout = new QVBoxLayout(connectivity_matrix_dialog);
         verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
         horizontalLayout = new QHBoxLayout();
@@ -131,16 +130,16 @@ public:
 
         horizontalLayout_2->addWidget(zoom);
 
-        log = new QCheckBox(connectivity_matrix_dialog);
-        log->setObjectName(QString::fromUtf8("log"));
-        log->setMaximumSize(QSize(16777215, 22));
+        label_4 = new QLabel(connectivity_matrix_dialog);
+        label_4->setObjectName(QString::fromUtf8("label_4"));
 
-        horizontalLayout_2->addWidget(log);
+        horizontalLayout_2->addWidget(label_4);
 
-        norm = new QCheckBox(connectivity_matrix_dialog);
-        norm->setObjectName(QString::fromUtf8("norm"));
+        matrix_value = new QComboBox(connectivity_matrix_dialog);
+        matrix_value->setObjectName(QString::fromUtf8("matrix_value"));
+        matrix_value->setSizeAdjustPolicy(QComboBox::AdjustToContents);
 
-        horizontalLayout_2->addWidget(norm);
+        horizontalLayout_2->addWidget(matrix_value);
 
         horizontalSpacer_2 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
@@ -185,8 +184,12 @@ public:
         recalculate->setText(QApplication::translate("connectivity_matrix_dialog", "Recalculate", 0, QApplication::UnicodeUTF8));
         save_as->setText(QApplication::translate("connectivity_matrix_dialog", "...", 0, QApplication::UnicodeUTF8));
         label->setText(QApplication::translate("connectivity_matrix_dialog", "Zoom in/out", 0, QApplication::UnicodeUTF8));
-        log->setText(QApplication::translate("connectivity_matrix_dialog", "Logarithm", 0, QApplication::UnicodeUTF8));
-        norm->setText(QApplication::translate("connectivity_matrix_dialog", "normalized by median length", 0, QApplication::UnicodeUTF8));
+        label_4->setText(QApplication::translate("connectivity_matrix_dialog", "Matrix value:", 0, QApplication::UnicodeUTF8));
+        matrix_value->clear();
+        matrix_value->insertItems(0, QStringList()
+         << QApplication::translate("connectivity_matrix_dialog", "count", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("connectivity_matrix_dialog", "ncount", 0, QApplication::UnicodeUTF8)
+        );
     } // retranslateUi
 
 };

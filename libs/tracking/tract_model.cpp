@@ -1534,6 +1534,32 @@ bool ConnectivityMatrix::calculate(const TractModel& tract_model,std::string mat
                 matrix_value[index] = count[i][j];
         return true;
     }
+    if(matrix_value_type == "ncount")
+    {
+        std::vector<std::vector<std::vector<unsigned int> > > length_matrix(regions.size());
+        for(unsigned int i = 0;i < regions.size();++i)
+            length_matrix[i].resize(regions.size());
+        for(unsigned int index = 0;index < passing_list.size();++index)
+        {
+            std::vector<unsigned int>& region_passed = passing_list[index];
+            for(unsigned int i = 0;i < region_passed.size();++i)
+                    for(unsigned int j = i+1;j < region_passed.size();++j)
+                    {
+                        length_matrix[region_passed[i]][region_passed[j]].push_back(tract_model.get_tract_length(index));
+                        length_matrix[region_passed[j]][region_passed[i]].push_back(tract_model.get_tract_length(index));
+                    }
+        }
+        for(unsigned int i = 0,index = 0;i < count.size();++i)
+            for(unsigned int j = 0;j < count[i].size();++j,++index)
+                if(!length_matrix[i][j].empty())
+                {
+                    std::nth_element(length_matrix[i][j].begin(),
+                                     length_matrix[i][j].begin()+(length_matrix[i][j].size() >> 1),
+                                     length_matrix[i][j].end());
+                    matrix_value[index] = count[i][j]/(float)length_matrix[i][j][length_matrix[i][j].size() >> 1];
+                }
+        return true;
+    }
     std::vector<std::vector<float> > data;
     if(matrix_value_type == "qa" || matrix_value_type == "fa")
         tract_model.get_tracts_fa(data);
