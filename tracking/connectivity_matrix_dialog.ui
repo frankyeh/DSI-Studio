@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>495</width>
-    <height>480</height>
+    <width>513</width>
+    <height>429</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -150,23 +150,22 @@
       </widget>
      </item>
      <item>
-      <widget class="QCheckBox" name="log">
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>22</height>
-        </size>
-       </property>
+      <widget class="QLabel" name="label_4">
        <property name="text">
-        <string>Logarithm</string>
+        <string>Matrix value:</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QCheckBox" name="norm">
-       <property name="text">
-        <string>normalized by median length</string>
+      <widget class="QComboBox" name="matrix_value">
+       <property name="sizeAdjustPolicy">
+        <enum>QComboBox::AdjustToContents</enum>
        </property>
+       <item>
+        <property name="text">
+         <string>count</string>
+        </property>
+       </item>
       </widget>
      </item>
      <item>

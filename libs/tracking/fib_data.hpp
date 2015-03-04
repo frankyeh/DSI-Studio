@@ -489,7 +489,16 @@ public:
                 return index_num;
         return view_item.size();
     }
-
+    void get_index_list(std::vector<std::string>& index_list) const
+    {
+        bool is_dti = (view_item[0].name[0] == 'f');
+        if(is_dti)
+            index_list.push_back("fa");
+        else
+            index_list.push_back("qa");
+        for (int index = other_mapping_index; index < view_item.size(); ++index)
+            index_list.push_back(view_item[index].name);
+    }
     float get_value_range(const std::string& view_name) const
     {
         unsigned int view_index = get_name_index(view_name);
@@ -610,23 +619,13 @@ public:
 
     void get_index_titles(std::vector<std::string>& titles)
     {
-        if (view_item[0].name[0] == 'f')// is dti
+        std::vector<std::string> index_list;
+        get_index_list(index_list);
+        for(unsigned int index = 0;index < index_list.size();++index)
         {
-            titles.push_back("FA mean");
-            titles.push_back("FA sd");
+            titles.push_back(index_list[index]+" mean");
+            titles.push_back(index_list[index]+" sd");
         }
-        else
-        {
-            titles.push_back("QA mean");
-            titles.push_back("QA sd");
-        }
-        for(int data_index = other_mapping_index;
-            data_index < view_item.size();++data_index)
-        {
-            titles.push_back(view_item[data_index].name+" mean");
-            titles.push_back(view_item[data_index].name+" sd");
-        }
-
     }
     void getSlicesDirColor(unsigned short order,unsigned int* pixels) const
     {

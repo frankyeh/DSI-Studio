@@ -15,6 +15,12 @@ connectivity_matrix_dialog::connectivity_matrix_dialog(tracking_window *parent) 
 {
     ui->setupUi(this);
     ui->graphicsView->setScene(&scene);
+
+    std::vector<std::string> index_list;
+    cur_tracking_window->handle->get_index_list(index_list);
+    for (unsigned int index = 0; index < index_list.size(); ++index)
+        ui->matrix_value->addItem(index_list[index].c_str());
+
     // atlas
     ui->region_list->addItem("ROIs");
     for(int index = 0;index < atlas_list.size();++index)
@@ -44,15 +50,15 @@ void connectivity_matrix_dialog::mouse_move(QMouseEvent *mouseEvent)
     int y = std::floor(((float)point.y()) / ui->zoom->value() - 0.5);
     if(x >= 0 && y >= 0 && x < data.region_name.size() && y < data.region_name.size())
     {
-        data.save_to_image(cm,ui->log->isChecked(),ui->norm->isChecked());
+        data.save_to_image(cm);
         // line x
-        for(unsigned int x_pos = 0,pos = y*data.matrix.size();x_pos < data.matrix.size();++x_pos,++pos)
+        for(unsigned int x_pos = 0,pos = y*data.matrix_value.height();x_pos < data.matrix_value.width();++x_pos,++pos)
         {
             cm[pos][2] = (cm[pos][0] >> 1);
             cm[pos][2] += 125;
         }
         // line y
-        for(unsigned int y_pos = 0,pos = x;y_pos < data.matrix.size();++y_pos,pos += data.matrix.size())
+        for(unsigned int y_pos = 0,pos = x;y_pos < data.matrix_value.height();++y_pos,pos += data.matrix_value.width())
         {
             cm[pos][2] = (cm[pos][0] >> 1);
             cm[pos][2] += 125;
@@ -63,13 +69,13 @@ void connectivity_matrix_dialog::mouse_move(QMouseEvent *mouseEvent)
         x_text->moveBy(point.x()-x_text->boundingRect().width()/2,-x_text->boundingRect().height());
         y_text->rotate(270);
         y_text->moveBy(-y_text->boundingRect().height(),point.y()+y_text->boundingRect().width()/2);
-        unsigned int index = x+y*data.matrix.size();
-        if(index < data.connectivity_count.size())
+        unsigned int index = x+y*data.matrix_value.width();
+        if(index < data.matrix_value.size())
         {
             QGraphicsTextItem *value_text =
-                    scene.addText(QString("count:%1 length:%2").
-                                  arg(data.connectivity_count[index]).
-                                  arg(data.tract_mean_length[index]));
+                    scene.addText(QString("%1:%2").
+                                  arg(ui->matrix_value->currentText()).
+                                  arg(data.matrix_value[index]));
             value_text->moveBy(0,-x_text->boundingRect().height()-value_text->boundingRect().height());
         }
     }
@@ -113,8 +119,9 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
         data.set_atlas(atlas_list[ui->region_list->currentIndex()-1],mni_position);
     }
     data.calculate(*(cur_tracking_window->tractWidget->tract_models[cur_tracking_window->tractWidget->currentRow()]),
+                   ui->matrix_value->currentText().toLocal8Bit().begin(),
                    ui->end_only->currentIndex());
-    data.save_to_image(cm,ui->log->isChecked(),ui->norm->isChecked());
+    data.save_to_image(cm);
     on_zoom_valueChanged(0);
 }
 
@@ -129,17 +136,6 @@ void connectivity_matrix_dialog::on_zoom_valueChanged(double arg1)
     scene.clear();
     scene.setItemIndexMethod(QGraphicsScene::NoIndex);
     scene.addRect(0, 0, view_image.width(),view_image.height(),QPen(),view_image);
-}
-
-void connectivity_matrix_dialog::on_log_toggled(bool checked)
-{
-    data.save_to_image(cm,ui->log->isChecked(),ui->norm->isChecked());
-    on_zoom_valueChanged(0);
-}
-void connectivity_matrix_dialog::on_norm_toggled(bool checked)
-{
-    data.save_to_image(cm,ui->log->isChecked(),ui->norm->isChecked());
-    on_zoom_valueChanged(0);
 }
 
 void connectivity_matrix_dialog::on_save_as_clicked()
@@ -161,7 +157,7 @@ void connectivity_matrix_dialog::on_save_as_clicked()
     }
     else
     {
-        data.save_to_image(cm,ui->log->isChecked(),ui->norm->isChecked());
+        data.save_to_image(cm);
         QImage qimage((unsigned char*)&*cm.begin(),cm.width(),cm.height(),QImage::Format_RGB32);
         qimage.save(filename);
     }

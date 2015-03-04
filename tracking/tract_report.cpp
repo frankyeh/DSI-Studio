@@ -12,10 +12,10 @@ tract_report::tract_report(QWidget *parent) :
     ui(new Ui::tract_report)
 {
     ui->setupUi(this);
-    ui->report_index->addItem((cur_tracking_window->is_dti) ? "fa":"qa");
-    FibData& fib_data = *(FibData*)cur_tracking_window->handle;
-    for (int index = fib_data.other_mapping_index; index < fib_data.view_item.size(); ++index)
-        ui->report_index->addItem(fib_data.view_item[index].name.c_str());
+    std::vector<std::string> index_list;
+    cur_tracking_window->handle->get_index_list(index_list);
+    for (unsigned int index = 0; index < index_list.size(); ++index)
+        ui->report_index->addItem(index_list[index].c_str());
 
     // report
     {

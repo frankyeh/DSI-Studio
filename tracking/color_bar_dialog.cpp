@@ -11,10 +11,11 @@ color_bar_dialog::color_bar_dialog(QWidget *parent) :
     ui(new Ui::color_bar_dialog)
 {
     ui->setupUi(this);
-    FibData& fib_data = *(FibData*)cur_tracking_window->handle;
-    ui->tract_color_index->addItem((cur_tracking_window->is_dti) ? "fa":"qa");
-    for (int index = fib_data.other_mapping_index; index < fib_data.view_item.size(); ++index)
-        ui->tract_color_index->addItem(fib_data.view_item[index].name.c_str());
+    std::vector<std::string> index_list;
+    cur_tracking_window->handle->get_index_list(index_list);
+    for (unsigned int index = 0; index < index_list.size(); ++index)
+        ui->tract_color_index->addItem(index_list[index].c_str());
+
     ui->color_bar_view->setScene(&color_bar);
     ui->color_bar_style->setCurrentIndex(1);
 

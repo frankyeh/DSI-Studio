@@ -27,6 +27,7 @@ int ana(int ac, char *av[])
     ("roi", po::value<std::string>(), "file for ROI regions")
     ("end", po::value<std::string>(), "file for END regions")
     ("export", po::value<std::string>(), "export additional information (e.g. --export=tdi)")
+    ("connectivity_value", po::value<std::string>()->default_value("count"), "specify connectivity parameter")
     ;
 
     if(!ac)
@@ -170,8 +171,9 @@ int ana(int ac, char *av[])
         std::cout << "total number of tracts=" << tract_model.get_tracts().size() << std::endl;
         data.set_regions(region_table);
         std::cout << "calculating connectivity matrix..." << std::endl;
-        std::cout << "Count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
-        data.calculate(tract_model,use_end_only);
+        std::cout << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
+        std::cout << "calculate matrix using " << vm["connectivity_value"].as<std::string>() << std::endl;
+        data.calculate(tract_model,vm["connectivity_value"].as<std::string>(),use_end_only);
         std::string file_name_stat(file_name);
         file_name_stat += ".connectivity.mat";
         std::cout << "export connectivity matrix to " << file_name_stat << std::endl;

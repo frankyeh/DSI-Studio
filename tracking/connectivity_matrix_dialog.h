@@ -33,11 +33,8 @@ private slots:
 
     void on_zoom_valueChanged(double arg1);
 
-    void on_log_toggled(bool checked);
-
     void on_save_as_clicked();
 
-    void on_norm_toggled(bool checked);
 
 private:
     Ui::connectivity_matrix_dialog *ui;

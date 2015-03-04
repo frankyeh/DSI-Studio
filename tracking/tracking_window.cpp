@@ -122,9 +122,11 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
     {
         if(is_dti)
             ui->actionQuantitative_anisotropy_QA->setText("Save FA...");
-        for (int index = fib_data.other_mapping_index; index < fib_data.view_item.size(); ++index)
+        std::vector<std::string> index_list;
+        fib_data.get_index_list(index_list);
+        for (int index = 1; index < index_list.size(); ++index)
             {
-                std::string& name = fib_data.view_item[index].name;
+                std::string& name = index_list[index];
                 QAction* Item = new QAction(this);
                 Item->setText(QString("Save %1...").arg(name.c_str()));
                 Item->setData(QString(name.c_str()));

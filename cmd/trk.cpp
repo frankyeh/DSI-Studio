@@ -43,7 +43,8 @@ int trk(int ac, char *av[])
     ("output", po::value<std::string>(), "output file name")
     ("export", po::value<std::string>(), "export additional information (e.g. --export=stat,tdi)")
     ("connectivity", po::value<std::string>(), "export connectivity")
-    ("connectivity_type", po::value<std::string>()->default_value("end"), "specify connectivity calculation approach")
+    ("connectivity_type", po::value<std::string>()->default_value("end"), "specify connectivity parameter")
+    ("connectivity_value", po::value<std::string>()->default_value("count"), "specify connectivity parameter")
     ("roi", po::value<std::string>(), "file for ROI regions")
     ("roi2", po::value<std::string>(), "file for the second ROI regions")
     ("roi3", po::value<std::string>(), "file for the third ROI regions")
@@ -289,7 +290,8 @@ int trk(int ac, char *av[])
             ConnectivityMatrix data;
             data.set_atlas(atlas_list[index],mapping);
             std::cout << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
-            data.calculate(tract_model,use_end_only);
+            std::cout << "calculate matrix using " << vm["connectivity_value"].as<std::string>() << std::endl;
+            data.calculate(tract_model,vm["connectivity_value"].as<std::string>(),use_end_only);
             std::string file_name_stat(vm["source"].as<std::string>());
             file_name_stat += ".";
             file_name_stat += atlas_list[index].name;

@@ -6,18 +6,6 @@
 
 class FibData;
 class fiber_orientations;
-struct connectivity_info{
-    unsigned int count;
-    std::vector<unsigned int> length;
-    connectivity_info(void):count(0){}
-    void add(const std::vector<float>& track)
-    {
-        ++count;
-        length.push_back(track.size());
-    }
-public:
-
-};
 
 class TractModel{
 public:
@@ -127,18 +115,18 @@ public:
 
         void get_tract_data(unsigned int fiber_index,
                             unsigned int index_num,
-                            std::vector<float>& data);
-        void get_tracts_data(
+                            std::vector<float>& data) const;
+        bool get_tracts_data(
                 const std::string& index_name,
-                std::vector<std::vector<float> >& data);
+                std::vector<std::vector<float> >& data) const;
 
-        void get_tract_fa(unsigned int fiber_index,std::vector<float>& data);
-        void get_tracts_fa(std::vector<std::vector<float> >& data);
+        void get_tract_fa(unsigned int fiber_index,std::vector<float>& data) const;
+        void get_tracts_fa(std::vector<std::vector<float> >& data) const;
         double get_spin_volume(void);
 public:
 
-        void get_connectivity_matrix(const std::vector<std::vector<image::vector<3,short> > >& regions,
-                                     std::vector<std::vector<connectivity_info> >& matrix,
+        void get_passing_list(const std::vector<std::vector<image::vector<3,short> > >& regions,
+                                     std::vector<std::vector<unsigned int> >& passing_list,
                                      bool use_end_only) const;
 
 };
@@ -149,10 +137,8 @@ public:
 class atlas;
 class ConnectivityMatrix{
 public:
-    std::vector<std::vector<connectivity_info> > matrix;
-    std::vector<unsigned int> connectivity_count;
-    std::vector<float> tract_median_length;
-    std::vector<float> tract_mean_length;
+    std::vector<std::vector<unsigned int> > passing_list;
+    image::basic_image<float,2> matrix_value;
 public:
     typedef std::multimap<float,std::pair<std::vector<image::vector<3,short> >,std::string> > region_table_type;
     std::vector<std::vector<image::vector<3,short> > > regions;
@@ -160,9 +146,9 @@ public:
     void set_atlas(const atlas& data,const image::basic_image<image::vector<3,float>,3 >& mni_position);
     void set_regions(const region_table_type& region_table);
 public:
-    void save_to_image(image::color_image& cm,bool log,bool norm);
+    void save_to_image(image::color_image& cm);
     void save_to_file(const char* file_name);
-    void calculate(const TractModel& tract_model,bool use_end_only);
+    bool calculate(const TractModel& tract_model,std::string matrix_value_type,bool use_end_only);
 };
 
 
