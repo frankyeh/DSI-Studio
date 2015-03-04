@@ -1115,10 +1115,18 @@ QString tracking_window::get_path(const std::string& id)
     std::map<std::string,QString>::const_iterator iter = path_map.find(id);
     if(iter == path_map.end())
         return absolute_path;
+    if(iter->second.contains("%PATH%"))
+    {
+        QString replaced_path = iter->second;
+        replaced_path.replace("%PATH%",absolute_path);
+        return replaced_path;
+    }
     return iter->second;
 }
 void tracking_window::add_path(const std::string& id,QString filename)
 {
+    if(filename.contains(absolute_path))
+        filename.replace(absolute_path,"%PATH%");
     path_map[id] = QFileInfo(filename).absolutePath();
 }
 
@@ -1264,10 +1272,9 @@ void tracking_window::on_zoom_out_clicked()
     scene.show_slice();
 }
 
-void show_info_dialog(QWidget *parent,const std::string& title,const std::string& result);
 void tracking_window::on_actionView_FIB_Content_triggered()
 {
-    show_info_dialog(this,"FIB content",handle->report);
+    show_info_dialog("FIB content",handle->report);
 }
 
 std::pair<unsigned int,unsigned int> evaluate_fib(
@@ -1296,7 +1303,7 @@ void tracking_window::on_actionQuality_Assessment_triggered()
     out << "Number of connected fibers: " << result.first << std::endl;
     out << "Number of disconnected fibers: " << result.second << std::endl;
     out << "Error ratio: " << 100.0*(float)result.second/(float)result.first << "%" << std::endl;
-    show_info_dialog(this,"Quality assessment",out.str().c_str());
+    show_info_dialog("Quality assessment",out.str().c_str());
 }
 
 void tracking_window::on_actionAuto_Rotate_triggered(bool checked)
@@ -1358,4 +1365,28 @@ void tracking_window::on_actionTrack_Report_triggered()
 {
     if(tact_report_imp.get())
                 tact_report_imp->copyToClipboard();
+}
+
+void tracking_window::show_info_dialog(const std::string& title,const std::string& result)
+{
+    QMessageBox msgBox;
+    msgBox.setText(title.c_str());
+    msgBox.setInformativeText(result.c_str());
+    msgBox.setStandardButtons(QMessageBox::Ok|QMessageBox::Save);
+    msgBox.setDefaultButton(QMessageBox::Ok);
+    QPushButton *copyButton = msgBox.addButton("Copy To Clipboard", QMessageBox::ActionRole);
+    if(msgBox.exec() == QMessageBox::Save)
+    {
+        QString filename;
+        filename = QFileDialog::getSaveFileName(this,
+                    "Save as",get_path(title) + "/info.txt",
+                    "Text files (*.txt);;All files|(*)");
+        if(filename.isEmpty())
+            return;
+        add_path(title,filename);
+        std::ofstream out(filename.toLocal8Bit().begin());
+        out << result.c_str();
+    }
+    if (msgBox.clickedButton() == copyButton)
+        QApplication::clipboard()->setText(result.c_str());
 }

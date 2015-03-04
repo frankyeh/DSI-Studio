@@ -17,33 +17,6 @@
 #include "libs/gzip_interface.hpp"
 #include "tract_cluster.hpp"
 
-void show_info_dialog(QWidget *parent,const std::string& title,const std::string& result)
-{
-    QMessageBox msgBox;
-    msgBox.setText(title.c_str());
-    msgBox.setInformativeText(result.c_str());
-    msgBox.setStandardButtons(QMessageBox::Ok|QMessageBox::Save);
-    msgBox.setDefaultButton(QMessageBox::Ok);
-    QPushButton *copyButton = msgBox.addButton("Copy To Clipboard", QMessageBox::ActionRole);
-
-
-    if(msgBox.exec() == QMessageBox::Save)
-    {
-        QString filename;
-        filename = QFileDialog::getSaveFileName(
-                    parent,
-                    "Save as","info.txt",
-                    "Text files (*.txt);;All files|(*)");
-        if(filename.isEmpty())
-            return;
-        std::ofstream out(filename.toLocal8Bit().begin());
-        out << result.c_str();
-    }
-    if (msgBox.clickedButton() == copyButton)
-        QApplication::clipboard()->setText(result.c_str());
-}
-
-
 TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget *parent) :
     QTableWidget(parent),cur_tracking_window(cur_tracking_window_),
     tract_serial(0)
@@ -640,7 +613,7 @@ void TractTableWidget::show_tracts_statistics(void)
         result = out.str();
     }
 
-    show_info_dialog(this,"Tract Statistics",result);
+    cur_tracking_window.show_info_dialog("Tract Statistics",result);
 
 }
 
@@ -650,7 +623,7 @@ void TractTableWidget::show_method(void)
     out << cur_tracking_window.handle->report.c_str();
     if(currentRow() < tract_models.size())
         out << tract_models[currentRow()]->report.c_str() << std::endl;
-    show_info_dialog(this,"Methods",out.str());
+    cur_tracking_window.show_info_dialog("Methods",out.str());
 }
 
 void TractTableWidget::save_fa_as(void)

@@ -92,6 +92,7 @@ public:
     QVariant operator[](QString name)const;
     void on_tracking_index_currentIndexChanged(int index);
     void add_slices(QStringList filenames,QString name);
+    void show_info_dialog(const std::string& title,const std::string& result);
 public slots:
     void on_SagView_clicked();
     void on_CorView_clicked();
