@@ -700,7 +700,6 @@ void GLWidget::add_odf(image::pixel_index<3> pos)
             handle->get_odf_data(pos.index());
     if(!odf_buffer)
         return;
-    float scaling = odf_scale/max_fa;
     unsigned int odf_dim = cur_tracking_window.odf_size;
     unsigned int half_odf = odf_dim >> 1;
     odf_points.resize(odf_points.size()+odf_dim);
@@ -709,7 +708,12 @@ void GLWidget::add_odf(image::pixel_index<3> pos)
     std::fill(iter,end,pos);
 
     float odf_min = *std::min_element(odf_buffer,odf_buffer+half_odf);
-
+    float scaling = odf_scale/max_fa;
+    if(!get_param("odf_min_max"))
+    {
+        scaling = 0.5*odf_scale/(max_fa+odf_min);
+        odf_min = 0;
+    }
     // smooth the odf a bit
 
     std::vector<float> new_odf_buffer;
