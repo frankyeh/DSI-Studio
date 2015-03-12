@@ -113,6 +113,12 @@ int rec(int ac, char *av[])
     }
     if(method_index == 4)
         param[0] = 1.2;
+    if(method_index == 6) // Convert to HARDI
+    {
+        param[0] = 1.25;
+        param[1] = 3000;
+        param[2] = 0.05;
+    }
     if(method_index == 7)
     {
         if (vm.count("template"))
