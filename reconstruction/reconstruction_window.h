@@ -60,7 +60,6 @@ private slots:
     void on_defragment_clicked();
     void on_dilation_clicked();
     void on_erosion_clicked();
-    void on_SlicePos_sliderMoved(int position);
 
     void on_remove_background_clicked();
     void on_b_table_itemSelectionChanged();
@@ -86,6 +85,7 @@ private slots:
     void on_delete_2_clicked();
     void on_actionTrim_image_triggered();
     void on_diffusion_sampling_valueChanged(double arg1);
+    void on_SlicePos_valueChanged(int value);
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

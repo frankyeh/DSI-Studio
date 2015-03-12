@@ -127,9 +127,9 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
 
     on_odf_sharpening_currentIndexChanged(ui->odf_sharpening->currentIndex());
-    connect(ui->z_pos,SIGNAL(sliderMoved(int)),this,SLOT(on_b_table_itemSelectionChanged()));
-    connect(ui->contrast,SIGNAL(sliderMoved(int)),this,SLOT(on_b_table_itemSelectionChanged()));
-    connect(ui->brightness,SIGNAL(sliderMoved(int)),this,SLOT(on_b_table_itemSelectionChanged()));
+    connect(ui->z_pos,SIGNAL(valueChanged(int)),this,SLOT(on_b_table_itemSelectionChanged()));
+    connect(ui->contrast,SIGNAL(valueChanged(int)),this,SLOT(on_b_table_itemSelectionChanged()));
+    connect(ui->brightness,SIGNAL(valueChanged(int)),this,SLOT(on_b_table_itemSelectionChanged()));
 
     on_b_table_itemSelectionChanged();
 }
@@ -184,12 +184,12 @@ void reconstruction_window::on_b_table_itemSelectionChanged()
 void reconstruction_window::resizeEvent ( QResizeEvent * event )
 {
     QMainWindow::resizeEvent(event);
-    on_SlicePos_sliderMoved(ui->SlicePos->value());
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 void reconstruction_window::showEvent ( QShowEvent * event )
 {
     QMainWindow::showEvent(event);
-    on_SlicePos_sliderMoved(ui->SlicePos->value());
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 void reconstruction_window::closeEvent(QCloseEvent *event)
@@ -276,57 +276,29 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
         ((MainWindow*)parent())->addFib(msg);
 }
 
-void reconstruction_window::on_SlicePos_sliderMoved(int position)
-{
-    if (!dwi.size())
-        return;
-    buffer.resize(image::geometry<2>(dwi.width(),dwi.height()));
-    unsigned int offset = position*buffer.size();
-    std::copy(dwi.begin() + offset,dwi.begin()+ offset + buffer.size(),buffer.begin());
-
-    unsigned char* slice_image_ptr = &*dwi.begin() + buffer.size()* position;
-    unsigned char* slice_mask = &*handle->mask.begin() + buffer.size()* position;
-    for (unsigned int index = 0; index < buffer.size(); ++index)
-    {
-        unsigned char value = slice_image_ptr[index]*0.8;
-        if (slice_mask[index])
-            buffer[index] = image::rgb_color(255, value, value);
-        else
-            buffer[index] = image::rgb_color(value, value, value);
-    }
-
-    double ratio = std::max(1.0,
-        std::min((double)ui->graphicsView->width()/(double)dwi.width(),
-                 (double)ui->graphicsView->height()/(double)dwi.height()));
-    scene.setSceneRect(0, 0, dwi.width()*ratio,dwi.height()*ratio);
-    slice_image = QImage((unsigned char*)&*buffer.begin(),dwi.width(),dwi.height(),QImage::Format_RGB32).
-                    scaled(dwi.width()*ratio,dwi.height()*ratio);
-    scene.clear();
-    scene.addRect(0, 0, dwi.width()*ratio,dwi.height()*ratio,QPen(),slice_image);
-}
 
 void reconstruction_window::on_erosion_clicked()
 {
     image::morphology::erosion(handle->mask);
-    on_SlicePos_sliderMoved(ui->SlicePos->value());
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 void reconstruction_window::on_dilation_clicked()
 {
     image::morphology::dilation(handle->mask);
-    on_SlicePos_sliderMoved(ui->SlicePos->value());
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 void reconstruction_window::on_defragment_clicked()
 {
     image::morphology::defragment(handle->mask);
-    on_SlicePos_sliderMoved(ui->SlicePos->value());
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 void reconstruction_window::on_smoothing_clicked()
 {
     image::morphology::smoothing(handle->mask);
-    on_SlicePos_sliderMoved(ui->SlicePos->value());
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 void reconstruction_window::on_thresholding_clicked()
@@ -339,7 +311,7 @@ void reconstruction_window::on_thresholding_clicked()
     if (!ok)
         return;
     image::threshold(dwi,handle->mask,threshold);
-    on_SlicePos_sliderMoved(ui->SlicePos->value());
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 void reconstruction_window::on_load_mask_clicked()
@@ -355,7 +327,7 @@ void reconstruction_window::on_load_mask_clicked()
     std::vector<float> trans;
     region.LoadFromFile(filename.toLocal8Bit().begin(),trans);
     region.SaveToBuffer(handle->mask);
-    on_SlicePos_sliderMoved(ui->SlicePos->value());
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 
@@ -559,7 +531,7 @@ void reconstruction_window::on_remove_background_clicked()
             if(handle->mask[i] == 0)
                 buf[i] = 0;
     }
-    on_SlicePos_sliderMoved(ui->SlicePos->value());
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 
@@ -688,21 +660,21 @@ void reconstruction_window::on_actionFlip_x_triggered()
 {
     handle->flip(0);
     update_image();
-    on_SlicePos_sliderMoved(ui->SlicePos->value());
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 void reconstruction_window::on_actionFlip_y_triggered()
 {
     handle->flip(1);
     update_image();
-    on_SlicePos_sliderMoved(ui->SlicePos->value());
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 void reconstruction_window::on_actionFlip_z_triggered()
 {
     handle->flip(2);
     update_image();
-    on_SlicePos_sliderMoved(ui->SlicePos->value());
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 void reconstruction_window::on_actionFlip_xy_triggered()
@@ -711,7 +683,7 @@ void reconstruction_window::on_actionFlip_xy_triggered()
     handle->flip(3);
     update_dimension();
     update_image();
-    on_SlicePos_sliderMoved(ui->SlicePos->value());
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 void reconstruction_window::on_actionFlip_yz_triggered()
 {
@@ -719,7 +691,7 @@ void reconstruction_window::on_actionFlip_yz_triggered()
     handle->flip(4);
     update_dimension();
     update_image();
-    on_SlicePos_sliderMoved(ui->SlicePos->value());
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 void reconstruction_window::on_actionFlip_xz_triggered()
 {
@@ -727,7 +699,7 @@ void reconstruction_window::on_actionFlip_xz_triggered()
     handle->flip(5);
     update_dimension();
     update_image();
-    on_SlicePos_sliderMoved(ui->SlicePos->value());
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 
@@ -747,7 +719,7 @@ void reconstruction_window::on_actionRotate_triggered()
     handle->rotate(out,affine);
     update_dimension();
     update_image();
-    on_SlicePos_sliderMoved(ui->SlicePos->value());
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 
 }
 
@@ -782,7 +754,7 @@ void reconstruction_window::on_actionTrim_image_triggered()
     handle->trim();
     update_dimension();
     update_image();
-    on_SlicePos_sliderMoved(ui->SlicePos->value());
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 void reconstruction_window::on_diffusion_sampling_valueChanged(double arg1)
@@ -791,4 +763,33 @@ void reconstruction_window::on_diffusion_sampling_valueChanged(double arg1)
         ui->gqi_spectral->show();
     else
         ui->gqi_spectral->hide();
+}
+
+void reconstruction_window::on_SlicePos_valueChanged(int position)
+{
+    if (!dwi.size())
+        return;
+    buffer.resize(image::geometry<2>(dwi.width(),dwi.height()));
+    unsigned int offset = position*buffer.size();
+    std::copy(dwi.begin() + offset,dwi.begin()+ offset + buffer.size(),buffer.begin());
+
+    unsigned char* slice_image_ptr = &*dwi.begin() + buffer.size()* position;
+    unsigned char* slice_mask = &*handle->mask.begin() + buffer.size()* position;
+    for (unsigned int index = 0; index < buffer.size(); ++index)
+    {
+        unsigned char value = slice_image_ptr[index]*0.8;
+        if (slice_mask[index])
+            buffer[index] = image::rgb_color(255, value, value);
+        else
+            buffer[index] = image::rgb_color(value, value, value);
+    }
+
+    double ratio = std::max(1.0,
+        std::min((double)ui->graphicsView->width()/(double)dwi.width(),
+                 (double)ui->graphicsView->height()/(double)dwi.height()));
+    scene.setSceneRect(0, 0, dwi.width()*ratio,dwi.height()*ratio);
+    slice_image = QImage((unsigned char*)&*buffer.begin(),dwi.width(),dwi.height(),QImage::Format_RGB32).
+                    scaled(dwi.width()*ratio,dwi.height()*ratio);
+    scene.clear();
+    scene.addRect(0, 0, dwi.width()*ratio,dwi.height()*ratio,QPen(),slice_image);
 }

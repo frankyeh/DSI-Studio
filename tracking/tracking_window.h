@@ -93,6 +93,7 @@ public:
     void on_tracking_index_currentIndexChanged(int index);
     void add_slices(QStringList filenames,QString name);
     void show_info_dialog(const std::string& title,const std::string& result);
+    QString get_save_file_name(QString title,QString file_name,QString file_type);
 public slots:
     void on_SagView_clicked();
     void on_CorView_clicked();
@@ -131,10 +132,6 @@ private slots:
     void on_actionMove_Object_triggered();
     void on_actionSave_Tracts_in_MNI_space_triggered();
     void on_tool6_pressed();
-    void on_offset_sliderMoved(int position);
-    void on_contrast_sliderMoved(int position);
-    void on_gl_offset_sliderMoved(int position);
-    void on_gl_contrast_sliderMoved(int position);
     void on_actionManual_Registration_triggered();
     void on_actionTract_Analysis_Report_triggered();
     void on_actionConnectivity_matrix_triggered();
@@ -163,6 +160,10 @@ private slots:
     void on_action3D_Screen_3_Views_Vertical_triggered();
     void on_actionROI_triggered();
     void on_actionTrack_Report_triggered();
+    void on_contrast_valueChanged(int value);
+    void on_offset_valueChanged(int value);
+    void on_gl_contrast_valueChanged(int value);
+    void on_gl_offset_valueChanged(int value);
 };
 
 #endif // TRACKING_WINDOW_H

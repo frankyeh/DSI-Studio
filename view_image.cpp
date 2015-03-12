@@ -9,9 +9,9 @@ view_image::view_image(QWidget *parent) :
 {
     ui->setupUi(this);
     ui->view->setScene(&source);
-    connect(ui->slice_pos,SIGNAL(sliderMoved(int)),this,SLOT(update_image()));
-    connect(ui->contrast,SIGNAL(sliderMoved(int)),this,SLOT(update_image()));
-    connect(ui->brightness,SIGNAL(sliderMoved(int)),this,SLOT(update_image()));
+    connect(ui->slice_pos,SIGNAL(valueChanged(int)),this,SLOT(update_image()));
+    connect(ui->contrast,SIGNAL(valueChanged(int)),this,SLOT(update_image()));
+    connect(ui->brightness,SIGNAL(valueChanged(int)),this,SLOT(update_image()));
     source_ratio = 2.0;
     ui->tabWidget->setCurrentIndex(0);
 }

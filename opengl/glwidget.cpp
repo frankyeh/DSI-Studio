@@ -1531,14 +1531,10 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 
 void GLWidget::saveCamera(void)
 {
-    QString filename = QFileDialog::getSaveFileName(
-            this,
-            "Save Translocation Matrix",
-            cur_tracking_window.get_path("camera") + "/camera.txt",
-            "Text files (*.txt);;All files (*)");
+    QString filename = cur_tracking_window.
+            get_save_file_name("Save Translocation Matrix","camera.txt","Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    cur_tracking_window.add_path("camera",filename);
     std::ofstream out(filename.toLocal8Bit().begin());
     for(int row = 0,index = 0;row < 4;++row)
     {

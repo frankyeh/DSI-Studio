@@ -914,25 +914,26 @@ void tracking_window::on_actionSave_Tracts_in_MNI_space_triggered()
     tractWidget->saveTransformedTracts(&*(handle->trans_to_mni.begin()));
 }
 
-
-void tracking_window::on_offset_sliderMoved(int position)
+void tracking_window::on_offset_valueChanged(int value)
 {
-    ui->offset_value->setValue((float)position*ui->offset_value->maximum()/100.0);
-}
-void tracking_window::on_gl_offset_sliderMoved(int position)
-{
-    ui->gl_offset_value->setValue((float)position*ui->gl_offset_value->maximum()/100.0);
+     ui->offset_value->setValue((float)value*ui->offset_value->maximum()/100.0);
 }
 
-void tracking_window::on_contrast_sliderMoved(int position)
+void tracking_window::on_contrast_valueChanged(int value)
 {
-    ui->contrast_value->setValue((position >= 0) ? ui->offset_value->maximum()/(1+(float)position/10.0) :
-                                                   ui->offset_value->maximum()*(1-(float)position/10.0));
+    ui->contrast_value->setValue((value >= 0) ? ui->offset_value->maximum()/(1+(float)value/10.0) :
+                                                   ui->offset_value->maximum()*(1-(float)value/10.0));
 }
-void tracking_window::on_gl_contrast_sliderMoved(int position)
+
+void tracking_window::on_gl_offset_valueChanged(int value)
 {
-    ui->gl_contrast_value->setValue((position >= 0) ? ui->gl_offset_value->maximum()/(1+(float)position/10.0) :
-                                                      ui->gl_offset_value->maximum()*(1-(float)position/10.0));
+    ui->gl_offset_value->setValue((float)value*ui->gl_offset_value->maximum()/100.0);
+}
+
+void tracking_window::on_gl_contrast_valueChanged(int value)
+{
+    ui->gl_contrast_value->setValue((value >= 0) ? ui->gl_offset_value->maximum()/(1+(float)value/10.0) :
+                                                      ui->gl_offset_value->maximum()*(1-(float)value/10.0));
 }
 
 void tracking_window::on_offset_value_valueChanged(double arg1)
@@ -1366,6 +1367,13 @@ void tracking_window::on_actionTrack_Report_triggered()
     if(tact_report_imp.get())
                 tact_report_imp->copyToClipboard();
 }
+QString tracking_window::get_save_file_name(QString title,QString file_name,QString file_type)
+{
+    QString filename = QFileDialog::getSaveFileName(this,title,get_path(title.toLocal8Bit().begin()) + "/" + file_name,file_type);
+    if(!filename.isEmpty())
+        add_path(title.toLocal8Bit().begin(),filename);
+    return filename;
+}
 
 void tracking_window::show_info_dialog(const std::string& title,const std::string& result)
 {
@@ -1390,3 +1398,11 @@ void tracking_window::show_info_dialog(const std::string& title,const std::strin
     if (msgBox.clickedButton() == copyButton)
         QApplication::clipboard()->setText(result.c_str());
 }
+
+
+
+
+
+
+
+
