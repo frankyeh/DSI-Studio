@@ -1631,7 +1631,6 @@ bool GLWidget::addSlices(QStringList filenames)
     std::vector<std::string> files(filenames.size());
     for (unsigned int index = 0; index < filenames.size(); ++index)
             files[index] = filenames[index].toLocal8Bit().begin();
-    std::vector<float> convert;
     std::auto_ptr<CustomSliceModel> new_slice(new CustomSliceModel);
     if(!new_slice->initialize(cur_tracking_window.slice,cur_tracking_window.is_qsdr,files))
     {
