@@ -139,6 +139,7 @@ public:
         init();
     }
     void init(void);
+    bool initialize(FibSliceModel& slice,bool is_qsdr,const std::vector<std::string>& files,std::vector<float>& convert);
 public:
     float get_value_range(void) const;
     void get_slice(image::color_image& image,float contrast,float offset) const;

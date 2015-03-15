@@ -73,6 +73,50 @@ void CustomSliceModel::init(void)
     if(scale != 0.0)
         scale = 255.0/scale;
 }
+bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::vector<std::string>& files,std::vector<float>& convert)
+{
+    gz_nifti nifti;
+    center_point = slice.center_point;
+    // QSDR loaded, use MNI transformation instead
+    if(is_qsdr && files.size() == 1 && nifti.load_from_file(files[0]))
+    {
+        loadLPS(nifti);
+        std::vector<float> t(nifti.get_transformation(),
+                             nifti.get_transformation()+12),inv_trans(16);
+        convert.resize(16);
+        t.resize(16);
+        t[15] = 1.0;
+        image::matrix::inverse(slice.handle->trans_to_mni.begin(),inv_trans.begin(),image::dim<4,4>());
+        image::matrix::product(inv_trans.begin(),t.begin(),convert.begin(),image::dim<4,4>(),image::dim<4,4>());
+    }
+    else
+    {
+        if(files.size() == 1 && nifti.load_from_file(files[0]))
+            loadLPS(nifti);
+        else
+        {
+            image::io::bruker_2dseq bruker;
+            if(files.size() == 1 && bruker.load_from_file(files[0].c_str()))
+                load(bruker);
+            else
+            {
+                image::io::volume volume;
+                if(volume.load_from_files(files,files.size()))
+                    load(volume);
+                else
+                    return false;
+            }
+        }
+        // same dimension, no registration required.
+        if(source_images.geometry() == slice.source_images.geometry())
+        {
+            convert.resize(16);
+            convert[0] = convert[5] = convert[10] = convert[15] = 1.0;
+        }
+    }
+    return true;
+}
+
 // ---------------------------------------------------------------------------
 float CustomSliceModel::get_value_range(void) const
 {

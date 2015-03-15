@@ -1632,52 +1632,13 @@ bool GLWidget::addSlices(QStringList filenames)
     std::vector<std::string> files(filenames.size());
     for (unsigned int index = 0; index < filenames.size(); ++index)
             files[index] = filenames[index].toLocal8Bit().begin();
-    gz_nifti nifti;
     std::vector<float> convert;
     std::auto_ptr<CustomSliceModel> new_slice(new CustomSliceModel);
-    new_slice->center_point = cur_tracking_window.slice.center_point;
-    // QSDR loaded, use MNI transformation instead
-    if(cur_tracking_window.is_qsdr && files.size() == 1 && nifti.load_from_file(files[0]))
+    if(!new_slice->initialize(cur_tracking_window.slice,cur_tracking_window.is_qsdr,files,convert))
     {
-        new_slice->loadLPS(nifti);
-        std::vector<float> t(nifti.get_transformation(),
-                             nifti.get_transformation()+12),inv_trans(16);
-        convert.resize(16);
-        t.resize(16);
-        t[15] = 1.0;
-        image::matrix::inverse(cur_tracking_window.handle->trans_to_mni.begin(),inv_trans.begin(),image::dim<4,4>());
-        image::matrix::product(inv_trans.begin(),t.begin(),convert.begin(),image::dim<4,4>(),image::dim<4,4>());
+        QMessageBox::information(this,"Error reading image files",0);
+        return false;
     }
-    else
-    {
-        if(files.size() == 1 && nifti.load_from_file(files[0]))
-            new_slice->loadLPS(nifti);
-        else
-        {
-            image::io::bruker_2dseq bruker;
-            if(filenames.size() == 1 && QFileInfo(filenames[0]).fileName() == "2dseq" &&
-                    bruker.load_from_file(filenames[0].toLocal8Bit().begin()))
-                new_slice->load(bruker);
-            else
-            {
-                image::io::volume volume;
-                if(volume.load_from_files(files,files.size()))
-                    new_slice->load(volume);
-                else
-                {
-                    QMessageBox::information(&cur_tracking_window,"DSI Studio","Cannot parse the images",0);
-                    return false;
-                }
-            }
-        }
-        // same dimension, no registration required.
-        if(new_slice->source_images.geometry() == cur_tracking_window.slice.source_images.geometry())
-        {
-            convert.resize(16);
-            convert[0] = convert[5] = convert[10] = convert[15] = 1.0;
-        }
-    }
-
     other_slices.push_back(new_slice.release());
 
     mi3s.push_back(new LinearMapping<image::const_pointer_image<float,3> >);
