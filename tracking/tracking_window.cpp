@@ -774,8 +774,8 @@ void tracking_window::add_slices(QStringList filenames,QString name)
     handle->view_item.push_back(handle->view_item[0]);
     handle->view_item.back().name = name.toLocal8Bit().begin();
     handle->view_item.back().is_overlay = false;
-    handle->view_item.back().image_data = image::make_image(glWidget->roi_image.back().geometry(),
-                                                                     glWidget->roi_image_buf.back());
+    handle->view_item.back().image_data = image::make_image(glWidget->other_slices.back().roi_image.geometry(),
+                                                            glWidget->other_slices.back().roi_image_buf);
     handle->view_item.back().set_scale(
                 glWidget->other_slices.back().source_images.begin(),
                 glWidget->other_slices.back().source_images.end());
@@ -894,7 +894,7 @@ void tracking_window::on_deleteSlice_clicked()
     if(ui->SliceModality->currentIndex() == 0)
         return;
     int index = ui->SliceModality->currentIndex();
-    unsigned int view_item_index = handle->view_item.size()-glWidget->mi3s.size()+index-1;
+    unsigned int view_item_index = handle->view_item.size()-glWidget->other_slices.size()+index-1;
     if(ui->sliceViewBox->currentIndex() == view_item_index)
         ui->sliceViewBox->setCurrentIndex(0);
     ui->sliceViewBox->removeItem(view_item_index);

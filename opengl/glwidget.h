@@ -8,7 +8,6 @@
 #include "SliceModel.h"
 #include "boost/ptr_container/ptr_vector.hpp"
 #include "tracking/region/RegionModel.h"
-#include "libs/coreg/linear.hpp"
 #include "tracking/tracking_window.h"
 class RenderingTableWidget;
  class GLWidget : public QGLWidget
@@ -51,11 +50,7 @@ class RenderingTableWidget;
      QTime time;
      int last_time;
      boost::ptr_vector<CustomSliceModel> other_slices;
-     boost::ptr_vector<LinearMapping<image::const_pointer_image<float,3> > > mi3s;
-     std::vector<std::vector<float> > transform;
 
-     boost::ptr_vector<image::basic_image<float,3> > roi_image;
-     std::vector<float*> roi_image_buf;
 
      unsigned int current_visible_slide;
      bool addSlices(QStringList filenames);

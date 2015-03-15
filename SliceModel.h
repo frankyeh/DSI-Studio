@@ -2,11 +2,11 @@
 
 #ifndef SliceModelH
 #define SliceModelH
+#include <boost/lambda/lambda.hpp>
 #include <boost/thread/thread.hpp>
 #include "image/image.hpp"
 #include "libs/gzip_interface.hpp"
-
-//#include "coreg_interface.h"
+#include "libs/coreg/linear.hpp"
 
 // ---------------------------------------------------------------------------
 struct SliceModel {
@@ -120,6 +120,58 @@ public:
 };
 
 class CustomSliceModel : public SliceModel{
+public:
+    std::vector<float> transform;
+    image::basic_image<float,3> roi_image;
+    float* roi_image_buf;
+public:
+    std::auto_ptr<boost::thread> thread;
+    image::const_pointer_image<float,3> from;
+    image::affine_transform<3> arg_min;
+    bool terminated;
+    bool ended;
+    ~CustomSliceModel(void)
+    {
+        terminate();
+    }
+
+    void terminate(void)
+    {
+        terminated = true;
+        if(thread.get())
+        {
+            thread->joinable();
+            thread->join();
+        }
+        ended = true;
+    }
+
+    void argmin(int reg_type)
+    {
+        terminated = false;
+        ended = false;
+        image::const_pointer_image<float,3> to = source_images;
+        image::reg::linear(from,to,arg_min,reg_type,image::reg::mutual_information(),terminated);
+        ended = true;
+    }
+    void update(void)
+    {
+        image::transformation_matrix<3,float> T(arg_min,from.geometry(),source_images.geometry());
+        const float* buf = T.get();
+        std::vector<float> inverse_transform(16);
+        image::create_affine_transformation_matrix(buf, buf + 9,inverse_transform.begin(), image::vdim<3>());
+        transform.resize(16);
+        image::matrix::inverse(inverse_transform.begin(),transform.begin(),image::dim<4, 4>());
+        update_roi();
+    }
+    void update_roi(void)
+    {
+        std::vector<float> inverse_transform(16);
+        image::matrix::inverse(transform.begin(),inverse_transform.begin(),image::dim<4, 4>());
+        // update roi image
+        std::fill(texture_need_update,texture_need_update+3,1);
+        image::resample(source_images,roi_image,inverse_transform);
+    }
 
 public:
     image::basic_image<float, 3> source_images;
@@ -139,7 +191,7 @@ public:
         init();
     }
     void init(void);
-    bool initialize(FibSliceModel& slice,bool is_qsdr,const std::vector<std::string>& files,std::vector<float>& convert);
+    bool initialize(FibSliceModel& slice,bool is_qsdr,const std::vector<std::string>& files);
 public:
     float get_value_range(void) const;
     void get_slice(image::color_image& image,float contrast,float offset) const;

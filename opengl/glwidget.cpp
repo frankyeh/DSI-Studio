@@ -1164,7 +1164,7 @@ void GLWidget::slice_location(unsigned char dim,std::vector<image::vector<3,floa
     {
         image::vector<3,float> tmp;
         image::vector_transformation(points[index].begin(), tmp.begin(),
-            transform[current_visible_slide-1].begin(), image::vdim<3>());
+            other_slices[current_visible_slide-1].transform.begin(), image::vdim<3>());
         points[index] = tmp;
     }
 }
@@ -1575,7 +1575,7 @@ void GLWidget::get_current_slice_transformation(
     }
     geo = other_slices[current_visible_slide-1].geometry;
     vs = other_slices[current_visible_slide-1].voxel_size;
-    tr = transform[current_visible_slide-1];
+    tr = other_slices[current_visible_slide-1].transform;
     tr.resize(16);
     tr[15] = 1.0;
     image::matrix::inverse(tr.begin(),image::dim<4,4>());
@@ -1598,7 +1598,7 @@ void GLWidget::saveMapping(void)
     for(int row = 0,index = 0;row < 4;++row)
     {
         for(int col = 0;col < 4;++col,++index)
-            out << transform[current_visible_slide-1][index] << " ";
+            out << other_slices[current_visible_slide-1].transform[index] << " ";
         out << std::endl;
     }
 }
@@ -1616,14 +1616,13 @@ void GLWidget::loadMapping(void)
     if(filename.isEmpty() || !in)
         return;
     cur_tracking_window.add_path("mapping",filename);
-    mi3s[current_visible_slide-1].terminate();
+    other_slices[current_visible_slide-1].terminate();
     std::vector<float> data;
     std::copy(std::istream_iterator<float>(in),
               std::istream_iterator<float>(),std::back_inserter(data));
     data.resize(16);
-    std::copy(data.begin(),data.end(),transform[current_visible_slide-1].begin());
-    std::fill(other_slices[current_visible_slide-1].texture_need_update,
-              other_slices[current_visible_slide-1].texture_need_update+3,1);
+    std::copy(data.begin(),data.end(),other_slices[current_visible_slide-1].transform.begin());
+    other_slices[current_visible_slide-1].update_roi();
     updateGL();
 }
 
@@ -1634,37 +1633,13 @@ bool GLWidget::addSlices(QStringList filenames)
             files[index] = filenames[index].toLocal8Bit().begin();
     std::vector<float> convert;
     std::auto_ptr<CustomSliceModel> new_slice(new CustomSliceModel);
-    if(!new_slice->initialize(cur_tracking_window.slice,cur_tracking_window.is_qsdr,files,convert))
+    if(!new_slice->initialize(cur_tracking_window.slice,cur_tracking_window.is_qsdr,files))
     {
         QMessageBox::information(this,"Error reading image files",0);
         return false;
     }
     other_slices.push_back(new_slice.release());
-
-    mi3s.push_back(new LinearMapping<image::const_pointer_image<float,3> >);
-    current_visible_slide = mi3s.size();
-    roi_image.push_back(new image::basic_image<float,3>(cur_tracking_window.handle->dim));
-    roi_image_buf.push_back(&*roi_image.back().begin());
-
-    if(convert.empty())
-    {
-        mi3s.back().from = cur_tracking_window.slice.source_images;
-        mi3s.back().to = other_slices.back().source_images;
-        mi3s.back().arg_min.scaling[0] = cur_tracking_window.slice.voxel_size[0] / other_slices.back().voxel_size[0];
-        mi3s.back().arg_min.scaling[1] = cur_tracking_window.slice.voxel_size[1] / other_slices.back().voxel_size[1];
-        mi3s.back().arg_min.scaling[2] = cur_tracking_window.slice.voxel_size[2] / other_slices.back().voxel_size[2];
-        mi3s.back().thread_argmin(image::reg::rigid_body);
-        // handle views
-        transform.push_back(std::vector<float>(16));
-    }
-    else
-    {
-        transform.push_back(convert);
-        std::vector<float> inverse_transform(16);
-        image::matrix::inverse(convert.begin(),inverse_transform.begin(),image::dim<4, 4>());
-        // update roi image
-        image::resample(other_slices.back().source_images,roi_image.back(),inverse_transform);
-    }
+    current_visible_slide = other_slices.size();
     if(!timer.get())
     {
         timer.reset(new QTimer());
@@ -1677,19 +1652,12 @@ bool GLWidget::addSlices(QStringList filenames)
 void GLWidget::check_reg(void)
 {
     bool all_ended = true;
-    for(unsigned int index = 0;index < mi3s.size();++index)
+    for(unsigned int index = 0;index < other_slices.size();++index)
     {
-        if(!mi3s[index].ended)
+        if(!other_slices[index].ended)
         {
             all_ended = false;
-            const float* buf = mi3s[index].get();
-            std::vector<float> inverse_transform(16);
-            image::create_affine_transformation_matrix(buf, buf + 9,inverse_transform.begin(), image::vdim<3>());
-            image::matrix::inverse(inverse_transform.begin(),transform[index].begin(),image::dim<4, 4>());
-            std::fill(other_slices[index].texture_need_update,
-                other_slices[index].texture_need_update+3,1);
-                // update roi image
-            image::resample(other_slices[index].source_images,roi_image[index],inverse_transform);
+            other_slices[index].update();
         }
     }
     cur_tracking_window.scene.show_slice();
@@ -1702,10 +1670,6 @@ void GLWidget::check_reg(void)
 void GLWidget::delete_slice(int index)
 {
     other_slices.erase(other_slices.begin()+index);
-    mi3s.erase(mi3s.begin()+index);
-    transform.erase(transform.begin()+index);
-    roi_image.erase(roi_image.begin()+index);
-    roi_image_buf.erase(roi_image_buf.begin()+index);
 }
 
 void GLWidget::addSurface(void)
@@ -1788,7 +1752,7 @@ void GLWidget::addSurface(void)
         image::vector<3,float> tmp;
         image::vector_transformation(
             surface->get()->point_list[index].begin(), tmp.begin(),
-            transform[current_visible_slide-1].begin(), image::vdim<3>());
+            other_slices[current_visible_slide-1].transform.begin(), image::vdim<3>());
         tmp += 0.5;
         surface->get()->point_list[index] = tmp;
     }

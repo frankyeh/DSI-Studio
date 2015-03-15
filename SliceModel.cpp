@@ -73,8 +73,11 @@ void CustomSliceModel::init(void)
     if(scale != 0.0)
         scale = 255.0/scale;
 }
-bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::vector<std::string>& files,std::vector<float>& convert)
+bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::vector<std::string>& files)
 {
+    terminated = true;
+    ended = true;
+
     gz_nifti nifti;
     center_point = slice.center_point;
     // QSDR loaded, use MNI transformation instead
@@ -83,11 +86,11 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
         loadLPS(nifti);
         std::vector<float> t(nifti.get_transformation(),
                              nifti.get_transformation()+12),inv_trans(16);
-        convert.resize(16);
+        transform.resize(16);
         t.resize(16);
         t[15] = 1.0;
         image::matrix::inverse(slice.handle->trans_to_mni.begin(),inv_trans.begin(),image::dim<4,4>());
-        image::matrix::product(inv_trans.begin(),t.begin(),convert.begin(),image::dim<4,4>(),image::dim<4,4>());
+        image::matrix::product(inv_trans.begin(),t.begin(),transform.begin(),image::dim<4,4>(),image::dim<4,4>());
     }
     else
     {
@@ -110,10 +113,25 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
         // same dimension, no registration required.
         if(source_images.geometry() == slice.source_images.geometry())
         {
-            convert.resize(16);
-            convert[0] = convert[5] = convert[10] = convert[15] = 1.0;
+            transform.resize(16);
+            transform[0] = transform[5] = transform[10] = transform[15] = 1.0;
         }
     }
+
+    roi_image.resize(slice.handle->dim);
+    roi_image_buf = &*roi_image.begin();
+    if(transform.empty())
+    {
+        from = slice.source_images;
+        arg_min.scaling[0] = slice.voxel_size[0] / voxel_size[0];
+        arg_min.scaling[1] = slice.voxel_size[1] / voxel_size[1];
+        arg_min.scaling[2] = slice.voxel_size[2] / voxel_size[2];
+        thread.reset(new boost::thread(&CustomSliceModel::argmin,this,image::reg::rigid_body));
+        // handle views
+        transform.resize(16);
+    }
+    else
+        update_roi();
     return true;
 }
 
