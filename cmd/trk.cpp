@@ -13,6 +13,7 @@
 #include "mapping/fa_template.hpp"
 #include "mapping/atlas.hpp"
 #include "manual_alignment.h"
+#include "SliceModel.h"
 std::string get_fa_template_path(void);
 bool atl_load_atlas(const std::string atlas_name);
 bool atl_get_mapping(gz_mat_read& mat_reader,
@@ -59,6 +60,7 @@ int trk(int ac, char *av[])
     ("end2", po::value<std::string>(), "file for ending regions")
     ("ter", po::value<std::string>(), "file for terminative regions")
     ("seed", po::value<std::string>(), "file for seed regions")
+    ("ref", po::value<std::string>(), "T1W or T2W file for exporting coordinate")
     ("threshold_index", po::value<std::string>(), "index for thresholding")
     ("step_size", po::value<float>(), "the step size in minimeter")
     ("turning_angle", po::value<float>()->default_value(60), "the turning angle in degrees (default:60)")
@@ -271,10 +273,28 @@ int trk(int ac, char *av[])
         file_name = fout.str();
     }
 
+    if(vm.count("ref")) // save track in T1W/T2W space
+    {
+        std::vector<std::string> files;
+        files.push_back(vm["ref"].as<std::string>());
+        FibSliceModel slice(handle.get());
+        CustomSliceModel new_slice;
+        std::cout << "Loading reference image:" << vm["ref"].as<std::string>() << std::endl;
+        if(!new_slice.initialize(slice,!(handle->trans_to_mni.empty())/*is_qsdr*/,files))
+        {
+            std::cout << "Error reading ref image file:" << vm["ref"].as<std::string>() << std::endl;
+            return 0;
+        }
+        std::cout << "Applying linear registration." << std::endl;
+        new_slice.thread->join();
+        new_slice.update();
+        tract_model.save_transformed_tracts_to_file(file_name.c_str(),&*new_slice.transform.begin(),false);
+    }
+    else
+        tract_model.save_tracts_to_file(file_name.c_str());
+
     std::cout << "a total of " << tract_model.get_visible_track_count() << " tracts are generated" << std::endl;
     std::cout << "output file:" << file_name << std::endl;
-    tract_model.save_tracts_to_file(file_name.c_str());
-
 
     if(vm.count("connectivity"))
     {
