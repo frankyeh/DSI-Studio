@@ -10,7 +10,6 @@
 #include "SliceModel.h"
 #include "slice_view_scene.h"
 #include "tract/tracttablewidget.h"
-#include "libs/coreg/linear.hpp"
 class FibData;
 class RenderingTableWidget;
 class RegionTableWidget;

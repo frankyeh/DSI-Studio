@@ -5,7 +5,6 @@
 #include <QTimer>
 #include <QGraphicsScene>
 #include "image/image.hpp"
-#include "libs/coreg/linear.hpp"
 #include <boost/thread/thread.hpp>
 
 namespace Ui {

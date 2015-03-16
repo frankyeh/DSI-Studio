@@ -82,7 +82,6 @@ HEADERS += mainwindow.h \
     tracking/tract/tracttablewidget.h \
     opengl/renderingtablewidget.h \
     qcolorcombobox.h \
-    libs/coreg/linear.hpp \
     libs/tracking/tracking_thread.hpp \
     libs/prog_interface_static_link.h \
     simulation.h \

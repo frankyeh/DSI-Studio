@@ -6,7 +6,6 @@
 #include <boost/thread/thread.hpp>
 #include "image/image.hpp"
 #include "libs/gzip_interface.hpp"
-#include "libs/coreg/linear.hpp"
 
 // ---------------------------------------------------------------------------
 struct SliceModel {
