@@ -143,14 +143,13 @@ void connectivity_matrix_dialog::on_save_as_clicked()
     QString filename = QFileDialog::getSaveFileName(
                 0,
                 "Save as",
-                cur_tracking_window->get_path("connectivity_matrix") + "/" +
+                cur_tracking_window->absolute_path + "/" +
                 cur_tracking_window->tractWidget->item(
                     cur_tracking_window->tractWidget->currentRow(),0)->text() + "_" +
                 ui->region_list->currentText() + ".mat",
                 "MAT File (*.mat);;Image Files (*.png *.tif *.bmp)");
     if(filename.isEmpty())
         return;
-    cur_tracking_window->add_path("connectivity_matrix",filename);
     if(QFileInfo(filename).suffix().toLower() == "mat")
     {
         data.save_to_file(filename.toLocal8Bit().begin());

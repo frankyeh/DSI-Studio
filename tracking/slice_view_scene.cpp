@@ -346,7 +346,7 @@ void slice_view_scene::save_slice_as()
     QString filename = QFileDialog::getSaveFileName(
                 0,
                 "Save as",
-                cur_tracking_window.get_path("slice") + "/" +
+                cur_tracking_window.absolute_path + "/" +
                 cur_tracking_window.handle->view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str(),
                 "NIFTI files (*.nii.gz);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
@@ -356,8 +356,6 @@ void slice_view_scene::save_slice_as()
 if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
     filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
 #endif
-
-    cur_tracking_window.add_path("region",filename);
 
     int index = cur_tracking_window.handle->get_name_index(
                 cur_tracking_window.ui->sliceViewBox->currentText().toLocal8Bit().begin());
@@ -396,13 +394,12 @@ void slice_view_scene::catch_screen()
     QSettings settings;
     QString filename = QFileDialog::getSaveFileName(
             0,"Save Images files",
-                cur_tracking_window.get_path("track") + "/" +
+                cur_tracking_window.absolute_path + "/" +
                 cur_tracking_window.handle->view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str()+"."+
                 settings.value("slice_image_extension","jpg").toString(),
                 "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
-    cur_tracking_window.add_path("slice_image",filename);
     settings.setValue("slice_image_extension",QFileInfo(filename).completeSuffix());
 
     if(cur_tracking_window["roi_layout"].toInt() != 0)// mosaic

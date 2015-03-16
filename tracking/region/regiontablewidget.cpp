@@ -429,11 +429,10 @@ void RegionTableWidget::load_region(void)
     QStringList filenames = QFileDialog::getOpenFileNames(
                                 this,
                                 "Open region",
-                                cur_tracking_window.get_path("region"),
+                                cur_tracking_window.absolute_path,
                                 "Region files (*.txt *.nii *.hdr *.nii.gz *.mat);;All files (*)" );
     if (filenames.isEmpty())
         return;
-    cur_tracking_window.add_path("region",filenames[0]);
 
     for (unsigned int index = 0;index < filenames.size();++index)
     {
@@ -557,12 +556,11 @@ void RegionTableWidget::save_region(void)
     QString filename = QFileDialog::getSaveFileName(
                            this,
                            "Save region",
-                cur_tracking_window.get_path("region") + "/" + item(currentRow(),0)->text() + "." + settings.value("region_save_type","nii.gz").toString(),
+                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + "." + settings.value("region_save_type","nii.gz").toString(),
                 "NIFTI file(*.nii.gz *.nii);;Text file(*.txt);;MAT file (*.mat);;All files(*)" );
     if (filename.isEmpty())
         return;
     settings.setValue("region_save_type",QFileInfo(filename).completeSuffix());
-    cur_tracking_window.add_path("region",filename);
 #ifdef __APPLE__
 // fix the Qt double extension bug here
     if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
@@ -582,10 +580,9 @@ void RegionTableWidget::save_all_regions_to_dir(void)
         return;
     QString dir = QFileDialog::getExistingDirectory(
                                 this,
-                                "Open directory",cur_tracking_window.get_path("region"));
+                                "Open directory",cur_tracking_window.absolute_path);
     if(dir.isEmpty())
         return;
-    cur_tracking_window.add_path("region",dir);
     begin_prog("save files...");
     for(unsigned int index = 0;check_prog(index,rowCount());++index)
         if (item(index,0)->checkState() == Qt::Checked) // either roi roa end or seed
@@ -607,12 +604,11 @@ void RegionTableWidget::save_all_regions(void)
     QString filename = QFileDialog::getSaveFileName(
                            this,
                            "Save region",
-                cur_tracking_window.get_path("region") + "/" + item(currentRow(),0)->text() + "." + settings.value("region_save_type","nii.gz").toString(),
+                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + "." + settings.value("region_save_type","nii.gz").toString(),
                            "Region file(*.nii.gz *.nii);;All file types (*)" );
     if (filename.isEmpty())
         return;
     settings.setValue("region_save_type",QFileInfo(filename).completeSuffix());
-    cur_tracking_window.add_path("region",filename);
 #ifdef __APPLE__
 // fix the Qt double extension bug here
     if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
@@ -654,11 +650,10 @@ void RegionTableWidget::save_region_info(void)
     QString filename = QFileDialog::getSaveFileName(
                            this,
                            "Save voxel information",
-                           cur_tracking_window.get_path("region") + "/" + item(currentRow(),0)->text() + "_info.txt",
+                           cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + "_info.txt",
                            "Text files (*.txt)" );
     if (filename.isEmpty())
         return;
-    cur_tracking_window.add_path("region",filename);
 
     std::ofstream out(filename.toLocal8Bit().begin());
     out << "x\ty\tz";
@@ -778,11 +773,10 @@ void RegionTableWidget::show_statistics(void)
         filename = QFileDialog::getSaveFileName(
                     this,
                     "Save satistics as",
-                    cur_tracking_window.get_path("region") + +"/" + item(currentRow(),0)->text() + "_stat.txt",
+                    cur_tracking_window.absolute_path + +"/" + item(currentRow(),0)->text() + "_stat.txt",
                     "Text files (*.txt);;All files|(*)");
         if(filename.isEmpty())
             return;
-        cur_tracking_window.add_path("region",filename);
         std::ofstream out(filename.toLocal8Bit().begin());
         out << result.c_str();
     }

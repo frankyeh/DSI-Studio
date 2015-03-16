@@ -1549,12 +1549,11 @@ void GLWidget::loadCamera(void)
     QString filename = QFileDialog::getOpenFileName(
             this,
             "Open Translocation Matrix",
-            cur_tracking_window.get_path("camera"),
+            cur_tracking_window.absolute_path,
             "Text files (*.txt);;All files (*)");
     std::ifstream in(filename.toLocal8Bit().begin());
     if(filename.isEmpty() || !in)
         return;
-    cur_tracking_window.add_path("camera",filename);
     std::vector<float> data;
     std::copy(std::istream_iterator<float>(in),
               std::istream_iterator<float>(),std::back_inserter(data));
@@ -1585,11 +1584,10 @@ void GLWidget::saveMapping(void)
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Save Mapping Matrix",
-            cur_tracking_window.get_path("mapping") + "/mapping.txt",
+            cur_tracking_window.absolute_path + "/mapping.txt",
             "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    cur_tracking_window.add_path("mapping",filename);
     std::ofstream out(filename.toLocal8Bit().begin());
 
     for(int row = 0,index = 0;row < 4;++row)
@@ -1607,12 +1605,11 @@ void GLWidget::loadMapping(void)
     QString filename = QFileDialog::getOpenFileName(
             this,
             "Open Mapping Matrix",
-            cur_tracking_window.get_path("mapping"),
+            cur_tracking_window.absolute_path,
             "Text files (*.txt);;All files (*)");
     std::ifstream in(filename.toLocal8Bit().begin());
     if(filename.isEmpty() || !in)
         return;
-    cur_tracking_window.add_path("mapping",filename);
     other_slices[current_visible_slide-1].terminate();
     std::vector<float> data;
     std::copy(std::istream_iterator<float>(in),
@@ -1769,12 +1766,11 @@ void GLWidget::catchScreen(void)
     QString filename = QFileDialog::getSaveFileName(
                this,
                "Save Images files",
-               cur_tracking_window.get_path("catch_screen") + "/image." +
+               cur_tracking_window.absolute_path + "/image." +
                 settings.value("catch_screen_extension","jpg").toString(),
                "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
-    cur_tracking_window.add_path("catch_screen",filename);
     settings.setValue("catch_screen_extension",QFileInfo(filename).completeSuffix());
     updateGL();
     grabFrameBuffer().save(filename);
@@ -1799,12 +1795,11 @@ void GLWidget::catchScreen2(void)
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Save Images files",
-            cur_tracking_window.get_path("catch_screen") + "/image." +
+            cur_tracking_window.absolute_path + "/image." +
             settings.value("catch_screen_extension","jpg").toString(),
             "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
-    cur_tracking_window.add_path("catch_screen",filename);
     settings.setValue("catch_screen_extension",QFileInfo(filename).completeSuffix());
     updateGL();
     int old_width = width;
@@ -1868,12 +1863,11 @@ void GLWidget::save3ViewImage(void)
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Assign image name",
-            cur_tracking_window.get_path("catch_screen") + "/image." +
+            cur_tracking_window.absolute_path + "/image." +
             settings.value("catch_screen_extension","jpg").toString(),
             "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
-    cur_tracking_window.add_path("catch_screen",filename);
     settings.setValue("catch_screen_extension",QFileInfo(filename).completeSuffix());
     QImage all;
     get3View(all,0);
@@ -1885,11 +1879,10 @@ void GLWidget::saveLeftRight3DImage(void)
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Assign image name",
-            cur_tracking_window.get_path("catch_screen"),
+            cur_tracking_window.absolute_path,
             "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
-    cur_tracking_window.add_path("catch_screen",filename);
     bool ok;
     int angle = QInputDialog::getInteger(this,
             "DSI Studio",
@@ -1923,11 +1916,10 @@ void GLWidget::saveRotationSeries(void)
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Assign image name",
-            cur_tracking_window.get_path("catch_screen"),
+            cur_tracking_window.absolute_path,
             "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
-    cur_tracking_window.add_path("catch_screen",filename);
     bool ok;
     int angle = QInputDialog::getInteger(this,
         "DSI Studio","Rotation angle in each step (degrees):",10,1,360,5,&ok);

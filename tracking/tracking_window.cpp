@@ -408,7 +408,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     {
         mi3->update_affine();
         handle->trans_to_mni.resize(16);
-        image::create_affine_transformation_matrix(mi3->T.get(),mi3->T.get() + 9,handle->trans_to_mni.begin(),image::vdim<3>());
+        mi3->T.save_to_transform(handle->trans_to_mni.begin());
         fa_template_imp.add_transformation(handle->trans_to_mni);
         if(mi3->data.progress >= 1)
             mi3->need_update_affine_matrix = false;
@@ -785,11 +785,10 @@ void tracking_window::on_actionInsert_T1_T2_triggered()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
         this,
-        "Open Images files",get_path("t1_path"),
+        "Open Images files",absolute_path,
         "Image files (*.dcm *.hdr *.nii *.nii.gz 2dseq);;All files (*)" );
     if( filenames.isEmpty())
         return;
-    add_path("t1_path",filenames[0]);
     add_slices(filenames,QFileInfo(filenames[0]).baseName());
     ui->SliceModality->setCurrentIndex(glWidget->other_slices.size());
     ui->sliceViewBox->setCurrentIndex(ui->sliceViewBox->count()-1);
@@ -1111,25 +1110,6 @@ void tracking_window::on_zoom_3d_valueChanged(double arg1)
         glWidget->current_scale = ui->zoom_3d->value();
     }
 }
-QString tracking_window::get_path(const std::string& id)
-{
-    std::map<std::string,QString>::const_iterator iter = path_map.find(id);
-    if(iter == path_map.end())
-        return absolute_path;
-    if(iter->second.contains("%PATH%"))
-    {
-        QString replaced_path = iter->second;
-        replaced_path.replace("%PATH%",absolute_path);
-        return replaced_path;
-    }
-    return iter->second;
-}
-void tracking_window::add_path(const std::string& id,QString filename)
-{
-    if(filename.contains(absolute_path))
-        filename.replace(absolute_path,"%PATH%");
-    path_map[id] = QFileInfo(filename).absolutePath();
-}
 
 void tracking_window::restore_3D_window()
 {
@@ -1369,10 +1349,7 @@ void tracking_window::on_actionTrack_Report_triggered()
 }
 QString tracking_window::get_save_file_name(QString title,QString file_name,QString file_type)
 {
-    QString filename = QFileDialog::getSaveFileName(this,title,get_path(title.toLocal8Bit().begin()) + "/" + file_name,file_type);
-    if(!filename.isEmpty())
-        add_path(title.toLocal8Bit().begin(),filename);
-    return filename;
+    return QFileDialog::getSaveFileName(this,title,absolute_path + "/" + file_name,file_type);
 }
 
 void tracking_window::show_info_dialog(const std::string& title,const std::string& result)
@@ -1387,11 +1364,10 @@ void tracking_window::show_info_dialog(const std::string& title,const std::strin
     {
         QString filename;
         filename = QFileDialog::getSaveFileName(this,
-                    "Save as",get_path(title) + "/info.txt",
+                    "Save as",absolute_path + "/info.txt",
                     "Text files (*.txt);;All files|(*)");
         if(filename.isEmpty())
             return;
-        add_path(title,filename);
         std::ofstream out(filename.toLocal8Bit().begin());
         out << result.c_str();
     }
