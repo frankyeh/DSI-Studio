@@ -285,10 +285,13 @@ int trk(int ac, char *av[])
             std::cout << "Error reading ref image file:" << vm["ref"].as<std::string>() << std::endl;
             return 0;
         }
-        std::cout << "Applying linear registration." << std::endl;
         new_slice.thread->join();
         new_slice.update();
-        tract_model.save_transformed_tracts_to_file(file_name.c_str(),&*new_slice.transform.begin(),false);
+        std::cout << "Applying linear registration." << std::endl;
+        std::cout << new_slice.transform[0] << " " << new_slice.transform[1] << " " << new_slice.transform[2] << " " << new_slice.transform[3] << std::endl;
+        std::cout << new_slice.transform[4] << " " << new_slice.transform[5] << " " << new_slice.transform[6] << " " << new_slice.transform[7] << std::endl;
+        std::cout << new_slice.transform[8] << " " << new_slice.transform[9] << " " << new_slice.transform[10] << " " << new_slice.transform[11] << std::endl;
+        tract_model.save_transformed_tracts_to_file(file_name.c_str(),&*new_slice.invT.begin(),false);
     }
     else
         tract_model.save_tracts_to_file(file_name.c_str());

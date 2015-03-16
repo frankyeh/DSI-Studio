@@ -121,7 +121,7 @@ public:
 
 class CustomSliceModel : public SliceModel{
 public:
-    std::vector<float> transform;
+    std::vector<float> transform,invT;
     image::basic_image<float,3> roi_image;
     float* roi_image_buf;
 public:
@@ -157,20 +157,18 @@ public:
     void update(void)
     {
         image::transformation_matrix<3,float> T(arg_min,from.geometry(),source_images.geometry());
-        const float* buf = T.get();
-        std::vector<float> inverse_transform(16);
-        image::create_affine_transformation_matrix(buf, buf + 9,inverse_transform.begin(), image::vdim<3>());
+        invT.resize(16);
+        invT[15] = 1.0;
+        T.save_to_transform(invT.begin());
         transform.resize(16);
-        image::matrix::inverse(inverse_transform.begin(),transform.begin(),image::dim<4, 4>());
+        transform[15] = 1.0;
+        image::matrix::inverse(invT.begin(),transform.begin(),image::dim<4, 4>());
         update_roi();
     }
     void update_roi(void)
     {
-        std::vector<float> inverse_transform(16);
-        image::matrix::inverse(transform.begin(),inverse_transform.begin(),image::dim<4, 4>());
-        // update roi image
         std::fill(texture_need_update,texture_need_update+3,1);
-        image::resample(source_images,roi_image,inverse_transform);
+        image::resample(source_images,roi_image,invT);
     }
 
 public:

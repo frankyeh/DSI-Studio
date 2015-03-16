@@ -1575,10 +1575,7 @@ void GLWidget::get_current_slice_transformation(
     }
     geo = other_slices[current_visible_slide-1].geometry;
     vs = other_slices[current_visible_slide-1].voxel_size;
-    tr = other_slices[current_visible_slide-1].transform;
-    tr.resize(16);
-    tr[15] = 1.0;
-    image::matrix::inverse(tr.begin(),image::dim<4,4>());
+    tr = other_slices[current_visible_slide-1].invT;
 }
 
 void GLWidget::saveMapping(void)
@@ -1621,7 +1618,10 @@ void GLWidget::loadMapping(void)
     std::copy(std::istream_iterator<float>(in),
               std::istream_iterator<float>(),std::back_inserter(data));
     data.resize(16);
-    std::copy(data.begin(),data.end(),other_slices[current_visible_slide-1].transform.begin());
+    data[15] = 1.0;
+    other_slices[current_visible_slide-1].transform = data;
+    other_slices[current_visible_slide-1].invT.resize(16);
+    image::matrix::inverse(data.begin(),other_slices[current_visible_slide-1].invT.begin(),image::dim<4,4>());
     other_slices[current_visible_slide-1].update_roi();
     updateGL();
 }
