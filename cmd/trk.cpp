@@ -403,5 +403,5 @@ int trk(int ac, char *av[])
     {
         std::cout << "program terminated due to unkown exception" << std::endl;
     }
-
+    return 0;
 }

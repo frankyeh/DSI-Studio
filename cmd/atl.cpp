@@ -200,7 +200,7 @@ int atl(int ac, char *av[])
     }
 
     if(!atl_load_atlas(vm["atlas"].as<std::string>()))
-        return false;
+        return 0;
 
     unsigned int factor = vm["order"].as<int>() + 1;
     unsigned int thread_count = vm["thread_count"].as<int>();
@@ -215,11 +215,12 @@ int atl(int ac, char *av[])
        !mat_reader.read("voxel_size",row,col,vs))
     {
         std::cout << "Invalid file format" << std::endl;
-        return false;
+        return 0;
     }
     mat_reader.read("trans",row,col,trans);
     image::basic_image<image::vector<3>,3> mapping;
     if(!atl_get_mapping(mat_reader,factor,thread_count,mapping))
-        return false;
+        return 0;
     atl_save_mapping(file_name,image::geometry<3>(dim),mapping,trans,vs,vm["output"].as<std::string>() == "multiple");
+    return 0;
 }

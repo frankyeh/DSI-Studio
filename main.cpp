@@ -27,11 +27,6 @@ int atl(int ac, char *av[]);
 
 fa_template fa_template_imp;
 std::vector<atlas> atlas_list;
-void prog_debug(const char* file,const char* fun)
-{
-
-}
-
 QStringList search_files(QString dir,QString filter)
 {
     QStringList dir_list,src_list;
