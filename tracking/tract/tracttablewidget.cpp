@@ -516,6 +516,7 @@ void TractTableWidget::saveTransformedTracts(const float* transform)
                  "Tract files (*.trk *.trk.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
+    settings.setValue("track_file_extension",QFileInfo(filename).completeSuffix());
 
     std::string sfilename = filename.toLocal8Bit().begin();
     tract_models[currentRow()]->save_transformed_tracts_to_file(&*sfilename.begin(),transform,false);
