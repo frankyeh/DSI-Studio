@@ -91,6 +91,8 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
         t[15] = 1.0;
         image::matrix::inverse(slice.handle->trans_to_mni.begin(),inv_trans.begin(),image::dim<4,4>());
         image::matrix::product(inv_trans.begin(),t.begin(),transform.begin(),image::dim<4,4>(),image::dim<4,4>());
+        invT.resize(16);
+        image::matrix::inverse(transform.begin(),invT.begin(),image::dim<4, 4>());
     }
     else
     {
@@ -115,6 +117,8 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
         {
             transform.resize(16);
             transform[0] = transform[5] = transform[10] = transform[15] = 1.0;
+            invT.resize(16);
+            invT[0] = invT[5] = invT[10] = invT[15] = 1.0;
         }
     }
 
@@ -129,6 +133,7 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
         thread.reset(new boost::thread(&CustomSliceModel::argmin,this,image::reg::rigid_body));
         // handle views
         transform.resize(16);
+        invT.resize(16);
     }
     else
         update_roi();

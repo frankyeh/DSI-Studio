@@ -78,7 +78,7 @@ void motion_correction(boost::ptr_vector<DwiHeader>& dwi_files,
                 image::transformation_matrix<3,double>(interpolated_arg,geo,geo);
 
         image::basic_image<short,3> new_image(geo);
-        image::resample(dwi_files[i].image,new_image,T);
+        image::resample(dwi_files[i].image,new_image,T,image::linear);
         dwi_files[i].image.swap(new_image);
 
         // rotate b-table

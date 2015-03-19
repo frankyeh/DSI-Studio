@@ -415,6 +415,7 @@ const char* reconstruction(ImageModel* image_model,unsigned int method_id,const 
             if (!image_model->reconstruct<gqi_estimate_response_function>())
                 return "reconstruction calceled";
             out << ".reg" << (int)image_model->voxel.reg_method;
+            out << "i" << (int)image_model->voxel.interpo_method;
             out << (image_model->voxel.r2_weighted ? ".qsdr2.":".qsdr.");
             out << param_values[0] << "." << param_values[1] << "mm";
             if(image_model->voxel.output_jacobian)

@@ -76,6 +76,7 @@ public:// parameters;
     std::vector<image::const_pointer_image<float,3> > grad_dev;
 public:
     unsigned char reg_method;// used in QSDR
+    unsigned char interpo_method;
     image::transformation_matrix<3,float> qsdr_trans;
     // used in QSDR only
     bool output_jacobian;

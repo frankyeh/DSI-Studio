@@ -40,14 +40,14 @@ public:
         if(new_geo.size() > mask.size())
             new_geo[2] = mask.size()/new_geo.plane_size();
         image::basic_image<float,3> tmp(new_geo);
-        image::resample(voxel.dwi_sum,tmp,affine);
+        image::resample(voxel.dwi_sum,tmp,affine,image::linear);
         voxel.dwi_sum = tmp;
-        image::resample(mask,tmp,affine);
+        image::resample(mask,tmp,affine,image::linear);
         mask = tmp;
         for (unsigned int index = 0;check_prog(index,dwi_data.size());++index)
         {
             image::pointer_image<unsigned short,3> I = image::make_image(voxel.dim,(unsigned short*)dwi_data[index]);
-            image::resample(I,tmp,affine);
+            image::resample(I,tmp,affine,image::linear);
             I.resize(new_geo);
             std::copy(tmp.begin(),tmp.end(),I.begin());
         }

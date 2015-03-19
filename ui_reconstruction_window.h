@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Sat Mar 7 16:02:24 2015
+** Created: Wed Mar 18 20:54:00 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -140,6 +140,9 @@ public:
     QLabel *label_15;
     QComboBox *reg_method;
     QToolButton *manual_reg;
+    QHBoxLayout *horizontalLayout_27;
+    QLabel *label_20;
+    QComboBox *interpo_method;
     QHBoxLayout *horizontalLayout_8;
     QLabel *label_8;
     QSpinBox *mni_resolution;
@@ -258,7 +261,7 @@ public:
         toolBox->setObjectName(QString::fromUtf8("toolBox"));
         source_page = new QWidget();
         source_page->setObjectName(QString::fromUtf8("source_page"));
-        source_page->setGeometry(QRect(0, 0, 267, 195));
+        source_page->setGeometry(QRect(0, 0, 597, 473));
         horizontalLayout_25 = new QHBoxLayout(source_page);
         horizontalLayout_25->setObjectName(QString::fromUtf8("horizontalLayout_25"));
         splitter = new QSplitter(source_page);
@@ -474,7 +477,7 @@ public:
         toolBox->addItem(page_3, QString::fromUtf8("Step 1: setup brain mask"));
         page = new QWidget();
         page->setObjectName(QString::fromUtf8("page"));
-        page->setGeometry(QRect(0, -14, 580, 487));
+        page->setGeometry(QRect(0, 0, 580, 487));
         page->setMinimumSize(QSize(0, 0));
         verticalLayout_2 = new QVBoxLayout(page);
         verticalLayout_2->setSpacing(3);
@@ -678,6 +681,21 @@ public:
 
 
         horizontalLayout_9->addLayout(horizontalLayout_10);
+
+        horizontalLayout_27 = new QHBoxLayout();
+        horizontalLayout_27->setObjectName(QString::fromUtf8("horizontalLayout_27"));
+        label_20 = new QLabel(ResolutionBox);
+        label_20->setObjectName(QString::fromUtf8("label_20"));
+
+        horizontalLayout_27->addWidget(label_20);
+
+        interpo_method = new QComboBox(ResolutionBox);
+        interpo_method->setObjectName(QString::fromUtf8("interpo_method"));
+
+        horizontalLayout_27->addWidget(interpo_method);
+
+
+        horizontalLayout_9->addLayout(horizontalLayout_27);
 
         horizontalLayout_8 = new QHBoxLayout();
         horizontalLayout_8->setObjectName(QString::fromUtf8("horizontalLayout_8"));
@@ -1091,6 +1109,7 @@ public:
 
         toolBox->setCurrentIndex(2);
         toolBox->layout()->setSpacing(0);
+        interpo_method->setCurrentIndex(2);
         ODFDim->setCurrentIndex(3);
 
 
@@ -1162,6 +1181,13 @@ public:
          << QApplication::translate("reconstruction_window", "norm 21-27-21", 0, QApplication::UnicodeUTF8)
         );
         manual_reg->setText(QApplication::translate("reconstruction_window", "...", 0, QApplication::UnicodeUTF8));
+        label_20->setText(QApplication::translate("reconstruction_window", "DWI interpolation", 0, QApplication::UnicodeUTF8));
+        interpo_method->clear();
+        interpo_method->insertItems(0, QStringList()
+         << QApplication::translate("reconstruction_window", "Trilinear", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("reconstruction_window", "Gaussian Radial Basis", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("reconstruction_window", "Tricubic", 0, QApplication::UnicodeUTF8)
+        );
         label_8->setText(QApplication::translate("reconstruction_window", "Output Resolution", 0, QApplication::UnicodeUTF8));
         hardi_param->setTitle(QString());
         label_16->setText(QApplication::translate("reconstruction_window", "Output b-value", 0, QApplication::UnicodeUTF8));

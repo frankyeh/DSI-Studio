@@ -118,7 +118,7 @@ public:
         }
         affine.inverse();
         image::basic_image<float,3> VFF(VG.geometry());
-        image::resample(VF,VFF,affine);
+        image::resample(VF,VFF,affine,image::cubic);
 
         //linear regression
         {
@@ -168,7 +168,7 @@ public:
                     image::vector<3,double> pos;
                     (*mni.get())(index,pos);
                     float value = 0.0;
-                    image::linear_estimate(VFF,pos,value);
+                    image::estimate(VFF,pos,value,image::linear);
                     x.push_back(VG[index.index()]);
                     y.push_back(value);
                 }
@@ -180,7 +180,7 @@ public:
             if(export_intermediate)
             {
                 image::basic_image<float,3> VFFF(VG.geometry());
-                image::resample(VFF,VFFF,*mni.get());
+                image::resample(VFF,VFFF,*mni.get(),image::cubic);
                 VFFF.save_to_file<image::io::nifti>("VFFF.nii.gz");
             }
         }
@@ -298,47 +298,25 @@ public:
         image::matrix::product(affine.scaling_rotation,M,jacobian,image::dim<3,3>(),image::dim<3,3>());
     }
 
-
-    virtual void run(Voxel& voxel, VoxelData& data)
+    template<typename interpolation_type>
+    void interpolate_dwi(Voxel& voxel, VoxelData& data,
+                         const image::vector<3,double>& pos,
+                         const image::vector<3,double>& Jpos,interpolation_type)
     {
-        image::interpolation<image::linear_weighting,3> trilinear_interpolation;
-        image::vector<3,double> pos(image::pixel_index<3>(data.voxel_index,voxel.dim)),Jpos;
-        pos[0] *= scale[0];
-        pos[1] *= scale[1];
-        pos[2] *= scale[2];
-        pos += des_offset;
-        pos += 0.5;
-        pos.floor();
-        (*mni.get())(pos,Jpos);
-        affine(Jpos);
-
-        // output mapping position
-        if(voxel.output_mapping)
-        {
-            mx[data.voxel_index] = Jpos[0];
-            my[data.voxel_index] = Jpos[1];
-            mz[data.voxel_index] = Jpos[2];
-        }
-
-        if(!trilinear_interpolation.get_location(src_geo,Jpos))
+        interpolation_type interpolation;
+        if(!interpolation.get_location(src_geo,Jpos))
         {
             std::fill(data.space.begin(),data.space.end(),0);
+            std::fill(data.jacobian,data.jacobian+9,0.0);
             return;
         }
         data.space.resize(ptr_images.size());
         for (unsigned int i = 0; i < ptr_images.size(); ++i)
-            trilinear_interpolation.estimate(ptr_images[i],data.space[i]);
-
+            interpolation.estimate(ptr_images[i],data.space[i]);
         if(voxel.half_sphere && b0_index != -1)
             data.space[b0_index] /= 2.0;
 
-        {
-            get_jacobian(pos,data.jacobian);
-            data.jdet = std::abs(image::matrix::determinant(data.jacobian,image::dim<3,3>())*voxel_volume_scale);
-            if(voxel.output_jacobian)
-                jdet[data.voxel_index] = data.jdet;
-        }
-
+        get_jacobian(pos,data.jacobian);
         if(!voxel.grad_dev.empty())
         {
             /*
@@ -347,7 +325,7 @@ public:
 
             float grad_dev[9];
             for(unsigned int i = 0; i < 9; ++i)
-                trilinear_interpolation.estimate(voxel.grad_dev[i],grad_dev[i]);
+                interpolation.estimate(voxel.grad_dev[i],grad_dev[i]);
             // this grad_dev matrix is rotated
             // add identity matrix
             grad_dev[0] += 1.0;
@@ -367,6 +345,42 @@ public:
             //  <G*b_vec,J*odf>
             //  = trans(b_vec)*trans(G)*J*odf
         }
+    }
+
+    virtual void run(Voxel& voxel, VoxelData& data)
+    {
+        image::vector<3,double> pos(image::pixel_index<3>(data.voxel_index,voxel.dim)),Jpos;
+        pos[0] *= scale[0];
+        pos[1] *= scale[1];
+        pos[2] *= scale[2];
+        pos += des_offset;
+        pos += 0.5;
+        pos.floor();
+        (*mni.get())(pos,Jpos);
+        affine(Jpos);
+
+        // output mapping position
+        if(voxel.output_mapping)
+        {
+            mx[data.voxel_index] = Jpos[0];
+            my[data.voxel_index] = Jpos[1];
+            mz[data.voxel_index] = Jpos[2];
+        }
+        switch(voxel.interpo_method)
+        {
+        case 0:
+            interpolate_dwi(voxel,data,pos,Jpos,image::interpolation<image::linear_weighting,3>());
+            break;
+        case 1:
+            interpolate_dwi(voxel,data,pos,Jpos,image::interpolation<image::gaussian_radial_basis_weighting,3>());
+            break;
+        case 2:
+            interpolate_dwi(voxel,data,pos,Jpos,image::cubic_interpolation<3>());
+            break;
+        }
+        data.jdet = std::abs(image::matrix::determinant(data.jacobian,image::dim<3,3>())*voxel_volume_scale);
+        if(voxel.output_jacobian)
+            jdet[data.voxel_index] = data.jdet;
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {

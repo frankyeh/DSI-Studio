@@ -167,7 +167,7 @@ public:
     void update_roi(void)
     {
         std::fill(texture_need_update,texture_need_update+3,1);
-        image::resample(source_images,roi_image,invT);
+        image::resample(source_images,roi_image,invT,image::linear);
     }
 
 public:

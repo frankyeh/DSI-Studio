@@ -37,6 +37,7 @@ int rec(int ac, char *av[])
     ("decomposition", po::value<int>()->default_value(0), "apply decomposition")
     ("r2_weighted", po::value<int>()->default_value(0), "set the r2 weighted in GQI")
     ("reg_method", po::value<int>()->default_value(1), "set the registration method for QSDR")
+    ("interpo_method", po::value<int>()->default_value(2), "set the interpolation method for QSDR")
     ("scheme_balance", po::value<int>()->default_value(0), "balance the diffusion sampling scheme")
     ("check_btable", po::value<int>()->default_value(1), "check b-table")
     ("param0", po::value<float>(), "set parameters")
@@ -183,6 +184,7 @@ int rec(int ac, char *av[])
     handle->voxel.max_fiber_number = vm["num_fiber"].as<int>();
     handle->voxel.r2_weighted = vm["r2_weighted"].as<int>();
     handle->voxel.reg_method = vm["reg_method"].as<int>();
+    handle->voxel.interpo_method = vm["interpo_method"].as<int>();
 
     {
         std::cout << "odf_order=" << vm["odf_order"].as<int>() << std::endl;

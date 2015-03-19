@@ -31,7 +31,7 @@ void run_reg(image::basic_image<float,3>& from,
     affine.inverse();
     data.progress = 1;
     image::basic_image<float,3> new_from(to.geometry());
-    image::resample(from,new_from,affine);
+    image::resample(from,new_from,affine,image::linear);
     if(thread_count == 1)
         image::reg::bfnorm(new_from,to,data.bnorm_data,data.terminated);
     else
@@ -188,7 +188,7 @@ void manual_alignment::update_image(void)
     update_affine();
     warped_from.clear();
     warped_from.resize(to.geometry());
-    image::resample(from,warped_from,iT);
+    image::resample(from,warped_from,iT,image::linear);
 }
 void manual_alignment::param_changed()
 {

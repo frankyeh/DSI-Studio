@@ -1276,7 +1276,7 @@ void TractModel::get_tract_data(unsigned int fiber_index,
         return;
     data.resize(tract_data[fiber_index].size()/3);
     for (unsigned int data_index = 0,index = 0;index < tract_data[fiber_index].size();index += 3,++data_index)
-        image::linear_estimate(handle->view_item[index_num].image_data,&(tract_data[fiber_index][index]),data[data_index]);
+        image::estimate(handle->view_item[index_num].image_data,&(tract_data[fiber_index][index]),data[data_index],image::linear);
 }
 
 bool TractModel::get_tracts_data(

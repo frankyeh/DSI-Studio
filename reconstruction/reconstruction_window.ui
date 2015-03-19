@@ -51,8 +51,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>267</width>
-         <height>195</height>
+         <width>597</width>
+         <height>473</height>
         </rect>
        </property>
        <attribute name="label">
@@ -385,7 +385,7 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>-14</y>
+         <y>0</y>
          <width>580</width>
          <height>487</height>
         </rect>
@@ -758,6 +758,39 @@
                <property name="text">
                 <string>...</string>
                </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_27">
+             <item>
+              <widget class="QLabel" name="label_20">
+               <property name="text">
+                <string>DWI interpolation</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="interpo_method">
+               <property name="currentIndex">
+                <number>2</number>
+               </property>
+               <item>
+                <property name="text">
+                 <string>Trilinear</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Gaussian Radial Basis</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Tricubic</string>
+                </property>
+               </item>
               </widget>
              </item>
             </layout>
