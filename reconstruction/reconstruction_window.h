@@ -5,6 +5,7 @@
 #include <QGraphicsScene>
 #include <QSettings>
 #include <image/image.hpp>
+#include "boost/thread.hpp"
 
 namespace Ui {
     class reconstruction_window;
@@ -31,6 +32,13 @@ private:
     float max_source_value,source_ratio;
 
     void load_b_table(void);
+private:
+    std::auto_ptr<QTimer> timer;
+    std::vector<image::affine_transform<3,float> > motion_args;
+    unsigned int progress;
+    bool terminated;
+    std::auto_ptr<boost::thread> motion_correction_thread;
+
 private:
     QGraphicsScene scene;
     image::color_image buffer;
@@ -86,6 +94,8 @@ private slots:
     void on_actionTrim_image_triggered();
     void on_diffusion_sampling_valueChanged(double arg1);
     void on_SlicePos_valueChanged(int value);
+    void on_motion_correction_clicked();
+    void check_progress(void);
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Wed Mar 18 20:54:00 2015
+** Created: Sat Mar 21 04:42:08 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -27,6 +27,7 @@
 #include <QtGui/QMainWindow>
 #include <QtGui/QMenu>
 #include <QtGui/QMenuBar>
+#include <QtGui/QProgressBar>
 #include <QtGui/QPushButton>
 #include <QtGui/QRadioButton>
 #include <QtGui/QSlider>
@@ -68,7 +69,8 @@ public:
     QVBoxLayout *verticalLayout_8;
     QHBoxLayout *horizontalLayout_21;
     QPushButton *delete_2;
-    QSpacerItem *horizontalSpacer_5;
+    QPushButton *motion_correction;
+    QProgressBar *motion_correction_progress;
     QWidget *widget_3;
     QVBoxLayout *verticalLayout_11;
     QSplitter *splitter_2;
@@ -281,13 +283,22 @@ public:
         horizontalLayout_21->setObjectName(QString::fromUtf8("horizontalLayout_21"));
         delete_2 = new QPushButton(widget_2);
         delete_2->setObjectName(QString::fromUtf8("delete_2"));
-        delete_2->setMaximumSize(QSize(100, 19));
+        delete_2->setMaximumSize(QSize(100, 24));
 
         horizontalLayout_21->addWidget(delete_2);
 
-        horizontalSpacer_5 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+        motion_correction = new QPushButton(widget_2);
+        motion_correction->setObjectName(QString::fromUtf8("motion_correction"));
+        motion_correction->setMaximumSize(QSize(16777215, 24));
 
-        horizontalLayout_21->addItem(horizontalSpacer_5);
+        horizontalLayout_21->addWidget(motion_correction);
+
+        motion_correction_progress = new QProgressBar(widget_2);
+        motion_correction_progress->setObjectName(QString::fromUtf8("motion_correction_progress"));
+        motion_correction_progress->setMaximumSize(QSize(16777215, 24));
+        motion_correction_progress->setValue(0);
+
+        horizontalLayout_21->addWidget(motion_correction_progress);
 
 
         verticalLayout_8->addLayout(horizontalLayout_21);
@@ -477,7 +488,7 @@ public:
         toolBox->addItem(page_3, QString::fromUtf8("Step 1: setup brain mask"));
         page = new QWidget();
         page->setObjectName(QString::fromUtf8("page"));
-        page->setGeometry(QRect(0, 0, 580, 487));
+        page->setGeometry(QRect(0, 0, 617, 487));
         page->setMinimumSize(QSize(0, 0));
         verticalLayout_2 = new QVBoxLayout(page);
         verticalLayout_2->setSpacing(3);
@@ -1107,7 +1118,7 @@ public:
 
         retranslateUi(reconstruction_window);
 
-        toolBox->setCurrentIndex(2);
+        toolBox->setCurrentIndex(0);
         toolBox->layout()->setSpacing(0);
         interpo_method->setCurrentIndex(2);
         ODFDim->setCurrentIndex(3);
@@ -1132,6 +1143,7 @@ public:
         actionRotate->setText(QApplication::translate("reconstruction_window", "Rotate...", 0, QApplication::UnicodeUTF8));
         actionTrim_image->setText(QApplication::translate("reconstruction_window", "Trim image", 0, QApplication::UnicodeUTF8));
         delete_2->setText(QApplication::translate("reconstruction_window", "Delete", 0, QApplication::UnicodeUTF8));
+        motion_correction->setText(QApplication::translate("reconstruction_window", "Motion correction", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem = b_table->horizontalHeaderItem(0);
         ___qtablewidgetitem->setText(QApplication::translate("reconstruction_window", "b value", 0, QApplication::UnicodeUTF8));
         QTableWidgetItem *___qtablewidgetitem1 = b_table->horizontalHeaderItem(1);

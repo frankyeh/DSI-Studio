@@ -35,7 +35,7 @@ bool reconstruction_window::load_src(int index)
 }
 
 reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *parent) :
-    QMainWindow(parent),filenames(filenames_),
+    QMainWindow(parent),filenames(filenames_),terminated(false),motion_correction_thread(0),
         ui(new Ui::reconstruction_window)
 {
 
@@ -164,9 +164,21 @@ void reconstruction_window::on_b_table_itemSelectionChanged()
 {
     image::basic_image<float,2> tmp(image::geometry<2>(handle->voxel.dim[0],handle->voxel.dim[1]));
     unsigned int b_index = ui->b_table->currentRow();
-    std::copy(handle->dwi_data[b_index] + ui->z_pos->value()*tmp.size(),
-              handle->dwi_data[b_index] + ui->z_pos->value()*tmp.size() + tmp.size(),tmp.begin());
-
+    if(motion_args.empty())
+        std::copy(handle->dwi_data[b_index] + ui->z_pos->value()*tmp.size(),
+                  handle->dwi_data[b_index] + ui->z_pos->value()*tmp.size() + tmp.size(),tmp.begin());
+    else
+    {
+        image::transformation_matrix<3,float> T(motion_args[b_index],handle->voxel.dim,handle->voxel.dim);
+        for(int y = 0,index = 0;y < handle->voxel.dim[1];++y)
+            for(int x = 0;x < handle->voxel.dim[0];++x,++index)
+            {
+                image::vector<3> pos(x,y,ui->z_pos->value()),to;
+                T(pos,to);
+                image::estimate(image::make_image(handle->voxel.dim,handle->dwi_data[b_index]),
+                                to,tmp[index],image::linear);
+            }
+    }
     tmp += ui->brightness->value();
     if( ui->contrast->value() != 0.0)
         tmp *= 255.99/ui->contrast->value();
@@ -202,6 +214,12 @@ void reconstruction_window::closeEvent(QCloseEvent *event)
 
 reconstruction_window::~reconstruction_window()
 {
+    if(motion_correction_thread.get())
+    {
+        terminated = true;
+        motion_correction_thread->join();
+        motion_correction_thread.reset(0);
+    }
     delete ui;
 }
 
@@ -796,4 +814,78 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
                     scaled(dwi.width()*ratio,dwi.height()*ratio);
     scene.clear();
     scene.addRect(0, 0, dwi.width()*ratio,dwi.height()*ratio,QPen(),slice_image);
+}
+
+void rec_motion_correction_parallel(ImageModel* handle,
+                                    std::vector<image::affine_transform<3,float> >& args,
+                                    unsigned int total_thread,unsigned int id,unsigned int& progress,bool& terminated)
+{
+    for(unsigned int i = id;i < handle->voxel.bvalues.size() && !terminated;i += total_thread)
+    {
+        if(i == 0)
+            continue;
+        if(id == 0)
+            progress = i*100/handle->voxel.bvalues.size();
+        image::basic_image<unsigned char,3> mask1(handle->voxel.dim),mask2(handle->voxel.dim);
+        image::segmentation::otsu(image::make_image(handle->voxel.dim,handle->dwi_data[0]),mask1);
+        image::segmentation::otsu(image::make_image(handle->voxel.dim,handle->dwi_data[i]),mask2);
+        image::morphology::smoothing(mask1);
+        image::morphology::smoothing(mask2);
+        image::reg::linear(mask1,mask2,args[i],
+                           image::reg::rigid_body,
+                           image::reg::square_error(),terminated);
+    }
+}
+
+void rec_motion_correction(ImageModel* handle,unsigned int total_thread,
+                           std::vector<image::affine_transform<3,float> >& args,
+                           unsigned int& progress,
+                           bool& terminated)
+{
+
+    boost::thread_group threads;
+    for(unsigned int i = 1;i < total_thread;++i)
+        threads.add_thread(new boost::thread(&rec_motion_correction_parallel,
+                                             handle,boost::ref(args),
+                                             total_thread,i,boost::ref(progress),boost::ref(terminated)));
+    rec_motion_correction_parallel(handle,args,total_thread,0,boost::ref(progress),terminated);
+    threads.join_all();
+
+    for(unsigned int i = 0;i < handle->voxel.bvalues.size();++i)
+        handle->rotate(i,image::transformation_matrix<3,float>(args[i],handle->voxel.dim,handle->voxel.dim));
+    args.clear();
+    progress = 100;
+}
+
+void reconstruction_window::on_motion_correction_clicked()
+{
+    if(motion_correction_thread.get())
+    {
+        terminated = true;
+        motion_correction_thread->join();
+        ui->motion_correction->setText("Motion correction");
+        timer.reset(0);
+        ui->motion_correction_progress->setValue(0);
+        motion_args.clear();
+        motion_correction_thread.reset(0);
+        return;
+    }
+    terminated = false;
+    motion_args.resize(handle->voxel.bvalues.size());
+    motion_correction_thread.reset(new boost::thread(&rec_motion_correction,
+                                                     handle.get(),4,boost::ref(motion_args),boost::ref(progress),boost::ref(terminated)));
+    timer.reset(new QTimer(this));
+    timer->setInterval(1000);
+    timer->start();
+    connect(timer.get(), SIGNAL(timeout()), this, SLOT(check_progress()));
+    ui->motion_correction->setText("Stop");
+}
+void reconstruction_window::check_progress(void)
+{
+    ui->motion_correction_progress->setValue(progress);
+    if(progress == 100)
+    {
+        load_b_table();
+        on_motion_correction_clicked();
+    }
 }
