@@ -39,27 +39,27 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
                                                << "null greater pdf" << "null lesser pdf"
                                                << "greater pdf" << "lesser pdf");
 
-    ui->subject_list->setRowCount(vbc->subject_count());
+    ui->subject_list->setRowCount(vbc->handle->num_subjects);
     std::string check_quality,bad_r2;
-    for(unsigned int index = 0;index < vbc->subject_count();++index)
+    for(unsigned int index = 0;index < vbc->handle->num_subjects;++index)
     {
-        ui->subject_list->setItem(index,0, new QTableWidgetItem(QString(vbc->subject_name(index).c_str())));
+        ui->subject_list->setItem(index,0, new QTableWidgetItem(QString(vbc->handle->subject_names[index].c_str())));
         ui->subject_list->setItem(index,1, new QTableWidgetItem(QString::number(0)));
-        ui->subject_list->setItem(index,2, new QTableWidgetItem(QString::number(vbc->subject_R2(index))));
-        if(vbc->subject_R2(index) < 0.3)
+        ui->subject_list->setItem(index,2, new QTableWidgetItem(QString::number(vbc->handle->R2[index])));
+        if(vbc->handle->R2[index] < 0.3)
         {
             if(check_quality.empty())
                 check_quality = "Low R2 value found in subject(s):";
             std::ostringstream out;
-            out << " #" << index+1 << " " << vbc->subject_name(index);
+            out << " #" << index+1 << " " << vbc->handle->subject_names[index];
             check_quality += out.str();
         }
-        if(vbc->subject_R2(index) != vbc->subject_R2(index))
+        if(vbc->handle->R2[index] != vbc->handle->R2[index])
         {
             if(bad_r2.empty())
                 bad_r2 = "Invalid data found in subject(s):";
             std::ostringstream out;
-            out << " #" << index+1 << " " << vbc->subject_name(index);
+            out << " #" << index+1 << " " << vbc->handle->subject_names[index];
             bad_r2 += out.str();
         }
 
@@ -310,7 +310,7 @@ void vbc_dialog::show_dis_table(void)
 void vbc_dialog::on_subject_list_itemSelectionChanged()
 {
     image::basic_image<float,2> slice;
-    vbc->get_subject_slice(ui->subject_list->currentRow(),ui->AxiSlider->value(),slice);
+    vbc->handle->get_subject_slice(ui->subject_list->currentRow(),ui->AxiSlider->value(),slice);
     image::normalize(slice);
     image::color_image color_slice(slice.geometry());
     std::copy(slice.begin(),slice.end(),color_slice.begin());
@@ -378,14 +378,14 @@ void vbc_dialog::on_open_mr_files_clicked()
 
     if(ui->rb_multiple_regression->isChecked())
     {
-        unsigned int feature_count = items.size()/(vbc->subject_count()+1);
-        if(feature_count*(vbc->subject_count()+1) != items.size())
+        unsigned int feature_count = items.size()/(vbc->handle->num_subjects+1);
+        if(feature_count*(vbc->handle->num_subjects+1) != items.size())
         {
             QMessageBox::information(this,"Warning",QString("Subject number mismatch."));
             return;
         }
         std::vector<double> X;
-        for(unsigned int i = 0,index = 0;i < vbc->subject_count();++i)
+        for(unsigned int i = 0,index = 0;i < vbc->handle->num_subjects;++i)
         {
             bool ok = false;
             X.push_back(1); // for the intercep
@@ -420,10 +420,10 @@ void vbc_dialog::on_open_mr_files_clicked()
         ui->subject_demo->clear();
         ui->subject_demo->setColumnCount(feature_count+1);
         ui->subject_demo->setHorizontalHeaderLabels(t);
-        ui->subject_demo->setRowCount(vbc->subject_count());
+        ui->subject_demo->setRowCount(vbc->handle->num_subjects);
         for(unsigned int row = 0,index = 0;row < ui->subject_demo->rowCount();++row)
         {
-            ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->subject_name(row).c_str())));
+            ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->handle->subject_names[row].c_str())));
             ++index;// skip intercep
             for(unsigned int col = 1;col < ui->subject_demo->columnCount();++col,++index)
                 ui->subject_demo->setItem(row,col,new QTableWidgetItem(QString::number(model->X[index])));
@@ -431,19 +431,19 @@ void vbc_dialog::on_open_mr_files_clicked()
     }
     if(ui->rb_group_difference->isChecked())
     {
-        if(vbc->subject_count() != items.size() &&
-           vbc->subject_count()+1 != items.size())
+        if(vbc->handle->num_subjects != items.size() &&
+           vbc->handle->num_subjects+1 != items.size())
         {
             QMessageBox::information(this,"Warning",
                                      QString("Subject number mismatch. text file=%1 database=%2").
-                                     arg(items.size()).arg(vbc->subject_count()));
+                                     arg(items.size()).arg(vbc->handle->num_subjects));
             return;
         }
-        if(vbc->subject_count()+1 == items.size())
+        if(vbc->handle->num_subjects+1 == items.size())
             items.erase(items.begin());
 
         std::vector<int> label;
-        for(unsigned int i = 0;i < vbc->subject_count();++i)
+        for(unsigned int i = 0;i < vbc->handle->num_subjects;++i)
         {
             bool ok = false;
             label.push_back(QString(items[i].c_str()).toInt(&ok));
@@ -461,28 +461,28 @@ void vbc_dialog::on_open_mr_files_clicked()
         ui->subject_demo->clear();
         ui->subject_demo->setColumnCount(2);
         ui->subject_demo->setHorizontalHeaderLabels(QStringList() << "Subject ID" << "Group ID");
-        ui->subject_demo->setRowCount(vbc->subject_count());
+        ui->subject_demo->setRowCount(vbc->handle->num_subjects);
         for(unsigned int row = 0;row < ui->subject_demo->rowCount();++row)
         {
-            ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->subject_name(row).c_str())));
+            ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->handle->subject_names[row].c_str())));
             ui->subject_demo->setItem(row,1,new QTableWidgetItem(QString::number(model->label[row])));
         }
     }
     if(ui->rb_paired_difference->isChecked())
     {
-        if(vbc->subject_count() != items.size() &&
-           vbc->subject_count()+1 != items.size())
+        if(vbc->handle->num_subjects != items.size() &&
+           vbc->handle->num_subjects+1 != items.size())
         {
             QMessageBox::information(this,"Warning",
                                      QString("Subject number mismatch. text file=%1 database=%2").
-                                     arg(items.size()).arg(vbc->subject_count()));
+                                     arg(items.size()).arg(vbc->handle->num_subjects));
             return;
         }
-        if(vbc->subject_count()+1 == items.size())
+        if(vbc->handle->num_subjects+1 == items.size())
             items.erase(items.begin());
 
         std::vector<int> label;
-        for(unsigned int i = 0;i < vbc->subject_count();++i)
+        for(unsigned int i = 0;i < vbc->handle->num_subjects;++i)
         {
             bool ok = false;
             label.push_back(QString(items[i].c_str()).toInt(&ok));
@@ -498,10 +498,10 @@ void vbc_dialog::on_open_mr_files_clicked()
         model->type = 3;
         model->pre.clear();
         model->post.clear();
-        for(unsigned int i = 0;i < label.size() && i < vbc->subject_count();++i)
+        for(unsigned int i = 0;i < label.size() && i < vbc->handle->num_subjects;++i)
             if(label[i] > 0)
             {
-                for(unsigned int j = 0;j < label.size() && j < vbc->subject_count();++j)
+                for(unsigned int j = 0;j < label.size() && j < vbc->handle->num_subjects;++j)
                     if(label[j] == -label[i])
                     {
                         model->pre.push_back(i);
@@ -514,8 +514,8 @@ void vbc_dialog::on_open_mr_files_clicked()
         ui->subject_demo->setRowCount(model->pre.size());
         for(unsigned int row = 0;row < ui->subject_demo->rowCount();++row)
         {
-            ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->subject_name(model->pre[row]).c_str())));
-            ui->subject_demo->setItem(row,1,new QTableWidgetItem(QString(vbc->subject_name(model->post[row]).c_str())));
+            ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->handle->subject_names[model->pre[row]].c_str())));
+            ui->subject_demo->setItem(row,1,new QTableWidgetItem(QString(vbc->handle->subject_names[model->post[row]].c_str())));
         }
     }
 
@@ -752,7 +752,7 @@ void vbc_dialog::on_run_clicked()
         out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted to identify affected pathway in "
             << vbc->individual_data.size() << " study patients.";
         out << " The diffusion data of the patients were compared with "
-            << vbc->subject_count() << " normal subjects, and percentile rank was calculated for each fiber direction.";
+            << vbc->handle->num_subjects << " normal subjects, and percentile rank was calculated for each fiber direction.";
         out << " A percentile rank threshold of " << ui->percentile->value() << "% was used to select fiber orientations with deviant condition.";
         for(unsigned int index = 0;index < vbc->trk_file_names.size();++index)
         {
@@ -857,8 +857,8 @@ void vbc_dialog::on_save_name_list_clicked()
     if(filename.isEmpty())
         return;
     std::ofstream out(filename.toLocal8Bit().begin());
-    for(unsigned int index = 0;index < vbc->subject_count();++index)
-        out << vbc->subject_name(index) << std::endl;
+    for(unsigned int index = 0;index < vbc->handle->num_subjects;++index)
+        out << vbc->handle->subject_names[index] << std::endl;
 }
 
 void vbc_dialog::on_show_result_clicked()
@@ -966,10 +966,10 @@ void vbc_dialog::on_roi_atlas_toggled(bool checked)
 void vbc_dialog::on_remove_subject_clicked()
 {
     if(ui->rb_group_difference->isChecked() || ui->rb_multiple_regression->isChecked())
-    if(ui->subject_demo->currentRow() >= 0 && vbc->subject_count() > 1)
+    if(ui->subject_demo->currentRow() >= 0 && vbc->handle->num_subjects > 1)
     {
         unsigned int index = ui->subject_demo->currentRow();
-        vbc->remove_subject(index);
+        vbc->handle->remove_subject(index);
         model->remove_subject(index);
         ui->subject_demo->removeRow(index);
         ui->subject_list->removeRow(index);
@@ -988,7 +988,7 @@ void vbc_dialog::on_remove_subject2_clicked()
 
     std::vector<unsigned int> remove_list;
     std::string remove_list_str;
-    for(unsigned int index = 0;index < vbc->subject_count();++index)
+    for(unsigned int index = 0;index < vbc->handle->num_subjects;++index)
     {
         for(unsigned int j = 1;j < model->feature_count;++j)
         {
@@ -997,7 +997,7 @@ void vbc_dialog::on_remove_subject2_clicked()
                 remove_list.push_back(index);
                 if(!remove_list_str.empty())
                     remove_list_str += ", ";
-                remove_list_str += vbc->subject_name(index);
+                remove_list_str += vbc->handle->subject_names[index];
             }
         }
     }
@@ -1008,7 +1008,7 @@ void vbc_dialog::on_remove_subject2_clicked()
     }
     while(!remove_list.empty())
     {
-        vbc->remove_subject(remove_list.back());
+        vbc->handle->remove_subject(remove_list.back());
         model->remove_subject(remove_list.back());
         ui->subject_demo->removeRow(remove_list.back());
         ui->subject_list->removeRow(remove_list.back());
@@ -1021,11 +1021,11 @@ void vbc_dialog::on_remove_subject2_clicked()
 
 void vbc_dialog::on_remove_sel_subject_clicked()
 {
-    if(ui->subject_list->currentRow() >= 0 && vbc->subject_count() > 1)
+    if(ui->subject_list->currentRow() >= 0 && vbc->handle->num_subjects > 1)
     {
         unsigned int index = ui->subject_list->currentRow();
         ui->subject_list->removeRow(index);
-        vbc->remove_subject(index);
+        vbc->handle->remove_subject(index);
         if(ui->subject_demo->rowCount() > 1 &&
           (ui->rb_group_difference->isChecked() || ui->rb_multiple_regression->isChecked()))
         {
@@ -1048,20 +1048,20 @@ void vbc_dialog::on_x_pos_valueChanged(int arg1)
 {
     // show data
     std::vector<float> vbc_data;
-    vbc->get_data_at(
+    vbc->handle->get_data_at(
             image::pixel_index<3>(ui->x_pos->value(),
                                   ui->y_pos->value(),
                                   ui->z_pos->value(),
-                                  vbc->handle->dim).index(),0,vbc_data);
+                                  vbc->handle->dim).index(),0,vbc_data,vbc->normalize_qa);
     if(vbc_data.empty())
         return;
     if(ui->run->isEnabled() && ui->rb_multiple_regression->isChecked())
     {
-        QVector<double> variables(vbc->subject_count());
-        for(unsigned int i = 0;i < vbc->subject_count();++i)
+        QVector<double> variables(vbc->handle->num_subjects);
+        for(unsigned int i = 0;i < vbc->handle->num_subjects;++i)
             variables[i] = model->X[i*model->feature_count+ui->foi->currentIndex()+1];
 
-        QVector<double> y(vbc->subject_count());
+        QVector<double> y(vbc->handle->num_subjects);
         std::copy(vbc_data.begin(),vbc_data.end(),y.begin());
 
         ui->vbc_report->clearGraphs();
@@ -1083,7 +1083,7 @@ void vbc_dialog::on_x_pos_valueChanged(int arg1)
     }
     else
     {
-        for(unsigned int index = 0;index < vbc->subject_count();++index)
+        for(unsigned int index = 0;index < vbc->handle->num_subjects;++index)
             ui->subject_list->item(index,1)->setText(QString::number(vbc_data[index]));
 
         vbc_data.erase(std::remove(vbc_data.begin(),vbc_data.end(),0.0),vbc_data.end());
@@ -1169,5 +1169,5 @@ void vbc_dialog::on_save_R2_clicked()
     if(filename.isEmpty())
         return;
     std::ofstream out(filename.toLocal8Bit().begin());
-    std::copy(vbc->R2.begin(),vbc->R2.end(),std::ostream_iterator<float>(out,"\n"));
+    std::copy(vbc->handle->R2.begin(),vbc->handle->R2.end(),std::ostream_iterator<float>(out,"\n"));
 }

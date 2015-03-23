@@ -4,6 +4,7 @@
 #include <fstream>
 #include "vbcdialog.h"
 #include "ui_vbcdialog.h"
+#include "fib_data.hpp"
 #include "libs/vbc/vbc_database.h"
 #include "prog_interface_static_link.h"
 #include "dsi_interface_static_link.h"
@@ -205,12 +206,12 @@ void VBCDialog::on_create_data_base_clicked()
             name_list[index] = group[index].toLocal8Bit().begin();
             tag_list[index] = QFileInfo(group[index]).baseName().toLocal8Bit().begin();
         }
-        if(!data->load_subject_files(name_list,tag_list))
+        if(!data->handle->load_subject_files(name_list,tag_list))
         {
             QMessageBox::information(this,"error",data->error_msg.c_str(),0);
             return;
         }
-        data->save_subject_data(ui->output_file_name->text().toLocal8Bit().begin());
+        data->handle->save_subject_data(ui->output_file_name->text().toLocal8Bit().begin());
         QMessageBox::information(this,"completed","Connectometry database created",0);
     }
     else

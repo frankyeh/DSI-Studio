@@ -193,50 +193,14 @@ public:
     vbc_database();
     ~vbc_database(){clear_thread();}
 private:// template information
-    image::geometry<3> dim;
-    unsigned int num_fiber;
-    std::vector<const short*> findex;
-    std::vector<const float*> fa;
-    std::vector<unsigned int> vi2si;
-    std::vector<unsigned int> si2vi;
-    std::vector<image::vector<3,float> > vertices;
-    unsigned int half_odf_size;
     float fiber_threshold;
-    bool is_consistent(gz_mat_read& mat_reader) const;
-    void read_template(void);
 public:
     bool create_database(const char* templat_name);
     bool load_database(const char* database_name);
 public:// database information
-    std::string subject_report;
-    std::vector<std::string> subject_names;
-    unsigned int num_subjects;
-    // 0: subject index 1:findex 2.s_index (fa > 0)
-    std::vector<std::vector<float> > subject_qa_buffer;
-    std::vector<const float*> subject_qa;
-    std::vector<float> subject_qa_max;
-    std::vector<float> R2;
     bool normalize_qa;
-    bool sample_odf(gz_mat_read& mat_reader,std::vector<float>& data);
-public:
-    void remove_subject(unsigned int index);
-    unsigned int subject_count(void)const{return num_subjects;}
-    const std::string& subject_name(unsigned int index)const{return subject_names[index];}
-    float subject_R2(unsigned int index)const{return R2[index];}
-    bool load_subject_files(const std::vector<std::string>& file_names,
-                            const std::vector<std::string>& names);
-    void save_subject_data(const char* output_name) const;
-    void get_data_at(unsigned int index,unsigned int fib,std::vector<float>& data) const;
-    void get_subject_slice(unsigned int subject_index,unsigned int z_pos,image::basic_image<float,2>& slice) const;
-    //bool calculate_individual_affected_tracks(const char* file_name,
-    //                                          std::vector<std::vector<std::vector<float> > >& greater,
-    //                                          std::vector<std::vector<std::vector<float> > >& lesser);
-
 private: // single subject analysis result
-    bool get_odf_profile(const char* file_name,std::vector<float>& cur_subject_data);
     void run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& track,float seed_ratio = 1.0);
-
-
 public:// for FDR analysis
     std::auto_ptr<boost::thread_group> threads;
     std::vector<unsigned int> subject_greater_null;

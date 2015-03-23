@@ -376,6 +376,305 @@ public:
     FiberDirection fib;
     ODFData odf;
 public:
+    std::string subject_report;
+    std::vector<std::string> subject_names;
+    unsigned int num_subjects;
+    // 0: subject index 1:findex 2.s_index (fa > 0)
+    std::vector<std::vector<float> > subject_qa_buffer;
+    std::vector<const float*> subject_qa;
+    std::vector<float> subject_qa_max;
+    std::vector<float> R2;
+    std::vector<unsigned int> vi2si;
+    std::vector<unsigned int> si2vi;
+
+    void read_db(void)
+    {
+        subject_qa.clear();
+        subject_qa_max.clear();
+        subject_qa_buffer.clear();
+        unsigned int row,col;
+        for(unsigned int index = 0;1;++index)
+        {
+            std::ostringstream out;
+            out << "subject" << index;
+            const float* buf = 0;
+            mat_reader.read(out.str().c_str(),row,col,buf);
+            if (!buf)
+                break;
+            subject_qa.push_back(buf);
+            subject_qa_max.push_back(*std::max_element(buf,buf+col*row));
+            if(subject_qa_max.back() == 0.0)
+                subject_qa_max.back() = 1.0;
+        }
+        num_subjects = subject_qa.size();
+        subject_names.resize(num_subjects);
+        R2.resize(num_subjects);
+        if(!num_subjects)
+            return;
+        {
+            const char* str = 0;
+            mat_reader.read("subject_names",row,col,str);
+            if(str)
+            {
+                std::istringstream in(str);
+                for(unsigned int index = 0;in && index < num_subjects;++index)
+                    std::getline(in,subject_names[index]);
+            }
+            const float* r2_values = 0;
+            mat_reader.read("R2",row,col,r2_values);
+            if(r2_values == 0)
+            {
+                error_msg = "Memory insufficiency. Use 64-bit program instead";
+                num_subjects = 0;
+                subject_qa.clear();
+                return;
+            }
+            std::copy(r2_values,r2_values+num_subjects,R2.begin());
+        }
+
+        vi2si.resize(dim.size());
+        for(unsigned int index = 0;index < dim.size();++index)
+        {
+            if(fib.fa[0][index] != 0.0)
+            {
+                vi2si[index] = si2vi.size();
+                si2vi.push_back(index);
+            }
+        }
+    }
+    void remove_subject(unsigned int index)
+    {
+        if(num_subjects <= 1)
+            return;
+        subject_names.erase(subject_names.begin()+index);
+        if(!subject_qa_buffer.empty())
+            subject_qa_buffer.erase(subject_qa_buffer.begin()+index);
+        subject_qa.erase(subject_qa.begin()+index);
+        R2.erase(R2.begin()+index);
+        --num_subjects;
+    }
+
+    bool sample_odf(gz_mat_read& m,std::vector<float>& data)
+    {
+        ODFData subject_odf;
+        for(unsigned int index = 0;1;++index)
+        {
+            std::ostringstream out;
+            out << "odf" << index;
+            const float* odf = 0;
+            unsigned int row,col;
+            m.read(out.str().c_str(),row,col,odf);
+            if (!odf)
+                break;
+            subject_odf.setODF(index,odf,row*col);
+        }
+
+        const float* fa0 = 0;
+        unsigned int row,col;
+        m.read("fa0",row,col,fa0);
+        if (!fa0)
+        {
+            error_msg = "Invalid file format. Cannot find fa0 matrix in ";
+            return false;
+        }
+        if(*std::max_element(fa0,fa0+row*col) == 0)
+        {
+            error_msg = "Invalid file format. No image data in ";
+            return false;
+        }
+        if(!subject_odf.has_odfs())
+        {
+            error_msg = "No ODF data in the subject file:";
+            return false;
+        }
+        subject_odf.initializeODF(dim,fa0,fib.half_odf_size);
+
+        set_title("load data");
+        for(unsigned int index = 0;index < si2vi.size();++index)
+        {
+            unsigned int cur_index = si2vi[index];
+            const float* odf = subject_odf.get_odf_data(cur_index);
+            if(odf == 0)
+                continue;
+            float min_value = *std::min_element(odf, odf + fib.half_odf_size);
+            unsigned int pos = index;
+            for(unsigned char i = 0;i < fib.num_fiber;++i,pos += si2vi.size())
+            {
+                if(fib.fa[i][cur_index] == 0.0)
+                    break;
+                // 0: subject index 1:findex by s_index (fa > 0)
+                data[pos] = odf[fib.findex[i][cur_index]]-min_value;
+            }
+        }
+        return true;
+    }
+    bool is_consistent(gz_mat_read& m)
+    {
+        unsigned int row,col;
+        const float* odf_buffer;
+        m.read("odf_vertices",row,col,odf_buffer);
+        if (!odf_buffer)
+        {
+            error_msg = "No odf_vertices matrix in ";
+            return false;
+        }
+        if(col != fib.odf_table.size())
+        {
+            error_msg = "Inconsistent ODF dimension in ";
+            return false;
+        }
+        for (unsigned int index = 0;index < col;++index,odf_buffer += 3)
+        {
+            if(fib.odf_table[index][0] != odf_buffer[0] ||
+               fib.odf_table[index][1] != odf_buffer[1] ||
+               fib.odf_table[index][2] != odf_buffer[2])
+            {
+                error_msg = "Inconsistent ODF dimension in ";
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool load_subject_files(const std::vector<std::string>& file_names,
+                                          const std::vector<std::string>& subject_names_)
+    {
+        num_subjects = file_names.size();
+        subject_qa.clear();
+        subject_qa_buffer.clear();
+        subject_qa.resize(num_subjects);
+        subject_qa_buffer.resize(num_subjects);
+        R2.resize(num_subjects);
+        for(unsigned int index = 0;index < num_subjects;++index)
+        {
+            subject_qa_buffer[index].resize(fib.num_fiber*si2vi.size());
+            subject_qa[index] = &*(subject_qa_buffer[index].begin());
+        }
+        // load subject data
+        for(unsigned int subject_index = 0;check_prog(subject_index,num_subjects);++subject_index)
+        {
+            gz_mat_read m;
+            if(!m.load_from_file(file_names[subject_index].c_str()))
+            {
+                error_msg = "failed to load subject data ";
+                error_msg += file_names[subject_index];
+                return false;
+            }
+            // check if the odf table is consistent or not
+            if(!is_consistent(m) ||
+               !sample_odf(m,subject_qa_buffer[subject_index]))
+            {
+                error_msg += file_names[subject_index];
+                return false;
+            }
+            // load R2
+            const float* value= 0;
+            unsigned int row,col;
+            m.read("R2",row,col,value);
+            if(!value || *value != *value)
+            {
+                error_msg = "Invalid R2 value in ";
+                error_msg += file_names[subject_index];
+                return false;
+            }
+            R2[subject_index] = *value;
+            if(subject_index == 0)
+            {
+                const char* report_buf = 0;
+                if(m.read("report",row,col,report_buf))
+                    subject_report = std::string(report_buf,report_buf+row*col);
+            }
+        }
+        subject_names = subject_names_;
+        return true;
+    }
+    void save_subject_data(const char* output_name)
+    {
+        // store results
+        gz_mat_write matfile(output_name);
+        if(!matfile)
+        {
+            error_msg = "Cannot output file";
+            return;
+        }
+        for(unsigned int index = 0;index < mat_reader.size();++index)
+            if(mat_reader[index].get_name() != "report" &&
+               mat_reader[index].get_name().find("subject") != 0)
+                matfile.write(mat_reader[index]);
+        for(unsigned int index = 0;check_prog(index,subject_qa.size());++index)
+        {
+            std::ostringstream out;
+            out << "subject" << index;
+            matfile.write(out.str().c_str(),subject_qa[index],fib.num_fiber,si2vi.size());
+        }
+        std::string name_string;
+        for(unsigned int index = 0;index < num_subjects;++index)
+        {
+            name_string += subject_names[index];
+            name_string += "\n";
+        }
+        matfile.write("subject_names",name_string.c_str(),1,name_string.size());
+        matfile.write("R2",&*R2.begin(),1,R2.size());
+
+        {
+            std::ostringstream out;
+            out << "A total of " << num_subjects << " subjects were included in the connectometry database." << subject_report.c_str();
+            std::string report = out.str();
+            matfile.write("report",&*report.c_str(),1,report.length());
+        }
+    }
+    void get_subject_slice(unsigned int subject_index,unsigned int z_pos,
+                            image::basic_image<float,2>& slice) const
+    {
+        slice.clear();
+        slice.resize(image::geometry<2>(dim.width(),dim.height()));
+        unsigned int slice_offset = z_pos*dim.plane_size();
+        for(unsigned int index = 0;index < slice.size();++index)
+        {
+            unsigned int cur_index = index + slice_offset;
+            if(fib.fa[0][cur_index] == 0.0)
+                continue;
+            slice[index] = subject_qa[subject_index][vi2si[cur_index]];
+        }
+    }
+    void get_data_at(unsigned int index,unsigned int fib_index,std::vector<float>& data,bool normalize_qa) const
+    {
+        data.clear();
+        if(index >= dim.size() || fib.fa[0][index] == 0.0)
+            return;
+        unsigned int s_index = vi2si[index];
+        unsigned int fib_offset = fib_index*si2vi.size();
+        data.resize(num_subjects);
+        if(normalize_qa)
+            for(unsigned int index = 0;index < num_subjects;++index)
+                data[index] = subject_qa[index][s_index+fib_offset]/subject_qa_max[index];
+        else
+        for(unsigned int index = 0;index < num_subjects;++index)
+            data[index] = subject_qa[index][s_index+fib_offset];
+    }
+    bool get_odf_profile(const char* file_name,std::vector<float>& cur_subject_data)
+    {
+        gz_mat_read single_subject;
+        if(!single_subject.load_from_file(file_name))
+        {
+            error_msg = "fail to load the fib file";
+            return false;
+        }
+        if(!is_consistent(single_subject))
+        {
+            error_msg = "Inconsistent ODF dimension";
+            return false;
+        }
+        cur_subject_data.clear();
+        cur_subject_data.resize(fib.num_fiber*si2vi.size());
+        if(!sample_odf(single_subject,cur_subject_data))
+        {
+            error_msg += file_name;
+            return false;
+        }
+        return true;
+    }
+public:
     image::geometry<3> dim;
     image::vector<3> vs;
     std::vector<float> trans_to_mni;
@@ -476,6 +775,7 @@ public:
             error_msg = "invalid dimension";
             return false;
         }
+        read_db();
         return true;
     }
 public:

@@ -9,40 +9,16 @@
 
 
 
-vbc_database::vbc_database():handle(0),num_subjects(0),roi_type(0),normalize_qa(true)
+vbc_database::vbc_database():handle(0),roi_type(0),normalize_qa(true)
 {
 }
 
-void vbc_database::read_template(void)
-{
-    dim = (handle->dim);
-    num_fiber = handle->fib.fa.size();
-    findex.resize(num_fiber);
-    fa.resize(num_fiber);
-    for(unsigned int index = 0;index < num_fiber;++index)
-    {
-        findex[index] = handle->fib.findex[index];
-        fa[index] = handle->fib.fa[index];
-    }
-    fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(dim,fa[0]));
-    vi2si.resize(dim.size());
-    for(unsigned int index = 0;index < dim.size();++index)
-    {
-        if(fa[0][index] != 0.0)
-        {
-            vi2si[index] = si2vi.size();
-            si2vi.push_back(index);
-        }
-    }
-    vertices = handle->fib.odf_table;
-    half_odf_size = vertices.size()/2;
-}
 bool vbc_database::create_database(const char* template_name)
 {
     handle.reset(new FibData);
     if(!handle->load_from_file(template_name))
         return false;
-    read_template();
+    fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dim,handle->fib.fa[0]));
     return true;
 }
 bool vbc_database::load_database(const char* database_name)
@@ -53,294 +29,15 @@ bool vbc_database::load_database(const char* database_name)
         error_msg = "Invalid fib file";
         return false;
     }
-    read_template();
-    // read databse data
-
-    // does it contain subject info?
-    gz_mat_read& matfile = handle->mat_reader;
-    subject_qa.clear();
-    subject_qa_max.clear();
-    subject_qa_buffer.clear();
-    unsigned int row,col;
-    for(unsigned int index = 0;1;++index)
-    {
-        std::ostringstream out;
-        out << "subject" << index;
-        const float* buf = 0;
-        matfile.read(out.str().c_str(),row,col,buf);
-        if (!buf)
-            break;
-        subject_qa.push_back(buf);
-        subject_qa_max.push_back(*std::max_element(buf,buf+col*row));
-        if(subject_qa_max.back() == 0.0)
-            subject_qa_max.back() = 1.0;
-    }
-    num_subjects = subject_qa.size();
-    subject_names.resize(num_subjects);
-    R2.resize(num_subjects);
-    if(num_subjects)
-    {
-        const char* str = 0;
-        matfile.read("subject_names",row,col,str);
-        if(str)
-        {
-            std::istringstream in(str);
-            for(unsigned int index = 0;in && index < num_subjects;++index)
-                std::getline(in,subject_names[index]);
-        }
-        const float* r2_values = 0;
-        matfile.read("R2",row,col,r2_values);
-        if(r2_values == 0)
-        {
-            error_msg = "Memory insufficiency. Use 64-bit program instead";
-            return false;
-        }
-        std::copy(r2_values,r2_values+num_subjects,R2.begin());
-    }
-    return !subject_qa.empty();
+    fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dim,handle->fib.fa[0]));
+    return !handle->subject_qa.empty();
 }
 
 
-void vbc_database::get_subject_slice(unsigned int subject_index,
-                                     unsigned int z_pos,
-                                     image::basic_image<float,2>& slice) const
-{
-    slice.clear();
-    slice.resize(image::geometry<2>(dim.width(),dim.height()));
-    unsigned int slice_offset = z_pos*dim.plane_size();
-    for(unsigned int index = 0;index < slice.size();++index)
-    {
-        unsigned int cur_index = index + slice_offset;
-        if(fa[0][cur_index] == 0.0)
-            continue;
-        slice[index] = subject_qa[subject_index][vi2si[cur_index]];
-    }
-}
 
-void vbc_database::get_data_at(unsigned int index,unsigned int fib,std::vector<float>& data) const
-{
-    data.clear();
-    if(index >= dim.size() || fa[0][index] == 0.0)
-        return;
-    unsigned int s_index = vi2si[index];
-    unsigned int fib_offset = fib*si2vi.size();
-    data.resize(num_subjects);
-    if(normalize_qa)
-        for(unsigned int index = 0;index < num_subjects;++index)
-            data[index] = subject_qa[index][s_index+fib_offset]/subject_qa_max[index];
-    else
-    for(unsigned int index = 0;index < num_subjects;++index)
-        data[index] = subject_qa[index][s_index+fib_offset];
-}
-bool vbc_database::is_consistent(gz_mat_read& mat_reader) const
-{
-    unsigned int row,col;
-    const float* odf_buffer;
-    mat_reader.read("odf_vertices",row,col,odf_buffer);
-    if (!odf_buffer)
-    {
-        error_msg = "No odf_vertices matrix in ";
-        return false;
-    }
-    if(col != vertices.size())
-    {
-        error_msg = "Inconsistent ODF dimension in ";
-        return false;
-    }
-    for (unsigned int index = 0;index < col;++index,odf_buffer += 3)
-    {
-        if(vertices[index][0] != odf_buffer[0] ||
-           vertices[index][1] != odf_buffer[1] ||
-           vertices[index][2] != odf_buffer[2])
-        {
-            error_msg = "Inconsistent ODF dimension in ";
-            return false;
-        }
-    }
-    return true;
-}
-void vbc_database::remove_subject(unsigned int index)
-{
-    if(num_subjects <= 1)
-        return;
-    subject_names.erase(subject_names.begin()+index);
-    if(!subject_qa_buffer.empty())
-        subject_qa_buffer.erase(subject_qa_buffer.begin()+index);
-    subject_qa.erase(subject_qa.begin()+index);
-    R2.erase(R2.begin()+index);
-    --num_subjects;
-}
 
-bool vbc_database::sample_odf(gz_mat_read& mat_reader,std::vector<float>& data)
-{
-    ODFData subject_odf;
-    for(unsigned int index = 0;1;++index)
-    {
-        std::ostringstream out;
-        out << "odf" << index;
-        const float* odf = 0;
-        unsigned int row,col;
-        mat_reader.read(out.str().c_str(),row,col,odf);
-        if (!odf)
-            break;
-        subject_odf.setODF(index,odf,row*col);
-    }
 
-    const float* fa0 = 0;
-    unsigned int row,col;
-    mat_reader.read("fa0",row,col,fa0);
-    if (!fa0)
-    {
-        error_msg = "Invalid file format. Cannot find fa0 matrix in ";
-        return false;
-    }
-    if(*std::max_element(fa0,fa0+row*col) == 0)
-    {
-        error_msg = "Invalid file format. No image data in ";
-        return false;
-    }
-    if(!subject_odf.has_odfs())
-    {
-        error_msg = "No ODF data in the subject file:";
-        return false;
-    }
-    subject_odf.initializeODF(dim,fa0,half_odf_size);
 
-    set_title("load data");
-    for(unsigned int index = 0;index < si2vi.size();++index)
-    {
-        unsigned int cur_index = si2vi[index];
-        const float* odf = subject_odf.get_odf_data(cur_index);
-        if(odf == 0)
-            continue;
-        float min_value = *std::min_element(odf, odf + half_odf_size);
-        unsigned int pos = index;
-        for(unsigned char fib = 0;fib < num_fiber;++fib,pos += si2vi.size())
-        {
-            if(fa[fib][cur_index] == 0.0)
-                break;
-            // 0: subject index 1:findex by s_index (fa > 0)
-            data[pos] = odf[findex[fib][cur_index]]-min_value;
-        }
-    }
-    return true;
-}
-
-bool vbc_database::load_subject_files(const std::vector<std::string>& file_names,
-                                      const std::vector<std::string>& subject_names_)
-{
-    if(!handle.get())
-        return false;
-    num_subjects = file_names.size();
-    subject_qa.clear();
-    subject_qa_buffer.clear();
-    subject_qa.resize(num_subjects);
-    subject_qa_buffer.resize(num_subjects);
-    R2.resize(num_subjects);
-    for(unsigned int index = 0;index < num_subjects;++index)
-    {
-        subject_qa_buffer[index].resize(num_fiber*si2vi.size());
-        subject_qa[index] = &*(subject_qa_buffer[index].begin());
-    }
-    // load subject data
-    for(unsigned int subject_index = 0;check_prog(subject_index,num_subjects);++subject_index)
-    {
-        gz_mat_read mat_reader;
-        if(!mat_reader.load_from_file(file_names[subject_index].c_str()))
-        {
-            error_msg = "failed to load subject data ";
-            error_msg += file_names[subject_index];
-            return false;
-        }
-        // check if the odf table is consistent or not
-        if(!is_consistent(mat_reader) ||
-           !sample_odf(mat_reader,subject_qa_buffer[subject_index]))
-        {
-            error_msg += file_names[subject_index];
-            return false;
-        }
-        // load R2
-        const float* value= 0;
-        unsigned int row,col;
-        mat_reader.read("R2",row,col,value);
-        if(!value || *value != *value)
-        {
-            error_msg = "Invalid R2 value in ";
-            error_msg += file_names[subject_index];
-            return false;
-        }
-        R2[subject_index] = *value;
-        if(subject_index == 0)
-        {
-            const char* report_buf = 0;
-            if(mat_reader.read("report",row,col,report_buf))
-                subject_report = std::string(report_buf,report_buf+row*col);
-        }
-    }
-    subject_names = subject_names_;
-    return true;
-}
-void vbc_database::save_subject_data(const char* output_name) const
-{
-    if(!handle.get())
-        return;
-    // store results
-    gz_mat_write matfile(output_name);
-    if(!matfile)
-    {
-        error_msg = "Cannot output file";
-        return;
-    }
-    gz_mat_read& mat_source = handle->mat_reader;
-    for(unsigned int index = 0;index < mat_source.size();++index)
-        if(mat_source[index].get_name() != "report" &&
-           mat_source[index].get_name().find("subject") != 0)
-            matfile.write(mat_source[index]);
-    for(unsigned int index = 0;check_prog(index,subject_qa.size());++index)
-    {
-        std::ostringstream out;
-        out << "subject" << index;
-        matfile.write(out.str().c_str(),subject_qa[index],num_fiber,si2vi.size());
-    }
-    std::string name_string;
-    for(unsigned int index = 0;index < num_subjects;++index)
-    {
-        name_string += subject_names[index];
-        name_string += "\n";
-    }
-    matfile.write("subject_names",name_string.c_str(),1,name_string.size());
-    matfile.write("R2",&*R2.begin(),1,R2.size());
-
-    {
-        std::ostringstream out;
-        out << "A total of " << num_subjects << " subjects were included in the connectometry database." << subject_report.c_str();
-        std::string report = out.str();
-        matfile.write("report",&*report.c_str(),1,report.length());
-    }
-}
-
-bool vbc_database::get_odf_profile(const char* file_name,std::vector<float>& cur_subject_data)
-{
-    gz_mat_read single_subject;
-    if(!single_subject.load_from_file(file_name))
-    {
-        error_msg = "fail to load the fib file";
-        return false;
-    }
-    if(!is_consistent(single_subject))
-    {
-        error_msg = "Inconsistent ODF dimension";
-        return false;
-    }
-    cur_subject_data.clear();
-    cur_subject_data.resize(num_fiber*si2vi.size());
-    if(!sample_odf(single_subject,cur_subject_data))
-    {
-        error_msg += file_name;
-        return false;
-    }
-    return true;
-}
 
 
 void fib_data::initialize(FibData* handle)
@@ -353,10 +50,10 @@ void fib_data::initialize(FibData* handle)
     lesser_dir.resize(num_fiber);
     for(unsigned char fib = 0;fib < num_fiber;++fib)
     {
-        greater[fib].resize(dim.size());
-        lesser[fib].resize(dim.size());
-        greater_dir[fib].resize(dim.size());
-        lesser_dir[fib].resize(dim.size());
+        greater[fib].resize(handle->dim.size());
+        lesser[fib].resize(handle->dim.size());
+        greater_dir[fib].resize(handle->dim.size());
+        lesser_dir[fib].resize(handle->dim.size());
     }
     greater_ptr.resize(num_fiber);
     lesser_ptr.resize(num_fiber);
@@ -423,7 +120,7 @@ void fib_data::write_greater(fiber_orientations& fib) const
 void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& tracks,float seed_ratio)
 {
     std::vector<image::vector<3,short> > seed;
-    for(image::pixel_index<3> index;index.is_valid(dim);index.next(dim))
+    for(image::pixel_index<3> index;index.is_valid(handle->dim);index.next(handle->dim))
         if(fib.fa[0][index.index()] > fib.threshold)
             seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
     if(seed.empty() || seed.size()*seed_ratio < 1.0)
@@ -666,20 +363,20 @@ void vbc_database::calculate_spm(fib_data& data,stat_model& info,std::vector<uns
 {
     data.initialize(handle.get());
     std::vector<double> selected_population(permu.size());
-    std::vector<unsigned char> greater_fib_count(dim.size()),lesser_fib_count(dim.size());
-    for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
+    std::vector<unsigned char> greater_fib_count(handle->dim.size()),lesser_fib_count(handle->dim.size());
+    for(unsigned int s_index = 0;s_index < handle->si2vi.size();++s_index)
     {
-        unsigned int cur_index = si2vi[s_index];
-        for(unsigned int fib = 0,fib_offset = 0;fib < num_fiber && fa[fib][cur_index] > fiber_threshold;
-                ++fib,fib_offset+=si2vi.size())
+        unsigned int cur_index = handle->si2vi[s_index];
+        for(unsigned int fib = 0,fib_offset = 0;fib < handle->fib.num_fiber && handle->fib.fa[fib][cur_index] > fiber_threshold;
+                ++fib,fib_offset+=handle->si2vi.size())
         {
             unsigned int pos = s_index + fib_offset;
             if(normalize_qa)
                 for(unsigned int index = 0;index < permu.size();++index)
-                    selected_population[index] = subject_qa[permu[index]][pos]/subject_qa_max[permu[index]];
+                    selected_population[index] = handle->subject_qa[permu[index]][pos]/handle->subject_qa_max[permu[index]];
             else
                 for(unsigned int index = 0;index < permu.size();++index)
-                    selected_population[index] = subject_qa[permu[index]][pos];
+                    selected_population[index] = handle->subject_qa[permu[index]][pos];
 
             if(std::find(selected_population.begin(),selected_population.end(),0.0) != selected_population.end())
                 continue;
@@ -689,7 +386,7 @@ void vbc_database::calculate_spm(fib_data& data,stat_model& info,std::vector<uns
             {
                 unsigned char fib_count = greater_fib_count[cur_index];
                 data.greater[fib_count][cur_index] = result;
-                data.greater_dir[fib_count][cur_index] = findex[fib][cur_index];
+                data.greater_dir[fib_count][cur_index] = handle->fib.findex[fib][cur_index];
                 ++greater_fib_count[cur_index];
                 for(char j = fib_count;j;--j)
                     if(data.greater[j][cur_index] > data.greater[j-1][cur_index])
@@ -702,7 +399,7 @@ void vbc_database::calculate_spm(fib_data& data,stat_model& info,std::vector<uns
             {
                 unsigned char fib_count = lesser_fib_count[cur_index];
                 data.lesser[fib_count][cur_index] = -result;
-                data.lesser_dir[fib_count][cur_index] = findex[fib][cur_index];
+                data.lesser_dir[fib_count][cur_index] = handle->fib.findex[fib][cur_index];
                 ++lesser_fib_count[cur_index];
                 for(char j = fib_count;j;--j)
                     if(data.lesser[j][cur_index] > data.lesser[j-1][cur_index])
@@ -721,7 +418,7 @@ bool vbc_database::read_subject_data(const std::vector<std::string>& files,std::
     begin_prog("reading");
     data.resize(files.size());
     for(unsigned int index = 0;check_prog(index,files.size());++index)
-        if(!get_odf_profile(files[index].c_str(),data[index]))
+        if(!handle->get_odf_profile(files[index].c_str(),data[index]))
         {
             error_msg = "Cannot read file ";
             error_msg += files[index];
@@ -746,7 +443,7 @@ void vbc_database::run_permutation_multithread(unsigned int id)
         if(id == 0)
         for(unsigned int subject_id = 0;subject_id < individual_data.size() && !terminated;++subject_id)
         {
-            std::vector<unsigned int> permu(subject_qa.size());
+            std::vector<unsigned int> permu(handle->subject_qa.size());
             for(unsigned int index = 0;index < permu.size();++index)
                 permu[index] = index;
             stat_model info;
@@ -773,15 +470,15 @@ void vbc_database::run_permutation_multithread(unsigned int id)
                     unsigned int random_subject_id = 0;
                     {
                         boost::mutex::scoped_lock lock(lock_resampling);
-                        random_subject_id = model->rand_gen(subject_qa.size());
+                        random_subject_id = model->rand_gen(handle->subject_qa.size());
                         for(unsigned int index = 0;index < permu.size();++index)
-                            permu[index] = model->rand_gen(subject_qa.size());
+                            permu[index] = model->rand_gen(handle->subject_qa.size());
                     }
                     info.type = model->type;
                     if(null)
                     {
-                        info.individual_data = subject_qa[random_subject_id];
-                        info.individual_data_max = subject_qa_max[random_subject_id];
+                        info.individual_data = handle->subject_qa[random_subject_id];
+                        info.individual_data_max = handle->subject_qa_max[random_subject_id];
                     }
                     else
                     {
