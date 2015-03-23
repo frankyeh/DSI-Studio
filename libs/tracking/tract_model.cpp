@@ -1470,7 +1470,7 @@ void ConnectivityMatrix::save_to_file(const char* file_name)
     mat_header.write("name",result.c_str(),1,result.length());
 }
 
-void ConnectivityMatrix::set_atlas(const atlas& data,const image::basic_image<image::vector<3,float>,3 >& mni_position)
+void ConnectivityMatrix::set_atlas(atlas& data,const image::basic_image<image::vector<3,float>,3 >& mni_position)
 {
     image::geometry<3> geo(mni_position.geometry());
     region_table_type region_table;

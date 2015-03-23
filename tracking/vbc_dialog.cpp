@@ -925,7 +925,11 @@ void vbc_dialog::on_roi_file_toggled(bool checked)
             ui->roi_whole_brain->setChecked(true);
             return;
         }
-        if(!study_region.load_from_file(openfilename.toLocal8Bit().begin()))
+        study_region.filename = openfilename.toLocal8Bit().begin();
+        try{
+            study_region.get_num();
+        }
+        catch(...)
         {
             QMessageBox::information(this,"Error","Invalid nifti file format",0);
             ui->roi_whole_brain->setChecked(true);

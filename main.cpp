@@ -60,9 +60,8 @@ void load_atlas(void)
     for(int index = 0;index < atlas_name_list.size();++index)
     {
         atlas_list.push_back(atlas());
-        if(!atlas_list.back().load_from_file((dir.absolutePath() + "/" + atlas_name_list[index]).toLocal8Bit().begin()))
-            atlas_list.pop_back();
         atlas_list.back().name = QFileInfo(atlas_name_list[index]).baseName().toLocal8Bit().begin();
+        atlas_list.back().filename = (dir.absolutePath() + "/" + atlas_name_list[index]).toLocal8Bit().begin();
     }
 }
 

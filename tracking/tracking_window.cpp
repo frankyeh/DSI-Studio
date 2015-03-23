@@ -422,13 +422,6 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
                 .arg(std::floor(mni[0]*10.0+0.5)/10.0)
                 .arg(std::floor(mni[1]*10.0+0.5)/10.0)
                 .arg(std::floor(mni[2]*10.0+0.5)/10.0);
-        unsigned int atlas_index = atlas_dialog ? atlas_dialog->index() : 0;
-        if(!atlas_list.empty())
-        {
-            status += atlas_list[atlas_index].name.c_str();
-            status += ":";
-            status += atlas_list[atlas_index].get_label_name_at(mni).c_str();
-        }
     }
     status += " ";
     std::vector<float> data;

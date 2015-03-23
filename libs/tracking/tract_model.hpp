@@ -143,7 +143,7 @@ public:
     typedef std::multimap<float,std::pair<std::vector<image::vector<3,short> >,std::string> > region_table_type;
     std::vector<std::vector<image::vector<3,short> > > regions;
     std::vector<std::string> region_name;
-    void set_atlas(const atlas& data,const image::basic_image<image::vector<3,float>,3 >& mni_position);
+    void set_atlas(atlas& data,const image::basic_image<image::vector<3,float>,3 >& mni_position);
     void set_regions(const region_table_type& region_table);
 public:
     void save_to_image(image::color_image& cm);

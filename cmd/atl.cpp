@@ -36,19 +36,15 @@ bool atl_load_atlas(std::string atlas_name)
                 has_atlas = true;
         if(has_atlas)
             continue;
+        std::cout << "loading atlas " << name_list[index] << std::endl;
         std::string atlas_path = QCoreApplication::applicationDirPath().toLocal8Bit().begin();
         atlas_path += "/atlas/";
         atlas_path += name_list[index];
         atlas_path += ".nii.gz";
         atlas_list.push_back(atlas());
-        if(!atlas_list.back().load_from_file(atlas_path.c_str()))
-        {
-            std::cout << "Cannot load atlas " << atlas_path << std::endl;
-            return false;
-        }
-        std::cout << name_list[index] << " loaded." << std::endl;
+        atlas_list.back().filename = atlas_path.c_str();
         atlas_list.back().name = name_list[index];
-
+        atlas_list.back().get_num();
     }
     return true;
 }

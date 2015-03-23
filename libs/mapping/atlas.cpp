@@ -6,12 +6,12 @@
 
 
 
-bool atlas::load_from_file(const char* file_name)
+void atlas::load_from_file(const char* file_name)
 {
     {
         gz_nifti nii;
         if(!nii.load_from_file(file_name))
-            return false;
+            throw std::runtime_error("Cannot load atlas file");
         nii >> I;
         transform.clear();
         transform.resize(16);
@@ -34,8 +34,7 @@ bool atlas::load_from_file(const char* file_name)
     {
         std::ifstream in(text_file_name.c_str());
         if(!in)
-            return false;
-
+            throw std::runtime_error("Cannot load atlas label file");
         std::map<std::string,std::set<unsigned int> > regions;
         std::string line;
         for(int i = 0;std::getline(in,line);++i)
@@ -99,7 +98,6 @@ bool atlas::load_from_file(const char* file_name)
                 }
         }
     }
-    return true;
 }
 
 
@@ -113,8 +111,10 @@ void mni_to_tal(float& x,float &y, float &z)
 }
 
 
-short atlas::get_label_at(const image::vector<3,float>& mni_space) const
+short atlas::get_label_at(const image::vector<3,float>& mni_space)
 {
+    if(I.empty())
+        load_from_file(filename.c_str());
     image::vector<3,float> atlas_space(mni_space);
     image::vector_transformation(mni_space.begin(),atlas_space.begin(),transform.begin(),image::vdim<3>());
     atlas_space += 0.5;
@@ -124,8 +124,10 @@ short atlas::get_label_at(const image::vector<3,float>& mni_space) const
     return I.at(atlas_space[0],atlas_space[1],atlas_space[2]);
 }
 
-std::string atlas::get_label_name_at(const image::vector<3,float>& mni_space) const
+std::string atlas::get_label_name_at(const image::vector<3,float>& mni_space)
 {
+    if(I.empty())
+        load_from_file(filename.c_str());
     short l = get_label_at(mni_space);
     if(!l)
         return std::string();
@@ -145,20 +147,27 @@ std::string atlas::get_label_name_at(const image::vector<3,float>& mni_space) co
     return result;
 }
 
-bool atlas::is_labeled_as(const image::vector<3,float>& mni_space,short label_name_index) const
+bool atlas::is_labeled_as(const image::vector<3,float>& mni_space,short label_name_index)
 {
+    if(I.empty())
+        load_from_file(filename.c_str());
     return label_matched(get_label_at(mni_space),label_name_index);
 }
-bool atlas::label_matched(short l,short label_name_index) const
+bool atlas::label_matched(short l,short label_name_index)
 {
+    if(I.empty())
+        load_from_file(filename.c_str());
     if(index2label.empty())
         return label_name_index >= label_num.size() ? false:l == label_num[label_name_index];
     if(l >= index2label.size())
         return false;
     return std::find(index2label[l].begin(),index2label[l].end(),label_name_index) != index2label[l].end();
 }
-void atlas::calculate_order(std::vector<float>& order) const
+void atlas::calculate_order(std::vector<float>& order)
 {
+    if(I.empty())
+        load_from_file(filename.c_str());
+
     if(!index2label.empty())
     {
         order.resize(labels.size());
