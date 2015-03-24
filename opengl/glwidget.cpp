@@ -1911,6 +1911,7 @@ void GLWidget::saveLeftRight3DImage(void)
     painter.drawImage(left.width(),0,right);
     all.save(filename);
 }
+
 void GLWidget::saveRotationSeries(void)
 {
     QString filename = QFileDialog::getSaveFileName(
@@ -1947,6 +1948,7 @@ void GLWidget::saveRotationSeries(void)
 
     makeCurrent();
     std::vector<float> m(transformation_matrix,transformation_matrix+16);
+
     begin_prog("save images");
     for(unsigned int index = 0;check_prog(index,360);index += angle)
     {
@@ -1958,10 +1960,10 @@ void GLWidget::saveRotationSeries(void)
         glPopMatrix();
         updateGL();
         grabFrameBuffer().save(
-                QFileInfo(filename).absolutePath()+"/"+
-                QFileInfo(filename).baseName()+"_"+
-                QString("%1").arg((int)index,4,10,0,'0')+"."+
-                QFileInfo(filename).suffix());
+                        QFileInfo(filename).absolutePath()+"/"+
+                        QFileInfo(filename).baseName()+"_"+
+                        QString("%1").arg((int)index,4,10,0,'0')+"."+
+                        QFileInfo(filename).suffix());
     }
     std::copy(m.begin(),m.end(),transformation_matrix);
     updateGL();

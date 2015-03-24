@@ -579,40 +579,37 @@ void TractTableWidget::show_tracts_statistics(void)
 {
     if(currentRow() >= tract_models.size())
         return;
-    std::string result;
+    std::ostringstream out;
+    std::vector<std::vector<std::string> > track_results(tract_models.size());
+    for(unsigned int index = 0;check_prog(index,tract_models.size());++index)
     {
-        std::vector<std::string> titles;
-        titles.push_back("number of tracts");
-        titles.push_back("tract length mean(mm)");
-        titles.push_back("tract length sd(mm)");
-        titles.push_back("tracts volume (mm^3)");
-        cur_tracking_window.handle->get_index_titles(titles);
-        std::vector<std::vector<float> > data(tract_models.size());
-        begin_prog("calculating");
-        for(unsigned int index = 0;check_prog(index,tract_models.size());++index)
-            tract_models[index]->get_quantitative_data(data[index]);
-        if(prog_aborted())
-            return;
-        std::ostringstream out;
-        out << "Tract Name\t";
-        for(unsigned int index = 0;index < tract_models.size();++index)
-            out << item(index,0)->text().toLocal8Bit().begin() << "\t";
-        out << std::endl;
-        for(unsigned int i = 0;i < titles.size();++i)
+        std::string tmp,line;
+        tract_models[index]->get_quantitative_info(tmp);
+        std::istringstream in(tmp);
+        while(std::getline(in,line))
         {
-            out << titles[i] << "\t";
-            for(unsigned int j = 0;j < tract_models.size();++j)
+            if(line.find("\t") == std::string::npos)
             {
-                if(i < data[j].size())
-                    out << data[j][i];
-                out << "\t";
+                if(index == 0)
+                    out << line;
+                continue;
             }
-            out << std::endl;
+            track_results[index].push_back(line);
         }
-        result = out.str();
     }
-
-    cur_tracking_window.show_info_dialog("Tract Statistics",result);
+    out << std::endl;
+    out << "Tract Name\t";
+    for(unsigned int index = 0;index < tract_models.size();++index)
+        out << item(index,0)->text().toLocal8Bit().begin() << "\t";
+    out << std::endl;
+    for(unsigned int index = 0;index < track_results[0].size();++index)
+    {
+        out << track_results[0][index];
+        for(unsigned int i = 1;i < track_results.size();++i)
+            out << track_results[i][index].substr(track_results[i][index].find("\t"));
+        out << std::endl;
+    }
+    cur_tracking_window.show_info_dialog("Tract Statistics",out.str());
 
 }
 

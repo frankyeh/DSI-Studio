@@ -637,6 +637,21 @@ public:
             slice[index] = subject_qa[subject_index][vi2si[cur_index]];
         }
     }
+    void get_subject_fa(unsigned int subject_index,std::vector<std::vector<float> >& fa_data) const
+    {
+        fa_data.resize(fib.num_fiber);
+        for(unsigned int index = 0;index < fib.num_fiber;++index)
+            fa_data[index].resize(dim.size());
+        for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
+        {
+            unsigned int cur_index = si2vi[s_index];
+            for(unsigned int i = 0,fib_offset = 0;i < fib.num_fiber && fib.fa[i][cur_index] > 0;++i,fib_offset+=si2vi.size())
+            {
+                unsigned int pos = s_index + fib_offset;
+                fa_data[i][cur_index] = subject_qa[subject_index][pos];
+            }
+        }
+    }
     void get_data_at(unsigned int index,unsigned int fib_index,std::vector<float>& data,bool normalize_qa) const
     {
         data.clear();

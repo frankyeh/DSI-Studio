@@ -1171,6 +1171,25 @@ void TractModel::get_quantitative_info(std::string& result)
     get_quantitative_data(data);
     for(unsigned int index = 0;index < data.size() && index < titles.size();++index)
         out << titles[index] << "\t" << data[index] << std::endl;
+
+    if(handle->num_subjects) // connectometry database
+    {
+        std::vector<const float*> old_fa(fib->fa);
+        std::vector<std::vector<float> > fa_data;
+        for(unsigned int subject_index = 0;subject_index < handle->num_subjects;++subject_index)
+        {
+            handle->get_subject_fa(subject_index,fa_data);
+            for(unsigned int i = 0;i < fib->fib_num;++i)
+                fib->fa[i] = &(fa_data[i][0]);
+
+            data.clear();
+            get_quantitative_data(data);
+            for(unsigned int index = 4;index < data.size() && index < titles.size();++index)
+                out << handle->subject_names[subject_index] << " " <<
+                       titles[index] << "\t" << data[index] << std::endl;
+        }
+        fib->fa = old_fa;
+    }
     result = out.str();
 }
 
