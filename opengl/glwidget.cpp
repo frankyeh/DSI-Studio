@@ -1916,56 +1916,34 @@ void GLWidget::saveRotationSeries(void)
 {
     QString filename = QFileDialog::getSaveFileName(
             this,
-            "Assign image name",
+            "Assign video name",
             cur_tracking_window.absolute_path,
-            "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
+            "Video file (*.avi);;All files (*)");
     if(filename.isEmpty())
         return;
-    bool ok;
-    int angle = QInputDialog::getInteger(this,
-        "DSI Studio","Rotation angle in each step (degrees):",10,1,360,5,&ok);
-    if(!ok)
-        return;
-    QString axis_text = QInputDialog::getText(this,
-                                      "DSI Studio","Input rotation axis (x y z):",QLineEdit::Normal,"0.0 1.0 0.0", &ok);
-    if(!ok)
-        return;
-    image::vector<3> axis;
-    {
-        std::vector<float> axis_values;
-        std::istringstream in(axis_text.toLocal8Bit().begin());
-        std::copy(std::istream_iterator<float>(in),
-                  std::istream_iterator<float>(),
-                  std::back_inserter(axis_values));
-        if(axis_values.size() != 3)
-        {
-            QMessageBox::information(this,"error","invalid axis values",0);
-            return;
-        }
-        std::copy(axis_values.begin(),axis_values.end(),axis.begin());
-        axis.normalize();
-    }
-
     makeCurrent();
-    std::vector<float> m(transformation_matrix,transformation_matrix+16);
-
     begin_prog("save images");
-    for(unsigned int index = 0;check_prog(index,360);index += angle)
+    image::io::avi avi;
+    for(unsigned int index = 1;check_prog(index,360);++index)
     {
         glPushMatrix();
         glLoadIdentity();
-        glRotated(angle, axis[0], axis[1], axis[2]);
+        glRotated(1,0,1.0,0.0);
         glMultMatrixf(transformation_matrix);
         glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
         glPopMatrix();
         updateGL();
-        grabFrameBuffer().save(
-                        QFileInfo(filename).absolutePath()+"/"+
-                        QFileInfo(filename).baseName()+"_"+
-                        QString("%1").arg((int)index,4,10,0,'0')+"."+
-                        QFileInfo(filename).suffix());
+
+        QImage I = grabFrameBuffer();
+        QBuffer buffer;
+        QImageWriter writer(&buffer, "JPG");
+        writer.write(I);
+        QByteArray data = buffer.data();
+        if(index == 1)
+            avi.open(filename.toLocal8Bit().begin(),I.width(),I.height(), "MJPG", 30/*fps*/);
+        avi.add_frame((unsigned char*)&*data.begin(),data.size());
     }
-    std::copy(m.begin(),m.end(),transformation_matrix);
+    avi.close();
     updateGL();
 }
 void GLWidget::rotate(void)
@@ -1980,3 +1958,5 @@ void GLWidget::rotate(void)
     updateGL();
     last_time = now_time;
 }
+
+

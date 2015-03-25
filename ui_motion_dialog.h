@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'motion_dialog.ui'
 **
-** Created: Wed Mar 18 20:54:00 2015
+** Created: Wed Mar 25 00:39:39 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!

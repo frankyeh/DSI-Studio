@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Wed Mar 18 20:54:00 2015
+** Created: Wed Mar 25 11:26:43 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -272,7 +272,7 @@ public:
     {
         if (tracking_window->objectName().isEmpty())
             tracking_window->setObjectName(QString::fromUtf8("tracking_window"));
-        tracking_window->resize(1176, 424);
+        tracking_window->resize(1198, 424);
         QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         sizePolicy.setHorizontalStretch(0);
         sizePolicy.setVerticalStretch(0);
@@ -969,7 +969,7 @@ public:
         tracking_window->addDockWidget(static_cast<Qt::DockWidgetArea>(2), renderingWidgetHolder);
         menuBar = new QMenuBar(tracking_window);
         menuBar->setObjectName(QString::fromUtf8("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 1176, 21));
+        menuBar->setGeometry(QRect(0, 0, 1198, 21));
         QSizePolicy sizePolicy7(QSizePolicy::Preferred, QSizePolicy::Minimum);
         sizePolicy7.setHorizontalStretch(0);
         sizePolicy7.setVerticalStretch(0);
@@ -1610,7 +1610,7 @@ public:
         actionSave_Camera->setText(QApplication::translate("tracking_window", "Save Camera", 0, QApplication::UnicodeUTF8));
         actionEndpoints_to_seeding->setText(QApplication::translate("tracking_window", "Endpoints To ROI", 0, QApplication::UnicodeUTF8));
         actionTracts_to_seeds->setText(QApplication::translate("tracking_window", "Tracts To ROI", 0, QApplication::UnicodeUTF8));
-        actionSave_Rotation_Images->setText(QApplication::translate("tracking_window", "Save Rotation Images...", 0, QApplication::UnicodeUTF8));
+        actionSave_Rotation_Images->setText(QApplication::translate("tracking_window", "Save Rotation Video...", 0, QApplication::UnicodeUTF8));
         actionPaint->setText(QApplication::translate("tracking_window", "Paint", 0, QApplication::UnicodeUTF8));
         actionPaint->setShortcut(QApplication::translate("tracking_window", "Ctrl+P", 0, QApplication::UnicodeUTF8));
         actionInsert_T1_T2->setText(QApplication::translate("tracking_window", "Insert T1w/T2w images...", 0, QApplication::UnicodeUTF8));
