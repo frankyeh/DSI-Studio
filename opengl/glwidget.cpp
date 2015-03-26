@@ -1941,7 +1941,7 @@ void GLWidget::saveRotationSeries(void)
         QByteArray data = buffer.data();
         if(index == 1)
             avi.open(filename.toLocal8Bit().begin(),I.width(),I.height(), "MJPG", 30/*fps*/);
-        avi.add_frame((unsigned char*)&*data.begin(),data.size());
+        avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
     }
     avi.close();
     updateGL();
