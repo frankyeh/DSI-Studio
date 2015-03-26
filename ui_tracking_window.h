@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Wed Mar 25 20:09:03 2015
+** Created: Thu Mar 26 13:21:56 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -152,6 +152,8 @@ public:
     QAction *action3D_Screen_3_Views_Vertical;
     QAction *actionROI;
     QAction *actionTrack_Report;
+    QAction *actionSave_Rotation_Video_in_High_Resolution;
+    QAction *actionSave_Rotation_Video_in_Left_Right_3D;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QWidget *main_widget;
@@ -580,6 +582,12 @@ public:
         actionROI->setObjectName(QString::fromUtf8("actionROI"));
         actionTrack_Report = new QAction(tracking_window);
         actionTrack_Report->setObjectName(QString::fromUtf8("actionTrack_Report"));
+        actionSave_Rotation_Video_in_High_Resolution = new QAction(tracking_window);
+        actionSave_Rotation_Video_in_High_Resolution->setObjectName(QString::fromUtf8("actionSave_Rotation_Video_in_High_Resolution"));
+        actionSave_Rotation_Video_in_High_Resolution->setIcon(icon2);
+        actionSave_Rotation_Video_in_Left_Right_3D = new QAction(tracking_window);
+        actionSave_Rotation_Video_in_Left_Right_3D->setObjectName(QString::fromUtf8("actionSave_Rotation_Video_in_Left_Right_3D"));
+        actionSave_Rotation_Video_in_Left_Right_3D->setIcon(icon2);
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -1484,12 +1492,14 @@ public:
         menu_View->addAction(actionLoad_Camera);
         menu_View->addAction(actionSave_Camera);
         menu_View->addSeparator();
-        menu_View->addAction(actionSave_Rotation_Images);
-        menu_View->addSeparator();
         menu_View->addAction(actionSave_Screen);
         menu_View->addAction(actionSave_3D_screen_in_3_views);
         menu_View->addAction(actionSave_3D_screen_in_high_resolution);
         menu_View->addAction(actionSave_Left_Right_3D_Image);
+        menu_View->addSeparator();
+        menu_View->addAction(actionSave_Rotation_Images);
+        menu_View->addAction(actionSave_Rotation_Video_in_High_Resolution);
+        menu_View->addAction(actionSave_Rotation_Video_in_Left_Right_3D);
         menu_View->addSeparator();
         menu_View->addAction(actionSave_ROI_Screen);
         menu_View->addAction(actionSave_Anisotrpy_Map_as);
@@ -1683,6 +1693,8 @@ public:
         action3D_Screen_3_Views_Vertical->setText(QApplication::translate("tracking_window", "3D Screen 3 Views Vertical", 0, QApplication::UnicodeUTF8));
         actionROI->setText(QApplication::translate("tracking_window", "ROI", 0, QApplication::UnicodeUTF8));
         actionTrack_Report->setText(QApplication::translate("tracking_window", "Track Report", 0, QApplication::UnicodeUTF8));
+        actionSave_Rotation_Video_in_High_Resolution->setText(QApplication::translate("tracking_window", "Save Rotation Video in High Resolution...", 0, QApplication::UnicodeUTF8));
+        actionSave_Rotation_Video_in_Left_Right_3D->setText(QApplication::translate("tracking_window", "Save Rotation Video in Left/Right 3D...", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)
