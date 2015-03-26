@@ -1778,6 +1778,7 @@ void GLWidget::catchScreen(void)
 
 void GLWidget::catchScreen2(void)
 {
+    QMessageBox::information(this,"Notice","This function may not work on Mac.",0);
     bool ok;
     QString result = QInputDialog::getText(this,"DSI Studio","Assign image dimension (width height)",QLineEdit::Normal,QString::number(width)+" "+QString::number(height),&ok);
     if(!ok)
@@ -1946,6 +1947,110 @@ void GLWidget::saveRotationSeries(void)
     avi.close();
     updateGL();
 }
+
+void GLWidget::saveRotationVideo(void)
+{
+    QMessageBox::information(this,"Notice","This function may not work on Mac.",0);
+    QString filename = QFileDialog::getSaveFileName(
+            this,
+            "Assign video name",
+            cur_tracking_window.absolute_path,
+            "Video file (*.avi);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    makeCurrent();
+    int old_width = width;
+    int old_height = height;
+    begin_prog("save images");
+    image::io::avi avi;
+    for(unsigned int index = 1;check_prog(index,360);++index)
+    {
+        glPushMatrix();
+        glLoadIdentity();
+        glRotated(1,0,1.0,0.0);
+        glMultMatrixf(transformation_matrix);
+        glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
+        glPopMatrix();
+        updateGL();
+
+        QImage I = renderPixmap(1920,1080).toImage();
+        QBuffer buffer;
+        QImageWriter writer(&buffer, "JPG");
+        writer.write(I);
+        QByteArray data = buffer.data();
+        if(index == 1)
+            avi.open(filename.toLocal8Bit().begin(),I.width(),I.height(), "MJPG", 30/*fps*/);
+        avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
+    }
+    avi.close();
+    resizeGL(old_width,old_height);
+    updateGL();
+}
+
+void GLWidget::saveRotationVideo2(void)
+{
+    QString filename = QFileDialog::getSaveFileName(
+            this,
+            "Assign video name",
+            cur_tracking_window.absolute_path,
+            "Video file (*.avi);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    makeCurrent();
+    int old_width = width;
+    int old_height = height;
+    begin_prog("save images");
+    image::io::avi avi;
+    for(unsigned int index = 1;check_prog(index,360);++index)
+    {
+        glPushMatrix();
+        glLoadIdentity();
+        glRotated(1,0,1.0,0.0);
+        glTranslatef(5,0,0);
+        glMultMatrixf(transformation_matrix);
+        glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
+        glPopMatrix();
+        updateGL();
+
+        QImage I1 = grabFrameBuffer();
+
+        glPushMatrix();
+        glLoadIdentity();
+        glTranslatef(-10,0,0);
+        glMultMatrixf(transformation_matrix);
+        glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
+        glPopMatrix();
+        updateGL();
+
+        QImage I2 = grabFrameBuffer();
+
+        glPushMatrix();
+        glLoadIdentity();
+        glTranslatef(5,0,0);
+        glMultMatrixf(transformation_matrix);
+        glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
+        glPopMatrix();
+
+        QImage I(I1.width() + I2.width(), I1.height() ,QImage::Format_RGB32);
+        QPainter painter;
+        painter.begin(&I);
+        painter.drawImage(0, 0, I1);
+        painter.drawImage(I1.width(), 0, I2);
+        painter.end();
+
+        QBuffer buffer;
+        QImageWriter writer(&buffer, "JPG");
+        writer.write(I);
+        QByteArray data = buffer.data();
+        if(index == 1)
+            avi.open(filename.toLocal8Bit().begin(),I.width(),I.height(), "MJPG", 30/*fps*/);
+        avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
+    }
+    avi.close();
+    resizeGL(old_width,old_height);
+    updateGL();
+}
+
 void GLWidget::rotate(void)
 {
     int now_time = time.elapsed();

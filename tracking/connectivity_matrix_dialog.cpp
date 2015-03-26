@@ -105,7 +105,7 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
         }
     else
     {
-        if(cur_tracking_window->handle->trans_to_mni.empty())
+        if(!cur_tracking_window->can_convert())
             return;
         image::basic_image<image::vector<3,float>,3 > mni_position(geo);
         const FiberDirection& fib = cur_tracking_window->handle->fib;

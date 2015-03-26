@@ -83,9 +83,6 @@ manual_alignment::manual_alignment(QWidget *parent,
     connect(ui->blend_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(timer, SIGNAL(timeout()), this, SLOT(check_reg()));
 
-    need_update_affine_matrix = true;
-
-
 }
 
 

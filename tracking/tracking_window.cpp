@@ -111,7 +111,7 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         handle->dim[1]*handle->vs[1] > 120 &&
         handle->dim[2]*handle->vs[2] > 50 && !is_qsdr)
     {
-        mi3.reset(new manual_alignment(this,slice.source_images,fa_template_imp.I,handle->vs));
+        // delayed background registration
     }
     else
         ui->actionManual_Registration->setEnabled(false);
@@ -160,6 +160,8 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         connect(ui->actionLoad_mapping,SIGNAL(triggered()),glWidget,SLOT(loadMapping()));
         connect(ui->actionSave_mapping,SIGNAL(triggered()),glWidget,SLOT(saveMapping()));
         connect(ui->actionSave_Rotation_Images,SIGNAL(triggered()),glWidget,SLOT(saveRotationSeries()));
+        connect(ui->actionSave_Rotation_Video_in_High_Resolution,SIGNAL(triggered()),glWidget,SLOT(saveRotationVideo()));
+        connect(ui->actionSave_Rotation_Video_in_Left_Right_3D,SIGNAL(triggered()),glWidget,SLOT(saveRotationVideo2()));
         connect(ui->actionSave_Left_Right_3D_Image,SIGNAL(triggered()),glWidget,SLOT(saveLeftRight3DImage()));
         connect(ui->actionSave_3D_screen_in_3_views,SIGNAL(triggered()),glWidget,SLOT(save3ViewImage()));
     }
@@ -354,6 +356,19 @@ tracking_window::~tracking_window()
     handle = 0;
     //std::cout << __FUNCTION__ << " " << __FILE__ << std::endl;
 }
+bool tracking_window::can_convert(void)
+{
+    if(!handle->trans_to_mni.empty())
+        return true;
+    if(!ui->actionManual_Registration->isEnabled())
+        return false;
+    if(!mi3.get())
+    {
+        mi3.reset(new manual_alignment(this,slice.source_images,fa_template_imp.I,handle->vs));
+        QMessageBox::information(this,"Connectivity matrix","The background registration started. You may need to wait until registration stablizes.",0);
+    }
+    return true;
+}
 
 void tracking_window::subject2mni(image::vector<3>& pos)
 {
@@ -403,18 +418,8 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     status = QString("(%1,%2,%3) ").arg(std::floor(pos[0]*10.0+0.5)/10.0)
             .arg(std::floor(pos[1]*10.0+0.5)/10.0)
             .arg(std::floor(pos[2]*10.0+0.5)/10.0);
-    // show atlas position
-    if(mi3.get() && mi3->need_update_affine_matrix)
-    {
-        mi3->update_affine();
-        handle->trans_to_mni.resize(16);
-        mi3->T.save_to_transform(handle->trans_to_mni.begin());
-        fa_template_imp.add_transformation(handle->trans_to_mni);
-        if(mi3->data.progress >= 1)
-            mi3->need_update_affine_matrix = false;
-    }
 
-    if(!handle->trans_to_mni.empty())
+    if(!handle->trans_to_mni.empty() || mi3.get())
     {
         image::vector<3,float> mni(pos);
         subject2mni(mni);
@@ -1063,6 +1068,7 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
 
 void tracking_window::on_actionManual_Registration_triggered()
 {
+    can_convert();
     if(mi3.get())
     {
         mi3->timer->start();
@@ -1088,8 +1094,6 @@ void tracking_window::on_actionConnectivity_matrix_triggered()
     }
     if(atlas_list.empty())
         QMessageBox::information(0,"Error",QString("DSI Studio cannot find atlas files in ")+QCoreApplication::applicationDirPath()+ "/atlas",0);
-    if(mi3.get() && mi3->data.progress < 1)
-        QMessageBox::information(this,"Connectivity matrix","The background registration is still running. The matrix is subject to change.",0);
     connectivity_matrix.reset(new connectivity_matrix_dialog(this));
     connectivity_matrix->show();
 }

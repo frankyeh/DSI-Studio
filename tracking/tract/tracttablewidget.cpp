@@ -466,6 +466,8 @@ void TractTableWidget::save_end_point_in_mni(void)
 {
     if(currentRow() >= tract_models.size())
         return;
+    if(!cur_tracking_window.can_convert())
+        return;
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,
@@ -474,7 +476,6 @@ void TractTableWidget::save_end_point_in_mni(void)
                 "Tract files (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
-
     std::vector<image::vector<3,float> > points;
     std::vector<float> buffer;
     tract_models[currentRow()]->get_end_points(points);
