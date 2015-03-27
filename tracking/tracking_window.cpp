@@ -1116,20 +1116,23 @@ void tracking_window::restore_3D_window()
 
 void tracking_window::float3dwindow(int w,int h)
 {
-    if(gLdock.get())
+    if(!gLdock.get())
     {
-        gLdock->resize(w,h);
-        return;
+        gLdock.reset(new QGLDockWidget(this));
+        gLdock->setWindowTitle("3D Window");
+        gLdock->setAllowedAreas(Qt::NoDockWidgetArea);
+        gLdock->setWidget(ui->main_widget);
     }
-    gLdock.reset(new QGLDockWidget(this));
-    gLdock->setWindowTitle("3D Window");
-    gLdock->setAllowedAreas(Qt::NoDockWidgetArea);
-    gLdock->setWidget(ui->main_widget);
     gLdock->setFloating(true);
     gLdock->show();
-    gLdock->resize(w,h);
-    connect(gLdock.get(),SIGNAL(closedSignal()),this,SLOT(restore_3D_window()));
+    gLdock->resize(w,h+44);
     qApp->processEvents();
+    if(glWidget->width() != h)
+    {
+        gLdock->resize(gLdock->width(),gLdock->height()+h-glWidget->width());
+        qApp->processEvents();
+    }
+    connect(gLdock.get(),SIGNAL(closedSignal()),this,SLOT(restore_3D_window()));
 }
 
 void tracking_window::on_actionFloat_3D_window_triggered()

@@ -104,7 +104,7 @@ class RenderingTableWidget;
  private:
      tracking_window& cur_tracking_window;
      RenderingTableWidget* renderWidget;
-     int width,height;
+     int cur_width,cur_height;
      float max_fa;
 
  private:

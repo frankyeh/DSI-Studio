@@ -352,7 +352,7 @@ void GLWidget::paintGL()
         GLfloat perspective = p[get_param("pespective")];
         GLfloat zNear = 1.0f;
         GLfloat zFar = 1000.0f;
-        GLfloat aspect = float(width)/float(height);
+        GLfloat aspect = float(cur_width)/float(cur_height);
         GLfloat fH = 0.25;
         GLfloat fW = fH * aspect;
         glFrustum( -fW, fW, -fH, fH, zNear*perspective, zFar*perspective);
@@ -1124,9 +1124,9 @@ void GLWidget::makeTracts(void)
 }
 void GLWidget::resizeGL(int width_, int height_)
 {
-    width = width_;
-    height = height_;
-    glViewport(0,0, width, height);
+    cur_width = width_;
+    cur_height = height_;
+    glViewport(0,0, cur_width, cur_height);
     glMatrixMode(GL_MODELVIEW);
     check_error(__FUNCTION__);
 }
@@ -1174,8 +1174,8 @@ void GLWidget::get_view_dir(QPoint p,image::vector<3,float>& dir)
     float m[16],v[3];
     glGetFloatv(GL_PROJECTION_MATRIX,m);
     // Compute the vector of the pick ray in screen space
-    v[0] = (( 2.0f * ((float)p.x())/((float)width)) - 1 ) / m[0];
-    v[1] = -(( 2.0f * ((float)p.y())/((float)height)) - 1 ) / m[5];
+    v[0] = (( 2.0f * ((float)p.x())/((float)cur_width)) - 1 ) / m[0];
+    v[1] = -(( 2.0f * ((float)p.y())/((float)cur_height)) - 1 ) / m[5];
     v[2] = -1.0f;
     // Transform the screen space pick ray into 3D space
     dir[0] = v[0]*mat[0] + v[1]*mat[4] + v[2]*mat[8];
@@ -1778,9 +1778,9 @@ void GLWidget::catchScreen(void)
 
 void GLWidget::catchScreen2(void)
 {
-    QMessageBox::information(this,"Notice","This function may not work on Mac.",0);
     bool ok;
-    QString result = QInputDialog::getText(this,"DSI Studio","Assign image dimension (width height)",QLineEdit::Normal,QString::number(width)+" "+QString::number(height),&ok);
+    QString result = QInputDialog::getText(this,"DSI Studio","Assign image dimension (width height)",QLineEdit::Normal,
+                                           QString::number(cur_width)+" "+QString::number(cur_height),&ok);
     if(!ok)
         return;
     std::istringstream in(result.toLocal8Bit().begin());
@@ -1930,7 +1930,6 @@ void GLWidget::saveRotationSeries(void)
 
 void GLWidget::saveRotationVideo(void)
 {
-    QMessageBox::information(this,"Notice","This function may not work on Mac.",0);
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Assign video name",
