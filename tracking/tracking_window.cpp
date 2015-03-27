@@ -1111,26 +1111,33 @@ void tracking_window::on_zoom_3d_valueChanged(double arg1)
 void tracking_window::restore_3D_window()
 {
     ui->centralLayout->addWidget(ui->main_widget);
-    delete gLdock;
-    gLdock = 0;
+    gLdock.reset(0);
+}
+
+void tracking_window::float3dwindow(int w,int h)
+{
+    if(gLdock.get())
+    {
+        gLdock->resize(w,h);
+        return;
+    }
+    gLdock.reset(new QGLDockWidget(this));
+    gLdock->setWindowTitle("3D Window");
+    gLdock->setAllowedAreas(Qt::NoDockWidgetArea);
+    gLdock->setWidget(ui->main_widget);
+    gLdock->setFloating(true);
+    gLdock->show();
+    gLdock->resize(w,h);
+    connect(gLdock.get(),SIGNAL(closedSignal()),this,SLOT(restore_3D_window()));
+    qApp->processEvents();
 }
 
 void tracking_window::on_actionFloat_3D_window_triggered()
 {
-    if(!gLdock)
-    {
-        gLdock = new QGLDockWidget(this);
-        int w = ui->main_widget->width();
-        gLdock->setWindowTitle("3D Window");
-        gLdock->setAllowedAreas(Qt::NoDockWidgetArea);
-        gLdock->setWidget(ui->main_widget);
-        gLdock->setFloating(true);
-        gLdock->show();
-        gLdock->resize(w,w);
-        connect(gLdock,SIGNAL(closedSignal()),this,SLOT(restore_3D_window()));
-    }
-    else
+    if(gLdock.get())
         restore_3D_window();
+    else
+        float3dwindow(ui->main_widget->width(),ui->main_widget->height());
 }
 
 void tracking_window::on_actionSave_tracking_parameters_triggered()
@@ -1371,11 +1378,6 @@ void tracking_window::show_info_dialog(const std::string& title,const std::strin
     if (msgBox.clickedButton() == copyButton)
         QApplication::clipboard()->setText(result.c_str());
 }
-
-
-
-
-
 
 
 

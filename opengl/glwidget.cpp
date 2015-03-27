@@ -1802,12 +1802,10 @@ void GLWidget::catchScreen2(void)
     if(filename.isEmpty())
         return;
     settings.setValue("catch_screen_extension",QFileInfo(filename).completeSuffix());
+    cur_tracking_window.float3dwindow(w,h);
     updateGL();
-    int old_width = width;
-    int old_height = height;
-    renderPixmap(w,h).save(filename);
-    makeCurrent();
-    resizeGL(old_width,old_height);
+    grabFrameBuffer().save(filename);
+    cur_tracking_window.restore_3D_window();
 }
 void GLWidget::get3View(QImage& I,unsigned int type)
 {
@@ -1891,21 +1889,10 @@ void GLWidget::saveLeftRight3DImage(void)
     if(!ok)
         return;
     makeCurrent();
-    glPushMatrix();
-
-    glLoadIdentity();
-    glRotated(angle/2.0, 0.0, 1.0, 0.0);
-    glMultMatrixf(transformation_matrix);
-    glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
-    updateGL();
+    rotate_angle(angle/2.0, 0.0, 1.0, 0.0);
     QImage left = grabFrameBuffer();
-    glLoadIdentity();
-    glRotated(-angle, 0.0, 1.0, 0.0);
-    glMultMatrixf(transformation_matrix);
-    glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
-    updateGL();
+    rotate_angle(-angle/2.0, 0.0, 1.0, 0.0);
     QImage right = grabFrameBuffer();
-    glPopMatrix();
     QImage all(left.width()*2,left.height(),QImage::Format_ARGB32);
     QPainter painter(&all);
     painter.drawImage(0,0,left);
@@ -1927,14 +1914,7 @@ void GLWidget::saveRotationSeries(void)
     image::io::avi avi;
     for(unsigned int index = 1;check_prog(index,360);++index)
     {
-        glPushMatrix();
-        glLoadIdentity();
-        glRotated(1,0,1.0,0.0);
-        glMultMatrixf(transformation_matrix);
-        glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
-        glPopMatrix();
-        updateGL();
-
+        rotate_angle(1,0,1.0,0.0);
         QImage I = grabFrameBuffer();
         QBuffer buffer;
         QImageWriter writer(&buffer, "JPG");
@@ -1959,21 +1939,14 @@ void GLWidget::saveRotationVideo(void)
     if(filename.isEmpty())
         return;
     makeCurrent();
-    int old_width = width;
-    int old_height = height;
     begin_prog("save images");
     image::io::avi avi;
+
+    cur_tracking_window.float3dwindow(1920,1080);
     for(unsigned int index = 1;check_prog(index,360);++index)
     {
-        glPushMatrix();
-        glLoadIdentity();
-        glRotated(1,0,1.0,0.0);
-        glMultMatrixf(transformation_matrix);
-        glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
-        glPopMatrix();
-        updateGL();
-
-        QImage I = renderPixmap(1920,1080).toImage();
+        rotate_angle(1,0,1.0,0.0);
+        QImage I = grabFrameBuffer();
         QBuffer buffer;
         QImageWriter writer(&buffer, "JPG");
         writer.write(I);
@@ -1983,7 +1956,7 @@ void GLWidget::saveRotationVideo(void)
         avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
     }
     avi.close();
-    resizeGL(old_width,old_height);
+    cur_tracking_window.restore_3D_window();
     updateGL();
 }
 
@@ -1997,12 +1970,12 @@ void GLWidget::saveRotationVideo2(void)
     if(filename.isEmpty())
         return;
     makeCurrent();
-    int old_width = width;
-    int old_height = height;
     begin_prog("save images");
     image::io::avi avi;
     for(unsigned int index = 1;check_prog(index,360);++index)
     {
+
+
         glPushMatrix();
         glLoadIdentity();
         glRotated(1,0,1.0,0.0);
@@ -2047,20 +2020,24 @@ void GLWidget::saveRotationVideo2(void)
         avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
     }
     avi.close();
-    resizeGL(old_width,old_height);
+    updateGL();
+}
+
+void GLWidget::rotate_angle(float angle,float x,float y,float z)
+{
+    glPushMatrix();
+    glLoadIdentity();
+    glRotated(angle,x,y,z);
+    glMultMatrixf(transformation_matrix);
+    glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
+    glPopMatrix();
     updateGL();
 }
 
 void GLWidget::rotate(void)
 {
     int now_time = time.elapsed();
-    glPushMatrix();
-    glLoadIdentity();
-    glRotated((now_time-last_time)/100.0,0,1.0,0.0);
-    glMultMatrixf(transformation_matrix);
-    glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
-    glPopMatrix();
-    updateGL();
+    rotate_angle((now_time-last_time)/100.0,0,1.0,0.0);
     last_time = now_time;
 }
 

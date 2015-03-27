@@ -52,7 +52,7 @@ public:
 
     Ui::tracking_window *ui;
     GLWidget *glWidget;
-    QGLDockWidget* gLdock;
+    std::auto_ptr<QGLDockWidget> gLdock;
     RegionTableWidget *regionWidget;
     TractTableWidget *tractWidget;
     RenderingTableWidget *renderWidget;
@@ -90,10 +90,12 @@ public:
     void add_slices(QStringList filenames,QString name);
     void show_info_dialog(const std::string& title,const std::string& result);
     QString get_save_file_name(QString title,QString file_name,QString file_type);
+    void float3dwindow(int w,int h);
 public slots:
     void on_SagView_clicked();
     void on_CorView_clicked();
     void on_AxiView_clicked();
+    void restore_3D_window();
 private slots:
     void on_actionRestore_window_layout_triggered();
     void on_actionSave_Tracts_in_Current_Mapping_triggered();
@@ -137,7 +139,6 @@ private slots:
     void on_gl_contrast_value_valueChanged(double arg1);
     void on_gl_offset_value_valueChanged(double arg1);
     void on_actionFloat_3D_window_triggered();
-    void restore_3D_window();
     void on_actionSave_tracking_parameters_triggered();
     void on_actionLoad_tracking_parameters_triggered();
     void on_actionSave_Rendering_Parameters_triggered();

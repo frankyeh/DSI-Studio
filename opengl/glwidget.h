@@ -70,7 +70,8 @@ class RenderingTableWidget;
      unsigned char odf_dim;
      unsigned char odf_slide_pos;
      void add_odf(image::pixel_index<3> pos);
-
+ private:
+     void rotate_angle(float angle,float x,float y,float z);
  public slots:
      void makeTracts(void);
      void addSurface(void);
