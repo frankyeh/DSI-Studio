@@ -160,7 +160,6 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         connect(ui->actionLoad_mapping,SIGNAL(triggered()),glWidget,SLOT(loadMapping()));
         connect(ui->actionSave_mapping,SIGNAL(triggered()),glWidget,SLOT(saveMapping()));
         connect(ui->actionSave_Rotation_Images,SIGNAL(triggered()),glWidget,SLOT(saveRotationSeries()));
-        connect(ui->actionSave_Rotation_Video_in_High_Resolution,SIGNAL(triggered()),glWidget,SLOT(saveRotationVideo()));
         connect(ui->actionSave_Rotation_Video_in_Left_Right_3D,SIGNAL(triggered()),glWidget,SLOT(saveRotationVideo2()));
         connect(ui->actionSave_Left_Right_3D_Image,SIGNAL(triggered()),glWidget,SLOT(saveLeftRight3DImage()));
         connect(ui->actionSave_3D_screen_in_3_views,SIGNAL(triggered()),glWidget,SLOT(save3ViewImage()));
@@ -1127,11 +1126,6 @@ void tracking_window::float3dwindow(int w,int h)
     gLdock->show();
     gLdock->resize(w,h+44);
     qApp->processEvents();
-    if(glWidget->width() != h)
-    {
-        gLdock->resize(gLdock->width(),gLdock->height()+h-glWidget->width());
-        qApp->processEvents();
-    }
     connect(gLdock.get(),SIGNAL(closedSignal()),this,SLOT(restore_3D_window()));
 }
 
@@ -1265,7 +1259,7 @@ void tracking_window::on_actionView_FIB_Content_triggered()
     show_info_dialog("FIB content",handle->report);
 }
 
-std::pair<unsigned int,unsigned int> evaluate_fib(
+std::pair<float,float> evaluate_fib(
         const image::geometry<3>& dim,
         const std::vector<std::vector<float> >& fib_fa,
         const std::vector<std::vector<float> >& fib_dir);
@@ -1286,7 +1280,7 @@ void tracking_window::on_actionQuality_Assessment_triggered()
             fib_dir[i][j+2] = v[2];
         }
     }
-    std::pair<unsigned int,unsigned int> result = evaluate_fib(handle->fib.dim,fib_fa,fib_dir);
+    std::pair<float,float> result = evaluate_fib(handle->fib.dim,fib_fa,fib_dir);
     std::ostringstream out;
     out << "Number of connected fibers: " << result.first << std::endl;
     out << "Number of disconnected fibers: " << result.second << std::endl;

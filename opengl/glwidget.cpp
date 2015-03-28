@@ -1909,53 +1909,31 @@ void GLWidget::saveRotationSeries(void)
             "Video file (*.avi);;All files (*)");
     if(filename.isEmpty())
         return;
+    QMessageBox::information(0,"saving video","DSI Studio is going to grab video from 3D window. Please don't move the window until finished.",0);
     makeCurrent();
-    begin_prog("save images");
-    image::io::avi avi;
-    for(unsigned int index = 1;check_prog(index,360);++index)
-    {
-        rotate_angle(1,0,1.0,0.0);
-        QImage I = grabFrameBuffer();
-        QBuffer buffer;
-        QImageWriter writer(&buffer, "JPG");
-        writer.write(I);
-        QByteArray data = buffer.data();
-        if(index == 1)
-            avi.open(filename.toLocal8Bit().begin(),I.width(),I.height(), "MJPG", 30/*fps*/);
-        avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
-    }
-    avi.close();
-    updateGL();
-}
-
-void GLWidget::saveRotationVideo(void)
-{
-    QString filename = QFileDialog::getSaveFileName(
-            this,
-            "Assign video name",
-            cur_tracking_window.absolute_path,
-            "Video file (*.avi);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    makeCurrent();
-    begin_prog("save images");
-    image::io::avi avi;
-
     cur_tracking_window.float3dwindow(1920,1080);
+    begin_prog("save images");
+    image::io::avi avi;
     for(unsigned int index = 1;check_prog(index,360);++index)
     {
         rotate_angle(1,0,1.0,0.0);
-        QImage I = grabFrameBuffer();
+        QImage I_ = grabFrameBuffer().scaledToWidth(1920);
+        QImage I(1920,1080,QImage::Format_RGB32);
+        QPainter painter;
+        painter.begin(&I);
+        painter.drawImage(0, (1080-I_.height())/2, I_);
+        painter.end();
+
         QBuffer buffer;
         QImageWriter writer(&buffer, "JPG");
         writer.write(I);
         QByteArray data = buffer.data();
         if(index == 1)
-            avi.open(filename.toLocal8Bit().begin(),I.width(),I.height(), "MJPG", 30/*fps*/);
+            avi.open(filename.toLocal8Bit().begin(),1920,1080, "MJPG", 30/*fps*/);
         avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
     }
-    avi.close();
     cur_tracking_window.restore_3D_window();
+    avi.close();
     updateGL();
 }
 
@@ -1968,46 +1946,48 @@ void GLWidget::saveRotationVideo2(void)
             "Video file (*.avi);;All files (*)");
     if(filename.isEmpty())
         return;
+    QMessageBox::information(0,"saving video","DSI Studio is going to grab video from 3D window. Please don't move the window until finished.",0);
     makeCurrent();
+    cur_tracking_window.float3dwindow(1024,768);
     begin_prog("save images");
     image::io::avi avi;
     for(unsigned int index = 1;check_prog(index,360);++index)
     {
 
-
+        // output 2048x768
         glPushMatrix();
         glLoadIdentity();
         glRotated(1,0,1.0,0.0);
-        glTranslatef(5,0,0);
+        glTranslatef(-3,0,0);
         glMultMatrixf(transformation_matrix);
         glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
         glPopMatrix();
         updateGL();
 
-        QImage I1 = grabFrameBuffer();
+        QImage I1 = grabFrameBuffer().scaledToWidth(1024);
 
         glPushMatrix();
         glLoadIdentity();
-        glTranslatef(-10,0,0);
+        glTranslatef(6,0,0);
         glMultMatrixf(transformation_matrix);
         glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
         glPopMatrix();
         updateGL();
 
-        QImage I2 = grabFrameBuffer();
+        QImage I2 = grabFrameBuffer().scaledToWidth(1024);
 
         glPushMatrix();
         glLoadIdentity();
-        glTranslatef(5,0,0);
+        glTranslatef(-3,0,0);
         glMultMatrixf(transformation_matrix);
         glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
         glPopMatrix();
 
-        QImage I(I1.width() + I2.width(), I1.height() ,QImage::Format_RGB32);
+        QImage I(2048,768,QImage::Format_RGB32);
         QPainter painter;
         painter.begin(&I);
-        painter.drawImage(0, 0, I1);
-        painter.drawImage(I1.width(), 0, I2);
+        painter.drawImage(0, (768-I1.height())/2, I1);
+        painter.drawImage(1024, (768-I1.height())/2, I2);
         painter.end();
 
         QBuffer buffer;
@@ -2018,6 +1998,7 @@ void GLWidget::saveRotationVideo2(void)
             avi.open(filename.toLocal8Bit().begin(),I.width(),I.height(), "MJPG", 30/*fps*/);
         avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
     }
+    cur_tracking_window.restore_3D_window();
     avi.close();
     updateGL();
 }

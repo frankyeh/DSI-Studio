@@ -1023,7 +1023,6 @@
     <addaction name="actionSave_Left_Right_3D_Image"/>
     <addaction name="separator"/>
     <addaction name="actionSave_Rotation_Images"/>
-    <addaction name="actionSave_Rotation_Video_in_High_Resolution"/>
     <addaction name="actionSave_Rotation_Video_in_Left_Right_3D"/>
     <addaction name="separator"/>
     <addaction name="actionSave_ROI_Screen"/>

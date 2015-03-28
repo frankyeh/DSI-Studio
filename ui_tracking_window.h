@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Thu Mar 26 13:21:56 2015
+** Created: Sat Mar 28 13:32:03 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -1498,7 +1498,6 @@ public:
         menu_View->addAction(actionSave_Left_Right_3D_Image);
         menu_View->addSeparator();
         menu_View->addAction(actionSave_Rotation_Images);
-        menu_View->addAction(actionSave_Rotation_Video_in_High_Resolution);
         menu_View->addAction(actionSave_Rotation_Video_in_Left_Right_3D);
         menu_View->addSeparator();
         menu_View->addAction(actionSave_ROI_Screen);

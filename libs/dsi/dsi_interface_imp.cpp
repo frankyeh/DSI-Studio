@@ -136,7 +136,7 @@ typedef boost::mpl::vector<
 > reprocess_odf;
 
 
-std::pair<unsigned int,unsigned int> evaluate_fib(
+std::pair<float,float> evaluate_fib(
         const image::geometry<3>& dim,
         const std::vector<std::vector<float> >& fib_fa,
         const std::vector<std::vector<float> >& fib_dir)
@@ -151,11 +151,11 @@ std::pair<unsigned int,unsigned int> evaluate_fib(
         dis[i] = image::vector<3>(dx[i],dy[i],dz[i]);
         dis[i].normalize();
     }
-    float otsu = image::segmentation::otsu_threshold(fib_fa[0])*0.6;
+    float otsu = *std::max_element(fib_fa[0].begin(),fib_fa[0].end())*0.1;
     std::vector<std::vector<unsigned char> > connected(fib_fa.size());
     for(unsigned int index = 0;index < connected.size();++index)
         connected[index].resize(dim.size());
-    unsigned int connection_count = 0;
+    float connection_count = 0;
     for(image::pixel_index<3> index;index.is_valid(dim);index.next(dim))
     {
         if(fib_fa[0][index.index()] <= otsu)
@@ -183,17 +183,20 @@ std::pair<unsigned int,unsigned int> evaluate_fib(
                     {
                         connected[fib1][index.index()] = 1;
                         connected[fib2][other_index.index()] = 1;
-                        ++connection_count;
+                        connection_count += fib_fa[fib2][other_index.index()];
                     }
             }
         }
     }
-    unsigned int no_connection_count = 0;
+    float no_connection_count = 0;
     for(image::pixel_index<3> index;index.is_valid(dim);index.next(dim))
     {
         for(unsigned int i = 0;i < num_fib;++i)
             if(fib_fa[i][index.index()] > otsu && !connected[i][index.index()])
-                ++no_connection_count;
+            {
+                no_connection_count += fib_fa[i][index.index()];
+            }
+
     }
 
     return std::make_pair(connection_count,no_connection_count);
@@ -289,13 +292,13 @@ const char* reconstruction(ImageModel* image_model,unsigned int method_id,const 
             std::vector<std::vector<float> > fib_dir(1);
             fib_fa[0].swap(image_model->voxel.fib_fa);
             fib_dir[0].swap(image_model->voxel.fib_dir);
-            unsigned int cur_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
+            float cur_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
             flip_fib_dir(fib_dir[0],true,false,false);
-            unsigned int flip_x_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
+            float flip_x_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
             flip_fib_dir(fib_dir[0],true,true,false);
-            unsigned int flip_y_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
+            float flip_y_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
             flip_fib_dir(fib_dir[0],false,true,true);
-            unsigned int flip_z_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
+            float flip_z_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
             if(flip_x_score > cur_score &&
                flip_x_score > flip_y_score && flip_x_score > flip_z_score)
             {
