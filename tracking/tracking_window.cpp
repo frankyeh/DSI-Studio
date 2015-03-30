@@ -38,7 +38,7 @@ QVariant tracking_window::operator[](QString name) const
 
 tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle_release_) :
         QMainWindow(parent),handle(new_handle),handle_release(handle_release_),
-        ui(new Ui::tracking_window),scene(*this),slice(new_handle),gLdock(0),atlas_dialog(0)
+        ui(new Ui::tracking_window),scene(*this),slice(new_handle),gLdock(0),atlas_dialog(0),renderWidget(0)
 
 {
     FibData& fib_data = *new_handle;
@@ -50,6 +50,10 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
     is_dti = (fib_data.view_item[0].name[0] == 'f');
 
     ui->setupUi(this);
+    {
+        QSettings settings;
+        ui->rendering_efficiency->setCurrentIndex(settings.value("rendering_quality",1).toInt());
+    }
     {
         setGeometry(10,10,800,600);
 
@@ -351,6 +355,7 @@ tracking_window::~tracking_window()
     QSettings settings;
     settings.setValue("geometry", saveGeometry());
     settings.setValue("state", saveState());
+    settings.setValue("rendering_quality",ui->rendering_efficiency->currentIndex());
     tractWidget->delete_all_tract();
     delete ui;
     if(handle_release)
@@ -1391,3 +1396,43 @@ void tracking_window::show_info_dialog(const std::string& title,const std::strin
 
 
 
+
+void tracking_window::on_rendering_efficiency_currentIndexChanged(int index)
+{
+    if(!renderWidget)
+        return;
+    switch(index)
+    {
+    case 0:
+        renderWidget->setData("anti_aliasing",0);
+        renderWidget->setData("line_smooth",0);
+        renderWidget->setData("point_smooth",0);
+        renderWidget->setData("poly_smooth",0);
+
+        renderWidget->setData("tract_style",0);
+        renderWidget->setData("tract_visible_tract",10000);
+        renderWidget->setData("tract_tube_detail",0);
+
+        break;
+    case 1:
+        renderWidget->setData("anti_aliasing",0);
+        renderWidget->setData("line_smooth",0);
+        renderWidget->setData("point_smooth",0);
+        renderWidget->setData("poly_smooth",0);
+
+        renderWidget->setData("tract_style",1);
+        renderWidget->setData("tract_visible_tract",25000);
+        renderWidget->setData("tract_tube_detail",1);
+        break;
+    case 2:
+        renderWidget->setData("anti_aliasing",1);
+        renderWidget->setData("line_smooth",1);
+        renderWidget->setData("point_smooth",1);
+        renderWidget->setData("poly_smooth",1);
+
+        renderWidget->setData("tract_style",1);
+        renderWidget->setData("tract_visible_tract",100000);
+        renderWidget->setData("tract_tube_detail",3);
+        break;
+    }
+}

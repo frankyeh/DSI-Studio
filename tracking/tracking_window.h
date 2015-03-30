@@ -161,6 +161,7 @@ private slots:
     void on_offset_valueChanged(int value);
     void on_gl_contrast_valueChanged(int value);
     void on_gl_offset_valueChanged(int value);
+    void on_rendering_efficiency_currentIndexChanged(int index);
 };
 
 #endif // TRACKING_WINDOW_H

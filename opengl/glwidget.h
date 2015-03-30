@@ -15,6 +15,7 @@ class RenderingTableWidget;
      Q_OBJECT
 
  public:
+     bool stereoscopy;
      GLWidget(bool samplebuffer,
               tracking_window& cur_tracking_window_,
               RenderingTableWidget* renderWidget_,

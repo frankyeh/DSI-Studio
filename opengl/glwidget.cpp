@@ -32,6 +32,7 @@ GLWidget::GLWidget(bool samplebuffer,
                    RenderingTableWidget* renderWidget_,
                    QWidget *parent)
                        : QGLWidget(samplebuffer ? QGLFormat(QGL::SampleBuffers):QGLFormat(),parent),
+        stereoscopy(false),
         cur_tracking_window(cur_tracking_window_),
         renderWidget(renderWidget_),
         tracts(0),
@@ -337,17 +338,20 @@ void GLWidget::paintGL()
                  (float)(color & 0x000000FF)/255.0,1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    renderLR(0);
-    //renderLR(10);
-    //renderLR(-10);
-
+    if(!stereoscopy)
+        renderLR(0);
+    else
+    {
+        renderLR(10);
+        renderLR(-10);
+    }
 }
 void GLWidget::renderLR(int eye)
 {
     if(eye > 0)
-        glDrawBuffer(GL_FRONT_RIGHT);
+        glDrawBuffer(GL_BACK_RIGHT);
     if(eye < 0)
-        glDrawBuffer(GL_FRONT_LEFT);
+        glDrawBuffer(GL_BACK_LEFT);
     {
         float p[11] = {0.35,0.4,0.45,0.5,0.6,0.8,1.0,1.5,2.0,12.0,50.0};
         GLfloat perspective = p[get_param("pespective")];

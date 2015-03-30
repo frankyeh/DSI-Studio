@@ -811,7 +811,27 @@
       <number>0</number>
      </property>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_8"/>
+      <layout class="QHBoxLayout" name="horizontalLayout_8">
+       <item>
+        <widget class="QComboBox" name="rendering_efficiency">
+         <item>
+          <property name="text">
+           <string>Low Rendering Quality (Fast)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Moderate Rendering Quality</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>High Rendering Quality (Slow)</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+      </layout>
      </item>
     </layout>
    </widget>
