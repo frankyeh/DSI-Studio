@@ -1139,7 +1139,12 @@ void tracking_window::float3dwindow(int w,int h)
 void tracking_window::on_actionFloat_3D_window_triggered()
 {
     if(gLdock.get())
-        restore_3D_window();
+    {
+        if(gLdock->isFullScreen())
+            gLdock->showNormal();
+        else
+            gLdock->showFullScreen();
+    }
     else
         float3dwindow(ui->main_widget->width(),ui->main_widget->height());
 }
@@ -1382,6 +1387,7 @@ void tracking_window::show_info_dialog(const std::string& title,const std::strin
     if (msgBox.clickedButton() == copyButton)
         QApplication::clipboard()->setText(result.c_str());
 }
+
 
 
 
