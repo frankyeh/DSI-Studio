@@ -96,6 +96,7 @@ class RenderingTableWidget;
      void initializeGL();
      void paintGL();
      void resizeGL(int width, int height);
+     void renderLR(int eye);
      void mousePressEvent(QMouseEvent *event);
      void mouseReleaseEvent(QMouseEvent *event);
      void mouseMoveEvent(QMouseEvent *event);
