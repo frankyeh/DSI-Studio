@@ -96,6 +96,7 @@ private slots:
     void on_SlicePos_valueChanged(int value);
     void on_motion_correction_clicked();
     void check_progress(void);
+    void on_refine_contour_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

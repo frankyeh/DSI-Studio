@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>597</width>
+    <width>636</width>
     <height>560</height>
    </rect>
   </property>
@@ -41,7 +41,7 @@
     <item>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -51,7 +51,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>597</width>
+         <width>636</width>
          <height>473</height>
         </rect>
        </property>
@@ -290,7 +290,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>597</width>
+         <width>636</width>
          <height>473</height>
         </rect>
        </property>
@@ -364,6 +364,25 @@
                </widget>
               </item>
               <item>
+               <widget class="QPushButton" name="refine_contour">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>20</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Refine contour</string>
+                </property>
+               </widget>
+              </item>
+              <item>
                <spacer name="horizontalSpacer_2">
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
@@ -399,7 +418,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>617</width>
+         <width>619</width>
          <height>487</height>
         </rect>
        </property>
@@ -1556,7 +1575,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>597</width>
+     <width>636</width>
      <height>21</height>
     </rect>
    </property>

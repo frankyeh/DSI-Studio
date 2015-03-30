@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Mon Mar 30 13:22:44 2015
+** Created: Mon Mar 30 14:42:47 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -1704,7 +1704,7 @@ public:
         actionTrack_Report->setText(QApplication::translate("tracking_window", "Track Report", 0, QApplication::UnicodeUTF8));
         actionSave_Rotation_Video_in_High_Resolution->setText(QApplication::translate("tracking_window", "Save Rotation Video in High Resolution...", 0, QApplication::UnicodeUTF8));
         actionSave_Rotation_Video_in_Left_Right_3D->setText(QApplication::translate("tracking_window", "Save Rotation Video in Left/Right 3D...", 0, QApplication::UnicodeUTF8));
-        actionContour->setText(QApplication::translate("tracking_window", "Contour", 0, QApplication::UnicodeUTF8));
+        actionContour->setText(QApplication::translate("tracking_window", "Refine", 0, QApplication::UnicodeUTF8));
         actionAdjust_Mapping->setText(QApplication::translate("tracking_window", "Adjust Mapping...", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()

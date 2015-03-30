@@ -2747,7 +2747,7 @@
   </action>
   <action name="actionContour">
    <property name="text">
-    <string>Contour</string>
+    <string>Refine</string>
    </property>
   </action>
   <action name="actionAdjust_Mapping">

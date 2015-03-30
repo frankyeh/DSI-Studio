@@ -323,6 +323,15 @@ void reconstruction_window::on_smoothing_clicked()
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
+void reconstruction_window::on_refine_contour_clicked()
+{
+    image::basic_image<unsigned char,3> new_mask;
+    image::segmentation::graph_cut(dwi,new_mask,0.5,dwi.size()/1000);
+    image::segmentation::refine_contour(new_mask,handle->mask);
+    on_SlicePos_valueChanged(ui->SlicePos->value());
+}
+
+
 void reconstruction_window::on_thresholding_clicked()
 {
     bool ok;
@@ -889,3 +898,4 @@ void reconstruction_window::check_progress(void)
         on_motion_correction_clicked();
     }
 }
+

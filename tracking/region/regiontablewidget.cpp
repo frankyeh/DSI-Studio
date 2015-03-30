@@ -924,7 +924,23 @@ void RegionTableWidget::do_action(int id)
         cur_region.shift(image::vector<3,short>(0, 0, -1));
         break;
     case 15:
-        break;
-    }
+        {
+            cur_region.SaveToBuffer(mask, 1);
+            if(*std::max_element(mask.begin(),mask.end()) == 0)
+                break;
+            unsigned int view_index =
+                cur_tracking_window.handle->get_name_index(cur_tracking_window.ui->sliceViewBox->currentText().toLocal8Bit().begin());
+            if(view_index == cur_tracking_window.handle->view_item.size())
+                view_index = 0;
+
+
+            image::basic_image<unsigned char,3> new_mask;
+            image::segmentation::graph_cut(cur_tracking_window.handle->view_item[view_index].image_data,
+                                           new_mask,0.5,1000);
+            image::segmentation::refine_contour(new_mask,mask);
+            cur_region.LoadFromBuffer(mask);
+            break;
+        }
+        }
     emit need_update();
 }
