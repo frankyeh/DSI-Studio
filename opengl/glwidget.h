@@ -84,6 +84,7 @@ class RenderingTableWidget;
      void saveLeftRight3DImage(void);
      void save3ViewImage(void);
      void saveMapping(void);
+     void adjustMapping(void);
      void loadMapping(void);
      void copyToClipboard(void);
      void check_reg(void);

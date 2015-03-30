@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'manual_alignment.ui'
 **
-** Created: Wed Mar 25 20:09:03 2015
+** Created: Mon Mar 30 14:12:11 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -88,6 +88,7 @@ public:
     QSpacerItem *horizontalSpacer;
     QPushButton *rerun;
     QSpacerItem *verticalSpacer;
+    QLabel *label_13;
     QHBoxLayout *horizontalLayout;
     QSlider *blend_pos;
     QDialogButtonBox *buttonBox;
@@ -382,6 +383,11 @@ public:
 
         verticalLayout_5->addItem(verticalSpacer);
 
+        label_13 = new QLabel(layoutWidget);
+        label_13->setObjectName(QString::fromUtf8("label_13"));
+
+        verticalLayout_5->addWidget(label_13);
+
         horizontalLayout = new QHBoxLayout();
         horizontalLayout->setSpacing(0);
         horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
@@ -389,6 +395,7 @@ public:
         blend_pos->setObjectName(QString::fromUtf8("blend_pos"));
         blend_pos->setMaximum(10);
         blend_pos->setPageStep(2);
+        blend_pos->setValue(5);
         blend_pos->setOrientation(Qt::Horizontal);
 
         horizontalLayout->addWidget(blend_pos);
@@ -423,7 +430,7 @@ public:
 
     void retranslateUi(QDialog *manual_alignment)
     {
-        manual_alignment->setWindowTitle(QApplication::translate("manual_alignment", "Dialog", 0, QApplication::UnicodeUTF8));
+        manual_alignment->setWindowTitle(QApplication::translate("manual_alignment", "Registration", 0, QApplication::UnicodeUTF8));
         groupBox->setTitle(QApplication::translate("manual_alignment", "Translocation", 0, QApplication::UnicodeUTF8));
         label_2->setText(QApplication::translate("manual_alignment", "x", 0, QApplication::UnicodeUTF8));
         label_3->setText(QApplication::translate("manual_alignment", "y", 0, QApplication::UnicodeUTF8));
@@ -441,6 +448,7 @@ public:
         label_12->setText(QApplication::translate("manual_alignment", "y", 0, QApplication::UnicodeUTF8));
         label_10->setText(QApplication::translate("manual_alignment", "z", 0, QApplication::UnicodeUTF8));
         rerun->setText(QApplication::translate("manual_alignment", "Re-run", 0, QApplication::UnicodeUTF8));
+        label_13->setText(QApplication::translate("manual_alignment", "Move the following slide to view the overlap of two images", 0, QApplication::UnicodeUTF8));
     } // retranslateUi
 
 };

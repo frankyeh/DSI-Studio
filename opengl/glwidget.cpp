@@ -16,6 +16,7 @@
 #include "SliceModel.h"
 #include "fib_data.hpp"
 #include "tracking/color_bar_dialog.hpp"
+#include "manual_alignment.h"
 
 GLenum BlendFunc1[] = {GL_ZERO,GL_ONE,GL_DST_COLOR,
                       GL_ONE_MINUS_DST_COLOR,GL_SRC_ALPHA,
@@ -1596,6 +1597,28 @@ void GLWidget::saveMapping(void)
             out << other_slices[current_visible_slide-1].transform[index] << " ";
         out << std::endl;
     }
+}
+
+void GLWidget::adjustMapping(void)
+{
+    if(!current_visible_slide)
+        return;
+    image::vector<3> scale(cur_tracking_window.slice.voxel_size[0] /
+                      other_slices[current_visible_slide-1].voxel_size[0],
+                      cur_tracking_window.slice.voxel_size[1] /
+                      other_slices[current_visible_slide-1].voxel_size[1],
+                      cur_tracking_window.slice.voxel_size[2] /
+                      other_slices[current_visible_slide-1].voxel_size[2]);
+    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,
+        cur_tracking_window.slice.source_images,
+        other_slices[current_visible_slide-1].source_images,scale,image::reg::rigid_body));
+    manual->timer->start();
+    if(manual->exec() != QDialog::Accepted)
+        return;
+    other_slices[current_visible_slide-1].terminate();
+    other_slices[current_visible_slide-1].arg_min = manual->data.arg;
+    other_slices[current_visible_slide-1].update();
+    updateGL();
 }
 
 void GLWidget::loadMapping(void)

@@ -3,10 +3,6 @@
 #include <string>
 #include <cstdio>
 #include <QApplication>
-#include <QCleanlooksStyle>
-#include <QMacStyle>
-#include <QMetaObject>
-#include <QMetaMethod>
 #include <QMessageBox>
 #include <QDir>
 #include "mainwindow.h"
@@ -133,7 +129,12 @@ int main(int ac, char *av[])
     QFont font;
     font.setFamily(QString::fromUtf8("Arial"));
     a.setFont(font);
-    //QApplication::setStyle(new QMacStyle);
+    #ifdef Q_WS_WIN
+    QApplication::setStyle("cleanlooks");
+    #endif
+    #ifdef Q_WS_MACX
+    QApplication::setStyle("macintosh");
+    #endif
 
     // load template
     if(!fa_template_imp.load_from_file(get_fa_template_path().c_str()))

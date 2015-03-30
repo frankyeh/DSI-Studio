@@ -159,6 +159,7 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         connect(ui->actionSave_Camera,SIGNAL(triggered()),glWidget,SLOT(saveCamera()));
         connect(ui->actionLoad_mapping,SIGNAL(triggered()),glWidget,SLOT(loadMapping()));
         connect(ui->actionSave_mapping,SIGNAL(triggered()),glWidget,SLOT(saveMapping()));
+        connect(ui->actionAdjust_Mapping,SIGNAL(triggered()),glWidget,SLOT(adjustMapping()));
         connect(ui->actionSave_Rotation_Images,SIGNAL(triggered()),glWidget,SLOT(saveRotationSeries()));
         connect(ui->actionSave_Rotation_Video_in_Left_Right_3D,SIGNAL(triggered()),glWidget,SLOT(saveRotationVideo2()));
         connect(ui->actionSave_Left_Right_3D_Image,SIGNAL(triggered()),glWidget,SLOT(saveLeftRight3DImage()));
@@ -228,6 +229,8 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         connect(ui->actionDilation,SIGNAL(triggered()),regionWidget,SLOT(action_dilation()));
         connect(ui->actionNegate,SIGNAL(triggered()),regionWidget,SLOT(action_negate()));
         connect(ui->actionDefragment,SIGNAL(triggered()),regionWidget,SLOT(action_defragment()));
+        connect(ui->actionContour,SIGNAL(triggered()),regionWidget,SLOT(action_contour()));
+
         connect(ui->actionMerge_All_2,SIGNAL(triggered()),regionWidget,SLOT(merge_all()));
 
         connect(ui->actionCheck_all_regions,SIGNAL(triggered()),regionWidget,SLOT(check_all()));
@@ -363,8 +366,12 @@ bool tracking_window::can_convert(void)
         return false;
     if(!mi3.get())
     {
-        mi3.reset(new manual_alignment(this,slice.source_images,fa_template_imp.I,handle->vs));
-        QMessageBox::information(this,"Connectivity matrix","The background registration started. You may need to wait until registration stablizes.",0);
+        image::basic_image<float,3> from = slice.source_images;
+        image::filter::gaussian(from);
+        from -= image::segmentation::otsu_threshold(from);
+        image::lower_threshold(from,0.0);
+        mi3.reset(new manual_alignment(this,from,fa_template_imp.I,handle->vs));
+        QMessageBox::information(this,"Running","The background registration started. You may need to wait until registration stablizes.",0);
     }
     return true;
 }

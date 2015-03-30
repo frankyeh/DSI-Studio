@@ -12,7 +12,6 @@
 #include "libs/gzip_interface.hpp"
 #include "mapping/fa_template.hpp"
 #include "mapping/atlas.hpp"
-#include "manual_alignment.h"
 #include "SliceModel.h"
 std::string get_fa_template_path(void);
 bool atl_load_atlas(const std::string atlas_name);

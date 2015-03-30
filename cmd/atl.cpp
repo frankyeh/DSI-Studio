@@ -7,7 +7,6 @@
 #include "libs/gzip_interface.hpp"
 #include "mapping/atlas.hpp"
 #include "manual_alignment.h"
-
 namespace po = boost::program_options;
 extern fa_template fa_template_imp;
 extern std::vector<atlas> atlas_list;
@@ -83,8 +82,15 @@ bool atl_get_mapping(gz_mat_read& mat_reader,
     }
     else
     {
-        image::basic_image<float,3> from(fa0,geo);
+        image::basic_image<float,3> from(fa0,geo),to(fa_template_imp.I);
         reg_data data(fa_template_imp.I.geometry(),image::reg::affine,factor);
+
+        image::filter::gaussian(from);
+        from -= image::segmentation::otsu_threshold(from);
+        image::lower_threshold(from,0.0);
+        image::normalize(from,1.0);
+        image::normalize(to,1.0);
+
         run_reg(from,fa_template_imp.I,image::vector<3>(vs),data,thread_count);
         image::transformation_matrix<3,float> T(data.arg,from.geometry(),fa_template_imp.I.geometry());
         mapping.resize(from.geometry());

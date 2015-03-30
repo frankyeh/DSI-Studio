@@ -101,8 +101,8 @@ HEADERS += mainwindow.h \
     tracking/color_bar_dialog.hpp \
     tracking/connectivity_matrix_dialog.h \
     tracking/atlasdialog.h \
-    dicom/motion_dialog.hpp \
-    libav/gwavi.h
+    dicom/motion_dialog.hpp
+
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
     reconstruction/reconstruction_window.ui \

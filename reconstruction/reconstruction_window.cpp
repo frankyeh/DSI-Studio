@@ -572,7 +572,7 @@ void reconstruction_window::on_zoom_out_clicked()
 extern fa_template fa_template_imp;
 void reconstruction_window::on_manual_reg_clicked()
 {
-    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,fa_template_imp.I,handle->voxel.vs));
+    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,fa_template_imp.I,handle->voxel.vs,image::reg::rigid_body));
     manual->timer->start();
     if(manual->exec() == QDialog::Accepted)
         handle->voxel.qsdr_trans = manual->T;

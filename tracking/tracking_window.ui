@@ -850,23 +850,27 @@
      <property name="title">
       <string>Modify Current Region</string>
      </property>
-     <addaction name="actionShift_X"/>
-     <addaction name="actionShift_X_2"/>
-     <addaction name="actionShift_Y"/>
-     <addaction name="actionShift_Y_2"/>
-     <addaction name="actionShift_Z"/>
-     <addaction name="actionShift_Z_2"/>
-     <addaction name="separator"/>
-     <addaction name="actionFlip_X"/>
-     <addaction name="actionFlip_Y"/>
-     <addaction name="actionFlip_Z"/>
-     <addaction name="separator"/>
      <addaction name="actionDilation"/>
      <addaction name="actionErosion"/>
      <addaction name="actionSmoothing"/>
      <addaction name="actionNegate"/>
      <addaction name="actionDefragment"/>
      <addaction name="actionThreshold"/>
+     <addaction name="actionContour"/>
+    </widget>
+    <widget class="QMenu" name="menuMove_Region">
+     <property name="title">
+      <string>Move Region</string>
+     </property>
+     <addaction name="actionShift_X"/>
+     <addaction name="actionShift_X_2"/>
+     <addaction name="actionShift_Y"/>
+     <addaction name="actionShift_Y_2"/>
+     <addaction name="actionShift_Z"/>
+     <addaction name="actionShift_Z_2"/>
+     <addaction name="actionFlip_X"/>
+     <addaction name="actionFlip_Y"/>
+     <addaction name="actionFlip_Z"/>
     </widget>
     <addaction name="actionNewRegion"/>
     <addaction name="actionOpenRegion"/>
@@ -885,6 +889,7 @@
     <addaction name="actionDeleteRegion"/>
     <addaction name="actionDeleteRegionAll"/>
     <addaction name="separator"/>
+    <addaction name="menuMove_Region"/>
     <addaction name="menuModify"/>
     <addaction name="actionWhole_brain_seeding"/>
     <addaction name="separator"/>
@@ -1041,6 +1046,7 @@
     <addaction name="separator"/>
     <addaction name="actionLoad_mapping"/>
     <addaction name="actionSave_mapping"/>
+    <addaction name="actionAdjust_Mapping"/>
     <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuTools">
@@ -2737,6 +2743,16 @@
    </property>
    <property name="text">
     <string>Save Rotation Video in Left/Right 3D...</string>
+   </property>
+  </action>
+  <action name="actionContour">
+   <property name="text">
+    <string>Contour</string>
+   </property>
+  </action>
+  <action name="actionAdjust_Mapping">
+   <property name="text">
+    <string>Adjust Mapping...</string>
    </property>
   </action>
  </widget>

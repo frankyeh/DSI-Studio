@@ -13,7 +13,6 @@
 #include "mapping/atlas.hpp"
 #include "mapping/fa_template.hpp"
 #include "opengl/glwidget.h"
-#include "manual_alignment.h"
 extern std::vector<atlas> atlas_list;
 extern fa_template fa_template_imp;
 
@@ -923,6 +922,8 @@ void RegionTableWidget::do_action(int id)
         break;
     case 14: // shift
         cur_region.shift(image::vector<3,short>(0, 0, -1));
+        break;
+    case 15:
         break;
     }
     emit need_update();

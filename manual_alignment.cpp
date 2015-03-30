@@ -17,16 +17,15 @@ void run_reg(image::basic_image<float,3>& from,
     data.arg.scaling[2] = vs[2];
     image::reg::align_center(from,to,data.arg);
 
-    image::filter::gaussian(from);
-    from -= image::segmentation::otsu_threshold(from);
-    image::lower_threshold(from,0.0);
-    image::normalize(from,1.0);
-    image::normalize(to,1.0);
-
     data.progress = 0;
     image::reg::linear(from,to,data.arg,data.reg_type,cost_func(),data.terminated);
     if(data.terminated)
         return;
+    if(data.reg_type == image::reg::rigid_body)
+    {
+        data.progress = 2;
+        return;
+    }
     image::transformation_matrix<3,float> affine(data.arg,from.geometry(),to.geometry());
     affine.inverse();
     data.progress = 1;
@@ -42,12 +41,15 @@ void run_reg(image::basic_image<float,3>& from,
 
 manual_alignment::manual_alignment(QWidget *parent,
                                    image::basic_image<float,3> from_,
-                                   image::basic_image<float,3> to_,const image::vector<3>& vs_,int reg_type_) :
-    QDialog(parent),ui(new Ui::manual_alignment),data(to_.geometry(),reg_type_),vs(vs_)
+                                   image::basic_image<float,3> to_,const image::vector<3>& scaling_,int reg_type_) :
+    QDialog(parent),ui(new Ui::manual_alignment),data(to_.geometry(),reg_type_),scaling(scaling_)
 {
     from.swap(from_);
     to.swap(to_);
-    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),vs,boost::ref(data),1));
+    image::normalize(from,1.0);
+    image::normalize(to,1.0);
+
+    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),scaling,boost::ref(data),1));
     ui->setupUi(this);
     if(reg_type_ == image::reg::rigid_body)
     {
@@ -62,7 +64,6 @@ manual_alignment::manual_alignment(QWidget *parent,
 
 
     load_param();
-    update_image();
 
     ui->sag_slice_pos->setMaximum(to.geometry()[0]-1);
     ui->sag_slice_pos->setMinimum(0);
@@ -213,6 +214,8 @@ void manual_alignment::param_changed()
 
 void manual_alignment::slice_pos_moved()
 {
+    if(warped_from.empty() || to.empty())
+        return;
     int slice_pos[3];
     slice_pos[0] = ui->sag_slice_pos->value();
     slice_pos[1] = ui->cor_slice_pos->value();
@@ -288,6 +291,8 @@ void manual_alignment::on_rerun_clicked()
         data.terminated = 1;
         reg_thread->join();
     }
-    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),vs,boost::ref(data),1));
+    data.terminated = 0;
+    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),scaling,boost::ref(data),1));
+    timer->start();
 
 }

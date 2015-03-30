@@ -31,7 +31,7 @@ class manual_alignment : public QDialog
     Q_OBJECT
 private:
     image::basic_image<float,3> from,to,warped_from;
-    image::vector<3> vs;
+    image::vector<3> scaling;
     QGraphicsScene scene[3];
     image::color_image buffer[3];
     QImage slice_image[3];
@@ -46,7 +46,7 @@ public:
     explicit manual_alignment(QWidget *parent,
         image::basic_image<float,3> from_,
         image::basic_image<float,3> to_,
-        const image::vector<3>& vs,int reg_type = image::reg::affine);
+        const image::vector<3>& scaling,int reg_type = image::reg::affine);
     ~manual_alignment();
     void connect_arg_update();
     void disconnect_arg_update();

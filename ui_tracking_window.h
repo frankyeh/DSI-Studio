@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Sat Mar 28 13:32:03 2015
+** Created: Mon Mar 30 13:22:44 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -154,6 +154,8 @@ public:
     QAction *actionTrack_Report;
     QAction *actionSave_Rotation_Video_in_High_Resolution;
     QAction *actionSave_Rotation_Video_in_Left_Right_3D;
+    QAction *actionContour;
+    QAction *actionAdjust_Mapping;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QWidget *main_widget;
@@ -210,6 +212,7 @@ public:
     QMenuBar *menuBar;
     QMenu *menuRegions;
     QMenu *menuModify;
+    QMenu *menuMove_Region;
     QMenu *menuTracts;
     QMenu *menuSave;
     QMenu *menuClustering;
@@ -588,6 +591,10 @@ public:
         actionSave_Rotation_Video_in_Left_Right_3D = new QAction(tracking_window);
         actionSave_Rotation_Video_in_Left_Right_3D->setObjectName(QString::fromUtf8("actionSave_Rotation_Video_in_Left_Right_3D"));
         actionSave_Rotation_Video_in_Left_Right_3D->setIcon(icon2);
+        actionContour = new QAction(tracking_window);
+        actionContour->setObjectName(QString::fromUtf8("actionContour"));
+        actionAdjust_Mapping = new QAction(tracking_window);
+        actionAdjust_Mapping->setObjectName(QString::fromUtf8("actionAdjust_Mapping"));
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -990,6 +997,8 @@ public:
         menuRegions->setObjectName(QString::fromUtf8("menuRegions"));
         menuModify = new QMenu(menuRegions);
         menuModify->setObjectName(QString::fromUtf8("menuModify"));
+        menuMove_Region = new QMenu(menuRegions);
+        menuMove_Region->setObjectName(QString::fromUtf8("menuMove_Region"));
         menuTracts = new QMenu(menuBar);
         menuTracts->setObjectName(QString::fromUtf8("menuTracts"));
         menuSave = new QMenu(menuTracts);
@@ -1406,27 +1415,27 @@ public:
         menuRegions->addAction(actionDeleteRegion);
         menuRegions->addAction(actionDeleteRegionAll);
         menuRegions->addSeparator();
+        menuRegions->addAction(menuMove_Region->menuAction());
         menuRegions->addAction(menuModify->menuAction());
         menuRegions->addAction(actionWhole_brain_seeding);
         menuRegions->addSeparator();
         menuRegions->addAction(actionRegion_statistics);
-        menuModify->addAction(actionShift_X);
-        menuModify->addAction(actionShift_X_2);
-        menuModify->addAction(actionShift_Y);
-        menuModify->addAction(actionShift_Y_2);
-        menuModify->addAction(actionShift_Z);
-        menuModify->addAction(actionShift_Z_2);
-        menuModify->addSeparator();
-        menuModify->addAction(actionFlip_X);
-        menuModify->addAction(actionFlip_Y);
-        menuModify->addAction(actionFlip_Z);
-        menuModify->addSeparator();
         menuModify->addAction(actionDilation);
         menuModify->addAction(actionErosion);
         menuModify->addAction(actionSmoothing);
         menuModify->addAction(actionNegate);
         menuModify->addAction(actionDefragment);
         menuModify->addAction(actionThreshold);
+        menuModify->addAction(actionContour);
+        menuMove_Region->addAction(actionShift_X);
+        menuMove_Region->addAction(actionShift_X_2);
+        menuMove_Region->addAction(actionShift_Y);
+        menuMove_Region->addAction(actionShift_Y_2);
+        menuMove_Region->addAction(actionShift_Z);
+        menuMove_Region->addAction(actionShift_Z_2);
+        menuMove_Region->addAction(actionFlip_X);
+        menuMove_Region->addAction(actionFlip_Y);
+        menuMove_Region->addAction(actionFlip_Z);
         menuTracts->addAction(actionOpenTract);
         menuTracts->addSeparator();
         menuTracts->addAction(menuSave_Tracts->menuAction());
@@ -1517,6 +1526,7 @@ public:
         menu_Slices->addSeparator();
         menu_Slices->addAction(actionLoad_mapping);
         menu_Slices->addAction(actionSave_mapping);
+        menu_Slices->addAction(actionAdjust_Mapping);
         menu_Slices->addSeparator();
         menuTools->addAction(actionLoad_tracking_parameters);
         menuTools->addAction(actionSave_tracking_parameters);
@@ -1694,6 +1704,8 @@ public:
         actionTrack_Report->setText(QApplication::translate("tracking_window", "Track Report", 0, QApplication::UnicodeUTF8));
         actionSave_Rotation_Video_in_High_Resolution->setText(QApplication::translate("tracking_window", "Save Rotation Video in High Resolution...", 0, QApplication::UnicodeUTF8));
         actionSave_Rotation_Video_in_Left_Right_3D->setText(QApplication::translate("tracking_window", "Save Rotation Video in Left/Right 3D...", 0, QApplication::UnicodeUTF8));
+        actionContour->setText(QApplication::translate("tracking_window", "Contour", 0, QApplication::UnicodeUTF8));
+        actionAdjust_Mapping->setText(QApplication::translate("tracking_window", "Adjust Mapping...", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)
@@ -1746,6 +1758,7 @@ public:
         renderingWidgetHolder->setWindowTitle(QApplication::translate("tracking_window", "Options", 0, QApplication::UnicodeUTF8));
         menuRegions->setTitle(QApplication::translate("tracking_window", "&Regions", 0, QApplication::UnicodeUTF8));
         menuModify->setTitle(QApplication::translate("tracking_window", "Modify Current Region", 0, QApplication::UnicodeUTF8));
+        menuMove_Region->setTitle(QApplication::translate("tracking_window", "Move Region", 0, QApplication::UnicodeUTF8));
         menuTracts->setTitle(QApplication::translate("tracking_window", "Tr&acts", 0, QApplication::UnicodeUTF8));
         menuSave->setTitle(QApplication::translate("tracking_window", "Save Along Tract Index", 0, QApplication::UnicodeUTF8));
         menuClustering->setTitle(QApplication::translate("tracking_window", "Clustering", 0, QApplication::UnicodeUTF8));

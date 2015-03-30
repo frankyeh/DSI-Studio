@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Registration</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -410,6 +410,13 @@
              </spacer>
             </item>
             <item>
+             <widget class="QLabel" name="label_13">
+              <property name="text">
+               <string>Move the following slide to view the overlap of two images</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <layout class="QHBoxLayout" name="horizontalLayout">
               <property name="spacing">
                <number>0</number>
@@ -421,6 +428,9 @@
                 </property>
                 <property name="pageStep">
                  <number>2</number>
+                </property>
+                <property name="value">
+                 <number>5</number>
                 </property>
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
