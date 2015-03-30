@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'reconstruction_window.ui'
 **
-** Created: Wed Mar 25 20:09:03 2015
+** Created: Mon Mar 30 15:06:45 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -100,6 +100,7 @@ public:
     QToolButton *smoothing;
     QToolButton *defragment;
     QToolButton *remove_background;
+    QPushButton *refine_contour;
     QSpacerItem *horizontalSpacer_2;
     QGraphicsView *graphicsView;
     QSlider *SlicePos;
@@ -219,7 +220,7 @@ public:
     {
         if (reconstruction_window->objectName().isEmpty())
             reconstruction_window->setObjectName(QString::fromUtf8("reconstruction_window"));
-        reconstruction_window->resize(597, 560);
+        reconstruction_window->resize(636, 560);
         QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         sizePolicy.setHorizontalStretch(0);
         sizePolicy.setVerticalStretch(0);
@@ -263,7 +264,7 @@ public:
         toolBox->setObjectName(QString::fromUtf8("toolBox"));
         source_page = new QWidget();
         source_page->setObjectName(QString::fromUtf8("source_page"));
-        source_page->setGeometry(QRect(0, 0, 597, 473));
+        source_page->setGeometry(QRect(0, 0, 636, 473));
         horizontalLayout_25 = new QHBoxLayout(source_page);
         horizontalLayout_25->setObjectName(QString::fromUtf8("horizontalLayout_25"));
         splitter = new QSplitter(source_page);
@@ -411,7 +412,7 @@ public:
         toolBox->addItem(source_page, QString::fromUtf8("Source Images"));
         page_3 = new QWidget();
         page_3->setObjectName(QString::fromUtf8("page_3"));
-        page_3->setGeometry(QRect(0, 0, 597, 473));
+        page_3->setGeometry(QRect(0, 0, 636, 473));
         gridLayout_2 = new QGridLayout(page_3);
         gridLayout_2->setObjectName(QString::fromUtf8("gridLayout_2"));
         verticalLayout_5 = new QVBoxLayout();
@@ -461,6 +462,17 @@ public:
 
         horizontalLayout->addWidget(remove_background);
 
+        refine_contour = new QPushButton(page_3);
+        refine_contour->setObjectName(QString::fromUtf8("refine_contour"));
+        QSizePolicy sizePolicy1(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        sizePolicy1.setHorizontalStretch(0);
+        sizePolicy1.setVerticalStretch(0);
+        sizePolicy1.setHeightForWidth(refine_contour->sizePolicy().hasHeightForWidth());
+        refine_contour->setSizePolicy(sizePolicy1);
+        refine_contour->setMaximumSize(QSize(16777215, 20));
+
+        horizontalLayout->addWidget(refine_contour);
+
         horizontalSpacer_2 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
         horizontalLayout->addItem(horizontalSpacer_2);
@@ -488,7 +500,7 @@ public:
         toolBox->addItem(page_3, QString::fromUtf8("Step 1: setup brain mask"));
         page = new QWidget();
         page->setObjectName(QString::fromUtf8("page"));
-        page->setGeometry(QRect(0, 0, 617, 487));
+        page->setGeometry(QRect(0, 0, 619, 487));
         page->setMinimumSize(QSize(0, 0));
         verticalLayout_2 = new QVBoxLayout(page);
         verticalLayout_2->setSpacing(3);
@@ -810,11 +822,11 @@ public:
 
         AdvancedWidget = new QWidget(page);
         AdvancedWidget->setObjectName(QString::fromUtf8("AdvancedWidget"));
-        QSizePolicy sizePolicy1(QSizePolicy::Preferred, QSizePolicy::Minimum);
-        sizePolicy1.setHorizontalStretch(0);
-        sizePolicy1.setVerticalStretch(0);
-        sizePolicy1.setHeightForWidth(AdvancedWidget->sizePolicy().hasHeightForWidth());
-        AdvancedWidget->setSizePolicy(sizePolicy1);
+        QSizePolicy sizePolicy2(QSizePolicy::Preferred, QSizePolicy::Minimum);
+        sizePolicy2.setHorizontalStretch(0);
+        sizePolicy2.setVerticalStretch(0);
+        sizePolicy2.setHeightForWidth(AdvancedWidget->sizePolicy().hasHeightForWidth());
+        AdvancedWidget->setSizePolicy(sizePolicy2);
         verticalLayout_7 = new QVBoxLayout(AdvancedWidget);
         verticalLayout_7->setSpacing(0);
         verticalLayout_7->setContentsMargins(0, 0, 0, 0);
@@ -1044,11 +1056,11 @@ public:
 
         widget = new QWidget(page);
         widget->setObjectName(QString::fromUtf8("widget"));
-        QSizePolicy sizePolicy2(QSizePolicy::Preferred, QSizePolicy::Maximum);
-        sizePolicy2.setHorizontalStretch(0);
-        sizePolicy2.setVerticalStretch(0);
-        sizePolicy2.setHeightForWidth(widget->sizePolicy().hasHeightForWidth());
-        widget->setSizePolicy(sizePolicy2);
+        QSizePolicy sizePolicy3(QSizePolicy::Preferred, QSizePolicy::Maximum);
+        sizePolicy3.setHorizontalStretch(0);
+        sizePolicy3.setVerticalStretch(0);
+        sizePolicy3.setHeightForWidth(widget->sizePolicy().hasHeightForWidth());
+        widget->setSizePolicy(sizePolicy3);
         horizontalLayout_20 = new QHBoxLayout(widget);
         horizontalLayout_20->setSpacing(0);
         horizontalLayout_20->setContentsMargins(0, 0, 0, 0);
@@ -1078,8 +1090,8 @@ public:
 
         doDTI = new QCommandLinkButton(widget);
         doDTI->setObjectName(QString::fromUtf8("doDTI"));
-        sizePolicy2.setHeightForWidth(doDTI->sizePolicy().hasHeightForWidth());
-        doDTI->setSizePolicy(sizePolicy2);
+        sizePolicy3.setHeightForWidth(doDTI->sizePolicy().hasHeightForWidth());
+        doDTI->setSizePolicy(sizePolicy3);
         doDTI->setMaximumSize(QSize(16777215, 40));
 
         horizontalLayout_20->addWidget(doDTI);
@@ -1094,7 +1106,7 @@ public:
         reconstruction_window->setCentralWidget(centralwidget);
         menuBar = new QMenuBar(reconstruction_window);
         menuBar->setObjectName(QString::fromUtf8("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 597, 21));
+        menuBar->setGeometry(QRect(0, 0, 636, 21));
         menuFile = new QMenu(menuBar);
         menuFile->setObjectName(QString::fromUtf8("menuFile"));
         menu_Edit = new QMenu(menuBar);
@@ -1118,7 +1130,7 @@ public:
 
         retranslateUi(reconstruction_window);
 
-        toolBox->setCurrentIndex(0);
+        toolBox->setCurrentIndex(1);
         toolBox->layout()->setSpacing(0);
         interpo_method->setCurrentIndex(2);
         ODFDim->setCurrentIndex(3);
@@ -1165,6 +1177,7 @@ public:
         smoothing->setText(QApplication::translate("reconstruction_window", "Smoothing", 0, QApplication::UnicodeUTF8));
         defragment->setText(QApplication::translate("reconstruction_window", "Defragment", 0, QApplication::UnicodeUTF8));
         remove_background->setText(QApplication::translate("reconstruction_window", "Remove background", 0, QApplication::UnicodeUTF8));
+        refine_contour->setText(QApplication::translate("reconstruction_window", "Refine contour", 0, QApplication::UnicodeUTF8));
         toolBox->setItemText(toolBox->indexOf(page_3), QApplication::translate("reconstruction_window", "Step 1: setup brain mask", 0, QApplication::UnicodeUTF8));
         groupBox->setTitle(QApplication::translate("reconstruction_window", "Reconstruction Method", 0, QApplication::UnicodeUTF8));
         DTI->setText(QApplication::translate("reconstruction_window", "DTI", 0, QApplication::UnicodeUTF8));

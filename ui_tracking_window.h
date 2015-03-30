@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Mon Mar 30 14:42:47 2015
+** Created: Mon Mar 30 17:27:55 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -209,6 +209,7 @@ public:
     QWidget *dockWidgetContents_2;
     QVBoxLayout *renderingLayout;
     QHBoxLayout *horizontalLayout_8;
+    QComboBox *rendering_efficiency;
     QMenuBar *menuBar;
     QMenu *menuRegions;
     QMenu *menuModify;
@@ -977,6 +978,11 @@ public:
         renderingLayout->setObjectName(QString::fromUtf8("renderingLayout"));
         horizontalLayout_8 = new QHBoxLayout();
         horizontalLayout_8->setObjectName(QString::fromUtf8("horizontalLayout_8"));
+        rendering_efficiency = new QComboBox(dockWidgetContents_2);
+        rendering_efficiency->setObjectName(QString::fromUtf8("rendering_efficiency"));
+
+        horizontalLayout_8->addWidget(rendering_efficiency);
+
 
         renderingLayout->addLayout(horizontalLayout_8);
 
@@ -1756,6 +1762,12 @@ public:
         region_down->setText(QApplication::translate("tracking_window", "...", 0, QApplication::UnicodeUTF8));
         addRegionFromAtlas->setText(QApplication::translate("tracking_window", "Atlas...", 0, QApplication::UnicodeUTF8));
         renderingWidgetHolder->setWindowTitle(QApplication::translate("tracking_window", "Options", 0, QApplication::UnicodeUTF8));
+        rendering_efficiency->clear();
+        rendering_efficiency->insertItems(0, QStringList()
+         << QApplication::translate("tracking_window", "Low Rendering Quality (Fast)", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("tracking_window", "Moderate Rendering Quality", 0, QApplication::UnicodeUTF8)
+         << QApplication::translate("tracking_window", "High Rendering Quality (Slow)", 0, QApplication::UnicodeUTF8)
+        );
         menuRegions->setTitle(QApplication::translate("tracking_window", "&Regions", 0, QApplication::UnicodeUTF8));
         menuModify->setTitle(QApplication::translate("tracking_window", "Modify Current Region", 0, QApplication::UnicodeUTF8));
         menuMove_Region->setTitle(QApplication::translate("tracking_window", "Move Region", 0, QApplication::UnicodeUTF8));
