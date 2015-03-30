@@ -110,7 +110,6 @@ void GLWidget::initializeGL()
     tract_alpha = -1; // ensure that make_track is called
     slice_contrast = -1;// ensure slices is rendered
     odf_position = 255;//ensure ODFs is renderred
-    paintGL();
     check_error(__FUNCTION__);
 }
 
@@ -328,27 +327,28 @@ void my_gluLookAt(GLdouble eyex, GLdouble eyey, GLdouble eyez, GLdouble centerx,
 
 void GLWidget::paintGL()
 {
-
-    //if(!cur_tracking_window.ui)
-    //    return;
-    // return to the original view matrix
-    /*
-    QPainter p(this);
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
     glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    */
+    glLoadIdentity();
+    //glDrawBuffer (GL_BACK);
 
+    int color = get_param("bkg_color");
+    glClearColor((float)((color & 0x00FF0000) >> 16)/255.0,
+                 (float)((color & 0x0000FF00) >> 8)/255.0,
+                 (float)(color & 0x000000FF)/255.0,1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    renderLR(0);
+    //renderLR(10);
+    //renderLR(-10);
+
+}
+void GLWidget::renderLR(int eye)
+{
+    if(eye > 0)
+        glDrawBuffer(GL_FRONT_RIGHT);
+    if(eye < 0)
+        glDrawBuffer(GL_FRONT_LEFT);
     {
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        //gluPerspective(get_param("fov_angle")*5+1,
-        //               (float)width/(float)height,1.0,1000.0);
-        // The following code is a fancy bit of math that is eqivilant to calling:
-        // gluPerspective( fieldOfView/2.0f, width/height , 0.1f, 255.0f )
-        // We do it this way simply to avoid requiring glu.h
         float p[11] = {0.35,0.4,0.45,0.5,0.6,0.8,1.0,1.5,2.0,12.0,50.0};
         GLfloat perspective = p[get_param("pespective")];
         GLfloat zNear = 1.0f;
@@ -360,16 +360,11 @@ void GLWidget::paintGL()
 
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-        my_gluLookAt(0,0,-200.0*perspective,0,0,0,0,-1.0,0);
+        my_gluLookAt(eye,0,-200.0*perspective,0,0,0,0,-1.0,0);
     }
 
     {
 
-        int color = get_param("bkg_color");
-        glClearColor((float)((color & 0x00FF0000) >> 16)/255.0,
-                     (float)((color & 0x0000FF00) >> 8)/255.0,
-                     (float)(color & 0x000000FF)/255.0,1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         if(scale_voxel != get_param("scale_voxel"))
         {
