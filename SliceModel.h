@@ -134,41 +134,10 @@ public:
         terminate();
     }
 
-    void terminate(void)
-    {
-        terminated = true;
-        if(thread.get())
-        {
-            thread->joinable();
-            thread->join();
-        }
-        ended = true;
-    }
-
-    void argmin(int reg_type)
-    {
-        terminated = false;
-        ended = false;
-        image::const_pointer_image<float,3> to = source_images;
-        image::reg::linear(from,to,arg_min,reg_type,image::reg::mutual_information(),terminated);
-        ended = true;
-    }
-    void update(void)
-    {
-        image::transformation_matrix<3,float> T(arg_min,from.geometry(),source_images.geometry());
-        invT.resize(16);
-        invT[15] = 1.0;
-        T.save_to_transform(invT.begin());
-        transform.resize(16);
-        transform[15] = 1.0;
-        image::matrix::inverse(invT.begin(),transform.begin(),image::dim<4, 4>());
-        update_roi();
-    }
-    void update_roi(void)
-    {
-        std::fill(texture_need_update,texture_need_update+3,1);
-        image::resample(source_images,roi_image,invT,image::linear);
-    }
+    void terminate(void);
+    void argmin(int reg_type);
+    void update(void);
+    void update_roi(void);
 
 public:
     image::basic_image<float, 3> source_images;
