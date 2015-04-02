@@ -876,7 +876,7 @@
      <addaction name="actionNegate"/>
      <addaction name="actionDefragment"/>
      <addaction name="actionThreshold"/>
-     <addaction name="actionContour"/>
+     <addaction name="actionSeparate"/>
     </widget>
     <widget class="QMenu" name="menuMove_Region">
      <property name="title">
@@ -2773,6 +2773,11 @@
   <action name="actionAdjust_Mapping">
    <property name="text">
     <string>Adjust Mapping...</string>
+   </property>
+  </action>
+  <action name="actionSeparate">
+   <property name="text">
+    <string>Separate</string>
    </property>
   </action>
  </widget>

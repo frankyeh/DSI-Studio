@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'vbcdialog.ui'
 **
-** Created: Wed Mar 25 20:09:03 2015
+** Created: Wed Apr 1 23:34:58 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -42,6 +42,7 @@ public:
     QPushButton *group1delete;
     QToolButton *moveup;
     QToolButton *movedown;
+    QPushButton *sort;
     QToolButton *open_list1;
     QToolButton *save_list1;
     QToolButton *open_dir1;
@@ -114,6 +115,17 @@ public:
         movedown->setMaximumSize(QSize(16777215, 26));
 
         horizontalLayout_2->addWidget(movedown);
+
+        sort = new QPushButton(method_group);
+        sort->setObjectName(QString::fromUtf8("sort"));
+        QSizePolicy sizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        sizePolicy.setHorizontalStretch(0);
+        sizePolicy.setVerticalStretch(0);
+        sizePolicy.setHeightForWidth(sort->sizePolicy().hasHeightForWidth());
+        sort->setSizePolicy(sizePolicy);
+        sort->setMaximumSize(QSize(50, 26));
+
+        horizontalLayout_2->addWidget(sort);
 
         open_list1 = new QToolButton(method_group);
         open_list1->setObjectName(QString::fromUtf8("open_list1"));
@@ -228,6 +240,7 @@ public:
         group1delete->setText(QString());
         moveup->setText(QApplication::translate("VBCDialog", "Up", 0, QApplication::UnicodeUTF8));
         movedown->setText(QApplication::translate("VBCDialog", "Down", 0, QApplication::UnicodeUTF8));
+        sort->setText(QApplication::translate("VBCDialog", "Sort", 0, QApplication::UnicodeUTF8));
         open_list1->setText(QApplication::translate("VBCDialog", "Open List", 0, QApplication::UnicodeUTF8));
         save_list1->setText(QApplication::translate("VBCDialog", "Save List", 0, QApplication::UnicodeUTF8));
         open_dir1->setText(QApplication::translate("VBCDialog", "Search in Directory...", 0, QApplication::UnicodeUTF8));

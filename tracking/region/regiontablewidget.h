@@ -91,7 +91,7 @@ public slots:
     void action_shiftz(void){do_action(13);}
     void action_shiftnz(void){do_action(14);}
     void action_threshold(void){do_action(8);}
-    void action_contour(void){do_action(15);}
+    void action_separate(void){do_action(15);}
 };
 
 #endif // REGIONTABLEWIDGET_H

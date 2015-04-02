@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'tracking_window.ui'
 **
-** Created: Mon Mar 30 17:27:55 2015
+** Created: Wed Apr 1 23:34:58 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -156,6 +156,7 @@ public:
     QAction *actionSave_Rotation_Video_in_Left_Right_3D;
     QAction *actionContour;
     QAction *actionAdjust_Mapping;
+    QAction *actionSeparate;
     QWidget *centralwidget;
     QVBoxLayout *centralLayout;
     QWidget *main_widget;
@@ -596,6 +597,8 @@ public:
         actionContour->setObjectName(QString::fromUtf8("actionContour"));
         actionAdjust_Mapping = new QAction(tracking_window);
         actionAdjust_Mapping->setObjectName(QString::fromUtf8("actionAdjust_Mapping"));
+        actionSeparate = new QAction(tracking_window);
+        actionSeparate->setObjectName(QString::fromUtf8("actionSeparate"));
         centralwidget = new QWidget(tracking_window);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         sizePolicy.setHeightForWidth(centralwidget->sizePolicy().hasHeightForWidth());
@@ -1432,7 +1435,7 @@ public:
         menuModify->addAction(actionNegate);
         menuModify->addAction(actionDefragment);
         menuModify->addAction(actionThreshold);
-        menuModify->addAction(actionContour);
+        menuModify->addAction(actionSeparate);
         menuMove_Region->addAction(actionShift_X);
         menuMove_Region->addAction(actionShift_X_2);
         menuMove_Region->addAction(actionShift_Y);
@@ -1712,6 +1715,7 @@ public:
         actionSave_Rotation_Video_in_Left_Right_3D->setText(QApplication::translate("tracking_window", "Save Rotation Video in Left/Right 3D...", 0, QApplication::UnicodeUTF8));
         actionContour->setText(QApplication::translate("tracking_window", "Refine", 0, QApplication::UnicodeUTF8));
         actionAdjust_Mapping->setText(QApplication::translate("tracking_window", "Adjust Mapping...", 0, QApplication::UnicodeUTF8));
+        actionSeparate->setText(QApplication::translate("tracking_window", "Separate", 0, QApplication::UnicodeUTF8));
         SliceModality->clear();
         SliceModality->insertItems(0, QStringList()
          << QApplication::translate("tracking_window", "Diffusion", 0, QApplication::UnicodeUTF8)

@@ -233,7 +233,7 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         connect(ui->actionDilation,SIGNAL(triggered()),regionWidget,SLOT(action_dilation()));
         connect(ui->actionNegate,SIGNAL(triggered()),regionWidget,SLOT(action_negate()));
         connect(ui->actionDefragment,SIGNAL(triggered()),regionWidget,SLOT(action_defragment()));
-        connect(ui->actionContour,SIGNAL(triggered()),regionWidget,SLOT(action_contour()));
+        connect(ui->actionSeparate,SIGNAL(triggered()),regionWidget,SLOT(action_separate()));
 
         connect(ui->actionMerge_All_2,SIGNAL(triggered()),regionWidget,SLOT(merge_all()));
 

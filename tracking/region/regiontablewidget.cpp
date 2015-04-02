@@ -894,15 +894,12 @@ void RegionTableWidget::do_action(int id)
         break;
     case 8: //
         {
+            cur_region.SaveToBuffer(mask, 1);
             float threshold = cur_tracking_window["fa_threshold"].toFloat();
-            for(int index = 0;index < cur_region.size();)
-            {
-                image::vector<3,short> point(cur_region.get()[index]);
-                if(threshold > ((const FibSliceModel&)cur_tracking_window.slice).source_images.at(point[0],point[1],point[2]))
-                    cur_region.erase(index);
-                else
-                    ++index;
-            }
+            for(unsigned int index = 0;index < mask.size();++index)
+                if(mask[index] && threshold > cur_tracking_window.slice.source_images[index])
+                    mask[index] = 0;
+            cur_region.LoadFromBuffer(mask);
         }
         break;
     case 9: // shift
@@ -926,19 +923,26 @@ void RegionTableWidget::do_action(int id)
     case 15:
         {
             cur_region.SaveToBuffer(mask, 1);
-            if(*std::max_element(mask.begin(),mask.end()) == 0)
-                break;
-            unsigned int view_index =
-                cur_tracking_window.handle->get_name_index(cur_tracking_window.ui->sliceViewBox->currentText().toLocal8Bit().begin());
-            if(view_index == cur_tracking_window.handle->view_item.size())
-                view_index = 0;
+            QString name = item(currentRow(),0)->text();
+            image::basic_image<unsigned int,3> labels;
+            std::vector<std::vector<unsigned int> > r;
+            image::morphology::connected_component_labeling(mask,labels,r);
 
-
-            image::basic_image<unsigned char,3> new_mask;
-            image::segmentation::graph_cut(cur_tracking_window.handle->view_item[view_index].image_data,
-                                           new_mask,0.5,1000);
-            image::segmentation::refine_contour(new_mask,mask);
-            cur_region.LoadFromBuffer(mask);
+            for(unsigned int index = 0,total_count = 0;index < r.size() && total_count < 10;++index)
+                if(!r[index].empty())
+                {
+                    std::fill(mask.begin(),mask.end(),0);
+                    for(unsigned int i = 0;i < r[index].size();++i)
+                        mask[r[index][i]] = 1;
+                    {
+                        ROIRegion region(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size);
+                        region.LoadFromBuffer(mask);
+                        add_region(name + "_"+QString::number(total_count+1),
+                                   roi_id,region.show_region.color.color);
+                        regions.back().assign(region.get());
+                    }
+                    ++total_count;
+                }
             break;
         }
         }
