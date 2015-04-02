@@ -432,6 +432,10 @@ public:
             std::copy(r2_values,r2_values+num_subjects,R2.begin());
         }
 
+        calculate_si2vi();
+    }
+    void calculate_si2vi(void)
+    {
         vi2si.resize(dim.size());
         for(unsigned int index = 0;index < dim.size();++index)
         {
@@ -442,6 +446,7 @@ public:
             }
         }
     }
+
     void remove_subject(unsigned int index)
     {
         if(num_subjects <= 1)
@@ -718,6 +723,13 @@ public:
         if(!fib.add_data(mat_reader))
         {
             error_msg = fib.error_msg;
+            return false;
+        }
+
+        if(fib.fa.empty())
+        {
+            error_msg = "Invalid fib format:";
+            error_msg += file_name;
             return false;
         }
         dim = fib.dim;

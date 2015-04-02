@@ -19,6 +19,7 @@ bool vbc_database::create_database(const char* template_name)
     if(!handle->load_from_file(template_name))
         return false;
     fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dim,handle->fib.fa[0]));
+    handle->calculate_si2vi();
     return true;
 }
 bool vbc_database::load_database(const char* database_name)
