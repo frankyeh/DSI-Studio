@@ -787,7 +787,7 @@ void vbc_dialog::on_run_clicked()
         vbc->model->study_feature = ui->foi->currentIndex()+1;
         out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted using a multiple regression model considering ";
         for(unsigned int index = 0;index < (int)ui->foi->count()-1;++index)
-            out << ui->foi->itemText(index).toLower().toLocal8Bit().begin() << ", ";
+            out << ui->foi->itemText(index).toLower().toLocal8Bit().begin() << (ui->foi->count() > 2 ? ", " : " ");
         out << "and " << ui->foi->itemText(ui->foi->count()-1).toLower().toLocal8Bit().begin() << ".";
         out << " A t-score threshold of " << ui->t_threshold->value()
             << " was used to select fiber directions correlated with "
@@ -833,7 +833,7 @@ void vbc_dialog::on_run_clicked()
     out << " Tracks with length greater than " <<
             ui->length_threshold->value() << " mm were collected.";
     out << " The seeding density was " <<
-            ui->seeding_density->value() << " seed(s) per mm^3.";
+            ui->seeding_density->value() << " seed(s) per mm3.";
 
     out << " To estimate the false discovery rate, a total of "
         << ui->mr_permutation->value()

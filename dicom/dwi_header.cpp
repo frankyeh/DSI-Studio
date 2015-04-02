@@ -16,7 +16,10 @@ void get_report_from_dicom(const image::io::dicom& header,std::string& report)
     make.erase(std::remove(make.begin(),make.end(),' '),make.end());
     std::ostringstream out;
     out << " The diffusion images were acquired on a " << manu.c_str() << " " << make.c_str()
-        << " scanner using a " << seq.c_str() << " sequence."
+        << " scanner using a ";
+    if(seq.find("ep2d") != std::string::npos)
+        out << "2D EPI ";
+    out << "diffusion sequence (" << seq.c_str() << ")."
         << " TE=" << header.get_float(0x0018,0x0081) << " ms, and TR=" << header.get_float(0x0018,0x0080)  << " ms.";
     report += out.str();
 }
@@ -404,7 +407,12 @@ void get_report(const std::vector<float>& bvalues,image::vector<3> vs,std::strin
     else
         if(shell.size() == 1)
         {
-            out << " A single-shell diffusion scheme was used, and a total of " << bvalues.size()-(bvalues.front() == 0 ? 1:0)
+            unsigned int dir_num = bvalues.size()-(bvalues.front() == 0 ? 1:0);
+            if(dir_num < 100)
+                out << " A DTI diffusion scheme was used, and a total of ";
+            else
+                out << " A HARDI scheme was used, and a total of ";
+            out << dir_num
                 << " diffusion sampling directions were acquired."
                 << " The b-value was " << bvalues.back() << " s/mm2.";
         }
