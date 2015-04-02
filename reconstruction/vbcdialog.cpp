@@ -101,6 +101,29 @@ void VBCDialog::on_movedown_clicked()
                                              QItemSelectionModel::Select);
 }
 
+void VBCDialog::on_sort_clicked()
+{
+    if(group.empty())
+        return;
+    if(QFileInfo(group[0]).baseName().count('_') == 2)
+    {
+        std::map<QString,QString> sort_map;
+        for(unsigned int index = 0;index < group.size();++index)
+        {
+            QString str = QFileInfo(group[index]).baseName();
+            int pos = str.lastIndexOf('_')+1;
+            sort_map[pos ? str.right(str.length()-pos):str] = group[index];
+        }
+        std::vector<std::pair<QString,QString> > sorted_groups(sort_map.begin(),sort_map.end());
+        for(unsigned int index = 0;index < sorted_groups.size();++index)
+            group[index] = sorted_groups[index].second;
+    }
+    else
+        group.sort();
+    update_list();
+}
+
+
 void VBCDialog::on_open_list1_clicked()
 {
     QString filename = QFileDialog::getOpenFileName(
@@ -234,5 +257,6 @@ void VBCDialog::on_create_data_base_clicked()
 
 
 }
+
 
 

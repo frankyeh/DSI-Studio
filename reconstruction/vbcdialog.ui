@@ -104,6 +104,25 @@
            </widget>
           </item>
           <item>
+           <widget class="QPushButton" name="sort">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>26</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Sort</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QToolButton" name="open_list1">
             <property name="maximumSize">
              <size>

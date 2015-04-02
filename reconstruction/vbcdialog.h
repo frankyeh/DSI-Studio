@@ -35,6 +35,7 @@ private slots:
     void on_select_output_file_clicked();
     void on_create_data_base_clicked();
     void on_open_skeleton_clicked();
+    void on_sort_clicked();
 };
 
 #endif // VBCDIALOG_H
