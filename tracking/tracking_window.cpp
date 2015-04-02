@@ -378,6 +378,7 @@ bool tracking_window::can_convert(void)
         mi3.reset(new manual_alignment(this,from,fa_template_imp.I,handle->vs));
         QMessageBox::information(this,"Running","The background registration started. You may need to wait until registration stablizes.",0);
     }
+    mi3->update_affine();
     return true;
 }
 
@@ -429,7 +430,8 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     status = QString("(%1,%2,%3) ").arg(std::floor(pos[0]*10.0+0.5)/10.0)
             .arg(std::floor(pos[1]*10.0+0.5)/10.0)
             .arg(std::floor(pos[2]*10.0+0.5)/10.0);
-
+    if(mi3.get() && mi3->data.progress != 2)
+        status += "Running background registration... ";
     if(!handle->trans_to_mni.empty() || mi3.get())
     {
         image::vector<3,float> mni(pos);

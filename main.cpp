@@ -132,9 +132,6 @@ int main(int ac, char *av[])
     #ifdef Q_WS_WIN
     QApplication::setStyle("cleanlooks");
     #endif
-    #ifdef Q_WS_MACX
-    QApplication::setStyle("macintosh");
-    #endif
 
     // load template
     if(!fa_template_imp.load_from_file(get_fa_template_path().c_str()))
