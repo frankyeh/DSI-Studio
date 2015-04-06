@@ -458,6 +458,9 @@
              </property>
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout_10">
+               <property name="spacing">
+                <number>0</number>
+               </property>
                <item>
                 <widget class="QToolButton" name="open_mr_files">
                  <property name="maximumSize">
@@ -501,6 +504,12 @@
                </item>
                <item>
                 <widget class="QToolButton" name="remove_subject2">
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>22</height>
+                  </size>
+                 </property>
                  <property name="text">
                   <string>Remove subject with a specific value</string>
                  </property>
@@ -674,14 +683,17 @@
                    <height>16777215</height>
                   </size>
                  </property>
+                 <property name="minimum">
+                  <double>1.000000000000000</double>
+                 </property>
                  <property name="maximum">
-                  <double>5.000000000000000</double>
+                  <double>100.000000000000000</double>
                  </property>
                  <property name="singleStep">
                   <double>1.000000000000000</double>
                  </property>
                  <property name="value">
-                  <double>2.000000000000000</double>
+                  <double>5.000000000000000</double>
                  </property>
                 </widget>
                </item>
@@ -720,6 +732,13 @@
                  </property>
                  <property name="text">
                   <string>%</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="range_label">
+                 <property name="text">
+                  <string>for</string>
                  </property>
                 </widget>
                </item>
@@ -896,7 +915,7 @@
                <item>
                 <widget class="QLabel" name="label_4">
                  <property name="text">
-                  <string>Permutation count.</string>
+                  <string>Permutation count</string>
                  </property>
                 </widget>
                </item>
@@ -907,6 +926,9 @@
                    <width>75</width>
                    <height>16777215</height>
                   </size>
+                 </property>
+                 <property name="toolTip">
+                  <string> Higher value lead to more accurate FDR estimation but will need more computation time</string>
                  </property>
                  <property name="minimum">
                   <number>50</number>
@@ -929,26 +951,32 @@
                <item>
                 <widget class="QLabel" name="label_3">
                  <property name="text">
-                  <string>Minimum track length (mm)</string>
+                  <string>False discovery rate</string>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QSpinBox" name="length_threshold">
+                <widget class="QDoubleSpinBox" name="fdr_control">
                  <property name="maximumSize">
                   <size>
                    <width>75</width>
                    <height>16777215</height>
                   </size>
                  </property>
+                 <property name="decimals">
+                  <number>3</number>
+                 </property>
                  <property name="minimum">
-                  <number>10</number>
+                  <double>0.001000000000000</double>
                  </property>
                  <property name="maximum">
-                  <number>200</number>
+                  <double>0.500000000000000</double>
+                 </property>
+                 <property name="singleStep">
+                  <double>0.010000000000000</double>
                  </property>
                  <property name="value">
-                  <number>40</number>
+                  <double>0.050000000000000</double>
                  </property>
                 </widget>
                </item>

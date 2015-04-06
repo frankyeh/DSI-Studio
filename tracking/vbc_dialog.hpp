@@ -92,6 +92,7 @@ private slots:
 
 public slots:
     void calculate_FDR(void);
+    void setup_threshold(void);
 private:
     Ui::vbc_dialog *ui;
 };

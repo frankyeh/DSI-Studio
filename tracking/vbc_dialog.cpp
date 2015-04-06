@@ -90,6 +90,9 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
     connect(ui->AxiSlider,SIGNAL(valueChanged(int)),this,SLOT(on_subject_list_itemSelectionChanged()));
     connect(ui->zoom,SIGNAL(valueChanged(double)),this,SLOT(on_subject_list_itemSelectionChanged()));
 
+    connect(ui->foi,SIGNAL(currentIndexChanged(int)),this,SLOT(setup_threshold()));
+    connect(ui->normalize_qa,SIGNAL(toggled(bool)),this,SLOT(setup_threshold()));
+
     ui->subject_list->selectRow(0);
     ui->toolBox->setCurrentIndex(1);
     ui->foi_widget->hide();
@@ -428,6 +431,7 @@ void vbc_dialog::on_open_mr_files_clicked()
             for(unsigned int col = 1;col < ui->subject_demo->columnCount();++col,++index)
                 ui->subject_demo->setItem(row,col,new QTableWidgetItem(QString::number(model->X[index])));
         }
+
     }
     if(ui->rb_group_difference->isChecked())
     {
@@ -527,7 +531,38 @@ void vbc_dialog::on_open_mr_files_clicked()
         ui->run->setEnabled(false);
         return;
     }
+
     ui->run->setEnabled(true);
+    setup_threshold();
+}
+
+void vbc_dialog::setup_threshold(void)
+{
+    if(!ui->run->isEnabled())
+        return;
+    result_fib.reset(new fib_data);
+    stat_model info;
+    std::vector<unsigned int> permu;
+    if(ui->rb_multiple_regression->isChecked())
+        model->study_feature = ui->foi->currentIndex()+1;
+    info.resample(*(model.get()),permu,false,false);
+    vbc->normalize_qa = ui->normalize_qa->isChecked();
+    vbc->calculate_spm(*result_fib.get(),info,permu);
+    std::vector<float> values;
+    values.reserve(vbc->handle->dim.size()/8);
+    for(unsigned int index = 0;index < vbc->handle->dim.size();++index)
+        if(vbc->handle->fib.fa[0][index] > vbc->fiber_threshold)
+            values.push_back(result_fib->lesser_ptr[0][index] == 0 ? result_fib->greater_ptr[0][index] :  result_fib->lesser_ptr[0][index]);
+    if(ui->rb_multiple_regression->isChecked())
+    {
+        ui->t_threshold->setValue(image::segmentation::otsu_threshold(values)*100);
+        ui->range_label->setText(QString("for %1 from %2 to %3").
+                                 arg(ui->foi->currentText()).
+                                 arg(model->X_min[model->study_feature]).
+                                 arg(model->X_max[model->study_feature]));
+    }
+    if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
+        ui->percentage_dif->setValue(image::segmentation::otsu_threshold(values)*100);
 }
 
 void vbc_dialog::on_rb_individual_analysis_clicked()
@@ -543,6 +578,7 @@ void vbc_dialog::on_rb_individual_analysis_clicked()
     ui->percentage_dif->hide();
     ui->percentage_label->show();
     ui->threshold_label->setText("Percentile");
+    ui->range_label->hide();
     ui->explaination->setText("25~50%:physiological difference, 5~25%:psychiatric diseases, 0~5%: neurological diseases");
     ui->remove_subject2->hide();
 }
@@ -559,7 +595,8 @@ void vbc_dialog::on_rb_group_difference_clicked()
     ui->percentage_dif->show();
     ui->percentage_label->show();
     ui->threshold_label->setText("Percentage difference");
-    ui->explaination->setText("0~10%:physiological difference, 10~40%:psychiatric diseases, 40%~100%: neurological diseases");
+    ui->range_label->hide();
+    ui->explaination->setText("0~30%:physiological difference, 30~50%:psychiatric diseases,  > 50%: neurological diseases");
     ui->remove_subject2->hide();
 }
 
@@ -575,9 +612,10 @@ void vbc_dialog::on_rb_multiple_regression_clicked()
     ui->percentile->hide();
     ui->t_threshold->show();
     ui->percentage_dif->hide();
-    ui->percentage_label->hide();
-    ui->threshold_label->setText("T threshold");
-    ui->explaination->setText("<1.5:physiological difference, 1.5~2.5:psychiatric diseases, >2.5: neurological diseases");
+    ui->percentage_label->show();
+    ui->threshold_label->setText("Percentage difference");
+    ui->range_label->show();
+    ui->explaination->setText("0~30%:physiological difference, 30~50%:psychiatric diseases,  > 50%: neurological diseases");
     ui->remove_subject2->show();
 }
 
@@ -593,7 +631,8 @@ void vbc_dialog::on_rb_paired_difference_clicked()
     ui->percentage_dif->show();
     ui->percentage_label->show();
     ui->threshold_label->setText("Percentage difference");
-    ui->explaination->setText("0~10%:physiological difference, 10~40%:psychiatric diseases, 40%~100%: neurological diseases");
+    ui->range_label->hide();
+    ui->explaination->setText("0~30%:physiological difference, 30~50%:psychiatric diseases,  > 50%: neurological diseases");
     ui->remove_subject2->hide();
 }
 
@@ -611,51 +650,45 @@ void vbc_dialog::calculate_FDR(void)
     if(ui->rb_individual_analysis->isChecked())
     {
         std::ostringstream out;
-        if(vbc->fdr_greater[vbc->length_threshold] > 0.5)
-            out << " The analysis results showed no track with significant increase in anisotropy.";
+        if(vbc->length_threshold_greater == 0)
+            out << " No track showed significant increase in anisotropy.";
         else
-            out << " The analysis results showed tracks with increased anisotropy with an FDR of "
-                << vbc->fdr_greater[vbc->length_threshold] << ".";
+            out << " The analysis results found tracks with significant increased anisotropy at length threshold of " << vbc->length_threshold_greater << " mm.";
 
-        if(vbc->fdr_lesser[vbc->length_threshold] > 0.5)
-            out << " The analysis results showed no track with significant decrease in anisotropy.";
+        if(vbc->length_threshold_lesser == 0)
+            out << " No track showed significant decrease in anisotropy.";
         else
-            out << " The analysis results showed tracks with decreased anisotropy with an FDR of "
-                << vbc->fdr_lesser[vbc->length_threshold] << ".";
+            out << " The analysis results found tracks with significant decreased anisotropy at length threshold of " << vbc->length_threshold_lesser << " mm.";
         report += out.str().c_str();
     }
     if(ui->rb_multiple_regression->isChecked())
     {
         std::ostringstream out;
-        if(vbc->fdr_greater[vbc->length_threshold] > 0.5)
-            out << " The analysis results showed that there is no track with significantly increased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
+        if(vbc->length_threshold_greater == 0)
+            out << " No track showed significantly increased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
         else
-            out << " The analysis results showed tracks with increased anisotropy related to "
-                << ui->foi->currentText().toLocal8Bit().begin() << " with an FDR of "
-                << vbc->fdr_greater[vbc->length_threshold] << ".";
+            out << " The analysis results found tracks with increased anisotropy related to "
+                << ui->foi->currentText().toLocal8Bit().begin() << " at length threshold of " << vbc->length_threshold_greater << " mm.";
 
-        if(vbc->fdr_lesser[vbc->length_threshold] > 0.5)
-            out << " The analysis results showed that there is no track with significantly decreased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
+        if(vbc->length_threshold_lesser == 0)
+            out << " No track showed significantly decreased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
         else
-            out << " The analysis results showed tracks with decreased anisotropy related to "
-                << ui->foi->currentText().toLocal8Bit().begin() << " with an FDR of "
-                << vbc->fdr_lesser[vbc->length_threshold] << ".";
+            out << " The analysis results found tracks with decreased anisotropy related to "
+                << ui->foi->currentText().toLocal8Bit().begin() << " at length threshold of " << vbc->length_threshold_lesser << " mm.";
         report += out.str().c_str();
     }
     if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
     {
         std::ostringstream out;
-        if(vbc->fdr_greater[vbc->length_threshold] > 0.5)
-            out << " The analysis results showed that there is no track in group 0 with significantly increased anisotropy.";
+        if(vbc->length_threshold_greater == 0)
+            out << " No track in group 0 showed significantly increased anisotropy.";
         else
-            out << " The analysis results showed tracks with increased anisotropy in group 0 with an FDR of "
-                << vbc->fdr_greater[vbc->length_threshold] << ".";
+            out << " The analysis results found tracks with significant increased anisotropy in group 0 at length threshold of " << vbc->length_threshold_greater << " mm.";
 
-        if(vbc->fdr_lesser[vbc->length_threshold] > 0.5)
-            out << " The analysis results showed that there is no track in group 1 with significantly increased anisotropy.";
+        if(vbc->length_threshold_lesser == 0)
+            out << "No track in group 1 showed significantly increased anisotropy.";
         else
-            out << " The analysis results showed tracks with increased anisotropy in group 1 with an FDR of "
-                << vbc->fdr_lesser[vbc->length_threshold] << ".";
+            out << " The analysis results found tracks with significant increased anisotropy in group 1 at length threshold of " << vbc->length_threshold_lesser << " mm.";
         report += out.str().c_str();
     }
 
@@ -723,22 +756,22 @@ void vbc_dialog::on_run_clicked()
     ui->show_result->hide();
     ui->run->setText("Stop");
     ui->span_to->setValue(80);
-    std::ostringstream out;
     vbc->permutation_count = ui->mr_permutation->value();
-    vbc->length_threshold = ui->length_threshold->value();
     vbc->seeding_density = ui->seeding_density->value();
     vbc->trk_file_names = file_names;
     vbc->normalize_qa = ui->normalize_qa->isChecked();
+    vbc->fdr_threshold = ui->fdr_control->value();
     vbc->model.reset(new stat_model);
     *(vbc->model.get()) = *(model.get());
     vbc->individual_data.clear();
 
+    std::ostringstream out;
     std::string parameter_str;
     {
         std::ostringstream out;
         if(ui->normalize_qa->isChecked())
             out << ".nqa";
-        out << ".l" << ui->length_threshold->value() << ".s" << ui->seeding_density->value() << ".p" << ui->mr_permutation->value();
+        out << ".fdr" << ui->fdr_control->value() << ".s" << ui->seeding_density->value() << ".p" << ui->mr_permutation->value();
         parameter_str = out.str();
     }
 
@@ -783,20 +816,20 @@ void vbc_dialog::on_run_clicked()
     }
     if(ui->rb_multiple_regression->isChecked())
     {
-        vbc->tracking_threshold = ui->t_threshold->value();
+        vbc->tracking_threshold = ui->t_threshold->value()*0.01; // percentage
         vbc->model->study_feature = ui->foi->currentIndex()+1;
         out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted using a multiple regression model considering ";
         for(unsigned int index = 0;index < (int)ui->foi->count()-1;++index)
             out << ui->foi->itemText(index).toLower().toLocal8Bit().begin() << (ui->foi->count() > 2 ? ", " : " ");
         out << "and " << ui->foi->itemText(ui->foi->count()-1).toLower().toLocal8Bit().begin() << ".";
-        out << " A t-score threshold of " << ui->t_threshold->value()
-            << " was used to select fiber directions correlated with "
+        out << " A percentage threshold of " << ui->t_threshold->value()*100.0
+            << " % was used to select fiber directions correlated with "
             << ui->foi->currentText().toLower().toLocal8Bit().begin() << ".";
         vbc->trk_file_names[0] += parameter_str;
         vbc->trk_file_names[0] += ".";
         vbc->trk_file_names[0] += ui->foi->currentText().toLower().toLocal8Bit().begin();
         vbc->trk_file_names[0] += ".t";
-        vbc->trk_file_names[0] += QString::number(ui->t_threshold->value()).toLocal8Bit().begin();
+        vbc->trk_file_names[0] += QString::number(ui->t_threshold->value()*100.0).toLocal8Bit().begin();
     }
 
     out << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was conducted to connect these fiber directions";
@@ -830,8 +863,8 @@ void vbc_dialog::on_run_clicked()
     }
     else
         out << " in whole brain regions.";
-    out << " Tracks with length greater than " <<
-            ui->length_threshold->value() << " mm were collected.";
+    out << " False discovery rate was controled at " <<
+            ui->fdr_control->value() << ".";
     out << " The seeding density was " <<
             ui->seeding_density->value() << " seed(s) per mm3.";
 
@@ -1175,3 +1208,5 @@ void vbc_dialog::on_save_R2_clicked()
     std::ofstream out(filename.toLocal8Bit().begin());
     std::copy(vbc->handle->R2.begin(),vbc->handle->R2.end(),std::ostream_iterator<float>(out,"\n"));
 }
+
+

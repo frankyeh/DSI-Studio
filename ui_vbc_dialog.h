@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'vbc_dialog.ui'
 **
-** Created: Wed Apr 1 23:34:58 2015
+** Created: Sat Apr 4 14:40:52 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -151,7 +151,7 @@ public:
     QSpinBox *mr_permutation;
     QHBoxLayout *horizontalLayout;
     QLabel *label_3;
-    QSpinBox *length_threshold;
+    QDoubleSpinBox *fdr_control;
     QCheckBox *normalize_qa;
     QSpacerItem *verticalSpacer_2;
     QWidget *page_3;
@@ -493,6 +493,7 @@ public:
         verticalLayout_17->setContentsMargins(0, 0, 0, 0);
         verticalLayout_17->setObjectName(QString::fromUtf8("verticalLayout_17"));
         horizontalLayout_10 = new QHBoxLayout();
+        horizontalLayout_10->setSpacing(0);
         horizontalLayout_10->setObjectName(QString::fromUtf8("horizontalLayout_10"));
         open_mr_files = new QToolButton(multiple_regression_demo);
         open_mr_files->setObjectName(QString::fromUtf8("open_mr_files"));
@@ -515,6 +516,7 @@ public:
 
         remove_subject2 = new QToolButton(multiple_regression_demo);
         remove_subject2->setObjectName(QString::fromUtf8("remove_subject2"));
+        remove_subject2->setMaximumSize(QSize(16777215, 22));
         remove_subject2->setIcon(icon2);
         remove_subject2->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 
@@ -609,9 +611,10 @@ public:
         t_threshold = new QDoubleSpinBox(groupBox);
         t_threshold->setObjectName(QString::fromUtf8("t_threshold"));
         t_threshold->setMaximumSize(QSize(50, 16777215));
-        t_threshold->setMaximum(5);
+        t_threshold->setMinimum(1);
+        t_threshold->setMaximum(100);
         t_threshold->setSingleStep(1);
-        t_threshold->setValue(2);
+        t_threshold->setValue(5);
 
         percentile_rank_layout->addWidget(t_threshold);
 
@@ -767,14 +770,16 @@ public:
 
         horizontalLayout->addWidget(label_3);
 
-        length_threshold = new QSpinBox(advanced_options_box);
-        length_threshold->setObjectName(QString::fromUtf8("length_threshold"));
-        length_threshold->setMaximumSize(QSize(75, 16777215));
-        length_threshold->setMinimum(10);
-        length_threshold->setMaximum(200);
-        length_threshold->setValue(40);
+        fdr_control = new QDoubleSpinBox(advanced_options_box);
+        fdr_control->setObjectName(QString::fromUtf8("fdr_control"));
+        fdr_control->setMaximumSize(QSize(75, 16777215));
+        fdr_control->setDecimals(3);
+        fdr_control->setMinimum(0.001);
+        fdr_control->setMaximum(0.5);
+        fdr_control->setSingleStep(0.01);
+        fdr_control->setValue(0.05);
 
-        horizontalLayout->addWidget(length_threshold);
+        horizontalLayout->addWidget(fdr_control);
 
 
         verticalLayout_18->addLayout(horizontalLayout);
@@ -994,7 +999,7 @@ public:
 
         toolBox->setCurrentIndex(2);
         toolBox->layout()->setSpacing(0);
-        tabWidget_2->setCurrentIndex(0);
+        tabWidget_2->setCurrentIndex(1);
 
 
         QMetaObject::connectSlotsByName(vbc_dialog);
@@ -1055,8 +1060,11 @@ public:
         );
         advanced_options_box->setTitle(QApplication::translate("vbc_dialog", "Advanced options", 0, QApplication::UnicodeUTF8));
         label_7->setText(QApplication::translate("vbc_dialog", "Seeding density (seeds/mm^3)", 0, QApplication::UnicodeUTF8));
-        label_4->setText(QApplication::translate("vbc_dialog", "Permutation count.", 0, QApplication::UnicodeUTF8));
-        label_3->setText(QApplication::translate("vbc_dialog", "Minimum track length (mm)", 0, QApplication::UnicodeUTF8));
+        label_4->setText(QApplication::translate("vbc_dialog", "Permutation count", 0, QApplication::UnicodeUTF8));
+#ifndef QT_NO_TOOLTIP
+        mr_permutation->setToolTip(QApplication::translate("vbc_dialog", " Higher value lead to more accurate FDR estimation but will need more computation time", 0, QApplication::UnicodeUTF8));
+#endif // QT_NO_TOOLTIP
+        label_3->setText(QApplication::translate("vbc_dialog", "False discovery rate", 0, QApplication::UnicodeUTF8));
         normalize_qa->setText(QApplication::translate("vbc_dialog", "normalize QA using its maximum value", 0, QApplication::UnicodeUTF8));
         toolBox->setItemText(toolBox->indexOf(page_2), QApplication::translate("vbc_dialog", "STEP2: Setup parameters", 0, QApplication::UnicodeUTF8));
         view_legend->setText(QApplication::translate("vbc_dialog", "legend", 0, QApplication::UnicodeUTF8));

@@ -116,11 +116,7 @@ public:
     template<typename iterator1,typename iterator2,typename iterator3>
     void regress(iterator1 y,iterator2 b,iterator3 t) const
     {
-        std::vector<value_type> xty(feature_count); // trans(x)*y    p by 1
-        image::matrix::vector_product(&*Xt.begin(),y,&*xty.begin(),image::dyndim(feature_count,subject_count));
-        image::matrix::lu_solve(&*XtX.begin(),&*piv.begin(),&*xty.begin(),b,
-                                image::dyndim(feature_count,feature_count));
-
+        regress(y,b);
         // calculate residual
         std::vector<value_type> y_(subject_count);
         image::matrix::left_vector_product(&*Xt.begin(),b,&*y_.begin(),image::dyndim(feature_count,subject_count));
@@ -130,6 +126,14 @@ public:
 
         for(unsigned int index = 0;index < feature_count;++index)
             t[index] = b[index]/X_cov[index]/rmse;
+    }
+    template<typename iterator1,typename iterator2>
+    void regress(iterator1 y,iterator2 b) const
+    {
+        std::vector<value_type> xty(feature_count); // trans(x)*y    p by 1
+        image::matrix::vector_product(&*Xt.begin(),y,&*xty.begin(),image::dyndim(feature_count,subject_count));
+        image::matrix::lu_solve(&*XtX.begin(),&*piv.begin(),&*xty.begin(),b,
+                                image::dyndim(feature_count,feature_count));
     }
 
 };
@@ -145,7 +149,7 @@ public: // group
     std::vector<int> label;
     unsigned int group1_count,group2_count;
 public: // multiple regression
-    std::vector<double> X;
+    std::vector<double> X,X_min,X_max,X_range;
     unsigned int feature_count;
     unsigned int study_feature;
     multiple_regression<double> mr;
@@ -192,12 +196,11 @@ public:
     mutable std::string error_msg;
     vbc_database();
     ~vbc_database(){clear_thread();}
-private:// template information
-    float fiber_threshold;
 public:
     bool create_database(const char* templat_name);
     bool load_database(const char* database_name);
 public:// database information
+    float fiber_threshold;
     bool normalize_qa;
 private: // single subject analysis result
     void run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& track,float seed_ratio = 1.0);
@@ -215,7 +218,7 @@ public:
     std::vector<std::string> trk_file_names;
     std::vector<image::vector<3,short> > roi;
     unsigned char roi_type;
-    unsigned int length_threshold;
+    unsigned int length_threshold_greater,length_threshold_lesser;
     float seeding_density;
     boost::mutex lock_resampling,lock_greater_tracks,lock_lesser_tracks;
     boost::ptr_vector<TractModel> greater_tracks;
@@ -231,6 +234,7 @@ public:// Individual analysis
 public:// Multiple regression
     std::auto_ptr<stat_model> model;
     float tracking_threshold;
+    float fdr_threshold;
     void run_permutation_multithread(unsigned int id);
     void run_permutation(unsigned int thread_count);
     void calculate_FDR(void);

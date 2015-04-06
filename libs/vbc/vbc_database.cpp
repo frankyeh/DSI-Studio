@@ -231,6 +231,21 @@ bool stat_model::pre_process(void)
         group1_count = label.size()-group2_count;
         return group2_count > 3 && group1_count > 3;
     case 1: // multiple regression
+        {
+            X_min = X_max = std::vector<double>(X.begin(),X.begin()+feature_count);
+            unsigned int subject_count = X.size()/feature_count;
+            for(unsigned int i = 1,index = feature_count;i < subject_count;++i)
+                for(unsigned int j = 0;j < feature_count;++j,++index)
+                {
+                    if(X[index] < X_min[j])
+                        X_min[j] = X[index];
+                    if(X[index] > X_max[j])
+                        X_max[j] = X[index];
+                }
+            X_range.resize(feature_count);
+            for(unsigned int j = 0;j < feature_count;++j)
+                X_range[j] = X_max[j]-X_min[j];
+        }
         return mr.set_variables(&*X.begin(),feature_count,X.size()/feature_count);
     case 2:
         return true;
@@ -328,9 +343,10 @@ double stat_model::operator()(const std::vector<double>& population,unsigned int
         break;
     case 1: // multiple regression
         {
-            std::vector<double> b(feature_count),t(feature_count);
-            mr.regress(&*population.begin(),&*b.begin(),&*t.begin());
-            return t[study_feature];
+            std::vector<double> b(feature_count);
+            mr.regress(&*population.begin(),&*b.begin());
+            double mean = image::mean(population.begin(),population.end());
+            return mean == 0 ? 0:b[study_feature]*X_range[study_feature]/mean;
         }
         break;
     case 2: // individual
@@ -497,7 +513,7 @@ void vbc_database::run_permutation_multithread(unsigned int id)
                     cal_hist(tracks,subject_lesser);
                     {
                         boost::mutex::scoped_lock lock(lock_lesser_tracks);
-                        lesser_tracks[subject_id].add_tracts(tracks,length_threshold);
+                        lesser_tracks[subject_id].add_tracts(tracks,30); // at least 30 mm
                         tracks.clear();
                     }
                 }
@@ -511,7 +527,7 @@ void vbc_database::run_permutation_multithread(unsigned int id)
                     cal_hist(tracks,subject_greater);
                     {
                         boost::mutex::scoped_lock lock(lock_greater_tracks);
-                        greater_tracks[subject_id].add_tracts(tracks,length_threshold);
+                        greater_tracks[subject_id].add_tracts(tracks,30);  // at least 30 mm
                         tracks.clear();
                     }
                 }
@@ -533,10 +549,10 @@ void vbc_database::run_permutation_multithread(unsigned int id)
             calculate_spm(spm_maps[0],info,permu);
             spm_maps[0].write_lesser(fib);
             run_track(fib,tracks,total_track_count);
-            lesser_tracks[0].add_tracts(tracks,length_threshold);
+            lesser_tracks[0].add_tracts(tracks,30); // at least 30 mm
             spm_maps[0].write_greater(fib);
             run_track(fib,tracks,total_track_count);
-            greater_tracks[0].add_tracts(tracks,length_threshold);
+            greater_tracks[0].add_tracts(tracks,30);  // at least 30 mm
         }
 
 
@@ -584,10 +600,10 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
     saved_file_name.clear();
     for(unsigned int index = 0;index < greater_tracks.size();++index)
     {
-        if(fdr_greater[length_threshold] < 0.5)
+        if(length_threshold_greater)
         {
             TractModel tracks(handle.get());
-            tracks.add_tracts(greater_tracks[index].get_tracts(),length_threshold);
+            tracks.add_tracts(greater_tracks[index].get_tracts(),length_threshold_greater);
             if(tracks.get_visible_track_count())
             {
                 {
@@ -629,10 +645,10 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
             greater_tracks[index] = tracks;
         }
 
-        if(fdr_lesser[length_threshold] < 0.5)
+        if(length_threshold_lesser)
         {
             TractModel tracks(handle.get());
-            tracks.add_tracts(lesser_tracks[index].get_tracts(),length_threshold);
+            tracks.add_tracts(lesser_tracks[index].get_tracts(),length_threshold_lesser);
             if(tracks.get_visible_track_count())
             {
                 {
@@ -716,6 +732,9 @@ void vbc_database::calculate_FDR(void)
     double sum_lesser_null = 0;
     double sum_greater = 0;
     double sum_lesser = 0;
+    length_threshold_greater = 0;
+    length_threshold_lesser = 0;
+
     for(int index = subject_greater_null.size()-1;index >= 0;--index)
     {
         sum_greater_null += subject_greater_null[index];
@@ -724,6 +743,10 @@ void vbc_database::calculate_FDR(void)
         sum_lesser += subject_lesser[index];
         fdr_greater[index] = (sum_greater > 0.0) ? std::min(1.0,sum_greater_null/sum_greater) : 1.0;
         fdr_lesser[index] = (sum_lesser > 0.0) ? std::min(1.0,sum_lesser_null/sum_lesser): 1.0;
+        if(fdr_greater[index] < fdr_threshold)
+            length_threshold_greater = index;
+        if(fdr_lesser[index] < fdr_threshold)
+            length_threshold_lesser = index;
     }
 
 }
