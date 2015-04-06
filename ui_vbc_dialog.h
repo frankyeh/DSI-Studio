@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'vbc_dialog.ui'
 **
-** Created: Sat Apr 4 14:40:52 2015
+** Created: Mon Apr 6 15:37:51 2015
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
@@ -128,6 +128,7 @@ public:
     QDoubleSpinBox *t_threshold;
     QDoubleSpinBox *percentile;
     QLabel *percentage_label;
+    QLabel *range_label;
     QLabel *explaination;
     QGroupBox *percentile_rank_group;
     QVBoxLayout *verticalLayout_2;
@@ -639,6 +640,11 @@ public:
 
         percentile_rank_layout->addWidget(percentage_label);
 
+        range_label = new QLabel(groupBox);
+        range_label->setObjectName(QString::fromUtf8("range_label"));
+
+        percentile_rank_layout->addWidget(range_label);
+
 
         verticalLayout_4->addLayout(percentile_rank_layout);
 
@@ -999,7 +1005,7 @@ public:
 
         toolBox->setCurrentIndex(2);
         toolBox->layout()->setSpacing(0);
-        tabWidget_2->setCurrentIndex(1);
+        tabWidget_2->setCurrentIndex(0);
 
 
         QMetaObject::connectSlotsByName(vbc_dialog);
@@ -1045,6 +1051,7 @@ public:
         label_6->setText(QApplication::translate("vbc_dialog", "Feature of interest", 0, QApplication::UnicodeUTF8));
         threshold_label->setText(QApplication::translate("vbc_dialog", "Percentile Threshold", 0, QApplication::UnicodeUTF8));
         percentage_label->setText(QApplication::translate("vbc_dialog", "%", 0, QApplication::UnicodeUTF8));
+        range_label->setText(QApplication::translate("vbc_dialog", "for", 0, QApplication::UnicodeUTF8));
         explaination->setText(QApplication::translate("vbc_dialog", "explanation", 0, QApplication::UnicodeUTF8));
         percentile_rank_group->setTitle(QApplication::translate("vbc_dialog", "ROI", 0, QApplication::UnicodeUTF8));
         roi_whole_brain->setText(QApplication::translate("vbc_dialog", "Whole brain", 0, QApplication::UnicodeUTF8));
