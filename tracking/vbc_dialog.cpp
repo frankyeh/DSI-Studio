@@ -242,35 +242,31 @@ void vbc_dialog::show_report()
         x_size = std::max<unsigned int>(x_size,vbc_data[i].size()-1);
     if(x_size == 0)
         return;
-    QVector<double> x(x_size),x2(x_size);
+    QVector<double> x(x_size);
     std::vector<QVector<double> > y(vbc_data.size());
     for(unsigned int i = 0;i < vbc_data.size();++i)
         y[i].resize(x_size);
-    for(unsigned int j = 0;j < x_size;++j)
+    for(unsigned int j = 2;j < x_size && j < vbc_data[0].size();++j)
     {
-        x[j] = (float)j-0.2;
-        x2[j] = (float)j+0.2;
+        x[j-2] = (float)j;
         for(unsigned int i = 0; i < vbc_data.size(); ++i)
-            if(j+1 < vbc_data[i].size())
-                y[i][j] = vbc_data[i][j+1];
+            y[i][j-2] = vbc_data[i][j];
     }
+
+    QPen pen;
     QColor color[4];
     color[0] = QColor(20,20,100,200);
     color[1] = QColor(100,20,20,200);
     color[2] = QColor(20,100,20,200);
     color[3] = QColor(20,100,100,200);
-    ui->null_dist->clearPlottables();
-
     for(unsigned int i = 0; i < vbc_data.size(); ++i)
     {
-        QCPBars *bars1 = new QCPBars(ui->null_dist->xAxis, ui->null_dist->yAxis);
-        ui->null_dist->addPlottable(bars1);
-        bars1->setData((i%2) ? x: x2, y[i]);
-        bars1->setWidth(0.4);
-        bars1->setPen(Qt::NoPen);
-        bars1->setBrush(color[i]);
-        bars1->setName(QString(legend[i]));
-
+        ui->null_dist->addGraph();
+        pen.setColor(color[i]);
+        ui->null_dist->graph()->setLineStyle(QCPGraph::lsLine);
+        ui->null_dist->graph()->setPen(pen);
+        ui->null_dist->graph()->setData(x, y[i]);
+        ui->null_dist->graph()->setName(QString(legend[i]));
     }
 
     ui->null_dist->xAxis->setLabel("mm");
