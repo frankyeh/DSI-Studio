@@ -246,6 +246,8 @@ void vbc_dialog::show_report()
     std::vector<QVector<double> > y(vbc_data.size());
     for(unsigned int i = 0;i < vbc_data.size();++i)
         y[i].resize(x_size);
+
+    // tracks length is at least 2 mm, so skip length < 2
     for(unsigned int j = 2;j < x_size && j < vbc_data[0].size();++j)
     {
         x[j-2] = (float)j;
@@ -818,14 +820,14 @@ void vbc_dialog::on_run_clicked()
         for(unsigned int index = 0;index < (int)ui->foi->count()-1;++index)
             out << ui->foi->itemText(index).toLower().toLocal8Bit().begin() << (ui->foi->count() > 2 ? ", " : " ");
         out << "and " << ui->foi->itemText(ui->foi->count()-1).toLower().toLocal8Bit().begin() << ".";
-        out << " A percentage threshold of " << ui->t_threshold->value()*100.0
+        out << " A percentage threshold of " << ui->t_threshold->value()
             << " % was used to select fiber directions correlated with "
             << ui->foi->currentText().toLower().toLocal8Bit().begin() << ".";
         vbc->trk_file_names[0] += parameter_str;
         vbc->trk_file_names[0] += ".";
         vbc->trk_file_names[0] += ui->foi->currentText().toLower().toLocal8Bit().begin();
         vbc->trk_file_names[0] += ".t";
-        vbc->trk_file_names[0] += QString::number(ui->t_threshold->value()*100.0).toLocal8Bit().begin();
+        vbc->trk_file_names[0] += QString::number(ui->t_threshold->value()).toLocal8Bit().begin();
     }
 
     out << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was conducted to connect these fiber directions";
