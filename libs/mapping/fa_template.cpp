@@ -1,11 +1,21 @@
 #include "image/image.hpp"
 #include "fa_template.hpp"
 #include "libs/gzip_interface.hpp"
-bool fa_template::load_from_file(const char* file_name)
+
+#include <QApplication>
+#include <QMessageBox>
+#include <QDir>
+
+bool fa_template::load_from_file(void)
 {
+    std::string fa_template_path = QCoreApplication::applicationDirPath().toLocal8Bit().begin();
+    fa_template_path += "/HCP488_QA.nii.gz";
+    std::string fa_template_path2 = QDir::currentPath().toLocal8Bit().begin();
+    fa_template_path2 += "/HCP488_QA.nii.gz";
+
     gz_nifti read;
-    std::cout << "loading template " << file_name << std::endl;
-    if(read.load_from_file(file_name))
+    if((!template_file_name.empty() && read.load_from_file(template_file_name.c_str())) ||
+            read.load_from_file(fa_template_path.c_str()) || read.load_from_file(fa_template_path2.c_str()))
     {
         read >> I;
         read.get_image_transformation(tran.begin());
@@ -26,7 +36,6 @@ bool fa_template::load_from_file(const char* file_name)
             image::flip_xy(I);
         return true;
     }
-    std::cout << "Failed to load template file " << file_name << std::endl;
     return false;
 }
 

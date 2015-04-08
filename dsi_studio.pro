@@ -11,12 +11,12 @@ TEMPLATE = app
 
 win32* {
 #change to the directory that contains boost library
-INCLUDEPATH += C:/frank/myprog/include
+INCLUDEPATH += ../include
 }
 
 win32-g++ {
 
-LIBS += -L. -lboost_thread-mgw45-mt-1_45.dll \
+LIBS +=      -L. -lboost_thread-mgw45-mt-1_45.dll \
      -L. -lboost_program_options-mgw45-mt-1_45.dll
 }
 

@@ -3,9 +3,10 @@
 #include <boost/thread.hpp>
 #include "image/image.hpp"
 struct fa_template{
+    std::string template_file_name;
     std::vector<float> tran;
     image::basic_image<float,3> I;
-    bool load_from_file(const char* file_name);
+    bool load_from_file(void);
     void to_mni(image::vector<3,float>& p);
     void add_transformation(std::vector<float>& t);
     fa_template(void):tran(16){}

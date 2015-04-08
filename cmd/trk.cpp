@@ -13,7 +13,6 @@
 #include "mapping/fa_template.hpp"
 #include "mapping/atlas.hpp"
 #include "SliceModel.h"
-std::string get_fa_template_path(void);
 bool atl_load_atlas(const std::string atlas_name);
 bool atl_get_mapping(gz_mat_read& mat_reader,
                      unsigned int factor,

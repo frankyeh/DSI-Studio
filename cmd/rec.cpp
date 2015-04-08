@@ -14,7 +14,6 @@ namespace po = boost::program_options;
 /**
  perform reconstruction
  */
-std::string get_fa_template_path(void);
 int rec(int ac, char *av[])
 {
     po::options_description rec_desc("reconstruction options");
@@ -123,16 +122,10 @@ int rec(int ac, char *av[])
     if(method_index == 7)
     {
         if (vm.count("template"))
-        {
-            std::string fa_file_name = vm["template"].as<std::string>();
-            if(!fa_template_imp.load_from_file(fa_file_name.c_str()))
-                return -1;
-        }
-        else
-        {
-            if(!fa_template_imp.load_from_file(get_fa_template_path().c_str()))
-                return -1;
-        }
+            fa_template_imp.template_file_name = vm["template"].as<std::string>();
+
+        if(!fa_template_imp.load_from_file())
+            return -1;
         param[0] = 1.2;
         param[1] = 2.0;
         std::fill(handle->mask.begin(),handle->mask.end(),1.0);

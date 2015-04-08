@@ -41,16 +41,10 @@ QStringList search_files(QString dir,QString filter)
 }
 
 
-std::string get_fa_template_path(void)
-{
-    std::string fa_template_path = QCoreApplication::applicationDirPath().toLocal8Bit().begin();
-    fa_template_path += "/HCP488_QA.nii.gz";
-    return fa_template_path;
-}
-
 void load_atlas(void)
 {
     QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
+    QDir dir2 = QDir::currentPath()+ "/atlas";
     QStringList atlas_name_list = dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
     atlas_name_list << dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
     for(int index = 0;index < atlas_name_list.size();++index)
@@ -59,6 +53,16 @@ void load_atlas(void)
         atlas_list.back().name = QFileInfo(atlas_name_list[index]).baseName().toLocal8Bit().begin();
         atlas_list.back().filename = (dir.absolutePath() + "/" + atlas_name_list[index]).toLocal8Bit().begin();
     }
+
+    atlas_name_list = dir2.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
+    atlas_name_list << dir2.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
+    for(int index = 0;index < atlas_name_list.size();++index)
+    {
+        atlas_list.push_back(atlas());
+        atlas_list.back().name = QFileInfo(atlas_name_list[index]).baseName().toLocal8Bit().begin();
+        atlas_list.back().filename = (dir2.absolutePath() + "/" + atlas_name_list[index]).toLocal8Bit().begin();
+    }
+
 }
 
 int main(int ac, char *av[])
@@ -134,11 +138,9 @@ int main(int ac, char *av[])
     #endif
 
     // load template
-    if(!fa_template_imp.load_from_file(get_fa_template_path().c_str()))
+    if(!fa_template_imp.load_from_file())
     {
-        std::string error_str = "Cannot find ";
-        error_str += get_fa_template_path();
-        QMessageBox::information(0,"Error",error_str.c_str(),0);
+        QMessageBox::information(0,"Error","Cannot find HCP488_QA.nii.gz in file directory",0);
         return false;
     }
     // load atlas

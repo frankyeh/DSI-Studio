@@ -65,7 +65,7 @@ bool atl_get_mapping(gz_mat_read& mat_reader,
     }
     image::geometry<3> geo(dim);
 
-    if(fa_template_imp.I.empty() && !fa_template_imp.load_from_file(get_fa_template_path().c_str()))
+    if(fa_template_imp.I.empty() && !fa_template_imp.load_from_file())
         return false;
     //QSDR
     const float* trans = 0;
