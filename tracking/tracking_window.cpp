@@ -21,6 +21,7 @@
 #include "mapping/atlas.hpp"
 #include "mapping/fa_template.hpp"
 #include "tracking/atlasdialog.h"
+#include "libs/tracking/tracking_thread.hpp"
 
 extern std::vector<atlas> atlas_list;
 extern fa_template fa_template_imp;

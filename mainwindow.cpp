@@ -7,6 +7,7 @@
 #include <QMessageBox>
 #include <QProgressDialog>
 #include <QDragEnterEvent>
+#include <QMimeData>
 #include <qmessagebox.h>
 #include "reconstruction/reconstruction_window.h"
 #include "dsi_interface_static_link.h"
@@ -22,6 +23,7 @@
 #include "libs/gzip_interface.hpp"
 #include "tracking/vbc_dialog.hpp"
 #include "vbc/vbc_database.h"
+#include "libs/tracking/fib_data.hpp"
 
 extern std::vector<atlas> atlas_list;
 extern std::auto_ptr<QProgressDialog> progressDialog;

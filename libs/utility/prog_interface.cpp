@@ -1,5 +1,5 @@
 #include <QProgressDialog>
-#include <QtGui/QApplication>
+#include <QApplication>
 #include <QObject>
 #include <memory>
 #include <ctime>

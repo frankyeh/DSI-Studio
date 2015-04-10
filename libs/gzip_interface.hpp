@@ -1,6 +1,6 @@
 #ifndef GZIP_INTERFACE_HPP
 #define GZIP_INTERFACE_HPP
-#include "gzlib/zlib.h"
+#include "QtZlib/zlib.h"
 #include "image/image.hpp"
 #include "prog_interface_static_link.h"
 
@@ -33,7 +33,7 @@ public:
             return handle;
         }
         in.open(file_name,std::ios::binary);
-        return in;
+        return in.good();
     }
     bool read(void* buf,size_t size)
     {
@@ -65,7 +65,7 @@ public:
             if(in)
             {
                 in.read((char*)buf,size);
-                return in;
+                return in.good();
             }
         return false;
     }
@@ -91,8 +91,8 @@ public:
             in.close();
     }
 
-    operator bool() const	{return handle ? true:in;}
-    bool operator!() const	{return !(handle? true:in);}
+    operator bool() const	{return handle ? true:in.good();}
+    bool operator!() const	{return !(handle? true:in.good());}
 };
 
 class gz_ostream{
@@ -124,7 +124,7 @@ public:
             return handle;
         }
         out.open(file_name,std::ios::binary);
-        return out;
+        return out.good();
     }
     void write(const void* buf,size_t size)
     {
@@ -161,8 +161,8 @@ public:
         if(out)
             out.close();
     }
-    operator bool() const	{return handle? true:out;}
-    bool operator!() const	{return !(handle? true:out);}
+    operator bool() const	{return handle? true:out.good();}
+    bool operator!() const	{return !(handle? true:out.good());}
 };
 
 

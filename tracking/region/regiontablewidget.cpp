@@ -13,6 +13,8 @@
 #include "mapping/atlas.hpp"
 #include "mapping/fa_template.hpp"
 #include "opengl/glwidget.h"
+#include "libs/tracking/fib_data.hpp"
+#include "libs/tracking/tracking_thread.hpp"
 extern std::vector<atlas> atlas_list;
 extern fa_template fa_template_imp;
 

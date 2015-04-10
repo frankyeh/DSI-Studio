@@ -1,4 +1,5 @@
 #define NOMINMAX
+#include <boost/random.hpp>
 #include <QtOpenGL>
 #include <QtGui>
 #include <QMessageBox>
@@ -17,6 +18,7 @@
 #include "fib_data.hpp"
 #include "tracking/color_bar_dialog.hpp"
 #include "manual_alignment.h"
+#include "libs/tracking/tract_model.hpp"
 
 GLenum BlendFunc1[] = {GL_ZERO,GL_ONE,GL_DST_COLOR,
                       GL_ONE_MINUS_DST_COLOR,GL_SRC_ALPHA,
@@ -1905,7 +1907,7 @@ void GLWidget::saveLeftRight3DImage(void)
     if(filename.isEmpty())
         return;
     bool ok;
-    int angle = QInputDialog::getInteger(this,
+    int angle = QInputDialog::getInt(this,
             "DSI Studio",
             "Assign left angle difference in degrees (negative value for right/left view)):",5,-60,60,5,&ok);
     if(!ok)

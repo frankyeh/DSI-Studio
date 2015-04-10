@@ -16,7 +16,7 @@ public:
     ~AtlasDialog();
     unsigned int index(void);
 signals:
-    void need_update(void);
+    void need_update();
 private slots:
     void on_add_atlas_clicked();
 

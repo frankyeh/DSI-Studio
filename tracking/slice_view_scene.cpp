@@ -10,6 +10,7 @@
 #include "ui_tracking_window.h"
 #include "region/regiontablewidget.h"
 #include "libs/gzip_interface.hpp"
+#include "libs/tracking/fib_data.hpp"
 
 void slice_view_scene::show_ruler(QPainter& paint)
 {

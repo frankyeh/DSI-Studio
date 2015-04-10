@@ -5,14 +5,13 @@
 #define NOMINMAX
 #include <memory>
 #include "QtOpenGL/QGLWidget"
-#include "SliceModel.h"
 #include "boost/ptr_container/ptr_vector.hpp"
 #include "tracking/region/RegionModel.h"
 #include "tracking/tracking_window.h"
 class RenderingTableWidget;
- class GLWidget : public QGLWidget
- {
-     Q_OBJECT
+class GLWidget : public QGLWidget
+{
+Q_OBJECT
 
  public:
      bool stereoscopy;
@@ -91,8 +90,8 @@ class RenderingTableWidget;
      void check_reg(void);
      void rotate(void);
  signals:
-     void edited(void);
-     void region_edited(void);
+     void edited();
+     void region_edited();
  protected:
      void initializeGL();
      void paintGL();

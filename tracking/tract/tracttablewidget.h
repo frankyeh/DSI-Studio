@@ -4,12 +4,12 @@
 #include <QItemDelegate>
 #include <QTableWidget>
 #include <QTimer>
-#include "libs/tracking/tracking_thread.hpp"
-#include "libs/tracking/tract_model.hpp"
+#include <image/image.hpp>
 
 class tracking_window;
 class TractModel;
 class ThreadData;
+
 
 class TractTableWidget : public QTableWidget
 {

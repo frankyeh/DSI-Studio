@@ -8,6 +8,7 @@
 #include "tracking_window.h"
 #include "ui_tracking_window.h"
 #include "mapping/atlas.hpp"
+#include "libs/tracking/fib_data.hpp"
 extern std::vector<atlas> atlas_list;
 connectivity_matrix_dialog::connectivity_matrix_dialog(tracking_window *parent) :
     QDialog(parent),cur_tracking_window(parent),
@@ -67,7 +68,7 @@ void connectivity_matrix_dialog::mouse_move(QMouseEvent *mouseEvent)
         QGraphicsTextItem *x_text = scene.addText(data.region_name[x].c_str());
         QGraphicsTextItem *y_text = scene.addText(data.region_name[y].c_str());
         x_text->moveBy(point.x()-x_text->boundingRect().width()/2,-x_text->boundingRect().height());
-        y_text->rotate(270);
+        y_text->setRotation(270);
         y_text->moveBy(-y_text->boundingRect().height(),point.y()+y_text->boundingRect().width()/2);
         unsigned int index = x+y*data.matrix_value.width();
         if(index < data.matrix_value.size())

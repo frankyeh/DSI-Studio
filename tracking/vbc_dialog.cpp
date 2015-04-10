@@ -8,6 +8,7 @@
 #include "ui_tracking_window.h"
 #include "tracking_window.h"
 #include "tract/tracttablewidget.h"
+#include "libs/tracking/fib_data.hpp"
 extern std::vector<atlas> atlas_list;
 
 vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) :
@@ -1015,7 +1016,7 @@ void vbc_dialog::on_remove_subject2_clicked()
     if(!ui->run->isEnabled())
         return;
     bool ok;
-    int value = QInputDialog::getInteger(this,
+    int value = QInputDialog::getInt(this,
                                          "Remove subject(s)",
                                          "Remove subject(s) with any field matching this value:",999,-2147483647,2147483647,1,&ok);
     if (!ok)

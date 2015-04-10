@@ -56,4 +56,5 @@ signals:
     void need_update();
 
 };
+
 #endif // SLICE_VIEW_SCENE_H

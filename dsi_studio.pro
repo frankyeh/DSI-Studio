@@ -3,21 +3,14 @@
 # -------------------------------------------------
 QT += core \
     gui \
-    opengl
+    opengl \
+    printsupport
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
-#CONFIG += console
 TARGET = dsi_studio
 TEMPLATE = app
-
 win32* {
 #change to the directory that contains boost library
 INCLUDEPATH += ../include
-}
-
-win32-g++ {
-
-LIBS +=      -L. -lboost_thread-mgw45-mt-1_45.dll \
-     -L. -lboost_program_options-mgw45-mt-1_45.dll
 }
 
 linux* {
@@ -143,21 +136,6 @@ SOURCES += main.cpp \
     cmd/trk.cpp \
     cmd/rec.cpp \
     simulation.cpp \
-    gzlib/zutil.c \
-    gzlib/uncompr.c \
-    gzlib/trees.c \
-    gzlib/inftrees.c \
-    gzlib/inflate.c \
-    gzlib/inffast.c \
-    gzlib/infback.c \
-    gzlib/gzwrite.c \
-    gzlib/gzread.c \
-    gzlib/gzlib.c \
-    gzlib/gzclose.c \
-    gzlib/deflate.c \
-    gzlib/crc32.c \
-    gzlib/compress.c \
-    gzlib/adler32.c \
     reconstruction/vbcdialog.cpp \
     cmd/src.cpp \
     libs/mapping/atlas.cpp \

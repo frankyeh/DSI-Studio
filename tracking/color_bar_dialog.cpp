@@ -4,6 +4,7 @@
 #include "ui_color_bar_dialog.h"
 #include "tracking_window.h"
 #include "opengl/glwidget.h"
+#include "libs/tracking/fib_data.hpp"
 
 color_bar_dialog::color_bar_dialog(QWidget *parent) :
     QDialog(parent),

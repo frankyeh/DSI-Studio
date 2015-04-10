@@ -118,12 +118,8 @@ public:
         // calculate sum(p(u*r)*r^2)dr
         using namespace boost::lambda;
         std::fill(data.odf.begin(),data.odf.end(),0.0f);
-        std::for_each(sample_group.begin(),sample_group.end(),
-                      bind(&SamplePoint::sampleODFValueWeighted,
-                           boost::lambda::_1,
-                           boost::ref(data.space),
-                           boost::ref(data.odf)));
-
+        for(unsigned int index = 0;index < sample_group.size();++index)
+            sample_group[index].sampleODFValueWeighted(data.space,data.odf);
         // normalization
         float sum = image::mean(data.odf.begin(),data.odf.end());
         if (sum != 0.0)

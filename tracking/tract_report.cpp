@@ -6,6 +6,8 @@
 #include "ui_tracking_window.h"
 #include "tracking_window.h"
 #include "tract/tracttablewidget.h"
+#include "libs/tracking/fib_data.hpp"
+#include "libs/tracking/tract_model.hpp"
 tract_report::tract_report(QWidget *parent) :
     QDialog(parent),
     cur_tracking_window((tracking_window*)parent),

@@ -133,10 +133,6 @@ int main(int ac, char *av[])
     QFont font;
     font.setFamily(QString::fromUtf8("Arial"));
     a.setFont(font);
-    #ifdef Q_WS_WIN
-    QApplication::setStyle("cleanlooks");
-    #endif
-
     // load template
     if(!fa_template_imp.load_from_file())
     {

@@ -503,7 +503,7 @@ bool TractModel::save_tracts_color_to_file(const char* file_name)
         color.color = tract_color[index];
         out << (int)color.r << " " << (int)color.g << " " << (int)color.b << std::endl;
     }
-    return out;
+    return out.good();
 }
 
 //---------------------------------------------------------------------------

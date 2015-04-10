@@ -1,4 +1,3 @@
-#define NOMINMAX
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QClipboard>
@@ -350,8 +349,7 @@ void TractTableWidget::clustering(int method_id)
     float param[4] = {0};
     if(method_id)// k-means or EM
     {
-        param[0] = QInputDialog::getInteger(this,
-            "DSI Studio","Number of clusters:",5,2,100,1);
+        param[0] = QInputDialog::getInt(this,"DSI Studio","Number of clusters:",5,2,100,1);
     }
     else
     {
@@ -939,4 +937,5 @@ if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
             }
     }
 }
+
 

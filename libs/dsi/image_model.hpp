@@ -127,7 +127,7 @@ public:
                 << voxel.bvectors[index][1] << " "
                 << voxel.bvectors[index][2] << std::endl;
         }
-        return out;
+        return out.good();
     }
     bool save_bval(const char* file_name) const
     {
@@ -138,7 +138,7 @@ public:
                 out << " ";
             out << voxel.bvalues[index];
         }
-        return out;
+        return out.good();
     }
     bool save_bvec(const char* file_name) const
     {
@@ -149,7 +149,7 @@ public:
                 << voxel.bvectors[index][1] << " "
                 << voxel.bvectors[index][2] << std::endl;
         }
-        return out;
+        return out.good();
     }
 
 public:

@@ -1,8 +1,5 @@
-// ---------------------------------------------------------------------------
-
 #ifndef SliceModelH
 #define SliceModelH
-#include <boost/lambda/lambda.hpp>
 #include <boost/thread/thread.hpp>
 #include "image/image.hpp"
 #include "libs/gzip_interface.hpp"
