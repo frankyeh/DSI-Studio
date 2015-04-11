@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1267</width>
+    <width>1333</width>
     <height>630</height>
    </rect>
   </property>
@@ -819,7 +819,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>211</width>
+     <width>229</width>
      <height>50</height>
     </size>
    </property>
@@ -877,8 +877,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1267</width>
-     <height>23</height>
+     <width>1333</width>
+     <height>21</height>
     </rect>
    </property>
    <property name="sizePolicy">
@@ -1136,8 +1136,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>151</width>
-     <height>84</height>
+     <width>252</width>
+     <height>96</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -1245,6 +1245,9 @@
             <iconset resource="../icons.qrc">
              <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
            </property>
+           <property name="autoRaise">
+            <bool>false</bool>
+           </property>
           </widget>
          </item>
          <item>
@@ -1319,22 +1322,14 @@
            <property name="maximumSize">
             <size>
              <width>16777215</width>
-             <height>22</height>
+             <height>24</height>
             </size>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>8</pointsize>
-             <weight>75</weight>
-             <bold>true</bold>
-            </font>
            </property>
            <property name="text">
             <string>Run Tracking</string>
            </property>
-           <property name="icon">
-            <iconset resource="../icons.qrc">
-             <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+           <property name="flat">
+            <bool>false</bool>
            </property>
           </widget>
          </item>
@@ -1342,12 +1337,15 @@
           <widget class="QPushButton" name="stop_tracking">
            <property name="maximumSize">
             <size>
-             <width>30</width>
-             <height>22</height>
+             <width>155</width>
+             <height>24</height>
             </size>
            </property>
            <property name="text">
             <string>Stop</string>
+           </property>
+           <property name="flat">
+            <bool>false</bool>
            </property>
           </widget>
          </item>
