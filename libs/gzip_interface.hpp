@@ -2,7 +2,7 @@
 #define GZIP_INTERFACE_HPP
 #ifdef WIN32
 #include "QtZlib/zlib.h"
-#elif
+#else
 #include "zlib.h"
 #endif
 #include "image/image.hpp"
