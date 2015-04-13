@@ -24,10 +24,10 @@ LIBS += -lboost_thread \
 mac{
 
 #change to the directory that contains boost library
-INCLUDEPATH += /Users/frank/boost/include
-LIBS += -L/Users/frank/boost/lib -lboost_system \
-        -L/Users/frank/boost/lib -lboost_thread \
-        -L/Users/frank/boost/lib -lboost_program_options \
+INCLUDEPATH += /Users/frankyeh/include
+LIBS += -L/Users/frankyeh/include/lib -lboost_system \
+        -L/Users/frankyeh/include/lib -lboost_thread \
+        -L/Users/frankyeh/include/lib -lboost_program_options \
         -lz
 }
 

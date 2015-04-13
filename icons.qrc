@@ -18,6 +18,7 @@
         <file>icons/save_all.xpm</file>
         <file>icons/down.xpm</file>
         <file>icons/up.xpm</file>
+        <file>icons/ruler.xpm</file>
     </qresource>
     <qresource prefix="/data">
         <file>options.txt</file>

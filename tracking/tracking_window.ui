@@ -1799,7 +1799,11 @@
           <string>show ruler</string>
          </property>
          <property name="text">
-          <string>||</string>
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../icons.qrc">
+           <normaloff>:/icons/icons/ruler.xpm</normaloff>:/icons/icons/ruler.xpm</iconset>
          </property>
          <property name="checkable">
           <bool>true</bool>
