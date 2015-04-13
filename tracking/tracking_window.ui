@@ -135,7 +135,7 @@
             </size>
            </property>
            <property name="text">
-            <string>...</string>
+            <string/>
            </property>
            <property name="icon">
             <iconset resource="../icons.qrc">
@@ -383,7 +383,11 @@
             </size>
            </property>
            <property name="text">
-            <string>&lt;|&gt;</string>
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="../icons.qrc">
+             <normaloff>:/icons/icons/rotate.xpm</normaloff>:/icons/icons/rotate.xpm</iconset>
            </property>
            <property name="checkable">
             <bool>true</bool>
@@ -403,7 +407,7 @@
            </property>
            <property name="icon">
             <iconset resource="../icons.qrc">
-             <normaloff>:/icons/icons/move.xpm</normaloff>:/icons/icons/move.xpm</iconset>
+             <normaloff>:/icons/icons/rec.xpm</normaloff>:/icons/icons/rec.xpm</iconset>
            </property>
           </widget>
          </item>
