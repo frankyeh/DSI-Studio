@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>636</width>
-    <height>560</height>
+    <width>833</width>
+    <height>708</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -35,13 +35,22 @@
     <property name="spacing">
      <number>0</number>
     </property>
-    <property name="margin">
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
      <number>0</number>
     </property>
     <item>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -51,8 +60,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>636</width>
-         <height>473</height>
+         <width>833</width>
+         <height>617</height>
         </rect>
        </property>
        <attribute name="label">
@@ -69,7 +78,16 @@
             <property name="spacing">
              <number>0</number>
             </property>
-            <property name="margin">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
              <number>0</number>
             </property>
             <item>
@@ -86,8 +104,8 @@
                  <widget class="QPushButton" name="delete_2">
                   <property name="maximumSize">
                    <size>
-                    <width>100</width>
-                    <height>24</height>
+                    <width>16777215</width>
+                    <height>16777215</height>
                    </size>
                   </property>
                   <property name="text">
@@ -100,7 +118,7 @@
                   <property name="maximumSize">
                    <size>
                     <width>16777215</width>
-                    <height>24</height>
+                    <height>16777215</height>
                    </size>
                   </property>
                   <property name="text">
@@ -113,7 +131,7 @@
                   <property name="maximumSize">
                    <size>
                     <width>16777215</width>
-                    <height>24</height>
+                    <height>16777215</height>
                    </size>
                   </property>
                   <property name="value">
@@ -135,7 +153,16 @@
                  <property name="spacing">
                   <number>0</number>
                  </property>
-                 <property name="margin">
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
                   <number>0</number>
                  </property>
                  <item>
@@ -193,7 +220,16 @@
             <property name="spacing">
              <number>0</number>
             </property>
-            <property name="margin">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
              <number>0</number>
             </property>
             <item>
@@ -202,7 +238,7 @@
                <number>0</number>
               </property>
               <item>
-               <widget class="QToolButton" name="zoom_in">
+               <widget class="QPushButton" name="zoom_in">
                 <property name="minimumSize">
                  <size>
                   <width>24</width>
@@ -210,12 +246,16 @@
                  </size>
                 </property>
                 <property name="text">
-                 <string>+</string>
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset resource="../icons.qrc">
+                  <normaloff>:/icons/icons/up.xpm</normaloff>:/icons/icons/up.xpm</iconset>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QToolButton" name="zoom_out">
+               <widget class="QPushButton" name="zoom_out">
                 <property name="minimumSize">
                  <size>
                   <width>24</width>
@@ -223,7 +263,11 @@
                  </size>
                 </property>
                 <property name="text">
-                 <string>-</string>
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset resource="../icons.qrc">
+                  <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
                 </property>
                </widget>
               </item>
@@ -290,8 +334,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>636</width>
-         <height>473</height>
+         <width>833</width>
+         <height>617</height>
         </rect>
        </property>
        <attribute name="label">
@@ -308,77 +352,58 @@
                <number>0</number>
               </property>
               <item>
-               <widget class="QToolButton" name="load_mask">
+               <widget class="QPushButton" name="load_mask">
                 <property name="text">
                  <string>Open...</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QToolButton" name="save_mask">
+               <widget class="QPushButton" name="save_mask">
                 <property name="text">
                  <string>Save...</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QToolButton" name="thresholding">
+               <widget class="QPushButton" name="thresholding">
                 <property name="text">
                  <string>Thresholding</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QToolButton" name="dilation">
+               <widget class="QPushButton" name="dilation">
                 <property name="text">
                  <string>Dilation</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QToolButton" name="erosion">
+               <widget class="QPushButton" name="erosion">
                 <property name="text">
                  <string>Erosion</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QToolButton" name="smoothing">
+               <widget class="QPushButton" name="smoothing">
                 <property name="text">
                  <string>Smoothing</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QToolButton" name="defragment">
+               <widget class="QPushButton" name="defragment">
                 <property name="text">
                  <string>Defragment</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QToolButton" name="remove_background">
+               <widget class="QPushButton" name="remove_background">
                 <property name="text">
                  <string>Remove background</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="refine_contour">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>16777215</width>
-                  <height>20</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string>Refine contour</string>
                 </property>
                </widget>
               </item>
@@ -418,8 +443,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>619</width>
-         <height>487</height>
+         <width>833</width>
+         <height>617</height>
         </rect>
        </property>
        <property name="minimumSize">
@@ -435,7 +460,16 @@
         <property name="spacing">
          <number>3</number>
         </property>
-        <property name="margin">
+        <property name="leftMargin">
+         <number>6</number>
+        </property>
+        <property name="topMargin">
+         <number>6</number>
+        </property>
+        <property name="rightMargin">
+         <number>6</number>
+        </property>
+        <property name="bottomMargin">
          <number>6</number>
         </property>
         <item>
@@ -642,7 +676,16 @@
               <property name="spacing">
                <number>0</number>
               </property>
-              <property name="margin">
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
                <number>0</number>
               </property>
               <item>
@@ -780,7 +823,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QToolButton" name="manual_reg">
+              <widget class="QPushButton" name="manual_reg">
                <property name="minimumSize">
                 <size>
                  <width>0</width>
@@ -805,8 +848,14 @@
              </item>
              <item>
               <widget class="QComboBox" name="interpo_method">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
                <property name="currentIndex">
-                <number>2</number>
+                <number>0</number>
                </property>
                <item>
                 <property name="text">
@@ -815,7 +864,7 @@
                </item>
                <item>
                 <property name="text">
-                 <string>Gaussian Radial Basis</string>
+                 <string>Gaussian</string>
                 </property>
                </item>
                <item>
@@ -945,10 +994,23 @@
               </widget>
              </item>
              <item>
+              <spacer name="horizontalSpacer_5">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
               <widget class="QPushButton" name="load_b_table">
                <property name="maximumSize">
                 <size>
-                 <width>32</width>
+                 <width>16777215</width>
                  <height>16777215</height>
                 </size>
                </property>
@@ -998,7 +1060,16 @@
            <property name="spacing">
             <number>0</number>
            </property>
-           <property name="margin">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
             <number>0</number>
            </property>
            <item>
@@ -1052,7 +1123,16 @@
                    <property name="spacing">
                     <number>0</number>
                    </property>
-                   <property name="margin">
+                   <property name="leftMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="rightMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="bottomMargin">
                     <number>0</number>
                    </property>
                    <item>
@@ -1176,7 +1256,16 @@
                    <property name="spacing">
                     <number>0</number>
                    </property>
-                   <property name="margin">
+                   <property name="leftMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="rightMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="bottomMargin">
                     <number>0</number>
                    </property>
                    <item>
@@ -1493,7 +1582,16 @@
            <property name="spacing">
             <number>0</number>
            </property>
-           <property name="margin">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
             <number>0</number>
            </property>
            <item>
@@ -1540,7 +1638,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QCommandLinkButton" name="doDTI">
+            <widget class="QPushButton" name="doDTI">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
                <horstretch>0</horstretch>
@@ -1550,14 +1648,11 @@
              <property name="maximumSize">
               <size>
                <width>16777215</width>
-               <height>40</height>
+               <height>16777215</height>
               </size>
              </property>
              <property name="text">
               <string>Run reconstruction</string>
-             </property>
-             <property name="description">
-              <string/>
              </property>
             </widget>
            </item>
@@ -1575,8 +1670,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>636</width>
-     <height>21</height>
+     <width>833</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1665,6 +1760,8 @@
    </property>
   </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="../icons.qrc"/>
+ </resources>
  <connections/>
 </ui>

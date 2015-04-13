@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>611</width>
+    <width>661</width>
     <height>361</height>
    </rect>
   </property>
@@ -23,7 +23,16 @@
       <property name="spacing">
        <number>5</number>
       </property>
-      <property name="margin">
+      <property name="leftMargin">
+       <number>5</number>
+      </property>
+      <property name="topMargin">
+       <number>5</number>
+      </property>
+      <property name="rightMargin">
+       <number>5</number>
+      </property>
+      <property name="bottomMargin">
        <number>5</number>
       </property>
       <item>
@@ -48,7 +57,7 @@
             <property name="maximumSize">
              <size>
               <width>16777215</width>
-              <height>26</height>
+              <height>16777215</height>
              </size>
             </property>
             <property name="text">
@@ -65,7 +74,7 @@
             <property name="maximumSize">
              <size>
               <width>16777215</width>
-              <height>26</height>
+              <height>16777215</height>
              </size>
             </property>
             <property name="text">
@@ -78,11 +87,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QToolButton" name="moveup">
+           <widget class="QPushButton" name="moveup">
             <property name="maximumSize">
              <size>
               <width>16777215</width>
-              <height>26</height>
+              <height>16777215</height>
              </size>
             </property>
             <property name="text">
@@ -91,11 +100,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QToolButton" name="movedown">
+           <widget class="QPushButton" name="movedown">
             <property name="maximumSize">
              <size>
               <width>16777215</width>
-              <height>26</height>
+              <height>16777215</height>
              </size>
             </property>
             <property name="text">
@@ -114,7 +123,7 @@
             <property name="maximumSize">
              <size>
               <width>50</width>
-              <height>26</height>
+              <height>16777215</height>
              </size>
             </property>
             <property name="text">
@@ -123,11 +132,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QToolButton" name="open_list1">
+           <widget class="QPushButton" name="open_list1">
             <property name="maximumSize">
              <size>
               <width>16777215</width>
-              <height>26</height>
+              <height>16777215</height>
              </size>
             </property>
             <property name="text">
@@ -136,11 +145,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QToolButton" name="save_list1">
+           <widget class="QPushButton" name="save_list1">
             <property name="maximumSize">
              <size>
               <width>16777215</width>
-              <height>26</height>
+              <height>16777215</height>
              </size>
             </property>
             <property name="text">
@@ -149,11 +158,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QToolButton" name="open_dir1">
+           <widget class="QPushButton" name="open_dir1">
             <property name="maximumSize">
              <size>
               <width>16777215</width>
-              <height>26</height>
+              <height>16777215</height>
              </size>
             </property>
             <property name="text">
@@ -184,7 +193,16 @@
    <item>
     <widget class="QWidget" name="skeleton_widget" native="true">
      <layout class="QHBoxLayout" name="horizontalLayout">
-      <property name="margin">
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
        <number>0</number>
       </property>
       <item>
@@ -198,7 +216,7 @@
        <widget class="QLineEdit" name="skeleton"/>
       </item>
       <item>
-       <widget class="QToolButton" name="open_skeleton">
+       <widget class="QPushButton" name="open_skeleton">
         <property name="text">
          <string/>
         </property>
@@ -224,9 +242,9 @@
       <widget class="QLineEdit" name="output_file_name"/>
      </item>
      <item>
-      <widget class="QToolButton" name="select_output_file">
+      <widget class="QPushButton" name="select_output_file">
        <property name="text">
-        <string>...</string>
+        <string/>
        </property>
        <property name="icon">
         <iconset resource="../icons.qrc">

@@ -65,7 +65,7 @@
          <x>0</x>
          <y>0</y>
          <width>350</width>
-         <height>368</height>
+         <height>372</height>
         </rect>
        </property>
        <attribute name="label">
@@ -142,7 +142,7 @@
          <x>0</x>
          <y>0</y>
          <width>350</width>
-         <height>368</height>
+         <height>372</height>
         </rect>
        </property>
        <attribute name="label">
@@ -201,8 +201,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>329</width>
-         <height>400</height>
+         <width>350</width>
+         <height>372</height>
         </rect>
        </property>
        <attribute name="label">
@@ -285,7 +285,7 @@
          <x>0</x>
          <y>0</y>
          <width>350</width>
-         <height>368</height>
+         <height>372</height>
         </rect>
        </property>
        <attribute name="label">
@@ -496,16 +496,19 @@
             </widget>
            </item>
            <item>
-            <widget class="QToolButton" name="browseDir">
+            <widget class="QPushButton" name="browseDir">
+             <property name="maximumSize">
+              <size>
+               <width>100</width>
+               <height>16777215</height>
+              </size>
+             </property>
              <property name="text">
               <string>Browse...</string>
              </property>
              <property name="icon">
               <iconset resource="icons.qrc">
                <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-             </property>
-             <property name="toolButtonStyle">
-              <enum>Qt::ToolButtonTextBesideIcon</enum>
              </property>
             </widget>
            </item>

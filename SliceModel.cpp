@@ -38,7 +38,7 @@ float FibSliceModel::get_value_range(void) const
 // ---------------------------------------------------------------------------
 void FibSliceModel::get_slice(image::color_image& show_image,float contrast,float offset) const
 {
-    handle->get_slice(view_name,overlay_name, cur_dim, slice_pos[cur_dim],show_image,contrast,offset);
+    handle->get_slice(view_name,cur_dim, slice_pos[cur_dim],show_image,contrast,offset);
 }
 // ---------------------------------------------------------------------------
 void FibSliceModel::get_mosaic(image::color_image& show_image,
@@ -54,7 +54,7 @@ void FibSliceModel::get_mosaic(image::color_image& show_image,
     for(unsigned int z = 0;z < slice_num;++z)
     {
         image::color_image slice_image;
-        handle->get_slice(view_name,overlay_name,2, z << skip,slice_image,contrast,offset);
+        handle->get_slice(view_name,2, z << skip,slice_image,contrast,offset);
         image::vector<2,int> pos(geometry[0]*(z%mosaic_size),
                                  geometry[1]*(z/mosaic_size));
         image::draw(slice_image,show_image,pos);

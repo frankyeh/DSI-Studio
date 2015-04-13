@@ -91,11 +91,7 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         slice_no_update = false;
 
         for (unsigned int index = 0;index < fib_data.view_item.size(); ++index)
-        {
             ui->sliceViewBox->addItem(fib_data.view_item[index].name.c_str());
-            if(fib_data.view_item[index].is_overlay)
-                ui->overlay->addItem(fib_data.view_item[index].name.c_str());
-        }
     }
 
     is_qsdr = !handle->trans_to_mni.empty();
@@ -190,7 +186,6 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         connect(ui->actionSave_Anisotrpy_Map_as,SIGNAL(triggered()),&scene,SLOT(save_slice_as()));
 
 
-        connect(ui->overlay,SIGNAL(currentIndexChanged(int)),this,SLOT(on_sliceViewBox_currentIndexChanged(int)));
         connect(ui->sliceViewBox,SIGNAL(currentIndexChanged(int)),&scene,SLOT(show_slice()));
 
     }
@@ -342,10 +337,7 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         on_glAxiView_clicked();
 
     ui->sliceViewBox->setCurrentIndex(0);
-    ui->overlay->setCurrentIndex(0);
     on_SliceModality_currentIndexChanged(0);
-    if(ui->overlay->count() == 1)
-       ui->overlay->hide();
 
     qApp->installEventFilter(this);
 }
@@ -582,8 +574,7 @@ void tracking_window::on_sliceViewBox_currentIndexChanged(int index)
 {
     ui->actionSave_Anisotrpy_Map_as->setText(QString("Save ") +
                                              ui->sliceViewBox->currentText()+" as...");
-    slice.set_view_name(ui->sliceViewBox->currentText().toLocal8Bit().begin(),
-                        ui->overlay->currentText().toLocal8Bit().begin());
+    slice.set_view_name(ui->sliceViewBox->currentText().toLocal8Bit().begin());
     float range = handle->get_value_range(ui->sliceViewBox->currentText().toLocal8Bit().begin());
     if(range != 0.0)
     {

@@ -837,7 +837,7 @@ public:
                view_item[view_index].min_value;
     }
 
-    void get_slice(const std::string& view_name,const std::string& overlay_name,
+    void get_slice(const std::string& view_name,
                    unsigned char d_index,unsigned int pos,
                    image::color_image& show_image,float contrast,float offset)
     {
@@ -882,42 +882,6 @@ public:
             std::copy(buf.begin(),buf.end(),show_image.begin());
         }
 
-
-        if(overlay_name.length()) // has overlay
-        {
-            unsigned int overlay_index = get_name_index(overlay_name);
-            if(overlay_index == view_item.size())
-                return;
-            if(view_item[overlay_index].data_buf.empty())
-            {
-                using namespace std;
-                const float* data = view_item[overlay_index].image_data.begin();
-                float max_value = view_item[overlay_index].max_value;
-                float min_value = view_item[overlay_index].min_value;
-                float r = max(max_value,-min_value);
-                if(r + 1.0 == 1.0)
-                    r = 1.0;
-                r = 255.9/r;
-                image::basic_image<image::rgb_color,3> color_buf(dim);
-                for (unsigned int index = 0;index < dim.size();++index)
-                    if(data[index] != 0.0)
-                    {
-                        image::rgb_color color;
-                        color.g = std::floor(std::abs(data[index]*r));
-                        if(data[index] > 0.0)
-                            color.r = 255;
-                        else
-                            color.b = 255;
-                        color_buf[index] = color;
-                    }
-                color_buf.swap(view_item[overlay_index].data_buf);
-            }
-            image::color_image buf;
-            image::reslicing(view_item[overlay_index].data_buf, buf, d_index, pos);
-            for(unsigned int index = 0;index < buf.size();++index)
-                if((unsigned int)(buf[index]) != 0)
-                    show_image[index] = buf[index];
-        }
     }
 
     void get_voxel_info2(unsigned int x,unsigned int y,unsigned int z,std::vector<float>& buf) const

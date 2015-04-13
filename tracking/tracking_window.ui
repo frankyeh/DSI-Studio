@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1333</width>
-    <height>630</height>
+    <width>1704</width>
+    <height>680</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -75,10 +75,16 @@
          </property>
          <item>
           <widget class="QComboBox" name="SliceModality">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="maximumSize">
             <size>
              <width>16777215</width>
-             <height>22</height>
+             <height>16777215</height>
             </size>
            </property>
            <property name="sizeAdjustPolicy">
@@ -92,11 +98,17 @@
           </widget>
          </item>
          <item>
-          <widget class="QToolButton" name="addSlices">
+          <widget class="QPushButton" name="addSlices">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="maximumSize">
             <size>
-             <width>24</width>
-             <height>22</height>
+             <width>16777215</width>
+             <height>16777215</height>
             </size>
            </property>
            <property name="text">
@@ -106,17 +118,20 @@
             <iconset resource="../icons.qrc">
              <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
            </property>
-           <property name="toolButtonStyle">
-            <enum>Qt::ToolButtonTextBesideIcon</enum>
-           </property>
           </widget>
          </item>
          <item>
-          <widget class="QToolButton" name="deleteSlice">
+          <widget class="QPushButton" name="deleteSlice">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="maximumSize">
             <size>
-             <width>24</width>
-             <height>22</height>
+             <width>16777215</width>
+             <height>16777215</height>
             </size>
            </property>
            <property name="text">
@@ -129,24 +144,40 @@
           </widget>
          </item>
          <item>
-          <widget class="QToolButton" name="isosurfaceButton">
+          <widget class="QPushButton" name="isosurfaceButton">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="maximumSize">
             <size>
              <width>16777215</width>
-             <height>22</height>
+             <height>16777215</height>
             </size>
            </property>
            <property name="text">
-            <string>+isosurface</string>
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="../icons.qrc">
+             <normaloff>:/icons/icons/sag.xpm</normaloff>:/icons/icons/sag.xpm</iconset>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QComboBox" name="surfaceStyle">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="maximumSize">
             <size>
              <width>16777215</width>
-             <height>22</height>
+             <height>16777215</height>
             </size>
            </property>
            <property name="sizeAdjustPolicy">
@@ -205,7 +236,7 @@
              <property name="maximumSize">
               <size>
                <width>16777215</width>
-               <height>22</height>
+               <height>16777215</height>
               </size>
              </property>
              <property name="text">
@@ -243,10 +274,16 @@
            </item>
            <item>
             <widget class="QSlider" name="gl_contrast">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="maximumSize">
               <size>
                <width>16777215</width>
-               <height>22</height>
+               <height>16777215</height>
               </size>
              </property>
              <property name="minimum">
@@ -280,7 +317,7 @@
              <property name="maximumSize">
               <size>
                <width>16777215</width>
-               <height>22</height>
+               <height>16777215</height>
               </size>
              </property>
              <property name="text">
@@ -291,7 +328,7 @@
            <item>
             <widget class="QDoubleSpinBox" name="gl_offset_value">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
@@ -318,7 +355,7 @@
              <property name="maximumSize">
               <size>
                <width>16777215</width>
-               <height>22</height>
+               <height>16777215</height>
               </size>
              </property>
              <property name="minimum">
@@ -338,11 +375,11 @@
           </layout>
          </item>
          <item>
-          <widget class="QToolButton" name="auto_rotate">
+          <widget class="QPushButton" name="auto_rotate">
            <property name="maximumSize">
             <size>
-             <width>22</width>
-             <height>22</height>
+             <width>16777215</width>
+             <height>16777215</height>
             </size>
            </property>
            <property name="text">
@@ -354,15 +391,15 @@
           </widget>
          </item>
          <item>
-          <widget class="QToolButton" name="move3Dwindow">
+          <widget class="QPushButton" name="move3Dwindow">
            <property name="maximumSize">
             <size>
-             <width>22</width>
-             <height>22</height>
+             <width>16777215</width>
+             <height>16777215</height>
             </size>
            </property>
            <property name="text">
-            <string>...</string>
+            <string/>
            </property>
            <property name="icon">
             <iconset resource="../icons.qrc">
@@ -375,7 +412,7 @@
        <item>
         <layout class="QHBoxLayout" name="centralLayout2">
          <property name="spacing">
-          <number>0</number>
+          <number>3</number>
          </property>
          <item>
           <widget class="QCheckBox" name="glSagCheck">
@@ -387,7 +424,7 @@
            </property>
            <property name="minimumSize">
             <size>
-             <width>16</width>
+             <width>24</width>
              <height>0</height>
             </size>
            </property>
@@ -397,18 +434,24 @@
           </widget>
          </item>
          <item>
-          <widget class="QToolButton" name="glSagView">
+          <widget class="QPushButton" name="glSagView">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="maximumSize">
             <size>
-             <width>22</width>
-             <height>22</height>
+             <width>16777215</width>
+             <height>16777215</height>
             </size>
            </property>
            <property name="toolTip">
             <string>Click to rotate to sagittal  view</string>
            </property>
            <property name="text">
-            <string>...</string>
+            <string/>
            </property>
            <property name="icon">
             <iconset resource="../icons.qrc">
@@ -428,6 +471,12 @@
          </item>
          <item>
           <widget class="QSlider" name="glSagSlider">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
@@ -436,14 +485,14 @@
          <item>
           <widget class="QCheckBox" name="glCorCheck">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
            <property name="minimumSize">
             <size>
-             <width>16</width>
+             <width>24</width>
              <height>0</height>
             </size>
            </property>
@@ -453,18 +502,24 @@
           </widget>
          </item>
          <item>
-          <widget class="QToolButton" name="glCorView">
+          <widget class="QPushButton" name="glCorView">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="maximumSize">
             <size>
-             <width>22</width>
-             <height>22</height>
+             <width>16777215</width>
+             <height>16777215</height>
             </size>
            </property>
            <property name="toolTip">
             <string>Click to rotate to coronal view</string>
            </property>
            <property name="text">
-            <string>...</string>
+            <string/>
            </property>
            <property name="icon">
             <iconset resource="../icons.qrc">
@@ -484,6 +539,12 @@
          </item>
          <item>
           <widget class="QSlider" name="glCorSlider">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
@@ -492,14 +553,14 @@
          <item>
           <widget class="QCheckBox" name="glAxiCheck">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
            <property name="minimumSize">
             <size>
-             <width>16</width>
+             <width>24</width>
              <height>0</height>
             </size>
            </property>
@@ -509,7 +570,13 @@
           </widget>
          </item>
          <item>
-          <widget class="QToolButton" name="glAxiView">
+          <widget class="QPushButton" name="glAxiView">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="minimumSize">
             <size>
              <width>0</width>
@@ -518,15 +585,15 @@
            </property>
            <property name="maximumSize">
             <size>
-             <width>22</width>
-             <height>22</height>
+             <width>16777215</width>
+             <height>16777215</height>
             </size>
            </property>
            <property name="toolTip">
             <string>Click to rotate to axial view</string>
            </property>
            <property name="text">
-            <string>...</string>
+            <string/>
            </property>
            <property name="icon">
             <iconset resource="../icons.qrc">
@@ -546,6 +613,12 @@
          </item>
          <item>
           <widget class="QSlider" name="glAxiSlider">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
@@ -553,6 +626,12 @@
          </item>
          <item>
           <widget class="QLabel" name="label">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="text">
             <string>Zoom</string>
            </property>
@@ -560,6 +639,12 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="zoom_3d">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="minimum">
             <double>0.010000000000000</double>
            </property>
@@ -591,8 +676,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>393</width>
-     <height>50</height>
+     <width>484</width>
+     <height>60</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -636,15 +721,21 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="QToolButton" name="tbNewRegion">
+        <widget class="QPushButton" name="tbNewRegion">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="maximumSize">
           <size>
-           <width>23</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="text">
-          <string>...</string>
+          <string/>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
@@ -653,15 +744,21 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="tbOpenRegion">
+        <widget class="QPushButton" name="tbOpenRegion">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="maximumSize">
           <size>
-           <width>23</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="text">
-          <string>...</string>
+          <string/>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
@@ -670,15 +767,21 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="tbSaveRegion">
+        <widget class="QPushButton" name="tbSaveRegion">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="maximumSize">
           <size>
-           <width>23</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="text">
-          <string>...</string>
+          <string/>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
@@ -687,15 +790,21 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="tbDeleteRegion">
+        <widget class="QPushButton" name="tbDeleteRegion">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="maximumSize">
           <size>
-           <width>23</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="text">
-          <string>...</string>
+          <string/>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
@@ -704,24 +813,24 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="whole_brain">
+        <widget class="QPushButton" name="whole_brain">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
          <property name="maximumSize">
           <size>
-           <width>23</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="toolTip">
           <string>Whole brain seeding</string>
          </property>
          <property name="text">
-          <string>...</string>
+          <string/>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
@@ -730,15 +839,21 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="region_up">
+        <widget class="QPushButton" name="region_up">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="maximumSize">
           <size>
-           <width>23</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="text">
-          <string>...</string>
+          <string/>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
@@ -747,15 +862,21 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="region_down">
+        <widget class="QPushButton" name="region_down">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="maximumSize">
           <size>
-           <width>23</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="text">
-          <string>...</string>
+          <string/>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
@@ -771,28 +892,6 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="addRegionFromAtlas">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Atlas...</string>
-         </property>
-         <property name="toolButtonStyle">
-          <enum>Qt::ToolButtonTextBesideIcon</enum>
-         </property>
-        </widget>
-       </item>
-       <item>
         <spacer name="horizontalSpacer">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -804,6 +903,25 @@
           </size>
          </property>
         </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="addRegionFromAtlas">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Atlas...</string>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>
@@ -877,8 +995,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1333</width>
-     <height>21</height>
+     <width>1704</width>
+     <height>23</height>
     </rect>
    </property>
    <property name="sizePolicy">
@@ -1136,7 +1254,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>252</width>
+     <width>382</width>
      <height>96</height>
     </size>
    </property>
@@ -1180,15 +1298,18 @@
           <number>0</number>
          </property>
          <item>
-          <widget class="QToolButton" name="tbOpenTract">
+          <widget class="QPushButton" name="tbOpenTract">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="maximumSize">
             <size>
-             <width>23</width>
-             <height>22</height>
+             <width>16777215</width>
+             <height>16777215</height>
             </size>
-           </property>
-           <property name="text">
-            <string>...</string>
            </property>
            <property name="icon">
             <iconset resource="../icons.qrc">
@@ -1197,15 +1318,18 @@
           </widget>
          </item>
          <item>
-          <widget class="QToolButton" name="tbSaveTract">
+          <widget class="QPushButton" name="tbSaveTract">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="maximumSize">
             <size>
-             <width>23</width>
-             <height>22</height>
+             <width>16777215</width>
+             <height>16777215</height>
             </size>
-           </property>
-           <property name="text">
-            <string>...</string>
            </property>
            <property name="icon">
             <iconset resource="../icons.qrc">
@@ -1214,15 +1338,18 @@
           </widget>
          </item>
          <item>
-          <widget class="QToolButton" name="save_all_tracks">
+          <widget class="QPushButton" name="save_all_tracks">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="maximumSize">
             <size>
-             <width>23</width>
-             <height>22</height>
+             <width>16777215</width>
+             <height>16777215</height>
             </size>
-           </property>
-           <property name="text">
-            <string>...</string>
            </property>
            <property name="icon">
             <iconset resource="../icons.qrc">
@@ -1231,22 +1358,22 @@
           </widget>
          </item>
          <item>
-          <widget class="QToolButton" name="tbDeleteTract">
+          <widget class="QPushButton" name="tbDeleteTract">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="maximumSize">
             <size>
-             <width>23</width>
-             <height>22</height>
+             <width>16777215</width>
+             <height>16777215</height>
             </size>
-           </property>
-           <property name="text">
-            <string>...</string>
            </property>
            <property name="icon">
             <iconset resource="../icons.qrc">
              <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
-           </property>
-           <property name="autoRaise">
-            <bool>false</bool>
            </property>
           </widget>
          </item>
@@ -1258,15 +1385,18 @@
           </widget>
          </item>
          <item>
-          <widget class="QToolButton" name="track_up">
+          <widget class="QPushButton" name="track_up">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="maximumSize">
             <size>
-             <width>23</width>
-             <height>22</height>
+             <width>16777215</width>
+             <height>16777215</height>
             </size>
-           </property>
-           <property name="text">
-            <string>...</string>
            </property>
            <property name="icon">
             <iconset resource="../icons.qrc">
@@ -1275,15 +1405,18 @@
           </widget>
          </item>
          <item>
-          <widget class="QToolButton" name="track_down">
+          <widget class="QPushButton" name="track_down">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="maximumSize">
             <size>
-             <width>23</width>
-             <height>22</height>
+             <width>16777215</width>
+             <height>16777215</height>
             </size>
-           </property>
-           <property name="text">
-            <string>...</string>
            </property>
            <property name="icon">
             <iconset resource="../icons.qrc">
@@ -1314,7 +1447,7 @@
          <item>
           <widget class="QPushButton" name="perform_tracking">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -1322,7 +1455,7 @@
            <property name="maximumSize">
             <size>
              <width>16777215</width>
-             <height>24</height>
+             <height>16777215</height>
             </size>
            </property>
            <property name="text">
@@ -1335,10 +1468,16 @@
          </item>
          <item>
           <widget class="QPushButton" name="stop_tracking">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="maximumSize">
             <size>
-             <width>155</width>
-             <height>24</height>
+             <width>16777215</width>
+             <height>16777215</height>
             </size>
            </property>
            <property name="text">
@@ -1385,7 +1524,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>499</width>
+     <width>583</width>
      <height>233</height>
     </size>
    </property>
@@ -1424,18 +1563,24 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="QToolButton" name="tool0">
+        <widget class="QPushButton" name="tool0">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="maximumSize">
           <size>
-           <width>23</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="toolTip">
           <string>Rectangle seeding</string>
          </property>
          <property name="text">
-          <string>Rec</string>
+          <string/>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
@@ -1459,18 +1604,24 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="tool1">
+        <widget class="QPushButton" name="tool1">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="maximumSize">
           <size>
-           <width>23</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="toolTip">
           <string>Polygon seeding</string>
          </property>
          <property name="text">
-          <string>Poly</string>
+          <string/>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
@@ -1494,15 +1645,21 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="tool4">
+        <widget class="QPushButton" name="tool4">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="maximumSize">
           <size>
-           <width>23</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="text">
-          <string>...</string>
+          <string/>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
@@ -1517,18 +1674,24 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="tool2">
+        <widget class="QPushButton" name="tool2">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="maximumSize">
           <size>
-           <width>23</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="toolTip">
           <string>Ball seeding</string>
          </property>
          <property name="text">
-          <string>Ball</string>
+          <string/>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
@@ -1549,18 +1712,24 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="tool3">
+        <widget class="QPushButton" name="tool3">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="maximumSize">
           <size>
-           <width>23</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="toolTip">
           <string>Cubic seeding</string>
          </property>
          <property name="text">
-          <string>Cubic</string>
+          <string/>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
@@ -1581,33 +1750,17 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="tool6">
+        <widget class="QPushButton" name="tool5">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="maximumSize">
           <size>
-           <width>23</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>show ruler</string>
-         </property>
-         <property name="text">
-          <string>|_|_|</string>
-         </property>
-         <property name="checkable">
-          <bool>true</bool>
-         </property>
-         <property name="autoExclusive">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="tool5">
-         <property name="maximumSize">
-          <size>
-           <width>23</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="toolTip">
@@ -1629,9 +1782,9 @@
         </widget>
        </item>
        <item>
-        <widget class="QComboBox" name="sliceViewBox">
+        <widget class="QPushButton" name="tool6">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
@@ -1639,18 +1792,27 @@
          <property name="maximumSize">
           <size>
            <width>16777215</width>
-           <height>22</height>
+           <height>16777215</height>
           </size>
          </property>
-         <property name="sizeAdjustPolicy">
-          <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
+         <property name="toolTip">
+          <string>show ruler</string>
+         </property>
+         <property name="text">
+          <string>||</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="autoExclusive">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QComboBox" name="overlay">
+        <widget class="QComboBox" name="sliceViewBox">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
@@ -1658,17 +1820,12 @@
          <property name="maximumSize">
           <size>
            <width>16777215</width>
-           <height>22</height>
+           <height>16777215</height>
           </size>
          </property>
          <property name="sizeAdjustPolicy">
           <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
          </property>
-         <item>
-          <property name="text">
-           <string>No overlay</string>
-          </property>
-         </item>
         </widget>
        </item>
       </layout>
@@ -1679,40 +1836,63 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="QToolButton" name="zoom_in">
+        <widget class="QPushButton" name="zoom_in">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="minimumSize">
           <size>
-           <width>23</width>
-           <height>22</height>
+           <width>0</width>
+           <height>0</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
-           <width>23</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="text">
-          <string>+</string>
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../icons.qrc">
+           <normaloff>:/icons/icons/up.xpm</normaloff>:/icons/icons/up.xpm</iconset>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="zoom_out">
+        <widget class="QPushButton" name="zoom_out">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="minimumSize">
           <size>
-           <width>23</width>
-           <height>22</height>
+           <width>0</width>
+           <height>0</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
-           <width>23</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="text">
-          <string>-</string>
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../icons.qrc">
+           <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
          </property>
         </widget>
        </item>
@@ -1832,21 +2012,27 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_2">
        <property name="spacing">
-        <number>0</number>
+        <number>3</number>
        </property>
        <item>
-        <widget class="QToolButton" name="SagView">
+        <widget class="QPushButton" name="SagView">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="maximumSize">
           <size>
-           <width>23</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="toolTip">
           <string>Sagittal view</string>
          </property>
          <property name="text">
-          <string>...</string>
+          <string/>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
@@ -1862,18 +2048,24 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="CorView">
+        <widget class="QPushButton" name="CorView">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="maximumSize">
           <size>
-           <width>23</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="toolTip">
           <string>Coronal view</string>
          </property>
          <property name="text">
-          <string>...</string>
+          <string/>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
@@ -1889,18 +2081,24 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="AxiView">
+        <widget class="QPushButton" name="AxiView">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="maximumSize">
           <size>
-           <width>23</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="toolTip">
           <string>Axial view</string>
          </property>
          <property name="text">
-          <string>...</string>
+          <string/>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
@@ -2838,134 +3036,6 @@
  </resources>
  <connections>
   <connection>
-   <sender>tbNewRegion</sender>
-   <signal>clicked()</signal>
-   <receiver>actionNewRegion</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>64</x>
-     <y>350</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>tbOpenRegion</sender>
-   <signal>clicked()</signal>
-   <receiver>actionOpenRegion</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>87</x>
-     <y>350</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>tbSaveRegion</sender>
-   <signal>clicked()</signal>
-   <receiver>actionSaveRegionAs</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>110</x>
-     <y>350</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>tbDeleteRegion</sender>
-   <signal>clicked()</signal>
-   <receiver>actionDeleteRegion</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>133</x>
-     <y>350</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>isosurfaceButton</sender>
-   <signal>clicked()</signal>
-   <receiver>actionAdd_surface</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>629</x>
-     <y>176</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>tbSaveTract</sender>
-   <signal>clicked()</signal>
-   <receiver>actionSaveTractAs</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>915</x>
-     <y>260</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>tbOpenTract</sender>
-   <signal>clicked()</signal>
-   <receiver>actionOpenTract</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>892</x>
-     <y>260</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>tbDeleteTract</sender>
-   <signal>clicked()</signal>
-   <receiver>actionDeleteTract</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>938</x>
-     <y>260</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>glAxiBox</sender>
    <signal>valueChanged(int)</signal>
    <receiver>glAxiSlider</receiver>
@@ -3058,38 +3128,6 @@
     <hint type="destinationlabel">
      <x>479</x>
      <y>486</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>save_all_tracks</sender>
-   <signal>clicked()</signal>
-   <receiver>actionSave_All_Tracts_As</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1369</x>
-     <y>523</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>move3Dwindow</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>actionFloat_3D_window</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1294</x>
-     <y>183</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
     </hint>
    </hints>
   </connection>

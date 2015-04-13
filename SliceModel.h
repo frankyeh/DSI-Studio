@@ -96,13 +96,12 @@ class FibSliceModel : public SliceModel{
 public:
     FibData* handle;
     image::const_pointer_image<float,3> source_images;
-    std::string view_name,overlay_name;
+    std::string view_name;
 public:
     FibSliceModel(FibData* new_handle);
-    void set_view_name(const std::string& view_name_,const std::string& overlay_name_)
+    void set_view_name(const std::string& view_name_)
     {
         view_name = view_name_;
-        overlay_name = overlay_name_;
     }
 public:
     float get_value_range(void) const;
