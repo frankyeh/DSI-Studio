@@ -1,6 +1,10 @@
 #ifndef GZIP_INTERFACE_HPP
 #define GZIP_INTERFACE_HPP
+#ifdef WIN32
 #include "QtZlib/zlib.h"
+#else
+#include "zlib.h"
+#endif
 #include "image/image.hpp"
 #include "prog_interface_static_link.h"
 

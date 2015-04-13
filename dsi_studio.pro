@@ -27,7 +27,8 @@ mac{
 INCLUDEPATH += /Users/frank/boost/include
 LIBS += -L/Users/frank/boost/lib -lboost_system \
         -L/Users/frank/boost/lib -lboost_thread \
-        -L/Users/frank/boost/lib -lboost_program_options
+        -L/Users/frank/boost/lib -lboost_program_options \
+        -lz
 }
 
 
