@@ -433,6 +433,7 @@ RenderingTableWidget::RenderingTableWidget(tracking_window& cur_tracking_window_
     setAlternatingRowColors(true);
 
     setModel(treemodel = new TreeModel(this));
+    connect(treemodel,SIGNAL(dataChanged(QModelIndex,QModelIndex)),this,SLOT(dataChanged(QModelIndex,QModelIndex)));
     initialize();
 
     header()->setSectionResizeMode(0, QHeaderView::Stretch);
