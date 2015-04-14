@@ -9,6 +9,7 @@
 #include "prog_interface_static_link.h"
 
 class gz_istream{
+    size_t size_;
     std::ifstream in;
     gzFile handle;
     bool is_gz(const char* file_name)
@@ -22,7 +23,7 @@ class gz_istream{
         return false;
     }
 public:
-    gz_istream(void):handle(0){}
+    gz_istream(void):size_(0),handle(0){}
     ~gz_istream(void)
     {
         close();
@@ -31,34 +32,48 @@ public:
     template<typename char_type>
     bool open(const char_type* file_name)
     {
+
+        in.open(file_name,std::ios::binary);
+        unsigned int gz_size = 0;
+        if(in)
+        {
+            in.seekg(-4,std::ios::end);
+            size_ = (size_t)in.tellg()+4;
+            in.read((char*)&gz_size,4);
+            in.seekg(0,std::ios::beg);
+        }
         if(is_gz(file_name))
         {
+            in.close();
+            size_ = gz_size;
             handle = gzopen(file_name, "rb");
             return handle;
         }
-        in.open(file_name,std::ios::binary);
         return in.good();
     }
-    bool read(void* buf,size_t size)
+    bool read(void* buf,size_t buf_size)
     {
         char title[] = "reading......";
         title[7+(std::clock()/CLOCKS_PER_SEC)%5] = 0;
         ::set_title(title);
+        check_prog(cur(),size());
+        if(prog_aborted())
+            return false;
         if(handle)
         {
 
             const size_t block_size = 524288000;// 500mb
-            while(size > block_size)
+            while(buf_size > block_size)
             {
                 if(gzread(handle,buf,block_size) <= 0)
                 {
                     close();
                     return false;
                 }
-                size -= block_size;
+                buf_size -= block_size;
                 buf = (char*)buf + block_size;
             }
-            if (gzread(handle,buf,size) <= 0)
+            if (gzread(handle,buf,buf_size) <= 0)
             {
                 close();
                 return false;
@@ -68,7 +83,7 @@ public:
         else
             if(in)
             {
-                in.read((char*)buf,size);
+                in.read((char*)buf,buf_size);
                 return in.good();
             }
         return false;
@@ -93,6 +108,14 @@ public:
         }
         if(in)
             in.close();
+    }
+    size_t cur(void)
+    {
+        return handle ? gztell(handle):in.tellg();
+    }
+    size_t size(void)
+    {
+        return size_;
     }
 
     operator bool() const	{return handle ? true:in.good();}

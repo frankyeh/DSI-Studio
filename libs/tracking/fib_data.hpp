@@ -709,9 +709,10 @@ public:
 public:
     bool load_from_file(const char* file_name)
     {
-        if (!mat_reader.load_from_file(file_name))
+        if (!mat_reader.load_from_file(file_name) || prog_aborted())
         {
-            error_msg = "Cannot open file";
+            if(!prog_aborted())
+                error_msg = "Cannot open file";
             return false;
         }
         {

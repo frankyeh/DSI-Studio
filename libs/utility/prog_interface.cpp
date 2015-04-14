@@ -5,6 +5,7 @@
 #include <ctime>
 #include <iostream>
 #include <QTime>
+
 std::auto_ptr<QProgressDialog> progressDialog;
 QTime t_total,t_last;
 bool lock_dialog = false;
@@ -17,11 +18,11 @@ void begin_prog(const char* title,bool lock)
         return;
     }
     lock_dialog = lock;
-    progressDialog.reset(new QProgressDialog);
+    progressDialog.reset(new QProgressDialog(title,"Cancel",0,100,0));
     progressDialog->show();
-    progressDialog->setWindowTitle(title);
-    qApp->processEvents();
+    QApplication::processEvents();
     t_total.start();
+    t_last.start();
 }
 bool is_running(void)
 {
@@ -35,14 +36,14 @@ void set_title(const char* title)
     if(!progressDialog.get())
         return;
     progressDialog->setWindowTitle(title);
-    qApp->processEvents();
+    QApplication::processEvents();
 }
-int check_prog(int now,int total)
+int check_prog(int now,unsigned int total)
 {
     if(now == total && progressDialog.get() && !lock_dialog)
     {
-        progressDialog.reset(new QProgressDialog("","Abort",0,10,0));
-        qApp->processEvents();
+        progressDialog.reset(new QProgressDialog("","Cancel",0,10,0));
+        QApplication::processEvents();
         return false;
     }
     if(now == 0 || now == total)
@@ -57,13 +58,12 @@ int check_prog(int now,int total)
             return false;
         progressDialog->setRange(0, total);
         progressDialog->setValue(now);
-
         if(expected_sec)
             progressDialog->setLabelText(QString("%1 of %2, estimated time: %3 min %4 sec").
                                              arg(now).arg(total).arg(expected_sec/60).arg(expected_sec%60));
         else
             progressDialog->setLabelText(QString("%1 of %2...").arg(now).arg(total));
-        qApp->processEvents();
+        QApplication::processEvents();
     }
     return now < total;
 }
