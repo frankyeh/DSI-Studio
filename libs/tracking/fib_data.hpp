@@ -94,12 +94,12 @@ public:
             odf_block_map2.resize(dim);
 
             int voxel_index = 0;
-            for(int i = 0;i < odf_block_size.size();++i)
-                for(int j = 0;j < odf_block_size[i];j += half_odf_size)
+            for(unsigned int i = 0;i < odf_block_size.size();++i)
+                for(unsigned int j = 0;j < odf_block_size[i];j += half_odf_size)
                 {
-                    int k_end = j + half_odf_size;
+                    unsigned int k_end = j + half_odf_size;
                     bool is_odf_zero = true;
-                    for(int k = j;k < k_end;++k)
+                    for(unsigned int k = j;k < k_end;++k)
                         if(odf_blocks[i][k] != 0.0)
                         {
                             is_odf_zero = false;
@@ -406,7 +406,7 @@ public:
             if(subject_qa_max.back() == 0.0)
                 subject_qa_max.back() = 1.0;
         }
-        num_subjects = subject_qa.size();
+        num_subjects = (unsigned int)subject_qa.size();
         subject_names.resize(num_subjects);
         R2.resize(num_subjects);
         if(!num_subjects)

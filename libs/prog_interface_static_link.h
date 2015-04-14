@@ -4,7 +4,7 @@
 
 void begin_prog(const char* title,bool lock = false);
 void set_title(const char* title);
-int check_prog(int now,unsigned int total);
+bool check_prog(unsigned int now,unsigned int total);
 int prog_aborted(void);
 bool is_running(void);
 #endif

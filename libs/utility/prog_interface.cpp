@@ -38,11 +38,11 @@ void set_title(const char* title)
     progressDialog->setWindowTitle(title);
     QApplication::processEvents();
 }
-int check_prog(int now,unsigned int total)
+bool check_prog(unsigned int now,unsigned int total)
 {
-    if(now == total && progressDialog.get() && !lock_dialog)
+    if(now >= total && progressDialog.get() && !lock_dialog)
     {
-        progressDialog.reset(new QProgressDialog("","Cancel",0,10,0));
+        progressDialog->hide();
         QApplication::processEvents();
         return false;
     }

@@ -338,7 +338,6 @@ const char* reconstruction(ImageModel* image_model,unsigned int method_id,const 
             {
                 if (!image_model->reconstruct<dsi_estimate_response_function>())
                     return "reconstruction calceled";
-                begin_prog("calculating");
             }
             out << ".dsi."<< (int)param_values[0] << ".fib.gz";
             if (!image_model->reconstruct<dsi_process>())
@@ -358,7 +357,6 @@ const char* reconstruction(ImageModel* image_model,unsigned int method_id,const 
             {
                 if (!image_model->reconstruct<qbi_estimate_response_function>())
                     return "reconstruction calceled";
-                begin_prog("calculating");
             }
             out << ".qbi."<< param_values[0] << "_" << param_values[1] << ".fib.gz";
             if (!image_model->reconstruct<qbi_process>())
@@ -370,7 +368,6 @@ const char* reconstruction(ImageModel* image_model,unsigned int method_id,const 
             {
                 if (!image_model->reconstruct<qbi_sh_estimate_response_function>())
                     return "reconstruction calceled";
-                begin_prog("calculating");
             }
             out << ".qbi.sh"<< (int) param_values[1] << "." << param_values[0] << ".fib.gz";
             if (!image_model->reconstruct<qbi_sh_process>())
@@ -393,7 +390,6 @@ const char* reconstruction(ImageModel* image_model,unsigned int method_id,const 
             {
                 if (!image_model->reconstruct<gqi_estimate_response_function>())
                     return "reconstruction calceled";
-                begin_prog("calculating");
             }
             if(image_model->voxel.r2_weighted)
                 image_model->voxel.recon_report << " The ODF calculation was weighted by the square of the diffuion displacement.";
@@ -425,7 +421,6 @@ const char* reconstruction(ImageModel* image_model,unsigned int method_id,const 
                 out << ".jac";
             if(image_model->voxel.output_mapping)
                 out << ".map";
-            begin_prog("deforming");
             if (!image_model->reconstruct<gqi_mni_process>())
                 return "reconstruction canceled";
             out << ".R" << (int)std::floor(image_model->voxel.R2*100.0) << ".fib.gz";

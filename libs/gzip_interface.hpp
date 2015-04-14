@@ -56,7 +56,7 @@ public:
         char title[] = "reading......";
         title[7+(std::clock()/CLOCKS_PER_SEC)%5] = 0;
         ::set_title(title);
-        check_prog(cur(),size());
+        check_prog((unsigned int)cur(),(unsigned int)size());
         if(prog_aborted())
             return false;
         if(handle)
@@ -73,7 +73,7 @@ public:
                 buf_size -= block_size;
                 buf = (char*)buf + block_size;
             }
-            if (gzread(handle,buf,buf_size) <= 0)
+            if (gzread(handle,buf,(unsigned int)buf_size) <= 0)
             {
                 close();
                 return false;
@@ -88,7 +88,7 @@ public:
             }
         return false;
     }
-    void seek(size_t pos)
+    void seek(long pos)
     {
         if(handle)
         {
@@ -108,6 +108,7 @@ public:
         }
         if(in)
             in.close();
+        check_prog(0,0);
     }
     size_t cur(void)
     {
@@ -171,7 +172,7 @@ public:
                 size -= block_size;
                 buf = (const char*)buf + block_size;
             }
-            if(gzwrite(handle,buf,size) <= 0)
+            if(gzwrite(handle,buf,(unsigned int)size) <= 0)
                 close();
         }
         else
