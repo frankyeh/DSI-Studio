@@ -111,7 +111,7 @@ public:
     }
     size_t cur(void)
     {
-        return handle ? gztell(handle):in.tellg();
+        return handle ? (size_t)gztell(handle):(size_t)in.tellg();
     }
     size_t size(void)
     {
