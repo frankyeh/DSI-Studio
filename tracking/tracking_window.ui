@@ -3139,5 +3139,165 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>tbSaveTract</sender>
+   <signal>clicked()</signal>
+   <receiver>actionSaveTractAs</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1373</x>
+     <y>331</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>tbSaveRegion</sender>
+   <signal>clicked()</signal>
+   <receiver>actionSaveRegionAs</receiver>
+   <slot>toggle()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>83</x>
+     <y>86</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>tbOpenTract</sender>
+   <signal>clicked()</signal>
+   <receiver>actionOpenTract</receiver>
+   <slot>toggle()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1340</x>
+     <y>331</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>tbOpenRegion</sender>
+   <signal>clicked()</signal>
+   <receiver>actionOpenRegion</receiver>
+   <slot>toggle()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>50</x>
+     <y>86</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>tbNewRegion</sender>
+   <signal>clicked()</signal>
+   <receiver>actionNewRegion</receiver>
+   <slot>toggle()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>17</x>
+     <y>86</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>tbDeleteTract</sender>
+   <signal>clicked()</signal>
+   <receiver>actionDeleteTract</receiver>
+   <slot>toggle()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1439</x>
+     <y>331</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>tbDeleteRegion</sender>
+   <signal>clicked()</signal>
+   <receiver>actionDeleteRegion</receiver>
+   <slot>toggle()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>116</x>
+     <y>86</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>save_all_tracks</sender>
+   <signal>clicked()</signal>
+   <receiver>actionSave_All_Tracts_As</receiver>
+   <slot>toggle()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1406</x>
+     <y>331</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>move3Dwindow</sender>
+   <signal>clicked()</signal>
+   <receiver>actionFloat_3D_window</receiver>
+   <slot>toggle()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1303</x>
+     <y>180</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>isosurfaceButton</sender>
+   <signal>clicked()</signal>
+   <receiver>actionAdd_surface</receiver>
+   <slot>toggle()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>746</x>
+     <y>180</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
 </ui>
