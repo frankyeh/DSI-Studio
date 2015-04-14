@@ -3,9 +3,7 @@
 #include <vector>
 #include <iosfwd>
 #include "image/image.hpp"
-
-class FibData;
-class fiber_orientations;
+#include "fib_data.hpp"
 
 class TractModel{
 public:

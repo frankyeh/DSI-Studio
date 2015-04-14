@@ -437,11 +437,11 @@ public:
     void calculate_si2vi(void)
     {
         vi2si.resize(dim.size());
-        for(unsigned int index = 0;index < dim.size();++index)
+        for(unsigned int index = 0;index < (unsigned int)dim.size();++index)
         {
             if(fib.fa[0][index] != 0.0)
             {
-                vi2si[index] = si2vi.size();
+                vi2si[index] = (unsigned int)si2vi.size();
                 si2vi.push_back(index);
             }
         }
@@ -503,7 +503,7 @@ public:
                 continue;
             float min_value = *std::min_element(odf, odf + fib.half_odf_size);
             unsigned int pos = index;
-            for(unsigned char i = 0;i < fib.num_fiber;++i,pos += si2vi.size())
+            for(unsigned char i = 0;i < fib.num_fiber;++i,pos += (unsigned int)si2vi.size())
             {
                 if(fib.fa[i][cur_index] == 0.0)
                     break;
@@ -544,7 +544,7 @@ public:
     bool load_subject_files(const std::vector<std::string>& file_names,
                                           const std::vector<std::string>& subject_names_)
     {
-        num_subjects = file_names.size();
+        num_subjects = (unsigned int)file_names.size();
         subject_qa.clear();
         subject_qa_buffer.clear();
         subject_qa.resize(num_subjects);
@@ -606,11 +606,11 @@ public:
             if(mat_reader[index].get_name() != "report" &&
                mat_reader[index].get_name().find("subject") != 0)
                 matfile.write(mat_reader[index]);
-        for(unsigned int index = 0;check_prog(index,subject_qa.size());++index)
+        for(unsigned int index = 0;check_prog(index,(unsigned int)subject_qa.size());++index)
         {
             std::ostringstream out;
             out << "subject" << index;
-            matfile.write(out.str().c_str(),subject_qa[index],fib.num_fiber,si2vi.size());
+            matfile.write(out.str().c_str(),subject_qa[index],fib.num_fiber,(unsigned int)si2vi.size());
         }
         std::string name_string;
         for(unsigned int index = 0;index < num_subjects;++index)
@@ -618,14 +618,14 @@ public:
             name_string += subject_names[index];
             name_string += "\n";
         }
-        matfile.write("subject_names",name_string.c_str(),1,name_string.size());
-        matfile.write("R2",&*R2.begin(),1,R2.size());
+        matfile.write("subject_names",name_string.c_str(),1,(unsigned int)name_string.size());
+        matfile.write("R2",&*R2.begin(),1,(unsigned int)R2.size());
 
         {
             std::ostringstream out;
             out << "A total of " << num_subjects << " subjects were included in the connectometry database." << subject_report.c_str();
             std::string report = out.str();
-            matfile.write("report",&*report.c_str(),1,report.length());
+            matfile.write("report",&*report.c_str(),1,(unsigned int)report.length());
         }
     }
     void get_subject_slice(unsigned int subject_index,unsigned int z_pos,
@@ -650,7 +650,7 @@ public:
         for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
         {
             unsigned int cur_index = si2vi[s_index];
-            for(unsigned int i = 0,fib_offset = 0;i < fib.num_fiber && fib.fa[i][cur_index] > 0;++i,fib_offset+=si2vi.size())
+            for(unsigned int i = 0,fib_offset = 0;i < fib.num_fiber && fib.fa[i][cur_index] > 0;++i,fib_offset+=(unsigned int)si2vi.size())
             {
                 unsigned int pos = s_index + fib_offset;
                 fa_data[i][cur_index] = subject_qa[subject_index][pos];
@@ -660,10 +660,10 @@ public:
     void get_data_at(unsigned int index,unsigned int fib_index,std::vector<float>& data,bool normalize_qa) const
     {
         data.clear();
-        if(index >= dim.size() || fib.fa[0][index] == 0.0)
+        if((int)index >= dim.size() || fib.fa[0][index] == 0.0)
             return;
         unsigned int s_index = vi2si[index];
-        unsigned int fib_offset = fib_index*si2vi.size();
+        unsigned int fib_offset = fib_index*(unsigned int)si2vi.size();
         data.resize(num_subjects);
         if(normalize_qa)
             for(unsigned int index = 0;index < num_subjects;++index)

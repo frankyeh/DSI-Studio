@@ -116,7 +116,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
             begin_prog("loading");
             for (unsigned int index = 0;check_prog(index,track_number);++index)
             {
-                int n_point;
+                unsigned int n_point;
                 in.read((char*)&n_point,sizeof(int));
                 unsigned int index_shift = 3 + trk.n_scalars;
                 std::vector<float> tract(index_shift*n_point + trk.n_properties);

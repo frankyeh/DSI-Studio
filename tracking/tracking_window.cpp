@@ -102,8 +102,22 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         t1 << QCoreApplication::applicationDirPath() + "/mni_icbm152_t1_tal_nlin_asym_09a.nii.gz";
         if(QFileInfo(t1[0]).exists())
             add_slices(t1,"T1w");
+        else
+        {
+            t1.clear();
+            t1 << QDir::currentPath() + "/mni_icbm152_t1_tal_nlin_asym_09a.nii.gz";
+            if(QFileInfo(t1[0]).exists())
+                add_slices(t1,"T1w");
+        }
         if(QFileInfo(wm[0]).exists())
             add_slices(wm,"wm");
+        else
+        {
+            wm.clear();
+            wm << QDir::currentPath() + "/mni_icbm152_wm_tal_nlin_asym_09a.nii.gz";
+            if(QFileInfo(wm[0]).exists())
+                add_slices(wm,"wm");
+        }
     }
 
     // setup atlas
