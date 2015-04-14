@@ -52,6 +52,7 @@ private:
     bool load_src(int index);
     void update_dimension(void);
     void update_image(void);
+    void dwi_correction(int reg_type);
     void doReconstruction(unsigned char method_id,bool prompt);
 private slots:
     void on_QDif_toggled(bool checked);
@@ -97,6 +98,7 @@ private slots:
     void on_motion_correction_clicked();
     void check_progress(void);
     void on_refine_contour_clicked();
+    void on_eddy_correction_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

@@ -9,7 +9,11 @@
 #include "libs/gzip_interface.hpp"
 extern fa_template fa_template_imp;
 namespace po = boost::program_options;
-
+void rec_motion_correction(ImageModel* handle,unsigned int total_thread,
+                           int reg_type,
+                           std::vector<image::affine_transform<3,float> >& args,
+                           unsigned int& progress,
+                           bool& terminated);
 
 /**
  perform reconstruction
@@ -39,6 +43,8 @@ int rec(int ac, char *av[])
     ("interpo_method", po::value<int>()->default_value(2), "set the interpolation method for QSDR")
     ("scheme_balance", po::value<int>()->default_value(0), "balance the diffusion sampling scheme")
     ("check_btable", po::value<int>()->default_value(1), "check b-table")
+    ("motion_correction", po::value<int>()->default_value(0), "correct for motion")
+    ("eddy_correction", po::value<int>()->default_value(0), "correct for eddy current")
     ("param0", po::value<float>(), "set parameters")
     ("param1", po::value<float>(), "set parameters")
     ("param2", po::value<float>(), "set parameters")
@@ -212,6 +218,17 @@ int rec(int ac, char *av[])
         }
     }    
 
+    if(vm["motion_correction"].as<int>() || vm["eddy_correction"].as<int>())
+    {
+        std::vector<image::affine_transform<3,float> > arg;
+        unsigned int progress = 0;
+        bool terminated = false;
+        std::cout << (vm["motion_correction"].as<int>() ? "correct for motion...":"correct for eddy current...") << std::endl;
+        rec_motion_correction(handle.get(),vm["thread"].as<int>(),
+                vm["motion_correction"].as<int>() ? image::reg::rigid_body : image::reg::affine,
+                arg,progress,terminated);
+        std::cout << "Done." <<std::endl;
+    }
     std::cout << "start reconstruction..." <<std::endl;
     const char* msg = reconstruction(handle.get(),method_index,param,vm["check_btable"].as<int>());
     if (!msg)
