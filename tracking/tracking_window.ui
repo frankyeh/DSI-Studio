@@ -3159,7 +3159,7 @@
    <sender>tbSaveRegion</sender>
    <signal>clicked()</signal>
    <receiver>actionSaveRegionAs</receiver>
-   <slot>toggle()</slot>
+   <slot>trigger()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>83</x>
@@ -3175,7 +3175,7 @@
    <sender>tbOpenTract</sender>
    <signal>clicked()</signal>
    <receiver>actionOpenTract</receiver>
-   <slot>toggle()</slot>
+   <slot>trigger()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>1340</x>
@@ -3191,7 +3191,7 @@
    <sender>tbOpenRegion</sender>
    <signal>clicked()</signal>
    <receiver>actionOpenRegion</receiver>
-   <slot>toggle()</slot>
+   <slot>trigger()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>50</x>
@@ -3207,7 +3207,7 @@
    <sender>tbNewRegion</sender>
    <signal>clicked()</signal>
    <receiver>actionNewRegion</receiver>
-   <slot>toggle()</slot>
+   <slot>trigger()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>17</x>
@@ -3223,7 +3223,7 @@
    <sender>tbDeleteTract</sender>
    <signal>clicked()</signal>
    <receiver>actionDeleteTract</receiver>
-   <slot>toggle()</slot>
+   <slot>trigger()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>1439</x>
@@ -3239,7 +3239,7 @@
    <sender>tbDeleteRegion</sender>
    <signal>clicked()</signal>
    <receiver>actionDeleteRegion</receiver>
-   <slot>toggle()</slot>
+   <slot>trigger()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>116</x>
@@ -3255,7 +3255,7 @@
    <sender>save_all_tracks</sender>
    <signal>clicked()</signal>
    <receiver>actionSave_All_Tracts_As</receiver>
-   <slot>toggle()</slot>
+   <slot>trigger()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>1406</x>
@@ -3271,7 +3271,7 @@
    <sender>move3Dwindow</sender>
    <signal>clicked()</signal>
    <receiver>actionFloat_3D_window</receiver>
-   <slot>toggle()</slot>
+   <slot>trigger()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>1303</x>
@@ -3287,7 +3287,7 @@
    <sender>isosurfaceButton</sender>
    <signal>clicked()</signal>
    <receiver>actionAdd_surface</receiver>
-   <slot>toggle()</slot>
+   <slot>trigger()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>746</x>
