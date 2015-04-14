@@ -20,7 +20,7 @@ public:
     BaseProcess(void) {}
     virtual void init(Voxel&) {}
     virtual void run(Voxel&, VoxelData&) {}
-    virtual void end(Voxel&,gz_mat_write& mat_writer) {}
+    virtual void end(Voxel&,gz_mat_write&) {}
     virtual ~BaseProcess(void) {}
 };
 

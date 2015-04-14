@@ -88,7 +88,7 @@ public: // rendering options
         }
 
         unsigned int size(void) const {
-        return region.size();
+        return (unsigned int)region.size();
     }
 
         void push_back(const image::vector<3,short>& point) {
