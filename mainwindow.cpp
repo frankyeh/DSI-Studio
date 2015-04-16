@@ -622,7 +622,15 @@ void MainWindow::on_batch_src_clicked()
                     continue;
             }
             if(load_all_files(dicom_file_list,dwi_files) && !prog_aborted())
+            {
+                for(unsigned int index = 0;index < dwi_files.size();++index)
+                    if(dwi_files[index].get_bvalue() < 100)
+                    {
+                        dwi_files[index].set_bvalue(0);
+                        dwi_files[index].set_bvec(0,0,0);
+                    }
                 DwiHeader::output_src(output.toLocal8Bit().begin(),dwi_files,0);
+            }
         }
     }
 }

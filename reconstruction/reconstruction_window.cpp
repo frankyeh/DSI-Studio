@@ -826,29 +826,71 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
 }
 
 void rec_motion_correction_parallel(ImageModel* handle,
-                                    int reg_type,
                                     std::vector<image::affine_transform<3,float> >& args,
                                     unsigned int total_thread,unsigned int id,unsigned int& progress,bool& terminated)
 {
     for(unsigned int i = id;i < handle->voxel.bvalues.size() && !terminated;i += total_thread)
     {
+
+        if(id == 0)
+            progress = i*99/handle->voxel.bvalues.size();
         if(i == 0)
             continue;
-        if(id == 0)
-            progress = i*95/handle->voxel.bvalues.size();
-        image::basic_image<unsigned char,3> mask1(handle->voxel.dim),mask2(handle->voxel.dim);
-        image::segmentation::otsu(image::make_image(handle->voxel.dim,handle->dwi_data[0]),mask1);
-        image::segmentation::otsu(image::make_image(handle->voxel.dim,handle->dwi_data[i]),mask2);
-        image::morphology::smoothing(mask1);
-        image::morphology::smoothing(mask2);
-        image::reg::linear(mask1,mask2,args[i],
-                           reg_type,
-                           image::reg::square_error(),terminated);
+        image::basic_image<float,3> I0,I1;
+        I0 = image::make_image(handle->voxel.dim,handle->dwi_data[0]);
+        I1 = image::make_image(handle->voxel.dim,handle->dwi_data[i]);
+        image::filter::mean(I0);
+        image::filter::mean(I1);
+        image::filter::mean(I0);
+        image::filter::mean(I1);
+        image::filter::mean(I0);
+        image::filter::mean(I1);
+        image::filter::gradient_magnitude(I0);
+        image::filter::gradient_magnitude(I1);
+        image::normalize(I0);
+        image::normalize(I1);
+
+
+        image::affine_transform<3,float> upper,lower;
+        upper.translocation[0] = 2;
+        upper.translocation[1] = 2;
+        upper.translocation[2] = 2;
+        lower.translocation[0] = -2;
+        lower.translocation[1] = -2;
+        lower.translocation[2] = -2;
+        upper.rotation[0] = 3.1415926*3.0/180.0;
+        upper.rotation[1] = 3.1415926*3.0/180.0;
+        upper.rotation[2] = 3.1415926*3.0/180.0;
+        lower.rotation[0] = -3.1415926*3.0/180.0;
+        lower.rotation[1] = -3.1415926*3.0/180.0;
+        lower.rotation[2] = -3.1415926*3.0/180.0;
+        upper.scaling[0] = 1.03;
+        upper.scaling[1] = 1.03;
+        upper.scaling[2] = 1.03;
+        lower.scaling[0] = 0.96;
+        lower.scaling[1] = 0.96;
+        lower.scaling[2] = 0.96;
+        upper.affine[0] = 0.04;
+        upper.affine[1] = 0.04;
+        upper.affine[2] = 0.04;
+        lower.affine[0] = -0.04;
+        lower.affine[1] = -0.04;
+        lower.affine[2] = -0.04;
+        image::normalize(I1);
+        image::reg::fun_adoptor<image::basic_image<float,3>,
+                                image::affine_transform<3,float>,
+                                image::affine_transform<3,float>,
+                                image::reg::square_error2> fun(I0,I1,args[i]);
+        double optimal_value = fun(args[i][0]);
+        image::optimization::graient_descent(args[i].begin(),args[i].end(),
+                                             upper.begin(),lower.begin(),fun,optimal_value,terminated,0.05);
+        //for(unsigned int index = 0;index < 12;++index)
+        //    std::cout << args[i][index] << " ";
+        //std::cout << std::endl;
     }
 }
 
 void rec_motion_correction(ImageModel* handle,unsigned int total_thread,
-                           int reg_type,
                            std::vector<image::affine_transform<3,float> >& args,
                            unsigned int& progress,
                            bool& terminated)
@@ -857,9 +899,9 @@ void rec_motion_correction(ImageModel* handle,unsigned int total_thread,
     boost::thread_group threads;
     for(unsigned int i = 1;i < total_thread;++i)
         threads.add_thread(new boost::thread(&rec_motion_correction_parallel,
-                                             handle,reg_type,boost::ref(args),
+                                             handle,boost::ref(args),
                                              total_thread,i,boost::ref(progress),boost::ref(terminated)));
-    rec_motion_correction_parallel(handle,reg_type,args,total_thread,0,boost::ref(progress),terminated);
+    rec_motion_correction_parallel(handle,args,total_thread,0,boost::ref(progress),terminated);
     threads.join_all();
 
     for(unsigned int i = 0;i < handle->voxel.bvalues.size();++i)
@@ -868,14 +910,13 @@ void rec_motion_correction(ImageModel* handle,unsigned int total_thread,
     progress = 100;
 }
 
-void reconstruction_window::dwi_correction(int reg_type)
+void reconstruction_window::on_motion_correction_clicked()
 {
     if(motion_correction_thread.get())
     {
         terminated = true;
         motion_correction_thread->join();
-        ui->motion_correction->setText("Motion Correction");
-        ui->eddy_correction->setText("Eddy Correction");
+        ui->motion_correction->setText("Motion/Eddy Correction");
         timer.reset(0);
         ui->motion_correction_progress->setValue(0);
         motion_args.clear();
@@ -885,26 +926,14 @@ void reconstruction_window::dwi_correction(int reg_type)
     terminated = false;
     motion_correction_thread.reset(new boost::thread(&rec_motion_correction,
                                                      handle.get(),4,
-                                                     reg_type,
                                                      boost::ref(motion_args),boost::ref(progress),boost::ref(terminated)));
     timer.reset(new QTimer(this));
     timer->setInterval(1000);
     timer->start();
     connect(timer.get(), SIGNAL(timeout()), this, SLOT(check_progress()));
-    if(reg_type == image::reg::rigid_body)
-        ui->motion_correction->setText("Stop");
-    else
-        ui->eddy_correction->setText("Stop");
+    ui->motion_correction->setText("Stop");
 }
 
-void reconstruction_window::on_motion_correction_clicked()
-{
-    dwi_correction(image::reg::rigid_body);
-}
-void reconstruction_window::on_eddy_correction_clicked()
-{
-    dwi_correction(image::reg::affine);
-}
 void reconstruction_window::check_progress(void)
 {
     ui->motion_correction_progress->setValue(progress);

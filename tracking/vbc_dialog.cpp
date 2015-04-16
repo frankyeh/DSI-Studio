@@ -158,8 +158,8 @@ void vbc_dialog::show_fdr_report()
 
     QPen pen;
     QColor color[4];
-    color[0] = QColor(20,20,100,200);
-    color[1] = QColor(100,20,20,200);
+    color[0] = QColor(20,20,255,255);
+    color[1] = QColor(255,20,20,255);
     for(unsigned int i = 0; i < vbc_data.size(); ++i)
     {
         QVector<double> x(vbc_data[i].size());
@@ -171,6 +171,7 @@ void vbc_dialog::show_fdr_report()
         }
         ui->fdr_dist->addGraph();
         pen.setColor(color[i]);
+        pen.setWidth(2);
         ui->fdr_dist->graph()->setLineStyle(QCPGraph::lsLine);
         ui->fdr_dist->graph()->setPen(pen);
         ui->fdr_dist->graph()->setData(x, y);
@@ -190,9 +191,9 @@ void vbc_dialog::show_fdr_report()
     ui->fdr_dist->yAxis2->setTickLabels(false);
     ui->fdr_dist->legend->setVisible(ui->view_legend->isChecked());
     QFont legendFont = font();  // start out with MainWindow's font..
-    legendFont.setPointSize(9); // and make a bit smaller for legend
+    legendFont.setPointSize(8); // and make a bit smaller for legend
     ui->fdr_dist->legend->setFont(legendFont);
-    ui->fdr_dist->legend->setPositionStyle(QCPLegend::psRight);
+    ui->fdr_dist->legend->setPositionStyle(QCPLegend::psTopRight);
     ui->fdr_dist->legend->setBrush(QBrush(QColor(255,255,255,230)));
     ui->fdr_dist->replot();
 
@@ -204,7 +205,7 @@ void vbc_dialog::show_report()
         return;
     ui->null_dist->clearGraphs();
     std::vector<std::vector<unsigned int> > vbc_data;
-    char legends[4][60] = {"null greater","null lesser","greater","lesser"};
+    char legends[4][60] = {"permuted greater","permuted lesser","nonpermuted greater","nonpermuted lesser"};
     std::vector<const char*> legend;
 
     if(ui->show_null_greater->isChecked())
@@ -258,14 +259,15 @@ void vbc_dialog::show_report()
 
     QPen pen;
     QColor color[4];
-    color[0] = QColor(20,20,100,200);
-    color[1] = QColor(100,20,20,200);
-    color[2] = QColor(20,100,20,200);
-    color[3] = QColor(20,100,100,200);
+    color[0] = QColor(20,20,255,255);
+    color[1] = QColor(255,20,20,255);
+    color[2] = QColor(20,255,20,255);
+    color[3] = QColor(20,255,255,255);
     for(unsigned int i = 0; i < vbc_data.size(); ++i)
     {
         ui->null_dist->addGraph();
         pen.setColor(color[i]);
+        pen.setWidth(2);
         ui->null_dist->graph()->setLineStyle(QCPGraph::lsLine);
         ui->null_dist->graph()->setPen(pen);
         ui->null_dist->graph()->setData(x, y[i]);
@@ -286,9 +288,9 @@ void vbc_dialog::show_report()
     ui->null_dist->yAxis2->setTickLabels(false);
     ui->null_dist->legend->setVisible(ui->view_legend->isChecked());
     QFont legendFont = font();  // start out with MainWindow's font..
-    legendFont.setPointSize(9); // and make a bit smaller for legend
+    legendFont.setPointSize(8); // and make a bit smaller for legend
     ui->null_dist->legend->setFont(legendFont);
-    ui->null_dist->legend->setPositionStyle(QCPLegend::psRight);
+    ui->null_dist->legend->setPositionStyle(QCPLegend::psTopRight);
     ui->null_dist->legend->setBrush(QBrush(QColor(255,255,255,230)));
     ui->null_dist->replot();
 }
@@ -706,21 +708,21 @@ void vbc_dialog::calculate_FDR(void)
         ui->show_greater->setChecked(true);
         ui->show_null_lesser->setChecked(false);
         ui->show_lesser->setChecked(false);
-        ui->null_dist->savePdf((vbc->trk_file_names[0]+".greater.dist.pdf").c_str(),true,300,300);
+        ui->null_dist->saveBmp((vbc->trk_file_names[0]+".greater.dist.bmp").c_str(),300,300,3);
 
         ui->show_null_greater->setChecked(false);
         ui->show_greater->setChecked(false);
         ui->show_null_lesser->setChecked(true);
         ui->show_lesser->setChecked(true);
-        ui->null_dist->savePdf((vbc->trk_file_names[0]+".lesser.dist.pdf").c_str(),true,300,300);
+        ui->null_dist->saveBmp((vbc->trk_file_names[0]+".lesser.dist.bmp").c_str(),300,300,3);
 
         ui->show_greater_2->setChecked(true);
         ui->show_lesser_2->setChecked(false);
-        ui->fdr_dist->savePdf((vbc->trk_file_names[0]+".greater.fdr.pdf").c_str(),true,300,300);
+        ui->fdr_dist->saveBmp((vbc->trk_file_names[0]+".greater.fdr.bmp").c_str(),300,300,3);
 
         ui->show_greater_2->setChecked(false);
         ui->show_lesser_2->setChecked(true);
-        ui->fdr_dist->savePdf((vbc->trk_file_names[0]+".lesser.fdr.pdf").c_str(),true,300,300);
+        ui->fdr_dist->saveBmp((vbc->trk_file_names[0]+".lesser.fdr.bmp").c_str(),300,300,3);
 
 
         // restore all checked status
@@ -1183,11 +1185,11 @@ void vbc_dialog::on_save_report_clicked()
                 work_dir + "/report.jpg",
                 "JPEC file (*.jpg);;BMP file (*.bmp);;PDF file (*.pdf);;PNG file (*.png);;TXT file (*.txt);;All files (*)");
     if(QFileInfo(filename).completeSuffix().toLower() == "jpg")
-        ui->vbc_report->saveJpg(filename);
+        ui->vbc_report->saveJpg(filename,300,300,3);
     if(QFileInfo(filename).completeSuffix().toLower() == "bmp")
-        ui->vbc_report->saveBmp(filename);
+        ui->vbc_report->saveBmp(filename,300,300,3);
     if(QFileInfo(filename).completeSuffix().toLower() == "png")
-        ui->vbc_report->savePng(filename);
+        ui->vbc_report->savePng(filename,300,300,3);
     if(QFileInfo(filename).completeSuffix().toLower() == "pdf")
         ui->vbc_report->savePdf(filename,true,300,300);
     if(QFileInfo(filename).completeSuffix().toLower() == "txt")

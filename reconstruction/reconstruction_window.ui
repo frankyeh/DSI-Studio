@@ -134,14 +134,7 @@
                    </size>
                   </property>
                   <property name="text">
-                   <string>Motion Correction</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="eddy_correction">
-                  <property name="text">
-                   <string>Eddy Correction</string>
+                   <string>Motion/Eddy Correction</string>
                   </property>
                  </widget>
                 </item>
