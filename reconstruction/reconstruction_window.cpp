@@ -1,4 +1,5 @@
 #include <QSplitter>
+#include <QThread>
 #include "reconstruction_window.h"
 #include "ui_reconstruction_window.h"
 #include "dsi_interface_static_link.h"
@@ -266,7 +267,6 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
 
     begin_prog("run reconstruction",true);
     int odf_order[8] = {4, 5, 6, 8, 10, 12, 16, 20};
-    handle->thread_count = ui->ThreadCount->value();
     handle->voxel.ti.init(odf_order[ui->ODFDim->currentIndex()]);
     handle->voxel.odf_deconvolusion = ui->odf_sharpening->currentIndex() == 1 ? 1 : 0;
     handle->voxel.odf_decomposition = ui->odf_sharpening->currentIndex() == 2 ? 1 : 0;
@@ -282,7 +282,9 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.output_jacobian = ui->output_jacobian->isChecked() ? 1 : 0;
     handle->voxel.output_mapping = ui->output_mapping->isChecked() ? 1 : 0;
 
-    const char* msg = (const char*)reconstruction(handle.get(), method_id, params,ui->check_btable->isChecked());
+    const char* msg = (const char*)reconstruction(handle.get(), method_id,
+                                                  params,ui->check_btable->isChecked(),
+                                                  ui->ThreadCount->value());
     if (!QFileInfo(msg).exists())
     {
         QMessageBox::information(this,"error",msg,0);
@@ -736,18 +738,33 @@ void reconstruction_window::on_actionFlip_xz_triggered()
 
 void reconstruction_window::on_actionRotate_triggered()
 {
-    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,fa_template_imp.I,handle->voxel.vs,image::reg::rigid_body));
+    QString filename = QFileDialog::getOpenFileName(
+            this,"Open Images files",absolute_path,
+            "Images (*.nii *nii.gz);;All files (*)" );
+    if( filename.isEmpty())
+        return;
+    image::basic_image<float,3> ref;
+    image::vector<3> vs,scale;
+    gz_nifti in;
+    if(!in.load_from_file(filename.toLocal8Bit().begin()) || !in.toLPS(ref))
+    {
+        QMessageBox::information(this,"Error","Not a valid nifti file",0);
+        return;
+    }
+    in.get_voxel_size(vs.begin());
+    scale[0] = handle->voxel.vs[0]/vs[0];
+    scale[1] = handle->voxel.vs[1]/vs[1];
+    scale[2] = handle->voxel.vs[2]/vs[2];
+    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,ref,scale,image::reg::rigid_body));
     manual->timer->start();
     if(manual->exec() != QDialog::Accepted)
         return;
 
-    image::geometry<3> out(fa_template_imp.I.width()/handle->voxel.vs[0],
-                           fa_template_imp.I.height()/handle->voxel.vs[0],
-                           fa_template_imp.I.depth()/handle->voxel.vs[0]);
     image::transformation_matrix<3,float> affine = manual->iT;
-    image::multiply_constant(affine.data,affine.data+9,handle->voxel.vs[0]);
     begin_prog("rotating");
-    handle->rotate(out,affine);
+    handle->rotate(ref.geometry(),affine);
+    handle->calculate_mask();
+    handle->voxel.vs = vs;
     update_dimension();
     update_image();
     on_SlicePos_valueChanged(ui->SlicePos->value());
@@ -925,7 +942,7 @@ void reconstruction_window::on_motion_correction_clicked()
     }
     terminated = false;
     motion_correction_thread.reset(new boost::thread(&rec_motion_correction,
-                                                     handle.get(),4,
+                                                     handle.get(),QThread::idealThreadCount(),
                                                      boost::ref(motion_args),boost::ref(progress),boost::ref(terminated)));
     timer.reset(new QTimer(this));
     timer->setInterval(1000);
@@ -939,8 +956,10 @@ void reconstruction_window::check_progress(void)
     ui->motion_correction_progress->setValue(progress);
     if(progress == 100)
     {
-        load_b_table();
         on_motion_correction_clicked();
+        handle->calculate_dwi_sum();
+        handle->calculate_mask();
+        update_image();
     }
 }
 

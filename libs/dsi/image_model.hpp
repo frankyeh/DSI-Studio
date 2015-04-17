@@ -8,9 +8,10 @@
 void get_report(const std::vector<float>& bvalues,image::vector<3> vs,std::string& report);
 struct ImageModel
 {
+private:
+    std::vector<image::basic_image<unsigned short,3> > new_dwi;//used in rotated volume
 public:
     Voxel voxel;
-    unsigned int thread_count;
     std::string file_name,error_msg;
     gz_mat_read mat_reader;
     std::vector<const unsigned short*> dwi_data;
@@ -52,20 +53,15 @@ public:
 
     void rotate(image::geometry<3> new_geo,image::transformation_matrix<3,float>& affine)
     {
-        if(new_geo.size() > mask.size())
-            new_geo[2] = mask.size()/new_geo.plane_size();
-        image::basic_image<float,3> tmp(new_geo);
-        image::resample(voxel.dwi_sum,tmp,affine,image::cubic);
-        voxel.dwi_sum = tmp;
-        image::resample(mask,tmp,affine,image::cubic);
-        mask = tmp;
+        std::vector<image::basic_image<unsigned short,3> > dwi(dwi_data.size());
         for (unsigned int index = 0;check_prog(index,dwi_data.size());++index)
         {
+            dwi[index].resize(new_geo);
             image::pointer_image<unsigned short,3> I = image::make_image(voxel.dim,(unsigned short*)dwi_data[index]);
-            image::resample(I,tmp,affine,image::cubic);
-            I.resize(new_geo);
-            std::copy(tmp.begin(),tmp.end(),I.begin());
+            image::resample(I,dwi[index],affine,image::cubic);
+            dwi_data[index] = &(dwi[index][0]);
         }
+        dwi.swap(new_dwi);
         // rotate b-table
         float iT[9];
         image::matrix::inverse(affine.scaling_rotation,iT,image::dim<3,3>());
@@ -76,8 +72,10 @@ public:
             tmp.normalize();
             voxel.bvectors[index] = tmp;
         }
-        image::morphology::smoothing(mask);
         voxel.dim = new_geo;
+        calculate_dwi_sum();
+        calculate_mask();
+
     }
     void trim(void)
     {
@@ -152,8 +150,8 @@ public:
         return out.good();
     }
 
+
 public:
-    ImageModel(void):thread_count(1) {}
     bool load_from_file(const char* dwi_file_name)
     {
         file_name = dwi_file_name;
@@ -238,6 +236,22 @@ public:
         }
 
         // create mask;
+        calculate_dwi_sum();
+
+        const unsigned char* mask_ptr = 0;
+        if(mat_reader.read("mask",row,col,mask_ptr))
+        {
+            mask.resize(voxel.dim);
+            if(row*col == voxel.dim.size())
+                std::copy(mask_ptr,mask_ptr+row*col,mask.begin());
+        }
+        else
+            calculate_mask();
+
+        return true;
+    }
+    void calculate_dwi_sum(void)
+    {
         voxel.dwi_sum.clear();
         voxel.dwi_sum.resize(voxel.dim);
         for (unsigned int index = 0;index < voxel.bvalues.size();++index)
@@ -250,8 +264,6 @@ public:
                 min_value = voxel.dwi_sum[index];
 
 
-        ::set_title("creating mask");
-        check_prog(0,3);
         image::minus_constant(voxel.dwi_sum,min_value);
         image::lower_threshold(voxel.dwi_sum,0.0f);
         image::normalize(voxel.dwi_sum,1.0);
@@ -259,26 +271,13 @@ public:
         image::log(voxel.dwi_sum);
         image::divide_constant(voxel.dwi_sum,0.301);
         image::upper_threshold(voxel.dwi_sum,1.0f);
-
-
-        const unsigned char* mask_ptr = 0;
-        if(mat_reader.read("mask",row,col,mask_ptr))
-        {
-            mask.resize(voxel.dim);
-            if(row*col == voxel.dim.size())
-                std::copy(mask_ptr,mask_ptr+row*col,mask.begin());
-        }
-        else
-        {
-            image::threshold(voxel.dwi_sum,mask,image::segmentation::otsu_threshold(voxel.dwi_sum)*0.8,1,0);
-            check_prog(1,3);
-            image::morphology::recursive_smoothing(mask,10);
-            check_prog(2,3);
-            image::morphology::defragment(mask);
-            image::morphology::recursive_smoothing(mask,10);
-        }
-        check_prog(3,3);
-        return true;
+    }
+    void calculate_mask(void)
+    {
+        image::threshold(voxel.dwi_sum,mask,image::segmentation::otsu_threshold(voxel.dwi_sum)*0.8,1,0);
+        image::morphology::recursive_smoothing(mask,10);
+        image::morphology::defragment(mask);
+        image::morphology::recursive_smoothing(mask,10);
     }
     void save_to_file(gz_mat_write& mat_writer)
     {
@@ -312,7 +311,7 @@ public:
     }
 
     template<typename ProcessType>
-    bool reconstruct(void)
+    bool reconstruct(unsigned int thread_count)
     {
         begin_prog("reconstruction");
         voxel.image_model = this;

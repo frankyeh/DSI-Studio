@@ -1763,7 +1763,7 @@
   </action>
   <action name="actionRotate">
    <property name="text">
-    <string>Rotate...</string>
+    <string>To T1w/T2w space...</string>
    </property>
   </action>
   <action name="actionTrim_image">

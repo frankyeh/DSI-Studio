@@ -217,7 +217,11 @@ void flip_fib_dir(std::vector<float>& fib_dir,bool x,bool y,bool z)
 
 void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 
-const char* reconstruction(ImageModel* image_model,unsigned int method_id,const float* param_values,bool check_b_table)
+const char* reconstruction(ImageModel* image_model,
+                           unsigned int method_id,
+                           const float* param_values,
+                           bool check_b_table,
+                           unsigned int thread_count)
 {
     static std::string output_name;
     try
@@ -287,7 +291,7 @@ const char* reconstruction(ImageModel* image_model,unsigned int method_id,const 
         if(check_b_table)
         {
             set_title("checking b-table");
-            image_model->reconstruct<dti_process>();
+            image_model->reconstruct<dti_process>(thread_count);
             std::vector<std::vector<float> > fib_fa(1);
             std::vector<std::vector<float> > fib_dir(1);
             fib_fa[0].swap(image_model->voxel.fib_fa);
@@ -336,18 +340,18 @@ const char* reconstruction(ImageModel* image_model,unsigned int method_id,const 
             " The diffusion data were reconstructed using diffusion spectrum imaging (Wedeen et al. MRM, 2005) with a Hanning filter of " << (int)param_values[0] << ".";
             if (image_model->voxel.odf_deconvolusion || image_model->voxel.odf_decomposition)
             {
-                if (!image_model->reconstruct<dsi_estimate_response_function>())
+                if (!image_model->reconstruct<dsi_estimate_response_function>(thread_count))
                     return "reconstruction calceled";
             }
             out << ".dsi."<< (int)param_values[0] << ".fib.gz";
-            if (!image_model->reconstruct<dsi_process>())
+            if (!image_model->reconstruct<dsi_process>(thread_count))
                 return "reconstruction canceled";
             break;
         case 1://DTI
             image_model->voxel.recon_report << " The diffusion tensor was calculated.";
             out << ".dti.fib.gz";
             image_model->voxel.max_fiber_number = 1;
-            if (!image_model->reconstruct<dti_process>())
+            if (!image_model->reconstruct<dti_process>(thread_count))
                 return "reconstruction canceled";
             break;
 
@@ -355,22 +359,22 @@ const char* reconstruction(ImageModel* image_model,unsigned int method_id,const 
             image_model->voxel.recon_report << " The diffusion data was reconstructed using q-ball imaging (Tuch, MRM 2004).";
             if (image_model->voxel.odf_deconvolusion || image_model->voxel.odf_decomposition)
             {
-                if (!image_model->reconstruct<qbi_estimate_response_function>())
+                if (!image_model->reconstruct<qbi_estimate_response_function>(thread_count))
                     return "reconstruction calceled";
             }
             out << ".qbi."<< param_values[0] << "_" << param_values[1] << ".fib.gz";
-            if (!image_model->reconstruct<qbi_process>())
+            if (!image_model->reconstruct<qbi_process>(thread_count))
                 return "reconstruction canceled";
             break;
         case 3://QBI
             image_model->voxel.recon_report << " The diffusion data was reconstructed using spherical-harmonic-based q-ball imaging (Descoteaux et al., MRM 2007).";
             if (image_model->voxel.odf_deconvolusion || image_model->voxel.odf_decomposition)
             {
-                if (!image_model->reconstruct<qbi_sh_estimate_response_function>())
+                if (!image_model->reconstruct<qbi_sh_estimate_response_function>(thread_count))
                     return "reconstruction calceled";
             }
             out << ".qbi.sh"<< (int) param_values[1] << "." << param_values[0] << ".fib.gz";
-            if (!image_model->reconstruct<qbi_sh_process>())
+            if (!image_model->reconstruct<qbi_sh_process>(thread_count))
                 return "reconstruction canceled";
             break;
 
@@ -380,7 +384,7 @@ const char* reconstruction(ImageModel* image_model,unsigned int method_id,const 
                 image_model->voxel.recon_report <<
                 " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, 2010).";
                 out << (image_model->voxel.r2_weighted ? ".gqi2.spec.fib.gz":".gqi.spec.fib.gz");
-                if (!image_model->reconstruct<gqi_spectral_process>())
+                if (!image_model->reconstruct<gqi_spectral_process>(thread_count))
                     return "reconstruction canceled";
                 break;
             }
@@ -388,13 +392,13 @@ const char* reconstruction(ImageModel* image_model,unsigned int method_id,const 
             " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, 2010) with a diffusion sampling length ratio of " << (float)param_values[0] << ".";
             if (image_model->voxel.odf_deconvolusion || image_model->voxel.odf_decomposition)
             {
-                if (!image_model->reconstruct<gqi_estimate_response_function>())
+                if (!image_model->reconstruct<gqi_estimate_response_function>(thread_count))
                     return "reconstruction calceled";
             }
             if(image_model->voxel.r2_weighted)
                 image_model->voxel.recon_report << " The ODF calculation was weighted by the square of the diffuion displacement.";
             out << (image_model->voxel.r2_weighted ? ".gqi2.":".gqi.") << param_values[0] << ".fib.gz";
-            if (!image_model->reconstruct<gqi_process>())
+            if (!image_model->reconstruct<gqi_process>(thread_count))
                 return "reconstruction canceled";
             break;
         case 6:
@@ -403,7 +407,7 @@ const char* reconstruction(ImageModel* image_model,unsigned int method_id,const 
             out << ".hardi."<< param_values[0]
                 << ".b" << param_values[1]
                 << ".reg" << param_values[2] << ".src.gz";
-            if (!image_model->reconstruct<hardi_convert_process>())
+            if (!image_model->reconstruct<hardi_convert_process>(thread_count))
                 return "reconstruction canceled";
             break;
         case 7:
@@ -411,7 +415,7 @@ const char* reconstruction(ImageModel* image_model,unsigned int method_id,const 
             << " The diffusion data were reconstructed using q-space diffeomorphic reconstruction (Yeh et al., Neuroimage, 2011) with a diffusion sampling length ratio of "
             << (float)param_values[0] << ". The output resolution was " << param_values[1] << " mm.";
             // run gqi to get the spin quantity
-            if (!image_model->reconstruct<gqi_estimate_response_function>())
+            if (!image_model->reconstruct<gqi_estimate_response_function>(thread_count))
                 return "reconstruction calceled";
             out << ".reg" << (int)image_model->voxel.reg_method;
             out << "i" << (int)image_model->voxel.interpo_method;
@@ -421,7 +425,7 @@ const char* reconstruction(ImageModel* image_model,unsigned int method_id,const 
                 out << ".jac";
             if(image_model->voxel.output_mapping)
                 out << ".map";
-            if (!image_model->reconstruct<gqi_mni_process>())
+            if (!image_model->reconstruct<gqi_mni_process>(thread_count))
                 return "reconstruction canceled";
             out << ".R" << (int)std::floor(image_model->voxel.R2*100.0) << ".fib.gz";
             break;
@@ -466,11 +470,10 @@ bool output_odfs(const image::basic_image<unsigned char,3>& mni_mask,
     image_model.voxel.need_odf = record_odf;
     image_model.voxel.template_odfs.swap(odfs);
     image_model.voxel.param = mni;
-    image_model.thread_count = 1;
     image_model.file_name = out_name;
     image_model.mask = mni_mask;
     std::copy(vs,vs+3,image_model.voxel.vs.begin());
-    if (prog_aborted() || !image_model.reconstruct<reprocess_odf>())
+    if (prog_aborted() || !image_model.reconstruct<reprocess_odf>(1))
         return false;
     image_model.save_fib(ext);
     image_model.voxel.template_odfs.swap(odfs);

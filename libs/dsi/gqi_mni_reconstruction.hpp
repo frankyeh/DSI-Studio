@@ -149,7 +149,7 @@ public:
             unsigned int factor = voxel.reg_method + 1;
             mni.reset(new image::reg::bfnorm_mapping<float,3>(VG.geometry(),image::geometry<3>(factor*7,factor*9,factor*7)));
             terminated_class terminated(17);
-            multi_thread_reg(*mni.get(),VG,VFF,voxel.image_model->thread_count,terminated);
+            multi_thread_reg(*mni.get(),VG,VFF,voxel.voxel_data.size(),terminated);
             if(prog_aborted())
                 throw std::runtime_error("Reconstruction canceled");
         }

@@ -95,7 +95,7 @@ public:
 public:// for template creation
     std::vector<std::vector<float> > template_odfs;
     std::string template_file_name;
-private:
+public:
     std::vector<VoxelData> voxel_data;
 public:
     ImageModel* image_model;

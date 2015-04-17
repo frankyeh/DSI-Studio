@@ -171,7 +171,6 @@ int rec(int ac, char *av[])
         std::cout << "param4=" << param[4] << std::endl;
     }
 
-    handle->thread_count = vm["thread"].as<int>(); //thread count
     handle->voxel.ti.init(vm["odf_order"].as<int>());
     handle->voxel.need_odf = vm["record_odf"].as<int>();
     handle->voxel.output_jacobian = vm["output_jac"].as<int>();
@@ -227,7 +226,9 @@ int rec(int ac, char *av[])
         std::cout << "Done." <<std::endl;
     }
     std::cout << "start reconstruction..." <<std::endl;
-    const char* msg = reconstruction(handle.get(),method_index,param,vm["check_btable"].as<int>());
+    const char* msg = reconstruction(handle.get(),method_index,
+                                     param,vm["check_btable"].as<int>(),
+                                     vm["thread"].as<int>());
     if (!msg)
         std::cout << "Reconstruction finished:" << msg << std::endl;
     return 0;

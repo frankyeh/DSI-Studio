@@ -388,7 +388,7 @@ void TractTableWidget::clustering(int method_id)
     int rec = msgBox.exec();
     if(rec == QMessageBox::Yes)
     {
-        unsigned int cluster_count = method_id ? handle->get_cluster_count() : std::min<float>(handle->get_cluster_count(),30);
+        unsigned int cluster_count = method_id ? handle->get_cluster_count() : std::min<float>(handle->get_cluster_count(),50);
         std::vector<std::vector<float> > tracts;
         tract_models[currentRow()]->release_tracts(tracts);
         delete_row(currentRow());
@@ -403,7 +403,6 @@ void TractTableWidget::clustering(int method_id)
             tract_models.back()->add_tracts(add_tracts);
             item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
         }
-        assign_colors();
     }
     else
     {
