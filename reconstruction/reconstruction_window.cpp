@@ -351,7 +351,7 @@ void reconstruction_window::on_load_mask_clicked()
             this,
             "Open region",
             absolute_path,
-            "Mask files (*.txt *.nii *.nii.gz *.hdr);;All files (*)" );
+            "Mask files (*.txt *.nii *nii.gz *.hdr);;All files (*)" );
     if(filename.isEmpty())
         return;
     ROIRegion region(dwi.geometry(),handle->voxel.vs);
@@ -368,7 +368,7 @@ void reconstruction_window::on_save_mask_clicked()
             this,
             "Save region",
             absolute_path+"/mask.txt",
-            "Text files (*.txt);;Nifti file(*.nii.gz)" );
+            "Text files (*.txt);;Nifti file(*nii.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
     #ifdef __APPLE__

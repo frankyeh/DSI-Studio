@@ -46,8 +46,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>772</width>
-           <height>377</height>
+           <width>752</width>
+           <height>394</height>
           </rect>
          </property>
          <attribute name="label">
@@ -286,6 +286,13 @@
                     <number>0</number>
                    </property>
                    <item>
+                    <widget class="QPushButton" name="save_vector">
+                     <property name="text">
+                      <string>Save Vector...</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
                     <widget class="QPushButton" name="save_name_list">
                      <property name="text">
                       <string>Save list...</string>
@@ -302,7 +309,7 @@
                    <item>
                     <widget class="QPushButton" name="remove_sel_subject">
                      <property name="text">
-                      <string>Remove selected subject</string>
+                      <string>Remove Subject</string>
                      </property>
                      <property name="icon">
                       <iconset resource="../icons.qrc">
@@ -370,8 +377,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>759</width>
-           <height>396</height>
+           <width>731</width>
+           <height>401</height>
           </rect>
          </property>
          <attribute name="label">
@@ -670,8 +677,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>750</width>
-           <height>392</height>
+           <width>752</width>
+           <height>394</height>
           </rect>
          </property>
          <attribute name="label">
@@ -1111,8 +1118,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>750</width>
-           <height>392</height>
+           <width>752</width>
+           <height>394</height>
           </rect>
          </property>
          <attribute name="label">

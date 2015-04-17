@@ -349,7 +349,7 @@ void slice_view_scene::save_slice_as()
                 "Save as",
                 cur_tracking_window.absolute_path + "/" +
                 cur_tracking_window.handle->view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str(),
-                "NIFTI files (*.nii.gz);;MAT files (*.mat);;All files (*)");
+                "NIFTI files (*nii.gz);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
 #ifdef __APPLE__

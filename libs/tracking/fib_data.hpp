@@ -593,6 +593,45 @@ public:
         subject_names = subject_names_;
         return true;
     }
+    void save_subject_vector(const char* output_name,bool normalize_qa)
+    {
+        gz_mat_write matfile(output_name);
+        if(!matfile)
+        {
+            error_msg = "Cannot output file";
+            return;
+        }
+        float fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(dim,fib.fa[0]));
+        std::vector<std::vector<float> > subject_vector(num_subjects);
+        for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
+        {
+            unsigned int cur_index = si2vi[s_index];
+            for(unsigned int j = 0,fib_offset = 0;j < fib.num_fiber && fib.fa[j][cur_index] > fiber_threshold;
+                    ++j,fib_offset+=si2vi.size())
+            {
+                unsigned int pos = s_index + fib_offset;
+                if(normalize_qa)
+                    for(unsigned int index = 0;index < subject_vector.size();++index)
+                        subject_vector[index].push_back(subject_qa[index][pos]/subject_qa_max[index]);
+                else
+                    for(unsigned int index = 0;index < subject_vector.size();++index)
+                        subject_vector[index].push_back(subject_qa[index][pos]);
+            }
+        }
+        std::string name_string;
+        for(unsigned int index = 0;index < num_subjects;++index)
+        {
+            name_string += subject_names[index];
+            name_string += "\n";
+        }
+        matfile.write("subject_names",name_string.c_str(),1,(unsigned int)name_string.size());
+        for(unsigned int index = 0;index < num_subjects;++index)
+        {
+            std::ostringstream out;
+            out << "subject" << index;
+            matfile.write(out.str().c_str(),&subject_vector[index][0],1,(unsigned int)subject_vector[index].size());
+        }
+    }
     void save_subject_data(const char* output_name)
     {
         // store results

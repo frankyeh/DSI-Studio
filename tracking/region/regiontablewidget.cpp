@@ -431,7 +431,7 @@ void RegionTableWidget::load_region(void)
                                 this,
                                 "Open region",
                                 cur_tracking_window.absolute_path,
-                                "Region files (*.txt *.nii *.hdr *.nii.gz *.mat);;All files (*)" );
+                                "Region files (*.txt *.nii *.hdr *nii.gz *.mat);;All files (*)" );
     if (filenames.isEmpty())
         return;
 
@@ -558,7 +558,7 @@ void RegionTableWidget::save_region(void)
                            this,
                            "Save region",
                 cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + "." + settings.value("region_save_type","nii.gz").toString(),
-                "NIFTI file(*.nii.gz *.nii);;Text file(*.txt);;MAT file (*.mat);;All files(*)" );
+                "NIFTI file(*nii.gz *.nii);;Text file(*.txt);;MAT file (*.mat);;All files(*)" );
     if (filename.isEmpty())
         return;
     settings.setValue("region_save_type",QFileInfo(filename).completeSuffix());
@@ -606,7 +606,7 @@ void RegionTableWidget::save_all_regions(void)
                            this,
                            "Save region",
                 cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + "." + settings.value("region_save_type","nii.gz").toString(),
-                           "Region file(*.nii.gz *.nii);;All file types (*)" );
+                           "Region file(*nii.gz *.nii);;All file types (*)" );
     if (filename.isEmpty())
         return;
     settings.setValue("region_save_type",QFileInfo(filename).completeSuffix());

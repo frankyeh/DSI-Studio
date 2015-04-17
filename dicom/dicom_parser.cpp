@@ -839,14 +839,9 @@ void dicom_parser::on_pushButton_clicked()
     QString filename = QFileDialog::getSaveFileName(
             this,"Save file",
             ui->SrcName->text(),
-            "Src files (*.src.gz *.src);;All files (*)" );
+            "Src files (*src.gz *.src);;All files (*)" );
     if(filename.isEmpty())
         return;
-#ifdef __APPLE__
-// fix the Qt double extension bug here
-if(QFileInfo(filename).completeSuffix().contains(".src.gz"))
-    filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".src.gz";
-#endif
     ui->SrcName->setText(filename);
 }
 
@@ -854,7 +849,7 @@ void dicom_parser::on_loadImage_clicked()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
             this,"Open Images files",cur_path,
-            "Images (*.dcm *.hdr *.nii *.nii.gz 2dseq);;All files (*)" );
+            "Images (*.dcm *.hdr *.nii *nii.gz 2dseq);;All files (*)" );
     if( filenames.isEmpty() )
         return;
     load_files(filenames);

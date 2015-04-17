@@ -90,6 +90,8 @@ private slots:
 
     void on_save_R2_clicked();
 
+    void on_save_vector_clicked();
+
 public slots:
     void calculate_FDR(void);
     void setup_threshold(void);

@@ -248,7 +248,7 @@ void MainWindow::on_OpenDICOM_clicked()
                                 this,
                                 "Open Images files",
                                 ui->workDir->currentText(),
-                                "Image files (*.dcm *.hdr *.nii *.nii.gz *.fdf 2dseq subject);;All files (*)" );
+                                "Image files (*.dcm *.hdr *.nii *nii.gz *.fdf 2dseq subject);;All files (*)" );
     if ( filenames.isEmpty() )
         return;
 
@@ -314,7 +314,7 @@ void MainWindow::on_Reconstruction_clicked()
                            this,
                            "Open Src files",
                            ui->workDir->currentText(),
-                           "Src files (*.src.gz *.src);;All files (*)" );
+                           "Src files (*src.gz *.src);;All files (*)" );
     if (filenames.isEmpty())
         return;
     loadSrc(filenames);
@@ -326,7 +326,7 @@ void MainWindow::on_FiberTracking_clicked()
                            this,
                            "Open Fib files",
                            ui->workDir->currentText(),
-                           "Fib files (*.fib.gz *.fib *.nii.gz *.nii);;All files (*)");
+                           "Fib files (*fib.gz *.fib *nii.gz *.nii);;All files (*)");
     if (filename.isEmpty())
         return;
     if(QFileInfo(filename).completeSuffix() == "nii" ||
@@ -654,7 +654,7 @@ void MainWindow::on_view_image_clicked()
                                 this,
                                 "Open Image",
                                 ui->workDir->currentText(),
-                                "image files (*.nii *.nii.gz *.dcm 2dseq)" );
+                                "image files (*.nii *nii.gz *.dcm 2dseq)" );
     if(filename.isEmpty())
         return;
     view_image* dialog = new view_image(this);
@@ -674,7 +674,7 @@ void MainWindow::on_connectometry_clicked()
                            this,
                            "Open Database files",
                            ui->workDir->currentText(),
-                           "Database files (*.db.fib.gz);;All files (*)");
+                           "Database files (*db?fib.gz);;All files (*)");
     if (filename.isEmpty())
         return;
 

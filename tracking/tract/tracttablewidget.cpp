@@ -212,7 +212,7 @@ void TractTableWidget::load_tracts(void)
             this,
             "Load tracts as",
             cur_tracking_window.absolute_path,
-            "Tract files (*.txt *.trk *.trk.gz *.tck);;All files (*)"));
+            "Tract files (*.txt *.trk *trk.gz *.tck);;All files (*)"));
 
 }
 
@@ -269,7 +269,7 @@ void TractTableWidget::save_all_tracts_as(void)
                 cur_tracking_window.absolute_path + "/" +
                 item(currentRow(),0)->text().replace(':','_') + "." +
                 settings.value("track_file_extension","trk.gz").toString(),
-                "Tract files (*.trk *.trk.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
+                "Tract files (*.trk *trk.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
     settings.setValue("track_file_extension",QFileInfo(filename).completeSuffix());
@@ -434,7 +434,7 @@ void TractTableWidget::save_tracts_as(void)
                 cur_tracking_window.absolute_path + "/" +
                 item(currentRow(),0)->text().replace(':','_') + "."+
                 settings.value("track_file_extension","trk.gz").toString(),
-                 "Tract files (*.trk *.trk.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
+                 "Tract files (*.trk *trk.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
     settings.setValue("track_file_extension",QFileInfo(filename).completeSuffix());
@@ -512,7 +512,7 @@ void TractTableWidget::saveTransformedTracts(const float* transform)
                 "Save tracts as",
                 cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + "." +
                 settings.value("track_file_extension","trk.gz").toString(),
-                 "Tract files (*.trk *.trk.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
+                 "Tract files (*.trk *trk.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
     settings.setValue("track_file_extension",QFileInfo(filename).completeSuffix());
@@ -896,7 +896,7 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
                     this,
                     "Save as",
                     cur_tracking_window.absolute_path+"/" + item(currentRow(),0)->text(),
-                    "NIFTI files (*.nii.gz *.nii);;MAT File (*.mat);;");
+                    "NIFTI files (*nii.gz *.nii);;MAT File (*.mat);;");
         if(filename.isEmpty())
             return;
 #ifdef __APPLE__

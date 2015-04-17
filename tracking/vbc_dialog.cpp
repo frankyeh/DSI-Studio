@@ -332,7 +332,7 @@ void vbc_dialog::on_open_files_clicked()
     QStringList file_name = QFileDialog::getOpenFileNames(
                                 this,
                 "Select subject fib file for analysis",
-                work_dir,"Fib files (*.fib.gz);;All files (*)" );
+                work_dir,"Fib files (*fib.gz);;All files (*)" );
     if (file_name.isEmpty())
         return;
     model.reset(new stat_model);
@@ -953,7 +953,7 @@ void vbc_dialog::on_roi_file_toggled(bool checked)
                     this,
                     "Load ROI from file",
                     work_dir + "/roi.nii.gz",
-                    "Report file (*.txt *.nii *.nii.gz);;All files (*)");
+                    "Report file (*.txt *.nii *nii.gz);;All files (*)");
         if(openfilename.isEmpty())
         {
             ui->roi_whole_brain->setChecked(true);
@@ -1211,3 +1211,15 @@ void vbc_dialog::on_save_R2_clicked()
 }
 
 
+
+void vbc_dialog::on_save_vector_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                this,
+                "Save Vector",
+                work_dir + "/subject_vector.mat",
+                "Report file (*.mat);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    vbc->handle->save_subject_vector(filename.toLocal8Bit().begin(),true);
+}

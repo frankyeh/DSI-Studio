@@ -58,7 +58,7 @@ void VBCDialog::on_group1open_clicked()
                                      this,
                                      "Open Fib files",
                                      "",
-                                     "Fib files (*.fib.gz);;All files (*)" );
+                                     "Fib files (*fib.gz);;All files (*)" );
     if (filenames.isEmpty())
         return;
     group << filenames;
@@ -175,7 +175,7 @@ void VBCDialog::on_select_output_file_clicked()
                                  this,
                                  "Save file",
                                  "",
-                                 "FIB file (*.fib.gz);;All files (*)");
+                                 "FIB file (*fib.gz);;All files (*)");
     if(filename.isEmpty())
         return;
 #ifdef __APPLE__
@@ -191,7 +191,7 @@ void VBCDialog::on_open_skeleton_clicked()
                                  this,
                                  "Template file",
                                  "",
-                                 "FIB file (*.fib.gz);;All files (*)");
+                                 "FIB file (*fib.gz);;All files (*)");
     if(filename.isEmpty())
         return;
     ui->skeleton->setText(filename);
