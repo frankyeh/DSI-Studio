@@ -89,7 +89,7 @@ public:
             std::fill(I.begin(),I.end(),0);
             std::copy(I0.begin(),I0.end(),I.begin());
         }
-        image::crop(voxel.dwi_sum,range_min,range_max);
+        calculate_dwi_sum();
         image::crop(mask,range_min,range_max);
         voxel.dim = mask.geometry();
 

@@ -43,7 +43,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButton_2">
+        <widget class="QPushButton" name="load_b_table">
          <property name="text">
           <string>Load b-table...</string>
          </property>
@@ -64,7 +64,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButton_8">
+        <widget class="QPushButton" name="save_b_table">
          <property name="text">
           <string>Save b-table...</string>
          </property>
@@ -91,42 +91,42 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="QPushButton" name="pushButton">
+        <widget class="QPushButton" name="flip_x">
          <property name="text">
           <string>Flip bx</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButton_3">
+        <widget class="QPushButton" name="flip_y">
          <property name="text">
           <string>Flip by</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButton_4">
+        <widget class="QPushButton" name="flip_z">
          <property name="text">
           <string>Flip bz</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButton_5">
+        <widget class="QPushButton" name="switch_xy">
          <property name="text">
           <string>Switch bx by</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButton_6">
+        <widget class="QPushButton" name="swith_xz">
          <property name="text">
           <string>Switch bx bz</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButton_7">
+        <widget class="QPushButton" name="switch_yz">
          <property name="text">
           <string>Switch by bz</string>
          </property>

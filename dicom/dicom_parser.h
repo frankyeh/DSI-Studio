@@ -29,18 +29,18 @@ private slots:
     void on_upperDir_clicked();
     void on_loadImage_clicked();
     void on_pushButton_clicked();
-    void on_toolButton_8_clicked();
-    void on_toolButton_2_clicked();
-    void on_toolButton_7_clicked();
-    void on_toolButton_6_clicked();
-    void on_toolButton_5_clicked();
-    void on_toolButton_4_clicked();
-    void on_toolButton_3_clicked();
-    void on_toolButton_clicked();
     void on_buttonBox_accepted();
     void on_load_bval_clicked();
     void on_load_bvec_clicked();
     void on_motion_correction_clicked();
+    void on_load_b_table_clicked();
+    void on_save_b_table_clicked();
+    void on_flip_x_clicked();
+    void on_flip_y_clicked();
+    void on_flip_z_clicked();
+    void on_switch_xy_clicked();
+    void on_swith_xz_clicked();
+    void on_switch_yz_clicked();
 };
 
 #endif // DICOM_PARSER_H

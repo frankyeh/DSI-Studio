@@ -690,87 +690,6 @@ void dicom_parser::on_buttonBox_accepted()
     close();
 }
 
-void dicom_parser::on_toolButton_clicked()
-{
-    // flip x
-    for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
-        ui->tableWidget->item(index,2)->setText(QString::number(-(ui->tableWidget->item(index,2)->text().toDouble())));
-}
-
-void dicom_parser::on_toolButton_3_clicked()
-{
-    // flip y
-    for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
-        ui->tableWidget->item(index,3)->setText(QString::number(-(ui->tableWidget->item(index,3)->text().toDouble())));
-}
-
-void dicom_parser::on_toolButton_4_clicked()
-{
-    // flip z
-    for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
-        ui->tableWidget->item(index,4)->setText(QString::number(-(ui->tableWidget->item(index,4)->text().toDouble())));
-
-}
-
-void dicom_parser::on_toolButton_5_clicked()
-{
-    // switch bx by
-    for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
-    {
-        QString temp = ui->tableWidget->item(index,3)->text();
-        ui->tableWidget->item(index,3)->setText(ui->tableWidget->item(index,2)->text());
-        ui->tableWidget->item(index,2)->setText(temp);
-    }
-}
-
-void dicom_parser::on_toolButton_6_clicked()
-{
-    // switch bx bz
-    for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
-    {
-        QString temp = ui->tableWidget->item(index,4)->text();
-        ui->tableWidget->item(index,4)->setText(ui->tableWidget->item(index,2)->text());
-        ui->tableWidget->item(index,2)->setText(temp);
-    }
-}
-
-void dicom_parser::on_toolButton_7_clicked()
-{
-    // switch by bz
-    for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
-    {
-        QString temp = ui->tableWidget->item(index,4)->text();
-        ui->tableWidget->item(index,4)->setText(ui->tableWidget->item(index,3)->text());
-        ui->tableWidget->item(index,3)->setText(temp);
-    }
-}
-
-void dicom_parser::on_toolButton_2_clicked()
-{
-    QString filename = QFileDialog::getOpenFileName(
-            this,
-            "Open b-table",
-            QFileInfo(ui->SrcName->text()).absolutePath(),
-            "Text files (*.txt);;All files (*)" );
-
-    std::ifstream in(filename.toLocal8Bit().begin());
-    if(!in)
-        return;
-    std::string line;
-    std::vector<double> b_table;
-    while(std::getline(in,line))
-    {
-        std::istringstream read_line(line);
-        std::copy(std::istream_iterator<double>(read_line),
-                  std::istream_iterator<double>(),
-                  std::back_inserter(b_table));
-    }
-    for (unsigned int index = 0,b_index = 0;index < ui->tableWidget->rowCount();++index)
-    {
-        for(unsigned int j = 0;j < 4 && b_index < b_table.size();++j,++b_index)
-            ui->tableWidget->item(index,j+1)->setText(QString::number(b_table[b_index]));
-    }
-}
 
 
 void dicom_parser::on_load_bval_clicked()
@@ -814,25 +733,6 @@ void dicom_parser::on_load_bvec_clicked()
     }
 }
 
-
-void dicom_parser::on_toolButton_8_clicked()
-{
-    QString filename = QFileDialog::getSaveFileName(
-            this,
-            "Save b-table",
-            QFileInfo(ui->SrcName->text()).absolutePath() + "/b_table.txt",
-            "Text files (*.txt);;All files (*)");
-
-    std::ofstream btable(filename.toLocal8Bit().begin());
-    if(!btable)
-        return;
-    for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
-    {
-        for(unsigned int j = 0;j < 4;++j)
-            btable << ui->tableWidget->item(index,j+1)->text().toDouble() << "\t";
-        btable<< std::endl;
-    }
-}
 
 void dicom_parser::on_pushButton_clicked()
 {
@@ -908,3 +808,99 @@ void dicom_parser::on_motion_correction_clicked()
     md->show();
 
 }
+
+void dicom_parser::on_load_b_table_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(
+            this,
+            "Open b-table",
+            QFileInfo(ui->SrcName->text()).absolutePath(),
+            "Text files (*.txt);;All files (*)" );
+
+    std::ifstream in(filename.toLocal8Bit().begin());
+    if(!in)
+        return;
+    std::string line;
+    std::vector<double> b_table;
+    while(std::getline(in,line))
+    {
+        std::istringstream read_line(line);
+        std::copy(std::istream_iterator<double>(read_line),
+                  std::istream_iterator<double>(),
+                  std::back_inserter(b_table));
+    }
+    for (unsigned int index = 0,b_index = 0;index < ui->tableWidget->rowCount();++index)
+    {
+        for(unsigned int j = 0;j < 4 && b_index < b_table.size();++j,++b_index)
+            ui->tableWidget->item(index,j+1)->setText(QString::number(b_table[b_index]));
+    }
+}
+
+void dicom_parser::on_save_b_table_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(
+            this,
+            "Save b-table",
+            QFileInfo(ui->SrcName->text()).absolutePath() + "/b_table.txt",
+            "Text files (*.txt);;All files (*)");
+
+    std::ofstream btable(filename.toLocal8Bit().begin());
+    if(!btable)
+        return;
+    for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
+    {
+        for(unsigned int j = 0;j < 4;++j)
+            btable << ui->tableWidget->item(index,j+1)->text().toDouble() << "\t";
+        btable<< std::endl;
+    }
+}
+
+
+void dicom_parser::on_flip_x_clicked()
+{
+    for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
+        ui->tableWidget->item(index,2)->setText(QString::number(-(ui->tableWidget->item(index,2)->text().toDouble())));
+}
+
+void dicom_parser::on_flip_y_clicked()
+{
+    for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
+        ui->tableWidget->item(index,3)->setText(QString::number(-(ui->tableWidget->item(index,3)->text().toDouble())));
+}
+
+void dicom_parser::on_flip_z_clicked()
+{
+    for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
+        ui->tableWidget->item(index,4)->setText(QString::number(-(ui->tableWidget->item(index,4)->text().toDouble())));
+}
+
+void dicom_parser::on_switch_xy_clicked()
+{
+    for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
+    {
+        QString temp = ui->tableWidget->item(index,3)->text();
+        ui->tableWidget->item(index,3)->setText(ui->tableWidget->item(index,2)->text());
+        ui->tableWidget->item(index,2)->setText(temp);
+    }
+}
+
+void dicom_parser::on_swith_xz_clicked()
+{
+    for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
+    {
+        QString temp = ui->tableWidget->item(index,4)->text();
+        ui->tableWidget->item(index,4)->setText(ui->tableWidget->item(index,2)->text());
+        ui->tableWidget->item(index,2)->setText(temp);
+    }
+}
+
+void dicom_parser::on_switch_yz_clicked()
+{
+    for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
+    {
+        QString temp = ui->tableWidget->item(index,4)->text();
+        ui->tableWidget->item(index,4)->setText(ui->tableWidget->item(index,3)->text());
+        ui->tableWidget->item(index,3)->setText(temp);
+    }
+}
+
