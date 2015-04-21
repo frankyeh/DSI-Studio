@@ -432,7 +432,7 @@ void vbc_database::calculate_spm(fib_data& data,stat_model& info,std::vector<uns
 
 bool vbc_database::read_subject_data(const std::vector<std::string>& files,std::vector<std::vector<float> >& data)
 {
-    begin_prog("reading");
+    begin_prog("reading",true);
     data.resize(files.size());
     for(unsigned int index = 0;check_prog(index,files.size());++index)
         if(!handle->get_odf_profile(files[index].c_str(),data[index]))
@@ -442,6 +442,8 @@ bool vbc_database::read_subject_data(const std::vector<std::string>& files,std::
             check_prog(0,0);
             return false;
         }
+    begin_prog("reading",false);
+    check_prog(0,0);
     return true;
 }
 

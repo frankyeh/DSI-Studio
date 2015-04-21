@@ -36,7 +36,7 @@
       <item>
        <widget class="QToolBox" name="toolBox">
         <property name="currentIndex">
-         <number>0</number>
+         <number>2</number>
         </property>
         <property name="tabSpacing">
          <number>0</number>
@@ -718,7 +718,7 @@
                    <number>0</number>
                   </property>
                   <item>
-                   <widget class="QLabel" name="label_6">
+                   <widget class="QLabel" name="foi_label">
                     <property name="text">
                      <string>Feature of interest</string>
                     </property>
@@ -778,7 +778,7 @@
                   <double>1.000000000000000</double>
                  </property>
                  <property name="maximum">
-                  <double>100.000000000000000</double>
+                  <double>200.000000000000000</double>
                  </property>
                  <property name="singleStep">
                   <double>1.000000000000000</double>

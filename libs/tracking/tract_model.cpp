@@ -358,11 +358,11 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         std::vector<unsigned int> length;
         for(unsigned int index = 0;index < tract_data.size();++index)
         {
-            length.push_back(tract_data[index].size()/3);
+            length.push_back((unsigned int)tract_data[index].size()/3);
             std::copy(tract_data[index].begin(),tract_data[index].end(),std::back_inserter(buf));
         }
-        out.write("tracts",&*buf.begin(),3,buf.size()/3);
-        out.write("length",&*length.begin(),1,length.size());
+        out.write("tracts",&*buf.begin(),3,(unsigned int)buf.size()/3);
+        out.write("length",&*length.begin(),1,(unsigned int)length.size());
         return true;
     }
     return false;

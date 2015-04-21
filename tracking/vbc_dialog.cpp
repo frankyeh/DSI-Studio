@@ -353,6 +353,7 @@ void vbc_dialog::on_open_files_clicked()
     individual_data.swap(new_individual_data);
     if(ui->rb_individual_analysis->isChecked())
     {
+        ui->percentile->setValue(2);
         model->type = 2;
         ((QStringListModel*)ui->individual_list->model())->setStringList(filenames);
     }
@@ -574,6 +575,8 @@ void vbc_dialog::on_rb_individual_analysis_clicked()
     ui->multiple_regression_demo->hide();
     ui->subject_demo->hide();
 
+    ui->regression_feature->hide();
+
     ui->percentile->show();
     ui->t_threshold->hide();
     ui->percentage_dif->hide();
@@ -591,6 +594,8 @@ void vbc_dialog::on_rb_group_difference_clicked()
     ui->multiple_regression_demo->show();
     ui->subject_demo->show();
     ui->regression_feature->hide();
+
+
     ui->percentile->hide();
     ui->t_threshold->hide();
     ui->percentage_dif->show();
@@ -627,6 +632,7 @@ void vbc_dialog::on_rb_paired_difference_clicked()
     ui->multiple_regression_demo->show();
     ui->subject_demo->show();
     ui->regression_feature->hide();
+
     ui->percentile->hide();
     ui->t_threshold->hide();
     ui->percentage_dif->show();

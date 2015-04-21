@@ -849,7 +849,7 @@ public:
     bool has_odfs(void) const{return odf.has_odfs();}
     const float* get_odf_data(unsigned int index) const{return odf.get_odf_data(index);}
 public:
-    unsigned int get_name_index(const std::string& index_name) const
+    size_t get_name_index(const std::string& index_name) const
     {
         for(unsigned int index_num = 0;index_num < view_item.size();++index_num)
             if(view_item[index_num].name == index_name)

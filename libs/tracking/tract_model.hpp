@@ -88,14 +88,14 @@ public:
         void get_end_points(std::vector<image::vector<3,short> >& points);
         void get_tract_points(std::vector<image::vector<3,short> >& points);
 
-        unsigned int get_deleted_track_count(void) const{return deleted_tract_data.size();}
-        unsigned int get_visible_track_count(void) const{return tract_data.size();}
+        size_t get_deleted_track_count(void) const{return deleted_tract_data.size();}
+        size_t get_visible_track_count(void) const{return tract_data.size();}
         
         const std::vector<float>& get_tract(unsigned int index) const{return tract_data[index];}
         const std::vector<std::vector<float> >& get_tracts(void) const{return tract_data;}
         std::vector<std::vector<float> >& get_tracts(void) {return tract_data;}
         unsigned int get_tract_color(unsigned int index) const{return tract_color[index];}
-        unsigned int get_tract_length(unsigned int index) const{return tract_data[index].size();}
+        size_t get_tract_length(unsigned int index) const{return tract_data[index].size();}
         void get_density_map(image::basic_image<unsigned int,3>& mapping,
              const std::vector<float>& transformation,bool endpoint);
         void get_density_map(image::basic_image<image::rgb_color,3>& mapping,
