@@ -551,10 +551,10 @@ void vbc_database::run_permutation_multithread(unsigned int id)
             calculate_spm(spm_maps[0],info,permu);
             spm_maps[0].write_lesser(fib);
             run_track(fib,tracks,total_track_count);
-            lesser_tracks[0].add_tracts(tracks,30); // at least 30 mm
+            lesser_tracks[0].add_tracts(tracks,40); // at least 40 mm
             spm_maps[0].write_greater(fib);
             run_track(fib,tracks,total_track_count);
-            greater_tracks[0].add_tracts(tracks,30);  // at least 30 mm
+            greater_tracks[0].add_tracts(tracks,40);  // at least 40 mm
         }
 
 
@@ -608,35 +608,10 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
             tracks.add_tracts(greater_tracks[index].get_tracts(),length_threshold_greater);
             if(tracks.get_visible_track_count())
             {
-                {
-                    std::ostringstream out1;
-                    out1 << trk_file_names[index] << ".greater.trk.gz";
-                    tracks.save_tracts_to_file(out1.str().c_str());
-                    saved_file_name.push_back(out1.str().c_str());
-                }
-
-                {
-                    std::ostringstream out1;
-                    out1 << trk_file_names[index] << ".greater.fib.gz";
-                    gz_mat_write mat_write(out1.str().c_str());
-                    for(unsigned int i = 0;i < handle->mat_reader.size();++i)
-                    {
-                        std::string name = handle->mat_reader.name(i);
-                        if(name == "dimension" || name == "voxel_size" ||
-                                name == "odf_vertices" || name == "odf_faces" || name == "trans")
-                            mat_write.write(handle->mat_reader[i]);
-                        if(name == "fa0")
-                            mat_write.write("qa_map",handle->fib.fa[0],1,handle->dim.size());
-                    }
-                    for(unsigned int i = 0;i < spm_maps[index].greater_ptr.size();++i)
-                    {
-                        std::ostringstream out1,out2;
-                        out1 << "fa" << i;
-                        out2 << "index" << i;
-                        mat_write.write(out1.str().c_str(),spm_maps[index].greater_ptr[i],1,handle->dim.size());
-                        mat_write.write(out2.str().c_str(),spm_maps[index].greater_dir_ptr[i],1,handle->dim.size());
-                    }
-                }
+                std::ostringstream out1;
+                out1 << trk_file_names[index] << ".greater.trk.gz";
+                tracks.save_tracts_to_file(out1.str().c_str());
+                saved_file_name.push_back(out1.str().c_str());
             }
             else
             {
@@ -646,6 +621,28 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
             }
             greater_tracks[index] = tracks;
         }
+        {
+            std::ostringstream out1;
+            out1 << trk_file_names[index] << ".greater.fib.gz";
+            gz_mat_write mat_write(out1.str().c_str());
+            for(unsigned int i = 0;i < handle->mat_reader.size();++i)
+            {
+                std::string name = handle->mat_reader.name(i);
+                if(name == "dimension" || name == "voxel_size" ||
+                        name == "odf_vertices" || name == "odf_faces" || name == "trans")
+                    mat_write.write(handle->mat_reader[i]);
+                if(name == "fa0")
+                    mat_write.write("qa_map",handle->fib.fa[0],1,handle->dim.size());
+            }
+            for(unsigned int i = 0;i < spm_maps[index].greater_ptr.size();++i)
+            {
+                std::ostringstream out1,out2;
+                out1 << "fa" << i;
+                out2 << "index" << i;
+                mat_write.write(out1.str().c_str(),spm_maps[index].greater_ptr[i],1,handle->dim.size());
+                mat_write.write(out2.str().c_str(),spm_maps[index].greater_dir_ptr[i],1,handle->dim.size());
+            }
+        }
 
         if(length_threshold_lesser)
         {
@@ -653,40 +650,41 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
             tracks.add_tracts(lesser_tracks[index].get_tracts(),length_threshold_lesser);
             if(tracks.get_visible_track_count())
             {
-                {
-                    std::ostringstream out1;
-                    out1 << trk_file_names[index] << ".lesser.trk.gz";
-                    tracks.save_tracts_to_file(out1.str().c_str());
-                    saved_file_name.push_back(out1.str().c_str());
-                }
-                {
-                    std::ostringstream out1;
-                    out1 << trk_file_names[index] << ".lesser.fib.gz";
-                    gz_mat_write mat_write(out1.str().c_str());
-                    for(unsigned int i = 0;i < handle->mat_reader.size();++i)
-                    {
-                        std::string name = handle->mat_reader.name(i);
-                        if(name == "dimension" || name == "voxel_size" ||
-                                name == "odf_vertices" || name == "odf_faces" || name == "trans")
-                            mat_write.write(handle->mat_reader[i]);
-                        if(name == "fa0")
-                            mat_write.write("qa_map",handle->fib.fa[0],1,handle->dim.size());
-                    }
-                    for(unsigned int i = 0;i < spm_maps[index].greater_ptr.size();++i)
-                    {
-                        std::ostringstream out1,out2;
-                        out1 << "fa" << i;
-                        out2 << "index" << i;
-                        mat_write.write(out1.str().c_str(),spm_maps[index].lesser_ptr[i],1,handle->dim.size());
-                        mat_write.write(out2.str().c_str(),spm_maps[index].lesser_dir_ptr[i],1,handle->dim.size());
-                    }
-                }
+                std::ostringstream out1;
+                out1 << trk_file_names[index] << ".lesser.trk.gz";
+                tracks.save_tracts_to_file(out1.str().c_str());
+                saved_file_name.push_back(out1.str().c_str());
             }
             else
             {
                 std::ostringstream out1;
                 out1 << trk_file_names[index] << ".lesser.no_trk.txt";
                 std::ofstream(out1.str().c_str());
+            }
+
+            lesser_tracks[index] = tracks;
+        }
+
+        {
+            std::ostringstream out1;
+            out1 << trk_file_names[index] << ".lesser.fib.gz";
+            gz_mat_write mat_write(out1.str().c_str());
+            for(unsigned int i = 0;i < handle->mat_reader.size();++i)
+            {
+                std::string name = handle->mat_reader.name(i);
+                if(name == "dimension" || name == "voxel_size" ||
+                        name == "odf_vertices" || name == "odf_faces" || name == "trans")
+                    mat_write.write(handle->mat_reader[i]);
+                if(name == "fa0")
+                    mat_write.write("qa_map",handle->fib.fa[0],1,handle->dim.size());
+            }
+            for(unsigned int i = 0;i < spm_maps[index].greater_ptr.size();++i)
+            {
+                std::ostringstream out1,out2;
+                out1 << "fa" << i;
+                out2 << "index" << i;
+                mat_write.write(out1.str().c_str(),spm_maps[index].lesser_ptr[i],1,handle->dim.size());
+                mat_write.write(out2.str().c_str(),spm_maps[index].lesser_dir_ptr[i],1,handle->dim.size());
             }
         }
 
