@@ -11,6 +11,7 @@ TEMPLATE = app
 win32* {
 #change to the directory that contains boost library
 INCLUDEPATH += ../include
+RC_FILE = dsi_studio.rc
 }
 
 linux* {
@@ -29,6 +30,7 @@ LIBS += -L/Users/frankyeh/include/lib -lboost_system \
         -L/Users/frankyeh/include/lib -lboost_thread \
         -L/Users/frankyeh/include/lib -lboost_program_options \
         -lz
+ICON = dsi_studio.icns
 }
 
 
