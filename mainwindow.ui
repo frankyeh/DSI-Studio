@@ -20,7 +20,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="icons.qrc">
-    <normaloff>:/icons/icons/axial.xpm</normaloff>:/icons/icons/axial.xpm</iconset>
+    <normaloff>:/icons/dsi_studio.ico</normaloff>:/icons/dsi_studio.ico</iconset>
   </property>
   <widget class="QWidget" name="centralWidget">
    <property name="sizePolicy">
@@ -65,7 +65,7 @@
          <x>0</x>
          <y>0</y>
          <width>350</width>
-         <height>372</height>
+         <height>368</height>
         </rect>
        </property>
        <attribute name="label">
@@ -142,7 +142,7 @@
          <x>0</x>
          <y>0</y>
          <width>350</width>
-         <height>372</height>
+         <height>368</height>
         </rect>
        </property>
        <attribute name="label">
@@ -201,8 +201,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>350</width>
-         <height>372</height>
+         <width>329</width>
+         <height>400</height>
         </rect>
        </property>
        <attribute name="label">
@@ -285,7 +285,7 @@
          <x>0</x>
          <y>0</y>
          <width>350</width>
-         <height>372</height>
+         <height>368</height>
         </rect>
        </property>
        <attribute name="label">

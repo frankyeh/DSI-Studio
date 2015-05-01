@@ -20,6 +20,7 @@
         <file>icons/up.xpm</file>
         <file>icons/ruler.xpm</file>
         <file>icons/rotate.xpm</file>
+        <file>dsi_studio.ico</file>
     </qresource>
     <qresource prefix="/data">
         <file>options.txt</file>
