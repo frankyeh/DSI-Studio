@@ -1970,13 +1970,12 @@ void GLWidget::saveRotationVideo2(void)
             "Video file (*.avi);;All files (*)");
     if(filename.isEmpty())
         return;
-    QMessageBox::information(0,"saving video","DSI Studio is going to grab video from 3D window. Please don't move the window until finished.",0);
+    QMessageBox::information(0,"saving video","DSI Studio is going to grab video from 3D window. Click ok to start.",0);
     makeCurrent();
     cur_tracking_window.float3dwindow(1024,768);
-    begin_prog("save images");
     image::io::avi avi;
     double eye_shift = cur_tracking_window["3d_perspective"].toDouble();
-    for(unsigned int index = 1;check_prog(index,360);++index)
+    for(unsigned int index = 1;index <= 360;++index)
     {
 
         // output 2048x768
