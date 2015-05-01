@@ -61,6 +61,8 @@ private slots:
 
     void on_rerun_clicked();
 
+    void on_switch_view_clicked();
+
 private:
     Ui::manual_alignment *ui;
     void update_image(void);

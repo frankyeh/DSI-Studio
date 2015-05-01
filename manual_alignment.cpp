@@ -296,3 +296,8 @@ void manual_alignment::on_rerun_clicked()
     timer->start();
 
 }
+
+void manual_alignment::on_switch_view_clicked()
+{
+    ui->blend_pos->setValue(ui->blend_pos->value() > ui->blend_pos->maximum()/2 ? 0:ui->blend_pos->maximum());
+}
