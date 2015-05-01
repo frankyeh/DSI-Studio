@@ -19,6 +19,7 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
     ui->vbc_view->setScene(&vbc_scene);
     ui->individual_list->setModel(new QStringListModel);
     ui->individual_list->setSelectionModel(new QItemSelectionModel(ui->individual_list->model()));
+    ui->advanced_options->hide();
     ui->subject_list->setColumnCount(3);
     ui->subject_list->setColumnWidth(0,300);
     ui->subject_list->setColumnWidth(1,50);
@@ -97,7 +98,6 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
     ui->subject_list->selectRow(0);
     ui->toolBox->setCurrentIndex(1);
     ui->foi_widget->hide();
-    ui->show_result->hide();
     ui->ROI_widget->hide();
     on_rb_multiple_regression_clicked();
     qApp->installEventFilter(this);
@@ -744,7 +744,6 @@ void vbc_dialog::calculate_FDR(void)
         ui->run->setText("Run");
         ui->progressBar->setValue(100);
         timer.reset(0);
-        ui->show_result->show();
     }
     else
         ui->progressBar->setValue(100*vbc->total_count/vbc->permutation_count);
@@ -760,7 +759,6 @@ void vbc_dialog::on_run_clicked()
         ui->run->setText("Run");
         return;
     }
-    ui->show_result->hide();
     ui->run->setText("Stop");
     ui->span_to->setValue(80);
     vbc->permutation_count = ui->mr_permutation->value();
@@ -824,7 +822,6 @@ void vbc_dialog::on_run_clicked()
     if(ui->rb_multiple_regression->isChecked())
     {
         vbc->tracking_threshold = ui->t_threshold->value()*0.01; // percentage
-        vbc->model->study_feature = ui->foi->currentIndex()+1;
         out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted using a multiple regression model considering ";
         for(unsigned int index = 0;index < (int)ui->foi->count()-1;++index)
             out << ui->foi->itemText(index).toLower().toLocal8Bit().begin() << (ui->foi->count() > 2 ? ", " : " ");
@@ -911,12 +908,13 @@ void vbc_dialog::on_show_result_clicked()
         out << report.toLocal8Bit().begin();
         new_data->report += out.str();
     }
-    if(vbc->model->type != 2) // not individual
+    stat_model* cur_model = vbc->model.get() ? vbc->model.get():model.get();
+    if(cur_model->type != 2) // not individual
     {
         result_fib.reset(new fib_data);
         stat_model info;
         std::vector<unsigned int> permu;
-        info.resample(*(vbc->model.get()),permu,false,false);
+        info.resample(*cur_model,permu,false,false);
         vbc->calculate_spm(*result_fib.get(),info,permu);
         new_data->view_item.push_back(ViewItem());
         new_data->view_item.back().name = "lesser";
@@ -940,8 +938,10 @@ void vbc_dialog::on_show_result_clicked()
     current_tracking_window->tractWidget->delete_all_tract();
     QStringList filenames;
     for(unsigned int index = 0;index < saved_file_name.size();++index)
-        filenames << saved_file_name[index].c_str();
-    current_tracking_window->tractWidget->load_tracts(filenames);
+        if(QFileInfo(saved_file_name[index].c_str()).exists())
+            filenames << saved_file_name[index].c_str();
+    if(!filenames.empty())
+        current_tracking_window->tractWidget->load_tracts(filenames);
 
 }
 
@@ -1083,7 +1083,7 @@ void vbc_dialog::on_toolBox_currentChanged(int index)
 {
     if(index > 1 && !ui->run->isEnabled())
     {
-        QMessageBox::information(this,"Missing information","Please provide patient information in STEP1 before going to STEP2 and 3",0);
+        QMessageBox::information(this,"Missing information","Please provide patient information in STEP1 before running connectometry",0);
         ui->toolBox->setCurrentIndex(1);
     }
 }
@@ -1228,4 +1228,17 @@ void vbc_dialog::on_save_vector_clicked()
     if(filename.isEmpty())
         return;
     vbc->handle->save_subject_vector(filename.toLocal8Bit().begin(),true);
+}
+
+void vbc_dialog::on_show_advanced_clicked()
+{
+    if(ui->advanced_options->isVisible())
+        ui->advanced_options->hide();
+    else
+        ui->advanced_options->show();
+}
+
+void vbc_dialog::on_foi_currentIndexChanged(int index)
+{
+    model->study_feature = ui->foi->currentIndex()+1;
 }

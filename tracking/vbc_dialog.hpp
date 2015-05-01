@@ -92,6 +92,10 @@ private slots:
 
     void on_save_vector_clicked();
 
+    void on_show_advanced_clicked();
+
+    void on_foi_currentIndexChanged(int index);
+
 public slots:
     void calculate_FDR(void);
     void setup_threshold(void);
