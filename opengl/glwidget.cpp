@@ -1975,6 +1975,7 @@ void GLWidget::saveRotationVideo2(void)
     cur_tracking_window.float3dwindow(1024,768);
     begin_prog("save images");
     image::io::avi avi;
+    double eye_shift = cur_tracking_window["3d_perspective"].toDouble();
     for(unsigned int index = 1;check_prog(index,360);++index)
     {
 
@@ -1982,7 +1983,7 @@ void GLWidget::saveRotationVideo2(void)
         glPushMatrix();
         glLoadIdentity();
         glRotated(1,0,1.0,0.0);
-        glTranslatef(-3,0,0);
+        glTranslatef(-eye_shift,0,0);
         glMultMatrixf(transformation_matrix);
         glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
         glPopMatrix();
@@ -1992,7 +1993,7 @@ void GLWidget::saveRotationVideo2(void)
 
         glPushMatrix();
         glLoadIdentity();
-        glTranslatef(6,0,0);
+        glTranslatef(eye_shift*2.0,0,0);
         glMultMatrixf(transformation_matrix);
         glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
         glPopMatrix();
@@ -2002,7 +2003,7 @@ void GLWidget::saveRotationVideo2(void)
 
         glPushMatrix();
         glLoadIdentity();
-        glTranslatef(-3,0,0);
+        glTranslatef(-eye_shift,0,0);
         glMultMatrixf(transformation_matrix);
         glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
         glPopMatrix();
