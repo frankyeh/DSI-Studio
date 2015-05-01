@@ -87,7 +87,7 @@ void slice_view_scene::show_fiber(QPainter& painter)
     float r = display_ratio * cur_tracking_window["roi_fiber_length"].toFloat();
     if(fiber_color)
     {
-        QPen pen(QColor(255,0,0));
+        QPen pen(QColor(fiber_color == 1 ? 255:0,fiber_color == 2 ? 255:0,fiber_color == 3 ? 255:0));
         pen.setWidthF(pen_w);
         painter.setPen(pen);
     }
