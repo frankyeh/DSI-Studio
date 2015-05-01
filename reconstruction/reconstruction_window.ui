@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>833</width>
-    <height>708</height>
+    <width>731</width>
+    <height>619</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -50,7 +50,7 @@
     <item>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -60,8 +60,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>833</width>
-         <height>610</height>
+         <width>731</width>
+         <height>521</height>
         </rect>
        </property>
        <attribute name="label">
@@ -115,41 +115,26 @@
                    </size>
                   </property>
                   <property name="text">
-                   <string>Delete</string>
+                   <string>Remove selected DWI</string>
+                  </property>
+                  <property name="icon">
+                   <iconset resource="../icons.qrc">
+                    <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="motion_correction">
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
+                 <spacer name="horizontalSpacer_8">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
                   </property>
-                  <property name="maximumSize">
+                  <property name="sizeHint" stdset="0">
                    <size>
-                    <width>16777215</width>
-                    <height>16777215</height>
+                    <width>40</width>
+                    <height>20</height>
                    </size>
                   </property>
-                  <property name="text">
-                   <string>Motion/Eddy Correction</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QProgressBar" name="motion_correction_progress">
-                  <property name="maximumSize">
-                   <size>
-                    <width>16777215</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="value">
-                   <number>0</number>
-                  </property>
-                 </widget>
+                 </spacer>
                 </item>
                </layout>
               </item>
@@ -326,6 +311,48 @@
              </layout>
             </item>
             <item>
+             <layout class="QHBoxLayout" name="horizontalLayout">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QPushButton" name="motion_correction">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Motion/Eddy Correction</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QProgressBar" name="motion_correction_progress">
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="value">
+                 <number>0</number>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
              <widget class="QGraphicsView" name="view_source"/>
             </item>
             <item>
@@ -346,8 +373,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>833</width>
-         <height>610</height>
+         <width>731</width>
+         <height>521</height>
         </rect>
        </property>
        <attribute name="label">
@@ -359,67 +386,18 @@
           <item>
            <layout class="QVBoxLayout" name="verticalLayout_3">
             <item>
-             <layout class="QHBoxLayout" name="horizontalLayout">
+             <layout class="QGridLayout" name="gridLayout">
               <property name="spacing">
                <number>0</number>
               </property>
-              <item>
-               <widget class="QPushButton" name="load_mask">
-                <property name="text">
-                 <string>Open...</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="save_mask">
-                <property name="text">
-                 <string>Save...</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="thresholding">
-                <property name="text">
-                 <string>Thresholding</string>
-                </property>
-               </widget>
-              </item>
-              <item>
+              <item row="0" column="3">
                <widget class="QPushButton" name="dilation">
                 <property name="text">
                  <string>Dilation</string>
                 </property>
                </widget>
               </item>
-              <item>
-               <widget class="QPushButton" name="erosion">
-                <property name="text">
-                 <string>Erosion</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="smoothing">
-                <property name="text">
-                 <string>Smoothing</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="defragment">
-                <property name="text">
-                 <string>Defragment</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="remove_background">
-                <property name="text">
-                 <string>Remove background</string>
-                </property>
-               </widget>
-              </item>
-              <item>
+              <item row="0" column="8">
                <spacer name="horizontalSpacer_2">
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
@@ -431,6 +409,63 @@
                  </size>
                 </property>
                </spacer>
+              </item>
+              <item row="0" column="4">
+               <widget class="QPushButton" name="erosion">
+                <property name="text">
+                 <string>Erosion</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="0">
+               <widget class="QPushButton" name="load_mask">
+                <property name="text">
+                 <string>Open...</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="../icons.qrc">
+                  <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QPushButton" name="save_mask">
+                <property name="text">
+                 <string>Save...</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="../icons.qrc">
+                  <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="2">
+               <widget class="QPushButton" name="thresholding">
+                <property name="text">
+                 <string>Thresholding</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QPushButton" name="smoothing">
+                <property name="text">
+                 <string>Smoothing</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QPushButton" name="defragment">
+                <property name="text">
+                 <string>Defragment</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="2">
+               <widget class="QPushButton" name="remove_background">
+                <property name="text">
+                 <string>Remove background</string>
+                </property>
+               </widget>
               </item>
              </layout>
             </item>
@@ -455,8 +490,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>833</width>
-         <height>610</height>
+         <width>731</width>
+         <height>521</height>
         </rect>
        </property>
        <property name="minimumSize">
@@ -836,10 +871,22 @@
              </item>
              <item>
               <widget class="QPushButton" name="manual_reg">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
                <property name="minimumSize">
                 <size>
                  <width>0</width>
-                 <height>23</height>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>40</width>
+                 <height>16777215</height>
                 </size>
                </property>
                <property name="text">
@@ -1020,9 +1067,15 @@
              </item>
              <item>
               <widget class="QPushButton" name="load_b_table">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
                <property name="maximumSize">
                 <size>
-                 <width>16777215</width>
+                 <width>40</width>
                  <height>16777215</height>
                 </size>
                </property>
@@ -1682,7 +1735,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>833</width>
+     <width>731</width>
      <height>26</height>
     </rect>
    </property>

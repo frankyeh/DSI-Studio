@@ -826,8 +826,8 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
     }
 
     double ratio = std::max(1.0,
-        std::min((double)ui->graphicsView->width()/(double)dwi.width(),
-                 (double)ui->graphicsView->height()/(double)dwi.height()));
+        std::min(((double)ui->graphicsView->width()-5)/(double)dwi.width(),
+                 ((double)ui->graphicsView->height()-5)/(double)dwi.height()));
     scene.setSceneRect(0, 0, dwi.width()*ratio,dwi.height()*ratio);
     slice_image = QImage((unsigned char*)&*buffer.begin(),dwi.width(),dwi.height(),QImage::Format_RGB32).
                     scaled(dwi.width()*ratio,dwi.height()*ratio);
