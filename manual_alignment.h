@@ -31,6 +31,7 @@ class manual_alignment : public QDialog
     Q_OBJECT
 private:
     image::basic_image<float,3> from,to,warped_from;
+    image::affine_transform<3,float> b_upper,b_lower;
     image::vector<3> scaling;
     QGraphicsScene scene[3];
     image::color_image buffer[3];

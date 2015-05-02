@@ -48,7 +48,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     to.swap(to_);
     image::normalize(from,1.0);
     image::normalize(to,1.0);
-
+    image::reg::get_bound(from,to,data.arg,b_upper,b_lower,reg_type_);
     reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),scaling,boost::ref(data),1));
     ui->setupUi(this);
     if(reg_type_ == image::reg::rigid_body)
@@ -132,45 +132,47 @@ manual_alignment::~manual_alignment()
 }
 void manual_alignment::load_param(void)
 {
+
+
     // translocation
-    ui->tx->setMaximum(from.geometry()[0]/2);
-    ui->tx->setMinimum(-from.geometry()[0]/2);
+    ui->tx->setMaximum(b_upper.translocation[0]);
+    ui->tx->setMinimum(b_lower.translocation[0]);
     ui->tx->setValue(data.arg.translocation[0]);
-    ui->ty->setMaximum(from.geometry()[1]/2);
-    ui->ty->setMinimum(-from.geometry()[1]/2);
+    ui->ty->setMaximum(b_upper.translocation[1]);
+    ui->ty->setMinimum(b_lower.translocation[1]);
     ui->ty->setValue(data.arg.translocation[1]);
-    ui->tz->setMaximum(from.geometry()[2]/2);
-    ui->tz->setMinimum(-from.geometry()[2]/2);
+    ui->tz->setMaximum(b_upper.translocation[2]);
+    ui->tz->setMinimum(b_lower.translocation[2]);
     ui->tz->setValue(data.arg.translocation[2]);
     // rotation
-    ui->rx->setMaximum(3.14159265358979323846*0.2);
-    ui->rx->setMinimum(-3.14159265358979323846*0.2);
+    ui->rx->setMaximum(b_upper.rotation[0]);
+    ui->rx->setMinimum(b_lower.rotation[0]);
     ui->rx->setValue(data.arg.rotation[0]);
-    ui->ry->setMaximum(3.14159265358979323846*0.2);
-    ui->ry->setMinimum(-3.14159265358979323846*0.2);
+    ui->ry->setMaximum(b_upper.rotation[1]);
+    ui->ry->setMinimum(b_lower.rotation[1]);
     ui->ry->setValue(data.arg.rotation[1]);
-    ui->rz->setMaximum(3.14159265358979323846*0.2);
-    ui->rz->setMinimum(-3.14159265358979323846*0.2);
+    ui->rz->setMaximum(b_upper.rotation[2]);
+    ui->rz->setMinimum(b_lower.rotation[2]);
     ui->rz->setValue(data.arg.rotation[2]);
     //scaling
-    ui->sx->setMaximum(data.arg.scaling[0]*2.0);
-    ui->sx->setMinimum(data.arg.scaling[0]/2.0);
+    ui->sx->setMaximum(b_upper.scaling[0]);
+    ui->sx->setMinimum(b_lower.scaling[0]);
     ui->sx->setValue(data.arg.scaling[0]);
-    ui->sy->setMaximum(data.arg.scaling[1]*2.0);
-    ui->sy->setMinimum(data.arg.scaling[1]/2.0);
+    ui->sy->setMaximum(b_upper.scaling[1]);
+    ui->sy->setMinimum(b_lower.scaling[1]);
     ui->sy->setValue(data.arg.scaling[1]);
-    ui->sz->setMaximum(data.arg.scaling[2]*2.0);
-    ui->sz->setMinimum(data.arg.scaling[2]/2.0);
+    ui->sz->setMaximum(b_upper.scaling[2]);
+    ui->sz->setMinimum(b_lower.scaling[2]);
     ui->sz->setValue(data.arg.scaling[2]);
     //tilting
-    ui->xy->setMaximum(1);
-    ui->xy->setMinimum(-1);
+    ui->xy->setMaximum(b_upper.affine[0]);
+    ui->xy->setMinimum(b_lower.affine[0]);
     ui->xy->setValue(data.arg.affine[0]);
-    ui->xz->setMaximum(1);
-    ui->xz->setMinimum(-1);
+    ui->xz->setMaximum(b_upper.affine[1]);
+    ui->xz->setMinimum(b_lower.affine[1]);
     ui->xz->setValue(data.arg.affine[1]);
-    ui->yz->setMaximum(1);
-    ui->yz->setMinimum(-1);
+    ui->yz->setMaximum(b_upper.affine[2]);
+    ui->yz->setMinimum(b_lower.affine[2]);
     ui->yz->setValue(data.arg.affine[2]);
 
 }
