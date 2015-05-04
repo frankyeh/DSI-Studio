@@ -14,7 +14,6 @@ std::string get_fa_template_path(void);
 
 void run_reg(image::basic_image<float,3>& from,
              image::basic_image<float,3>& to,
-             image::vector<3> vs,
              reg_data& data,
              unsigned int thread_count);
 
@@ -90,8 +89,10 @@ bool atl_get_mapping(gz_mat_read& mat_reader,
         image::lower_threshold(from,0.0);
         image::normalize(from,1.0);
         image::normalize(to,1.0);
-
-        run_reg(from,fa_template_imp.I,image::vector<3>(vs),data,thread_count);
+        data.arg.scaling[0] = vs[0];
+        data.arg.scaling[1] = vs[1];
+        data.arg.scaling[2] = vs[2];
+        run_reg(from,fa_template_imp.I,data,thread_count);
         image::transformation_matrix<3,float> T(data.arg,from.geometry(),fa_template_imp.I.geometry());
         mapping.resize(from.geometry());
         for(image::pixel_index<3> index;from.geometry().is_valid(index);index.next(from.geometry()))

@@ -8,13 +8,9 @@ typedef image::reg::mutual_information cost_func;
 
 void run_reg(image::basic_image<float,3>& from,
              image::basic_image<float,3>& to,
-             image::vector<3> vs,
              reg_data& data,
              unsigned int thread_count)
 {
-    data.arg.scaling[0] = vs[0];
-    data.arg.scaling[1] = vs[1];
-    data.arg.scaling[2] = vs[2];
     image::reg::align_center(from,to,data.arg);
 
     data.progress = 0;
@@ -48,8 +44,11 @@ manual_alignment::manual_alignment(QWidget *parent,
     to.swap(to_);
     image::normalize(from,1.0);
     image::normalize(to,1.0);
+    data.arg.scaling[0] = scaling[0];
+    data.arg.scaling[1] = scaling[1];
+    data.arg.scaling[2] = scaling[2];
     image::reg::get_bound(from,to,data.arg,b_upper,b_lower,reg_type_);
-    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),scaling,boost::ref(data),1));
+    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),boost::ref(data),1));
     ui->setupUi(this);
     if(reg_type_ == image::reg::rigid_body)
     {
@@ -294,7 +293,7 @@ void manual_alignment::on_rerun_clicked()
         reg_thread->join();
     }
     data.terminated = 0;
-    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),scaling,boost::ref(data),1));
+    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),boost::ref(data),1));
     timer->start();
 
 }
