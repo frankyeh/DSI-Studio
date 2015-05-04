@@ -3,6 +3,7 @@
 #include <QSplitter>
 #include <QSettings>
 #include <QClipboard>
+#include <QShortcut>
 #include "tracking_window.h"
 #include "ui_tracking_window.h"
 #include "opengl/glwidget.h"
@@ -354,6 +355,12 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
     on_SliceModality_currentIndexChanged(0);
 
     qApp->installEventFilter(this);
+    #ifdef __APPLE__ // fix Mac shortcut problem
+    foreach (QAction *a, ui->menu_Edit->actions()) {
+        QObject::connect(new QShortcut(a->shortcut(), a->parentWidget()),
+                         SIGNAL(activated()), a, SLOT(trigger()));
+    }
+    #endif
 }
 
 tracking_window::~tracking_window()
