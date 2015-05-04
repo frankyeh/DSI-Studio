@@ -1972,6 +1972,7 @@ void GLWidget::saveRotationVideo2(void)
         return;
     QMessageBox::information(0,"saving video","DSI Studio is going to grab video from 3D window. Click ok to start.",0);
     makeCurrent();
+    cur_tracking_window.gLdock.reset(0);
     cur_tracking_window.float3dwindow(1024,768);
     image::io::avi avi;
     double eye_shift = cur_tracking_window["3d_perspective"].toDouble();
