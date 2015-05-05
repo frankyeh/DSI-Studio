@@ -5,7 +5,6 @@
 #include <QSettings>
 #include <QFileDialog>
 #include <QClipboard>
-#include <QMessageBox>
 #include "tracking_window.h"
 #include "ui_tracking_window.h"
 #include "region/regiontablewidget.h"

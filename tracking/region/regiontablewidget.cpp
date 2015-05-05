@@ -762,7 +762,7 @@ void RegionTableWidget::show_statistics(void)
     }
     QMessageBox msgBox;
     msgBox.setText("Region Statistics");
-    msgBox.setInformativeText(result.c_str());
+    msgBox.setDetailedText(result.c_str());
     msgBox.setStandardButtons(QMessageBox::Ok|QMessageBox::Save);
     msgBox.setDefaultButton(QMessageBox::Ok);
     QPushButton *copyButton = msgBox.addButton("Copy To Clipboard", QMessageBox::ActionRole);

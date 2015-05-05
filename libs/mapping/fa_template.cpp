@@ -3,7 +3,6 @@
 #include "libs/gzip_interface.hpp"
 
 #include <QApplication>
-#include <QMessageBox>
 #include <QDir>
 
 bool fa_template::load_from_file(void)

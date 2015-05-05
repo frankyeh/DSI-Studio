@@ -1389,7 +1389,7 @@ void tracking_window::show_info_dialog(const std::string& title,const std::strin
 {
     QMessageBox msgBox;
     msgBox.setText(title.c_str());
-    msgBox.setInformativeText(result.c_str());
+    msgBox.setDetailedText(result.c_str());
     msgBox.setStandardButtons(QMessageBox::Ok|QMessageBox::Save);
     msgBox.setDefaultButton(QMessageBox::Ok);
     QPushButton *copyButton = msgBox.addButton("Copy To Clipboard", QMessageBox::ActionRole);
