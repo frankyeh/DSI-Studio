@@ -133,6 +133,8 @@ public:
     {
         unsigned int sum_mask = std::accumulate(mask.begin(),mask.end(),(unsigned int)0)/thread_count;
         unsigned int cur = 0;
+        if(thread_index == 0)
+            begin_prog("run reconstruction");
         for(unsigned int voxel_index = thread_index;
             voxel_index < mask.size() &&
             (thread_index != 0 || check_prog(cur,sum_mask));voxel_index += thread_count)

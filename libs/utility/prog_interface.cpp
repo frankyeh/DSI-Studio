@@ -37,7 +37,7 @@ void set_title(const char* title)
 {
     if(!progressDialog.get())
         return;
-    progressDialog->setWindowTitle(title);
+    progressDialog->setLabelText(title);
     QApplication::processEvents();
 }
 bool check_prog(unsigned int now,unsigned int total)
@@ -61,11 +61,12 @@ bool check_prog(unsigned int now,unsigned int total)
             return false;
         progressDialog->setRange(0, total);
         progressDialog->setValue(now);
+        QString label = progressDialog->labelText().split(':').at(0);
         if(expected_sec)
-            progressDialog->setLabelText(QString("%1 of %2, estimated time: %3 min %4 sec").
+            progressDialog->setLabelText(label + QString(": %1 of %2, estimated time: %3 min %4 sec").
                                              arg(now).arg(total).arg(expected_sec/60).arg(expected_sec%60));
         else
-            progressDialog->setLabelText(QString("%1 of %2...").arg(now).arg(total));
+            progressDialog->setLabelText(label + QString(": %1 of %2...").arg(now).arg(total));
         QApplication::processEvents();
     }
     return now < total;
