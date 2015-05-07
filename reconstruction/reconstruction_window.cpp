@@ -265,7 +265,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     settings.setValue("output_mapping",ui->output_mapping->isChecked() ? 1 : 0);
     settings.setValue("check_btable",ui->check_btable->isChecked() ? 1 : 0);
 
-    begin_prog("run reconstruction",true);
+    begin_prog("reconstruction",true);
     int odf_order[8] = {4, 5, 6, 8, 10, 12, 16, 20};
     handle->voxel.ti.init(odf_order[ui->ODFDim->currentIndex()]);
     handle->voxel.odf_deconvolusion = ui->odf_sharpening->currentIndex() == 1 ? 1 : 0;

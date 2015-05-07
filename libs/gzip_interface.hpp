@@ -53,9 +53,6 @@ public:
     }
     bool read(void* buf,size_t buf_size)
     {
-        char title[] = "reading......";
-        title[7+(std::clock()/CLOCKS_PER_SEC)%5] = 0;
-        ::set_title(title);
         check_prog((unsigned int)cur(),(unsigned int)size());
         if(prog_aborted())
             return false;
