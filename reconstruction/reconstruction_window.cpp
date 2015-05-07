@@ -890,7 +890,7 @@ void rec_motion_correction_parallel(ImageModel* handle,
         image::reg::fun_adoptor<image::basic_image<float,3>,
                                 image::affine_transform<3,float>,
                                 image::affine_transform<3,float>,
-                                image::reg::square_error2> fun(I0,I1,args[i]);
+                                image::reg::square_error> fun(I0,I1,args[i]);
         double optimal_value = fun(args[i][0]);
         image::optimization::graient_descent(args[i].begin(),args[i].end(),
                                              upper.begin(),lower.begin(),fun,optimal_value,terminated,0.05);

@@ -579,6 +579,7 @@ void TractTableWidget::show_tracts_statistics(void)
         return;
     std::ostringstream out;
     std::vector<std::vector<std::string> > track_results(tract_models.size());
+    begin_prog("calculating");
     for(unsigned int index = 0;check_prog(index,tract_models.size());++index)
     {
         std::string tmp,line;
