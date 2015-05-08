@@ -49,6 +49,10 @@ struct TrackVis
         n_properties = 0;
         std::fill((char*)property_name,(char*)property_name+200,0);
         std::fill((float*)vox_to_ras,(float*)vox_to_ras+16,(float)0.0);
+        vox_to_ras[0][0] = -voxel_size[0]; // L to R
+        vox_to_ras[1][1] = -voxel_size[1]; // P to A
+        vox_to_ras[2][2] = voxel_size[2];
+        vox_to_ras[3][3] = 1;
         std::fill(reserved,reserved+sizeof(reserved),0);
         voxel_order[0] = 'L';
         voxel_order[1] = 'P';
