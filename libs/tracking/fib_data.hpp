@@ -558,6 +558,11 @@ public:
         // load subject data
         for(unsigned int subject_index = 0;check_prog(subject_index,num_subjects);++subject_index)
         {
+            if(prog_aborted())
+            {
+                check_prog(1,1);
+                return false;
+            }
             gz_mat_read m;
             if(!m.load_from_file(file_names[subject_index].c_str()))
             {

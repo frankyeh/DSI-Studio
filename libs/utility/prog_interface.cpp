@@ -67,6 +67,7 @@ bool check_prog(unsigned int now,unsigned int total)
                                              arg(now).arg(total).arg(expected_sec/60).arg(expected_sec%60));
         else
             progressDialog->setLabelText(label + QString(": %1 of %2...").arg(now).arg(total));
+        progressDialog->show();
         QApplication::processEvents();
     }
     return now < total;
