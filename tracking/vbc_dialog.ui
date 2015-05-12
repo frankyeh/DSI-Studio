@@ -46,8 +46,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>772</width>
-           <height>540</height>
+           <width>776</width>
+           <height>553</height>
           </rect>
          </property>
          <attribute name="label">
@@ -203,9 +203,7 @@
                       <number>0</number>
                      </property>
                      <item>
-                      <widget class="QCustomPlot" name="vbc_report" native="true">
-                       <zorder>normalize_qa</zorder>
-                      </widget>
+                      <widget class="QCustomPlot" name="vbc_report" native="true"/>
                      </item>
                      <item>
                       <layout class="QHBoxLayout" name="horizontalLayout_14">
@@ -391,9 +389,9 @@
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>-135</y>
-           <width>751</width>
-           <height>675</height>
+           <y>0</y>
+           <width>759</width>
+           <height>572</height>
           </rect>
          </property>
          <attribute name="label">
@@ -1062,7 +1060,7 @@
                   <number>100</number>
                  </property>
                  <property name="value">
-                  <number>1000</number>
+                  <number>5000</number>
                  </property>
                 </widget>
                </item>
@@ -1114,8 +1112,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>772</width>
-           <height>540</height>
+           <width>776</width>
+           <height>553</height>
           </rect>
          </property>
          <attribute name="label">

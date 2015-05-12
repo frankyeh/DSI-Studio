@@ -2,6 +2,7 @@
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QStringListModel>
+#include <QThread>
 #include <boost/math/distributions/students_t.hpp>
 #include "vbc_dialog.hpp"
 #include "ui_vbc_dialog.h"
@@ -17,6 +18,7 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
 {
     ui->setupUi(this);
     ui->vbc_view->setScene(&vbc_scene);
+    ui->multithread->setValue(QThread::idealThreadCount());
     ui->individual_list->setModel(new QStringListModel);
     ui->individual_list->setSelectionModel(new QItemSelectionModel(ui->individual_list->model()));
     ui->advanced_options->hide();
@@ -1042,6 +1044,7 @@ void vbc_dialog::on_remove_subject2_clicked()
                 if(!remove_list_str.empty())
                     remove_list_str += ", ";
                 remove_list_str += vbc->handle->subject_names[index];
+                break;
             }
         }
     }

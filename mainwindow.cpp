@@ -680,6 +680,7 @@ void MainWindow::on_connectometry_clicked()
 
     std::auto_ptr<vbc_database> database(new vbc_database);
     database.reset(new vbc_database);
+    begin_prog("reading connectometry db");
     if(!database->load_database(filename.toLocal8Bit().begin()))
     {
         QMessageBox::information(this,"Error","Invalid database format",0);
