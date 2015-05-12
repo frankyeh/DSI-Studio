@@ -1019,7 +1019,9 @@ void vbc_dialog::on_remove_subject_clicked()
         model->remove_subject(index);
         ui->subject_demo->removeRow(index);
         ui->subject_list->removeRow(index);
+        setup_threshold();
     }
+
 }
 void vbc_dialog::on_remove_subject2_clicked()
 {
@@ -1061,6 +1063,7 @@ void vbc_dialog::on_remove_subject2_clicked()
         ui->subject_list->removeRow(remove_list.back());
         remove_list.pop_back();
     }
+    setup_threshold();
     remove_list_str += " removed.";
     QMessageBox::information(this,"Remove subject(s)",remove_list_str.c_str(),0,0);
 }
