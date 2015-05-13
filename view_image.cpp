@@ -14,11 +14,28 @@ view_image::view_image(QWidget *parent) :
     connect(ui->brightness,SIGNAL(valueChanged(int)),this,SLOT(update_image()));
     source_ratio = 2.0;
     ui->tabWidget->setCurrentIndex(0);
+    qApp->installEventFilter(this);
 }
 
 view_image::~view_image()
 {
+    qApp->removeEventFilter(this);
     delete ui;
+}
+bool view_image::eventFilter(QObject *obj, QEvent *event)
+{
+    if (event->type() != QEvent::MouseMove || obj->parent() != ui->view)
+        return false;
+    QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+    QPointF point = ui->view->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
+    image::vector<3,float> pos;
+    pos[0] =  ((float)point.x()) / source_ratio - 0.5;
+    pos[1] =  ((float)point.y()) / source_ratio - 0.5;
+    pos[2] = ui->slice_pos->value();
+    if(!data.geometry().is_valid(pos))
+        return true;
+    ui->info_label->setText(QString("(%1,%2,%3) = %4").arg(pos[0]).arg(pos[1]).arg(pos[2]).arg(data.at(pos[0],pos[1],pos[2])));
+    return true;
 }
 
 bool view_image::open(QString file_name)

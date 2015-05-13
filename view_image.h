@@ -17,6 +17,7 @@ public:
     explicit view_image(QWidget *parent = 0);
     ~view_image();
     bool open(QString file_name);
+    bool eventFilter(QObject *obj, QEvent *event);
 private slots:
     void update_image(void);
     void on_zoom_in_clicked();
