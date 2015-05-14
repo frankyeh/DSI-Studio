@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>722</width>
-    <height>676</height>
+    <width>799</width>
+    <height>622</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -46,8 +46,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>591</width>
-           <height>201</height>
+           <width>741</width>
+           <height>528</height>
           </rect>
          </property>
          <attribute name="label">
@@ -378,9 +378,9 @@
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>-320</y>
-           <width>679</width>
-           <height>902</height>
+           <y>-358</y>
+           <width>756</width>
+           <height>886</height>
           </rect>
          </property>
          <attribute name="label">
@@ -587,7 +587,7 @@
                      </size>
                     </property>
                     <property name="text">
-                     <string>Remove selected subject</string>
+                     <string/>
                     </property>
                     <property name="icon">
                      <iconset resource="../icons.qrc">
@@ -936,6 +936,13 @@
                 <number>0</number>
                </property>
                <item>
+                <widget class="QLabel" name="label_6">
+                 <property name="text">
+                  <string>Region:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
                 <widget class="QRadioButton" name="roi_whole_brain">
                  <property name="text">
                   <string>Whole brain</string>
@@ -948,14 +955,14 @@
                <item>
                 <widget class="QRadioButton" name="roi_file">
                  <property name="text">
-                  <string>Assign by file</string>
+                  <string>From file</string>
                  </property>
                 </widget>
                </item>
                <item>
                 <widget class="QRadioButton" name="roi_atlas">
                  <property name="text">
-                  <string>Assign by atlas</string>
+                  <string>Use</string>
                  </property>
                 </widget>
                </item>
@@ -996,7 +1003,7 @@
                   <item>
                    <widget class="QLabel" name="label_5">
                     <property name="text">
-                     <string>used as</string>
+                     <string> as</string>
                     </property>
                    </widget>
                   </item>
@@ -1207,8 +1214,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>744</width>
-           <height>242</height>
+           <width>777</width>
+           <height>528</height>
           </rect>
          </property>
          <attribute name="label">
