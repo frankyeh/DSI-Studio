@@ -447,18 +447,6 @@ public:
         }
     }
 
-    void remove_subject(unsigned int index)
-    {
-        if(num_subjects <= 1)
-            return;
-        subject_names.erase(subject_names.begin()+index);
-        if(!subject_qa_buffer.empty())
-            subject_qa_buffer.erase(subject_qa_buffer.begin()+index);
-        subject_qa.erase(subject_qa.begin()+index);
-        R2.erase(R2.begin()+index);
-        --num_subjects;
-    }
-
     bool sample_odf(gz_mat_read& m,std::vector<float>& data)
     {
         ODFData subject_odf;
@@ -701,7 +689,7 @@ public:
             }
         }
     }
-    void get_data_at(unsigned int index,unsigned int fib_index,std::vector<float>& data,bool normalize_qa) const
+    void get_data_at(unsigned int index,unsigned int fib_index,std::vector<double>& data,bool normalize_qa) const
     {
         data.clear();
         if((int)index >= dim.size() || fib.fa[0][index] == 0.0)

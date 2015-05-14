@@ -94,13 +94,11 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) 
     connect(ui->AxiSlider,SIGNAL(valueChanged(int)),this,SLOT(on_subject_list_itemSelectionChanged()));
     connect(ui->zoom,SIGNAL(valueChanged(double)),this,SLOT(on_subject_list_itemSelectionChanged()));
 
-    connect(ui->foi,SIGNAL(currentIndexChanged(int)),this,SLOT(setup_threshold()));
-    connect(ui->normalize_qa,SIGNAL(toggled(bool)),this,SLOT(setup_threshold()));
-
     ui->subject_list->selectRow(0);
     ui->toolBox->setCurrentIndex(1);
     ui->foi_widget->hide();
     ui->ROI_widget->hide();
+    on_rb_FDR_toggled(true);
     on_rb_multiple_regression_clicked();
     qApp->installEventFilter(this);
 
@@ -338,6 +336,7 @@ void vbc_dialog::on_open_files_clicked()
     if (file_name.isEmpty())
         return;
     model.reset(new stat_model);
+    model->init(vbc->handle->num_subjects);
     QStringList filenames;
     file_names.clear();
     for(unsigned int index = 0;index < file_name.size();++index)
@@ -374,6 +373,7 @@ void vbc_dialog::on_open_mr_files_clicked()
     if(filename.isEmpty())
         return;
     model.reset(new stat_model);
+    model->init(vbc->handle->num_subjects);
     file_names.clear();
     file_names.push_back(filename.toLocal8Bit().begin());
 
@@ -391,11 +391,35 @@ void vbc_dialog::on_open_mr_files_clicked()
             QMessageBox::information(this,"Warning",QString("Subject number mismatch."));
             return;
         }
+        bool add_age_and_sex = false;
+        std::vector<unsigned int> age(vbc->handle->num_subjects),sex(vbc->handle->num_subjects);
+        if((QString(vbc->handle->subject_names[0].c_str()).contains("_M0") || QString(vbc->handle->subject_names[0].c_str()).contains("_F0")) &&
+            QString(vbc->handle->subject_names[0].c_str()).contains("Y_") &&
+            QMessageBox::information(this,"Connectomtetry aanalysis","Pull age and sex (1 = male, 0 = female) information from connectometry db?",QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
+            {
+                add_age_and_sex = true;
+                for(unsigned int index = 0;index < vbc->handle->num_subjects;++index)
+                {
+                    QString name = vbc->handle->subject_names[index].c_str();
+                    sex[index] = name.contains("_M0") ? 1:0;
+                    int pos = name.indexOf("Y_")-2;
+                    if(pos <= 0)
+                        continue;
+                    age[index] = name.mid(pos,2).toInt();
+
+                }
+            }
+
         std::vector<double> X;
         for(unsigned int i = 0,index = 0;i < vbc->handle->num_subjects;++i)
         {
             bool ok = false;
             X.push_back(1); // for the intercep
+            if(add_age_and_sex)
+            {
+                X.push_back(age[index]);
+                X.push_back(sex[index]);
+            }
             for(unsigned int j = 0;j < feature_count;++j,++index)
             {
                 X.push_back(QString(items[index+feature_count].c_str()).toDouble(&ok));
@@ -413,6 +437,12 @@ void vbc_dialog::on_open_mr_files_clicked()
         model->feature_count = feature_count+1; // additional one for intercept
         QStringList t;
         t << "Subject ID";
+        if(add_age_and_sex)
+        {
+            model->feature_count += 2;
+            t << "Age";
+            t << "Sex";
+        }
         for(unsigned int index = 0;index < feature_count;++index)
         {
             std::replace(items[index].begin(),items[index].end(),'/','_');
@@ -425,7 +455,7 @@ void vbc_dialog::on_open_mr_files_clicked()
         ui->foi->setCurrentIndex(ui->foi->count()-1);
         ui->foi_widget->show();
         ui->subject_demo->clear();
-        ui->subject_demo->setColumnCount(feature_count+1);
+        ui->subject_demo->setColumnCount(t.size());
         ui->subject_demo->setHorizontalHeaderLabels(t);
         ui->subject_demo->setRowCount(vbc->handle->num_subjects);
         for(unsigned int row = 0,index = 0;row < ui->subject_demo->rowCount();++row)
@@ -435,7 +465,7 @@ void vbc_dialog::on_open_mr_files_clicked()
             for(unsigned int col = 1;col < ui->subject_demo->columnCount();++col,++index)
                 ui->subject_demo->setItem(row,col,new QTableWidgetItem(QString::number(model->X[index])));
         }
-
+        ui->missing_data_checked->setChecked(std::find(X.begin(),X.end(),ui->missing_value->value()) != X.end());
     }
     if(ui->rb_group_difference->isChecked())
     {
@@ -504,26 +534,26 @@ void vbc_dialog::on_open_mr_files_clicked()
         }
 
         model->type = 3;
-        model->pre.clear();
-        model->post.clear();
+        model->subject_index.clear();
+        model->paired.clear();
         for(unsigned int i = 0;i < label.size() && i < vbc->handle->num_subjects;++i)
             if(label[i] > 0)
             {
                 for(unsigned int j = 0;j < label.size() && j < vbc->handle->num_subjects;++j)
                     if(label[j] == -label[i])
                     {
-                        model->pre.push_back(i);
-                        model->post.push_back(j);
+                        model->subject_index.push_back(i);
+                        model->paired.push_back(j);
                     } 
             }
         ui->subject_demo->clear();
         ui->subject_demo->setColumnCount(2);
         ui->subject_demo->setHorizontalHeaderLabels(QStringList() << "Subject ID" << "Matched ID");
-        ui->subject_demo->setRowCount(model->pre.size());
+        ui->subject_demo->setRowCount(model->subject_index.size());
         for(unsigned int row = 0;row < ui->subject_demo->rowCount();++row)
         {
-            ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->handle->subject_names[model->pre[row]].c_str())));
-            ui->subject_demo->setItem(row,1,new QTableWidgetItem(QString(vbc->handle->subject_names[model->post[row]].c_str())));
+            ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->handle->subject_names[model->subject_index[row]].c_str())));
+            ui->subject_demo->setItem(row,1,new QTableWidgetItem(QString(vbc->handle->subject_names[model->paired[row]].c_str())));
         }
     }
 
@@ -537,36 +567,6 @@ void vbc_dialog::on_open_mr_files_clicked()
     }
 
     ui->run->setEnabled(true);
-    setup_threshold();
-}
-
-void vbc_dialog::setup_threshold(void)
-{
-    if(!ui->run->isEnabled())
-        return;
-    result_fib.reset(new fib_data);
-    stat_model info;
-    std::vector<unsigned int> permu;
-    if(ui->rb_multiple_regression->isChecked())
-        model->study_feature = ui->foi->currentIndex()+1;
-    info.resample(*(model.get()),permu,false,false);
-    vbc->normalize_qa = ui->normalize_qa->isChecked();
-    vbc->calculate_spm(*result_fib.get(),info,permu);
-    std::vector<float> values;
-    values.reserve(vbc->handle->dim.size()/8);
-    for(unsigned int index = 0;index < vbc->handle->dim.size();++index)
-        if(vbc->handle->fib.fa[0][index] > vbc->fiber_threshold)
-            values.push_back(result_fib->lesser_ptr[0][index] == 0 ? result_fib->greater_ptr[0][index] :  result_fib->lesser_ptr[0][index]);
-    if(ui->rb_multiple_regression->isChecked())
-    {
-        ui->t_threshold->setValue(image::segmentation::otsu_threshold(values)*100);
-        ui->range_label->setText(QString("for %1 from %2 to %3").
-                                 arg(ui->foi->currentText()).
-                                 arg(model->X_min[model->study_feature]).
-                                 arg(model->X_max[model->study_feature]));
-    }
-    if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
-        ui->percentage_dif->setValue(image::segmentation::otsu_threshold(values)*100);
 }
 
 void vbc_dialog::on_rb_individual_analysis_clicked()
@@ -586,7 +586,6 @@ void vbc_dialog::on_rb_individual_analysis_clicked()
     ui->threshold_label->setText("Percentile");
     ui->range_label->hide();
     ui->explaination->setText("25~50%:physiological difference, 5~25%:psychiatric diseases, 0~5%: neurological diseases");
-    ui->remove_subject2->hide();
 }
 
 void vbc_dialog::on_rb_group_difference_clicked()
@@ -605,7 +604,6 @@ void vbc_dialog::on_rb_group_difference_clicked()
     ui->threshold_label->setText("Percentage difference");
     ui->range_label->hide();
     ui->explaination->setText("0~30%:physiological difference, 30~50%:psychiatric diseases,  > 50%: neurological diseases");
-    ui->remove_subject2->hide();
 }
 
 void vbc_dialog::on_rb_multiple_regression_clicked()
@@ -624,7 +622,6 @@ void vbc_dialog::on_rb_multiple_regression_clicked()
     ui->threshold_label->setText("Percentage difference");
     ui->range_label->show();
     ui->explaination->setText("0~30%:physiological difference, 30~50%:psychiatric diseases,  > 50%: neurological diseases");
-    ui->remove_subject2->show();
 }
 
 void vbc_dialog::on_rb_paired_difference_clicked()
@@ -642,7 +639,6 @@ void vbc_dialog::on_rb_paired_difference_clicked()
     ui->threshold_label->setText("Percentage difference");
     ui->range_label->hide();
     ui->explaination->setText("0~30%:physiological difference, 30~50%:psychiatric diseases,  > 50%: neurological diseases");
-    ui->remove_subject2->hide();
 }
 
 void vbc_dialog::calculate_FDR(void)
@@ -656,51 +652,106 @@ void vbc_dialog::calculate_FDR(void)
         report = vbc->handle->report.c_str();
     if(!vbc->report.empty())
         report += vbc->report.c_str();
-    if(ui->rb_individual_analysis->isChecked())
+    if(vbc->use_track_length)
     {
-        std::ostringstream out;
-        if(vbc->length_threshold_greater == 0)
-            out << " No track showed significant increase in anisotropy.";
-        else
-            out << " The analysis results found tracks with significant increased anisotropy at length threshold of " << vbc->length_threshold_greater << " mm.";
+        if(ui->rb_individual_analysis->isChecked())
+            {
+                std::ostringstream out;
+                if(vbc->fdr_greater[vbc->length_threshold] > 0.5)
+                    out << " The analysis results showed no track with significant increase in anisotropy.";
+                else
+                    out << " The analysis results showed tracks with increased anisotropy with an FDR of "
+                        << vbc->fdr_greater[vbc->length_threshold] << ".";
 
-        if(vbc->length_threshold_lesser == 0)
-            out << " No track showed significant decrease in anisotropy.";
-        else
-            out << " The analysis results found tracks with significant decreased anisotropy at length threshold of " << vbc->length_threshold_lesser << " mm.";
-        report += out.str().c_str();
+                if(vbc->fdr_lesser[vbc->length_threshold] > 0.5)
+                    out << " The analysis results showed no track with significant decrease in anisotropy.";
+                else
+                    out << " The analysis results showed tracks with decreased anisotropy with an FDR of "
+                        << vbc->fdr_lesser[vbc->length_threshold] << ".";
+                report += out.str().c_str();
+            }
+            if(ui->rb_multiple_regression->isChecked())
+            {
+                std::ostringstream out;
+                if(vbc->fdr_greater[vbc->length_threshold] > 0.5)
+                    out << " The analysis results showed that there is no track with significantly increased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
+                else
+                    out << " The analysis results showed tracks with increased anisotropy related to "
+                        << ui->foi->currentText().toLocal8Bit().begin() << " with an FDR of "
+                        << vbc->fdr_greater[vbc->length_threshold] << ".";
+
+                if(vbc->fdr_lesser[vbc->length_threshold] > 0.5)
+                    out << " The analysis results showed that there is no track with significantly decreased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
+                else
+                    out << " The analysis results showed tracks with decreased anisotropy related to "
+                        << ui->foi->currentText().toLocal8Bit().begin() << " with an FDR of "
+                        << vbc->fdr_lesser[vbc->length_threshold] << ".";
+                report += out.str().c_str();
+            }
+            if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
+            {
+                std::ostringstream out;
+                if(vbc->fdr_greater[vbc->length_threshold] > 0.5)
+                    out << " The analysis results showed that there is no track in group 0 with significantly increased anisotropy.";
+                else
+                    out << " The analysis results showed tracks with increased anisotropy in group 0 with an FDR of "
+                        << vbc->fdr_greater[vbc->length_threshold] << ".";
+
+                if(vbc->fdr_lesser[vbc->length_threshold] > 0.5)
+                    out << " The analysis results showed that there is no track in group 1 with significantly increased anisotropy.";
+                else
+                    out << " The analysis results showed tracks with increased anisotropy in group 1 with an FDR of "
+                        << vbc->fdr_lesser[vbc->length_threshold] << ".";
+                report += out.str().c_str();
+            }
     }
-    if(ui->rb_multiple_regression->isChecked())
+    else
     {
-        std::ostringstream out;
-        if(vbc->length_threshold_greater == 0)
-            out << " No track showed significantly increased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
-        else
-            out << " The analysis results found tracks with increased anisotropy related to "
-                << ui->foi->currentText().toLocal8Bit().begin() << " at length threshold of " << vbc->length_threshold_greater << " mm.";
+        if(ui->rb_individual_analysis->isChecked())
+        {
+            std::ostringstream out;
+            if(vbc->length_threshold_greater == 0)
+                out << " No track showed significant increase in anisotropy.";
+            else
+                out << " The analysis results found tracks with significant increased anisotropy at length threshold of " << vbc->length_threshold_greater << " mm.";
 
-        if(vbc->length_threshold_lesser == 0)
-            out << " No track showed significantly decreased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
-        else
-            out << " The analysis results found tracks with decreased anisotropy related to "
-                << ui->foi->currentText().toLocal8Bit().begin() << " at length threshold of " << vbc->length_threshold_lesser << " mm.";
-        report += out.str().c_str();
+            if(vbc->length_threshold_lesser == 0)
+                out << " No track showed significant decrease in anisotropy.";
+            else
+                out << " The analysis results found tracks with significant decreased anisotropy at length threshold of " << vbc->length_threshold_lesser << " mm.";
+            report += out.str().c_str();
+        }
+        if(ui->rb_multiple_regression->isChecked())
+        {
+            std::ostringstream out;
+            if(vbc->length_threshold_greater == 0)
+                out << " No track showed significantly increased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
+            else
+                out << " The analysis results found tracks with increased anisotropy related to "
+                    << ui->foi->currentText().toLocal8Bit().begin() << " at length threshold of " << vbc->length_threshold_greater << " mm.";
+
+            if(vbc->length_threshold_lesser == 0)
+                out << " No track showed significantly decreased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
+            else
+                out << " The analysis results found tracks with decreased anisotropy related to "
+                    << ui->foi->currentText().toLocal8Bit().begin() << " at length threshold of " << vbc->length_threshold_lesser << " mm.";
+            report += out.str().c_str();
+        }
+        if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
+        {
+            std::ostringstream out;
+            if(vbc->length_threshold_greater == 0)
+                out << " No track in group 0 showed significantly increased anisotropy.";
+            else
+                out << " The analysis results found tracks with significant increased anisotropy in group 0 at length threshold of " << vbc->length_threshold_greater << " mm.";
+
+            if(vbc->length_threshold_lesser == 0)
+                out << "No track in group 1 showed significantly increased anisotropy.";
+            else
+                out << " The analysis results found tracks with significant increased anisotropy in group 1 at length threshold of " << vbc->length_threshold_lesser << " mm.";
+            report += out.str().c_str();
+        }
     }
-    if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
-    {
-        std::ostringstream out;
-        if(vbc->length_threshold_greater == 0)
-            out << " No track in group 0 showed significantly increased anisotropy.";
-        else
-            out << " The analysis results found tracks with significant increased anisotropy in group 0 at length threshold of " << vbc->length_threshold_greater << " mm.";
-
-        if(vbc->length_threshold_lesser == 0)
-            out << "No track in group 1 showed significantly increased anisotropy.";
-        else
-            out << " The analysis results found tracks with significant increased anisotropy in group 1 at length threshold of " << vbc->length_threshold_lesser << " mm.";
-        report += out.str().c_str();
-    }
-
     ui->textBrowser->setText(report);
 
     if(vbc->total_count >= vbc->permutation_count)
@@ -767,9 +818,16 @@ void vbc_dialog::on_run_clicked()
     vbc->seeding_density = ui->seeding_density->value();
     vbc->trk_file_names = file_names;
     vbc->normalize_qa = ui->normalize_qa->isChecked();
+    vbc->use_track_length = ui->rb_track_length->isChecked();
     vbc->fdr_threshold = ui->fdr_control->value();
+    vbc->length_threshold = ui->length_threshold->value();
     vbc->model.reset(new stat_model);
     *(vbc->model.get()) = *(model.get());
+
+    if(ui->missing_data_checked->isChecked())
+        vbc->model->remove_missing_data(ui->missing_value->value());
+
+
     vbc->individual_data.clear();
 
     std::ostringstream out;
@@ -804,7 +862,8 @@ void vbc_dialog::on_run_clicked()
     if(ui->rb_group_difference->isChecked())
     {
         vbc->tracking_threshold = (float)ui->percentage_dif->value()*0.01;
-        out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted to compare group differences."
+        out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted to compare group differences in a total of "
+            << vbc->model->subject_index.size() << " subjects."
             << " The group difference was quantified using percentage measurement (i.e. 2*(d1-d2)/(d1+d2) x %), where d1 and d2 are the group averages of the spin distribution function (SDF)."
             << " A threshold of " << ui->percentage_dif->value() << "% difference was used to select fiber directions with substantial difference in anisotropy.";
         vbc->trk_file_names[0] += parameter_str;
@@ -815,7 +874,8 @@ void vbc_dialog::on_run_clicked()
     if(ui->rb_paired_difference->isChecked())
     {
         vbc->tracking_threshold = (float)ui->percentage_dif->value()*0.01;
-        out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted to compare paired group differences."
+        out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted to compare paired group differences in a total of "
+            << vbc->model->subject_index.size() << " pairs."
             << " A threshold of " << ui->percentage_dif->value() << "% difference was used to select fiber directions with substantial difference in anisotropy.";
         vbc->trk_file_names[0] += parameter_str;
         vbc->trk_file_names[0] += ".paired.p";
@@ -824,7 +884,8 @@ void vbc_dialog::on_run_clicked()
     if(ui->rb_multiple_regression->isChecked())
     {
         vbc->tracking_threshold = ui->t_threshold->value()*0.01; // percentage
-        out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted using a multiple regression model considering ";
+        out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted in a total of "
+            << vbc->model->subject_index.size() << " subjects using a multiple regression model considering ";
         for(unsigned int index = 0;index < (int)ui->foi->count()-1;++index)
             out << ui->foi->itemText(index).toLower().toLocal8Bit().begin() << (ui->foi->count() > 2 ? ", " : " ");
         out << "and " << ui->foi->itemText(ui->foi->count()-1).toLower().toLocal8Bit().begin() << ".";
@@ -869,8 +930,10 @@ void vbc_dialog::on_run_clicked()
     }
     else
         out << " in whole brain regions.";
-    out << " False discovery rate was controled at " <<
-            ui->fdr_control->value() << ".";
+    if(vbc->use_track_length)
+        out << " A length threshold of " << ui->length_threshold->value() << " mm were used to select tracks.";
+    else
+        out << " False discovery rate was controled at " << ui->fdr_control->value() << ".";
     out << " The seeding density was " <<
             ui->seeding_density->value() << " seed(s) per mm3.";
 
@@ -915,9 +978,8 @@ void vbc_dialog::on_show_result_clicked()
     {
         result_fib.reset(new fib_data);
         stat_model info;
-        std::vector<unsigned int> permu;
-        info.resample(*cur_model,permu,false,false);
-        vbc->calculate_spm(*result_fib.get(),info,permu);
+        info.resample(*cur_model,false,false);
+        vbc->calculate_spm(*result_fib.get(),info);
         new_data->view_item.push_back(ViewItem());
         new_data->view_item.back().name = "lesser";
         new_data->view_item.back().image_data = image::make_image(new_data->dim,result_fib->lesser_ptr[0]);
@@ -1015,74 +1077,11 @@ void vbc_dialog::on_remove_subject_clicked()
     if(ui->subject_demo->currentRow() >= 0 && vbc->handle->num_subjects > 1)
     {
         unsigned int index = ui->subject_demo->currentRow();
-        vbc->handle->remove_subject(index);
         model->remove_subject(index);
         ui->subject_demo->removeRow(index);
         ui->subject_list->removeRow(index);
-        setup_threshold();
     }
 
-}
-void vbc_dialog::on_remove_subject2_clicked()
-{
-    if(!ui->run->isEnabled())
-        return;
-    bool ok;
-    int value = QInputDialog::getInt(this,
-                                         "Remove subject(s)",
-                                         "Remove subject(s) with any field matching this value:",999,-2147483647,2147483647,1,&ok);
-    if (!ok)
-        return;
-
-    std::vector<unsigned int> remove_list;
-    std::string remove_list_str;
-    for(unsigned int index = 0;index < vbc->handle->num_subjects;++index)
-    {
-        for(unsigned int j = 1;j < model->feature_count;++j)
-        {
-            if(model->X[index*model->feature_count + j] == value)
-            {
-                remove_list.push_back(index);
-                if(!remove_list_str.empty())
-                    remove_list_str += ", ";
-                remove_list_str += vbc->handle->subject_names[index];
-                break;
-            }
-        }
-    }
-    if(remove_list.empty())
-    {
-        QMessageBox::information(this,"Remove subject(s)","No subject matches the value.",0,0);
-        return;
-    }
-    while(!remove_list.empty())
-    {
-        vbc->handle->remove_subject(remove_list.back());
-        model->remove_subject(remove_list.back());
-        ui->subject_demo->removeRow(remove_list.back());
-        ui->subject_list->removeRow(remove_list.back());
-        remove_list.pop_back();
-    }
-    setup_threshold();
-    remove_list_str += " removed.";
-    QMessageBox::information(this,"Remove subject(s)",remove_list_str.c_str(),0,0);
-}
-
-
-void vbc_dialog::on_remove_sel_subject_clicked()
-{
-    if(ui->subject_list->currentRow() >= 0 && vbc->handle->num_subjects > 1)
-    {
-        unsigned int index = ui->subject_list->currentRow();
-        ui->subject_list->removeRow(index);
-        vbc->handle->remove_subject(index);
-        if(ui->subject_demo->rowCount() > 1 &&
-          (ui->rb_group_difference->isChecked() || ui->rb_multiple_regression->isChecked()))
-        {
-            ui->subject_demo->removeRow(index);
-            model->remove_subject(index);
-        }
-    }
 }
 
 void vbc_dialog::on_toolBox_currentChanged(int index)
@@ -1097,7 +1096,7 @@ void vbc_dialog::on_toolBox_currentChanged(int index)
 void vbc_dialog::on_x_pos_valueChanged(int arg1)
 {
     // show data
-    std::vector<float> vbc_data;
+    std::vector<double> vbc_data;
     vbc->handle->get_data_at(
             image::pixel_index<3>(ui->x_pos->value(),
                                   ui->y_pos->value(),
@@ -1107,11 +1106,14 @@ void vbc_dialog::on_x_pos_valueChanged(int arg1)
         return;
     if(ui->run->isEnabled() && ui->rb_multiple_regression->isChecked())
     {
-        QVector<double> variables(vbc->handle->num_subjects);
-        for(unsigned int i = 0;i < vbc->handle->num_subjects;++i)
+        model->select(vbc_data,vbc_data);
+        if(vbc_data.empty())
+            return;
+        QVector<double> variables(vbc_data.size());
+        for(unsigned int i = 0;i < vbc_data.size();++i)
             variables[i] = model->X[i*model->feature_count+ui->foi->currentIndex()+1];
 
-        QVector<double> y(vbc->handle->num_subjects);
+        QVector<double> y(vbc_data.size());
         std::copy(vbc_data.begin(),vbc_data.end(),y.begin());
 
         ui->vbc_report->clearGraphs();
@@ -1133,7 +1135,7 @@ void vbc_dialog::on_x_pos_valueChanged(int arg1)
     }
     else
     {
-        for(unsigned int index = 0;index < vbc->handle->num_subjects;++index)
+        for(unsigned int index = 0;index < vbc_data.size();++index)
             ui->subject_list->item(index,1)->setText(QString::number(vbc_data[index]));
 
         vbc_data.erase(std::remove(vbc_data.begin(),vbc_data.end(),0.0),vbc_data.end());
@@ -1247,4 +1249,52 @@ void vbc_dialog::on_show_advanced_clicked()
 void vbc_dialog::on_foi_currentIndexChanged(int index)
 {
     model->study_feature = ui->foi->currentIndex()+1;
+}
+
+
+void vbc_dialog::on_rb_FDR_toggled(bool checked)
+{
+    ui->fdr_control->setVisible(checked);
+    ui->length_threshold->setVisible(!checked);
+}
+
+void vbc_dialog::on_rb_track_length_toggled(bool checked)
+{
+    ui->fdr_control->setVisible(!checked);
+    ui->length_threshold->setVisible(checked);
+}
+
+void vbc_dialog::on_missing_data_checked_toggled(bool checked)
+{
+    ui->missing_value->setEnabled(checked);
+}
+
+void vbc_dialog::on_suggest_threshold_clicked()
+{
+    if(!ui->run->isEnabled())
+        return;
+    result_fib.reset(new fib_data);
+    stat_model info;
+    if(ui->rb_multiple_regression->isChecked())
+        model->study_feature = ui->foi->currentIndex()+1;
+    info = *(model.get());
+    if(ui->missing_data_checked->isChecked())
+        info.remove_missing_data(ui->missing_value->value());
+    vbc->normalize_qa = ui->normalize_qa->isChecked();
+    vbc->calculate_spm(*result_fib.get(),info);
+    std::vector<float> values;
+    values.reserve(vbc->handle->dim.size()/8);
+    for(unsigned int index = 0;index < vbc->handle->dim.size();++index)
+        if(vbc->handle->fib.fa[0][index] > vbc->fiber_threshold)
+            values.push_back(result_fib->lesser_ptr[0][index] == 0 ? result_fib->greater_ptr[0][index] :  result_fib->lesser_ptr[0][index]);
+    if(ui->rb_multiple_regression->isChecked())
+    {
+        ui->t_threshold->setValue(image::segmentation::otsu_threshold(values)*100);
+        ui->range_label->setText(QString("for %1 from %2 to %3").
+                                 arg(ui->foi->currentText()).
+                                 arg(info.X_min[info.study_feature]).
+                                 arg(info.X_max[info.study_feature]));
+    }
+    if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
+        ui->percentage_dif->setValue(image::segmentation::otsu_threshold(values)*100);
 }

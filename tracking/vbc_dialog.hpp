@@ -72,8 +72,6 @@ private slots:
 
     void on_remove_subject_clicked();
 
-    void on_remove_sel_subject_clicked();
-
     void on_toolBox_currentChanged(int index);
 
     void on_x_pos_valueChanged(int arg1);
@@ -86,8 +84,6 @@ private slots:
 
     void on_save_report_clicked();
 
-    void on_remove_subject2_clicked();
-
     void on_save_R2_clicked();
 
     void on_save_vector_clicked();
@@ -96,9 +92,17 @@ private slots:
 
     void on_foi_currentIndexChanged(int index);
 
+
+    void on_rb_FDR_toggled(bool checked);
+
+    void on_rb_track_length_toggled(bool checked);
+
+    void on_missing_data_checked_toggled(bool checked);
+
+    void on_suggest_threshold_clicked();
+
 public slots:
     void calculate_FDR(void);
-    void setup_threshold(void);
 private:
     Ui::vbc_dialog *ui;
 };

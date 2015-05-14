@@ -143,6 +143,9 @@ public:
     boost::mt19937 generator;
     boost::uniform_int<int> uniform_rand;
     boost::variate_generator<boost::mt19937&, boost::uniform_int<int> > rand_gen;
+    boost::mutex lock_random;
+public:
+    std::vector<unsigned int> subject_index;
 public:
     unsigned int type;
 public: // group
@@ -157,14 +160,17 @@ public: // individual
     const float* individual_data;
     float individual_data_max;
 public: // paired
-    std::vector<unsigned int> pre,post;
+    std::vector<unsigned int> paired;
 public:
     stat_model(void):
         generator(0),uniform_rand(),rand_gen(generator,uniform_rand),individual_data(0){}
 public:
+    void init(unsigned int subject_count);
     void remove_subject(unsigned int index);
-    bool resample(stat_model& rhs,std::vector<unsigned int>& permu,bool null,bool boostrap);
+    void remove_missing_data(double missing_value);
+    bool resample(stat_model& rhs,bool null,bool boostrap);
     bool pre_process(void);
+    void select(const std::vector<double>& population,std::vector<double>& selected_population)const;
     double operator()(const std::vector<double>& population,unsigned int pos) const;
     void clear(void)
     {
@@ -173,17 +179,20 @@ public:
     }
     const stat_model& operator=(const stat_model& rhs)
     {
+        subject_index = rhs.subject_index;
         type = rhs.type;
         label = rhs.label;
         group1_count = rhs.group1_count;
         group2_count = rhs.group2_count;
         X = rhs.X;
+        X_min = rhs.X_min;
+        X_max = rhs.X_max;
+        X_range = rhs.X_range;
         feature_count = rhs.feature_count;
         study_feature = rhs.study_feature;
         mr = rhs.mr;
         individual_data = rhs.individual_data;
-        pre = rhs.pre;
-        post = rhs.post;
+        paired = rhs.paired;
         return *this;
     }
 };
@@ -226,7 +235,7 @@ public:
     boost::ptr_vector<fib_data> spm_maps;
     void save_tracks_files(std::vector<std::string>&);
 public:// routine for calculate SPM
-    void calculate_spm(fib_data& data,stat_model& info,std::vector<unsigned int>& permu);
+    void calculate_spm(fib_data& data,stat_model& info);
 public:// Individual analysis
     std::vector<std::vector<float> > individual_data;
     std::vector<float> individual_data_max;
@@ -234,7 +243,8 @@ public:// Individual analysis
 public:// Multiple regression
     std::auto_ptr<stat_model> model;
     float tracking_threshold;
-    float fdr_threshold;
+    bool use_track_length;
+    float fdr_threshold,length_threshold;
     void run_permutation_multithread(unsigned int id);
     void run_permutation(unsigned int thread_count);
     void calculate_FDR(void);
