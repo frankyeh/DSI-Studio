@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>719</width>
-    <height>661</height>
+    <width>722</width>
+    <height>676</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -46,8 +46,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>701</width>
-           <height>580</height>
+           <width>591</width>
+           <height>201</height>
           </rect>
          </property>
          <attribute name="label">
@@ -378,9 +378,9 @@
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>0</y>
-           <width>701</width>
-           <height>580</height>
+           <y>-320</y>
+           <width>679</width>
+           <height>902</height>
           </rect>
          </property>
          <attribute name="label">
@@ -611,7 +611,7 @@
                   <item>
                    <widget class="QCheckBox" name="missing_data_checked">
                     <property name="text">
-                     <string>Have missing data labeled by</string>
+                     <string>Missing data labeled by</string>
                     </property>
                     <property name="checked">
                      <bool>false</bool>
@@ -694,11 +694,6 @@
               </widget>
              </item>
             </layout>
-            <zorder></zorder>
-            <zorder>individual_demo</zorder>
-            <zorder>individual_list</zorder>
-            <zorder>multiple_regression_demo</zorder>
-            <zorder>subject_demo</zorder>
            </widget>
           </item>
           <item>
@@ -713,13 +708,6 @@
              <property name="topMargin">
               <number>0</number>
              </property>
-             <item>
-              <widget class="QLabel" name="label_3">
-               <property name="text">
-                <string>You may run a series of different thresholds (10%, 20% ...etc. ) to explore results at different levels of structural change.</string>
-               </property>
-              </widget>
-             </item>
              <item>
               <layout class="QHBoxLayout" name="percentile_rank_layout">
                <item>
@@ -875,6 +863,22 @@
               <widget class="QLabel" name="explaination">
                <property name="text">
                 <string>explanation</string>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_3">
+               <property name="text">
+                <string>You may run a series of different thresholds (10%, 20%...etc. ) to explore results at different levels of structural change.</string>
+               </property>
+               <property name="textFormat">
+                <enum>Qt::AutoText</enum>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -1203,8 +1207,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>701</width>
-           <height>580</height>
+           <width>744</width>
+           <height>242</height>
           </rect>
          </property>
          <attribute name="label">
