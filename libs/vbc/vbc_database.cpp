@@ -318,7 +318,7 @@ void stat_model::remove_missing_data(double missing_value)
     pre_process();
 }
 
-bool stat_model::resample(stat_model& rhs,bool null,bool boostrap)
+bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap)
 {
     boost::mutex::scoped_lock lock(rhs.lock_random);
     type = rhs.type;
@@ -337,19 +337,29 @@ bool stat_model::resample(stat_model& rhs,bool null,bool boostrap)
         switch(type)
         {
         case 0: // group
+        {
+            std::vector<unsigned int> group0,group1;
+            for(unsigned int index = 0;index < rhs.subject_index.size();++index)
+                if(rhs.label[index])
+                    group1.push_back(index);
+                else
+                    group0.push_back(index);
             label.resize(rhs.subject_index.size());
             for(unsigned int index = 0;index < rhs.subject_index.size();++index)
             {
-                unsigned int new_index = boostrap ? rhs.rand_gen(rhs.subject_index.size()) : index;
+                unsigned int new_index = index;
+                if(bootstrap)
+                    new_index = rhs.label[index] ? group1[rhs.rand_gen(group1.size())]:group0[rhs.rand_gen(group0.size())];
                 subject_index[index] = rhs.subject_index[new_index];
                 label[index] = rhs.label[new_index];
             }
+        }
             break;
         case 1: // multiple regression
             X.resize(rhs.X.size());
             for(unsigned int index = 0,pos = 0;index < rhs.subject_index.size();++index,pos += feature_count)
             {
-                unsigned int new_index = boostrap ? rhs.rand_gen(rhs.subject_index.size()) : index;
+                unsigned int new_index = bootstrap ? rhs.rand_gen(rhs.subject_index.size()) : index;
                 subject_index[index] = rhs.subject_index[new_index];
                 std::copy(rhs.X.begin()+new_index*feature_count,
                           rhs.X.begin()+new_index*feature_count+feature_count,X.begin()+pos);
@@ -359,7 +369,7 @@ bool stat_model::resample(stat_model& rhs,bool null,bool boostrap)
         case 2: // individual
             for(unsigned int index = 0;index < rhs.subject_index.size();++index)
             {
-                unsigned int new_index = boostrap ? rhs.rand_gen(rhs.subject_index.size()) : index;
+                unsigned int new_index = bootstrap ? rhs.rand_gen(rhs.subject_index.size()) : index;
                 subject_index[index] = rhs.subject_index[new_index];
             }
             break;
@@ -367,7 +377,7 @@ bool stat_model::resample(stat_model& rhs,bool null,bool boostrap)
             paired.resize(rhs.subject_index.size());
             for(unsigned int index = 0;index < rhs.subject_index.size();++index)
             {
-                unsigned int new_index = boostrap ? rhs.rand_gen(rhs.subject_index.size()) : index;
+                unsigned int new_index = bootstrap ? rhs.rand_gen(rhs.subject_index.size()) : index;
                 subject_index[index] = rhs.subject_index[new_index];
                 paired[index] = rhs.paired[new_index];
                 if(null && rhs.rand_gen(2) == 1)
@@ -599,8 +609,10 @@ void vbc_database::run_permutation_multithread(unsigned int id)
             calculate_spm(spm_maps[0],info);
             spm_maps[0].write_lesser(fib);
             run_track(fib,tracks,total_track_count);
+            lesser_tracks[0].add_tracts(tracks,30);
             spm_maps[0].write_greater(fib);
             run_track(fib,tracks,total_track_count);
+            greater_tracks[0].add_tracts(tracks,30);
         }
 
 
@@ -618,21 +630,25 @@ void vbc_database::run_permutation_multithread(unsigned int id)
             data.write_lesser(fib);
             run_track(fib,tracks,total_track_count/permutation_count);
             cal_hist(tracks,(null) ? subject_lesser_null : subject_lesser);
+            /*
             if(!null)
             {
                 boost::mutex::scoped_lock lock(lock_lesser_tracks);
                 lesser_tracks[0].add_tracts(tracks,30); // at least 30 mm
                 tracks.clear();
             }
+            */
             data.write_greater(fib);
             run_track(fib,tracks,total_track_count/permutation_count);
             cal_hist(tracks,(null) ? subject_greater_null : subject_greater);
+            /*
             if(!null)
             {
                 boost::mutex::scoped_lock lock(lock_greater_tracks);
                 greater_tracks[0].add_tracts(tracks,30);  // at least 30 mm
                 tracks.clear();
             }
+            */
             null = !null;
         }
     }
@@ -652,6 +668,8 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
     if(trk_file_names.size() != greater_tracks.size())
         throw std::runtime_error("Please assign file name for saving trk files.");
     saved_file_name.clear();
+    has_greater_result = false;
+    has_lesser_result = false;
     for(unsigned int index = 0;index < greater_tracks.size();++index)
     {
         if(length_threshold_greater)
@@ -664,6 +682,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
                 out1 << trk_file_names[index] << ".greater.trk.gz";
                 tracks.save_tracts_to_file(out1.str().c_str());
                 saved_file_name.push_back(out1.str().c_str());
+                has_greater_result = true;
             }
             else
             {
@@ -706,6 +725,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
                 out1 << trk_file_names[index] << ".lesser.trk.gz";
                 tracks.save_tracts_to_file(out1.str().c_str());
                 saved_file_name.push_back(out1.str().c_str());
+                has_lesser_result = true;
             }
             else
             {
@@ -767,6 +787,8 @@ void vbc_database::run_permutation(unsigned int thread_count)
     greater_tracks.clear();
     lesser_tracks.clear();
     spm_maps.clear();
+    has_greater_result = true;
+    has_lesser_result = true;
     unsigned int num_subjects = (model->type == 2 ? individual_data.size():1);
     for(unsigned int index = 0;index < num_subjects;++index)
     {
@@ -786,7 +808,6 @@ void vbc_database::calculate_FDR(void)
     double sum_lesser = 0;
     length_threshold_greater = 0;
     length_threshold_lesser = 0;
-
     for(int index = subject_greater_null.size()-1;index >= 0;--index)
     {
         sum_greater_null += subject_greater_null[index];

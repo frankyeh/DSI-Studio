@@ -657,13 +657,13 @@ void vbc_dialog::calculate_FDR(void)
         if(ui->rb_individual_analysis->isChecked())
             {
                 std::ostringstream out;
-                if(vbc->fdr_greater[vbc->length_threshold] > 0.5)
+                if(vbc->fdr_greater[vbc->length_threshold] > 0.5 || !vbc->has_greater_result)
                     out << " The analysis results showed no track with significant increase in anisotropy.";
                 else
                     out << " The analysis results showed tracks with increased anisotropy with an FDR of "
                         << vbc->fdr_greater[vbc->length_threshold] << ".";
 
-                if(vbc->fdr_lesser[vbc->length_threshold] > 0.5)
+                if(vbc->fdr_lesser[vbc->length_threshold] > 0.5 || !vbc->has_lesser_result)
                     out << " The analysis results showed no track with significant decrease in anisotropy.";
                 else
                     out << " The analysis results showed tracks with decreased anisotropy with an FDR of "
@@ -673,14 +673,14 @@ void vbc_dialog::calculate_FDR(void)
             if(ui->rb_multiple_regression->isChecked())
             {
                 std::ostringstream out;
-                if(vbc->fdr_greater[vbc->length_threshold] > 0.5)
+                if(vbc->fdr_greater[vbc->length_threshold] > 0.5 || !vbc->has_greater_result)
                     out << " The analysis results showed that there is no track with significantly increased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
                 else
                     out << " The analysis results showed tracks with increased anisotropy related to "
                         << ui->foi->currentText().toLocal8Bit().begin() << " with an FDR of "
                         << vbc->fdr_greater[vbc->length_threshold] << ".";
 
-                if(vbc->fdr_lesser[vbc->length_threshold] > 0.5)
+                if(vbc->fdr_lesser[vbc->length_threshold] > 0.5 || !vbc->has_lesser_result)
                     out << " The analysis results showed that there is no track with significantly decreased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
                 else
                     out << " The analysis results showed tracks with decreased anisotropy related to "
@@ -691,13 +691,13 @@ void vbc_dialog::calculate_FDR(void)
             if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
             {
                 std::ostringstream out;
-                if(vbc->fdr_greater[vbc->length_threshold] > 0.5)
+                if(vbc->fdr_greater[vbc->length_threshold] > 0.5 || !vbc->has_greater_result)
                     out << " The analysis results showed that there is no track in group 0 with significantly increased anisotropy.";
                 else
                     out << " The analysis results showed tracks with increased anisotropy in group 0 with an FDR of "
                         << vbc->fdr_greater[vbc->length_threshold] << ".";
 
-                if(vbc->fdr_lesser[vbc->length_threshold] > 0.5)
+                if(vbc->fdr_lesser[vbc->length_threshold] > 0.5 || !vbc->has_lesser_result)
                     out << " The analysis results showed that there is no track in group 1 with significantly increased anisotropy.";
                 else
                     out << " The analysis results showed tracks with increased anisotropy in group 1 with an FDR of "
@@ -710,12 +710,12 @@ void vbc_dialog::calculate_FDR(void)
         if(ui->rb_individual_analysis->isChecked())
         {
             std::ostringstream out;
-            if(vbc->length_threshold_greater == 0)
+            if(vbc->length_threshold_greater == 0 || !vbc->has_greater_result)
                 out << " No track showed significant increase in anisotropy.";
             else
                 out << " The analysis results found tracks with significant increased anisotropy at length threshold of " << vbc->length_threshold_greater << " mm.";
 
-            if(vbc->length_threshold_lesser == 0)
+            if(vbc->length_threshold_lesser == 0 || !vbc->has_lesser_result)
                 out << " No track showed significant decrease in anisotropy.";
             else
                 out << " The analysis results found tracks with significant decreased anisotropy at length threshold of " << vbc->length_threshold_lesser << " mm.";
@@ -724,13 +724,13 @@ void vbc_dialog::calculate_FDR(void)
         if(ui->rb_multiple_regression->isChecked())
         {
             std::ostringstream out;
-            if(vbc->length_threshold_greater == 0)
+            if(vbc->length_threshold_greater == 0 || !vbc->has_greater_result)
                 out << " No track showed significantly increased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
             else
                 out << " The analysis results found tracks with increased anisotropy related to "
                     << ui->foi->currentText().toLocal8Bit().begin() << " at length threshold of " << vbc->length_threshold_greater << " mm.";
 
-            if(vbc->length_threshold_lesser == 0)
+            if(vbc->length_threshold_lesser == 0 || !vbc->has_lesser_result)
                 out << " No track showed significantly decreased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
             else
                 out << " The analysis results found tracks with decreased anisotropy related to "
@@ -740,12 +740,12 @@ void vbc_dialog::calculate_FDR(void)
         if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
         {
             std::ostringstream out;
-            if(vbc->length_threshold_greater == 0)
+            if(vbc->length_threshold_greater == 0 || !vbc->has_greater_result)
                 out << " No track in group 0 showed significantly increased anisotropy.";
             else
                 out << " The analysis results found tracks with significant increased anisotropy in group 0 at length threshold of " << vbc->length_threshold_greater << " mm.";
 
-            if(vbc->length_threshold_lesser == 0)
+            if(vbc->length_threshold_lesser == 0 || !vbc->has_lesser_result)
                 out << "No track in group 1 showed significantly increased anisotropy.";
             else
                 out << " The analysis results found tracks with significant increased anisotropy in group 1 at length threshold of " << vbc->length_threshold_lesser << " mm.";

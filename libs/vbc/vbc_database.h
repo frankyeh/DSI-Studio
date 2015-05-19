@@ -228,6 +228,7 @@ public:
     std::vector<image::vector<3,short> > roi;
     unsigned char roi_type;
     unsigned int length_threshold_greater,length_threshold_lesser;
+    bool has_greater_result,has_lesser_result;
     float seeding_density;
     boost::mutex lock_resampling,lock_greater_tracks,lock_lesser_tracks;
     boost::ptr_vector<TractModel> greater_tracks;
