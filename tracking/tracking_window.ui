@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1704</width>
-    <height>680</height>
+    <width>1082</width>
+    <height>644</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -275,7 +275,7 @@
            <item>
             <widget class="QSlider" name="gl_contrast">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
@@ -353,7 +353,7 @@
            <item>
             <widget class="QSlider" name="gl_offset">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
@@ -422,7 +422,7 @@
        <item>
         <layout class="QHBoxLayout" name="centralLayout2">
          <property name="spacing">
-          <number>3</number>
+          <number>0</number>
          </property>
          <item>
           <widget class="QCheckBox" name="glSagCheck">
@@ -482,7 +482,7 @@
          <item>
           <widget class="QSlider" name="glSagSlider">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -550,7 +550,7 @@
          <item>
           <widget class="QSlider" name="glCorSlider">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -624,7 +624,7 @@
          <item>
           <widget class="QSlider" name="glAxiSlider">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -686,13 +686,13 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>484</width>
-     <height>60</height>
+     <width>0</width>
+     <height>0</height>
     </size>
    </property>
    <property name="maximumSize">
     <size>
-     <width>600</width>
+     <width>524287</width>
      <height>524287</height>
     </size>
    </property>
@@ -940,15 +940,15 @@
   </widget>
   <widget class="QDockWidget" name="renderingWidgetHolder">
    <property name="sizePolicy">
-    <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
      <horstretch>0</horstretch>
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
    <property name="minimumSize">
     <size>
-     <width>229</width>
-     <height>50</height>
+     <width>0</width>
+     <height>0</height>
     </size>
    </property>
    <property name="windowTitle">
@@ -1005,7 +1005,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1704</width>
+     <width>1082</width>
      <height>23</height>
     </rect>
    </property>
@@ -1265,8 +1265,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>382</width>
-     <height>96</height>
+     <width>0</width>
+     <height>0</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -1528,15 +1528,15 @@
   </widget>
   <widget class="QDockWidget" name="dockWidget">
    <property name="sizePolicy">
-    <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
+    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
      <horstretch>0</horstretch>
      <verstretch>1</verstretch>
     </sizepolicy>
    </property>
    <property name="minimumSize">
     <size>
-     <width>583</width>
-     <height>233</height>
+     <width>0</width>
+     <height>0</height>
     </size>
    </property>
    <property name="floating">
