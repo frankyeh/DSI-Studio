@@ -269,6 +269,9 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         connect(glWidget,SIGNAL(region_edited()),glWidget,SLOT(updateGL()));
         connect(glWidget,SIGNAL(region_edited()),&scene,SLOT(show_slice()));
 
+
+        connect(ui->actionFilter_by_ROI,SIGNAL(triggered()),tractWidget,SLOT(filter_by_roi()));
+
         connect(ui->actionOpenTract,SIGNAL(triggered()),tractWidget,SLOT(load_tracts()));
         connect(ui->actionMerge_All,SIGNAL(triggered()),tractWidget,SLOT(merge_all()));
         connect(ui->actionCopyTrack,SIGNAL(triggered()),tractWidget,SLOT(copy_track()));

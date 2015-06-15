@@ -53,6 +53,7 @@ public slots:
     void check_all(void);
     void uncheck_all(void);
     void start_tracking(void);
+    void filter_by_roi(void);
     void fetch_tracts(void);
     void load_tracts(void);
     void save_tracts_as(void);

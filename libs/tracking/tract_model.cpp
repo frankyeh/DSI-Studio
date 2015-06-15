@@ -4,6 +4,7 @@
 #include <iterator>
 #include <set>
 #include <map>
+#include "roi.hpp"
 #include "tract_model.hpp"
 #include "prog_interface_static_link.h"
 #include "fib_data.hpp"
@@ -784,7 +785,38 @@ void TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater)
         }
     redo_size.clear();
 }
-
+//---------------------------------------------------------------------------
+void TractModel::filter_by_roi(RoiMgr& roi_mgr)
+{
+    std::vector<unsigned int> tracts_to_delete;
+    for (unsigned int index = 0;index < tract_data.size();++index)
+    if(tract_data[index].size() >= 6)
+    {
+        if(!roi_mgr.have_include(&(tract_data[index][0]),tract_data[index].size()) ||
+           !roi_mgr.fulfill_end_point(image::vector<3,float>(tract_data[index][0],
+                                                             tract_data[index][1],
+                                                             tract_data[index][2]),
+                                      image::vector<3,float>(tract_data[index][tract_data[index].size()-3],
+                                                             tract_data[index][tract_data[index].size()-2],
+                                                             tract_data[index][tract_data[index].size()-1])))
+        {
+            tracts_to_delete.push_back(index);
+            continue;
+        }
+        if(roi_mgr.exclusive.get())
+        {
+            for(unsigned int i = 0;i < tract_data[index].size();i+=3)
+                if(roi_mgr.is_excluded_point(image::vector<3,float>(tract_data[index][i],
+                                                                    tract_data[index][i+1],
+                                                                    tract_data[index][i+2])))
+                {
+                    tracts_to_delete.push_back(index);
+                    break;
+                }
+        }
+    }
+    delete_tracts(tracts_to_delete);
+}
 //---------------------------------------------------------------------------
 void TractModel::cull(float select_angle,
                       const image::vector<3,float>& from_dir,

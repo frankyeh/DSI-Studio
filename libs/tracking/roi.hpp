@@ -58,7 +58,7 @@ public:
 
 
 class RoiMgr {
-private:
+public:
     boost::ptr_vector<Roi> inclusive;
     boost::ptr_vector<Roi> end;
     std::auto_ptr<Roi> exclusive;

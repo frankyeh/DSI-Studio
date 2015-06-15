@@ -1155,6 +1155,7 @@
     <addaction name="actionCopyTrack"/>
     <addaction name="actionDeleteTract"/>
     <addaction name="actionDeleteTractAll"/>
+    <addaction name="actionFilter_by_ROI"/>
     <addaction name="separator"/>
     <addaction name="actionEndpoints_to_seeding"/>
     <addaction name="actionTracts_to_seeds"/>
@@ -3042,6 +3043,11 @@
   <action name="actionSeparate">
    <property name="text">
     <string>Separate</string>
+   </property>
+  </action>
+  <action name="actionFilter_by_ROI">
+   <property name="text">
+    <string>Filter by ROI/ROA/End</string>
    </property>
   </action>
  </widget>

@@ -135,6 +135,20 @@ void TractTableWidget::start_tracking(void)
     tract_models.back()->report = thread_data.back()->report.str();
     timer->start(1000);
 }
+void TractTableWidget::filter_by_roi(void)
+{
+    ThreadData track_thread(cur_tracking_window["random_seed"].toInt());
+    cur_tracking_window.set_tracking_param(track_thread);
+    cur_tracking_window.regionWidget->setROIs(&track_thread);
+    for(int index = 0;index < tract_models.size();++index)
+    if(item(index,0)->checkState() == Qt::Checked)
+    {
+        tract_models[index]->filter_by_roi(track_thread.roi_mgr);
+        item(index,1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
+        item(index,2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
+    }
+    emit need_update();
+}
 
 void TractTableWidget::fetch_tracts(void)
 {

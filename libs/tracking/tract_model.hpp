@@ -5,6 +5,7 @@
 #include "image/image.hpp"
 #include "fib_data.hpp"
 
+class RoiMgr;
 class TractModel{
 public:
         std::string report;
@@ -65,6 +66,7 @@ public:
         void release_tracts(std::vector<std::vector<float> >& released_tracks);
         void add_tracts(std::vector<std::vector<float> >& new_tracks);
         void add_tracts(std::vector<std::vector<float> >& new_tracks,unsigned int length_threshold);
+        void filter_by_roi(RoiMgr& roi_mgr);
         void cull(float select_angle,
                   const image::vector<3,float>& from_dir,
                   const image::vector<3,float>& to_dir,
