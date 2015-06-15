@@ -624,13 +624,14 @@ void RegionTableWidget::save_all_regions(void)
     image::geometry<3> geo = cur_tracking_window.slice.geometry;
     image::basic_image<unsigned int, 3>mask(geo);
     for (unsigned int i = 0; i < regions.size(); ++i)
-    for (unsigned int j = 0; j < regions[i].get().size(); ++j)
-    {
-        if (geo.is_valid(regions[i].get()[j][0], regions[i].get()[j][1],regions[i].get()[j][2]))
-            mask[image::pixel_index<3>(regions[i].get()[j][0],
-                                       regions[i].get()[j][1],
-                                       regions[i].get()[j][2], geo).index()] = i+1;
-    }
+        if (item(i,0)->checkState() == Qt::Checked)
+        for (unsigned int j = 0; j < regions[i].get().size(); ++j)
+        {
+            if (geo.is_valid(regions[i].get()[j][0], regions[i].get()[j][1],regions[i].get()[j][2]))
+                mask[image::pixel_index<3>(regions[i].get()[j][0],
+                                           regions[i].get()[j][1],
+                                           regions[i].get()[j][2], geo).index()] = i+1;
+        }
 
     gz_nifti header;
     header.set_voxel_size(cur_tracking_window.slice.voxel_size);
