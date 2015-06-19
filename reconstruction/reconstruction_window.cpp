@@ -49,10 +49,10 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->toolBox->setCurrentIndex(1);
     ui->graphicsView->setScene(&scene);
     ui->view_source->setScene(&source);
-    ui->b_table->setColumnWidth(0,40);
-    ui->b_table->setColumnWidth(1,60);
-    ui->b_table->setColumnWidth(2,60);
-    ui->b_table->setColumnWidth(3,60);
+    ui->b_table->setColumnWidth(0,60);
+    ui->b_table->setColumnWidth(1,80);
+    ui->b_table->setColumnWidth(2,80);
+    ui->b_table->setColumnWidth(3,80);
     ui->b_table->setHorizontalHeaderLabels(QStringList() << "b value" << "bx" << "by" << "bz");
     ui->gqi_spectral->hide();
 

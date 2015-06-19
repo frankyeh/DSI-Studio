@@ -329,7 +329,6 @@ public:
             /*
             new_bvecs = (I+grad_dev) * bvecs;
             */
-
             float grad_dev[9];
             for(unsigned int i = 0; i < 9; ++i)
                 interpolation.estimate(voxel.grad_dev[i],grad_dev[i]);

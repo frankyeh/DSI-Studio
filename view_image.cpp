@@ -8,12 +8,17 @@ view_image::view_image(QWidget *parent) :
     ui(new Ui::view_image)
 {
     ui->setupUi(this);
+    ui->info->setColumnWidth(0,120);
+    ui->info->setColumnWidth(1,200);
+    ui->info->setHorizontalHeaderLabels(QStringList() << "Header" << "Value");
     ui->view->setScene(&source);
     connect(ui->slice_pos,SIGNAL(valueChanged(int)),this,SLOT(update_image()));
     connect(ui->contrast,SIGNAL(valueChanged(int)),this,SLOT(update_image()));
     connect(ui->brightness,SIGNAL(valueChanged(int)),this,SLOT(update_image()));
     source_ratio = 2.0;
     ui->tabWidget->setCurrentIndex(0);
+
+
     qApp->installEventFilter(this);
 }
 
@@ -43,15 +48,17 @@ bool view_image::open(QString file_name)
     gz_nifti nifti;
     image::io::dicom dicom;
     image::io::bruker_2dseq seq;
+    gz_mat_read mat;
     data.clear();
-    ui->info->clear();
     float vs[3];
+    QString info;
+    begin_prog("loading...");
+    check_prog(0,1);
     if(nifti.load_from_file(file_name.toLocal8Bit().begin()))
     {
         nifti >> data;
         image::flip_xy(data);
         nifti.get_voxel_size(vs);
-        QString info;
         info = QString("sizeof_hdr=%1\ndim_info=%2\n").
                 arg(nifti.nif_header.sizeof_hdr).
                 arg((int)nifti.nif_header.dim_info);
@@ -103,7 +110,7 @@ bool view_image::open(QString file_name)
                     arg(i).arg(nifti.nif_header.srow_z[i]);
 
         info += QString("intent_name=%1\n").arg(nifti.nif_header.intent_name);
-        ui->info->setPlainText(info);
+
 
     }
     else
@@ -111,16 +118,46 @@ bool view_image::open(QString file_name)
         {
             dicom >> data;
             dicom.get_voxel_size(vs);
-            std::string info;
-            dicom >> info;
-            ui->info->setPlainText(info.c_str());
+            std::string info_;
+            dicom >> info_;
+            info = info_.c_str();
+
         }
         else
+            if(mat.load_from_file(file_name.toLocal8Bit().begin()))
+            {
+                mat >> data;
+                mat.get_voxel_size(vs);
+                for(unsigned int index = 0;index < mat.size();++index)
+                {
+                    std::string data;
+                    mat[index].get_info(data);
+                    info += QString("%1 [%2x%3]=%4\n").arg(mat[index].get_name().c_str()).
+                            arg(mat[index].get_rows()).
+                            arg(mat[index].get_cols()).
+                            arg(data.c_str());
+                }
+            }
+            else
             if(seq.load_from_file(file_name.toLocal8Bit().begin()))
             {
                 seq >> data;
                 seq.get_voxel_size(vs);
             }
+    check_prog(0,0);
+    QStringList list = info.split("\n");
+    ui->info->clear();
+    ui->info->setRowCount(list.size());
+    for(unsigned int row = 0;row < list.size();++row)
+    {
+        QString line = list[row];
+        QStringList value_list = line.split("=");
+        ui->info->setItem(row,0, new QTableWidgetItem(value_list[0]));
+        if(value_list.size() > 1)
+            ui->info->setItem(row,1, new QTableWidgetItem(value_list[1]));
+    }
+    ui->info->selectRow(0);
+
     if(!data.empty())
     {
         ui->slice_pos->setRange(0,data.depth()-1);

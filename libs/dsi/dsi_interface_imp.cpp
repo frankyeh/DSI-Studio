@@ -239,7 +239,7 @@ const char* reconstruction(ImageModel* image_model,
             image_model->voxel.odf_deconvolusion = 0;
             image_model->voxel.odf_decomposition = 0;
         }
-        if(method_id != 1) // not DTI
+        else
         {
             out << ".odf" << image_model->voxel.ti.fold;// odf_order
             out << ".f" << image_model->voxel.max_fiber_number;
@@ -270,6 +270,7 @@ const char* reconstruction(ImageModel* image_model,
                         << "_" << image_model->voxel.odf_xyz[2];
             }
         }
+
         // correct for b-table orientation
         if(check_b_table)
         {
