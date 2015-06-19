@@ -60,8 +60,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>731</width>
-         <height>524</height>
+         <width>431</width>
+         <height>241</height>
         </rect>
        </property>
        <attribute name="label">
@@ -373,8 +373,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>731</width>
-         <height>524</height>
+         <width>526</width>
+         <height>205</height>
         </rect>
        </property>
        <attribute name="label">
@@ -899,7 +899,7 @@
              <item>
               <widget class="QPushButton" name="manual_reg">
                <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
@@ -963,7 +963,7 @@
              <item>
               <widget class="QPushButton" name="add_t1t2">
                <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
