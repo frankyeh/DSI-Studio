@@ -46,8 +46,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>741</width>
-           <height>528</height>
+           <width>591</width>
+           <height>201</height>
           </rect>
          </property>
          <attribute name="label">
@@ -378,7 +378,7 @@
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>-358</y>
+           <y>0</y>
            <width>756</width>
            <height>886</height>
           </rect>
@@ -402,7 +402,7 @@
              <item>
               <widget class="QRadioButton" name="rb_multiple_regression">
                <property name="text">
-                <string>Multipler regression: (e.g. to study connectivity change due to difference in age or IQ)</string>
+                <string>Multiple regression: (e.g. to study connectivity change due to difference in age or IQ)</string>
                </property>
                <property name="checked">
                 <bool>true</bool>
@@ -1214,8 +1214,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>777</width>
-           <height>528</height>
+           <width>744</width>
+           <height>242</height>
           </rect>
          </property>
          <attribute name="label">

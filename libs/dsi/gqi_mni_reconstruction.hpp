@@ -39,6 +39,8 @@ protected:
 protected:
     image::basic_image<float,3> VG,VF;
     double VGvs[3];
+protected: // for warping other image modality
+    std::vector<image::basic_image<float,3> > other_image;
 protected:
     image::vector<3,int> bounding_box_lower;
     image::vector<3,int> bounding_box_upper;
@@ -238,7 +240,13 @@ public:
             }
         }
 
-
+        // other image
+        if(!voxel.other_image.empty())
+        {
+            other_image.resize(voxel.other_image.size());
+            for(unsigned int index = 0;index < voxel.other_image.size();++index)
+                other_image[index].resize(des_geo);
+        }
 
 
         b0_index = -1;
@@ -305,6 +313,15 @@ public:
             interpolation.estimate(ptr_images[i],data.space[i]);
         if(voxel.half_sphere && b0_index != -1)
             data.space[b0_index] /= 2.0;
+
+        for(unsigned int index = 0;index < voxel.other_image.size();++index)
+        {
+            interpolation_type interpolation;
+            image::vector<3,double> Opos;
+            voxel.other_image_affine[index](Jpos,Opos);
+            interpolation.get_location(voxel.other_image[index].geometry(),Opos);
+            interpolation.estimate(voxel.other_image[index],other_image[index][data.voxel_index]);
+        }
 
         get_jacobian(pos,data.jacobian);
         if(!voxel.grad_dev.empty())
@@ -390,6 +407,8 @@ public:
             mat_writer.write("native_dimension",&*voxel.qa_map.begin(),1,3);
             mat_writer.write("native_qa",&*voxel.qa_map.begin(),1,voxel.qa_map.size());
         }
+        for(unsigned int index = 0;index < other_image.size();++index)
+            mat_writer.write(voxel.other_image_name[index].c_str(),&*other_image[index].begin(),1,other_image[index].size());
         mat_writer.write("trans",&*trans_to_mni,4,4);
         mat_writer.write("R2",&voxel.R2,1,1);
     }

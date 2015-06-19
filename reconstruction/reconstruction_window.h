@@ -96,6 +96,7 @@ private slots:
     void check_progress(void);
     void on_scheme_balance_toggled(bool checked);
     void on_half_sphere_toggled(bool checked);
+    void on_add_t1t2_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

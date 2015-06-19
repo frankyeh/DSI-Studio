@@ -942,3 +942,51 @@ void reconstruction_window::on_half_sphere_toggled(bool checked)
     if(checked)
         ui->scheme_balance->setChecked(false);
 }
+
+void reconstruction_window::on_add_t1t2_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(
+            this,"Open Images files",absolute_path,
+            "Images (*.nii *nii.gz);;All files (*)" );
+    if( filename.isEmpty())
+        return;
+    image::basic_image<float,3> ref;
+    image::vector<3> vs,scale;
+    gz_nifti in;
+    if(!in.load_from_file(filename.toLocal8Bit().begin()) || !in.toLPS(ref))
+    {
+        QMessageBox::information(this,"Error","Not a valid nifti file",0);
+        return;
+    }
+    image::transformation_matrix<3,float> affine;
+    bool has_registered = false;
+    for(unsigned int index = 0;index < handle->voxel.other_image.size();++index)
+        if(ref.dimension == handle->voxel.other_image[index].dimension)
+        {
+            int result = QMessageBox::information(this,"Adding T1W/T2W","Apply previous registration?",QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+            if(result == QMessageBox::Cancel)
+                return;
+            if(result == QMessageBox::Yes)
+            {
+                affine = handle->voxel.other_image_affine[index];
+                has_registered = true;
+            }
+            break;
+        }
+    if(!has_registered)
+    {
+        in.get_voxel_size(vs.begin());
+        scale[0] = handle->voxel.vs[0]/vs[0];
+        scale[1] = handle->voxel.vs[1]/vs[1];
+        scale[2] = handle->voxel.vs[2]/vs[2];
+        std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,ref,scale,image::reg::rigid_body));
+        manual->timer->start();
+        if(manual->exec() != QDialog::Accepted)
+            return;
+        affine = manual->iT;
+        affine.inverse();
+    }
+    handle->voxel.other_image.push_back(ref);
+    handle->voxel.other_image_name.push_back(QFileInfo(filename).baseName().toLocal8Bit().begin());
+    handle->voxel.other_image_affine.push_back(affine);
+}
