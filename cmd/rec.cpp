@@ -181,6 +181,8 @@ int rec(int ac, char *av[])
     handle->voxel.r2_weighted = vm["r2_weighted"].as<int>();
     handle->voxel.reg_method = vm["reg_method"].as<int>();
     handle->voxel.interpo_method = vm["interpo_method"].as<int>();
+    handle->voxel.scheme_balance = vm["scheme_balance"].as<int>();
+    handle->voxel.half_sphere = vm["half_sphere"].as<int>();
 
     {
         std::cout << "odf_order=" << vm["odf_order"].as<int>() << std::endl;
