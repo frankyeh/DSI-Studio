@@ -383,6 +383,12 @@ public:
             mat_writer.write("mx",&*mx.begin(),1,mx.size());
             mat_writer.write("my",&*my.begin(),1,my.size());
             mat_writer.write("mz",&*mz.begin(),1,mz.size());
+            short dimension[3];
+            dimension[0] = voxel.qa_map.width();
+            dimension[1] = voxel.qa_map.height();
+            dimension[2] = voxel.qa_map.depth();
+            mat_writer.write("native_dimension",&*voxel.qa_map.begin(),1,3);
+            mat_writer.write("native_qa",&*voxel.qa_map.begin(),1,voxel.qa_map.size());
         }
         mat_writer.write("trans",&*trans_to_mni,4,4);
         mat_writer.write("R2",&voxel.R2,1,1);
