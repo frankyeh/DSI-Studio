@@ -35,6 +35,8 @@ bool reconstruction_window::load_src(int index)
     return true;
 }
 
+void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
+
 reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *parent) :
     QMainWindow(parent),filenames(filenames_),terminated(false),motion_correction_thread(0),
         ui(new Ui::reconstruction_window)
@@ -73,10 +75,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui->QBI->setChecked(true);
         on_QBI_toggled(true);
         break;
-    case 6:
-        ui->HARDI->setChecked(true);
-        on_HARDI_toggled(true);
-        break;
     case 7:
         ui->QDif->setChecked(true);
         on_QDif_toggled(true);
@@ -112,9 +110,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->output_mapping->setChecked(settings.value("output_mapping",0).toInt());
     ui->check_btable->setChecked(settings.value("check_btable",1).toInt());
 
-    ui->hardi_bvalue->setValue(settings.value("hardi_bvalue",3000).toDouble());
-    ui->hardi_reg->setValue(settings.value("hardi_reg",0.05).toDouble());
-
     ui->report->setText(handle->voxel.report.c_str());
 
     max_source_value = *std::max_element(handle->dwi_data.back(),
@@ -135,6 +130,18 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     connect(ui->brightness,SIGNAL(valueChanged(int)),this,SLOT(on_b_table_itemSelectionChanged()));
 
     on_b_table_itemSelectionChanged();
+
+
+    {
+        std::vector<unsigned int> shell;
+        calculate_shell(handle->voxel.bvalues,shell);
+        ui->half_sphere->setChecked((shell.size() > 5) && (shell[1] - shell[0] <= 3));
+        if(!ui->half_sphere->isChecked())
+        {
+            ui->scheme_balance->setChecked((shell.size() <= 5) && !shell.empty() &&
+                handle->voxel.bvalues.size()-shell.back() < 100);
+        }
+    }
 }
 void reconstruction_window::update_dimension(void)
 {
@@ -281,6 +288,16 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.need_odf = ui->RecordODF->isChecked() ? 1 : 0;
     handle->voxel.output_jacobian = ui->output_jacobian->isChecked() ? 1 : 0;
     handle->voxel.output_mapping = ui->output_mapping->isChecked() ? 1 : 0;
+    if(method_id == 7 || method_id == 4)
+    {
+        handle->voxel.half_sphere = ui->half_sphere->isChecked() ? 1:0;
+        handle->voxel.scheme_balance = ui->scheme_balance->isChecked() ? 1:0;
+    }
+    else
+    {
+        handle->voxel.half_sphere = false;
+        handle->voxel.scheme_balance = false;
+    }
 
     const char* msg = (const char*)reconstruction(handle.get(), method_id,
                                                   params,ui->check_btable->isChecked(),
@@ -407,17 +424,6 @@ void reconstruction_window::on_doDTI_clicked()
             doReconstruction(3,index+1 == filenames.size());
         }
         else
-        if(ui->HARDI->isChecked())
-        {
-            params[0] = ui->diffusion_sampling->value();
-            params[1] = ui->hardi_bvalue->value();
-            params[2] = ui->hardi_reg->value();
-            settings.setValue("rec_gqi_sampling",ui->diffusion_sampling->value());
-            settings.setValue("hardi_bvalue",ui->hardi_bvalue->value());
-            settings.setValue("hardi_reg",ui->hardi_reg->value());
-            doReconstruction(6,index+1 == filenames.size());
-        }
-        else
         if(ui->GQI->isChecked() || ui->QDif->isChecked())
         {
             params[0] = ui->diffusion_sampling->value();
@@ -452,8 +458,6 @@ void reconstruction_window::on_DTI_toggled(bool checked)
     ui->output_jacobian->setVisible(!checked);
     ui->RecordODF->setVisible(!checked);
 
-    ui->hardi_param->setVisible(!checked);
-
 }
 
 void reconstruction_window::on_DSI_toggled(bool checked)
@@ -470,7 +474,6 @@ void reconstruction_window::on_DSI_toggled(bool checked)
     ui->output_jacobian->setVisible(!checked);
     ui->RecordODF->setVisible(checked);
 
-    ui->hardi_param->setVisible(!checked);
 }
 
 void reconstruction_window::on_QBI_toggled(bool checked)
@@ -487,7 +490,6 @@ void reconstruction_window::on_QBI_toggled(bool checked)
     ui->output_jacobian->setVisible(!checked);
     ui->RecordODF->setVisible(checked);
 
-    ui->hardi_param->setVisible(!checked);
 }
 
 void reconstruction_window::on_GQI_toggled(bool checked)
@@ -504,26 +506,8 @@ void reconstruction_window::on_GQI_toggled(bool checked)
     ui->output_jacobian->setVisible(!checked);
     ui->RecordODF->setVisible(checked);
 
-    ui->hardi_param->setVisible(!checked);
 
 }
-void reconstruction_window::on_HARDI_toggled(bool checked)
-{
-    ui->ResolutionBox->setVisible(!checked);
-    ui->ODFSharpening->setVisible(!checked);
-    ui->DSIOption_2->setVisible(!checked);
-    ui->QBIOption_2->setVisible(!checked);
-    ui->GQIOption_2->setVisible(checked);
-
-    ui->AdvancedOptions->setVisible(checked);
-
-    ui->output_mapping->setVisible(!checked);
-    ui->output_jacobian->setVisible(!checked);
-    ui->RecordODF->setVisible(!checked);
-
-    ui->hardi_param->setVisible(checked);
-}
-
 
 void reconstruction_window::on_QDif_toggled(bool checked)
 {
@@ -539,7 +523,6 @@ void reconstruction_window::on_QDif_toggled(bool checked)
     ui->output_jacobian->setVisible(checked);
     ui->RecordODF->setVisible(checked);
 
-    ui->hardi_param->setVisible(!checked);
 
 }
 
@@ -765,19 +748,6 @@ void reconstruction_window::on_actionRotate_triggered()
 }
 
 
-void reconstruction_window::on_load_b_table_clicked()
-{
-    QString filename = QFileDialog::getOpenFileName(
-            this,
-            "Save b-table",
-            QFileInfo(filenames[0]).absolutePath() + "/b_table.txt",
-            "Text files (*.txt);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    handle->voxel.file_name = filename.toLocal8Bit().begin();
-    ui->b_table_label->setText(QFileInfo(filename).baseName());
-}
-
 void reconstruction_window::on_delete_2_clicked()
 {
     if(handle->dwi_data.size() == 1)
@@ -958,3 +928,17 @@ void reconstruction_window::check_progress(void)
 
 
 
+
+void reconstruction_window::on_scheme_balance_toggled(bool checked)
+{
+    if(checked)
+        ui->half_sphere->setChecked(false);
+}
+
+
+
+void reconstruction_window::on_half_sphere_toggled(bool checked)
+{
+    if(checked)
+        ui->scheme_balance->setChecked(false);
+}

@@ -88,14 +88,14 @@ private slots:
     void on_actionFlip_xz_triggered();
     void on_actionFlip_yz_triggered();
     void on_actionRotate_triggered();
-    void on_HARDI_toggled(bool checked);
-    void on_load_b_table_clicked();
     void on_delete_2_clicked();
     void on_actionTrim_image_triggered();
     void on_diffusion_sampling_valueChanged(double arg1);
     void on_SlicePos_valueChanged(int value);
     void on_motion_correction_clicked();
     void check_progress(void);
+    void on_scheme_balance_toggled(bool checked);
+    void on_half_sphere_toggled(bool checked);
 };
 
 #endif // RECONSTRUCTION_WINDOW_H
