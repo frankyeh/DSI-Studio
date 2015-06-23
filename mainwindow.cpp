@@ -24,7 +24,6 @@
 #include "tracking/vbc_dialog.hpp"
 #include "vbc/vbc_database.h"
 #include "libs/tracking/fib_data.hpp"
-
 extern std::vector<atlas> atlas_list;
 extern std::auto_ptr<QProgressDialog> progressDialog;
 MainWindow::MainWindow(QWidget *parent) :
@@ -621,7 +620,46 @@ void MainWindow::on_batch_src_clicked()
                 if(!choice)
                     continue;
             }
-            if(load_all_files(dicom_file_list,dwi_files) && !prog_aborted())
+            if(!load_all_files(dicom_file_list,dwi_files) || prog_aborted())
+                continue;
+            if(dwi_files.size() == 1) //MPRAGE or T2W
+            {
+                std::sort(dicom_file_list.begin(),dicom_file_list.end(),compare_qstring());
+                image::io::volume v;
+                image::io::dicom header;
+                std::vector<std::string> file_list;
+                for(unsigned int index = 0;index < dicom_file_list.size();++index)
+                    file_list.push_back(dicom_file_list[index].toLocal8Bit().begin());
+                if(!v.load_from_files(file_list,file_list.size()) ||
+                   !header.load_from_file(dicom_file_list[0].toLocal8Bit().begin()))
+                    continue;
+                image::basic_image<float,3> I;
+                image::vector<3> vs;
+                v >> I;
+                v.get_voxel_size(vs.begin());
+                gz_nifti nii_out;
+                image::flip_xy(I);
+                nii_out << I;
+                nii_out.set_voxel_size(vs);
+
+
+                std::string manu,make,seq,report;
+                header.get_text(0x0008,0x0070,manu);//Manufacturer
+                header.get_text(0x0008,0x1090,make);
+                header.get_text(0x0018,0x1030,seq);
+                std::replace(manu.begin(),manu.end(),' ',(char)0);
+                make.erase(std::remove(make.begin(),make.end(),' '),make.end());
+                std::ostringstream out;
+                out << manu.c_str() << " " << make.c_str() << " " << seq
+                    << ".TE=" << header.get_float(0x0018,0x0081) << ".TR=" << header.get_float(0x0018,0x0080)  << ".";
+                report = out.str();
+                std::copy(report.begin(),report.begin() + std::min<int>(80,report.length()+1),nii_out.nif_header.descrip);
+
+                QString output_name = QFileInfo(get_src_name(dicom_file_list[0])).absolutePath() + "/" +
+                                      QFileInfo(get_src_name(dicom_file_list[0])).baseName()+ "."+seq.c_str() + ".nii.gz";
+                nii_out.save_to_file(output_name.toLocal8Bit().begin());
+            }
+            else
             {
                 for(unsigned int index = 0;index < dwi_files.size();++index)
                     if(dwi_files[index].get_bvalue() < 100)

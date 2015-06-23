@@ -10,14 +10,7 @@
 #include "libs/gzip_interface.hpp"
 #include "motion_dialog.hpp"
 
-struct compare_qstring{
-    bool operator()(const QString& lhs,const QString& rhs)
-    {
-        if(lhs.length() != rhs.length())
-            return lhs.length() < rhs.length();
-        return lhs < rhs;
-    }
-};
+
 
 void get_report_from_dicom(const image::io::dicom& header,std::string& report_);
 

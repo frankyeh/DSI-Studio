@@ -8,7 +8,14 @@
 namespace Ui {
     class dicom_parser;
 }
-
+struct compare_qstring{
+    bool operator()(const QString& lhs,const QString& rhs)
+    {
+        if(lhs.length() != rhs.length())
+            return lhs.length() < rhs.length();
+        return lhs < rhs;
+    }
+};
 class dicom_parser : public QDialog
 {
     Q_OBJECT
