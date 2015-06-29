@@ -40,7 +40,7 @@ protected:
     image::basic_image<float,3> VG,VF;
     double VGvs[3];
 protected: // for warping other image modality
-    std::vector<image::basic_image<float,3> > other_image;
+    std::vector<image::basic_image<float,3> > other_image,other_image_x,other_image_y,other_image_z;
 protected:
     image::vector<3,int> bounding_box_lower;
     image::vector<3,int> bounding_box_upper;
@@ -244,8 +244,22 @@ public:
         if(!voxel.other_image.empty())
         {
             other_image.resize(voxel.other_image.size());
+            if(voxel.output_mapping)
+            {
+                other_image_x.resize(voxel.other_image.size());
+                other_image_y.resize(voxel.other_image.size());
+                other_image_z.resize(voxel.other_image.size());
+            }
             for(unsigned int index = 0;index < voxel.other_image.size();++index)
+            {
                 other_image[index].resize(des_geo);
+                if(voxel.output_mapping)
+                {
+                    other_image_x[index].resize(des_geo);
+                    other_image_y[index].resize(des_geo);
+                    other_image_z[index].resize(des_geo);
+                }
+            }
         }
 
 
@@ -302,6 +316,7 @@ public:
                          const image::vector<3,double>& Jpos,interpolation_type)
     {
         interpolation_type interpolation;
+
         if(!interpolation.get_location(src_geo,Jpos))
         {
             std::fill(data.space.begin(),data.space.end(),0);
@@ -313,12 +328,25 @@ public:
             interpolation.estimate(ptr_images[i],data.space[i]);
         if(voxel.half_sphere && b0_index != -1)
             data.space[b0_index] /= 2.0;
+        // output mapping position
+        if(voxel.output_mapping)
+        {
+            mx[data.voxel_index] = Jpos[0];
+            my[data.voxel_index] = Jpos[1];
+            mz[data.voxel_index] = Jpos[2];
+        }
 
         for(unsigned int index = 0;index < voxel.other_image.size();++index)
         {
             interpolation_type interpolation;
             image::vector<3,double> Opos;
             voxel.other_image_affine[index](Jpos,Opos);
+            if(voxel.output_mapping)
+            {
+                other_image_x[index][data.voxel_index] = Opos[0];
+                other_image_y[index][data.voxel_index] = Opos[1];
+                other_image_z[index][data.voxel_index] = Opos[2];
+            }
             interpolation.get_location(voxel.other_image[index].geometry(),Opos);
             interpolation.estimate(voxel.other_image[index],other_image[index][data.voxel_index]);
         }
@@ -365,13 +393,6 @@ public:
         (*mni.get())(pos,Jpos);
         affine(Jpos);
 
-        // output mapping position
-        if(voxel.output_mapping)
-        {
-            mx[data.voxel_index] = Jpos[0];
-            my[data.voxel_index] = Jpos[1];
-            mz[data.voxel_index] = Jpos[2];
-        }
         switch(voxel.interpo_method)
         {
         case 0:
@@ -396,18 +417,32 @@ public:
             mat_writer.write("jdet",&*jdet.begin(),1,jdet.size());
         if(voxel.output_mapping)
         {
-            mat_writer.write("mx",&*mx.begin(),1,mx.size());
-            mat_writer.write("my",&*my.begin(),1,my.size());
-            mat_writer.write("mz",&*mz.begin(),1,mz.size());
+            mat_writer.write("fa0_x",&*mx.begin(),1,mx.size());
+            mat_writer.write("fa0_y",&*my.begin(),1,my.size());
+            mat_writer.write("fa0_z",&*mz.begin(),1,mz.size());
             short dimension[3];
             dimension[0] = voxel.qa_map.width();
             dimension[1] = voxel.qa_map.height();
             dimension[2] = voxel.qa_map.depth();
-            mat_writer.write("native_dimension",&*voxel.qa_map.begin(),1,3);
-            mat_writer.write("native_qa",&*voxel.qa_map.begin(),1,voxel.qa_map.size());
+            mat_writer.write("fa0_dimension",dimension,1,3);
+            mat_writer.write("native_fa0",&*voxel.qa_map.begin(),1,voxel.qa_map.size());
         }
         for(unsigned int index = 0;index < other_image.size();++index)
+        {
             mat_writer.write(voxel.other_image_name[index].c_str(),&*other_image[index].begin(),1,other_image[index].size());
+            short dimension[3];
+            dimension[0] = voxel.other_image[index].width();
+            dimension[1] = voxel.other_image[index].height();
+            dimension[2] = voxel.other_image[index].depth();
+            mat_writer.write((voxel.other_image_name[index]+"_dimension").c_str(),dimension,1,3);
+            if(voxel.output_mapping)
+            {
+                mat_writer.write((voxel.other_image_name[index]+"_x").c_str(),&*other_image_x[index].begin(),1,other_image_x[index].size());
+                mat_writer.write((voxel.other_image_name[index]+"_y").c_str(),&*other_image_y[index].begin(),1,other_image_y[index].size());
+                mat_writer.write((voxel.other_image_name[index]+"_z").c_str(),&*other_image_z[index].begin(),1,other_image_z[index].size());
+            }
+        }
+
         mat_writer.write("trans",&*trans_to_mni,4,4);
         mat_writer.write("R2",&voxel.R2,1,1);
     }

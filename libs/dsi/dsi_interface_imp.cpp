@@ -325,7 +325,7 @@ const char* reconstruction(ImageModel* image_model,
             if (image_model->voxel.odf_deconvolusion || image_model->voxel.odf_decomposition)
             {
                 if (!image_model->reconstruct<dsi_estimate_response_function>(thread_count))
-                    return "reconstruction calceled";
+                    return "reconstruction canceled";
             }
             out << ".dsi."<< (int)param_values[0] << ".fib.gz";
             if (!image_model->reconstruct<dsi_process>(thread_count))
@@ -344,7 +344,7 @@ const char* reconstruction(ImageModel* image_model,
             if (image_model->voxel.odf_deconvolusion || image_model->voxel.odf_decomposition)
             {
                 if (!image_model->reconstruct<qbi_estimate_response_function>(thread_count))
-                    return "reconstruction calceled";
+                    return "reconstruction canceled";
             }
             out << ".qbi."<< param_values[0] << "_" << param_values[1] << ".fib.gz";
             if (!image_model->reconstruct<qbi_process>(thread_count))
@@ -355,7 +355,7 @@ const char* reconstruction(ImageModel* image_model,
             if (image_model->voxel.odf_deconvolusion || image_model->voxel.odf_decomposition)
             {
                 if (!image_model->reconstruct<qbi_sh_estimate_response_function>(thread_count))
-                    return "reconstruction calceled";
+                    return "reconstruction canceled";
             }
             out << ".qbi.sh"<< (int) param_values[1] << "." << param_values[0] << ".fib.gz";
             if (!image_model->reconstruct<qbi_sh_process>(thread_count))
@@ -377,7 +377,7 @@ const char* reconstruction(ImageModel* image_model,
             if (image_model->voxel.odf_deconvolusion || image_model->voxel.odf_decomposition)
             {
                 if (!image_model->reconstruct<gqi_estimate_response_function>(thread_count))
-                    return "reconstruction calceled";
+                    return "reconstruction canceled";
             }
             if(image_model->voxel.r2_weighted)
                 image_model->voxel.recon_report << " The ODF calculation was weighted by the square of the diffuion displacement.";
@@ -400,7 +400,7 @@ const char* reconstruction(ImageModel* image_model,
             << (float)param_values[0] << ". The output resolution was " << param_values[1] << " mm.";
             // run gqi to get the spin quantity
             if (!image_model->reconstruct<gqi_estimate_response_function>(thread_count))
-                return "reconstruction calceled";
+                return "reconstruction canceled";
             out << ".reg" << (int)image_model->voxel.reg_method;
             out << "i" << (int)image_model->voxel.interpo_method;
             out << (image_model->voxel.r2_weighted ? ".qsdr2.":".qsdr.");
