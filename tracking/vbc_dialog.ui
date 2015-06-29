@@ -46,8 +46,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>591</width>
-           <height>201</height>
+           <width>781</width>
+           <height>541</height>
           </rect>
          </property>
          <attribute name="label">
@@ -378,9 +378,9 @@
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>0</y>
-           <width>756</width>
-           <height>886</height>
+           <y>-271</y>
+           <width>764</width>
+           <height>812</height>
           </rect>
          </property>
          <attribute name="label">
@@ -1139,7 +1139,7 @@
                        <string>Track length threshold (mm)</string>
                       </property>
                       <property name="checked">
-                       <bool>false</bool>
+                       <bool>true</bool>
                       </property>
                      </widget>
                     </item>
@@ -1149,7 +1149,7 @@
                        <string>False discovery rate</string>
                       </property>
                       <property name="checked">
-                       <bool>true</bool>
+                       <bool>false</bool>
                       </property>
                      </widget>
                     </item>
@@ -1214,8 +1214,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>744</width>
-           <height>242</height>
+           <width>781</width>
+           <height>541</height>
           </rect>
          </property>
          <attribute name="label">

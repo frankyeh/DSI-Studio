@@ -371,7 +371,8 @@ struct ViewItem
 class FibData
 {
 public:
-    std::string error_msg,report;
+    mutable std::string error_msg;
+    std::string report;
     gz_mat_read mat_reader;
     FiberDirection fib;
     ODFData odf;
@@ -586,16 +587,11 @@ public:
         subject_names = subject_names_;
         return true;
     }
-    void save_subject_vector(const char* output_name,bool normalize_qa)
+    void get_subject_vector(std::vector<std::vector<float> >& subject_vector,bool normalize_qa) const
     {
-        gz_mat_write matfile(output_name);
-        if(!matfile)
-        {
-            error_msg = "Cannot output file";
-            return;
-        }
         float fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(dim,fib.fa[0]));
-        std::vector<std::vector<float> > subject_vector(num_subjects);
+        subject_vector.clear();
+        subject_vector.resize(num_subjects);
         for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
         {
             unsigned int cur_index = si2vi[s_index];
@@ -611,6 +607,18 @@ public:
                         subject_vector[index].push_back(subject_qa[index][pos]);
             }
         }
+    }
+
+    void save_subject_vector(const char* output_name,bool normalize_qa) const
+    {
+        gz_mat_write matfile(output_name);
+        if(!matfile)
+        {
+            error_msg = "Cannot output file";
+            return;
+        }
+        std::vector<std::vector<float> > subject_vector;
+        get_subject_vector(subject_vector,normalize_qa);
         std::string name_string;
         for(unsigned int index = 0;index < num_subjects;++index)
         {

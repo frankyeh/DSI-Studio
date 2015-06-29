@@ -793,7 +793,10 @@ void vbc_dialog::calculate_FDR(void)
         ui->fdr_dist->saveTxt((vbc->trk_file_names[0]+".fdr_value.txt").c_str());
         ui->null_dist->saveTxt((vbc->trk_file_names[0]+".dist_value.txt").c_str());
 
-        QMessageBox::information(this,"Finished","Trk files saved.",0);
+        if(vbc->has_greater_result || vbc->has_lesser_result)
+            QMessageBox::information(this,"Finished","Trk files saved.",0);
+        else
+            QMessageBox::information(this,"Finished","No significant finding.",0);
         ui->run->setText("Run");
         ui->progressBar->setValue(100);
         timer.reset(0);
