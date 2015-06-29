@@ -800,7 +800,6 @@ void tracking_window::add_slices(QStringList filenames,QString name)
     ui->sliceViewBox->addItem(name);
     handle->view_item.push_back(handle->view_item[0]);
     handle->view_item.back().name = name.toLocal8Bit().begin();
-    handle->view_item.back().is_overlay = false;
     handle->view_item.back().image_data = image::make_image(glWidget->other_slices.back().roi_image.geometry(),
                                                             glWidget->other_slices.back().roi_image_buf);
     handle->view_item.back().set_scale(

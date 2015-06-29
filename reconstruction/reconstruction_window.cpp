@@ -989,4 +989,5 @@ void reconstruction_window::on_add_t1t2_clicked()
     handle->voxel.other_image.push_back(ref);
     handle->voxel.other_image_name.push_back(QFileInfo(filename).baseName().toLocal8Bit().begin());
     handle->voxel.other_image_affine.push_back(affine);
+    ui->output_mapping->setChecked(true);
 }

@@ -304,7 +304,6 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         if(QFileInfo(base_name).suffix().toLower() == "nii")
             base_name = QFileInfo(base_name).completeBaseName();
         QString label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".txt";
-        std::cout << label_file.toLocal8Bit().begin() << std::endl;
         if(!QFileInfo(label_file).exists())
         {
             QMessageBox msgBox;
@@ -353,16 +352,39 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     if(from.geometry() != cur_tracking_window.slice.geometry &&
        !cur_tracking_window.handle->trans_to_mni.empty() && convert.empty())// use transformation information
     {
-        QMessageBox::information(this,"Warning","The nii file has different image dimension. Transformation will be applied to load the region",0);
-        std::vector<float> t(header.get_transformation(),
-                             header.get_transformation()+12),inv_trans(16);
-        convert.resize(16);
-        t.resize(16);
-        t[15] = 1.0;
-        image::matrix::inverse(t.begin(),inv_trans.begin(),image::dim<4,4>());
-        image::matrix::product(inv_trans.begin(),
-                               cur_tracking_window.handle->trans_to_mni.begin(),
-                               convert.begin(),image::dim<4,4>(),image::dim<4,4>());
+        // searching QSDR mappings
+        image::basic_image<unsigned int, 3> new_from;
+        for(unsigned int index = 0;index < cur_tracking_window.handle->view_item.size();++index)
+            if(cur_tracking_window.handle->view_item[index].native_geo == from.geometry())
+            {
+                new_from.resize(cur_tracking_window.slice.geometry);
+                for(image::pixel_index<3> pos;new_from.geometry().is_valid(pos);pos.next(new_from.geometry()))
+                {
+                    image::vector<3> new_pos(cur_tracking_window.handle->view_item[index].mx[pos.index()],
+                                             cur_tracking_window.handle->view_item[index].my[pos.index()],
+                                             cur_tracking_window.handle->view_item[index].mz[pos.index()]);
+                    new_pos += 0.5;
+                    new_pos.floor();
+                    new_from[pos.index()] = from.at(new_pos[0],new_pos[1],new_pos[2]);
+                }
+                break;
+            }
+
+        if(new_from.empty())
+        {
+            QMessageBox::information(this,"Warning","The nii file has different image dimension. Transformation will be applied to load the region",0);
+            std::vector<float> t(header.get_transformation(),
+                                 header.get_transformation()+12),inv_trans(16);
+            convert.resize(16);
+            t.resize(16);
+            t[15] = 1.0;
+            image::matrix::inverse(t.begin(),inv_trans.begin(),image::dim<4,4>());
+            image::matrix::product(inv_trans.begin(),
+                                   cur_tracking_window.handle->trans_to_mni.begin(),
+                                   convert.begin(),image::dim<4,4>(),image::dim<4,4>());
+        }
+        else
+            new_from.swap(from);
     }
 
     if(!multiple_roi)

@@ -417,14 +417,14 @@ public:
             mat_writer.write("jdet",&*jdet.begin(),1,jdet.size());
         if(voxel.output_mapping)
         {
-            mat_writer.write("fa0_x",&*mx.begin(),1,mx.size());
-            mat_writer.write("fa0_y",&*my.begin(),1,my.size());
-            mat_writer.write("fa0_z",&*mz.begin(),1,mz.size());
+            mat_writer.write("_x",&*mx.begin(),1,mx.size());
+            mat_writer.write("_y",&*my.begin(),1,my.size());
+            mat_writer.write("_z",&*mz.begin(),1,mz.size());
             short dimension[3];
             dimension[0] = voxel.qa_map.width();
             dimension[1] = voxel.qa_map.height();
             dimension[2] = voxel.qa_map.depth();
-            mat_writer.write("fa0_dimension",dimension,1,3);
+            mat_writer.write("_d",dimension,1,3);
             mat_writer.write("native_fa0",&*voxel.qa_map.begin(),1,voxel.qa_map.size());
         }
         for(unsigned int index = 0;index < other_image.size();++index)
@@ -434,7 +434,7 @@ public:
             dimension[0] = voxel.other_image[index].width();
             dimension[1] = voxel.other_image[index].height();
             dimension[2] = voxel.other_image[index].depth();
-            mat_writer.write((voxel.other_image_name[index]+"_dimension").c_str(),dimension,1,3);
+            mat_writer.write((voxel.other_image_name[index]+"_d").c_str(),dimension,1,3);
             if(voxel.output_mapping)
             {
                 mat_writer.write((voxel.other_image_name[index]+"_x").c_str(),&*other_image_x[index].begin(),1,other_image_x[index].size());

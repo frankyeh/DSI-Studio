@@ -351,10 +351,12 @@ struct ViewItem
 {
     std::string name;
     image::const_pointer_image<float,3> image_data;
-    bool is_overlay;
     float max_value;
     float min_value;
     image::basic_image<image::rgb_color,3> data_buf;
+    // used in QSDR
+    image::const_pointer_image<float,3> mx,my,mz;
+    image::geometry<3> native_geo;
     template<typename input_iterator>
     void set_scale(input_iterator from,input_iterator to)
     {
@@ -783,13 +785,11 @@ public:
             view_item.back().name =  fib.fa.size() == 1 ? "fa0":"qa0";
             view_item.back().name[2] += index;
             view_item.back().image_data = image::make_image(fib.dim,fib.fa[index]);
-            view_item.back().is_overlay = false;
             view_item.back().set_scale(fib.fa[index],fib.fa[index]+fib.dim.size());
         }
 
         view_item.push_back(ViewItem());
         view_item.back().name = "color";
-        view_item.back().is_overlay = false;
         other_mapping_index = view_item.size();
 
         unsigned int row,col;
@@ -825,15 +825,14 @@ public:
             mat_reader.read(index,row,col,buf);
             if (row*col != dim.size() || !buf)
                 continue;
+            if(matrix_name.length() >= 2 && matrix_name[matrix_name.length()-2] == '_' &&
+               (matrix_name[matrix_name.length()-1] == 'x' ||
+                matrix_name[matrix_name.length()-1] == 'y' ||
+                matrix_name[matrix_name.length()-1] == 'z' ||
+                matrix_name[matrix_name.length()-1] == 'd'))
+                continue;
             view_item.push_back(ViewItem());
             view_item.back().name = matrix_name;
-            view_item.back().is_overlay = false;
-            for(unsigned int i = 0;i < dim.size();++i)
-                if(buf[i] == 0.0 && fib.fa[0][i] != 0.0)
-                {
-                    view_item.back().is_overlay = true;
-                    break;
-                }
             view_item.back().image_data = image::make_image(fib.dim,buf);
             view_item.back().set_scale(buf,buf+dim.size());
 
@@ -843,6 +842,32 @@ public:
             error_msg = "invalid dimension";
             return false;
         }
+
+        if(!trans_to_mni.empty() && !view_item.empty())
+        {
+            unsigned int row,col;
+            const float* mx = 0;
+            const float* my = 0;
+            const float* mz = 0;
+            const short* native_geo = 0;
+            for(unsigned int i = 0; i < view_item.size();++i)
+            {
+                std::string name;
+                if(i)
+                    name = view_item[i].name;
+                if(mat_reader.read((name+"_x").c_str(),row,col,mx) &&
+                   mat_reader.read((name+"_y").c_str(),row,col,my) &&
+                   mat_reader.read((name+"_z").c_str(),row,col,mz) &&
+                     mat_reader.read((name+"_d").c_str(),row,col,native_geo))
+                {
+                    view_item[i].mx = image::make_image(fib.dim,mx);
+                    view_item[i].my = image::make_image(fib.dim,my);
+                    view_item[i].mz = image::make_image(fib.dim,mz);
+                    view_item[i].native_geo = image::geometry<3>(native_geo[0],native_geo[1],native_geo[2]);
+                }
+            }
+        }
+
         read_db();
         return true;
     }

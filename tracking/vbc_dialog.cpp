@@ -986,13 +986,11 @@ void vbc_dialog::on_show_result_clicked()
         new_data->view_item.push_back(ViewItem());
         new_data->view_item.back().name = "lesser";
         new_data->view_item.back().image_data = image::make_image(new_data->dim,result_fib->lesser_ptr[0]);
-        new_data->view_item.back().is_overlay = true;
         new_data->view_item.back().set_scale(result_fib->lesser_ptr[0],
                                              result_fib->lesser_ptr[0]+new_data->dim.size());
         new_data->view_item.push_back(ViewItem());
         new_data->view_item.back().name = "greater";
         new_data->view_item.back().image_data = image::make_image(new_data->dim,result_fib->greater_ptr[0]);
-        new_data->view_item.back().is_overlay = true;
         new_data->view_item.back().set_scale(result_fib->greater_ptr[0],
                                              result_fib->greater_ptr[0]+new_data->dim.size());
 
