@@ -397,25 +397,17 @@ void slice_view_scene::catch_screen()
                 cur_tracking_window.absolute_path + "/" +
                 cur_tracking_window.handle->view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str()+"."+
                 settings.value("slice_image_extension","jpg").toString(),
-                "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
+                "Image files (*.png *.bmp *.jpg);;All files (*)");
     if(filename.isEmpty())
         return;
     settings.setValue("slice_image_extension",QFileInfo(filename).completeSuffix());
-
     if(cur_tracking_window["roi_layout"].toInt() != 0)// mosaic
     {
         view_image.save(filename);
         return;
     }
-    bool flip_x = false;
-    bool flip_y = false;
-    if(cur_tracking_window.slice.cur_dim != 2)
-        flip_y = true;
-    if(cur_tracking_window["orientation_convention"].toInt())
-        flip_x = true;
-
     QImage output = view_image;
-    QPainter paint(&view_image);
+    QPainter paint(&output);
     show_ruler(paint);
     output.save(filename);
 }
