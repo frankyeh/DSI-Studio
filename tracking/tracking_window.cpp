@@ -1425,7 +1425,6 @@ void tracking_window::on_rendering_efficiency_currentIndexChanged(int index)
         renderWidget->setData("anti_aliasing",0);
         renderWidget->setData("line_smooth",0);
         renderWidget->setData("point_smooth",0);
-        renderWidget->setData("poly_smooth",0);
 
         renderWidget->setData("tract_style",0);
         renderWidget->setData("tract_visible_tract",10000);
@@ -1436,7 +1435,6 @@ void tracking_window::on_rendering_efficiency_currentIndexChanged(int index)
         renderWidget->setData("anti_aliasing",0);
         renderWidget->setData("line_smooth",0);
         renderWidget->setData("point_smooth",0);
-        renderWidget->setData("poly_smooth",0);
 
         renderWidget->setData("tract_style",1);
         renderWidget->setData("tract_visible_tract",25000);
@@ -1446,11 +1444,11 @@ void tracking_window::on_rendering_efficiency_currentIndexChanged(int index)
         renderWidget->setData("anti_aliasing",1);
         renderWidget->setData("line_smooth",1);
         renderWidget->setData("point_smooth",1);
-        renderWidget->setData("poly_smooth",1);
 
         renderWidget->setData("tract_style",1);
         renderWidget->setData("tract_visible_tract",100000);
         renderWidget->setData("tract_tube_detail",3);
         break;
     }
+    glWidget->updateGL();
 }
