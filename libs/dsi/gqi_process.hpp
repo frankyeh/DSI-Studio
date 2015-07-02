@@ -39,7 +39,7 @@ public:
             for (unsigned int i = 0; i < voxel.bvalues.size(); ++i,++index)
                 sinc_ql[index] = voxel.bvectors[i]*
                              image::vector<3,float>(voxel.ti.vertices[j])*
-                               std::sqrt(voxel.bvalues[i]*0.01506); // £^G£_
+                               std::sqrt(voxel.bvalues[i]*0.01506);
 
         for (unsigned int index = 0; index < sinc_ql.size(); ++index)
             sinc_ql[index] = voxel.r2_weighted ?
@@ -52,10 +52,6 @@ public:
             data.space[b0_images.front()] /= 2.0;
         image::matrix::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
                                     image::dyndim(data.odf.size(),data.space.size()));
-    }
-    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
-    {
-
     }
 };
 

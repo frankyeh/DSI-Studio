@@ -37,11 +37,8 @@ public:
     static void get_q_table(const Voxel& voxel,std::vector<image::vector<3,int> >& q_table)
     {
         float b_min = get_min_b(voxel);
-        unsigned int n = voxel.bvalues.size();
-
-        for (unsigned int index = 0; index < n; ++index)
+        for (unsigned int index = 0; index < voxel.bvalues.size(); ++index)
         {
-            int q2 = std::floor(std::abs(voxel.bvalues[index]/b_min)+0.5);
             image::vector<3,float> bvec = voxel.bvectors[index];
             bvec.normalize();
             bvec *= std::sqrt(std::abs(voxel.bvalues[index]/b_min));
@@ -55,16 +52,15 @@ public:
 public:
     virtual void init(Voxel& voxel)
     {
-        unsigned int n = voxel.bvalues.size();
-        qspace_mapping1.resize(n);
-        qspace_mapping2.resize(n);
-        hanning_filter.resize(n);
+        qspace_mapping1.resize(voxel.bvalues.size());
+        qspace_mapping2.resize(voxel.bvalues.size());
+        hanning_filter.resize(voxel.bvalues.size());
         std::vector<image::vector<3,int> > q_table;
         get_q_table(voxel,q_table);
 
 
         float filter_width = voxel.param[0];
-        for (unsigned int index = 0; index < n; ++index)
+        for (unsigned int index = 0; index < voxel.bvalues.size(); ++index)
         {
             int x = q_table[index][0];
             int y = q_table[index][1];
@@ -77,7 +73,7 @@ public:
         }
         fft.reset(new image::fftn<3>(image::geometry<3>(space_length,space_length,space_length)));
     }
-    virtual void run(Voxel& voxel, VoxelData& data)
+    virtual void run(Voxel&, VoxelData& data)
     {
         std::vector<float> pdf(qspace_size),buffer(qspace_size);
         for (unsigned int index = 0; index < qspace_mapping1.size(); ++index)
@@ -113,7 +109,7 @@ public:
                                 voxel.ti.vertices[index][2]*r,r*r));
         b0_index = SpaceMapping<dsi_range>::getIndex(0,0,0);
     }
-    virtual void run(Voxel& voxel, VoxelData& data)
+    virtual void run(Voxel&, VoxelData& data)
     {
         // calculate sum(p(u*r)*r^2)dr
         using namespace boost::lambda;

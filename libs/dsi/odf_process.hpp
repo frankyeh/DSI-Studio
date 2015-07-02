@@ -132,9 +132,6 @@ public:
         data.space.swap(new_data);
         image::matrix::vector_product(trans.begin(),new_data.begin(),data.space.begin(),image::dyndim(new_q_count,old_q_count));
     }
-    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
-    {
-    }
 };
 
 struct GeneralizedFA

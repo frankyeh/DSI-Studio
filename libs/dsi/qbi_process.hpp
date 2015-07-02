@@ -123,10 +123,8 @@ public:
 
     }
 public:
-    virtual void run(Voxel& voxel, VoxelData& data)
+    virtual void run(Voxel&, VoxelData& data)
     {
-
-
         // Ht_s = Ht * signal
         std::vector<float> Ht_s(half_odf_size);
         image::matrix::vector_product(Ht.begin(),data.space.begin(),Ht_s.begin(),image::dyndim(half_odf_size,data.space.size()));
