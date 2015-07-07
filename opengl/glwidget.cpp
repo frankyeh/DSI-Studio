@@ -1176,8 +1176,8 @@ void GLWidget::get_view_dir(QPoint p,image::vector<3,float>& dir)
     float m[16],v[3];
     glGetFloatv(GL_PROJECTION_MATRIX,m);
     // Compute the vector of the pick ray in screen space
-    v[0] = (( 2.0f * ((float)p.x())/((float)cur_width)) - 1 ) / m[0];
-    v[1] = -(( 2.0f * ((float)p.y())/((float)cur_height)) - 1 ) / m[5];
+    v[0] = (( 2.0f * ((float)p.x() * devicePixelRatio())/((float)cur_width)) - 1 ) / m[0];
+    v[1] = -(( 2.0f * ((float)p.y() * devicePixelRatio())/((float)cur_height)) - 1 ) / m[5];
     v[2] = -1.0f;
     // Transform the screen space pick ray into 3D space
     dir[0] = v[0]*mat[0] + v[1]*mat[4] + v[2]*mat[8];
