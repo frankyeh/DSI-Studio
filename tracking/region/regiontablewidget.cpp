@@ -274,7 +274,13 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 
 
     image::basic_image<unsigned int, 3> from;
-    header.toLPS(from);
+    {
+        image::basic_image<float, 3> tmp;
+        header.toLPS(tmp);
+        image::add_constant(tmp,0.5);
+        from = tmp;
+    }
+
     std::vector<unsigned char> value_map(std::numeric_limits<unsigned short>::max());
     unsigned int max_value = 0;
     for (image::pixel_index<3>index; index.is_valid(from.geometry());index.next(from.geometry()))
