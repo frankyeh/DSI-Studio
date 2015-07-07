@@ -1935,17 +1935,18 @@ void GLWidget::saveRotationSeries(void)
         return;
     QMessageBox::information(0,"saving video","DSI Studio is going to grab video from 3D window. Please don't move the window until finished.",0);
     makeCurrent();
+    cur_tracking_window.gLdock.reset(0);
     cur_tracking_window.float3dwindow(1920,1080);
     begin_prog("save images");
     image::io::avi avi;
     for(unsigned int index = 1;check_prog(index,360);++index)
     {
         rotate_angle(1,0,1.0,0.0);
-        QImage I_ = grabFrameBuffer().scaledToWidth(1920);
+        QImage I_ = grabFrameBuffer().scaledToWidth(1920*devicePixelRatio());
         QImage I(1920,1080,QImage::Format_RGB32);
         QPainter painter;
         painter.begin(&I);
-        painter.drawImage(0, (1080-I_.height())/2, I_);
+        painter.drawImage(0, (1080*devicePixelRatio()-I_.height())/2/devicePixelRatio(), I_);
         painter.end();
 
         QBuffer buffer;
@@ -1989,7 +1990,7 @@ void GLWidget::saveRotationVideo2(void)
         glPopMatrix();
         updateGL();
 
-        QImage I1 = grabFrameBuffer().scaledToWidth(1024);
+        QImage I1 = grabFrameBuffer().scaledToWidth(1024*devicePixelRatio());
 
         glPushMatrix();
         glLoadIdentity();
@@ -1999,7 +2000,7 @@ void GLWidget::saveRotationVideo2(void)
         glPopMatrix();
         updateGL();
 
-        QImage I2 = grabFrameBuffer().scaledToWidth(1024);
+        QImage I2 = grabFrameBuffer().scaledToWidth(1024*devicePixelRatio());
 
         glPushMatrix();
         glLoadIdentity();
@@ -2011,8 +2012,8 @@ void GLWidget::saveRotationVideo2(void)
         QImage I(2048,768,QImage::Format_RGB32);
         QPainter painter;
         painter.begin(&I);
-        painter.drawImage(0, (768-I1.height())/2, I1);
-        painter.drawImage(1024, (768-I1.height())/2, I2);
+        painter.drawImage(0, (768*devicePixelRatio()-I1.height())/2/devicePixelRatio(), I1);
+        painter.drawImage(1024, (768*devicePixelRatio()-I1.height())/2/devicePixelRatio(), I2);
         painter.end();
 
         QBuffer buffer;
