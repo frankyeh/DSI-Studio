@@ -250,9 +250,6 @@ public:// Multiple regression
     void run_permutation(unsigned int thread_count);
     void calculate_FDR(void);
     void clear_thread(void);
-private:
-
-
 public:
 };
 
