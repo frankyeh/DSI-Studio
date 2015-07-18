@@ -589,7 +589,9 @@ public:
         subject_names = subject_names_;
         return true;
     }
-    void get_subject_vector(std::vector<std::vector<float> >& subject_vector,bool normalize_qa) const
+    void get_subject_vector(std::vector<std::vector<float> >& subject_vector,
+                            const image::basic_image<int,3>& cerebrum_mask,
+                            bool normalize_qa) const
     {
         float fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(dim,fib.fa[0]));
         subject_vector.clear();
@@ -597,21 +599,25 @@ public:
         for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
         {
             unsigned int cur_index = si2vi[s_index];
+            if(!cerebrum_mask[cur_index])
+                continue;
             for(unsigned int j = 0,fib_offset = 0;j < fib.num_fiber && fib.fa[j][cur_index] > fiber_threshold;
                     ++j,fib_offset+=si2vi.size())
             {
                 unsigned int pos = s_index + fib_offset;
                 if(normalize_qa)
-                    for(unsigned int index = 0;index < subject_vector.size();++index)
+                    for(unsigned int index = 0;index < num_subjects;++index)
                         subject_vector[index].push_back(subject_qa[index][pos]/subject_qa_max[index]);
                 else
-                    for(unsigned int index = 0;index < subject_vector.size();++index)
+                    for(unsigned int index = 0;index < num_subjects;++index)
                         subject_vector[index].push_back(subject_qa[index][pos]);
             }
         }
     }
 
-    void save_subject_vector(const char* output_name,bool normalize_qa) const
+    void save_subject_vector(const char* output_name,
+                             const image::basic_image<int,3>& cerebrum_mask,
+                             bool normalize_qa) const
     {
         gz_mat_write matfile(output_name);
         if(!matfile)
@@ -620,7 +626,7 @@ public:
             return;
         }
         std::vector<std::vector<float> > subject_vector;
-        get_subject_vector(subject_vector,normalize_qa);
+        get_subject_vector(subject_vector,cerebrum_mask,normalize_qa);
         std::string name_string;
         for(unsigned int index = 0;index < num_subjects;++index)
         {

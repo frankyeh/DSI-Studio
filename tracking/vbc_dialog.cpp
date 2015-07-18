@@ -1229,6 +1229,55 @@ void vbc_dialog::on_save_R2_clicked()
 
 void vbc_dialog::on_save_vector_clicked()
 {
+    QString file1 = "/cerebrum1.nii.gz";
+    QString file2 = "/cerebrum2.nii.gz";
+    image::basic_image<int,3> I1,I2;
+
+    if(QFileInfo(QCoreApplication::applicationDirPath() + file1).exists())
+        file1 = QCoreApplication::applicationDirPath() + file1;
+    else
+        if(QFileInfo(QDir::currentPath() + file1).exists())
+            file1 = QDir::currentPath() + file1;
+        else
+        {
+            QMessageBox::information(this,"Error",QString("Cannot find ") + QDir::currentPath() + file1,0);
+            return;
+        }
+
+    if(QFileInfo(QCoreApplication::applicationDirPath() + file2).exists())
+        file2 = QCoreApplication::applicationDirPath() + file2;
+    else
+        if(QFileInfo(QDir::currentPath() + file2).exists())
+            file2 = QDir::currentPath() + file2;
+        else
+        {
+            QMessageBox::information(this,"Error",QString("Cannot find ") + QDir::currentPath() + file2,0);
+            return;
+        }
+    {
+        gz_nifti n1;
+        if(!n1.load_from_file(file1.toLocal8Bit().begin()))
+        {
+            QMessageBox::information(this,"Error",QString("Invalid format in ") + file1,0);
+            return;
+        }
+        n1.toLPS(I1);
+    }
+    {
+        gz_nifti n2;
+        if(!n2.load_from_file(file2.toLocal8Bit().begin()))
+        {
+            QMessageBox::information(this,"Error",QString("Invalid format in ") + file2,0);
+            return;
+        }
+        n2.toLPS(I2);
+    }
+    if(I1.geometry() != vbc->handle->dim && I2.geometry() != vbc->handle->dim)
+    {
+        QMessageBox::information(this,"Error","Inconsistent image dimension between connectometry db and cerebrum.nii.gz",0);
+        return;
+    }
+
     QString filename = QFileDialog::getSaveFileName(
                 this,
                 "Save Vector",
@@ -1236,7 +1285,13 @@ void vbc_dialog::on_save_vector_clicked()
                 "Report file (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
-    vbc->handle->save_subject_vector(filename.toLocal8Bit().begin(),true);
+
+    if(I1.geometry() == vbc->handle->dim)
+        vbc->handle->save_subject_vector(filename.toLocal8Bit().begin(),I1,ui->normalize_qa->isChecked());
+    else
+        if(I2.geometry() == vbc->handle->dim)
+            vbc->handle->save_subject_vector(filename.toLocal8Bit().begin(),I2,ui->normalize_qa->isChecked());
+
 }
 
 void vbc_dialog::on_show_advanced_clicked()
