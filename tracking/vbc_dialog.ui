@@ -47,7 +47,7 @@
            <x>0</x>
            <y>0</y>
            <width>781</width>
-           <height>522</height>
+           <height>544</height>
           </rect>
          </property>
          <attribute name="label">
@@ -382,7 +382,7 @@
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>0</y>
+           <y>-274</y>
            <width>760</width>
            <height>818</height>
           </rect>
@@ -1197,7 +1197,7 @@
                 <bool>true</bool>
                </property>
                <property name="text">
-                <string>normalize QA (to minimize </string>
+                <string>normalize QA (for aggregating data from multiple sites)</string>
                </property>
                <property name="checked">
                 <bool>false</bool>
