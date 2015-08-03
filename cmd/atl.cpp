@@ -20,29 +20,50 @@ void run_reg(image::basic_image<float,3>& from,
 bool atl_load_atlas(std::string atlas_name)
 {
     std::cout << "loading atlas..." << std::endl;
-    std::replace(atlas_name.begin(),atlas_name.end(),',',' ');
-    std::istringstream in(atlas_name);
-    std::vector<std::string> name_list;
-    std::copy(std::istream_iterator<std::string>(in),
-              std::istream_iterator<std::string>(),std::back_inserter(name_list));
+    QStringList name_list = QString(atlas_name.c_str()).split(",");
+
 
     for(unsigned int index = 0;index < name_list.size();++index)
     {
         bool has_atlas = false;
         for(unsigned int i = 0;i < atlas_list.size();++i)
-            if(atlas_list[i].name == name_list[index])
+            if(atlas_list[i].name == name_list[index].toStdString())
                 has_atlas = true;
         if(has_atlas)
             continue;
-        std::cout << "loading atlas " << name_list[index] << std::endl;
-        std::string atlas_path = QCoreApplication::applicationDirPath().toLocal8Bit().begin();
-        atlas_path += "/atlas/";
-        atlas_path += name_list[index];
-        atlas_path += ".nii.gz";
-        atlas_list.push_back(atlas());
-        atlas_list.back().filename = atlas_path.c_str();
-        atlas_list.back().name = name_list[index];
-        atlas_list.back().get_num();
+        std::string file_path;
+        if(QFileInfo(name_list[index]).exists())
+        {
+            file_path = name_list[index].toStdString();
+            name_list[index] = QFileInfo(name_list[index]).baseName();
+        }
+        else
+        {
+            std::string atlas_path = QCoreApplication::applicationDirPath().toStdString();
+            atlas_path += "/atlas/";
+            atlas_path += name_list[index].toStdString();
+            atlas_path += ".nii.gz";
+            if(QFileInfo(atlas_path.c_str()).exists())
+                file_path = atlas_path;
+            else
+            {
+                std::cout << "Load " << name_list[index].toStdString() << " failed. Cannot find file in " << atlas_path << std::endl;
+                return false;
+            }
+        }
+
+        {
+            std::cout << "loading " << name_list[index].toStdString() << "..." << std::endl;
+            atlas_list.push_back(atlas());
+            atlas_list.back().filename = file_path;
+            atlas_list.back().name = name_list[index].toStdString();
+            if(atlas_list.back().get_num().empty())
+            {
+                std::cout << "Invalid file format. No ROI found in " << name_list[index].toStdString() << "." << std::endl;
+                return false;
+            }
+            continue;
+        }
     }
     return true;
 }
@@ -51,6 +72,7 @@ bool atl_get_mapping(gz_mat_read& mat_reader,
                      unsigned int thread_count,
                      image::basic_image<image::vector<3>,3>& mapping)
 {
+    std::cout << "Conduct spatial warping: " << thread_count << "-thread, " << factor << "-factor" << std::endl;
     unsigned int col,row;
     const unsigned short* dim = 0;
     const float* vs = 0;
