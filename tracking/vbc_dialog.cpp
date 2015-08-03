@@ -936,7 +936,7 @@ void vbc_dialog::on_run_clicked()
     if(vbc->use_track_length)
         out << " A length threshold of " << ui->length_threshold->value() << " mm were used to select tracks.";
     else
-        out << " False discovery rate was controled at " << ui->fdr_control->value() << ".";
+        out << " False discovery rate was controlled at " << ui->fdr_control->value() << ".";
     out << " The seeding density was " <<
             ui->seeding_density->value() << " seed(s) per mm3.";
 
@@ -1074,10 +1074,9 @@ void vbc_dialog::on_roi_atlas_toggled(bool checked)
 
 void vbc_dialog::on_remove_subject_clicked()
 {
-    if(ui->rb_group_difference->isChecked() || ui->rb_multiple_regression->isChecked())
-    if(ui->subject_demo->currentRow() >= 0 && vbc->handle->num_subjects > 1)
+    if(ui->subject_list->currentRow() >= 0 && vbc->handle->num_subjects > 1)
     {
-        unsigned int index = ui->subject_demo->currentRow();
+        unsigned int index = ui->subject_list->currentRow();
         model->remove_subject(index);
         ui->subject_demo->removeRow(index);
         ui->subject_list->removeRow(index);

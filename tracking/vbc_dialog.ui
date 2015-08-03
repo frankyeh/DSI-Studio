@@ -47,7 +47,7 @@
            <x>0</x>
            <y>0</y>
            <width>781</width>
-           <height>541</height>
+           <height>522</height>
           </rect>
          </property>
          <attribute name="label">
@@ -118,19 +118,6 @@
                      </property>
                      <item>
                       <layout class="QHBoxLayout" name="horizontalLayout_17">
-                       <item>
-                        <widget class="QCheckBox" name="normalize_qa">
-                         <property name="enabled">
-                          <bool>true</bool>
-                         </property>
-                         <property name="text">
-                          <string>normalize QA</string>
-                         </property>
-                         <property name="checked">
-                          <bool>false</bool>
-                         </property>
-                        </widget>
-                       </item>
                        <item>
                         <widget class="QLabel" name="label_13">
                          <property name="text">
@@ -299,6 +286,23 @@
                     <number>0</number>
                    </property>
                    <item>
+                    <widget class="QPushButton" name="remove_subject">
+                     <property name="maximumSize">
+                      <size>
+                       <width>16777215</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string>Remove selected subject</string>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="../icons.qrc">
+                       <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
                     <widget class="QPushButton" name="save_vector">
                      <property name="text">
                       <string>Save Vector...</string>
@@ -378,9 +382,9 @@
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>-271</y>
-           <width>764</width>
-           <height>812</height>
+           <y>0</y>
+           <width>760</width>
+           <height>818</height>
           </rect>
          </property>
          <attribute name="label">
@@ -575,23 +579,6 @@
                     <property name="icon">
                      <iconset resource="../icons.qrc">
                       <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="remove_subject">
-                    <property name="maximumSize">
-                     <size>
-                      <width>16777215</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                    <property name="icon">
-                     <iconset resource="../icons.qrc">
-                      <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
                     </property>
                    </widget>
                   </item>
@@ -1204,6 +1191,19 @@
                </item>
               </layout>
              </item>
+             <item>
+              <widget class="QCheckBox" name="normalize_qa">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
+               <property name="text">
+                <string>normalize QA (to minimize </string>
+               </property>
+               <property name="checked">
+                <bool>false</bool>
+               </property>
+              </widget>
+             </item>
             </layout>
            </widget>
           </item>
@@ -1215,7 +1215,7 @@
            <x>0</x>
            <y>0</y>
            <width>781</width>
-           <height>541</height>
+           <height>544</height>
           </rect>
          </property>
          <attribute name="label">
