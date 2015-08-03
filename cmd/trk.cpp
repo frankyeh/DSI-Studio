@@ -301,7 +301,7 @@ int trk(int ac, char *av[])
     {
         bool use_end_only = (vm["connectivity_type"].as<std::string>() == "end");
         atlas_list.clear(); // some atlas may be loaded in ROI
-        if(mapping.empty() && !atl_get_mapping(handle->mat_reader,1/*7-9-7*/,1/*thread_count*/,mapping))
+        if(mapping.empty() && !atl_get_mapping(handle->mat_reader,1/*7-9-7*/,vm["thread_count"].as<int>(),mapping))
             return false;
 
         if(atl_load_atlas(vm["connectivity"].as<std::string>()))
