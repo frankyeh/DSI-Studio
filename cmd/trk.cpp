@@ -312,7 +312,11 @@ int trk(int ac, char *av[])
             data.set_atlas(atlas_list[index],mapping);
             std::cout << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
             std::cout << "calculate matrix using " << vm["connectivity_value"].as<std::string>() << std::endl;
-            data.calculate(tract_model,vm["connectivity_value"].as<std::string>(),use_end_only);
+            if(!data.calculate(tract_model,vm["connectivity_value"].as<std::string>(),use_end_only))
+            {
+                std::cout << "Cannot generate connectivity matrix." << std::endl;
+                return false;
+            }
             std::string file_name_stat(vm["source"].as<std::string>());
             file_name_stat += ".";
             file_name_stat += atlas_list[index].name;
