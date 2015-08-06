@@ -325,7 +325,7 @@ public:
 struct SaveFA : public BaseProcess
 {
 protected:
-    std::vector<float> iso;
+    std::vector<float> iso,gfa;
     std::vector<std::vector<float> > fa;
 public:
     virtual void init(Voxel& voxel)
@@ -334,18 +334,23 @@ public:
         fa.resize(voxel.max_fiber_number);
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             fa[index].resize(voxel.dim.size());
+        gfa.clear();
+        gfa.resize(voxel.dim.size());
         iso.clear();
         iso.resize(voxel.dim.size());
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
         iso[data.voxel_index] = data.min_odf;
+        gfa[data.voxel_index] = GeneralizedFA()(data.odf);
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             fa[index][data.voxel_index] = data.fa[index];
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
-        set_title("output gfa");
+        set_title("output data");
+        mat_writer.write("gfa",&*gfa.begin(),1,gfa.size());
+
         if(!voxel.odf_deconvolusion && voxel.z0 + 1.0 != 1.0)
         {
             mat_writer.write("z0",&voxel.z0,1,1);
@@ -365,6 +370,26 @@ public:
             fa_str += num;
             set_title(fa_str.c_str());
             mat_writer.write(fa_str.c_str(),&*fa[index].begin(),1,fa[index].size());
+        }
+
+        // output normalized qa
+        {
+            float max_qa = 0.0;
+            for (unsigned int i = 0;i < voxel.max_fiber_number;++i)
+                max_qa = std::max<float>(*std::max_element(fa[i].begin(),fa[i].end()),max_qa);
+
+            if(max_qa != 0.0)
+            for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
+            {
+                std::for_each(fa[index].begin(),fa[index].end(),boost::lambda::_1 /= max_qa);
+                std::ostringstream out;
+                out << index;
+                std::string num = out.str();
+                std::string fa_str = "nqa";
+                fa_str += num;
+                set_title(fa_str.c_str());
+                mat_writer.write(fa_str.c_str(),&*fa[index].begin(),1,fa[index].size());
+            }
         }
     }
 };
