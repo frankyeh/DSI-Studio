@@ -171,6 +171,11 @@
          <string>ncount</string>
         </property>
        </item>
+       <item>
+        <property name="text">
+         <string>mean_length</string>
+        </property>
+       </item>
       </widget>
      </item>
      <item>

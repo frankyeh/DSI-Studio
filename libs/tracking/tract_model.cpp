@@ -1615,6 +1615,34 @@ bool ConnectivityMatrix::calculate(const TractModel& tract_model,std::string mat
                 }
         return true;
     }
+    if(matrix_value_type == "mean_length")
+    {
+        std::vector<std::vector<unsigned int> > sum_length(regions.size());
+        std::vector<std::vector<unsigned int> > sum_n(regions.size());
+
+        for(unsigned int i = 0;i < regions.size();++i)
+        {
+            sum_length[i].resize(regions.size());
+            sum_n[i].resize(regions.size());
+        }
+        for(unsigned int index = 0;index < passing_list.size();++index)
+        {
+            std::vector<unsigned int>& region_passed = passing_list[index];
+            for(unsigned int i = 0;i < region_passed.size();++i)
+                    for(unsigned int j = i+1;j < region_passed.size();++j)
+                    {
+                        sum_length[region_passed[i]][region_passed[j]] += tract_model.get_tract_length(index);
+                        sum_length[region_passed[j]][region_passed[i]] += tract_model.get_tract_length(index);
+                        ++sum_n[region_passed[i]][region_passed[j]];
+                        ++sum_n[region_passed[j]][region_passed[i]];
+                    }
+        }
+        for(unsigned int i = 0,index = 0;i < count.size();++i)
+            for(unsigned int j = 0;j < count[i].size();++j,++index)
+                if(sum_n[i][j])
+                    matrix_value[index] = (float)sum_length[i][j]/(float)sum_n[i][j]/3.0;
+        return true;
+    }
     std::vector<std::vector<float> > data;
     if(matrix_value_type == "qa" || matrix_value_type == "fa")
         tract_model.get_tracts_fa(data);
