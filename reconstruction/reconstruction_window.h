@@ -48,7 +48,6 @@ private:
     std::auto_ptr<ImageModel> handle;
     float params[5];
     image::basic_image<unsigned char, 3>dwi;
-    image::basic_image<unsigned char, 3>mask;
     bool load_src(int index);
     void update_dimension(void);
     void update_image(void);

@@ -134,17 +134,14 @@ public:
     void thread_run(unsigned char thread_index,unsigned char thread_count,
                     const image::basic_image<unsigned char,3>& mask)
     {
-        unsigned int sum_mask = std::accumulate(mask.begin(),mask.end(),(unsigned int)0)/thread_count;
-        unsigned int cur = 0;
         if(thread_index == 0)
             begin_prog("reconstructing");
         for(unsigned int voxel_index = thread_index;
             voxel_index < mask.size() &&
-            (thread_index != 0 || check_prog(cur,sum_mask));voxel_index += thread_count)
+            (thread_index != 0 || check_prog(voxel_index,mask.size()));voxel_index += thread_count)
         {
             if (!mask[voxel_index])
                 continue;
-            cur += mask[voxel_index];
             voxel_data[thread_index].init();
             voxel_data[thread_index].voxel_index = voxel_index;
             for (int index = 0; index < process_list.size(); ++index)
