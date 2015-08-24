@@ -60,8 +60,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>431</width>
-         <height>241</height>
+         <width>731</width>
+         <height>541</height>
         </rect>
        </property>
        <attribute name="label">
@@ -373,8 +373,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>526</width>
-         <height>205</height>
+         <width>731</width>
+         <height>541</height>
         </rect>
        </property>
        <attribute name="label">
@@ -491,7 +491,7 @@
          <x>0</x>
          <y>0</y>
          <width>731</width>
-         <height>524</height>
+         <height>541</height>
         </rect>
        </property>
        <property name="minimumSize">
@@ -1646,7 +1646,7 @@
      <x>0</x>
      <y>0</y>
      <width>731</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1670,6 +1670,7 @@
     <addaction name="actionFlip_yz"/>
     <addaction name="actionRotate"/>
     <addaction name="actionTrim_image"/>
+    <addaction name="actionManual_Rotation"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menu_Edit"/>
@@ -1732,6 +1733,11 @@
   <action name="actionTrim_image">
    <property name="text">
     <string>Trim image</string>
+   </property>
+  </action>
+  <action name="actionManual_Rotation">
+   <property name="text">
+    <string>Manual rotation...</string>
    </property>
   </action>
  </widget>

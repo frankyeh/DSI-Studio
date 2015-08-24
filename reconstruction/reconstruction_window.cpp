@@ -991,3 +991,18 @@ void reconstruction_window::on_add_t1t2_clicked()
     handle->voxel.other_image_affine.push_back(affine);
     ui->output_mapping->setChecked(true);
 }
+
+void reconstruction_window::on_actionManual_Rotation_triggered()
+{
+    image::vector<3> scale(1,1,1);
+    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,dwi,scale,0));
+    if(manual->exec() != QDialog::Accepted)
+        return;
+    image::transformation_matrix<3,float> affine = manual->iT;
+    begin_prog("rotating");
+    handle->rotate(dwi.geometry(),affine);
+    handle->calculate_mask();
+    update_dimension();
+    update_image();
+    on_SlicePos_valueChanged(ui->SlicePos->value());
+}

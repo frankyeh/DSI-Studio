@@ -38,7 +38,7 @@ void run_reg(image::basic_image<float,3>& from,
 manual_alignment::manual_alignment(QWidget *parent,
                                    image::basic_image<float,3> from_,
                                    image::basic_image<float,3> to_,const image::vector<3>& scaling_,int reg_type_) :
-    QDialog(parent),ui(new Ui::manual_alignment),data(to_.geometry(),reg_type_),scaling(scaling_)
+    QDialog(parent),ui(new Ui::manual_alignment),data(to_.geometry(),reg_type_),scaling(scaling_),timer(0)
 {
     from.swap(from_);
     to.swap(to_);
@@ -47,15 +47,37 @@ manual_alignment::manual_alignment(QWidget *parent,
     data.arg.scaling[0] = scaling[0];
     data.arg.scaling[1] = scaling[1];
     data.arg.scaling[2] = scaling[2];
-    image::reg::get_bound(from,to,data.arg,b_upper,b_lower,reg_type_);
-    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),boost::ref(data),1));
+    if(!reg_type_) // manuall rotation
+    {
+        image::reg::get_bound(from,to,data.arg,b_upper,b_lower,image::reg::rigid_body);
+        b_upper.rotation[0] *= 2;
+        b_upper.rotation[1] *= 2;
+        b_upper.rotation[2] *= 2;
+        b_lower.rotation[0] *= 2;
+        b_lower.rotation[1] *= 2;
+        b_lower.rotation[2] *= 2;
+    }
+    else
+    {
+        image::reg::get_bound(from,to,data.arg,b_upper,b_lower,reg_type_);
+        reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),boost::ref(data),1));
+    }
     ui->setupUi(this);
     if(reg_type_ == image::reg::rigid_body)
     {
         ui->scaling_group->hide();
         ui->tilting_group->hide();
     }
-
+    if(!reg_type_)
+    {
+        ui->blend_pos->setValue(0);
+        ui->scaling_group->hide();
+        ui->tilting_group->hide();
+        ui->rerun->hide();
+        ui->blend_pos->hide();
+        ui->switch_view->hide();
+        ui->label_13->hide();
+    }
     ui->sag_view->setScene(&scene[0]);
     ui->cor_view->setScene(&scene[1]);
     ui->axi_view->setScene(&scene[2]);
@@ -73,16 +95,24 @@ manual_alignment::manual_alignment(QWidget *parent,
     ui->axi_slice_pos->setMaximum(to.geometry()[2]-1);
     ui->axi_slice_pos->setMinimum(0);
     ui->axi_slice_pos->setValue(to.geometry()[2] >> 1);
-    timer = new QTimer(this);
-    timer->setInterval(1000);
 
     connect_arg_update();
     connect(ui->sag_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(ui->cor_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(ui->axi_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(ui->blend_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
-    connect(timer, SIGNAL(timeout()), this, SLOT(check_reg()));
 
+    if(reg_type_)
+    {
+        timer = new QTimer(this);
+        timer->setInterval(1000);
+        connect(timer, SIGNAL(timeout()), this, SLOT(check_reg()));
+    }
+    else
+    {
+        slice_pos_moved();
+        update_image();
+    }
 }
 
 
@@ -120,12 +150,15 @@ void manual_alignment::disconnect_arg_update()
 
 manual_alignment::~manual_alignment()
 {
-    timer->stop();
-    if(reg_thread.get())
+    if(timer)
     {
         timer->stop();
-        data.terminated = 1;
-        reg_thread->join();
+        if(reg_thread.get())
+        {
+            timer->stop();
+            data.terminated = 1;
+            reg_thread->join();
+        }
     }
     delete ui;
 }
@@ -276,13 +309,15 @@ void manual_alignment::check_reg()
 
 void manual_alignment::on_buttonBox_accepted()
 {
-    timer->stop();
+    if(timer)
+        timer->stop();
     update_image(); // to update the affine matrix
 }
 
 void manual_alignment::on_buttonBox_rejected()
 {
-    timer->stop();
+    if(timer)
+        timer->stop();
 }
 
 void manual_alignment::on_rerun_clicked()
@@ -294,7 +329,8 @@ void manual_alignment::on_rerun_clicked()
     }
     data.terminated = 0;
     reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),boost::ref(data),1));
-    timer->start();
+    if(timer)
+        timer->start();
 
 }
 
