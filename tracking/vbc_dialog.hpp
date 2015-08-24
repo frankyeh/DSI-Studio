@@ -35,7 +35,10 @@ public:
     explicit vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_);
     ~vbc_dialog();
     bool eventFilter(QObject *obj, QEvent *event);
-private slots:
+public:
+    bool load_demographic_file(QString filename,bool gui);
+
+public slots:
 
 
     void on_subject_list_itemSelectionChanged();
@@ -103,7 +106,7 @@ private slots:
 
 public slots:
     void calculate_FDR(void);
-private:
+public:
     Ui::vbc_dialog *ui;
 };
 

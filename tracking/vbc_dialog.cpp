@@ -372,6 +372,11 @@ void vbc_dialog::on_open_mr_files_clicked()
                 "Text file (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
+    load_demographic_file(filename,true);
+}
+
+bool vbc_dialog::load_demographic_file(QString filename,bool gui)
+{
     model.reset(new stat_model);
     model->init(vbc->handle->num_subjects);
     file_names.clear();
@@ -379,22 +384,32 @@ void vbc_dialog::on_open_mr_files_clicked()
 
     std::vector<std::string> items;
     std::ifstream in(filename.toLocal8Bit().begin());
+    if(!in)
+    {
+        if(gui)
+            QMessageBox::information(this,"Error",QString("Cannot find the demographic file."));
+        else
+            std::cout << "cannot find the demographic file at" << filename.toLocal8Bit().begin() << std::endl;
+        return false;
+    }
     std::copy(std::istream_iterator<std::string>(in),
               std::istream_iterator<std::string>(),std::back_inserter(items));
-
 
     if(ui->rb_multiple_regression->isChecked())
     {
         unsigned int feature_count = items.size()/(vbc->handle->num_subjects+1);
         if(feature_count*(vbc->handle->num_subjects+1) != items.size())
         {
-            QMessageBox::information(this,"Warning",QString("Subject number mismatch."));
-            return;
+            if(gui)
+                QMessageBox::information(this,"Warning",QString("Subject number mismatch."));
+            else
+                std::cout << "subject number mismatch in the demographic file" <<std::endl;
+            return false;
         }
         bool add_age_and_sex = false;
         std::vector<unsigned int> age(vbc->handle->num_subjects),sex(vbc->handle->num_subjects);
         if((QString(vbc->handle->subject_names[0].c_str()).contains("_M0") || QString(vbc->handle->subject_names[0].c_str()).contains("_F0")) &&
-            QString(vbc->handle->subject_names[0].c_str()).contains("Y_") &&
+            QString(vbc->handle->subject_names[0].c_str()).contains("Y_") && gui &&
             QMessageBox::information(this,"Connectomtetry aanalysis","Pull age and sex (1 = male, 0 = female) information from connectometry db?",QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
             {
                 add_age_and_sex = true;
@@ -425,10 +440,13 @@ void vbc_dialog::on_open_mr_files_clicked()
                 X.push_back(QString(items[index+feature_count].c_str()).toDouble(&ok));
                 if(!ok)
                 {
+                    if(gui)
                     QMessageBox::information(this,"Error",QString("Cannot parse '") +
                                              QString(items[index+feature_count].c_str()) +
                                              QString("' at subject%1 feature%2.").arg(i+1).arg(j+1),0);
-                    return;
+                    else
+                        std::cout << "invalid demographic file: cannot parse " << items[index+feature_count] << std::endl;
+                    return false;
                 }
             }
         }
@@ -472,10 +490,13 @@ void vbc_dialog::on_open_mr_files_clicked()
         if(vbc->handle->num_subjects != items.size() &&
            vbc->handle->num_subjects+1 != items.size())
         {
-            QMessageBox::information(this,"Warning",
+            if(gui)
+                QMessageBox::information(this,"Warning",
                                      QString("Subject number mismatch. text file=%1 database=%2").
                                      arg(items.size()).arg(vbc->handle->num_subjects));
-            return;
+            else
+                std::cout << "invalid demographic file: subject number mismatch." << std::endl;
+            return false;
         }
         if(vbc->handle->num_subjects+1 == items.size())
             items.erase(items.begin());
@@ -487,10 +508,13 @@ void vbc_dialog::on_open_mr_files_clicked()
             label.push_back(QString(items[i].c_str()).toInt(&ok));
             if(!ok)
             {
-                QMessageBox::information(this,"Error",QString("Cannot parse ") +
+                if(gui)
+                    QMessageBox::information(this,"Error",QString("Cannot parse ") +
                                              QString(items[i].c_str()) +
                                              QString(" at subject%1").arg(i+1),0);
-                return;
+                else
+                    std::cout << "invalid demographic file: cannot parse " << items[i] << std::endl;
+                return false;
             }
         }
 
@@ -511,10 +535,13 @@ void vbc_dialog::on_open_mr_files_clicked()
         if(vbc->handle->num_subjects != items.size() &&
            vbc->handle->num_subjects+1 != items.size())
         {
-            QMessageBox::information(this,"Warning",
+            if(gui)
+                QMessageBox::information(this,"Warning",
                                      QString("Subject number mismatch. text file=%1 database=%2").
                                      arg(items.size()).arg(vbc->handle->num_subjects));
-            return;
+            else
+                std::cout << "invalid demographic file: subject number mismatch." << std::endl;
+            return false;
         }
         if(vbc->handle->num_subjects+1 == items.size())
             items.erase(items.begin());
@@ -526,10 +553,13 @@ void vbc_dialog::on_open_mr_files_clicked()
             label.push_back(QString(items[i].c_str()).toInt(&ok));
             if(!ok)
             {
-                QMessageBox::information(this,"Error",QString("Cannot parse ") +
+                if(gui)
+                    QMessageBox::information(this,"Error",QString("Cannot parse ") +
                                              QString(items[i].c_str()) +
                                              QString(" at subject%1").arg(i+1),0);
-                return;
+                else
+                    std::cout << "invalid demographic file: cannot parse " << items[i] << std::endl;
+                return false;
             }
         }
 
@@ -561,12 +591,16 @@ void vbc_dialog::on_open_mr_files_clicked()
 
     if(!model->pre_process())
     {
-        QMessageBox::information(this,"Error","Invalid subjet information for statistical analysis",0);
+        if(gui)
+            QMessageBox::information(this,"Error","Invalid subjet information for statistical analysis",0);
+        else
+            std::cout << "invalid subjet information for statistical analysis" << std::endl;
         ui->run->setEnabled(false);
-        return;
+        return false;
     }
 
     ui->run->setEnabled(true);
+    return true;
 }
 
 void vbc_dialog::on_rb_individual_analysis_clicked()

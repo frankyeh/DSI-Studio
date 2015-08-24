@@ -156,7 +156,8 @@ SOURCES += main.cpp \
     libs/dsi/tessellated_icosahedron.cpp \
     cmd/atl.cpp \
     tracking/atlasdialog.cpp \
-    dicom/motion_dialog.cpp
+    dicom/motion_dialog.cpp \
+    cmd/cnt.cpp
 
 OTHER_FILES += \
     options.txt

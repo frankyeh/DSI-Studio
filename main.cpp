@@ -21,6 +21,8 @@ int ana(int ac, char *av[]);
 int exp(int ac, char *av[]);
 int atl(int ac, char *av[]);
 
+#include "cmd/cnt.cpp"
+
 fa_template fa_template_imp;
 std::vector<atlas> atlas_list;
 QStringList search_files(QString dir,QString filter)
@@ -112,6 +114,8 @@ int main(int ac, char *av[])
                 return exp(ac,av);
             if(vm["action"].as<std::string>() == std::string("atl"))
                 return atl(ac,av);
+            if(vm["action"].as<std::string>() == std::string("cnt"))
+                return cnt(ac,av);
             std::cout << "invalid command, use --help for more detail" << std::endl;
             return 1;
         }
