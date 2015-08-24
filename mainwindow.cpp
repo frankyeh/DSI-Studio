@@ -724,7 +724,7 @@ void MainWindow::on_connectometry_clicked()
         QMessageBox::information(this,"Error","Invalid database format",0);
         return;
     }
-    vbc_dialog* vbc = new vbc_dialog(this,database.release(),QFileInfo(filename).absoluteDir().absolutePath());
+    vbc_dialog* vbc = new vbc_dialog(this,database.release(),QFileInfo(filename).absoluteDir().absolutePath(),true);
     vbc->setAttribute(Qt::WA_DeleteOnClose);
     vbc->show();
 }

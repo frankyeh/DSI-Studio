@@ -69,9 +69,20 @@ int main(int ac, char *av[])
 { 
     if(ac > 2)
     {
-        QCoreApplication cmd(ac,av);
-        cmd.setOrganizationName("LabSolver");
-        cmd.setApplicationName("DSI Studio");
+        std::auto_ptr<QCoreApplication> cmd;
+        {
+            for (int i = 1; i < ac; ++i)
+                if (std::string(av[i]) == std::string("--action=cnt"))
+                {
+                    cmd.reset(new QApplication(ac, av));
+                    std::cout << "Starting GUI-based command line interface." << std::endl;
+                    break;
+                }
+            if(!cmd.get())
+                cmd.reset(new QCoreApplication(ac, av));
+        }
+        cmd->setOrganizationName("LabSolver");
+        cmd->setApplicationName("DSI Studio");
 
         try
         {

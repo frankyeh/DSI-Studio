@@ -22,6 +22,7 @@ private:
     std::auto_ptr<fib_data> result_fib;
     void show_dis_table(void);
 public:
+    bool gui;
     QString work_dir;
     std::vector<std::string> file_names,saved_file_name;
 public:
@@ -32,11 +33,11 @@ public:
     QString report;
     atlas study_region;
     QString study_region_file_name;
-    explicit vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_);
+    explicit vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_,bool gui_);
     ~vbc_dialog();
     bool eventFilter(QObject *obj, QEvent *event);
 public:
-    bool load_demographic_file(QString filename,bool gui);
+    bool load_demographic_file(QString filename);
 
 public slots:
 

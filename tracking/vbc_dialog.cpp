@@ -12,8 +12,8 @@
 #include "libs/tracking/fib_data.hpp"
 extern std::vector<atlas> atlas_list;
 
-vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_) :
-    QDialog(parent),vbc(vbc_ptr),work_dir(work_dir_),
+vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_,bool gui_) :
+    QDialog(parent),vbc(vbc_ptr),work_dir(work_dir_),gui(gui_),
     ui(new Ui::vbc_dialog)
 {
     ui->setupUi(this);
@@ -372,10 +372,10 @@ void vbc_dialog::on_open_mr_files_clicked()
                 "Text file (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    load_demographic_file(filename,true);
+    load_demographic_file(filename);
 }
 
-bool vbc_dialog::load_demographic_file(QString filename,bool gui)
+bool vbc_dialog::load_demographic_file(QString filename)
 {
     model.reset(new stat_model);
     model->init(vbc->handle->num_subjects);
@@ -827,10 +827,20 @@ void vbc_dialog::calculate_FDR(void)
         ui->fdr_dist->saveTxt((vbc->trk_file_names[0]+".fdr_value.txt").c_str());
         ui->null_dist->saveTxt((vbc->trk_file_names[0]+".dist_value.txt").c_str());
 
-        if(vbc->has_greater_result || vbc->has_lesser_result)
-            QMessageBox::information(this,"Finished","Trk files saved.",0);
+        if(gui)
+        {
+            if(vbc->has_greater_result || vbc->has_lesser_result)
+                QMessageBox::information(this,"Finished","Trk files saved.",0);
+            else
+                QMessageBox::information(this,"Finished","No significant finding.",0);
+        }
         else
-            QMessageBox::information(this,"Finished","No significant finding.",0);
+        {
+            if(vbc->has_greater_result || vbc->has_lesser_result)
+                std::cout << "trk files saved" << std::endl;
+            else
+                std::cout << "no significant finding" << std::endl;
+        }
         ui->run->setText("Run");
         ui->progressBar->setValue(100);
         timer.reset(0);

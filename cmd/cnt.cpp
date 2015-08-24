@@ -28,8 +28,6 @@ int cnt(int ac, char *av[])
     ("track_fdr", po::value<float>(), "assign the FDR threshold for tracks")
     ("track_length", po::value<int>()->default_value(40), "assign the length threshold for tracks")
     ("normalized_qa", po::value<int>()->default_value(0), "specify whether qa will be normalized")
-
-
     ;
 
     if(!ac)
@@ -43,10 +41,6 @@ int cnt(int ac, char *av[])
     po::store(po::command_line_parser(ac, av).options(ana_desc).run(), vm);
     po::notify(vm);
 
-    QApplication a(ac,av);
-    a.setOrganizationName("LabSolver");
-    a.setApplicationName("DSI Studio");
-
     std::auto_ptr<vbc_database> database(new vbc_database);
     database.reset(new vbc_database);
     std::cout << "reading connectometry db" <<std::endl;
@@ -55,7 +49,7 @@ int cnt(int ac, char *av[])
         std::cout << "invalid database format" << std::endl;
         return 0;
     }
-    vbc_dialog* vbc = new vbc_dialog(0,database.release(),QFileInfo(vm["source"].as<std::string>().c_str()).absoluteDir().absolutePath());
+    std::auto_ptr<vbc_dialog> vbc(new vbc_dialog(0,database.release(),QFileInfo(vm["source"].as<std::string>().c_str()).absoluteDir().absolutePath(),false));
     vbc->setAttribute(Qt::WA_DeleteOnClose);
     vbc->show();
 
@@ -69,7 +63,7 @@ int cnt(int ac, char *av[])
     {
     case 0:
         vbc->ui->rb_multiple_regression->setChecked(true);
-        if(!vbc->load_demographic_file(vm["demo"].as<std::string>().c_str(),false))
+        if(!vbc->load_demographic_file(vm["demo"].as<std::string>().c_str()))
             return 0;
         std::cout << "demographic file loaded" << std::endl;
         if(!vm.count("foi"))
@@ -82,13 +76,13 @@ int cnt(int ac, char *av[])
         break;
     case 1:
         vbc->ui->rb_group_difference->setChecked(true);
-        if(!vbc->load_demographic_file(vm["demo"].as<std::string>().c_str(),false))
+        if(!vbc->load_demographic_file(vm["demo"].as<std::string>().c_str()))
             return 0;
         std::cout << "demographic file loaded" << std::endl;
         break;
     case 2:
         vbc->ui->rb_paired_difference->setChecked(true);
-        if(!vbc->load_demographic_file(vm["demo"].as<std::string>().c_str(),false))
+        if(!vbc->load_demographic_file(vm["demo"].as<std::string>().c_str()))
             return 0;
         std::cout << "demographic file loaded" << std::endl;
         break;
@@ -160,5 +154,8 @@ int cnt(int ac, char *av[])
     vbc->vbc->threads->join_all();
     std::cout << "output results" << std::endl;
     vbc->calculate_FDR();
+    std::cout << "close GUI" << std::endl;
+    vbc->close();
+    vbc.reset(0);
     return 0;
 }
