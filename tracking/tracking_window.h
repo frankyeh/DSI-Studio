@@ -87,7 +87,7 @@ public:
     bool eventFilter(QObject *obj, QEvent *event);
     QVariant operator[](QString name)const;
     void on_tracking_index_currentIndexChanged(int index);
-    void add_slices(QStringList filenames,QString name);
+    void add_slice_name(QString name);
     void show_info_dialog(const std::string& title,const std::string& result);
     QString get_save_file_name(QString title,QString file_name,QString file_type);
     void float3dwindow(int w,int h);

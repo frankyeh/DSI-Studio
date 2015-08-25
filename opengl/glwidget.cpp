@@ -1772,8 +1772,45 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             return;
         makeCurrent();
         set_view(param.toInt());
-        paintGL();;
+        paintGL();
         return;
+    }
+    if(cmd == "add_slice")
+    {
+        std::vector<std::string> file;
+        file.push_back(param.toStdString());
+        std::auto_ptr<CustomSliceModel> new_slice(new CustomSliceModel);
+        if(!new_slice->initialize(cur_tracking_window.slice,cur_tracking_window.is_qsdr,file))
+        {
+            std::cout << "Invalid file format:" << param.toStdString() << std::endl;
+            return;
+        }
+        other_slices.push_back(new_slice.release());
+        current_visible_slide = other_slices.size();
+        cur_tracking_window.add_slice_name(QFileInfo(param).baseName());
+
+        std::cout << "register image to the DWI space" << std::endl;
+        if(other_slices.back().thread.get())
+            other_slices.back().thread->join();
+        other_slices.back().update();
+        updateGL();
+        return;
+    }
+    if(cmd == "move_slice")
+    {
+        switch(param.toInt())
+        {
+        case 0:
+            cur_tracking_window.ui->glSagSlider->setValue(param2.toInt());
+            break;
+        case 1:
+            cur_tracking_window.ui->glCorSlider->setValue(param2.toInt());
+            break;
+        case 2:
+            cur_tracking_window.ui->glAxiSlider->setValue(param2.toInt());
+            break;
+        }
+        paintGL();
     }
     if(cmd == "add_surface")
     {

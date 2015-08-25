@@ -101,24 +101,24 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         QStringList wm,t1;
         wm << QCoreApplication::applicationDirPath() + "/mni_icbm152_wm_tal_nlin_asym_09a.nii.gz";
         t1 << QCoreApplication::applicationDirPath() + "/mni_icbm152_t1_tal_nlin_asym_09a.nii.gz";
-        if(QFileInfo(t1[0]).exists())
-            add_slices(t1,"T1w");
-        else
+        if(!QFileInfo(t1[0]).exists())
         {
             t1.clear();
             t1 << QDir::currentPath() + "/mni_icbm152_t1_tal_nlin_asym_09a.nii.gz";
-            if(QFileInfo(t1[0]).exists())
-                add_slices(t1,"T1w");
         }
-        if(QFileInfo(wm[0]).exists())
-            add_slices(wm,"wm");
-        else
+
+        if(!QFileInfo(wm[0]).exists())
         {
             wm.clear();
             wm << QDir::currentPath() + "/mni_icbm152_wm_tal_nlin_asym_09a.nii.gz";
-            if(QFileInfo(wm[0]).exists())
-                add_slices(wm,"wm");
         }
+
+
+        if(QFileInfo(t1[0]).exists() && glWidget->addSlices(t1))
+            add_slice_name("T1w");
+        if(QFileInfo(wm[0]).exists() && glWidget->addSlices(wm))
+            add_slice_name("wm");
+
     }
 
     // setup atlas
@@ -355,7 +355,7 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         on_glAxiView_clicked();
 
     ui->sliceViewBox->setCurrentIndex(0);
-    on_SliceModality_currentIndexChanged(0);
+    on_SliceModality_currentIndexChanged(ui->SliceModality->count()-1);
 
 
     if(handle->dim[0] > 80)
@@ -799,10 +799,8 @@ void tracking_window::on_actionTracts_to_seeds_triggered()
     glWidget->updateGL();
 }
 
-void tracking_window::add_slices(QStringList filenames,QString name)
+void tracking_window::add_slice_name(QString name)
 {
-    if(!glWidget->addSlices(filenames))
-        return;
     ui->SliceModality->addItem(name);
     ui->sliceViewBox->addItem(name);
     handle->view_item.push_back(handle->view_item[0]);
@@ -812,6 +810,8 @@ void tracking_window::add_slices(QStringList filenames,QString name)
     handle->view_item.back().set_scale(
                 glWidget->other_slices.back().source_images.begin(),
                 glWidget->other_slices.back().source_images.end());
+    ui->SliceModality->setCurrentIndex(ui->SliceModality->count()-1);
+    ui->sliceViewBox->setCurrentIndex(ui->sliceViewBox->count()-1);
 }
 
 void tracking_window::on_actionInsert_T1_T2_triggered()
@@ -822,9 +822,8 @@ void tracking_window::on_actionInsert_T1_T2_triggered()
         "Image files (*.dcm *.hdr *.nii *nii.gz 2dseq);;All files (*)" );
     if( filenames.isEmpty())
         return;
-    add_slices(filenames,QFileInfo(filenames[0]).baseName());
-    ui->SliceModality->setCurrentIndex(glWidget->other_slices.size());
-    ui->sliceViewBox->setCurrentIndex(ui->sliceViewBox->count()-1);
+    if(glWidget->addSlices(filenames))
+        add_slice_name(QFileInfo(filenames[0]).baseName());
 }
 
 
