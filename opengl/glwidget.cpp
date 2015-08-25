@@ -368,7 +368,7 @@ void GLWidget::renderLR(int eye)
         glLoadIdentity();
         my_gluLookAt(eye,0,-200.0*perspective,0,0,0,0,-1.0,0);
     }
-
+    check_error("basic");
     {
 
 
@@ -379,9 +379,10 @@ void GLWidget::renderLR(int eye)
         }
 
         if(get_param("anti_aliasing"))
-            glEnable(0x809D/*GL_MULTISAMPLE*/);
+            glEnable(GL_MULTISAMPLE);
         else
-            glDisable(0x809D/*GL_MULTISAMPLE*/);
+            glDisable(GL_MULTISAMPLE);
+        glGetError(); //slience the multisample error
 
         if(get_param("line_smooth"))
         {
@@ -1697,7 +1698,6 @@ void GLWidget::addSurface(void)
     SliceModel* active_slice = current_visible_slide ?
                                (SliceModel*)&other_slices[current_visible_slide-1] :
                                (SliceModel*)&cur_tracking_window.slice;
-
     float threshold = image::segmentation::otsu_threshold(active_slice->get_source());
     bool ok;
     threshold = QInputDialog::getDouble(this,
@@ -1707,75 +1707,7 @@ void GLWidget::addSurface(void)
         4, &ok);
     if (!ok)
         return;
-    {
-        surface.reset(new RegionModel);
-        image::basic_image<float, 3> crop_image(active_slice->get_source());
-        switch(cur_tracking_window.ui->surfaceStyle->currentIndex())
-        {
-        case 1: //right hemi
-            for(unsigned int index = 0;index < crop_image.size();index += crop_image.width())
-            {
-                std::fill(crop_image.begin()+index+active_slice->slice_pos[0],
-                          crop_image.begin()+index+crop_image.width(),crop_image[0]);
-            }
-            break;
-        case 2: // left hemi
-            for(unsigned int index = 0;index < crop_image.size();index += crop_image.width())
-            {
-                std::fill(crop_image.begin()+index,
-                          crop_image.begin()+index+active_slice->slice_pos[0],crop_image[0]);
-            }
-            break;
-        case 3: //lower
-            std::fill(crop_image.begin()+active_slice->slice_pos[2]*crop_image.plane_size(),
-                      crop_image.end(),crop_image[0]);
-            break;
-        case 4: // higher
-            std::fill(crop_image.begin(),
-                      crop_image.begin()+active_slice->slice_pos[2]*crop_image.plane_size(),crop_image[0]);
-            break;
-        case 5: //anterior
-            for(unsigned int index = 0;index < crop_image.size();index += crop_image.plane_size())
-            {
-                std::fill(crop_image.begin()+index+active_slice->slice_pos[1]*crop_image.width(),
-                          crop_image.begin()+index+crop_image.plane_size(),crop_image[0]);
-            }
-            break;
-        case 6: // posterior
-            for(unsigned int index = 0;index < crop_image.size();index += crop_image.plane_size())
-            {
-                std::fill(crop_image.begin()+index,
-                          crop_image.begin()+index+active_slice->slice_pos[1]*crop_image.width(),crop_image[0]);
-            }
-            break;
-        }
-        switch(get_param("surface_mesh_smoothed"))
-        {
-        case 1:
-            image::filter::gaussian(crop_image);
-            break;
-        case 2:
-            image::filter::gaussian(crop_image);
-            image::filter::gaussian(crop_image);
-            break;
-        }
-        if(!surface->load(crop_image,threshold))
-        {
-            surface.reset(0);
-            return;
-        }
-    }
-
-    if(current_visible_slide)
-    for(unsigned int index = 0;index < surface->get()->point_list.size();++index)
-    {
-        image::vector<3,float> tmp;
-        image::vector_transformation(
-            surface->get()->point_list[index].begin(), tmp.begin(),
-            other_slices[current_visible_slide-1].transform.begin(), image::vdim<3>());
-        tmp += 0.5;
-        surface->get()->point_list[index] = tmp;
-    }
+    command("add_surface",QString::number(cur_tracking_window.ui->surfaceStyle->currentIndex()),QString::number(threshold));
 }
 
 void GLWidget::copyToClipboard(void)
@@ -1784,70 +1716,22 @@ void GLWidget::copyToClipboard(void)
     QApplication::clipboard()->setImage(grabFrameBuffer());
 }
 
-void GLWidget::catchScreen(void)
-{
-    QSettings settings;
-    QString filename = QFileDialog::getSaveFileName(
-               this,
-               "Save Images files",
-               cur_tracking_window.absolute_path + "/image." +
-                settings.value("catch_screen_extension","jpg").toString(),
-               "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    settings.setValue("catch_screen_extension",QFileInfo(filename).completeSuffix());
-    updateGL();
-    grabFrameBuffer().save(filename);
-}
 
-void GLWidget::catchScreen2(void)
-{
-    bool ok;
-    QString result = QInputDialog::getText(this,"DSI Studio","Assign image dimension (width height)",QLineEdit::Normal,
-                                           QString::number(cur_width)+" "+QString::number(cur_height),&ok);
-    if(!ok)
-        return;
-    std::istringstream in(result.toLocal8Bit().begin());
-    int w = 0;
-    int h = 0;
-    in >> w >> h;
-    if(w < 10 || w > 10000 || h < 10 || h > 10000)
-    {
-        QMessageBox::information(this,"Error","Invalid image dimension",0);
-        return;
-    }
-    QSettings settings;
-    QString filename = QFileDialog::getSaveFileName(
-            this,
-            "Save Images files",
-            cur_tracking_window.absolute_path + "/image." +
-            settings.value("catch_screen_extension","jpg").toString(),
-            "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    settings.setValue("catch_screen_extension",QFileInfo(filename).completeSuffix());
-    cur_tracking_window.float3dwindow(w,h);
-    updateGL();
-    grabFrameBuffer().save(filename);
-    cur_tracking_window.restore_3D_window();
-}
+
 void GLWidget::get3View(QImage& I,unsigned int type)
 {
     makeCurrent();
     set_view_flip = false;
     set_view(0);
-    updateGL();
-    updateGL();
+    paintGL();
     QImage image0 = grabFrameBuffer();
     set_view_flip = true;
     set_view(1);
-    updateGL();
-    updateGL();
+    paintGL();
     QImage image1 = grabFrameBuffer();
     set_view_flip = true;
     set_view(2);
-    updateGL();
-    updateGL();
+    paintGL();
     QImage image2 = grabFrameBuffer();
     QImage image3 = cur_tracking_window.scene.view_image.scaledToWidth(image0.width()).convertToFormat(QImage::Format_ARGB32);
     if(type == 0)
@@ -1880,6 +1764,253 @@ void GLWidget::get3View(QImage& I,unsigned int type)
     }
 }
 
+void GLWidget::command(QString cmd,QString param,QString param2)
+{
+    if(cmd == "add_surface")
+    {
+        SliceModel* active_slice = current_visible_slide ?
+                                   (SliceModel*)&other_slices[current_visible_slide-1] :
+                                   (SliceModel*)&cur_tracking_window.slice;
+
+        float threshold = (param2.isEmpty()) ? image::segmentation::otsu_threshold(active_slice->get_source()):param2.toFloat();
+        {
+            surface.reset(new RegionModel);
+            image::basic_image<float, 3> crop_image(active_slice->get_source());
+            switch(param.toInt())
+            {
+            case 1: //right hemi
+                for(unsigned int index = 0;index < crop_image.size();index += crop_image.width())
+                {
+                    std::fill(crop_image.begin()+index+active_slice->slice_pos[0],
+                              crop_image.begin()+index+crop_image.width(),crop_image[0]);
+                }
+                break;
+            case 2: // left hemi
+                for(unsigned int index = 0;index < crop_image.size();index += crop_image.width())
+                {
+                    std::fill(crop_image.begin()+index,
+                              crop_image.begin()+index+active_slice->slice_pos[0],crop_image[0]);
+                }
+                break;
+            case 3: //lower
+                std::fill(crop_image.begin()+active_slice->slice_pos[2]*crop_image.plane_size(),
+                          crop_image.end(),crop_image[0]);
+                break;
+            case 4: // higher
+                std::fill(crop_image.begin(),
+                          crop_image.begin()+active_slice->slice_pos[2]*crop_image.plane_size(),crop_image[0]);
+                break;
+            case 5: //anterior
+                for(unsigned int index = 0;index < crop_image.size();index += crop_image.plane_size())
+                {
+                    std::fill(crop_image.begin()+index+active_slice->slice_pos[1]*crop_image.width(),
+                              crop_image.begin()+index+crop_image.plane_size(),crop_image[0]);
+                }
+                break;
+            case 6: // posterior
+                for(unsigned int index = 0;index < crop_image.size();index += crop_image.plane_size())
+                {
+                    std::fill(crop_image.begin()+index,
+                              crop_image.begin()+index+active_slice->slice_pos[1]*crop_image.width(),crop_image[0]);
+                }
+                break;
+            }
+            switch(get_param("surface_mesh_smoothed"))
+            {
+            case 1:
+                image::filter::gaussian(crop_image);
+                break;
+            case 2:
+                image::filter::gaussian(crop_image);
+                image::filter::gaussian(crop_image);
+                break;
+            }
+            if(!surface->load(crop_image,threshold))
+            {
+                surface.reset(0);
+                return;
+            }
+        }
+
+        if(current_visible_slide)
+        for(unsigned int index = 0;index < surface->get()->point_list.size();++index)
+        {
+            image::vector<3,float> tmp;
+            image::vector_transformation(
+                surface->get()->point_list[index].begin(), tmp.begin(),
+                other_slices[current_visible_slide-1].transform.begin(), image::vdim<3>());
+            tmp += 0.5;
+            surface->get()->point_list[index] = tmp;
+        }
+    }
+    if(cmd == "save_image")
+    {
+        if(param.isEmpty())
+            return;
+        if(!param2.isEmpty())
+        {
+            std::istringstream in(param2.toLocal8Bit().begin());
+            int w = 0;
+            int h = 0;
+            in >> w >> h;
+            cur_tracking_window.float3dwindow(w,h);
+        }
+        paintGL();
+        grabFrameBuffer().save(param);
+        if(!param2.isEmpty())
+            cur_tracking_window.restore_3D_window();
+    }
+    if(cmd == "save_3view_image")
+    {
+        if(param.isEmpty())
+            return;
+        QImage all;
+        get3View(all,0);
+        all.save(param);
+    }
+    if(cmd == "save_lr_image")
+    {
+        if(param.isEmpty() || param2.isEmpty())
+            return;
+        float angle = param2.toFloat();
+        makeCurrent();
+        rotate_angle(angle/2.0, 0.0, 1.0, 0.0);
+        QImage left = grabFrameBuffer();
+        rotate_angle(-angle/2.0, 0.0, 1.0, 0.0);
+        QImage right = grabFrameBuffer();
+        QImage all(left.width()*2,left.height(),QImage::Format_ARGB32);
+        QPainter painter(&all);
+        painter.drawImage(0,0,left);
+        painter.drawImage(left.width(),0,right);
+        all.save(param);
+    }
+    if(cmd == "save_rotation_video")
+    {
+        if(param.isEmpty())
+            return;
+        makeCurrent();
+        cur_tracking_window.gLdock.reset(0);
+        cur_tracking_window.float3dwindow(1920,1080);
+        begin_prog("save images");
+        image::io::avi avi;
+        for(unsigned int index = 1;check_prog(index,360);++index)
+        {
+            rotate_angle(1,0,1.0,0.0);
+            QImage I_ = grabFrameBuffer().scaledToWidth(1920*devicePixelRatio());
+            QImage I(1920,1080,QImage::Format_RGB32);
+            QPainter painter;
+            painter.begin(&I);
+            painter.drawImage(0, (1080*devicePixelRatio()-I_.height())/2/devicePixelRatio(), I_);
+            painter.end();
+
+            QBuffer buffer;
+            QImageWriter writer(&buffer, "JPG");
+            writer.write(I);
+            QByteArray data = buffer.data();
+            if(index == 1)
+                avi.open(param.toLocal8Bit().begin(),1920,1080, "MJPG", 30/*fps*/);
+            avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
+        }
+        cur_tracking_window.restore_3D_window();
+        avi.close();
+        updateGL();
+    }
+    if(cmd == "save_stereo_rotation_video")
+    {
+        if(param.isEmpty())
+            return;
+        makeCurrent();
+        cur_tracking_window.gLdock.reset(0);
+        cur_tracking_window.float3dwindow(1024,768);
+        image::io::avi avi;
+        double eye_shift = cur_tracking_window["3d_perspective"].toDouble();
+        for(unsigned int index = 1;index <= 360;++index)
+        {
+
+            // output 2048x768
+            glPushMatrix();
+            glLoadIdentity();
+            glRotated(1,0,1.0,0.0);
+            glTranslatef(-eye_shift,0,0);
+            glMultMatrixf(transformation_matrix);
+            glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
+            glPopMatrix();
+            paintGL();
+
+            QImage I1 = grabFrameBuffer().scaledToWidth(1024*devicePixelRatio());
+
+            glPushMatrix();
+            glLoadIdentity();
+            glTranslatef(eye_shift*2.0,0,0);
+            glMultMatrixf(transformation_matrix);
+            glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
+            glPopMatrix();
+            paintGL();
+
+            QImage I2 = grabFrameBuffer().scaledToWidth(1024*devicePixelRatio());
+
+            glPushMatrix();
+            glLoadIdentity();
+            glTranslatef(-eye_shift,0,0);
+            glMultMatrixf(transformation_matrix);
+            glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
+            glPopMatrix();
+
+            QImage I(2048,768,QImage::Format_RGB32);
+            QPainter painter;
+            painter.begin(&I);
+            painter.drawImage(0, (768*devicePixelRatio()-I1.height())/2/devicePixelRatio(), I1);
+            painter.drawImage(1024, (768*devicePixelRatio()-I1.height())/2/devicePixelRatio(), I2);
+            painter.end();
+
+            QBuffer buffer;
+            QImageWriter writer(&buffer, "JPG");
+            writer.write(I);
+            QByteArray data = buffer.data();
+            if(index == 1)
+                avi.open(param.toLocal8Bit().begin(),I.width(),I.height(), "MJPG", 30/*fps*/);
+            avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
+        }
+        cur_tracking_window.restore_3D_window();
+        avi.close();
+        updateGL();
+    }
+}
+void GLWidget::catchScreen(void)
+{
+    QSettings settings;
+    QString filename = QFileDialog::getSaveFileName(
+               this,
+               "Save Images files",
+               cur_tracking_window.absolute_path + "/image." +
+                settings.value("catch_screen_extension","jpg").toString(),
+               "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    settings.setValue("catch_screen_extension",QFileInfo(filename).completeSuffix());
+    command("save_image",filename);
+}
+
+void GLWidget::catchScreen2(void)
+{
+    bool ok;
+    QString result = QInputDialog::getText(this,"DSI Studio","Assign image dimension (width height)",QLineEdit::Normal,
+                                           QString::number(cur_width)+" "+QString::number(cur_height),&ok);
+    if(!ok)
+        return;
+    QSettings settings;
+    QString filename = QFileDialog::getSaveFileName(
+            this,
+            "Save Images files",
+            cur_tracking_window.absolute_path + "/image." +
+            settings.value("catch_screen_extension","jpg").toString(),
+            "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    settings.setValue("catch_screen_extension",QFileInfo(filename).completeSuffix());
+    command("save_image",filename,result);
+}
+
 void GLWidget::save3ViewImage(void)
 {
     QSettings settings;
@@ -1889,12 +2020,10 @@ void GLWidget::save3ViewImage(void)
             cur_tracking_window.absolute_path + "/image." +
             settings.value("catch_screen_extension","jpg").toString(),
             "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    settings.setValue("catch_screen_extension",QFileInfo(filename).completeSuffix());
-    QImage all;
-    get3View(all,0);
-    all.save(filename);
+    if(!filename.isEmpty())
+        settings.setValue("catch_screen_extension",QFileInfo(filename).completeSuffix());
+    command("save_3view_image",filename);
+
 }
 
 void GLWidget::saveLeftRight3DImage(void)
@@ -1912,121 +2041,25 @@ void GLWidget::saveLeftRight3DImage(void)
             "Assign left angle difference in degrees (negative value for right/left view)):",5,-60,60,5,&ok);
     if(!ok)
         return;
-    makeCurrent();
-    rotate_angle(angle/2.0, 0.0, 1.0, 0.0);
-    QImage left = grabFrameBuffer();
-    rotate_angle(-angle/2.0, 0.0, 1.0, 0.0);
-    QImage right = grabFrameBuffer();
-    QImage all(left.width()*2,left.height(),QImage::Format_ARGB32);
-    QPainter painter(&all);
-    painter.drawImage(0,0,left);
-    painter.drawImage(left.width(),0,right);
-    all.save(filename);
+    command("save_lr_image",filename,QString::number(angle));
 }
 
 void GLWidget::saveRotationSeries(void)
 {
-    QString filename = QFileDialog::getSaveFileName(
-            this,
-            "Assign video name",
-            cur_tracking_window.absolute_path,
-            "Video file (*.avi);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    QMessageBox::information(0,"saving video","DSI Studio is going to grab video from 3D window. Please don't move the window until finished.",0);
-    makeCurrent();
-    cur_tracking_window.gLdock.reset(0);
-    cur_tracking_window.float3dwindow(1920,1080);
-    begin_prog("save images");
-    image::io::avi avi;
-    for(unsigned int index = 1;check_prog(index,360);++index)
-    {
-        rotate_angle(1,0,1.0,0.0);
-        QImage I_ = grabFrameBuffer().scaledToWidth(1920*devicePixelRatio());
-        QImage I(1920,1080,QImage::Format_RGB32);
-        QPainter painter;
-        painter.begin(&I);
-        painter.drawImage(0, (1080*devicePixelRatio()-I_.height())/2/devicePixelRatio(), I_);
-        painter.end();
-
-        QBuffer buffer;
-        QImageWriter writer(&buffer, "JPG");
-        writer.write(I);
-        QByteArray data = buffer.data();
-        if(index == 1)
-            avi.open(filename.toLocal8Bit().begin(),1920,1080, "MJPG", 30/*fps*/);
-        avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
-    }
-    cur_tracking_window.restore_3D_window();
-    avi.close();
-    updateGL();
+    command("save_rotation_video",QFileDialog::getSaveFileName(
+                this,
+                "Assign video name",
+                cur_tracking_window.absolute_path,
+                "Video file (*.avi);;All files (*)"));
 }
 
 void GLWidget::saveRotationVideo2(void)
 {
-    QString filename = QFileDialog::getSaveFileName(
+    command("save_stereo_rotation_video",QFileDialog::getSaveFileName(
             this,
             "Assign video name",
             cur_tracking_window.absolute_path,
-            "Video file (*.avi);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    QMessageBox::information(0,"saving video","DSI Studio is going to grab video from 3D window. Click ok to start.",0);
-    makeCurrent();
-    cur_tracking_window.gLdock.reset(0);
-    cur_tracking_window.float3dwindow(1024,768);
-    image::io::avi avi;
-    double eye_shift = cur_tracking_window["3d_perspective"].toDouble();
-    for(unsigned int index = 1;index <= 360;++index)
-    {
-
-        // output 2048x768
-        glPushMatrix();
-        glLoadIdentity();
-        glRotated(1,0,1.0,0.0);
-        glTranslatef(-eye_shift,0,0);
-        glMultMatrixf(transformation_matrix);
-        glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
-        glPopMatrix();
-        updateGL();
-
-        QImage I1 = grabFrameBuffer().scaledToWidth(1024*devicePixelRatio());
-
-        glPushMatrix();
-        glLoadIdentity();
-        glTranslatef(eye_shift*2.0,0,0);
-        glMultMatrixf(transformation_matrix);
-        glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
-        glPopMatrix();
-        updateGL();
-
-        QImage I2 = grabFrameBuffer().scaledToWidth(1024*devicePixelRatio());
-
-        glPushMatrix();
-        glLoadIdentity();
-        glTranslatef(-eye_shift,0,0);
-        glMultMatrixf(transformation_matrix);
-        glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
-        glPopMatrix();
-
-        QImage I(2048,768,QImage::Format_RGB32);
-        QPainter painter;
-        painter.begin(&I);
-        painter.drawImage(0, (768*devicePixelRatio()-I1.height())/2/devicePixelRatio(), I1);
-        painter.drawImage(1024, (768*devicePixelRatio()-I1.height())/2/devicePixelRatio(), I2);
-        painter.end();
-
-        QBuffer buffer;
-        QImageWriter writer(&buffer, "JPG");
-        writer.write(I);
-        QByteArray data = buffer.data();
-        if(index == 1)
-            avi.open(filename.toLocal8Bit().begin(),I.width(),I.height(), "MJPG", 30/*fps*/);
-        avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
-    }
-    cur_tracking_window.restore_3D_window();
-    avi.close();
-    updateGL();
+            "Video file (*.avi);;All files (*)"));
 }
 
 void GLWidget::rotate_angle(float angle,float x,float y,float z)
@@ -2037,7 +2070,7 @@ void GLWidget::rotate_angle(float angle,float x,float y,float z)
     glMultMatrixf(transformation_matrix);
     glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
     glPopMatrix();
-    updateGL();
+    paintGL();
 }
 
 void GLWidget::rotate(void)

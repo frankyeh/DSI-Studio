@@ -61,6 +61,8 @@ Q_OBJECT
                                            image::vector<3,float>& vs,
                                            std::vector<float>& tr);
      bool get_mouse_pos(QMouseEvent *mouseEvent,image::vector<3,float>& position);
+     void paintGL();
+
  private://surface
      std::auto_ptr<RegionModel> surface;
 
@@ -94,7 +96,6 @@ Q_OBJECT
      void region_edited();
  protected:
      void initializeGL();
-     void paintGL();
      void resizeGL(int width, int height);
      void renderLR(int eye);
      void mousePressEvent(QMouseEvent *event);
@@ -134,6 +135,7 @@ Q_OBJECT
      float current_scale;
      bool set_view_flip;
      void get3View(QImage& I,unsigned int type);
+     void command(QString cmd,QString param = "",QString param2 = "");
  };
 
 #endif // GLWIDGET_H
