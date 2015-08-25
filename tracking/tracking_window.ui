@@ -686,8 +686,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>276</width>
+     <height>48</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -947,8 +947,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>173</width>
+     <height>44</height>
     </size>
    </property>
    <property name="windowTitle">
@@ -1006,7 +1006,7 @@
      <x>0</x>
      <y>0</y>
      <width>1082</width>
-     <height>23</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="sizePolicy">
@@ -1265,8 +1265,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>175</width>
+     <height>75</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -1535,8 +1535,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>248</width>
+     <height>171</height>
     </size>
    </property>
    <property name="floating">

@@ -329,9 +329,9 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
             default_state = saveState();
         restoreGeometry(settings.value("geometry").toByteArray());
         restoreState(settings.value("state").toByteArray());
-        ui->glSagCheck->setChecked(settings.value("SagSlice",1).toBool());
-        ui->glCorCheck->setChecked(settings.value("CorSlice",1).toBool());
-        ui->glAxiCheck->setChecked(settings.value("AxiSlice",1).toBool());
+        ui->glSagCheck->setChecked(settings.value("sag_slice",1).toBool());
+        ui->glCorCheck->setChecked(settings.value("cor_slice",1).toBool());
+        ui->glAxiCheck->setChecked(settings.value("axi_slice",1).toBool());
     }
 
     {
@@ -357,6 +357,10 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
     ui->sliceViewBox->setCurrentIndex(0);
     on_SliceModality_currentIndexChanged(0);
 
+
+    if(handle->dim[0] > 80)
+        ui->zoom_3d->setValue(80.0/(float)std::max<int>(std::max<int>(handle->dim[0],handle->dim[1]),handle->dim[2]));
+
     qApp->installEventFilter(this);
     #ifdef __APPLE__ // fix Mac shortcut problem
     foreach (QAction *a, ui->menu_Edit->actions()) {
@@ -372,6 +376,9 @@ tracking_window::~tracking_window()
     QSettings settings;
     settings.setValue("geometry", saveGeometry());
     settings.setValue("state", saveState());
+    settings.setValue("sag_slice",ui->glSagCheck->isChecked() ? 1:0);
+    settings.setValue("cor_slice",ui->glCorCheck->isChecked() ? 1:0);
+    settings.setValue("axi_slice",ui->glAxiCheck->isChecked() ? 1:0);
     settings.setValue("rendering_quality",ui->rendering_efficiency->currentIndex());
     tractWidget->delete_all_tract();
     delete ui;
