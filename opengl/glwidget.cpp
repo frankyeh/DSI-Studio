@@ -1142,7 +1142,7 @@ void GLWidget::scale_by(float scalefactor)
     glMultMatrixf(transformation_matrix);
     glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
     glPopMatrix();
-    paintGL();
+    updateGL();
 }
 
 void GLWidget::wheelEvent ( QWheelEvent * event )
