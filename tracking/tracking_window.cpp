@@ -1161,7 +1161,6 @@ void tracking_window::float3dwindow(int w,int h)
     gLdock->setFloating(true);
     gLdock->show();
     gLdock->resize(w,h+44);
-    qApp->processEvents();
     connect(gLdock.get(),SIGNAL(closedSignal()),this,SLOT(restore_3D_window()));
 }
 

@@ -1142,7 +1142,7 @@ void GLWidget::scale_by(float scalefactor)
     glMultMatrixf(transformation_matrix);
     glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
     glPopMatrix();
-    updateGL();
+    paintGL();
 }
 
 void GLWidget::wheelEvent ( QWheelEvent * event )
@@ -1712,7 +1712,7 @@ void GLWidget::addSurface(void)
 
 void GLWidget::copyToClipboard(void)
 {
-    updateGL();
+    paintGL();
     QApplication::clipboard()->setImage(grabFrameBuffer());
 }
 
@@ -1766,6 +1766,15 @@ void GLWidget::get3View(QImage& I,unsigned int type)
 
 void GLWidget::command(QString cmd,QString param,QString param2)
 {
+    if(cmd == "set_view")
+    {
+        if(param.isEmpty())
+            return;
+        makeCurrent();
+        set_view(param.toInt());
+        paintGL();;
+        return;
+    }
     if(cmd == "add_surface")
     {
         SliceModel* active_slice = current_visible_slide ?
@@ -1776,6 +1785,7 @@ void GLWidget::command(QString cmd,QString param,QString param2)
         {
             surface.reset(new RegionModel);
             image::basic_image<float, 3> crop_image(active_slice->get_source());
+            if(!param.isEmpty())
             switch(param.toInt())
             {
             case 1: //right hemi
@@ -1842,6 +1852,8 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             tmp += 0.5;
             surface->get()->point_list[index] = tmp;
         }
+        paintGL();
+        return;
     }
     if(cmd == "save_image")
     {
@@ -1859,6 +1871,7 @@ void GLWidget::command(QString cmd,QString param,QString param2)
         grabFrameBuffer().save(param);
         if(!param2.isEmpty())
             cur_tracking_window.restore_3D_window();
+        return;
     }
     if(cmd == "save_3view_image")
     {
@@ -1867,13 +1880,13 @@ void GLWidget::command(QString cmd,QString param,QString param2)
         QImage all;
         get3View(all,0);
         all.save(param);
+        return;
     }
     if(cmd == "save_lr_image")
     {
         if(param.isEmpty() || param2.isEmpty())
             return;
         float angle = param2.toFloat();
-        makeCurrent();
         rotate_angle(angle/2.0, 0.0, 1.0, 0.0);
         QImage left = grabFrameBuffer();
         rotate_angle(-angle/2.0, 0.0, 1.0, 0.0);
@@ -1883,12 +1896,12 @@ void GLWidget::command(QString cmd,QString param,QString param2)
         painter.drawImage(0,0,left);
         painter.drawImage(left.width(),0,right);
         all.save(param);
+        return;
     }
     if(cmd == "save_rotation_video")
     {
         if(param.isEmpty())
             return;
-        makeCurrent();
         cur_tracking_window.gLdock.reset(0);
         cur_tracking_window.float3dwindow(1920,1080);
         begin_prog("save images");
@@ -1913,7 +1926,7 @@ void GLWidget::command(QString cmd,QString param,QString param2)
         }
         cur_tracking_window.restore_3D_window();
         avi.close();
-        updateGL();
+        return;
     }
     if(cmd == "save_stereo_rotation_video")
     {
@@ -1973,8 +1986,9 @@ void GLWidget::command(QString cmd,QString param,QString param2)
         }
         cur_tracking_window.restore_3D_window();
         avi.close();
-        updateGL();
+        return;
     }
+    std::cout << "unknown command:" << cmd.toStdString() << std::endl;
 }
 void GLWidget::catchScreen(void)
 {
@@ -2064,6 +2078,7 @@ void GLWidget::saveRotationVideo2(void)
 
 void GLWidget::rotate_angle(float angle,float x,float y,float z)
 {
+    makeCurrent();
     glPushMatrix();
     glLoadIdentity();
     glRotated(angle,x,y,z);
