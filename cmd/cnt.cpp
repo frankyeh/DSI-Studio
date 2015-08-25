@@ -6,10 +6,7 @@
 
 namespace po = boost::program_options;
 
-// test example
-// --action=ana --source=20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
-
-int cnt(int ac, char *av[])
+int cnt(int ac,char *av[])
 {
     // options for fiber tracking
     po::options_description ana_desc("analysis options");
@@ -52,6 +49,7 @@ int cnt(int ac, char *av[])
     std::auto_ptr<vbc_dialog> vbc(new vbc_dialog(0,database.release(),QFileInfo(vm["source"].as<std::string>().c_str()).absoluteDir().absolutePath(),false));
     vbc->setAttribute(Qt::WA_DeleteOnClose);
     vbc->show();
+    vbc->hide();
 
     if(!vm.count("demo"))
     {

@@ -12,7 +12,11 @@
 #include "mapping/atlas.hpp"
 #include <iostream>
 #include <iterator>
+
+#include "cmd/cnt.cpp" // Qt project cannot build cnt.cpp without adding this.
+
 namespace po = boost::program_options;
+
 
 int rec(int ac, char *av[]);
 int trk(int ac, char *av[]);
@@ -20,8 +24,9 @@ int src(int ac, char *av[]);
 int ana(int ac, char *av[]);
 int exp(int ac, char *av[]);
 int atl(int ac, char *av[]);
+int cnt(int ac, char *av[]);
+int vis(int ac, char *av[]);
 
-#include "cmd/cnt.cpp"
 
 fa_template fa_template_imp;
 std::vector<atlas> atlas_list;
@@ -72,7 +77,8 @@ int main(int ac, char *av[])
         std::auto_ptr<QCoreApplication> cmd;
         {
             for (int i = 1; i < ac; ++i)
-                if (std::string(av[i]) == std::string("--action=cnt"))
+                if (std::string(av[i]) == std::string("--action=cnt") ||
+                    std::string(av[i]) == std::string("--action=vis"))
                 {
                     cmd.reset(new QApplication(ac, av));
                     std::cout << "Starting GUI-based command line interface." << std::endl;
@@ -127,6 +133,8 @@ int main(int ac, char *av[])
                 return atl(ac,av);
             if(vm["action"].as<std::string>() == std::string("cnt"))
                 return cnt(ac,av);
+            if(vm["action"].as<std::string>() == std::string("vis"))
+                return vis(ac,av);
             std::cout << "invalid command, use --help for more detail" << std::endl;
             return 1;
         }

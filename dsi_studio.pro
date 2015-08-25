@@ -157,7 +157,8 @@ SOURCES += main.cpp \
     cmd/atl.cpp \
     tracking/atlasdialog.cpp \
     dicom/motion_dialog.cpp \
-    cmd/cnt.cpp
+    cmd/cnt.cpp \
+    cmd/vis.cpp
 
 OTHER_FILES += \
     options.txt
