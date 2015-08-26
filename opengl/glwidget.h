@@ -132,6 +132,8 @@ Q_OBJECT
      GLuint tracts,slice_texture[3];
      QPoint lastPos;
      float transformation_matrix[16];
+     float rotation_matrix[16];
+
      float current_scale;
      bool set_view_flip;
      void get3View(QImage& I,unsigned int type);

@@ -120,6 +120,8 @@ void GLWidget::set_view(unsigned char view_option)
 {
     // initialize world matrix
     image::matrix::identity(transformation_matrix,image::dim<4,4>());
+    image::matrix::identity(rotation_matrix,image::dim<4,4>());
+
     if(get_param("scale_voxel") && cur_tracking_window.slice.voxel_size[0] > 0.0)
     {
         transformation_matrix[5] = cur_tracking_window.slice.voxel_size[1] / cur_tracking_window.slice.voxel_size[0];
@@ -135,8 +137,7 @@ void GLWidget::set_view(unsigned char view_option)
 
     if(view_option != 2)
     {
-        float m1[16],m2[16];
-        std::copy(transformation_matrix,transformation_matrix+16,m1);
+        float m2[16];
         std::fill(m2, m2 + 16, 0.0);
         m2[15] = 1.0;
         switch(view_option)
@@ -154,19 +155,26 @@ void GLWidget::set_view(unsigned char view_option)
         case 2:
             break;
         }
+        float m1[16];
+        std::copy(transformation_matrix,transformation_matrix+16,m1);
         image::matrix::product(m1, m2, transformation_matrix, image::dim<4, 4>(),image::dim<4, 4>());
+        std::copy(rotation_matrix,rotation_matrix+16,m1);
+        image::matrix::product(m1, m2, rotation_matrix, image::dim<4, 4>(),image::dim<4, 4>());
     }
     // rotate 180 degrees
     if(set_view_flip)
     {
-        float m1[16],m2[16];
-        std::copy(transformation_matrix,transformation_matrix+16,m1);
+        float m2[16];
         std::fill(m2, m2 + 16, 0.0);
         m2[0] = -1.0;
         m2[5] = 1.0;
         m2[10] = -1.0;
         m2[15] = 1.0;
+        float m1[16];
+        std::copy(transformation_matrix,transformation_matrix+16,m1);
         image::matrix::product(m1, m2, transformation_matrix, image::dim<4, 4>(),image::dim<4, 4>());
+        std::copy(rotation_matrix,rotation_matrix+16,m1);
+        image::matrix::product(m1, m2, rotation_matrix, image::dim<4, 4>(),image::dim<4, 4>());
     }
     set_view_flip = !set_view_flip;
 }
@@ -330,8 +338,6 @@ void my_gluLookAt(GLdouble eyex, GLdouble eyey, GLdouble eyez, GLdouble centerx,
 
 void GLWidget::paintGL()
 {
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
     //glDrawBuffer (GL_BACK);
 
     int color = get_param("bkg_color");
@@ -354,7 +360,13 @@ void GLWidget::renderLR(int eye)
         glDrawBuffer(GL_BACK_RIGHT);
     if(eye < 0)
         glDrawBuffer(GL_BACK_LEFT);
+
+
+
+
     {
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
         float p[11] = {0.35,0.4,0.45,0.5,0.6,0.8,1.0,1.5,2.0,12.0,50.0};
         GLfloat perspective = p[get_param("pespective")];
         GLfloat zNear = 1.0f;
@@ -364,10 +376,12 @@ void GLWidget::renderLR(int eye)
         GLfloat fW = fH * aspect;
         glFrustum( -fW, fW, -fH, fH, zNear*perspective, zFar*perspective);
 
+
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
         my_gluLookAt(eye,0,-200.0*perspective,0,0,0,0,-1.0,0);
     }
+
     check_error("basic");
     {
 
@@ -693,6 +707,37 @@ void GLWidget::renderLR(int eye)
         glPopMatrix();
         check_error("show_surface");
     }
+
+    if (get_param("show_axis"))
+    {
+        glEnable(GL_COLOR_MATERIAL);
+        glDisable(GL_LIGHTING);
+
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        float p[11] = {0.35,0.4,0.45,0.5,0.6,0.8,1.0,1.5,2.0,12.0,50.0};
+        GLfloat perspective = p[get_param("pespective")];
+        GLfloat zNear = 1.0f;
+        GLfloat zFar = 1000.0f;
+        GLfloat aspect = float(cur_width)/float(cur_height);
+        GLfloat fH = 0.25;
+        GLfloat fW = fH * aspect;
+        glFrustum( -fW, 0.01, -0.01, fH, zNear*perspective, zFar*perspective);
+
+
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        my_gluLookAt(eye,0,-200.0*perspective,0,0,0,0,-1.0,0);
+        glMultMatrixf(rotation_matrix);
+        glLineWidth (1.5);
+        glBegin (GL_LINES);
+        glColor3f (1.0,0.3,0.3);  glVertex3f(0,0,0);  glVertex3f(2,0,0);    // X axis is red.
+        glColor3f (0.3,1.0,0.3);  glVertex3f(0,0,0);  glVertex3f(0,2,0);    // Y axis is green.
+        glColor3f (0.3,0.3,1.0);  glVertex3f(0,0,0);  glVertex3f(0,0,2);    // z axis is blue.
+        glEnd();
+
+    }
+    check_error("axis");
 
 }
 
@@ -1511,9 +1556,19 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     // the joystick mode is the second step transformation
     if (event->buttons() & Qt::LeftButton)
     {
+        // bookeeping the rotation matrix
+        {
+            glRotated(dy / 2.0, 1.0, 0.0, 0.0);
+            if(!(event->modifiers() & Qt::ShiftModifier))
+                glRotated(-dx / 2.0, 0.0, 1.0, 0.0);
+            glMultMatrixf(rotation_matrix);
+            glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix);
+            glLoadIdentity();
+        }
         glRotated(dy / 2.0, 1.0, 0.0, 0.0);
         if(!(event->modifiers() & Qt::ShiftModifier))
             glRotated(-dx / 2.0, 0.0, 1.0, 0.0);
+
     }
     else if (event->buttons() & Qt::RightButton)
     {
@@ -2117,6 +2172,12 @@ void GLWidget::rotate_angle(float angle,float x,float y,float z)
 {
     makeCurrent();
     glPushMatrix();
+
+    glLoadIdentity();
+    glRotated(angle,x,y,z);
+    glMultMatrixf(rotation_matrix);
+    glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix);
+
     glLoadIdentity();
     glRotated(angle,x,y,z);
     glMultMatrixf(transformation_matrix);
