@@ -1866,6 +1866,56 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             break;
         }
         paintGL();
+        return;
+    }
+    if(cmd == "slice_off")
+    {
+        if(param.isEmpty())
+        {
+            cur_tracking_window.ui->glCorCheck->setChecked(false);
+            cur_tracking_window.ui->glSagCheck->setChecked(false);
+            cur_tracking_window.ui->glAxiCheck->setChecked(false);
+            return;
+        }
+        switch(param.toInt())
+        {
+        case 0:
+            cur_tracking_window.ui->glSagCheck->setChecked(false);
+            break;
+        case 1:
+            cur_tracking_window.ui->glCorCheck->setChecked(false);
+            break;
+        case 2:
+            cur_tracking_window.ui->glAxiCheck->setChecked(false);
+            break;
+        }
+        paintGL();
+        return;
+
+    }
+    if(cmd == "slice_on")
+    {
+        if(param.isEmpty())
+        {
+            cur_tracking_window.ui->glCorCheck->setChecked(true);
+            cur_tracking_window.ui->glSagCheck->setChecked(true);
+            cur_tracking_window.ui->glAxiCheck->setChecked(true);
+            return;
+        }
+        switch(param.toInt())
+        {
+        case 0:
+            cur_tracking_window.ui->glSagCheck->setChecked(true);
+            break;
+        case 1:
+            cur_tracking_window.ui->glCorCheck->setChecked(true);
+            break;
+        case 2:
+            cur_tracking_window.ui->glAxiCheck->setChecked(true);
+            break;
+        }
+        paintGL();
+        return;
     }
     if(cmd == "add_surface")
     {
