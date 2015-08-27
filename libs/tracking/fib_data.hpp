@@ -759,8 +759,10 @@ public:
     {
         if (!mat_reader.load_from_file(file_name) || prog_aborted())
         {
-            if(!prog_aborted())
-                error_msg = "Cannot open file";
+            if(prog_aborted())
+                error_msg = "loading process aborted";
+            else
+                error_msg = "cannot open file";
             return false;
         }
         {
@@ -777,7 +779,7 @@ public:
 
         if(fib.fa.empty())
         {
-            error_msg = "Invalid fib format:";
+            error_msg = "invalid fib format:";
             error_msg += file_name;
             return false;
         }
