@@ -216,7 +216,7 @@ void VBCDialog::on_create_data_base_clicked()
         std::auto_ptr<vbc_database> data(new vbc_database);
         if(!data->create_database(ui->skeleton->text().toLocal8Bit().begin()))
         {
-            QMessageBox::information(this,"error",data->error_msg.c_str(),0);
+            QMessageBox::information(this,"error in creating database",data->error_msg.c_str(),0);
             return;
         }
         //instance.permutation_test(output_dir,num_files1,p_value_threshold))
@@ -231,7 +231,7 @@ void VBCDialog::on_create_data_base_clicked()
         }
         if(!data->handle->load_subject_files(name_list,tag_list))
         {
-            QMessageBox::information(this,"error",data->error_msg.c_str(),0);
+            QMessageBox::information(this,"error in loading subject fib files",data->error_msg.c_str(),0);
             return;
         }
         data->handle->save_subject_data(ui->output_file_name->text().toLocal8Bit().begin());

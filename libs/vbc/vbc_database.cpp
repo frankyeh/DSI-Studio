@@ -17,7 +17,10 @@ bool vbc_database::create_database(const char* template_name)
 {
     handle.reset(new FibData);
     if(!handle->load_from_file(template_name))
+    {
+        error_msg = handle->error_msg;
         return false;
+    }
     fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dim,handle->fib.fa[0]));
     handle->calculate_si2vi();
     return true;
