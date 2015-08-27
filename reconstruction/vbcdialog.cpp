@@ -231,7 +231,7 @@ void VBCDialog::on_create_data_base_clicked()
         }
         if(!data->handle->load_subject_files(name_list,tag_list))
         {
-            QMessageBox::information(this,"error in loading subject fib files",data->error_msg.c_str(),0);
+            QMessageBox::information(this,"error in loading subject fib files",data->handle->error_msg.c_str(),0);
             return;
         }
         data->handle->save_subject_data(ui->output_file_name->text().toLocal8Bit().begin());
