@@ -213,6 +213,8 @@ void VBCDialog::on_create_data_base_clicked()
             return;
         }
 
+
+        begin_prog("loading skeleton");
         std::auto_ptr<vbc_database> data(new vbc_database);
         if(!data->create_database(ui->skeleton->text().toLocal8Bit().begin()))
         {
@@ -220,7 +222,7 @@ void VBCDialog::on_create_data_base_clicked()
             return;
         }
         //instance.permutation_test(output_dir,num_files1,p_value_threshold))
-        begin_prog("loading");
+        begin_prog("loading subjects");
         if(group.empty())
             return;
         std::vector<std::string> name_list(group.count()),tag_list(group.count());
