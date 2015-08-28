@@ -1,4 +1,5 @@
 #include <QStringListModel>
+#include <QMessageBox>
 #include "atlasdialog.h"
 #include "ui_atlasdialog.h"
 #include "tracking_window.h"
@@ -30,7 +31,10 @@ unsigned int AtlasDialog::index(void)
 void AtlasDialog::on_add_atlas_clicked()
 {
     if(!cur_tracking_window.can_convert())
+    {
+        QMessageBox::information(this,"Error","Atlas is not support for the current image resolution.",0);
         return;
+    }
     int atlas_index = ui->atlasListBox->currentIndex();
     QModelIndexList indexes = ui->region_list->selectionModel()->selectedRows();
     if(!indexes.count())

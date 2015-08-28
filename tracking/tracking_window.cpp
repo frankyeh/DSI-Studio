@@ -400,7 +400,7 @@ bool tracking_window::can_convert(void)
         from -= image::segmentation::otsu_threshold(from);
         image::lower_threshold(from,0.0);
         mi3.reset(new manual_alignment(this,from,fa_template_imp.I,handle->vs));
-        QMessageBox::information(this,"Running","The background registration started. You may need to wait until registration stablizes.",0);
+        QMessageBox::information(this,"Running","The registration started. You may need to wait until it finish running (shown in the bottom status bar).",0);
     }
     mi3->update_affine();
     return true;
@@ -451,11 +451,19 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
         return false;
 
     QString status;
-    status = QString("(%1,%2,%3) ").arg(std::floor(pos[0]*10.0+0.5)/10.0)
+    if(mi3.get())
+    {
+        if(mi3->data.progress == 0)
+            status = "Running linear registration... ";
+        if(mi3->data.progress == 1)
+            status = "Running nonlinear registration... ";
+        if(mi3->data.progress == 2)
+            status = "Registration done. ";
+    }
+    status += QString("(%1,%2,%3) ").arg(std::floor(pos[0]*10.0+0.5)/10.0)
             .arg(std::floor(pos[1]*10.0+0.5)/10.0)
             .arg(std::floor(pos[2]*10.0+0.5)/10.0);
-    if(mi3.get() && mi3->data.progress != 2)
-        status += "Running background registration... ";
+
     if(!handle->trans_to_mni.empty() || mi3.get())
     {
         image::vector<3,float> mni(pos);
@@ -933,16 +941,20 @@ void tracking_window::on_deleteSlice_clicked()
     ui->SliceModality->setCurrentIndex(0);
     glWidget->delete_slice(index-1);
     ui->SliceModality->removeItem(index);
-
-
 }
 
 
 void tracking_window::on_actionSave_Tracts_in_MNI_space_triggered()
 {
-    if(handle->trans_to_mni.empty())
+    if(!can_convert())
+    {
+        QMessageBox::information(this,"Error","MNI normalization is not supported for the current image resolution",0);
         return;
-    tractWidget->saveTransformedTracts(&*(handle->trans_to_mni.begin()));
+    }
+    if(handle->trans_to_mni.empty())
+        tractWidget->saveTransformedTracts(0);
+    else
+        tractWidget->saveTransformedTracts(&*(handle->trans_to_mni.begin()));
 }
 
 void tracking_window::on_offset_valueChanged(int value)

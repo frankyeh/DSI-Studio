@@ -531,7 +531,28 @@ void TractTableWidget::saveTransformedTracts(const float* transform)
     settings.setValue("track_file_extension",QFileInfo(filename).completeSuffix());
 
     std::string sfilename = filename.toLocal8Bit().begin();
-    tract_models[currentRow()]->save_transformed_tracts_to_file(&*sfilename.begin(),transform,false);
+    if(transform)
+        tract_models[currentRow()]->save_transformed_tracts_to_file(&*sfilename.begin(),transform,false);
+    else
+    {
+        std::vector<std::vector<float> > tract_data(tract_models[currentRow()]->get_tracts());
+        begin_prog("converting coordinates");
+        for(unsigned int i = 0;check_prog(i,tract_data.size());++i)
+            for(unsigned int j = 0;j < tract_data[i].size();j += 3)
+            {
+                image::vector<3> v(&(tract_data[i][j]));
+                cur_tracking_window.subject2mni(v);
+                tract_data[i][j] = v[0];
+                tract_data[i][j+1] = v[1];
+                tract_data[i][j+2] = v[2];
+            }
+        if(!prog_aborted())
+        {
+            tract_models[currentRow()]->get_tracts().swap(tract_data);
+            tract_models[currentRow()]->save_tracts_to_file(&*sfilename.begin());
+            tract_models[currentRow()]->get_tracts().swap(tract_data);
+        }
+    }
 }
 
 
