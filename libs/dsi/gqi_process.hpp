@@ -10,6 +10,8 @@
 
 class QSpace2Odf  : public BaseProcess
 {
+public:// recorded for scheme balanced
+    std::vector<image::vector<3,double> > q_vectors_time;
 public:
     std::vector<unsigned int> b0_images;
     std::vector<float> sinc_ql;
@@ -31,9 +33,19 @@ public:
 
 
         unsigned int odf_size = voxel.ti.half_vertices_count;
-        sinc_ql.resize(odf_size*voxel.bvalues.size());
         float sigma = voxel.param[0]; //optimal 1.24
-
+        if(!voxel.grad_dev.empty())
+        {
+            q_vectors_time.resize(voxel.bvalues.size());
+            for (unsigned int index = 0; index < voxel.bvalues.size(); ++index)
+            {
+                q_vectors_time[index] = voxel.bvectors[index];
+                q_vectors_time[index] *= std::sqrt(voxel.bvalues[index]*0.01506);// get q in (mm) -1
+                q_vectors_time[index] *= sigma;
+            }
+            return;
+        }
+        sinc_ql.resize(odf_size*voxel.bvalues.size());
         // calculate reconstruction matrix
         for (unsigned int j = 0,index = 0; j < odf_size; ++j)
             for (unsigned int i = 0; i < voxel.bvalues.size(); ++i,++index)
@@ -50,7 +62,49 @@ public:
     {
         if(b0_images.size() == 1 && voxel.half_sphere)
             data.space[b0_images.front()] /= 2.0;
-        image::matrix::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
+        if(!voxel.grad_dev.empty()) // correction for gradient nonlinearity
+        {
+            /*
+            new_bvecs = (I+grad_dev) * bvecs;
+            */
+            float grad_dev[9];
+            for(unsigned int i = 0; i < 9; ++i)
+                grad_dev[i] = voxel.grad_dev[i][data.voxel_index];
+            // this grad_dev matrix is rotated
+            // add identity matrix
+            grad_dev[0] += 1.0;
+            grad_dev[4] += 1.0;
+            grad_dev[8] += 1.0;
+            if(voxel.bflip) // if b_table is flipped
+            {
+                // voxel.bflip = 1 indicates that bvec is flipped at y direction
+                // 1  0  0         1  0  0
+                //[0 -1  0] *Grad*[0 -1  0]
+                // 0  0  1         0  0  1
+                unsigned char nindex[4][4] = {{0,0,0,0},{1,2,3,6},{1,3,5,7},{2,5,6,7}};
+                for(unsigned int i = 0;i < 4;++i)
+                    grad_dev[nindex[voxel.bflip][i]] = -grad_dev[nindex[voxel.bflip][i]];
+            }
+
+            std::vector<float> new_sinc_ql(data.odf.size()*data.space.size());
+            for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
+            {
+                image::vector<3,double> dir(voxel.ti.vertices[j]),from;
+                image::matrix::vector_product(grad_dev,dir.begin(),from.begin(),image::dim<3,3>());
+                from.normalize();
+                if(voxel.r2_weighted)
+                    for (unsigned int i = 0; i < data.space.size(); ++i,++index)
+                        new_sinc_ql[index] = base_function(q_vectors_time[i]*from);
+                else
+                    for (unsigned int i = 0; i < data.space.size(); ++i,++index)
+                        new_sinc_ql[index] = boost::math::sinc_pi(q_vectors_time[i]*from);
+
+            }
+            image::matrix::vector_product(&*new_sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
+                                    image::dyndim(data.odf.size(),data.space.size()));
+        }
+        else
+            image::matrix::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
                                     image::dyndim(data.odf.size(),data.space.size()));
     }
 };
