@@ -70,8 +70,10 @@ public:// parameters;
     bool half_sphere;
     bool r2_weighted;// used in GQI only
     bool scheme_balance;
+    unsigned char bflip; // 0 :no b_table flip 1: flip in x 2: flip in y 3: flip in z
     unsigned int max_fiber_number;
     std::vector<std::string> file_list;
+public:
     std::vector<image::const_pointer_image<float,3> > grad_dev;
 public:
     unsigned char reg_method;// used in QSDR
@@ -134,14 +136,24 @@ public:
     void thread_run(unsigned char thread_index,unsigned char thread_count,
                     const image::basic_image<unsigned char,3>& mask)
     {
+        size_t cur_voxel = 0,total_voxel = 0;
         if(thread_index == 0)
-            begin_prog("reconstructing");
-        for(unsigned int voxel_index = thread_index;
-            voxel_index < mask.size() &&
-            (thread_index != 0 || check_prog(voxel_index,mask.size()));voxel_index += thread_count)
         {
+            for(size_t index = 0;index < mask.size();++index)
+                if (mask[index])
+                    ++total_voxel;
+        }
+        for(unsigned int voxel_index = thread_index;voxel_index < mask.size();voxel_index += thread_count)
+        {
+            if(prog_aborted())
+                return;
             if (!mask[voxel_index])
                 continue;
+            if(thread_index == 0)
+            {
+                ++cur_voxel;
+                check_prog(cur_voxel*(size_t)thread_count,total_voxel);
+            }
             voxel_data[thread_index].init();
             voxel_data[thread_index].voxel_index = voxel_index;
             for (int index = 0; index < process_list.size(); ++index)
