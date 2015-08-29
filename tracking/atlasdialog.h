@@ -6,15 +6,15 @@
 namespace Ui {
 class AtlasDialog;
 }
-class tracking_window;
 class AtlasDialog : public QDialog
 {
     Q_OBJECT
-    tracking_window& cur_tracking_window;
 public:
-    explicit AtlasDialog(tracking_window *parent);
+    explicit AtlasDialog(QWidget *parent);
     ~AtlasDialog();
-    unsigned int index(void);
+    unsigned int atlas_index;
+    std::vector<unsigned int> roi_list;
+    std::vector<std::string> roi_name;
 signals:
     void need_update();
 private slots:

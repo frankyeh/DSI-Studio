@@ -40,7 +40,7 @@ QVariant tracking_window::operator[](QString name) const
 
 tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle_release_) :
         QMainWindow(parent),handle(new_handle),handle_release(handle_release_),
-        ui(new Ui::tracking_window),scene(*this),slice(new_handle),gLdock(0),atlas_dialog(0),renderWidget(0)
+        ui(new Ui::tracking_window),scene(*this),slice(new_handle),gLdock(0),renderWidget(0)
 
 {
     FibData& fib_data = *new_handle;
@@ -1271,13 +1271,30 @@ void tracking_window::on_addRegionFromAtlas_clicked()
         QMessageBox::information(0,"Error",QString("DSI Studio cannot find atlas files in ")+QCoreApplication::applicationDirPath()+ "/atlas",0);
         return;
     }
-    if(!atlas_dialog)
+    if(!can_convert())
     {
-        atlas_dialog = new AtlasDialog(this);
-        connect(atlas_dialog,SIGNAL(need_update()),&scene,SLOT(show_slice()));
-        connect(atlas_dialog,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
+        QMessageBox::information(this,"Error","Atlas is not support for the current image resolution.",0);
+        return;
     }
-    atlas_dialog->show();
+    std::auto_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this));
+    if(atlas_dialog->exec() == QDialog::Accepted)
+    {
+        for(unsigned int i = 0;i < atlas_dialog->roi_list.size();++i)
+        {
+            std::vector<image::vector<3,short> > points;
+            unsigned short label = atlas_dialog->roi_list[i];
+            for (image::pixel_index<3>index; index.is_valid(slice.geometry); index.next(slice.geometry))
+            {
+                image::vector<3,float> mni((const unsigned int*)(index.begin()));
+                subject2mni(mni);
+                if (!atlas_list[atlas_dialog->atlas_index].is_labeled_as(mni, label))
+                    continue;
+                points.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
+            }
+            regionWidget->add_region(atlas_dialog->roi_name[i].c_str(),roi_id);
+            regionWidget->add_points(points,false);
+        }
+    }
 }
 
 void tracking_window::on_actionRestore_Settings_triggered()

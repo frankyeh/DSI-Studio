@@ -23,7 +23,6 @@ class manual_alignment;
 class tract_report;
 class color_bar_dialog;
 class connectivity_matrix_dialog;
-class AtlasDialog;
 class QGLDockWidget : public QDockWidget
 {
     Q_OBJECT
@@ -56,7 +55,6 @@ public:
     RegionTableWidget *regionWidget;
     TractTableWidget *tractWidget;
     RenderingTableWidget *renderWidget;
-    AtlasDialog* atlas_dialog;
     slice_view_scene scene;
 public:
     std::auto_ptr<QTimer> timer;
