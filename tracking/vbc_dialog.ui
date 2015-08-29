@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>799</width>
+    <width>654</width>
     <height>622</height>
    </rect>
   </property>
@@ -46,8 +46,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>781</width>
-           <height>544</height>
+           <width>656</width>
+           <height>524</height>
           </rect>
          </property>
          <attribute name="label">
@@ -382,9 +382,9 @@
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>-274</y>
-           <width>760</width>
-           <height>818</height>
+           <y>-434</y>
+           <width>619</width>
+           <height>975</height>
           </rect>
          </property>
          <attribute name="label">
@@ -900,17 +900,11 @@
            </layout>
           </item>
           <item>
-           <widget class="QGroupBox" name="advanced_options">
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>16777215</height>
-             </size>
-            </property>
+           <widget class="QGroupBox" name="roi_options">
             <property name="title">
-             <string>Options</string>
+             <string>Study region</string>
             </property>
-            <layout class="QVBoxLayout" name="verticalLayout_18">
+            <layout class="QVBoxLayout" name="verticalLayout_11">
              <property name="spacing">
               <number>0</number>
              </property>
@@ -923,13 +917,6 @@
                 <number>0</number>
                </property>
                <item>
-                <widget class="QLabel" name="label_6">
-                 <property name="text">
-                  <string>Region:</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
                 <widget class="QRadioButton" name="roi_whole_brain">
                  <property name="text">
                   <string>Whole brain</string>
@@ -940,16 +927,16 @@
                 </widget>
                </item>
                <item>
-                <widget class="QRadioButton" name="roi_file">
+                <widget class="QRadioButton" name="roi_user_defined">
                  <property name="text">
-                  <string>From file</string>
+                  <string>User Defined</string>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QRadioButton" name="roi_atlas">
+                <widget class="QPushButton" name="load_roi_from_atlas">
                  <property name="text">
-                  <string>Use</string>
+                  <string>Load from atlas...</string>
                  </property>
                 </widget>
                </item>
@@ -972,25 +959,9 @@
                    <number>0</number>
                   </property>
                   <item>
-                   <widget class="QComboBox" name="atlas_box"/>
-                  </item>
-                  <item>
-                   <widget class="QComboBox" name="atlas_region_box">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="sizeAdjustPolicy">
-                     <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
                    <widget class="QLabel" name="label_5">
                     <property name="text">
-                     <string> as</string>
+                     <string>as</string>
                     </property>
                    </widget>
                   </item>
@@ -1018,11 +989,77 @@
                     </item>
                    </widget>
                   </item>
+                  <item>
+                   <spacer name="horizontalSpacer_7">
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>40</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="clear_all_roi">
+                    <property name="text">
+                     <string>Clear all</string>
+                    </property>
+                   </widget>
+                  </item>
                  </layout>
                 </widget>
                </item>
               </layout>
              </item>
+             <item>
+              <widget class="QTableWidget" name="roi_table">
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>100</height>
+                </size>
+               </property>
+               <column>
+                <property name="text">
+                 <string>Name</string>
+                </property>
+               </column>
+               <column>
+                <property name="text">
+                 <string>Source</string>
+                </property>
+               </column>
+               <column>
+                <property name="text">
+                 <string>Type</string>
+                </property>
+               </column>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="advanced_options">
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="title">
+             <string>Options</string>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_18">
+             <property name="spacing">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout_5">
                <property name="topMargin">
@@ -1214,8 +1251,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>781</width>
-           <height>544</height>
+           <width>636</width>
+           <height>541</height>
           </rect>
          </property>
          <attribute name="label">

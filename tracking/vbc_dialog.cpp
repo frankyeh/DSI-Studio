@@ -10,6 +10,7 @@
 #include "tracking_window.h"
 #include "tract/tracttablewidget.h"
 #include "libs/tracking/fib_data.hpp"
+#include "tracking/atlasdialog.h"
 extern std::vector<atlas> atlas_list;
 
 vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_,bool gui_) :
@@ -75,9 +76,6 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_,b
     ui->y_pos->setMaximum(vbc->handle->dim[1]-1);
     ui->z_pos->setMaximum(vbc->handle->dim[2]-1);
 
-    for(int index = 0; index < atlas_list.size(); ++index)
-        ui->atlas_box->addItem(atlas_list[index].name.c_str());
-
     // dist report
     connect(ui->span_to,SIGNAL(valueChanged(int)),this,SLOT(show_report()));
     connect(ui->span_to,SIGNAL(valueChanged(int)),this,SLOT(show_fdr_report()));
@@ -98,7 +96,9 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_,b
     ui->toolBox->setCurrentIndex(1);
     ui->foi_widget->hide();
     ui->ROI_widget->hide();
-    on_rb_FDR_toggled(true);
+    ui->roi_options->hide();
+    on_roi_whole_brain_toggled(true);
+    on_rb_FDR_toggled(false);
     on_rb_multiple_regression_clicked();
     qApp->installEventFilter(this);
 
@@ -416,12 +416,26 @@ bool vbc_dialog::load_demographic_file(QString filename)
                 for(unsigned int index = 0;index < vbc->handle->num_subjects;++index)
                 {
                     QString name = vbc->handle->subject_names[index].c_str();
-                    sex[index] = name.contains("_M0") ? 1:0;
+                    if(name.contains("_M0"))
+                        sex[index] = 1;
+                    else
+                        if(name.contains("_F0"))
+                            sex[index] = 0;
+                        else
+                        {
+                            sex[index] = ui->missing_value->value();
+                            ui->missing_data_checked->setChecked(true);
+                        }
                     int pos = name.indexOf("Y_")-2;
                     if(pos <= 0)
                         continue;
-                    age[index] = name.mid(pos,2).toInt();
-
+                    bool okay;
+                    age[index] = name.mid(pos,2).toInt(&okay);
+                    if(!okay)
+                    {
+                        age[index] = ui->missing_value->value();
+                        ui->missing_data_checked->setChecked(true);
+                    }
                 }
             }
 
@@ -432,8 +446,8 @@ bool vbc_dialog::load_demographic_file(QString filename)
             X.push_back(1); // for the intercep
             if(add_age_and_sex)
             {
-                X.push_back(age[index]);
-                X.push_back(sex[index]);
+                X.push_back(age[i]);
+                X.push_back(sex[i]);
             }
             for(unsigned int j = 0;j < feature_count;++j,++index)
             {
@@ -894,11 +908,11 @@ void vbc_dialog::on_run_clicked()
         vbc->individual_data_max.resize(vbc->individual_data.size());
         for(unsigned int index = 0;index < vbc->individual_data.size();++index)
             vbc->individual_data_max[index] = *std::max_element(vbc->individual_data[index].begin(),vbc->individual_data[index].end());
-        out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted to identify affected pathway in "
+        out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted to identify affected pathways in "
             << vbc->individual_data.size() << " study patients.";
         out << " The diffusion data of the patients were compared with "
-            << vbc->handle->num_subjects << " normal subjects, and percentile rank was calculated for each fiber direction.";
-        out << " A percentile rank threshold of " << ui->percentile->value() << "% was used to select fiber orientations with deviant condition.";
+            << vbc->handle->num_subjects << " normal subjects, and percentile rank was calculated for each local connectome.";
+        out << " A percentile rank threshold of " << ui->percentile->value() << "% was used to select deviant local connectomes.";
         for(unsigned int index = 0;index < vbc->trk_file_names.size();++index)
         {
             vbc->trk_file_names[index] += parameter_str;
@@ -911,8 +925,8 @@ void vbc_dialog::on_run_clicked()
         vbc->tracking_threshold = (float)ui->percentage_dif->value()*0.01;
         out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted to compare group differences in a total of "
             << vbc->model->subject_index.size() << " subjects."
-            << " The group difference was quantified using percentage measurement (i.e. 2*(d1-d2)/(d1+d2) x %), where d1 and d2 are the group averages of the spin distribution function (SDF)."
-            << " A threshold of " << ui->percentage_dif->value() << "% difference was used to select fiber directions with substantial difference in anisotropy.";
+            << " The group difference was quantified using percentage measurement (i.e. 2*(d1-d2)/(d1+d2) x %), where d1 and d2 are the group averages of the local connectome."
+            << " A threshold of " << ui->percentage_dif->value() << "% difference was used to select local connectomes that had substantial difference.";
         vbc->trk_file_names[0] += parameter_str;
         vbc->trk_file_names[0] += ".group.p";
         vbc->trk_file_names[0] += QString::number(ui->percentage_dif->value()).toLocal8Bit().begin();
@@ -923,7 +937,7 @@ void vbc_dialog::on_run_clicked()
         vbc->tracking_threshold = (float)ui->percentage_dif->value()*0.01;
         out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted to compare paired group differences in a total of "
             << vbc->model->subject_index.size() << " pairs."
-            << " A threshold of " << ui->percentage_dif->value() << "% difference was used to select fiber directions with substantial difference in anisotropy.";
+            << " A threshold of " << ui->percentage_dif->value() << "% difference was used to select local connectomes that had substantial difference.";
         vbc->trk_file_names[0] += parameter_str;
         vbc->trk_file_names[0] += ".paired.p";
         vbc->trk_file_names[0] += QString::number(ui->percentage_dif->value()).toLocal8Bit().begin();
@@ -933,11 +947,18 @@ void vbc_dialog::on_run_clicked()
         vbc->tracking_threshold = ui->t_threshold->value()*0.01; // percentage
         out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted in a total of "
             << vbc->model->subject_index.size() << " subjects using a multiple regression model considering ";
-        for(unsigned int index = 0;index < (int)ui->foi->count()-1;++index)
-            out << ui->foi->itemText(index).toLower().toLocal8Bit().begin() << (ui->foi->count() > 2 ? ", " : " ");
-        out << "and " << ui->foi->itemText(ui->foi->count()-1).toLower().toLocal8Bit().begin() << ".";
+        for(unsigned int index = 0;index < ui->foi->count();++index)
+        {
+            if(index && ui->foi->count() > 2)
+                out << ",";
+            out << " ";
+            if(ui->foi->count() >= 2 && index+1 == ui->foi->count())
+                out << "and ";
+            out << ui->foi->itemText(index).toStdString();
+        }
+        out << ".";
         out << " A percentage threshold of " << ui->t_threshold->value()
-            << " % was used to select fiber directions correlated with "
+            << " % was used to select local connectomes correlated with "
             << ui->foi->currentText().toLower().toLocal8Bit().begin() << ".";
         vbc->trk_file_names[0] += parameter_str;
         vbc->trk_file_names[0] += ".";
@@ -946,37 +967,33 @@ void vbc_dialog::on_run_clicked()
         vbc->trk_file_names[0] += QString::number(ui->t_threshold->value()).toLocal8Bit().begin();
     }
 
-    out << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was conducted to connect these fiber directions";
+    out << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was conducted to connect the selected local connectomes.";
 
     // load region
-    vbc->roi.clear();
-    if(ui->roi_file->isChecked() || ui->roi_atlas->isChecked())
+    if(!ui->roi_whole_brain->isChecked() && !roi_list.empty())
     {
-        unsigned short label = ui->atlas_region_box->currentIndex();
-        image::geometry<3> geo = vbc->handle->dim;
-        for (image::pixel_index<3>index; index.is_valid(geo); index.next(geo))
+        out << " The tracking algorithm used ";
+        const char roi_type_name[5][20] = {"region of interst","region of avoidance","ending region","seeding region","terminating region"};
+        for(unsigned int index = 0;index < roi_list.size();++index)
         {
-            image::vector<3> pos((const unsigned int*)(index.begin()));
-            image::vector<3> mni;
-            image::vector_transformation(pos.begin(),mni.begin(), vbc->handle->trans_to_mni,image::vdim<3>());
-            if(ui->roi_file->isChecked() && !study_region.is_labeled_as(mni,label))
-                continue;
-            if(ui->roi_atlas->isChecked() &&
-                    !atlas_list[ui->atlas_box->currentIndex()].is_labeled_as(mni, label))
-                continue;
-            vbc->roi.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
+            if(index && roi_list.size() > 2)
+                out << ",";
+            out << " ";
+            if(roi_list.size() >= 2 && index+1 == roi_list.size())
+                out << "and ";
+            out << roi_name[index] << " as the " << roi_type_name[roi_type[index]];
         }
-        vbc->roi_type = ui->region_type->currentIndex();
-        out << " using ";
-        if(ui->roi_atlas->isChecked())
-            out << ui->atlas_region_box->currentText().toLocal8Bit().begin() << " ("
-                << ui->atlas_box->currentText().toLocal8Bit().begin() << " atlas)";
-        else
-            out << study_region_file_name.toLocal8Bit().begin();
-        out << " as the " << ui->region_type->currentText().toLocal8Bit().begin() << ".";
+        out << ".";
+        vbc->roi_list = roi_list;
+        vbc->roi_type = roi_type;
     }
     else
-        out << " in whole brain regions.";
+    {
+        vbc->roi_list.clear();
+        vbc->roi_type.clear();
+    }
+
+
     if(vbc->use_track_length)
         out << " A length threshold of " << ui->length_threshold->value() << " mm were used to select tracks.";
     else
@@ -1056,64 +1073,11 @@ void vbc_dialog::on_show_result_clicked()
 
 void vbc_dialog::on_roi_whole_brain_toggled(bool checked)
 {
-    if(checked)
-        ui->ROI_widget->hide();
+    ui->roi_table->setEnabled(!checked);
+    ui->load_roi_from_atlas->setEnabled(!checked);
+    ui->clear_all_roi->setEnabled(!checked);
+    ui->region_type->setEnabled(!checked);
 }
-
-void vbc_dialog::on_roi_file_toggled(bool checked)
-{
-    if(checked)
-    {
-        QString openfilename = QFileDialog::getOpenFileName(
-                    this,
-                    "Load ROI from file",
-                    work_dir + "/roi.nii.gz",
-                    "Report file (*.txt *.nii *nii.gz);;All files (*)");
-        if(openfilename.isEmpty())
-        {
-            ui->roi_whole_brain->setChecked(true);
-            return;
-        }
-        study_region.filename = openfilename.toLocal8Bit().begin();
-        try{
-            study_region.get_num();
-        }
-        catch(...)
-        {
-            QMessageBox::information(this,"Error","Invalid nifti file format",0);
-            ui->roi_whole_brain->setChecked(true);
-            return;
-        }
-        study_region_file_name = QFileInfo(openfilename).completeBaseName();
-        ui->roi_file->setText(QString("Assigned by file:") + study_region_file_name);
-        ui->ROI_widget->show();
-        ui->atlas_box->hide();
-        ui->atlas_region_box->clear();
-        for (unsigned int index = 0; index < study_region.get_list().size(); ++index)
-            ui->atlas_region_box->addItem(study_region.get_list()[index].c_str());
-        ui->atlas_region_box->show();
-    }
-    else
-        ui->roi_file->setText(QString("Assigned by file"));
-}
-
-void vbc_dialog::on_atlas_box_currentIndexChanged(int i)
-{
-    ui->atlas_region_box->clear();
-    for (unsigned int index = 0; index < atlas_list[i].get_list().size(); ++index)
-        ui->atlas_region_box->addItem(atlas_list[i].get_list()[index].c_str());
-}
-
-void vbc_dialog::on_roi_atlas_toggled(bool checked)
-{
-    if(checked)
-    {
-        ui->ROI_widget->show();
-        ui->atlas_box->show();
-        ui->atlas_region_box->show();
-    }
-}
-
 
 
 void vbc_dialog::on_remove_subject_clicked()
@@ -1340,9 +1304,15 @@ void vbc_dialog::on_save_vector_clicked()
 void vbc_dialog::on_show_advanced_clicked()
 {
     if(ui->advanced_options->isVisible())
+    {
         ui->advanced_options->hide();
+        ui->roi_options->hide();
+    }
     else
+    {
         ui->advanced_options->show();
+        ui->roi_options->show();
+    }
 }
 
 void vbc_dialog::on_foi_currentIndexChanged(int index)
@@ -1396,4 +1366,50 @@ void vbc_dialog::on_suggest_threshold_clicked()
     }
     if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
         ui->percentage_dif->setValue(image::segmentation::otsu_threshold(values)*100);
+}
+
+
+void vbc_dialog::on_load_roi_from_atlas_clicked()
+{
+    std::auto_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this));
+    if(atlas_dialog->exec() == QDialog::Accepted)
+    {
+        const char roi_type_name[5][5] = {"ROI","ROA","End","Seed","Ter"};
+        for(unsigned int i = 0;i < atlas_dialog->roi_list.size();++i)
+        {
+            std::vector<image::vector<3,short> > new_roi;
+            unsigned short label = atlas_dialog->roi_list[i];
+            for (image::pixel_index<3>index; index.is_valid(vbc->handle->dim); index.next(vbc->handle->dim))
+            {
+                image::vector<3> pos((const unsigned int*)(index.begin()));
+                image::vector<3> mni;
+                image::vector_transformation(pos.begin(),mni.begin(), vbc->handle->trans_to_mni,image::vdim<3>());
+                if(atlas_list[atlas_dialog->atlas_index].is_labeled_as(mni, label))
+                    new_roi.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
+            }
+            if(!new_roi.empty())
+            {
+                //ui->subject_demo->clear();
+                //ui->subject_demo->setColumnCount(2);
+                //ui->subject_demo->setHorizontalHeaderLabels(QStringList() << "Subject ID" << "Group ID");
+                ui->roi_table->setRowCount(ui->roi_table->rowCount()+1);
+                ui->roi_table->setItem(ui->roi_table->rowCount()-1,0,new QTableWidgetItem(QString(atlas_dialog->roi_name[i].c_str())));
+                ui->roi_table->setItem(ui->roi_table->rowCount()-1,1,new QTableWidgetItem(QString(atlas_dialog->atlas_name.c_str())));
+                ui->roi_table->setItem(ui->roi_table->rowCount()-1,2,new QTableWidgetItem(QString(roi_type_name[ui->region_type->currentIndex()])));
+                roi_list.push_back(new_roi);
+                roi_name.push_back(atlas_dialog->roi_name[i]);
+                roi_type.push_back(ui->region_type->currentIndex());
+            }
+
+        }
+
+    }
+}
+
+void vbc_dialog::on_clear_all_roi_clicked()
+{
+    roi_list.clear();
+    roi_name.clear();
+    roi_type.clear();
+    ui->roi_table->setRowCount(0);
 }

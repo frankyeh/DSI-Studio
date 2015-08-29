@@ -13,6 +13,7 @@ public:
     explicit AtlasDialog(QWidget *parent);
     ~AtlasDialog();
     unsigned int atlas_index;
+    std::string atlas_name;
     std::vector<unsigned int> roi_list;
     std::vector<std::string> roi_name;
 signals:

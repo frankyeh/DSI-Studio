@@ -25,6 +25,7 @@ AtlasDialog::~AtlasDialog()
 void AtlasDialog::on_add_atlas_clicked()
 {
     atlas_index = ui->atlasListBox->currentIndex();
+    atlas_name = ui->atlasListBox->currentText().toStdString();
     QModelIndexList indexes = ui->region_list->selectionModel()->selectedRows();
     if(!indexes.count())
     {

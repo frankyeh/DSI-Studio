@@ -26,13 +26,16 @@ public:
     QString work_dir;
     std::vector<std::string> file_names,saved_file_name;
 public:
+    std::vector<std::string> roi_name;
+    std::vector<std::vector<image::vector<3,short> > > roi_list;
+    std::vector<unsigned char> roi_type;
+public:
     std::auto_ptr<vbc_database> vbc;
     std::auto_ptr<stat_model> model;
     std::vector<std::vector<float> > individual_data;
     std::auto_ptr<QTimer> timer;
     QString report;
-    atlas study_region;
-    QString study_region_file_name;
+
     explicit vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_,bool gui_);
     ~vbc_dialog();
     bool eventFilter(QObject *obj, QEvent *event);
@@ -67,12 +70,6 @@ public slots:
     void on_show_result_clicked();
 
     void on_roi_whole_brain_toggled(bool checked);
-
-    void on_roi_file_toggled(bool checked);
-
-    void on_roi_atlas_toggled(bool checked);
-
-    void on_atlas_box_currentIndexChanged(int index);
 
     void on_remove_subject_clicked();
 
@@ -109,6 +106,9 @@ public slots:
     void calculate_FDR(void);
 public:
     Ui::vbc_dialog *ui;
+private slots:
+    void on_load_roi_from_atlas_clicked();
+    void on_clear_all_roi_clicked();
 };
 
 #endif // VBC_DIALOG_HPP

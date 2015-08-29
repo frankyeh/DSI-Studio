@@ -142,11 +142,14 @@ void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vect
     tracking_thread.interpolation_strategy = 0; // trilinear interpolation
     tracking_thread.stop_by_tract = 0;// stop by seed
     tracking_thread.center_seed = 0;// subvoxel seeding
-    if(roi.empty() || roi_type != 3)
-    tracking_thread.setRegions(fib.dim,seed,3);
-    if(!roi.empty())
-        tracking_thread.setRegions(fib.dim,roi,roi_type);
-
+    // if no seed assigned, assign whole brain
+    if(roi_list.empty() || std::find(roi_type.begin(),roi_type.end(),3) == roi_type.end())
+        tracking_thread.setRegions(fib.dim,seed,3);
+    if(!roi_list.empty())
+    {
+        for(unsigned int index = 0;index < roi_list.size();++index)
+            tracking_thread.setRegions(fib.dim,roi_list[index],roi_type[index]);
+    }
     tracking_thread.run(fib,1,seed.size()*seed_ratio,true);
     tracking_thread.track_buffer.swap(tracks);
 }

@@ -224,9 +224,11 @@ public:// for FDR analysis
     unsigned int permutation_count;
     bool terminated;
 public:
+    std::vector<std::vector<image::vector<3,short> > > roi_list;
+    std::vector<unsigned char> roi_type;
+public:
     std::vector<std::string> trk_file_names;
-    std::vector<image::vector<3,short> > roi;
-    unsigned char roi_type;
+
     unsigned int length_threshold_greater,length_threshold_lesser;
     bool has_greater_result,has_lesser_result;
     float seeding_density;
