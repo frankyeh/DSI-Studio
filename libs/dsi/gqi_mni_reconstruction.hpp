@@ -362,9 +362,12 @@ public:
                 interpolation.estimate(voxel.grad_dev[i],grad_dev[i]);
             // this grad_dev matrix is rotated
             // add identity matrix
-            grad_dev[0] += 1.0;
-            grad_dev[4] += 1.0;
-            grad_dev[8] += 1.0;
+            if(grad_dev[0]+grad_dev[4]+grad_dev[8] < 1)
+            {
+                grad_dev[0] += 1.0;
+                grad_dev[4] += 1.0;
+                grad_dev[8] += 1.0;
+            }
             if(voxel.bflip) // if b_table is flipped
             {
                 // voxel.bflip = 1 indicates that bvec is flipped at y direction
