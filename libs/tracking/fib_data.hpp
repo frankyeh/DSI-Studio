@@ -437,6 +437,17 @@ public:
 
         calculate_si2vi();
     }
+    void remove_subject(unsigned int index)
+    {
+        if(index >= subject_qa.size())
+            return;
+        subject_qa.erase(subject_qa.begin()+index);
+        subject_qa_max.erase(subject_qa_max.begin()+index);
+        subject_names.erase(subject_names.begin()+index);
+        R2.erase(R2.begin()+index);
+        --num_subjects;
+    }
+
     void calculate_si2vi(void)
     {
         vi2si.resize(dim.size());

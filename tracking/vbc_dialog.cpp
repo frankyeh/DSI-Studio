@@ -1085,9 +1085,13 @@ void vbc_dialog::on_remove_subject_clicked()
     if(ui->subject_list->currentRow() >= 0 && vbc->handle->num_subjects > 1)
     {
         unsigned int index = ui->subject_list->currentRow();
-        model->remove_subject(index);
-        ui->subject_demo->removeRow(index);
-        ui->subject_list->removeRow(index);
+        vbc->handle->remove_subject(index);
+        if(model.get())
+            model->remove_subject(index);
+        if(index < ui->subject_demo->rowCount())
+            ui->subject_demo->removeRow(index);
+        if(index < ui->subject_list->rowCount())
+            ui->subject_list->removeRow(index);
     }
 
 }
