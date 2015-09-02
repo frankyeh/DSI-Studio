@@ -362,26 +362,6 @@ void GLWidget::renderLR(int eye)
         glDrawBuffer(GL_BACK_LEFT);
 
 
-
-
-    {
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        float p[11] = {0.35,0.4,0.45,0.5,0.6,0.8,1.0,1.5,2.0,12.0,50.0};
-        GLfloat perspective = p[get_param("pespective")];
-        GLfloat zNear = 1.0f;
-        GLfloat zFar = 1000.0f;
-        GLfloat aspect = float(cur_width)/float(cur_height);
-        GLfloat fH = 0.25;
-        GLfloat fW = fH * aspect;
-        glFrustum( -fW, fW, -fH, fH, zNear*perspective, zFar*perspective);
-
-
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-        my_gluLookAt(eye,0,-200.0*perspective,0,0,0,0,-1.0,0);
-    }
-
     check_error("basic");
     {
 
@@ -725,6 +705,7 @@ void GLWidget::renderLR(int eye)
         glFrustum( -fW, 0.01, -0.01, fH, zNear*perspective, zFar*perspective);
 
 
+        glDisable(GL_DEPTH_TEST);
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
         my_gluLookAt(eye,0,-200.0*perspective,0,0,0,0,-1.0,0);
@@ -735,9 +716,31 @@ void GLWidget::renderLR(int eye)
         glColor3f (0.3,1.0,0.3);  glVertex3f(0,0,0);  glVertex3f(0,2,0);    // Y axis is green.
         glColor3f (0.3,0.3,1.0);  glVertex3f(0,0,0);  glVertex3f(0,0,2);    // z axis is blue.
         glEnd();
+        glEnable(GL_DEPTH_TEST);
 
     }
+
     check_error("axis");
+
+    {
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        float p[11] = {0.35,0.4,0.45,0.5,0.6,0.8,1.0,1.5,2.0,12.0,50.0};
+        GLfloat perspective = p[get_param("pespective")];
+        GLfloat zNear = 1.0f;
+        GLfloat zFar = 1000.0f;
+        GLfloat aspect = float(cur_width)/float(cur_height);
+        GLfloat fH = 0.25;
+        GLfloat fW = fH * aspect;
+        glFrustum( -fW, fW, -fH, fH, zNear*perspective, zFar*perspective);
+
+
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        my_gluLookAt(eye,0,-200.0*perspective,0,0,0,0,-1.0,0);
+    }
+
+
 
 }
 
