@@ -382,9 +382,9 @@
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>-434</y>
+           <y>-457</y>
            <width>619</width>
-           <height>975</height>
+           <height>998</height>
           </rect>
          </property>
          <attribute name="label">
@@ -934,11 +934,17 @@
                 </widget>
                </item>
                <item>
-                <widget class="QPushButton" name="load_roi_from_atlas">
-                 <property name="text">
-                  <string>Load from atlas...</string>
+                <spacer name="horizontalSpacer_8">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
                  </property>
-                </widget>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
                </item>
                <item>
                 <widget class="QWidget" name="ROI_widget" native="true">
@@ -958,59 +964,60 @@
                   <property name="bottomMargin">
                    <number>0</number>
                   </property>
-                  <item>
-                   <widget class="QLabel" name="label_5">
-                    <property name="text">
-                     <string>as</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QComboBox" name="region_type">
-                    <item>
-                     <property name="text">
-                      <string>ROI</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>ROA</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>End</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>Seed</string>
-                     </property>
-                    </item>
-                   </widget>
-                  </item>
-                  <item>
-                   <spacer name="horizontalSpacer_7">
-                    <property name="orientation">
-                     <enum>Qt::Horizontal</enum>
-                    </property>
-                    <property name="sizeHint" stdset="0">
-                     <size>
-                      <width>40</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                   </spacer>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="clear_all_roi">
-                    <property name="text">
-                     <string>Clear all</string>
-                    </property>
-                   </widget>
-                  </item>
                  </layout>
                 </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_20">
+               <property name="spacing">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <widget class="QToolButton" name="toolButton">
+                 <property name="text">
+                  <string>...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../icons.qrc">
+                   <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="load_roi_from_atlas">
+                 <property name="text">
+                  <string>From atlas...</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="clear_all_roi">
+                 <property name="text">
+                  <string>Clear all</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../icons.qrc">
+                   <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_7">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
                </item>
               </layout>
              </item>

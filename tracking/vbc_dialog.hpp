@@ -2,6 +2,7 @@
 #define VBC_DIALOG_HPP
 #include <QDialog>
 #include <QGraphicsScene>
+#include <QItemDelegate>
 #include <QTimer>
 #include "image/image.hpp"
 #include "vbc/vbc_database.h"
@@ -9,6 +10,26 @@
 namespace Ui {
 class vbc_dialog;
 }
+
+
+class ROIViewDelegate : public QItemDelegate
+ {
+     Q_OBJECT
+
+ public:
+    ROIViewDelegate(QObject *parent)
+         : QItemDelegate(parent)
+     {
+     }
+
+     QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option,
+                                const QModelIndex &index) const;
+          void setEditorData(QWidget *editor, const QModelIndex &index) const;
+          void setModelData(QWidget *editor, QAbstractItemModel *model,
+                            const QModelIndex &index) const;
+private slots:
+    void emitCommitData();
+ };
 
 class tracking_window;
 class FibData;
@@ -26,9 +47,7 @@ public:
     QString work_dir;
     std::vector<std::string> file_names,saved_file_name;
 public:
-    std::vector<std::string> roi_name;
     std::vector<std::vector<image::vector<3,short> > > roi_list;
-    std::vector<unsigned char> roi_type;
 public:
     std::auto_ptr<vbc_database> vbc;
     std::auto_ptr<stat_model> model;

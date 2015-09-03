@@ -212,7 +212,7 @@ public:// database information
     float fiber_threshold;
     bool normalize_qa;
 private: // single subject analysis result
-    void run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& track,float seed_ratio = 1.0);
+    void run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& track,float seed_ratio = 1.0,unsigned int thread_count = 1);
 public:// for FDR analysis
     std::auto_ptr<boost::thread_group> threads;
     std::vector<unsigned int> subject_greater_null;

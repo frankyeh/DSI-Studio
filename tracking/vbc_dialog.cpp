@@ -13,11 +13,58 @@
 #include "tracking/atlasdialog.h"
 extern std::vector<atlas> atlas_list;
 
+
+QWidget *ROIViewDelegate::createEditor(QWidget *parent,
+                                     const QStyleOptionViewItem &option,
+                                     const QModelIndex &index) const
+{
+    if (index.column() == 2)
+    {
+        QComboBox *comboBox = new QComboBox(parent);
+        comboBox->addItem("ROI");
+        comboBox->addItem("ROA");
+        comboBox->addItem("End");
+        comboBox->addItem("Seed");
+        connect(comboBox, SIGNAL(activated(int)), this, SLOT(emitCommitData()));
+        return comboBox;
+    }
+    else
+        return QItemDelegate::createEditor(parent,option,index);
+
+}
+
+void ROIViewDelegate::setEditorData(QWidget *editor,
+                                  const QModelIndex &index) const
+{
+
+    if (index.column() == 2)
+        ((QComboBox*)editor)->setCurrentIndex(index.model()->data(index).toString().toInt());
+    else
+        return QItemDelegate::setEditorData(editor,index);
+}
+
+void ROIViewDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
+                                 const QModelIndex &index) const
+{
+    if (index.column() == 2)
+        model->setData(index,QString::number(((QComboBox*)editor)->currentIndex()));
+    else
+        QItemDelegate::setModelData(editor,model,index);
+}
+
+void ROIViewDelegate::emitCommitData()
+{
+    emit commitData(qobject_cast<QWidget *>(sender()));
+}
+
+
 vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_,bool gui_) :
     QDialog(parent),vbc(vbc_ptr),work_dir(work_dir_),gui(gui_),
     ui(new Ui::vbc_dialog)
 {
     ui->setupUi(this);
+    ui->roi_table->setItemDelegate(new ROIViewDelegate(ui->roi_table));
+    ui->roi_table->setAlternatingRowColors(true);
     ui->vbc_view->setScene(&vbc_scene);
     ui->multithread->setValue(QThread::idealThreadCount());
     ui->individual_list->setModel(new QStringListModel);
@@ -974,6 +1021,9 @@ void vbc_dialog::on_run_clicked()
     {
         out << " The tracking algorithm used ";
         const char roi_type_name[5][20] = {"region of interst","region of avoidance","ending region","seeding region","terminating region"};
+        const char roi_type_name2[5][5] = {"roi","roa","end","seed"};
+        vbc->roi_list = roi_list;
+        vbc->roi_type.resize(roi_list.size());
         for(unsigned int index = 0;index < roi_list.size();++index)
         {
             if(index && roi_list.size() > 2)
@@ -981,11 +1031,23 @@ void vbc_dialog::on_run_clicked()
             out << " ";
             if(roi_list.size() >= 2 && index+1 == roi_list.size())
                 out << "and ";
-            out << roi_name[index] << " as the " << roi_type_name[roi_type[index]];
+            out << ui->roi_table->item(index,0)->text().toStdString() << " as the " << roi_type_name[ui->roi_table->item(index,2)->text().toInt()];
+            QString name = ui->roi_table->item(index,0)->text();
+            name = name.replace('?','_');
+            name = name.replace(':','_');
+            name = name.replace('/','_');
+            name = name.replace('\\','_');
+            vbc->roi_type[index] = ui->roi_table->item(index,2)->text().toInt();
+            for(unsigned int index = 0;index < vbc->trk_file_names.size();++index)
+            {
+                vbc->trk_file_names[index] += ".";
+                vbc->trk_file_names[index] += roi_type_name2[vbc->roi_type.front()];
+                vbc->trk_file_names[index] += ".";
+                vbc->trk_file_names[index] += name.toStdString();
+            }
         }
         out << ".";
-        vbc->roi_list = roi_list;
-        vbc->roi_type = roi_type;
+
     }
     else
     {
@@ -1076,7 +1138,6 @@ void vbc_dialog::on_roi_whole_brain_toggled(bool checked)
     ui->roi_table->setEnabled(!checked);
     ui->load_roi_from_atlas->setEnabled(!checked);
     ui->clear_all_roi->setEnabled(!checked);
-    ui->region_type->setEnabled(!checked);
 }
 
 
@@ -1378,7 +1439,6 @@ void vbc_dialog::on_load_roi_from_atlas_clicked()
     std::auto_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this));
     if(atlas_dialog->exec() == QDialog::Accepted)
     {
-        const char roi_type_name[5][5] = {"ROI","ROA","End","Seed","Ter"};
         for(unsigned int i = 0;i < atlas_dialog->roi_list.size();++i)
         {
             std::vector<image::vector<3,short> > new_roi;
@@ -1393,16 +1453,12 @@ void vbc_dialog::on_load_roi_from_atlas_clicked()
             }
             if(!new_roi.empty())
             {
-                //ui->subject_demo->clear();
-                //ui->subject_demo->setColumnCount(2);
-                //ui->subject_demo->setHorizontalHeaderLabels(QStringList() << "Subject ID" << "Group ID");
                 ui->roi_table->setRowCount(ui->roi_table->rowCount()+1);
                 ui->roi_table->setItem(ui->roi_table->rowCount()-1,0,new QTableWidgetItem(QString(atlas_dialog->roi_name[i].c_str())));
                 ui->roi_table->setItem(ui->roi_table->rowCount()-1,1,new QTableWidgetItem(QString(atlas_dialog->atlas_name.c_str())));
-                ui->roi_table->setItem(ui->roi_table->rowCount()-1,2,new QTableWidgetItem(QString(roi_type_name[ui->region_type->currentIndex()])));
+                ui->roi_table->setItem(ui->roi_table->rowCount()-1,2,new QTableWidgetItem(QString::number(0)));
+                ui->roi_table->openPersistentEditor(ui->roi_table->item(ui->roi_table->rowCount()-1,2));
                 roi_list.push_back(new_roi);
-                roi_name.push_back(atlas_dialog->roi_name[i]);
-                roi_type.push_back(ui->region_type->currentIndex());
             }
 
         }
@@ -1413,7 +1469,5 @@ void vbc_dialog::on_load_roi_from_atlas_clicked()
 void vbc_dialog::on_clear_all_roi_clicked()
 {
     roi_list.clear();
-    roi_name.clear();
-    roi_type.clear();
     ui->roi_table->setRowCount(0);
 }
