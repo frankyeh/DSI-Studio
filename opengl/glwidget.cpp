@@ -2244,6 +2244,7 @@ void GLWidget::rotate(void)
     int now_time = time.elapsed();
     rotate_angle((now_time-last_time)/100.0,0,1.0,0.0);
     last_time = now_time;
+    updateGL();
 }
 
 
