@@ -121,7 +121,7 @@ void fib_data::write_greater(fiber_orientations& fib) const
 }
 
 
-void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& tracks,float seed_ratio)
+void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& tracks,float seed_ratio, unsigned int thread_count)
 {
     std::vector<image::vector<3,short> > seed;
     for(image::pixel_index<3> index;index.is_valid(handle->dim);index.next(handle->dim))
@@ -150,7 +150,7 @@ void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vect
         for(unsigned int index = 0;index < roi_list.size();++index)
             tracking_thread.setRegions(fib.dim,roi_list[index],roi_type[index]);
     }
-    tracking_thread.run(fib,1,seed.size()*seed_ratio,true);
+    tracking_thread.run(fib,thread_count,seed.size()*seed_ratio,true);
     tracking_thread.track_buffer.swap(tracks);
 }
 
@@ -468,7 +468,7 @@ void vbc_database::calculate_spm(fib_data& data,stat_model& info)
     data.initialize(handle.get());
     std::vector<double> population(handle->subject_qa.size());
     std::vector<unsigned char> greater_fib_count(handle->dim.size()),lesser_fib_count(handle->dim.size());
-    for(unsigned int s_index = 0;s_index < handle->si2vi.size();++s_index)
+    for(unsigned int s_index = 0;s_index < handle->si2vi.size() && !terminated;++s_index)
     {
         unsigned int cur_index = handle->si2vi[s_index];
         for(unsigned int fib = 0,fib_offset = 0;fib < handle->fib.num_fiber && handle->fib.fa[fib][cur_index] > fiber_threshold;
@@ -608,20 +608,6 @@ void vbc_database::run_permutation_multithread(unsigned int id)
     }
     else
     {
-        if(id == 0)
-        {
-            stat_model info;
-            info.resample(*model.get(),false,false);
-            calculate_spm(spm_maps[0],info);
-            spm_maps[0].write_lesser(fib);
-            run_track(fib,tracks,total_track_count);
-            lesser_tracks[0].add_tracts(tracks,30);
-            spm_maps[0].write_greater(fib);
-            run_track(fib,tracks,total_track_count);
-            greater_tracks[0].add_tracts(tracks,30);
-        }
-
-
         bool null = true;
         while(total_count < permutation_count && !terminated)
         {
@@ -657,6 +643,22 @@ void vbc_database::run_permutation_multithread(unsigned int id)
             */
             null = !null;
         }
+        if(id == 0)
+        {
+            stat_model info;
+            info.resample(*model.get(),false,false);
+            calculate_spm(spm_maps[0],info);
+            if(terminated)
+                return;
+            spm_maps[0].write_lesser(fib);
+            run_track(fib,tracks,total_track_count,threads->size());
+            lesser_tracks[0].add_tracts(tracks,30);
+            spm_maps[0].write_greater(fib);
+            if(terminated)
+                return;
+            run_track(fib,tracks,total_track_count,threads->size());
+            greater_tracks[0].add_tracts(tracks,30);
+        }
     }
 }
 void vbc_database::clear_thread(void)
@@ -666,6 +668,7 @@ void vbc_database::clear_thread(void)
         terminated = true;
         threads->join_all();
         threads.reset(0);
+        terminated = false;
     }
 }
 void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
