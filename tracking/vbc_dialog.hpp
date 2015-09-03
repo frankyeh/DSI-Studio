@@ -42,6 +42,7 @@ private:
     unsigned int vbc_slice_pos;
     std::auto_ptr<fib_data> result_fib;
     void show_dis_table(void);
+    void add_new_roi(QString name,QString source,std::vector<image::vector<3,short> >& new_roi);
 public:
     bool gui;
     QString work_dir;
@@ -128,6 +129,7 @@ public:
 private slots:
     void on_load_roi_from_atlas_clicked();
     void on_clear_all_roi_clicked();
+    void on_load_roi_from_file_clicked();
 };
 
 #endif // VBC_DIALOG_HPP

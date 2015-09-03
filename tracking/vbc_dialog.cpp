@@ -1432,7 +1432,15 @@ void vbc_dialog::on_suggest_threshold_clicked()
     if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
         ui->percentage_dif->setValue(image::segmentation::otsu_threshold(values)*100);
 }
-
+void vbc_dialog::add_new_roi(QString name,QString source,std::vector<image::vector<3,short> >& new_roi)
+{
+    ui->roi_table->setRowCount(ui->roi_table->rowCount()+1);
+    ui->roi_table->setItem(ui->roi_table->rowCount()-1,0,new QTableWidgetItem(name));
+    ui->roi_table->setItem(ui->roi_table->rowCount()-1,1,new QTableWidgetItem(source));
+    ui->roi_table->setItem(ui->roi_table->rowCount()-1,2,new QTableWidgetItem(QString::number(0)));
+    ui->roi_table->openPersistentEditor(ui->roi_table->item(ui->roi_table->rowCount()-1,2));
+    roi_list.push_back(new_roi);
+}
 
 void vbc_dialog::on_load_roi_from_atlas_clicked()
 {
@@ -1452,17 +1460,8 @@ void vbc_dialog::on_load_roi_from_atlas_clicked()
                     new_roi.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
             }
             if(!new_roi.empty())
-            {
-                ui->roi_table->setRowCount(ui->roi_table->rowCount()+1);
-                ui->roi_table->setItem(ui->roi_table->rowCount()-1,0,new QTableWidgetItem(QString(atlas_dialog->roi_name[i].c_str())));
-                ui->roi_table->setItem(ui->roi_table->rowCount()-1,1,new QTableWidgetItem(QString(atlas_dialog->atlas_name.c_str())));
-                ui->roi_table->setItem(ui->roi_table->rowCount()-1,2,new QTableWidgetItem(QString::number(0)));
-                ui->roi_table->openPersistentEditor(ui->roi_table->item(ui->roi_table->rowCount()-1,2));
-                roi_list.push_back(new_roi);
-            }
-
+                add_new_roi(atlas_dialog->roi_name[i].c_str(),atlas_dialog->atlas_name.c_str(),new_roi);
         }
-
     }
 }
 
@@ -1470,4 +1469,49 @@ void vbc_dialog::on_clear_all_roi_clicked()
 {
     roi_list.clear();
     ui->roi_table->setRowCount(0);
+}
+
+void vbc_dialog::on_load_roi_from_file_clicked()
+{
+    QString file = QFileDialog::getOpenFileName(
+                                this,
+                                "Load ROI from file",
+                                work_dir + "/roi.nii.gz",
+                                "Report file (*.txt *.nii *nii.gz);;All files (*)");
+    if(file.isEmpty())
+        return;
+    image::basic_image<short,3> I;
+    std::vector<float> transform;
+    gz_nifti nii;
+    if(!nii.load_from_file(file.toLocal8Bit().begin()))
+    {
+        QMessageBox::information(this,"Error","Invalid nifti file format",0);
+        return;
+    }
+    nii >> I;
+    transform.clear();
+    transform.resize(16);
+    transform[15] = 1.0;
+    nii.get_image_transformation(transform.begin());
+    image::matrix::inverse(transform.begin(),image::dim<4,4>());
+    std::vector<image::vector<3,short> > new_roi;
+    for (image::pixel_index<3>index; index.is_valid(vbc->handle->dim); index.next(vbc->handle->dim))
+    {
+        image::vector<3> pos((const unsigned int*)(index.begin()));
+        image::vector<3> mni;
+        image::vector_transformation(pos.begin(),mni.begin(), vbc->handle->trans_to_mni,image::vdim<3>());
+        image::vector<3> atlas_space;
+        image::vector_transformation(mni.begin(),atlas_space.begin(),transform.begin(),image::vdim<3>());
+        atlas_space += 0.5;
+        atlas_space.floor();
+        if(!I.geometry().is_valid(atlas_space) || I.at(atlas_space[0],atlas_space[1],atlas_space[2]) == 0)
+            continue;
+        new_roi.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
+    }
+    if(new_roi.empty())
+    {
+        QMessageBox::information(this,"Error","The nifti contain no voxel with value greater than 0.",0);
+        return;
+    }
+    add_new_roi(QFileInfo(file).baseName(),"Local File",new_roi);
 }
