@@ -40,6 +40,7 @@ int trk(int ac, char *av[])
     ("seed_plan", po::value<int>()->default_value(0), "seeding methods (0:subvoxel, 1:voxelwise)")
     ("thread_count", po::value<int>()->default_value(1), "number of thread (default:1)")
     ("output", po::value<std::string>(), "output file name")
+    ("end_point", po::value<std::string>(), "output end point file")
     ("export", po::value<std::string>(), "export additional information (e.g. --export=stat,tdi)")
     ("connectivity", po::value<std::string>(), "export connectivity")
     ("connectivity_type", po::value<std::string>()->default_value("end"), "specify connectivity parameter")
@@ -293,6 +294,8 @@ int trk(int ac, char *av[])
     }
     else
         tract_model.save_tracts_to_file(file_name.c_str());
+    if(vm.count(("end_point")))
+        tract_model.save_end_points(vm["end_point"].as<std::string>().c_str());
 
     std::cout << "a total of " << tract_model.get_visible_track_count() << " tracts are generated" << std::endl;
     std::cout << "output file:" << file_name << std::endl;
