@@ -29,7 +29,6 @@ public:
         static bool save_all(const char* file_name,const std::vector<TractModel*>& all);
         const std::vector<unsigned int>& get_cluster_info(void) const{return tract_cluster;}
         std::vector<unsigned int>& get_cluster_info(void) {return tract_cluster;}
-private:
         void select(float select_angle,
                     const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
                     const image::vector<3,float>& from_pos,std::vector<unsigned int>& selected);
@@ -148,7 +147,7 @@ public:
 public:
     void save_to_image(image::color_image& cm);
     void save_to_file(const char* file_name);
-    bool calculate(const TractModel& tract_model,std::string matrix_value_type,bool use_end_only);
+    bool calculate(TractModel& tract_model,std::string matrix_value_type,bool use_end_only);
 };
 
 

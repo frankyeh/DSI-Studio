@@ -1560,13 +1560,38 @@ void ConnectivityMatrix::set_regions(const region_table_type& region_table)
     }
 }
 
-bool ConnectivityMatrix::calculate(const TractModel& tract_model,std::string matrix_value_type,bool use_end_only)
+bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_value_type,bool use_end_only)
 {
     if(regions.size() == 0)
         return false;
 
     tract_model.get_passing_list(regions,passing_list,use_end_only);
+    if(matrix_value_type == "trk")
+    {
+        std::vector<std::vector<std::vector<unsigned int> > > region_passing_list(regions.size());
+        for(unsigned int i = 0;i < regions.size();++i)
+            region_passing_list[i].resize(regions.size());
+        for(unsigned int index = 0;index < passing_list.size();++index)
+        {
+            std::vector<unsigned int>& region_passed = passing_list[index];
+            for(unsigned int i = 0;i < region_passed.size();++i)
+                    for(unsigned int j = i+1;j < region_passed.size();++j)
+                    {
+                        region_passing_list[region_passed[i]][region_passed[j]].push_back(index);
+                        region_passing_list[region_passed[j]][region_passed[i]].push_back(index);
+                    }
+        }
 
+        for(unsigned int i = 0;i < region_passing_list.size();++i)
+            for(unsigned int j = i+1;j < region_passing_list.size();++j)
+            {
+                std::string file_name = region_name[i]+"_"+region_name[j]+".trk";
+                tract_model.select_tracts(region_passing_list[i][j]);
+                tract_model.save_tracts_to_file(file_name.c_str());
+                tract_model.undo();
+            }
+        return true;
+    }
     matrix_value.clear();
     matrix_value.resize(image::geometry<2>(regions.size(),regions.size()));
     std::vector<std::vector<unsigned int> > count(regions.size());

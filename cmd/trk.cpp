@@ -1,4 +1,5 @@
 #include <QFileInfo>
+#include <QStringList>
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -310,27 +311,30 @@ int trk(int ac, char *av[])
         if(atl_load_atlas(vm["connectivity"].as<std::string>()))
         for(unsigned int index = 0;index < atlas_list.size();++index)
         {
-            std::cout << "calculating connectivity matrix for atlas:"<< atlas_list[index].name << std::endl;
-            ConnectivityMatrix data;
-            data.set_atlas(atlas_list[index],mapping);
-            std::cout << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
-            std::cout << "calculate matrix using " << vm["connectivity_value"].as<std::string>() << std::endl;
-            if(!data.calculate(tract_model,vm["connectivity_value"].as<std::string>(),use_end_only))
+            QStringList value_list = QString(vm["connectivity_value"].as<std::string>().c_str()).split(",");
+            for(unsigned int j = 0;j < value_list.size();++j)
             {
-                std::cout << "Cannot generate connectivity matrix." << std::endl;
-                return false;
+                std::cout << "calculating connectivity matrix for atlas:"<< atlas_list[index].name << std::endl;
+                ConnectivityMatrix data;
+                data.set_atlas(atlas_list[index],mapping);
+                std::cout << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
+                std::cout << "calculate matrix using " << value_list[j].toStdString() << std::endl;
+                if(!data.calculate(tract_model,value_list[j].toStdString(),use_end_only))
+                {
+                    std::cout << "Cannot generate connectivity matrix." << std::endl;
+                    return false;
+                }
+                std::string file_name_stat(vm["source"].as<std::string>());
+                file_name_stat += ".";
+                file_name_stat += atlas_list[index].name;
+                file_name_stat += ".connectivity.";
+                file_name_stat += vm["connectivity_value"].as<std::string>();
+                if(use_end_only)
+                    file_name_stat += ".end_only";
+                file_name_stat += ".mat";
+                std::cout << "export connectivity matrix to " << file_name_stat << std::endl;
+                data.save_to_file(file_name_stat.c_str());
             }
-            std::string file_name_stat(vm["source"].as<std::string>());
-            file_name_stat += ".";
-            file_name_stat += atlas_list[index].name;
-            file_name_stat += ".connectivity.";
-            file_name_stat += vm["connectivity_value"].as<std::string>();
-            if(use_end_only)
-                file_name_stat += ".end_only";
-            file_name_stat += ".mat";
-            std::cout << "export connectivity matrix to " << file_name_stat << std::endl;
-            data.save_to_file(file_name_stat.c_str());
-
         }
     }
 
