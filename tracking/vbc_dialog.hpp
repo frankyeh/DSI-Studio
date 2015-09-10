@@ -45,7 +45,7 @@ private:
     void add_new_roi(QString name,QString source,std::vector<image::vector<3,short> >& new_roi);
 public:
     bool gui;
-    QString work_dir;
+    QString work_dir,db_file_name;
     std::vector<std::string> file_names,saved_file_name;
 public:
     std::vector<std::vector<image::vector<3,short> > > roi_list;
@@ -56,7 +56,7 @@ public:
     std::auto_ptr<QTimer> timer;
     QString report;
 
-    explicit vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_,bool gui_);
+    explicit vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString db_file_name_,bool gui_);
     ~vbc_dialog();
     bool eventFilter(QObject *obj, QEvent *event);
 public:

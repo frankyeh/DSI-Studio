@@ -46,7 +46,7 @@ int cnt(int ac,char *av[])
         std::cout << "invalid database format" << std::endl;
         return 0;
     }
-    std::auto_ptr<vbc_dialog> vbc(new vbc_dialog(0,database.release(),QFileInfo(vm["source"].as<std::string>().c_str()).absoluteDir().absolutePath(),false));
+    std::auto_ptr<vbc_dialog> vbc(new vbc_dialog(0,database.release(),vm["source"].as<std::string>().c_str(),false));
     vbc->setAttribute(Qt::WA_DeleteOnClose);
     vbc->show();
     vbc->hide();

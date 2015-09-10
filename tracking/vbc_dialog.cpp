@@ -58,8 +58,8 @@ void ROIViewDelegate::emitCommitData()
 }
 
 
-vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString work_dir_,bool gui_) :
-    QDialog(parent),vbc(vbc_ptr),work_dir(work_dir_),gui(gui_),
+vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString db_file_name_,bool gui_) :
+    QDialog(parent),vbc(vbc_ptr),db_file_name(db_file_name_),work_dir(QFileInfo(db_file_name_).absoluteDir().absolutePath()),gui(gui_),
     ui(new Ui::vbc_dialog)
 {
     ui->setupUi(this);
@@ -1080,7 +1080,7 @@ void vbc_dialog::on_save_name_list_clicked()
     QString filename = QFileDialog::getSaveFileName(
                 this,
                 "Save name list",
-                work_dir + "/name.txt",
+                db_file_name + ".name.txt",
                 "Report file (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -1289,7 +1289,7 @@ void vbc_dialog::on_save_R2_clicked()
     QString filename = QFileDialog::getSaveFileName(
                 this,
                 "Save R2 values",
-                work_dir + "/R2.txt",
+                db_file_name + ".R2.txt",
                 "Report file (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -1353,7 +1353,7 @@ void vbc_dialog::on_save_vector_clicked()
     QString filename = QFileDialog::getSaveFileName(
                 this,
                 "Save Vector",
-                work_dir + "/subject_vector.mat",
+                db_file_name + ".vec.mat",
                 "Report file (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
