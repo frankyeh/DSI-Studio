@@ -362,6 +362,22 @@ void GLWidget::renderLR(int eye)
         glDrawBuffer(GL_BACK_LEFT);
 
 
+    {
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        float p[11] = {0.35,0.4,0.45,0.5,0.6,0.8,1.0,1.5,2.0,12.0,50.0};
+        GLfloat perspective = p[get_param("pespective")];
+        GLfloat zNear = 1.0f;
+        GLfloat zFar = 1000.0f;
+        GLfloat aspect = float(cur_width)/float(cur_height);
+        GLfloat fH = 0.25;
+        GLfloat fW = fH * aspect;
+        glFrustum( -fW, fW, -fH, fH, zNear*perspective, zFar*perspective);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        my_gluLookAt(eye,0,-200.0*perspective,0,0,0,0,-1.0,0);
+    }
+
     check_error("basic");
     {
 
@@ -694,6 +710,7 @@ void GLWidget::renderLR(int eye)
         glDisable(GL_LIGHTING);
 
         glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
         glLoadIdentity();
         float p[11] = {0.35,0.4,0.45,0.5,0.6,0.8,1.0,1.5,2.0,12.0,50.0};
         GLfloat perspective = p[get_param("pespective")];
@@ -702,43 +719,35 @@ void GLWidget::renderLR(int eye)
         GLfloat aspect = float(cur_width)/float(cur_height);
         GLfloat fH = 0.25;
         GLfloat fW = fH * aspect;
-        glFrustum( -fW, 0.01, -0.01, fH, zNear*perspective, zFar*perspective);
+        glFrustum( -fW, 0.015, -0.015, fH, zNear*perspective, zFar*perspective);
 
 
         glDisable(GL_DEPTH_TEST);
         glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
         glLoadIdentity();
         my_gluLookAt(eye,0,-200.0*perspective,0,0,0,0,-1.0,0);
         glMultMatrixf(rotation_matrix);
         glLineWidth (1.5);
         glBegin (GL_LINES);
-        glColor3f (1.0,0.3,0.3);  glVertex3f(0,0,0);  glVertex3f(2,0,0);    // X axis is red.
-        glColor3f (0.3,1.0,0.3);  glVertex3f(0,0,0);  glVertex3f(0,2,0);    // Y axis is green.
-        glColor3f (0.3,0.3,1.0);  glVertex3f(0,0,0);  glVertex3f(0,0,2);    // z axis is blue.
+        glColor3f (1.0,0.3,0.3);  glVertex3f(0,0,0);  glVertex3f(1.5,0,0);    // X axis is red.
+        glColor3f (0.3,1.0,0.3);  glVertex3f(0,0,0);  glVertex3f(0,1.5,0);    // Y axis is green.
+        glColor3f (0.3,0.3,1.0);  glVertex3f(0,0,0);  glVertex3f(0,0,1.5);    // z axis is blue.
         glEnd();
+        renderText(0,0,2,"S");
+        glColor3f (1.0,0.3,0.3);
+        renderText(2,0,0,"L");
+        glColor3f (0.3,1.0,0.3);
+        renderText(0,2,0,"P");
         glEnable(GL_DEPTH_TEST);
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
 
     }
 
     check_error("axis");
-
-    {
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        float p[11] = {0.35,0.4,0.45,0.5,0.6,0.8,1.0,1.5,2.0,12.0,50.0};
-        GLfloat perspective = p[get_param("pespective")];
-        GLfloat zNear = 1.0f;
-        GLfloat zFar = 1000.0f;
-        GLfloat aspect = float(cur_width)/float(cur_height);
-        GLfloat fH = 0.25;
-        GLfloat fW = fH * aspect;
-        glFrustum( -fW, fW, -fH, fH, zNear*perspective, zFar*perspective);
-
-
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-        my_gluLookAt(eye,0,-200.0*perspective,0,0,0,0,-1.0,0);
-    }
 
 
 
@@ -2010,12 +2019,10 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             int w = 0;
             int h = 0;
             in >> w >> h;
-            cur_tracking_window.float3dwindow(w,h);
+            renderPixmap(w,h).save(param);
         }
-        paintGL();
-        grabFrameBuffer().save(param);
-        if(!param2.isEmpty())
-            cur_tracking_window.restore_3D_window();
+        else
+            renderPixmap().save(param);
         return;
     }
     if(cmd == "save_3view_image")
