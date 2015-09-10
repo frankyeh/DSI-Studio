@@ -97,6 +97,7 @@ Q_OBJECT
  protected:
      void initializeGL();
      void resizeGL(int width, int height);
+     void setFrustum(int eye);
      void renderLR(int);
      void mousePressEvent(QMouseEvent *event);
      void mouseReleaseEvent(QMouseEvent *event);

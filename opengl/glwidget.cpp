@@ -49,6 +49,7 @@ GLWidget::GLWidget(bool samplebuffer,
     max_fa = *std::max_element(cur_tracking_window.slice.source_images.begin(),cur_tracking_window.slice.source_images.end());
     if(max_fa == 0.0)
         max_fa = 1.0;
+
 }
 
 GLWidget::~GLWidget()
@@ -101,20 +102,6 @@ void check_error(const char* line)
     }
 }
 
-
-
-void GLWidget::initializeGL()
-{
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_NORMALIZE);
-    glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
-    glBlendFunc (GL_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    tracts = glGenLists(1);
-    tract_alpha = -1; // ensure that make_track is called
-    slice_contrast = -1;// ensure slices is rendered
-    odf_position = 255;//ensure ODFs is renderred
-    check_error(__FUNCTION__);
-}
 
 void GLWidget::set_view(unsigned char view_option)
 {
@@ -336,16 +323,38 @@ void my_gluLookAt(GLdouble eyex, GLdouble eyey, GLdouble eyez, GLdouble centerx,
     glTranslated(-eyex, -eyey, -eyez);
 }
 
+void GLWidget::setFrustum(int eye)
+{
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    float p[11] = {0.35,0.4,0.45,0.5,0.6,0.8,1.0,1.5,2.0,12.0,50.0};
+    GLfloat perspective = p[get_param("pespective")];
+    GLfloat zNear = 1.0f;
+    GLfloat zFar = 1000.0f;
+    GLfloat aspect = float(cur_width)/float(cur_height);
+    GLfloat fH = 0.25;
+    GLfloat fW = fH * aspect;
+    glFrustum( -fW, fW, -fH, fH, zNear*perspective, zFar*perspective);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    my_gluLookAt(eye,0,-200.0*perspective,0,0,0,0,-1.0,0);
+}
+
+void GLWidget::initializeGL()
+{
+    check_error(__FUNCTION__);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_NORMALIZE);
+
+    tracts = glGenLists(1);
+    tract_alpha = -1; // ensure that make_track is called
+    slice_contrast = -1;// ensure slices is rendered
+    odf_position = 255;//ensure ODFs is renderred
+    check_error(__FUNCTION__);
+    renderLR(0);
+}
 void GLWidget::paintGL()
 {
-    //glDrawBuffer (GL_BACK);
-
-    int color = get_param("bkg_color");
-    glClearColor((float)((color & 0x00FF0000) >> 16)/255.0,
-                 (float)((color & 0x0000FF00) >> 8)/255.0,
-                 (float)(color & 0x000000FF)/255.0,1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     if(!stereoscopy)
         renderLR(0);
     else
@@ -354,29 +363,21 @@ void GLWidget::paintGL()
         renderLR(-10);
     }
 }
+
+
 void GLWidget::renderLR(int eye)
 {
     if(eye > 0)
         glDrawBuffer(GL_BACK_RIGHT);
     if(eye < 0)
         glDrawBuffer(GL_BACK_LEFT);
+    int color = get_param("bkg_color");
+    qglClearColor(QColor((float)((color & 0x00FF0000) >> 16),
+                  (float)((color & 0x0000FF00) >> 8),
+                  (float)(color & 0x000000FF)));
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
-    {
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        float p[11] = {0.35,0.4,0.45,0.5,0.6,0.8,1.0,1.5,2.0,12.0,50.0};
-        GLfloat perspective = p[get_param("pespective")];
-        GLfloat zNear = 1.0f;
-        GLfloat zFar = 1000.0f;
-        GLfloat aspect = float(cur_width)/float(cur_height);
-        GLfloat fH = 0.25;
-        GLfloat fW = fH * aspect;
-        glFrustum( -fW, fW, -fH, fH, zNear*perspective, zFar*perspective);
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-        my_gluLookAt(eye,0,-200.0*perspective,0,0,0,0,-1.0,0);
-    }
+    setFrustum(eye);
 
     check_error("basic");
     {
@@ -567,7 +568,6 @@ void GLWidget::renderLR(int eye)
         glPopMatrix();
         glDisable(GL_COLOR_MATERIAL);
         glDisable(GL_BLEND);
-        glDisable(GL_TEXTURE_2D);
         glDepthMask(true);
         check_error("show_tract");
     }
@@ -744,14 +744,10 @@ void GLWidget::renderLR(int eye)
         glMatrixMode(GL_PROJECTION);
         glPopMatrix();
         glMatrixMode(GL_MODELVIEW);
-
+        check_error("axis");
     }
-
-    check_error("axis");
-
-
-
 }
+
 
 void GLWidget::add_odf(image::pixel_index<3> pos)
 {
@@ -2054,9 +2050,7 @@ void GLWidget::command(QString cmd,QString param,QString param2)
     {
         if(param.isEmpty())
             return;
-        cur_tracking_window.gLdock.reset(0);
-        cur_tracking_window.float3dwindow(1920,1080);
-        begin_prog("save images");
+        begin_prog("save video");
         image::io::avi avi;
         for(unsigned int index = 1;check_prog(index,360);++index)
         {
@@ -2076,7 +2070,6 @@ void GLWidget::command(QString cmd,QString param,QString param2)
                 avi.open(param.toLocal8Bit().begin(),1920,1080, "MJPG", 30/*fps*/);
             avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
         }
-        cur_tracking_window.restore_3D_window();
         avi.close();
         return;
     }
@@ -2085,11 +2078,10 @@ void GLWidget::command(QString cmd,QString param,QString param2)
         if(param.isEmpty())
             return;
         makeCurrent();
-        cur_tracking_window.gLdock.reset(0);
-        cur_tracking_window.float3dwindow(1024,768);
         image::io::avi avi;
         double eye_shift = cur_tracking_window["3d_perspective"].toDouble();
-        for(unsigned int index = 1;index <= 360;++index)
+        begin_prog("save video");
+        for(unsigned int index = 1;check_prog(index,361);++index)
         {
 
             // output 2048x768
@@ -2101,7 +2093,6 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
             glPopMatrix();
             paintGL();
-
             QImage I1 = grabFrameBuffer().scaledToWidth(1024*devicePixelRatio());
 
             glPushMatrix();
@@ -2111,7 +2102,6 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
             glPopMatrix();
             paintGL();
-
             QImage I2 = grabFrameBuffer().scaledToWidth(1024*devicePixelRatio());
 
             glPushMatrix();
@@ -2136,7 +2126,6 @@ void GLWidget::command(QString cmd,QString param,QString param2)
                 avi.open(param.toLocal8Bit().begin(),I.width(),I.height(), "MJPG", 30/*fps*/);
             avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
         }
-        cur_tracking_window.restore_3D_window();
         avi.close();
         return;
     }
@@ -2144,16 +2133,13 @@ void GLWidget::command(QString cmd,QString param,QString param2)
 }
 void GLWidget::catchScreen(void)
 {
-    QSettings settings;
     QString filename = QFileDialog::getSaveFileName(
                this,
                "Save Images files",
-               cur_tracking_window.absolute_path + "/image." +
-                settings.value("catch_screen_extension","jpg").toString(),
+               cur_tracking_window.absolute_path + "/image.jpg",
                "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
-    settings.setValue("catch_screen_extension",QFileInfo(filename).completeSuffix());
     command("save_image",filename);
 }
 
