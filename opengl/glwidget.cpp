@@ -351,7 +351,6 @@ void GLWidget::initializeGL()
     slice_contrast = -1;// ensure slices is rendered
     odf_position = 255;//ensure ODFs is renderred
     check_error(__FUNCTION__);
-    renderLR(0);
 }
 void GLWidget::paintGL()
 {
