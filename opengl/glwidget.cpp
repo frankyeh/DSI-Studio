@@ -2087,6 +2087,11 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             glPushMatrix();
             glLoadIdentity();
             glRotated(1,0,1.0,0.0);
+            glMultMatrixf(rotation_matrix);
+            glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix);
+
+            glLoadIdentity();
+            glRotated(1,0,1.0,0.0);
             glTranslatef(-eye_shift,0,0);
             glMultMatrixf(transformation_matrix);
             glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
@@ -2135,7 +2140,7 @@ void GLWidget::catchScreen(void)
     QString filename = QFileDialog::getSaveFileName(
                this,
                "Save Images files",
-               cur_tracking_window.absolute_path + "/image.jpg",
+               "image.jpg",
                "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -2149,30 +2154,23 @@ void GLWidget::catchScreen2(void)
                                            QString::number(cur_width)+" "+QString::number(cur_height),&ok);
     if(!ok)
         return;
-    QSettings settings;
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Save Images files",
-            cur_tracking_window.absolute_path + "/image." +
-            settings.value("catch_screen_extension","jpg").toString(),
+            "image.jpg",
             "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
-    settings.setValue("catch_screen_extension",QFileInfo(filename).completeSuffix());
     command("save_image",filename,result);
 }
 
 void GLWidget::save3ViewImage(void)
 {
-    QSettings settings;
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Assign image name",
-            cur_tracking_window.absolute_path + "/image." +
-            settings.value("catch_screen_extension","jpg").toString(),
+            "image.jpg",
             "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
-    if(!filename.isEmpty())
-        settings.setValue("catch_screen_extension",QFileInfo(filename).completeSuffix());
     command("save_3view_image",filename);
 
 }
@@ -2182,7 +2180,7 @@ void GLWidget::saveLeftRight3DImage(void)
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Assign image name",
-            cur_tracking_window.absolute_path,
+            "image.jpg",
             "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -2200,7 +2198,7 @@ void GLWidget::saveRotationSeries(void)
     command("save_rotation_video",QFileDialog::getSaveFileName(
                 this,
                 "Assign video name",
-                cur_tracking_window.absolute_path,
+                "movie.avi",
                 "Video file (*.avi);;All files (*)"));
 }
 
@@ -2209,7 +2207,7 @@ void GLWidget::saveRotationVideo2(void)
     command("save_stereo_rotation_video",QFileDialog::getSaveFileName(
             this,
             "Assign video name",
-            cur_tracking_window.absolute_path,
+            "movie.avi",
             "Video file (*.avi);;All files (*)"));
 }
 
