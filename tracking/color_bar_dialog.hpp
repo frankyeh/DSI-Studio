@@ -14,9 +14,9 @@ class color_bar_dialog : public QDialog
 {
     Q_OBJECT
 public:// color_bar
-    image::color_image bar;
+    image::color_map color_map;
+    image::color_bar bar;
     QGraphicsScene color_bar;
-    std::vector<image::vector<3,float> > color_map;
 public:
     tracking_window* cur_tracking_window;
     Ui::color_bar_dialog *ui;

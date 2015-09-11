@@ -8,7 +8,7 @@
 
 color_bar_dialog::color_bar_dialog(QWidget *parent) :
     QDialog(parent),
-    cur_tracking_window((tracking_window*)parent),
+    cur_tracking_window((tracking_window*)parent),bar(20,256),
     ui(new Ui::color_bar_dialog)
 {
     ui->setupUi(this);
@@ -70,64 +70,23 @@ void color_bar_dialog::on_tract_color_index_currentIndexChanged(int index)
 }
 
 
-unsigned char color_spectrum_value(unsigned char center, unsigned char value)
-{
-    unsigned char dif = center > value ? center-value:value-center;
-    if(dif < 32)
-        return 255;
-    dif -= 32;
-    if(dif >= 64)
-        return 0;
-    return 255-(dif << 2);
-}
+
 
 
 void color_bar_dialog::update_color_map(void)
 {
-    color_map.resize(256);
-    bar.resize(image::geometry<2>(20,256));
-
     if(ui->color_bar_style->currentIndex() == 0)
     {
         image::rgb_color from_color = ui->color_from->color().rgba();
         image::rgb_color to_color = ui->color_to->color().rgba();
-        for(unsigned int index = 0;index < color_map.size();++index)
-        {
-            float findex = (float)index/255.0;
-            for(unsigned char rgb_index = 0;rgb_index < 3;++rgb_index)
-                color_map[index][2-rgb_index] =
-                        (float)to_color[rgb_index]*findex/255.0+
-                        (float)from_color[rgb_index]*(1.0-findex)/255.0;
-        }
-
-
-
-        for(unsigned int index = 1;index < 255;++index)
-        {
-            float findex = (float)index/256.0;
-            image::rgb_color color;
-            for(unsigned char rgb_index = 0;rgb_index < 3;++rgb_index)
-                color[rgb_index] = (float)from_color[rgb_index]*findex+(float)to_color[rgb_index]*(1.0-findex);
-            std::fill(bar.begin()+index*20+1,bar.begin()+(index+1)*20-1,color);
-        }
+        color_map.two_color(from_color,to_color);
+        bar.two_color(from_color,to_color);
     }
 
     if(ui->color_bar_style->currentIndex() == 1)
     {
-        for(unsigned int index = 0;index < color_map.size();++index)
-        {
-            color_map[index][0] = (float)color_spectrum_value(128+64,index)/255.0;
-            color_map[index][1] = (float)color_spectrum_value(128,index)/255.0;
-            color_map[index][2] = (float)color_spectrum_value(64,index)/255.0;
-        }
-        for(unsigned int index = 1;index < 255;++index)
-        {
-            image::rgb_color color;
-            color.r = color_spectrum_value(64,index);
-            color.g = color_spectrum_value(128,index);
-            color.b = color_spectrum_value(128+64,index);
-            std::fill(bar.begin()+index*20+1,bar.begin()+(index+1)*20-1,color);
-        }
+        color_map.spectrum();
+        bar.spectrum();
     }
 
     color_bar.clear();
