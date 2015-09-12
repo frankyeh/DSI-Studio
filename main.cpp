@@ -69,6 +69,42 @@ void load_atlas(void)
     }
 
 }
+image::basic_image<int,3> cerebrum_1mm,cerebrum_2mm;
+bool load_cerebrum_mask(void)
+{
+    if(!cerebrum_1mm.empty() && !cerebrum_2mm.empty())
+        return true;
+    QString file1 = "/cerebrum1.nii.gz";
+    QString file2 = "/cerebrum2.nii.gz";
+    if(QFileInfo(QCoreApplication::applicationDirPath() + file1).exists())
+        file1 = QCoreApplication::applicationDirPath() + file1;
+    else
+        if(QFileInfo(QDir::currentPath() + file1).exists())
+            file1 = QDir::currentPath() + file1;
+        else
+            return false;
+
+    if(QFileInfo(QCoreApplication::applicationDirPath() + file2).exists())
+        file2 = QCoreApplication::applicationDirPath() + file2;
+    else
+        if(QFileInfo(QDir::currentPath() + file2).exists())
+            file2 = QDir::currentPath() + file2;
+        else
+            return false;
+    {
+        gz_nifti n1;
+        if(!n1.load_from_file(file1.toLocal8Bit().begin()))
+            return false;
+        n1.toLPS(cerebrum_1mm);
+    }
+    {
+        gz_nifti n2;
+        if(!n2.load_from_file(file2.toLocal8Bit().begin()))
+            return false;
+        n2.toLPS(cerebrum_2mm);
+    }
+    return true;
+}
 
 int main(int ac, char *av[])
 { 

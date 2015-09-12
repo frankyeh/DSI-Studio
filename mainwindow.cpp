@@ -34,6 +34,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
     progressDialog.reset(new QProgressDialog);
+    progressDialog->hide();
     ui->setupUi(this);
     ui->recentFib->setColumnCount(3);
     ui->recentFib->setColumnWidth(0,300);

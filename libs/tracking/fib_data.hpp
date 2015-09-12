@@ -382,19 +382,17 @@ public:
     std::string subject_report;
     std::vector<std::string> subject_names;
     unsigned int num_subjects;
-    // 0: subject index 1:findex 2.s_index (fa > 0)
-    std::vector<std::vector<float> > subject_qa_buffer;
     std::vector<const float*> subject_qa;
+    unsigned int subject_qa_length;
     std::vector<float> subject_qa_max;
     std::vector<float> R2;
     std::vector<unsigned int> vi2si;
     std::vector<unsigned int> si2vi;
-
+    std::vector<std::vector<float> > subject_qa_buf;// merged from other db
     void read_db(void)
     {
         subject_qa.clear();
         subject_qa_max.clear();
-        subject_qa_buffer.clear();
         unsigned int row,col;
         for(unsigned int index = 0;1;++index)
         {
@@ -404,6 +402,8 @@ public:
             mat_reader.read(out.str().c_str(),row,col,buf);
             if (!buf)
                 break;
+            if(!index)
+                subject_qa_length = row*col;
             subject_qa.push_back(buf);
             subject_qa_max.push_back(*std::max_element(buf,buf+col*row));
             if(subject_qa_max.back() == 0.0)
@@ -548,9 +548,8 @@ public:
     {
         num_subjects = (unsigned int)file_names.size();
         subject_qa.clear();
-        subject_qa_buffer.clear();
         subject_qa.resize(num_subjects);
-        subject_qa_buffer.resize(num_subjects);
+        std::vector<std::vector<float> > subject_qa_buffer(num_subjects);
         R2.resize(num_subjects);
         for(unsigned int index = 0;index < num_subjects;++index)
         {
@@ -601,8 +600,7 @@ public:
         return true;
     }
     void get_subject_vector(std::vector<std::vector<float> >& subject_vector,
-                            const image::basic_image<int,3>& cerebrum_mask,
-                            bool normalize_qa) const
+                            const image::basic_image<int,3>& cerebrum_mask) const
     {
         float fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(dim,fib.fa[0]));
         subject_vector.clear();
@@ -616,19 +614,57 @@ public:
                     ++j,fib_offset+=si2vi.size())
             {
                 unsigned int pos = s_index + fib_offset;
-                if(normalize_qa)
-                    for(unsigned int index = 0;index < num_subjects;++index)
-                        subject_vector[index].push_back(subject_qa[index][pos]/subject_qa_max[index]);
-                else
-                    for(unsigned int index = 0;index < num_subjects;++index)
-                        subject_vector[index].push_back(subject_qa[index][pos]);
+                for(unsigned int index = 0;index < num_subjects;++index)
+                    subject_vector[index].push_back(subject_qa[index][pos]);
             }
         }
+        for(unsigned int index = 0;index < num_subjects;++index)
+        {
+            image::minus_constant(subject_vector[index].begin(),subject_vector[index].end(),image::mean(subject_vector[index].begin(),subject_vector[index].end()));
+            float sd = image::standard_deviation(subject_vector[index].begin(),subject_vector[index].end());
+            if(sd > 0.0)
+                image::divide_constant(subject_vector[index].begin(),subject_vector[index].end(),sd);
+        }
+    }
+    void get_subject_vector(unsigned int subject_index,std::vector<float>& subject_vector,
+                            const image::basic_image<int,3>& cerebrum_mask) const
+    {
+        float fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(dim,fib.fa[0]));
+        subject_vector.clear();
+        for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
+        {
+            unsigned int cur_index = si2vi[s_index];
+            if(!cerebrum_mask[cur_index])
+                continue;
+            for(unsigned int j = 0,fib_offset = 0;j < fib.num_fiber && fib.fa[j][cur_index] > fiber_threshold;
+                    ++j,fib_offset+=si2vi.size())
+                subject_vector.push_back(subject_qa[subject_index][s_index + fib_offset]);
+        }
+        image::minus_constant(subject_vector.begin(),subject_vector.end(),image::mean(subject_vector.begin(),subject_vector.end()));
+        float sd = image::standard_deviation(subject_vector.begin(),subject_vector.end());
+        if(sd > 0.0)
+            image::divide_constant(subject_vector.begin(),subject_vector.end(),sd);
+    }
+    void get_dif_matrix(std::vector<float>& matrix,const image::basic_image<int,3>& cerebrum_mask)
+    {
+        matrix.clear();
+        matrix.resize(num_subjects*num_subjects);
+        std::vector<std::vector<float> > subject_vector;
+        get_subject_vector(subject_vector,cerebrum_mask);
+        begin_prog("calculating");
+        for(unsigned int i = 0; check_prog(i,num_subjects);++i)
+            for(unsigned int j = i+1; j < num_subjects;++j)
+            {
+                double result = image::root_mean_suqare_error(
+                            subject_vector[i].begin(),subject_vector[i].end(),
+                            subject_vector[j].begin());
+                matrix[i*num_subjects+j] = result;
+                matrix[j*num_subjects+i] = result;
+            }
     }
 
     void save_subject_vector(const char* output_name,
-                             const image::basic_image<int,3>& cerebrum_mask,
-                             bool normalize_qa) const
+                             const image::basic_image<int,3>& cerebrum_mask) const
     {
         gz_mat_write matfile(output_name);
         if(!matfile)
@@ -637,7 +673,7 @@ public:
             return;
         }
         std::vector<std::vector<float> > subject_vector;
-        get_subject_vector(subject_vector,cerebrum_mask,normalize_qa);
+        get_subject_vector(subject_vector,cerebrum_mask);
         std::string name_string;
         for(unsigned int index = 0;index < num_subjects;++index)
         {
@@ -753,6 +789,39 @@ public:
         }
         return true;
     }
+    bool add_db(const FibData* rhs)
+    {
+        if(rhs->dim != dim || subject_qa_length != rhs->subject_qa_length)
+        {
+            error_msg = "Image dimension does not match";
+            return false;
+        }
+        for(unsigned int index = 0;index < dim.size();++index)
+            if(fib.fa[0][index] != rhs->fib.fa[0][index])
+            {
+                error_msg = "The connectometry db was created using a different template.";
+                return false;
+            }
+
+        num_subjects += rhs->num_subjects;
+        R2.insert(R2.end(),rhs->R2.begin(),rhs->R2.end());
+        subject_qa_max.insert(subject_qa_max.end(),rhs->subject_qa_max.begin(),rhs->subject_qa_max.end());
+        subject_names.insert(subject_names.end(),rhs->subject_names.begin(),rhs->subject_names.end());
+        // copy the qa memeory
+        for(unsigned int index = 0;index < rhs->num_subjects;++index)
+        {
+            subject_qa_buf.push_back(std::vector<float>());
+            subject_qa_buf.back().resize(subject_qa_length);
+            std::copy(rhs->subject_qa[index],
+                      rhs->subject_qa[index]+subject_qa_length,subject_qa_buf.back().begin());
+        }
+
+        // everytime subject_qa_buf has a change, its memory may have been reallocated. Thus we need to assign all pointers.
+        subject_qa.resize(num_subjects);
+        for(unsigned int index = 0;index < subject_qa_buf.size();++index)
+            subject_qa[num_subjects+index-subject_qa_buf.size()] = &(subject_qa_buf[index][0]);
+    }
+
 public:
     image::geometry<3> dim;
     image::vector<3> vs;

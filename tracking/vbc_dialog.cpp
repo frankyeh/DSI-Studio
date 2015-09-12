@@ -3,6 +3,8 @@
 #include <QInputDialog>
 #include <QStringListModel>
 #include <QThread>
+#include <QGraphicsTextItem>
+#include <QGraphicsPixmapItem>
 #include <boost/math/distributions/students_t.hpp>
 #include "vbc_dialog.hpp"
 #include "ui_vbc_dialog.h"
@@ -12,7 +14,8 @@
 #include "libs/tracking/fib_data.hpp"
 #include "tracking/atlasdialog.h"
 extern std::vector<atlas> atlas_list;
-
+extern image::basic_image<int,3> cerebrum_1mm,cerebrum_2mm;
+bool load_cerebrum_mask(void);
 
 QWidget *ROIViewDelegate::createEditor(QWidget *parent,
                                      const QStyleOptionViewItem &option,
@@ -59,13 +62,19 @@ void ROIViewDelegate::emitCommitData()
 
 
 vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString db_file_name_,bool gui_) :
-    QDialog(parent),vbc(vbc_ptr),db_file_name(db_file_name_),work_dir(QFileInfo(db_file_name_).absoluteDir().absolutePath()),gui(gui_),
+    QDialog(parent),vbc(vbc_ptr),db_file_name(db_file_name_),work_dir(QFileInfo(db_file_name_).absoluteDir().absolutePath()),gui(gui_),color_bar(10,256),
     ui(new Ui::vbc_dialog)
 {
+    color_map.spectrum();
+    color_bar.spectrum();
     ui->setupUi(this);
+    setMouseTracking(true);
     ui->roi_table->setItemDelegate(new ROIViewDelegate(ui->roi_table));
     ui->roi_table->setAlternatingRowColors(true);
     ui->vbc_view->setScene(&vbc_scene);
+    ui->fp_dif_view->setScene(&fp_dif_scene);
+    ui->fp_view->setScene(&fp_scene);
+
     ui->multithread->setValue(QThread::idealThreadCount());
     ui->individual_list->setModel(new QStringListModel);
     ui->individual_list->setSelectionModel(new QItemSelectionModel(ui->individual_list->model()));
@@ -91,31 +100,13 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString db_file_nam
                                                << "null greater pdf" << "null lesser pdf"
                                                << "greater pdf" << "lesser pdf");
 
-    ui->subject_list->setRowCount(vbc->handle->num_subjects);
-    std::string check_quality,bad_r2;
-    for(unsigned int index = 0;index < vbc->handle->num_subjects;++index)
-    {
-        ui->subject_list->setItem(index,0, new QTableWidgetItem(QString(vbc->handle->subject_names[index].c_str())));
-        ui->subject_list->setItem(index,1, new QTableWidgetItem(QString::number(0)));
-        ui->subject_list->setItem(index,2, new QTableWidgetItem(QString::number(vbc->handle->R2[index])));
-        if(vbc->handle->R2[index] < 0.3)
-        {
-            if(check_quality.empty())
-                check_quality = "Low R2 value found in subject(s):";
-            std::ostringstream out;
-            out << " #" << index+1 << " " << vbc->handle->subject_names[index];
-            check_quality += out.str();
-        }
-        if(vbc->handle->R2[index] != vbc->handle->R2[index])
-        {
-            if(bad_r2.empty())
-                bad_r2 = "Invalid data found in subject(s):";
-            std::ostringstream out;
-            out << " #" << index+1 << " " << vbc->handle->subject_names[index];
-            bad_r2 += out.str();
-        }
 
-    }
+    ui->subject_view->setCurrentIndex(0);
+    ui->fp_splitter->setSizes(QList<int>() << 100 << 300);
+
+    update_subject_list();
+
+
     ui->AxiSlider->setMaximum(vbc->handle->dim[2]-1);
     ui->AxiSlider->setMinimum(0);
     ui->AxiSlider->setValue(vbc->handle->dim[2] >> 1);
@@ -142,17 +133,12 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString db_file_nam
     ui->subject_list->selectRow(0);
     ui->toolBox->setCurrentIndex(1);
     ui->foi_widget->hide();
-    ui->ROI_widget->hide();
-    ui->roi_options->hide();
     on_roi_whole_brain_toggled(true);
     on_rb_FDR_toggled(false);
     on_rb_multiple_regression_clicked();
     qApp->installEventFilter(this);
 
-    if(!check_quality.empty())
-        QMessageBox::information(this,"Warning",check_quality.c_str());
-    if(!bad_r2.empty())
-        QMessageBox::information(this,"Warning",bad_r2.c_str());
+
 
 }
 
@@ -174,14 +160,45 @@ bool vbc_dialog::eventFilter(QObject *obj, QEvent *event)
     pos[2] = ui->AxiSlider->value();
     if(!vbc->handle->dim.is_valid(pos))
         return true;
-    ui->coordinate->setText(QString("(%1,%2,%3)").arg(pos[0]).arg(pos[1]).arg(pos[2]));
-
     ui->x_pos->setValue(std::floor(pos[0] + 0.5));
     ui->y_pos->setValue(std::floor(pos[1] + 0.5));
     ui->z_pos->setValue(std::floor(pos[2] + 0.5));
 
 
     return true;
+}
+void vbc_dialog::update_subject_list()
+{
+    ui->subject_list->clear();
+    ui->subject_list->setRowCount(vbc->handle->num_subjects);
+    std::string check_quality,bad_r2;
+    for(unsigned int index = 0;index < vbc->handle->num_subjects;++index)
+    {
+        ui->subject_list->setItem(index,0, new QTableWidgetItem(QString(vbc->handle->subject_names[index].c_str())));
+        ui->subject_list->setItem(index,1, new QTableWidgetItem(QString::number(0)));
+        ui->subject_list->setItem(index,2, new QTableWidgetItem(QString::number(vbc->handle->R2[index])));
+        if(vbc->handle->R2[index] < 0.3)
+        {
+            if(check_quality.empty())
+                check_quality = "Low R2 value found in subject(s):";
+            std::ostringstream out;
+            out << " #" << index+1 << " " << vbc->handle->subject_names[index];
+            check_quality += out.str();
+        }
+        if(vbc->handle->R2[index] != vbc->handle->R2[index])
+        {
+            if(bad_r2.empty())
+                bad_r2 = "Invalid data found in subject(s):";
+            std::ostringstream out;
+            out << " #" << index+1 << " " << vbc->handle->subject_names[index];
+            bad_r2 += out.str();
+        }
+
+    }
+    if(!check_quality.empty())
+        QMessageBox::information(this,"Warning",check_quality.c_str());
+    if(!bad_r2.empty())
+        QMessageBox::information(this,"Warning",bad_r2.c_str());
 }
 
 void vbc_dialog::show_fdr_report()
@@ -372,6 +389,76 @@ void vbc_dialog::on_subject_list_itemSelectionChanged()
     vbc_scene.setItemIndexMethod(QGraphicsScene::NoIndex);
     vbc_scene.addRect(0, 0, vbc_slice_image.width(),vbc_slice_image.height(),QPen(),vbc_slice_image);
     vbc_slice_pos = ui->AxiSlider->value();
+
+    if(ui->toolBox->currentIndex() == 0 && ui->subject_view->currentIndex() == 1 && load_cerebrum_mask())
+    {
+        std::vector<float> fp;
+        if(cerebrum_1mm.geometry() == vbc->handle->dim)
+            vbc->handle->get_subject_vector(ui->subject_list->currentRow(),fp,cerebrum_1mm);
+        else
+            if(cerebrum_2mm.geometry() == vbc->handle->dim)
+                vbc->handle->get_subject_vector(ui->subject_list->currentRow(),fp,cerebrum_2mm);
+
+        fp_image_buf.clear();
+        fp_image_buf.resize(image::geometry<2>(ui->fp_zoom->value()*25,ui->fp_zoom->value()*100));// rotated
+
+        image::minus_constant(fp.begin(),fp.end(),*std::min_element(fp.begin(),fp.end()));
+        float max_fp = *std::max_element(fp.begin(),fp.end());
+        if(max_fp == 0)
+            return;
+        image::multiply_constant(fp,(float)fp_image_buf.width()/max_fp);
+        std::vector<int> ifp(fp.size());
+        std::copy(fp.begin(),fp.end(),ifp.begin());
+        image::upper_lower_threshold(ifp,0,(int)fp_image_buf.width()-1);
+        unsigned int* base = (unsigned int*)&fp_image_buf[0];
+        for(unsigned int i = 0;i < fp_image_buf.height();++i,base += fp_image_buf.width())
+        {
+            unsigned int from_index = (i)*ifp.size()/fp_image_buf.height();
+            unsigned int to_index = (i+1)*ifp.size()/fp_image_buf.height();
+            for(++from_index;from_index != to_index;++from_index)
+            {
+                unsigned int from = ifp[from_index-1];
+                unsigned int to = ifp[from_index];
+                if(from > to)
+                    std::swap(from,to);
+                image::add_constant(base+from,base+to,1);
+            }
+        }
+        base = (unsigned int*)&fp_image_buf[0];
+        unsigned int max_value = *std::max_element(base,base+fp_image_buf.size());
+        for(unsigned int index = 0;index < fp_image_buf.size();++index)
+            fp_image_buf[index] = image::rgb_color((unsigned char)(255-std::min<int>(255,(fp_image_buf[index].color*512/max_value))));
+        image::swap_xy(fp_image_buf);
+        image::flip_y(fp_image_buf);
+        QImage fp_image_tmp((unsigned char*)&*fp_image_buf.begin(),fp_image_buf.width(),fp_image_buf.height(),QImage::Format_RGB32);
+        fp_image = fp_image_tmp;
+        fp_scene.setSceneRect(0, 0, fp_image.width(),fp_image.height());
+        fp_scene.clear();
+        fp_scene.setItemIndexMethod(QGraphicsScene::NoIndex);
+        fp_scene.addRect(0, 0, fp_image.width(),fp_image.height(),QPen(),fp_image);
+
+    }
+
+    if(!fp_dif_map.empty() && fp_dif_map.width() == vbc->handle->num_subjects)
+    {
+        fp_dif_map.resize(image::geometry<2>(vbc->handle->num_subjects,vbc->handle->num_subjects));
+        for(unsigned int index = 0;index < fp_matrix.size();++index)
+            fp_dif_map[index] = color_map[fp_matrix[index]*256.0/fp_max_value];
+
+        // line x
+        for(unsigned int x_pos = 0,pos = ui->subject_list->currentRow()*vbc->handle->num_subjects;x_pos < vbc->handle->num_subjects;++x_pos,++pos)
+        {
+            fp_dif_map[pos][2] = (fp_dif_map[pos][0] >> 1);
+            fp_dif_map[pos][2] += 125;
+        }
+        // line y
+        for(unsigned int y_pos = 0,pos = ui->subject_list->currentRow();y_pos < vbc->handle->num_subjects;++y_pos,pos += vbc->handle->num_subjects)
+        {
+            fp_dif_map[pos][2] = (fp_dif_map[pos][0] >> 1);
+            fp_dif_map[pos][2] += 125;
+        }
+        on_fp_zoom_valueChanged(0);
+    }
 }
 
 void vbc_dialog::on_open_files_clicked()
@@ -1138,6 +1225,7 @@ void vbc_dialog::on_roi_whole_brain_toggled(bool checked)
     ui->roi_table->setEnabled(!checked);
     ui->load_roi_from_atlas->setEnabled(!checked);
     ui->clear_all_roi->setEnabled(!checked);
+    ui->load_roi_from_file->setEnabled(!checked);
 }
 
 
@@ -1298,55 +1386,11 @@ void vbc_dialog::on_save_R2_clicked()
 }
 
 
-
 void vbc_dialog::on_save_vector_clicked()
 {
-    QString file1 = "/cerebrum1.nii.gz";
-    QString file2 = "/cerebrum2.nii.gz";
-    image::basic_image<int,3> I1,I2;
-
-    if(QFileInfo(QCoreApplication::applicationDirPath() + file1).exists())
-        file1 = QCoreApplication::applicationDirPath() + file1;
-    else
-        if(QFileInfo(QDir::currentPath() + file1).exists())
-            file1 = QDir::currentPath() + file1;
-        else
-        {
-            QMessageBox::information(this,"Error",QString("Cannot find ") + QDir::currentPath() + file1,0);
-            return;
-        }
-
-    if(QFileInfo(QCoreApplication::applicationDirPath() + file2).exists())
-        file2 = QCoreApplication::applicationDirPath() + file2;
-    else
-        if(QFileInfo(QDir::currentPath() + file2).exists())
-            file2 = QDir::currentPath() + file2;
-        else
-        {
-            QMessageBox::information(this,"Error",QString("Cannot find ") + QDir::currentPath() + file2,0);
-            return;
-        }
+    if(!load_cerebrum_mask())
     {
-        gz_nifti n1;
-        if(!n1.load_from_file(file1.toLocal8Bit().begin()))
-        {
-            QMessageBox::information(this,"Error",QString("Invalid format in ") + file1,0);
-            return;
-        }
-        n1.toLPS(I1);
-    }
-    {
-        gz_nifti n2;
-        if(!n2.load_from_file(file2.toLocal8Bit().begin()))
-        {
-            QMessageBox::information(this,"Error",QString("Invalid format in ") + file2,0);
-            return;
-        }
-        n2.toLPS(I2);
-    }
-    if(I1.geometry() != vbc->handle->dim && I2.geometry() != vbc->handle->dim)
-    {
-        QMessageBox::information(this,"Error","Inconsistent image dimension between connectometry db and cerebrum.nii.gz",0);
+        QMessageBox::information(this,"Error","Cannot find the cerebrum mask",0);
         return;
     }
 
@@ -1358,26 +1402,20 @@ void vbc_dialog::on_save_vector_clicked()
     if(filename.isEmpty())
         return;
 
-    if(I1.geometry() == vbc->handle->dim)
-        vbc->handle->save_subject_vector(filename.toLocal8Bit().begin(),I1,ui->normalize_qa->isChecked());
+    if(cerebrum_1mm.geometry() == vbc->handle->dim)
+        vbc->handle->save_subject_vector(filename.toLocal8Bit().begin(),cerebrum_1mm);
     else
-        if(I2.geometry() == vbc->handle->dim)
-            vbc->handle->save_subject_vector(filename.toLocal8Bit().begin(),I2,ui->normalize_qa->isChecked());
+        if(cerebrum_2mm.geometry() == vbc->handle->dim)
+            vbc->handle->save_subject_vector(filename.toLocal8Bit().begin(),cerebrum_2mm);
 
 }
 
 void vbc_dialog::on_show_advanced_clicked()
 {
     if(ui->advanced_options->isVisible())
-    {
         ui->advanced_options->hide();
-        ui->roi_options->hide();
-    }
     else
-    {
         ui->advanced_options->show();
-        ui->roi_options->show();
-    }
 }
 
 void vbc_dialog::on_foi_currentIndexChanged(int index)
@@ -1515,3 +1553,115 @@ void vbc_dialog::on_load_roi_from_file_clicked()
     }
     add_new_roi(QFileInfo(file).baseName(),"Local File",new_roi);
 }
+
+void vbc_dialog::on_calculate_dif_clicked()
+{
+    if(!load_cerebrum_mask())
+    {
+        QMessageBox::information(this,"Error","Cannot load cerebrum mask.");
+        return;
+    }
+    if(cerebrum_1mm.geometry() == vbc->handle->dim)
+        vbc->handle->get_dif_matrix(fp_matrix,cerebrum_1mm);
+    else
+        if(cerebrum_2mm.geometry() == vbc->handle->dim)
+            vbc->handle->get_dif_matrix(fp_matrix,cerebrum_2mm);
+
+    fp_max_value = *std::max_element(fp_matrix.begin(),fp_matrix.end());
+    fp_dif_map.resize(image::geometry<2>(vbc->handle->num_subjects,vbc->handle->num_subjects));
+    for(unsigned int index = 0;index < fp_matrix.size();++index)
+        fp_dif_map[index] = color_map[fp_matrix[index]*256.0/fp_max_value];
+    on_fp_zoom_valueChanged(ui->fp_zoom->value());
+}
+
+void vbc_dialog::on_fp_zoom_valueChanged(double arg1)
+{
+    QImage qimage((unsigned char*)&*fp_dif_map.begin(),fp_dif_map.width(),fp_dif_map.height(),QImage::Format_RGB32);
+    fp_dif_image = qimage.scaled(fp_dif_map.width()*ui->fp_zoom->value(),fp_dif_map.height()*ui->fp_zoom->value());
+    fp_dif_scene.setSceneRect(0, 0, fp_dif_image.width()+80,fp_dif_image.height()+10);
+    fp_dif_scene.clear();
+    fp_dif_scene.setItemIndexMethod(QGraphicsScene::NoIndex);
+    fp_dif_scene.addRect(0, 0, fp_dif_image.width(),fp_dif_image.height(),QPen(),fp_dif_image);
+
+    QImage qbar((unsigned char*)&*color_bar.begin(),color_bar.width(),color_bar.height(),QImage::Format_RGB32);
+    qbar = qbar.scaledToHeight(fp_dif_image.height());
+    fp_dif_scene.addPixmap(QPixmap::fromImage(qbar))->moveBy(fp_dif_image.width()+10,0);
+    fp_dif_scene.addText(QString::number(fp_max_value))->moveBy(fp_dif_image.width()+qbar.width()+10,-10);
+    fp_dif_scene.addText(QString("0"))->moveBy(fp_dif_image.width()+qbar.width()+10,(int)fp_dif_image.height()-10);
+}
+
+void vbc_dialog::on_subject_view_tabBarClicked(int index)
+{
+    if(index == 1 && fp_dif_map.empty() )
+        on_calculate_dif_clicked();
+}
+
+void vbc_dialog::on_save_dif_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                this,
+                "Save Vector",
+                db_file_name + ".vec.dif.mat",
+                "Figures (*.jpg *.png *.tif *.bmp;;MATLAB file (*.mat);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    if(fp_matrix.empty() || fp_matrix.size() != vbc->handle->num_subjects*vbc->handle->num_subjects)
+        on_calculate_dif_clicked();
+    if(QFileInfo(filename).suffix().toLower() == "mat")
+    {
+        image::io::mat_write out(filename.toStdString().c_str());
+        if(!out)
+            return;
+        out.write("dif",(const float*)&*fp_matrix.begin(),vbc->handle->num_subjects,vbc->handle->num_subjects);
+    }
+    else
+    {
+        QImage img(fp_dif_scene.sceneRect().size().toSize(), QImage::Format_RGB32);
+        QPainter painter(&img);
+        painter.fillRect(fp_dif_scene.sceneRect(),Qt::white);
+        fp_dif_scene.render(&painter);
+        img.save(filename);
+    }
+}
+
+void vbc_dialog::on_save_fp_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                this,
+                "Save Vector",
+                db_file_name + ".vec.dif.mat",
+                "Figures (*.jpg *.png *.tif *.bmp;;MATLAB file (*.mat);;All files (*)");
+    if(filename.isEmpty())
+        return;
+}
+
+
+void vbc_dialog::on_add_db_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(
+                           this,
+                           "Open Database files",
+                           db_file_name,
+                           "Database files (*db?fib.gz);;All files (*)");
+    if (filename.isEmpty())
+        return;
+    std::auto_ptr<FibData> handle(new FibData);
+    begin_prog("reading connectometry db");
+    if(!handle->load_from_file(filename.toStdString().c_str()))
+    {
+        QMessageBox::information(this,"Error",handle->error_msg.c_str(),0);
+        return;
+    }
+    vbc->handle->add_db(handle.get());
+    update_subject_list();
+    if(model.get())
+    {
+        model.reset(0);
+        ui->subject_demo->clear();
+        ui->run->setEnabled(false);
+    }
+    if(!fp_dif_map.empty())
+        on_calculate_dif_clicked();
+}
+
+

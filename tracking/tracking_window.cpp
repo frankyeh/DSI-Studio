@@ -446,6 +446,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
         // for connectivity matrix
         if(connectivity_matrix.get() && connectivity_matrix->is_graphic_view(obj->parent()))
             connectivity_matrix->mouse_move(static_cast<QMouseEvent*>(event));
+
     }
     if(!has_info)
         return false;

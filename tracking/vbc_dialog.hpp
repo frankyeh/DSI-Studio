@@ -37,6 +37,15 @@ class vbc_dialog : public QDialog
 {
     Q_OBJECT
 private:
+    QGraphicsScene fp_dif_scene, fp_scene;
+    image::color_image fp_dif_map;
+    QImage fp_dif_image,fp_image;
+    image::color_image fp_image_buf;
+    image::color_map_rgb color_map;
+    image::color_bar color_bar;
+    std::vector<float> fp_matrix;
+    float fp_max_value;
+private:
     QGraphicsScene vbc_scene;
     QImage vbc_slice_image;
     unsigned int vbc_slice_pos;
@@ -59,9 +68,9 @@ public:
     explicit vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString db_file_name_,bool gui_);
     ~vbc_dialog();
     bool eventFilter(QObject *obj, QEvent *event);
+    void update_subject_list();
 public:
     bool load_demographic_file(QString filename);
-
 public slots:
 
 
@@ -130,6 +139,12 @@ private slots:
     void on_load_roi_from_atlas_clicked();
     void on_clear_all_roi_clicked();
     void on_load_roi_from_file_clicked();
+    void on_calculate_dif_clicked();
+    void on_fp_zoom_valueChanged(double arg1);
+    void on_subject_view_tabBarClicked(int index);
+    void on_save_dif_clicked();
+    void on_add_db_clicked();
+    void on_save_fp_clicked();
 };
 
 #endif // VBC_DIALOG_HPP
