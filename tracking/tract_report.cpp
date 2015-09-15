@@ -26,6 +26,7 @@ tract_report::tract_report(QWidget *parent) :
         connect(ui->linewidth,SIGNAL(valueChanged(int)),this,SLOT(on_refresh_report_clicked()));
         connect(ui->report_bandwidth,SIGNAL(valueChanged(double)),this,SLOT(on_refresh_report_clicked()));
         connect(ui->report_legend,SIGNAL(clicked()),this,SLOT(on_refresh_report_clicked()));
+
     }
 }
 
@@ -49,7 +50,7 @@ void tract_report::on_refresh_report_clicked()
 
     ui->report_widget->clearGraphs();
 
-    double max_y = 0.0,min_x = 0.0,max_x = 0;
+    double max_y = 0.0,min_y = 0.0,min_x = 0.0,max_x = 0;
     if(ui->profile_dir->currentIndex() <= 2)
         min_x = cur_tracking_window->slice.geometry[ui->profile_dir->currentIndex()];
     for(unsigned int index = 0;index < cur_tracking_window->tractWidget->tract_models.size();++index)
@@ -69,10 +70,23 @@ void tract_report::on_refresh_report_clicked()
             if(data_profile[i] > 0.0)
             {
                 max_y = std::max<float>(max_y,data_profile[i]);
+                min_y = std::min<float>(min_y,data_profile[i]);
                 max_x = std::max<float>(max_x,values[i]);
                 min_x = std::min<float>(min_x,values[i]);
             }
 
+        if(ui->max_y->minimum() != min_y ||
+           ui->min_y->maximum() != max_y)
+        {
+            ui->max_y->setMaximum(max_y+std::fabs(max_y));
+            ui->min_y->setMaximum(max_y);
+            ui->max_y->setMinimum(min_y);
+            ui->max_y->setMinimum(min_y-std::fabs(min_y));
+            ui->max_y->setValue(max_y);
+            ui->min_y->setValue(min_y);
+            ui->max_y->setSingleStep((max_y-min_y)/20);
+            ui->min_y->setSingleStep((max_y-min_y)/20);
+        }
         QVector<double> x(data_profile.size()),y(data_profile.size());
         std::copy(values.begin(),values.end(),x.begin());
         std::copy(data_profile.begin(),data_profile.end(),y.begin());
@@ -94,8 +108,7 @@ void tract_report::on_refresh_report_clicked()
 
     }
     ui->report_widget->xAxis->setRange(min_x,max_x);
-    ui->report_widget->yAxis->setRange(ui->report_index->currentIndex() ? 0 :
-            (*cur_tracking_window)["fa_threshold"].toFloat(), max_y);
+    ui->report_widget->yAxis->setRange(ui->min_y->value(),ui->max_y->value());
     if(ui->report_legend->checkState() == Qt::Checked)
     {
         ui->report_widget->legend->setVisible(true);
@@ -146,4 +159,16 @@ void tract_report::on_save_image_clicked()
         ui->report_widget->savePng(filename);
     if(QFileInfo(filename).completeSuffix().toLower() == "pdf")
         ui->report_widget->savePdf(filename,true);
+}
+
+void tract_report::on_max_y_valueChanged(double arg1)
+{
+    ui->report_widget->yAxis->setRange(ui->min_y->value(),ui->max_y->value());
+    ui->report_widget->replot();
+}
+
+void tract_report::on_min_y_valueChanged(double arg1)
+{
+    ui->report_widget->yAxis->setRange(ui->min_y->value(),ui->max_y->value());
+    ui->report_widget->replot();
 }

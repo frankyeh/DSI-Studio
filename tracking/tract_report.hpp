@@ -24,6 +24,11 @@ public slots:
 
     void on_save_image_clicked();
 
+private slots:
+    void on_max_y_valueChanged(double arg1);
+
+    void on_min_y_valueChanged(double arg1);
+
 private:
     Ui::tract_report *ui;
 };

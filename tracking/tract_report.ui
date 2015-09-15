@@ -34,6 +34,9 @@
         <string>Data Sources</string>
        </property>
        <layout class="QGridLayout" name="gridLayout_2">
+        <property name="spacing">
+         <number>0</number>
+        </property>
         <item row="0" column="0">
          <widget class="QLabel" name="label_2">
           <property name="text">
@@ -108,48 +111,124 @@
         <string>Visualization</string>
        </property>
        <layout class="QGridLayout" name="gridLayout">
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_12">
-          <property name="text">
-           <string>Line Width</string>
-          </property>
-         </widget>
-        </item>
+        <property name="spacing">
+         <number>0</number>
+        </property>
         <item row="0" column="1">
-         <widget class="QSpinBox" name="linewidth">
-          <property name="minimum">
-           <number>1</number>
-          </property>
-          <property name="maximum">
-           <number>10</number>
+         <widget class="Line" name="line">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
           </property>
          </widget>
         </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label">
-          <property name="text">
-           <string>Regression Bandwidth</string>
+        <item row="0" column="0">
+         <layout class="QFormLayout" name="formLayout_2">
+          <property name="horizontalSpacing">
+           <number>0</number>
           </property>
-         </widget>
+          <property name="verticalSpacing">
+           <number>0</number>
+          </property>
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>Max Y</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>Min Y</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QDoubleSpinBox" name="min_y">
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>16777215</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QDoubleSpinBox" name="max_y">
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>16777215</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
-        <item row="1" column="1">
-         <widget class="QDoubleSpinBox" name="report_bandwidth">
-          <property name="decimals">
-           <number>1</number>
+        <item row="0" column="2">
+         <layout class="QFormLayout" name="formLayout">
+          <property name="horizontalSpacing">
+           <number>0</number>
           </property>
-          <property name="minimum">
-           <double>0.100000000000000</double>
+          <property name="verticalSpacing">
+           <number>0</number>
           </property>
-          <property name="maximum">
-           <double>10.000000000000000</double>
-          </property>
-          <property name="singleStep">
-           <double>0.500000000000000</double>
-          </property>
-          <property name="value">
-           <double>1.000000000000000</double>
-          </property>
-         </widget>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_12">
+            <property name="text">
+             <string>Line Width</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>Regression Bandwidth</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QSpinBox" name="linewidth">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>10</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QDoubleSpinBox" name="report_bandwidth">
+            <property name="decimals">
+             <number>1</number>
+            </property>
+            <property name="minimum">
+             <double>0.100000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>10.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.500000000000000</double>
+            </property>
+            <property name="value">
+             <double>1.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>
@@ -180,6 +259,9 @@
        </item>
        <item>
         <widget class="QPushButton" name="save_image">
+         <property name="styleSheet">
+          <string notr="true">text-align: left</string>
+         </property>
          <property name="text">
           <string>Save Image...</string>
          </property>
@@ -187,6 +269,9 @@
        </item>
        <item>
         <widget class="QPushButton" name="save_report">
+         <property name="styleSheet">
+          <string notr="true">text-align: left</string>
+         </property>
          <property name="text">
           <string>Save Report Data...</string>
          </property>
