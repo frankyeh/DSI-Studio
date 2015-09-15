@@ -970,17 +970,22 @@ void TractModel::redo(void)
     delete_tracts(redo_tracts);
 }
 //---------------------------------------------------------------------------
-void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract)
+void TractModel::add_tracts(std::vector<std::vector<float> >& new_tracks)
+{
+    add_tracts(new_tracks,image::rgb_color(200,100,30));
+}
+//---------------------------------------------------------------------------
+void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract,image::rgb_color color)
 {
     tract_data.reserve(tract_data.size()+new_tract.size());
-    image::rgb_color def_color(200,100,30);
+
     for (unsigned int index = 0;index < new_tract.size();++index)
     {
         if (new_tract[index].empty())
             continue;
         tract_data.push_back(std::vector<float>());
         tract_data.back().swap(new_tract[index]);
-        tract_color.push_back(def_color);
+        tract_color.push_back(color);
     }
 }
 

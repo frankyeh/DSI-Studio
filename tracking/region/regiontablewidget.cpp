@@ -850,6 +850,8 @@ void RegionTableWidget::setROIs(ThreadData* data)
     for (unsigned int index = 0;index < regions.size();++index)
         if (!regions[index].empty() && item(index,0)->checkState() == Qt::Checked)
         {
+            if(data->color.color == 0)
+                data->color = regions[index].show_region.color;
             data->setRegions(cur_tracking_window.handle->dim,regions[index].get(),
                              regions[index].regions_feature);
             if(regions[index].regions_feature == roi_id)

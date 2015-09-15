@@ -64,6 +64,7 @@ public:
 
         void release_tracts(std::vector<std::vector<float> >& released_tracks);
         void add_tracts(std::vector<std::vector<float> >& new_tracks);
+        void add_tracts(std::vector<std::vector<float> >& new_tracks,image::rgb_color color);
         void add_tracts(std::vector<std::vector<float> >& new_tracks,unsigned int length_threshold);
         void filter_by_roi(RoiMgr& roi_mgr);
         void cull(float select_angle,

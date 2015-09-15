@@ -17,6 +17,7 @@ struct ThreadData
 
 public:
     RoiMgr roi_mgr;
+    image::rgb_color color;
     std::vector<image::vector<3,short> > seeds;
 public:
     std::ostringstream report;
@@ -31,6 +32,7 @@ public:
     unsigned int max_seed_count;
 public:
     ThreadData(bool random_seed):
+        color(200,100,30),
         joinning(false),
         generator(random_seed ? std::time(0):0),
         uniform_rand(0,1.0),
@@ -164,7 +166,7 @@ public:
             return false;
 
         boost::mutex::scoped_lock lock(lock_feed_function);
-        handle->add_tracts(track_buffer);
+        handle->add_tracts(track_buffer,color);
         track_buffer.clear();
         return true;
 
