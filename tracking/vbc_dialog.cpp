@@ -1652,7 +1652,11 @@ void vbc_dialog::on_add_db_clicked()
         QMessageBox::information(this,"Error",handle->error_msg.c_str(),0);
         return;
     }
-    vbc->handle->add_db(handle.get());
+    if(!vbc->handle->add_db(handle.get()))
+    {
+        QMessageBox::information(this,"Error",vbc->handle->error_msg.c_str(),0);
+        return;
+    }
     update_subject_list();
     if(model.get())
     {
