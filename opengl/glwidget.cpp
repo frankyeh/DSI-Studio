@@ -2070,11 +2070,11 @@ void GLWidget::command(QString cmd,QString param,QString param2)
         for(unsigned int index = 1;check_prog(index,360);++index)
         {
             rotate_angle(1,0,1.0,0.0);
-            QImage I_ = grabFrameBuffer().scaledToWidth(1920*devicePixelRatio());
-            QImage I(1920,1080,QImage::Format_RGB32);
+            QImage I_ = grabFrameBuffer();
+            QImage I(I_.width(),I_.height(),QImage::Format_RGB32);
             QPainter painter;
             painter.begin(&I);
-            painter.drawImage(0, (1080*devicePixelRatio()-I_.height())/2/devicePixelRatio(), I_);
+            painter.drawImage(0, 0, I_);
             painter.end();
 
             QBuffer buffer;
@@ -2082,7 +2082,7 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             writer.write(I);
             QByteArray data = buffer.data();
             if(index == 1)
-                avi.open(param.toLocal8Bit().begin(),1920,1080, "MJPG", 30/*fps*/);
+                avi.open(param.toLocal8Bit().begin(),I_.width(),I_.height(), "MJPG", 30/*fps*/);
             avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
         }
         avi.close();
