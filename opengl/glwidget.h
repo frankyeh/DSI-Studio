@@ -139,6 +139,7 @@ Q_OBJECT
 
      float current_scale;
      bool set_view_flip;
+     void update_slice(void){slice_index = 255;}
      void get3View(QImage& I,unsigned int type);
      void command(QString cmd,QString param = "",QString param2 = "");
  };

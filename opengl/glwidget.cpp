@@ -609,9 +609,7 @@ void GLWidget::renderLR(int eye)
             slice_min_color = cur_tracking_window.ui->min_color_gl->color().rgb();
             slice_max_color = cur_tracking_window.ui->max_color_gl->color().rgb();
 
-            image::color_map_rgb color_map;
-            color_map.two_color(slice_min_color,slice_max_color);
-            cur_tracking_window.v2c_gl.set_color_map(color_map);
+            cur_tracking_window.v2c_gl.two_color(slice_min_color,slice_max_color);
             active_slice->texture_need_update[0] = true;
             active_slice->texture_need_update[1] = true;
             active_slice->texture_need_update[2] = true;

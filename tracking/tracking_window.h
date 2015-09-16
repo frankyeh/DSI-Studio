@@ -123,7 +123,6 @@ private slots:
     void SliderValueChanged(void);
     void glSliderValueChanged(void);
 
-    void on_update_v2c(void);
     void on_actionSave_Endpoints_in_Current_Mapping_triggered();
     void on_deleteSlice_clicked();
     void on_tool5_pressed();
@@ -154,6 +153,12 @@ private slots:
     void on_actionROI_triggered();
     void on_actionTrack_Report_triggered();
     void on_rendering_efficiency_currentIndexChanged(int index);
+    void on_load_color_map_clicked();
+    void on_max_value_valueChanged(double arg1);
+    void on_min_value_valueChanged(double arg1);
+    void on_max_color_released();
+    void on_min_color_released();
+    void on_load_color_map_gl_released();
 };
 
 #endif // TRACKING_WINDOW_H

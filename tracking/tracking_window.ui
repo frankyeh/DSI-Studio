@@ -300,6 +300,17 @@
              </property>
             </widget>
            </item>
+           <item>
+            <widget class="QToolButton" name="load_color_map_gl">
+             <property name="text">
+              <string>...</string>
+             </property>
+             <property name="icon">
+              <iconset resource="../icons.qrc">
+               <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+             </property>
+            </widget>
+           </item>
           </layout>
          </item>
          <item>
@@ -1894,6 +1905,17 @@
          <property name="icon">
           <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/rec.xpm</normaloff>:/icons/icons/rec.xpm</iconset>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="load_color_map">
+         <property name="text">
+          <string>...</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../icons.qrc">
+           <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
          </property>
         </widget>
        </item>

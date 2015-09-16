@@ -94,6 +94,8 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         ui->max_color->setColor(QColor(255,255,255));
         ui->min_color_gl->setColor(QColor(0,0,0));
         ui->max_color_gl->setColor(QColor(255,255,255));
+        v2c.two_color(ui->min_color->color().rgb(),ui->max_color->color().rgb());
+        v2c_gl.two_color(ui->min_color->color().rgb(),ui->max_color->color().rgb());
 
         slice_no_update = false;
 
@@ -211,11 +213,6 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
 
 
         connect(ui->sliceViewBox,SIGNAL(currentIndexChanged(int)),&scene,SLOT(show_slice()));
-
-        connect(ui->min_color,SIGNAL(released()),this,SLOT(on_update_v2c()));
-        connect(ui->max_color,SIGNAL(released()),this,SLOT(on_update_v2c()));
-        connect(ui->min_value,SIGNAL(valueChanged(double)),this,SLOT(on_update_v2c()));
-        connect(ui->max_value,SIGNAL(valueChanged(double)),this,SLOT(on_update_v2c()));
 
 
     }
@@ -369,7 +366,6 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
     if(renderWidget->getData("orientation_convention").toInt() == 1)
         on_glAxiView_clicked();
 
-    on_update_v2c();
     ui->sliceViewBox->setCurrentIndex(0);
     on_SliceModality_currentIndexChanged(ui->SliceModality->count()-1);
 
@@ -553,15 +549,6 @@ void tracking_window::glSliderValueChanged(void)
             glWidget->updateGL();
 
 }
-void tracking_window::on_update_v2c(void)
-{
-    v2c.set_range(ui->min_value->value(),ui->max_value->value());
-    image::color_map_rgb color_map;
-    color_map.two_color(ui->min_color->color().rgb(),ui->max_color->color().rgb());
-    v2c.set_color_map(color_map);
-    scene.show_slice();
-}
-
 
 void tracking_window::on_AxiView_clicked()
 {
@@ -1469,3 +1456,70 @@ void tracking_window::on_rendering_efficiency_currentIndexChanged(int index)
     }
     glWidget->updateGL();
 }
+
+void tracking_window::on_load_color_map_clicked()
+{
+    QMessageBox::information(this,"Load color map","Please assign a text file of RGB numbers as the colormap.");
+    QString filename;
+    filename = QFileDialog::getOpenFileName(this,
+                "Load color map",absolute_path + "/color_map.txt",
+                "Text files (*.txt);;All files|(*)");
+    if(filename.isEmpty())
+        return;
+    image::color_map_rgb new_color_map;
+    if(!new_color_map.load_from_file(filename.toStdString().c_str()))
+    {
+          QMessageBox::information(this,"Error","Invalid color map format");
+          return;
+    }
+    v2c.set_color_map(new_color_map);
+    ui->min_color->setColor(v2c.min_color().color);
+    ui->max_color->setColor(v2c.max_color().color);
+    scene.show_slice();
+}
+void tracking_window::on_load_color_map_gl_released()
+{
+    QMessageBox::information(this,"Load color map","Please assign a text file of RGB numbers as the colormap.");
+    QString filename;
+    filename = QFileDialog::getOpenFileName(this,
+                "Load color map",absolute_path + "/color_map.txt",
+                "Text files (*.txt);;All files|(*)");
+    if(filename.isEmpty())
+        return;
+    image::color_map_rgb new_color_map;
+    if(!new_color_map.load_from_file(filename.toStdString().c_str()))
+    {
+          QMessageBox::information(this,"Error","Invalid color map format");
+          return;
+    }
+    v2c_gl.set_color_map(new_color_map);
+    ui->min_color_gl->setColor(v2c_gl.min_color().color);
+    ui->max_color_gl->setColor(v2c_gl.max_color().color);
+    glWidget->update_slice();
+}
+
+
+void tracking_window::on_max_value_valueChanged(double arg1)
+{
+    v2c.set_range(ui->min_value->value(),ui->max_value->value());
+    scene.show_slice();
+}
+
+void tracking_window::on_min_value_valueChanged(double arg1)
+{
+    v2c.set_range(ui->min_value->value(),ui->max_value->value());
+    scene.show_slice();
+}
+
+void tracking_window::on_max_color_released()
+{
+    v2c.two_color(ui->min_color->color().rgb(),ui->max_color->color().rgb());
+    scene.show_slice();
+}
+
+void tracking_window::on_min_color_released()
+{
+    v2c.two_color(ui->min_color->color().rgb(),ui->max_color->color().rgb());
+    scene.show_slice();
+}
+
