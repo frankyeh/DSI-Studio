@@ -89,6 +89,12 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         ui->glSagBox->setValue(slice.slice_pos[0]);
         ui->glCorBox->setValue(slice.slice_pos[1]);
         ui->glAxiBox->setValue(slice.slice_pos[2]);
+
+        ui->min_color->setColor(QColor(0,0,0));
+        ui->max_color->setColor(QColor(255,255,255));
+        ui->min_color_gl->setColor(QColor(0,0,0));
+        ui->max_color_gl->setColor(QColor(255,255,255));
+
         slice_no_update = false;
 
         for (unsigned int index = 0;index < fib_data.view_item.size(); ++index)
@@ -158,6 +164,9 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         connect(ui->glCorSlider,SIGNAL(valueChanged(int)),this,SLOT(glSliderValueChanged()));
         connect(ui->glAxiSlider,SIGNAL(valueChanged(int)),this,SLOT(glSliderValueChanged()));
 
+        connect(ui->min_value_gl,SIGNAL(valueChanged(double)),glWidget,SLOT(updateGL()));
+        connect(ui->max_value_gl,SIGNAL(valueChanged(double)),glWidget,SLOT(updateGL()));
+
         connect(ui->glSagCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(updateGL()));
         connect(ui->glCorCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(updateGL()));
         connect(ui->glAxiCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(updateGL()));
@@ -202,6 +211,12 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
 
 
         connect(ui->sliceViewBox,SIGNAL(currentIndexChanged(int)),&scene,SLOT(show_slice()));
+
+        connect(ui->min_color,SIGNAL(released()),this,SLOT(on_update_v2c()));
+        connect(ui->max_color,SIGNAL(released()),this,SLOT(on_update_v2c()));
+        connect(ui->min_value,SIGNAL(valueChanged(double)),this,SLOT(on_update_v2c()));
+        connect(ui->max_value,SIGNAL(valueChanged(double)),this,SLOT(on_update_v2c()));
+
 
     }
 
@@ -354,6 +369,7 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
     if(renderWidget->getData("orientation_convention").toInt() == 1)
         on_glAxiView_clicked();
 
+    on_update_v2c();
     ui->sliceViewBox->setCurrentIndex(0);
     on_SliceModality_currentIndexChanged(ui->SliceModality->count()-1);
 
@@ -537,6 +553,14 @@ void tracking_window::glSliderValueChanged(void)
             glWidget->updateGL();
 
 }
+void tracking_window::on_update_v2c(void)
+{
+    v2c.set_range(ui->min_value->value(),ui->max_value->value());
+    image::color_map_rgb color_map;
+    color_map.two_color(ui->min_color->color().rgb(),ui->max_color->color().rgb());
+    v2c.set_color_map(color_map);
+    scene.show_slice();
+}
 
 
 void tracking_window::on_AxiView_clicked()
@@ -615,29 +639,32 @@ void tracking_window::on_sliceViewBox_currentIndexChanged(int index)
     ui->actionSave_Anisotrpy_Map_as->setText(QString("Save ") +
                                              ui->sliceViewBox->currentText()+" as...");
     slice.set_view_name(ui->sliceViewBox->currentText().toLocal8Bit().begin());
-    float range = handle->get_value_range(ui->sliceViewBox->currentText().toLocal8Bit().begin());
-    if(range != 0.0)
-    {
-        ui->offset_value->setMaximum(range);
-        ui->offset_value->setMinimum(-range);
-        ui->offset_value->setSingleStep(range/50.0);
-        ui->contrast_value->setMaximum(range*11.0);
-        ui->contrast_value->setMinimum(range/11.0);
-        ui->contrast_value->setSingleStep(range/50.0);
-        ui->contrast_value->setValue(range);
-        ui->offset_value->setValue(0.0);
+    std::pair<float,float> range = handle->get_value_range(ui->sliceViewBox->currentText().toLocal8Bit().begin());
+    float r = std::fabs(range.first-range.second);
+    if(r == 0.0)
+        r = 1;
+    float step = r/20.0;
+    ui->min_value->setMinimum(range.first-r);
+    ui->min_value->setMaximum(range.second+r);
+    ui->min_value->setSingleStep(step);
+    ui->min_value->setValue(range.first);
+    ui->max_value->setMinimum(range.first-r);
+    ui->max_value->setMaximum(range.second+r);
+    ui->max_value->setSingleStep(step);
+    ui->max_value->setValue(range.second);
+    v2c.set_range(range.first,range.second);
 
-        if(glWidget->current_visible_slide == 0) // Show diffusion
-        {
-            ui->gl_offset_value->setMaximum(range);
-            ui->gl_offset_value->setMinimum(-range);
-            ui->gl_offset_value->setSingleStep(range/50.0);
-            ui->gl_contrast_value->setMaximum(range*11.0);
-            ui->gl_contrast_value->setMinimum(range/11.0);
-            ui->gl_contrast_value->setSingleStep(range/50.0);
-            ui->gl_contrast_value->setValue(range);
-            ui->gl_offset_value->setValue(0.0);
-        }
+    if(glWidget->current_visible_slide == 0) // Show diffusion
+    {
+        ui->min_value_gl->setMinimum(range.first-r);
+        ui->min_value_gl->setMaximum(range.second+r);
+        ui->min_value_gl->setSingleStep(step);
+        ui->min_value_gl->setValue(range.first);
+        ui->max_value_gl->setMinimum(range.first-r);
+        ui->max_value_gl->setMaximum(range.second+r);
+        ui->max_value_gl->setSingleStep(step);
+        ui->max_value_gl->setValue(range.second);
+        v2c_gl.set_range(range.first,range.second);
     }
 }
 
@@ -705,19 +732,25 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     slice_no_update = true;
 
     {
-        float range;
+        std::pair<float,float> range;
         if(index)
             range = glWidget->other_slices[glWidget->current_visible_slide-1].get_value_range();
         else
             range =  handle->get_value_range(ui->sliceViewBox->currentText().toLocal8Bit().begin());
-        ui->gl_offset_value->setMaximum(range);
-        ui->gl_offset_value->setMinimum(-range);
-        ui->gl_offset_value->setSingleStep(range/50.0);
-        ui->gl_contrast_value->setMaximum(range*11.0);
-        ui->gl_contrast_value->setMinimum(range/11.0);
-        ui->gl_contrast_value->setSingleStep(range/50.0);
-        ui->gl_contrast_value->setValue(range);
-        ui->gl_offset_value->setValue(0.0);
+        float r = range.second-range.first;
+        if(r == 0.0)
+            r = 1;
+        float step = r/20.0;
+
+        ui->min_value_gl->setMinimum(range.first-r);
+        ui->min_value_gl->setMaximum(range.second+r);
+        ui->min_value_gl->setSingleStep(step);
+        ui->min_value_gl->setValue(range.first);
+        ui->max_value_gl->setMinimum(range.first-r);
+        ui->max_value_gl->setMaximum(range.second+r);
+        ui->max_value_gl->setSingleStep(step);
+        ui->max_value_gl->setValue(range.second);
+        v2c_gl.set_range(range.first,range.second);
     }
 
     if(index)
@@ -956,56 +989,6 @@ void tracking_window::on_actionSave_Tracts_in_MNI_space_triggered()
         tractWidget->saveTransformedTracts(0);
     else
         tractWidget->saveTransformedTracts(&*(handle->trans_to_mni.begin()));
-}
-
-void tracking_window::on_offset_valueChanged(int value)
-{
-     ui->offset_value->setValue((float)value*ui->offset_value->maximum()/100.0);
-}
-
-void tracking_window::on_contrast_valueChanged(int value)
-{
-    ui->contrast_value->setValue((value >= 0) ? ui->offset_value->maximum()/(1+(float)value/10.0) :
-                                                   ui->offset_value->maximum()*(1-(float)value/10.0));
-}
-
-void tracking_window::on_gl_offset_valueChanged(int value)
-{
-    ui->gl_offset_value->setValue((float)value*ui->gl_offset_value->maximum()/100.0);
-}
-
-void tracking_window::on_gl_contrast_valueChanged(int value)
-{
-    ui->gl_contrast_value->setValue((value >= 0) ? ui->gl_offset_value->maximum()/(1+(float)value/10.0) :
-                                                      ui->gl_offset_value->maximum()*(1-(float)value/10.0));
-}
-
-void tracking_window::on_offset_value_valueChanged(double arg1)
-{
-    ui->offset->setValue(arg1*100.0/ui->offset_value->maximum());
-    scene.show_slice();
-}
-
-void tracking_window::on_gl_offset_value_valueChanged(double arg1)
-{
-    ui->gl_offset->setValue(arg1*100.0/ui->gl_offset_value->maximum());
-    glWidget->updateGL();
-}
-
-void tracking_window::on_contrast_value_valueChanged(double arg1)
-{
-    ui->contrast->setValue((arg1 >= ui->offset_value->maximum()) ?
-                           10-arg1*10.0/ui->offset_value->maximum():
-                           ui->offset_value->maximum()*10.0/arg1-10);
-    scene.show_slice();
-}
-
-void tracking_window::on_gl_contrast_value_valueChanged(double arg1)
-{
-    ui->gl_contrast->setValue((arg1 >= ui->gl_offset_value->maximum()) ?
-                            10-arg1*10.0/ui->gl_offset_value->maximum():
-                            ui->gl_offset_value->maximum()*10.0/arg1-10);
-    glWidget->updateGL();
 }
 
 

@@ -126,8 +126,10 @@ Q_OBJECT
      unsigned char odf_position;
      unsigned char odf_skip;
      float odf_scale;
-     float slice_contrast;
-     float slice_offset;
+     float slice_min_value;
+     float slice_max_value;
+     image::rgb_color slice_min_color;
+     image::rgb_color slice_max_color;
      unsigned char slice_index;
  public:
      GLuint tracts,slice_texture[3];

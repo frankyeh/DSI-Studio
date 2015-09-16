@@ -30,21 +30,19 @@ FibSliceModel::FibSliceModel(FibData* handle_):handle(handle_)
     //loadImage(fib_data.fib.fa[0],false);
 }
 // ---------------------------------------------------------------------------
-float FibSliceModel::get_value_range(void) const
+std::pair<float,float> FibSliceModel::get_value_range(void) const
 {
-    std::pair<float,float> value = image::min_max_value(source_images.begin(),source_images.end());
-    return value.second-value.first;
+    return image::min_max_value(source_images.begin(),source_images.end());
 }
 // ---------------------------------------------------------------------------
-void FibSliceModel::get_slice(image::color_image& show_image,float contrast,float offset) const
+void FibSliceModel::get_slice(image::color_image& show_image,const image::value_to_color<float>& v2c) const
 {
-    handle->get_slice(view_name,cur_dim, slice_pos[cur_dim],show_image,contrast,offset);
+    handle->get_slice(view_name,cur_dim, slice_pos[cur_dim],show_image,v2c);
 }
 // ---------------------------------------------------------------------------
 void FibSliceModel::get_mosaic(image::color_image& show_image,
                                unsigned int mosaic_size,
-                               float contrast,
-                               float offset,
+                               const image::value_to_color<float>& v2c,
                                unsigned int skip) const
 {
     unsigned slice_num = geometry[2] >> skip;
@@ -54,7 +52,7 @@ void FibSliceModel::get_mosaic(image::color_image& show_image,
     for(unsigned int z = 0;z < slice_num;++z)
     {
         image::color_image slice_image;
-        handle->get_slice(view_name,2, z << skip,slice_image,contrast,offset);
+        handle->get_slice(view_name,2, z << skip,slice_image,v2c);
         image::vector<2,int> pos(geometry[0]*(z%mosaic_size),
                                  geometry[1]*(z/mosaic_size));
         image::draw(slice_image,show_image,pos);
@@ -141,10 +139,9 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
 }
 
 // ---------------------------------------------------------------------------
-float CustomSliceModel::get_value_range(void) const
+std::pair<float,float> CustomSliceModel::get_value_range(void) const
 {
-    std::pair<float,float> value = image::min_max_value(source_images.begin(),source_images.end());
-    return value.second-value.first;
+    return image::min_max_value(source_images.begin(),source_images.end());
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::argmin(int reg_type)
@@ -185,14 +182,9 @@ void CustomSliceModel::terminate(void)
     ended = true;
 }
 // ---------------------------------------------------------------------------
-void CustomSliceModel::get_slice(image::color_image& show_image,float contrast,float offset) const
+void CustomSliceModel::get_slice(image::color_image& show_image,const image::value_to_color<float>& v2c) const
 {
     image::basic_image<float,2> buf;
     image::reslicing(source_images, buf, cur_dim, slice_pos[cur_dim]);
-    show_image.resize(buf.geometry());
-    buf += offset-min_value;
-    if(contrast != 0.0)
-        buf *= 255.99/contrast;
-    image::upper_lower_threshold(buf,(float)0.0,(float)255.0);
-    std::copy(buf.begin(),buf.end(),show_image.begin());
+    v2c.convert(buf,show_image);
 }

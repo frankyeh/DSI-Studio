@@ -135,9 +135,7 @@ void slice_view_scene::show_pos(QPainter& painter)
 void slice_view_scene::get_view_image(QImage& new_view_image)
 {
     float display_ratio = cur_tracking_window["roi_zoom"].toInt();
-    float contrast = cur_tracking_window.ui->contrast_value->value();
-    float offset = cur_tracking_window.ui->offset_value->value();
-    cur_tracking_window.slice.get_slice(slice_image,contrast,offset);
+    cur_tracking_window.slice.get_slice(slice_image,cur_tracking_window.v2c);
     QImage qimage((unsigned char*)&*slice_image.begin(),slice_image.width(),slice_image.height(),QImage::Format_RGB32);
     // draw region colors on the image
     cur_tracking_window.regionWidget->draw_region(qimage);
@@ -313,11 +311,9 @@ void slice_view_scene::show_slice(void)
     }
     else
     {
-        float contrast = cur_tracking_window.ui->contrast_value->value();
-        float offset = cur_tracking_window.ui->offset_value->value();
         unsigned int skip = cur_tracking_window["roi_layout"].toInt()-2;
         mosaic_size = std::max((int)1,(int)std::ceil(std::sqrt((float)(cur_tracking_window.slice.geometry[2] >> skip))));
-        cur_tracking_window.slice.get_mosaic(mosaic_image,mosaic_size,contrast,offset,skip);
+        cur_tracking_window.slice.get_mosaic(mosaic_image,mosaic_size,cur_tracking_window.v2c,skip);
         QImage qimage((unsigned char*)&*mosaic_image.begin(),mosaic_image.width(),mosaic_image.height(),QImage::Format_RGB32);
         cur_tracking_window.regionWidget->draw_mosaic_region(qimage,mosaic_size,skip);
         view_image = qimage.scaled(mosaic_image.width()*display_ratio/(float)mosaic_size,mosaic_image.height()*display_ratio/(float)mosaic_size);

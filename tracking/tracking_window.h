@@ -57,6 +57,8 @@ public:
     RenderingTableWidget *renderWidget;
     slice_view_scene scene;
 public:
+    image::value_to_color<float> v2c,v2c_gl;
+public:
     std::auto_ptr<QTimer> timer;
     unsigned int odf_size;
     unsigned int odf_face_size;
@@ -121,7 +123,7 @@ private slots:
     void SliderValueChanged(void);
     void glSliderValueChanged(void);
 
-
+    void on_update_v2c(void);
     void on_actionSave_Endpoints_in_Current_Mapping_triggered();
     void on_deleteSlice_clicked();
     void on_tool5_pressed();
@@ -132,10 +134,6 @@ private slots:
     void on_actionTract_Analysis_Report_triggered();
     void on_actionConnectivity_matrix_triggered();
     void on_zoom_3d_valueChanged(double arg1);
-    void on_contrast_value_valueChanged(double arg1);
-    void on_offset_value_valueChanged(double arg1);
-    void on_gl_contrast_value_valueChanged(double arg1);
-    void on_gl_offset_value_valueChanged(double arg1);
     void on_actionFloat_3D_window_triggered();
     void on_actionSave_tracking_parameters_triggered();
     void on_actionLoad_tracking_parameters_triggered();
@@ -155,10 +153,6 @@ private slots:
     void on_action3D_Screen_3_Views_Vertical_triggered();
     void on_actionROI_triggered();
     void on_actionTrack_Report_triggered();
-    void on_contrast_valueChanged(int value);
-    void on_offset_valueChanged(int value);
-    void on_gl_contrast_valueChanged(int value);
-    void on_gl_offset_valueChanged(int value);
     void on_rendering_efficiency_currentIndexChanged(int index);
 };
 

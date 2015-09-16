@@ -348,7 +348,6 @@ void GLWidget::initializeGL()
 
     tracts = glGenLists(1);
     tract_alpha = -1; // ensure that make_track is called
-    slice_contrast = -1;// ensure slices is rendered
     odf_position = 255;//ensure ODFs is renderred
     check_error(__FUNCTION__);
 }
@@ -589,13 +588,30 @@ void GLWidget::renderLR(int eye)
                                    (SliceModel*)&other_slices[current_visible_slide-1] :
                                    (SliceModel*)&cur_tracking_window.slice;
 
-        if(cur_tracking_window.ui->gl_contrast_value->value() != slice_contrast ||
-           cur_tracking_window.ui->gl_offset_value->value() != slice_offset ||
+        if(cur_tracking_window.ui->min_value_gl->value() != slice_min_value ||
+           cur_tracking_window.ui->max_value_gl->value() != slice_max_value ||
+
             slice_index != current_visible_slide)
         {
-            slice_contrast = cur_tracking_window.ui->gl_contrast_value->value();
-            slice_offset = cur_tracking_window.ui->gl_offset_value->value();
+            slice_min_value = cur_tracking_window.ui->min_value_gl->value();
+            slice_max_value = cur_tracking_window.ui->max_value_gl->value();
+            cur_tracking_window.v2c_gl.set_range(slice_min_value,slice_max_value);
+
             slice_index = current_visible_slide;
+            active_slice->texture_need_update[0] = true;
+            active_slice->texture_need_update[1] = true;
+            active_slice->texture_need_update[2] = true;
+        }
+        if(
+            cur_tracking_window.ui->min_color_gl->color().rgb() != slice_min_color.color ||
+            cur_tracking_window.ui->max_color_gl->color().rgb() != slice_max_color.color)
+        {
+            slice_min_color = cur_tracking_window.ui->min_color_gl->color().rgb();
+            slice_max_color = cur_tracking_window.ui->max_color_gl->color().rgb();
+
+            image::color_map_rgb color_map;
+            color_map.two_color(slice_min_color,slice_max_color);
+            cur_tracking_window.v2c_gl.set_color_map(color_map);
             active_slice->texture_need_update[0] = true;
             active_slice->texture_need_update[1] = true;
             active_slice->texture_need_update[2] = true;
@@ -616,7 +632,7 @@ void GLWidget::renderLR(int eye)
                 if(slice_texture[dim])
                     deleteTexture(slice_texture[dim]);
                 image::color_image texture;
-                active_slice->get_texture(dim,texture,slice_contrast,slice_offset);
+                active_slice->get_texture(dim,texture,cur_tracking_window.v2c_gl);
                 slice_texture[dim] =
                     bindTexture(QImage((unsigned char*)&*texture.begin(),
                 texture.width(),texture.height(),QImage::Format_RGB32));

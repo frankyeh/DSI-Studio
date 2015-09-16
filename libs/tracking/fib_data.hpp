@@ -980,20 +980,19 @@ public:
         for (int index = other_mapping_index; index < view_item.size(); ++index)
             index_list.push_back(view_item[index].name);
     }
-    float get_value_range(const std::string& view_name) const
+    std::pair<float,float> get_value_range(const std::string& view_name) const
     {
         unsigned int view_index = get_name_index(view_name);
         if(view_index == view_item.size())
-            return 0.0;
+            return std::make_pair((float)0.0,(float)0.0);
         if(view_item[view_index].name == "color")
-            return 0.0;
-        return view_item[view_index].max_value-
-               view_item[view_index].min_value;
+            return std::make_pair((float)0.0,(float)0.0);
+        return std::make_pair(view_item[view_index].min_value,view_item[view_index].max_value);
     }
 
     void get_slice(const std::string& view_name,
                    unsigned char d_index,unsigned int pos,
-                   image::color_image& show_image,float contrast,float offset)
+                   image::color_image& show_image,const image::value_to_color<float>& v2c)
     {
         unsigned int view_index = get_name_index(view_name);
         if(view_index == view_item.size())
@@ -1028,12 +1027,7 @@ public:
         {
             image::basic_image<float,2> buf;
             image::reslicing(view_item[view_index].image_data, buf, d_index, pos);
-            show_image.resize(buf.geometry());
-            buf += offset-view_item[view_index].min_value;
-            if(contrast != 0.0)
-                buf *= 255.99/contrast;
-            image::upper_lower_threshold(buf,(float)0.0,(float)255.0);
-            std::copy(buf.begin(),buf.end(),show_image.begin());
+            v2c.convert(buf,show_image);
         }
 
     }

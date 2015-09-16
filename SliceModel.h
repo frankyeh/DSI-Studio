@@ -12,8 +12,8 @@ public:
         image::vector<3,float>center_point;
         SliceModel(void);
 public:
-        virtual float get_value_range(void) const = 0;
-        virtual void get_slice(image::color_image& image,float contrast,float offset) const = 0;
+        virtual std::pair<float,float> get_value_range(void) const = 0;
+        virtual void get_slice(image::color_image& image,const image::value_to_color<float>& v2c) const = 0;
         virtual image::const_pointer_image<float, 3> get_source(void) const = 0;
 public:
 public:
@@ -42,11 +42,11 @@ public:
         int slice_pos[3];
         bool slice_visible[3];
         bool texture_need_update[3];
-        void get_texture(unsigned char dim,image::color_image& cur_rendering_image,float contrast,float offset)
+        void get_texture(unsigned char dim,image::color_image& cur_rendering_image,const image::value_to_color<float>& v2c)
         {
             unsigned char cur_dim_backup = cur_dim;
             cur_dim = dim;
-            get_slice(cur_rendering_image,contrast,offset);
+            get_slice(cur_rendering_image,v2c);
             cur_dim = cur_dim_backup;
             for(unsigned int index = 0;index < cur_rendering_image.size();++index)
             {
@@ -104,13 +104,12 @@ public:
         view_name = view_name_;
     }
 public:
-    float get_value_range(void) const;
-    void get_slice(image::color_image& image,float contrast,float offset) const;
+    std::pair<float,float> get_value_range(void) const;
+    void get_slice(image::color_image& image,const image::value_to_color<float>& v2c) const;
     image::const_pointer_image<float, 3> get_source(void) const{return source_images;}
     void get_mosaic(image::color_image& image,
                     unsigned int mosaic_size,
-                    float contrast,
-                    float offset,
+                    const image::value_to_color<float>& v2c,
                     unsigned int skip) const;
 };
 
@@ -155,8 +154,8 @@ public:
     void init(void);
     bool initialize(FibSliceModel& slice,bool is_qsdr,const std::vector<std::string>& files);
 public:
-    float get_value_range(void) const;
-    void get_slice(image::color_image& image,float contrast,float offset) const;
+    std::pair<float,float> get_value_range(void) const;
+    void get_slice(image::color_image& image,const image::value_to_color<float>& v2c) const;
     image::const_pointer_image<float, 3> get_source(void) const  {return source_images;}
 };
 
