@@ -139,8 +139,6 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
     }
     else
         ui->actionManual_Registration->setEnabled(false);
-    ui->actionConnectometry->setEnabled(handle->has_odfs() && is_qsdr);
-
 
 
     {
