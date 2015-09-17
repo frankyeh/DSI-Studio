@@ -1118,6 +1118,17 @@
     <property name="title">
      <string>&amp;Edit</string>
     </property>
+    <widget class="QMenu" name="menuCut_by_slice">
+     <property name="title">
+      <string>Cut by slice</string>
+     </property>
+     <addaction name="actionCut_X"/>
+     <addaction name="actionCut_X_2"/>
+     <addaction name="actionCut_Y"/>
+     <addaction name="actionCut_Y_2"/>
+     <addaction name="actionCut_Z"/>
+     <addaction name="actionCut_Z_2"/>
+    </widget>
     <addaction name="actionUndo"/>
     <addaction name="actionRedo"/>
     <addaction name="separator"/>
@@ -1126,7 +1137,7 @@
     <addaction name="actionTrim"/>
     <addaction name="actionPaint"/>
     <addaction name="actionCut"/>
-    <addaction name="actionCut_by_slice"/>
+    <addaction name="menuCut_by_slice"/>
     <addaction name="separator"/>
     <addaction name="actionMove_Object"/>
    </widget>
@@ -2115,20 +2126,6 @@
     </font>
    </property>
   </action>
-  <action name="actionSaveTractFA">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
-   </property>
-   <property name="text">
-    <string>Save tract anisotropy as...</string>
-   </property>
-   <property name="font">
-    <font>
-     <family>Arial</family>
-    </font>
-   </property>
-  </action>
   <action name="actionDeleteRegionAll">
    <property name="icon">
     <iconset resource="../icons.qrc">
@@ -2330,22 +2327,6 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+X</string>
-   </property>
-  </action>
-  <action name="actionZoom_In">
-   <property name="text">
-    <string>Zoom &amp;In</string>
-   </property>
-   <property name="shortcut">
-    <string>F3</string>
-   </property>
-  </action>
-  <action name="actionZoom_Out">
-   <property name="text">
-    <string>Zoom Out&amp;</string>
-   </property>
-   <property name="shortcut">
-    <string>F4</string>
    </property>
   </action>
   <action name="actionSagittal_view">
@@ -2617,15 +2598,6 @@
     <string>Ctrl+A</string>
    </property>
   </action>
-  <action name="actionSave_Report_as">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
-   </property>
-   <property name="text">
-    <string>Save Report As...</string>
-   </property>
-  </action>
   <action name="actionSave_Tracts_in_MNI_space">
    <property name="icon">
     <iconset resource="../icons.qrc">
@@ -2633,24 +2605,6 @@
    </property>
    <property name="text">
     <string>Save Tracts In MNI Space...</string>
-   </property>
-  </action>
-  <action name="actionOpen_Clusters">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-   </property>
-   <property name="text">
-    <string>Open Clusters...</string>
-   </property>
-  </action>
-  <action name="actionSave_Clusters">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
-   </property>
-   <property name="text">
-    <string>Save Clusters...</string>
    </property>
   </action>
   <action name="actionOpen_Cluster_Labels">
@@ -2722,11 +2676,6 @@
   <action name="actionCopyTrack">
    <property name="text">
     <string>Copy</string>
-   </property>
-  </action>
-  <action name="actionConnectometry">
-   <property name="text">
-    <string>Connectometry...</string>
    </property>
   </action>
   <action name="actionSave_3D_screen_in_high_resolution">
@@ -2840,11 +2789,6 @@
     <string>View FIB Content...</string>
    </property>
   </action>
-  <action name="actionPublish_or_perish">
-   <property name="text">
-    <string>Publish or perish...</string>
-   </property>
-  </action>
   <action name="actionMethod_Report">
    <property name="text">
     <string>Method Report...</string>
@@ -2873,11 +2817,6 @@
     <string>Save Enpoints In MNI Space...</string>
    </property>
   </action>
-  <action name="actionCut_by_slice">
-   <property name="text">
-    <string>Cut by slice</string>
-   </property>
-  </action>
   <action name="actionAuto_Rotate">
    <property name="checkable">
     <bool>true</bool>
@@ -2889,15 +2828,6 @@
   <action name="action3D_Screen">
    <property name="text">
     <string>3D Screen</string>
-   </property>
-  </action>
-  <action name="actionSave_3D_Screen_in_3_Horizontal_Views">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
-   </property>
-   <property name="text">
-    <string>Save 3D Screen in 3 Horizontal Views...</string>
    </property>
   </action>
   <action name="action3D_Screen_3_Views">
@@ -2925,15 +2855,6 @@
     <string>Track Report</string>
    </property>
   </action>
-  <action name="actionSave_Rotation_Video_in_High_Resolution">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
-   </property>
-   <property name="text">
-    <string>Save Rotation Video in High Resolution...</string>
-   </property>
-  </action>
   <action name="actionSave_Rotation_Video_in_Left_Right_3D">
    <property name="icon">
     <iconset resource="../icons.qrc">
@@ -2941,11 +2862,6 @@
    </property>
    <property name="text">
     <string>Save Rotation Video in Left/Right 3D...</string>
-   </property>
-  </action>
-  <action name="actionContour">
-   <property name="text">
-    <string>Refine</string>
    </property>
   </action>
   <action name="actionAdjust_Mapping">
@@ -2961,6 +2877,36 @@
   <action name="actionFilter_by_ROI">
    <property name="text">
     <string>Filter by ROI/ROA/End</string>
+   </property>
+  </action>
+  <action name="actionCut_X">
+   <property name="text">
+    <string>Cut X+</string>
+   </property>
+  </action>
+  <action name="actionCut_X_2">
+   <property name="text">
+    <string>Cut X-</string>
+   </property>
+  </action>
+  <action name="actionCut_Y">
+   <property name="text">
+    <string>Cut Y+</string>
+   </property>
+  </action>
+  <action name="actionCut_Y_2">
+   <property name="text">
+    <string>Cut Y-</string>
+   </property>
+  </action>
+  <action name="actionCut_Z">
+   <property name="text">
+    <string>Cut Z+</string>
+   </property>
+  </action>
+  <action name="actionCut_Z_2">
+   <property name="text">
+    <string>Cut Z-</string>
    </property>
   </action>
  </widget>

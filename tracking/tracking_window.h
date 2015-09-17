@@ -159,6 +159,12 @@ private slots:
     void on_max_color_released();
     void on_min_color_released();
     void on_load_color_map_gl_released();
+    void on_actionCut_X_triggered();
+    void on_actionCut_X_2_triggered();
+    void on_actionCut_Y_triggered();
+    void on_actionCut_Y_2_triggered();
+    void on_actionCut_Z_triggered();
+    void on_actionCut_Z_2_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

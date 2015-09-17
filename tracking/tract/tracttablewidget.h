@@ -37,6 +37,7 @@ public:
     void saveTransformedTracts(const float* transform);
     void saveTransformedEndpoints(const float* transform);
     void load_tracts(QStringList filenames);
+    void cut_by_slice(unsigned char dim,bool greater);
 signals:
     void need_update(void);
 private:
@@ -71,7 +72,6 @@ public slots:
     void delete_all_tract(void);
     void edit_tracts(void);
     void undo_tracts(void);
-    void cut_by_slice(void);
     void redo_tracts(void);
     void trim_tracts(void);
     void assign_colors(void);

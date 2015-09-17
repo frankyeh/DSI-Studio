@@ -300,7 +300,6 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         connect(ui->actionUndo,SIGNAL(triggered()),tractWidget,SLOT(undo_tracts()));
         connect(ui->actionRedo,SIGNAL(triggered()),tractWidget,SLOT(redo_tracts()));
         connect(ui->actionTrim,SIGNAL(triggered()),tractWidget,SLOT(trim_tracts()));
-        connect(ui->actionCut_by_slice,SIGNAL(triggered()),tractWidget,SLOT(cut_by_slice()));
 
 
         connect(ui->actionSet_Color,SIGNAL(triggered()),tractWidget,SLOT(set_color()));
@@ -1523,3 +1522,33 @@ void tracking_window::on_min_color_released()
     scene.show_slice();
 }
 
+
+void tracking_window::on_actionCut_X_triggered()
+{
+    tractWidget->cut_by_slice(0,true);
+}
+
+void tracking_window::on_actionCut_X_2_triggered()
+{
+    tractWidget->cut_by_slice(0,false);
+}
+
+void tracking_window::on_actionCut_Y_triggered()
+{
+    tractWidget->cut_by_slice(1,true);
+}
+
+void tracking_window::on_actionCut_Y_2_triggered()
+{
+    tractWidget->cut_by_slice(1,false);
+}
+
+void tracking_window::on_actionCut_Z_triggered()
+{
+    tractWidget->cut_by_slice(2,true);
+}
+
+void tracking_window::on_actionCut_Z_2_triggered()
+{
+    tractWidget->cut_by_slice(2,false);
+}
