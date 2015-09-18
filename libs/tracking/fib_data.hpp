@@ -549,14 +549,12 @@ public:
         num_subjects = (unsigned int)file_names.size();
         subject_qa.clear();
         subject_qa.resize(num_subjects);
-        std::vector<std::vector<float> > subject_qa_buffer(num_subjects);
+        subject_qa_buf.resize(num_subjects);
         R2.resize(num_subjects);
         for(unsigned int index = 0;index < num_subjects;++index)
-        {
-            subject_qa_buffer[index].resize(fib.num_fiber*si2vi.size());
-            subject_qa[index] = &*(subject_qa_buffer[index].begin());
-        }
-        // load subject data
+            subject_qa_buf[index].resize(fib.num_fiber*si2vi.size());
+        for(unsigned int index = 0;index < num_subjects;++index)
+            subject_qa[index] = &(subject_qa_buf[index][0]);
         for(unsigned int subject_index = 0;check_prog(subject_index,num_subjects);++subject_index)
         {
             if(prog_aborted())
@@ -573,7 +571,7 @@ public:
             }
             // check if the odf table is consistent or not
             if(!is_consistent(m) ||
-               !sample_odf(m,subject_qa_buffer[subject_index]))
+               !sample_odf(m,subject_qa_buf[subject_index]))
             {
                 error_msg += file_names[subject_index];
                 return false;
