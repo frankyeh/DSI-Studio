@@ -846,12 +846,15 @@ void RegionTableWidget::setROIs(ThreadData* data)
         data->setRegions(cur_tracking_window.handle->dim,points,seed_id);
         data->seed_report = " Whole brain seeding was used.";
     }
-
+    bool set_color = false;
     for (unsigned int index = 0;index < regions.size();++index)
         if (!regions[index].empty() && item(index,0)->checkState() == Qt::Checked)
         {
-            if(data->color.color == 0)
+            if(!set_color)
+            {
                 data->color = regions[index].show_region.color;
+                set_color = true;
+            }
             data->setRegions(cur_tracking_window.handle->dim,regions[index].get(),
                              regions[index].regions_feature);
             if(regions[index].regions_feature == roi_id)
