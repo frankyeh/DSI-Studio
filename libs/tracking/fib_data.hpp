@@ -806,7 +806,10 @@ public:
     {
         data.resize(num_subjects);
         for(unsigned int i = 0;i < num_subjects;++i)
-            data[i].swap(std::vector<float>(subject_qa[i],subject_qa[i]+subject_qa_length));
+        {
+            std::vector<float> buf(subject_qa[i],subject_qa[i]+subject_qa_length);
+            data[i].swap(buf);
+        }
     }
 
     bool add_db(const FibData* rhs)
