@@ -787,7 +787,7 @@ public:
         }
         return true;
     }
-    bool add_db(const FibData* rhs)
+    bool is_db_compatible(const FibData* rhs)
     {
         if(rhs->dim != dim || subject_qa_length != rhs->subject_qa_length)
         {
@@ -800,7 +800,19 @@ public:
                 error_msg = "The connectometry db was created using a different template.";
                 return false;
             }
+        return true;
+    }
+    void read_subject_qa(std::vector<std::vector<float> >&data) const
+    {
+        data.resize(num_subjects);
+        for(unsigned int i = 0;i < num_subjects;++i)
+            data[i].swap(std::vector<float>(subject_qa[i],subject_qa[i]+subject_qa_length));
+    }
 
+    bool add_db(const FibData* rhs)
+    {
+        if(!is_db_compatible(rhs))
+            return false;
         num_subjects += rhs->num_subjects;
         R2.insert(R2.end(),rhs->R2.begin(),rhs->R2.end());
         subject_qa_max.insert(subject_qa_max.end(),rhs->subject_qa_max.begin(),rhs->subject_qa_max.end());

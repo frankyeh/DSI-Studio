@@ -36,7 +36,7 @@
       <item>
        <widget class="QToolBox" name="toolBox">
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <property name="tabSpacing">
          <number>0</number>
@@ -890,7 +890,7 @@ Difference</string>
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>0</y>
+           <y>-32</y>
            <width>641</width>
            <height>848</height>
           </rect>
@@ -992,7 +992,7 @@ Difference</string>
                   <item>
                    <widget class="QLabel" name="open_instruction">
                     <property name="text">
-                     <string>Open subjects' fib files </string>
+                     <string>Open patients connectometry db</string>
                     </property>
                    </widget>
                   </item>
@@ -1416,7 +1416,7 @@ Difference</string>
              </size>
             </property>
             <property name="currentIndex">
-             <number>0</number>
+             <number>1</number>
             </property>
             <widget class="QWidget" name="tab_5">
              <attribute name="title">
@@ -1671,7 +1671,7 @@ Difference</string>
                          </size>
                         </property>
                         <property name="minimum">
-                         <number>10</number>
+                         <number>30</number>
                         </property>
                         <property name="maximum">
                          <number>200</number>
@@ -1943,7 +1943,7 @@ Difference</string>
           <item>
            <widget class="QTabWidget" name="tabWidget_2">
             <property name="currentIndex">
-             <number>1</number>
+             <number>0</number>
             </property>
             <widget class="QWidget" name="tab">
              <attribute name="title">

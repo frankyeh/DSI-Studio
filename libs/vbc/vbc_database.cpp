@@ -439,7 +439,7 @@ double stat_model::operator()(const std::vector<double>& original_population,uns
         break;
     case 2: // individual
         {
-            float value = individual_data[pos]/individual_data_max;
+            float value = (individual_data_max == 1.0) ? individual_data[pos]:individual_data[pos]/individual_data_max;
             if(value == 0.0)
                 return 0.0;
             int rank = 0;
@@ -553,8 +553,18 @@ void vbc_database::run_permutation_multithread(unsigned int id)
             stat_model info;
             info.resample(*model.get(),false,false);
             info.individual_data = &(individual_data[subject_id][0]);
-            info.individual_data_max = individual_data_max[subject_id];
+            info.individual_data_max = normalize_qa ? individual_data_max[subject_id]:1.0;
             calculate_spm(spm_maps[subject_id],info);
+            if(terminated)
+                return;
+            spm_maps[subject_id].write_lesser(fib);
+            run_track(fib,tracks,total_track_count,threads->size());
+            lesser_tracks[subject_id].add_tracts(tracks,30);
+            spm_maps[subject_id].write_greater(fib);
+            if(terminated)
+                return;
+            run_track(fib,tracks,total_track_count,threads->size());
+            greater_tracks[subject_id].add_tracts(tracks,30);
         }
 
         bool null = true;
@@ -573,37 +583,38 @@ void vbc_database::run_permutation_multithread(unsigned int id)
                 {
                     unsigned int random_subject_id = model->rand_gen(model->subject_index.size());
                     info.individual_data = handle->subject_qa[random_subject_id];
-                    info.individual_data_max = handle->subject_qa_max[random_subject_id];
+                    info.individual_data_max = normalize_qa ? handle->subject_qa_max[random_subject_id]:1.0;
                 }
                 else
                 {
                     info.individual_data = &(individual_data[subject_id][0]);
-                    info.individual_data_max = individual_data_max[subject_id];
+                    info.individual_data_max = normalize_qa ? individual_data_max[subject_id]:1.0;
                 }
                 calculate_spm(data,info);
                 data.write_lesser(fib);
                 run_track(fib,tracks,total_track_count/permutation_count);
                 cal_hist(tracks,(null) ? subject_lesser_null : subject_lesser);
+                /*
                 if(!null)
                 {
                     boost::mutex::scoped_lock lock(lock_lesser_tracks);
                     lesser_tracks[subject_id].add_tracts(tracks,30); // at least 30 mm
                     tracks.clear();
                 }
-
+                */
 
                 data.write_greater(fib);
                 run_track(fib,tracks,total_track_count/permutation_count);
                 cal_hist(tracks,(null) ? subject_greater_null : subject_greater);
+                /*
                 if(!null)
                 {
                     boost::mutex::scoped_lock lock(lock_greater_tracks);
                     greater_tracks[subject_id].add_tracts(tracks,30);  // at least 30 mm
                     tracks.clear();
                 }
-
+                */
             }
-
             null = !null;
         }
     }

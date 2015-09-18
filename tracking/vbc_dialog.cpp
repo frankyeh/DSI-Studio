@@ -463,36 +463,39 @@ void vbc_dialog::on_subject_list_itemSelectionChanged()
 
 void vbc_dialog::on_open_files_clicked()
 {
-    QStringList file_name = QFileDialog::getOpenFileNames(
+    QString file_name = QFileDialog::getOpenFileName(
                                 this,
-                "Select subject fib file for analysis",
-                work_dir,"Fib files (*fib.gz);;All files (*)" );
+                "Select patients' Connectometry DB",
+                work_dir,"Connectometry DB files (*db?fib.gz);;All files (*)" );
     if (file_name.isEmpty())
         return;
-    model.reset(new stat_model);
-    model->init(vbc->handle->num_subjects);
-    QStringList filenames;
-    file_names.clear();
-    for(unsigned int index = 0;index < file_name.size();++index)
+    std::auto_ptr<FibData> handle(new FibData);
+    begin_prog("reading connectometry DB");
+    if(!handle->load_from_file(file_name.toStdString().c_str()))
     {
-        filenames << QFileInfo(file_name[index]).baseName();
-        file_names.push_back(file_name[index].toLocal8Bit().begin());
-    }
-
-    std::vector<std::vector<float> > new_individual_data;
-    if(!vbc->read_subject_data(file_names,new_individual_data))
-    {
-        QMessageBox::information(this,"error",vbc->error_msg.c_str(),0);
+        QMessageBox::information(this,"Error",handle->error_msg.c_str(),0);
         return;
     }
-    individual_data.swap(new_individual_data);
-    if(ui->rb_individual_analysis->isChecked())
+    if(!vbc->handle->is_db_compatible(handle.get()))
     {
-        ui->percentile->setValue(2);
-        model->type = 2;
-        ((QStringListModel*)ui->individual_list->model())->setStringList(filenames);
+        QMessageBox::information(this,"Error",vbc->handle->error_msg.c_str(),0);
+        return;
     }
 
+
+    model.reset(new stat_model);
+    model->init(vbc->handle->num_subjects);
+    QStringList name_list;
+    file_names.clear();
+    for(unsigned int i = 0;i < handle->num_subjects;++i)
+    {
+        name_list.push_back(handle->subject_names[i].c_str());
+        file_names.push_back(file_name.toStdString() + "." + handle->subject_names[i]);
+    }
+    handle->read_subject_qa(individual_data);
+    ui->percentile->setValue(2);
+    model->type = 2;
+    ((QStringListModel*)ui->individual_list->model())->setStringList(name_list);
     ui->run->setEnabled(true);
 }
 
