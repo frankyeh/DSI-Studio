@@ -15,6 +15,7 @@ void run_reg(image::basic_image<float,3>& from,
 
     data.progress = 0;
     image::reg::linear(from,to,data.arg,data.reg_type,cost_func(),data.terminated);
+    image::reg::linear(from,to,data.arg,data.reg_type,cost_func(),data.terminated);
     if(data.terminated)
         return;
     if(data.reg_type == image::reg::rigid_body)
