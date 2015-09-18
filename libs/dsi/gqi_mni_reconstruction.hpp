@@ -116,7 +116,6 @@ public:
                 {
                     bool terminated = false;
                     image::reg::linear(VF,VG,arg_min,reg_type[reg_iter],image::reg::correlation(),terminated);
-                    image::reg::linear(VF,VG,arg_min,reg_type[reg_iter],image::reg::correlation(),terminated);
                     affine_buf = image::transformation_matrix<3,float>(arg_min,VF.geometry(),VG.geometry());
                 }
                 affine_buf.inverse();
