@@ -685,6 +685,19 @@ public:
             out << "subject" << index;
             matfile.write(out.str().c_str(),&subject_vector[index][0],1,(unsigned int)subject_vector[index].size());
         }
+        matfile.write("dimension",&dim[0],1,3);
+        std::vector<int> voxel_location;
+        for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
+        {
+            unsigned int cur_index = si2vi[s_index];
+            if(!cerebrum_mask[cur_index])
+                continue;
+            for(unsigned int j = 0,fib_offset = 0;j < fib.num_fiber && fib.fa[j][cur_index] > fiber_threshold;++j,fib_offset+=si2vi.size())
+                voxel_location.push_back(cur_index);
+        }
+        matfile.write("voxel_location",&voxel_location[0],1,voxel_location.size());
+
+
     }
     void save_subject_data(const char* output_name)
     {
