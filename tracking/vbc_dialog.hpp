@@ -145,6 +145,7 @@ private slots:
     void on_save_dif_clicked();
     void on_add_db_clicked();
     void on_save_fp_clicked();
+    void on_view_x_toggled(bool checked);
 };
 
 #endif // VBC_DIALOG_HPP

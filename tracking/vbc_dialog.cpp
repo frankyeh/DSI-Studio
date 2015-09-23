@@ -107,9 +107,8 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString db_file_nam
     update_subject_list();
 
 
-    ui->AxiSlider->setMaximum(vbc->handle->dim[2]-1);
-    ui->AxiSlider->setMinimum(0);
-    ui->AxiSlider->setValue(vbc->handle->dim[2] >> 1);
+    on_view_x_toggled(true);
+
     ui->x_pos->setMaximum(vbc->handle->dim[0]-1);
     ui->y_pos->setMaximum(vbc->handle->dim[1]-1);
     ui->z_pos->setMaximum(vbc->handle->dim[2]-1);
@@ -127,7 +126,11 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString db_file_nam
     connect(ui->show_lesser_2,SIGNAL(toggled(bool)),this,SLOT(show_fdr_report()));
 
 
-    connect(ui->AxiSlider,SIGNAL(valueChanged(int)),this,SLOT(on_subject_list_itemSelectionChanged()));
+    connect(ui->slice_pos,SIGNAL(valueChanged(int)),this,SLOT(on_subject_list_itemSelectionChanged()));
+
+    connect(ui->view_y,SIGNAL(toggled(bool)),this,SLOT(on_view_x_toggled(bool)));
+    connect(ui->view_z,SIGNAL(toggled(bool)),this,SLOT(on_view_x_toggled(bool)));
+
     connect(ui->zoom,SIGNAL(valueChanged(double)),this,SLOT(on_subject_list_itemSelectionChanged()));
 
     ui->subject_list->selectRow(0);
@@ -157,7 +160,7 @@ bool vbc_dialog::eventFilter(QObject *obj, QEvent *event)
     image::vector<3,float> pos;
     pos[0] =  ((float)point.x()) / ui->zoom->value() - 0.5;
     pos[1] =  ((float)point.y()) / ui->zoom->value() - 0.5;
-    pos[2] = ui->AxiSlider->value();
+    pos[2] = ui->slice_pos->value();
     if(!vbc->handle->dim.is_valid(pos))
         return true;
     ui->x_pos->setValue(std::floor(pos[0] + 0.5));
@@ -377,18 +380,29 @@ void vbc_dialog::show_dis_table(void)
 
 void vbc_dialog::on_subject_list_itemSelectionChanged()
 {
+    if(ui->view_x->isChecked())
+        ui->x_pos->setValue(ui->slice_pos->value());
+    if(ui->view_y->isChecked())
+        ui->y_pos->setValue(ui->slice_pos->value());
+    if(ui->view_z->isChecked())
+        ui->z_pos->setValue(ui->slice_pos->value());
+
     image::basic_image<float,2> slice;
-    vbc->handle->get_subject_slice(ui->subject_list->currentRow(),ui->AxiSlider->value(),slice);
+    vbc->handle->get_subject_slice(ui->subject_list->currentRow(),
+                                   ui->view_x->isChecked() ? 0:(ui->view_y->isChecked() ? 1:2),
+                                   ui->slice_pos->value(),slice);
     image::normalize(slice);
     image::color_image color_slice(slice.geometry());
     std::copy(slice.begin(),slice.end(),color_slice.begin());
     QImage qimage((unsigned char*)&*color_slice.begin(),color_slice.width(),color_slice.height(),QImage::Format_RGB32);
     vbc_slice_image = qimage.scaled(color_slice.width()*ui->zoom->value(),color_slice.height()*ui->zoom->value());
+    if(!ui->view_z->isChecked())
+        vbc_slice_image = vbc_slice_image.mirrored();
     vbc_scene.clear();
     vbc_scene.setSceneRect(0, 0, vbc_slice_image.width(),vbc_slice_image.height());
     vbc_scene.setItemIndexMethod(QGraphicsScene::NoIndex);
     vbc_scene.addRect(0, 0, vbc_slice_image.width(),vbc_slice_image.height(),QPen(),vbc_slice_image);
-    vbc_slice_pos = ui->AxiSlider->value();
+    vbc_slice_pos = ui->slice_pos->value();
 
     if(ui->toolBox->currentIndex() == 0 && ui->subject_view->currentIndex() == 1 && load_cerebrum_mask())
     {
@@ -1672,3 +1686,12 @@ void vbc_dialog::on_add_db_clicked()
 }
 
 
+void vbc_dialog::on_view_x_toggled(bool checked)
+{
+    if(!checked)
+        return;
+    unsigned char dim = ui->view_x->isChecked() ? 0:(ui->view_y->isChecked() ? 1:2);
+    ui->slice_pos->setMaximum(vbc->handle->dim[dim]-1);
+    ui->slice_pos->setMinimum(0);
+    ui->slice_pos->setValue(vbc->handle->dim[dim] >> 1);
+}

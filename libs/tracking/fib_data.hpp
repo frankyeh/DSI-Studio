@@ -386,7 +386,7 @@ public:
     unsigned int subject_qa_length;
     std::vector<float> subject_qa_max;
     std::vector<float> R2;
-    std::vector<unsigned int> vi2si;
+    image::basic_image<unsigned int,3> vi2si;
     std::vector<unsigned int> si2vi;
     std::vector<std::vector<float> > subject_qa_buf;// merged from other db
     void read_db(void)
@@ -450,7 +450,7 @@ public:
 
     void calculate_si2vi(void)
     {
-        vi2si.resize(dim.size());
+        vi2si.resize(dim);
         for(unsigned int index = 0;index < (unsigned int)dim.size();++index)
         {
             if(fib.fa[0][index] != 0.0)
@@ -733,19 +733,16 @@ public:
             matfile.write("report",&*report.c_str(),1,(unsigned int)report.length());
         }
     }
-    void get_subject_slice(unsigned int subject_index,unsigned int z_pos,
+    void get_subject_slice(unsigned int subject_index,unsigned char dim,unsigned int pos,
                             image::basic_image<float,2>& slice) const
     {
+        image::basic_image<unsigned int,2> tmp;
+        image::reslicing(vi2si, tmp, dim, pos);
         slice.clear();
-        slice.resize(image::geometry<2>(dim.width(),dim.height()));
-        unsigned int slice_offset = z_pos*dim.plane_size();
+        slice.resize(tmp.geometry());
         for(unsigned int index = 0;index < slice.size();++index)
-        {
-            unsigned int cur_index = index + slice_offset;
-            if(fib.fa[0][cur_index] == 0.0)
-                continue;
-            slice[index] = subject_qa[subject_index][vi2si[cur_index]];
-        }
+            if(tmp[index])
+                slice[index] = subject_qa[subject_index][tmp[index]];
     }
     void get_subject_fa(unsigned int subject_index,std::vector<std::vector<float> >& fa_data) const
     {
