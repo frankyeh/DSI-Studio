@@ -273,19 +273,15 @@ void TractTableWidget::save_all_tracts_as(void)
 {
     if(tract_models.empty())
         return;
-    QSettings settings;
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,
                 "Save tracts as",
                 cur_tracking_window.absolute_path + "/" +
-                item(currentRow(),0)->text().replace(':','_') + "." +
-                settings.value("track_file_extension","trk.gz").toString(),
+                item(currentRow(),0)->text().replace(':','_') + ".trk.gz",
                 "Tract files (*.trk *trk.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
-    settings.setValue("track_file_extension",QFileInfo(filename).completeSuffix());
-
     std::string sfilename = filename.toLocal8Bit().begin();
     TractModel::save_all(&*sfilename.begin(),tract_models);
 }
@@ -437,19 +433,15 @@ void TractTableWidget::save_tracts_as(void)
 {
     if(currentRow() >= tract_models.size())
         return;
-    QSettings settings;
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,
                 "Save tracts as",
                 cur_tracking_window.absolute_path + "/" +
-                item(currentRow(),0)->text().replace(':','_') + "."+
-                settings.value("track_file_extension","trk.gz").toString(),
+                item(currentRow(),0)->text().replace(':','_') + ".trk.gz",
                  "Tract files (*.trk *trk.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
-    settings.setValue("track_file_extension",QFileInfo(filename).completeSuffix());
-
     std::string sfilename = filename.toLocal8Bit().begin();
     tract_models[currentRow()]->save_tracts_to_file(&*sfilename.begin());
 }
@@ -517,17 +509,13 @@ void TractTableWidget::saveTransformedTracts(const float* transform)
     if(currentRow() >= tract_models.size())
         return;
     QString filename;
-    QSettings settings;
     filename = QFileDialog::getSaveFileName(
                 this,
                 "Save tracts as",
-                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + "." +
-                settings.value("track_file_extension","trk.gz").toString(),
+                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + ".trk.gz"
                  "Tract files (*.trk *trk.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
-    settings.setValue("track_file_extension",QFileInfo(filename).completeSuffix());
-
     std::string sfilename = filename.toLocal8Bit().begin();
     if(transform)
         tract_models[currentRow()]->save_transformed_tracts_to_file(&*sfilename.begin(),transform,false);

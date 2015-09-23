@@ -581,7 +581,6 @@ void RegionTableWidget::save_region(void)
 {
     if (currentRow() >= regions.size())
         return;
-    QSettings settings;
     QString filename = QFileDialog::getSaveFileName(
                            this,
                            "Save region",
@@ -625,21 +624,18 @@ void RegionTableWidget::save_all_regions(void)
 {
     if (regions.empty())
         return;
-    QSettings settings;
     QString filename = QFileDialog::getSaveFileName(
                            this,
                            "Save region",
-                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + "." + settings.value("region_save_type","nii.gz").toString(),
+                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + ".nii.gz",
                            "Region file(*nii.gz *.nii);;All file types (*)" );
     if (filename.isEmpty())
         return;
-    settings.setValue("region_save_type",QFileInfo(filename).completeSuffix());
 #ifdef __APPLE__
 // fix the Qt double extension bug here
     if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
     {
         filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
-        settings.setValue("region_save_type","nii.gz");
     }
 #endif
 
