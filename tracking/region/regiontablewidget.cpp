@@ -585,18 +585,14 @@ void RegionTableWidget::save_region(void)
     QString filename = QFileDialog::getSaveFileName(
                            this,
                            "Save region",
-                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + "." + settings.value("region_save_type","nii.gz").toString(),
+                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + ".nii.gz",
                 "NIFTI file(*nii.gz *.nii);;Text file(*.txt);;MAT file (*.mat);;All files(*)" );
     if (filename.isEmpty())
         return;
-    settings.setValue("region_save_type",QFileInfo(filename).completeSuffix());
 #ifdef __APPLE__
 // fix the Qt double extension bug here
     if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
-    {
         filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
-        settings.setValue("region_save_type","nii.gz");
-    }
 #endif
     std::vector<float> no_trans;
     regions[currentRow()].SaveToFile(filename.toLocal8Bit().begin(),

@@ -926,7 +926,7 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
         QString filename = QFileDialog::getSaveFileName(
                     this,
                     "Save as",
-                    cur_tracking_window.absolute_path+"/" + item(currentRow(),0)->text(),
+                    cur_tracking_window.absolute_path+"/" + item(currentRow(),0)->text()+".nii.gz",
                     "NIFTI files (*nii.gz *.nii);;MAT File (*.mat);;");
         if(filename.isEmpty())
             return;

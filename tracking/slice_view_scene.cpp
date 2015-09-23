@@ -343,7 +343,7 @@ void slice_view_scene::save_slice_as()
                 0,
                 "Save as",
                 cur_tracking_window.absolute_path + "/" +
-                cur_tracking_window.handle->view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str(),
+                cur_tracking_window.handle->view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str()+".nii.gz",
                 "NIFTI files (*nii.gz);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;

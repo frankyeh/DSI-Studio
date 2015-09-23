@@ -562,6 +562,7 @@ void MainWindow::on_batch_src_clicked()
                                 ui->workDir->currentText());
     if(dir.isEmpty())
         return;
+    add_work_dir(dir);
 
     {
         QStringList dir_list;
@@ -716,7 +717,7 @@ void MainWindow::on_connectometry_clicked()
                            "Database files (*db?fib.gz);;All files (*)");
     if (filename.isEmpty())
         return;
-
+    add_work_dir(QFileInfo(filename).absolutePath());
     std::auto_ptr<vbc_database> database(new vbc_database);
     database.reset(new vbc_database);
     begin_prog("reading connectometry db");
