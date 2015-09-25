@@ -44,6 +44,7 @@ private slots:
     void on_batch_reconstruction_clicked();
     void on_view_image_clicked();
     void on_connectometry_clicked();
+    void on_workDir_currentIndexChanged(const QString &arg1);
 };
 
 #endif // MAINWINDOW_H

@@ -1470,8 +1470,6 @@ void tracking_window::on_load_color_map_clicked()
           return;
     }
     v2c.set_color_map(new_color_map);
-    ui->min_color->setColor(v2c.min_color().color);
-    ui->max_color->setColor(v2c.max_color().color);
     scene.show_slice();
 }
 void tracking_window::on_load_color_map_gl_released()
@@ -1490,8 +1488,6 @@ void tracking_window::on_load_color_map_gl_released()
           return;
     }
     v2c_gl.set_color_map(new_color_map);
-    ui->min_color_gl->setColor(v2c_gl.min_color().color);
-    ui->max_color_gl->setColor(v2c_gl.max_color().color);
     glWidget->update_slice();
 }
 

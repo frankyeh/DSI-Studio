@@ -730,3 +730,8 @@ void MainWindow::on_connectometry_clicked()
     vbc->setAttribute(Qt::WA_DeleteOnClose);
     vbc->show();
 }
+
+void MainWindow::on_workDir_currentIndexChanged(const QString &arg1)
+{
+    QDir::setCurrent(arg1);
+}
