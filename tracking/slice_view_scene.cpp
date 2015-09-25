@@ -342,8 +342,7 @@ void slice_view_scene::save_slice_as()
     QString filename = QFileDialog::getSaveFileName(
                 0,
                 "Save as",
-                cur_tracking_window.absolute_path + "/" +
-                cur_tracking_window.handle->view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str()+".nii.gz",
+                QString(cur_tracking_window.handle->view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str())+".nii.gz",
                 "NIFTI files (*nii.gz);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -390,9 +389,7 @@ void slice_view_scene::catch_screen()
     QSettings settings;
     QString filename = QFileDialog::getSaveFileName(
             0,"Save Images files",
-                cur_tracking_window.absolute_path + "/" +
-                cur_tracking_window.handle->view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str()+"."+
-                settings.value("slice_image_extension","jpg").toString(),
+                QString(cur_tracking_window.handle->view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str())+".jpg",
                 "Image files (*.png *.bmp *.jpg);;All files (*)");
     if(filename.isEmpty())
         return;

@@ -843,9 +843,7 @@ void tracking_window::add_slice_name(QString name)
 void tracking_window::on_actionInsert_T1_T2_triggered()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
-        this,
-        "Open Images files",absolute_path,
-        "Image files (*.dcm *.hdr *.nii *nii.gz 2dseq);;All files (*)" );
+        this,"Open Images files","","Image files (*.dcm *.hdr *.nii *nii.gz 2dseq);;All files (*)" );
     if( filenames.isEmpty())
         return;
     if(glWidget->addSlices(filenames))
@@ -1160,9 +1158,7 @@ void tracking_window::on_actionSave_tracking_parameters_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
                            this,
-                           "Save INI files",
-                           absolute_path,
-                           "Setting file (*.ini);;All files (*)");
+                           "Save INI files","","Setting file (*.ini);;All files (*)");
     if (filename.isEmpty())
         return;
     QSettings s(filename, QSettings::IniFormat);
@@ -1175,10 +1171,7 @@ void tracking_window::on_actionSave_tracking_parameters_triggered()
 void tracking_window::on_actionLoad_tracking_parameters_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
-                           this,
-                           "Open INI files",
-                           absolute_path,
-                           "Setting file (*.ini);;All files (*)");
+                           this,"Open INI files","","Setting file (*.ini);;All files (*)");
     if (filename.isEmpty())
         return;
     QSettings s(filename, QSettings::IniFormat);
@@ -1192,9 +1185,7 @@ void tracking_window::on_actionSave_Rendering_Parameters_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
                            this,
-                           "Save INI files",
-                           absolute_path,
-                           "Setting file (*.ini);;All files (*)");
+                           "Save INI files","","Setting file (*.ini);;All files (*)");
     if (filename.isEmpty())
         return;
     QSettings s(filename, QSettings::IniFormat);
@@ -1212,10 +1203,7 @@ void tracking_window::on_actionSave_Rendering_Parameters_triggered()
 void tracking_window::on_actionLoad_Rendering_Parameters_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
-                           this,
-                           "Open INI files",
-                           absolute_path,
-                           "Setting file (*.ini);;All files (*)");
+                           this,"Open INI files","","Setting file (*.ini);;All files (*)");
     if (filename.isEmpty())
         return;
     QSettings s(filename, QSettings::IniFormat);
@@ -1386,7 +1374,7 @@ void tracking_window::on_actionTrack_Report_triggered()
 }
 QString tracking_window::get_save_file_name(QString title,QString file_name,QString file_type)
 {
-    return QFileDialog::getSaveFileName(this,title,absolute_path + "/" + file_name,file_type);
+    return QFileDialog::getSaveFileName(this,title,file_name,file_type);
 }
 
 void tracking_window::show_info_dialog(const std::string& title,const std::string& result)
@@ -1401,7 +1389,7 @@ void tracking_window::show_info_dialog(const std::string& title,const std::strin
     {
         QString filename;
         filename = QFileDialog::getSaveFileName(this,
-                    "Save as",absolute_path + "/info.txt",
+                    "Save as","info.txt",
                     "Text files (*.txt);;All files|(*)");
         if(filename.isEmpty())
             return;
@@ -1459,7 +1447,7 @@ void tracking_window::on_load_color_map_clicked()
     QMessageBox::information(this,"Load color map","Please assign a text file of RGB numbers as the colormap.");
     QString filename;
     filename = QFileDialog::getOpenFileName(this,
-                "Load color map",absolute_path + "/color_map.txt",
+                "Load color map","color_map.txt",
                 "Text files (*.txt);;All files|(*)");
     if(filename.isEmpty())
         return;
@@ -1477,7 +1465,7 @@ void tracking_window::on_load_color_map_gl_released()
     QMessageBox::information(this,"Load color map","Please assign a text file of RGB numbers as the colormap.");
     QString filename;
     filename = QFileDialog::getOpenFileName(this,
-                "Load color map",absolute_path + "/color_map.txt",
+                "Load color map","color_map.txt",
                 "Text files (*.txt);;All files|(*)");
     if(filename.isEmpty())
         return;

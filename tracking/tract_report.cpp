@@ -127,9 +127,7 @@ void tract_report::on_refresh_report_clicked()
 void tract_report::on_save_report_clicked()
 {
     QString filename = QFileDialog::getSaveFileName(
-                this,
-                "Save report as",
-                cur_tracking_window->absolute_path + "/report.txt",
+                this,"Save report as","report.txt",
                 "Report file (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -147,9 +145,7 @@ void tract_report::on_save_report_clicked()
 void tract_report::on_save_image_clicked()
 {
     QString filename = QFileDialog::getSaveFileName(
-                this,
-                "Save report as",
-                cur_tracking_window->absolute_path + "/report.jpg",
+                this,"Save report as","report.jpg",
                 "JPEC file (*.jpg);;BMP file (*.bmp);;PDF file (*.pdf);;PNG file (*.png);;All files (*)");
     if(QFileInfo(filename).completeSuffix().toLower() == "jpg")
         ui->report_widget->saveJpg(filename);

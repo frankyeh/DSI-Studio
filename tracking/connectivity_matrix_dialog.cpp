@@ -142,11 +142,7 @@ void connectivity_matrix_dialog::on_zoom_valueChanged(double arg1)
 void connectivity_matrix_dialog::on_save_as_clicked()
 {
     QString filename = QFileDialog::getSaveFileName(
-                0,
-                "Save as",
-                cur_tracking_window->absolute_path + "/" +
-                cur_tracking_window->tractWidget->item(
-                    cur_tracking_window->tractWidget->currentRow(),0)->text() + "_" +
+                this,"Save as",cur_tracking_window->tractWidget->item(cur_tracking_window->tractWidget->currentRow(),0)->text() + "_" +
                 ui->region_list->currentText() + ".mat",
                 "MAT File (*.mat);;Image Files (*.png *.tif *.bmp)");
     if(filename.isEmpty())

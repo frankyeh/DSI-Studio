@@ -46,7 +46,6 @@ int vis(int ac, char *av[])
     std::cout << "starting gui" << std::endl;
     std::auto_ptr<tracking_window> new_mdi(new tracking_window(0,new_handle.release()));
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
-    new_mdi->absolute_path = QFileInfo(file_name.c_str()).absolutePath();
     new_mdi->setWindowTitle(file_name.c_str());
     new_mdi->show();
     new_mdi->hide();

@@ -456,10 +456,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 void RegionTableWidget::load_region(void)
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
-                                this,
-                                "Open region",
-                                cur_tracking_window.absolute_path,
-                                "Region files (*.txt *.nii *.hdr *nii.gz *.mat);;All files (*)" );
+                                this,"Open region","","Region files (*.txt *.nii *.hdr *nii.gz *.mat);;All files (*)" );
     if (filenames.isEmpty())
         return;
 
@@ -583,9 +580,7 @@ void RegionTableWidget::save_region(void)
         return;
     QString filename = QFileDialog::getSaveFileName(
                            this,
-                           "Save region",
-                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + ".nii.gz",
-                "NIFTI file(*nii.gz *.nii);;Text file(*.txt);;MAT file (*.mat);;All files(*)" );
+                           "Save region",item(currentRow(),0)->text() + ".nii.gz","NIFTI file(*nii.gz *.nii);;Text file(*.txt);;MAT file (*.mat);;All files(*)" );
     if (filename.isEmpty())
         return;
 #ifdef __APPLE__
@@ -602,9 +597,7 @@ void RegionTableWidget::save_all_regions_to_dir(void)
 {
     if (regions.empty())
         return;
-    QString dir = QFileDialog::getExistingDirectory(
-                                this,
-                                "Open directory",cur_tracking_window.absolute_path);
+    QString dir = QFileDialog::getExistingDirectory(this,"Open directory","");
     if(dir.isEmpty())
         return;
     begin_prog("save files...");
@@ -625,9 +618,7 @@ void RegionTableWidget::save_all_regions(void)
     if (regions.empty())
         return;
     QString filename = QFileDialog::getSaveFileName(
-                           this,
-                           "Save region",
-                cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + ".nii.gz",
+                           this,"Save region",item(currentRow(),0)->text() + ".nii.gz",
                            "Region file(*nii.gz *.nii);;All file types (*)" );
     if (filename.isEmpty())
         return;
@@ -670,9 +661,7 @@ void RegionTableWidget::save_region_info(void)
     if (currentRow() >= regions.size())
         return;
     QString filename = QFileDialog::getSaveFileName(
-                           this,
-                           "Save voxel information",
-                           cur_tracking_window.absolute_path + "/" + item(currentRow(),0)->text() + "_info.txt",
+                           this,"Save voxel information",item(currentRow(),0)->text() + "_info.txt",
                            "Text files (*.txt)" );
     if (filename.isEmpty())
         return;
@@ -793,9 +782,7 @@ void RegionTableWidget::show_statistics(void)
     {
         QString filename;
         filename = QFileDialog::getSaveFileName(
-                    this,
-                    "Save satistics as",
-                    cur_tracking_window.absolute_path + +"/" + item(currentRow(),0)->text() + "_stat.txt",
+                    this,"Save satistics as",item(currentRow(),0)->text() + "_stat.txt",
                     "Text files (*.txt);;All files|(*)");
         if(filename.isEmpty())
             return;

@@ -203,9 +203,9 @@ void MainWindow::loadFib(QString filename)
     }
     tracking_window* new_mdi = new tracking_window(this,new_handle.release());
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
-    new_mdi->absolute_path = QFileInfo(filename).absolutePath();
     new_mdi->setWindowTitle(filename);
     new_mdi->showNormal();
+    QDir::setCurrent(QFileInfo(filename).absolutePath());
     addFib(filename);
     add_work_dir(QFileInfo(filename).absolutePath());
 }
@@ -217,6 +217,7 @@ void MainWindow::loadSrc(QStringList filenames)
         reconstruction_window* new_mdi = new reconstruction_window(filenames,this);
         new_mdi->setAttribute(Qt::WA_DeleteOnClose);
         new_mdi->show();
+        QDir::setCurrent(QFileInfo(filenames[0]).absolutePath());
         if(filenames.size() == 1)
         {
             addSrc(filenames[0]);
@@ -717,6 +718,7 @@ void MainWindow::on_connectometry_clicked()
                            "Database files (*db?fib.gz);;All files (*)");
     if (filename.isEmpty())
         return;
+    QDir::setCurrent(QFileInfo(filename).absolutePath());
     add_work_dir(QFileInfo(filename).absolutePath());
     std::auto_ptr<vbc_database> database(new vbc_database);
     database.reset(new vbc_database);

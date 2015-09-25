@@ -79,7 +79,6 @@ public:
     std::auto_ptr<color_bar_dialog> color_bar;
     std::auto_ptr<connectivity_matrix_dialog> connectivity_matrix;
 public:
-    QString absolute_path;
     FibData* handle;
     FibSliceModel slice;
     bool handle_release;
