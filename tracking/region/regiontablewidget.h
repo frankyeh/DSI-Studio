@@ -75,6 +75,8 @@ public slots:
     void uncheck_all(void);
     void move_up(void);
     void move_down(void);
+    void undo(void);
+    void redo(void);
     // actions
     void action_smoothing(void){do_action(0);}
     void action_erosion(void){do_action(1);}

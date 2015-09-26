@@ -521,6 +521,8 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
             {
                 find_region = true;
                 cur_tracking_window.regionWidget->selectRow(index);
+                std::vector<image::vector<3,short> > dummy;
+                cur_tracking_window.regionWidget->regions[index].add_points(dummy,true); // create a undo point
                 break;
             }
         if(!find_region)

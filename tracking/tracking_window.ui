@@ -1019,6 +1019,9 @@
     <addaction name="actionDeleteRegion"/>
     <addaction name="actionDeleteRegionAll"/>
     <addaction name="separator"/>
+    <addaction name="actionUndo_Edit"/>
+    <addaction name="actionRedo_Edit"/>
+    <addaction name="separator"/>
     <addaction name="menuMove_Region"/>
     <addaction name="menuModify"/>
     <addaction name="actionWhole_brain_seeding"/>
@@ -2907,6 +2910,16 @@
   <action name="actionCut_Z_2">
    <property name="text">
     <string>Cut Z-</string>
+   </property>
+  </action>
+  <action name="actionUndo_Edit">
+   <property name="text">
+    <string>Undo Edit</string>
+   </property>
+  </action>
+  <action name="actionRedo_Edit">
+   <property name="text">
+    <string>Redo Edit</string>
    </property>
   </action>
  </widget>

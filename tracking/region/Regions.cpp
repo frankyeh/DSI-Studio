@@ -10,6 +10,8 @@
 // ---------------------------------------------------------------------------
 void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool del)
 {
+    if(!region.empty())
+        undo_backup.push_back(region);
     for(unsigned int index = 0; index < points.size();)
         if (!geo.is_valid(points[index][0], points[index][1], points[index][2]))
         {
@@ -287,6 +289,8 @@ bool ROIRegion::has_points(const std::vector<image::vector<3,short> >& points)
 // ---------------------------------------------------------------------------
 void ROIRegion::Flip(unsigned int dimension) {
     modified = true;
+    if(!region.empty())
+        undo_backup.push_back(region);
     for (unsigned int index = 0; index < region.size(); ++index)
         region[index][dimension] = ((short)geo[dimension]) -
                                    region[index][dimension] - 1;

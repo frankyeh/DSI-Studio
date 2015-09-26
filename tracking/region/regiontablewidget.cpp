@@ -882,6 +882,16 @@ QString RegionTableWidget::getROIname(void)
                 return item(index,0)->text();
     return "whole_brain";
 }
+void RegionTableWidget::undo(void)
+{
+    regions[currentRow()].undo();
+    emit need_update();
+}
+void RegionTableWidget::redo(void)
+{
+    regions[currentRow()].redo();
+    emit need_update();
+}
 
 void RegionTableWidget::do_action(int id)
 {

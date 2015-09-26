@@ -22,6 +22,8 @@ private:
         image::geometry<3> geo;
         image::vector<3> vs;
         bool modified;
+        std::vector<std::vector<image::vector<3,short> > > undo_backup;
+        std::vector<std::vector<image::vector<3,short> > > redo_backup;
 private:
         bool has_back_thread;
         unsigned int back_thread_id;
@@ -43,6 +45,8 @@ public: // rendering options
             region = rhs.region;
             geo = rhs.geo;
             vs = rhs.vs;
+            undo_backup = rhs.undo_backup;
+            redo_backup = rhs.redo_backup;
             regions_feature = rhs.regions_feature;
             show_region = rhs.show_region;
             modified = true;
@@ -54,6 +58,8 @@ public: // rendering options
             region.swap(rhs.region);
             geo.swap(rhs.geo);
             std::swap(vs,rhs.vs);
+            undo_backup.swap(rhs.undo_backup);
+            redo_backup.swap(rhs.redo_backup);
             std::swap(regions_feature,rhs.regions_feature);
             show_region.swap(rhs.show_region);
             std::swap(modified,rhs.modified);
@@ -64,37 +70,34 @@ public: // rendering options
         ROIRegion(const image::geometry<3>& geo_, const image::vector<3>& vs_)
             : geo(geo_), vs(vs_),has_back_thread(false),modified(false){}
 
-        const std::vector<image::vector<3,short> >& get(void) const {
-        return region;
-    }
+        const std::vector<image::vector<3,short> >& get(void) const {return region;}
         void assign(const std::vector<image::vector<3,short> >& region_)
         {
             region = region_;
             modified = true;
         }
 
-    bool empty(void) const {
-        return region.empty();
-    }
+        bool empty(void) const {return region.empty();}
 
-    void clear(void) {
-        modified = true;
-        region.clear();
-    }
+        void clear(void)
+        {
+            modified = true;
+            region.clear();
+        }
 
-        void erase(unsigned int index){
+        void erase(unsigned int index)
+        {
             modified = true;
             region.erase(region.begin()+index);
         }
 
-        unsigned int size(void) const {
-        return (unsigned int)region.size();
-    }
+        unsigned int size(void) const {return (unsigned int)region.size();}
 
-        void push_back(const image::vector<3,short>& point) {
-        region.push_back(point);
-        modified = true;
-    }
+        void push_back(const image::vector<3,short>& point)
+        {
+            region.push_back(point);
+            modified = true;
+        }
 
         std::vector<image::vector<3,short> >::const_iterator
                 begin(void) const {return region.begin();}
@@ -106,6 +109,31 @@ public:
             add_points(tmp,false);
         }
         void add_points(std::vector<image::vector<3,short> >& points,bool del);
+        void undo(void)
+        {
+            if(region.empty() && undo_backup.empty())
+                return;
+            redo_backup.push_back(std::vector<image::vector<3,short> >());
+            redo_backup.back().swap(region);
+            if(!undo_backup.empty())
+            {
+                region.swap(undo_backup.back());
+                undo_backup.pop_back();
+            }
+            modified = true;
+
+        }
+        void redo(void)
+        {
+            if(redo_backup.empty())
+                return;
+            undo_backup.push_back(std::vector<image::vector<3,short> >());
+            undo_backup.back().swap(region);
+            region.swap(redo_backup.back());
+            redo_backup.pop_back();
+            modified = true;
+
+        }
         void SaveToFile(const char* FileName,const std::vector<float>& trans);
         bool LoadFromFile(const char* FileName,const std::vector<float>& trans);
         void Flip(unsigned int dimension);
@@ -131,7 +159,10 @@ public:
         template<typename image_type>
         void LoadFromBuffer(const image_type& mask)
         {
-            modified = true;region.clear();
+            modified = true;
+            if(!region.empty())
+                undo_backup.push_back(region);
+            region.clear();
             for (image::pixel_index<3>index;index.is_valid(mask.geometry());index.next(mask.geometry()))
                 if (mask[index.index()] != 0)
                 region.push_back(image::vector<3,short>(index.x(), index.y(),index.z()));
