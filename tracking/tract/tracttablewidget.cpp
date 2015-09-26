@@ -72,7 +72,7 @@ void TractTableWidget::check_check_status(int row, int col)
     }
 }
 
-void TractTableWidget::addNewTracts(QString tract_name)
+void TractTableWidget::addNewTracts(QString tract_name,bool checked)
 {
     thread_data.push_back(0);
     tract_models.push_back(new TractModel(cur_tracking_window.handle));
@@ -82,7 +82,7 @@ void TractTableWidget::addNewTracts(QString tract_name)
 
     setRowCount(tract_models.size());
     QTableWidgetItem *item0 = new QTableWidgetItem(tract_name);
-    item0->setCheckState(Qt::Checked);
+    item0->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
     setItem(tract_models.size()-1, 0, item0);
     for(unsigned int index = 1;index <= 3;++index)
     {
@@ -102,7 +102,7 @@ void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vect
         if(lesser[index].empty())
             continue;
         int color = std::min<int>((index+1)*50,255);
-        addNewTracts(QString("Lesser_") + QString::number((index+1)*10));
+        addNewTracts(QString("Lesser_") + QString::number((index+1)*10),false);
         tract_models.back()->add_tracts(lesser[index],image::rgb_color(255,255-color,255-color));
         item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     }
@@ -111,7 +111,7 @@ void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vect
         if(greater[index].empty())
             continue;
         int color = std::min<int>((index+1)*50,255);
-        addNewTracts(QString("Greater_") + QString::number((index+1)*10));
+        addNewTracts(QString("Greater_") + QString::number((index+1)*10),false);
         tract_models.back()->add_tracts(greater[index],image::rgb_color(255-color,255-color,255));
         item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     }
@@ -202,7 +202,7 @@ void TractTableWidget::load_tracts(QStringList filenames)
         label.remove(".gz");
         label.remove(".txt");
         std::string sfilename = filename.toLocal8Bit().begin();
-        addNewTracts(label);
+        addNewTracts(label,false);
         tract_models.back()->load_from_file(&*sfilename.begin(),false);
         if(tract_models.back()->get_cluster_info().empty()) // not multiple cluster file
         {
@@ -245,7 +245,18 @@ void TractTableWidget::uncheck_all(void)
     }
     emit need_update();
 }
-
+QString TractTableWidget::output_format(void)
+{
+    switch(cur_tracking_window["track_format"].toInt())
+    {
+    case 0:
+        return ".trk.gz";
+    case 1:
+        return ".trk";
+    case 2:
+        return ".txt";
+    }
+}
 
 void TractTableWidget::save_all_tracts_to_dir(void)
 {
@@ -261,7 +272,7 @@ void TractTableWidget::save_all_tracts_to_dir(void)
             std::string filename = dir.toLocal8Bit().begin();
             filename  += "/";
             filename  += item(index,0)->text().toLocal8Bit().begin();
-            filename  += ".trk";
+            filename  += output_format().toStdString();
             tract_models[index]->save_tracts_to_file(filename.c_str());
         }
 }
@@ -271,7 +282,7 @@ void TractTableWidget::save_all_tracts_as(void)
         return;
     QString filename;
     filename = QFileDialog::getSaveFileName(
-                this,"Save tracts as",item(currentRow(),0)->text().replace(':','_') + ".trk.gz",
+                this,"Save tracts as",item(currentRow(),0)->text().replace(':','_') + output_format(),
                 "Tract files (*.trk *trk.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -426,7 +437,7 @@ void TractTableWidget::save_tracts_as(void)
         return;
     QString filename;
     filename = QFileDialog::getSaveFileName(
-                this,"Save tracts as",item(currentRow(),0)->text().replace(':','_') + ".trk.gz",
+                this,"Save tracts as",item(currentRow(),0)->text().replace(':','_') + output_format(),
                  "Tract files (*.trk *trk.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -497,7 +508,7 @@ void TractTableWidget::saveTransformedTracts(const float* transform)
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,
-                "Save tracts as",item(currentRow(),0)->text() + ".trk.gz"
+                "Save tracts as",item(currentRow(),0)->text() + output_format(),
                  "Tract files (*.trk *trk.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;

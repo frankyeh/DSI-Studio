@@ -28,7 +28,7 @@ public:
     std::vector<ThreadData*> thread_data;
     std::vector<TractModel*> tract_models;
     unsigned char edit_option;
-    void addNewTracts(QString tract_name);
+    void addNewTracts(QString tract_name,bool checked = true);
     void addConnectometryResults(std::vector<std::vector<std::vector<float> > >& greater,
                                  std::vector<std::vector<std::vector<float> > >& lesser);
     void export_tract_density(image::geometry<3>& dim,
@@ -38,6 +38,7 @@ public:
     void saveTransformedEndpoints(const float* transform);
     void load_tracts(QStringList filenames);
     void cut_by_slice(unsigned char dim,bool greater);
+    QString output_format(void);
 signals:
     void need_update(void);
 private:

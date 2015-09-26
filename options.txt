@@ -22,6 +22,7 @@ Tracking/Tracking Algorithm/tracking_method/Stremline(Euler):RK4:Voxel tracking/
 Tracking/Terminate if/track_count/int:1:100000000:1000/5000
 Tracking/ /tracking_plan/Seeds:Tracts/0
 Tracking/Thread Count/thread_count/int:1:12:1/1
+Tracking/Output Format/track_format/trk.gz:trk:txt/0
 Rendering/Scale with voxel size/scale_voxel/Off:On/1
 Rendering/Perspective/pespective/int/5
 Rendering/3D Perspective/3d_perspective/float:0.5:3:0.5:1/1.0
