@@ -206,6 +206,8 @@ void RegionTableWidget::check_check_status(int row, int col)
 void RegionTableWidget::draw_region(QImage& qimage)
 {
     int X, Y, Z;
+    int cur_row = currentRow();
+    image::basic_image<unsigned char,2> cur_image_mask(image::geometry<2>(qimage.width(),qimage.height()));
     for (unsigned int roi_index = 0;roi_index < regions.size();++roi_index)
     {
         if (item(roi_index,0)->checkState() != Qt::Checked)
@@ -217,7 +219,18 @@ void RegionTableWidget::draw_region(QImage& qimage)
             if (cur_tracking_window.slice.slice_pos[cur_tracking_window.slice.cur_dim] != Z ||
                     X < 0 || Y < 0 || X >= qimage.width() || Y >= qimage.height())
                 continue;
+            if(roi_index == cur_row)
+                cur_image_mask.at(X,Y) = 1;
             qimage.setPixel(X,Y,(unsigned int)qimage.pixel(X,Y) | cur_color);
+        }
+        if(roi_index == cur_row)
+        {
+            image::morphology::inner_edge(cur_image_mask);
+            for(int y = 0,index = 0;y < qimage.height();++y)
+                 for(int x = 0;x < qimage.width();++x,++index)
+                     if(cur_image_mask[index])
+                         qimage.setPixel(x,y,0x00FFFFFF);
+
         }
     }
 }
@@ -749,18 +762,21 @@ void RegionTableWidget::show_statistics(void)
         std::vector<std::vector<float> > data(regions.size());
         begin_prog("calculating");
         for(unsigned int index = 0;check_prog(index,regions.size());++index)
-            regions[index].get_quantitative_data(cur_tracking_window.handle,data[index]);
+            if(item(index,0)->checkState() == Qt::Checked)
+                regions[index].get_quantitative_data(cur_tracking_window.handle,data[index]);
         if(prog_aborted())
             return;
         std::ostringstream out;
         out << "Name\t";
         for(unsigned int index = 0;index < regions.size();++index)
-            out << item(index,0)->text().toLocal8Bit().begin() << "\t";
+            if(item(index,0)->checkState() == Qt::Checked)
+                out << item(index,0)->text().toLocal8Bit().begin() << "\t";
         out << std::endl;
         for(unsigned int i = 0;i < titles.size();++i)
         {
             out << titles[i] << "\t";
             for(unsigned int j = 0;j < regions.size();++j)
+            if(item(j,0)->checkState() == Qt::Checked)
             {
                 if(i < data[j].size())
                     out << data[j][i];

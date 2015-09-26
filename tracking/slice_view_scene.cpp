@@ -516,7 +516,8 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         image::vector<3,short> cur_point(x, y, z);
         for(unsigned int index = 0;index <
             cur_tracking_window.regionWidget->regions.size();++index)
-            if(cur_tracking_window.regionWidget->regions[index].has_point(cur_point))
+            if(cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked &&
+               cur_tracking_window.regionWidget->regions[index].has_point(cur_point))
             {
                 find_region = true;
                 cur_tracking_window.regionWidget->selectRow(index);

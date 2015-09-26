@@ -219,6 +219,7 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
     {
 
         connect(regionWidget,SIGNAL(need_update()),&scene,SLOT(show_slice()));
+        connect(regionWidget,SIGNAL(currentCellChanged(int,int,int,int)),&scene,SLOT(show_slice()));
         connect(regionWidget,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
         connect(ui->whole_brain,SIGNAL(clicked()),regionWidget,SLOT(whole_brain()));
 

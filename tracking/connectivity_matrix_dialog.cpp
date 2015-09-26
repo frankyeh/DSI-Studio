@@ -94,6 +94,7 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
         {
             ConnectivityMatrix::region_table_type region_table;
             for(unsigned int index = 0;index < cur_tracking_window->regionWidget->regions.size();++index)
+            if(cur_tracking_window->regionWidget->item(index,0)->checkState() == Qt::Checked)
             {
                 const std::vector<image::vector<3,short> >& cur_region =
                         cur_tracking_window->regionWidget->regions[index].get();
