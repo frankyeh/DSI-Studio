@@ -207,7 +207,10 @@ void RegionTableWidget::draw_region(QImage& qimage)
 {
     int X, Y, Z;
     int cur_row = currentRow();
-    image::basic_image<unsigned char,2> cur_image_mask(image::geometry<2>(qimage.width(),qimage.height()));
+    image::basic_image<unsigned char,2> cur_image_mask;
+    bool outline = cur_tracking_window["roi_outline"].toInt();
+    if(outline)
+        cur_image_mask.resize(image::geometry<2>(qimage.width(),qimage.height()));
     for (unsigned int roi_index = 0;roi_index < regions.size();++roi_index)
     {
         if (item(roi_index,0)->checkState() != Qt::Checked)
@@ -219,11 +222,11 @@ void RegionTableWidget::draw_region(QImage& qimage)
             if (cur_tracking_window.slice.slice_pos[cur_tracking_window.slice.cur_dim] != Z ||
                     X < 0 || Y < 0 || X >= qimage.width() || Y >= qimage.height())
                 continue;
-            if(roi_index == cur_row)
+            if(outline && roi_index == cur_row)
                 cur_image_mask.at(X,Y) = 1;
             qimage.setPixel(X,Y,(unsigned int)qimage.pixel(X,Y) | cur_color);
         }
-        if(roi_index == cur_row)
+        if(outline && roi_index == cur_row)
         {
             image::morphology::inner_edge(cur_image_mask);
             for(int y = 0,index = 0;y < qimage.height();++y)
