@@ -267,7 +267,7 @@ void TractTableWidget::save_all_tracts_to_dir(void)
         return;
     begin_prog("save files...");
     for(unsigned int index = 0;check_prog(index,rowCount());++index)
-        if (item(index,0)->checkState() == Qt::Checked && tract_models[index]->get_visible_track_count())
+        if (item(index,0)->checkState() == Qt::Checked)
         {
             std::string filename = dir.toLocal8Bit().begin();
             filename  += "/";
