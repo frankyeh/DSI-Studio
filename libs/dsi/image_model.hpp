@@ -304,13 +304,14 @@ public:
             {
                 for(unsigned int index = 0;index < 9;index++)
                     voxel.grad_dev.push_back(image::make_image(voxel.dim,(float*)grad_dev+index*voxel.dim.size()));
+                if(std::fabs(voxel.grad_dev[0][0])+std::fabs(voxel.grad_dev[4][0])+std::fabs(voxel.grad_dev[8][0]) < 1.0)
+                {
+                    image::add_constant(voxel.grad_dev[0].begin(),voxel.grad_dev[0].end(),1.0);
+                    image::add_constant(voxel.grad_dev[4].begin(),voxel.grad_dev[4].end(),1.0);
+                    image::add_constant(voxel.grad_dev[8].begin(),voxel.grad_dev[8].end(),1.0);
+                }
             }
-            if(std::fabs(voxel.grad_dev[0][0])+std::fabs(voxel.grad_dev[4][0])+std::fabs(voxel.grad_dev[8][0]) < 1.0)
-            {
-                image::add_constant(voxel.grad_dev[0].begin(),voxel.grad_dev[0].end(),1.0);
-                image::add_constant(voxel.grad_dev[4].begin(),voxel.grad_dev[4].end(),1.0);
-                image::add_constant(voxel.grad_dev[8].begin(),voxel.grad_dev[8].end(),1.0);
-            }
+
         }
 
         // create mask;
