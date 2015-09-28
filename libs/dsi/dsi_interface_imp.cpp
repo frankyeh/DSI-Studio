@@ -287,33 +287,26 @@ const char* reconstruction(ImageModel* image_model,
             float flip_y_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
             flip_fib_dir(fib_dir[0],false,true,true);
             float flip_z_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
-            image_model->voxel.bflip = 0;
             if(flip_x_score > cur_score &&
                flip_x_score > flip_y_score && flip_x_score > flip_z_score)
             {
                 std::cout << "b-table flipped x" << std::endl;
-                for(unsigned int index = 0;index < image_model->voxel.bvectors.size();++index)
-                    image_model->voxel.bvectors[index][0] = -image_model->voxel.bvectors[index][0];
                 out << ".fx";
-                image_model->voxel.bflip = 1;
+                image_model->flip_b_table(0);
             }
             if(flip_y_score > cur_score &&
                flip_y_score > flip_x_score && flip_y_score > flip_z_score)
             {
                 std::cout << "b-table flipped y" << std::endl;
-                for(unsigned int index = 0;index < image_model->voxel.bvectors.size();++index)
-                    image_model->voxel.bvectors[index][1] = -image_model->voxel.bvectors[index][1];
                 out << ".fy";
-                image_model->voxel.bflip = 2;
+                image_model->flip_b_table(1);
             }
             if(flip_z_score > cur_score &&
                flip_z_score > flip_y_score && flip_z_score > flip_x_score)
             {
                 std::cout << "b-table flipped z" << std::endl;
-                for(unsigned int index = 0;index < image_model->voxel.bvectors.size();++index)
-                    image_model->voxel.bvectors[index][2] = -image_model->voxel.bvectors[index][2];
                 out << ".fz";
-                image_model->voxel.bflip = 3;
+                image_model->flip_b_table(2);
             }
         }
 

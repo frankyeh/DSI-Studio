@@ -17,31 +17,70 @@ public:
     std::vector<const unsigned short*> dwi_data;
     image::basic_image<unsigned char,3> mask;
 public:
+    void flip_b_table(unsigned char dim)
+    {
+        for(unsigned int index = 0;index < voxel.bvectors.size();++index)
+            voxel.bvectors[index][dim] = -voxel.bvectors[index][dim];
+        if(!voxel.grad_dev.empty())
+        {
+            // <Flip*Gra_dev*b_table,ODF>
+            // = <(Flip*Gra_dev*inv(Flip))*Flip*b_table,ODF>
+            unsigned char nindex[3][4] = {{1,2,3,6},{1,3,5,7},{2,5,6,7}};
+            for(unsigned int index = 0;index < 4;++index)
+            {
+                // 1  0  0         1  0  0
+                //[0 -1  0] *Grad*[0 -1  0]
+                // 0  0  1         0  0  1
+                unsigned char pos = nindex[dim][index];
+                for(unsigned int i = 0;i < voxel.dim.size();++i)
+                    voxel.grad_dev[pos][i] = -voxel.grad_dev[pos][i];
+            }
+        }
+    }
+    // 0:xy 1:yz 2: xz
+    void rotate_b_table(unsigned char dim)
+    {
+        for (unsigned int index = 0;index < voxel.bvectors.size();++index)
+            std::swap(voxel.bvectors[index][dim],voxel.bvectors[index][(dim+1)%3]);
+        if(!voxel.grad_dev.empty())
+        {
+            unsigned char swap1[3][6] = {{0,3,6,0,1,2},{1,4,7,3,4,5},{0,3,6,0,1,2}};
+            unsigned char swap2[3][6] = {{1,4,7,3,4,5},{2,5,8,6,7,8},{2,5,8,6,7,8}};
+            for(unsigned int index = 0;index < 6;++index)
+            {
+                unsigned char s1 = swap1[dim][index];
+                unsigned char s2 = swap2[dim][index];
+                for(unsigned int i = 0;i < voxel.dim.size();++i)
+                    std::swap(voxel.grad_dev[s1][i],voxel.grad_dev[s2][i]);
+            }
+        }
+    }
+
     // 0: x  1: y  2: z
     // 3: xy 4: yz 5: xz
     void flip(unsigned char type)
     {
         if(type < 3)
-            for (unsigned int index = 0;index < voxel.bvectors.size();++index)
-                voxel.bvectors[index][type] = -voxel.bvectors[index][type];
+            flip_b_table(type);
         else
-            for (unsigned int index = 0;index < voxel.bvectors.size();++index)
-                std::swap(voxel.bvectors[index][type%3],voxel.bvectors[index][(type+1)%3]);
+            rotate_b_table(type-3);
         image::flip(voxel.dwi_sum,type);
         image::flip(mask,type);
+        for(unsigned int i = 0;i < voxel.grad_dev.size();++i)
+            image::flip(image::make_image(voxel.dim,(float*)&*(voxel.grad_dev[i].begin())),type);
         for (unsigned int index = 0;check_prog(index,dwi_data.size());++index)
-        {
-            image::pointer_image<unsigned short,3> I = image::make_image(voxel.dim,(unsigned short*)dwi_data[index]);
-            image::flip(I,type);
-        }
+            image::flip(image::make_image(voxel.dim,(unsigned short*)dwi_data[index]),type);
         voxel.dim = voxel.dwi_sum.geometry();
     }
-    void rotate(unsigned int dwi_index,const image::transformation_matrix<3,float>& affine)
+    // used in eddy correction for each dwi
+    void rotate_dwi(unsigned int dwi_index,const image::transformation_matrix<3,float>& affine)
     {
         image::basic_image<float,3> tmp(voxel.dim);
         image::pointer_image<unsigned short,3> I = image::make_image(voxel.dim,(unsigned short*)dwi_data[dwi_index]);
         image::resample(I,tmp,affine,image::cubic);
         std::copy(tmp.begin(),tmp.end(),I.begin());
+
+
         // rotate b-table
         float iT[9];
         image::matrix::inverse(affine.scaling_rotation,iT,image::dim<3,3>());
@@ -57,11 +96,11 @@ public:
         for (unsigned int index = 0;check_prog(index,dwi_data.size());++index)
         {
             dwi[index].resize(new_geo);
-            image::pointer_image<unsigned short,3> I = image::make_image(voxel.dim,(unsigned short*)dwi_data[index]);
-            image::resample(I,dwi[index],affine,image::cubic);
+            image::resample(image::make_image(voxel.dim,(unsigned short*)dwi_data[index]),dwi[index],affine,image::cubic);
             dwi_data[index] = &(dwi[index][0]);
         }
         dwi.swap(new_dwi);
+
         // rotate b-table
         float iT[9];
         image::matrix::inverse(affine.scaling_rotation,iT,image::dim<3,3>());
@@ -71,6 +110,33 @@ public:
             image::vector_rotation(voxel.bvectors[index].begin(),tmp.begin(),iT,image::vdim<3>());
             tmp.normalize();
             voxel.bvectors[index] = tmp;
+        }
+
+        if(!voxel.grad_dev.empty())
+        {
+            // <R*Gra_dev*b_table,ODF>
+            // = <(R*Gra_dev*inv(R))*R*b_table,ODF>
+            float det = std::abs(image::matrix::determinant(iT,image::dim<3,3>()));
+            begin_prog("rotating grad_dev");
+            for(unsigned int index = 0;check_prog(index,voxel.dim.size());++index)
+            {
+                float grad_dev[9],G_invR[9];
+                for(unsigned int i = 0; i < 9; ++i)
+                    grad_dev[i] = voxel.grad_dev[i][index];
+                image::matrix::product(grad_dev,affine.scaling_rotation,G_invR,image::dim<3,3>(),image::dim<3,3>());
+                image::matrix::product(iT,G_invR,grad_dev,image::dim<3,3>(),image::dim<3,3>());
+                for(unsigned int i = 0; i < 9; ++i)
+                    voxel.grad_dev[i][index] = grad_dev[i]/det;
+            }
+            std::vector<image::basic_image<float,3> > new_gra_dev(voxel.grad_dev.size());
+            begin_prog("rotating grad_dev volume");
+            for (unsigned int index = 0;check_prog(index,new_gra_dev.size());++index)
+            {
+                new_gra_dev[index].resize(new_geo);
+                image::resample(voxel.grad_dev[index],new_gra_dev[index],affine,image::cubic);
+                voxel.grad_dev[index] = image::make_image(voxel.dim,(float*)&(new_gra_dev[index][0]));
+            }
+            new_gra_dev.swap(voxel.new_grad_dev);
         }
         voxel.dim = new_geo;
         calculate_dwi_sum();
@@ -231,7 +297,7 @@ public:
             if(mat_reader.read("grad_dev",row,col,grad_dev) && row*col == voxel.dim.size()*9)
             {
                 for(unsigned int index = 0;index < 9;index++)
-                    voxel.grad_dev.push_back(image::make_image(voxel.dim,grad_dev+index*voxel.dim.size()));
+                    voxel.grad_dev.push_back(image::make_image(voxel.dim,(float*)grad_dev+index*voxel.dim.size()));
             }
         }
 

@@ -70,11 +70,11 @@ public:// parameters;
     bool half_sphere;
     bool r2_weighted;// used in GQI only
     bool scheme_balance;
-    unsigned char bflip; // 0 :no b_table flip 1: flip in x 2: flip in y 3: flip in z
     unsigned int max_fiber_number;
     std::vector<std::string> file_list;
 public:
-    std::vector<image::const_pointer_image<float,3> > grad_dev;
+    std::vector<image::basic_image<float,3> > new_grad_dev;
+    std::vector<image::pointer_image<float,3> > grad_dev;
 public:
     unsigned char reg_method;// used in QSDR
     unsigned char interpo_method;

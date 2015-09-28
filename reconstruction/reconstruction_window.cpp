@@ -885,7 +885,7 @@ void rec_motion_correction(ImageModel* handle,unsigned int total_thread,
     threads.join_all();
 
     for(unsigned int i = 0;i < handle->voxel.bvalues.size();++i)
-        handle->rotate(i,image::transformation_matrix<3,float>(args[i],handle->voxel.dim,handle->voxel.dim));
+        handle->rotate_dwi(i,image::transformation_matrix<3,float>(args[i],handle->voxel.dim,handle->voxel.dim));
     args.clear();
     progress = 100;
 }

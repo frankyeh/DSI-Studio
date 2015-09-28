@@ -360,24 +360,6 @@ public:
             float grad_dev[9];
             for(unsigned int i = 0; i < 9; ++i)
                 interpolation.estimate(voxel.grad_dev[i],grad_dev[i]);
-            // this grad_dev matrix is rotated
-            // add identity matrix
-            if(grad_dev[0]+grad_dev[4]+grad_dev[8] < 1)
-            {
-                grad_dev[0] += 1.0;
-                grad_dev[4] += 1.0;
-                grad_dev[8] += 1.0;
-            }
-            if(voxel.bflip) // if b_table is flipped
-            {
-                // voxel.bflip = 1 indicates that bvec is flipped at y direction
-                // 1  0  0         1  0  0
-                //[0 -1  0] *Grad*[0 -1  0]
-                // 0  0  1         0  0  1
-                unsigned char nindex[4][4] = {{0,0,0,0},{1,2,3,6},{1,3,5,7},{2,5,6,7}};
-                for(unsigned int i = 0;i < 4;++i)
-                    grad_dev[nindex[voxel.bflip][i]] = -grad_dev[nindex[voxel.bflip][i]];
-            }
             float new_j[9];
             image::matrix::product(grad_dev,data.jacobian,new_j,image::dim<3,3>(),image::dim<3,3>());
             std::copy(new_j,new_j+9,data.jacobian);
