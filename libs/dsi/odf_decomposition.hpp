@@ -117,7 +117,7 @@ protected:
         {
             // calculate the correlation with each SFO
 
-            image::matrix::vector_product(&*x.begin(),&*residual.begin(),&*tmp.begin(),
+            image::mat::vector_product(&*x.begin(),&*residual.begin(),&*tmp.begin(),
                                             image::dyndim(y_dim,y_dim));
             // get the most correlated orientation
             int dir = std::max_element(tmp.begin(),tmp.end())-tmp.begin();
@@ -239,7 +239,7 @@ public:
             }
             results.resize(dir_list.size()+has_isotropic);
 
-            image::matrix::pseudo_inverse_solve(&*RRt.begin(),&*old_odf.begin(),&*results.begin(),image::dyndim(results.size(),half_odf_size));
+            image::mat::pseudo_inverse_solve(&*RRt.begin(),&*old_odf.begin(),&*results.begin(),image::dyndim(results.size(),half_odf_size));
 
             //  drop negative
             int min_index = std::min_element(results.begin()+has_isotropic,results.end())-results.begin();

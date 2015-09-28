@@ -1004,7 +1004,7 @@ void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract, unsigne
 }
 //---------------------------------------------------------------------------
 void TractModel::get_density_map(image::basic_image<unsigned int,3>& mapping,
-                                 const std::vector<float>& transformation,bool endpoint)
+                                 const image::matrix<4,4,float>& transformation,bool endpoint)
 {
     image::geometry<3> geometry = mapping.geometry();
     begin_prog("calculating");
@@ -1017,7 +1017,7 @@ void TractModel::get_density_map(image::basic_image<unsigned int,3>& mapping,
                 j = tract_data[i].size()-3;
             image::vector<3,float> tmp;
             image::vector_transformation(tract_data[i].begin()+j, tmp.begin(),
-                transformation, image::vdim<3>());
+                transformation.begin(), image::vdim<3>());
 
             int x = std::floor(tmp[0]+0.5);
             int y = std::floor(tmp[1]+0.5);
@@ -1035,7 +1035,7 @@ void TractModel::get_density_map(image::basic_image<unsigned int,3>& mapping,
 //---------------------------------------------------------------------------
 void TractModel::get_density_map(
         image::basic_image<image::rgb_color,3>& mapping,
-        const std::vector<float>& transformation,bool endpoint)
+        const image::matrix<4,4,float>& transformation,bool endpoint)
 {
     image::geometry<3> geometry = mapping.geometry();
     image::basic_image<float,3> map_r(geometry),
@@ -1049,9 +1049,9 @@ void TractModel::get_density_map(
                 j = tract_data[i].size()-3;
             image::vector<3,float>  tmp,dir;
             image::vector_transformation(buf+j-3, dir.begin(),
-                transformation, image::vdim<3>());
+                transformation.begin(), image::vdim<3>());
             image::vector_transformation(buf+j, tmp.begin(),
-                transformation, image::vdim<3>());
+                transformation.begin(), image::vdim<3>());
             dir -= tmp;
             dir.normalize();
             int x = std::floor(tmp[0]+0.5);

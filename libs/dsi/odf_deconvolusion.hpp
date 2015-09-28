@@ -106,8 +106,8 @@ protected:
 	void deconvolution(std::vector<float>& odf)
 	{
 		std::vector<float> tmp(half_odf_size);
-        image::matrix::vector_product(&*Rt.begin(),&*odf.begin(),&*tmp.begin(),image::dyndim(half_odf_size,half_odf_size));
-        image::matrix::lu_solve(&*A.begin(),&*pv.begin(),&*tmp.begin(),&*odf.begin(),image::dyndim(half_odf_size,half_odf_size));
+        image::mat::vector_product(&*Rt.begin(),&*odf.begin(),&*tmp.begin(),image::dyndim(half_odf_size,half_odf_size));
+        image::mat::lu_solve(&*A.begin(),&*pv.begin(),&*tmp.begin(),&*odf.begin(),image::dyndim(half_odf_size,half_odf_size));
 	}
 	void remove_isotropic(std::vector<float>& odf)
 	{
@@ -166,13 +166,13 @@ public:
 
         A.resize(half_odf_size*half_odf_size);
         pv.resize(half_odf_size);
-        image::matrix::product_transpose(Rt.begin(),Rt.begin(),A.begin(),
+        image::mat::product_transpose(Rt.begin(),Rt.begin(),A.begin(),
                                        image::dyndim(half_odf_size,half_odf_size),image::dyndim(half_odf_size,half_odf_size));
 
         AA = A;
         for (unsigned int i = 0,index = 0; i < half_odf_size; ++i,index += half_odf_size + 1)
             A[index] += voxel.param[2];
-        image::matrix::lu_decomposition(A.begin(),pv.begin(),image::dyndim(half_odf_size,half_odf_size));
+        image::mat::lu_decomposition(A.begin(),pv.begin(),image::dyndim(half_odf_size,half_odf_size));
 
         get_error_percentage(voxel);
 		
@@ -212,9 +212,9 @@ private:
     {
         using namespace math;
         std::vector<double> mm(half_odf_size);
-        image::matrix::vector_product(&*R.begin(),&*fODF.begin(),&*mm.begin(),math::dyndim(half_odf_size,half_odf_size));
+        image::mat::vector_product(&*R.begin(),&*fODF.begin(),&*mm.begin(),math::dyndim(half_odf_size,half_odf_size));
         mm -= dODF;
-        image::matrix::vector_product(&*Rt.begin(),&*mm.begin(),&*g.begin(),math::dyndim(half_odf_size,half_odf_size));
+        image::mat::vector_product(&*Rt.begin(),&*mm.begin(),&*g.begin(),math::dyndim(half_odf_size,half_odf_size));
         g *= (double)2.0;
         double n0 = std::max((double)0.0,*std::min_element(fODF.begin(),fODF.end()));
         for (unsigned int index = 0;index < fODF.size();++index)
@@ -230,7 +230,7 @@ private:
     {
         using namespace math;
         std::vector<double> mm(half_odf_size);
-        image::matrix::vector_product(&*R.begin(),&*fODF.begin(),&*mm.begin(),math::dyndim(half_odf_size,half_odf_size));
+        image::mat::vector_product(&*R.begin(),&*fODF.begin(),&*mm.begin(),math::dyndim(half_odf_size,half_odf_size));
         mm -= dODF;
 
         double cost = math::vector_op_dot(&*mm.begin(),&*mm.begin()+mm.size(),&*mm.begin());
@@ -260,7 +260,7 @@ public:
 
         lambda = voxel.param[3];
         R.resize(half_odf_size*half_odf_size);
-        image::matrix::transpose(Rt.begin(),R.begin(),math::dyndim(half_odf_size,half_odf_size));
+        image::mat::transpose(Rt.begin(),R.begin(),math::dyndim(half_odf_size,half_odf_size));
 
     }
 

@@ -8,7 +8,7 @@ private:
     image::basic_image<short,3> I;
     std::vector<short> label_num;
     std::vector<std::string> labels;
-    std::vector<float> transform;
+    image::matrix<4,4,float> transform;
     void load_from_file(const char* file_name);
 
 private:// for talairach only

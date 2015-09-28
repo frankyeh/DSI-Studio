@@ -33,7 +33,7 @@ public:
                                  std::vector<std::vector<std::vector<float> > >& lesser);
     void export_tract_density(image::geometry<3>& dim,
                               image::vector<3,float> vs,
-                              std::vector<float>& transformation,bool color,bool endpoint);
+                              image::matrix<4,4,float>& transformation,bool color,bool endpoint);
     void saveTransformedTracts(const float* transform);
     void saveTransformedEndpoints(const float* transform);
     void load_tracts(QStringList filenames);

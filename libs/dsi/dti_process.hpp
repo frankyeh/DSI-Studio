@@ -56,7 +56,7 @@ public:
             {
                 //qq = q qT
                 std::vector<float> qq(3*3);
-                image::matrix::product_transpose(b_data[i].begin(),b_data[i].begin(),qq.begin(),
+                image::mat::product_transpose(b_data[i].begin(),b_data[i].begin(),qq.begin(),
                                                image::dyndim(3,1),image::dyndim(3,1));
 
                 /*
@@ -70,9 +70,9 @@ public:
         }
         iKtK.resize(6*6);
         iKtK_pivot.resize(6);
-        image::matrix::product_transpose(Kt.begin(),Kt.begin(),iKtK.begin(),
+        image::mat::product_transpose(Kt.begin(),Kt.begin(),iKtK.begin(),
                                        image::dyndim(6,b_count),image::dyndim(6,b_count));
-        image::matrix::lu_decomposition(iKtK.begin(),iKtK_pivot.begin(),image::dyndim(6,6));
+        image::mat::lu_decomposition(iKtK.begin(),iKtK_pivot.begin(),image::dyndim(6,6));
     }
 public:
     virtual void run(Voxel& voxel, VoxelData& data)
@@ -89,15 +89,15 @@ public:
         double tensor[9];
         double V[9],d[3];
 
-        image::matrix::product(Kt.begin(),signal.begin(),KtS,image::dyndim(6,b_count),image::dyndim(b_count,1));
-        image::matrix::lu_solve(iKtK.begin(),iKtK_pivot.begin(),KtS,tensor_param,image::dyndim(6,6));
+        image::mat::product(Kt.begin(),signal.begin(),KtS,image::dyndim(6,b_count),image::dyndim(b_count,1));
+        image::mat::lu_solve(iKtK.begin(),iKtK_pivot.begin(),KtS,tensor_param,image::dyndim(6,6));
 
 
         unsigned int tensor_index[9] = {0,3,4,3,1,5,4,5,2};
         for (unsigned int index = 0; index < 9; ++index)
             tensor[index] = tensor_param[tensor_index[index]];
 
-        image::matrix::eigen_decomposition_sym(tensor,V,d,image::dim<3,3>());
+        image::mat::eigen_decomposition_sym(tensor,V,d,image::dim<3,3>());
         if (d[1] < 0.0)
         {
             d[1] = 0.0;

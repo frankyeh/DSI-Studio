@@ -1508,9 +1508,8 @@ void vbc_dialog::on_load_roi_from_atlas_clicked()
             for (image::pixel_index<3>index; index.is_valid(vbc->handle->dim); index.next(vbc->handle->dim))
             {
                 image::vector<3> pos((const unsigned int*)(index.begin()));
-                image::vector<3> mni;
-                image::vector_transformation(pos.begin(),mni.begin(), vbc->handle->trans_to_mni,image::vdim<3>());
-                if(atlas_list[atlas_dialog->atlas_index].is_labeled_as(mni, label))
+                pos.to(vbc->handle->trans_to_mni);
+                if(atlas_list[atlas_dialog->atlas_index].is_labeled_as(pos, label))
                     new_roi.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
             }
             if(!new_roi.empty())
@@ -1535,7 +1534,7 @@ void vbc_dialog::on_load_roi_from_file_clicked()
     if(file.isEmpty())
         return;
     image::basic_image<short,3> I;
-    std::vector<float> transform;
+    image::matrix<4,4,float> transform;
     gz_nifti nii;
     if(!nii.load_from_file(file.toLocal8Bit().begin()))
     {
@@ -1543,22 +1542,18 @@ void vbc_dialog::on_load_roi_from_file_clicked()
         return;
     }
     nii >> I;
-    transform.clear();
-    transform.resize(16);
-    transform[15] = 1.0;
+    transform.identity();
     nii.get_image_transformation(transform.begin());
-    image::matrix::inverse(transform.begin(),image::dim<4,4>());
+    transform.inv();
     std::vector<image::vector<3,short> > new_roi;
     for (image::pixel_index<3>index; index.is_valid(vbc->handle->dim); index.next(vbc->handle->dim))
     {
         image::vector<3> pos((const unsigned int*)(index.begin()));
-        image::vector<3> mni;
-        image::vector_transformation(pos.begin(),mni.begin(), vbc->handle->trans_to_mni,image::vdim<3>());
-        image::vector<3> atlas_space;
-        image::vector_transformation(mni.begin(),atlas_space.begin(),transform.begin(),image::vdim<3>());
-        atlas_space += 0.5;
-        atlas_space.floor();
-        if(!I.geometry().is_valid(atlas_space) || I.at(atlas_space[0],atlas_space[1],atlas_space[2]) == 0)
+        pos.to(vbc->handle->trans_to_mni);
+        pos.to(transform);
+        pos += 0.5;
+        pos.floor();
+        if(!I.geometry().is_valid(pos) || I.at(pos[0],pos[1],pos[2]) == 0)
             continue;
         new_roi.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
     }

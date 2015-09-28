@@ -359,7 +359,8 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         }
     }
 
-    std::vector<float> convert;
+    image::matrix<4,4,float> convert;
+    bool has_transform = false;
 
     // searching for T1/T2 mappings
     for(unsigned int index = 0;index < cur_tracking_window.glWidget->other_slices.size();++index)
@@ -367,12 +368,13 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         if(from.geometry() == cur_tracking_window.glWidget->other_slices[index].source_images.geometry())
         {
             convert = cur_tracking_window.glWidget->other_slices[index].invT;
+            has_transform = true;
             break;
         }
     }
 
     if(from.geometry() != cur_tracking_window.slice.geometry &&
-       !cur_tracking_window.handle->trans_to_mni.empty() && convert.empty())// use transformation information
+       !cur_tracking_window.handle->trans_to_mni.empty() && !has_transform)// use transformation information
     {
         // searching QSDR mappings
         image::basic_image<unsigned int, 3> new_from;
@@ -395,15 +397,11 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         if(new_from.empty())
         {
             QMessageBox::information(this,"Warning","The nii file has different image dimension. Transformation will be applied to load the region",0);
-            std::vector<float> t(header.get_transformation(),
-                                 header.get_transformation()+12),inv_trans(16);
-            convert.resize(16);
-            t.resize(16);
-            t[15] = 1.0;
-            image::matrix::inverse(t.begin(),inv_trans.begin(),image::dim<4,4>());
-            image::matrix::product(inv_trans.begin(),
-                                   cur_tracking_window.handle->trans_to_mni.begin(),
-                                   convert.begin(),image::dim<4,4>(),image::dim<4,4>());
+            convert.identity();
+            header.get_image_transformation(convert.begin());
+            convert.inv();
+            convert *= cur_tracking_window.handle->trans_to_mni;
+            has_transform = true;
         }
         else
             new_from.swap(from);
@@ -413,10 +411,10 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     {
         ROIRegion region(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size);
 
-        if(convert.empty())
-            region.LoadFromBuffer(from);
-        else
+        if(has_transform)
             region.LoadFromBuffer(from,convert);
+        else
+            region.LoadFromBuffer(from);
 
         int color = 0;
         int type = roi_id;
@@ -454,10 +452,10 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
                 if(from[i] == value)
                     mask[i] = 1;
             ROIRegion region(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size);
-            if(convert.empty())
-                region.LoadFromBuffer(mask);
-            else
+            if(has_transform)
                 region.LoadFromBuffer(mask,convert);
+            else
+                region.LoadFromBuffer(mask);
             QString name = (label_map.find(value) == label_map.end() ?
                                 QString("roi_") + QString::number(value):QString(label_map[value].c_str()));
             add_region(name,roi_id);

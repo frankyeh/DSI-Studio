@@ -22,7 +22,6 @@ Q_OBJECT
      ~GLWidget();
  public:// editing
      unsigned char editing_option;
-     float mat[16];
      image::vector<3,float> pos,dir1,dir2;
      bool angular_selection;
      void get_pos(void);
@@ -59,7 +58,7 @@ Q_OBJECT
      {return other_slices[current_visible_slide-1].geometry;}
      void get_current_slice_transformation(image::geometry<3>& geo,
                                            image::vector<3,float>& vs,
-                                           std::vector<float>& tr);
+                                           image::matrix<4,4,float>& tr);
      bool get_mouse_pos(QMouseEvent *mouseEvent,image::vector<3,float>& position);
      void paintGL();
 
@@ -134,8 +133,7 @@ Q_OBJECT
  public:
      GLuint tracts,slice_texture[3];
      QPoint lastPos;
-     float transformation_matrix[16];
-     float rotation_matrix[16];
+     image::matrix<4,4,float> mat,transformation_matrix,rotation_matrix;
 
      float current_scale;
      bool set_view_flip;

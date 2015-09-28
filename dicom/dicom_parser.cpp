@@ -114,7 +114,7 @@ void load_bvec(const char* file_name,std::vector<double>& b_table)
         ++total_line;
     }
     if(total_line == 3)
-        image::matrix::transpose(b_table.begin(),image::dyndim(3,b_table.size()/3));
+        image::mat::transpose(b_table.begin(),image::dyndim(3,b_table.size()/3));
 }
 void load_bval(const char* file_name,std::vector<double>& bval)
 {

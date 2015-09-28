@@ -13,11 +13,9 @@ void atlas::load_from_file(const char* file_name)
         if(!nii.load_from_file(file_name))
             throw std::runtime_error("Cannot load atlas file");
         nii >> I;
-        transform.clear();
-        transform.resize(16);
-        transform[15] = 1.0;
+        transform.identity();
         nii.get_image_transformation(transform.begin());
-        image::matrix::inverse(transform.begin(),image::dim<4,4>());
+        transform.inv();
     }
     std::string file_name_str(file_name);
     std::string text_file_name;
@@ -116,7 +114,7 @@ short atlas::get_label_at(const image::vector<3,float>& mni_space)
     if(I.empty())
         load_from_file(filename.c_str());
     image::vector<3,float> atlas_space(mni_space);
-    image::vector_transformation(mni_space.begin(),atlas_space.begin(),transform.begin(),image::vdim<3>());
+    atlas_space.to(transform);
     atlas_space += 0.5;
     atlas_space.floor();
     if(!I.geometry().is_valid(atlas_space))

@@ -130,7 +130,7 @@ public:
         }
         std::vector<float> new_data(new_q_count);
         data.space.swap(new_data);
-        image::matrix::vector_product(trans.begin(),new_data.begin(),data.space.begin(),image::dyndim(new_q_count,old_q_count));
+        image::mat::vector_product(trans.begin(),new_data.begin(),data.space.begin(),image::dyndim(new_q_count,old_q_count));
     }
 };
 

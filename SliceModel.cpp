@@ -79,18 +79,16 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
     gz_nifti nifti;
     center_point = slice.center_point;
     // QSDR loaded, use MNI transformation instead
+    bool has_transform = false;
     if(is_qsdr && files.size() == 1 && nifti.load_from_file(files[0]))
     {
         loadLPS(nifti);
-        std::vector<float> t(nifti.get_transformation(),
-                             nifti.get_transformation()+12),inv_trans(16);
-        transform.resize(16);
-        t.resize(16);
-        t[15] = 1.0;
-        image::matrix::inverse(slice.handle->trans_to_mni.begin(),inv_trans.begin(),image::dim<4,4>());
-        image::matrix::product(inv_trans.begin(),t.begin(),transform.begin(),image::dim<4,4>(),image::dim<4,4>());
-        invT.resize(16);
-        image::matrix::inverse(transform.begin(),invT.begin(),image::dim<4, 4>());
+        invT.identity();
+        nifti.get_image_transformation(invT.begin());
+        invT.inv();
+        invT *= slice.handle->trans_to_mni;
+        transform = image::inverse(invT);
+        has_transform = true;
     }
     else
     {
@@ -113,25 +111,20 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
         // same dimension, no registration required.
         if(source_images.geometry() == slice.source_images.geometry())
         {
-            transform.resize(16);
-            transform[0] = transform[5] = transform[10] = transform[15] = 1.0;
-            invT.resize(16);
-            invT[0] = invT[5] = invT[10] = invT[15] = 1.0;
+            transform.identity();
+            invT.identity();
         }
     }
 
     roi_image.resize(slice.handle->dim);
     roi_image_buf = &*roi_image.begin();
-    if(transform.empty())
+    if(!has_transform)
     {
         from = slice.source_images;
         arg_min.scaling[0] = slice.voxel_size[0] / voxel_size[0];
         arg_min.scaling[1] = slice.voxel_size[1] / voxel_size[1];
         arg_min.scaling[2] = slice.voxel_size[2] / voxel_size[2];
         thread.reset(new boost::thread(&CustomSliceModel::argmin,this,image::reg::rigid_body));
-        // handle views
-        transform.resize(16);
-        invT.resize(16);
     }
     else
         update_roi();
@@ -156,19 +149,18 @@ void CustomSliceModel::argmin(int reg_type)
 void CustomSliceModel::update(void)
 {
     image::transformation_matrix<3,float> T(arg_min,from.geometry(),source_images.geometry());
-    invT.resize(16);
-    invT[15] = 1.0;
+    invT.identity();
     T.save_to_transform(invT.begin());
-    transform.resize(16);
-    transform[15] = 1.0;
-    image::matrix::inverse(invT.begin(),transform.begin(),image::dim<4, 4>());
+    transform = image::inverse(invT);
     update_roi();
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::update_roi(void)
 {
     std::fill(texture_need_update,texture_need_update+3,1);
-    image::resample(source_images,roi_image,invT,image::linear);
+    image::transformation_matrix<3> transform;
+    transform.load_from_transform(invT.begin());
+    image::resample(source_images,roi_image,transform,image::linear);
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::terminate(void)

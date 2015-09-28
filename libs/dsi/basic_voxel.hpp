@@ -36,7 +36,7 @@ struct VoxelData
     std::vector<short> dir_index;
     float min_odf;
     float jdet;
-    image::matrix::mat<3,3,float> jacobian;
+    image::matrix<3,3,float> jacobian;
 
     void init(void)
     {

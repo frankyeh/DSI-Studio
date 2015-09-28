@@ -70,12 +70,12 @@ public:
             float grad_dev[9];
             for(unsigned int i = 0; i < 9; ++i)
                 grad_dev[i] = voxel.grad_dev[i][data.voxel_index];
-            image::matrix::transpose(grad_dev,image::dim<3,3>());
+            image::mat::transpose(grad_dev,image::dim<3,3>());
             std::vector<float> new_sinc_ql(data.odf.size()*data.space.size());
             for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
             {
-                image::vector<3,double> dir(voxel.ti.vertices[j]),from;
-                image::matrix::vector_product(grad_dev,dir.begin(),from.begin(),image::dim<3,3>());
+                image::vector<3,float> from(voxel.ti.vertices[j]);
+                from.rotate(grad_dev);
                 from.normalize();
                 if(voxel.r2_weighted)
                     for (unsigned int i = 0; i < data.space.size(); ++i,++index)
@@ -85,11 +85,11 @@ public:
                         new_sinc_ql[index] = boost::math::sinc_pi(q_vectors_time[i]*from);
 
             }
-            image::matrix::vector_product(&*new_sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
+            image::mat::vector_product(&*new_sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
                                     image::dyndim(data.odf.size(),data.space.size()));
         }
         else
-            image::matrix::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
+            image::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
                                     image::dyndim(data.odf.size(),data.space.size()));
     }
 };
@@ -148,15 +148,15 @@ public:
             b0.resize(voxel.dim.size());
 
         Rt.resize(dwi.size()*dwi.size());
-        image::matrix::transpose(&*to.sinc_ql.begin(),&*Rt.begin(),image::dyndim(dwi.size(),dwi.size()));
+        image::mat::transpose(&*to.sinc_ql.begin(),&*Rt.begin(),image::dyndim(dwi.size(),dwi.size()));
         A.resize(dwi.size()*dwi.size());
         piv.resize(dwi.size());
-        image::matrix::product_transpose(&*Rt.begin(),&*Rt.begin(),&*A.begin(),
+        image::mat::product_transpose(&*Rt.begin(),&*Rt.begin(),&*A.begin(),
                                        image::dyndim(dwi.size(),dwi.size()),image::dyndim(dwi.size(),dwi.size()));
         float max_value = *std::max_element(A.begin(),A.end());
         for (unsigned int i = 0,index = 0; i < dwi.size(); ++i,index += dwi.size() + 1)
             A[index] += max_value*voxel.param[2];
-        image::matrix::lu_decomposition(A.begin(),piv.begin(),image::dyndim(dwi.size(),dwi.size()));
+        image::mat::lu_decomposition(A.begin(),piv.begin(),image::dyndim(dwi.size(),dwi.size()));
 
         total_negative_value = 0;
         total_value = 0;
@@ -174,8 +174,8 @@ public:
         }
         from.run(voxel,data);
         std::vector<float> hardi_data(dwi.size()),tmp(dwi.size());
-        image::matrix::vector_product(&*Rt.begin(),&*data.odf.begin(),&*tmp.begin(),image::dyndim(dwi.size(),dwi.size()));
-        image::matrix::lu_solve(&*A.begin(),&*piv.begin(),&*tmp.begin(),&*hardi_data.begin(),image::dyndim(dwi.size(),dwi.size()));
+        image::mat::vector_product(&*Rt.begin(),&*data.odf.begin(),&*tmp.begin(),image::dyndim(dwi.size(),dwi.size()));
+        image::mat::lu_solve(&*A.begin(),&*piv.begin(),&*tmp.begin(),&*hardi_data.begin(),image::dyndim(dwi.size(),dwi.size()));
         for(unsigned int index = 0;index < dwi.size();++index)
         {
             if(hardi_data[index] < 0.0)

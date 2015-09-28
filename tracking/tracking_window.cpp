@@ -433,11 +433,7 @@ void tracking_window::subject2mni(image::vector<3>& pos)
     }
     else
     if(!handle->trans_to_mni.empty())
-    {
-        image::vector<3> mni;
-        image::vector_transformation(pos.begin(),mni.begin(), handle->trans_to_mni,image::vdim<3>());
-        pos = mni;
-    }
+        pos.to(handle->trans_to_mni);
 }
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 {
@@ -874,8 +870,8 @@ bool ask_TDI_options(int& rec,int& rec2)
 }
 void tracking_window::on_actionTDI_Diffusion_Space_triggered()
 {
-    std::vector<float> tr(16);
-    tr[0] = tr[5] = tr[10] = tr[15] = 1.0;
+    image::matrix<4,4,float> tr;
+    tr.identity();
     int rec,rec2;
     if(!ask_TDI_options(rec,rec2))
         return;
@@ -885,9 +881,9 @@ void tracking_window::on_actionTDI_Diffusion_Space_triggered()
 
 void tracking_window::on_actionTDI_Subvoxel_Diffusion_Space_triggered()
 {
-    std::vector<float> tr(16);
+    image::matrix<4,4,float> tr;
+    tr.identity();
     tr[0] = tr[5] = tr[10] = 4.0;
-    tr[15] = 1.0;
     image::geometry<3> new_geo(slice.geometry[0]*4,slice.geometry[1]*4,slice.geometry[2]*4);
     image::vector<3,float> new_vs(slice.voxel_size);
     new_vs /= 4.0;
@@ -899,7 +895,7 @@ void tracking_window::on_actionTDI_Subvoxel_Diffusion_Space_triggered()
 
 void tracking_window::on_actionTDI_Import_Slice_Space_triggered()
 {
-    std::vector<float> tr(16);
+    image::matrix<4,4,float> tr;
     image::geometry<3> geo;
     image::vector<3,float> vs;
     glWidget->get_current_slice_transformation(geo,vs,tr);
@@ -912,7 +908,7 @@ void tracking_window::on_actionTDI_Import_Slice_Space_triggered()
 
 void tracking_window::on_actionSave_Tracts_in_Current_Mapping_triggered()
 {
-    std::vector<float> tr(16);
+    image::matrix<4,4,float> tr;
     image::geometry<3> geo;
     image::vector<3,float> vs;
     glWidget->get_current_slice_transformation(geo,vs,tr);
@@ -920,8 +916,7 @@ void tracking_window::on_actionSave_Tracts_in_Current_Mapping_triggered()
 }
 void tracking_window::on_actionSave_Endpoints_in_Current_Mapping_triggered()
 {
-
-    std::vector<float> tr(16);
+    image::matrix<4,4,float> tr;
     image::geometry<3> geo;
     image::vector<3,float> vs;
     glWidget->get_current_slice_transformation(geo,vs,tr);
@@ -1052,7 +1047,7 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
             out << ui->glSagSlider->value() << " "
                 << ui->glCorSlider->value() << " "
                 << ui->glAxiSlider->value() << " ";
-            std::copy(glWidget->transformation_matrix,glWidget->transformation_matrix+16,std::ostream_iterator<float>(out," "));
+            std::copy(glWidget->transformation_matrix.begin(),glWidget->transformation_matrix.end(),std::ostream_iterator<float>(out," "));
             settings.setValue(key_str,QString(out.str().c_str()));
         }
         else
@@ -1066,7 +1061,7 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
             std::vector<float> tran((std::istream_iterator<float>(in)),(std::istream_iterator<float>()));
             if(tran.size() != 16)
                 return;
-            std::copy(tran.begin(),tran.begin()+16,glWidget->transformation_matrix);
+            std::copy(tran.begin(),tran.begin()+16,glWidget->transformation_matrix.begin());
             ui->glSagSlider->setValue(sag);
             ui->glCorSlider->setValue(cor);
             ui->glAxiSlider->setValue(axi);
@@ -1244,11 +1239,11 @@ void tracking_window::on_addRegionFromAtlas_clicked()
             unsigned short label = atlas_dialog->roi_list[i];
             for (image::pixel_index<3>index; index.is_valid(slice.geometry); index.next(slice.geometry))
             {
-                image::vector<3,float> mni((const unsigned int*)(index.begin()));
+                image::vector<3> mni(index.begin());
                 subject2mni(mni);
                 if (!atlas_list[atlas_dialog->atlas_index].is_labeled_as(mni, label))
                     continue;
-                points.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
+                points.push_back(image::vector<3,short>(index.begin()));
             }
             regionWidget->add_region(atlas_dialog->roi_name[i].c_str(),roi_id);
             regionWidget->add_points(points,false);

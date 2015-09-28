@@ -110,20 +110,18 @@ int ana(int ac, char *av[])
         std::cout << "region loaded" << std::endl;
         image::basic_image<unsigned int, 3> from;
         header.toLPS(from);
-        std::vector<float> convert;
+        image::matrix<4,4,float> convert;
+        bool has_convert = false;
         if(from.geometry() != geometry)
         {
             if(is_qsdr)
             {
-                std::vector<float> t(header.get_transformation(),
-                                     header.get_transformation()+12),inv_trans(16);
-                convert.resize(16);
-                t.resize(16);
-                t[15] = 1.0;
-                image::matrix::inverse(t.begin(),inv_trans.begin(),image::dim<4,4>());
-                image::matrix::product(inv_trans.begin(),
-                                       handle->trans_to_mni.begin(),
-                                       convert.begin(),image::dim<4,4>(),image::dim<4,4>());
+                convert.identity();
+                header.get_image_transformation(convert.begin());
+                convert.inv();
+                convert *= handle->trans_to_mni;
+                has_convert = true;
+
             }
             else
             {
@@ -155,10 +153,10 @@ int ana(int ac, char *av[])
                     if(from[i] == value)
                         mask[i] = 1;
                 ROIRegion region(geometry,handle->vs);
-                if(convert.empty())
-                    region.LoadFromBuffer(mask);
-                else
+                if(has_convert)
                     region.LoadFromBuffer(mask,convert);
+                else
+                    region.LoadFromBuffer(mask);
                 const std::vector<image::vector<3,short> >& cur_region = region.get();
                 image::vector<3,float> pos = std::accumulate(cur_region.begin(),cur_region.end(),image::vector<3,float>(0,0,0));
                 pos /= cur_region.size();

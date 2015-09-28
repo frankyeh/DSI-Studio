@@ -96,9 +96,9 @@ bool atl_get_mapping(gz_mat_read& mat_reader,
         std::cout << "Transformation matrix found." << std::endl;
         for(image::pixel_index<3> index;geo.is_valid(index);index.next(geo))
         {
-            image::vector<3,float> pos(index),mni;
-            image::vector_transformation(pos.begin(),mni.begin(),trans,image::vdim<3>());
-            mapping[index.index()] = mni;
+            image::vector<3> pos(index);
+            pos.to(trans);
+            mapping[index.index()] = pos;
         }
     }
     else

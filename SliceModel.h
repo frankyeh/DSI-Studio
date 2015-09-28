@@ -115,7 +115,7 @@ public:
 
 class CustomSliceModel : public SliceModel{
 public:
-    std::vector<float> transform,invT;
+    image::matrix<4,4,float> transform,invT;
     image::basic_image<float,3> roi_image;
     float* roi_image_buf;
 public:

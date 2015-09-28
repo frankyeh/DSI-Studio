@@ -159,21 +159,19 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
         image::basic_image<unsigned int, 3>from;
         if(image::geometry<3>(header.nif_header.dim+1) != geo)// use transformation information
         {
-            header >> from;
             if(trans.empty())
                 return false;
-            std::vector<float> t(header.get_transformation(),
-                                 header.get_transformation()+12),inv_trans(16),convert(16);
-            t.resize(16);
-            t[15] = 1.0;
-            image::matrix::inverse(t.begin(),inv_trans.begin(),image::dim<4,4>());
-            image::matrix::product(inv_trans.begin(),trans.begin(),convert.begin(),image::dim<4,4>(),image::dim<4,4>());
-            LoadFromBuffer(from,convert);
+            header >> from;
+            image::matrix<4,4,float> t;
+            t.identity();
+            header.get_image_transformation(t.begin());
+            t.inv();
+            t *= trans;
+            LoadFromBuffer(from,t);
             return true;
         }
         header.toLPS(from);
         LoadFromBuffer(from);
-
         return true;
     }
     return false;

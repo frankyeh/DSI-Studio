@@ -106,8 +106,8 @@ void check_error(const char* line)
 void GLWidget::set_view(unsigned char view_option)
 {
     // initialize world matrix
-    image::matrix::identity(transformation_matrix,image::dim<4,4>());
-    image::matrix::identity(rotation_matrix,image::dim<4,4>());
+    transformation_matrix.identity();
+    rotation_matrix.identity();
 
     if(get_param("scale_voxel") && cur_tracking_window.slice.voxel_size[0] > 0.0)
     {
@@ -121,47 +121,37 @@ void GLWidget::set_view(unsigned char view_option)
     transformation_matrix[12] = -transformation_matrix[0]*cur_tracking_window.slice.center_point[0];
     transformation_matrix[13] = -transformation_matrix[5]*cur_tracking_window.slice.center_point[1];
     transformation_matrix[14] = -transformation_matrix[10]*cur_tracking_window.slice.center_point[2];
-
+    image::matrix<4,4,float> m;
     if(view_option != 2)
     {
-        float m2[16];
-        std::fill(m2, m2 + 16, 0.0);
-        m2[15] = 1.0;
+        m.zero();
+        m[15] = 1.0;
         switch(view_option)
         {
         case 0:
-            m2[2] = -1.0;
-            m2[4] = 1.0;
-            m2[9] = -1.0;
+            m[2] = -1.0;
+            m[4] = 1.0;
+            m[9] = -1.0;
             break;
         case 1:
-            m2[0] = 1.0;
-            m2[6] = 1.0;
-            m2[9] = -1.0;
+            m[0] = 1.0;
+            m[6] = 1.0;
+            m[9] = -1.0;
             break;
         case 2:
             break;
         }
-        float m1[16];
-        std::copy(transformation_matrix,transformation_matrix+16,m1);
-        image::matrix::product(m1, m2, transformation_matrix, image::dim<4, 4>(),image::dim<4, 4>());
-        std::copy(rotation_matrix,rotation_matrix+16,m1);
-        image::matrix::product(m1, m2, rotation_matrix, image::dim<4, 4>(),image::dim<4, 4>());
+        transformation_matrix *= m;
+        rotation_matrix *= m;
     }
     // rotate 180 degrees
     if(set_view_flip)
     {
-        float m2[16];
-        std::fill(m2, m2 + 16, 0.0);
-        m2[0] = -1.0;
-        m2[5] = 1.0;
-        m2[10] = -1.0;
-        m2[15] = 1.0;
-        float m1[16];
-        std::copy(transformation_matrix,transformation_matrix+16,m1);
-        image::matrix::product(m1, m2, transformation_matrix, image::dim<4, 4>(),image::dim<4, 4>());
-        std::copy(rotation_matrix,rotation_matrix+16,m1);
-        image::matrix::product(m1, m2, rotation_matrix, image::dim<4, 4>(),image::dim<4, 4>());
+        m.identity();
+        m[0] = -1.0;
+        m[10] = -1.0;
+        transformation_matrix *= m;
+        rotation_matrix *= m;
     }
     set_view_flip = !set_view_flip;
 }
@@ -223,15 +213,13 @@ void setupMaterial(float emission)
     check_error(__FUNCTION__);
 }
 
-unsigned char getCurView(float* transformation_matrix)
+unsigned char getCurView(const image::matrix<4,4,float>& m)
 {
     unsigned char cur_view = 0;
     {
         const float view_dirs[6][3] = {{1,0,0},{0,1,0},{0,0,1},{-1,0,0},{0,-1,0},{0,0,-1}};
-        float mat[16];
-        //image::matrix::product(transformation_matrix,mat,view,image::dim<4,4>(),image::dim<4,4>());
-        image::matrix::inverse(transformation_matrix,mat,image::dim<4,4>());
-        image::vector<3,float> dir(mat+8);
+        image::matrix<4,4,float> mat = image::inverse(m);
+        image::vector<3,float> dir(mat.begin()+8);
         float max_cos = 0;
         for (unsigned int index = 0;index < 6;++index)
         if (dir*image::vector<3,float>(view_dirs[index]) < max_cos)
@@ -345,8 +333,8 @@ void GLWidget::initializeGL()
     check_error(__FUNCTION__);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
-
-    tracts = glGenLists(1);
+    if(!tracts)
+        tracts = glGenLists(1);
     tract_alpha = -1; // ensure that make_track is called
     odf_position = 255;//ensure ODFs is renderred
     check_error(__FUNCTION__);
@@ -490,7 +478,7 @@ void GLWidget::renderLR(int eye)
         glEnable(GL_COLOR_MATERIAL);
         glDisable(GL_LIGHTING);
         glPushMatrix();
-        glMultMatrixf(transformation_matrix);
+        glMultMatrixf(transformation_matrix.begin());
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_COLOR_ARRAY);
         unsigned int num_odf = odf_points.size()/cur_tracking_window.odf_size;
@@ -520,7 +508,7 @@ void GLWidget::renderLR(int eye)
                    get_param("tract_light_option"));
 
         glPushMatrix();
-        glMultMatrixf(transformation_matrix);
+        glMultMatrixf(transformation_matrix.begin());
         setupMaterial((float)(get_param("tract_emission"))/10.0);
 
         if(get_param("tract_color_style") != tract_color_style)
@@ -581,7 +569,7 @@ void GLWidget::renderLR(int eye)
         glDepthMask((alpha == 1.0));
 
         glPushMatrix();
-        glMultMatrixf(transformation_matrix);
+        glMultMatrixf(transformation_matrix.begin());
 
         std::vector<image::vector<3,float> > points(4);
         SliceModel* active_slice = current_visible_slide ?
@@ -673,7 +661,7 @@ void GLWidget::renderLR(int eye)
                    get_param("region_light_option"));
 
         glPushMatrix();
-        glMultMatrixf(transformation_matrix);
+        glMultMatrixf(transformation_matrix.begin());
 
         setupMaterial((float)(get_param("region_emission"))/10.0);
 
@@ -702,7 +690,7 @@ void GLWidget::renderLR(int eye)
                    get_param("surface_light_option"));
 
         glPushMatrix();
-        glMultMatrixf(transformation_matrix);
+        glMultMatrixf(transformation_matrix.begin());
         setupMaterial((float)(get_param("surface_emission"))/10.0);
 
         float alpha = get_param_float("surface_alpha");
@@ -740,7 +728,7 @@ void GLWidget::renderLR(int eye)
         glPushMatrix();
         glLoadIdentity();
         my_gluLookAt(eye,0,-200.0*perspective,0,0,0,0,-1.0,0);
-        glMultMatrixf(rotation_matrix);
+        glMultMatrixf(rotation_matrix.begin());
         glLineWidth (1.5);
         glBegin (GL_LINES);
         glColor3f (1.0,0.3,0.3);  glVertex3f(0,0,0);  glVertex3f(1.5,0,0);    // X axis is red.
@@ -1205,8 +1193,8 @@ void GLWidget::scale_by(float scalefactor)
     glPushMatrix();
     glLoadIdentity();
     glScaled(scalefactor,scalefactor,scalefactor);
-    glMultMatrixf(transformation_matrix);
-    glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
+    glMultMatrixf(transformation_matrix.begin());
+    glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
     glPopMatrix();
     updateGL();
 }
@@ -1230,18 +1218,14 @@ void GLWidget::slice_location(unsigned char dim,std::vector<image::vector<3,floa
     active_slice->get_slice_positions(dim,points);
     if(current_visible_slide)
     for(unsigned int index = 0;index < 4;++index)
-    {
-        image::vector<3,float> tmp;
-        image::vector_transformation(points[index].begin(), tmp.begin(),
-            other_slices[current_visible_slide-1].transform.begin(), image::vdim<3>());
-        points[index] = tmp;
-    }
+        points[index].to(other_slices[current_visible_slide-1].transform);
 }
 
 void GLWidget::get_view_dir(QPoint p,image::vector<3,float>& dir)
 {
-    float m[16],v[3];
-    glGetFloatv(GL_PROJECTION_MATRIX,m);
+    image::matrix<4,4,float> m;
+    float v[3];
+    glGetFloatv(GL_PROJECTION_MATRIX,m.begin());
     // Compute the vector of the pick ray in screen space
     v[0] = (( 2.0f * ((float)p.x() * devicePixelRatio())/((float)cur_width)) - 1 ) / m[0];
     v[1] = -(( 2.0f * ((float)p.y() * devicePixelRatio())/((float)cur_height)) - 1 ) / m[5];
@@ -1264,7 +1248,7 @@ float GLWidget::get_slice_projection_point(unsigned char dim,
     pos_offset -= slice_points[0];
     v1 -= slice_points[0];
     v2 -= slice_points[0];
-    float m[9],result[3];
+    image::matrix<3,3,float> m;
     m[0] = v1[0];
     m[1] = v2[0];
     m[2] = -v3[0];
@@ -1275,12 +1259,12 @@ float GLWidget::get_slice_projection_point(unsigned char dim,
     m[7] = v2[2];
     m[8] = -v3[2];
 
-    if(!image::matrix::inverse(m,image::dim<3,3>()))
+    if(!m.inv())
         return 0.0;
-    image::matrix::vector_product(m,pos_offset.begin(),result,image::dim<3,3>());
-    dx = result[0];
-    dy = result[1];
-    return result[2];
+    pos_offset.rotate(m);
+    dx = pos_offset[0];
+    dy = pos_offset[1];
+    return pos_offset[2];
 }
 
 image::vector<3,float> get_norm(const std::vector<image::vector<3,float> >& slice_points)
@@ -1346,11 +1330,10 @@ void GLWidget::select_slice(void)
 }
 void GLWidget::get_pos(void)
 {
-    float view[16];
     //glMultMatrixf(transformation_matrix);
-    glGetFloatv(GL_MODELVIEW_MATRIX,mat);
-    image::matrix::product(transformation_matrix,mat,view,image::dim<4,4>(),image::dim<4,4>());
-    image::matrix::inverse(view,mat,image::dim<4,4>());
+    glGetFloatv(GL_MODELVIEW_MATRIX,mat.begin());
+    image::matrix<4,4,float> view = transformation_matrix*mat;
+    mat = image::inverse(view);
     pos[0] = mat[12];
     pos[1] = mat[13];
     pos[2] = mat[14];
@@ -1500,8 +1483,8 @@ void GLWidget::move_by(int x,int y)
     glPushMatrix();
     glLoadIdentity();
     glTranslated(x/5.0,y/5.0,0);
-    glMultMatrixf(transformation_matrix);
-    glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
+    glMultMatrixf(transformation_matrix.begin());
+    glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
     glPopMatrix();
     updateGL();
 }
@@ -1582,8 +1565,8 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
             glRotated(dy / 2.0, 1.0, 0.0, 0.0);
             if(!(event->modifiers() & Qt::ShiftModifier))
                 glRotated(-dx / 2.0, 0.0, 1.0, 0.0);
-            glMultMatrixf(rotation_matrix);
-            glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix);
+            glMultMatrixf(rotation_matrix.begin());
+            glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix.begin());
             glLoadIdentity();
         }
         glRotated(dy / 2.0, 1.0, 0.0, 0.0);
@@ -1601,8 +1584,8 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     else
         glTranslated(dx/5.0,dy/5.0,0);
 
-    glMultMatrixf(transformation_matrix);
-    glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
+    glMultMatrixf(transformation_matrix.begin());
+    glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
     glPopMatrix();
     updateGL();
     lastPos = event->pos();
@@ -1635,11 +1618,11 @@ void GLWidget::loadCamera(void)
     std::copy(std::istream_iterator<float>(in),
               std::istream_iterator<float>(),std::back_inserter(data));
     data.resize(16);
-    std::copy(data.begin(),data.end(),transformation_matrix);
+    std::copy(data.begin(),data.end(),transformation_matrix.begin());
     updateGL();
 }
 void GLWidget::get_current_slice_transformation(
-            image::geometry<3>& geo,image::vector<3,float>& vs,std::vector<float>& tr)
+            image::geometry<3>& geo,image::vector<3,float>& vs,image::matrix<4,4,float>& tr)
 {
     if(!current_visible_slide)
     {
@@ -1712,8 +1695,8 @@ void GLWidget::loadMapping(void)
     data.resize(16);
     data[15] = 1.0;
     other_slices[current_visible_slide-1].transform = data;
-    other_slices[current_visible_slide-1].invT.resize(16);
-    image::matrix::inverse(data.begin(),other_slices[current_visible_slide-1].invT.begin(),image::dim<4,4>());
+    other_slices[current_visible_slide-1].invT = data;
+    other_slices[current_visible_slide-1].invT.inv();
     other_slices[current_visible_slide-1].update_roi();
     updateGL();
 }
@@ -2002,12 +1985,8 @@ void GLWidget::command(QString cmd,QString param,QString param2)
         if(current_visible_slide)
         for(unsigned int index = 0;index < surface->get()->point_list.size();++index)
         {
-            image::vector<3,float> tmp;
-            image::vector_transformation(
-                surface->get()->point_list[index].begin(), tmp.begin(),
-                other_slices[current_visible_slide-1].transform.begin(), image::vdim<3>());
-            tmp += 0.5;
-            surface->get()->point_list[index] = tmp;
+            surface->get()->point_list[index].to(other_slices[current_visible_slide-1].transform);
+            surface->get()->point_list[index] += 0.5;
         }
         paintGL();
         return;
@@ -2095,14 +2074,14 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             glPushMatrix();
             glLoadIdentity();
             glRotated(1,0,1.0,0.0);
-            glMultMatrixf(rotation_matrix);
-            glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix);
+            glMultMatrixf(rotation_matrix.begin());
+            glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix.begin());
 
             glLoadIdentity();
             glRotated(1,0,1.0,0.0);
             glTranslatef(-eye_shift,0,0);
-            glMultMatrixf(transformation_matrix);
-            glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
+            glMultMatrixf(transformation_matrix.begin());
+            glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
             glPopMatrix();
             paintGL();
             QImage I1 = grabFrameBuffer().scaledToWidth(1024*devicePixelRatio());
@@ -2110,8 +2089,8 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             glPushMatrix();
             glLoadIdentity();
             glTranslatef(eye_shift*2.0,0,0);
-            glMultMatrixf(transformation_matrix);
-            glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
+            glMultMatrixf(transformation_matrix.begin());
+            glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
             glPopMatrix();
             paintGL();
             QImage I2 = grabFrameBuffer().scaledToWidth(1024*devicePixelRatio());
@@ -2119,8 +2098,8 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             glPushMatrix();
             glLoadIdentity();
             glTranslatef(-eye_shift,0,0);
-            glMultMatrixf(transformation_matrix);
-            glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
+            glMultMatrixf(transformation_matrix.begin());
+            glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
             glPopMatrix();
 
             QImage I(2048,768,QImage::Format_RGB32);
@@ -2226,13 +2205,13 @@ void GLWidget::rotate_angle(float angle,float x,float y,float z)
 
     glLoadIdentity();
     glRotated(angle,x,y,z);
-    glMultMatrixf(rotation_matrix);
-    glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix);
+    glMultMatrixf(rotation_matrix.begin());
+    glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix.begin());
 
     glLoadIdentity();
     glRotated(angle,x,y,z);
-    glMultMatrixf(transformation_matrix);
-    glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix);
+    glMultMatrixf(transformation_matrix.begin());
+    glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
     glPopMatrix();
     paintGL();
 }

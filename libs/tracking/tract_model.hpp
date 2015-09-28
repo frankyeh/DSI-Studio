@@ -99,9 +99,9 @@ public:
         unsigned int get_tract_color(unsigned int index) const{return tract_color[index];}
         size_t get_tract_length(unsigned int index) const{return tract_data[index].size();}
         void get_density_map(image::basic_image<unsigned int,3>& mapping,
-             const std::vector<float>& transformation,bool endpoint);
+             const image::matrix<4,4,float>& transformation,bool endpoint);
         void get_density_map(image::basic_image<image::rgb_color,3>& mapping,
-             const std::vector<float>& transformation,bool endpoint);
+             const image::matrix<4,4,float>& transformation,bool endpoint);
         void save_tdi(const char* file_name,bool sub_voxel,bool endpoint,const std::vector<float>& tran);
 
         void get_quantitative_data(std::vector<float>& data);

@@ -139,17 +139,17 @@ public:
         void Flip(unsigned int dimension);
         void shift(const image::vector<3,short>& dx);
 
-        template<typename image_type>
-        void LoadFromBuffer(const image_type& from,const std::vector<float>& trans)
+        template<typename image_type,typename trans_type>
+        void LoadFromBuffer(const image_type& from,const trans_type& trans)
         {
             std::vector<image::vector<3,short> > points;
             for (image::pixel_index<3> index; index.is_valid(geo);index.next(geo))
             {
-                image::vector<3> p(index.begin()),p2;
-                image::vector_transformation(p.begin(),p2.begin(),trans.begin(),image::vdim<3>());
-                p2 += 0.5;
-                p2.floor();
-                if (from.geometry().is_valid(p2) && from.at(p2[0],p2[1],p2[2]) != 0)
+                image::vector<3> p(index.begin());
+                p.to(trans);
+                p += 0.5;
+                p.floor();
+                if (from.geometry().is_valid(p) && from.at(p[0],p[1],p[2]) != 0)
                     points.push_back(image::vector<3,short>(index.begin()));
             }
             region.swap(points);

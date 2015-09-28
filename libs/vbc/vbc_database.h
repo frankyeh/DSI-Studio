@@ -65,24 +65,24 @@ public:
         X.resize(feature_count*subject_count);
         std::copy(X_,X_+X.size(),X.begin());
         Xt.resize(X.size());
-        image::matrix::transpose(&*X.begin(),&*Xt.begin(),image::dyndim(subject_count,feature_count));
+        image::mat::transpose(&*X.begin(),&*Xt.begin(),image::dyndim(subject_count,feature_count));
 
         XtX.resize(feature_count*feature_count); // trans(x)*y    p by p
-        image::matrix::product_transpose(&*Xt.begin(),&*Xt.begin(),
+        image::mat::product_transpose(&*Xt.begin(),&*Xt.begin(),
                                          &*XtX.begin(),
                                          image::dyndim(feature_count,subject_count),
                                          image::dyndim(feature_count,subject_count));
         piv.resize(feature_count);
-        image::matrix::lu_decomposition(&*XtX.begin(),&*piv.begin(),image::dyndim(feature_count,feature_count));
+        image::mat::lu_decomposition(&*XtX.begin(),&*piv.begin(),image::dyndim(feature_count,feature_count));
 
 
         // calculate the covariance
         {
             X_cov = Xt;
             std::vector<value_type> c(feature_count),d(feature_count);
-            if(!image::matrix::lq_decomposition(&*X_cov.begin(),&*c.begin(),&*d.begin(),image::dyndim(feature_count,subject_count)))
+            if(!image::mat::lq_decomposition(&*X_cov.begin(),&*c.begin(),&*d.begin(),image::dyndim(feature_count,subject_count)))
                 return false;
-            image::matrix::lq_get_l(&*X_cov.begin(),&*d.begin(),&*X_cov.begin(),
+            image::mat::lq_get_l(&*X_cov.begin(),&*d.begin(),&*X_cov.begin(),
                                     image::dyndim(feature_count,subject_count));
         }
 
@@ -91,7 +91,7 @@ public:
         for(unsigned int row = 1,pos = subject_count,pos2 = feature_count;row < feature_count;++row,pos += subject_count,pos2 += feature_count)
             std::copy(X_cov.begin() + pos,X_cov.begin() + pos + feature_count,X_cov.begin() + pos2);
 
-        image::matrix::inverse_lower(&*X_cov.begin(),image::dyndim(feature_count,feature_count));
+        image::mat::inverse_lower(&*X_cov.begin(),image::dyndim(feature_count,feature_count));
 
         image::square(X_cov.begin(),X_cov.begin()+feature_count*feature_count);
 
@@ -119,7 +119,7 @@ public:
         regress(y,b);
         // calculate residual
         std::vector<value_type> y_(subject_count);
-        image::matrix::left_vector_product(&*Xt.begin(),b,&*y_.begin(),image::dyndim(feature_count,subject_count));
+        image::mat::left_vector_product(&*Xt.begin(),b,&*y_.begin(),image::dyndim(feature_count,subject_count));
         image::minus(y_.begin(),y_.end(),y);
         image::square(y_);
         value_type rmse = std::sqrt(std::accumulate(y_.begin(),y_.end(),0.0)/(subject_count-feature_count));
@@ -131,8 +131,8 @@ public:
     void regress(iterator1 y,iterator2 b) const
     {
         std::vector<value_type> xty(feature_count); // trans(x)*y    p by 1
-        image::matrix::vector_product(&*Xt.begin(),y,&*xty.begin(),image::dyndim(feature_count,subject_count));
-        image::matrix::lu_solve(&*XtX.begin(),&*piv.begin(),&*xty.begin(),b,
+        image::mat::vector_product(&*Xt.begin(),y,&*xty.begin(),image::dyndim(feature_count,subject_count));
+        image::mat::lu_solve(&*XtX.begin(),&*piv.begin(),&*xty.begin(),b,
                                 image::dyndim(feature_count,feature_count));
     }
 

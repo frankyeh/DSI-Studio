@@ -303,9 +303,9 @@ public:
         return image::vector<3,int>(x,y,z);
     }
 
-    void get_jacobian(const image::vector<3,double>& pos,image::matrix::mat<3,3,float>& jacobian)
+    void get_jacobian(const image::vector<3,double>& pos,image::matrix<3,3,float>& jacobian)
     {
-        image::matrix::mat<3,3,float> M;
+        image::matrix<3,3,float> M;
         image::reg::bfnorm_get_jacobian(*mni.get(),pos,M.begin());
         jacobian = affine.scaling_rotation*M;
     }
@@ -354,10 +354,10 @@ public:
         get_jacobian(pos,data.jacobian);
         if(!voxel.grad_dev.empty())
         {
-            image::matrix::mat<3,3,float> grad_dev,new_j;
+            image::matrix<3,3,float> grad_dev,new_j;
             for(unsigned int i = 0; i < 9; ++i)
                 interpolation.estimate(voxel.grad_dev[i],grad_dev[i]);
-            image::matrix::transpose(grad_dev.begin(),image::dim<3,3>());
+            image::mat::transpose(grad_dev.begin(),image::dim<3,3>());
             new_j = grad_dev*data.jacobian;
             data.jacobian = new_j;
         }
@@ -387,7 +387,7 @@ public:
             interpolate_dwi(voxel,data,pos,Jpos,image::cubic_interpolation<3>());
             break;
         }
-        data.jdet = std::abs(image::matrix::determinant(data.jacobian.begin(),image::dim<3,3>())*voxel_volume_scale);
+        data.jdet = std::abs(image::mat::determinant(data.jacobian.begin(),image::dim<3,3>())*voxel_volume_scale);
         if(voxel.output_jacobian)
             jdet[data.voxel_index] = data.jdet;
     }
@@ -491,7 +491,7 @@ public:
         for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
         {
             image::vector<3,double> dir(voxel.ti.vertices[j]),from;
-            image::matrix::vector_product(data.jacobian.begin(),dir.begin(),from.begin(),image::dim<3,3>());
+            image::mat::vector_product(data.jacobian.begin(),dir.begin(),from.begin(),image::dim<3,3>());
             from.normalize();
             if(voxel.r2_weighted)
                 for (unsigned int i = 0; i < data.space.size(); ++i,++index)
@@ -501,7 +501,7 @@ public:
                     sinc_ql[index] = boost::math::sinc_pi(q_vectors_time[i]*from);
 
         }
-        image::matrix::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
+        image::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
                                       image::dyndim(data.odf.size(),data.space.size()));
         std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 *= data.jdet);
 

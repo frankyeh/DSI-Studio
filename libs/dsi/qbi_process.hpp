@@ -18,7 +18,7 @@ void rotation_matrix(value_type r[9],value_type* u)
     z_u[0] = z[0] + u[0];
     z_u[1] = z[1] + u[1];
     z_u[2] = z[2] + u[2];
-    image::matrix::product(z_u,z_u,r,image::dim<3,1>(),image::dim<1,3>());
+    image::mat::product(z_u,z_u,r,image::dim<3,1>(),image::dim<1,3>());
 
     for (unsigned int i = 0; i < 9; ++i)
         r[i] /= value;
@@ -70,9 +70,9 @@ public:
             }
         iHtH.resize(half_odf_size*half_odf_size);
         iHtH_pivot.resize(half_odf_size);
-        image::matrix::square(Ht.begin(),iHtH.begin(),image::dyndim(half_odf_size,b_count));
+        image::mat::square(Ht.begin(),iHtH.begin(),image::dyndim(half_odf_size,b_count));
 
-        image::matrix::lu_decomposition(iHtH.begin(),iHtH_pivot.begin(),image::dyndim(half_odf_size,half_odf_size));
+        image::mat::lu_decomposition(iHtH.begin(),iHtH_pivot.begin(),image::dyndim(half_odf_size,half_odf_size));
 
         // vector of angles
         std::vector<float> C(3*k); // 3 by k matrix
@@ -94,8 +94,8 @@ public:
             std::vector<float> Gt(half_odf_size*k); // a half_odf_size-by-k matrix
 
             // 	Gt = icosa_data*r*C;
-            image::matrix::product(icosa_data.begin(),r,icosa_data_r.begin(),image::dyndim(half_odf_size,3),image::dim<3,3>());
-            image::matrix::product(icosa_data_r.begin(),C.begin(),Gt.begin(),image::dyndim(half_odf_size,3),image::dyndim(3,k));
+            image::mat::product(icosa_data.begin(),r,icosa_data_r.begin(),image::dyndim(half_odf_size,3),image::dim<3,3>());
+            image::mat::product(icosa_data_r.begin(),C.begin(),Gt.begin(),image::dyndim(half_odf_size,3),image::dyndim(3,k));
 
             for (unsigned int i = 0; i < Gt.size(); ++i)
                 Gt[i] = spherical_guassian(std::abs(Gt[i]),interop_angle);
@@ -119,7 +119,7 @@ public:
         }
         sG.resize(half_odf_size*half_odf_size);
         //sG = S*G;
-        image::matrix::product(S.begin(),G.begin(),sG.begin(),image::dyndim(half_odf_size,half_odf_size),image::dyndim(half_odf_size,half_odf_size));
+        image::mat::product(S.begin(),G.begin(),sG.begin(),image::dyndim(half_odf_size,half_odf_size),image::dyndim(half_odf_size,half_odf_size));
 
     }
 public:
@@ -127,12 +127,12 @@ public:
     {
         // Ht_s = Ht * signal
         std::vector<float> Ht_s(half_odf_size);
-        image::matrix::vector_product(Ht.begin(),data.space.begin(),Ht_s.begin(),image::dyndim(half_odf_size,data.space.size()));
+        image::mat::vector_product(Ht.begin(),data.space.begin(),Ht_s.begin(),image::dyndim(half_odf_size,data.space.size()));
         // solve HtH * x = Ht_s
         std::vector<float> x(half_odf_size);
-        image::matrix::lu_solve(iHtH.begin(),iHtH_pivot.begin(),Ht_s.begin(),x.begin(),image::dyndim(half_odf_size,half_odf_size));
+        image::mat::lu_solve(iHtH.begin(),iHtH_pivot.begin(),Ht_s.begin(),x.begin(),image::dyndim(half_odf_size,half_odf_size));
         // odf = sG*x
-        image::matrix::vector_product(sG.begin(),x.begin(),data.odf.begin(),image::dyndim(half_odf_size,half_odf_size));
+        image::mat::vector_product(sG.begin(),x.begin(),data.odf.begin(),image::dyndim(half_odf_size,half_odf_size));
 
         for (unsigned int index = 0; index < data.odf.size(); ++index)
             if (data.odf[index] < 0.0)

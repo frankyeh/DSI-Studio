@@ -40,10 +40,9 @@ bool fa_template::load_from_file(void)
 
 void fa_template::to_mni(image::vector<3,float>& p)
 {
-    image::vector<3,float> pp(p);
-    pp[0] = I.width()-pp[0]-1;
-    pp[1] = I.height()-pp[1]-1;
-    image::vector_transformation(pp.begin(),p.begin(),tran.begin(),image::vdim<3>());
+    p[0] = I.width()-p[0]-1;
+    p[1] = I.height()-p[1]-1;
+    p.to(tran);
 }
 
 void fa_template::add_transformation(std::vector<float>& t)
@@ -57,5 +56,5 @@ void fa_template::add_transformation(std::vector<float>& t)
         tt[i] = -tt[i];
     tt[3] += I.width()-1;
     tt[7] += I.height()-1;
-    image::matrix::product(tran.begin(),tt.begin(),t.begin(),image::dim<3,4>(),image::dim<4,4>());
+    image::mat::product(tran.begin(),tt.begin(),t.begin(),image::dim<3,4>(),image::dim<4,4>());
  }
