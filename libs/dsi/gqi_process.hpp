@@ -70,6 +70,7 @@ public:
             float grad_dev[9];
             for(unsigned int i = 0; i < 9; ++i)
                 grad_dev[i] = voxel.grad_dev[i][data.voxel_index];
+            image::matrix::transpose(grad_dev,image::dim<3,3>());
             std::vector<float> new_sinc_ql(data.odf.size()*data.space.size());
             for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
             {

@@ -361,6 +361,7 @@ public:
             for(unsigned int i = 0; i < 9; ++i)
                 interpolation.estimate(voxel.grad_dev[i],grad_dev[i]);
             float new_j[9];
+            image::matrix::transpose(grad_dev,image::dim<3,3>());
             image::matrix::product(grad_dev,data.jacobian,new_j,image::dim<3,3>(),image::dim<3,3>());
             std::copy(new_j,new_j+9,data.jacobian);
             //  <G*b_vec,J*odf>
