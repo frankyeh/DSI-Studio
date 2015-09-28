@@ -303,11 +303,11 @@ public:
         return image::vector<3,int>(x,y,z);
     }
 
-    void get_jacobian(const image::vector<3,double>& pos,float* jacobian)
+    void get_jacobian(const image::vector<3,double>& pos,image::matrix::mat<3,3,float>& jacobian)
     {
-        float M[9];
-        image::reg::bfnorm_get_jacobian(*mni.get(),pos,M);
-        image::matrix::product(affine.scaling_rotation,M,jacobian,image::dim<3,3>(),image::dim<3,3>());
+        image::matrix::mat<3,3,float> M;
+        image::reg::bfnorm_get_jacobian(*mni.get(),pos,M.begin());
+        jacobian = affine.scaling_rotation*M;
     }
 
     template<typename interpolation_type>
@@ -320,7 +320,7 @@ public:
         if(!interpolation.get_location(src_geo,Jpos))
         {
             std::fill(data.space.begin(),data.space.end(),0);
-            std::fill(data.jacobian,data.jacobian+9,0.0);
+            std::fill(data.jacobian.begin(),data.jacobian.end(),0.0);
             return;
         }
         data.space.resize(ptr_images.size());
@@ -354,18 +354,12 @@ public:
         get_jacobian(pos,data.jacobian);
         if(!voxel.grad_dev.empty())
         {
-            /*
-            new_bvecs = (I+grad_dev) * bvecs;
-            */
-            float grad_dev[9];
+            image::matrix::mat<3,3,float> grad_dev,new_j;
             for(unsigned int i = 0; i < 9; ++i)
                 interpolation.estimate(voxel.grad_dev[i],grad_dev[i]);
-            float new_j[9];
-            image::matrix::transpose(grad_dev,image::dim<3,3>());
-            image::matrix::product(grad_dev,data.jacobian,new_j,image::dim<3,3>(),image::dim<3,3>());
-            std::copy(new_j,new_j+9,data.jacobian);
-            //  <G*b_vec,J*odf>
-            //  = trans(b_vec)*trans(G)*J*odf
+            image::matrix::transpose(grad_dev.begin(),image::dim<3,3>());
+            new_j = grad_dev*data.jacobian;
+            data.jacobian = new_j;
         }
     }
 
@@ -393,7 +387,7 @@ public:
             interpolate_dwi(voxel,data,pos,Jpos,image::cubic_interpolation<3>());
             break;
         }
-        data.jdet = std::abs(image::matrix::determinant(data.jacobian,image::dim<3,3>())*voxel_volume_scale);
+        data.jdet = std::abs(image::matrix::determinant(data.jacobian.begin(),image::dim<3,3>())*voxel_volume_scale);
         if(voxel.output_jacobian)
             jdet[data.voxel_index] = data.jdet;
     }
@@ -497,7 +491,7 @@ public:
         for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
         {
             image::vector<3,double> dir(voxel.ti.vertices[j]),from;
-            image::matrix::vector_product(data.jacobian,dir.begin(),from.begin(),image::dim<3,3>());
+            image::matrix::vector_product(data.jacobian.begin(),dir.begin(),from.begin(),image::dim<3,3>());
             from.normalize();
             if(voxel.r2_weighted)
                 for (unsigned int i = 0; i < data.space.size(); ++i,++index)

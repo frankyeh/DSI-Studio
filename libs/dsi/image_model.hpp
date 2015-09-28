@@ -88,8 +88,8 @@ public:
 
 
         // rotate b-table
-        float iT[9];
-        image::matrix::inverse(affine.scaling_rotation,iT,image::dim<3,3>());
+        image::matrix::mat<3,3,float> iT;
+        image::matrix::inverse(affine.scaling_rotation.begin(),iT.begin(),image::dim<3,3>());
         image::vector<3> v;
         image::vector_rotation(voxel.bvectors[dwi_index].begin(),v.begin(),iT,image::vdim<3>());
         v.normalize();
@@ -109,8 +109,8 @@ public:
         dwi.swap(new_dwi);
 
         // rotate b-table
-        float iT[9];
-        image::matrix::inverse(affine.scaling_rotation,iT,image::dim<3,3>());
+        image::matrix::mat<3,3,float> iT;
+        image::matrix::inverse(affine.scaling_rotation.begin(),iT.begin(),image::dim<3,3>());
         for (unsigned int index = 0;index < voxel.bvalues.size();++index)
         {
             image::vector<3> tmp;
@@ -123,15 +123,15 @@ public:
         {
             // <R*Gra_dev*b_table,ODF>
             // = <(R*Gra_dev*inv(R))*R*b_table,ODF>
-            float det = std::abs(image::matrix::determinant(iT,image::dim<3,3>()));
+            float det = std::abs(image::matrix::determinant(iT.begin(),image::dim<3,3>()));
             begin_prog("rotating grad_dev");
             for(unsigned int index = 0;check_prog(index,voxel.dim.size());++index)
             {
-                float grad_dev[9],G_invR[9];
+                image::matrix::mat<3,3,float> grad_dev,G_invR;
                 for(unsigned int i = 0; i < 9; ++i)
                     grad_dev[i] = voxel.grad_dev[i][index];
-                image::matrix::product(grad_dev,affine.scaling_rotation,G_invR,image::dim<3,3>(),image::dim<3,3>());
-                image::matrix::product(iT,G_invR,grad_dev,image::dim<3,3>(),image::dim<3,3>());
+                G_invR = grad_dev*affine.scaling_rotation;
+                grad_dev = iT*G_invR;
                 for(unsigned int i = 0; i < 9; ++i)
                     voxel.grad_dev[i][index] = grad_dev[i]/det;
             }
