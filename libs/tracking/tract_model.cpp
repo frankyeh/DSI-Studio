@@ -1084,7 +1084,8 @@ void TractModel::get_density_map(
 
 void TractModel::save_tdi(const char* file_name,bool sub_voxel,bool endpoint,const std::vector<float>& trans)
 {
-    std::vector<float> tr(16);
+    image::matrix<4,4,float> tr;
+    tr.zero();
     tr[0] = tr[5] = tr[10] = tr[15] = (sub_voxel ? 4.0:1.0);
     image::vector<3,float> new_vs(vs);
     if(sub_voxel)

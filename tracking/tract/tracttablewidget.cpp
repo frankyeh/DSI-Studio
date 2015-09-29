@@ -920,7 +920,7 @@ if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
             nii_header.set_voxel_size(vs.begin());
             if(cur_tracking_window.is_qsdr) //QSDR condition
             {
-                image::matrix<4,4,float> new_trans(transformation),trans(cur_tracking_window.handle->trans_to_mni);
+                image::matrix<4,4,float> new_trans(transformation),trans(cur_tracking_window.handle->trans_to_mni.begin());
                 new_trans.inv();
                 trans *= new_trans;
                 nii_header.set_image_transformation(trans.begin());
