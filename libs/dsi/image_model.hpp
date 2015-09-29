@@ -128,7 +128,7 @@ public:
                 image::matrix<3,3,float> grad_dev,G_invR;
                 for(unsigned int i = 0; i < 9; ++i)
                     grad_dev[i] = voxel.grad_dev[i][index];
-                G_invR = grad_dev*image::make_matrix(affine.get(),image::dim<3,3>());
+                G_invR = grad_dev*affine.get();
                 grad_dev = iT*G_invR;
                 for(unsigned int i = 0; i < 9; ++i)
                     voxel.grad_dev[i][index] = grad_dev[i]/det;
