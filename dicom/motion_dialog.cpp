@@ -82,7 +82,7 @@ void motion_correction(boost::ptr_vector<DwiHeader>& dwi_files,
         dwi_files[i].image.swap(new_image);
 
         // rotate b-table
-        image::matrix<3,3,float> iT = image::inverse(T.scaling_rotation);
+        image::matrix<3,3,float> iT = image::inverse(T.get());
         image::vector<3> tmp;
         image::vector_rotation(dwi_files[i].bvec.begin(),tmp.begin(),iT,image::vdim<3>());
         tmp.normalize();

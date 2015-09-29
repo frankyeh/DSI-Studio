@@ -88,7 +88,7 @@ public:
 
 
         // rotate b-table
-        image::matrix<3,3,float> iT = image::inverse(affine.scaling_rotation);
+        image::matrix<3,3,float> iT = image::inverse(affine.get());
         image::vector<3> v;
         image::vector_rotation(voxel.bvectors[dwi_index].begin(),v.begin(),iT,image::vdim<3>());
         v.normalize();
@@ -108,7 +108,7 @@ public:
         dwi.swap(new_dwi);
 
         // rotate b-table
-        image::matrix<3,3,float> iT = image::inverse(affine.scaling_rotation);
+        image::matrix<3,3,float> iT = image::inverse(affine.get());
         for (unsigned int index = 0;index < voxel.bvalues.size();++index)
         {
             image::vector<3> tmp;
@@ -128,7 +128,7 @@ public:
                 image::matrix<3,3,float> grad_dev,G_invR;
                 for(unsigned int i = 0; i < 9; ++i)
                     grad_dev[i] = voxel.grad_dev[i][index];
-                G_invR = grad_dev*affine.scaling_rotation;
+                G_invR = grad_dev*image::make_matrix(affine.get(),image::dim<3,3>());
                 grad_dev = iT*G_invR;
                 for(unsigned int i = 0; i < 9; ++i)
                     voxel.grad_dev[i][index] = grad_dev[i]/det;

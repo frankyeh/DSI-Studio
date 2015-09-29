@@ -307,7 +307,7 @@ public:
     {
         image::matrix<3,3,float> M;
         image::reg::bfnorm_get_jacobian(*mni.get(),pos,M.begin());
-        jacobian = affine.scaling_rotation*M;
+        jacobian = image::make_matrix(affine.get(),image::dim<3,3>())*M;
     }
 
     template<typename interpolation_type>
