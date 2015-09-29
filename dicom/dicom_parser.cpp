@@ -73,6 +73,7 @@ bool load_dicom_multi_frame(const char* file_name,boost::ptr_vector<DwiHeader>& 
         dicom_header >> buf_image;
         unsigned short num_gradient = buf_image.depth()/slice_num;
         unsigned int plane_size = buf_image.width()*buf_image.height();
+        begin_prog("loading multi frame DICOM");
         for(unsigned int index = 0;check_prog(index,num_gradient);++index)
         {
             std::auto_ptr<DwiHeader> new_file(new DwiHeader);
@@ -189,7 +190,7 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
     }
     // check data range
     float max_value = 0.0;
-    for(unsigned int index = 0;check_prog(index,analyze_header.dim(4));++index)
+    for(unsigned int index = 0;index < analyze_header.dim(4);++index)
     {
         std::auto_ptr<DwiHeader> new_file(new DwiHeader);
         image::basic_image<float,3> data;
@@ -202,7 +203,7 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
     {
         float vs[4];
         analyze_header.get_voxel_size(vs);
-        for(unsigned int index = 0;check_prog(index,analyze_header.dim(4));++index)
+        for(unsigned int index = 0;index < analyze_header.dim(4);++index)
         {
             std::auto_ptr<DwiHeader> new_file(new DwiHeader);
             if(max_value > 32768 || (max_value > 0.0 && max_value < 10.0))
@@ -410,8 +411,7 @@ bool load_multiple_slice_dicom(QStringList file_list,boost::ptr_vector<DwiHeader
 
     if(iterate_slice_first)
     {
-        for (unsigned int index = 0,b_index = 0,slice_index = 0;
-                    check_prog(index,file_list.size());++index)
+        for (unsigned int index = 0,b_index = 0,slice_index = 0;check_prog(index,file_list.size());++index)
         {
             if(!dicom_header2.load_from_file(file_list[index].toLocal8Bit().begin()))
                 return false;
@@ -435,8 +435,8 @@ bool load_multiple_slice_dicom(QStringList file_list,boost::ptr_vector<DwiHeader
     }
     else
     {
-        for (unsigned int index = 0,b_index = 0,slice_index = 0;
-                    check_prog(index,file_list.size());++index)
+        begin_prog("loading images");
+        for (unsigned int index = 0,b_index = 0,slice_index = 0;check_prog(index,file_list.size());++index)
         {
             if(!dicom_header2.load_from_file(file_list[index].toLocal8Bit().begin()))
                 return false;
@@ -545,6 +545,7 @@ bool load_4d_fdf(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files)
 
 bool load_3d_series(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files)
 {
+    begin_prog("loading images");
     for (unsigned int index = 0;check_prog(index,file_list.size());++index)
     {
         std::auto_ptr<DwiHeader> new_file(new DwiHeader);

@@ -388,7 +388,7 @@ public:
             interpolate_dwi(voxel,data,pos,Jpos,image::cubic_interpolation<3>());
             break;
         }
-        data.jdet = std::abs(image::mat::determinant(data.jacobian.begin(),image::dim<3,3>())*voxel_volume_scale);
+        data.jdet = std::abs(data.jacobian.det()*voxel_volume_scale);
         if(voxel.output_jacobian)
             jdet[data.voxel_index] = data.jdet;
     }
@@ -491,8 +491,8 @@ public:
         std::vector<float> sinc_ql(data.odf.size()*data.space.size());
         for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
         {
-            image::vector<3,double> dir(voxel.ti.vertices[j]),from;
-            image::mat::vector_product(data.jacobian.begin(),dir.begin(),from.begin(),image::dim<3,3>());
+            image::vector<3,double> from(voxel.ti.vertices[j]);
+            from.rotate(data.jacobian);
             from.normalize();
             if(voxel.r2_weighted)
                 for (unsigned int i = 0; i < data.space.size(); ++i,++index)

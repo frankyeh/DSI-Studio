@@ -139,6 +139,7 @@ public:
         size_t cur_voxel = 0,total_voxel = 0;
         if(thread_index == 0)
         {
+            begin_prog("reconstructing");
             for(size_t index = 0;index < mask.size();++index)
                 if (mask[index])
                     ++total_voxel;
@@ -162,6 +163,7 @@ public:
     }
     void end(gz_mat_write& writer)
     {
+        begin_prog("output data");
         for (unsigned int index = 0; check_prog(index,process_list.size()); ++index)
             process_list[index].end(*this,writer);
     }

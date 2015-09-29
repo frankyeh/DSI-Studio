@@ -45,16 +45,4 @@ void fa_template::to_mni(image::vector<3,float>& p)
     p.to(tran);
 }
 
-void fa_template::add_transformation(std::vector<float>& t)
-{
-    std::vector<float> tt(t);
-    tt.resize(16);
-    tt[12] = tt[13] = tt[14] = 0;
-    tt[15] = 1.0;
-    // flip xy
-    for(int i = 0;i < 8;++i)
-        tt[i] = -tt[i];
-    tt[3] += I.width()-1;
-    tt[7] += I.height()-1;
-    image::mat::product(tran.begin(),tt.begin(),t.begin(),image::dim<3,4>(),image::dim<4,4>());
- }
+

@@ -468,10 +468,10 @@ const char* odf_average(const char* out_name,const char* const * file_names,unsi
     float vs[3];
     image::basic_image<unsigned char,3> mask;
     std::vector<std::vector<float> > odfs;
-    begin_prog("averaging");
     unsigned int half_vertex_count = 0;
     unsigned int row,col;
     float mni[16]={0};
+    begin_prog("averaging");
     for (unsigned int index = 0;check_prog(index,num_files);++index)
     {
         const char* file_name = file_names[index];
