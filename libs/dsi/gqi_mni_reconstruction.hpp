@@ -307,7 +307,8 @@ public:
     {
         image::matrix<3,3,float> M;
         image::reg::bfnorm_get_jacobian(*mni.get(),pos,M.begin());
-        jacobian = image::make_matrix(affine.get(),image::dim<3,3>())*M;
+        std::copy(affine.get(),affine.get()+9,jacobian.begin());
+        jacobian *= M;
     }
 
     template<typename interpolation_type>
