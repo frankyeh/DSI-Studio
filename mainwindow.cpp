@@ -568,9 +568,9 @@ void MainWindow::on_batch_src_clicked()
     {
         QStringList dir_list;
         dir_list << dir;
-        begin_prog("batch creating src");
         bool all = false;
         bool choice = false;
+        begin_prog("batch creating src");
         for(unsigned int i = 0;check_prog(i,dir_list.size()) && !prog_aborted();++i)
         {
             QDir cur_dir = dir_list[i];

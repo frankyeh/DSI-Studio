@@ -443,7 +443,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
         return true;
     }
-
+    begin_prog("loading ROIs");
     for(unsigned int value = 1;check_prog(value,value_map.size());++value)
         if(value_map[value])
         {

@@ -67,15 +67,10 @@ public:
         image::flip(voxel.dwi_sum,type);
         image::flip(mask,type);
         for(unsigned int i = 0;i < voxel.grad_dev.size();++i)
-        {
-            auto I = image::make_image(voxel.dim,(float*)&*(voxel.grad_dev[i].begin()));
-            image::flip(I,type);
-        }
+            image::flip(image::make_image(voxel.dim,(float*)&*(voxel.grad_dev[i].begin())),type);
         for (unsigned int index = 0;check_prog(index,dwi_data.size());++index)
-        {
-            auto I = image::make_image(voxel.dim,(unsigned short*)dwi_data[index]);
-            image::flip(I,type);
-        }
+            image::flip(image::make_image(voxel.dim,(unsigned short*)dwi_data[index]),type);
+
         voxel.dim = voxel.dwi_sum.geometry();
     }
     // used in eddy correction for each dwi
@@ -101,8 +96,7 @@ public:
         for (unsigned int index = 0;check_prog(index,dwi_data.size());++index)
         {
             dwi[index].resize(new_geo);
-            auto I = image::make_image(voxel.dim,(unsigned short*)dwi_data[index]);
-            image::resample(I,dwi[index],affine,image::cubic);
+            image::resample(image::make_image(voxel.dim,(unsigned short*)dwi_data[index]),dwi[index],affine,image::cubic);
             dwi_data[index] = &(dwi[index][0]);
         }
         dwi.swap(new_dwi);
