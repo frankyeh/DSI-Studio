@@ -4,11 +4,10 @@
 #include "image/image.hpp"
 struct fa_template{
     std::string template_file_name;
-    std::vector<float> tran;
+    image::vector<3> vs,shift;
     image::basic_image<float,3> I;
     bool load_from_file(void);
     void to_mni(image::vector<3,float>& p);
-    fa_template(void):tran(16){}
 };
 
 

@@ -38,7 +38,7 @@ protected:
     image::transformation_matrix<3,float> affine;
 protected:
     image::basic_image<float,3> VG,VF;
-    double VGvs[3];
+    image::vector<3> VGvs;
 protected: // for warping other image modality
     std::vector<image::basic_image<float,3> > other_image,other_image_x,other_image_y,other_image_z;
 protected:
@@ -78,9 +78,7 @@ public:
         image::normalize(VG,1.0);
         image::normalize(VF,1.0);
 
-        VGvs[0] = std::fabs(fa_template_imp.tran[0]);
-        VGvs[1] = std::fabs(fa_template_imp.tran[5]);
-        VGvs[2] = std::fabs(fa_template_imp.tran[10]);
+        VGvs = fa_template_imp.vs;
 
         const unsigned int num_reg_type = 3;
         int reg_type[num_reg_type];
@@ -194,10 +192,10 @@ public:
             des_geo[2] = (bounding_box_upper[2]-bounding_box_lower[2])/voxel_size+1;//69
 
             // DSI Studio use radiology convention, the MNI coordinate of the x and y are flipped
-            des_offset[0] = (fa_template_imp.I.width()-1)*VGvs[0]+fa_template_imp.tran[3]-bounding_box_upper[0];
-            des_offset[1] = (fa_template_imp.I.height()-1)*VGvs[1]+fa_template_imp.tran[7]-bounding_box_upper[1];
-            des_offset[2] = bounding_box_lower[2]-fa_template_imp.tran[11];
-
+            // fa_template is now LPS,but bounding box is RAS
+            des_offset[0] = fa_template_imp.shift[0]-bounding_box_upper[0];
+            des_offset[1] = fa_template_imp.shift[1]-bounding_box_upper[1];
+            des_offset[2] = bounding_box_lower[2]-fa_template_imp.shift[2];
             // units in template space
             des_offset[0] /= VGvs[0];
             des_offset[1] /= VGvs[1];

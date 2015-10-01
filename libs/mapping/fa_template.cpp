@@ -16,23 +16,15 @@ bool fa_template::load_from_file(void)
     if((!template_file_name.empty() && read.load_from_file(template_file_name.c_str())) ||
             read.load_from_file(fa_template_path.c_str()) || read.load_from_file(fa_template_path2.c_str()))
     {
-        read >> I;
-        read.get_image_transformation(tran.begin());
-        tran[15] = 1.0;
-        if(tran[0] < 0)
-        {
-            tran[0] = -tran[0];
-            tran[3] -= (I.width()-1)*tran[0];
-            if(tran[5] > 0)
-                image::flip_y(I);
-            else
-            {
-                tran[5] = -tran[5];
-                tran[7] -= (I.height()-1)*tran[5];
-            }
-        }
-        else
-            image::flip_xy(I);
+        read.toLPS(I);
+        float tran[16];
+        read.get_image_transformation(tran);
+        vs[0] = std::fabs(tran[0]);
+        vs[1] = std::fabs(tran[5]);
+        vs[2] = std::fabs(tran[10]);
+        shift[0] = tran[3];
+        shift[1] = tran[7];
+        shift[2] = tran[11];
         return true;
     }
     return false;
@@ -40,9 +32,10 @@ bool fa_template::load_from_file(void)
 
 void fa_template::to_mni(image::vector<3,float>& p)
 {
-    p[0] = I.width()-p[0]-1;
-    p[1] = I.height()-p[1]-1;
-    p.to(tran);
+    p[0] = p[0]*vs[0];
+    p[1] = p[1]*vs[1];
+    p[2] = p[2]*vs[2];
+    p += shift;
 }
 
 
