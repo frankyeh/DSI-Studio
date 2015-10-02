@@ -618,8 +618,7 @@ public:
         }
         for(unsigned int index = 0;index < num_subjects;++index)
         {
-            image::minus_constant(subject_vector[index].begin(),subject_vector[index].end(),image::mean(subject_vector[index].begin(),subject_vector[index].end()));
-            float sd = image::standard_deviation(subject_vector[index].begin(),subject_vector[index].end(),0);
+            float sd = image::standard_deviation(subject_vector[index].begin(),subject_vector[index].end(),image::mean(subject_vector[index].begin(),subject_vector[index].end()));
             if(sd > 0.0)
                 image::multiply_constant(subject_vector[index].begin(),subject_vector[index].end(),1.0/sd);
         }
@@ -638,8 +637,7 @@ public:
                     ++j,fib_offset+=si2vi.size())
                 subject_vector.push_back(subject_qa[subject_index][s_index + fib_offset]);
         }
-        image::minus_constant(subject_vector.begin(),subject_vector.end(),image::mean(subject_vector.begin(),subject_vector.end()));
-        float sd = image::standard_deviation(subject_vector.begin(),subject_vector.end(),0);
+        float sd = image::standard_deviation(subject_vector.begin(),subject_vector.end(),image::mean(subject_vector.begin(),subject_vector.end()));
         if(sd > 0.0)
             image::multiply_constant(subject_vector.begin(),subject_vector.end(),1.0/sd);
     }

@@ -1613,7 +1613,7 @@ void vbc_dialog::on_save_dif_clicked()
                 this,
                 "Save Vector",
                 db_file_name + ".vec.dif.mat",
-                "Figures (*.jpg *.png *.tif *.bmp;;MATLAB file (*.mat);;All files (*)");
+                "MATLAB file (*.mat);;Figures (*.jpg *.png *.tif *.bmp;;All files (*)");
     if(filename.isEmpty())
         return;
     if(fp_matrix.empty() || fp_matrix.size() != vbc->handle->num_subjects*vbc->handle->num_subjects)

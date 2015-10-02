@@ -104,10 +104,10 @@ bool load_cerebrum_mask(void)
     int x2 = (-trans[3]+16)/trans[0];
     if(x2 < x1)
         std::swap(x1,x2);
-    image::fill_rect(image::make_image(image::geometry<2>(wm_mask.width(),wm_mask.height()),&wm_mask[0]+z*wm.geometry().plane_size()),
-                     image::vector<2,int>(x1,y1),image::vector<2,int>(x2,y2),0);
-    image::fill_rect(image::make_image(image::geometry<2>(wm_mask.width(),wm_mask.height()),&wm_mask[0]+(z+1)*wm.geometry().plane_size()),
-                     image::vector<2,int>(x1,y1),image::vector<2,int>(x2,y2),0);
+    image::pointer_image<char,2> I1 = make_image(image::geometry<2>(wm_mask.width(),wm_mask.height()),&wm_mask[0]+z*wm.geometry().plane_size());
+    image::fill_rect(I1,image::vector<2,int>(x1,y1),image::vector<2,int>(x2,y2),0);
+    image::pointer_image<char,2> I2 = make_image(image::geometry<2>(wm_mask.width(),wm_mask.height()),&wm_mask[0]+(z+1)*wm.geometry().plane_size());
+    image::fill_rect(I2,image::vector<2,int>(x1,y1),image::vector<2,int>(x2,y2),0);
     image::morphology::defragment(wm_mask);
     float trans1_[16] = {-1, 0, 0, 78,
                           0,-1, 0, 76,
