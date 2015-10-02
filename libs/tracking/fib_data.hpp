@@ -619,9 +619,9 @@ public:
         for(unsigned int index = 0;index < num_subjects;++index)
         {
             image::minus_constant(subject_vector[index].begin(),subject_vector[index].end(),image::mean(subject_vector[index].begin(),subject_vector[index].end()));
-            float sd = image::standard_deviation(subject_vector[index].begin(),subject_vector[index].end());
+            float sd = image::standard_deviation(subject_vector[index].begin(),subject_vector[index].end(),0);
             if(sd > 0.0)
-                image::divide_constant(subject_vector[index].begin(),subject_vector[index].end(),sd);
+                image::multiply_constant(subject_vector[index].begin(),subject_vector[index].end(),1.0/sd);
         }
     }
     void get_subject_vector(unsigned int subject_index,std::vector<float>& subject_vector,
@@ -639,9 +639,9 @@ public:
                 subject_vector.push_back(subject_qa[subject_index][s_index + fib_offset]);
         }
         image::minus_constant(subject_vector.begin(),subject_vector.end(),image::mean(subject_vector.begin(),subject_vector.end()));
-        float sd = image::standard_deviation(subject_vector.begin(),subject_vector.end());
+        float sd = image::standard_deviation(subject_vector.begin(),subject_vector.end(),0);
         if(sd > 0.0)
-            image::divide_constant(subject_vector.begin(),subject_vector.end(),sd);
+            image::multiply_constant(subject_vector.begin(),subject_vector.end(),1.0/sd);
     }
     void get_dif_matrix(std::vector<float>& matrix,const image::basic_image<int,3>& cerebrum_mask)
     {

@@ -14,7 +14,7 @@
 #include "libs/tracking/fib_data.hpp"
 #include "tracking/atlasdialog.h"
 extern std::vector<atlas> atlas_list;
-extern image::basic_image<int,3> cerebrum_1mm,cerebrum_2mm;
+extern image::basic_image<char,3> cerebrum_1mm,cerebrum_2mm;
 bool load_cerebrum_mask(void);
 
 QWidget *ROIViewDelegate::createEditor(QWidget *parent,
