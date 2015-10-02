@@ -158,9 +158,7 @@ void CustomSliceModel::update(void)
 void CustomSliceModel::update_roi(void)
 {
     std::fill(texture_need_update,texture_need_update+3,1);
-    image::transformation_matrix<3> transform;
-    transform.load_from_transform(invT.begin());
-    image::resample(source_images,roi_image,transform,image::linear);
+    image::resample(source_images,roi_image,invT,image::linear);
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::terminate(void)
