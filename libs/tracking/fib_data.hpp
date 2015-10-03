@@ -384,7 +384,7 @@ public:
     unsigned int num_subjects;
     std::vector<const float*> subject_qa;
     unsigned int subject_qa_length;
-    std::vector<float> subject_qa_max;
+    std::vector<float> subject_qa_sd;
     std::vector<float> R2;
     image::basic_image<unsigned int,3> vi2si;
     std::vector<unsigned int> si2vi;
@@ -392,7 +392,7 @@ public:
     void read_db(void)
     {
         subject_qa.clear();
-        subject_qa_max.clear();
+        subject_qa_sd.clear();
         unsigned int row,col;
         for(unsigned int index = 0;1;++index)
         {
@@ -405,9 +405,9 @@ public:
             if(!index)
                 subject_qa_length = row*col;
             subject_qa.push_back(buf);
-            subject_qa_max.push_back(*std::max_element(buf,buf+col*row));
-            if(subject_qa_max.back() == 0.0)
-                subject_qa_max.back() = 1.0;
+            subject_qa_sd.push_back(image::standard_deviation(buf,buf+col*row));
+            if(subject_qa_sd.back() == 0.0)
+                subject_qa_sd.back() = 1.0;
         }
         num_subjects = (unsigned int)subject_qa.size();
         subject_names.resize(num_subjects);
@@ -442,7 +442,7 @@ public:
         if(index >= subject_qa.size())
             return;
         subject_qa.erase(subject_qa.begin()+index);
-        subject_qa_max.erase(subject_qa_max.begin()+index);
+        subject_qa_sd.erase(subject_qa_sd.begin()+index);
         subject_names.erase(subject_names.begin()+index);
         R2.erase(R2.begin()+index);
         --num_subjects;
@@ -767,7 +767,7 @@ public:
         data.resize(num_subjects);
         if(normalize_qa)
             for(unsigned int index = 0;index < num_subjects;++index)
-                data[index] = subject_qa[index][s_index+fib_offset]/subject_qa_max[index];
+                data[index] = subject_qa[index][s_index+fib_offset]/subject_qa_sd[index];
         else
         for(unsigned int index = 0;index < num_subjects;++index)
             data[index] = subject_qa[index][s_index+fib_offset];
@@ -825,7 +825,7 @@ public:
             return false;
         num_subjects += rhs->num_subjects;
         R2.insert(R2.end(),rhs->R2.begin(),rhs->R2.end());
-        subject_qa_max.insert(subject_qa_max.end(),rhs->subject_qa_max.begin(),rhs->subject_qa_max.end());
+        subject_qa_sd.insert(subject_qa_sd.end(),rhs->subject_qa_sd.begin(),rhs->subject_qa_sd.end());
         subject_names.insert(subject_names.end(),rhs->subject_names.begin(),rhs->subject_names.end());
         // copy the qa memeory
         for(unsigned int index = 0;index < rhs->num_subjects;++index)

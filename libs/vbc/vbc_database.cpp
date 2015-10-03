@@ -478,7 +478,7 @@ void vbc_database::calculate_spm(fib_data& data,stat_model& info)
             unsigned int pos = s_index + fib_offset;
             if(normalize_qa)
                 for(unsigned int index = 0;index < population.size();++index)
-                    population[index] = handle->subject_qa[index][pos]/handle->subject_qa_max[index];
+                    population[index] = handle->subject_qa[index][pos]/handle->subject_qa_sd[index];
             else
                 for(unsigned int index = 0;index < population.size();++index)
                     population[index] = handle->subject_qa[index][pos];
@@ -583,7 +583,7 @@ void vbc_database::run_permutation_multithread(unsigned int id)
                 {
                     unsigned int random_subject_id = model->rand_gen(model->subject_index.size());
                     info.individual_data = handle->subject_qa[random_subject_id];
-                    info.individual_data_max = normalize_qa ? handle->subject_qa_max[random_subject_id]:1.0;
+                    info.individual_data_max = normalize_qa ? handle->subject_qa_sd[random_subject_id]:1.0;
                 }
                 else
                 {
