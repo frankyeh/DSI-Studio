@@ -57,19 +57,14 @@ void TractTableWidget::check_check_status(int row, int col)
     if(item(row,0)->checkState() == Qt::Checked)
     {
         if(item(row,0)->data(Qt::ForegroundRole) == QBrush(Qt::gray))
-        {
             item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
-            emit need_update();
-        }
     }
     else
     {
         if(item(row,0)->data(Qt::ForegroundRole) != QBrush(Qt::gray))
-        {
             item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
-            emit need_update();
-        }
     }
+    emit need_update();
 }
 
 void TractTableWidget::addNewTracts(QString tract_name,bool checked)
