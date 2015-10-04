@@ -1049,7 +1049,11 @@ void vbc_dialog::on_run_clicked()
         std::ostringstream out;
         if(ui->normalize_qa->isChecked())
             out << ".nqa";
-        out << ".fdr" << ui->fdr_control->value() << ".s" << ui->seeding_density->value() << ".p" << ui->mr_permutation->value();
+        if(ui->rb_FDR->isChecked())
+            out << ".fdr" << ui->fdr_control->value();
+        else
+            out << ".length" << ui->length_threshold->value();
+        out << ".s" << ui->seeding_density->value() << ".p" << ui->mr_permutation->value();
         parameter_str = out.str();
     }
 
