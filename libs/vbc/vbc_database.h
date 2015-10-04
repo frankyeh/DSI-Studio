@@ -158,7 +158,7 @@ public: // multiple regression
     multiple_regression<double> mr;
 public: // individual
     const float* individual_data;
-    float individual_data_max;
+    float individual_data_sd;
 public: // paired
     std::vector<unsigned int> paired;
 public:
@@ -241,7 +241,7 @@ public:// routine for calculate SPM
     void calculate_spm(fib_data& data,stat_model& info);
 public:// Individual analysis
     std::vector<std::vector<float> > individual_data;
-    std::vector<float> individual_data_max;
+    std::vector<float> individual_data_sd;
     bool read_subject_data(const std::vector<std::string>& files,std::vector<std::vector<float> >& data);
 public:// Multiple regression
     std::auto_ptr<stat_model> model;

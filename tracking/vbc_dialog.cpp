@@ -28,6 +28,7 @@ QWidget *ROIViewDelegate::createEditor(QWidget *parent,
         comboBox->addItem("ROA");
         comboBox->addItem("End");
         comboBox->addItem("Seed");
+        comboBox->addItem("Terminative");
         connect(comboBox, SIGNAL(activated(int)), this, SLOT(emitCommitData()));
         return comboBox;
     }
@@ -1056,9 +1057,9 @@ void vbc_dialog::on_run_clicked()
     {
         vbc->tracking_threshold = 1.0-(float)ui->percentile->value()*0.01;
         vbc->individual_data = individual_data;
-        vbc->individual_data_max.resize(vbc->individual_data.size());
+        vbc->individual_data_sd.resize(vbc->individual_data.size());
         for(unsigned int index = 0;index < vbc->individual_data.size();++index)
-            vbc->individual_data_max[index] = *std::max_element(vbc->individual_data[index].begin(),vbc->individual_data[index].end());
+            vbc->individual_data_sd[index] = image::standard_deviation(vbc->individual_data[index].begin(),vbc->individual_data[index].end());
         out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage Clin 2, 912, 2013) was conducted to identify affected pathways in "
             << vbc->individual_data.size() << " study patients.";
         out << " The diffusion data of the patients were compared with "
