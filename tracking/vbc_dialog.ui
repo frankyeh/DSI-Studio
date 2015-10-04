@@ -1647,42 +1647,11 @@ Difference</string>
                   <number>0</number>
                  </property>
                  <item>
-                  <widget class="QWidget" name="widget_13" native="true">
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>0</height>
-                    </size>
+                  <widget class="QGroupBox" name="groupBox_5">
+                   <property name="title">
+                    <string>Track selection policy</string>
                    </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>75</height>
-                    </size>
-                   </property>
-                   <layout class="QVBoxLayout" name="verticalLayout_26">
-                    <property name="spacing">
-                     <number>0</number>
-                    </property>
-                    <property name="leftMargin">
-                     <number>0</number>
-                    </property>
-                    <property name="topMargin">
-                     <number>0</number>
-                    </property>
-                    <property name="rightMargin">
-                     <number>0</number>
-                    </property>
-                    <property name="bottomMargin">
-                     <number>0</number>
-                    </property>
-                    <item>
-                     <widget class="QLabel" name="label_6">
-                      <property name="text">
-                       <string>Track selection </string>
-                      </property>
-                     </widget>
-                    </item>
+                   <layout class="QVBoxLayout" name="verticalLayout_34">
                     <item>
                      <layout class="QHBoxLayout" name="horizontalLayout_5">
                       <property name="spacing">
@@ -1779,7 +1748,7 @@ Difference</string>
                  <item>
                   <widget class="QWidget" name="widget_11" native="true">
                    <property name="sizePolicy">
-                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                      <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
@@ -1792,7 +1761,7 @@ Difference</string>
                    </property>
                    <property name="maximumSize">
                     <size>
-                     <width>500</width>
+                     <width>600</width>
                      <height>75</height>
                     </size>
                    </property>
@@ -1826,7 +1795,7 @@ Difference</string>
                       <item>
                        <widget class="QLabel" name="label_5">
                         <property name="text">
-                         <string>Seeding density</string>
+                         <string>Seeding density per mm cubic</string>
                         </property>
                         <property name="wordWrap">
                          <bool>true</bool>
@@ -1851,13 +1820,13 @@ Difference</string>
                          <double>1.000000000000000</double>
                         </property>
                         <property name="maximum">
-                         <double>100.000000000000000</double>
+                         <double>20.000000000000000</double>
                         </property>
                         <property name="singleStep">
                          <double>0.500000000000000</double>
                         </property>
                         <property name="value">
-                         <double>10.000000000000000</double>
+                         <double>1.000000000000000</double>
                         </property>
                        </widget>
                       </item>
@@ -1899,7 +1868,7 @@ Difference</string>
                          <number>100</number>
                         </property>
                         <property name="value">
-                         <number>5000</number>
+                         <number>2000</number>
                         </property>
                        </widget>
                       </item>
@@ -1933,19 +1902,6 @@ Difference</string>
                     </item>
                    </layout>
                   </widget>
-                 </item>
-                 <item>
-                  <spacer name="horizontalSpacer_7">
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>40</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                  </spacer>
                  </item>
                 </layout>
                </widget>
