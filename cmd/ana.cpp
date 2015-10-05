@@ -1,4 +1,5 @@
 #include <QFileInfo>
+#include <QStringList>
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -170,12 +171,25 @@ int ana(int ac, char *av[])
         data.set_regions(region_table);
         std::cout << "calculating connectivity matrix..." << std::endl;
         std::cout << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
-        std::cout << "calculate matrix using " << vm["connectivity_value"].as<std::string>() << std::endl;
-        data.calculate(tract_model,vm["connectivity_value"].as<std::string>(),use_end_only);
-        std::string file_name_stat(file_name);
-        file_name_stat += ".connectivity.mat";
-        std::cout << "export connectivity matrix to " << file_name_stat << std::endl;
-        data.save_to_file(file_name_stat.c_str());
+        QStringList value_list = QString(vm["connectivity_value"].as<std::string>().c_str()).split(",");
+        for(unsigned int j = 0;j < value_list.size();++j)
+        {
+            std::cout << "calculate matrix using " << value_list[j].toStdString() << std::endl;
+            if(!data.calculate(tract_model,value_list[j].toStdString(),use_end_only))
+            {
+                std::cout << "failed...invalid connectivity_value:" << value_list[j].toStdString();
+                continue;
+            }
+            std::string file_name_stat(file_name);
+            file_name_stat += ".";
+            file_name_stat += QFileInfo(roi_file_name.c_str()).baseName().toStdString();
+            file_name_stat += ".";
+            file_name_stat += vm["connectivity_value"].as<std::string>();
+            file_name_stat += use_end_only ? ".end":".pass";
+            file_name_stat += ".connectivity.mat";
+            std::cout << "export connectivity matrix to " << file_name_stat << std::endl;
+            data.save_to_file(file_name_stat.c_str());
+        }
         return 0;
     }
 

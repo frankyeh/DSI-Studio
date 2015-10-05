@@ -321,17 +321,16 @@ int trk(int ac, char *av[])
                 std::cout << "calculate matrix using " << value_list[j].toStdString() << std::endl;
                 if(!data.calculate(tract_model,value_list[j].toStdString(),use_end_only))
                 {
-                    std::cout << "Cannot generate connectivity matrix." << std::endl;
-                    return false;
+                    std::cout << "failed...invalid connectivity_value:" << value_list[j].toStdString();
+                    continue;
                 }
                 std::string file_name_stat(vm["source"].as<std::string>());
                 file_name_stat += ".";
                 file_name_stat += atlas_list[index].name;
-                file_name_stat += ".connectivity.";
-                file_name_stat += vm["connectivity_value"].as<std::string>();
-                if(use_end_only)
-                    file_name_stat += ".end_only";
-                file_name_stat += ".mat";
+                file_name_stat += ".";
+                file_name_stat += value_list[j].toStdString();
+                file_name_stat += use_end_only ? ".end":".pass";
+                file_name_stat += ".connectivity.mat";
                 std::cout << "export connectivity matrix to " << file_name_stat << std::endl;
                 data.save_to_file(file_name_stat.c_str());
             }
