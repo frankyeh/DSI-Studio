@@ -598,7 +598,7 @@ public:
         return true;
     }
     void get_subject_vector(std::vector<std::vector<float> >& subject_vector,
-                            const image::basic_image<int,3>& cerebrum_mask) const
+                            const image::basic_image<int,3>& cerebrum_mask,bool normalize_fp) const
     {
         float fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(dim,fib.fa[0]));
         subject_vector.clear();
@@ -616,6 +616,7 @@ public:
                     subject_vector[index].push_back(subject_qa[index][pos]);
             }
         }
+        if(normalize_fp)
         for(unsigned int index = 0;index < num_subjects;++index)
         {
             float sd = image::standard_deviation(subject_vector[index].begin(),subject_vector[index].end(),image::mean(subject_vector[index].begin(),subject_vector[index].end()));
@@ -624,7 +625,7 @@ public:
         }
     }
     void get_subject_vector(unsigned int subject_index,std::vector<float>& subject_vector,
-                            const image::basic_image<int,3>& cerebrum_mask) const
+                            const image::basic_image<int,3>& cerebrum_mask,bool normalize_fp) const
     {
         float fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(dim,fib.fa[0]));
         subject_vector.clear();
@@ -637,16 +638,19 @@ public:
                     ++j,fib_offset+=si2vi.size())
                 subject_vector.push_back(subject_qa[subject_index][s_index + fib_offset]);
         }
-        float sd = image::standard_deviation(subject_vector.begin(),subject_vector.end(),image::mean(subject_vector.begin(),subject_vector.end()));
-        if(sd > 0.0)
-            image::multiply_constant(subject_vector.begin(),subject_vector.end(),1.0/sd);
+        if(normalize_fp)
+        {
+            float sd = image::standard_deviation(subject_vector.begin(),subject_vector.end(),image::mean(subject_vector.begin(),subject_vector.end()));
+            if(sd > 0.0)
+                image::multiply_constant(subject_vector.begin(),subject_vector.end(),1.0/sd);
+        }
     }
-    void get_dif_matrix(std::vector<float>& matrix,const image::basic_image<int,3>& cerebrum_mask)
+    void get_dif_matrix(std::vector<float>& matrix,const image::basic_image<int,3>& cerebrum_mask,bool normalize_fp)
     {
         matrix.clear();
         matrix.resize(num_subjects*num_subjects);
         std::vector<std::vector<float> > subject_vector;
-        get_subject_vector(subject_vector,cerebrum_mask);
+        get_subject_vector(subject_vector,cerebrum_mask,normalize_fp);
         begin_prog("calculating");
         for(unsigned int i = 0; check_prog(i,num_subjects);++i)
             for(unsigned int j = i+1; j < num_subjects;++j)
@@ -660,7 +664,8 @@ public:
     }
 
     void save_subject_vector(const char* output_name,
-                             const image::basic_image<int,3>& cerebrum_mask) const
+                             const image::basic_image<int,3>& cerebrum_mask,
+                             bool normalize_fp) const
     {
         gz_mat_write matfile(output_name);
         if(!matfile)
@@ -669,7 +674,7 @@ public:
             return;
         }
         std::vector<std::vector<float> > subject_vector;
-        get_subject_vector(subject_vector,cerebrum_mask);
+        get_subject_vector(subject_vector,cerebrum_mask,normalize_fp);
         std::string name_string;
         for(unsigned int index = 0;index < num_subjects;++index)
         {

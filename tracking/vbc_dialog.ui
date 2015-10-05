@@ -36,7 +36,7 @@
       <item>
        <widget class="QToolBox" name="toolBox">
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <property name="tabSpacing">
          <number>0</number>
@@ -716,6 +716,16 @@ Difference</string>
                      </layout>
                     </item>
                     <item>
+                     <widget class="QCheckBox" name="normalize_fp">
+                      <property name="text">
+                       <string>Normalize FP</string>
+                      </property>
+                      <property name="checked">
+                       <bool>true</bool>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
                      <spacer name="verticalSpacer_5">
                       <property name="orientation">
                        <enum>Qt::Vertical</enum>
@@ -932,7 +942,7 @@ Difference</string>
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>-366</y>
+           <y>0</y>
            <width>641</width>
            <height>848</height>
           </rect>

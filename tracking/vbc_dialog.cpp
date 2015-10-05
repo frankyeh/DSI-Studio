@@ -409,10 +409,10 @@ void vbc_dialog::on_subject_list_itemSelectionChanged()
     {
         std::vector<float> fp;
         if(cerebrum_1mm.geometry() == vbc->handle->dim)
-            vbc->handle->get_subject_vector(ui->subject_list->currentRow(),fp,cerebrum_1mm);
+            vbc->handle->get_subject_vector(ui->subject_list->currentRow(),fp,cerebrum_1mm,ui->normalize_fp->isChecked());
         else
             if(cerebrum_2mm.geometry() == vbc->handle->dim)
-                vbc->handle->get_subject_vector(ui->subject_list->currentRow(),fp,cerebrum_2mm);
+                vbc->handle->get_subject_vector(ui->subject_list->currentRow(),fp,cerebrum_2mm,ui->normalize_fp->isChecked());
 
         fp_image_buf.clear();
         fp_image_buf.resize(image::geometry<2>(ui->fp_zoom->value()*25,ui->fp_zoom->value()*100));// rotated
@@ -1424,10 +1424,10 @@ void vbc_dialog::on_save_vector_clicked()
         return;
 
     if(cerebrum_1mm.geometry() == vbc->handle->dim)
-        vbc->handle->save_subject_vector(filename.toLocal8Bit().begin(),cerebrum_1mm);
+        vbc->handle->save_subject_vector(filename.toLocal8Bit().begin(),cerebrum_1mm,ui->normalize_fp->isChecked());
     else
         if(cerebrum_2mm.geometry() == vbc->handle->dim)
-            vbc->handle->save_subject_vector(filename.toLocal8Bit().begin(),cerebrum_2mm);
+            vbc->handle->save_subject_vector(filename.toLocal8Bit().begin(),cerebrum_2mm,ui->normalize_fp->isChecked());
 
 }
 
@@ -1578,10 +1578,10 @@ void vbc_dialog::on_calculate_dif_clicked()
         return;
     }
     if(cerebrum_1mm.geometry() == vbc->handle->dim)
-        vbc->handle->get_dif_matrix(fp_matrix,cerebrum_1mm);
+        vbc->handle->get_dif_matrix(fp_matrix,cerebrum_1mm,ui->normalize_fp->isChecked());
     else
         if(cerebrum_2mm.geometry() == vbc->handle->dim)
-            vbc->handle->get_dif_matrix(fp_matrix,cerebrum_2mm);
+            vbc->handle->get_dif_matrix(fp_matrix,cerebrum_2mm,ui->normalize_fp->isChecked());
 
     fp_max_value = *std::max_element(fp_matrix.begin(),fp_matrix.end());
     fp_dif_map.resize(image::geometry<2>(vbc->handle->num_subjects,vbc->handle->num_subjects));
