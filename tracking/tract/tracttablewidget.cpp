@@ -187,7 +187,7 @@ void TractTableWidget::load_tracts(QStringList filenames)
         label.remove(".gz");
         label.remove(".txt");
         std::string sfilename = filename.toLocal8Bit().begin();
-        addNewTracts(label,false);
+        addNewTracts(label);
         tract_models.back()->load_from_file(&*sfilename.begin(),false);
         if(tract_models.back()->get_cluster_info().empty()) // not multiple cluster file
         {
@@ -312,7 +312,7 @@ void TractTableWidget::load_cluster_label(const std::vector<unsigned int>& label
                 add_tracts[i].swap(tracts[index]);
                 ++i;
             }
-        addNewTracts(Name+QString::number(cluster_index));
+        addNewTracts(Name+QString::number(cluster_index),false);
         tract_models.back()->add_tracts(add_tracts);
         item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     }
