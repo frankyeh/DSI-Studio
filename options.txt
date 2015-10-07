@@ -7,7 +7,7 @@ ROI/Fiber Width/roi_fiber_width/float:0.1:1:0.1:2/0.2
 ROI/Fiber Length/roi_fiber_length/float:0.1:1:0.1:2/0.3
 ROI/"R" label/roi_label/Off:On/1
 ROI/Position Line/roi_position/Off:On/1
-ROI/Slice Layout/roi_layout/Single Slice:3 Slices:Mosaic:Mosaic 2:Mosaic 4/0
+ROI/Slice Layout/roi_layout/Single Slice:3 Slices:Mosaic:Mosaic 2:Mosaic 3/0
 Tracking/Termination Index/tracking_index/fa:adc/0
 Tracking/Threshold/fa_threshold/float:0:1:0.01:5/0.2
 Tracking/Angular Threshold/turning_angle/int:0:90:5/60

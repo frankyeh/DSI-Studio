@@ -45,14 +45,14 @@ void FibSliceModel::get_mosaic(image::color_image& show_image,
                                const image::value_to_color<float>& v2c,
                                unsigned int skip) const
 {
-    unsigned slice_num = geometry[2] >> skip;
+    unsigned slice_num = geometry[2] / skip;
     show_image.clear();
     show_image.resize(image::geometry<2>(geometry[0]*mosaic_size,
                                           geometry[1]*(std::ceil((float)slice_num/(float)mosaic_size))));
     for(unsigned int z = 0;z < slice_num;++z)
     {
         image::color_image slice_image;
-        handle->get_slice(view_name,2, z << skip,slice_image,v2c);
+        handle->get_slice(view_name,2, z * skip,slice_image,v2c);
         image::vector<2,int> pos(geometry[0]*(z%mosaic_size),
                                  geometry[1]*(z/mosaic_size));
         image::draw(slice_image,show_image,pos);
