@@ -822,7 +822,7 @@ void TractTableWidget::cut_by_slice(unsigned char dim,bool greater)
     {
         if(item(index,0)->checkState() != Qt::Checked)
             continue;
-        tract_models[index]->cut_by_slice(dim,cur_tracking_window.slice.slice_pos[cur_tracking_window.slice.cur_dim],greater);
+        tract_models[index]->cut_by_slice(dim,cur_tracking_window.slice.slice_pos[dim],greater);
         item(index,1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
         item(index,2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
     }
