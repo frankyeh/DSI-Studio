@@ -20,6 +20,7 @@ private:
         std::vector<unsigned int> tract_color;
         std::vector<unsigned int> deleted_tract_color;
         std::vector<unsigned int> deleted_count;
+        std::vector<std::pair<unsigned int,unsigned int> > deleted_cut_count;
         std::vector<std::pair<unsigned int,unsigned int> > redo_size;
         // offset, size
 private:
