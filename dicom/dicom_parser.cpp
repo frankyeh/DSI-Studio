@@ -13,6 +13,7 @@
 
 
 void get_report_from_dicom(const image::io::dicom& header,std::string& report_);
+void get_report_from_bruker(const image::io::bruker_info& header,std::string& report_);
 
 QString get_src_name(QString file_name)
 {
@@ -308,7 +309,7 @@ bool load_4d_2dseq(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files
     {
         std::auto_ptr<DwiHeader> new_file(new DwiHeader);
         if(index == 0)
-            new_file->report = "The diffusion images were acquired on a Bruker scanner.";
+            get_report_from_bruker(method_file,new_file->report);
         new_file->image.resize(image::geometry<3>(buf_image.width(),buf_image.height(),buf_image.depth()));
 
         std::copy(buf_image.begin()+index*new_file->image.size(),

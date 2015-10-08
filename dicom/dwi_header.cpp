@@ -23,6 +23,15 @@ void get_report_from_dicom(const image::io::dicom& header,std::string& report)
         << " TE=" << header.get_float(0x0018,0x0081) << " ms, and TR=" << header.get_float(0x0018,0x0080)  << " ms.";
     report += out.str();
 }
+void get_report_from_bruker(const image::io::bruker_info& header,std::string& report)
+{
+    std::ostringstream out;
+    out << " The diffusion images were acquired on a " << header["ORIGIN"] << " scanner using a "
+        << header["Method"] << " " << header["PVM_DiffPrepMode"]
+        <<  " sequence. TE=" << header["PVM_EchoTime"] << " ms, and TR=" << header["PVM_RepetitionTime"] << " ms."
+        << " The diffusion time was " << header["PVM_DwGradSep"] << " ms. The diffusion encoding duration was " << header["PVM_DwGradDur"] << " ms.";
+    report += out.str();
+}
 
 bool DwiHeader::open(const char* filename)
 {
