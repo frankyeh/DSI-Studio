@@ -79,6 +79,7 @@ public:
         image::normalize(VF,1.0);
 
         VGvs = fa_template_imp.vs;
+        VGvs.abs();
 
         const unsigned int num_reg_type = 3;
         int reg_type[num_reg_type];

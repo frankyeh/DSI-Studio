@@ -19,9 +19,9 @@ bool fa_template::load_from_file(void)
         read.toLPS(I);
         float tran[16];
         read.get_image_transformation(tran);
-        vs[0] = std::fabs(tran[0]);
-        vs[1] = std::fabs(tran[5]);
-        vs[2] = std::fabs(tran[10]);
+        vs[0] = tran[0];
+        vs[1] = tran[5];
+        vs[2] = tran[10];
         shift[0] = tran[3];
         shift[1] = tran[7];
         shift[2] = tran[11];
