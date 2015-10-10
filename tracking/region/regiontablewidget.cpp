@@ -921,8 +921,7 @@ void RegionTableWidget::do_action(int id)
         break;
     case 4: // Negate
         cur_region.SaveToBuffer(mask, 1);
-        for (unsigned int index = 0; index < mask.size(); ++index)
-            mask[index] = 1 - mask[index];
+        image::morphology::negate(mask);
         cur_region.LoadFromBuffer(mask);
         break;
     case 5:

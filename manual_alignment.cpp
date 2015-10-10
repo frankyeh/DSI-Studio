@@ -6,18 +6,13 @@
 typedef image::reg::correlation cost_func;
 
 
-void run_reg(image::basic_image<float,3>& from,
-             image::basic_image<float,3>& to,
+void run_reg(const image::basic_image<float,3>& from,
+             const image::basic_image<float,3>& to,
              reg_data& data,
              unsigned int thread_count)
 {
     image::reg::align_center(from,to,data.arg);
-
     data.progress = 0;
-    int reg_type[3];
-    reg_type[0] = image::reg::rigid_body;
-    reg_type[1] = image::reg::rigid_scaling;
-    reg_type[2] = image::reg::affine;
     image::reg::linear(from,to,data.arg,data.reg_type,cost_func(),data.terminated);
     if(data.terminated)
         return;

@@ -1188,6 +1188,7 @@
     </property>
     <addaction name="actionInsert_T1_T2"/>
     <addaction name="actionAdd_surface"/>
+    <addaction name="actionStrip_skull_for_T1w_image"/>
     <addaction name="separator"/>
     <addaction name="actionLoad_mapping"/>
     <addaction name="actionSave_mapping"/>
@@ -2920,6 +2921,11 @@
   <action name="actionRedo_Edit">
    <property name="text">
     <string>Redo Edit</string>
+   </property>
+  </action>
+  <action name="actionStrip_skull_for_T1w_image">
+   <property name="text">
+    <string>Strip skull for T1w image...</string>
    </property>
   </action>
  </widget>

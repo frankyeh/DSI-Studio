@@ -126,6 +126,43 @@ bool load_cerebrum_mask(void)
     image::resample(wm_mask,cerebrum_2mm,trans2,image::linear);
     return true;
 }
+image::basic_image<char,3> brain_mask;
+image::basic_image<float,3> mni_t1w;
+bool load_brain_mask(void)
+{
+    if(!brain_mask.empty())
+        return true;
+    QString wm_path;
+    wm_path = QCoreApplication::applicationDirPath() + "/mni_icbm152_t1_tal_nlin_asym_09a.nii.gz";
+    if(!QFileInfo(wm_path).exists())
+        wm_path = QDir::currentPath() + "/mni_icbm152_t1_tal_nlin_asym_09a.nii.gz";
+    if(!QFileInfo(wm_path).exists())
+        return false;
+
+    gz_nifti read_wm;
+    if(read_wm.load_from_file(wm_path.toStdString().c_str()))
+        read_wm.toLPS(mni_t1w);
+    brain_mask.resize(mni_t1w.geometry());
+    for(unsigned int index = 0;index < mni_t1w.size();++index)
+        if(mni_t1w[index] > 2000)
+            brain_mask[index] = 1;
+    image::morphology::smoothing(brain_mask);
+    image::morphology::smoothing(brain_mask);
+    image::morphology::defragment(brain_mask);
+    image::morphology::negate(brain_mask);
+    image::morphology::erosion(brain_mask);
+    image::morphology::erosion(brain_mask);
+    image::morphology::erosion(brain_mask);
+    image::morphology::smoothing(brain_mask);
+    image::morphology::smoothing(brain_mask);
+    image::morphology::smoothing(brain_mask);
+    image::morphology::defragment(brain_mask);
+    image::morphology::negate(brain_mask);
+
+    image::lower_threshold(mni_t1w,0);
+    image::normalize(mni_t1w,1);
+    return true;
+}
 
 int main(int ac, char *av[])
 { 

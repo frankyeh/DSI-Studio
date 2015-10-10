@@ -3,6 +3,7 @@
 #include "SliceModel.h"
 #include "prog_interface_static_link.h"
 #include "fib_data.hpp"
+#include "manual_alignment.h"
 // ---------------------------------------------------------------------------
 SliceModel::SliceModel(void):cur_dim(2)
 {
@@ -177,4 +178,38 @@ void CustomSliceModel::get_slice(image::color_image& show_image,const image::val
     image::basic_image<float,2> buf;
     image::reslicing(source_images, buf, cur_dim, slice_pos[cur_dim]);
     v2c.convert(buf,show_image);
+}
+// ---------------------------------------------------------------------------
+extern image::basic_image<char,3> brain_mask;
+extern image::basic_image<float,3> mni_t1w;
+bool load_brain_mask(void);
+bool CustomSliceModel::stripskull(void)
+{
+    if(!load_brain_mask())
+        return false;
+    begin_prog("calculating");
+    check_prog(0,3);
+    reg_data data(mni_t1w.geometry(),image::reg::affine,1);
+    image::filter::gaussian(source_images);
+    data.arg.scaling[0] = voxel_size[0];
+    data.arg.scaling[1] = voxel_size[1];
+    data.arg.scaling[2] = voxel_size[2];
+    set_title("running registration");
+    check_prog(1,3);
+    run_reg(source_images,mni_t1w,data,4);
+    image::transformation_matrix<3,float> T(data.arg,source_images.geometry(),mni_t1w.geometry());
+    set_title("stripping skull");
+    check_prog(2,3);
+    for(image::pixel_index<3> index;source_images.geometry().is_valid(index);index.next(source_images.geometry()))
+    {
+        image::vector<3,float> pos(index),t1_space;
+        T(pos);// from -> new_from
+        data.bnorm_data(pos,t1_space);
+        t1_space += 0.5;
+        t1_space.floor();
+        if(!mni_t1w.geometry().is_valid(t1_space) || brain_mask.at(t1_space[0],t1_space[1],t1_space[2]) == 0)
+            source_images[index.index()] = 0;
+    }
+    check_prog(0,0);
+    return true;
 }

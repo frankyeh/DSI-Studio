@@ -1532,3 +1532,10 @@ void tracking_window::on_actionCut_Z_2_triggered()
 {
     tractWidget->cut_by_slice(2,false);
 }
+
+void tracking_window::on_actionStrip_skull_for_T1w_image_triggered()
+{
+    QMessageBox::information(this,"DSI Studio","This may take 10 minutes to complete.",0);
+    if(glWidget->current_visible_slide)
+        glWidget->other_slices[glWidget->current_visible_slide-1].stripskull();
+}

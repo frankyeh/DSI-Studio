@@ -25,6 +25,10 @@ struct reg_data{
     unsigned char progress;
 
 };
+void run_reg(const image::basic_image<float,3>& from,
+             const image::basic_image<float,3>& to,
+             reg_data& data,
+             unsigned int thread_count);
 
 class manual_alignment : public QDialog
 {

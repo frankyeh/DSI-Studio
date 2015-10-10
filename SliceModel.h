@@ -156,6 +156,7 @@ public:
 public:
     std::pair<float,float> get_value_range(void) const;
     void get_slice(image::color_image& image,const image::value_to_color<float>& v2c) const;
+    bool stripskull(void);
     image::const_pointer_image<float, 3> get_source(void) const  {return source_images;}
 };
 

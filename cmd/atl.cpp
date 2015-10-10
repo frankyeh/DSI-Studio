@@ -12,11 +12,6 @@ extern fa_template fa_template_imp;
 extern std::vector<atlas> atlas_list;
 std::string get_fa_template_path(void);
 
-void run_reg(image::basic_image<float,3>& from,
-             image::basic_image<float,3>& to,
-             reg_data& data,
-             unsigned int thread_count);
-
 bool atl_load_atlas(std::string atlas_name)
 {
     std::cout << "loading atlas..." << std::endl;
