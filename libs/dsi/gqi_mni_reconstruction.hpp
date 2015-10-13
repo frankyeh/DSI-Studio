@@ -81,53 +81,37 @@ public:
         VGvs = fa_template_imp.vs;
         VGvs.abs();
 
-        const unsigned int num_reg_type = 3;
-        int reg_type[num_reg_type];
-        reg_type[0] = image::reg::rigid_body;
-        reg_type[1] = image::reg::rigid_scaling;
-        reg_type[2] = image::reg::affine;
         voxel_volume_scale = (voxel.vs[0]*voxel.vs[1]*voxel.vs[2])/(VGvs[0]*VGvs[1]*VGvs[2]);
 
         image::basic_image<float,3> VFF;
         {
-            float max_c = 0;
             begin_prog("linear registration");
-            for(unsigned int reg_iter = 0;check_prog(reg_iter,num_reg_type);++reg_iter)
+
+            image::affine_transform<3,float> arg_min;
+            // VG: FA TEMPLATE
+            // VF: SUBJECT QA
+            arg_min.scaling[0] = voxel.vs[0] / VGvs[0];
+            arg_min.scaling[1] = voxel.vs[1] / VGvs[1];
+            arg_min.scaling[2] = voxel.vs[2] / VGvs[2];
+            image::reg::align_center(VF,VG,arg_min);
+
+            if(export_intermediate)
             {
-                image::affine_transform<3,float> arg_min;
-                image::transformation_matrix<3,float> affine_buf;
-                // VG: FA TEMPLATE
-                // VF: SUBJECT QA
-                arg_min.scaling[0] = voxel.vs[0] / VGvs[0];
-                arg_min.scaling[1] = voxel.vs[1] / VGvs[1];
-                arg_min.scaling[2] = voxel.vs[2] / VGvs[2];
-                image::reg::align_center(VF,VG,arg_min);
-
-                if(export_intermediate)
-                {
-                    VG.save_to_file<image::io::nifti>("VG.nii.gz");
-                    VF.save_to_file<image::io::nifti>("VF.nii.gz");
-                }
-
-                if(voxel.qsdr_trans.data[0] != 0.0) // has manual reg data
-                    affine_buf = voxel.qsdr_trans;
-                else
-                {
-                    bool terminated = false;
-                    image::reg::linear(VF,VG,arg_min,reg_type[reg_iter],image::reg::correlation(),terminated);
-                    affine_buf = image::transformation_matrix<3,float>(arg_min,VF.geometry(),VG.geometry());
-                }
-                affine_buf.inverse();
-                image::basic_image<float,3> VFF_buf(VG.geometry());
-                image::resample(VF,VFF_buf,affine_buf,image::cubic);
-                float c = image::correlation(VG.begin(),VG.end(),VFF_buf.begin());
-                if(c > max_c)
-                {
-                    max_c = c;
-                    affine = affine_buf;
-                    VFF.swap(VFF_buf);
-                }
+                VG.save_to_file<image::io::nifti>("VG.nii.gz");
+                VF.save_to_file<image::io::nifti>("VF.nii.gz");
             }
+
+            if(voxel.qsdr_trans.data[0] != 0.0) // has manual reg data
+                affine = voxel.qsdr_trans;
+            else
+            {
+                bool terminated = false;
+                image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::correlation(),terminated);
+                affine = image::transformation_matrix<3,float>(arg_min,VF.geometry(),VG.geometry());
+            }
+            affine.inverse();
+            VFF.resize(VG.geometry());
+            image::resample(VF,VFF,affine,image::cubic);
             if(prog_aborted())
                 throw std::runtime_error("Reconstruction canceled");
 
@@ -170,7 +154,7 @@ public:
             throw std::runtime_error("Registration failed due to memory insufficiency.");
         }
         {
-            voxel.R2 = -image::reg::correlation2()(VFF,VG,(*mni.get()));
+            voxel.R2 = -image::reg::correlation()(VG,VFF,(*mni.get()));
             if(export_intermediate)
             {
                 image::basic_image<float,3> VFFF(VG.geometry());
