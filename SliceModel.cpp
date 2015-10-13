@@ -183,27 +183,58 @@ void CustomSliceModel::get_slice(image::color_image& show_image,const image::val
 extern image::basic_image<char,3> brain_mask;
 extern image::basic_image<float,3> mni_t1w;
 bool load_brain_mask(void);
+#include "manual_alignment.h"
+#include "fa_template.hpp"
 bool CustomSliceModel::stripskull(void)
 {
+    begin_prog("calculating");
     if(!load_brain_mask())
         return false;
+    image::basic_image<float,3> to(mni_t1w);
+    image::basic_image<float,3> from(source_images);
+    image::downsampling(to);
+    image::downsampling(from);
+    image::minus_constant(from,image::segmentation::otsu_threshold(from));
+    image::lower_threshold(from,0);
+    image::normalize(from,1);
+
+    image::minus_constant(to,*std::min_element(to.begin(),to.end()));
+    image::normalize(to,1);
+
+    image::hist_norm(to,1000);
+    image::hist_norm(from,1000);
+    image::vector<3,float> vs(voxel_size);
+    vs[0] = 1.0/vs[0];
+    vs[1] = 1.0/vs[1];
+    vs[2] = 1.0/vs[2];
+    std::auto_ptr<manual_alignment> manual(new manual_alignment(0,to,from,vs,image::reg::affine));
+    manual->timer->start();
+    if(manual->exec() != QDialog::Accepted)
+        return false;
     begin_prog("calculating");
+    manual->update_affine();
+    manual->T.shift[0] *= 2.0;
+    manual->T.shift[1] *= 2.0;
+    manual->T.shift[2] *= 2.0;
+    manual->iT.shift[0] *= 2.0;
+    manual->iT.shift[1] *= 2.0;
+    manual->iT.shift[2] *= 2.0;
+
     check_prog(0,3);
+    image::basic_image<float,3> new_from(mni_t1w.geometry());
+    image::resample(source_images,new_from,manual->T,image::linear);
+
+    image::io::nifti out;
+    out << new_from;
+    out.save_to_file("test.nii");
     reg_data data(mni_t1w.geometry(),image::reg::affine,1);
-    image::filter::gaussian(source_images);
-    data.arg.scaling[0] = voxel_size[0];
-    data.arg.scaling[1] = voxel_size[1];
-    data.arg.scaling[2] = voxel_size[2];
-    set_title("running registration");
-    check_prog(1,3);
-    run_reg(source_images,mni_t1w,data,4);
-    image::transformation_matrix<3,float> T(data.arg,source_images.geometry(),mni_t1w.geometry());
+    multi_thread_reg(data.bnorm_data,new_from,mni_t1w,4,data.terminated);
     set_title("stripping skull");
-    check_prog(2,3);
+    check_prog(1,3);
     for(image::pixel_index<3> index;source_images.geometry().is_valid(index);index.next(source_images.geometry()))
     {
         image::vector<3,float> pos(index),t1_space;
-        T(pos);// from -> new_from
+        manual->iT(pos);// from -> new_from
         data.bnorm_data(pos,t1_space);
         t1_space += 0.5;
         t1_space.floor();
