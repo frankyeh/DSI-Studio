@@ -818,6 +818,7 @@ void TractTableWidget::undo_tracts(void)
 }
 void TractTableWidget::cut_by_slice(unsigned char dim,bool greater)
 {
+    cur_tracking_window.ui->SliceModality->setCurrentIndex(0);
     for(unsigned int index = 0;index < tract_models.size();++index)
     {
         if(item(index,0)->checkState() != Qt::Checked)

@@ -760,8 +760,9 @@ void TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater)
         {
             if(tract_data[i][j+dim] < pos ^ greater)
             {
+                if(!adding)
+                    continue;
                 adding = false;
-                continue;
             }
             if(!adding)
             {
