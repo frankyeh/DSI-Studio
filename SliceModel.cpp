@@ -4,6 +4,11 @@
 #include "prog_interface_static_link.h"
 #include "fib_data.hpp"
 #include "manual_alignment.h"
+#include "fa_template.hpp"
+extern image::basic_image<char,3> brain_mask;
+extern image::basic_image<float,3> mni_t1w;
+bool load_brain_mask(void);
+
 // ---------------------------------------------------------------------------
 SliceModel::SliceModel(void):cur_dim(2)
 {
@@ -180,11 +185,6 @@ void CustomSliceModel::get_slice(image::color_image& show_image,const image::val
     v2c.convert(buf,show_image);
 }
 // ---------------------------------------------------------------------------
-extern image::basic_image<char,3> brain_mask;
-extern image::basic_image<float,3> mni_t1w;
-bool load_brain_mask(void);
-#include "manual_alignment.h"
-#include "fa_template.hpp"
 bool CustomSliceModel::stripskull(void)
 {
     begin_prog("calculating");

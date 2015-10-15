@@ -2,9 +2,16 @@
 #include "ui_manual_alignment.h"
 #include "tracking/tracking_window.h"
 #include "fa_template.hpp"
-
+#include <boost/thread.hpp>
 typedef image::reg::correlation cost_func;
 
+unsigned int mcc_thread_count = 4;
+struct thread_count_functor{
+    unsigned int operator()(void)
+    {
+        return mcc_thread_count;
+    }
+};
 
 void run_reg(const image::basic_image<float,3>& from,
              const image::basic_image<float,3>& to,
@@ -13,7 +20,9 @@ void run_reg(const image::basic_image<float,3>& from,
 {
     image::reg::align_center(from,to,data.arg);
     data.progress = 0;
-    image::reg::linear(from,to,data.arg,data.reg_type,cost_func(),data.terminated);
+    mcc_thread_count = thread_count;
+    image::reg::linear(from,to,data.arg,data.reg_type,image::reg::mt_correlation<image::basic_image<float,3>,
+                       image::transformation_matrix<3>,boost::thread,thread_count_functor>(0),data.terminated);
     if(data.terminated)
         return;
     if(data.reg_type == image::reg::rigid_body)
@@ -59,7 +68,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     else
     {
         image::reg::get_bound(from,to,data.arg,b_upper,b_lower,reg_type_);
-        reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),boost::ref(data),1));
+        reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),boost::ref(data),boost::thread::hardware_concurrency()));
     }
     ui->setupUi(this);
     if(reg_type_ == image::reg::rigid_body)
@@ -327,7 +336,7 @@ void manual_alignment::on_rerun_clicked()
         reg_thread->join();
     }
     data.terminated = 0;
-    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),boost::ref(data),1));
+    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),boost::ref(data),boost::thread::hardware_concurrency()));
     if(timer)
         timer->start();
 

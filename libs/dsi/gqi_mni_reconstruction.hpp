@@ -9,6 +9,13 @@
 #include "gqi_process.hpp"
 
 extern fa_template fa_template_imp;
+extern unsigned int mcc_thread_count;
+struct qsdr_thread_count_functor{
+    unsigned int operator()(void)
+    {
+        return mcc_thread_count;
+    }
+};
 
 struct terminated_class {
     unsigned int total;
@@ -106,7 +113,9 @@ public:
             else
             {
                 bool terminated = false;
-                image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::correlation(),terminated);
+                mcc_thread_count = voxel.voxel_data.size();
+                image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
+                                   image::transformation_matrix<3>,boost::thread,qsdr_thread_count_functor>(0),terminated);
                 affine = image::transformation_matrix<3,float>(arg_min,VF.geometry(),VG.geometry());
             }
             affine.inverse();
