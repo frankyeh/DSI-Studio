@@ -1537,5 +1537,10 @@ void tracking_window::on_actionStrip_skull_for_T1w_image_triggered()
 {
     QMessageBox::information(this,"DSI Studio","This may take 10 minutes to complete.",0);
     if(glWidget->current_visible_slide)
+    {
         glWidget->other_slices[glWidget->current_visible_slide-1].stripskull();
+        SliceModel* active_slice = (SliceModel*)&glWidget->other_slices[glWidget->current_visible_slide-1];
+        float threshold = image::segmentation::otsu_threshold(active_slice->get_source());
+        glWidget->command("add_surface",QString::number(ui->surfaceStyle->currentIndex()),QString::number(threshold));
+    }
 }

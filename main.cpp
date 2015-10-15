@@ -158,6 +158,7 @@ bool load_brain_mask(void)
     image::morphology::smoothing(brain_mask);
     image::morphology::defragment(brain_mask);
     image::morphology::negate(brain_mask);
+    image::morphology::erosion(brain_mask);
 
     image::lower_threshold(mni_t1w,0);
     image::normalize(mni_t1w,1);

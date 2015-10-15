@@ -2925,7 +2925,7 @@
   </action>
   <action name="actionStrip_skull_for_T1w_image">
    <property name="text">
-    <string>Strip skull for T1w image...</string>
+    <string>Add Gyral Surface  for T1w...</string>
    </property>
   </action>
  </widget>

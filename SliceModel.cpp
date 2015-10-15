@@ -219,28 +219,20 @@ bool CustomSliceModel::stripskull(void)
     manual->iT.shift[0] *= 2.0;
     manual->iT.shift[1] *= 2.0;
     manual->iT.shift[2] *= 2.0;
-
-    check_prog(0,3);
-    image::basic_image<float,3> new_from(mni_t1w.geometry());
-    image::resample(source_images,new_from,manual->T,image::linear);
-
-    image::io::nifti out;
-    out << new_from;
-    out.save_to_file("test.nii");
-    reg_data data(mni_t1w.geometry(),image::reg::affine,1);
-    multi_thread_reg(data.bnorm_data,new_from,mni_t1w,4,data.terminated);
-    set_title("stripping skull");
     check_prog(1,3);
+    set_title("stripping skull");
     for(image::pixel_index<3> index;source_images.geometry().is_valid(index);index.next(source_images.geometry()))
     {
-        image::vector<3,float> pos(index),t1_space;
+        image::vector<3,float> pos(index);
         manual->iT(pos);// from -> new_from
-        data.bnorm_data(pos,t1_space);
-        t1_space += 0.5;
-        t1_space.floor();
-        if(!mni_t1w.geometry().is_valid(t1_space) || brain_mask.at(t1_space[0],t1_space[1],t1_space[2]) == 0)
+        pos += 0.5;
+        pos.floor();
+        if(!mni_t1w.geometry().is_valid(pos) || brain_mask.at(pos[0],pos[1],pos[2]) == 0)
             source_images[index.index()] = 0;
     }
+    image::filter::gaussian(source_images);
+    image::filter::anisotropic_diffusion(source_images);
+    image::filter::anisotropic_diffusion(source_images);
     check_prog(0,0);
     return true;
 }
