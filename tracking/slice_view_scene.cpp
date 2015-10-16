@@ -327,12 +327,6 @@ void slice_view_scene::show_slice(void)
     clear();
     setItemIndexMethod(QGraphicsScene::NoIndex);
     addRect(0, 0, view_image.width(),view_image.height(),QPen(),view_image);
-    // clear point buffer
-    if(sel_mode != 5) // move object need the selection record
-    {
-        sel_point.clear();
-        sel_coord.clear();
-    }
 }
 
 void slice_view_scene::save_slice_as()
@@ -626,6 +620,8 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
                         cur_tracking_window.slice.cur_dim == 0 ? geo[1]*display_ratio:geo[0]*display_ratio,
                         cur_tracking_window.slice.cur_dim != 2 ? geo[2]*display_ratio:geo[1]*display_ratio);
     }
+    if(sel_coord.empty() || sel_point.empty())
+        return;
 
     if(sel_mode == 6) // ruler
     {
@@ -720,6 +716,8 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     {
     case 0: // rectangle
     {
+        if (sel_coord.size() < 2)
+            return;
         image::vector<3,short>min_cood, max_cood;
         for (unsigned int i = 0; i < 3; ++i)
             if (sel_coord[0][i] > sel_coord[1][i])
@@ -775,6 +773,8 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     break;
     case 2:
     {
+        if (sel_coord.size() < 2)
+            return;
         int dx = sel_coord[1][0] - sel_coord[0][0];
         int dy = sel_coord[1][1] - sel_coord[0][1];
         int dz = sel_coord[1][2] - sel_coord[0][2];
@@ -792,6 +792,8 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     break;
     case 3:
     {
+        if (sel_coord.size() < 2)
+            return;
         int dx = sel_coord[1][0] - sel_coord[0][0];
         int dy = sel_coord[1][1] - sel_coord[0][1];
         int dz = sel_coord[1][2] - sel_coord[0][2];
