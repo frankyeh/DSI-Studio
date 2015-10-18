@@ -206,7 +206,7 @@ void TractTableWidget::load_tracts(QStringList filenames)
 void TractTableWidget::load_tracts(void)
 {
     load_tracts(QFileDialog::getOpenFileNames(
-            this,"Load tracts as","",
+            this,"Load tracts as",QDir::currentPath(),
             "Tract files (*.txt *.trk *trk.gz *.tck);;All files (*)"));
 
 }
@@ -323,7 +323,7 @@ void TractTableWidget::open_cluster_label(void)
     if(tract_models.empty())
         return;
     QString filename = QFileDialog::getOpenFileName(
-            this,"Load cluster label","",
+            this,"Load cluster label",QDir::currentPath(),
             "Cluster label files (*.txt);;All files (*)");
     if(!filename.size())
         return;
@@ -545,7 +545,7 @@ void TractTableWidget::load_tracts_color(void)
     if(currentRow() >= tract_models.size())
         return;
     QString filename = QFileDialog::getOpenFileName(
-            this,"Load tracts color","",
+            this,"Load tracts color",QDir::currentPath(),
             "Color files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;

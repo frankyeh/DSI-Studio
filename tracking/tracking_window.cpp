@@ -411,7 +411,7 @@ bool tracking_window::can_convert(void)
         image::filter::gaussian(from);
         from -= image::segmentation::otsu_threshold(from);
         image::lower_threshold(from,0.0);
-        mi3.reset(new manual_alignment(this,from,fa_template_imp.I,handle->vs));
+        mi3.reset(new manual_alignment(this,from,fa_template_imp.I,handle->vs,image::reg::affine,0/*correlation*/));
         QMessageBox::information(this,"Running","The registration started. You may need to wait until it finish running (shown in the bottom status bar).",0);
     }
     mi3->update_affine();
@@ -842,7 +842,7 @@ void tracking_window::add_slice_name(QString name)
 void tracking_window::on_actionInsert_T1_T2_triggered()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
-        this,"Open Images files","","Image files (*.dcm *.hdr *.nii *nii.gz 2dseq);;All files (*)" );
+        this,"Open Images files",QDir::currentPath(),"Image files (*.dcm *.hdr *.nii *nii.gz 2dseq);;All files (*)" );
     if( filenames.isEmpty())
         return;
     if(glWidget->addSlices(filenames))
@@ -1156,7 +1156,7 @@ void tracking_window::on_actionSave_tracking_parameters_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
                            this,
-                           "Save INI files","","Setting file (*.ini);;All files (*)");
+                           "Save INI files",QDir::currentPath(),"Setting file (*.ini);;All files (*)");
     if (filename.isEmpty())
         return;
     QSettings s(filename, QSettings::IniFormat);
@@ -1169,7 +1169,7 @@ void tracking_window::on_actionSave_tracking_parameters_triggered()
 void tracking_window::on_actionLoad_tracking_parameters_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
-                           this,"Open INI files","","Setting file (*.ini);;All files (*)");
+                           this,"Open INI files",QDir::currentPath(),"Setting file (*.ini);;All files (*)");
     if (filename.isEmpty())
         return;
     QSettings s(filename, QSettings::IniFormat);
@@ -1183,7 +1183,7 @@ void tracking_window::on_actionSave_Rendering_Parameters_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
                            this,
-                           "Save INI files","","Setting file (*.ini);;All files (*)");
+                           "Save INI files",QDir::currentPath(),"Setting file (*.ini);;All files (*)");
     if (filename.isEmpty())
         return;
     QSettings s(filename, QSettings::IniFormat);
@@ -1201,7 +1201,7 @@ void tracking_window::on_actionSave_Rendering_Parameters_triggered()
 void tracking_window::on_actionLoad_Rendering_Parameters_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
-                           this,"Open INI files","","Setting file (*.ini);;All files (*)");
+                           this,"Open INI files",QDir::currentPath(),"Setting file (*.ini);;All files (*)");
     if (filename.isEmpty())
         return;
     QSettings s(filename, QSettings::IniFormat);
@@ -1535,12 +1535,13 @@ void tracking_window::on_actionCut_Z_2_triggered()
 
 void tracking_window::on_actionStrip_skull_for_T1w_image_triggered()
 {
-    QMessageBox::information(this,"DSI Studio","This may take 10 minutes to complete.",0);
     if(glWidget->current_visible_slide)
     {
-        glWidget->other_slices[glWidget->current_visible_slide-1].stripskull();
-        SliceModel* active_slice = (SliceModel*)&glWidget->other_slices[glWidget->current_visible_slide-1];
-        float threshold = image::segmentation::otsu_threshold(active_slice->get_source());
-        glWidget->command("add_surface",QString::number(ui->surfaceStyle->currentIndex()),QString::number(threshold));
+        image::basic_image<float,3> tmp = glWidget->other_slices[glWidget->current_visible_slide-1].source_images;
+        glWidget->other_slices[glWidget->current_visible_slide-1].stripskull(renderWidget->getData("fa_threshold").toFloat());
+        glWidget->addSurface();
+        glWidget->other_slices[glWidget->current_visible_slide-1].source_images = tmp;
     }
+    else
+        QMessageBox::information(this,"Error","Load T1W image first");
 }

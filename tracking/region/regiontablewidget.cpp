@@ -470,7 +470,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 void RegionTableWidget::load_region(void)
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
-                                this,"Open region","","Region files (*.txt *.nii *.hdr *nii.gz *.mat);;All files (*)" );
+                                this,"Open region",QDir::currentPath(),"Region files (*.txt *.nii *.hdr *nii.gz *.mat);;All files (*)" );
     if (filenames.isEmpty())
         return;
 

@@ -17,18 +17,22 @@ struct reg_data{
     {
         terminated = false;
         progress = 0;
+        bn_progress = 0;
     }
     image::reg::bfnorm_mapping<float,3> bnorm_data;
     image::affine_transform<3,float> arg;
     int reg_type;
+    int cost_function;
     unsigned char terminated;
     unsigned char progress;
+    unsigned int bn_progress;
 
 };
 void run_reg(const image::basic_image<float,3>& from,
              const image::basic_image<float,3>& to,
              reg_data& data,
-             unsigned int thread_count);
+             unsigned int thread_count,
+             unsigned int cost_function = 0);
 
 class manual_alignment : public QDialog
 {
@@ -51,7 +55,7 @@ public:
     explicit manual_alignment(QWidget *parent,
         image::basic_image<float,3> from_,
         image::basic_image<float,3> to_,
-        const image::vector<3>& scaling,int reg_type = image::reg::affine);
+        const image::vector<3>& scaling,int reg_type, int cost_function = 0);
     ~manual_alignment();
     void connect_arg_update();
     void disconnect_arg_update();

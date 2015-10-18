@@ -14,11 +14,11 @@ struct fa_template{
 template<typename bfnorm_type,typename terminated_class>
 void multi_thread_reg(bfnorm_type& mapping,
                       const image::basic_image<float,3>& VG,
-                      const image::basic_image<float,3>& VFF,unsigned int thread_count,terminated_class& terminated)
+                      const image::basic_image<float,3>& VFF,unsigned int thread_count,unsigned int& iteration,terminated_class& terminated)
 {
     image::reg::bfnorm_mrqcof<image::basic_image<float,3>,float> bf_optimize(VG,VFF,mapping,thread_count);
     // image::reg::bfnorm(VG,VFF,*mni.get(),terminated);
-    for(int iter = 0; iter < 16 && !terminated; ++iter)
+    for(iteration = 0; iteration < 16 && !terminated; ++iteration)
     {
 
         bf_optimize.start();

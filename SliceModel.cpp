@@ -122,6 +122,29 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
         }
     }
 
+    // correction for intensity bias
+    {
+        float t = image::segmentation::otsu_threshold(source_images);
+        std::vector<float> x,y;
+        for(unsigned char dim = 0;dim < 3;++dim)
+        {
+            x.clear();
+            y.clear();
+            for(image::pixel_index<3> i;i.index() < source_images.size();i.next(source_images.geometry()))
+            if(source_images[i.index()] > t)
+            {
+                x.push_back(i[dim]);
+                y.push_back(source_images[i.index()]);
+            }
+            std::pair<double,double> r = image::linear_regression(x.begin(),x.end(),y.begin());
+            for(image::pixel_index<3> i;i.index() < source_images.size();i.next(source_images.geometry()))
+                source_images[i.index()] -= (float)i[dim]*r.first;
+        }
+        image::lower_threshold(source_images,0);
+    }
+
+
+
     roi_image.resize(slice.handle->dim);
     roi_image_buf = &*roi_image.begin();
     if(!has_transform)
@@ -150,6 +173,7 @@ void CustomSliceModel::argmin(int reg_type)
     image::const_pointer_image<float,3> to = source_images;
     image::reg::linear(from,to,arg_min,reg_type,image::reg::mutual_information(),terminated);
     ended = true;
+
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::update(void)
@@ -185,54 +209,18 @@ void CustomSliceModel::get_slice(image::color_image& show_image,const image::val
     v2c.convert(buf,show_image);
 }
 // ---------------------------------------------------------------------------
-bool CustomSliceModel::stripskull(void)
+bool CustomSliceModel::stripskull(float qa_threshold)
 {
-    begin_prog("calculating");
-    if(!load_brain_mask())
+    if(!ended)
         return false;
-    image::basic_image<float,3> to(mni_t1w);
-    image::basic_image<float,3> from(source_images);
-    image::downsampling(to);
-    image::downsampling(from);
-    image::minus_constant(from,image::segmentation::otsu_threshold(from));
-    image::lower_threshold(from,0);
-    image::normalize(from,1);
-
-    image::minus_constant(to,*std::min_element(to.begin(),to.end()));
-    image::normalize(to,1);
-
-    image::hist_norm(to,1000);
-    image::hist_norm(from,1000);
-    image::vector<3,float> vs(voxel_size);
-    vs[0] = 1.0/vs[0];
-    vs[1] = 1.0/vs[1];
-    vs[2] = 1.0/vs[2];
-    std::auto_ptr<manual_alignment> manual(new manual_alignment(0,to,from,vs,image::reg::affine));
-    manual->timer->start();
-    if(manual->exec() != QDialog::Accepted)
-        return false;
-    begin_prog("calculating");
-    manual->update_affine();
-    manual->T.shift[0] *= 2.0;
-    manual->T.shift[1] *= 2.0;
-    manual->T.shift[2] *= 2.0;
-    manual->iT.shift[0] *= 2.0;
-    manual->iT.shift[1] *= 2.0;
-    manual->iT.shift[2] *= 2.0;
-    check_prog(1,3);
-    set_title("stripping skull");
-    for(image::pixel_index<3> index;source_images.geometry().is_valid(index);index.next(source_images.geometry()))
-    {
-        image::vector<3,float> pos(index);
-        manual->iT(pos);// from -> new_from
-        pos += 0.5;
-        pos.floor();
-        if(!mni_t1w.geometry().is_valid(pos) || brain_mask.at(pos[0],pos[1],pos[2]) == 0)
-            source_images[index.index()] = 0;
-    }
-    image::filter::gaussian(source_images);
-    image::filter::anisotropic_diffusion(source_images);
-    image::filter::anisotropic_diffusion(source_images);
-    check_prog(0,0);
+    update();
+    image::basic_image<float,3> filter(source_images.geometry());
+    image::resample(from,filter,transform,image::linear);
+    image::upper_threshold(filter,qa_threshold);
+    image::filter::gaussian(filter);
+    image::filter::gaussian(filter);
+    float m = *std::max_element(source_images.begin(),source_images.end());
+    source_images *= filter;
+    image::normalize(source_images,m);
     return true;
 }

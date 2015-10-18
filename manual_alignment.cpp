@@ -3,8 +3,6 @@
 #include "tracking/tracking_window.h"
 #include "fa_template.hpp"
 #include <boost/thread.hpp>
-typedef image::reg::correlation cost_func;
-
 unsigned int mcc_thread_count = 4;
 struct thread_count_functor{
     unsigned int operator()(void)
@@ -16,13 +14,24 @@ struct thread_count_functor{
 void run_reg(const image::basic_image<float,3>& from,
              const image::basic_image<float,3>& to,
              reg_data& data,
-             unsigned int thread_count)
+             unsigned int thread_count,
+             unsigned int cost_function)
 {
     image::reg::align_center(from,to,data.arg);
     data.progress = 0;
     mcc_thread_count = thread_count;
-    image::reg::linear(from,to,data.arg,data.reg_type,image::reg::mt_correlation<image::basic_image<float,3>,
+    if(cost_function == 1) // mutual information
+    {
+        image::reg::linear(from,to,data.arg,data.reg_type,image::reg::mutual_information(),data.terminated);
+        image::reg::linear(from,to,data.arg,data.reg_type,image::reg::mutual_information(),data.terminated);
+    }
+    else
+    {
+        image::reg::linear(from,to,data.arg,data.reg_type,image::reg::mt_correlation<image::basic_image<float,3>,
                        image::transformation_matrix<3>,boost::thread,thread_count_functor>(0),data.terminated);
+        image::reg::linear(from,to,data.arg,data.reg_type,image::reg::mt_correlation<image::basic_image<float,3>,
+                       image::transformation_matrix<3>,boost::thread,thread_count_functor>(0),data.terminated);
+    }
     if(data.terminated)
         return;
     if(data.reg_type == image::reg::rigid_body)
@@ -38,16 +47,18 @@ void run_reg(const image::basic_image<float,3>& from,
     if(thread_count == 1)
         image::reg::bfnorm(new_from,to,data.bnorm_data,data.terminated);
     else
-        multi_thread_reg(data.bnorm_data,new_from,to,thread_count,data.terminated);
+        multi_thread_reg(data.bnorm_data,new_from,to,thread_count,data.bn_progress,data.terminated);
+    data.bn_progress = 16;
     if(!(data.terminated))
         data.progress = 2;
 }
 
 manual_alignment::manual_alignment(QWidget *parent,
                                    image::basic_image<float,3> from_,
-                                   image::basic_image<float,3> to_,const image::vector<3>& scaling_,int reg_type_) :
+                                   image::basic_image<float,3> to_,const image::vector<3>& scaling_,int reg_type_,int cost_function) :
     QDialog(parent),ui(new Ui::manual_alignment),data(to_.geometry(),reg_type_),scaling(scaling_),timer(0)
 {
+    data.cost_function = cost_function;
     from.swap(from_);
     to.swap(to_);
     image::normalize(from,1.0);
@@ -68,13 +79,14 @@ manual_alignment::manual_alignment(QWidget *parent,
     else
     {
         image::reg::get_bound(from,to,data.arg,b_upper,b_lower,reg_type_);
-        reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),boost::ref(data),boost::thread::hardware_concurrency()));
+        reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),boost::ref(data),boost::thread::hardware_concurrency(),cost_function));
     }
     ui->setupUi(this);
     if(reg_type_ == image::reg::rigid_body)
     {
         ui->scaling_group->hide();
         ui->tilting_group->hide();
+        ui->nl_group_box->hide();
     }
     if(!reg_type_)
     {
@@ -308,6 +320,7 @@ void manual_alignment::check_reg()
         ui->xz->setValue(data.arg.affine[1]);
         ui->yz->setValue(data.arg.affine[2]);
         connect_arg_update();
+        ui->nl_progress_bar->setValue(data.bn_progress);
         update_image();
     }
     slice_pos_moved();
@@ -336,7 +349,7 @@ void manual_alignment::on_rerun_clicked()
         reg_thread->join();
     }
     data.terminated = 0;
-    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),boost::ref(data),boost::thread::hardware_concurrency()));
+    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),boost::ref(data),boost::thread::hardware_concurrency(),data.cost_function));
     if(timer)
         timer->start();
 

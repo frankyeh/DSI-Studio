@@ -104,8 +104,8 @@ public:
 
             if(export_intermediate)
             {
-                VG.save_to_file<image::io::nifti>("VG.nii.gz");
-                VF.save_to_file<image::io::nifti>("VF.nii.gz");
+                VG.save_to_file<image::io::nifti>("Template_QA.nii.gz");
+                VF.save_to_file<image::io::nifti>("Subject_QA.nii.gz");
             }
 
             if(voxel.qsdr_trans.data[0] != 0.0) // has manual reg data
@@ -114,6 +114,8 @@ public:
             {
                 bool terminated = false;
                 mcc_thread_count = voxel.voxel_data.size();
+                image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
+                                   image::transformation_matrix<3>,boost::thread,qsdr_thread_count_functor>(0),terminated);
                 image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
                                    image::transformation_matrix<3>,boost::thread,qsdr_thread_count_functor>(0),terminated);
                 affine = image::transformation_matrix<3,float>(arg_min,VF.geometry(),VG.geometry());
@@ -146,7 +148,7 @@ public:
 
 
         if(export_intermediate)
-            VFF.save_to_file<image::io::nifti>("VFF.nii.gz");
+            VFF.save_to_file<image::io::nifti>("Subject_QA_linear_reg.nii.gz");
 
 
         try
@@ -154,8 +156,9 @@ public:
             begin_prog("normalization");
             terminated_class ter(17);
             unsigned int factor = voxel.reg_method + 1;
+            unsigned int iteration = 0;
             mni.reset(new image::reg::bfnorm_mapping<float,3>(VG.geometry(),image::geometry<3>(factor*7,factor*9,factor*7)));
-            multi_thread_reg(*mni.get(),VG,VFF,voxel.voxel_data.size(),ter);
+            multi_thread_reg(*mni.get(),VG,VFF,voxel.voxel_data.size(),iteration,ter);
 
         }
         catch(...)
@@ -168,7 +171,7 @@ public:
             {
                 image::basic_image<float,3> VFFF(VG.geometry());
                 image::resample(VFF,VFFF,*mni.get(),image::cubic);
-                VFFF.save_to_file<image::io::nifti>("VFFF.nii.gz");
+                VFFF.save_to_file<image::io::nifti>("Subject_QA_nonlinear_reg.nii.gz");
             }
         }
         // setup output bounding box

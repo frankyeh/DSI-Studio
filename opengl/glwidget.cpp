@@ -1610,7 +1610,7 @@ void GLWidget::loadCamera(void)
 {
     QString filename = QFileDialog::getOpenFileName(
             this,
-            "Open Translocation Matrix","","Text files (*.txt);;All files (*)");
+            "Open Translocation Matrix",QDir::currentPath(),"Text files (*.txt);;All files (*)");
     std::ifstream in(filename.toLocal8Bit().begin());
     if(filename.isEmpty() || !in)
         return;
@@ -1669,7 +1669,8 @@ void GLWidget::adjustMapping(void)
                       other_slices[current_visible_slide-1].voxel_size[2]);
     std::auto_ptr<manual_alignment> manual(new manual_alignment(this,
         cur_tracking_window.slice.source_images,
-        other_slices[current_visible_slide-1].source_images,scale,image::reg::rigid_body));
+        other_slices[current_visible_slide-1].source_images,scale,image::reg::rigid_body,1/*mutual info*/));
+    manual->data.arg = other_slices[current_visible_slide-1].arg_min;
     manual->timer->start();
     if(manual->exec() != QDialog::Accepted)
         return;
@@ -1684,7 +1685,7 @@ void GLWidget::loadMapping(void)
     if(!current_visible_slide)
         return;
     QString filename = QFileDialog::getOpenFileName(
-            this,"Open Mapping Matrix","","Text files (*.txt);;All files (*)");
+            this,"Open Mapping Matrix",QDir::currentPath(),"Text files (*.txt);;All files (*)");
     std::ifstream in(filename.toLocal8Bit().begin());
     if(filename.isEmpty() || !in)
         return;

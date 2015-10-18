@@ -205,9 +205,9 @@ void MainWindow::loadFib(QString filename)
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
     new_mdi->setWindowTitle(filename);
     new_mdi->showNormal();
-    QDir::setCurrent(QFileInfo(filename).absolutePath());
     addFib(filename);
     add_work_dir(QFileInfo(filename).absolutePath());
+    QDir::setCurrent(QFileInfo(filename).absolutePath());
 }
 
 void MainWindow::loadSrc(QStringList filenames)
@@ -733,7 +733,7 @@ void MainWindow::on_connectometry_clicked()
     vbc->show();
 }
 
-void MainWindow::on_workDir_currentIndexChanged(const QString &arg1)
+void MainWindow::on_workDir_currentTextChanged(const QString &arg1)
 {
     QDir::setCurrent(arg1);
 }
