@@ -155,9 +155,6 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
         image::lower_threshold(source_images,0);
     }
 
-
-
-
     roi_image.resize(slice.handle->dim);
     roi_image_buf = &*roi_image.begin();
     if(!has_transform)

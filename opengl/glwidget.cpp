@@ -741,11 +741,14 @@ void GLWidget::renderLR(int eye)
         glColor3f (0.3,1.0,0.3);  glVertex3f(0,0,0);  glVertex3f(0,1.5,0);    // Y axis is green.
         glColor3f (0.3,0.3,1.0);  glVertex3f(0,0,0);  glVertex3f(0,0,1.5);    // z axis is blue.
         glEnd();
-        //renderText(0,0,2,"S");
-        glColor3f (1.0,0.3,0.3);
-        //renderText(2,0,0,"L");
-        glColor3f (0.3,1.0,0.3);
-        //renderText(0,2,0,"P");
+        if(get_param("show_axis_text"))
+        {
+            renderText(0,0,2,"S");
+            glColor3f (1.0,0.3,0.3);
+            renderText(2,0,0,"L");
+            glColor3f (0.3,1.0,0.3);
+            renderText(0,2,0,"P");
+        }
         glEnable(GL_DEPTH_TEST);
         glPopMatrix();
         glMatrixMode(GL_PROJECTION);
