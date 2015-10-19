@@ -259,6 +259,8 @@ void drawRegion(RegionModel& cur_region,unsigned char cur_view,
     glNormalPointer(GL_FLOAT, 0, (float*)&cur_region.get()->normal_list.front());
     glDrawElements(GL_TRIANGLES, cur_region.getSortedIndex(cur_view).size(),
                    GL_UNSIGNED_INT,&*cur_region.getSortedIndex(cur_view).begin());
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_NORMAL_ARRAY);
     check_error(__FUNCTION__);
 }
 
@@ -330,11 +332,11 @@ void GLWidget::setFrustum(int eye)
 
 void GLWidget::initializeGL()
 {
-    check_error(__FUNCTION__);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
-    if(!tracts)
-        tracts = glGenLists(1);
+    glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
+    glBlendFunc (GL_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    tracts = glGenLists(1);
     tract_alpha = -1; // ensure that make_track is called
     odf_position = 255;//ensure ODFs is renderred
     check_error(__FUNCTION__);
@@ -475,6 +477,7 @@ void GLWidget::renderLR(int eye)
                 odf_colors.push_back(std::abs(handle->fib.odf_table[index][2]));
             }
         }
+
         glEnable(GL_COLOR_MATERIAL);
         glDisable(GL_LIGHTING);
         glPushMatrix();
@@ -491,8 +494,11 @@ void GLWidget::renderLR(int eye)
             glDrawElements(GL_TRIANGLES, face_size,
                            GL_UNSIGNED_SHORT,handle->fib.odf_faces[0].begin());
         }
+        glDisableClientState(GL_VERTEX_ARRAY);
+        glDisableClientState(GL_COLOR_ARRAY);
         glPopMatrix();
         glDisable(GL_COLOR_MATERIAL);
+
     }
 
     if (tracts && get_param("show_tract"))
@@ -554,6 +560,7 @@ void GLWidget::renderLR(int eye)
         glPopMatrix();
         glDisable(GL_COLOR_MATERIAL);
         glDisable(GL_BLEND);
+        glDisable(GL_TEXTURE_2D);
         glDepthMask(true);
         check_error("show_tract");
     }
@@ -704,7 +711,6 @@ void GLWidget::renderLR(int eye)
         glPopMatrix();
         check_error("show_surface");
     }
-
     if (get_param("show_axis"))
     {
         glEnable(GL_COLOR_MATERIAL);

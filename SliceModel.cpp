@@ -122,9 +122,20 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
         }
     }
 
-    // correction for intensity bias
+    // quality control for t1w
     {
         float t = image::segmentation::otsu_threshold(source_images);
+        float snr = image::mean(source_images.begin()+source_images.width(),source_images.begin()+2*source_images.width());
+        // correction for SNR
+        for(unsigned int i = 0;i < 6 && snr != 0 && t/snr < 10;++i)
+        {
+            image::filter::gaussian(source_images);
+            t = image::segmentation::otsu_threshold(source_images);
+            snr = image::mean(source_images.begin()+source_images.width(),source_images.begin()+2*source_images.width());
+        }
+
+        // correction for intensity bias
+        t = image::segmentation::otsu_threshold(source_images);
         std::vector<float> x,y;
         for(unsigned char dim = 0;dim < 3;++dim)
         {
@@ -138,10 +149,12 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
             }
             std::pair<double,double> r = image::linear_regression(x.begin(),x.end(),y.begin());
             for(image::pixel_index<3> i;i.index() < source_images.size();i.next(source_images.geometry()))
-                source_images[i.index()] -= (float)i[dim]*r.first;
+                if(source_images[i.index()] > t)
+                    source_images[i.index()] -= (float)i[dim]*r.first;
         }
         image::lower_threshold(source_images,0);
     }
+
 
 
 
