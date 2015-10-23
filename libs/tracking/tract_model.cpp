@@ -1553,10 +1553,9 @@ void ConnectivityMatrix::save_to_file(const char* file_name)
 void ConnectivityMatrix::set_atlas(atlas& data,const image::basic_image<image::vector<3,float>,3 >& mni_position)
 {
     image::geometry<3> geo(mni_position.geometry());
-    region_table_type region_table;
     image::vector<3> null;
-    std::vector<float> atlas_region_order;
-    data.calculate_order(atlas_region_order);
+    regions.clear();
+    region_name.clear();
     for (unsigned int label_index = 0; label_index < data.get_list().size(); ++label_index)
     {
         std::vector<image::vector<3,short> > cur_region;
@@ -1564,24 +1563,8 @@ void ConnectivityMatrix::set_atlas(atlas& data,const image::basic_image<image::v
             if(mni_position[index.index()] != null &&
                data.label_matched(data.get_label_at(mni_position[index.index()]),label_index))
                 cur_region.push_back(image::vector<3,short>(index.begin()));
-        region_table.insert(std::make_pair(atlas_region_order[label_index],
-                                               std::make_pair(cur_region,data.get_list()[label_index])));
-    }
-    set_regions(region_table);
-}
-
-void ConnectivityMatrix::set_regions(const region_table_type& region_table)
-{
-    regions.resize(region_table.size());
-    region_name.resize(region_table.size());
-    region_table_type::const_iterator iter = region_table.begin();
-    region_table_type::const_iterator end = region_table.end();
-    for(unsigned int index = 0;iter != end;++iter,++index)
-    {
-        regions[index] = iter->second.first;
-        region_name[index] = iter->second.second;
-        // replace space by _
-        std::replace(region_name[index].begin(),region_name[index].end(),' ','_');
+        regions.push_back(cur_region);
+        region_name.push_back(data.get_list()[label_index]);
     }
 }
 

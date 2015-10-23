@@ -145,7 +145,8 @@ int ana(int ac, char *av[])
             return 0;
         }
         ConnectivityMatrix data;
-        ConnectivityMatrix::region_table_type region_table;
+        data.regions.clear();
+        data.region_name.clear();
         for(unsigned int value = 1;value < value_map.size();++value)
             if(value_map[value])
             {
@@ -163,12 +164,11 @@ int ana(int ac, char *av[])
                 pos /= cur_region.size();
                 std::ostringstream out;
                 out << "region" << value;
-                region_table.insert(std::make_pair(pos[0] > (geometry[0] >> 1) ? pos[1]-geometry[1]:geometry[1]-pos[1],
-                                    std::make_pair(cur_region,out.str())));
+                data.regions.push_back(cur_region);
+                data.region_name.push_back(out.str());
             }
-        std::cout << "total number of regions=" << region_table.size() << std::endl;
+        std::cout << "total number of regions=" << data.regions.size() << std::endl;
         std::cout << "total number of tracts=" << tract_model.get_tracts().size() << std::endl;
-        data.set_regions(region_table);
         std::cout << "calculating connectivity matrix..." << std::endl;
         std::cout << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
         QStringList value_list = QString(vm["connectivity_value"].as<std::string>().c_str()).split(",");

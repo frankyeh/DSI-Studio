@@ -92,7 +92,8 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
 
     if(ui->region_list->currentIndex() == 0)
         {
-            ConnectivityMatrix::region_table_type region_table;
+            data.regions.clear();
+            data.region_name.clear();
             for(unsigned int index = 0;index < cur_tracking_window->regionWidget->regions.size();++index)
             if(cur_tracking_window->regionWidget->item(index,0)->checkState() == Qt::Checked)
             {
@@ -100,10 +101,9 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
                         cur_tracking_window->regionWidget->regions[index].get();
                 image::vector<3,float> pos = std::accumulate(cur_region.begin(),cur_region.end(),image::vector<3,float>(0,0,0));
                 pos /= cur_region.size();
-                region_table.insert(std::make_pair((float)(pos[0] > (geo[0] >> 1) ? pos[1]-geo[1]:geo[1]-pos[1]),
-                                                   std::make_pair(cur_region,std::string(cur_tracking_window->regionWidget->item(index,0)->text().toLocal8Bit().begin()))));
+                data.regions.push_back(cur_region);
+                data.region_name.push_back(std::string(cur_tracking_window->regionWidget->item(index,0)->text().toLocal8Bit().begin()));
             }
-            data.set_regions(region_table);
         }
     else
     {
