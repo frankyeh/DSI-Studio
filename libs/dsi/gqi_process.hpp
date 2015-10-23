@@ -92,6 +92,7 @@ public:
             image::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
                                     image::dyndim(data.odf.size(),data.space.size()));
     }
+
 };
 
 class SchemeConverter : public BaseProcess
@@ -212,75 +213,79 @@ public:
     }
 };
 
+template<typename value_type>
+value_type sinint(value_type x)
+{
+    bool sgn = x > 0;
+    x = std::fabs(x);
+    value_type eps = 1e-15;
+    value_type x2 = x*x;
+    value_type si;
+    if(x == 0.0)
+        return 0.0;
+    if(x <= 16.0)
+    {
+        value_type xr = x;
+        si = x;
+        for(unsigned int k = 1;k <= 40;++k)
+        {
+            si += (xr *= -0.5*(value_type)(2*k-1)/(value_type)k/(value_type)(4*k*(k+1)+1)*x2);
+            if(std::fabs(xr) < std::fabs(si)*eps)
+                break;
+        }
+        return sgn ? si:-si;
+    }
+
+    if(x <= 32.0)
+    {
+        unsigned int m = std::floor(47.2+0.82*x);
+        std::vector<double> bj(m+1);
+        value_type xa1 = 0.0;
+        value_type xa0 = 1.0e-100;
+        for(unsigned int k=m;k>=1;--k)
+        {
+            value_type xa = 4.0*(value_type)k*xa0/x-xa1;
+            bj[k-1] = xa;
+            xa1 = xa0;
+            xa0 = xa;
+        }
+        value_type xs = bj[0];
+        for(unsigned int k=3;k <= m;k += 2)
+            xs += 2.0*bj[k-1];
+        for(unsigned int k=0;k < m;++k)
+            bj[k] /= xs;
+        value_type xr = 1.0;
+        value_type xg1 = bj[0];
+        for(int k=2;k <= m;++k)
+            xg1 += bj[k-1]*(xr *= 0.25*(2*k-3)*(2*k-3)/((k-1)*(2*k-1)*(2*k-1))*x);
+        xr = 1.0;
+        value_type xg2 = bj[0];
+        for(int k=2;k <= m;++k)
+            xg2 += bj[k-1]*(xr *= 0.25*(2*k-5)*(2*k-5)/((k-1)*(2*k-3)*(2*k-3))*x);
+        si = x*std::cos(x/2.0)*xg1+2.0*std::sin(x/2.0)*xg2-std::sin(x);
+        return sgn ? si:-si;
+    }
+
+    value_type xr = 1.0;
+    value_type xf = 1.0;
+    for(unsigned int k=1;k <= 9;++k)
+        xf += (xr *= -2.0*k*(2*k-1)/x2);
+    xr = 1.0/x;
+    value_type xg = xr;
+    for(unsigned int k=1;k <= 8;++k)
+        xg += (xr *= -2.0*(2*k+1)*k/x2);
+    si = 1.570796326794897-xf*std::cos(x)/x-xg*std::sin(x)/x;
+    return sgn ? si:-si;
+}
+
+
 class QSpaceSpectral  : public BaseProcess
 {
 public:
     static const int max_length = 50; // 50 microns
     std::vector<unsigned int> b0_images;
     std::vector<std::vector<float> > cdf,dis,cdfw,disw;
-    double sinint(double x)
-    {
-        bool sgn = x > 0;
-        x = std::fabs(x);
-        double eps = 1e-15;
-        double x2 = x*x;
-        double si;
-        if(x == 0.0)
-            return 0.0;
-        if(x <= 16.0)
-        {
-            double xr = x;
-            si = x;
-            for(unsigned int k = 1;k <= 40;++k)
-            {
-                si += (xr *= -0.5*(double)(2*k-1)/(double)k/(double)(4*k*(k+1)+1)*x2);
-                if(std::fabs(xr) < std::fabs(si)*eps)
-                    break;
-            }
-            return sgn ? si:-si;
-        }
 
-        if(x <= 32.0)
-        {
-            unsigned int m = std::floor(47.2+0.82*x);
-            std::vector<double> bj(m+1);
-            double xa1 = 0.0;
-            double xa0 = 1.0e-100;
-            for(unsigned int k=m;k>=1;--k)
-            {
-                double xa = 4.0*(double)k*xa0/x-xa1;
-                bj[k-1] = xa;
-                xa1 = xa0;
-                xa0 = xa;
-            }
-            double xs = bj[0];
-            for(unsigned int k=3;k <= m;k += 2)
-                xs += 2.0*bj[k-1];
-            for(unsigned int k=0;k < m;++k)
-                bj[k] /= xs;
-            double xr = 1.0;
-            double xg1 = bj[0];
-            for(int k=2;k <= m;++k)
-                xg1 += bj[k-1]*(xr *= 0.25*(2*k-3)*(2*k-3)/((k-1)*(2*k-1)*(2*k-1))*x);
-            xr = 1.0;
-            double xg2 = bj[0];
-            for(int k=2;k <= m;++k)
-                xg2 += bj[k-1]*(xr *= 0.25*(2*k-5)*(2*k-5)/((k-1)*(2*k-3)*(2*k-3))*x);
-            si = x*std::cos(x/2.0)*xg1+2.0*std::sin(x/2.0)*xg2-std::sin(x);
-            return sgn ? si:-si;
-        }
-
-        double xr = 1.0;
-        double xf = 1.0;
-        for(unsigned int k=1;k <= 9;++k)
-            xf += (xr *= -2.0*k*(2*k-1)/x2);
-        xr = 1.0/x;
-        double xg = xr;
-        for(unsigned int k=1;k <= 8;++k)
-            xg += (xr *= -2.0*(2*k+1)*k/x2);
-        si = 1.570796326794897-xf*std::cos(x)/x-xg*std::sin(x)/x;
-        return sgn ? si:-si;
-    }
 
     double base_function(double theta)
     {
@@ -367,5 +372,82 @@ public:
     }
 };
 
+class RestrictedDiffusionImaging  : public BaseProcess
+{
+private:
+    std::vector<std::vector<float> > rdi,rdi_n;
+    std::vector<std::vector<float> > rdi_value,rdi_n_value;
 
+    double base_function(double theta)
+    {
+        if(std::abs(theta) < 0.000001)
+            return 1.0/3.0;
+        return (2*std::cos(theta)+(theta-2.0/theta)*std::sin(theta))/theta/theta;
+    }
+public:
+    virtual void init(Voxel& voxel)
+    {
+        float sigma = voxel.param[0]; //optimal 1.24
+        if(!voxel.output_rdi)
+            return;
+        for(float L = 0.1;L <= sigma;L+= 0.1)
+        {
+            rdi.push_back(std::vector<float>());
+            rdi_value.push_back(std::vector<float>());
+            rdi_n.push_back(std::vector<float>());
+            rdi_n_value.push_back(std::vector<float>());
+
+            rdi.back().resize(voxel.bvalues.size());
+            rdi_value.back().resize(voxel.dim.size());
+            for(unsigned int index = 0;index < voxel.bvalues.size();++index)
+            {
+                float q = std::sqrt(voxel.bvalues[index]*0.01506);
+                rdi.back()[index] = (q > 0)? sinint(L*q)/q: L;
+            }
+            rdi_n.back().resize(voxel.bvalues.size());
+            rdi_n_value.back().resize(voxel.dim.size());
+            for(unsigned int index = 0;index < voxel.bvalues.size();++index)
+            {
+                float q = std::sqrt(voxel.bvalues[index]*0.01506);
+                rdi_n.back()[index] = ((q > 0)? sinint(sigma*q)/q: sigma)-rdi.back()[index];
+            }
+        }
+    }
+    virtual void run(Voxel& voxel, VoxelData& data)
+    {
+        if(!voxel.output_rdi)
+            return;
+        for(unsigned int index = 0;index < rdi.size();++index)
+        {
+            rdi_value[index][data.voxel_index] = image::vec::dot(rdi[index].begin(),rdi[index].end(),data.space.begin());
+            rdi_n_value[index][data.voxel_index] = image::vec::dot(rdi_n[index].begin(),rdi_n[index].end(),data.space.begin());
+        }
+    }
+    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
+    {
+        if(!voxel.output_rdi)
+            return;
+        for(unsigned int i = 0;i < rdi.size();++i)
+        {
+            image::lower_threshold(rdi_value[i],0);
+            image::lower_threshold(rdi_n_value[i],0);
+        }
+        float L = 0.1;
+        for(unsigned int i = 0;i < rdi.size();++i,L += 0.1)
+        {
+            std::ostringstream out;
+            out.precision(2);
+            out << "rdi" << L;
+            mat_writer.write(out.str().c_str(),&*rdi_value[i].begin(),1,rdi_value[i].size());
+        }
+        L = 0.1;
+        for(unsigned int i = 0;i < rdi.size();++i,L += 0.1)
+        {
+            std::ostringstream out2;
+            out2.precision(2);
+            out2 << "rdi_n" << L;
+            mat_writer.write(out2.str().c_str(),&*rdi_n_value[i].begin(),1,rdi_n_value[i].size());
+        }
+    }
+};
 #endif//DDI_PROCESS_HPP

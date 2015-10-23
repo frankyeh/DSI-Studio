@@ -108,6 +108,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->RecordODF->setChecked(settings.value("rec_record_odf",0).toInt());
     ui->output_jacobian->setChecked(settings.value("output_jacobian",0).toInt());
     ui->output_mapping->setChecked(settings.value("output_mapping",0).toInt());
+    ui->rdi->setChecked(settings.value("output_rdi",0).toInt());
     ui->check_btable->setChecked(settings.value("check_btable",1).toInt());
 
     ui->report->setText(handle->voxel.report.c_str());
@@ -270,6 +271,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     settings.setValue("rec_record_odf",ui->RecordODF->isChecked() ? 1 : 0);
     settings.setValue("output_jacobian",ui->output_jacobian->isChecked() ? 1 : 0);
     settings.setValue("output_mapping",ui->output_mapping->isChecked() ? 1 : 0);
+    settings.setValue("output_rdi",ui->rdi->isChecked() ? 1 : 0);
     settings.setValue("check_btable",ui->check_btable->isChecked() ? 1 : 0);
 
     begin_prog("reconstruction",true);
@@ -288,6 +290,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.need_odf = ui->RecordODF->isChecked() ? 1 : 0;
     handle->voxel.output_jacobian = ui->output_jacobian->isChecked() ? 1 : 0;
     handle->voxel.output_mapping = ui->output_mapping->isChecked() ? 1 : 0;
+    handle->voxel.output_rdi = ui->rdi->isChecked() ? 1 : 0;
     if(method_id == 7 || method_id == 4)
     {
         handle->voxel.half_sphere = ui->half_sphere->isChecked() ? 1:0;
@@ -457,6 +460,8 @@ void reconstruction_window::on_DTI_toggled(bool checked)
     ui->output_mapping->setVisible(!checked);
     ui->output_jacobian->setVisible(!checked);
     ui->RecordODF->setVisible(!checked);
+    ui->rdi->setVisible(!checked);
+
 
 }
 
@@ -473,6 +478,7 @@ void reconstruction_window::on_DSI_toggled(bool checked)
     ui->output_mapping->setVisible(!checked);
     ui->output_jacobian->setVisible(!checked);
     ui->RecordODF->setVisible(checked);
+    ui->rdi->setVisible(!checked);
 
 }
 
@@ -489,6 +495,7 @@ void reconstruction_window::on_QBI_toggled(bool checked)
     ui->output_mapping->setVisible(!checked);
     ui->output_jacobian->setVisible(!checked);
     ui->RecordODF->setVisible(checked);
+    ui->rdi->setVisible(!checked);
 
 }
 
@@ -506,7 +513,7 @@ void reconstruction_window::on_GQI_toggled(bool checked)
     ui->output_jacobian->setVisible(!checked);
     ui->RecordODF->setVisible(checked);
 
-
+    ui->rdi->setVisible(checked);
 }
 
 void reconstruction_window::on_QDif_toggled(bool checked)
@@ -522,6 +529,7 @@ void reconstruction_window::on_QDif_toggled(bool checked)
     ui->output_mapping->setVisible(checked);
     ui->output_jacobian->setVisible(checked);
     ui->RecordODF->setVisible(checked);
+    ui->rdi->setVisible(!checked);
 
 
 }

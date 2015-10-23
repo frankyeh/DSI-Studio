@@ -82,6 +82,7 @@ public:
     // used in QSDR only
     bool output_jacobian;
     bool output_mapping;
+    bool output_rdi;
     image::vector<3,int> csf_pos1,csf_pos2;
     double R2;
 public: // for QSDR associated T1WT2W
