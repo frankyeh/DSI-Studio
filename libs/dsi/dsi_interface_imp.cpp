@@ -73,7 +73,8 @@ typedef odf_reco_type<boost::mpl::vector<
 
 typedef odf_reco_type<boost::mpl::vector<
     BalanceScheme,
-    QSpace2Odf
+    QSpace2Odf,
+    RestrictedDiffusionImaging
 > >::type gqi_process;
 
 typedef boost::mpl::vector<
@@ -234,6 +235,7 @@ const char* reconstruction(ImageModel* image_model,
             image_model->voxel.need_odf = 0;
             image_model->voxel.output_jacobian = 0;
             image_model->voxel.output_mapping = 0;
+            image_model->voxel.output_rdi = 0;
             image_model->voxel.scheme_balance = 0;
             image_model->voxel.half_sphere = 0;
             image_model->voxel.odf_deconvolusion = 0;
@@ -362,14 +364,14 @@ const char* reconstruction(ImageModel* image_model,
             if(param_values[0] == 0.0) // spectral analysis
             {
                 image_model->voxel.recon_report <<
-                " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, 2010).";
+                " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010).";
                 out << (image_model->voxel.r2_weighted ? ".gqi2.spec.fib.gz":".gqi.spec.fib.gz");
                 if (!image_model->reconstruct<gqi_spectral_process>(thread_count))
                     return "reconstruction canceled";
                 break;
             }
             image_model->voxel.recon_report <<
-            " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, 2010) with a diffusion sampling length ratio of " << (float)param_values[0] << ".";
+            " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010) with a diffusion sampling length ratio of " << (float)param_values[0] << ".";
             if (image_model->voxel.odf_deconvolusion || image_model->voxel.odf_decomposition)
             {
                 if (!image_model->reconstruct<gqi_estimate_response_function>(thread_count))
@@ -377,6 +379,8 @@ const char* reconstruction(ImageModel* image_model,
             }
             if(image_model->voxel.r2_weighted)
                 image_model->voxel.recon_report << " The ODF calculation was weighted by the square of the diffuion displacement.";
+            if (image_model->voxel.output_rdi)
+                out << ".rdi";
             out << (image_model->voxel.r2_weighted ? ".gqi2.":".gqi.") << param_values[0] << ".fib.gz";
             if (!image_model->reconstruct<gqi_process>(thread_count))
                 return "reconstruction canceled";
@@ -392,8 +396,9 @@ const char* reconstruction(ImageModel* image_model,
             break;
         case 7:
             image_model->voxel.recon_report
-            << " The diffusion data were reconstructed using q-space diffeomorphic reconstruction (Yeh et al., Neuroimage, 2011) with a diffusion sampling length ratio of "
-            << (float)param_values[0] << ". The output resolution was " << param_values[1] << " mm.";
+            << " The diffusion data were reconstructed in the MNI space using q-space diffeomorphic reconstruction (Yeh et al., Neuroimage, 58(1):91-9, 2011) to obtain the spin distribution function (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010). "
+            << " A diffusion sampling length ratio of "
+            << (float)param_values[0] << " was used, and the output resolution was " << param_values[1] << " mm.";
             // run gqi to get the spin quantity
             if (!image_model->reconstruct<gqi_estimate_response_function>(thread_count))
                 return "reconstruction canceled";
