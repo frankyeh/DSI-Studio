@@ -375,15 +375,8 @@ public:
 class RestrictedDiffusionImaging  : public BaseProcess
 {
 private:
-    std::vector<std::vector<float> > rdi,rdi_n;
-    std::vector<std::vector<float> > rdi_value,rdi_n_value;
-
-    double base_function(double theta)
-    {
-        if(std::abs(theta) < 0.000001)
-            return 1.0/3.0;
-        return (2*std::cos(theta)+(theta-2.0/theta)*std::sin(theta))/theta/theta;
-    }
+    std::vector<std::vector<float> > rdi;
+    std::vector<std::vector<float> > rdi_value;
 public:
     virtual void init(Voxel& voxel)
     {
@@ -394,22 +387,12 @@ public:
         {
             rdi.push_back(std::vector<float>());
             rdi_value.push_back(std::vector<float>());
-            rdi_n.push_back(std::vector<float>());
-            rdi_n_value.push_back(std::vector<float>());
-
             rdi.back().resize(voxel.bvalues.size());
             rdi_value.back().resize(voxel.dim.size());
             for(unsigned int index = 0;index < voxel.bvalues.size();++index)
             {
-                float q = std::sqrt(voxel.bvalues[index]*0.01506);
+                float q = std::sqrt(voxel.bvalues[index]*0.018);
                 rdi.back()[index] = (q > 0)? sinint(L*q)/q: L;
-            }
-            rdi_n.back().resize(voxel.bvalues.size());
-            rdi_n_value.back().resize(voxel.dim.size());
-            for(unsigned int index = 0;index < voxel.bvalues.size();++index)
-            {
-                float q = std::sqrt(voxel.bvalues[index]*0.01506);
-                rdi_n.back()[index] = ((q > 0)? sinint(sigma*q)/q: sigma)-rdi.back()[index];
             }
         }
     }
@@ -417,21 +400,18 @@ public:
     {
         if(!voxel.output_rdi)
             return;
+        float last_value = 0;
         for(unsigned int index = 0;index < rdi.size();++index)
         {
-            rdi_value[index][data.voxel_index] = image::vec::dot(rdi[index].begin(),rdi[index].end(),data.space.begin());
-            rdi_n_value[index][data.voxel_index] = image::vec::dot(rdi_n[index].begin(),rdi_n[index].end(),data.space.begin());
+            // incremental
+            rdi_value[index][data.voxel_index] = std::max<float>(last_value,image::vec::dot(rdi[index].begin(),rdi[index].end(),data.space.begin()));
+            last_value = rdi_value[index][data.voxel_index];
         }
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
         if(!voxel.output_rdi)
             return;
-        for(unsigned int i = 0;i < rdi.size();++i)
-        {
-            image::lower_threshold(rdi_value[i],0);
-            image::lower_threshold(rdi_n_value[i],0);
-        }
         float L = 0.1;
         for(unsigned int i = 0;i < rdi.size();++i,L += 0.1)
         {
@@ -440,13 +420,16 @@ public:
             out << "rdi" << L;
             mat_writer.write(out.str().c_str(),&*rdi_value[i].begin(),1,rdi_value[i].size());
         }
+        for(unsigned int i = 0;i < voxel.dim.size();++i)
+        for(unsigned int j = 0;j < rdi.size();++j)
+            rdi_value[j][i] = rdi_value[rdi.size()-1][i]-rdi_value[j][i];
         L = 0.1;
         for(unsigned int i = 0;i < rdi.size();++i,L += 0.1)
         {
             std::ostringstream out2;
             out2.precision(2);
             out2 << "rdi_n" << L;
-            mat_writer.write(out2.str().c_str(),&*rdi_n_value[i].begin(),1,rdi_n_value[i].size());
+            mat_writer.write(out2.str().c_str(),&*rdi_value[i].begin(),1,rdi_value[i].size());
         }
     }
 };
