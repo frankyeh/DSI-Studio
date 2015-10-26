@@ -122,9 +122,9 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         }
 
 
-        if(QFileInfo(t1[0]).exists() && glWidget->addSlices(t1))
+        if(QFileInfo(t1[0]).exists() && glWidget->addSlices(t1,false))
             add_slice_name("T1w");
-        if(QFileInfo(wm[0]).exists() && glWidget->addSlices(wm))
+        if(QFileInfo(wm[0]).exists() && glWidget->addSlices(wm,false))
             add_slice_name("wm");
 
     }
@@ -845,7 +845,7 @@ void tracking_window::on_actionInsert_T1_T2_triggered()
         this,"Open Images files",QDir::currentPath(),"Image files (*.dcm *.hdr *.nii *nii.gz 2dseq);;All files (*)" );
     if( filenames.isEmpty())
         return;
-    if(glWidget->addSlices(filenames))
+    if(glWidget->addSlices(filenames,true))
         add_slice_name(QFileInfo(filenames[0]).baseName());
 }
 

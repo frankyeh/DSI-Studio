@@ -77,7 +77,7 @@ void CustomSliceModel::init(void)
     if(scale != 0.0)
         scale = 255.0/scale;
 }
-bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::vector<std::string>& files)
+bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::vector<std::string>& files,bool correct_intensity)
 {
     terminated = true;
     ended = true;
@@ -123,6 +123,7 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
     }
 
     // quality control for t1w
+    if(correct_intensity)
     {
         float t = image::segmentation::otsu_threshold(source_images);
         float snr = image::mean(source_images.begin()+source_images.width(),source_images.begin()+2*source_images.width());
@@ -152,7 +153,6 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
                 if(source_images[i.index()] > t)
                     source_images[i.index()] -= (float)i[dim]*r.first;
         }
-        image::lower_threshold(source_images,0);
     }
 
     roi_image.resize(slice.handle->dim);

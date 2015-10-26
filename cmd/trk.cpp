@@ -280,7 +280,7 @@ int trk(int ac, char *av[])
         FibSliceModel slice(handle.get());
         CustomSliceModel new_slice;
         std::cout << "Loading reference image:" << vm["ref"].as<std::string>() << std::endl;
-        if(!new_slice.initialize(slice,!(handle->trans_to_mni.empty())/*is_qsdr*/,files))
+        if(!new_slice.initialize(slice,!(handle->trans_to_mni.empty())/*is_qsdr*/,files,false))
         {
             std::cout << "Error reading ref image file:" << vm["ref"].as<std::string>() << std::endl;
             return 0;

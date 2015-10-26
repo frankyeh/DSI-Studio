@@ -52,7 +52,7 @@ Q_OBJECT
 
 
      unsigned int current_visible_slide;
-     bool addSlices(QStringList filenames);
+     bool addSlices(QStringList filenames,bool correct_intensity);
      void delete_slice(int index);
      const image::geometry<3>& getCurrentGeo(void) const
      {return other_slices[current_visible_slide-1].geometry;}

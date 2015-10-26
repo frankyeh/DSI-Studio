@@ -152,7 +152,7 @@ public:
         init();
     }
     void init(void);
-    bool initialize(FibSliceModel& slice,bool is_qsdr,const std::vector<std::string>& files);
+    bool initialize(FibSliceModel& slice,bool is_qsdr,const std::vector<std::string>& files,bool correct_intensity);
 public:
     std::pair<float,float> get_value_range(void) const;
     void get_slice(image::color_image& image,const image::value_to_color<float>& v2c) const;
