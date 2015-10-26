@@ -46,6 +46,7 @@ protected:
 protected:
     image::basic_image<float,3> VG,VF;
     image::vector<3> VGvs;
+    float voxel_size; // output resolution
 protected: // for warping other image modality
     std::vector<image::basic_image<float,3> > other_image,other_image_x,other_image_y,other_image_z;
 protected:
@@ -72,7 +73,7 @@ public:
             throw std::runtime_error("No spatial information found in src file. Recreate src file or contact developer for assistance");
         bool export_intermediate = false;
         begin_prog("normalization");
-
+        voxel_size = voxel.param[1];
         VG = fa_template_imp.I;
         VF = voxel.qa_map;
 
@@ -157,27 +158,48 @@ public:
             terminated_class ter(17);
             unsigned int factor = voxel.reg_method + 1;
             unsigned int iteration = 0;
-            mni.reset(new image::reg::bfnorm_mapping<float,3>(VG.geometry(),image::geometry<3>(factor*7,factor*9,factor*7)));
-            multi_thread_reg(*mni.get(),VG,VFF,voxel.voxel_data.size(),iteration,ter);
 
+            if(voxel_size < 0.99)
+            {
+                image::geometry<3> geo2(VG.width()/voxel_size,VG.height()/voxel_size,VG.depth()/voxel_size);
+                image::basic_image<float,3> VG2(geo2),VFF2(geo2);
+                image::transformation_matrix<3> m;
+                m.scaling_rotation[0] = voxel_size;
+                m.scaling_rotation[4] = voxel_size;
+                m.scaling_rotation[8] = voxel_size;
+                image::resample(VG,VG2,m,image::cubic);
+                image::resample(VFF,VFF2,m,image::cubic);
+                mni.reset(new image::reg::bfnorm_mapping<float,3>(geo2,image::geometry<3>(factor*7,factor*9,factor*7)));
+                multi_thread_reg(*mni.get(),VG2,VFF2,voxel.voxel_data.size(),iteration,ter);
+                voxel.R2 = -image::reg::correlation()(VG2,VFF2,(*mni.get()));
+                if(export_intermediate)
+                {
+                    image::basic_image<float,3> VFFF2(VG2.geometry());
+                    image::resample(VFF2,VFFF2,*mni.get(),image::cubic);
+                    VFFF2.save_to_file<image::io::nifti>("Subject_QA_nonlinear_reg.nii.gz");
+                }
+            }
+            else
+            {
+                mni.reset(new image::reg::bfnorm_mapping<float,3>(VG.geometry(),image::geometry<3>(factor*7,factor*9,factor*7)));
+                multi_thread_reg(*mni.get(),VG,VFF,voxel.voxel_data.size(),iteration,ter);
+                voxel.R2 = -image::reg::correlation()(VG,VFF,(*mni.get()));
+                if(export_intermediate)
+                {
+                    image::basic_image<float,3> VFFF(VG.geometry());
+                    image::resample(VFF,VFFF,*mni.get(),image::cubic);
+                    VFFF.save_to_file<image::io::nifti>("Subject_QA_nonlinear_reg.nii.gz");
+                }
+            }
         }
         catch(...)
         {
             throw std::runtime_error("Registration failed due to memory insufficiency.");
         }
-        {
-            voxel.R2 = -image::reg::correlation()(VG,VFF,(*mni.get()));
-            if(export_intermediate)
-            {
-                image::basic_image<float,3> VFFF(VG.geometry());
-                image::resample(VFF,VFFF,*mni.get(),image::cubic);
-                VFFF.save_to_file<image::io::nifti>("Subject_QA_nonlinear_reg.nii.gz");
-            }
-        }
+
         // setup output bounding box
         {
             //setBoundingBox(-78,-112,-50,78,76,85,1.0);
-            float voxel_size = voxel.param[1];
             bounding_box_lower[0] = std::floor(-78.0/voxel_size+0.5)*voxel_size;
             bounding_box_lower[1] = std::floor(-112.0/voxel_size+0.5)*voxel_size;
             bounding_box_lower[2] = std::floor(-50.0/voxel_size+0.5)*voxel_size;
@@ -297,19 +319,8 @@ public:
         z /= scale[2];
         return image::vector<3,int>(x,y,z);
     }
-
-    void get_jacobian(const image::vector<3,double>& pos,image::matrix<3,3,float>& jacobian)
-    {
-        image::matrix<3,3,float> M;
-        image::reg::bfnorm_get_jacobian(*mni.get(),pos,M.begin());
-        std::copy(affine.get(),affine.get()+9,jacobian.begin());
-        jacobian *= M;
-    }
-
     template<typename interpolation_type>
-    void interpolate_dwi(Voxel& voxel, VoxelData& data,
-                         const image::vector<3,double>& pos,
-                         const image::vector<3,double>& Jpos,interpolation_type)
+    void interpolate_dwi(Voxel& voxel, VoxelData& data,const image::vector<3,double>& Jpos,interpolation_type)
     {
         interpolation_type interpolation;
 
@@ -346,8 +357,6 @@ public:
             interpolation.get_location(voxel.other_image[index].geometry(),Opos);
             interpolation.estimate(voxel.other_image[index],other_image[index][data.voxel_index]);
         }
-
-        get_jacobian(pos,data.jacobian);
         if(!voxel.grad_dev.empty())
         {
             image::matrix<3,3,float> grad_dev,new_j;
@@ -366,21 +375,31 @@ public:
         pos[1] *= scale[1];
         pos[2] *= scale[2];
         pos += des_offset;
+        if(voxel_size < 0.99)
+            pos /= voxel_size;
         pos += 0.5;
         pos.floor();
         (*mni.get())(pos,Jpos);
+        if(voxel_size < 0.99)
+            Jpos *= voxel_size;
         affine(Jpos);
+
+        image::matrix<3,3,float> M;
+        image::reg::bfnorm_get_jacobian(*mni.get(),pos,M.begin());
+        std::copy(affine.get(),affine.get()+9,data.jacobian.begin());
+        data.jacobian *= M;
+
 
         switch(voxel.interpo_method)
         {
         case 0:
-            interpolate_dwi(voxel,data,pos,Jpos,image::interpolation<image::linear_weighting,3>());
+            interpolate_dwi(voxel,data,Jpos,image::interpolation<image::linear_weighting,3>());
             break;
         case 1:
-            interpolate_dwi(voxel,data,pos,Jpos,image::interpolation<image::gaussian_radial_basis_weighting,3>());
+            interpolate_dwi(voxel,data,Jpos,image::interpolation<image::gaussian_radial_basis_weighting,3>());
             break;
         case 2:
-            interpolate_dwi(voxel,data,pos,Jpos,image::cubic_interpolation<3>());
+            interpolate_dwi(voxel,data,Jpos,image::cubic_interpolation<3>());
             break;
         }
         data.jdet = std::abs(data.jacobian.det()*voxel_volume_scale);
