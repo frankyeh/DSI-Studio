@@ -101,7 +101,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->decon_param->setValue(settings.value("rec_deconvolution_param",3.0).toDouble());
     ui->decom_m->setValue(settings.value("rec_decom_m",10).toInt());
 
-    ui->mni_resolution->setValue(settings.value("rec_mni_resolution",2.0).toDouble());
+    ui->resolution->setCurrentIndex(settings.value("rec_resolution",2).toInt());
 
     ui->ODFDim->setCurrentIndex(settings.value("odf_order",3).toInt());
 
@@ -435,8 +435,9 @@ void reconstruction_window::on_doDTI_clicked()
             settings.setValue("rec_gqi_sampling",ui->diffusion_sampling->value());
             if(ui->QDif->isChecked())
             {
-                params[1] = ui->mni_resolution->value();
-                settings.setValue("rec_mni_resolution",params[1]);
+                float res[4] = {0.5,1.0,2.0,3.0};
+                params[1] = res[ui->resolution->currentIndex()];
+                settings.setValue("rec_resolution",ui->resolution->currentIndex());
                 doReconstruction(7,index+1 == filenames.size());
             }
             else

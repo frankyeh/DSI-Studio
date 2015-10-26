@@ -60,8 +60,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>731</width>
-         <height>535</height>
+         <width>389</width>
+         <height>199</height>
         </rect>
        </property>
        <attribute name="label">
@@ -373,8 +373,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>731</width>
-         <height>535</height>
+         <width>356</width>
+         <height>177</height>
         </rect>
        </property>
        <attribute name="label">
@@ -936,28 +936,33 @@
               </widget>
              </item>
              <item>
-              <widget class="QSpinBox" name="mni_resolution">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
+              <widget class="QComboBox" name="resolution">
                <property name="maximumSize">
                 <size>
                  <width>75</width>
                  <height>16777215</height>
                 </size>
                </property>
-               <property name="minimum">
-                <number>1</number>
-               </property>
-               <property name="maximum">
-                <number>3</number>
-               </property>
-               <property name="value">
-                <number>2</number>
-               </property>
+               <item>
+                <property name="text">
+                 <string>0.5 mm</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1 mm</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>2 mm</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>3 mm</string>
+                </property>
+               </item>
               </widget>
              </item>
              <item>
