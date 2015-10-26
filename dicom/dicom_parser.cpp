@@ -824,6 +824,19 @@ void dicom_parser::on_load_b_table_clicked()
                   std::istream_iterator<double>(),
                   std::back_inserter(b_table));
     }
+    // handle per slice b_table
+    if(b_table.size()/4 != ui->tableWidget->rowCount() && (b_table.size()/4)%ui->tableWidget->rowCount() == 0)
+    {
+        unsigned int slice_num = (b_table.size()/4)/ui->tableWidget->rowCount();
+        for(unsigned int i = 0;i < ui->tableWidget->rowCount();++i)
+        {
+            b_table[i*4] = b_table[i*4*slice_num];
+            b_table[i*4+1] = b_table[i*4*slice_num+1];
+            b_table[i*4+2] = b_table[i*4*slice_num+2];
+            b_table[i*4+3] = b_table[i*4*slice_num+3];
+        }
+        b_table.resize(ui->tableWidget->rowCount()*4);
+    }
     for (unsigned int index = 0,b_index = 0;index < ui->tableWidget->rowCount();++index)
     {
         for(unsigned int j = 0;j < 4 && b_index < b_table.size();++j,++b_index)
