@@ -36,7 +36,7 @@
       <item>
        <widget class="QToolBox" name="toolBox">
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <property name="tabSpacing">
          <number>0</number>
@@ -942,7 +942,7 @@ Difference</string>
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>0</y>
+           <y>-366</y>
            <width>641</width>
            <height>848</height>
           </rect>
@@ -1284,7 +1284,7 @@ Difference</string>
                   <item>
                    <widget class="QLabel" name="foi_label">
                     <property name="text">
-                     <string>Feature of interest</string>
+                     <string>variable of interest</string>
                     </property>
                    </widget>
                   </item>
@@ -1468,7 +1468,7 @@ Difference</string>
              </size>
             </property>
             <property name="currentIndex">
-             <number>1</number>
+             <number>0</number>
             </property>
             <widget class="QWidget" name="tab_5">
              <attribute name="title">

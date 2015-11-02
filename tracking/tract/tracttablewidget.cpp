@@ -609,6 +609,24 @@ void TractTableWidget::show_tracts_statistics(void)
 
 }
 
+bool TractTableWidget::command(QString cmd,QString param,QString param2)
+{
+    if(cmd == "run_tracking")
+    {
+        start_tracking();
+        while(timer->isActive())
+            fetch_tracts();
+        emit need_update();
+        return true;
+    }
+    if(cmd == "cut_by_slice")
+    {
+        cut_by_slice(param.toInt(),param2.toInt());
+        return true;
+    }
+    return false;
+}
+
 void TractTableWidget::show_method(void)
 {
     std::ostringstream out;

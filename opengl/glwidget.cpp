@@ -115,9 +115,9 @@ void GLWidget::set_view(unsigned char view_option)
         transformation_matrix[10] = cur_tracking_window.slice.voxel_size[2] / cur_tracking_window.slice.voxel_size[0];
     }
 
-    transformation_matrix[0] *= cur_tracking_window.ui->zoom_3d->value();
-    transformation_matrix[5] *= cur_tracking_window.ui->zoom_3d->value();
-    transformation_matrix[10] *= cur_tracking_window.ui->zoom_3d->value();
+    transformation_matrix[0] *= current_scale;
+    transformation_matrix[5] *= current_scale;
+    transformation_matrix[10] *= current_scale;
     transformation_matrix[12] = -transformation_matrix[0]*cur_tracking_window.slice.center_point[0];
     transformation_matrix[13] = -transformation_matrix[5]*cur_tracking_window.slice.center_point[1];
     transformation_matrix[14] = -transformation_matrix[10]*cur_tracking_window.slice.center_point[2];
@@ -364,17 +364,15 @@ void GLWidget::renderLR(int eye)
                   (float)((color & 0x0000FF00) >> 8),
                   (float)(color & 0x000000FF)));
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     setFrustum(eye);
-
     check_error("basic");
     {
-
-
         if(scale_voxel != get_param("scale_voxel"))
         {
             scale_voxel = get_param("scale_voxel");
-            set_view(0);
+            set_view(2);// initialize view to axial
+            if(get_param("orientation_convention") == 1)
+                set_view(2);
         }
 
         if(get_param("anti_aliasing"))
@@ -1652,7 +1650,7 @@ void GLWidget::saveMapping(void)
         return;
     QString filename = QFileDialog::getSaveFileName(
             this,
-            "Save Mapping Matrix","mapping.txt",
+            "Save Mapping Matrix",QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_mapping.txt",
             "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -1827,16 +1825,28 @@ void GLWidget::get3View(QImage& I,unsigned int type)
     }
 }
 
-void GLWidget::command(QString cmd,QString param,QString param2)
+bool GLWidget::command(QString cmd,QString param,QString param2)
 {
+    if(cmd == "set_zoom")
+    {
+        if(param.isEmpty())
+            return true;
+        float zoom = param.toFloat();
+        if(zoom == 0)
+            return true;
+        scale_by(zoom/current_scale);
+        current_scale = zoom;
+        paintGL();
+        return true;
+    }
     if(cmd == "set_view")
     {
         if(param.isEmpty())
-            return;
+            return true;
         makeCurrent();
         set_view(param.toInt());
         paintGL();
-        return;
+        return true;
     }
     if(cmd == "add_slice")
     {
@@ -1846,7 +1856,7 @@ void GLWidget::command(QString cmd,QString param,QString param2)
         if(!new_slice->initialize(cur_tracking_window.slice,cur_tracking_window.is_qsdr,file,true))
         {
             std::cout << "Invalid file format:" << param.toStdString() << std::endl;
-            return;
+            return true;
         }
         other_slices.push_back(new_slice.release());
         current_visible_slide = other_slices.size();
@@ -1857,7 +1867,7 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             other_slices.back().thread->join();
         other_slices.back().update();
         updateGL();
-        return;
+        return true;
     }
     if(cmd == "move_slice")
     {
@@ -1874,7 +1884,7 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             break;
         }
         paintGL();
-        return;
+        return true;
     }
     if(cmd == "slice_off")
     {
@@ -1883,7 +1893,7 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             cur_tracking_window.ui->glCorCheck->setChecked(false);
             cur_tracking_window.ui->glSagCheck->setChecked(false);
             cur_tracking_window.ui->glAxiCheck->setChecked(false);
-            return;
+            return true;
         }
         switch(param.toInt())
         {
@@ -1898,7 +1908,7 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             break;
         }
         paintGL();
-        return;
+        return true;
 
     }
     if(cmd == "slice_on")
@@ -1908,7 +1918,7 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             cur_tracking_window.ui->glCorCheck->setChecked(true);
             cur_tracking_window.ui->glSagCheck->setChecked(true);
             cur_tracking_window.ui->glAxiCheck->setChecked(true);
-            return;
+            return true;
         }
         switch(param.toInt())
         {
@@ -1923,7 +1933,7 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             break;
         }
         paintGL();
-        return;
+        return true;
     }
     if(cmd == "add_surface")
     {
@@ -1988,7 +1998,7 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             if(!surface->load(crop_image,threshold))
             {
                 surface.reset(0);
-                return;
+                return true;
             }
         }
 
@@ -1999,12 +2009,12 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             surface->get()->point_list[index] += 0.5;
         }
         paintGL();
-        return;
+        return true;
     }
     if(cmd == "save_image")
     {
         if(param.isEmpty())
-            return;
+            param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_image.jpg";
         if(!param2.isEmpty())
         {
             std::istringstream in(param2.toLocal8Bit().begin());
@@ -2015,22 +2025,22 @@ void GLWidget::command(QString cmd,QString param,QString param2)
         }
         else
             renderPixmap().save(param);
-        return;
+        return true;
     }
     if(cmd == "save_3view_image")
     {
         if(param.isEmpty())
-            return;
+            param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_3view_image.jpg";
         QImage all;
         get3View(all,0);
         all.save(param);
-        return;
+        return true;
     }
     if(cmd == "save_lr_image")
     {
-        if(param.isEmpty() || param2.isEmpty())
-            return;
-        float angle = param2.toFloat();
+        if(param.isEmpty())
+            param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_lr_image.jpg";
+        float angle = (param2.isEmpty()) ? 5 : param2.toFloat();
         rotate_angle(angle/2.0, 0.0, 1.0, 0.0);
         QImage left = grabFrameBuffer();
         rotate_angle(-angle/2.0, 0.0, 1.0, 0.0);
@@ -2040,12 +2050,12 @@ void GLWidget::command(QString cmd,QString param,QString param2)
         painter.drawImage(0,0,left);
         painter.drawImage(left.width(),0,right);
         all.save(param);
-        return;
+        return true;
     }
     if(cmd == "save_rotation_video")
     {
         if(param.isEmpty())
-            return;
+            param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_rotation_movie.avi";
         begin_prog("save video");
         image::io::avi avi;
         for(unsigned int index = 1;check_prog(index,360);++index)
@@ -2067,12 +2077,12 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
         }
         avi.close();
-        return;
+        return true;
     }
     if(cmd == "save_stereo_rotation_video")
     {
         if(param.isEmpty())
-            return;
+           param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_lr_rotation_movie.avi";
         makeCurrent();
         image::io::avi avi;
         double eye_shift = cur_tracking_window["3d_perspective"].toDouble();
@@ -2128,16 +2138,16 @@ void GLWidget::command(QString cmd,QString param,QString param2)
             avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
         }
         avi.close();
-        return;
+        return true;
     }
-    std::cout << "unknown command:" << cmd.toStdString() << std::endl;
+    return false;
 }
 void GLWidget::catchScreen(void)
 {
     QString filename = QFileDialog::getSaveFileName(
                this,
                "Save Images files",
-               "image.jpg",
+               QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_image.jpg",
                "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -2154,7 +2164,7 @@ void GLWidget::catchScreen2(void)
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Save Images files",
-            "image.jpg",
+            QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_hd_image.jpg",
             "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -2166,7 +2176,7 @@ void GLWidget::save3ViewImage(void)
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Assign image name",
-            "image.jpg",
+            QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_3view_image.jpg",
             "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     command("save_3view_image",filename);
 
@@ -2177,7 +2187,7 @@ void GLWidget::saveLeftRight3DImage(void)
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Assign image name",
-            "image.jpg",
+            QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_lr_image.jpg",
             "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -2195,7 +2205,7 @@ void GLWidget::saveRotationSeries(void)
     command("save_rotation_video",QFileDialog::getSaveFileName(
                 this,
                 "Assign video name",
-                "movie.avi",
+                QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_rotation_movie.avi",
                 "Video file (*.avi);;All files (*)"));
 }
 
@@ -2204,7 +2214,7 @@ void GLWidget::saveRotationVideo2(void)
     command("save_stereo_rotation_video",QFileDialog::getSaveFileName(
             this,
             "Assign video name",
-            "movie.avi",
+            QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_lr_rotation_movie.avi",
             "Video file (*.avi);;All files (*)"));
 }
 

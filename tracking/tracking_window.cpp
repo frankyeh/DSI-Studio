@@ -341,9 +341,6 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
             default_state = saveState();
         restoreGeometry(settings.value("geometry").toByteArray());
         restoreState(settings.value("state").toByteArray());
-        ui->glSagCheck->setChecked(settings.value("sag_slice",1).toBool());
-        ui->glCorCheck->setChecked(settings.value("cor_slice",1).toBool());
-        ui->glAxiCheck->setChecked(settings.value("axi_slice",1).toBool());
     }
 
     {
@@ -362,9 +359,6 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         scene.center();
     }
 
-    on_glAxiView_clicked();
-    if(renderWidget->getData("orientation_convention").toInt() == 1)
-        on_glAxiView_clicked();
 
     ui->sliceViewBox->setCurrentIndex(0);
     on_SliceModality_currentIndexChanged(ui->SliceModality->count()-1);
@@ -388,9 +382,6 @@ tracking_window::~tracking_window()
     QSettings settings;
     settings.setValue("geometry", saveGeometry());
     settings.setValue("state", saveState());
-    settings.setValue("sag_slice",ui->glSagCheck->isChecked() ? 1:0);
-    settings.setValue("cor_slice",ui->glCorCheck->isChecked() ? 1:0);
-    settings.setValue("axi_slice",ui->glAxiCheck->isChecked() ? 1:0);
     settings.setValue("rendering_quality",ui->rendering_efficiency->currentIndex());
     tractWidget->delete_all_tract();
     delete ui;
@@ -1111,11 +1102,7 @@ void tracking_window::on_actionConnectivity_matrix_triggered()
 
 void tracking_window::on_zoom_3d_valueChanged(double arg1)
 {
-    if(std::fabs(ui->zoom_3d->value() - glWidget->current_scale) > 0.02)
-    {
-        glWidget->scale_by(ui->zoom_3d->value()/glWidget->current_scale);
-        glWidget->current_scale = ui->zoom_3d->value();
-    }
+    glWidget->command("set_zoom",QString::number(ui->zoom_3d->value()));
 }
 
 void tracking_window::restore_3D_window()
@@ -1156,7 +1143,7 @@ void tracking_window::on_actionSave_tracking_parameters_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
                            this,
-                           "Save INI files",QDir::currentPath(),"Setting file (*.ini);;All files (*)");
+                           "Save INI files",QFileInfo(windowTitle()).baseName()+".ini","Setting file (*.ini);;All files (*)");
     if (filename.isEmpty())
         return;
     QSettings s(filename, QSettings::IniFormat);
@@ -1183,7 +1170,7 @@ void tracking_window::on_actionSave_Rendering_Parameters_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
                            this,
-                           "Save INI files",QDir::currentPath(),"Setting file (*.ini);;All files (*)");
+                           "Save INI files",QFileInfo(windowTitle()).baseName()+".ini","Setting file (*.ini);;All files (*)");
     if (filename.isEmpty())
         return;
     QSettings s(filename, QSettings::IniFormat);
@@ -1387,7 +1374,7 @@ void tracking_window::show_info_dialog(const std::string& title,const std::strin
     {
         QString filename;
         filename = QFileDialog::getSaveFileName(this,
-                    "Save as","info.txt",
+                    "Save as",QFileInfo(windowTitle()).baseName()+"_info.txt",
                     "Text files (*.txt);;All files|(*)");
         if(filename.isEmpty())
             return;

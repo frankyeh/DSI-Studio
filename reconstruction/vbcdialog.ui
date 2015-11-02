@@ -208,7 +208,7 @@
       <item>
        <widget class="QLabel" name="label">
         <property name="text">
-         <string>Skeleton:</string>
+         <string>Atlas</string>
         </property>
        </widget>
       </item>

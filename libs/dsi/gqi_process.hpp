@@ -403,7 +403,7 @@ public:
         float last_value = 0;
         for(unsigned int index = 0;index < rdi.size();++index)
         {
-            // incremental
+            // force incremental
             rdi_value[index][data.voxel_index] = std::max<float>(last_value,image::vec::dot(rdi[index].begin(),rdi[index].end(),data.space.begin()));
             last_value = rdi_value[index][data.voxel_index];
         }

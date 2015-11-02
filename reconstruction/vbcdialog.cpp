@@ -61,6 +61,19 @@ void VBCDialog::on_group1open_clicked()
                                      "Fib files (*fib.gz);;All files (*)" );
     if (filenames.isEmpty())
         return;
+    for(unsigned int index = 0;index < filenames.size();++index)
+    {
+        if((QFileInfo(filenames[index]).baseName().contains("1mm") && QFileInfo(ui->skeleton->text()).baseName().contains("2mm")) ||
+           (QFileInfo(filenames[index]).baseName().contains("2mm") && QFileInfo(ui->skeleton->text()).baseName().contains("1mm")))
+        {
+            if(QMessageBox::information(this,"Warning",QString("It seems that ")+
+                                        QFileInfo(filenames[index]).baseName() +
+                                        " and the atlas have different resolution, Continue? ",
+                                        QMessageBox::Yes|QMessageBox::No) == QMessageBox::No)
+                return;
+            break;
+        }
+    }
     group << filenames;
     update_list();
     if(create_db)

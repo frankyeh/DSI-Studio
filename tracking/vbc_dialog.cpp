@@ -1229,7 +1229,7 @@ void vbc_dialog::on_show_result_clicked()
     }
     tracking_window* current_tracking_window = new tracking_window(this,new_data.release());
     current_tracking_window->setAttribute(Qt::WA_DeleteOnClose);
-    current_tracking_window->setWindowTitle(QString("Connectometry mapping"));
+    current_tracking_window->setWindowTitle(saved_file_name.front().c_str());
     current_tracking_window->showNormal();
     current_tracking_window->tractWidget->delete_all_tract();
     QStringList filenames;

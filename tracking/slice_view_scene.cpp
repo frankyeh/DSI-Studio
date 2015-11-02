@@ -170,6 +170,70 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
                          cur_tracking_window["orientation_convention"].toInt() ? Qt::AlignTop|Qt::AlignRight: Qt::AlignTop|Qt::AlignLeft,"R");
     }
 }
+bool slice_view_scene::command(QString cmd,QString param,QString param2)
+{
+    if(cmd == "save_roi_image")
+    {
+        if(param.isEmpty())
+            param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+
+                    QString(cur_tracking_window.handle->view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str())+".jpg";
+        if(param2 != "0")// mosaic
+        {
+            view_image.save(param);
+            return true;
+        }
+        QImage output = view_image;
+        QPainter paint(&output);
+        show_ruler(paint);
+        output.save(param);
+        return true;
+    }
+    if(cmd == "save_mapping")
+    {
+        if( cur_tracking_window.ui->sliceViewBox->currentText() == "color")
+        {
+            std::cout << "Cannot save color map as a mapping file" << std::endl;
+            return true;
+        }
+        if(param.isEmpty())
+            param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+
+                    QString(cur_tracking_window.handle->view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str())+".nii.gz";
+
+
+        int index = cur_tracking_window.handle->get_name_index(
+                    cur_tracking_window.ui->sliceViewBox->currentText().toLocal8Bit().begin());
+        if(index >= cur_tracking_window.handle->view_item.size())
+            return true;
+
+        if(QFileInfo(param).completeSuffix().toLower() == "nii" ||
+                QFileInfo(param).completeSuffix().toLower() == "nii.gz")
+        {
+            image::basic_image<float,3> buf(cur_tracking_window.handle->view_item[index].image_data);
+            gz_nifti file;
+            file.set_voxel_size(cur_tracking_window.slice.voxel_size.begin());
+            if(cur_tracking_window.is_qsdr) //QSDR condition
+            {
+                file.set_image_transformation(cur_tracking_window.handle->trans_to_mni.begin());
+                file << cur_tracking_window.handle->view_item[index].image_data;
+            }
+            else
+            {
+                image::flip_xy(buf);
+                file << buf;
+            }
+            file.save_to_file(param.toLocal8Bit().begin());
+
+        }
+        if(QFileInfo(param).completeSuffix().toLower() == "mat")
+        {
+            image::io::mat_write file(param.toLocal8Bit().begin());
+            file << cur_tracking_window.handle->view_item[index].image_data;
+        }
+        return true;
+    }
+    return false;
+}
+
 bool slice_view_scene::get_location(float x,float y,image::vector<3,float>& pos)
 {
     image::geometry<3> geo(cur_tracking_window.slice.geometry);
@@ -336,67 +400,24 @@ void slice_view_scene::save_slice_as()
     QString filename = QFileDialog::getSaveFileName(
                 0,
                 "Save as",
+                QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+
                 QString(cur_tracking_window.handle->view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str())+".nii.gz",
                 "NIFTI files (*nii.gz);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
-#ifdef __APPLE__
-// fix the Qt double extension bug here
-if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
-    filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
-#endif
-
-    int index = cur_tracking_window.handle->get_name_index(
-                cur_tracking_window.ui->sliceViewBox->currentText().toLocal8Bit().begin());
-    if(index >= cur_tracking_window.handle->view_item.size())
-        return;
-
-    if(QFileInfo(filename).completeSuffix().toLower() == "nii" ||
-            QFileInfo(filename).completeSuffix().toLower() == "nii.gz")
-    {
-        image::basic_image<float,3> buf(cur_tracking_window.handle->view_item[index].image_data);
-        gz_nifti file;
-        file.set_voxel_size(cur_tracking_window.slice.voxel_size.begin());
-        if(cur_tracking_window.is_qsdr) //QSDR condition
-        {
-            file.set_image_transformation(cur_tracking_window.handle->trans_to_mni.begin());
-            file << cur_tracking_window.handle->view_item[index].image_data;
-        }
-        else
-        {
-            image::flip_xy(buf);
-            file << buf;
-        }
-        file.save_to_file(filename.toLocal8Bit().begin());
-
-    }
-    if(QFileInfo(filename).completeSuffix().toLower() == "mat")
-    {
-        image::io::mat_write file(filename.toLocal8Bit().begin());
-        file << cur_tracking_window.handle->view_item[index].image_data;
-    }
-
+    command("save_mapping",filename,"");
 }
 
 void slice_view_scene::catch_screen()
 {
-    QSettings settings;
     QString filename = QFileDialog::getSaveFileName(
-            0,"Save Images files",
-                QString(cur_tracking_window.handle->view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str())+".jpg",
-                "Image files (*.png *.bmp *.jpg);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    settings.setValue("slice_image_extension",QFileInfo(filename).completeSuffix());
-    if(cur_tracking_window["roi_layout"].toInt() != 0)// mosaic
-    {
-        view_image.save(filename);
-        return;
-    }
-    QImage output = view_image;
-    QPainter paint(&output);
-    show_ruler(paint);
-    output.save(filename);
+                0,"Save Images files",
+                    QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+
+                    QString(cur_tracking_window.handle->view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str())+".jpg",
+                    "Image files (*.png *.bmp *.jpg);;All files (*)");
+        if(filename.isEmpty())
+            return;
+    command("save_roi_image",filename,cur_tracking_window["roi_layout"].toString());
 }
 
 void slice_view_scene::copyClipBoard()

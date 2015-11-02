@@ -39,6 +39,7 @@ public:
     void load_tracts(QStringList filenames);
     void cut_by_slice(unsigned char dim,bool greater);
     QString output_format(void);
+    bool command(QString cmd,QString param = "",QString param2 = "");
 signals:
     void need_update(void);
 private:

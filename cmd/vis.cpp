@@ -59,20 +59,16 @@ int vis(int ac, char *av[])
     for(unsigned int index = 0;index < cmd.size();++index)
     {
         QStringList param = cmd[index].split(',');
-        if(cmd[index].contains("save") && param.size() < 2)
-        {
-            QString save_name = QString(file_name.c_str()) + "." + cmd[index];
-            if(cmd[index].contains("image"))
-                save_name += ".jpg";
-            if(cmd[index].contains("video"))
-                save_name += ".avi";
-            param.append(save_name);
-        }
         std::cout << "run ";
         for(unsigned int j = 0;j < param.size();++j)
             std::cout << param[j].toStdString() << " ";
         std::cout << std::endl;
-        new_mdi->glWidget->command(param[0],param.size() > 1 ? param[1]:QString(),param.size() > 2 ? param[2]:QString());
+        if(!new_mdi->glWidget->command(param[0],param.size() > 1 ? param[1]:QString(),param.size() > 2 ? param[2]:QString()) &&
+           !new_mdi->scene.command(param[0],param.size() > 1 ? param[1]:QString(),param.size() > 2 ? param[2]:QString()) &&
+           !new_mdi->tractWidget->command(param[0],param.size() > 1 ? param[1]:QString(),param.size() > 2 ? param[2]:QString()))
+        {
+            std::cout << "unknown command:" << param[0].toStdString() << std::endl;
+        }
     }
     new_mdi->close();
     return 0;
