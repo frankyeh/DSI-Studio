@@ -518,7 +518,7 @@ public:
     bool is_consistent(gz_mat_read& m)
     {
         unsigned int row,col;
-        const float* odf_buffer;
+        const float* odf_buffer = 0;
         m.read("odf_vertices",row,col,odf_buffer);
         if (!odf_buffer)
         {
@@ -539,6 +539,20 @@ public:
                 error_msg = "Inconsistent ODF dimension in ";
                 return false;
             }
+        }
+        const float* voxel_size = 0;
+        m.read("voxel_size",row,col,voxel_size);
+        if(!voxel_size)
+        {
+            error_msg = "No voxel_size matrix in ";
+            return false;
+        }
+        if(voxel_size[0] != vs[0])
+        {
+            std::ostringstream out;
+            out << "Inconsistency in image resolution. Please use a correct atlas. The atlas resolution (" << vs[0] << " mm) is different from that in ";
+            error_msg = out.str();
+            return false;
         }
         return true;
     }
