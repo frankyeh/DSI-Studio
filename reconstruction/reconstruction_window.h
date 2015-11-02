@@ -97,6 +97,7 @@ private slots:
     void on_half_sphere_toggled(bool checked);
     void on_add_t1t2_clicked();
     void on_actionManual_Rotation_triggered();
+    void on_negate_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

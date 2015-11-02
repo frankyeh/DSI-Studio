@@ -344,7 +344,11 @@ void reconstruction_window::on_smoothing_clicked()
     image::morphology::smoothing(handle->mask);
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
-
+void reconstruction_window::on_negate_clicked()
+{
+    image::morphology::negate(handle->mask);
+    on_SlicePos_valueChanged(ui->SlicePos->value());
+}
 
 
 void reconstruction_window::on_thresholding_clicked()
@@ -1015,3 +1019,5 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
     update_image();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
+
+
