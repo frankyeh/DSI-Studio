@@ -32,7 +32,6 @@ private:
     std::vector<float> slice_orientation;// for applying slice orientation
     void load_files(QStringList file_list);
 private slots:
-    void on_apply_slice_orientation_clicked();
     void on_upperDir_clicked();
     void on_loadImage_clicked();
     void on_pushButton_clicked();

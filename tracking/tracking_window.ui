@@ -1203,6 +1203,7 @@
     <addaction name="actionSave_mapping"/>
     <addaction name="actionAdjust_Mapping"/>
     <addaction name="separator"/>
+    <addaction name="actionLoad_Color_Map"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -2935,6 +2936,15 @@
   <action name="actionStrip_skull_for_T1w_image">
    <property name="text">
     <string>Add Surface using T1w...</string>
+   </property>
+  </action>
+  <action name="actionLoad_Color_Map">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Load Color Map...</string>
    </property>
   </action>
  </widget>

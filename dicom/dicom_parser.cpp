@@ -67,7 +67,7 @@ bool load_dicom_multi_frame(const char* file_name,boost::ptr_vector<DwiHeader>& 
         return false;
     {
         // Philips multiframe
-        unsigned int slice_num = dicom_header.get_int(0x2001,0x102D);
+        unsigned int slice_num = dicom_header.get_int(0x2001,0x1018);
         if(!slice_num)
             slice_num = 1;
         image::basic_image<unsigned short,3> buf_image;
@@ -767,24 +767,6 @@ void dicom_parser::update_b_table(void)
         ui->tableWidget->item(index,4)->setText(QString::number(dwi_files[index].bvec[2]));
     }
 }
-
-void dicom_parser::on_apply_slice_orientation_clicked()
-{
-    if(slice_orientation.empty())
-        return;
-    for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
-    {
-        image::vector<3,float> bvec,cbvec;
-        bvec[0] = ui->tableWidget->item(index,2)->text().toDouble();
-        bvec[1] = ui->tableWidget->item(index,3)->text().toDouble();
-        bvec[2] = ui->tableWidget->item(index,4)->text().toDouble();
-        image::vector_rotation(bvec.begin(),cbvec.begin(),slice_orientation.begin(),image::vdim<3>());
-        ui->tableWidget->item(index,2)->setText(QString::number(-cbvec[0]));
-        ui->tableWidget->item(index,3)->setText(QString::number(-cbvec[1]));
-        ui->tableWidget->item(index,4)->setText(QString::number(-cbvec[2]));
-    }
-}
-
 
 void dicom_parser::on_motion_correction_clicked()
 {

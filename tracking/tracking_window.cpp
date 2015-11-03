@@ -328,8 +328,10 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
 
     }
 
-
-
+    // slice
+    {
+        connect(ui->actionLoad_Color_Map,SIGNAL(triggered()),this,SLOT(on_load_color_map_gl_released()));
+    }
 
     // recall the setting
     {
