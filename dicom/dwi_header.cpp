@@ -479,10 +479,8 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
     begin_prog("Save Files");
     for (unsigned int index = 0;check_prog(index,dwi_files.size());++index)
     {
-        // avoid negative values
-        image::lower_threshold(dwi_files[index].image,(short)0);
         std::ostringstream name;
-        image::basic_image<short,3> buffer;
+        image::basic_image<unsigned short,3> buffer;
         const unsigned short* ptr = 0;
         name << "image" << index;
         ptr = (const unsigned short*)dwi_files[index].begin();

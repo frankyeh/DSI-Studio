@@ -213,12 +213,12 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
                 if(!analyze_header.toLPS(data,false))
                     break;
                 data *= 32767.0/max_value;
+                image::lower_threshold(data,0);
                 new_file->image = data;
             }
             else
             if(!analyze_header.toLPS(new_file->image,false))
                 break;
-            image::lower_threshold(new_file->image,0);
             new_file->file_name = file_name;
             std::ostringstream out;
             out << index;
