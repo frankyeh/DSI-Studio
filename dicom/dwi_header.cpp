@@ -19,8 +19,14 @@ void get_report_from_dicom(const image::io::dicom& header,std::string& report)
         << " scanner using a ";
     if(seq.find("ep2d") != std::string::npos)
         out << "2D EPI ";
+    float te = header.get_float(0x0018,0x0081);
+    if(te == 0)
+        te = header.get_float(0x2001,0x1025); // for philips scanner;
+    float tr = header.get_float(0x0018,0x0080);
+    if(tr == 0)
+        tr = header.get_float(0x2005,0x1030); // for philips scanner;
     out << "diffusion sequence (" << seq.c_str() << ")."
-        << " TE=" << header.get_float(0x0018,0x0081) << " ms, and TR=" << header.get_float(0x0018,0x0080)  << " ms.";
+        << " TE=" << te << " ms, and TR=" << tr << " ms.";
     report += out.str();
 }
 void get_report_from_bruker(const image::io::bruker_info& header,std::string& report)

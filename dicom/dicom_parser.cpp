@@ -593,12 +593,13 @@ bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_file
 
 
     begin_prog("loading");
-    if (file_list.size() == 1) // 4d image
+    if (file_list.size() <= 3) // 4d image
     {
-        if(!load_dicom_multi_frame(file_list[0].toLocal8Bit().begin(),dwi_files) &&
-           !load_4d_nii(file_list[0].toLocal8Bit().begin(),dwi_files))
+        for(unsigned int i = 0;i < file_list.size();++i)
+        if(!load_dicom_multi_frame(file_list[i].toLocal8Bit().begin(),dwi_files) &&
+           !load_4d_nii(file_list[i].toLocal8Bit().begin(),dwi_files))
             return false;
-         return !dwi_files.empty();
+        return !dwi_files.empty();
     }
 
     std::sort(file_list.begin(),file_list.end(),compare_qstring());
