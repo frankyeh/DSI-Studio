@@ -150,8 +150,8 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
             }
             std::pair<double,double> r = image::linear_regression(x.begin(),x.end(),y.begin());
             for(image::pixel_index<3> i;i.index() < source_images.size();i.next(source_images.geometry()))
-                if(source_images[i.index()] > t)
-                    source_images[i.index()] -= (float)i[dim]*r.first;
+                source_images[i.index()] -= (float)i[dim]*r.first;
+            image::lower_threshold(source_images,0);
         }
     }
 
@@ -160,9 +160,7 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
     if(!has_transform)
     {
         from = slice.source_images;
-        arg_min.scaling[0] = slice.voxel_size[0] / voxel_size[0];
-        arg_min.scaling[1] = slice.voxel_size[1] / voxel_size[1];
-        arg_min.scaling[2] = slice.voxel_size[2] / voxel_size[2];
+        from_vs = slice.voxel_size;
         thread.reset(new boost::thread(&CustomSliceModel::argmin,this,image::reg::rigid_body));
     }
     else
@@ -181,14 +179,14 @@ void CustomSliceModel::argmin(int reg_type)
     terminated = false;
     ended = false;
     image::const_pointer_image<float,3> to = source_images;
-    image::reg::linear(from,to,arg_min,reg_type,image::reg::mutual_information(),terminated);
+    image::reg::linear(from,from_vs,to,voxel_size,arg_min,reg_type,image::reg::mutual_information(),terminated);
     ended = true;
 
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::update(void)
 {
-    image::transformation_matrix<3,float> T(arg_min,from.geometry(),source_images.geometry());
+    image::transformation_matrix<float> T(arg_min,from.geometry(),from_vs,source_images.geometry(),voxel_size);
     invT.identity();
     T.save_to_transform(invT.begin());
     transform = image::inverse(invT);

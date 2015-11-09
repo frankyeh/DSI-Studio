@@ -20,7 +20,7 @@ struct reg_data{
         bn_progress = 0;
     }
     image::reg::bfnorm_mapping<float,3> bnorm_data;
-    image::affine_transform<3,float> arg;
+    image::affine_transform<float> arg;
     int reg_type;
     int cost_function;
     unsigned char terminated;
@@ -29,7 +29,9 @@ struct reg_data{
 
 };
 void run_reg(const image::basic_image<float,3>& from,
+             const image::vector<3>& from_vs,
              const image::basic_image<float,3>& to,
+             const image::vector<3>& to_vs,
              reg_data& data,
              unsigned int thread_count,
              unsigned int cost_function = 0);
@@ -39,8 +41,8 @@ class manual_alignment : public QDialog
     Q_OBJECT
 private:
     image::basic_image<float,3> from,to,warped_from;
-    image::affine_transform<3,float> b_upper,b_lower;
-    image::vector<3> scaling;
+    image::affine_transform<float> b_upper,b_lower;
+    image::vector<3> from_vs,to_vs;
     QGraphicsScene scene[3];
     image::color_image buffer[3];
     QImage slice_image[3];
@@ -50,12 +52,14 @@ private:
 public:
     reg_data data;
     QTimer* timer;
-    image::transformation_matrix<3,float> T;
-    image::transformation_matrix<3,float> iT;
+    image::transformation_matrix<float> T;
+    image::transformation_matrix<float> iT;
     explicit manual_alignment(QWidget *parent,
-        image::basic_image<float,3> from_,
-        image::basic_image<float,3> to_,
-        const image::vector<3>& scaling,int reg_type, int cost_function = 0);
+                              image::basic_image<float,3> from_,
+                              const image::vector<3>& from_vs,
+                              image::basic_image<float,3> to_,
+                              const image::vector<3>& to_vs,
+                              int reg_type, int cost_function = 0);
     ~manual_alignment();
     void connect_arg_update();
     void disconnect_arg_update();

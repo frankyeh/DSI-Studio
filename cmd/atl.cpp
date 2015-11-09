@@ -80,6 +80,7 @@ bool atl_get_mapping(gz_mat_read& mat_reader,
         return false;
     }
     image::geometry<3> geo(dim);
+    image::vector<3> voxel_size(vs);
 
     if(fa_template_imp.I.empty() && !fa_template_imp.load_from_file())
         return false;
@@ -106,11 +107,8 @@ bool atl_get_mapping(gz_mat_read& mat_reader,
         image::lower_threshold(from,0.0);
         image::normalize(from,1.0);
         image::normalize(to,1.0);
-        data.arg.scaling[0] = vs[0];
-        data.arg.scaling[1] = vs[1];
-        data.arg.scaling[2] = vs[2];
-        run_reg(from,fa_template_imp.I,data,thread_count);
-        image::transformation_matrix<3,float> T(data.arg,from.geometry(),fa_template_imp.I.geometry());
+        run_reg(from,voxel_size,fa_template_imp.I,fa_template_imp.vs,data,thread_count);
+        image::transformation_matrix<float> T(data.arg,from.geometry(),voxel_size,fa_template_imp.I.geometry(),fa_template_imp.vs);
         mapping.resize(from.geometry());
         for(image::pixel_index<3> index;from.geometry().is_valid(index);index.next(from.geometry()))
             if(from[index.index()] > 0)

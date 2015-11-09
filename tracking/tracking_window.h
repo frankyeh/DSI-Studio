@@ -69,7 +69,7 @@ public:
     void set_tracking_param(ThreadData& tracking_thread);
 
 public:
-    image::affine_transform<3,float> mi3_arg;
+    image::affine_transform<float> mi3_arg;
     std::auto_ptr<manual_alignment> mi3;
     bool can_convert(void);
     void subject2mni(image::vector<3>& pos);

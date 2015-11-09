@@ -12,25 +12,26 @@ struct thread_count_functor{
 };
 
 void run_reg(const image::basic_image<float,3>& from,
+             const image::vector<3>& from_vs,
              const image::basic_image<float,3>& to,
+             const image::vector<3>& to_vs,
              reg_data& data,
              unsigned int thread_count,
              unsigned int cost_function)
 {
-    image::reg::align_center(from,to,data.arg);
     data.progress = 0;
     mcc_thread_count = thread_count;
     if(cost_function == 1) // mutual information
     {
-        image::reg::linear(from,to,data.arg,data.reg_type,image::reg::mutual_information(),data.terminated);
-        image::reg::linear(from,to,data.arg,data.reg_type,image::reg::mutual_information(),data.terminated);
+        image::reg::linear(from,from_vs,to,to_vs,data.arg,data.reg_type,image::reg::mutual_information(),data.terminated);
+        image::reg::linear(from,from_vs,to,to_vs,data.arg,data.reg_type,image::reg::mutual_information(),data.terminated);
     }
     else
     {
-        image::reg::linear(from,to,data.arg,data.reg_type,image::reg::mt_correlation<image::basic_image<float,3>,
-                       image::transformation_matrix<3>,boost::thread,thread_count_functor>(0),data.terminated);
-        image::reg::linear(from,to,data.arg,data.reg_type,image::reg::mt_correlation<image::basic_image<float,3>,
-                       image::transformation_matrix<3>,boost::thread,thread_count_functor>(0),data.terminated);
+        image::reg::linear(from,from_vs,to,to_vs,data.arg,data.reg_type,image::reg::mt_correlation<image::basic_image<float,3>,
+                       image::transformation_matrix<float>,boost::thread,thread_count_functor>(0),data.terminated);
+        image::reg::linear(from,from_vs,to,to_vs,data.arg,data.reg_type,image::reg::mt_correlation<image::basic_image<float,3>,
+                       image::transformation_matrix<float>,boost::thread,thread_count_functor>(0),data.terminated);
     }
     if(data.terminated)
         return;
@@ -39,7 +40,7 @@ void run_reg(const image::basic_image<float,3>& from,
         data.progress = 2;
         return;
     }
-    image::transformation_matrix<3,float> affine(data.arg,from.geometry(),to.geometry());
+    image::transformation_matrix<float> affine(data.arg,from.geometry(),from_vs,to.geometry(),to_vs);
     affine.inverse();
     data.progress = 1;
     image::basic_image<float,3> new_from(to.geometry());
@@ -55,17 +56,17 @@ void run_reg(const image::basic_image<float,3>& from,
 
 manual_alignment::manual_alignment(QWidget *parent,
                                    image::basic_image<float,3> from_,
-                                   image::basic_image<float,3> to_,const image::vector<3>& scaling_,int reg_type_,int cost_function) :
-    QDialog(parent),ui(new Ui::manual_alignment),data(to_.geometry(),reg_type_),scaling(scaling_),timer(0)
+                                   const image::vector<3>& from_vs_,
+                                   image::basic_image<float,3> to_,
+                                   const image::vector<3>& to_vs_,
+                                   int reg_type_,int cost_function) :
+    QDialog(parent),ui(new Ui::manual_alignment),from_vs(from_vs_),to_vs(to_vs_),data(to_.geometry(),reg_type_),timer(0)
 {
     data.cost_function = cost_function;
     from.swap(from_);
     to.swap(to_);
     image::normalize(from,1.0);
     image::normalize(to,1.0);
-    data.arg.scaling[0] = scaling[0];
-    data.arg.scaling[1] = scaling[1];
-    data.arg.scaling[2] = scaling[2];
     if(!reg_type_) // manuall rotation
     {
         image::reg::get_bound(from,to,data.arg,b_upper,b_lower,image::reg::rigid_body);
@@ -79,7 +80,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     else
     {
         image::reg::get_bound(from,to,data.arg,b_upper,b_lower,reg_type_);
-        reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),boost::ref(data),boost::thread::hardware_concurrency(),cost_function));
+        reg_thread.reset(new boost::thread(run_reg,boost::ref(from),from_vs,boost::ref(to),to_vs,boost::ref(data),boost::thread::hardware_concurrency(),cost_function));
     }
     ui->setupUi(this);
     if(reg_type_ == image::reg::rigid_body)
@@ -230,7 +231,7 @@ void manual_alignment::load_param(void)
 }
 void manual_alignment::update_affine(void)
 {
-    T = image::transformation_matrix<3,float>(data.arg,from.geometry(),to.geometry());
+    T = image::transformation_matrix<float>(data.arg,from.geometry(),from_vs,to.geometry(),to_vs);
     iT = T;
     iT.inverse();
 }
@@ -349,7 +350,7 @@ void manual_alignment::on_rerun_clicked()
         reg_thread->join();
     }
     data.terminated = 0;
-    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),boost::ref(to),boost::ref(data),boost::thread::hardware_concurrency(),data.cost_function));
+    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),from_vs,boost::ref(to),to_vs,boost::ref(data),boost::thread::hardware_concurrency(),data.cost_function));
     if(timer)
         timer->start();
 

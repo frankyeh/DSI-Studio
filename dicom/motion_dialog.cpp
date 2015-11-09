@@ -6,12 +6,14 @@
 #include "libs/prog_interface_static_link.h"
 
 void linear_reg(const image::basic_image<short,3>& from,
+                const image::vector<3>& from_vs,
                 const image::basic_image<short,3>& to,
-                image::affine_transform<3,double>& arg,
+                const image::vector<3>& to_vs,
+                image::affine_transform<double>& arg,
                 bool& terminated,
                 unsigned int& finished)
 {
-    image::reg::linear(from,to,arg,image::reg::rigid_body,
+    image::reg::linear(from,from_vs,to,to_vs,arg,image::reg::rigid_body,
                        image::reg::square_error(),terminated);
     ++finished;
 }
@@ -19,7 +21,7 @@ void linear_reg(const image::basic_image<short,3>& from,
 void motion_detection(boost::thread_group& threads,
                       boost::ptr_vector<DwiHeader>& dwi_files,
                       std::vector<unsigned int>& b0_index,
-                      std::vector<image::affine_transform<3,double> >& arg,
+                      std::vector<image::affine_transform<double> >& arg,
                       bool& terminated,
                       unsigned int& finished)
 {
@@ -31,10 +33,13 @@ void motion_detection(boost::thread_group& threads,
     }
     arg.clear();
     arg.resize(b0_index.size());
+    image::vector<3> vs(1,1,1);
     for(unsigned int index = 1;index < b0_index.size();++index)
         threads.add_thread(new boost::thread(&linear_reg,
                                              boost::ref(dwi_files[b0_index[0]].image),
+                                             vs,
                                              boost::ref(dwi_files[b0_index[index]].image),
+                                             vs,
                                              boost::ref(arg[index]),
                                              boost::ref(terminated),
                                              boost::ref(finished)));
@@ -42,7 +47,7 @@ void motion_detection(boost::thread_group& threads,
 
 void motion_correction(boost::ptr_vector<DwiHeader>& dwi_files,
                        const std::vector<unsigned int>& b0_index,
-                       const std::vector<image::affine_transform<3,double> >& arg)
+                       const std::vector<image::affine_transform<double> >& arg)
 {
     image::geometry<3> geo(dwi_files[0].image.geometry());
     unsigned int b1 = 0,b2 = 1;
@@ -68,14 +73,14 @@ void motion_correction(boost::ptr_vector<DwiHeader>& dwi_files,
             w1 /= dis;
             w2 /= dis;
         }
-        image::affine_transform<3,double> interpolated_arg;
+        image::affine_transform<double> interpolated_arg;
         for(unsigned int i = 0;i < 6;++i)
             interpolated_arg.translocation[i] =
                     arg[b1].translocation[i]*w1 +
                     arg[b2].translocation[i]*w2;
-
-        image::transformation_matrix<3,double> T =
-                image::transformation_matrix<3,double>(interpolated_arg,geo,geo);
+        image::vector<3> vs(1,1,1);
+        image::transformation_matrix<double> T =
+                image::transformation_matrix<double>(interpolated_arg,geo,vs,geo,vs);
 
         image::basic_image<unsigned short,3> new_image(geo);
         image::resample(dwi_files[i].image,new_image,T,image::linear);

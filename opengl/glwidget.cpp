@@ -360,6 +360,7 @@ void GLWidget::renderLR(int eye)
     if(eye < 0)
         glDrawBuffer(GL_BACK_LEFT);
     int color = get_param("bkg_color");
+    check_error("begin");
     qglClearColor(QColor((float)((color & 0x00FF0000) >> 16),
                   (float)((color & 0x0000FF00) >> 8),
                   (float)(color & 0x000000FF)));
@@ -1668,15 +1669,10 @@ void GLWidget::adjustMapping(void)
 {
     if(!current_visible_slide)
         return;
-    image::vector<3> scale(cur_tracking_window.slice.voxel_size[0] /
-                      other_slices[current_visible_slide-1].voxel_size[0],
-                      cur_tracking_window.slice.voxel_size[1] /
-                      other_slices[current_visible_slide-1].voxel_size[1],
-                      cur_tracking_window.slice.voxel_size[2] /
-                      other_slices[current_visible_slide-1].voxel_size[2]);
     std::auto_ptr<manual_alignment> manual(new manual_alignment(this,
-        cur_tracking_window.slice.source_images,
-        other_slices[current_visible_slide-1].source_images,scale,image::reg::rigid_body,1/*mutual info*/));
+        cur_tracking_window.slice.source_images,cur_tracking_window.slice.voxel_size,
+        other_slices[current_visible_slide-1].source_images,other_slices[current_visible_slide-1].voxel_size,
+            image::reg::rigid_body,1/*mutual info*/));
     manual->data.arg = other_slices[current_visible_slide-1].arg_min;
     manual->timer->start();
     if(manual->exec() != QDialog::Accepted)

@@ -78,7 +78,7 @@ public:
 public:
     unsigned char reg_method;// used in QSDR
     unsigned char interpo_method;
-    image::transformation_matrix<3,float> qsdr_trans;
+    image::transformation_matrix<float> qsdr_trans;
     // used in QSDR only
     bool output_jacobian;
     bool output_mapping;
@@ -88,7 +88,7 @@ public:
 public: // for QSDR associated T1WT2W
     std::vector<image::basic_image<float,3> > other_image;
     std::vector<std::string> other_image_name;
-    std::vector<image::transformation_matrix<3,float> > other_image_affine;
+    std::vector<image::transformation_matrix<float> > other_image_affine;
 public: // user in fib evaluation
     std::vector<float> fib_fa;
     std::vector<float> fib_dir;

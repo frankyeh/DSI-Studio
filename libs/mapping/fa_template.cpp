@@ -17,11 +17,11 @@ bool fa_template::load_from_file(void)
             read.load_from_file(fa_template_path.c_str()) || read.load_from_file(fa_template_path2.c_str()))
     {
         read.toLPS(I);
-        float tran[16];
         read.get_image_transformation(tran);
         vs[0] = tran[0];
         vs[1] = tran[5];
         vs[2] = tran[10];
+        vs.abs();
         shift[0] = tran[3];
         shift[1] = tran[7];
         shift[2] = tran[11];
@@ -32,9 +32,9 @@ bool fa_template::load_from_file(void)
 
 void fa_template::to_mni(image::vector<3,float>& p)
 {
-    p[0] = p[0]*vs[0];
-    p[1] = p[1]*vs[1];
-    p[2] = p[2]*vs[2];
+    p[0] = p[0]*tran[0];
+    p[1] = p[1]*tran[5];
+    p[2] = p[2]*tran[10];
     p += shift;
 }
 

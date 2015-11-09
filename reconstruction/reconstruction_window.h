@@ -34,7 +34,7 @@ private:
     void load_b_table(void);
 private:
     std::auto_ptr<QTimer> timer;
-    std::vector<image::affine_transform<3,float> > motion_args;
+    std::vector<image::affine_transform<float> > motion_args;
     unsigned int progress;
     bool terminated;
     std::auto_ptr<boost::thread> motion_correction_thread;

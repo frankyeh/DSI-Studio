@@ -178,7 +178,7 @@ void reconstruction_window::on_b_table_itemSelectionChanged()
                   handle->dwi_data[b_index] + ui->z_pos->value()*tmp.size() + tmp.size(),tmp.begin());
     else
     {
-        image::transformation_matrix<3,float> T(motion_args[b_index],handle->voxel.dim,handle->voxel.dim);
+        image::transformation_matrix<float> T(motion_args[b_index],handle->voxel.dim,handle->voxel.vs,handle->voxel.dim,handle->voxel.vs);
         for(int y = 0,index = 0;y < handle->voxel.dim[1];++y)
             for(int x = 0;x < handle->voxel.dim[0];++x,++index)
             {
@@ -572,7 +572,7 @@ void reconstruction_window::on_zoom_out_clicked()
 extern fa_template fa_template_imp;
 void reconstruction_window::on_manual_reg_clicked()
 {
-    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,fa_template_imp.I,handle->voxel.vs,image::reg::rigid_body));
+    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,handle->voxel.vs,fa_template_imp.I,fa_template_imp.vs,image::reg::rigid_body));
     manual->timer->start();
     if(manual->exec() == QDialog::Accepted)
         handle->voxel.qsdr_trans = manual->T;
@@ -733,7 +733,7 @@ void reconstruction_window::on_actionRotate_triggered()
     if( filename.isEmpty())
         return;
     image::basic_image<float,3> ref;
-    image::vector<3> vs,scale;
+    image::vector<3> vs;
     gz_nifti in;
     if(!in.load_from_file(filename.toLocal8Bit().begin()) || !in.toLPS(ref))
     {
@@ -741,15 +741,12 @@ void reconstruction_window::on_actionRotate_triggered()
         return;
     }
     in.get_voxel_size(vs.begin());
-    scale[0] = handle->voxel.vs[0]/vs[0];
-    scale[1] = handle->voxel.vs[1]/vs[1];
-    scale[2] = handle->voxel.vs[2]/vs[2];
-    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,ref,scale,image::reg::rigid_body));
+    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,handle->voxel.vs,ref,vs,image::reg::rigid_body));
     manual->timer->start();
     if(manual->exec() != QDialog::Accepted)
         return;
 
-    image::transformation_matrix<3,float> affine = manual->iT;
+    image::transformation_matrix<float> affine = manual->iT;
     begin_prog("rotating");
     handle->rotate(ref.geometry(),affine);
     handle->calculate_mask();
@@ -819,7 +816,7 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
 }
 
 void rec_motion_correction_parallel(ImageModel* handle,
-                                    std::vector<image::affine_transform<3,float> >& args,
+                                    std::vector<image::affine_transform<float> >& args,
                                     unsigned int total_thread,unsigned int id,unsigned int& progress,bool& terminated)
 {
     for(unsigned int i = id;i < handle->voxel.bvalues.size() && !terminated;i += total_thread)
@@ -844,7 +841,7 @@ void rec_motion_correction_parallel(ImageModel* handle,
         image::normalize(I1);
 
 
-        image::affine_transform<3,float> upper,lower;
+        image::affine_transform<float> upper,lower;
         upper.translocation[0] = 2;
         upper.translocation[1] = 2;
         upper.translocation[2] = 2;
@@ -871,9 +868,10 @@ void rec_motion_correction_parallel(ImageModel* handle,
         lower.affine[2] = -0.04;
         image::normalize(I1);
         image::reg::fun_adoptor<image::basic_image<float,3>,
-                                image::affine_transform<3,float>,
-                                image::affine_transform<3,float>,
-                                image::reg::square_error> fun(I0,I1,args[i]);
+                                image::vector<3>,
+                                image::affine_transform<float>,
+                                image::affine_transform<float>,
+                                image::reg::square_error> fun(I0,handle->voxel.vs,I1,handle->voxel.vs,args[i]);
         double optimal_value = fun(args[i][0]);
         image::optimization::graient_descent(args[i].begin(),args[i].end(),
                                              upper.begin(),lower.begin(),fun,optimal_value,terminated,0.05);
@@ -884,7 +882,7 @@ void rec_motion_correction_parallel(ImageModel* handle,
 }
 
 void rec_motion_correction(ImageModel* handle,unsigned int total_thread,
-                           std::vector<image::affine_transform<3,float> >& args,
+                           std::vector<image::affine_transform<float> >& args,
                            unsigned int& progress,
                            bool& terminated)
 {
@@ -898,7 +896,7 @@ void rec_motion_correction(ImageModel* handle,unsigned int total_thread,
     threads.join_all();
 
     for(unsigned int i = 0;i < handle->voxel.bvalues.size();++i)
-        handle->rotate_dwi(i,image::transformation_matrix<3,float>(args[i],handle->voxel.dim,handle->voxel.dim));
+        handle->rotate_dwi(i,image::transformation_matrix<float>(args[i],handle->voxel.dim,handle->voxel.vs,handle->voxel.dim,handle->voxel.vs));
     args.clear();
     progress = 100;
 }
@@ -964,14 +962,14 @@ void reconstruction_window::on_add_t1t2_clicked()
     if( filename.isEmpty())
         return;
     image::basic_image<float,3> ref;
-    image::vector<3> vs,scale;
+    image::vector<3> vs;
     gz_nifti in;
     if(!in.load_from_file(filename.toLocal8Bit().begin()) || !in.toLPS(ref))
     {
         QMessageBox::information(this,"Error","Not a valid nifti file",0);
         return;
     }
-    image::transformation_matrix<3,float> affine;
+    image::transformation_matrix<float> affine;
     bool has_registered = false;
     for(unsigned int index = 0;index < handle->voxel.other_image.size();++index)
         if(ref.dimension == handle->voxel.other_image[index].dimension)
@@ -989,10 +987,7 @@ void reconstruction_window::on_add_t1t2_clicked()
     if(!has_registered)
     {
         in.get_voxel_size(vs.begin());
-        scale[0] = handle->voxel.vs[0]/vs[0];
-        scale[1] = handle->voxel.vs[1]/vs[1];
-        scale[2] = handle->voxel.vs[2]/vs[2];
-        std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,ref,scale,image::reg::rigid_body));
+        std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,handle->voxel.vs,ref,vs,image::reg::rigid_body));
         manual->timer->start();
         if(manual->exec() != QDialog::Accepted)
             return;
@@ -1007,11 +1002,10 @@ void reconstruction_window::on_add_t1t2_clicked()
 
 void reconstruction_window::on_actionManual_Rotation_triggered()
 {
-    image::vector<3> scale(1,1,1);
-    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,dwi,scale,0));
+    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,handle->voxel.vs,dwi,handle->voxel.vs,0));
     if(manual->exec() != QDialog::Accepted)
         return;
-    image::transformation_matrix<3,float> affine = manual->iT;
+    image::transformation_matrix<float> affine = manual->iT;
     begin_prog("rotating");
     handle->rotate(dwi.geometry(),affine);
     handle->calculate_mask();

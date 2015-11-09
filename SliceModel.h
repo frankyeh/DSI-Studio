@@ -121,7 +121,8 @@ public:
 public:
     std::auto_ptr<boost::thread> thread;
     image::const_pointer_image<float,3> from;
-    image::affine_transform<3> arg_min;
+    image::vector<3> from_vs;
+    image::affine_transform<float> arg_min;
     bool terminated;
     bool ended;
     ~CustomSliceModel(void)

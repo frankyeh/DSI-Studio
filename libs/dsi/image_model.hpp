@@ -79,7 +79,7 @@ public:
         voxel.dim = voxel.dwi_sum.geometry();
     }
     // used in eddy correction for each dwi
-    void rotate_dwi(unsigned int dwi_index,const image::transformation_matrix<3,float>& affine)
+    void rotate_dwi(unsigned int dwi_index,const image::transformation_matrix<float>& affine)
     {
         image::basic_image<float,3> tmp(voxel.dim);
         image::pointer_image<unsigned short,3> I = image::make_image(voxel.dim,(unsigned short*)dwi_data[dwi_index]);
@@ -95,7 +95,7 @@ public:
         voxel.bvectors[dwi_index] = v;
     }
 
-    void rotate(image::geometry<3> new_geo,image::transformation_matrix<3,float>& affine)
+    void rotate(image::geometry<3> new_geo,image::transformation_matrix<float>& affine)
     {
         std::vector<image::basic_image<unsigned short,3> > dwi(dwi_data.size());
         for (unsigned int index = 0;check_prog(index,dwi_data.size());++index)

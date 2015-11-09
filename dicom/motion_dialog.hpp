@@ -17,7 +17,7 @@ private:
     dicom_parser& dicom_gui;
     boost::ptr_vector<DwiHeader>& dwi_files;
     std::vector<unsigned int> b0_index;
-    std::vector<image::affine_transform<3,double> > arg;
+    std::vector<image::affine_transform<double> > arg;
     bool terminated;
     unsigned int finished;
     boost::thread_group threads;

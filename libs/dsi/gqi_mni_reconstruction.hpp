@@ -42,7 +42,7 @@ protected:
     image::geometry<3> des_geo;
     int b0_index;
 protected:
-    image::transformation_matrix<3,float> affine;
+    image::transformation_matrix<float> affine;
 protected:
     image::basic_image<float,3> VG,VF;
     image::vector<3> VGvs;
@@ -87,7 +87,6 @@ public:
         image::normalize(VF,1.0);
 
         VGvs = fa_template_imp.vs;
-        VGvs.abs();
 
         voxel_volume_scale = (voxel.vs[0]*voxel.vs[1]*voxel.vs[2])/(VGvs[0]*VGvs[1]*VGvs[2]);
 
@@ -95,14 +94,9 @@ public:
         {
             begin_prog("linear registration");
 
-            image::affine_transform<3,float> arg_min;
+            image::affine_transform<float> arg_min;
             // VG: FA TEMPLATE
             // VF: SUBJECT QA
-            arg_min.scaling[0] = voxel.vs[0] / VGvs[0];
-            arg_min.scaling[1] = voxel.vs[1] / VGvs[1];
-            arg_min.scaling[2] = voxel.vs[2] / VGvs[2];
-            image::reg::align_center(VF,VG,arg_min);
-
             if(export_intermediate)
             {
                 VG.save_to_file<image::io::nifti>("Template_QA.nii.gz");
@@ -115,11 +109,11 @@ public:
             {
                 bool terminated = false;
                 mcc_thread_count = voxel.voxel_data.size();
-                image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
-                                   image::transformation_matrix<3>,boost::thread,qsdr_thread_count_functor>(0),terminated);
-                image::reg::linear(VF,VG,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
-                                   image::transformation_matrix<3>,boost::thread,qsdr_thread_count_functor>(0),terminated);
-                affine = image::transformation_matrix<3,float>(arg_min,VF.geometry(),VG.geometry());
+                image::reg::linear(VF,voxel.vs,VG,VGvs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
+                                   image::transformation_matrix<float>,boost::thread,qsdr_thread_count_functor>(0),terminated);
+                image::reg::linear(VF,voxel.vs,VG,VGvs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
+                                   image::transformation_matrix<float>,boost::thread,qsdr_thread_count_functor>(0),terminated);
+                affine = image::transformation_matrix<float>(arg_min,VF.geometry(),voxel.vs,VG.geometry(),VGvs);
             }
             affine.inverse();
             VFF.resize(VG.geometry());
@@ -163,10 +157,10 @@ public:
             {
                 image::geometry<3> geo2(VG.width()/voxel_size,VG.height()/voxel_size,VG.depth()/voxel_size);
                 image::basic_image<float,3> VG2(geo2),VFF2(geo2);
-                image::transformation_matrix<3> m;
-                m.scaling_rotation[0] = voxel_size;
-                m.scaling_rotation[4] = voxel_size;
-                m.scaling_rotation[8] = voxel_size;
+                image::transformation_matrix<float> m;
+                m.sr[0] = voxel_size;
+                m.sr[4] = voxel_size;
+                m.sr[8] = voxel_size;
                 image::resample(VG,VG2,m,image::cubic);
                 image::resample(VFF,VFF2,m,image::cubic);
                 mni.reset(new image::reg::bfnorm_mapping<float,3>(geo2,image::geometry<3>(factor*7,factor*9,factor*7)));

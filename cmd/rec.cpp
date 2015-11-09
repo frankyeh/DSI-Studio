@@ -10,7 +10,7 @@
 extern fa_template fa_template_imp;
 namespace po = boost::program_options;
 void rec_motion_correction(ImageModel* handle,unsigned int total_thread,
-                           std::vector<image::affine_transform<3,float> >& args,
+                           std::vector<image::affine_transform<float> >& args,
                            unsigned int& progress,
                            bool& terminated);
 
@@ -90,7 +90,7 @@ int rec(int ac, char *av[])
             std::cout << "Invalid transfformation matrix." <<std::endl;
             return 1;
         }
-        image::transformation_matrix<3,float> affine;
+        image::transformation_matrix<float> affine;
         affine.load_from_transform(T.begin());
         std::cout << "rotating images" << std::endl;
         handle->rotate(handle->voxel.dim,affine);
@@ -219,7 +219,7 @@ int rec(int ac, char *av[])
 
     if(vm["motion_correction"].as<int>())
     {
-        std::vector<image::affine_transform<3,float> > arg;
+        std::vector<image::affine_transform<float> > arg;
         unsigned int progress = 0;
         bool terminated = false;
         std::cout << "correct for motion and eddy current..." << std::endl;

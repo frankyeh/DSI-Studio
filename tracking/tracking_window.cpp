@@ -404,7 +404,7 @@ bool tracking_window::can_convert(void)
         image::filter::gaussian(from);
         from -= image::segmentation::otsu_threshold(from);
         image::lower_threshold(from,0.0);
-        mi3.reset(new manual_alignment(this,from,fa_template_imp.I,handle->vs,image::reg::affine,0/*correlation*/));
+        mi3.reset(new manual_alignment(this,from,handle->vs,fa_template_imp.I,fa_template_imp.vs,image::reg::affine,0/*correlation*/));
         QMessageBox::information(this,"Running","The registration started. You may need to wait until it finish running (shown in the bottom status bar).",0);
     }
     mi3->update_affine();
