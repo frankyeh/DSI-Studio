@@ -142,6 +142,7 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
             cb->addItems(string_list);
             cb->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
             cb->setMaximumWidth(100);
+            cb->setFocusPolicy(Qt::WheelFocus);
             connect(cb, SIGNAL(currentIndexChanged(int)), this, SLOT(emitCommitData()));
             ((RenderingItem*)index.internalPointer())->GUI = cb;
             return cb;
