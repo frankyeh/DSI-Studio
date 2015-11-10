@@ -39,6 +39,8 @@ GLWidget::GLWidget(bool samplebuffer,
         renderWidget(renderWidget_),
         tracts(0),
         current_scale(1),
+        cur_height(1),
+        cur_width(1),
         editing_option(0),
         current_visible_slide(0),
         set_view_flip(false)
