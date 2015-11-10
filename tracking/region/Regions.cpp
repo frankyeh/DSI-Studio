@@ -301,7 +301,23 @@ void ROIRegion::shift(const image::vector<3,short>& dx) {
     for (unsigned int index = 0; index < region.size(); ++index)
         region[index] += dx;
 }
-
+// ---------------------------------------------------------------------------
+void ROIRegion::get_quantitative_data_title(FibData* handle,std::vector<std::string>& titles)
+{
+    titles.clear();
+    titles.push_back("voxel counts");
+    titles.push_back("volume (mm^3)");
+    titles.push_back("center x");
+    titles.push_back("center y");
+    titles.push_back("center z");
+    titles.push_back("bounding box x");
+    titles.push_back("bounding box y");
+    titles.push_back("bounding box z");
+    titles.push_back("bounding box x");
+    titles.push_back("bounding box y");
+    titles.push_back("bounding box z");
+    handle->get_index_titles(titles);
+}
 void ROIRegion::get_quantitative_data(FibData* handle,std::vector<float>& data)
 {
     data.push_back(region.size()); //number of voxels

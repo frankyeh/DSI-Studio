@@ -58,11 +58,43 @@ int ana(int ac, char *av[])
     }
     bool is_qsdr = !handle->trans_to_mni.empty();
     image::geometry<3> geometry = handle->dim;
+
+    if(!vm.count("tract"))
+    {
+        if(!vm.count("roi"))
+        {
+            std::cout << "No tract file or ROI file assigned." << std::endl;
+            return 0;
+        }
+        std::string roi_file_name = vm["roi"].as<std::string>();
+        ROIRegion region(handle->fib.dim,handle->vs);
+        if(!region.LoadFromFile(roi_file_name.c_str(),handle->trans_to_mni))
+        {
+            std::cout << "Fail to load the ROI file." << std::endl;
+            return 0;
+        }
+        if(vm.count("export") && vm["export"].as<std::string>() == std::string("stat"))
+        {
+            std::string file_name_stat(roi_file_name);
+            file_name_stat += ".statistics.txt";
+            std::cout << "export ROI statistics..." << std::endl;
+            std::ofstream out(file_name_stat.c_str());
+            std::vector<std::string> titles;
+            region.get_quantitative_data_title(handle.get(),titles);
+            std::vector<float> data;
+            region.get_quantitative_data(handle.get(),data);
+            for(unsigned int i = 0;i < titles.size() && i < data.size();++i)
+                out << titles[i] << "\t" << data[i] << std::endl;
+            return 0;
+        }
+        std::cout << "unknown export specification" << std::endl;
+        return 0;
+    }
+
     TractModel tract_model(handle.get());
     float threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(geometry,handle->fib.fa[0]));
     tract_model.get_fib().threshold = threshold;
     tract_model.get_fib().cull_cos_angle = std::cos(60.0*3.1415926/180.0);
-
     std::string file_name = vm["tract"].as<std::string>();
     {
         std::cout << "loading " << file_name << "..." <<std::endl;

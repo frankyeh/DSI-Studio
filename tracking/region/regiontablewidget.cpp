@@ -745,20 +745,8 @@ void RegionTableWidget::show_statistics(void)
         return;
     std::string result;
     {
-
         std::vector<std::string> titles;
-        titles.push_back("voxel counts");
-        titles.push_back("volume (mm^3)");
-        titles.push_back("center x");
-        titles.push_back("center y");
-        titles.push_back("center z");
-        titles.push_back("bounding box x");
-        titles.push_back("bounding box y");
-        titles.push_back("bounding box z");
-        titles.push_back("bounding box x");
-        titles.push_back("bounding box y");
-        titles.push_back("bounding box z");
-        cur_tracking_window.handle->get_index_titles(titles);
+        regions[0].get_quantitative_data_title(cur_tracking_window.handle,titles);
 
         std::vector<std::vector<float> > data(regions.size());
         begin_prog("calculating");
