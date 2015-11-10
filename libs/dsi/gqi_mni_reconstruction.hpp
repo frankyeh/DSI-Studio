@@ -408,14 +408,14 @@ public:
             mat_writer.write("jdet",&*jdet.begin(),1,jdet.size());
         if(voxel.output_mapping)
         {
-            mat_writer.write("_x",&*mx.begin(),1,mx.size());
-            mat_writer.write("_y",&*my.begin(),1,my.size());
-            mat_writer.write("_z",&*mz.begin(),1,mz.size());
+            mat_writer.write("native_x",&*mx.begin(),1,mx.size());
+            mat_writer.write("native_y",&*my.begin(),1,my.size());
+            mat_writer.write("native_z",&*mz.begin(),1,mz.size());
             short dimension[3];
             dimension[0] = voxel.qa_map.width();
             dimension[1] = voxel.qa_map.height();
             dimension[2] = voxel.qa_map.depth();
-            mat_writer.write("_d",dimension,1,3);
+            mat_writer.write("native_d",dimension,1,3);
             mat_writer.write("native_fa0",&*voxel.qa_map.begin(),1,voxel.qa_map.size());
         }
         for(unsigned int index = 0;index < other_image.size();++index)
