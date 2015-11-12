@@ -1299,6 +1299,119 @@ void tracking_window::on_actionQuality_Assessment_triggered()
     show_info_dialog("Quality assessment",out.str().c_str());
 }
 
+#include "tessellated_icosahedron.hpp"
+void tracking_window::on_actionImprove_Quality_triggered()
+{
+    fiber_orientations fib;
+    fib.read(*handle);
+    fib.threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->fib.dim,handle->fib.fa[0]));
+    if(!fib.dir.empty())
+        return;
+    for(float cos_angle = 0.99;check_prog(1000-cos_angle*1000,1000-866);cos_angle -= 0.005)
+    {
+        fib.cull_cos_angle = cos_angle; // smaller than 30 degrees
+
+        std::vector<std::vector<float> > new_fa(handle->fib.num_fiber);
+        std::vector<std::vector<short> > new_index(handle->fib.num_fiber);
+        unsigned int size = handle->fib.dim.size();
+        for(unsigned int i = 0 ;i < new_fa.size();++i)
+        {
+            new_fa[i].resize(size);
+            new_index[i].resize(size);
+            std::copy(handle->fib.fa[i],handle->fib.fa[i]+size,new_fa[i].begin());
+            std::copy(handle->fib.findex[i],handle->fib.findex[i]+size,new_index[i].begin());
+        }
+
+        for(image::pixel_index<3> index;index.index() < handle->fib.dim.size();index.next(handle->fib.dim))
+        {
+            if(handle->fib.fa[0][index.index()] < fib.threshold)
+                continue;
+            std::vector<image::pixel_index<3> > neighbors;
+            image::get_neighbors(index,handle->fib.dim,neighbors);
+
+            std::vector<image::vector<3> > dis(neighbors.size());
+            std::vector<image::vector<3> > fib_dir(neighbors.size());
+            std::vector<float> fib_fa(neighbors.size());
+
+
+            for(unsigned char i = 0;i < neighbors.size();++i)
+            {
+                dis[i] = neighbors[i];
+                dis[i] -= image::vector<3>(index);
+                dis[i].normalize();
+                unsigned char fib_order,reverse;
+                if(fib.get_nearest_dir_fib(neighbors[i].index(),dis[i],fib_order,reverse))
+                {
+                    fib_dir[i] = handle->fib.getDir(neighbors[i].index(),fib_order);
+                    if(reverse)
+                        fib_dir[i] = -fib_dir[i];
+                    fib_fa[i] = handle->fib.fa[fib_order][neighbors[i].index()];
+                }
+            }
+
+
+            for(unsigned char i = 0;i < neighbors.size();++i)
+            if(fib_fa[i] > fib.threshold)
+            {
+                for(unsigned char j = i+1;j < neighbors.size();++j)
+                if(fib_fa[j] > fib.threshold)
+                {
+                    float angle = fib_dir[i]*fib_dir[j];
+                    if(angle > -fib.cull_cos_angle) // select opposite side
+                        continue;
+                    image::vector<3> predict_dir(fib_dir[i]);
+                    if(angle > 0)
+                        predict_dir += fib_dir[j];
+                    else
+                        predict_dir -= fib_dir[j];
+                    predict_dir.normalize();
+                    unsigned char fib_order,reverse;
+                    bool has_match = false;
+                    if(fib.get_nearest_dir_fib(index.index(),predict_dir,fib_order,reverse))
+                    {
+                        if(reverse)
+                            predict_dir -= image::vector<3>(handle->fib.getDir(index.index(),fib_order));
+                        else
+                            predict_dir += image::vector<3>(handle->fib.getDir(index.index(),fib_order));
+                        predict_dir.normalize();
+                        has_match = true;
+                    }
+                    short dir_index = 0;
+                    float max_value = 0.0;
+                    for (unsigned int k = 0; k < handle->fib.half_odf_size; ++k)
+                    {
+                        float value = std::abs(predict_dir*handle->fib.odf_table[k]);
+                        if (value > max_value)
+                        {
+                            max_value = value;
+                            dir_index = k;
+                        }
+                    }
+
+                    if(has_match)
+                        new_index[fib_order][index.index()] = dir_index;
+                    else
+                    {
+                        float add_fa = (fib_fa[i]+fib_fa[j])*0.5;
+                        for(unsigned char m = 0;m < new_fa.size();++m)
+                        if(add_fa > new_fa[m][index.index()])
+                        {
+                            std::swap(add_fa,new_fa[m][index.index()]);
+                            std::swap(dir_index,new_index[m][index.index()]);
+                        }
+                    }
+                }
+            }
+        }
+        for(unsigned int i = 0 ;i < new_fa.size();++i)
+        {
+            std::copy(new_fa[i].begin(),new_fa[i].begin()+size,(float*)handle->fib.fa[i]);
+            std::copy(new_index[i].begin(),new_index[i].begin()+size,(short*)handle->fib.findex[i]);
+        }
+    }
+    scene.show_slice();
+}
+
 void tracking_window::on_actionAuto_Rotate_triggered(bool checked)
 {
     if(checked)
