@@ -15,7 +15,10 @@ namespace po = boost::program_options;
 
 // test example
 // --action=ana --source=20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
-
+void get_connectivity_matrix(FibData* handle,
+                             TractModel& tract_model,
+                             image::basic_image<image::vector<3>,3>& mapping,
+                             po::variables_map& vm);
 int ana(int ac, char *av[])
 {
     // options for fiber tracking
@@ -25,9 +28,10 @@ int ana(int ac, char *av[])
     ("action", po::value<std::string>(), "ana: analysis")
     ("source", po::value<std::string>(), "assign the .fib file name")
     ("tract", po::value<std::string>(), "assign the .trk file name")
-    ("roi", po::value<std::string>(), "file for ROI regions")
-    ("end", po::value<std::string>(), "file for END regions")
+    ("roi", po::value<std::string>(), "file for region-based analysis")
     ("export", po::value<std::string>(), "export additional information (e.g. --export=tdi)")
+    ("connectivity", po::value<std::string>(), "export connectivity")
+    ("connectivity_type", po::value<std::string>()->default_value("end"), "specify connectivity parameter")
     ("connectivity_value", po::value<std::string>()->default_value("count"), "specify connectivity parameter")
     ;
 
@@ -111,118 +115,10 @@ int ana(int ac, char *av[])
         std::cout << file_name << " loaded" << std::endl;
 
     }
-    if(vm.count("export") && vm["export"].as<std::string>() == std::string("connectivity"))
+    if(vm.count("connectivity"))
     {
-        bool use_end_only = false;
-        std::string roi_file_name;
-        if (vm.count("roi"))
-        {
-            roi_file_name = vm["roi"].as<std::string>();
-            use_end_only = false;
-            std::cout << "roi=" << roi_file_name << std::endl;
-        }
-        if (vm.count("end"))
-        {
-            roi_file_name = vm["end"].as<std::string>();
-            use_end_only = true;
-            std::cout << "end=" << roi_file_name << std::endl;
-        }
-
-        if (roi_file_name.empty())
-        {
-            std::cout << "No ROI or END region defined for connectivity matrix." << std::endl;
-            return 0;
-        }
-        gz_nifti header;
-        std::cout << "loading " << roi_file_name << std::endl;
-        if (!header.load_from_file(roi_file_name))
-        {
-            std::cout << "Cannot open nifti file " << roi_file_name << std::endl;
-            return 0;
-        }
-        std::cout << "region loaded" << std::endl;
-        image::basic_image<unsigned int, 3> from;
-        header.toLPS(from);
-        image::matrix<4,4,float> convert;
-        bool has_convert = false;
-        if(from.geometry() != geometry)
-        {
-            if(is_qsdr)
-            {
-                convert.identity();
-                header.get_image_transformation(convert.begin());
-                convert.inv();
-                convert *= handle->trans_to_mni;
-                has_convert = true;
-
-            }
-            else
-            {
-                std::cout << "The ROI needs to be in the diffusion space." << std::endl;
-                return 0;
-            }
-        }
-        std::vector<unsigned char> value_map(std::numeric_limits<unsigned short>::max());
-        unsigned int max_value = 0;
-        for (image::pixel_index<3>index; index.is_valid(from.geometry());index.next(from.geometry()))
-        {
-            value_map[(unsigned short)from[index.index()]] = 1;
-            max_value = std::max<unsigned short>(from[index.index()],max_value);
-        }
-        value_map.resize(max_value+1);
-        unsigned short region_count = std::accumulate(value_map.begin(),value_map.end(),(unsigned short)0);
-        if(region_count < 2)
-        {
-            std::cout << "The ROI file should contain at least two regions to calculate the connectivity matrix." << std::endl;
-            return 0;
-        }
-        ConnectivityMatrix data;
-        data.regions.clear();
-        data.region_name.clear();
-        for(unsigned int value = 1;value < value_map.size();++value)
-            if(value_map[value])
-            {
-                image::basic_image<unsigned char,3> mask(from.geometry());
-                for(unsigned int i = 0;i < mask.size();++i)
-                    if(from[i] == value)
-                        mask[i] = 1;
-                ROIRegion region(geometry,handle->vs);
-                if(has_convert)
-                    region.LoadFromBuffer(mask,convert);
-                else
-                    region.LoadFromBuffer(mask);
-                const std::vector<image::vector<3,short> >& cur_region = region.get();
-                image::vector<3,float> pos = std::accumulate(cur_region.begin(),cur_region.end(),image::vector<3,float>(0,0,0));
-                pos /= cur_region.size();
-                std::ostringstream out;
-                out << "region" << value;
-                data.regions.push_back(cur_region);
-                data.region_name.push_back(out.str());
-            }
-        std::cout << "total number of regions=" << data.regions.size() << std::endl;
-        std::cout << "total number of tracts=" << tract_model.get_tracts().size() << std::endl;
-        std::cout << "calculating connectivity matrix..." << std::endl;
-        std::cout << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
-        QStringList value_list = QString(vm["connectivity_value"].as<std::string>().c_str()).split(",");
-        for(unsigned int j = 0;j < value_list.size();++j)
-        {
-            std::cout << "calculate matrix using " << value_list[j].toStdString() << std::endl;
-            if(!data.calculate(tract_model,value_list[j].toStdString(),use_end_only))
-            {
-                std::cout << "failed...invalid connectivity_value:" << value_list[j].toStdString();
-                continue;
-            }
-            std::string file_name_stat(file_name);
-            file_name_stat += ".";
-            file_name_stat += QFileInfo(roi_file_name.c_str()).baseName().toStdString();
-            file_name_stat += ".";
-            file_name_stat += vm["connectivity_value"].as<std::string>();
-            file_name_stat += use_end_only ? ".end":".pass";
-            file_name_stat += ".connectivity.mat";
-            std::cout << "export connectivity matrix to " << file_name_stat << std::endl;
-            data.save_to_file(file_name_stat.c_str());
-        }
-        return 0;
+        image::basic_image<image::vector<3>,3> mapping;
+        get_connectivity_matrix(handle.get(),tract_model,mapping,vm);
     }
 
     if(vm.count("export") && vm["export"].as<std::string>() == std::string("tdi"))

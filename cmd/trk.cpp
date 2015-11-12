@@ -23,6 +23,108 @@ extern fa_template fa_template_imp;
 extern std::vector<atlas> atlas_list;
 namespace po = boost::program_options;
 
+void save_connectivity_matrix(TractModel& tract_model,
+                              ConnectivityMatrix& data,
+                              const std::string& source,
+                              const std::string& connectivity_roi,
+                              const std::string& connectivity_value,
+                              bool use_end_only)
+{
+    std::cout << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
+    std::cout << "calculate matrix using " << connectivity_value << std::endl;
+    if(!data.calculate(tract_model,connectivity_value,use_end_only))
+    {
+        std::cout << "failed...invalid connectivity_value:" << connectivity_value;
+        return;
+    }
+    std::string file_name_stat(source);
+    file_name_stat += ".";
+    file_name_stat += connectivity_roi;
+    file_name_stat += ".";
+    file_name_stat += connectivity_value;
+    file_name_stat += use_end_only ? ".end":".pass";
+    file_name_stat += ".connectivity.mat";
+    std::cout << "export connectivity matrix to " << file_name_stat << std::endl;
+    data.save_to_file(file_name_stat.c_str());
+}
+
+void get_connectivity_matrix(FibData* handle,
+                             TractModel& tract_model,
+                             image::basic_image<image::vector<3>,3>& mapping,
+                             po::variables_map& vm)
+{
+    std::string source = vm["source"].as<std::string>();
+    QStringList connectivity_list = QString(vm["connectivity"].as<std::string>().c_str()).split(",");
+    QStringList connectivity_type_list = QString( vm["connectivity_type"].as<std::string>().c_str()).split(",");
+    QStringList connectivity_value_list = QString(vm["connectivity_value"].as<std::string>().c_str()).split(",");
+    for(unsigned int i = 0;i < connectivity_list.size();++i)
+    {
+        std::string roi_file_name = connectivity_list[i].toStdString();
+        ConnectivityMatrix data;
+        gz_nifti header;
+        image::basic_image<unsigned int, 3> from;
+        std::cout << "loading " << roi_file_name << std::endl;
+        if (!header.load_from_file(roi_file_name))
+        {
+            std::cout << "Cannot open nifti file " << roi_file_name << std::endl;
+            continue;
+        }
+        header.toLPS(from);
+        if(from.geometry() != handle->dim)
+        {
+            std::cout << roi_file_name << " is used as an MNI space ROI." << std::endl;
+            if(mapping.empty() && !atl_get_mapping(handle->mat_reader,1/*7-9-7*/,vm["thread_count"].as<int>(),mapping))
+                continue;
+            atlas_list.clear(); // some atlas may be loaded in ROI
+            if(atl_load_atlas(roi_file_name))
+                data.set_atlas(atlas_list[0],mapping);
+            else
+                continue;
+        }
+        else
+        {
+            std::cout << roi_file_name << " is used as a native space ROI." << std::endl;
+            std::vector<unsigned char> value_map(std::numeric_limits<unsigned short>::max());
+            unsigned int max_value = 0;
+            for (image::pixel_index<3>index; index.is_valid(from.geometry());index.next(from.geometry()))
+            {
+                value_map[(unsigned short)from[index.index()]] = 1;
+                max_value = std::max<unsigned short>(from[index.index()],max_value);
+            }
+            value_map.resize(max_value+1);
+            unsigned short region_count = std::accumulate(value_map.begin(),value_map.end(),(unsigned short)0);
+            if(region_count < 2)
+            {
+                std::cout << "The ROI file should contain at least two regions to calculate the connectivity matrix." << std::endl;
+                continue;
+            }
+            std::cout << "total number of regions=" << region_count << std::endl;
+            for(unsigned int value = 1;value < value_map.size();++value)
+                if(value_map[value])
+                {
+                    image::basic_image<unsigned char,3> mask(from.geometry());
+                    for(unsigned int i = 0;i < mask.size();++i)
+                        if(from[i] == value)
+                            mask[i] = 1;
+                    ROIRegion region(handle->dim,handle->vs);
+                    region.LoadFromBuffer(mask);
+                    const std::vector<image::vector<3,short> >& cur_region = region.get();
+                    image::vector<3,float> pos = std::accumulate(cur_region.begin(),cur_region.end(),image::vector<3,float>(0,0,0));
+                    pos /= cur_region.size();
+                    std::ostringstream out;
+                    out << "region" << value;
+                    data.regions.push_back(cur_region);
+                    data.region_name.push_back(out.str());
+                }
+        }
+
+        for(unsigned int j = 0;j < connectivity_type_list.size();++j)
+        for(unsigned int k = 0;k < connectivity_value_list.size();++k)
+            save_connectivity_matrix(tract_model,data,source,roi_file_name,connectivity_value_list[k].toStdString(),
+                                         connectivity_type_list[j].toLower() == QString("end"));
+    }
+}
+
 // test example
 // --action=trk --source=./test/20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
 
@@ -302,44 +404,7 @@ int trk(int ac, char *av[])
     std::cout << "output file:" << file_name << std::endl;
 
     if(vm.count("connectivity"))
-    {
-        QStringList connectivity_type_list = QString(vm["connectivity_type"].as<std::string>().c_str()).split(",");
-        for(unsigned int k = 0;k < connectivity_type_list.size();++k)
-        {
-            bool use_end_only = (connectivity_type_list[k].toLower() == QString("end"));
-            atlas_list.clear(); // some atlas may be loaded in ROI
-            if(mapping.empty() && !atl_get_mapping(handle->mat_reader,1/*7-9-7*/,vm["thread_count"].as<int>(),mapping))
-                return false;
-
-            if(atl_load_atlas(vm["connectivity"].as<std::string>()))
-            for(unsigned int index = 0;index < atlas_list.size();++index)
-            {
-                QStringList value_list = QString(vm["connectivity_value"].as<std::string>().c_str()).split(",");
-                for(unsigned int j = 0;j < value_list.size();++j)
-                {
-                    std::cout << "calculating connectivity matrix for atlas:"<< atlas_list[index].name << std::endl;
-                    ConnectivityMatrix data;
-                    data.set_atlas(atlas_list[index],mapping);
-                    std::cout << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
-                    std::cout << "calculate matrix using " << value_list[j].toStdString() << std::endl;
-                    if(!data.calculate(tract_model,value_list[j].toStdString(),use_end_only))
-                    {
-                        std::cout << "failed...invalid connectivity_value:" << value_list[j].toStdString();
-                        continue;
-                    }
-                    std::string file_name_stat(vm["source"].as<std::string>());
-                    file_name_stat += ".";
-                    file_name_stat += atlas_list[index].name;
-                    file_name_stat += ".";
-                    file_name_stat += value_list[j].toStdString();
-                    file_name_stat += use_end_only ? ".end":".pass";
-                    file_name_stat += ".connectivity.mat";
-                    std::cout << "export connectivity matrix to " << file_name_stat << std::endl;
-                    data.save_to_file(file_name_stat.c_str());
-                }
-            }
-        }
-    }
+        get_connectivity_matrix(handle.get(),tract_model,mapping,vm);
 
     if(vm.count("export"))
     {
