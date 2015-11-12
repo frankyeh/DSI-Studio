@@ -303,36 +303,40 @@ int trk(int ac, char *av[])
 
     if(vm.count("connectivity"))
     {
-        bool use_end_only = (vm["connectivity_type"].as<std::string>() == "end");
-        atlas_list.clear(); // some atlas may be loaded in ROI
-        if(mapping.empty() && !atl_get_mapping(handle->mat_reader,1/*7-9-7*/,vm["thread_count"].as<int>(),mapping))
-            return false;
-
-        if(atl_load_atlas(vm["connectivity"].as<std::string>()))
-        for(unsigned int index = 0;index < atlas_list.size();++index)
+        QStringList connectivity_type_list = QString(vm["connectivity_type"].as<std::string>().c_str()).split(",");
+        for(unsigned int k = 0;k < connectivity_type_list.size();++k)
         {
-            QStringList value_list = QString(vm["connectivity_value"].as<std::string>().c_str()).split(",");
-            for(unsigned int j = 0;j < value_list.size();++j)
+            bool use_end_only = (connectivity_type_list[k].toLower() == QString("end"));
+            atlas_list.clear(); // some atlas may be loaded in ROI
+            if(mapping.empty() && !atl_get_mapping(handle->mat_reader,1/*7-9-7*/,vm["thread_count"].as<int>(),mapping))
+                return false;
+
+            if(atl_load_atlas(vm["connectivity"].as<std::string>()))
+            for(unsigned int index = 0;index < atlas_list.size();++index)
             {
-                std::cout << "calculating connectivity matrix for atlas:"<< atlas_list[index].name << std::endl;
-                ConnectivityMatrix data;
-                data.set_atlas(atlas_list[index],mapping);
-                std::cout << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
-                std::cout << "calculate matrix using " << value_list[j].toStdString() << std::endl;
-                if(!data.calculate(tract_model,value_list[j].toStdString(),use_end_only))
+                QStringList value_list = QString(vm["connectivity_value"].as<std::string>().c_str()).split(",");
+                for(unsigned int j = 0;j < value_list.size();++j)
                 {
-                    std::cout << "failed...invalid connectivity_value:" << value_list[j].toStdString();
-                    continue;
+                    std::cout << "calculating connectivity matrix for atlas:"<< atlas_list[index].name << std::endl;
+                    ConnectivityMatrix data;
+                    data.set_atlas(atlas_list[index],mapping);
+                    std::cout << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
+                    std::cout << "calculate matrix using " << value_list[j].toStdString() << std::endl;
+                    if(!data.calculate(tract_model,value_list[j].toStdString(),use_end_only))
+                    {
+                        std::cout << "failed...invalid connectivity_value:" << value_list[j].toStdString();
+                        continue;
+                    }
+                    std::string file_name_stat(vm["source"].as<std::string>());
+                    file_name_stat += ".";
+                    file_name_stat += atlas_list[index].name;
+                    file_name_stat += ".";
+                    file_name_stat += value_list[j].toStdString();
+                    file_name_stat += use_end_only ? ".end":".pass";
+                    file_name_stat += ".connectivity.mat";
+                    std::cout << "export connectivity matrix to " << file_name_stat << std::endl;
+                    data.save_to_file(file_name_stat.c_str());
                 }
-                std::string file_name_stat(vm["source"].as<std::string>());
-                file_name_stat += ".";
-                file_name_stat += atlas_list[index].name;
-                file_name_stat += ".";
-                file_name_stat += value_list[j].toStdString();
-                file_name_stat += use_end_only ? ".end":".pass";
-                file_name_stat += ".connectivity.mat";
-                std::cout << "export connectivity matrix to " << file_name_stat << std::endl;
-                data.save_to_file(file_name_stat.c_str());
             }
         }
     }
