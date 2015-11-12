@@ -39,7 +39,7 @@ void save_connectivity_matrix(TractModel& tract_model,
     }
     std::string file_name_stat(source);
     file_name_stat += ".";
-    file_name_stat += connectivity_roi;
+    file_name_stat += (QFileInfo(connectivity_roi.c_str()).exists()) ? QFileInfo(connectivity_roi.c_str()).baseName().toStdString():connectivity_roi;
     file_name_stat += ".";
     file_name_stat += connectivity_value;
     file_name_stat += use_end_only ? ".end":".pass";
