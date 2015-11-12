@@ -53,7 +53,7 @@ void get_connectivity_matrix(FibData* handle,
                              image::basic_image<image::vector<3>,3>& mapping,
                              po::variables_map& vm)
 {
-    std::string source = vm["source"].as<std::string>();
+    std::string source = (vm.count("output")? vm["output"].as<std::string>(): vm["source"].as<std::string>());
     QStringList connectivity_list = QString(vm["connectivity"].as<std::string>().c_str()).split(",");
     QStringList connectivity_type_list = QString( vm["connectivity_type"].as<std::string>().c_str()).split(",");
     QStringList connectivity_value_list = QString(vm["connectivity_value"].as<std::string>().c_str()).split(",");
@@ -117,7 +117,7 @@ void get_connectivity_matrix(FibData* handle,
         for(unsigned int j = 0;j < connectivity_type_list.size();++j)
         for(unsigned int k = 0;k < connectivity_value_list.size();++k)
             save_connectivity_matrix(tract_model,data,source,roi_file_name,connectivity_value_list[k].toStdString(),
-                                         connectivity_type_list[j].toLower() == QString("end"));
+                                     connectivity_type_list[j].toLower() == QString("end"));
     }
 }
 
