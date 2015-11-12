@@ -64,12 +64,8 @@ void get_connectivity_matrix(FibData* handle,
         gz_nifti header;
         image::basic_image<unsigned int, 3> from;
         std::cout << "loading " << roi_file_name << std::endl;
-        if (!header.load_from_file(roi_file_name))
-        {
-            std::cout << "Cannot open nifti file " << roi_file_name << std::endl;
-            continue;
-        }
-        header.toLPS(from);
+        if (QFileInfo(roi_file_name.c_str()).exists() && header.load_from_file(roi_file_name))
+            header.toLPS(from);
         if(from.geometry() != handle->dim)
         {
             std::cout << roi_file_name << " is used as an MNI space ROI." << std::endl;
