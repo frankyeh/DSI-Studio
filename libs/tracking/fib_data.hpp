@@ -1140,7 +1140,7 @@ public:
     std::vector<image::vector<3,float> > odf_table;
     float threshold;
     float cull_cos_angle;
-private:
+public:
     bool get_nearest_dir_fib(unsigned int space_index,
                          const image::vector<3,float>& ref_dir, // reference direction, should be unit vector
                          unsigned char& fib_order_,

@@ -1219,6 +1219,7 @@
     <addaction name="actionManual_Registration"/>
     <addaction name="actionView_FIB_Content"/>
     <addaction name="actionQuality_Assessment"/>
+    <addaction name="actionImprove_Quality"/>
    </widget>
    <addaction name="menu_Edit"/>
    <addaction name="menuRegions"/>
@@ -2945,6 +2946,11 @@
    </property>
    <property name="text">
     <string>Load Color Map...</string>
+   </property>
+  </action>
+  <action name="actionImprove_Quality">
+   <property name="text">
+    <string>FIB Autocorrect</string>
    </property>
   </action>
  </widget>
