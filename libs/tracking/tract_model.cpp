@@ -74,7 +74,7 @@ struct TrackVis
     }
 };
 //---------------------------------------------------------------------------
-TractModel::TractModel(FibData* handle_):handle(handle_),geometry(handle_->dim),vs(handle_->vs),fib(new fiber_orientations)
+TractModel::TractModel(FibData* handle_):handle(handle_),report(handle_->report),geometry(handle_->dim),vs(handle_->vs),fib(new fiber_orientations)
 {
     fib->read(*handle_);
 }

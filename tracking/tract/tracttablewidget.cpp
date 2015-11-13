@@ -115,7 +115,7 @@ void TractTableWidget::start_tracking(void)
     thread_data.back()->run(tract_models.back()->get_fib(),
                             cur_tracking_window["thread_count"].toInt(),
                             cur_tracking_window["track_count"].toInt());
-    tract_models.back()->report = thread_data.back()->report.str();
+    tract_models.back()->report += thread_data.back()->report.str();
     timer->start(1000);
 }
 void TractTableWidget::filter_by_roi(void)
@@ -630,7 +630,6 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
 void TractTableWidget::show_method(void)
 {
     std::ostringstream out;
-    out << cur_tracking_window.handle->report.c_str();
     if(currentRow() < tract_models.size())
         out << tract_models[currentRow()]->report.c_str() << std::endl;
     cur_tracking_window.show_info_dialog("Methods",out.str());

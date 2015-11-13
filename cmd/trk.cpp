@@ -346,6 +346,7 @@ int trk(int ac, char *av[])
     std::cout << "start tracking." << std::endl;
 
     tracking_thread.run(tract_model.get_fib(),vm["thread_count"].as<int>(),termination_count,true);
+    tract_model.report += tracking_thread.report.str();
 
     tracking_thread.fetchTracks(&tract_model);
 
