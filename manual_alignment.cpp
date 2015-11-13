@@ -40,11 +40,13 @@ void run_reg(const image::basic_image<float,3>& from,
         data.progress = 2;
         return;
     }
-    image::transformation_matrix<float> affine(data.arg,from.geometry(),from_vs,to.geometry(),to_vs);
-    affine.inverse();
+    data.T = image::transformation_matrix<float>(data.arg,from.geometry(),from_vs,to.geometry(),to_vs);
+    data.iT = data.T;
+    data.iT.inverse();
+
     data.progress = 1;
     image::basic_image<float,3> new_from(to.geometry());
-    image::resample(from,new_from,affine,image::linear);
+    image::resample(from,new_from,data.iT,image::linear);
     if(thread_count == 1)
         image::reg::bfnorm(new_from,to,data.bnorm_data,data.terminated);
     else
@@ -231,9 +233,9 @@ void manual_alignment::load_param(void)
 }
 void manual_alignment::update_affine(void)
 {
-    T = image::transformation_matrix<float>(data.arg,from.geometry(),from_vs,to.geometry(),to_vs);
-    iT = T;
-    iT.inverse();
+    data.T = image::transformation_matrix<float>(data.arg,from.geometry(),from_vs,to.geometry(),to_vs);
+    data.iT = data.T;
+    data.iT.inverse();
 }
 
 void manual_alignment::update_image(void)
@@ -241,7 +243,7 @@ void manual_alignment::update_image(void)
     update_affine();
     warped_from.clear();
     warped_from.resize(to.geometry());
-    image::resample(from,warped_from,iT,image::linear);
+    image::resample(from,warped_from,data.iT,image::linear);
 }
 void manual_alignment::param_changed()
 {

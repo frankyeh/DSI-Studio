@@ -21,6 +21,8 @@ struct reg_data{
     }
     image::reg::bfnorm_mapping<float,3> bnorm_data;
     image::affine_transform<float> arg;
+    image::transformation_matrix<float> T;
+    image::transformation_matrix<float> iT;
     int reg_type;
     int cost_function;
     unsigned char terminated;
@@ -52,8 +54,6 @@ private:
 public:
     reg_data data;
     QTimer* timer;
-    image::transformation_matrix<float> T;
-    image::transformation_matrix<float> iT;
     explicit manual_alignment(QWidget *parent,
                               image::basic_image<float,3> from_,
                               const image::vector<3>& from_vs,

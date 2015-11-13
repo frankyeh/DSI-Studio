@@ -575,7 +575,7 @@ void reconstruction_window::on_manual_reg_clicked()
     std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,handle->voxel.vs,fa_template_imp.I,fa_template_imp.vs,image::reg::rigid_body));
     manual->timer->start();
     if(manual->exec() == QDialog::Accepted)
-        handle->voxel.qsdr_trans = manual->T;
+        handle->voxel.qsdr_trans = manual->data.T;
 }
 
 void reconstruction_window::on_odf_sharpening_currentIndexChanged(int index)
@@ -746,9 +746,8 @@ void reconstruction_window::on_actionRotate_triggered()
     if(manual->exec() != QDialog::Accepted)
         return;
 
-    image::transformation_matrix<float> affine = manual->iT;
     begin_prog("rotating");
-    handle->rotate(ref.geometry(),affine);
+    handle->rotate(ref.geometry(),manual->data.iT);
     handle->calculate_mask();
     handle->voxel.vs = vs;
     update_dimension();
@@ -991,8 +990,7 @@ void reconstruction_window::on_add_t1t2_clicked()
         manual->timer->start();
         if(manual->exec() != QDialog::Accepted)
             return;
-        affine = manual->iT;
-        affine.inverse();
+        affine = manual->data.T;
     }
     handle->voxel.other_image.push_back(ref);
     handle->voxel.other_image_name.push_back(QFileInfo(filename).baseName().toLocal8Bit().begin());
@@ -1005,9 +1003,8 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
     std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,handle->voxel.vs,dwi,handle->voxel.vs,0));
     if(manual->exec() != QDialog::Accepted)
         return;
-    image::transformation_matrix<float> affine = manual->iT;
     begin_prog("rotating");
-    handle->rotate(dwi.geometry(),affine);
+    handle->rotate(dwi.geometry(),manual->data.iT);
     handle->calculate_mask();
     update_dimension();
     update_image();

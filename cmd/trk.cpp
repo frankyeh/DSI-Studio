@@ -272,7 +272,7 @@ int trk(int ac, char *av[])
             std::cout << "Loading " << region_name << " from " << atlas_name << " atlas" << std::endl;
             if(!atl_load_atlas(atlas_name))
                 return 0;
-            if(mapping.empty() && !atl_get_mapping(handle->mat_reader,1/*7-9-7*/,1/*thread_count*/,mapping))
+            if(mapping.empty() && !atl_get_mapping(handle->mat_reader,1/*7-9-7*/,boost::thread::hardware_concurrency(),mapping))
                 return 0;
             image::vector<3> null;
             std::vector<image::vector<3,short> > cur_region;

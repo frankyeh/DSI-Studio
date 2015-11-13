@@ -415,7 +415,7 @@ void tracking_window::subject2mni(image::vector<3>& pos)
 {
     if(mi3.get())
     {
-        mi3->T(pos);
+        mi3->data.T(pos);
         if(mi3->data.progress >= 1)
         {
             image::vector<3> mni;
