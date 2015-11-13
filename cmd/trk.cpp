@@ -53,10 +53,14 @@ void get_connectivity_matrix(FibData* handle,
                              image::basic_image<image::vector<3>,3>& mapping,
                              po::variables_map& vm)
 {
-    std::string source = (vm.count("output")? vm["output"].as<std::string>(): vm["source"].as<std::string>());
+    std::string source;
     QStringList connectivity_list = QString(vm["connectivity"].as<std::string>().c_str()).split(",");
     QStringList connectivity_type_list = QString( vm["connectivity_type"].as<std::string>().c_str()).split(",");
     QStringList connectivity_value_list = QString(vm["connectivity_value"].as<std::string>().c_str()).split(",");
+    if(vm.count("output"))
+        source = vm["output"].as<std::string>();
+    if(source.empty() || source == "no_file")
+        source = vm["source"].as<std::string>();
     for(unsigned int i = 0;i < connectivity_list.size();++i)
     {
         std::string roi_file_name = connectivity_list[i].toStdString();

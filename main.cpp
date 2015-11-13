@@ -214,6 +214,7 @@ int main(int ac, char *av[])
                 std::cout << "invalid command, use --help for more detail" << std::endl;
                 return 1;
             }
+            QDir::setCurrent(QFileInfo(vm["action"].as<std::string>().c_str()).absolutePath());
             if(vm["action"].as<std::string>() == std::string("rec"))
                 return rec(ac,av);
             if(vm["action"].as<std::string>() == std::string("trk"))
