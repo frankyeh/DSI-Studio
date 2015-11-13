@@ -32,7 +32,7 @@ int rec(int ac, char *av[])
     ("record_odf", po::value<int>()->default_value(0), "output odf information")
     ("output_jac", po::value<int>()->default_value(0), "output jacobian determinant")
     ("output_map", po::value<int>()->default_value(0), "output mapping")
-    ("thread", po::value<int>()->default_value(2), "set the multi-thread count --thread=2")
+    ("thread_count", po::value<int>()->default_value(boost::thread::hardware_concurrency()), "set the multi-thread count --thread_count=2")
     ("num_fiber", po::value<int>()->default_value(5), "maximum fibers resolved per voxel, default=3")
     ("half_sphere", po::value<int>()->default_value(0), "specific whether half sphere is used")
     ("deconvolution", po::value<int>()->default_value(0), "apply deconvolution")
@@ -223,14 +223,14 @@ int rec(int ac, char *av[])
         unsigned int progress = 0;
         bool terminated = false;
         std::cout << "correct for motion and eddy current..." << std::endl;
-        rec_motion_correction(handle.get(),vm["thread"].as<int>(),
+        rec_motion_correction(handle.get(),vm["thread_count"].as<int>(),
                 arg,progress,terminated);
         std::cout << "Done." <<std::endl;
     }
     std::cout << "start reconstruction..." <<std::endl;
     const char* msg = reconstruction(handle.get(),method_index,
                                      param,vm["check_btable"].as<int>(),
-                                     vm["thread"].as<int>());
+                                     vm["thread_count"].as<int>());
     if (!msg)
         std::cout << "Reconstruction finished:" << msg << std::endl;
     return 0;

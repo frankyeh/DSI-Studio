@@ -21,7 +21,7 @@ int cnt(int ac,char *av[])
     ("threshold", po::value<float>()->default_value(0), "assign the threshold for tracking.")
     ("seeding_density", po::value<float>()->default_value(10), "assign the seeding_density for tracking")
     ("permutation", po::value<int>()->default_value(5000), "assign the number of permutation")
-    ("thread", po::value<int>()->default_value(4), "assign the number of threads used in computation")
+    ("thread_count", po::value<int>()->default_value(boost::thread::hardware_concurrency()), "assign the number of threads used in computation")
     ("track_fdr", po::value<float>(), "assign the FDR threshold for tracks")
     ("track_length", po::value<int>()->default_value(40), "assign the length threshold for tracks")
     ("normalized_qa", po::value<int>()->default_value(0), "specify whether qa will be normalized")
@@ -126,7 +126,7 @@ int cnt(int ac,char *av[])
     vbc->ui->mr_permutation->setValue(vm["permutation"].as<int>());
     std::cout << "permutation=" << vbc->ui->mr_permutation->value() << std::endl;
 
-    vbc->ui->multithread->setValue(vm["thread"].as<int>());
+    vbc->ui->multithread->setValue(vm["thread_count"].as<int>());
     std::cout << "thread=" << vbc->ui->multithread->value() << std::endl;
 
     if(vm["normalized_qa"].as<int>())

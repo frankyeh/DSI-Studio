@@ -187,7 +187,7 @@ int atl(int ac, char *av[])
     ("action", po::value<std::string>(), "atl: output atlas")
     ("source", po::value<std::string>(), "assign the .fib file name")
     ("order", po::value<int>()->default_value(0), "normalization order (0~3)")
-    ("thread_count", po::value<int>()->default_value(1), "thread count")
+    ("thread_count", po::value<int>()->default_value(boost::thread::hardware_concurrency()), "thread count")
     ("atlas", po::value<std::string>(), "atlas name")
     ("output", po::value<std::string>()->default_value("multiple"), "output files")
     ;
