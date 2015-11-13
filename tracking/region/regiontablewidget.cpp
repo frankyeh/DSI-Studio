@@ -827,8 +827,7 @@ void RegionTableWidget::setROIs(ThreadData* data)
     {
         std::vector<image::vector<3,short> > points;
         whole_brain_points(points);
-        data->setRegions(cur_tracking_window.handle->dim,points,seed_id);
-        data->seed_report = " Whole brain seeding was used.";
+        data->setRegions(cur_tracking_window.handle->dim,points,seed_id,"whole brain");
     }
     bool set_color = false;
     for (unsigned int index = 0;index < regions.size();++index)
@@ -840,19 +839,8 @@ void RegionTableWidget::setROIs(ThreadData* data)
                 set_color = true;
             }
             data->setRegions(cur_tracking_window.handle->dim,regions[index].get(),
-                             regions[index].regions_feature);
-            if(regions[index].regions_feature == roi_id)
-                data->seed_report += " An ROI was placed at ";
-            if(regions[index].regions_feature == roa_id)
-                data->seed_report += " An ROA was placed at ";
-            if(regions[index].regions_feature == end_id)
-                data->seed_report += " An ending region was placed at ";
-            if(regions[index].regions_feature == seed_id)
-                data->seed_report += " A seeding region was placed at ";
-            if(regions[index].regions_feature == terminate_id)
-                data->seed_report += " A terminative region was placed at ";
-            data->seed_report += item(index,0)->text().toLocal8Bit().begin();
-            data->seed_report += ".";
+                             regions[index].regions_feature,item(index,0)->text().toLocal8Bit().begin());
+
         }
 }
 

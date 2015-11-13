@@ -172,28 +172,36 @@ public:
 
     }
     void setRegions(image::geometry<3> dim,
-                    const std::vector<image::vector<3,short> >& points,unsigned char type)
+                    const std::vector<image::vector<3,short> >& points,
+                    unsigned char type,
+                    const char* roi_name)
     {
         switch(type)
         {
         case 0: //ROI
             roi_mgr.add_inclusive_roi(dim,points);
-                break;
+            seed_report += " An ROI was placed at ";
+            break;
         case 1: //ROA
             roi_mgr.add_exclusive_roi(dim,points);
-                break;
+            seed_report += " An ROA was placed at ";
+            break;
         case 2: //End
             roi_mgr.add_end_roi(dim,points);
-                break;
+            seed_report += " An ending region was placed at ";
+            break;
         case 4: //Terminate
             roi_mgr.add_terminate_roi(dim,points);
-                break;
+            seed_report += " A terminative region was placed at ";
+            break;
         case 3: //seed
             for (unsigned int index = 0;index < points.size();++index)
                 seeds.push_back(points[index]);
+            seed_report += " A seeding region was placed at ";
             break;
-
         }
+        seed_report += roi_name;
+        seed_report += ".";
     }
     TrackingMethod* new_method(const fiber_orientations& fib)
     {

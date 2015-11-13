@@ -67,7 +67,6 @@ bool atl_get_mapping(gz_mat_read& mat_reader,
                      unsigned int thread_count,
                      image::basic_image<image::vector<3>,3>& mapping)
 {
-    std::cout << "Conduct spatial warping: " << thread_count << "-thread, " << factor << "-factor" << std::endl;
     unsigned int col,row;
     const unsigned short* dim = 0;
     const float* vs = 0;
@@ -99,6 +98,7 @@ bool atl_get_mapping(gz_mat_read& mat_reader,
     }
     else
     {
+        std::cout << "Conduct spatial warping: " << thread_count << "-thread, " << factor << "-factor" << std::endl;
         image::basic_image<float,3> from(fa0,geo),to(fa_template_imp.I);
         reg_data data(fa_template_imp.I.geometry(),image::reg::affine,factor);
 

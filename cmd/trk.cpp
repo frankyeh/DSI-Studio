@@ -306,7 +306,7 @@ int trk(int ac, char *av[])
             std::cout << "No region found in " << file_name << std::endl;
             continue;
         }
-        tracking_thread.setRegions(geometry,roi.get(),type[index]);
+        tracking_thread.setRegions(geometry,roi.get(),type[index],file_name.c_str());
         std::cout << roi_names[index] << "=" << file_name << std::endl;
     }
 
@@ -326,7 +326,7 @@ int trk(int ac, char *av[])
         for(image::pixel_index<3> index;index.is_valid(geometry);index.next(geometry))
             if(fa0[index.index()] > tract_model.get_fib().threshold)
                 seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
-        tracking_thread.setRegions(geometry,seed,3);
+        tracking_thread.setRegions(geometry,seed,3,"whole brain");
     }
 
     {
