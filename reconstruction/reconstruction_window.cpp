@@ -703,24 +703,24 @@ void reconstruction_window::on_actionFlip_xy_triggered()
 {
     begin_prog("rotating");
     handle->flip(3);
-    update_dimension();
     update_image();
+    update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 void reconstruction_window::on_actionFlip_yz_triggered()
 {
     begin_prog("rotating");
     handle->flip(4);
-    update_dimension();
     update_image();
+    update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 void reconstruction_window::on_actionFlip_xz_triggered()
 {
     begin_prog("rotating");
     handle->flip(5);
-    update_dimension();
     update_image();
+    update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
@@ -750,8 +750,8 @@ void reconstruction_window::on_actionRotate_triggered()
     handle->rotate(ref.geometry(),manual->data.iT);
     handle->calculate_mask();
     handle->voxel.vs = vs;
-    update_dimension();
     update_image();
+    update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 
 }
@@ -772,8 +772,8 @@ void reconstruction_window::on_actionTrim_image_triggered()
 {
     begin_prog("trimming");
     handle->trim();
-    update_dimension();
     update_image();
+    update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
@@ -1006,8 +1006,8 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
     begin_prog("rotating");
     handle->rotate(dwi.geometry(),manual->data.iT);
     handle->calculate_mask();
-    update_dimension();
     update_image();
+    update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
