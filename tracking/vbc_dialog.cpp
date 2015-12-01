@@ -553,10 +553,18 @@ bool vbc_dialog::load_demographic_file(QString filename)
         if(feature_count*(vbc->handle->num_subjects+1) != items.size())
         {
             if(gui)
-                QMessageBox::information(this,"Warning",QString("Subject number mismatch."));
+            {
+                int result = QMessageBox::information(this,"Warning",QString("Subject number mismatch. text file has %1 elements while database has %2 subjects. Try to match the data?").
+                                                                arg(items.size()).arg(vbc->handle->num_subjects),QMessageBox::Yes|QMessageBox::No);
+                if(result == QMessageBox::No)
+                    return false;
+                items.resize(feature_count*(vbc->handle->num_subjects+1));
+            }
             else
+            {
                 std::cout << "subject number mismatch in the demographic file" <<std::endl;
-            return false;
+                return false;
+            }
         }
         bool add_age_and_sex = false;
         std::vector<unsigned int> age(vbc->handle->num_subjects),sex(vbc->handle->num_subjects);
