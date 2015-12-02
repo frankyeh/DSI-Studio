@@ -133,13 +133,6 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="motion_correction">
-         <property name="text">
-          <string>Detect motion...</string>
-         </property>
-        </widget>
-       </item>
-       <item>
         <spacer name="horizontalSpacer">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
