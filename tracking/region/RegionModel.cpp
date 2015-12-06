@@ -52,9 +52,11 @@ void RegionModel::sortIndices(void)
 
 
 // ---------------------------------------------------------------------------
-bool RegionModel::load(const std::vector<image::vector<3,short> >& seeds, double scale)
+bool RegionModel::load(const std::vector<image::vector<3,short> >& seeds, double scale,bool smooth)
 {
-    image::vector<3,short> max_value, min_value;
+    if(seeds.empty())
+        return false;
+    image::vector<3,short> max_value(seeds[0]), min_value(seeds[0]);
     for (unsigned int index = 0; index < seeds.size(); ++index)
         for (unsigned int dim = 0; dim < 3; ++dim)
             if (seeds[index][dim] > max_value[dim])
@@ -62,14 +64,7 @@ bool RegionModel::load(const std::vector<image::vector<3,short> >& seeds, double
             else if (seeds[index][dim] < min_value[dim])
                 min_value[dim] = seeds[index][dim];
     max_value += image::vector<3,short>(3, 3, 3);
-    for (unsigned int dim = 0; dim < 3; ++dim)
-    {
-        if (max_value[dim] > 512)
-            max_value[dim] = 512;
-        if (min_value[dim] < -512)
-            min_value[dim] = -512;
-        min_value[dim] = 0;
-    }
+    min_value -= image::vector<3,short>(3, 3, 3);
     image::basic_image<unsigned char, 3>buffer
     (image::geometry<3>(max_value[0] - min_value[0],
                         max_value[1] - min_value[1], max_value[2] - min_value[2]));
@@ -78,8 +73,6 @@ bool RegionModel::load(const std::vector<image::vector<3,short> >& seeds, double
     {
         image::vector<3,short> point(seeds[index]);
         point -= min_value;
-        if (!buffer.geometry().is_valid(point))
-            continue;
         buffer[image::pixel_index<3>(point[0], point[1], point[2],
                                      buffer.geometry()).index()] = 200;
     }
@@ -90,7 +83,8 @@ bool RegionModel::load(const std::vector<image::vector<3,short> >& seeds, double
         image::downsampling(buffer);
     }
 
-    image::filter::mean(buffer);
+    if(smooth)
+        image::filter::mean(buffer);
 
     object.reset(new image::march_cube<image::vector<3,float> >(buffer, 20));
 
@@ -104,7 +98,7 @@ bool RegionModel::load(const std::vector<image::vector<3,short> >& seeds, double
     else
     {
         for (unsigned int index = 0; index < object->point_list.size(); ++index)
-            object->point_list[index] -= shift;
+            object->point_list[index] += shift;
         sortIndices();
     }
     if (scale != 1.0)
@@ -112,32 +106,6 @@ bool RegionModel::load(const std::vector<image::vector<3,short> >& seeds, double
             object->point_list[index]/= scale;
 
 
-    return object.get();
-}
-
-bool RegionModel::load(const image::basic_image<unsigned char, 3>& mask,unsigned char threshold)
-{
-    if(mask.width() > 256 || mask.height() > 256 || mask.depth() > 256)
-    {
-        image::basic_image<unsigned int, 3> new_mask(mask);
-        float scale = 1.0;
-        while(new_mask.width() > 256 || new_mask.height() > 256 || new_mask.depth() > 256)
-        {
-            scale *= 2.0;
-            image::downsampling(new_mask);
-        }
-        object.reset(new image::march_cube<image::vector<3,float> >(new_mask, threshold));
-        for (unsigned int index = 0; index < object->point_list.size(); ++index)
-            object->point_list[index] *= scale;
-    }
-    else
-        object.reset(new image::march_cube<image::vector<3,float> >(mask, threshold));
-
-
-    if (object->point_list.empty())
-        object.reset(0);
-    else
-        sortIndices();
     return object.get();
 }
 

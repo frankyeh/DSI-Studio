@@ -180,24 +180,6 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
 // ---------------------------------------------------------------------------
 std::vector<boost::thread*> back_thread;
 std::vector<RegionModel*> back_region;
-void updateMesh(unsigned int id,image::geometry<3> geo,
-                std::vector<image::vector<3,short> > region,bool smooth)
-{
-    image::basic_image<unsigned char, 3> mask(geo);
-    for (unsigned int index = 0; index < region.size(); ++index)
-    {
-        if (geo.is_valid(region[index][0], region[index][1], region[index][2]))
-            mask[image::pixel_index<3>(region[index][0], region[index][1],
-                                       region[index][2], geo).index()] = 200;
-    }
-    if(smooth)
-        image::filter::gaussian(mask);
-    std::auto_ptr<RegionModel> new_region(new RegionModel);
-    new_region->load(mask,20);
-    if(back_thread[id])
-        back_region[id] = new_region.release();
-
-}
 // ---------------------------------------------------------------------------
 ROIRegion::~ROIRegion(void)
 {
@@ -230,28 +212,10 @@ bool ROIRegion::need_update(void)
 
 void ROIRegion::makeMeshes(bool smooth)
 {
-    /*
-    if (modified && !has_back_thread)
-    {
-        modified = false;
-        back_thread_id = back_thread.size();
-        has_back_thread = true;
-        back_region.push_back(0);
-        back_thread.push_back(new boost::thread(&updateMesh,back_thread_id,geo,region,smooth));
-    }
-    */
     if(!modified)
         return;
     modified = false;
-    if(smooth)
-    {
-        image::basic_image<unsigned char, 3> mask(geo);
-        SaveToBuffer(mask,200);
-        image::filter::gaussian(mask);
-        show_region.load(mask,20);
-    }
-    else
-        show_region.load(region);
+    show_region.load(region,1.0,smooth);
 }
 // ---------------------------------------------------------------------------
 void ROIRegion::SaveToBuffer(image::basic_image<unsigned char, 3>& mask,
