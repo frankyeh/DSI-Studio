@@ -359,7 +359,7 @@ public:
                 std::for_each(fa[i].begin(),fa[i].end(),boost::lambda::_1 /= voxel.z0);
         }
 
-        //mat_writer.write("iso",&*iso.begin(),1,iso.size());
+        mat_writer.write("iso",&*iso.begin(),1,iso.size());
 
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
         {
