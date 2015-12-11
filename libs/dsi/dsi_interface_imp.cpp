@@ -400,8 +400,11 @@ const char* reconstruction(ImageModel* image_model,
             << " A diffusion sampling length ratio of "
             << (float)param_values[0] << " was used, and the output resolution was " << param_values[1] << " mm.";
             // run gqi to get the spin quantity
+            std::vector<image::pointer_image<float,3> > tmp;
+            tmp.swap(image_model->voxel.grad_dev);
             if (!image_model->reconstruct<gqi_estimate_response_function>(thread_count))
                 return "reconstruction canceled";
+            tmp.swap(image_model->voxel.grad_dev);
             out << ".reg" << (int)image_model->voxel.reg_method;
             out << "i" << (int)image_model->voxel.interpo_method;
             out << (image_model->voxel.r2_weighted ? ".qsdr2.":".qsdr.");
