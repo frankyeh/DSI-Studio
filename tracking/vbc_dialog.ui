@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>641</width>
-    <height>566</height>
+    <width>646</width>
+    <height>613</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -47,7 +47,7 @@
            <x>0</x>
            <y>0</y>
            <width>644</width>
-           <height>468</height>
+           <height>515</height>
           </rect>
          </property>
          <attribute name="label">
@@ -942,8 +942,8 @@ Difference</string>
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>-426</y>
-           <width>606</width>
+           <y>-379</y>
+           <width>611</width>
            <height>911</height>
           </rect>
          </property>
@@ -1937,7 +1937,7 @@ Difference</string>
            <x>0</x>
            <y>0</y>
            <width>631</width>
-           <height>468</height>
+           <height>515</height>
           </rect>
          </property>
          <attribute name="label">
