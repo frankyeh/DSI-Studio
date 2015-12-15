@@ -1211,11 +1211,12 @@
     </property>
     <addaction name="actionLoad_tracking_parameters"/>
     <addaction name="actionSave_tracking_parameters"/>
+    <addaction name="actionRestore_Tracking_Settings"/>
     <addaction name="separator"/>
     <addaction name="actionLoad_Rendering_Parameters"/>
     <addaction name="actionSave_Rendering_Parameters"/>
-    <addaction name="separator"/>
     <addaction name="actionRestore_Settings"/>
+    <addaction name="separator"/>
     <addaction name="actionManual_Registration"/>
     <addaction name="actionView_FIB_Content"/>
     <addaction name="actionQuality_Assessment"/>
@@ -2951,6 +2952,11 @@
   <action name="actionImprove_Quality">
    <property name="text">
     <string>FIB Autocorrect</string>
+   </property>
+  </action>
+  <action name="actionRestore_Tracking_Settings">
+   <property name="text">
+    <string>Restore Tracking Settings</string>
    </property>
   </action>
  </widget>

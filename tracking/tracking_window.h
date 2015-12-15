@@ -166,6 +166,7 @@ private slots:
     void on_actionCut_Z_2_triggered();
     void on_actionStrip_skull_for_T1w_image_triggered();
     void on_actionImprove_Quality_triggered();
+    void on_actionRestore_Tracking_Settings_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

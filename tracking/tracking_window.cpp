@@ -1247,12 +1247,21 @@ void tracking_window::on_addRegionFromAtlas_clicked()
 
 void tracking_window::on_actionRestore_Settings_triggered()
 {
+    renderWidget->setDefault("ROI");
     renderWidget->setDefault("Rendering");
     renderWidget->setDefault("show_slice");
     renderWidget->setDefault("show_tract");
     renderWidget->setDefault("show_region");
     renderWidget->setDefault("show_surface");
     renderWidget->setDefault("show_odf");
+    glWidget->updateGL();
+    scene.show_slice();
+}
+
+
+void tracking_window::on_actionRestore_Tracking_Settings_triggered()
+{
+    renderWidget->setDefault("Tracking");
     glWidget->updateGL();
 }
 
@@ -1652,3 +1661,7 @@ void tracking_window::on_actionStrip_skull_for_T1w_image_triggered()
     else
         QMessageBox::information(this,"Error","Load T1W image first");
 }
+
+
+
+
