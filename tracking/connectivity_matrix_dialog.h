@@ -18,11 +18,12 @@ class connectivity_matrix_dialog : public QDialog
     image::color_image cm;
     QImage view_image;
     QGraphicsScene scene;
+    QString method;
 public:
     ConnectivityMatrix data;
 public:
     tracking_window* cur_tracking_window;
-    explicit connectivity_matrix_dialog(tracking_window *parent);
+    explicit connectivity_matrix_dialog(tracking_window *parent, QString method);
     ~connectivity_matrix_dialog();
 
     void mouse_move(QMouseEvent *mouseEvent);

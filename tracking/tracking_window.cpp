@@ -1100,9 +1100,14 @@ void tracking_window::on_actionConnectivity_matrix_triggered()
         QMessageBox::information(this,"DSI Studio","Run fiber tracking first",0);
         return;
     }
+    if(tractWidget->tract_models.front()->get_visible_track_count() < 10000)
+        QMessageBox::information(this,"DSI Studio","You have limited number of tracks. It is recommended to increase the tracks count to get a more reliable estimation.",0);
     if(atlas_list.empty())
         QMessageBox::information(0,"Error",QString("DSI Studio cannot find atlas files in ")+QCoreApplication::applicationDirPath()+ "/atlas",0);
-    connectivity_matrix.reset(new connectivity_matrix_dialog(this));
+    std::ostringstream out;
+    if(tractWidget->currentRow() < tractWidget->tract_models.size())
+        out << tractWidget->tract_models[tractWidget->currentRow()]->report.c_str() << std::endl;
+    connectivity_matrix.reset(new connectivity_matrix_dialog(this,out.str().c_str()));
     connectivity_matrix->show();
 }
 

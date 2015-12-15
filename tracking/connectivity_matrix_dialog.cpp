@@ -10,9 +10,9 @@
 #include "mapping/atlas.hpp"
 #include "libs/tracking/fib_data.hpp"
 extern std::vector<atlas> atlas_list;
-connectivity_matrix_dialog::connectivity_matrix_dialog(tracking_window *parent) :
+connectivity_matrix_dialog::connectivity_matrix_dialog(tracking_window *parent,QString method_) :
     QDialog(parent),cur_tracking_window(parent),
-    ui(new Ui::connectivity_matrix_dialog)
+    ui(new Ui::connectivity_matrix_dialog),method(method_)
 {
     ui->setupUi(this);
     ui->graphicsView->setScene(&scene);
@@ -125,6 +125,9 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
                    ui->end_only->currentIndex());
     data.save_to_image(cm);
     on_zoom_valueChanged(0);
+    QString out = QString("%1 %2 was used as the brain parcellation, and the connectivity matrix was calculated by using %3 of the connecting tracks.").
+            arg(method).arg(ui->region_list->currentText()).arg(ui->matrix_value->currentText());
+    ui->report->setText(out);
 }
 
 
