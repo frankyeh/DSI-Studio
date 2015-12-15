@@ -60,7 +60,7 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         setGeometry(10,10,800,600);
 
         ui->regionDockWidget->setMinimumWidth(0);
-        ui->dockWidget->setMinimumWidth(0);
+        ui->ROIdockWidget->setMinimumWidth(0);
         ui->renderingLayout->addWidget(renderWidget = new RenderingTableWidget(*this,ui->renderingWidgetHolder));
         ui->main_layout->insertWidget(1,glWidget = new GLWidget(renderWidget->getData("anti_aliasing").toInt(),*this,renderWidget));
         ui->verticalLayout_3->addWidget(regionWidget = new RegionTableWidget(*this,ui->regionDockWidget));
@@ -343,6 +343,11 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
             default_state = saveState();
         restoreGeometry(settings.value("geometry").toByteArray());
         restoreState(settings.value("state").toByteArray());
+        ui->TractWidgetHolder->show();
+        ui->renderingWidgetHolder->show();
+        ui->ROIdockWidget->show();
+        ui->regionDockWidget->show();
+
     }
 
     {
