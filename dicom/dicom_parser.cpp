@@ -207,18 +207,13 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
         for(unsigned int index = 0;index < analyze_header.dim(4);++index)
         {
             std::auto_ptr<DwiHeader> new_file(new DwiHeader);
-            if(max_value > 32768 || (max_value > 0.0 && max_value < 10.0))
-            {
-                image::basic_image<float,3> data;
-                if(!analyze_header.toLPS(data,false))
-                    break;
-                data *= 32767.0/max_value;
-                image::lower_threshold(data,0);
-                new_file->image = data;
-            }
-            else
-            if(!analyze_header.toLPS(new_file->image,false))
+            image::basic_image<float,3> data;
+            if(!analyze_header.toLPS(data,false))
                 break;
+            image::lower_threshold(data,0);
+            if(std::floor(max_value) != max_value) // if floating point, scale and convert to interger
+                data *= 32767.0/max_value;
+            new_file->image = data;
             new_file->file_name = file_name;
             std::ostringstream out;
             out << index;
