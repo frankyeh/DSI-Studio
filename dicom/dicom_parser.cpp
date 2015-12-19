@@ -211,7 +211,7 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
             if(!analyze_header.toLPS(data,false))
                 break;
             image::lower_threshold(data,0);
-            if(std::floor(max_value) != max_value) // if floating point, scale and convert to interger
+            if(std::floor(max_value+0.1) != max_value && (max_value > 32768 || max_value < 10)) // if floating point, scale and convert to interger
                 data *= 32767.0/max_value;
             new_file->image = data;
             new_file->file_name = file_name;
