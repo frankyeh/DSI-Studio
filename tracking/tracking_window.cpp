@@ -843,7 +843,7 @@ void tracking_window::on_actionInsert_T1_T2_triggered()
         this,"Open Images files",QDir::currentPath(),"Image files (*.dcm *.hdr *.nii *nii.gz 2dseq);;All files (*)" );
     if( filenames.isEmpty())
         return;
-    if(glWidget->addSlices(filenames,true))
+    if(glWidget->addSlices(filenames,renderWidget->getData("slice_smoothing").toBool()))
         add_slice_name(QFileInfo(filenames[0]).baseName());
 }
 

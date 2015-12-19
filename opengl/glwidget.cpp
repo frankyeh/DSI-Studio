@@ -1851,7 +1851,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         std::vector<std::string> file;
         file.push_back(param.toStdString());
         std::auto_ptr<CustomSliceModel> new_slice(new CustomSliceModel);
-        if(!new_slice->initialize(cur_tracking_window.slice,cur_tracking_window.is_qsdr,file,true))
+        if(!new_slice->initialize(cur_tracking_window.slice,cur_tracking_window.is_qsdr,file,get_param("slice_smoothing")))
         {
             std::cout << "Invalid file format:" << param.toStdString() << std::endl;
             return true;

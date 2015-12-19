@@ -38,6 +38,7 @@ Slice/Opacity/slice_alpha/float:0:1:0.1:2/1
 Slice/Mag Filter/slice_mag_filter/NEAREST:LINEAR/1
 Slice/Blend Func1/slice_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
 Slice/Blend Func2/slice_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
+Slice/Smoothing/slice_smoothing/Off:On/0
 Tract/Opacity/tract_alpha/float:0:1:0.1:2/1
 Tract/Transparent Style/tract_alpha_style/Sketch:Classic/0
 Tract/Blend Func1/tract_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
