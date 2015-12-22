@@ -8,7 +8,6 @@ namespace po = boost::program_options;
 
 int cnt(int ac,char *av[])
 {
-    // options for fiber tracking
     po::options_description ana_desc("analysis options");
     ana_desc.add_options()
     ("help", "help message")

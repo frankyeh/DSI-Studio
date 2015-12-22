@@ -252,7 +252,7 @@ public:
         index_mapping1.resize(voxel.image_model->mask.size());
         index_mapping2.resize(voxel.image_model->mask.size());
         int voxel_index = 0;
-        for(unsigned char i = 0;i < voxel.template_odfs.size();++i)
+        for(unsigned int i = 0;i < voxel.template_odfs.size();++i)
         {
             for(unsigned int j = 0;j < voxel.template_odfs[i].size();j += voxel.ti.half_vertices_count)
             {
