@@ -239,7 +239,7 @@ public:
 
         if(param.min_points_count3 != 6)
             report << " Tracks with length less than "
-                   << (int)std::floor(param.min_points_count3 * fib.vs[0]/3.0+0.5) << " mm were discarded.";
+                   << (int)std::floor(param.min_points_count3 * param.step_size /3.0+0.5) << " mm were discarded.";
 
 
         // to ensure consistency, seed initialization with all orientation only fits with single thread

@@ -242,7 +242,7 @@ public:
 
 struct ODFLoader : public BaseProcess
 {
-    std::vector<unsigned char> index_mapping1;
+    std::vector<unsigned int> index_mapping1;
     std::vector<unsigned int> index_mapping2;
 public:
     virtual void init(Voxel& voxel)
