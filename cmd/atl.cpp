@@ -1,6 +1,7 @@
 #include <boost/thread.hpp>
 #include <QFileInfo>
 #include <QApplication>
+#include <QDir>
 #include "image/image.hpp"
 #include "boost/program_options.hpp"
 #include "mapping/fa_template.hpp"
@@ -11,7 +12,7 @@ namespace po = boost::program_options;
 extern fa_template fa_template_imp;
 extern std::vector<atlas> atlas_list;
 std::string get_fa_template_path(void);
-
+const char* odf_average(const char* out_name,std::vector<std::string>& file_names);
 bool atl_load_atlas(std::string atlas_name)
 {
     std::cout << "loading atlas..." << std::endl;
@@ -201,6 +202,40 @@ int atl(int ac, char *av[])
     po::variables_map vm;
     po::store(po::command_line_parser(ac, av).options(norm_desc).run(), vm);
     po::notify(vm);
+
+    // construct an atlas
+    if(vm["order"].as<int>() == -1)
+    {
+        std::string dir = vm["source"].as<std::string>();
+        std::cout << "Constructing an atlas" << std::endl;
+        std::cout << "Loading fib file in " << dir << std::endl;
+        QDir directory = dir.c_str();
+        QStringList file_list = directory.entryList(QStringList("*.fib.gz"),QDir::Files);
+        if(file_list.empty())
+        {
+            std::cout << "Cannot find fib file to construct an atlas" << std::endl;
+            return 0;
+        }
+        std::vector<std::string> name_list;
+        for (unsigned int index = 0;index < file_list.size();++index)
+        {
+            std::string file_name = dir;
+            file_name += "/";
+            file_name += file_list[index].toStdString();
+            if(!file_list[index].contains("rec.reg"))
+            {
+                std::cout << file_list[index].toStdString() << " seems not containing QSDR ODF information. Skipping..." << std::endl;
+                continue;
+            }
+            name_list.push_back(file_name);
+        }
+        dir += "/";
+        dir += "atlas";
+        const char* msg = odf_average(dir.c_str(),name_list);
+        if(msg)
+            std::cout << msg << std::endl;
+        return 0;
+    }
 
 
     gz_mat_read mat_reader;

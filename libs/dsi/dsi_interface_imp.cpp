@@ -469,7 +469,7 @@ bool output_odfs(const image::basic_image<unsigned char,3>& mni_mask,
 }
 
 
-const char* odf_average(const char* out_name,const char* const * file_names,unsigned int num_files)
+const char* odf_average(const char* out_name,std::vector<std::string>& file_names)
 {
     static std::string error_msg,report;
     tessellated_icosahedron ti;
@@ -480,10 +480,11 @@ const char* odf_average(const char* out_name,const char* const * file_names,unsi
     unsigned int row,col;
     float mni[16]={0};
     begin_prog("averaging");
-    for (unsigned int index = 0;check_prog(index,num_files);++index)
+    for (unsigned int index = 0;check_prog(index,file_names.size());++index)
     {
-        const char* file_name = file_names[index];
+        const char* file_name = file_names[index].c_str();
         gz_mat_read reader;
+        set_title(file_names[index].c_str());
         if(!reader.load_from_file(file_name))
         {
             error_msg = "Cannot open file ";
@@ -640,13 +641,15 @@ const char* odf_average(const char* out_name,const char* const * file_names,unsi
     if (prog_aborted())
         return 0;
 
+    set_title("averaging odfs");
     for (unsigned int odf_index = 0;odf_index < odfs.size();++odf_index)
         for (unsigned int j = 0;j < odfs[odf_index].size();++j)
-            odfs[odf_index][j] /= (double)num_files;
+            odfs[odf_index][j] /= (double)file_names.size();
 
     std::ostringstream out;
-    out << "A group average template was constructed from a total of " << num_files << " subjects." << report.c_str();
+    out << "A group average template was constructed from a total of " << file_names.size() << " subjects." << report.c_str();
     report = out.str();
+    set_title("output files");
     output_odfs(mask,out_name,".mean.odf.fib.gz",odfs,ti,vs,mni,report);
     output_odfs(mask,out_name,".mean.fib.gz",odfs,ti,vs,mni,report,false);
     return 0;

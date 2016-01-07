@@ -36,7 +36,10 @@ bool is_running(void)
 void set_title(const char* title)
 {
     if(!progressDialog.get())
+    {
+        std::cout << title << std::endl;
         return;
+    }
     progressDialog->setLabelText(title);
     QApplication::processEvents();
 }

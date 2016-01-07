@@ -4,5 +4,4 @@ const char* reconstruction(ImageModel* image_model,
                    const float* param_values,
                    bool check_btable,
                    unsigned int thread_count);
-const char* odf_average(const char* out_name,
-        const char* const * file_name,unsigned int file_num);
+const char* odf_average(const char* out_name,std::vector<std::string>& file_names);

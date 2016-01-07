@@ -255,15 +255,9 @@ void VBCDialog::on_create_data_base_clicked()
     else
     {
         std::vector<std::string> name_list(group.count());
-        std::vector<const char*> name_list_buf(group.count());
         for (unsigned int index = 0;index < group.count();++index)
-        {
             name_list[index] = group[index].toLocal8Bit().begin();
-            name_list_buf[index] = name_list[index].c_str();
-        }
-        const char* error_msg = odf_average(ui->output_file_name->text().toLocal8Bit().begin(),
-                    &*name_list_buf.begin(),
-                    group.count());
+        const char* error_msg = odf_average(ui->output_file_name->text().toLocal8Bit().begin(),name_list);
         if(error_msg)
             QMessageBox::information(this,"error",error_msg,0);
         else
