@@ -222,7 +222,7 @@ int atl(int ac, char *av[])
             std::string file_name = dir;
             file_name += "/";
             file_name += file_list[index].toStdString();
-            if(!file_list[index].contains("rec.reg"))
+            if(!file_list[index].contains("rec"))
             {
                 std::cout << file_list[index].toStdString() << " seems not containing QSDR ODF information. Skipping..." << std::endl;
                 continue;
