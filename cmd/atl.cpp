@@ -209,7 +209,7 @@ int atl(int ac, char *av[])
         std::string dir = vm["source"].as<std::string>();
         std::cout << "Constructing an atlas" << std::endl;
         std::cout << "Loading fib file in " << dir << std::endl;
-        QDir directory = dir.c_str();
+        QDir directory(QString(dir.c_str()));
         QStringList file_list = directory.entryList(QStringList("*.fib.gz"),QDir::Files);
         if(file_list.empty())
         {
