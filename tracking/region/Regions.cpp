@@ -170,7 +170,12 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
             LoadFromBuffer(from,t);
             return true;
         }
-        header.toLPS(from);
+        {
+            image::basic_image<float, 3> tmp;
+            header.toLPS(tmp);
+            image::add_constant(tmp,0.5);
+            from = tmp;
+        }
         LoadFromBuffer(from);
         return true;
     }
