@@ -923,7 +923,6 @@ public:
         for (unsigned int index = 0;check_prog(index,mat_reader.size());++index)
         {
             std::string matrix_name = mat_reader.name(index);
-            ::set_title(matrix_name.c_str());
             if (matrix_name == "voxel_size")
             {
                 const float* size_buf = 0;

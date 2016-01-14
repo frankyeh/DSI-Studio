@@ -351,9 +351,9 @@ int trk(int ac, char *av[])
 
     tracking_thread.run(tract_model.get_fib(),vm["thread_count"].as<int>(),termination_count,true);
     tract_model.report += tracking_thread.report.str();
+    std::cout << tract_model.report << std::endl;
 
     tracking_thread.fetchTracks(&tract_model);
-
     std::cout << "finished tracking." << std::endl;
 
     if(tract_model.get_visible_track_count() == 0)
@@ -436,5 +436,6 @@ int trk(int ac, char *av[])
     {
         std::cout << "program terminated due to unkown exception" << std::endl;
     }
+
     return 0;
 }
