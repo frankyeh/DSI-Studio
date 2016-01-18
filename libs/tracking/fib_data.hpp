@@ -353,8 +353,8 @@ struct ViewItem
     image::const_pointer_image<float,3> image_data;
     float max_value;
     float min_value;
-    image::basic_image<image::rgb_color,3> data_buf;
     // used in QSDR
+    image::basic_image<unsigned int,3> color_map_buf;
     image::const_pointer_image<float,3> mx,my,mz;
     image::geometry<3> native_geo;
     template<typename input_iterator>
@@ -1024,7 +1024,7 @@ public:
         if(view_index == view_item.size())
             return std::make_pair((float)0.0,(float)0.0);
         if(view_item[view_index].name == "color")
-            return std::make_pair((float)0.0,(float)0.0);
+            return std::make_pair(view_item[0].min_value,view_item[0].max_value);
         return std::make_pair(view_item[view_index].min_value,view_item[view_index].max_value);
     }
 
@@ -1038,28 +1038,27 @@ public:
 
         if(view_item[view_index].name == "color")
         {
-
-            if(view_item[view_index].data_buf.empty())
             {
-                image::basic_image<image::rgb_color,3> color_buf(dim);
-                float max_value = view_item[0].max_value;
-                if(max_value + 1.0 == 1.0)
-                    max_value = 1.0;
-                float r = 255.9/max_value;
-                for (unsigned int index = 0;index < dim.size();++index)
-                {
-                    image::vector<3,float> dir(fib.getDir(index,0));
-                    dir *= std::floor(fib.getFA(index,0)*r);
-                    unsigned int color = (unsigned char)std::abs(dir[0]);
-                    color <<= 8;
-                    color |= (unsigned char)std::abs(dir[1]);
-                    color <<= 8;
-                    color |= (unsigned char)std::abs(dir[2]);
-                    color_buf[index] = color;
-                }
-                color_buf.swap(view_item[view_index].data_buf);
+                image::basic_image<float,2> buf;
+                image::reslicing(view_item[0].image_data, buf, d_index, pos);
+                v2c.convert(buf,show_image);
             }
-            image::reslicing(view_item[view_index].data_buf, show_image, d_index,pos);
+
+            if(view_item[view_index].color_map_buf.empty())
+            {
+                view_item[view_index].color_map_buf.resize(dim);
+                for (unsigned int index = 0;index < dim.size();++index)
+                    view_item[view_index].color_map_buf[index] = index;
+            }
+            image::basic_image<unsigned int,2> buf;
+            image::reslicing(view_item[view_index].color_map_buf, buf, d_index, pos);
+            for (unsigned int index = 0;index < buf.size();++index)
+            {
+                image::vector<3,float> dir(fib.getDir(buf[index],0));
+                show_image[index].r = std::abs((float)show_image[index].r*(float)dir[0]);
+                show_image[index].g = std::abs((float)show_image[index].g*(float)dir[1]);
+                show_image[index].b = std::abs((float)show_image[index].b*(float)dir[2]);
+            }
         }
         else
         {
