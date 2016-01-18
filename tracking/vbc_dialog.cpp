@@ -1648,17 +1648,6 @@ void vbc_dialog::on_save_dif_clicked()
     }
 }
 
-void vbc_dialog::on_save_fp_clicked()
-{
-    QString filename = QFileDialog::getSaveFileName(
-                this,
-                "Save Vector",
-                db_file_name + ".vec.dif.mat",
-                "Figures (*.jpg *.png *.tif *.bmp;;MATLAB file (*.mat);;All files (*)");
-    if(filename.isEmpty())
-        return;
-}
-
 
 void vbc_dialog::on_add_db_clicked()
 {

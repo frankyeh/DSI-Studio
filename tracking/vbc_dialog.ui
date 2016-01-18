@@ -36,7 +36,7 @@
       <item>
        <widget class="QToolBox" name="toolBox">
         <property name="currentIndex">
-         <number>1</number>
+         <number>2</number>
         </property>
         <property name="tabSpacing">
          <number>0</number>
@@ -594,18 +594,6 @@ Plot</string>
                      <number>0</number>
                     </property>
                     <item>
-                     <widget class="QPushButton" name="save_fp">
-                      <property name="text">
-                       <string>Save
-Fingerprint</string>
-                      </property>
-                      <property name="icon">
-                       <iconset resource="../icons.qrc">
-                        <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
                      <widget class="QPushButton" name="save_vector">
                       <property name="sizePolicy">
                        <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
@@ -942,7 +930,7 @@ Difference</string>
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>-379</y>
+           <y>0</y>
            <width>611</width>
            <height>911</height>
           </rect>
