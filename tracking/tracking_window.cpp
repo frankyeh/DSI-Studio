@@ -525,6 +525,13 @@ void tracking_window::SliderValueChanged(void)
             scene.show_slice();
         if(glWidget->current_visible_slide == 0)
             glWidget->updateGL();
+        else
+        {
+            image::vector<3,float> p(ui->SagSlider->value(),ui->CorSlider->value(),ui->AxiSlider->value());
+            p.to(glWidget->other_slices[glWidget->current_visible_slide-1].invT);
+            if(glWidget->other_slices[glWidget->current_visible_slide-1].set_slice_pos(p[0]+0.5,p[1]+0.5,p[2]+0.5))
+                glWidget->updateGL();
+        }
     }
 
 
@@ -540,8 +547,15 @@ void tracking_window::glSliderValueChanged(void)
                 ui->glSagSlider->value(),
                 ui->glCorSlider->value(),
                 ui->glAxiSlider->value()))
-            glWidget->updateGL();
-
+    {
+        image::vector<3,float> p(cur_slice.slice_pos[0],cur_slice.slice_pos[1],cur_slice.slice_pos[2]);
+        p.to(glWidget->other_slices[glWidget->current_visible_slide-1].transform);
+        ui->SagSlider->setValue(p[0]+0.5);
+        ui->CorSlider->setValue(p[1]+0.5);
+        ui->AxiSlider->setValue(p[2]+0.5);
+        scene.show_slice();
+        glWidget->updateGL();
+    }
 }
 
 void tracking_window::on_AxiView_clicked()
