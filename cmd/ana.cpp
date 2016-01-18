@@ -120,7 +120,7 @@ void export_track_info(const std::string& file_name,
             tract_model.save_data_to_file(file_name_stat.c_str(),cmd);
         else
         {
-            std::cout << "cannot find index name:" << cmd << std::endl;
+            std::cout << "invalid export option:" << cmd << std::endl;
             continue;
         }
     }

@@ -1703,5 +1703,6 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
     for(unsigned int i = 0,index = 0;i < count.size();++i)
         for(unsigned int j = 0;j < count[i].size();++j,++index)
             matrix_value[index] = (count[i][j] ? sum[i][j]/(float)count[i][j] : 0);
+    return true;
 
 }
