@@ -559,12 +559,12 @@ void vbc_database::run_permutation_multithread(unsigned int id)
                 return;
             spm_maps[subject_id].write_lesser(fib);
             run_track(fib,tracks,total_track_count,threads->size());
-            lesser_tracks[subject_id].add_tracts(tracks,30);
+            lesser_tracks[subject_id].add_tracts(tracks);
             spm_maps[subject_id].write_greater(fib);
             if(terminated)
                 return;
             run_track(fib,tracks,total_track_count,threads->size());
-            greater_tracks[subject_id].add_tracts(tracks,30);
+            greater_tracks[subject_id].add_tracts(tracks);
         }
 
         bool null = true;
@@ -664,12 +664,12 @@ void vbc_database::run_permutation_multithread(unsigned int id)
                 return;
             spm_maps[0].write_lesser(fib);
             run_track(fib,tracks,total_track_count,threads->size());
-            lesser_tracks[0].add_tracts(tracks,10);
+            lesser_tracks[0].add_tracts(tracks);
             spm_maps[0].write_greater(fib);
             if(terminated)
                 return;
             run_track(fib,tracks,total_track_count,threads->size());
-            greater_tracks[0].add_tracts(tracks,10);
+            greater_tracks[0].add_tracts(tracks);
         }
     }
 }
