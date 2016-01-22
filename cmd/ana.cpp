@@ -167,7 +167,6 @@ int ana(int ac, char *av[])
             return 0;
         }
     }
-    bool is_qsdr = !handle->trans_to_mni.empty();
     image::geometry<3> geometry = handle->dim;
 
     if(!vm.count("tract"))
@@ -231,6 +230,5 @@ int ana(int ac, char *av[])
     if(vm.count("export"))
         export_track_info(file_name,vm["export"].as<std::string>(),handle.get(),tract_model);
 
-    std::cout << "unknown export specification" << std::endl;
     return 0;
 }
