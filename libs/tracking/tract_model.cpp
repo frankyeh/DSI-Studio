@@ -117,7 +117,6 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
             if (!in.open(file_name_))
                 return false;
             in.read((char*)&trk,1000);
-            report = trk.reserved;
             unsigned int track_number = trk.n_count;
             begin_prog("loading");
             for (unsigned int index = 0;check_prog(index,track_number);++index)
@@ -144,6 +143,14 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                 if(trk.n_properties == 1)
                     loaded_tract_cluster.push_back(from[0]);
             }
+            unsigned int report_size = 0;
+            in.read(&report_size,sizeof(unsigned int));
+            if(in && report_size)
+            {
+                report.resize(report_size);
+                in.read(&*report.begin(),report_size);
+            }
+
         }
         else
         if (ext == std::string(".txt"))
@@ -320,7 +327,6 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
             TrackVis trk;
             trk.init(geometry,vs);
             trk.n_count = tract_data.size();
-            std::copy(report.begin(),report.begin()+std::min<int>(444,report.length()),trk.reserved);
             out.write((const char*)&trk,1000);
         }
         begin_prog("saving");
@@ -341,7 +347,9 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
             out.write((const char*)&n_point,sizeof(int));
             out.write((const char*)&*buffer.begin(),sizeof(float)*buffer.size());
         }
-
+        unsigned int report_size = report.size();
+        out.write((const char*)&report_size,sizeof(unsigned int));
+        out.write((const char*)&*report.begin(),report_size);
         return true;
     }
     if (ext == std::string(".txt"))
