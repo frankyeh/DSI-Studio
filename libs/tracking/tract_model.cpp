@@ -1224,7 +1224,7 @@ void TractModel::get_quantitative_info(std::string& result)
     std::ostringstream out;
     std::vector<std::string> titles;
     std::vector<float> data;
-    out << handle->report.c_str() << report.c_str() << std::endl;
+    out << report.c_str() << std::endl;
     titles.push_back("number of tracts");
     titles.push_back("tract length mean(mm)");
     titles.push_back("tract length sd(mm)");
