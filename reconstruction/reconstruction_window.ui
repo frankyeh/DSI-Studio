@@ -60,8 +60,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>389</width>
-         <height>199</height>
+         <width>731</width>
+         <height>535</height>
         </rect>
        </property>
        <attribute name="label">
@@ -1389,6 +1389,9 @@
                <widget class="QCheckBox" name="rdi">
                 <property name="text">
                  <string>Restricted diffusion imaging</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
                 </property>
                </widget>
               </item>

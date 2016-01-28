@@ -1680,7 +1680,3 @@ void tracking_window::on_actionStrip_skull_for_T1w_image_triggered()
     else
         QMessageBox::information(this,"Error","Load T1W image first");
 }
-
-
-
-
