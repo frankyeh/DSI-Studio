@@ -611,6 +611,7 @@ public:
         subject_names = subject_names_;
         return true;
     }
+
     void get_subject_vector(std::vector<std::vector<float> >& subject_vector,
                             const image::basic_image<int,3>& cerebrum_mask,bool normalize_fp) const
     {
@@ -800,10 +801,7 @@ public:
             return false;
         }
         if(!is_consistent(single_subject))
-        {
-            error_msg = "Inconsistent ODF dimension";
             return false;
-        }
         cur_subject_data.clear();
         cur_subject_data.resize(fib.num_fiber*si2vi.size());
         if(!sample_odf(single_subject,cur_subject_data))
@@ -1152,7 +1150,7 @@ public:
         for (unsigned char index = 0;index < fib_num;++index)
         {
             if (fa[index][space_index] <= threshold)
-                break;
+                continue;
             float value = cos_angle(ref_dir,space_index,index);
             if (-value > max_value)
             {
