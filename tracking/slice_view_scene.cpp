@@ -92,6 +92,7 @@ void slice_view_scene::show_fiber(QPainter& painter)
         painter.setPen(pen);
     }
     const FibData& fib_data = *(cur_tracking_window.handle);
+    char max_fiber = fib_data.fib.num_fiber-1;
     for (unsigned int y = 0; y < slice_image.height(); ++y)
         for (unsigned int x = 0; x < slice_image.width(); ++x)
             if (cur_tracking_window.slice.get3dPosition(x, y, X, Y, Z))
@@ -99,7 +100,7 @@ void slice_view_scene::show_fiber(QPainter& painter)
                 image::pixel_index<3> pos(X,Y,Z,fib_data.dim);
                 if (pos.index() >= fib_data.dim.size() || fib_data.fib.getFA(pos.index(),0) == 0.0)
                     continue;
-                for (char fiber = 2; fiber >= 0; --fiber)
+                for (char fiber = max_fiber; fiber >= 0; --fiber)
                     if(fib_data.fib.getFA(pos.index(),fiber) > threshold)
                     {
                         const float* dir_ptr = fib_data.fib.getDir(pos.index(),fiber);
