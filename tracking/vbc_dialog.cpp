@@ -408,12 +408,10 @@ void vbc_dialog::on_subject_list_itemSelectionChanged()
     if(ui->toolBox->currentIndex() == 0 && ui->subject_view->currentIndex() == 1 && load_cerebrum_mask())
     {
         std::vector<float> fp;
-        if(cerebrum_1mm.geometry() == vbc->handle->dim)
-            vbc->handle->get_subject_vector(ui->subject_list->currentRow(),fp,cerebrum_1mm,ui->normalize_fp->isChecked());
-        else
-            if(cerebrum_2mm.geometry() == vbc->handle->dim)
-                vbc->handle->get_subject_vector(ui->subject_list->currentRow(),fp,cerebrum_2mm,ui->normalize_fp->isChecked());
-
+        float threshold = ui->fp_coverage->value()*image::segmentation::otsu_threshold(image::make_image(vbc->handle->dim,vbc->handle->fib.fa[0]));
+        vbc->handle->get_subject_vector(ui->subject_list->currentRow(),fp,
+                                            cerebrum_1mm.geometry() == vbc->handle->dim ? cerebrum_1mm : cerebrum_2mm,
+                                            threshold,ui->normalize_fp->isChecked());
         fp_image_buf.clear();
         fp_image_buf.resize(image::geometry<2>(ui->fp_zoom->value()*25,ui->fp_zoom->value()*100));// rotated
 
@@ -1431,11 +1429,10 @@ void vbc_dialog::on_save_vector_clicked()
     if(filename.isEmpty())
         return;
 
-    if(cerebrum_1mm.geometry() == vbc->handle->dim)
-        vbc->handle->save_subject_vector(filename.toLocal8Bit().begin(),cerebrum_1mm,ui->normalize_fp->isChecked());
-    else
-        if(cerebrum_2mm.geometry() == vbc->handle->dim)
-            vbc->handle->save_subject_vector(filename.toLocal8Bit().begin(),cerebrum_2mm,ui->normalize_fp->isChecked());
+    float threshold = ui->fp_coverage->value()*image::segmentation::otsu_threshold(image::make_image(vbc->handle->dim,vbc->handle->fib.fa[0]));
+    vbc->handle->save_subject_vector(filename.toLocal8Bit().begin(),
+                                     cerebrum_1mm.geometry() == vbc->handle->dim ? cerebrum_1mm : cerebrum_2mm,
+                                     threshold,ui->normalize_fp->isChecked());
 
 }
 
@@ -1585,12 +1582,8 @@ void vbc_dialog::on_calculate_dif_clicked()
         QMessageBox::information(this,"Error","Cannot load cerebrum mask.");
         return;
     }
-    if(cerebrum_1mm.geometry() == vbc->handle->dim)
-        vbc->handle->get_dif_matrix(fp_matrix,cerebrum_1mm,ui->normalize_fp->isChecked());
-    else
-        if(cerebrum_2mm.geometry() == vbc->handle->dim)
-            vbc->handle->get_dif_matrix(fp_matrix,cerebrum_2mm,ui->normalize_fp->isChecked());
-
+    float threshold = ui->fp_coverage->value()*image::segmentation::otsu_threshold(image::make_image(vbc->handle->dim,vbc->handle->fib.fa[0]));
+    vbc->handle->get_dif_matrix(fp_matrix,cerebrum_1mm.geometry() == vbc->handle->dim ? cerebrum_1mm : cerebrum_2mm,threshold,ui->normalize_fp->isChecked());
     fp_max_value = *std::max_element(fp_matrix.begin(),fp_matrix.end());
     fp_dif_map.resize(image::geometry<2>(vbc->handle->num_subjects,vbc->handle->num_subjects));
     for(unsigned int index = 0;index < fp_matrix.size();++index)
