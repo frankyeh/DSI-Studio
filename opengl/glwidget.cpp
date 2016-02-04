@@ -2044,10 +2044,11 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         if(param.isEmpty())
             param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_rotation_movie.avi";
         begin_prog("save video");
+        float angle = (param2.isEmpty()) ? 1 : param2.toFloat();\
         image::io::avi avi;
-        for(unsigned int index = 1;check_prog(index,360);++index)
+        for(float index = 0;check_prog(index,360);index += angle)
         {
-            rotate_angle(1,0,1.0,0.0);
+            rotate_angle(angle,0,1.0,0.0);
             QImage I_ = grabFrameBuffer();
             QImage I(I_.width(),I_.height(),QImage::Format_RGB32);
             QPainter painter;
@@ -2059,7 +2060,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             QImageWriter writer(&buffer, "JPG");
             writer.write(I);
             QByteArray data = buffer.data();
-            if(index == 1)
+            if(index == 0.0)
                 avi.open(param.toLocal8Bit().begin(),I_.width(),I_.height(), "MJPG", 30/*fps*/);
             avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
         }
@@ -2071,21 +2072,22 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         if(param.isEmpty())
            param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_lr_rotation_movie.avi";
         makeCurrent();
+        float angle = (param2.isEmpty()) ? 1 : param2.toFloat();\
         image::io::avi avi;
         double eye_shift = cur_tracking_window["3d_perspective"].toDouble();
         begin_prog("save video");
-        for(unsigned int index = 1;check_prog(index,361);++index)
+        for(float index = 0;check_prog(index,360);index += angle)
         {
 
             // output 2048x768
             glPushMatrix();
             glLoadIdentity();
-            glRotated(1,0,1.0,0.0);
+            glRotated(angle,0,1.0,0.0);
             glMultMatrixf(rotation_matrix.begin());
             glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix.begin());
 
             glLoadIdentity();
-            glRotated(1,0,1.0,0.0);
+            glRotated(angle,0,1.0,0.0);
             glTranslatef(-eye_shift,0,0);
             glMultMatrixf(transformation_matrix.begin());
             glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
@@ -2120,7 +2122,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             QImageWriter writer(&buffer, "JPG");
             writer.write(I);
             QByteArray data = buffer.data();
-            if(index == 1)
+            if(index == 0.0)
                 avi.open(param.toLocal8Bit().begin(),I.width(),I.height(), "MJPG", 30/*fps*/);
             avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
         }
@@ -2189,20 +2191,38 @@ void GLWidget::saveLeftRight3DImage(void)
 
 void GLWidget::saveRotationSeries(void)
 {
-    command("save_rotation_video",QFileDialog::getSaveFileName(
+    QString filename = QFileDialog::getSaveFileName(
                 this,
                 "Assign video name",
                 QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_rotation_movie.avi",
-                "Video file (*.avi);;All files (*)"));
+                "Video file (*.avi);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    bool ok;
+    int angle = QInputDialog::getInt(this,
+            "DSI Studio",
+            "Assign angle increament in degree(s):",1,1,10,1,&ok);
+    if(!ok)
+        return;
+    command("save_rotation_video",filename,QString::number(angle));
 }
 
 void GLWidget::saveRotationVideo2(void)
 {
-    command("save_stereo_rotation_video",QFileDialog::getSaveFileName(
-            this,
-            "Assign video name",
-            QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_lr_rotation_movie.avi",
-            "Video file (*.avi);;All files (*)"));
+    QString filename = QFileDialog::getSaveFileName(
+                this,
+                "Assign video name",
+                QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_rotation_movie.avi",
+                "Video file (*.avi);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    bool ok;
+    int angle = QInputDialog::getInt(this,
+            "DSI Studio",
+            "Assign angle increament in degree(s):",1,1,10,1,&ok);
+    if(!ok)
+        return;
+    command("save_stereo_rotation_video",filename,QString::number(angle));
 }
 
 void GLWidget::rotate_angle(float angle,float x,float y,float z)
