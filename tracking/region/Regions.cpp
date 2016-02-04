@@ -271,25 +271,13 @@ void ROIRegion::shift(const image::vector<3,short>& dx) {
         region[index] += dx;
 }
 // ---------------------------------------------------------------------------
-void ROIRegion::get_quantitative_data_title(FibData* handle,std::vector<std::string>& titles)
+void ROIRegion::get_quantitative_data(FibData* handle,std::vector<std::string>& titles,std::vector<float>& data)
 {
     titles.clear();
     titles.push_back("voxel counts");
+    data.push_back(region.size());
+
     titles.push_back("volume (mm^3)");
-    titles.push_back("center x");
-    titles.push_back("center y");
-    titles.push_back("center z");
-    titles.push_back("bounding box x");
-    titles.push_back("bounding box y");
-    titles.push_back("bounding box z");
-    titles.push_back("bounding box x");
-    titles.push_back("bounding box y");
-    titles.push_back("bounding box z");
-    handle->get_index_titles(titles);
-}
-void ROIRegion::get_quantitative_data(FibData* handle,std::vector<float>& data)
-{
-    data.push_back(region.size()); //number of voxels
     data.push_back(region.size()*vs[0]*vs[1]*vs[2]); //volume (mm^3)
     if(region.empty())
         return;
@@ -306,18 +294,29 @@ void ROIRegion::get_quantitative_data(FibData* handle,std::vector<float>& data)
         min[2] = std::min<short>(min[2],region[index][2]);
     }
     cm /= region.size();
+    titles.push_back("center x");
+    titles.push_back("center y");
+    titles.push_back("center z");
     std::copy(cm.begin(),cm.end(),std::back_inserter(data)); // center of the mass
+
+    titles.push_back("bounding box x");
+    titles.push_back("bounding box y");
+    titles.push_back("bounding box z");
     std::copy(max.begin(),max.end(),std::back_inserter(data)); // bounding box
+
+    titles.push_back("bounding box x");
+    titles.push_back("bounding box y");
+    titles.push_back("bounding box z");
     std::copy(min.begin(),min.end(),std::back_inserter(data)); // bounding box
 
+    handle->get_index_titles(titles); // other index
     std::vector<unsigned int> pos_index;
     for (unsigned int index = 0; index < region.size(); ++index)
         pos_index.push_back(image::pixel_index<3>(region[index][0],region[index][1],region[index][2],geo).index());
 
-    for(int data_index = 0;
-            data_index < handle->view_item.size(); ++data_index)
+    for(int data_index = 0;data_index < handle->view_item.size(); ++data_index)
     {
-        if(data_index > 0 && data_index < handle->other_mapping_index)
+        if(handle->view_item[data_index].name == "color")
             continue;
         float sum = 0.0,sum2 = 0.0;
         image::const_pointer_image<float, 3> I(handle->view_item[data_index].image_data);

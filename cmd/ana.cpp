@@ -109,13 +109,6 @@ void export_track_info(const std::string& file_name,
             continue;
         }
 
-        if(cmd == "fa" || cmd == "qa")
-        {
-            std::cout << "export..." << cmd << std::endl;
-            tract_model.save_fa_to_file(file_name_stat.c_str());
-            continue;
-        }
-
         if(handle->get_name_index(cmd) != handle->view_item.size())
             tract_model.save_data_to_file(file_name_stat.c_str(),cmd);
         else
@@ -190,9 +183,8 @@ int ana(int ac, char *av[])
             std::cout << "export ROI statistics..." << std::endl;
             std::ofstream out(file_name_stat.c_str());
             std::vector<std::string> titles;
-            region.get_quantitative_data_title(handle.get(),titles);
             std::vector<float> data;
-            region.get_quantitative_data(handle.get(),data);
+            region.get_quantitative_data(handle.get(),titles,data);
             for(unsigned int i = 0;i < titles.size() && i < data.size();++i)
                 out << titles[i] << "\t" << data[i] << std::endl;
             return 0;

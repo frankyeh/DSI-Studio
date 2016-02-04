@@ -1049,7 +1049,6 @@
       <iconset resource="../icons.qrc">
        <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
      </property>
-     <addaction name="actionQuantitative_anisotropy_QA"/>
     </widget>
     <widget class="QMenu" name="menuClustering">
      <property name="title">
@@ -1188,8 +1187,6 @@
     <addaction name="actionSave_Anisotrpy_Map_as"/>
     <addaction name="separator"/>
     <addaction name="menuCopy_to_Clipboard"/>
-    <addaction name="actionRestore_window_layout"/>
-    <addaction name="actionFloat_3D_window"/>
    </widget>
    <widget class="QMenu" name="menu_Slices">
     <property name="title">
@@ -1222,19 +1219,26 @@
      <string>Analysis</string>
     </property>
     <addaction name="actionIndividual_Connectometry"/>
-    <addaction name="separator"/>
     <addaction name="actionView_FIB_Content"/>
     <addaction name="actionManual_Registration"/>
     <addaction name="actionQuality_Assessment"/>
     <addaction name="actionImprove_Quality"/>
+   </widget>
+   <widget class="QMenu" name="menuLayout">
+    <property name="title">
+     <string>Layout</string>
+    </property>
+    <addaction name="actionRestore_window_layout"/>
+    <addaction name="actionFloat_3D_window"/>
    </widget>
    <addaction name="menu_Edit"/>
    <addaction name="menuRegions"/>
    <addaction name="menuTracts"/>
    <addaction name="menu_Slices"/>
    <addaction name="menu_View"/>
-   <addaction name="menuTools"/>
    <addaction name="menuAnalysis"/>
+   <addaction name="menuLayout"/>
+   <addaction name="menuTools"/>
   </widget>
   <widget class="QDockWidget" name="TractWidgetHolder">
    <property name="sizePolicy">
@@ -2374,11 +2378,6 @@
    </property>
    <property name="shortcut">
     <string>C</string>
-   </property>
-  </action>
-  <action name="actionQuantitative_anisotropy_QA">
-   <property name="text">
-    <string>Save Quantitative anisotropy (QA)</string>
    </property>
   </action>
   <action name="actionMerge_All">

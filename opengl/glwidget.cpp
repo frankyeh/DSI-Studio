@@ -846,17 +846,13 @@ void GLWidget::makeTracts(void)
 
     float color_r;
     std::vector<float> mean_fa;
-    int color_item_index;
     unsigned int mean_fa_index = 0;
     float color_max_value = cur_tracking_window.color_bar->get_color_max_value();
     float color_min_value = cur_tracking_window.color_bar->get_color_min_value();
-    unsigned int tract_color_index = cur_tracking_window.color_bar->get_tract_color_index();
-
+    unsigned int track_num_index = cur_tracking_window.handle->get_name_index(cur_tracking_window.color_bar->get_tract_color_name().toStdString());
     // show tract by index value
     if (tract_color_style > 1 && tract_color_style <= 3)
     {
-        if(tract_color_index > 0)
-            color_item_index = cur_tracking_window.handle->other_mapping_index+tract_color_index-1;
         if(tract_color_style == 3)// mean value
         {
             for (unsigned int active_tract_index = 0;
@@ -878,11 +874,7 @@ void GLWidget::makeTracts(void)
                         continue;
 
                     std::vector<float> fa_values;
-                    if(tract_color_index == 0)
-                        active_tract_model->get_tract_fa(data_index,fa_values);
-                    else
-                        active_tract_model->get_tract_data(data_index,color_item_index,fa_values);
-
+                    active_tract_model->get_tract_data(data_index,track_num_index,fa_values);
                     float sum = std::accumulate(fa_values.begin(),fa_values.end(),0.0f);
                     sum /= (float)fa_values.size();
                     mean_fa.push_back(sum);
@@ -962,10 +954,7 @@ void GLWidget::makeTracts(void)
                     paint_color_f /= 255.0;
                     break;
                 case 2:// local
-                    if(tract_color_index == 0)
-                        active_tract_model->get_tract_fa(data_index,color);
-                    else
-                        active_tract_model->get_tract_data(data_index,color_item_index,color);
+                    active_tract_model->get_tract_data(data_index,track_num_index,color);
                     break;
                 case 3:// mean
                     paint_color_f =

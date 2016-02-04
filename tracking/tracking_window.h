@@ -65,8 +65,7 @@ public:
     std::auto_ptr<QTimer> timer;
     unsigned int odf_size;
     unsigned int odf_face_size;
-    unsigned char has_odfs;
-    bool is_dti,is_qsdr;
+    bool is_qsdr;
 
     void set_tracking_param(ThreadData& tracking_thread);
 public:

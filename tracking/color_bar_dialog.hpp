@@ -25,7 +25,7 @@ public:
 public:
     float get_color_max_value(void) const;
     float get_color_min_value(void) const;
-    unsigned int get_tract_color_index(void) const;
+    QString get_tract_color_name(void) const;
 
 public slots:
     void update_color_map(void);

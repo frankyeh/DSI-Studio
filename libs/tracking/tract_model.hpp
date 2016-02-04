@@ -53,7 +53,6 @@ public:
         void add(const TractModel& rhs);
         bool load_from_file(const char* file_name,bool append = false);
 
-        bool save_fa_to_file(const char* file_name);
         bool save_tracts_to_file(const char* file_name);
         bool save_transformed_tracts_to_file(const char* file_name,const float* transform,bool end_point);
         bool save_data_to_file(const char* file_name,const std::string& index_name);
@@ -112,18 +111,12 @@ public:
                         std::vector<float>& data_profile);
 
 public:
-
-
         void get_tract_data(unsigned int fiber_index,
                             unsigned int index_num,
                             std::vector<float>& data) const;
         bool get_tracts_data(
                 const std::string& index_name,
                 std::vector<std::vector<float> >& data) const;
-
-        void get_tract_fa(unsigned int fiber_index,std::vector<float>& data) const;
-        void get_tracts_fa(std::vector<std::vector<float> >& data) const;
-        double get_spin_volume(void);
 public:
 
         void get_passing_list(const std::vector<std::vector<image::vector<3,short> > >& regions,

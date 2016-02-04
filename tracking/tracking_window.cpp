@@ -47,9 +47,6 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
 
     odf_size = fib_data.fib.odf_table.size();
     odf_face_size = fib_data.fib.odf_faces.size();
-    has_odfs = fib_data.has_odfs() ? 1:0;
-    // check whether first index is "fa0"
-    is_dti = (fib_data.view_item[0].name[0] == 'f');
 
     ui->setupUi(this);
     {
@@ -142,11 +139,9 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
 
 
     {
-        if(is_dti)
-            ui->actionQuantitative_anisotropy_QA->setText("Save FA...");
         std::vector<std::string> index_list;
         fib_data.get_index_list(index_list);
-        for (int index = 1; index < index_list.size(); ++index)
+        for (int index = 0; index < index_list.size(); ++index)
             {
                 std::string& name = index_list[index];
                 QAction* Item = new QAction(this);
@@ -318,7 +313,6 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
 
 
         connect(ui->actionMethod_Report,SIGNAL(triggered()),tractWidget,SLOT(show_method()));
-        connect(ui->actionQuantitative_anisotropy_QA,SIGNAL(triggered()),tractWidget,SLOT(save_fa_as()));
         connect(ui->actionSave_End_Points_As,SIGNAL(triggered()),tractWidget,SLOT(save_end_point_as()));
         connect(ui->actionSave_Enpoints_In_MNI_Space,SIGNAL(triggered()),tractWidget,SLOT(save_end_point_in_mni()));
         connect(ui->actionStatistics,SIGNAL(triggered()),tractWidget,SLOT(show_tracts_statistics()));

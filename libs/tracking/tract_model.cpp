@@ -271,32 +271,12 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     redo_size.clear();
     return true;
 }
-//---------------------------------------------------------------------------
-bool TractModel::save_fa_to_file(const char* file_name)
-{
-    std::vector<std::vector<float> > data;
-    get_tracts_fa(data);
-    if(data.empty())
-        return false;
-    std::ofstream out(file_name,std::ios::binary);
-    if (!out)
-        return false;
-    begin_prog("saving");
-    for (unsigned int i = 0;check_prog(i,data.size());++i)
-    {
-        std::copy(data[i].begin(),data[i].end(),std::ostream_iterator<float>(out," "));
-        out << std::endl;
-    }
-    return true;
-}
 
 //---------------------------------------------------------------------------
 bool TractModel::save_data_to_file(const char* file_name,const std::string& index_name)
 {
     std::vector<std::vector<float> > data;
-    if(!get_tracts_data(index_name,data))
-        return false;
-    if(data.empty())
+    if(!get_tracts_data(index_name,data) || data.empty())
         return false;
     std::ofstream out(file_name,std::ios::binary);
     if (!out)
@@ -1195,22 +1175,17 @@ void TractModel::get_quantitative_data(std::vector<float>& data)
     }
 
     // output mean and std of each index
-    for(int data_index = 0;
-        data_index < handle->view_item.size();++data_index)
+    for(int data_index = 0;data_index < handle->view_item.size();++data_index)
     {
-        if(data_index > 0 && data_index < handle->other_mapping_index)
+        if(handle->view_item[data_index].name == "color")
             continue;
-
         float sum_data = 0.0;
         float sum_data2 = 0.0;
         unsigned int total = 0;
         for (unsigned int i = 0;i < tract_data.size();++i)
         {
             std::vector<float> data;
-            if(data_index == 0)
-                get_tract_fa(i,data);
-            else
-                get_tract_data(i,data_index,data);
+            get_tract_data(i,data_index,data);
             for(int j = 0;j < data.size();++j)
             {
                 float value = data[j];
@@ -1300,10 +1275,7 @@ void TractModel::get_report(unsigned int profile_dir,float band_width,const std:
 
     {
         std::vector<std::vector<float> > data;
-        if(index_name == "qa" || index_name == "fa")
-            get_tracts_fa(data);
-        else
-            get_tracts_data(index_name,data);
+        get_tracts_data(index_name,data);
 
         if(profile_on_length == 2)// list the mean fa value of each tract
         {
@@ -1356,31 +1328,7 @@ void TractModel::get_report(unsigned int profile_dir,float band_width,const std:
 }
 
 
-void TractModel::get_tract_data(unsigned int fiber_index,
-                    unsigned int index_num,
-                    std::vector<float>& data) const
-{
-    data.clear();
-    if(index_num >= handle->view_item.size())
-        return;
-    data.resize(tract_data[fiber_index].size()/3);
-    for (unsigned int data_index = 0,index = 0;index < tract_data[fiber_index].size();index += 3,++data_index)
-        image::estimate(handle->view_item[index_num].image_data,&(tract_data[fiber_index][index]),data[data_index],image::linear);
-}
 
-bool TractModel::get_tracts_data(
-        const std::string& index_name,
-        std::vector<std::vector<float> >& data) const
-{
-    data.clear();
-    unsigned int index_num = handle->get_name_index(index_name);
-    if(index_num == handle->view_item.size())
-        return false;
-    data.resize(tract_data.size());
-    for (unsigned int i = 0;i < tract_data.size();++i)
-        get_tract_data(i,index_num,data[i]);
-    return true;
-}
 
 template<typename input_iterator,typename output_iterator>
 void gradient(input_iterator from,input_iterator to,output_iterator out)
@@ -1410,79 +1358,66 @@ void gradient(input_iterator from,input_iterator to,output_iterator out)
         ++next_from;
     }
 }
-
-void TractModel::get_tract_fa(unsigned int fiber_index,std::vector<float>& data) const
+void TractModel::get_tract_data(unsigned int fiber_index,unsigned int index_num,std::vector<float>& data) const
 {
-    unsigned int count = tract_data[fiber_index].size()/3;
-    data.resize(count);
+    data.clear();
     if(tract_data[fiber_index].empty())
         return;
-    std::vector<image::vector<3,float> > gradient(count);
-    const float (*tract_ptr)[3] = (const float (*)[3])&(tract_data[fiber_index][0]);
-    ::gradient(tract_ptr,tract_ptr+count,gradient.begin());
-    for (unsigned int point_index = 0,tract_index = 0;
-         point_index < count;++point_index,tract_index += 3)
+    unsigned int count = tract_data[fiber_index].size()/3;
+    data.resize(count);
+    // track specific index
+    if(index_num < handle->get_name_index("color"))
     {
-        image::interpolation<image::linear_weighting,3> tri_interpo;
-        gradient[point_index].normalize();
-        if (tri_interpo.get_location(fib->dim,&(tract_data[fiber_index][tract_index])))
+        std::vector<image::vector<3,float> > gradient(count);
+        const float (*tract_ptr)[3] = (const float (*)[3])&(tract_data[fiber_index][0]);
+        ::gradient(tract_ptr,tract_ptr+count,gradient.begin());
+        for (unsigned int point_index = 0,tract_index = 0;
+             point_index < count;++point_index,tract_index += 3)
         {
-            float value,average_value = 0.0;
-            float sum_value = 0.0;
-            for (unsigned int index = 0;index < 8;++index)
+            image::interpolation<image::linear_weighting,3> tri_interpo;
+            gradient[point_index].normalize();
+            if (tri_interpo.get_location(fib->dim,&(tract_data[fiber_index][tract_index])))
             {
-                if ((value = fib->get_fa(tri_interpo.dindex[index],gradient[point_index])) == 0.0)
-                    continue;
-                average_value += value*tri_interpo.ratio[index];
-                sum_value += tri_interpo.ratio[index];
+                float value,average_value = 0.0;
+                float sum_value = 0.0;
+                for (unsigned int index = 0;index < 8;++index)
+                {
+                    if ((value = fib->get_track_specific_index(tri_interpo.dindex[index],index_num,gradient[point_index])) == 0.0)
+                        continue;
+                    average_value += value*tri_interpo.ratio[index];
+                    sum_value += tri_interpo.ratio[index];
+                }
+                if (sum_value > 0.5)
+                    data[point_index] = average_value/sum_value;
+                else
+                    image::estimate(handle->view_item[index_num].image_data,&(tract_data[fiber_index][tract_index]),data[point_index],image::linear);
             }
-            if (sum_value > 0.5)
-                data[point_index] = average_value/sum_value;
             else
-            data[point_index] = fib->threshold;
+                image::estimate(handle->view_item[index_num].image_data,&(tract_data[fiber_index][tract_index]),data[point_index],image::linear);
         }
-        else
-            data[point_index] = fib->threshold;
+    }
+    else
+    // voxel-based index
+    {
+        for (unsigned int data_index = 0,index = 0;index < tract_data[fiber_index].size();index += 3,++data_index)
+            image::estimate(handle->view_item[index_num].image_data,&(tract_data[fiber_index][index]),data[data_index],image::linear);
     }
 }
-void TractModel::get_tracts_fa(std::vector<std::vector<float> >& data) const
+
+bool TractModel::get_tracts_data(
+        const std::string& index_name,
+        std::vector<std::vector<float> >& data) const
 {
+    unsigned int index_num = handle->get_name_index(index_name);
+    if(index_num == handle->view_item.size())
+        return false;
+    data.clear();
     data.resize(tract_data.size());
-    for(unsigned int index = 0;index < tract_data.size();++index)
-        get_tract_fa(index,data[index]);
-}
-
-double TractModel::get_spin_volume(void)
-{
-    std::map<image::vector<3,short>,image::vector<3,float> > passing_regions;
     for (unsigned int i = 0;i < tract_data.size();++i)
-    {
-        std::vector<image::vector<3,float> > point(tract_data[i].size() / 3);
-        std::vector<image::vector<3,float> > gradient(tract_data[i].size() / 3);
-        for (unsigned int j = 0,index = 0;j < tract_data[i].size();j += 3,++index)
-            point[index] = &(tract_data[i][j]);
-
-        ::gradient(point.begin(),point.end(),gradient.begin());
-
-        for (unsigned int j = 0;j < point.size();++j)
-        {
-            gradient[j].normalize();
-            point[j] += 0.5;
-            point[j].floor();
-            passing_regions[image::vector<3,short>(point[j])] += gradient[j];
-        }
-    }
-    double result = 0.0;
-    std::map<image::vector<3,short>,image::vector<3,float> >::iterator iter = passing_regions.begin();
-    std::map<image::vector<3,short>,image::vector<3,float> >::iterator end = passing_regions.end();
-    for (;iter != end;++iter)
-    {
-        iter->second.normalize();
-        result += fib->get_fa(
-                      image::pixel_index<3>(iter->first[0],iter->first[1],iter->first[2],fib->dim).index(),iter->second);
-    }
-    return result;
+        get_tract_data(i,index_num,data[i]);
+    return true;
 }
+
 
 void TractModel::get_passing_list(const std::vector<std::vector<image::vector<3,short> > >& regions,
                                          std::vector<std::vector<unsigned int> >& passing_list,
@@ -1686,11 +1621,7 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
         return true;
     }
     std::vector<std::vector<float> > data;
-    if(matrix_value_type == "qa" || matrix_value_type == "fa")
-        tract_model.get_tracts_fa(data);
-    else
-        tract_model.get_tracts_data(matrix_value_type,data);
-    if(data.empty())
+    if(!tract_model.get_tracts_data(matrix_value_type,data) || data.empty())
         return false;
 
     std::vector<std::vector<float> > sum(regions.size());

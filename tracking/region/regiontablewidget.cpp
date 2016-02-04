@@ -746,13 +746,11 @@ void RegionTableWidget::show_statistics(void)
     std::string result;
     {
         std::vector<std::string> titles;
-        regions[0].get_quantitative_data_title(cur_tracking_window.handle,titles);
-
         std::vector<std::vector<float> > data(regions.size());
         begin_prog("calculating");
         for(unsigned int index = 0;check_prog(index,regions.size());++index)
             if(item(index,0)->checkState() == Qt::Checked)
-                regions[index].get_quantitative_data(cur_tracking_window.handle,data[index]);
+                regions[index].get_quantitative_data(cur_tracking_window.handle,titles,data[index]);
         if(prog_aborted())
             return;
         std::ostringstream out;

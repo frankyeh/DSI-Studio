@@ -872,7 +872,6 @@ public:
     std::vector<float> trans_to_mni;
 public:
     std::vector<ViewItem> view_item;
-    unsigned int other_mapping_index;
 public:
     FibData(void)
     {
@@ -910,18 +909,19 @@ public:
         dim = fib.dim;
         odf.read(mat_reader);
 
-        for(int index = 0;index < fib.fa.size();++index)
+        view_item.push_back(ViewItem());
+        view_item.back().name =  fib.fa.size() == 1 ? "fa":"qa";
+        view_item.back().image_data = image::make_image(fib.dim,fib.fa[0]);
+        view_item.back().set_scale(fib.fa[0],fib.fa[0]+fib.dim.size());
+        for(unsigned int index = 1;index < fib.index_name.size();++index)
         {
             view_item.push_back(ViewItem());
-            view_item.back().name =  fib.fa.size() == 1 ? "fa0":"qa0";
-            view_item.back().name[2] += index;
-            view_item.back().image_data = image::make_image(fib.dim,fib.fa[index]);
-            view_item.back().set_scale(fib.fa[index],fib.fa[index]+fib.dim.size());
+            view_item.back().name =  fib.index_name[index];
+            view_item.back().image_data = image::make_image(fib.dim,fib.index_data[index][0]);
+            view_item.back().set_scale(fib.index_data[index][0],fib.index_data[index][0]+fib.dim.size());
         }
-
         view_item.push_back(ViewItem());
         view_item.back().name = "color";
-        other_mapping_index = view_item.size();
 
         unsigned int row,col;
         for (unsigned int index = 0;check_prog(index,mat_reader.size());++index)
@@ -961,11 +961,12 @@ public:
                 matrix_name[matrix_name.length()-1] == 'z' ||
                 matrix_name[matrix_name.length()-1] == 'd'))
                 continue;
+            if(matrix_name[matrix_name.length()-1] >= '0' && matrix_name[matrix_name.length()-1] <= '9')
+                continue;
             view_item.push_back(ViewItem());
             view_item.back().name = matrix_name;
             view_item.back().image_data = image::make_image(fib.dim,buf);
             view_item.back().set_scale(buf,buf+dim.size());
-
         }
         if (!dim[2])
         {
@@ -1014,13 +1015,9 @@ public:
     }
     void get_index_list(std::vector<std::string>& index_list) const
     {
-        bool is_dti = (view_item[0].name[0] == 'f');
-        if(is_dti)
-            index_list.push_back("fa");
-        else
-            index_list.push_back("qa");
-        for (int index = other_mapping_index; index < view_item.size(); ++index)
-            index_list.push_back(view_item[index].name);
+        for (int index = 0; index < view_item.size(); ++index)
+            if(view_item[index].name != "color")
+                index_list.push_back(view_item[index].name);
     }
     std::pair<float,float> get_value_range(const std::string& view_name) const
     {
@@ -1139,6 +1136,7 @@ public:
     std::vector<const float*> dir;
     std::vector<const float*> fa;
     std::vector<const short*> findex;
+    std::vector<std::vector<const float*> > other_index;
     std::vector<image::vector<3,float> > odf_table;
     float threshold;
     float cull_cos_angle;
@@ -1188,6 +1186,7 @@ public:
         fa = fib_data.fib.fa;
         findex = fib_data.fib.findex;
         dir = fib_data.fib.dir;
+        other_index = fib_data.fib.index_data;
     }
     bool get_dir(unsigned int space_index,
                          const image::vector<3,float>& dir, // reference direction, should be unit vector
@@ -1224,14 +1223,14 @@ public:
         return cur_dir*odf_table[findex[fib_order][space_index]];
     }
 
-    float get_fa(unsigned int space_index,
+    float get_track_specific_index(unsigned int space_index,unsigned int index_num,
                              const image::vector<3,float>& dir) const
     {
         unsigned char fib_order;
         unsigned char reverse;
         if (!get_nearest_dir_fib(space_index,dir,fib_order,reverse))
             return 0.0;
-        return fa[fib_order][space_index];
+        return other_index[index_num][fib_order][space_index];
     }
 };
 

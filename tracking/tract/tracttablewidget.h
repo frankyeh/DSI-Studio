@@ -62,7 +62,6 @@ public slots:
     void save_tracts_as(void);
     void load_tracts_color(void);
     void save_tracts_color_as(void);
-    void save_fa_as(void);
     void save_tracts_data_as(void);
     void save_all_tracts_as(void);
     void save_all_tracts_to_dir(void);

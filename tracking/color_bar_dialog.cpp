@@ -45,7 +45,7 @@ color_bar_dialog::~color_bar_dialog()
 
 void color_bar_dialog::on_tract_color_index_currentIndexChanged(int index)
 {
-    unsigned int item_index = index ? index+cur_tracking_window->handle->other_mapping_index-1:0;
+    unsigned int item_index = cur_tracking_window->handle->get_name_index(ui->tract_color_index->currentText().toStdString());
     float max_value = cur_tracking_window->handle->view_item[item_index].max_value;
     float min_value = cur_tracking_window->handle->view_item[item_index].min_value;
     float decimal = std::floor(2.0-std::log10(max_value));
@@ -111,7 +111,7 @@ float color_bar_dialog::get_color_min_value(void) const
 {
     return ui->tract_color_min_value->value();
 }
-unsigned int color_bar_dialog::get_tract_color_index(void) const
+QString color_bar_dialog::get_tract_color_name(void) const
 {
-    return ui->tract_color_index->currentIndex();
+    return ui->tract_color_index->currentText();
 }

@@ -635,21 +635,6 @@ void TractTableWidget::show_method(void)
     cur_tracking_window.show_info_dialog("Methods",out.str());
 }
 
-void TractTableWidget::save_fa_as(void)
-{
-    if(currentRow() >= tract_models.size())
-        return;
-    QString filename;
-    filename = QFileDialog::getSaveFileName(
-                this,"Save QA as",item(currentRow(),0)->text() + "_qa.txt",
-                "Text files (*.txt);;All files (*)");
-    if(filename.isEmpty())
-        return;
-
-    if(!tract_models[currentRow()]->save_fa_to_file(filename.toLocal8Bit().begin()))
-        QMessageBox::information(this,"error","fail to save information",0);
-}
-
 void TractTableWidget::save_tracts_data_as(void)
 {
     if(currentRow() >= tract_models.size())
