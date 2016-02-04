@@ -411,7 +411,7 @@ void GLWidget::renderLR(int eye)
 
     check_error("others");
 
-    if (cur_tracking_window.has_odfs &&
+    if (cur_tracking_window.handle->has_odfs() &&
         get_param("show_odf"))
     {
         SliceModel& slice = cur_tracking_window.slice;
