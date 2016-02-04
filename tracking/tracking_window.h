@@ -10,6 +10,7 @@
 #include "SliceModel.h"
 #include "slice_view_scene.h"
 #include "tract/tracttablewidget.h"
+#include "vbc/vbc_database.h"
 class FibData;
 class RenderingTableWidget;
 class RegionTableWidget;
@@ -59,15 +60,15 @@ public:
 public:
     image::value_to_color<float> v2c,v2c_gl;
 public:
+    fib_data connectometry_fib;
+public:
     std::auto_ptr<QTimer> timer;
     unsigned int odf_size;
     unsigned int odf_face_size;
     unsigned char has_odfs;
     bool is_dti,is_qsdr;
 
-
     void set_tracking_param(ThreadData& tracking_thread);
-
 public:
     image::affine_transform<float> mi3_arg;
     std::auto_ptr<manual_alignment> mi3;
@@ -167,6 +168,7 @@ private slots:
     void on_actionStrip_skull_for_T1w_image_triggered();
     void on_actionImprove_Quality_triggered();
     void on_actionRestore_Tracking_Settings_triggered();
+    void on_actionIndividual_Connectometry_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

@@ -18,14 +18,11 @@ class TractModel;
 
 struct fib_data{
     std::vector<std::vector<float> > greater,lesser;
-    std::vector<std::vector<short> > greater_dir,lesser_dir;
     std::vector<const float*> greater_ptr,lesser_ptr;
-    std::vector<const short*> greater_dir_ptr,lesser_dir_ptr;
 public:
     void initialize(FibData* fib_file);
-    void add_greater_lesser_mapping_for_tracking(FibData* fib_file);
-    void write_lesser(fiber_orientations& fib) const;
-    void write_greater(fiber_orientations& fib) const;
+    void add_greater_lesser_mapping_for_tracking(FibData* handle);
+    bool add_dif_mapping_for_tracking(FibData* fib_file,std::vector<std::vector<float> >& fa_data);
 };
 
 
@@ -196,7 +193,8 @@ public:
         return *this;
     }
 };
-
+void calculate_spm(FibData* handle,fib_data& data,stat_model& info,
+                   float fiber_threshold,bool normalize_qa,bool& terminated);
 class vbc_database
 {
 public:
@@ -211,6 +209,11 @@ public:
 public:// database information
     float fiber_threshold;
     bool normalize_qa;
+public:
+    void calculate_spm(fib_data& data,stat_model& info)
+    {
+        ::calculate_spm(handle.get(),data,info,fiber_threshold,normalize_qa,terminated);
+    }
 private: // single subject analysis result
     void run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& track,float seed_ratio = 1.0,unsigned int thread_count = 1);
 public:// for FDR analysis
@@ -237,8 +240,6 @@ public:
     boost::ptr_vector<TractModel> lesser_tracks;
     boost::ptr_vector<fib_data> spm_maps;
     void save_tracks_files(std::vector<std::string>&);
-public:// routine for calculate SPM
-    void calculate_spm(fib_data& data,stat_model& info);
 public:// Individual analysis
     std::vector<std::vector<float> > individual_data;
     std::vector<float> individual_data_sd;

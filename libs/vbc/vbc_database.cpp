@@ -38,89 +38,87 @@ bool vbc_database::load_database(const char* database_name)
     return !handle->subject_qa.empty();
 }
 
-
-
-
-
-
-
-
 void fib_data::initialize(FibData* handle)
 {
     unsigned char num_fiber = handle->fib.num_fiber;
-    image::geometry<3> dim(handle->dim);
     greater.resize(num_fiber);
     lesser.resize(num_fiber);
-    greater_dir.resize(num_fiber);
-    lesser_dir.resize(num_fiber);
     for(unsigned char fib = 0;fib < num_fiber;++fib)
     {
         greater[fib].resize(handle->dim.size());
         lesser[fib].resize(handle->dim.size());
-        greater_dir[fib].resize(handle->dim.size());
-        lesser_dir[fib].resize(handle->dim.size());
     }
     greater_ptr.resize(num_fiber);
     lesser_ptr.resize(num_fiber);
-    greater_dir_ptr.resize(num_fiber);
-    lesser_dir_ptr.resize(num_fiber);
     for(unsigned char fib = 0;fib < num_fiber;++fib)
     {
         greater_ptr[fib] = &greater[fib][0];
         lesser_ptr[fib] = &lesser[fib][0];
-        greater_dir_ptr[fib] = &greater_dir[fib][0];
-        lesser_dir_ptr[fib] = &lesser_dir[fib][0];
     }
     for(unsigned char fib = 0;fib < num_fiber;++fib)
     {
         std::fill(greater[fib].begin(),greater[fib].end(),0.0);
         std::fill(lesser[fib].begin(),lesser[fib].end(),0.0);
-        std::fill(greater_dir[fib].begin(),greater_dir[fib].end(),0);
-        std::fill(lesser_dir[fib].begin(),lesser_dir[fib].end(),0);
     }
 }
 
 void fib_data::add_greater_lesser_mapping_for_tracking(FibData* handle)
 {
-
-    unsigned int greater_index_id =
-            std::find(handle->fib.index_name.begin(),
-                      handle->fib.index_name.end(),
-                      "greater")-handle->fib.index_name.begin();
-    if(greater_index_id == handle->fib.index_name.size())
-    {
-        handle->fib.index_name.push_back("greater");
-        handle->fib.index_data.push_back(std::vector<const float*>());
-        handle->fib.index_data_dir.push_back(std::vector<const short*>());
-    }
-    handle->fib.index_data[greater_index_id] = greater_ptr;
-    handle->fib.index_data_dir[greater_index_id] = greater_dir_ptr;
-
-    unsigned int lesser_index_id =
-            std::find(handle->fib.index_name.begin(),
-                      handle->fib.index_name.end(),
-                      "lesser")-handle->fib.index_name.begin();
-    if(lesser_index_id == handle->fib.index_name.size())
-    {
-        handle->fib.index_name.push_back("lesser");
-        handle->fib.index_data.push_back(std::vector<const float*>());
-        handle->fib.index_data_dir.push_back(std::vector<const short*>());
-    }
-    handle->fib.index_data[lesser_index_id] = lesser_ptr;
-    handle->fib.index_data_dir[lesser_index_id] = lesser_dir_ptr;
+    for(unsigned int index = 0;index < handle->fib.index_name.size();++index)
+        if(handle->fib.index_name[index].find('%') != std::string::npos)
+        {
+            handle->fib.index_name.erase(handle->fib.index_name.begin()+index);
+            handle->fib.index_data.erase(handle->fib.index_data.begin()+index);
+            index = 0;
+        }
+    handle->fib.index_name.push_back(">%");
+    handle->fib.index_data.push_back(std::vector<const float*>());
+    handle->fib.index_data.back() = greater_ptr;
+    handle->fib.index_name.push_back("<%");
+    handle->fib.index_data.push_back(std::vector<const float*>());
+    handle->fib.index_data.back() = lesser_ptr;
 }
-
-void fib_data::write_lesser(fiber_orientations& fib) const
+bool fib_data::add_dif_mapping_for_tracking(FibData* handle,std::vector<std::vector<float> >& fa_data)
 {
-    fib.fa = lesser_ptr;
-    fib.findex = lesser_dir_ptr;
+    // normalization
+    float max_qa1 = 0.0,max_qa2 = 0.0;
+    for(unsigned char fib = 0;fib < handle->fib.num_fiber;++fib)
+    {
+        max_qa1 = std::max<float>(max_qa1,*std::max_element(handle->fib.fa[fib],handle->fib.fa[fib] + handle->dim.size()));
+        max_qa2 = std::max<float>(max_qa2,*std::max_element(fa_data[fib].begin(),fa_data[fib].end()));
+    }
+    if(max_qa1 == 0.0 || max_qa2 == 0.0)
+        return false;
+    //calculating dif
+    for(unsigned char fib = 0;fib < handle->fib.num_fiber;++fib)
+    {
+        for(unsigned int index = 0;index < handle->dim.size();++index)
+            if(handle->fib.fa[fib][index] > 0.0 && fa_data[fib][index] > 0.0)
+            {
+                float f1 = handle->fib.fa[fib][index];
+                float f2 = fa_data[fib][index]*max_qa1/max_qa2;
+                if(f1 > f2)
+                    lesser[fib][index] = f1-f2;  // subject decreased connectivity
+                else
+                    greater[fib][index] = f2-f1; // subject increased connectivity
+            }
+    }
+    for(unsigned int index = 0;index < handle->fib.index_name.size();++index)
+        if(handle->fib.index_name[index] == "inc" ||
+                handle->fib.index_name[index] == "dec")
+        {
+            handle->fib.index_name.erase(handle->fib.index_name.begin()+index);
+            handle->fib.index_data.erase(handle->fib.index_data.begin()+index);
+            index = 0;
+        }
+    handle->fib.index_name.push_back("inc");
+    handle->fib.index_data.push_back(std::vector<const float*>());
+    handle->fib.index_data.back() = greater_ptr;
+    handle->fib.index_name.push_back("dec");
+    handle->fib.index_data.push_back(std::vector<const float*>());
+    handle->fib.index_data.back() = lesser_ptr;
+    return true;
 }
-void fib_data::write_greater(fiber_orientations& fib) const
-{
-    fib.fa = greater_ptr;
-    fib.findex = greater_dir_ptr;
-}
-
 
 void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& tracks,float seed_ratio, unsigned int thread_count)
 {
@@ -463,12 +461,11 @@ double stat_model::operator()(const std::vector<double>& original_population,uns
 
     return 0.0;
 }
-
-void vbc_database::calculate_spm(fib_data& data,stat_model& info)
+void calculate_spm(FibData* handle,fib_data& data,stat_model& info,
+                   float fiber_threshold,bool normalize_qa,bool& terminated)
 {
-    data.initialize(handle.get());
+    data.initialize(handle);
     std::vector<double> population(handle->subject_qa.size());
-    std::vector<unsigned char> greater_fib_count(handle->dim.size()),lesser_fib_count(handle->dim.size());
     for(unsigned int s_index = 0;s_index < handle->si2vi.size() && !terminated;++s_index)
     {
         unsigned int cur_index = handle->si2vi[s_index];
@@ -488,31 +485,10 @@ void vbc_database::calculate_spm(fib_data& data,stat_model& info)
             double result = info(population,pos);
 
             if(result > 0.0) // group 0 > group 1
-            {
-                unsigned char fib_count = greater_fib_count[cur_index];
-                data.greater[fib_count][cur_index] = result;
-                data.greater_dir[fib_count][cur_index] = handle->fib.findex[fib][cur_index];
-                ++greater_fib_count[cur_index];
-                for(char j = fib_count;j;--j)
-                    if(data.greater[j][cur_index] > data.greater[j-1][cur_index])
-                    {
-                        std::swap(data.greater[j][cur_index],data.greater[j-1][cur_index]);
-                        std::swap(data.greater_dir[j][cur_index],data.greater_dir[j-1][cur_index]);
-                    }
-            }
+                data.greater[fib][cur_index] = result;
             if(result < 0.0) // group 0 < group 1
-            {
-                unsigned char fib_count = lesser_fib_count[cur_index];
-                data.lesser[fib_count][cur_index] = -result;
-                data.lesser_dir[fib_count][cur_index] = handle->fib.findex[fib][cur_index];
-                ++lesser_fib_count[cur_index];
-                for(char j = fib_count;j;--j)
-                    if(data.lesser[j][cur_index] > data.lesser[j-1][cur_index])
-                    {
-                        std::swap(data.lesser[j][cur_index],data.lesser[j-1][cur_index]);
-                        std::swap(data.lesser_dir[j][cur_index],data.lesser_dir[j-1][cur_index]);
-                    }
-            }
+                data.lesser[fib][cur_index] = -result;
+
         }
     }
 }
@@ -557,10 +533,10 @@ void vbc_database::run_permutation_multithread(unsigned int id)
             calculate_spm(spm_maps[subject_id],info);
             if(terminated)
                 return;
-            spm_maps[subject_id].write_lesser(fib);
+            fib.fa = spm_maps[subject_id].lesser_ptr;
             run_track(fib,tracks,total_track_count,threads->size());
             lesser_tracks[subject_id].add_tracts(tracks);
-            spm_maps[subject_id].write_greater(fib);
+            fib.fa = spm_maps[subject_id].greater_ptr;
             if(terminated)
                 return;
             run_track(fib,tracks,total_track_count,threads->size());
@@ -591,7 +567,7 @@ void vbc_database::run_permutation_multithread(unsigned int id)
                     info.individual_data_sd = normalize_qa ? individual_data_sd[subject_id]:1.0;
                 }
                 calculate_spm(data,info);
-                data.write_lesser(fib);
+                fib.fa = data.lesser_ptr;
                 run_track(fib,tracks,total_track_count/permutation_count);
                 cal_hist(tracks,(null) ? subject_lesser_null : subject_lesser);
                 /*
@@ -603,7 +579,7 @@ void vbc_database::run_permutation_multithread(unsigned int id)
                 }
                 */
 
-                data.write_greater(fib);
+                fib.fa = data.greater_ptr;
                 run_track(fib,tracks,total_track_count/permutation_count);
                 cal_hist(tracks,(null) ? subject_greater_null : subject_greater);
                 /*
@@ -631,7 +607,7 @@ void vbc_database::run_permutation_multithread(unsigned int id)
             info.resample(*model.get(),null,true);
             calculate_spm(data,info);
 
-            data.write_lesser(fib);
+            fib.fa = data.lesser_ptr;
             run_track(fib,tracks,total_track_count/permutation_count);
             cal_hist(tracks,(null) ? subject_lesser_null : subject_lesser);
             /*
@@ -642,7 +618,7 @@ void vbc_database::run_permutation_multithread(unsigned int id)
                 tracks.clear();
             }
             */
-            data.write_greater(fib);
+            fib.fa = data.greater_ptr;
             run_track(fib,tracks,total_track_count/permutation_count);
             cal_hist(tracks,(null) ? subject_greater_null : subject_greater);
             /*
@@ -662,10 +638,10 @@ void vbc_database::run_permutation_multithread(unsigned int id)
             calculate_spm(spm_maps[0],info);
             if(terminated)
                 return;
-            spm_maps[0].write_lesser(fib);
+            fib.fa = spm_maps[0].lesser_ptr;
             run_track(fib,tracks,total_track_count,threads->size());
             lesser_tracks[0].add_tracts(tracks);
-            spm_maps[0].write_greater(fib);
+            fib.fa = spm_maps[0].greater_ptr;
             if(terminated)
                 return;
             run_track(fib,tracks,total_track_count,threads->size());
@@ -732,7 +708,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
                 out1 << "fa" << i;
                 out2 << "index" << i;
                 mat_write.write(out1.str().c_str(),spm_maps[index].greater_ptr[i],1,handle->dim.size());
-                mat_write.write(out2.str().c_str(),spm_maps[index].greater_dir_ptr[i],1,handle->dim.size());
+                mat_write.write(out2.str().c_str(),handle->fib.findex[i],1,handle->dim.size());
             }
         }
 
@@ -777,7 +753,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
                 out1 << "fa" << i;
                 out2 << "index" << i;
                 mat_write.write(out1.str().c_str(),spm_maps[index].lesser_ptr[i],1,handle->dim.size());
-                mat_write.write(out2.str().c_str(),spm_maps[index].lesser_dir_ptr[i],1,handle->dim.size());
+                mat_write.write(out2.str().c_str(),handle->fib.findex[i],1,handle->dim.size());
             }
         }
 

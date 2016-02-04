@@ -65,7 +65,7 @@
          <x>0</x>
          <y>0</y>
          <width>350</width>
-         <height>452</height>
+         <height>460</height>
         </rect>
        </property>
        <attribute name="label">
@@ -141,8 +141,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>310</width>
-         <height>160</height>
+         <width>350</width>
+         <height>460</height>
         </rect>
        </property>
        <attribute name="label">
@@ -177,7 +177,10 @@
         <item>
          <widget class="QCommandLinkButton" name="connectometry">
           <property name="text">
-           <string>STEP2: Connectometry Analysis </string>
+           <string>STEP2: Group Connectometry Analysis </string>
+          </property>
+          <property name="description">
+           <string>Analysis group difference</string>
           </property>
          </widget>
         </item>
@@ -201,8 +204,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>218</width>
-         <height>520</height>
+         <width>350</width>
+         <height>460</height>
         </rect>
        </property>
        <attribute name="label">
@@ -284,8 +287,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>309</width>
-         <height>363</height>
+         <width>350</width>
+         <height>460</height>
         </rect>
        </property>
        <attribute name="label">

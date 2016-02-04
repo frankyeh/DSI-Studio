@@ -1216,9 +1216,15 @@
     <addaction name="actionLoad_Rendering_Parameters"/>
     <addaction name="actionSave_Rendering_Parameters"/>
     <addaction name="actionRestore_Settings"/>
+   </widget>
+   <widget class="QMenu" name="menuAnalysis">
+    <property name="title">
+     <string>Analysis</string>
+    </property>
+    <addaction name="actionIndividual_Connectometry"/>
     <addaction name="separator"/>
-    <addaction name="actionManual_Registration"/>
     <addaction name="actionView_FIB_Content"/>
+    <addaction name="actionManual_Registration"/>
     <addaction name="actionQuality_Assessment"/>
     <addaction name="actionImprove_Quality"/>
    </widget>
@@ -1228,6 +1234,7 @@
    <addaction name="menu_Slices"/>
    <addaction name="menu_View"/>
    <addaction name="menuTools"/>
+   <addaction name="menuAnalysis"/>
   </widget>
   <widget class="QDockWidget" name="TractWidgetHolder">
    <property name="sizePolicy">
@@ -2957,6 +2964,11 @@
   <action name="actionRestore_Tracking_Settings">
    <property name="text">
     <string>Restore Tracking Settings</string>
+   </property>
+  </action>
+  <action name="actionIndividual_Connectometry">
+   <property name="text">
+    <string>Individual Connectometry</string>
    </property>
   </action>
  </widget>

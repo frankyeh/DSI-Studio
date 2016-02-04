@@ -946,11 +946,22 @@ void tracking_window::on_actionRestore_window_layout_triggered()
 
 void tracking_window::on_tracking_index_currentIndexChanged(int index)
 {
-    handle->fib.set_tracking_index(index);
-    float max_value = *std::max_element(handle->fib.fa[0],handle->fib.fa[0]+handle->fib.dim.size());
-    renderWidget->setMinMax("fa_threshold",0.0,max_value*1.1,max_value/50.0);
-    renderWidget->setData("fa_threshold",0.6*image::segmentation::otsu_threshold(image::make_image(handle->fib.dim,
-                                                                                                   handle->fib.fa[0])));
+    if(index < 0)
+        return;
+    if(handle->fib.set_tracking_index(index) &&
+       handle->fib.index_name[index].find('%') != std::string::npos)
+    {
+        // percentile threshold
+        renderWidget->setMinMax("fa_threshold",0.0,1.0,0.05);
+        renderWidget->setData("fa_threshold",0.95);
+    }
+    else
+    {
+        float max_value = *std::max_element(handle->fib.fa[0],handle->fib.fa[0]+handle->fib.dim.size());
+        renderWidget->setMinMax("fa_threshold",0.0,max_value*1.1,max_value/50.0);
+        renderWidget->setData("fa_threshold",0.6*image::segmentation::otsu_threshold(image::make_image(handle->fib.dim,
+                                                                                                  handle->fib.fa[0])));
+    }
 }
 
 
@@ -1679,4 +1690,67 @@ void tracking_window::on_actionStrip_skull_for_T1w_image_triggered()
     }
     else
         QMessageBox::information(this,"Error","Load T1W image first");
+}
+
+void tracking_window::on_actionIndividual_Connectometry_triggered()
+{
+    if(!is_qsdr)
+    {
+        QMessageBox::information(this,"Error","Please open an atlas or a connectometry db in STEP3: fiber tracking to run individual connectometry. See online documentation for details.");
+        return;
+    }
+    QString subject = QFileDialog::getOpenFileName(
+                           this,
+                           "Open subject Fib files",
+                           "",
+                           "Fib files (*fib.gz);;All files (*)");
+    if (subject.isEmpty())
+        return;
+
+    // restore fa0 to QA
+    handle->fib.set_tracking_index(0);
+    if(handle->num_subjects)
+    {
+        std::vector<float> data;
+        if(!handle->get_odf_profile(subject.toLocal8Bit().begin(),data))
+        {
+            QMessageBox::information(this,QString("Error in ")+QFileInfo(subject).baseName(),handle->error_msg.c_str(),0);
+            return;
+        }
+
+        bool normalized_qa = false;
+        bool terminated = false;
+        stat_model info;
+        info.init(handle->num_subjects);
+        info.type = 2;
+        info.individual_data = &(data[0]);
+        //info.individual_data_sd = normalize_qa ? individual_data_sd[subject_id]:1.0;
+        info.individual_data_sd = 1.0;
+        float fa_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->fib.dim,
+                                                                                           handle->fib.fa[0]));
+        calculate_spm(handle,connectometry_fib,info,fa_threshold,normalized_qa,terminated);
+        connectometry_fib.add_greater_lesser_mapping_for_tracking(handle);
+    }
+    else
+    {
+        std::vector<std::vector<float> > data;
+        if(!handle->get_qa_profile(subject.toLocal8Bit().begin(),data))
+        {
+            QMessageBox::information(this,QString("Error in ")+QFileInfo(subject).baseName(),handle->error_msg.c_str(),0);
+            return;
+        }
+        connectometry_fib.initialize(handle);
+        if(!connectometry_fib.add_dif_mapping_for_tracking(handle,data))
+        {
+            QMessageBox::information(this,"Error","Invalid value in the subject file.",0);
+            return;
+        }
+    }
+    QStringList tracking_index_list;
+    for(int index = 0;index < handle->fib.index_name.size();++index)
+        tracking_index_list.push_back(handle->fib.index_name[index].c_str());
+    renderWidget->setList("tracking_index",tracking_index_list);
+    renderWidget->setData("tracking_index",tracking_index_list.size()-1);
+    on_tracking_index_currentIndexChanged(tracking_index_list.size()-1);
+    scene.show_slice();
 }

@@ -20,48 +20,54 @@ private:
     unsigned int half_odf_size;
 public:
     ODFData(void):odfs(0){}
-    void read(gz_mat_read& mat_reader)
+    bool read(gz_mat_read& mat_reader)
     {
         unsigned int row,col;
         {
-            const float* odfs = 0;
             if(mat_reader.read("odfs",row,col,odfs))
+                odfs_size = row*col;
+            else
             {
-                setODFs(odfs,row*col);
-                return;
+                for(unsigned int index = 0;1;++index)
+                {
+                    const float* odf = 0;
+                    std::ostringstream out;
+                    out << "odf" << index;
+                    std::string name = out.str();
+                    if(!mat_reader.read(name.c_str(),row,col,odf))
+                        break;
+                    if(odf_blocks.size() <= index)
+                    {
+                        odf_blocks.resize(index+1);
+                        odf_block_size.resize(index+1);
+                    }
+                    odf_blocks[index] = odf;
+                    odf_block_size[index] = row*col;
+                }
             }
         }
-        for(unsigned int index = 0;;++index)
-        {
-            const float* odf = 0;
-            std::ostringstream out;
-            out << "odf" << index;
-            std::string name = out.str();
-            if(!mat_reader.read(name.c_str(),row,col,odf))
-                return;
-            setODF(index,odf,row*col);
-        }
-    }
+        if(!has_odfs())
+            return false;
 
-    void setODFs(const float* odfs_,unsigned int odfs_size_)
-    {
-        odfs = odfs_;
-        odfs_size = odfs_size_;
-    }
-    void setODF(unsigned int store_index,const float* odf,unsigned int size)
-    {
-        if(odf_blocks.size() <= store_index)
+        // dimension
+        image::geometry<3> dim;
         {
-            odf_blocks.resize(store_index+1);
-            odf_block_size.resize(store_index+1);
+            const unsigned short* dim_buf = 0;
+            if (!mat_reader.read("dimension",row,col,dim_buf))
+                return false;
+            std::copy(dim_buf,dim_buf+3,dim.begin());
         }
-        odf_blocks[store_index] = odf;
-        odf_block_size[store_index] = size;
-    }
-    void initializeODF(const image::geometry<3>& dim,const float* fa0,unsigned int half_odf_size_)
-    {
-        half_odf_size = half_odf_size_;
-        // handle the odf mappings
+        // odf_vertices
+        {
+            const float* odf_buffer;
+            if (!mat_reader.read("odf_vertices",row,col,odf_buffer))
+                return false;
+            half_odf_size = col / 2;
+        }
+        const float* fa0 = 0;
+        if (!mat_reader.read("fa0",row,col,fa0))
+            return false;
+
         if (odfs)
         {
             voxel_index_map.resize(dim);
@@ -116,7 +122,9 @@ public:
                     ++voxel_index;
                 }
         }
+
     }
+
     // odf functions
     bool has_odfs(void) const
     {
@@ -151,8 +159,6 @@ public:
 public:
     std::vector<std::string> index_name;
     std::vector<std::vector<const float*> > index_data;
-    std::vector<std::vector<const short*> > index_data_dir;
-
 public:
     std::vector<const float*> fa;
 
@@ -277,8 +283,6 @@ public:
             {
                 index_name.push_back(prefix_name);
                 index_data.push_back(std::vector<const float*>());
-                index_data_dir.push_back(std::vector<const short*>());
-
             }
 
             if(index_data[prefix_name_index].size() <= store_index)
@@ -292,17 +296,14 @@ public:
         // adding the primary fiber index
         index_name.insert(index_name.begin(),fa.size() == 1 ? "fa":"qa");
         index_data.insert(index_data.begin(),fa);
-        index_data_dir.insert(index_data_dir.begin(),findex);
 
         // check index_data integrity
         for(int index = 1;index < index_data.size();++index)
         {
-            index_data_dir[index] = findex;
             for(int j = 0;j < index_data[index].size();++j)
                 if(!index_data[index][j] || index_data[index].size() != num_fiber)
                 {
                     index_data.erase(index_data.begin()+index);
-                    index_data_dir.erase(index_data_dir.begin()+index);
                     index_name.erase(index_name.begin()+index);
                     --index;
                     break;
@@ -317,10 +318,9 @@ public:
 
     bool set_tracking_index(int new_index)
     {
-        if(new_index >= index_data.size())
+        if(new_index >= index_data.size() || new_index < 0)
             return false;
         fa = index_data[new_index];
-        findex = index_data_dir[new_index];
         return true;
     }
 
@@ -464,38 +464,8 @@ public:
     bool sample_odf(gz_mat_read& m,std::vector<float>& data)
     {
         ODFData subject_odf;
-        for(unsigned int index = 0;1;++index)
-        {
-            std::ostringstream out;
-            out << "odf" << index;
-            const float* odf = 0;
-            unsigned int row,col;
-            m.read(out.str().c_str(),row,col,odf);
-            if (!odf)
-                break;
-            subject_odf.setODF(index,odf,row*col);
-        }
-
-        const float* fa0 = 0;
-        unsigned int row,col;
-        m.read("fa0",row,col,fa0);
-        if (!fa0)
-        {
-            error_msg = "Invalid file format. Cannot find fa0 matrix in ";
+        if(!subject_odf.read(m))
             return false;
-        }
-        if(*std::max_element(fa0,fa0+row*col) == 0)
-        {
-            error_msg = "Invalid file format. No image data in ";
-            return false;
-        }
-        if(!subject_odf.has_odfs())
-        {
-            error_msg = "No ODF data in the subject file:";
-            return false;
-        }
-        subject_odf.initializeODF(dim,fa0,fib.half_odf_size);
-
         set_title("load data");
         for(unsigned int index = 0;index < si2vi.size();++index)
         {
@@ -811,6 +781,43 @@ public:
         }
         return true;
     }
+    bool get_qa_profile(const char* file_name,std::vector<std::vector<float> >& data)
+    {
+        gz_mat_read single_subject;
+        if(!single_subject.load_from_file(file_name))
+        {
+            error_msg = "fail to load the fib file";
+            return false;
+        }
+        if(!is_consistent(single_subject))
+            return false;
+        ODFData subject_odf;
+        if(!subject_odf.read(single_subject))
+        {
+            error_msg = "The fib file contains no ODF information. Please reconstruct the SRC file again with ODF output.";
+            return false;
+        }
+        data.clear();
+        data.resize(fib.num_fiber);
+        for(unsigned int index = 0;index < data.size();++index)
+            data[index].resize(dim.size());
+
+        for(unsigned int index = 0;index < dim.size();++index)
+            if(fib.fa[0][index] != 0.0)
+            {
+                const float* odf = subject_odf.get_odf_data(index);
+                if(odf == 0)
+                    continue;
+                float min_value = *std::min_element(odf, odf + fib.half_odf_size);
+                for(unsigned char i = 0;i < fib.num_fiber;++i)
+                {
+                    if(fib.fa[i][index] == 0.0)
+                        break;
+                    data[i][index] = odf[fib.findex[i][index]]-min_value;
+                }
+            }
+        return true;
+    }
     bool is_db_compatible(const FibData* rhs)
     {
         if(rhs->dim != dim || subject_qa_length != rhs->subject_qa_length)
@@ -902,7 +909,6 @@ public:
         }
         dim = fib.dim;
         odf.read(mat_reader);
-        odf.initializeODF(dim,fib.fa[0],fib.half_odf_size);
 
         for(int index = 0;index < fib.fa.size();++index)
         {
