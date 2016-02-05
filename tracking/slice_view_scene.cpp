@@ -206,9 +206,12 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
                     cur_tracking_window.ui->sliceViewBox->currentText().toLocal8Bit().begin());
         if(index >= cur_tracking_window.handle->view_item.size())
             return true;
-
-        if(QFileInfo(param).completeSuffix().toLower() == "nii" ||
-                QFileInfo(param).completeSuffix().toLower() == "nii.gz")
+        if(QFileInfo(param).completeSuffix().toLower() == "mat")
+        {
+            image::io::mat_write file(param.toLocal8Bit().begin());
+            file << cur_tracking_window.handle->view_item[index].image_data;
+        }
+        else
         {
             image::basic_image<float,3> buf(cur_tracking_window.handle->view_item[index].image_data);
             gz_nifti file;
@@ -224,12 +227,6 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
                 file << buf;
             }
             file.save_to_file(param.toLocal8Bit().begin());
-
-        }
-        if(QFileInfo(param).completeSuffix().toLower() == "mat")
-        {
-            image::io::mat_write file(param.toLocal8Bit().begin());
-            file << cur_tracking_window.handle->view_item[index].image_data;
         }
         return true;
     }
@@ -407,6 +404,8 @@ void slice_view_scene::save_slice_as()
                 "NIFTI files (*nii.gz);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
+    if(QFileInfo(filename.toLower()).completeSuffix() != "mat")
+        filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
     command("save_mapping",filename,"");
 }
 

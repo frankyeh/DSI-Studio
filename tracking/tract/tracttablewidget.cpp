@@ -888,11 +888,8 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
                     "NIFTI files (*nii.gz *.nii);;MAT File (*.mat);;");
         if(filename.isEmpty())
             return;
-#ifdef __APPLE__
-// fix the Qt double extension bug here
-if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
-    filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
-#endif
+        if(QFileInfo(filename.toLower()).completeSuffix() != "mat")
+            filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
 
         image::basic_image<unsigned int,3> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
@@ -901,8 +898,12 @@ if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
                 continue;
             tract_models[index]->get_density_map(tdi,transformation,end_point);
         }
-        if(QFileInfo(filename).completeSuffix().toLower() == "nii" ||
-                QFileInfo(filename).completeSuffix().toLower() == "nii.gz")
+        if(QFileInfo(filename).completeSuffix().toLower() == "mat")
+        {
+            image::io::mat_write mat_header(filename.toLocal8Bit().begin());
+            mat_header << tdi;
+        }
+        else
         {
             gz_nifti nii_header;
             nii_header.set_voxel_size(vs.begin());
@@ -918,12 +919,6 @@ if(QFileInfo(filename).completeSuffix().contains(".nii.gz"))
             nii_header << tdi;
             nii_header.save_to_file(filename.toLocal8Bit().begin());
         }
-        else
-            if(QFileInfo(filename).completeSuffix().toLower() == "mat")
-            {
-                image::io::mat_write mat_header(filename.toLocal8Bit().begin());
-                mat_header << tdi;
-            }
     }
 }
 

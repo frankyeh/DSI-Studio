@@ -626,7 +626,8 @@ void tracking_window::on_tool6_pressed()
 void tracking_window::on_sliceViewBox_currentIndexChanged(int index)
 {
     ui->actionSave_Anisotrpy_Map_as->setText(QString("Save ") +
-                                             ui->sliceViewBox->currentText()+" as...");
+                                             ui->sliceViewBox->currentText()+" volume as...");
+    ui->actionSave_Anisotrpy_Map_as->setEnabled(ui->sliceViewBox->currentText() != "color");
     slice.set_view_name(ui->sliceViewBox->currentText().toLocal8Bit().begin());
     std::pair<float,float> range = handle->get_value_range(ui->sliceViewBox->currentText().toLocal8Bit().begin());
     float r = std::fabs(range.first-range.second);
