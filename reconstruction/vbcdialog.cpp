@@ -27,10 +27,7 @@ VBCDialog::VBCDialog(QWidget *parent,bool create_db_) :
         ui->create_data_base->setText("Create skeleton");
     }
 
-    QDir cur_dir(QApplication::applicationDirPath());
-    QStringList file_list = cur_dir.entryList(QStringList("*.fib.gz"),QDir::Files);
-    if(!file_list.empty())
-        ui->skeleton->setText(QApplication::applicationDirPath() + "/"+ file_list[0]);
+
 }
 
 VBCDialog::~VBCDialog()
@@ -61,18 +58,18 @@ void VBCDialog::on_group1open_clicked()
                                      "Fib files (*fib.gz);;All files (*)" );
     if (filenames.isEmpty())
         return;
-    for(unsigned int index = 0;index < filenames.size();++index)
+    if(ui->skeleton->text().isEmpty())
     {
-        if((QFileInfo(filenames[index]).baseName().contains("1mm") && QFileInfo(ui->skeleton->text()).baseName().contains("2mm")) ||
-           (QFileInfo(filenames[index]).baseName().contains("2mm") && QFileInfo(ui->skeleton->text()).baseName().contains("1mm")))
-        {
-            if(QMessageBox::information(this,"Warning",QString("It seems that ")+
-                                        QFileInfo(filenames[index]).baseName() +
-                                        " and the atlas have different resolution, Continue? ",
-                                        QMessageBox::Yes|QMessageBox::No) == QMessageBox::No)
-                return;
-            break;
-        }
+        QDir cur_dir(QApplication::applicationDirPath());
+        QStringList file_list = cur_dir.entryList(QStringList("*.fib.gz"),QDir::Files);
+        if(QFileInfo(filenames[0]).baseName().contains("1mm"))
+            for(unsigned int i = 0;i < file_list.size();++i)
+                if(file_list[i].contains("1mm"))
+                    ui->skeleton->setText(QApplication::applicationDirPath() + "/"+ file_list[0]);
+        if(QFileInfo(filenames[0]).baseName().contains("2mm"))
+            for(unsigned int i = 0;i < file_list.size();++i)
+                if(file_list[i].contains("2mm"))
+                    ui->skeleton->setText(QApplication::applicationDirPath() + "/"+ file_list[0]);
     }
     group << filenames;
     update_list();
