@@ -253,7 +253,7 @@ int main(int ac, char *av[])
     // load template
     if(!fa_template_imp.load_from_file())
     {
-        QMessageBox::information(0,"Error","Cannot find HCP842_1mm_qa.nii.gz in file directory",0);
+        QMessageBox::information(0,"Error","Cannot find HCP488_QA.nii.gz in file directory",0);
         return false;
     }
     // load atlas
