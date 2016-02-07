@@ -212,9 +212,10 @@ int rec(int ac, char *av[])
             if(name_value.size() != 2)
             {
                 std::cout << "Invalid command: " << file_list[i].toStdString() << std::endl;
-                continue;
+                return 0;
             }
-            add_other_image(handle.get(),name_value[0],name_value[1],true);
+            if(!add_other_image(handle.get(),name_value[0],name_value[1],true))
+                return 0;
         }
     }
     if(vm.count("mask"))
