@@ -337,20 +337,6 @@ public:
             mz[data.voxel_index] = Jpos[2];
         }
 
-        for(unsigned int index = 0;index < voxel.other_image.size();++index)
-        {
-            interpolation_type interpolation;
-            image::vector<3,double> Opos;
-            voxel.other_image_affine[index](Jpos,Opos);
-            if(voxel.output_mapping)
-            {
-                other_image_x[index][data.voxel_index] = Opos[0];
-                other_image_y[index][data.voxel_index] = Opos[1];
-                other_image_z[index][data.voxel_index] = Opos[2];
-            }
-            interpolation.get_location(voxel.other_image[index].geometry(),Opos);
-            interpolation.estimate(voxel.other_image[index],other_image[index][data.voxel_index]);
-        }
         if(!voxel.grad_dev.empty())
         {
             image::matrix<3,3,float> grad_dev,new_j;
@@ -359,6 +345,26 @@ public:
             image::mat::transpose(grad_dev.begin(),image::dim<3,3>());
             new_j = grad_dev*data.jacobian;
             data.jacobian = new_j;
+        }
+
+        for(unsigned int index = 0;index < voxel.other_image.size();++index)
+        {
+            if(voxel.other_image[index].geometry() != voxel.qa_map.geometry())
+            {
+                interpolation_type interpo;
+                image::vector<3,double> Opos;
+                voxel.other_image_affine[index](Jpos,Opos);
+                if(voxel.output_mapping)
+                {
+                    other_image_x[index][data.voxel_index] = Opos[0];
+                    other_image_y[index][data.voxel_index] = Opos[1];
+                    other_image_z[index][data.voxel_index] = Opos[2];
+                }
+                interpo.get_location(voxel.other_image[index].geometry(),Opos);
+                interpo.estimate(voxel.other_image[index],other_image[index][data.voxel_index]);
+            }
+            else
+                interpolation.estimate(voxel.other_image[index],other_image[index][data.voxel_index]);
         }
     }
 
@@ -421,6 +427,8 @@ public:
         for(unsigned int index = 0;index < other_image.size();++index)
         {
             mat_writer.write(voxel.other_image_name[index].c_str(),&*other_image[index].begin(),1,other_image[index].size());
+            if(voxel.other_image[index].geometry() == voxel.qa_map.geometry())
+                continue;
             short dimension[3];
             dimension[0] = voxel.other_image[index].width();
             dimension[1] = voxel.other_image[index].height();

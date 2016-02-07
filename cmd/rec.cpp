@@ -1,3 +1,4 @@
+#include <QString>
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -7,6 +8,8 @@
 #include "dsi_interface_static_link.h"
 #include "mapping/fa_template.hpp"
 #include "libs/gzip_interface.hpp"
+#include "reconstruction/reconstruction_window.h"
+#include "manual_alignment.h"
 extern fa_template fa_template_imp;
 namespace po = boost::program_options;
 void rec_motion_correction(ImageModel* handle,unsigned int total_thread,
@@ -27,11 +30,13 @@ int rec(int ac, char *av[])
     ("mask", po::value<std::string>(), "assign the mask file")
     ("template", po::value<std::string>(), "assign the template file")
     ("affine", po::value<std::string>(), "assign the rotation matrix")
+    ("other_image", po::value<std::string>(), "assign other image volume to be warpped with DWI")
     ("method", po::value<int>(), "reconstruction methods (0:dsi, 1:dti, 2:qbi_frt, 3:qbi_sh, 4:gqi)")
     ("odf_order", po::value<int>()->default_value(8), "set odf dimensions (4:162 direcitons, 5:252 directions, 6:362 directions, 8:642 directions)")
     ("record_odf", po::value<int>()->default_value(0), "output odf information")
     ("output_jac", po::value<int>()->default_value(0), "output jacobian determinant")
     ("output_map", po::value<int>()->default_value(0), "output mapping")
+    ("output_rdi", po::value<int>()->default_value(1), "output rdi")
     ("thread_count", po::value<int>()->default_value(boost::thread::hardware_concurrency()), "set the multi-thread count --thread_count=2")
     ("num_fiber", po::value<int>()->default_value(5), "maximum fibers resolved per voxel, default=3")
     ("half_sphere", po::value<int>()->default_value(0), "specific whether half sphere is used")
@@ -175,6 +180,7 @@ int rec(int ac, char *av[])
     handle->voxel.need_odf = vm["record_odf"].as<int>();
     handle->voxel.output_jacobian = vm["output_jac"].as<int>();
     handle->voxel.output_mapping = vm["output_map"].as<int>();
+    handle->voxel.output_rdi = vm["output_rdi"].as<int>();
     handle->voxel.odf_deconvolusion = vm["deconvolution"].as<int>();
     handle->voxel.odf_decomposition = vm["decomposition"].as<int>();
     handle->voxel.max_fiber_number = vm["num_fiber"].as<int>();
@@ -197,25 +203,37 @@ int rec(int ac, char *av[])
             std::cout << "r2 weighted is used for GQI" << std::endl;
     }
 
+    if(vm.count("other_image"))
     {
-        if(vm.count("mask"))
+        QStringList file_list = QString(vm["other_image"].as<std::string>().c_str()).split(";");
+        for(unsigned int i = 0;i < file_list.size();++i)
         {
-            std::string mask_file = vm["mask"].as<std::string>();
-            std::cout << "reading mask..." << mask_file << std::endl;
-            gz_nifti header;
-            if(header.load_from_file(mask_file.c_str()))
+            QStringList name_value = file_list[i].split(",");
+            if(name_value.size() != 2)
             {
-                image::basic_image<unsigned char,3> external_mask;
-                header.toLPS(external_mask);
-                if(external_mask.geometry() != handle->voxel.dim)
-                    std::cout << "In consistent the mask dimension...using default mask" << std::endl;
-                else
-                    handle->mask = external_mask;
+                std::cout << "Invalid command: " << file_list[i].toStdString() << std::endl;
+                continue;
             }
-            else
-                std::cout << "fail reading the mask...using default mask" << std::endl;
+            add_other_image(handle.get(),name_value[0],name_value[1],true);
         }
-    }    
+    }
+    if(vm.count("mask"))
+    {
+        std::string mask_file = vm["mask"].as<std::string>();
+        std::cout << "reading mask..." << mask_file << std::endl;
+        gz_nifti header;
+        if(header.load_from_file(mask_file.c_str()))
+        {
+            image::basic_image<unsigned char,3> external_mask;
+            header.toLPS(external_mask);
+            if(external_mask.geometry() != handle->voxel.dim)
+                std::cout << "In consistent the mask dimension...using default mask" << std::endl;
+            else
+                handle->mask = external_mask;
+        }
+        else
+            std::cout << "fail reading the mask...using default mask" << std::endl;
+    }
 
     if(vm["motion_correction"].as<int>())
     {

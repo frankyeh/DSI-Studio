@@ -952,6 +952,55 @@ void reconstruction_window::on_half_sphere_toggled(bool checked)
         ui->scheme_balance->setChecked(false);
 }
 
+bool add_other_image(ImageModel* handle,QString name,QString filename,bool full_auto)
+{
+    image::basic_image<float,3> ref;
+    image::vector<3> vs;
+    gz_nifti in;
+    if(!in.load_from_file(filename.toLocal8Bit().begin()) || !in.toLPS(ref))
+    {
+        if(full_auto)
+            std::cout << "Not a valid nifti file:" << filename.toStdString() << std::endl;
+        else
+            QMessageBox::information(0,"Error","Not a valid nifti file",0);
+        return false;
+    }
+    image::transformation_matrix<float> affine;
+    bool has_registered = false;
+    for(unsigned int index = 0;index < handle->voxel.other_image.size();++index)
+        if(ref.dimension == handle->voxel.other_image[index].dimension)
+        {
+            affine = handle->voxel.other_image_affine[index];
+            has_registered = true;
+        }
+    if(!has_registered && ref.geometry() != handle->voxel.dim)
+    {
+        if(full_auto)
+        {
+            std::cout << "adding " << filename.toStdString() << " as " << name.toStdString() << std::endl;
+            in.get_voxel_size(vs.begin());
+            image::basic_image<float,3> from(handle->voxel.dwi_sum),to(ref);
+            image::normalize(from,1.0);
+            image::normalize(to,1.0);
+            reg_data data(from.geometry(),image::reg::rigid_body);
+            run_reg(from,handle->voxel.vs,to,vs,data,boost::thread::hardware_concurrency(),1/*mutual infor*/);
+            affine = image::transformation_matrix<float>(data.arg,from.geometry(),handle->voxel.vs,to.geometry(),vs);
+        }
+        else
+        {
+            std::auto_ptr<manual_alignment> manual(new manual_alignment(0,handle->voxel.dwi_sum,handle->voxel.vs,ref,vs,image::reg::rigid_body));
+            manual->timer->start();
+            if(manual->exec() != QDialog::Accepted)
+                return false;
+            affine = manual->data.T;
+        }
+    }
+    handle->voxel.other_image.push_back(ref);
+    handle->voxel.other_image_name.push_back(name.toLocal8Bit().begin());
+    handle->voxel.other_image_affine.push_back(affine);
+    return true;
+}
+
 void reconstruction_window::on_add_t1t2_clicked()
 {
     QString filename = QFileDialog::getOpenFileName(
@@ -959,42 +1008,7 @@ void reconstruction_window::on_add_t1t2_clicked()
             "Images (*.nii *nii.gz);;All files (*)" );
     if( filename.isEmpty())
         return;
-    image::basic_image<float,3> ref;
-    image::vector<3> vs;
-    gz_nifti in;
-    if(!in.load_from_file(filename.toLocal8Bit().begin()) || !in.toLPS(ref))
-    {
-        QMessageBox::information(this,"Error","Not a valid nifti file",0);
-        return;
-    }
-    image::transformation_matrix<float> affine;
-    bool has_registered = false;
-    for(unsigned int index = 0;index < handle->voxel.other_image.size();++index)
-        if(ref.dimension == handle->voxel.other_image[index].dimension)
-        {
-            int result = QMessageBox::information(this,"Adding T1W/T2W","Apply previous registration?",QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
-            if(result == QMessageBox::Cancel)
-                return;
-            if(result == QMessageBox::Yes)
-            {
-                affine = handle->voxel.other_image_affine[index];
-                has_registered = true;
-            }
-            break;
-        }
-    if(!has_registered)
-    {
-        in.get_voxel_size(vs.begin());
-        std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,handle->voxel.vs,ref,vs,image::reg::rigid_body));
-        manual->timer->start();
-        if(manual->exec() != QDialog::Accepted)
-            return;
-        affine = manual->data.T;
-    }
-    handle->voxel.other_image.push_back(ref);
-    handle->voxel.other_image_name.push_back(QFileInfo(filename).baseName().toLocal8Bit().begin());
-    handle->voxel.other_image_affine.push_back(affine);
-    ui->output_mapping->setChecked(true);
+    add_other_image(handle.get(),QFileInfo(filename).baseName(),filename,false);
 }
 
 void reconstruction_window::on_actionManual_Rotation_triggered()
