@@ -38,7 +38,6 @@ private slots:
     void on_buttonBox_accepted();
     void on_load_bval_clicked();
     void on_load_bvec_clicked();
-    void on_motion_correction_clicked();
     void on_load_b_table_clicked();
     void on_save_b_table_clicked();
     void on_flip_x_clicked();
@@ -47,6 +46,7 @@ private slots:
     void on_switch_xy_clicked();
     void on_swith_xz_clicked();
     void on_switch_yz_clicked();
+    void on_detect_motion_clicked();
 };
 
 #endif // DICOM_PARSER_H
