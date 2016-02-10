@@ -610,25 +610,25 @@ void vbc_database::run_permutation_multithread(unsigned int id)
             fib.fa = data.lesser_ptr;
             run_track(fib,tracks,total_track_count/permutation_count);
             cal_hist(tracks,(null) ? subject_lesser_null : subject_lesser);
-            /*
-            if(!null)
+
+            if(output_resampling && !null)
             {
                 boost::mutex::scoped_lock lock(lock_lesser_tracks);
-                lesser_tracks[0].add_tracts(tracks,30); // at least 30 mm
+                lesser_tracks[0].add_tracts(tracks);
                 tracks.clear();
             }
-            */
+
             fib.fa = data.greater_ptr;
             run_track(fib,tracks,total_track_count/permutation_count);
             cal_hist(tracks,(null) ? subject_greater_null : subject_greater);
-            /*
-            if(!null)
+
+            if(output_resampling && !null)
             {
                 boost::mutex::scoped_lock lock(lock_greater_tracks);
-                greater_tracks[0].add_tracts(tracks,30);  // at least 30 mm
+                greater_tracks[0].add_tracts(tracks);
                 tracks.clear();
             }
-            */
+
             null = !null;
         }
         if(id == 0)

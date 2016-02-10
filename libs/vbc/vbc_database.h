@@ -209,6 +209,7 @@ public:
 public:// database information
     float fiber_threshold;
     bool normalize_qa;
+    bool output_resampling;
 public:
     void calculate_spm(fib_data& data,stat_model& info)
     {

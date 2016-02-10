@@ -1035,6 +1035,7 @@ void vbc_dialog::on_run_clicked()
     vbc->seeding_density = ui->seeding_density->value();
     vbc->trk_file_names = file_names;
     vbc->normalize_qa = ui->normalize_qa->isChecked();
+    vbc->output_resampling = ui->output_resampling->isChecked();
     vbc->use_track_length = ui->rb_track_length->isChecked();
     vbc->fdr_threshold = ui->fdr_control->value();
     vbc->length_threshold = ui->length_threshold->value();
