@@ -133,7 +133,6 @@
                        <height>100</height>
                       </size>
                      </property>
-                     <zorder></zorder>
                     </widget>
                    </item>
                   </layout>
@@ -479,6 +478,17 @@ Fingerprint</string>
                      </property>
                     </widget>
                    </item>
+                   <item>
+                    <widget class="QPushButton" name="load_fp_mask">
+                     <property name="text">
+                      <string>Load mask...</string>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="../icons.qrc">
+                       <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                     </property>
+                    </widget>
+                   </item>
                   </layout>
                  </item>
                  <item>
@@ -613,7 +623,7 @@ Difference</string>
                         <double>0.100000000000000</double>
                        </property>
                        <property name="maximum">
-                        <double>1.000000000000000</double>
+                        <double>5.000000000000000</double>
                        </property>
                        <property name="singleStep">
                         <double>0.100000000000000</double>

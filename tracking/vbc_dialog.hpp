@@ -45,6 +45,7 @@ private:
     image::color_bar color_bar;
     std::vector<float> fp_matrix;
     float fp_max_value;
+    image::basic_image<char,3> fp_mask;
 private:
     QGraphicsScene vbc_scene;
     QImage vbc_slice_image;
@@ -145,6 +146,7 @@ private slots:
     void on_save_dif_clicked();
     void on_add_db_clicked();
     void on_view_x_toggled(bool checked);
+    void on_load_fp_mask_clicked();
 };
 
 #endif // VBC_DIALOG_HPP

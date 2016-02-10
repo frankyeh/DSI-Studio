@@ -21,6 +21,7 @@ VBCDialog::VBCDialog(QWidget *parent,bool create_db_) :
 
     if(!create_db)
     {
+        ui->index_of_interest->hide();
         ui->skeleton_widget->hide();
         ui->movedown->hide();
         ui->moveup->hide();
@@ -62,19 +63,43 @@ void VBCDialog::on_group1open_clicked()
     {
         QDir cur_dir(QApplication::applicationDirPath());
         QStringList file_list = cur_dir.entryList(QStringList("*.fib.gz"),QDir::Files);
-        if(QFileInfo(filenames[0]).baseName().contains("1mm"))
+        if(!file_list.empty())
+        {
+        if(filenames[0].contains("1mm"))
             for(unsigned int i = 0;i < file_list.size();++i)
                 if(file_list[i].contains("1mm"))
                     ui->skeleton->setText(QApplication::applicationDirPath() + "/"+ file_list[0]);
-        if(QFileInfo(filenames[0]).baseName().contains("2mm"))
+        if(filenames[0].contains("2mm"))
             for(unsigned int i = 0;i < file_list.size();++i)
                 if(file_list[i].contains("2mm"))
                     ui->skeleton->setText(QApplication::applicationDirPath() + "/"+ file_list[0]);
+        }
+    }
+    if(group.empty())
+    {
+        FibData fib;
+        if(!fib.load_from_file(filenames[0].toLocal8Bit().begin()))
+        {
+            QMessageBox::information(this,"Error","Invalid FIB file format",0);
+            return;
+        }
+        if(fib.trans_to_mni.empty())
+        {
+            QMessageBox::information(this,"Error","The FIB file was not reconstructed by QSDR.",0);
+            return;
+        }
+        ui->index_of_interest->clear();
+        if(fib.has_odfs())
+            ui->index_of_interest->addItem("sdf");
+        std::vector<std::string> item_list;
+        fib.get_index_list(item_list);
+        for(unsigned int i = fib.fib.index_name.size();i < item_list.size();++i)
+            ui->index_of_interest->addItem(item_list[i].c_str());
     }
     group << filenames;
     update_list();
     if(create_db)
-        ui->output_file_name->setText(QFileInfo(filenames[0]).absolutePath() + "/connectometry.db.fib.gz");
+        ui->output_file_name->setText(QFileInfo(filenames[0]).absolutePath() + "/connectometry." + ui->index_of_interest->currentText() + ".db.fib.gz");
     else
         ui->output_file_name->setText(QFileInfo(filenames[0]).absolutePath() + "/template.fib.gz");
 }
@@ -241,7 +266,7 @@ void VBCDialog::on_create_data_base_clicked()
             name_list[index] = group[index].toLocal8Bit().begin();
             tag_list[index] = QFileInfo(group[index]).baseName().toLocal8Bit().begin();
         }
-        if(!data->handle->load_subject_files(name_list,tag_list))
+        if(!data->handle->load_subject_files(name_list,tag_list,ui->index_of_interest->currentText().toLocal8Bit().begin()))
         {
             QMessageBox::information(this,"error in loading subject fib files",data->handle->error_msg.c_str(),0);
             return;
@@ -266,3 +291,9 @@ void VBCDialog::on_create_data_base_clicked()
 
 
 
+
+void VBCDialog::on_index_of_interest_currentIndexChanged(const QString &arg1)
+{
+    if(!group.empty())
+        ui->output_file_name->setText(QFileInfo(group[0]).absolutePath() + "/connectometry." + arg1.toLower() + ".db.fib.gz");
+}

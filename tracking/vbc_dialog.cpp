@@ -14,8 +14,7 @@
 #include "libs/tracking/fib_data.hpp"
 #include "tracking/atlasdialog.h"
 extern std::vector<atlas> atlas_list;
-extern image::basic_image<char,3> cerebrum_1mm,cerebrum_2mm;
-bool load_cerebrum_mask(void);
+bool load_cerebrum_mask(image::basic_image<char,3>& fp_mask);
 
 QWidget *ROIViewDelegate::createEditor(QWidget *parent,
                                      const QStyleOptionViewItem &option,
@@ -142,8 +141,9 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString db_file_nam
     on_rb_multiple_regression_clicked();
     qApp->installEventFilter(this);
 
-
-
+    fp_mask.resize(vbc->handle->dim);
+    if(!load_cerebrum_mask(fp_mask))
+        std::fill(fp_mask.begin(),fp_mask.end(),1);
 }
 
 vbc_dialog::~vbc_dialog()
@@ -405,13 +405,11 @@ void vbc_dialog::on_subject_list_itemSelectionChanged()
     vbc_scene.addRect(0, 0, vbc_slice_image.width(),vbc_slice_image.height(),QPen(),vbc_slice_image);
     vbc_slice_pos = ui->slice_pos->value();
 
-    if(ui->toolBox->currentIndex() == 0 && ui->subject_view->currentIndex() == 1 && load_cerebrum_mask())
+    if(ui->toolBox->currentIndex() == 0 && ui->subject_view->currentIndex() == 1)
     {
         std::vector<float> fp;
         float threshold = ui->fp_coverage->value()*image::segmentation::otsu_threshold(image::make_image(vbc->handle->dim,vbc->handle->fib.fa[0]));
-        vbc->handle->get_subject_vector(ui->subject_list->currentRow(),fp,
-                                            cerebrum_1mm.geometry() == vbc->handle->dim ? cerebrum_1mm : cerebrum_2mm,
-                                            threshold,ui->normalize_fp->isChecked());
+        vbc->handle->get_subject_vector(ui->subject_list->currentRow(),fp,fp_mask,threshold,ui->normalize_fp->isChecked());
         fp_image_buf.clear();
         fp_image_buf.resize(image::geometry<2>(ui->fp_zoom->value()*25,ui->fp_zoom->value()*100));// rotated
 
@@ -1415,12 +1413,6 @@ void vbc_dialog::on_save_R2_clicked()
 
 void vbc_dialog::on_save_vector_clicked()
 {
-    if(!load_cerebrum_mask())
-    {
-        QMessageBox::information(this,"Error","Cannot find the cerebrum mask",0);
-        return;
-    }
-
     QString filename = QFileDialog::getSaveFileName(
                 this,
                 "Save Vector",
@@ -1430,9 +1422,7 @@ void vbc_dialog::on_save_vector_clicked()
         return;
 
     float threshold = ui->fp_coverage->value()*image::segmentation::otsu_threshold(image::make_image(vbc->handle->dim,vbc->handle->fib.fa[0]));
-    vbc->handle->save_subject_vector(filename.toLocal8Bit().begin(),
-                                     cerebrum_1mm.geometry() == vbc->handle->dim ? cerebrum_1mm : cerebrum_2mm,
-                                     threshold,ui->normalize_fp->isChecked());
+    vbc->handle->save_subject_vector(filename.toLocal8Bit().begin(),fp_mask,threshold,ui->normalize_fp->isChecked());
 
 }
 
@@ -1577,13 +1567,8 @@ void vbc_dialog::on_load_roi_from_file_clicked()
 
 void vbc_dialog::on_calculate_dif_clicked()
 {
-    if(!load_cerebrum_mask())
-    {
-        QMessageBox::information(this,"Error","Cannot load cerebrum mask.");
-        return;
-    }
     float threshold = ui->fp_coverage->value()*image::segmentation::otsu_threshold(image::make_image(vbc->handle->dim,vbc->handle->fib.fa[0]));
-    vbc->handle->get_dif_matrix(fp_matrix,cerebrum_1mm.geometry() == vbc->handle->dim ? cerebrum_1mm : cerebrum_2mm,threshold,ui->normalize_fp->isChecked());
+    vbc->handle->get_dif_matrix(fp_matrix,fp_mask,threshold,ui->normalize_fp->isChecked());
     fp_max_value = *std::max_element(fp_matrix.begin(),fp_matrix.end());
     fp_dif_map.resize(image::geometry<2>(vbc->handle->num_subjects,vbc->handle->num_subjects));
     for(unsigned int index = 0;index < fp_matrix.size();++index)
@@ -1683,4 +1668,31 @@ void vbc_dialog::on_view_x_toggled(bool checked)
     ui->slice_pos->setMaximum(vbc->handle->dim[dim]-1);
     ui->slice_pos->setMinimum(0);
     ui->slice_pos->setValue(vbc->handle->dim[dim] >> 1);
+}
+
+void vbc_dialog::on_load_fp_mask_clicked()
+{
+    QString file = QFileDialog::getOpenFileName(
+                                this,
+                                "Load ROI from file",
+                                work_dir + "/roi.nii.gz",
+                                "Report file (*.txt *.nii *nii.gz);;All files (*)");
+    if(file.isEmpty())
+        return;
+    image::basic_image<float,3> I;
+    gz_nifti nii;
+    if(!nii.load_from_file(file.toLocal8Bit().begin()))
+    {
+        QMessageBox::information(this,"Error","Invalid nifti file format",0);
+        return;
+    }
+    nii.toLPS(I);
+    if(I.geometry() != fp_mask.geometry())
+    {
+        QMessageBox::information(this,"Error","Inconsistent image dimension. Please use DSI Studio to output the mask.",0);
+        return;
+    }
+    for(unsigned int i = 0;i < I.size();++i)
+        fp_mask[i] = I[i] ? 1:0;
+    on_calculate_dif_clicked();
 }

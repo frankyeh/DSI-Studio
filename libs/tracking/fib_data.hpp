@@ -485,6 +485,25 @@ public:
         }
         return true;
     }
+    bool sample_index(gz_mat_read& m,std::vector<float>& data,const char* index_name)
+    {
+        const float* index_of_interest = 0;
+        unsigned int row,col;
+        if(!m.read(index_name,row,col,index_of_interest))
+            return false;
+        for(unsigned int index = 0;index < si2vi.size();++index)
+        {
+            unsigned int cur_index = si2vi[index];
+            unsigned int pos = index;
+            for(unsigned char i = 0;i < fib.num_fiber;++i,pos += (unsigned int)si2vi.size())
+            {
+                if(fib.fa[i][cur_index] == 0.0)
+                    break;
+                data[pos] = index_of_interest[cur_index];
+            }
+        }
+        return true;
+    }
     bool is_consistent(gz_mat_read& m)
     {
         unsigned int row,col;
@@ -528,7 +547,8 @@ public:
     }
 
     bool load_subject_files(const std::vector<std::string>& file_names,
-                                          const std::vector<std::string>& subject_names_)
+                            const std::vector<std::string>& subject_names_,
+                            const char* index_name)
     {
         num_subjects = (unsigned int)file_names.size();
         subject_qa.clear();
@@ -554,11 +574,25 @@ public:
                 return false;
             }
             // check if the odf table is consistent or not
-            if(!is_consistent(m) ||
-               !sample_odf(m,subject_qa_buf[subject_index]))
+            if(std::string(index_name) == "sdf")
             {
-                error_msg += file_names[subject_index];
-                return false;
+                if(!is_consistent(m) || !sample_odf(m,subject_qa_buf[subject_index]))
+                {
+                    error_msg = "failed to read odf ";
+                    error_msg += file_names[subject_index];
+                    return false;
+                }
+            }
+            else
+            {
+                if(!sample_index(m,subject_qa_buf[subject_index],index_name))
+                {
+                    error_msg = "failed to sample ";
+                    error_msg += index_name;
+                    error_msg += " in ";
+                    error_msg += file_names[subject_index];
+                    return false;
+                }
             }
             // load R2
             const float* value= 0;

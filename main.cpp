@@ -69,11 +69,9 @@ void load_atlas(void)
     }
 
 }
-image::basic_image<char,3> cerebrum_1mm,cerebrum_2mm;
-bool load_cerebrum_mask(void)
+bool load_cerebrum_mask(image::basic_image<char,3>& fp_mask)
 {
-    if(!cerebrum_1mm.empty() && !cerebrum_2mm.empty())
-        return true;
+
     QString wm_path;
     wm_path = QCoreApplication::applicationDirPath() + "/mni_icbm152_wm_tal_nlin_asym_09a.nii.gz";
     if(!QFileInfo(wm_path).exists())
@@ -120,11 +118,17 @@ bool load_cerebrum_mask(void)
     trans.inv();
     trans1 = trans*trans1_;
     trans2 = trans*trans2_;
-    cerebrum_1mm.resize(image::geometry<3>(157,189,136));
-    cerebrum_2mm.resize(image::geometry<3>(79,95,69));
-    image::resample(wm_mask,cerebrum_1mm,trans1,image::linear);
-    image::resample(wm_mask,cerebrum_2mm,trans2,image::linear);
-    return true;
+    if(fp_mask.geometry() == image::geometry<3>(157,189,136)) // 1mm
+    {
+        image::resample(wm_mask,fp_mask,trans1,image::linear);
+        return true;
+    }
+    if(fp_mask.geometry() == image::geometry<3>(79,95,69)) // 2mm
+    {
+        image::resample(wm_mask,fp_mask,trans2,image::linear);
+        return true;
+    }
+    return false;
 }
 image::basic_image<char,3> brain_mask;
 image::basic_image<float,3> mni_t1w;

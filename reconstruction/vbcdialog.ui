@@ -232,6 +232,22 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_4">
      <item>
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Index of interest:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="index_of_interest">
+       <item>
+        <property name="text">
+         <string>sdf</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item>
       <widget class="QLabel" name="ODF_label">
        <property name="text">
         <string>Output file name:</string>

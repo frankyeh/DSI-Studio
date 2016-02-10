@@ -36,6 +36,7 @@ private slots:
     void on_create_data_base_clicked();
     void on_open_skeleton_clicked();
     void on_sort_clicked();
+    void on_index_of_interest_currentIndexChanged(const QString &arg1);
 };
 
 #endif // VBCDIALOG_H
