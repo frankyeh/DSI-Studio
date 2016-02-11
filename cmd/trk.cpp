@@ -51,7 +51,7 @@ void save_connectivity_matrix(TractModel& tract_model,
     std::cout << "export connectivity matrix to " << file_name_stat << std::endl;
     data.save_to_file(file_name_stat.c_str());
 }
-
+void load_nii_label(const char* filename,std::map<short,std::string>& label_map);
 void get_connectivity_matrix(FibData* handle,
                              TractModel& tract_model,
                              image::basic_image<image::vector<3>,3>& mapping,
@@ -103,6 +103,15 @@ void get_connectivity_matrix(FibData* handle,
                 continue;
             }
             std::cout << "total number of regions=" << region_count << std::endl;
+
+            std::map<short,std::string> label_map;
+            QString label_file = QFileInfo(roi_file_name.c_str()).absolutePath()+"/"+QFileInfo(roi_file_name.c_str()).completeBaseName()+".txt";
+            std::cout << "searching for roi label file:" << label_file.toStdString() << std::endl;
+            if(QFileInfo(label_file).exists())
+            {
+                load_nii_label(label_file.toLocal8Bit().begin(),label_map);
+                std::cout << "label file loaded." <<std::endl;
+            }
             for(unsigned int value = 1;value < value_map.size();++value)
                 if(value_map[value])
                 {
@@ -115,10 +124,15 @@ void get_connectivity_matrix(FibData* handle,
                     const std::vector<image::vector<3,short> >& cur_region = region.get();
                     image::vector<3,float> pos = std::accumulate(cur_region.begin(),cur_region.end(),image::vector<3,float>(0,0,0));
                     pos /= cur_region.size();
-                    std::ostringstream out;
-                    out << "region" << value;
                     data.regions.push_back(cur_region);
-                    data.region_name.push_back(out.str());
+                    if(label_map.find(value) != label_map.end())
+                        data.region_name.push_back(label_map[value]);
+                    else
+                    {
+                        std::ostringstream out;
+                        out << "region" << value;
+                        data.region_name.push_back(out.str());
+                    }
                 }
         }
 

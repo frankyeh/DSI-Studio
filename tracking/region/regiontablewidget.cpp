@@ -281,6 +281,24 @@ void RegionTableWidget::copy_region(void)
     regions.back() = regions[cur_row];
     regions.back().show_region.color.color = color;
 }
+void load_nii_label(const char* filename,std::map<short,std::string>& label_map)
+{
+    std::ifstream in(filename);
+    if(in)
+    {
+        std::string line,txt;
+        while(std::getline(in,line))
+        {
+            if(line.empty() || line[0] == '#')
+                continue;
+            std::istringstream read_line(line);
+            short num = 0;
+            read_line >> num >> txt;
+            label_map[num] = txt;
+        }
+    }
+}
+
 bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 {
     gz_nifti header;
@@ -341,22 +359,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
                                        "Text files (*.txt)" );
         }
         if(QFileInfo(label_file).exists())
-        {
-            std::ifstream in(label_file.toLocal8Bit().begin());
-            if(in)
-            {
-                std::string line,txt;
-                while(std::getline(in,line))
-                {
-                    if(line.empty() || line[0] == '#')
-                        continue;
-                    std::istringstream read_line(line);
-                    short num = 0;
-                    read_line >> num >> txt;
-                    label_map[num] = txt;
-                }
-            }
-        }
+            load_nii_label(label_file.toLocal8Bit().begin(),label_map);
     }
 
     image::matrix<4,4,float> convert;
