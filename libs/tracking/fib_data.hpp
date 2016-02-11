@@ -576,9 +576,14 @@ public:
             // check if the odf table is consistent or not
             if(std::string(index_name) == "sdf")
             {
-                if(!is_consistent(m) || !sample_odf(m,subject_qa_buf[subject_index]))
+                if(!is_consistent(m))
                 {
-                    error_msg = "failed to read odf ";
+                    error_msg += file_names[subject_index];
+                    return false;
+                }
+                if(!sample_odf(m,subject_qa_buf[subject_index]))
+                {
+                    error_msg = "Failed to read odf ";
                     error_msg += file_names[subject_index];
                     return false;
                 }
