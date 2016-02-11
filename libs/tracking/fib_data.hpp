@@ -122,7 +122,7 @@ public:
                     ++voxel_index;
                 }
         }
-
+        return true;
     }
 
     // odf functions
