@@ -119,6 +119,49 @@ bool fib_data::add_dif_mapping_for_tracking(FibData* handle,std::vector<std::vec
     handle->fib.index_data.back() = lesser_ptr;
     return true;
 }
+bool fib_data::individual_connectometry(FibData* handle,const char* file_name)
+{
+    // restore fa0 to QA
+    handle->fib.set_tracking_index(0);
+    if(handle->num_subjects)
+    {
+        std::vector<float> data;
+        if(!handle->get_odf_profile(file_name,data))
+        {
+            error_msg = handle->error_msg;
+            return false;
+        }
+
+        bool normalized_qa = false;
+        bool terminated = false;
+        stat_model info;
+        info.init(handle->num_subjects);
+        info.type = 2;
+        info.individual_data = &(data[0]);
+        //info.individual_data_sd = normalize_qa ? individual_data_sd[subject_id]:1.0;
+        info.individual_data_sd = 1.0;
+        float fa_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->fib.dim,
+                                                                                           handle->fib.fa[0]));
+        calculate_spm(handle,*this,info,fa_threshold,normalized_qa,terminated);
+        add_greater_lesser_mapping_for_tracking(handle);
+    }
+    else
+    {
+        std::vector<std::vector<float> > data;
+        if(!handle->get_qa_profile(file_name,data))
+        {
+            error_msg = handle->error_msg;
+            return false;
+        }
+        initialize(handle);
+        if(!add_dif_mapping_for_tracking(handle,data))
+        {
+            error_msg = "Invalid value in the subject file.";
+            return false;
+        }
+    }
+    return true;
+}
 
 void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& tracks,float seed_ratio, unsigned int thread_count)
 {

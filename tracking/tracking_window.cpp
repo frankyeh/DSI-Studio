@@ -1701,45 +1701,10 @@ void tracking_window::on_actionIndividual_Connectometry_triggered()
                            "Fib files (*fib.gz);;All files (*)");
     if (subject.isEmpty())
         return;
-
-    // restore fa0 to QA
-    handle->fib.set_tracking_index(0);
-    if(handle->num_subjects)
+    if(!connectometry_fib.individual_connectometry(handle,subject.toLocal8Bit().begin()))
     {
-        std::vector<float> data;
-        if(!handle->get_odf_profile(subject.toLocal8Bit().begin(),data))
-        {
-            QMessageBox::information(this,QString("Error in ")+QFileInfo(subject).baseName(),handle->error_msg.c_str(),0);
-            return;
-        }
-
-        bool normalized_qa = false;
-        bool terminated = false;
-        stat_model info;
-        info.init(handle->num_subjects);
-        info.type = 2;
-        info.individual_data = &(data[0]);
-        //info.individual_data_sd = normalize_qa ? individual_data_sd[subject_id]:1.0;
-        info.individual_data_sd = 1.0;
-        float fa_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->fib.dim,
-                                                                                           handle->fib.fa[0]));
-        calculate_spm(handle,connectometry_fib,info,fa_threshold,normalized_qa,terminated);
-        connectometry_fib.add_greater_lesser_mapping_for_tracking(handle);
-    }
-    else
-    {
-        std::vector<std::vector<float> > data;
-        if(!handle->get_qa_profile(subject.toLocal8Bit().begin(),data))
-        {
-            QMessageBox::information(this,QString("Error in ")+QFileInfo(subject).baseName(),handle->error_msg.c_str(),0);
-            return;
-        }
-        connectometry_fib.initialize(handle);
-        if(!connectometry_fib.add_dif_mapping_for_tracking(handle,data))
-        {
-            QMessageBox::information(this,"Error","Invalid value in the subject file.",0);
-            return;
-        }
+        QMessageBox::information(this,"Error",connectometry_fib.error_msg.c_str());
+        return;
     }
     QStringList tracking_index_list;
     for(int index = 0;index < handle->fib.index_name.size();++index)

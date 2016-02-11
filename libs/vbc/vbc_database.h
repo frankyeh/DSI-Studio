@@ -20,9 +20,11 @@ struct fib_data{
     std::vector<std::vector<float> > greater,lesser;
     std::vector<const float*> greater_ptr,lesser_ptr;
 public:
+    std::string error_msg;
     void initialize(FibData* fib_file);
     void add_greater_lesser_mapping_for_tracking(FibData* handle);
     bool add_dif_mapping_for_tracking(FibData* fib_file,std::vector<std::vector<float> >& fa_data);
+    bool individual_connectometry(FibData* handle,const char* file_name);
 };
 
 
