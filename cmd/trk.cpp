@@ -1,5 +1,6 @@
 #include <QFileInfo>
 #include <QStringList>
+#include <QDir>
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -14,6 +15,7 @@
 #include "mapping/fa_template.hpp"
 #include "mapping/atlas.hpp"
 #include "SliceModel.h"
+#include "vbc/vbc_database.h"
 bool atl_load_atlas(const std::string atlas_name);
 bool atl_get_mapping(gz_mat_read& mat_reader,
                      unsigned int factor,
@@ -163,6 +165,8 @@ int trk(int ac, char *av[])
     ("output", po::value<std::string>(), "output file name")
     ("end_point", po::value<std::string>(), "output end point file")
     ("export", po::value<std::string>(), "export additional information (e.g. --export=stat,tdi)")
+    ("connectometry", po::value<std::string>(), "connectometry")
+    ("connectometry_threshold", po::value<std::string>(), "connectometry threshold")
     ("connectivity", po::value<std::string>(), "export connectivity")
     ("connectivity_type", po::value<std::string>()->default_value("end"), "specify connectivity parameter")
     ("connectivity_value", po::value<std::string>()->default_value("count"), "specify connectivity parameter")
@@ -328,7 +332,26 @@ int trk(int ac, char *av[])
         std::cout << roi_names[index] << "=" << file_name << std::endl;
     }
 
+    QStringList cnt_file_name;
+    if(vm.count("individual_connectometry"))
+    {
+        std::string names = vm["individual_connectometry"].as<std::string>().c_str();
+        if(names.find('*') != std::string::npos)
+        {
+            QDir directory;
+            cnt_file_name = directory.entryList(QStringList(names.c_str()),QDir::Files);
+            if(cnt_file_name.empty())
+            {
+                std::cout << "No file found for connectometry analysis" << std::endl;
+                return -1;
+            }
+        }
+        else
+            cnt_file_name = QString(names.c_str()).split(",");
+    }
     TractModel tract_model(handle.get());
+
+
 
     if (vm.count("fa_threshold") )
         tract_model.get_fib().threshold = vm["fa_threshold"].as<float>();
@@ -360,6 +383,43 @@ int trk(int ac, char *av[])
         std::cout << "voxelwise=" << (int)tracking_thread.center_seed << std::endl;
         std::cout << "thread_count=" << vm["thread_count"].as<int>() << std::endl;
     }
+
+    if(!cnt_file_name.empty())
+    {
+        QStringList connectometry_threshold;
+        if(!vm.count("connectometry_threshold"))
+            connectometry_threshold << "0.05" << "-0.05";
+        else
+            connectometry_threshold = QString(vm["connectometry_threshold"].as<std::string>().c_str()).split(",");
+        for(unsigned int i = 0;i < cnt_file_name.size();++i)
+        {
+            fib_data cnt;
+            std::cout << "loading individual file:" << cnt_file_name[i].toStdString() << std::endl;
+            if(!cnt.individual_connectometry(handle.get(),cnt_file_name[i].toLocal8Bit().begin()))
+            {
+                std::cout << "Error loading connectomnetry file:" << cnt.error_msg <<std::endl;
+                return -1;
+            }
+            for(unsigned int j = 0;j < connectometry_threshold.size();++j)
+            {
+                double t = connectometry_threshold[j].toDouble();
+                handle->fib.set_tracking_index(handle->fib.index_data.size()-((t > 0) ? 2:1));
+                std::cout << "mapping track with " << ((t > 0) ? "increased":"decreased") << " connectivity at " << std::fabs(t) << std::endl;
+                tract_model.get_fib().threshold = std::fabs(t);
+                std::cout << "start tracking." << std::endl;
+
+                tracking_thread.run(tract_model.get_fib(),vm["thread_count"].as<int>(),termination_count,true);
+                tracking_thread.fetchTracks(&tract_model);
+                std::ostringstream out;
+                out << cnt_file_name[i].toStdString() << "." << ((t > 0) ? "inc":"dec") << std::fabs(t) << ".trk.gz" << std::endl;
+                tract_model.save_tracts_to_file(out.str().c_str());
+                std::vector<std::vector<float> > tmp;
+                tract_model.release_tracts(tmp);
+            }
+        }
+        return 0;
+    }
+
 
     std::cout << "start tracking." << std::endl;
 
