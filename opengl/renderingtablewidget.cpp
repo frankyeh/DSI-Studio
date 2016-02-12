@@ -478,7 +478,6 @@ void RenderingTableWidget::dataChanged(const QModelIndex &topLeft, const QModelI
     if(((RenderingItem*)bottomRight.internalPointer())->id == "tracking_index")
     {
         cur_tracking_window.on_tracking_index_currentIndexChanged(((RenderingItem*)bottomRight.internalPointer())->value.toInt());
-        cur_tracking_window.scene.show_slice();
         return;
     }
 

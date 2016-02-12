@@ -165,7 +165,8 @@ int trk(int ac, char *av[])
     ("output", po::value<std::string>(), "output file name")
     ("end_point", po::value<std::string>(), "output end point file")
     ("export", po::value<std::string>(), "export additional information (e.g. --export=stat,tdi)")
-    ("connectometry", po::value<std::string>(), "connectometry")
+    ("connectometry_source", po::value<std::string>(), "connectometry source file")
+    ("connectometry_type", po::value<std::string>(), "connectometry type")
     ("connectometry_threshold", po::value<std::string>(), "connectometry threshold")
     ("connectivity", po::value<std::string>(), "export connectivity")
     ("connectivity_type", po::value<std::string>()->default_value("end"), "specify connectivity parameter")
@@ -333,21 +334,18 @@ int trk(int ac, char *av[])
     }
 
     QStringList cnt_file_name;
-    if(vm.count("individual_connectometry"))
+    QString cnt_type;
+
+    if(vm.count("connectometry_source"))
     {
-        std::string names = vm["individual_connectometry"].as<std::string>().c_str();
-        if(names.find('*') != std::string::npos)
+        std::string names = vm["connectometry_source"].as<std::string>().c_str();
+        cnt_file_name = QString(names.c_str()).split(",");
+        if(!vm.count("connectometry_type"))
         {
-            QDir directory;
-            cnt_file_name = directory.entryList(QStringList(names.c_str()),QDir::Files);
-            if(cnt_file_name.empty())
-            {
-                std::cout << "No file found for connectometry analysis" << std::endl;
-                return -1;
-            }
+            std::cout << "Please assign the connectometry analysis type." << std::endl;
+            return -1;
         }
-        else
-            cnt_file_name = QString(names.c_str()).split(",");
+        cnt_type = vm["connectometry_type"].as<std::string>().c_str();
     }
     TractModel tract_model(handle.get());
 
@@ -388,17 +386,35 @@ int trk(int ac, char *av[])
     {
         QStringList connectometry_threshold;
         if(!vm.count("connectometry_threshold"))
-            connectometry_threshold << "0.05" << "-0.05";
-        else
-            connectometry_threshold = QString(vm["connectometry_threshold"].as<std::string>().c_str()).split(",");
+        {
+            std::cout << "Please assign the connectometry threshold." << std::endl;
+            return -1;
+        }
+        connectometry_threshold = QString(vm["connectometry_threshold"].as<std::string>().c_str()).split(",");
         for(unsigned int i = 0;i < cnt_file_name.size();++i)
         {
             fib_data cnt;
             std::cout << "loading individual file:" << cnt_file_name[i].toStdString() << std::endl;
-            if(!cnt.individual_connectometry(handle.get(),cnt_file_name[i].toLocal8Bit().begin()))
+            if(cnt_type == "iva" && !cnt.individual_vs_atlas(handle.get(),cnt_file_name[i].toLocal8Bit().begin()))
             {
                 std::cout << "Error loading connectomnetry file:" << cnt.error_msg <<std::endl;
                 return -1;
+            }
+            if(cnt_type == "ivp" && !cnt.individual_vs_db(handle.get(),cnt_file_name[i].toLocal8Bit().begin()))
+            {
+                std::cout << "Error loading connectomnetry file:" << cnt.error_msg <<std::endl;
+                return -1;
+            }
+            if(cnt_type == "ivi")
+            {
+                std::cout << "loading individual file:" << cnt_file_name[i+1].toStdString() << std::endl;
+                if(!cnt.individual_vs_individual(handle.get(),cnt_file_name[i].toLocal8Bit().begin(),
+                                                              cnt_file_name[i+1].toLocal8Bit().begin()))
+                {
+                    std::cout << "Error loading connectomnetry file:" << cnt.error_msg <<std::endl;
+                    return -1;
+                }
+                ++i;
             }
             for(unsigned int j = 0;j < connectometry_threshold.size();++j)
             {
@@ -411,7 +427,8 @@ int trk(int ac, char *av[])
                 tracking_thread.run(tract_model.get_fib(),vm["thread_count"].as<int>(),termination_count,true);
                 tracking_thread.fetchTracks(&tract_model);
                 std::ostringstream out;
-                out << cnt_file_name[i].toStdString() << "." << ((t > 0) ? "inc":"dec") << std::fabs(t) << ".trk.gz" << std::endl;
+                out << cnt_file_name[i].toStdString() << "." << cnt_type.toStdString()
+                        << ((t > 0) ? "inc":"dec") << std::fabs(t) << ".trk.gz" << std::endl;
                 tract_model.save_tracts_to_file(out.str().c_str());
                 std::vector<std::vector<float> > tmp;
                 tract_model.release_tracts(tmp);

@@ -61,106 +61,130 @@ void fib_data::initialize(FibData* handle)
         std::fill(lesser[fib].begin(),lesser[fib].end(),0.0);
     }
 }
-
-void fib_data::add_greater_lesser_mapping_for_tracking(FibData* handle)
+void fib_data::remove_old_index(FibData* handle)
 {
     for(unsigned int index = 0;index < handle->fib.index_name.size();++index)
-        if(handle->fib.index_name[index].find('%') != std::string::npos)
+        if(handle->fib.index_name[index] == ">%" ||
+           handle->fib.index_name[index] == "<%" ||
+           handle->fib.index_name[index] == "inc" ||
+           handle->fib.index_name[index] == "dec")
         {
             handle->fib.index_name.erase(handle->fib.index_name.begin()+index);
             handle->fib.index_data.erase(handle->fib.index_data.begin()+index);
             index = 0;
         }
-    handle->fib.index_name.push_back(">%");
+}
+
+void fib_data::add_mapping_for_tracking(FibData* handle,const char* t1,const char* t2)
+{
+    remove_old_index(handle);
+    handle->fib.index_name.push_back(t1);
     handle->fib.index_data.push_back(std::vector<const float*>());
     handle->fib.index_data.back() = greater_ptr;
-    handle->fib.index_name.push_back("<%");
+    handle->fib.index_name.push_back(t2);
     handle->fib.index_data.push_back(std::vector<const float*>());
     handle->fib.index_data.back() = lesser_ptr;
 }
-bool fib_data::add_dif_mapping_for_tracking(FibData* handle,std::vector<std::vector<float> >& fa_data)
+
+bool fib_data::individual_vs_db(FibData* handle,const char* file_name)
+{
+    if(!handle->num_subjects)
+    {
+        error_msg = "Please open a connectometry database first.";
+        return false;
+    }
+    handle->fib.set_tracking_index(0);
+    std::vector<float> data;
+    if(!handle->get_odf_profile(file_name,data))
+    {
+        error_msg = handle->error_msg;
+        return false;
+    }
+    bool normalized_qa = false;
+    bool terminated = false;
+    stat_model info;
+    info.init(handle->num_subjects);
+    info.type = 2;
+    info.individual_data = &(data[0]);
+    //info.individual_data_sd = normalize_qa ? individual_data_sd[subject_id]:1.0;
+    info.individual_data_sd = 1.0;
+    float fa_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->fib.dim,
+                                                                                       handle->fib.fa[0]));
+    calculate_spm(handle,*this,info,fa_threshold,normalized_qa,terminated);
+    add_mapping_for_tracking(handle,">%","<%");
+    return true;
+}
+bool fib_data::compare(FibData* handle,const std::vector<const float*>& fa1,
+                                        const std::vector<const float*>& fa2)
 {
     // normalization
     float max_qa1 = 0.0,max_qa2 = 0.0;
-    for(unsigned char fib = 0;fib < handle->fib.num_fiber;++fib)
-    {
-        max_qa1 = std::max<float>(max_qa1,*std::max_element(handle->fib.fa[fib],handle->fib.fa[fib] + handle->dim.size()));
-        max_qa2 = std::max<float>(max_qa2,*std::max_element(fa_data[fib].begin(),fa_data[fib].end()));
-    }
+    max_qa1 = std::max<float>(max_qa1,*std::max_element(fa1[0],fa1[0] + handle->dim.size()));
+    max_qa2 = std::max<float>(max_qa2,*std::max_element(fa2[0],fa2[0] + handle->dim.size()));
     if(max_qa1 == 0.0 || max_qa2 == 0.0)
         return false;
     //calculating dif
     for(unsigned char fib = 0;fib < handle->fib.num_fiber;++fib)
     {
         for(unsigned int index = 0;index < handle->dim.size();++index)
-            if(handle->fib.fa[fib][index] > 0.0 && fa_data[fib][index] > 0.0)
+            if(fa1[fib][index] > 0.0 && fa2[fib][index] > 0.0)
             {
-                float f1 = handle->fib.fa[fib][index];
-                float f2 = fa_data[fib][index]*max_qa1/max_qa2;
+                float f1 = fa1[fib][index];
+                float f2 = fa2[fib][index]*max_qa1/max_qa2;
                 if(f1 > f2)
                     lesser[fib][index] = f1-f2;  // subject decreased connectivity
                 else
                     greater[fib][index] = f2-f1; // subject increased connectivity
             }
     }
-    for(unsigned int index = 0;index < handle->fib.index_name.size();++index)
-        if(handle->fib.index_name[index] == "inc" ||
-                handle->fib.index_name[index] == "dec")
-        {
-            handle->fib.index_name.erase(handle->fib.index_name.begin()+index);
-            handle->fib.index_data.erase(handle->fib.index_data.begin()+index);
-            index = 0;
-        }
-    handle->fib.index_name.push_back("inc");
-    handle->fib.index_data.push_back(std::vector<const float*>());
-    handle->fib.index_data.back() = greater_ptr;
-    handle->fib.index_name.push_back("dec");
-    handle->fib.index_data.push_back(std::vector<const float*>());
-    handle->fib.index_data.back() = lesser_ptr;
     return true;
 }
-bool fib_data::individual_connectometry(FibData* handle,const char* file_name)
+
+bool fib_data::individual_vs_atlas(FibData* handle,const char* file_name)
 {
     // restore fa0 to QA
     handle->fib.set_tracking_index(0);
-    if(handle->num_subjects)
+    std::vector<std::vector<float> > fa_data;
+    if(!handle->get_qa_profile(file_name,fa_data))
     {
-        std::vector<float> data;
-        if(!handle->get_odf_profile(file_name,data))
-        {
-            error_msg = handle->error_msg;
-            return false;
-        }
-
-        bool normalized_qa = false;
-        bool terminated = false;
-        stat_model info;
-        info.init(handle->num_subjects);
-        info.type = 2;
-        info.individual_data = &(data[0]);
-        //info.individual_data_sd = normalize_qa ? individual_data_sd[subject_id]:1.0;
-        info.individual_data_sd = 1.0;
-        float fa_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->fib.dim,
-                                                                                           handle->fib.fa[0]));
-        calculate_spm(handle,*this,info,fa_threshold,normalized_qa,terminated);
-        add_greater_lesser_mapping_for_tracking(handle);
+        error_msg = handle->error_msg;
+        return false;
     }
-    else
-    {
-        std::vector<std::vector<float> > data;
-        if(!handle->get_qa_profile(file_name,data))
-        {
-            error_msg = handle->error_msg;
-            return false;
-        }
-        initialize(handle);
-        if(!add_dif_mapping_for_tracking(handle,data))
-        {
-            error_msg = "Invalid value in the subject file.";
-            return false;
-        }
-    }
+    std::vector<const float*> ptr(fa_data.size());
+    for(unsigned int i = 0;i < ptr.size();++i)
+        ptr[i] = &(fa_data[i][0]);
+    initialize(handle);
+    if(!compare(handle,handle->fib.fa,ptr))
+        return false;
+    add_mapping_for_tracking(handle,"inc","dec");
     return true;
+}
+
+bool fib_data::individual_vs_individual(FibData* handle,const char* file_name1,const char* file_name2)
+{
+    // restore fa0 to QA
+    handle->fib.set_tracking_index(0);
+    std::vector<std::vector<float> > data1,data2;
+    if(!handle->get_qa_profile(file_name1,data1))
+    {
+        error_msg = handle->error_msg;
+        return false;
+    }
+    if(!handle->get_qa_profile(file_name2,data2))
+    {
+        error_msg = handle->error_msg;
+        return false;
+    }
+    initialize(handle);
+    std::vector<const float*> ptr1(data1.size()),ptr2(data2.size());
+    for(unsigned int i = 0;i < ptr1.size();++i)
+    {
+        ptr1[i] = &(data1[i][0]);
+        ptr2[i] = &(data2[i][0]);
+    }
+    if(!compare(handle,ptr1,ptr2))
+        return false;
+    add_mapping_for_tracking(handle,"inc","dec");
 }
 
 void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& tracks,float seed_ratio, unsigned int thread_count)

@@ -354,14 +354,8 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
 
     // setup fa threshold
     {
-        QStringList tracking_index_list;
-        for(int index = 0;index < fib_data.fib.index_name.size();++index)
-            tracking_index_list.push_back(fib_data.fib.index_name[index].c_str());
-
-        renderWidget->setList("tracking_index",tracking_index_list);
-        set_data("tracking_index",0);
+        initialize_tracking_index(0);
         set_data("step_size",fib_data.vs[0]/2.0);
-        scene.center();
     }
 
 
@@ -395,6 +389,17 @@ tracking_window::~tracking_window()
     handle = 0;
     //std::cout << __FUNCTION__ << " " << __FILE__ << std::endl;
 }
+void tracking_window::initialize_tracking_index(int index)
+{
+    QStringList tracking_index_list;
+    for(int index = 0;index < handle->fib.index_name.size();++index)
+        tracking_index_list.push_back(handle->fib.index_name[index].c_str());
+    renderWidget->setList("tracking_index",tracking_index_list);
+    set_data("tracking_index",index);
+    on_tracking_index_currentIndexChanged(index);
+    scene.center();
+}
+
 bool tracking_window::can_convert(void)
 {
     if(!handle->trans_to_mni.empty())
@@ -947,20 +952,30 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
 {
     if(index < 0)
         return;
-    if(handle->fib.set_tracking_index(index) &&
-       handle->fib.index_name[index].find('%') != std::string::npos)
+    handle->fib.set_tracking_index(index);
+    if(handle->fib.index_name[index] == "<%" ||
+        handle->fib.index_name[index] == ">%")
     {
         // percentile threshold
         renderWidget->setMinMax("fa_threshold",0.0,1.0,0.05);
         set_data("fa_threshold",0.95);
+        scene.show_slice();
+        return;
     }
-    else
+    if(handle->fib.index_name[index] == "inc" ||
+        handle->fib.index_name[index] == "dec")
     {
-        float max_value = *std::max_element(handle->fib.fa[0],handle->fib.fa[0]+handle->fib.dim.size());
-        renderWidget->setMinMax("fa_threshold",0.0,max_value*1.1,max_value/50.0);
-        set_data("fa_threshold",0.6*image::segmentation::otsu_threshold(image::make_image(handle->fib.dim,
-                                                                                                  handle->fib.fa[0])));
+        // percentile threshold
+        renderWidget->setMinMax("fa_threshold",0.0,1.0,0.05);
+        set_data("fa_threshold",0.05);
+        scene.show_slice();
+        return;
     }
+    float max_value = *std::max_element(handle->fib.fa[0],handle->fib.fa[0]+handle->fib.dim.size());
+    renderWidget->setMinMax("fa_threshold",0.0,max_value*1.1,max_value/50.0);
+    set_data("fa_threshold",0.6*image::segmentation::otsu_threshold(image::make_image(handle->fib.dim,
+                                                                                      handle->fib.fa[0])));
+    scene.show_slice();
 }
 
 
@@ -1691,11 +1706,12 @@ void tracking_window::on_actionStrip_skull_for_T1w_image_triggered()
         QMessageBox::information(this,"Error","Load T1W image first");
 }
 
-void tracking_window::on_actionIndividual_Connectometry_triggered()
+
+void tracking_window::on_actionIndividual_vs_atlas_triggered()
 {
     if(!is_qsdr)
     {
-        QMessageBox::information(this,"Error","Please open an atlas or a connectometry db in STEP3: fiber tracking to run individual connectometry. See online documentation for details.");
+        QMessageBox::information(this,"Error","Please open an atlas in STEP3: fiber tracking to run individual connectometry. See online documentation for details.");
         return;
     }
     QString subject = QFileDialog::getOpenFileName(
@@ -1705,16 +1721,62 @@ void tracking_window::on_actionIndividual_Connectometry_triggered()
                            "Fib files (*fib.gz);;All files (*)");
     if (subject.isEmpty())
         return;
-    if(!connectometry_fib.individual_connectometry(handle,subject.toLocal8Bit().begin()))
+    if(!connectometry_fib.individual_vs_atlas(handle,subject.toLocal8Bit().begin()))
     {
         QMessageBox::information(this,"Error",connectometry_fib.error_msg.c_str());
         return;
     }
-    QStringList tracking_index_list;
-    for(int index = 0;index < handle->fib.index_name.size();++index)
-        tracking_index_list.push_back(handle->fib.index_name[index].c_str());
-    renderWidget->setList("tracking_index",tracking_index_list);
-    set_data("tracking_index",tracking_index_list.size()-1);
-    on_tracking_index_currentIndexChanged(tracking_index_list.size()-1);
-    scene.show_slice();
+    initialize_tracking_index(handle->fib.index_data.size()-1);
+}
+
+void tracking_window::on_actionIndividual_vs_individual_triggered()
+{
+    if(!is_qsdr)
+    {
+        QMessageBox::information(this,"Error","Please open an atlas or a connectometry db in STEP3: fiber tracking to run individual connectometry. See online documentation for details.");
+        return;
+    }
+    QMessageBox::information(this,"Specify files","Please assign the baseline FIB file and then the comparison FIB.");
+    QString subject1 = QFileDialog::getOpenFileName(
+                           this,
+                           "Open baseline Fib files",
+                           "",
+                           "Fib files (*fib.gz);;All files (*)");
+    if (subject1.isEmpty())
+        return;
+    QString subject2 = QFileDialog::getOpenFileName(
+                           this,
+                           "Open comparison Fib files",
+                           "",
+                           "Fib files (*fib.gz);;All files (*)");
+    if (subject2.isEmpty())
+        return;
+    if(!connectometry_fib.individual_vs_individual(handle,subject1.toLocal8Bit().begin(),subject2.toLocal8Bit().begin()))
+    {
+        QMessageBox::information(this,"Error",connectometry_fib.error_msg.c_str());
+        return;
+    }
+    initialize_tracking_index(handle->fib.index_data.size()-1);
+}
+
+void tracking_window::on_actionIndividual_vs_normal_population_triggered()
+{
+    if(!is_qsdr)
+    {
+        QMessageBox::information(this,"Error","Please open a connectometry db in STEP3: fiber tracking to run individual connectometry. See online documentation for details.");
+        return;
+    }
+    QString subject = QFileDialog::getOpenFileName(
+                           this,
+                           "Open subject Fib files",
+                           "",
+                           "Fib files (*fib.gz);;All files (*)");
+    if (subject.isEmpty())
+        return;
+    if(!connectometry_fib.individual_vs_db(handle,subject.toLocal8Bit().begin()))
+    {
+        QMessageBox::information(this,"Error",connectometry_fib.error_msg.c_str());
+        return;
+    }
+    initialize_tracking_index(handle->fib.index_data.size()-1);
 }

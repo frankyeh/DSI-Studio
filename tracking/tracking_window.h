@@ -91,6 +91,7 @@ public:
     void show_info_dialog(const std::string& title,const std::string& result);
     QString get_save_file_name(QString title,QString file_name,QString file_type);
     void float3dwindow(int w,int h);
+    void initialize_tracking_index(int index);
 public slots:
     void on_SagView_clicked();
     void on_CorView_clicked();
@@ -168,7 +169,9 @@ private slots:
     void on_actionStrip_skull_for_T1w_image_triggered();
     void on_actionImprove_Quality_triggered();
     void on_actionRestore_Tracking_Settings_triggered();
-    void on_actionIndividual_Connectometry_triggered();
+    void on_actionIndividual_vs_atlas_triggered();
+    void on_actionIndividual_vs_individual_triggered();
+    void on_actionIndividual_vs_normal_population_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

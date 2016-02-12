@@ -19,12 +19,16 @@ class TractModel;
 struct fib_data{
     std::vector<std::vector<float> > greater,lesser;
     std::vector<const float*> greater_ptr,lesser_ptr;
+    void remove_old_index(FibData* handle);
+    bool compare(FibData* handle,const std::vector<const float*>& fa1,const std::vector<const float*>& fa2);
 public:
     std::string error_msg;
     void initialize(FibData* fib_file);
-    void add_greater_lesser_mapping_for_tracking(FibData* handle);
-    bool add_dif_mapping_for_tracking(FibData* fib_file,std::vector<std::vector<float> >& fa_data);
-    bool individual_connectometry(FibData* handle,const char* file_name);
+    void add_mapping_for_tracking(FibData* handle,const char* t1,const char* t2);
+    bool individual_vs_atlas(FibData* handle,const char* file_name);
+    bool individual_vs_db(FibData* handle,const char* file_name);
+    bool individual_vs_individual(FibData* handle,const char* file_name1,const char* file_name2);
+
 };
 
 

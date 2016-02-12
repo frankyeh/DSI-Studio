@@ -1218,7 +1218,15 @@
     <property name="title">
      <string>Analysis</string>
     </property>
-    <addaction name="actionIndividual_Connectometry"/>
+    <widget class="QMenu" name="menuIndividual_Connectometry">
+     <property name="title">
+      <string>Individual Connectometry</string>
+     </property>
+     <addaction name="actionIndividual_vs_atlas"/>
+     <addaction name="actionIndividual_vs_individual"/>
+     <addaction name="actionIndividual_vs_normal_population"/>
+    </widget>
+    <addaction name="menuIndividual_Connectometry"/>
     <addaction name="actionView_FIB_Content"/>
     <addaction name="actionManual_Registration"/>
     <addaction name="actionQuality_Assessment"/>
@@ -2965,9 +2973,19 @@
     <string>Restore Tracking Settings</string>
    </property>
   </action>
-  <action name="actionIndividual_Connectometry">
+  <action name="actionIndividual_vs_atlas">
    <property name="text">
-    <string>Individual Connectometry</string>
+    <string>Individual vs atlas</string>
+   </property>
+  </action>
+  <action name="actionIndividual_vs_individual">
+   <property name="text">
+    <string>Individual vs individual</string>
+   </property>
+  </action>
+  <action name="actionIndividual_vs_normal_population">
+   <property name="text">
+    <string>Individual vs normal population</string>
    </property>
   </action>
  </widget>
