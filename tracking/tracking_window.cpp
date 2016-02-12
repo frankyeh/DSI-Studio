@@ -37,6 +37,10 @@ QVariant tracking_window::operator[](QString name) const
 {
     return renderWidget->getData(name);
 }
+void tracking_window::set_data(QString name, QVariant value)
+{
+    renderWidget->setData(name,value);
+}
 
 tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle_release_) :
         QMainWindow(parent),handle(new_handle),handle_release(handle_release_),
@@ -355,8 +359,8 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
             tracking_index_list.push_back(fib_data.fib.index_name[index].c_str());
 
         renderWidget->setList("tracking_index",tracking_index_list);
-        renderWidget->setData("tracking_index",0);
-        renderWidget->setData("step_size",fib_data.vs[0]/2.0);
+        set_data("tracking_index",0);
+        set_data("step_size",fib_data.vs[0]/2.0);
         scene.center();
     }
 
@@ -948,13 +952,13 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
     {
         // percentile threshold
         renderWidget->setMinMax("fa_threshold",0.0,1.0,0.05);
-        renderWidget->setData("fa_threshold",0.95);
+        set_data("fa_threshold",0.95);
     }
     else
     {
         float max_value = *std::max_element(handle->fib.fa[0],handle->fib.fa[0]+handle->fib.dim.size());
         renderWidget->setMinMax("fa_threshold",0.0,max_value*1.1,max_value/50.0);
-        renderWidget->setData("fa_threshold",0.6*image::segmentation::otsu_threshold(image::make_image(handle->fib.dim,
+        set_data("fa_threshold",0.6*image::segmentation::otsu_threshold(image::make_image(handle->fib.dim,
                                                                                                   handle->fib.fa[0])));
     }
 }
@@ -1195,7 +1199,7 @@ void tracking_window::on_actionLoad_tracking_parameters_triggered()
     QStringList param_list = renderWidget->getChildren("Tracking");
     for(unsigned int index = 0;index < param_list.size();++index)
         if(s.contains(param_list[index]))
-            renderWidget->setData(param_list[index],s.value(param_list[index]));
+            set_data(param_list[index],s.value(param_list[index]));
 }
 
 void tracking_window::on_actionSave_Rendering_Parameters_triggered()
@@ -1233,7 +1237,7 @@ void tracking_window::on_actionLoad_Rendering_Parameters_triggered()
     param_list += renderWidget->getChildren("ODF");
     for(unsigned int index = 0;index < param_list.size();++index)
         if(s.contains(param_list[index]))
-            renderWidget->setData(param_list[index],s.value(param_list[index]));
+            set_data(param_list[index],s.value(param_list[index]));
     glWidget->updateGL();
 }
 
@@ -1292,14 +1296,14 @@ void tracking_window::on_actionRestore_Tracking_Settings_triggered()
 
 void tracking_window::on_zoom_in_clicked()
 {
-    renderWidget->setData("roi_zoom",renderWidget->getData("roi_zoom").toInt()+1);
+    set_data("roi_zoom",renderWidget->getData("roi_zoom").toInt()+1);
     scene.center();
     scene.show_slice();
 }
 
 void tracking_window::on_zoom_out_clicked()
 {
-    renderWidget->setData("roi_zoom",std::max<int>(1,renderWidget->getData("roi_zoom").toInt()-1));
+    set_data("roi_zoom",std::max<int>(1,renderWidget->getData("roi_zoom").toInt()-1));
     scene.center();
     scene.show_slice();
 }
@@ -1550,32 +1554,32 @@ void tracking_window::on_rendering_efficiency_currentIndexChanged(int index)
     switch(index)
     {
     case 0:
-        renderWidget->setData("anti_aliasing",0);
-        renderWidget->setData("line_smooth",0);
-        renderWidget->setData("point_smooth",0);
+        set_data("anti_aliasing",0);
+        set_data("line_smooth",0);
+        set_data("point_smooth",0);
 
-        renderWidget->setData("tract_style",0);
-        renderWidget->setData("tract_visible_tract",10000);
-        renderWidget->setData("tract_tube_detail",0);
+        set_data("tract_style",0);
+        set_data("tract_visible_tract",10000);
+        set_data("tract_tube_detail",0);
 
         break;
     case 1:
-        renderWidget->setData("anti_aliasing",0);
-        renderWidget->setData("line_smooth",0);
-        renderWidget->setData("point_smooth",0);
+        set_data("anti_aliasing",0);
+        set_data("line_smooth",0);
+        set_data("point_smooth",0);
 
-        renderWidget->setData("tract_style",1);
-        renderWidget->setData("tract_visible_tract",25000);
-        renderWidget->setData("tract_tube_detail",1);
+        set_data("tract_style",1);
+        set_data("tract_visible_tract",25000);
+        set_data("tract_tube_detail",1);
         break;
     case 2:
-        renderWidget->setData("anti_aliasing",1);
-        renderWidget->setData("line_smooth",1);
-        renderWidget->setData("point_smooth",1);
+        set_data("anti_aliasing",1);
+        set_data("line_smooth",1);
+        set_data("point_smooth",1);
 
-        renderWidget->setData("tract_style",1);
-        renderWidget->setData("tract_visible_tract",100000);
-        renderWidget->setData("tract_tube_detail",3);
+        set_data("tract_style",1);
+        set_data("tract_visible_tract",100000);
+        set_data("tract_tube_detail",3);
         break;
     }
     glWidget->updateGL();
@@ -1710,7 +1714,7 @@ void tracking_window::on_actionIndividual_Connectometry_triggered()
     for(int index = 0;index < handle->fib.index_name.size();++index)
         tracking_index_list.push_back(handle->fib.index_name[index].c_str());
     renderWidget->setList("tracking_index",tracking_index_list);
-    renderWidget->setData("tracking_index",tracking_index_list.size()-1);
+    set_data("tracking_index",tracking_index_list.size()-1);
     on_tracking_index_currentIndexChanged(tracking_index_list.size()-1);
     scene.show_slice();
 }

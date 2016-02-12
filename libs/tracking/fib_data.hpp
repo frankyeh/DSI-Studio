@@ -925,6 +925,10 @@ public:
                 error_msg = "cannot open file";
             return false;
         }
+        return load_from_mat();
+    }
+    bool load_from_mat(void)
+    {
         {
             unsigned int row,col;
             const char* report_buf = 0;
@@ -939,8 +943,7 @@ public:
 
         if(fib.fa.empty())
         {
-            error_msg = "invalid fib format:";
-            error_msg += file_name;
+            error_msg = "Empty FA matrix";
             return false;
         }
         dim = fib.dim;

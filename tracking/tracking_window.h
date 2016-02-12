@@ -85,6 +85,7 @@ public:
     bool slice_no_update;
     bool eventFilter(QObject *obj, QEvent *event);
     QVariant operator[](QString name)const;
+    void set_data(QString name, QVariant value);
     void on_tracking_index_currentIndexChanged(int index);
     void add_slice_name(QString name);
     void show_info_dialog(const std::string& title,const std::string& result);

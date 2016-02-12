@@ -100,7 +100,7 @@ void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vect
         tract_models.back()->add_tracts(greater[index],image::rgb_color(255-color,255-color,255));
         item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     }
-    cur_tracking_window.renderWidget->setData("tract_color_style",1);//manual assigned
+    cur_tracking_window.set_data("tract_color_style",1);//manual assigned
     emit need_update();
 }
 
@@ -283,7 +283,7 @@ void TractTableWidget::set_color(void)
     if(!color.isValid())
         return;
     tract_models[currentRow()]->set_color(color.rgb());
-    cur_tracking_window.renderWidget->setData("tract_color_style",1);//manual assigned
+    cur_tracking_window.set_data("tract_color_style",1);//manual assigned
     emit need_update();
 }
 extern QColor ROIColor[15];
@@ -291,7 +291,7 @@ void TractTableWidget::assign_colors(void)
 {
     for(unsigned int index = 0;index < tract_models.size();++index)
         tract_models[index]->set_color(ROIColor[index%16].rgb());
-    cur_tracking_window.renderWidget->setData("tract_color_style",1);//manual assigned
+    cur_tracking_window.set_data("tract_color_style",1);//manual assigned
     emit need_update();
 }
 void TractTableWidget::load_cluster_label(const std::vector<unsigned int>& labels,QString Name)
@@ -411,7 +411,7 @@ void TractTableWidget::clustering(int method_id)
             for(int i = 0;i < cluster_size;++i)
                 tract_models[currentRow()]->set_tract_color(data[i],color);
         }
-        cur_tracking_window.renderWidget->setData("tract_color_style",1);//manual assigned
+        cur_tracking_window.set_data("tract_color_style",1);//manual assigned
         emit need_update();
     }
 }
@@ -797,7 +797,7 @@ void TractTableWidget::edit_tracts(void)
                              cur_tracking_window.glWidget->dir1,
                              cur_tracking_window.glWidget->dir2,
                              cur_tracking_window.glWidget->pos,QColorDialog::getColor(Qt::red).rgb());
-            cur_tracking_window.renderWidget->setData("tract_color_style",1);//manual assigned
+            cur_tracking_window.set_data("tract_color_style",1);//manual assigned
             break;
         }
         item(index,1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
