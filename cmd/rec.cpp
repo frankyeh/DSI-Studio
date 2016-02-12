@@ -16,6 +16,7 @@ void rec_motion_correction(ImageModel* handle,unsigned int total_thread,
                            std::vector<image::affine_transform<float> >& args,
                            unsigned int& progress,
                            bool& terminated);
+void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 
 /**
  perform reconstruction
@@ -41,13 +42,13 @@ int rec(int ac, char *av[])
     ("output_rdi", po::value<int>()->default_value(1), "output rdi")
     ("thread_count", po::value<int>()->default_value(boost::thread::hardware_concurrency()), "set the multi-thread count --thread_count=2")
     ("num_fiber", po::value<int>()->default_value(5), "maximum fibers resolved per voxel, default=3")
-    ("half_sphere", po::value<int>()->default_value(0), "specific whether half sphere is used")
+    ("half_sphere", po::value<int>()->default_value(-1), "specific whether half sphere is used")
     ("deconvolution", po::value<int>()->default_value(0), "apply deconvolution")
     ("decomposition", po::value<int>()->default_value(0), "apply decomposition")
     ("r2_weighted", po::value<int>()->default_value(0), "set the r2 weighted in GQI")
     ("reg_method", po::value<int>()->default_value(0), "set the registration method for QSDR")
     ("interpo_method", po::value<int>()->default_value(2), "set the interpolation method for QSDR")
-    ("scheme_balance", po::value<int>()->default_value(0), "balance the diffusion sampling scheme")
+    ("scheme_balance", po::value<int>()->default_value(-1), "balance the diffusion sampling scheme")
     ("check_btable", po::value<int>()->default_value(1), "check b-table")
     ("motion_correction", po::value<int>()->default_value(0), "correct for motion")
     ("param0", po::value<float>(), "set parameters")
@@ -191,8 +192,14 @@ int rec(int ac, char *av[])
     handle->voxel.r2_weighted = vm["r2_weighted"].as<int>();
     handle->voxel.reg_method = vm["reg_method"].as<int>();
     handle->voxel.interpo_method = vm["interpo_method"].as<int>();
-    handle->voxel.scheme_balance = vm["scheme_balance"].as<int>();
-    handle->voxel.half_sphere = vm["half_sphere"].as<int>();
+
+    std::vector<unsigned int> shell;
+    calculate_shell(handle->voxel.bvalues,shell);
+    handle->voxel.half_sphere = (vm["half_sphere"].as<int>() == -1) ?
+                                    ((shell.size() > 5) && (shell[1] - shell[0] <= 3)) : vm["half_sphere"].as<int>();
+    handle->voxel.scheme_balance = (vm["scheme_balance"].as<int>() == -1) ?
+                (shell.size() <= 5) && !shell.empty() && handle->voxel.bvalues.size()-shell.back() < 100 : vm["scheme_balance"].as<int>();
+
 
     {
         std::cout << "odf_order=" << vm["odf_order"].as<int>() << std::endl;
