@@ -36,6 +36,8 @@ int rec(int ac, char *av[])
     ("record_odf", po::value<int>()->default_value(0), "output odf information")
     ("output_jac", po::value<int>()->default_value(0), "output jacobian determinant")
     ("output_map", po::value<int>()->default_value(0), "output mapping")
+    ("output_dif", po::value<int>()->default_value(1), "output diffusivity")
+    ("output_tensor", po::value<int>()->default_value(0), "output tensor")
     ("output_rdi", po::value<int>()->default_value(1), "output rdi")
     ("thread_count", po::value<int>()->default_value(boost::thread::hardware_concurrency()), "set the multi-thread count --thread_count=2")
     ("num_fiber", po::value<int>()->default_value(5), "maximum fibers resolved per voxel, default=3")
@@ -180,6 +182,8 @@ int rec(int ac, char *av[])
     handle->voxel.need_odf = vm["record_odf"].as<int>();
     handle->voxel.output_jacobian = vm["output_jac"].as<int>();
     handle->voxel.output_mapping = vm["output_map"].as<int>();
+    handle->voxel.output_diffusivity = vm["output_dif"].as<int>();
+    handle->voxel.output_tensor = vm["output_tensor"].as<int>();
     handle->voxel.output_rdi = vm["output_rdi"].as<int>();
     handle->voxel.odf_deconvolusion = vm["deconvolution"].as<int>();
     handle->voxel.odf_decomposition = vm["decomposition"].as<int>();

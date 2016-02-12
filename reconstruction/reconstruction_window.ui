@@ -1396,23 +1396,24 @@
                </widget>
               </item>
               <item>
-               <spacer name="horizontalSpacer_4">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
+               <widget class="QCheckBox" name="output_diffusivity">
+                <property name="text">
+                 <string>Diffusivity</string>
                 </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="output_tensor">
+                <property name="text">
+                 <string>Tensor</string>
                 </property>
-               </spacer>
+               </widget>
               </item>
              </layout>
             </widget>
            </item>
            <item>
-            <widget class="QGroupBox" name="groupBox_2">
+            <widget class="QGroupBox" name="ODFOption">
              <property name="title">
               <string>Others</string>
              </property>

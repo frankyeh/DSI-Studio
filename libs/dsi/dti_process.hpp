@@ -6,7 +6,7 @@
 
 class Dwi2Tensor : public BaseProcess
 {
-    std::vector<float> d0,d1,d2,d3,md;
+    std::vector<float> d0,d1,d2,d3,md,txx,txy,txz,tyy,tyz,tzz;
     float get_fa(float l1,float l2,float l3)
     {
         float ll = (l1+l2+l3)/3.0;
@@ -30,17 +30,34 @@ public:
         voxel.fib_fa.resize(voxel.dim.size());
         voxel.fib_dir.clear();
         voxel.fib_dir.resize(voxel.dim.size()*3);
-
-        md.clear();
-        md.resize(voxel.dim.size());
-        d0.clear();
-        d0.resize(voxel.dim.size());
-        d1.clear();
-        d1.resize(voxel.dim.size());
-        d2.clear();
-        d2.resize(voxel.dim.size());
-        d3.clear();
-        d3.resize(voxel.dim.size());
+        if(voxel.output_diffusivity)
+        {
+            md.clear();
+            md.resize(voxel.dim.size());
+            d0.clear();
+            d0.resize(voxel.dim.size());
+            d1.clear();
+            d1.resize(voxel.dim.size());
+            d2.clear();
+            d2.resize(voxel.dim.size());
+            d3.clear();
+            d3.resize(voxel.dim.size());
+        }
+        if(voxel.output_tensor)
+        {
+            txx.clear();
+            txx.resize(voxel.dim.size());
+            txy.clear();
+            txy.resize(voxel.dim.size());
+            txz.clear();
+            txz.resize(voxel.dim.size());
+            tyy.clear();
+            tyy.resize(voxel.dim.size());
+            tyz.clear();
+            tyz.resize(voxel.dim.size());
+            tzz.clear();
+            tzz.resize(voxel.dim.size());
+        }
 
         b_count = voxel.bvalues.size()-1;
         std::vector<image::vector<3> > b_data(b_count);
@@ -115,21 +132,45 @@ public:
         }
         std::copy(V,V+3,voxel.fib_dir.begin() + data.voxel_index + data.voxel_index + data.voxel_index);
         data.fa[0] = voxel.fib_fa[data.voxel_index] = get_fa(d[0],d[1],d[2]);
-        md[data.voxel_index] = 1000.0*(d[0]+d[1]+d[2])/3.0;
-        d0[data.voxel_index] = 1000.0*d[0];
-        d2[data.voxel_index] = 1000.0*d[1];
-        d3[data.voxel_index] = 1000.0*d[2];
-        d1[data.voxel_index] = 1000.0*(d[1]+d[2])/2.0;
+        if(voxel.output_diffusivity)
+        {
+            md[data.voxel_index] = 1000.0*(d[0]+d[1]+d[2])/3.0;
+            d0[data.voxel_index] = 1000.0*d[0];
+            d2[data.voxel_index] = 1000.0*d[1];
+            d3[data.voxel_index] = 1000.0*d[2];
+            d1[data.voxel_index] = 1000.0*(d[1]+d[2])/2.0;
+        }
+        if(voxel.output_tensor)
+        {
+            txx[data.voxel_index] = tensor[0];
+            txy[data.voxel_index] = tensor[1];
+            txz[data.voxel_index] = tensor[2];
+            tyy[data.voxel_index] = tensor[4];
+            tyz[data.voxel_index] = tensor[5];
+            tzz[data.voxel_index] = tensor[8];
+        }
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
         mat_writer.write("fa0",&*voxel.fib_fa.begin(),1,voxel.fib_fa.size());
         mat_writer.write("dir0",&*voxel.fib_dir.begin(),1,voxel.fib_dir.size());
-        mat_writer.write("adc",&*md.begin(),1,md.size());
-        mat_writer.write("axial_dif",&*d0.begin(),1,d0.size());
-        mat_writer.write("radial_dif",&*d1.begin(),1,d1.size());
-        mat_writer.write("radial_dif1",&*d2.begin(),1,d2.size());
-        mat_writer.write("radial_dif2",&*d3.begin(),1,d3.size());
+        if(voxel.output_diffusivity)
+        {
+            mat_writer.write("adc",&*md.begin(),1,md.size());
+            mat_writer.write("axial_dif",&*d0.begin(),1,d0.size());
+            mat_writer.write("radial_dif",&*d1.begin(),1,d1.size());
+            mat_writer.write("radial_dif1",&*d2.begin(),1,d2.size());
+            mat_writer.write("radial_dif2",&*d3.begin(),1,d3.size());
+        }
+        if(voxel.output_tensor)
+        {
+            mat_writer.write("txx",&*txx.begin(),1,txx.size());
+            mat_writer.write("txy",&*txy.begin(),1,txy.size());
+            mat_writer.write("txz",&*txz.begin(),1,txz.size());
+            mat_writer.write("tyy",&*tyy.begin(),1,tyy.size());
+            mat_writer.write("tyz",&*tyz.begin(),1,tyz.size());
+            mat_writer.write("tzz",&*tzz.begin(),1,tzz.size());
+        }
     }
 };
 

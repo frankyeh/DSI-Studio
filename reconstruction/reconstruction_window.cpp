@@ -108,6 +108,8 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->RecordODF->setChecked(settings.value("rec_record_odf",0).toInt());
     ui->output_jacobian->setChecked(settings.value("output_jacobian",0).toInt());
     ui->output_mapping->setChecked(settings.value("output_mapping",0).toInt());
+    ui->output_diffusivity->setChecked(settings.value("output_diffusivity",1).toInt());
+    ui->output_tensor->setChecked(settings.value("output_tensor",0).toInt());
     ui->rdi->setChecked(settings.value("output_rdi",1).toInt());
     ui->check_btable->setChecked(settings.value("check_btable",1).toInt());
 
@@ -271,6 +273,8 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     settings.setValue("rec_record_odf",ui->RecordODF->isChecked() ? 1 : 0);
     settings.setValue("output_jacobian",ui->output_jacobian->isChecked() ? 1 : 0);
     settings.setValue("output_mapping",ui->output_mapping->isChecked() ? 1 : 0);
+    settings.setValue("output_diffusivity",ui->output_diffusivity->isChecked() ? 1 : 0);
+    settings.setValue("output_tensor",ui->output_tensor->isChecked() ? 1 : 0);
     settings.setValue("output_rdi",(ui->rdi->isChecked() && method_id == 4) ? 1 : 0); // only for GQI
     settings.setValue("check_btable",ui->check_btable->isChecked() ? 1 : 0);
 
@@ -286,10 +290,11 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.r2_weighted = ui->ODFDef->currentIndex();
     handle->voxel.reg_method = ui->reg_method->currentIndex();
     handle->voxel.interpo_method = ui->interpo_method->currentIndex();
-
     handle->voxel.need_odf = ui->RecordODF->isChecked() ? 1 : 0;
     handle->voxel.output_jacobian = ui->output_jacobian->isChecked() ? 1 : 0;
     handle->voxel.output_mapping = ui->output_mapping->isChecked() ? 1 : 0;
+    handle->voxel.output_diffusivity = ui->output_diffusivity->isChecked() ? 1 : 0;
+    handle->voxel.output_tensor = ui->output_tensor->isChecked() ? 1 : 0;
     handle->voxel.output_rdi = ui->rdi->isChecked() ? 1 : 0;
     if(method_id == 7 || method_id == 4)
     {
@@ -457,12 +462,15 @@ void reconstruction_window::on_DTI_toggled(bool checked)
     ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(!checked);
 
-    ui->AdvancedOptions->setVisible(!checked);
-
+    ui->AdvancedOptions->setVisible(checked);
+    ui->ODFOption->setVisible(!checked);
     ui->output_mapping->setVisible(!checked);
     ui->output_jacobian->setVisible(!checked);
+    ui->output_diffusivity->setVisible(checked);
+    ui->output_tensor->setVisible(checked);
     ui->RecordODF->setVisible(!checked);
     ui->rdi->setVisible(!checked);
+
 
 
 }
@@ -476,6 +484,7 @@ void reconstruction_window::on_DSI_toggled(bool checked)
     ui->GQIOption_2->setVisible(!checked);
 
     ui->AdvancedOptions->setVisible(checked);
+    ui->ODFOption->setVisible(checked);
 
     ui->output_mapping->setVisible(!checked);
     ui->output_jacobian->setVisible(!checked);
@@ -493,6 +502,7 @@ void reconstruction_window::on_QBI_toggled(bool checked)
     ui->GQIOption_2->setVisible(!checked);
 
     ui->AdvancedOptions->setVisible(checked);
+    ui->ODFOption->setVisible(checked);
 
     ui->output_mapping->setVisible(!checked);
     ui->output_jacobian->setVisible(!checked);
@@ -510,6 +520,7 @@ void reconstruction_window::on_GQI_toggled(bool checked)
     ui->GQIOption_2->setVisible(checked);
 
     ui->AdvancedOptions->setVisible(checked);
+    ui->ODFOption->setVisible(checked);
 
     ui->output_mapping->setVisible(!checked);
     ui->output_jacobian->setVisible(!checked);
@@ -529,6 +540,7 @@ void reconstruction_window::on_QDif_toggled(bool checked)
     ui->GQIOption_2->setVisible(checked);
 
     ui->AdvancedOptions->setVisible(checked);
+    ui->ODFOption->setVisible(checked);
 
     ui->output_mapping->setVisible(checked);
     ui->output_jacobian->setVisible(checked);

@@ -277,7 +277,13 @@ const char* reconstruction(ImageModel* image_model,
         if(check_b_table)
         {
             set_title("checking b-table");
+            bool output_dif = image_model->voxel.output_diffusivity;
+            bool output_tensor = image_model->voxel.output_tensor;
+            image_model->voxel.output_diffusivity = false;
+            image_model->voxel.output_tensor = false;
             image_model->reconstruct<dti_process>(thread_count);
+            image_model->voxel.output_diffusivity = output_dif;
+            image_model->voxel.output_tensor = output_tensor;
             std::vector<std::vector<float> > fib_fa(1);
             std::vector<std::vector<float> > fib_dir(1);
             fib_fa[0].swap(image_model->voxel.fib_fa);

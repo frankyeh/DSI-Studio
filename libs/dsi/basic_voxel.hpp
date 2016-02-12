@@ -64,22 +64,26 @@ public:// parameters;
     const float* param;
     std::string file_name;
     bool need_odf;
+    bool half_sphere;
+    unsigned int max_fiber_number;
+    std::vector<std::string> file_list;
+public:// DTI
+    bool output_diffusivity;
+    bool output_tensor;
+public://used in GQI
+    bool r2_weighted;// used in GQI only
+    bool scheme_balance;
+public:// odf sharpening
     bool odf_deconvolusion;
     bool odf_decomposition;
     image::vector<3,short> odf_xyz;
-    bool half_sphere;
-    bool r2_weighted;// used in GQI only
-    bool scheme_balance;
-    unsigned int max_fiber_number;
-    std::vector<std::string> file_list;
-public:
+public:// gradient deviation
     std::vector<image::basic_image<float,3> > new_grad_dev;
     std::vector<image::pointer_image<float,3> > grad_dev;
-public:
-    unsigned char reg_method;// used in QSDR
+public:// used in QSDR
+    unsigned char reg_method;
     unsigned char interpo_method;
     image::transformation_matrix<float> qsdr_trans;
-    // used in QSDR only
     bool output_jacobian;
     bool output_mapping;
     bool output_rdi;
