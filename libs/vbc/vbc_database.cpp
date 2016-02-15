@@ -131,10 +131,13 @@ bool fib_data::compare(FibData* handle,const std::vector<const float*>& fa1,
             {
                 float f1 = fa1[fib][index];
                 float f2 = fa2[fib][index]*max_qa1/max_qa2;
+                float avg = (f1+f2)*0.5;
+                if(avg == 0.0)
+                    continue;
                 if(f1 > f2)
-                    lesser[fib][index] = f1-f2;  // subject decreased connectivity
+                    lesser[fib][index] = (f1-f2)/avg;  // subject decreased connectivity
                 else
-                    greater[fib][index] = f2-f1; // subject increased connectivity
+                    greater[fib][index] = (f2-f1)/avg; // subject increased connectivity
             }
     }
     return true;
