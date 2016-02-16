@@ -9,6 +9,7 @@
 #include <QDragEnterEvent>
 #include <QMimeData>
 #include <qmessagebox.h>
+#include "filebrowser.h"
 #include "reconstruction/reconstruction_window.h"
 #include "dsi_interface_static_link.h"
 #include "prog_interface_static_link.h"
@@ -24,6 +25,7 @@
 #include "tracking/vbc_dialog.hpp"
 #include "vbc/vbc_database.h"
 #include "libs/tracking/fib_data.hpp"
+
 extern std::vector<atlas> atlas_list;
 extern std::auto_ptr<QProgressDialog> progressDialog;
 MainWindow::MainWindow(QWidget *parent) :
@@ -756,4 +758,11 @@ void MainWindow::on_connectometry_clicked()
 void MainWindow::on_workDir_currentTextChanged(const QString &arg1)
 {
     QDir::setCurrent(arg1);
+}
+
+void MainWindow::on_bruker_browser_clicked()
+{
+    FileBrowser* bw = new FileBrowser(this);
+    bw->setAttribute(Qt::WA_DeleteOnClose);
+    bw->showNormal();
 }

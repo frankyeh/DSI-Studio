@@ -45,6 +45,7 @@ private slots:
     void on_view_image_clicked();
     void on_connectometry_clicked();
     void on_workDir_currentTextChanged(const QString &arg1);
+    void on_bruker_browser_clicked();
 };
 
 #endif // MAINWINDOW_H

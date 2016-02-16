@@ -97,7 +97,8 @@ HEADERS += mainwindow.h \
     tracking/color_bar_dialog.hpp \
     tracking/connectivity_matrix_dialog.h \
     tracking/atlasdialog.h \
-    dicom/motion_dialog.hpp
+    dicom/motion_dialog.hpp \
+    filebrowser.h
 
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
@@ -112,7 +113,8 @@ FORMS += mainwindow.ui \
     tracking/color_bar_dialog.ui \
     tracking/connectivity_matrix_dialog.ui \
     tracking/atlasdialog.ui \
-    dicom/motion_dialog.ui
+    dicom/motion_dialog.ui \
+    filebrowser.ui
 RESOURCES += \
     icons.qrc
 SOURCES += main.cpp \
@@ -158,7 +160,8 @@ SOURCES += main.cpp \
     tracking/atlasdialog.cpp \
     dicom/motion_dialog.cpp \
     cmd/cnt.cpp \
-    cmd/vis.cpp
+    cmd/vis.cpp \
+    filebrowser.cpp
 
 OTHER_FILES += \
     options.txt

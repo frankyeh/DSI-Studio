@@ -54,7 +54,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -64,8 +64,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>350</width>
-         <height>460</height>
+         <width>192</width>
+         <height>310</height>
         </rect>
        </property>
        <attribute name="label">
@@ -141,8 +141,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>350</width>
-         <height>460</height>
+         <width>255</width>
+         <height>155</height>
         </rect>
        </property>
        <attribute name="label">
@@ -204,8 +204,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>350</width>
-         <height>460</height>
+         <width>182</width>
+         <height>420</height>
         </rect>
        </property>
        <attribute name="label">
@@ -302,6 +302,13 @@
           </property>
           <property name="description">
            <string>Open image and header information</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="bruker_browser">
+          <property name="text">
+           <string>Image Browser</string>
           </property>
          </widget>
         </item>
