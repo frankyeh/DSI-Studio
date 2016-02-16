@@ -479,7 +479,20 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
             std::for_each(voxel_size,voxel_size+3,boost::lambda::_1 /= 4.0);
         write_mat.write("voxel_size",voxel_size,1,3);
     }
-
+    // store bvec file
+    {
+        std::vector<float> b_table;
+        for (unsigned int index = 0;index < dwi_files.size();++index)
+        {
+            b_table.push_back(dwi_files[index].get_bvalue());
+            std::copy(dwi_files[index].get_bvec(),dwi_files[index].get_bvec()+3,std::back_inserter(b_table));
+        }
+        write_mat.write("b_table",&b_table[0],4,b_table.size()/4);
+    }
+    if(!dwi_files[0].grad_dev.empty())
+        write_mat.write("grad_dev",&*dwi_files[0].grad_dev.begin(),dwi_files[0].grad_dev.size()/9,9);
+    if(!dwi_files[0].mask.empty())
+        write_mat.write("mask",&*dwi_files[0].mask.begin(),1,dwi_files[0].mask.size());
 
     //store images
     begin_prog("Save Files");
@@ -507,21 +520,8 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
         }
         write_mat.write(name.str().c_str(),ptr,1,output_size);
     }
-    // store bvec file
-    {
-        std::vector<float> b_table;
-        for (unsigned int index = 0;index < dwi_files.size();++index)
-        {
-            b_table.push_back(dwi_files[index].get_bvalue());
-            std::copy(dwi_files[index].get_bvec(),dwi_files[index].get_bvec()+3,std::back_inserter(b_table));
-        }
-        write_mat.write("b_table",&b_table[0],4,b_table.size()/4);
-    }
 
-    if(!dwi_files[0].grad_dev.empty())
-        write_mat.write("grad_dev",&*dwi_files[0].grad_dev.begin(),dwi_files[0].grad_dev.size()/9,9);
-    if(!dwi_files[0].mask.empty())
-        write_mat.write("mask",&*dwi_files[0].mask.begin(),1,dwi_files[0].mask.size());
+
 
 
     std::string report1 = dwi_files.front().report;
