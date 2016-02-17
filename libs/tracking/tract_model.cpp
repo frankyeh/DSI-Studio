@@ -1,4 +1,5 @@
 //---------------------------------------------------------------------------
+#include <QString>
 #include <fstream>
 #include <sstream>
 #include <iterator>
@@ -364,6 +365,171 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         return true;
     }
     return false;
+}
+bool TractModel::save_vrml(const char* file_name,int tract_color_style,float tube_diameter,unsigned char tract_tube_detail)
+{
+    std::ofstream out(file_name);
+    out << "#VRML V2.0 utf8" << std::endl;
+    out << "Viewpoint { description \"Initial view\" position 0 0 9 }" << std::endl;
+    out << "NavigationInfo { type \"EXAMINE\" }" << std::endl;
+
+
+
+
+    std::vector<image::vector<3,float> > points(8),previous_points(8);
+    image::rgb_color paint_color;
+    image::vector<3,float> paint_color_f;
+
+    const float detail_option[] = {1.0,0.5,0.25,0.0,0.0};
+    float tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0;
+
+
+    QString CoordinateIndex;
+    std::vector<int> CoordinateIndexPos(2);
+    for (unsigned int data_index = 0; data_index < tract_data.size(); ++data_index)
+    {
+        unsigned int vertex_count = get_tract_length(data_index)/3;
+        if (vertex_count <= 1)
+            continue;
+
+        const float* data_iter = &tract_data[data_index][0];
+
+        switch(tract_color_style)
+        {
+        case 1:
+            paint_color = get_tract_color(data_index);
+            paint_color_f = image::vector<3,float>(paint_color.r,paint_color.g,paint_color.b);
+            paint_color_f /= 255.0;
+            break;
+        break;
+        }
+        unsigned int vrml_coordinate_count = 0,vrml_color_count = 0;
+        QString Coordinate,Color,ColorIndex;
+        image::vector<3,float> last_pos(data_iter),
+                vec_a(1,0,0),vec_b(0,1,0),
+                vec_n,prev_vec_n,vec_ab,vec_ba,cur_color,previous_color;
+
+        for (unsigned int j = 0, index = 0; index < vertex_count;j += 3, data_iter += 3, ++index)
+        {
+            image::vector<3,float> pos(data_iter);
+            if (index + 1 < vertex_count)
+            {
+                vec_n[0] = data_iter[3] - data_iter[0];
+                vec_n[1] = data_iter[4] - data_iter[1];
+                vec_n[2] = data_iter[5] - data_iter[2];
+                vec_n.normalize();
+            }
+
+            switch(tract_color_style)
+            {
+            case 0://directional
+                cur_color[0] = std::fabs(vec_n[0]);
+                cur_color[1] = std::fabs(vec_n[1]);
+                cur_color[2] = std::fabs(vec_n[2]);
+                break;
+            case 1://manual assigned
+                cur_color = paint_color_f;
+                break;
+            }
+
+            if (index != 0 && index+1 != vertex_count)
+            {
+                image::vector<3,float> displacement(data_iter+3);
+                displacement -= last_pos;
+                displacement -= prev_vec_n*(prev_vec_n*displacement);
+                if (displacement.length() < tube_detail)
+                    continue;
+            }
+
+            if (index == 0 && std::fabs(vec_a*vec_n) > 0.5)
+                std::swap(vec_a,vec_b);
+
+            vec_b = vec_a.cross_product(vec_n);
+            vec_a = vec_n.cross_product(vec_b);
+            vec_a.normalize();
+            vec_b.normalize();
+            vec_ba = vec_ab = vec_a;
+            vec_ab += vec_b;
+            vec_ba -= vec_b;
+            vec_ab.normalize();
+            vec_ba.normalize();
+            vec_ba *= tube_diameter;
+            vec_ab *= tube_diameter;
+            vec_a *= tube_diameter;
+            vec_b *= tube_diameter;
+
+            // add point
+            {
+                std::fill(points.begin(),points.end(),pos);
+                points[0] += vec_a;
+                points[1] += vec_ab;
+                points[2] += vec_b;
+                points[3] -= vec_ba;
+                points[4] -= vec_a;
+                points[5] -= vec_ab;
+                points[6] -= vec_b;
+                points[7] += vec_ba;
+            }
+            Color += QString("%1 %2 %3 ").arg(cur_color[0]).arg(cur_color[1]).arg(cur_color[2]);
+            // add end
+            static const unsigned char end_sequence[8] = {4,3,5,2,6,1,7,0};
+            if (index == 0)
+            {
+                for (unsigned int k = 0;k < 8;++k)
+                {
+                    Coordinate += QString("%1 %2 %3 ").arg(points[end_sequence[k]][0]).arg(points[end_sequence[k]][1]).arg(points[end_sequence[k]][2]);
+                    ColorIndex += QString("%1 ").arg(vrml_color_count);
+                }
+                vrml_coordinate_count+=8;
+            }
+            else
+            // add tube
+            {
+
+                Coordinate += QString("%1 %2 %3 ").arg(points[0][0]).arg(points[0][1]).arg(points[0][2]);
+                ColorIndex += QString("%1, ").arg(vrml_color_count);
+                for (unsigned int k = 1;k < 8;++k)
+                {
+                    Coordinate += QString("%1 %2 %3 ").arg(previous_points[k][0]).arg(previous_points[k][1]).arg(previous_points[k][2]);
+                    Coordinate += QString("%1 %2 %3 ").arg(points[k][0]).arg(points[k][1]).arg(points[k][2]);
+                    ColorIndex += QString("%1, ").arg(vrml_color_count);
+                    ColorIndex += QString("%1, ").arg(vrml_color_count);
+                }
+                Coordinate += QString("%1 %2 %3 ").arg(points[0][0]).arg(points[0][1]).arg(points[0][2]);
+                ColorIndex += QString("%1 ").arg(vrml_color_count);
+                vrml_coordinate_count+=16;
+
+                if(index +1 == vertex_count)
+                {
+                    for (int k = 7;k >= 0;--k)
+                    {
+                        Coordinate += QString("%1 %2 %3 ").arg(points[end_sequence[k]][0]).arg(points[end_sequence[k]][1]).arg(points[end_sequence[k]][2]);
+                        ColorIndex += QString("%1 ").arg(vrml_color_count);
+                    }
+                    vrml_coordinate_count+=8;
+                }
+            }
+            previous_points.swap(points);
+            previous_color = cur_color;
+            prev_vec_n = vec_n;
+            last_pos = pos;
+            ++vrml_color_count;
+
+        }
+
+        for (unsigned int j = CoordinateIndexPos.size();j < vrml_coordinate_count;++j)
+        {
+            CoordinateIndex += QString("%1 %2 %3 -1 ").arg(j-2).arg(j-1).arg(j);
+            CoordinateIndexPos.push_back(CoordinateIndex.size());
+        }
+        out << "Shape {" << std::endl;
+        out << "geometry DEF IFS IndexedFaceSet {" << std::endl;
+        out << "coord Coordinate { point [" << Coordinate.toStdString() << " ] }" << std::endl;
+        out << "coordIndex ["<< CoordinateIndex.left(CoordinateIndexPos[vrml_coordinate_count-1]-1).toStdString() <<"]" << std::endl;
+        out << "color Color { color ["<< Color.toStdString() <<"] }" << std::endl;
+        out << "colorPerVertex FALSE" << std::endl;
+        out << "colorIndex ["<< ColorIndex.toStdString() << "] } }" << std::endl;
+    }
 }
 
 //---------------------------------------------------------------------------

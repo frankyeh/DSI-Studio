@@ -1098,6 +1098,8 @@
      <addaction name="actionSave_End_Points_As"/>
      <addaction name="actionSave_Endpoints_in_Current_Mapping"/>
      <addaction name="actionSave_Enpoints_In_MNI_Space"/>
+     <addaction name="separator"/>
+     <addaction name="actionSave_VMRL"/>
     </widget>
     <addaction name="actionOpenTract"/>
     <addaction name="separator"/>
@@ -2986,6 +2988,15 @@
   <action name="actionIndividual_vs_normal_population">
    <property name="text">
     <string>Individual vs normal population</string>
+   </property>
+  </action>
+  <action name="actionSave_VMRL">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save VRML...</string>
    </property>
   </action>
  </widget>

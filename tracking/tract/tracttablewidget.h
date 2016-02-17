@@ -60,6 +60,7 @@ public slots:
     void fetch_tracts(void);
     void load_tracts(void);
     void save_tracts_as(void);
+    void save_vrml_as(void);
     void load_tracts_color(void);
     void save_tracts_color_as(void);
     void save_tracts_data_as(void);

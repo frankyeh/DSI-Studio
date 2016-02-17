@@ -430,6 +430,22 @@ void TractTableWidget::save_tracts_as(void)
     tract_models[currentRow()]->save_tracts_to_file(&*sfilename.begin());
 }
 
+void TractTableWidget::save_vrml_as(void)
+{
+    if(currentRow() >= tract_models.size())
+        return;
+    QString filename;
+    filename = QFileDialog::getSaveFileName(
+                this,"Save tracts as",item(currentRow(),0)->text().replace(':','_') + ".wrl",
+                 "Tract files (*.wrl);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    std::string sfilename = filename.toLocal8Bit().begin();
+    tract_models[currentRow()]->save_vrml(&*sfilename.begin(),cur_tracking_window["tract_color_style"].toInt(),
+                                                cur_tracking_window["tube_diameter"].toFloat(),
+                                                cur_tracking_window["tract_tube_detail"].toInt());
+}
+
 void TractTableWidget::save_end_point_as(void)
 {
     if(currentRow() >= tract_models.size())
