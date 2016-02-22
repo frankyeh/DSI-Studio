@@ -441,7 +441,9 @@ void TractTableWidget::save_vrml_as(void)
     if(filename.isEmpty())
         return;
     std::string sfilename = filename.toLocal8Bit().begin();
-    tract_models[currentRow()]->save_vrml(&*sfilename.begin(),cur_tracking_window["tract_color_style"].toInt(),
+    tract_models[currentRow()]->save_vrml(&*sfilename.begin(),
+                                                cur_tracking_window["tract_style"].toInt(),
+                                                cur_tracking_window["tract_color_style"].toInt(),
                                                 cur_tracking_window["tube_diameter"].toFloat(),
                                                 cur_tracking_window["tract_tube_detail"].toInt());
 }

@@ -34,8 +34,11 @@ private slots:
 
     void on_zoom_valueChanged(double arg1);
 
-    void on_save_as_clicked();
 
+
+    void on_save_matrix_clicked();
+
+    void on_save_network_property_clicked();
 
 private:
     Ui::connectivity_matrix_dialog *ui;

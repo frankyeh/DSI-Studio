@@ -49,9 +49,17 @@ void save_connectivity_matrix(TractModel& tract_model,
     file_name_stat += ".";
     file_name_stat += connectivity_value;
     file_name_stat += use_end_only ? ".end":".pass";
+    std::string network_measures(file_name_stat);
     file_name_stat += ".connectivity.mat";
     std::cout << "export connectivity matrix to " << file_name_stat << std::endl;
     data.save_to_file(file_name_stat.c_str());
+
+    network_measures += ".network_measures.txt";
+    std::cout << "export network measures to " << network_measures << std::endl;
+    std::string report;
+    data.network_property(report);
+    std::ofstream out(network_measures.c_str());
+    out << report;
 }
 void load_nii_label(const char* filename,std::map<short,std::string>& label_map);
 void get_connectivity_matrix(FibData* handle,

@@ -1307,6 +1307,7 @@ void tracking_window::on_actionRestore_Settings_triggered()
 void tracking_window::on_actionRestore_Tracking_Settings_triggered()
 {
     renderWidget->setDefault("Tracking");
+    on_tracking_index_currentIndexChanged((*this)["tracking_index"].toInt());
     glWidget->updateGL();
 }
 

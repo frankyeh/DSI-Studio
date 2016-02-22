@@ -366,7 +366,11 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     }
     return false;
 }
-bool TractModel::save_vrml(const char* file_name,int tract_color_style,float tube_diameter,unsigned char tract_tube_detail)
+void TractModel::save_vrml(const char* file_name,
+                           unsigned char tract_style,
+                           unsigned char tract_color_style,
+                           float tube_diameter,
+                           unsigned char tract_tube_detail)
 {
     std::ofstream out(file_name);
     out << "#VRML V2.0 utf8" << std::endl;
@@ -407,7 +411,7 @@ bool TractModel::save_vrml(const char* file_name,int tract_color_style,float tub
         QString Coordinate,Color,ColorIndex;
         image::vector<3,float> last_pos(data_iter),
                 vec_a(1,0,0),vec_b(0,1,0),
-                vec_n,prev_vec_n,vec_ab,vec_ba,cur_color,previous_color;
+                vec_n,prev_vec_n,vec_ab,vec_ba,cur_color;
 
         for (unsigned int j = 0, index = 0; index < vertex_count;j += 3, data_iter += 3, ++index)
         {
@@ -440,6 +444,17 @@ bool TractModel::save_vrml(const char* file_name,int tract_color_style,float tub
                 if (displacement.length() < tube_detail)
                     continue;
             }
+            Color += QString("%1 %2 %3 ").arg(cur_color[0]).arg(cur_color[1]).arg(cur_color[2]);
+            // add end
+            if(tract_style == 0)// line
+            {
+                Coordinate += QString("%1 %2 %3 ").arg(pos[0]).arg(pos[1]).arg(pos[2]);
+                ColorIndex += QString("%1 ").arg(vrml_color_count);
+                prev_vec_n = vec_n;
+                last_pos = pos;
+                ++vrml_color_count;
+                continue;
+            }
 
             if (index == 0 && std::fabs(vec_a*vec_n) > 0.5)
                 std::swap(vec_a,vec_b);
@@ -470,8 +485,7 @@ bool TractModel::save_vrml(const char* file_name,int tract_color_style,float tub
                 points[6] -= vec_b;
                 points[7] += vec_ba;
             }
-            Color += QString("%1 %2 %3 ").arg(cur_color[0]).arg(cur_color[1]).arg(cur_color[2]);
-            // add end
+
             static const unsigned char end_sequence[8] = {4,3,5,2,6,1,7,0};
             if (index == 0)
             {
@@ -510,13 +524,25 @@ bool TractModel::save_vrml(const char* file_name,int tract_color_style,float tub
                 }
             }
             previous_points.swap(points);
-            previous_color = cur_color;
             prev_vec_n = vec_n;
             last_pos = pos;
             ++vrml_color_count;
 
         }
-
+        if(tract_style == 0)// line
+        {
+            for (unsigned int j = CoordinateIndexPos.size();j < vrml_coordinate_count;++j)
+            {
+                CoordinateIndex += QString("%1 ").arg(j-2).arg(j-1).arg(j);
+                CoordinateIndexPos.push_back(CoordinateIndex.size());
+            }
+            out << "Shape {" << std::endl;
+            out << "geometry DEF IFS IndexedLineSet {" << std::endl;
+            out << "point [" << Coordinate.toStdString() << " ]" << std::endl;
+            out << "coordIndex ["<< ColorIndex.toStdString() <<"]" << std::endl;
+            out << "color Color { color ["<< Color.toStdString() <<"] } } }" << std::endl;
+            continue;
+        }
         for (unsigned int j = CoordinateIndexPos.size();j < vrml_coordinate_count;++j)
         {
             CoordinateIndex += QString("%1 %2 %3 -1 ").arg(j-2).arg(j-1).arg(j);
@@ -1809,5 +1835,512 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
         for(unsigned int j = 0;j < count[i].size();++j,++index)
             matrix_value[index] = (count[i][j] ? sum[i][j]/(float)count[i][j] : 0);
     return true;
+
+}
+template<typename matrix_type>
+void distance_bin(const matrix_type& bin,image::basic_image<float,2>& D)
+{
+    unsigned int n = bin.width();
+    image::basic_image<unsigned int,2> A,Lpath;
+    A = bin;
+    Lpath = bin;
+    D = bin;
+    for(unsigned int l = 2;1;++l)
+    {
+        image::basic_image<unsigned int,2> t(A.geometry());
+        image::mat::product(Lpath.begin(),A.begin(),t.begin(),image::dyndim(n,n),image::dyndim(n,n));
+        std::swap(Lpath,t);
+        bool con = false;
+        for(unsigned int i = 0;i < D.size();++i)
+            if(Lpath[i] != 0 && D[i] == 0)
+            {
+                D[i] = l;
+                con = true;
+            }
+        if(!con)
+            break;
+    }
+    std::replace(D.begin(),D.end(),(float)0,std::numeric_limits<float>::max());
+}
+template<typename matrix_type>
+void distance_wei(const matrix_type& W_,image::basic_image<float,2>& D)
+{
+    image::basic_image<float,2> W(W_);
+    for(unsigned int i = 0;i < W.size();++i)
+        W[i] = (W[i] != 0) ? 1.0/W[i]:0;
+    unsigned int n = W.width();
+    D.clear();
+    D.resize(W.geometry());
+    std::fill(D.begin(),D.end(),std::numeric_limits<float>::max());
+    for(unsigned int i = 0,dg = 0;i < n;++i,dg += n + 1)
+        D[dg] = 0;
+    for(unsigned int i = 0,in = 0;i < n;++i,in += n)
+    {
+        std::vector<unsigned char> S(n);
+        image::basic_image<float,2> W1(W);
+
+        std::vector<unsigned int> V;
+        V.push_back(i);
+        while(1)
+        {
+            for(unsigned int j = 0;j < V.size();++j)
+            {
+                S[V[j]] = 1;
+                for(unsigned int k = V[j];k < W1.size();k += n)
+                    W1[k] = 0;
+            }
+            for(unsigned int j = 0;j < V.size();++j)
+            {
+                unsigned int v = V[j];
+                unsigned int vn = v*n;
+                for(unsigned int k = 0;k < n;++k)
+                if(W1[vn+k] > 0)
+                    D[in+k] = std::min<float>(D[in+k],D[in+v]+W1[vn+k]);
+            }
+            float minD = std::numeric_limits<float>::max();
+            for(unsigned int j = 0;j < n;++j)
+                if(S[j] == 0 && minD > D[in+j])
+                    minD = D[in+j];
+            if(minD == std::numeric_limits<float>::max())
+                break;
+            V.clear();
+            for(unsigned int j = 0;j < n;++j)
+                if(D[in+j]  == minD)
+                    V.push_back(j);
+        }
+    }
+    std::replace(D.begin(),D.end(),(float)0.0,std::numeric_limits<float>::max());
+}
+template<typename matrix_type>
+void inv_dis(const matrix_type& D,matrix_type& e)
+{
+    if(e.begin() != D.begin())
+        e = D;
+    unsigned int n = D.width();
+    for(unsigned int i = 0;i < e.size();++i)
+        e[i] = ((e[i] == 0 || e[i] == std::numeric_limits<float>::max()) ? 0:1.0/e[i]);
+    for(unsigned int i = 0,pos = 0;i < n;++i,pos += n+1)
+        e[pos] = 0;
+}
+
+template<typename vec_type>
+void output_node_measures(std::ostream& out,const char* name,const vec_type& data)
+{
+    out << name << "\t";
+    for(unsigned int i = 0;i < data.size();++i)
+        out << data[i] << "\t";
+    out << std::endl;
+}
+
+void ConnectivityMatrix::network_property(std::string& report)
+{
+    std::ostringstream out;
+    size_t n = matrix_value.width();
+    image::basic_image<unsigned char,2> binary_matrix(matrix_value.geometry());
+    image::basic_image<float,2> norm_matrix(matrix_value.geometry());
+
+    float max_value = *std::max_element(matrix_value.begin(),matrix_value.end());
+    float threshold = max_value*0.001;
+    for(unsigned int i = 0;i < binary_matrix.size();++i)
+    {
+        binary_matrix[i] = matrix_value[i] > threshold ? 1 : 0;
+        norm_matrix[i] = matrix_value[i]/max_value;
+    }
+    // density
+    size_t edge = std::accumulate(binary_matrix.begin(),binary_matrix.end(),size_t(0))/2;
+    out << "density=" << (float)edge*2.0/(float)(n*n-n) << std::endl;
+
+    // calculate degree
+    std::vector<float> degree(n);
+    for(unsigned int i = 0;i < n;++i)
+        degree[i] = std::accumulate(binary_matrix.begin()+i*n,binary_matrix.begin()+(i+1)*n,0.0);
+    // calculate strength
+    std::vector<float> nstrength(n),strength(n);
+    for(unsigned int i = 0;i < n;++i)
+    {
+        strength[i] = std::accumulate(matrix_value.begin()+i*n,matrix_value.begin()+(i+1)*n,0.0);
+        nstrength[i] = std::accumulate(norm_matrix.begin()+i*n,norm_matrix.begin()+(i+1)*n,0.0);
+    }
+    // calculate clustering coefficient
+    std::vector<float> cluster_co(n);
+    for(unsigned int i = 0,posi = 0;i < n;++i,posi += n)
+    if(degree[i] >= 2)
+    {
+        for(unsigned int j = 0,index = 0;j < n;++j)
+            for(unsigned int k = 0;k < n;++k,++index)
+                if(binary_matrix[posi + j] && binary_matrix[posi + k])
+                    cluster_co[i] += binary_matrix[index];
+        float d = degree[i];
+        cluster_co[i] /= (d*d-d);
+    }
+
+    // calculate weighted clustering coefficient
+    image::basic_image<float,2> cyc3(matrix_value.geometry());
+    std::vector<float> wcluster_co(n);
+    {
+        image::basic_image<float,2> root(norm_matrix);
+        for(unsigned int j = 0;j < root.size();++j)
+            root[j] = std::pow(root[j],1.0/3.0);
+        image::basic_image<float,2> t(root.geometry());
+        image::mat::product(root.begin(),root.begin(),t.begin(),image::dyndim(n,n),image::dyndim(n,n));
+        image::mat::product(t.begin(),root.begin(),cyc3.begin(),image::dyndim(n,n),image::dyndim(n,n));
+        for(unsigned int i = 0;i < strength.size();++i)
+        if(degree[i] >= 2)
+        {
+            float d = degree[i];
+            wcluster_co[i] = cyc3[i*(n+1)]/(d*d-d);
+        }
+    }
+
+    // transitivity
+    {
+        image::basic_image<float,2> norm_matrix2(norm_matrix.geometry());
+        image::basic_image<float,2> norm_matrix3(norm_matrix.geometry());
+        image::mat::product(norm_matrix.begin(),norm_matrix.begin(),norm_matrix2.begin(),image::dyndim(n,n),image::dyndim(n,n));
+        image::mat::product(norm_matrix2.begin(),norm_matrix.begin(),norm_matrix3.begin(),image::dyndim(n,n),image::dyndim(n,n));
+        out << "transitivity(binary)=" << image::mat::trace(norm_matrix3.begin(),image::dyndim(n,n)) /
+                (std::accumulate(norm_matrix2.begin(),norm_matrix2.end(),0.0) - image::mat::trace(norm_matrix2.begin(),image::dyndim(n,n))) << std::endl;
+        float k = 0;
+        for(unsigned int i = 0;i < n;++i)
+            k += degree[i]*(degree[i]-1);
+        out << "transitivity(weighted)=" << (k == 0 ? 0 : image::mat::trace(cyc3.begin(),image::dyndim(n,n))/k) << std::endl;
+    }
+
+    std::vector<float> eccentricity_bin(n),eccentricity_wei(n);
+
+    {
+        image::basic_image<float,2> dis_bin,dis_wei;
+        distance_bin(binary_matrix,dis_bin);
+        distance_wei(matrix_value,dis_wei);
+        unsigned int inf_count_bin = std::count(dis_bin.begin(),dis_bin.end(),std::numeric_limits<float>::max());
+        unsigned int inf_count_wei = std::count(dis_wei.begin(),dis_wei.end(),std::numeric_limits<float>::max());
+        std::replace(dis_bin.begin(),dis_bin.end(),std::numeric_limits<float>::max(),(float)0);
+        std::replace(dis_wei.begin(),dis_wei.end(),std::numeric_limits<float>::max(),(float)0);
+        out << "network_characteristic_path_length(binary)=" << std::accumulate(dis_bin.begin(),dis_bin.end(),0.0)/(n*n-inf_count_bin) << std::endl;
+        out << "network_characteristic_path_length(weighted)=" << std::accumulate(dis_wei.begin(),dis_wei.end(),0.0)/(n*n-inf_count_wei) << std::endl;
+        image::basic_image<float,2> invD;
+        inv_dis(dis_bin,invD);
+        out << "global_efficiency(binary)=" << std::accumulate(invD.begin(),invD.end(),0.0)/(n*n-inf_count_bin) << std::endl;
+        inv_dis(dis_wei,invD);
+        out << "global_efficiency(weighted)=" << std::accumulate(invD.begin(),invD.end(),0.0)/(n*n-inf_count_wei) << std::endl;
+
+        for(unsigned int i = 0,ipos = 0;i < n;++i,ipos += n)
+        {
+            eccentricity_bin[i] = *std::max_element(dis_bin.begin()+ipos,
+                                                 dis_bin.begin()+ipos+n);
+            eccentricity_wei[i] = *std::max_element(dis_wei.begin()+ipos,
+                                                 dis_wei.begin()+ipos+n);
+
+        }
+        out << "diameter_of_graph(binary)=" << *std::max_element(eccentricity_bin.begin(),eccentricity_bin.end()) <<std::endl;
+        out << "diameter_of_graph(weighted)=" << *std::max_element(eccentricity_wei.begin(),eccentricity_wei.end()) <<std::endl;
+
+
+        std::replace(eccentricity_bin.begin(),eccentricity_bin.end(),(float)0,std::numeric_limits<float>::max());
+        std::replace(eccentricity_wei.begin(),eccentricity_wei.end(),(float)0,std::numeric_limits<float>::max());
+        out << "radius_of_graph(binary)=" << *std::min_element(eccentricity_bin.begin(),eccentricity_bin.end()) <<std::endl;
+        out << "radius_of_graph(weighted)=" << *std::min_element(eccentricity_wei.begin(),eccentricity_wei.end()) <<std::endl;
+        std::replace(eccentricity_bin.begin(),eccentricity_bin.end(),std::numeric_limits<float>::max(),(float)0);
+        std::replace(eccentricity_wei.begin(),eccentricity_wei.end(),std::numeric_limits<float>::max(),(float)0);
+    }
+
+    std::vector<float> local_efficiency_bin(n);
+    //claculate local efficiency
+    {
+        for(unsigned int i = 0,ipos = 0;i < n;++i,ipos += n)
+        {
+            unsigned int new_n = std::accumulate(binary_matrix.begin()+ipos,
+                                                 binary_matrix.begin()+ipos+n,0);
+            if(new_n < 2)
+                continue;
+            image::basic_image<float,2> newA(image::geometry<2>(new_n,new_n));
+            unsigned int pos = 0;
+            for(unsigned int j = 0,index = 0;j < n;++j)
+                for(unsigned int k = 0;k < n;++k,++index)
+                    if(binary_matrix[ipos+j] && binary_matrix[ipos+k])
+                    {
+                        if(pos < newA.size())
+                            newA[pos] = binary_matrix[index];
+                        ++pos;
+                    }
+            image::basic_image<float,2> invD;
+            distance_bin(newA,invD);
+            inv_dis(invD,invD);
+            local_efficiency_bin[i] = std::accumulate(invD.begin(),invD.end(),0.0)/(new_n*new_n-new_n);
+        }
+    }
+
+    std::vector<float> local_efficiency_wei(n);
+    {
+
+        for(unsigned int i = 0,ipos = 0;i < n;++i,ipos += n)
+        {
+            unsigned int new_n = std::accumulate(binary_matrix.begin()+ipos,
+                                                 binary_matrix.begin()+ipos+n,0);
+            if(new_n < 2)
+                continue;
+            image::basic_image<float,2> newA(image::geometry<2>(new_n,new_n));
+            unsigned int pos = 0;
+            for(unsigned int j = 0,index = 0;j < n;++j)
+                for(unsigned int k = 0;k < n;++k,++index)
+                    if(binary_matrix[ipos+j] && binary_matrix[ipos+k])
+                    {
+                        if(pos < newA.size())
+                            newA[pos] = matrix_value[index];
+                        ++pos;
+                    }
+            std::vector<float> sw;
+            for(unsigned int j = 0;j < n;++j)
+                if(binary_matrix[ipos+j])
+                    sw.push_back(std::pow(matrix_value[ipos+j],1.0/3.0));
+            image::basic_image<float,2> invD;
+            distance_wei(newA,invD);
+            inv_dis(invD,invD);
+            float numer = 0.0;
+            for(unsigned int j = 0,index = 0;j < new_n;++j)
+                for(unsigned int k = 0;k < new_n;++k,++index)
+                    numer += std::pow(invD[index],1.0/3.0)*sw[j]*sw[k];
+            local_efficiency_wei[i] = numer/(new_n*new_n-new_n);
+        }
+    }
+
+
+    // calculate assortativity
+    {
+        std::vector<float> degi,degj;
+        for(unsigned int i = 0,index = 0;i < n;++i)
+            for(unsigned int j = 0;j < n;++j,++index)
+                if(j > i && binary_matrix[index])
+                {
+                    degi.push_back(degree[i]);
+                    degj.push_back(degree[j]);
+                }
+        float a = (std::accumulate(degi.begin(),degi.end(),0.0)+
+                   std::accumulate(degj.begin(),degj.end(),0.0))/2.0/degi.size();
+        float sum = image::vec::dot(degi.begin(),degi.end(),degj.begin())/degi.size();
+        image::square(degi);
+        image::square(degj);
+        float b = (std::accumulate(degi.begin(),degi.end(),0.0)+
+                   std::accumulate(degj.begin(),degj.end(),0.0))/2.0/degi.size();
+        a = a*a;
+        out << "assortativity_coefficient(binary) = " << (b == a ? 0 : ( sum  - a)/ ( b - a )) << std::endl;
+    }
+
+
+    // calculate assortativity
+    {
+        std::vector<float> degi,degj;
+        for(unsigned int i = 0,index = 0;i < n;++i)
+            for(unsigned int j = 0;j < n;++j,++index)
+                if(j > i && binary_matrix[index])
+                {
+                    degi.push_back(strength[i]);
+                    degj.push_back(strength[j]);
+                }
+        float a = (std::accumulate(degi.begin(),degi.end(),0.0)+
+                   std::accumulate(degj.begin(),degj.end(),0.0))/2.0/degi.size();
+        float sum = image::vec::dot(degi.begin(),degi.end(),degj.begin())/degi.size();
+        image::square(degi);
+        image::square(degj);
+        float b = (std::accumulate(degi.begin(),degi.end(),0.0)+
+                   std::accumulate(degj.begin(),degj.end(),0.0))/2.0/degi.size();
+        out << "assortativity_coefficient(weighted) = " << ( sum  - a*a)/ ( b - a*a ) << std::endl;
+    }
+    // betweenness
+    std::vector<float> betweenness_bin(n);
+    {
+
+        image::basic_image<unsigned int,2> NPd(binary_matrix),NSPd(binary_matrix),NSP(binary_matrix);
+        for(unsigned int i = 0,dg = 0;i < n;++i,dg += n+1)
+            NSP[dg] = 1;
+        image::basic_image<unsigned int,2> L(NSP);
+        unsigned int d = 2;
+        for(;std::find(NSPd.begin(),NSPd.end(),1) != NSPd.end();++d)
+        {
+            image::basic_image<unsigned int,2> t(binary_matrix.geometry());
+            image::mat::product(NPd.begin(),binary_matrix.begin(),t.begin(),image::dyndim(n,n),image::dyndim(n,n));
+            t.swap(NPd);
+            for(unsigned int i = 0;i < L.size();++i)
+            {
+                NSPd[i] = (L[i] == 0) ? NPd[i]:0;
+                NSP[i] += NSPd[i];
+                L[i] += (NSPd[i] == 0) ? 0:d;
+            }
+        }
+
+        for(unsigned int i = 0,dg = 0;i < n;++i,dg += n+1)
+            L[dg] = 0;
+        std::replace(NSP.begin(),NSP.end(),0,1);
+        image::basic_image<float,2> DP(binary_matrix.geometry());
+        for(--d;d >= 2;--d)
+        {
+            image::basic_image<float,2> t(DP),DPd1(binary_matrix.geometry());
+            t += 1.0;
+            for(unsigned int i = 0;i < t.size();++i)
+                if(L[i] != d)
+                    t[i] = 0;
+                else
+                    t[i] /= NSP[i];
+            image::mat::product(t.begin(),binary_matrix.begin(),DPd1.begin(),image::dyndim(n,n),image::dyndim(n,n));
+            for(unsigned int i = 0;i < DPd1.size();++i)
+                if(L[i] != d-1)
+                    DPd1[i] = 0;
+                else
+                    DPd1[i] *= NSP[i];
+            DP += DPd1;
+        }
+
+        for(unsigned int i = 0,index = 0;i < n;++i)
+            for(unsigned int j = 0;j < n;++j,++index)
+                betweenness_bin[j] += DP[index];
+    }
+    std::vector<float> betweenness_wei(n);
+    {
+
+        for(unsigned int i = 0;i < n;++i)
+        {
+            std::vector<float> D(n),NP(n);
+            std::fill(D.begin(),D.end(),std::numeric_limits<float>::max());
+            D[i] = 0;
+            NP[i] = 1;
+            std::vector<unsigned char> S(n),Q(n);
+            int q = n-1;
+            std::fill(S.begin(),S.end(),1);
+            image::basic_image<unsigned char,2> P(binary_matrix.geometry());
+            image::basic_image<float,2> G1(matrix_value);
+            std::vector<unsigned int> V;
+            V.push_back(i);
+            while(1)
+            {
+                for(unsigned int j = 0,jpos = 0;j < n;++j,jpos += n)
+                    for(unsigned int k = 0;k < V.size();++k)
+                        G1[jpos+V[k]] = 0;
+
+                for(unsigned int k = 0;k < V.size();++k)
+                {
+                    S[V[k]] = 0;
+                    Q[q--]=V[k];
+                    unsigned int v_rowk = V[k]*n;
+                    for(unsigned int w = 0,w_row = 0;w < n;++w, w_row += n)
+                        if(G1[v_rowk+w] > 0)
+                        {
+                            float Duw=D[V[k]]+G1[v_rowk+w];
+                            if(Duw < D[w])
+                            {
+                                D[w]=Duw;
+                                NP[w]=NP[V[k]];
+                                std::fill(P.begin()+w_row,P.begin()+w_row+n,0);
+                                P[w_row + V[k]] = 1;
+                            }
+                            else
+                            if(Duw==D[w])
+                            {
+                                NP[w]+=NP[V[k]];
+                                P[w_row+V[k]]=1;
+                            }
+                        }
+                }
+                if(std::find(S.begin(),S.end(),1) == S.end())
+                    break;
+                float minD = std::numeric_limits<float>::max();
+                for(unsigned int j = 0;j < n;++j)
+                    if(S[j] && minD > D[j])
+                        minD = D[j];
+                if(minD == std::numeric_limits<float>::max())
+                {
+                    for(unsigned int j = 0,k = 0;j < n;++j)
+                        if(D[j] == std::numeric_limits<float>::max())
+                            Q[k++] = j;
+                    break;
+                }
+                V.clear();
+                for(unsigned int j = 0;j < n;++j)
+                    if(D[j] == minD)
+                        V.push_back(j);
+            }
+
+            std::vector<float> DP(n);
+            for(unsigned int j = 0;j < n-1;++j)
+            {
+                unsigned int w=Q[j];
+                unsigned int w_row = w*n;
+                betweenness_wei[w] += DP[w];
+                for(unsigned int k = 0;k < n;++k)
+                    if(P[w_row+k])
+                        DP[k] += (1.0+DP[w])*NP[k]/NP[w];
+            }
+        }
+    }
+
+
+    std::vector<float> eigenvector_centrality_bin(n),eigenvector_centrality_wei(n);
+    {
+        image::basic_image<float,2> bin;
+        bin = binary_matrix;
+        std::vector<float> V(binary_matrix.size()),d(n);
+        image::mat::eigen_decomposition_sym(bin.begin(),V.begin(),d.begin(),image::dyndim(n,n));
+        std::copy(V.begin(),V.begin()+n,eigenvector_centrality_bin.begin());
+        image::mat::eigen_decomposition_sym(matrix_value.begin(),V.begin(),d.begin(),image::dyndim(n,n));
+        std::copy(V.begin(),V.begin()+n,eigenvector_centrality_wei.begin());
+    }
+
+    std::vector<float> pagerank_centrality_bin(n),pagerank_centrality_wei(n);
+    {
+        float d = 0.85;
+        std::vector<float> deg_bin(degree.begin(),degree.end()),deg_wei(strength.begin(),strength.end());
+        std::replace(deg_bin.begin(),deg_bin.end(),0.0,1.0);
+        std::replace(deg_wei.begin(),deg_wei.end(),0.0,1.0);
+
+        image::basic_image<float,2> B_bin(binary_matrix.geometry()),B_wei(binary_matrix.geometry());
+        for(unsigned int i = 0,index = 0;i < n;++i)
+            for(unsigned int j = 0;j < n;++j,++index)
+            {
+                B_bin[index] = -d*((float)binary_matrix[index])*1.0/deg_bin[j];
+                B_wei[index] = -d*matrix_value[index]*1.0/deg_wei[j];
+                if(i == j)
+                {
+                    B_bin[index] += 1.0;
+                    B_wei[index] += 1.0;
+                }
+            }
+        std::vector<unsigned int> pivot(n);
+        std::vector<float> b(n);
+        std::fill(b.begin(),b.end(),(1.0-d)/n);
+        image::mat::lu_decomposition(B_bin.begin(),pivot.begin(),image::dyndim(n,n));
+        image::mat::lu_solve(B_bin.begin(),pivot.begin(),b.begin(),pagerank_centrality_bin.begin(),image::dyndim(n,n));
+        image::mat::lu_decomposition(B_wei.begin(),pivot.begin(),image::dyndim(n,n));
+        image::mat::lu_solve(B_wei.begin(),pivot.begin(),b.begin(),pagerank_centrality_wei.begin(),image::dyndim(n,n));
+
+        float sum_bin = std::accumulate(pagerank_centrality_bin.begin(),pagerank_centrality_bin.end(),0.0);
+        float sum_wei = std::accumulate(pagerank_centrality_wei.begin(),pagerank_centrality_wei.end(),0.0);
+
+        if(sum_bin != 0)
+            image::divide_constant(pagerank_centrality_bin,sum_bin);
+        if(sum_wei != 0)
+            image::divide_constant(pagerank_centrality_wei,sum_wei);
+    }
+    output_node_measures(out,"network_measures",region_name);
+    output_node_measures(out,"degree(binary)",degree);
+    output_node_measures(out,"strength(weighted)",strength);
+    output_node_measures(out,"cluster_coef(binary)",cluster_co);
+    output_node_measures(out,"cluster_coef(weighted)",wcluster_co);
+    output_node_measures(out,"local_efficiency(binary)",local_efficiency_bin);
+    output_node_measures(out,"local_efficiency(weighted)",local_efficiency_wei);
+    output_node_measures(out,"betweenness_centrality(binary)",betweenness_bin);
+    output_node_measures(out,"betweenness_centrality(weighted)",betweenness_wei);
+    output_node_measures(out,"eigenvector_centrality(binary)",eigenvector_centrality_bin);
+    output_node_measures(out,"eigenvector_centrality(weighted)",eigenvector_centrality_wei);
+    output_node_measures(out,"pagerank_centrality(binary)",pagerank_centrality_bin);
+    output_node_measures(out,"pagerank_centrality(weighted)",pagerank_centrality_wei);
+    output_node_measures(out,"eccentricity(binary)",eccentricity_bin);
+    output_node_measures(out,"eccentricity(weighted)",eccentricity_wei);
+
+
+
+
+    report = out.str();
+
+
+
 
 }

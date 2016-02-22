@@ -54,7 +54,11 @@ public:
         bool load_from_file(const char* file_name,bool append = false);
 
         bool save_tracts_to_file(const char* file_name);
-        bool save_vrml(const char* file_name,int tract_color_style,float tube_diameter,unsigned char tract_tube_detail);
+        void save_vrml(const char* file_name,
+                       unsigned char tract_style,
+                       unsigned char tract_color_style,
+                       float tube_diameter,
+                       unsigned char tract_tube_detail);
         bool save_transformed_tracts_to_file(const char* file_name,const float* transform,bool end_point);
         bool save_data_to_file(const char* file_name,const std::string& index_name);
         void save_end_points(const char* file_name) const;
@@ -142,6 +146,7 @@ public:
     void save_to_image(image::color_image& cm);
     void save_to_file(const char* file_name);
     bool calculate(TractModel& tract_model,std::string matrix_value_type,bool use_end_only);
+    void network_property(std::string& report);
 };
 
 

@@ -128,6 +128,10 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
     QString out = QString("%1 %2 was used as the brain parcellation, and the connectivity matrix was calculated by using %3 of the connecting tracks.").
             arg(method).arg(ui->region_list->currentText()).arg(ui->matrix_value->currentText());
     ui->report->setText(out);
+
+    std::string report;
+    data.network_property(report);
+    ui->network_measures->setText(report.c_str());
 }
 
 
@@ -143,7 +147,8 @@ void connectivity_matrix_dialog::on_zoom_valueChanged(double arg1)
     scene.addRect(0, 0, view_image.width(),view_image.height(),QPen(),view_image);
 }
 
-void connectivity_matrix_dialog::on_save_as_clicked()
+
+void connectivity_matrix_dialog::on_save_matrix_clicked()
 {
     QString filename = QFileDialog::getSaveFileName(
                 this,"Save as",cur_tracking_window->tractWidget->item(cur_tracking_window->tractWidget->currentRow(),0)->text() + "_" +
@@ -163,4 +168,16 @@ void connectivity_matrix_dialog::on_save_as_clicked()
     }
 }
 
-
+void connectivity_matrix_dialog::on_save_network_property_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                this,"Save as",cur_tracking_window->tractWidget->item(cur_tracking_window->tractWidget->currentRow(),0)->text() + "_" +
+                ui->region_list->currentText() + "_net.txt",
+                "Text File (*.txt);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    std::string report;
+    data.network_property(report);
+    std::ofstream out(filename.toStdString().c_str());
+    out << report;
+}
