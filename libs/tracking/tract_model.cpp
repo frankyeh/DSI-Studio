@@ -1980,7 +1980,7 @@ void ConnectivityMatrix::network_property(std::string& report)
     {
         image::basic_image<float,2> root(norm_matrix);
         for(unsigned int j = 0;j < root.size();++j)
-            root[j] = std::pow(root[j],1.0/3.0);
+            root[j] = std::pow(root[j],(float)(1.0/3.0));
         image::basic_image<float,2> t(root.geometry());
         image::mat::product(root.begin(),root.begin(),t.begin(),image::dyndim(n,n),image::dyndim(n,n));
         image::mat::product(t.begin(),root.begin(),cyc3.begin(),image::dyndim(n,n),image::dyndim(n,n));
@@ -2092,14 +2092,14 @@ void ConnectivityMatrix::network_property(std::string& report)
             std::vector<float> sw;
             for(unsigned int j = 0;j < n;++j)
                 if(binary_matrix[ipos+j])
-                    sw.push_back(std::pow(matrix_value[ipos+j],1.0/3.0));
+                    sw.push_back(std::pow(matrix_value[ipos+j],(float)(1.0/3.0)));
             image::basic_image<float,2> invD;
             distance_wei(newA,invD);
             inv_dis(invD,invD);
             float numer = 0.0;
             for(unsigned int j = 0,index = 0;j < new_n;++j)
                 for(unsigned int k = 0;k < new_n;++k,++index)
-                    numer += std::pow(invD[index],1.0/3.0)*sw[j]*sw[k];
+                    numer += std::pow(invD[index],(float)(1.0/3.0))*sw[j]*sw[k];
             local_efficiency_wei[i] = numer/(new_n*new_n-new_n);
         }
     }
