@@ -89,7 +89,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->NumOfFibers->setValue(settings.value("rec_num_fiber",5).toInt());
     ui->ODFDef->setCurrentIndex(settings.value("rec_gqi_def",0).toInt());
     ui->reg_method->setCurrentIndex(settings.value("rec_reg_method",0).toInt());
-    ui->interpo_method->setCurrentIndex(settings.value("rec_interpo_method",2).toInt());
+    ui->interpo_method->setCurrentIndex(settings.value("qsdr_interpo_method",2).toInt());
 
 
     ui->diffusion_sampling->setValue(settings.value("rec_gqi_sampling",1.25).toDouble());
@@ -267,7 +267,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     settings.setValue("rec_num_fiber",ui->NumOfFibers->value());
     settings.setValue("rec_gqi_def",ui->ODFDef->currentIndex());
     settings.setValue("rec_reg_method",ui->reg_method->currentIndex());
-    settings.setValue("rec_interpo_method",ui->interpo_method->currentIndex());
+    settings.setValue("qsdr_interpo_method",ui->interpo_method->currentIndex());
 
     settings.setValue("odf_order",ui->ODFDim->currentIndex());
     settings.setValue("rec_record_odf",ui->RecordODF->isChecked() ? 1 : 0);

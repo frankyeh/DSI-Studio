@@ -919,10 +919,7 @@ public:
     {
         if (!mat_reader.load_from_file(file_name) || prog_aborted())
         {
-            if(prog_aborted())
-                error_msg = "loading process aborted";
-            else
-                error_msg = "cannot open file";
+            error_msg = prog_aborted() ? "loading process aborted" : "cannot open file";
             return false;
         }
         return load_from_mat();

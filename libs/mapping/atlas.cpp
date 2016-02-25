@@ -62,6 +62,7 @@ void atlas::load_from_file(const char* file_name)
         }
     }
     else
+    if(!I.empty())
     {
         std::vector<unsigned short> hist(1+*std::max_element(I.begin(),I.end()));
         for(int index = 0;index < I.size();++index)

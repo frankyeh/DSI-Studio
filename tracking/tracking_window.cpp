@@ -409,12 +409,25 @@ bool tracking_window::can_convert(void)
         return false;
     if(!mi3.get())
     {
+        begin_prog("nonlinear registration");
         image::basic_image<float,3> from = slice.source_images;
         image::filter::gaussian(from);
         from -= image::segmentation::otsu_threshold(from);
         image::lower_threshold(from,0.0);
+        check_prog(0,3);
         mi3.reset(new manual_alignment(this,from,handle->vs,fa_template_imp.I,fa_template_imp.vs,image::reg::affine,0/*correlation*/));
-        QMessageBox::information(this,"Running","The registration started. You may need to wait until it finish running (shown in the bottom status bar).",0);
+        while(!prog_aborted())
+        {
+            if(mi3->data.progress == 0)
+                check_prog(1,3);
+            if(mi3->data.progress == 1)
+                check_prog(2,3);
+            if(mi3->data.progress == 2)
+            {
+                check_prog(3,3);
+                break;
+            }
+        }
     }
     mi3->update_affine();
     return true;
@@ -462,16 +475,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
         return false;
 
     QString status;
-    if(mi3.get())
-    {
-        if(mi3->data.progress == 0)
-            status = "Running linear registration... ";
-        if(mi3->data.progress == 1)
-            status = "Running nonlinear registration... ";
-        if(mi3->data.progress == 2)
-            status = "Registration done. ";
-    }
-    status += QString("(%1,%2,%3) ").arg(std::floor(pos[0]*10.0+0.5)/10.0)
+    status = QString("(%1,%2,%3) ").arg(std::floor(pos[0]*10.0+0.5)/10.0)
             .arg(std::floor(pos[1]*10.0+0.5)/10.0)
             .arg(std::floor(pos[2]*10.0+0.5)/10.0);
 

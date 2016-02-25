@@ -7,7 +7,7 @@
 #endif
 #include "image/image.hpp"
 #include "prog_interface_static_link.h"
-
+extern bool prog_aborted_;
 class gz_istream{
     size_t size_;
     std::ifstream in;
@@ -32,7 +32,7 @@ public:
     template<typename char_type>
     bool open(const char_type* file_name)
     {
-
+        prog_aborted_ = false;
         in.open(file_name,std::ios::binary);
         unsigned int gz_size = 0;
         if(in)

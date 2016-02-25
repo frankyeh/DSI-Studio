@@ -151,7 +151,7 @@ public:
         }
         for(unsigned int voxel_index = thread_index;voxel_index < mask.size();voxel_index += thread_count)
         {
-            if(prog_aborted())
+            if(!thread_index && prog_aborted())
                 return;
             if (!mask[voxel_index])
                 continue;
