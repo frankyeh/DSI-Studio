@@ -185,6 +185,7 @@ bool fib_data::individual_vs_individual(FibData* handle,const char* file_name1,c
     if(!compare(handle,ptr1,ptr2))
         return false;
     add_mapping_for_tracking(handle,"inc","dec");
+    return true;
 }
 
 void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& tracks,float seed_ratio, unsigned int thread_count)
