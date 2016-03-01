@@ -352,9 +352,22 @@ public:
     void calculate_mask(void)
     {
         image::threshold(voxel.dwi_sum,mask,image::segmentation::otsu_threshold(voxel.dwi_sum)*0.8,1,0);
-        image::morphology::recursive_smoothing(mask,10);
-        image::morphology::defragment(mask);
-        image::morphology::recursive_smoothing(mask,10);
+        if(voxel.dwi_sum.depth() < 10)
+        {
+            for(unsigned int i = 0;i < mask.depth();++i)
+            {
+                image::pointer_image<unsigned char,2> I(&mask[0]+i*mask.plane_size(),image::geometry<2>(mask.width(),mask.height()));
+                image::morphology::defragment(I);
+                image::morphology::recursive_smoothing(I,10);
+                image::morphology::defragment(I);
+            }
+        }
+        else
+        {
+            image::morphology::recursive_smoothing(mask,10);
+            image::morphology::defragment(mask);
+            image::morphology::recursive_smoothing(mask,10);
+        }
     }
     void save_to_file(gz_mat_write& mat_writer)
     {
