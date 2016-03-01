@@ -159,9 +159,23 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
     roi_image_buf = &*roi_image.begin();
     if(!has_transform)
     {
-        from = slice.source_images;
-        from_vs = slice.voxel_size;
-        thread.reset(new boost::thread(&CustomSliceModel::argmin,this,image::reg::rigid_body));
+        if(slice.source_images.depth() < 10) // 2d assume FOV is the same
+        {
+            transform.identity();
+            invT.identity();
+            invT[0] = (float)source_images.width()/(float)slice.source_images.width();
+            invT[5] = (float)source_images.height()/(float)slice.source_images.height();
+            invT[10] = (float)source_images.depth()/(float)slice.source_images.depth();
+            invT[15] = 1.0;
+            transform = image::inverse(invT);
+            update_roi();
+        }
+        else
+        {
+            from = slice.source_images;
+            from_vs = slice.voxel_size;
+            thread.reset(new boost::thread(&CustomSliceModel::argmin,this,image::reg::rigid_body));
+        }
     }
     else
         update_roi();
