@@ -10,7 +10,7 @@ class Dwi2Tensor : public BaseProcess
     float get_fa(float l1,float l2,float l3)
     {
         float ll = (l1+l2+l3)/3.0;
-        if (ll == 0.0)
+        if (ll == 0.0 || l2 == 0.0 || l3 == 0.0)
             return 0.0;
         float ll1 = l1-ll;
         float ll2 = l2-ll;
@@ -19,8 +19,8 @@ class Dwi2Tensor : public BaseProcess
     }
 private:
     //math::dynamic_matrix<float> iKtKKt;
-    std::vector<double> iKtK; // 6-by-6
-    std::vector<unsigned int> iKtK_pivot;
+    std::vector<std::vector<double> > iKtK; // 6-by-6
+    std::vector<std::vector<unsigned int> > iKtK_pivot;
     std::vector<double> Kt;
     unsigned int b_count;
 public:
@@ -87,11 +87,22 @@ public:
                     Kt[index] = qq[qmap[col]]*qweighting[col];
             }
         }
-        iKtK.resize(6*6);
-        iKtK_pivot.resize(6);
-        image::mat::product_transpose(Kt.begin(),Kt.begin(),iKtK.begin(),
-                                       image::dyndim(6,b_count),image::dyndim(6,b_count));
-        image::mat::lu_decomposition(iKtK.begin(),iKtK_pivot.begin(),image::dyndim(6,6));
+        iKtK.resize(20);
+        iKtK_pivot.resize(iKtK.size());
+        for(unsigned int i = 0;i < iKtK.size();++i)
+        {
+            iKtK[i].resize(6*6);
+            iKtK_pivot[i].resize(6);
+            image::mat::product_transpose(Kt.begin(),Kt.begin(),iKtK[i].begin(),
+                                           image::dyndim(6,b_count),image::dyndim(6,b_count));
+            if(i)
+            {
+                double w = 0.005*std::pow(2.0,(double)i)*(*std::max_element(iKtK[i].begin(),iKtK[i].end()));
+                for(unsigned int j = 0;j < 36;j += 7)
+                    iKtK[i][j] += w;
+            }
+            image::mat::lu_decomposition(iKtK[i].begin(),iKtK_pivot[i].begin(),image::dyndim(6,6));
+        }
     }
 public:
     virtual void run(Voxel& voxel, VoxelData& data)
@@ -107,16 +118,20 @@ public:
         double KtS[6],tensor_param[6];
         double tensor[9];
         double V[9],d[3];
+        for(unsigned int i = 0;i < iKtK.size();++i)
+        {
+            image::mat::product(Kt.begin(),signal.begin(),KtS,image::dyndim(6,b_count),image::dyndim(b_count,1));
+            image::mat::lu_solve(iKtK[i].begin(),iKtK_pivot[i].begin(),KtS,tensor_param,image::dyndim(6,6));
 
-        image::mat::product(Kt.begin(),signal.begin(),KtS,image::dyndim(6,b_count),image::dyndim(b_count,1));
-        image::mat::lu_solve(iKtK.begin(),iKtK_pivot.begin(),KtS,tensor_param,image::dyndim(6,6));
 
+            unsigned int tensor_index[9] = {0,3,4,3,1,5,4,5,2};
+            for (unsigned int index = 0; index < 9; ++index)
+                tensor[index] = tensor_param[tensor_index[index]];
 
-        unsigned int tensor_index[9] = {0,3,4,3,1,5,4,5,2};
-        for (unsigned int index = 0; index < 9; ++index)
-            tensor[index] = tensor_param[tensor_index[index]];
-
-        image::mat::eigen_decomposition_sym(tensor,V,d,image::dim<3,3>());
+            image::mat::eigen_decomposition_sym(tensor,V,d,image::dim<3,3>());
+            if(d[0] > 0.0 && d[1] > 0.0 && d[2] > 0.0)
+                break;
+        }
         if (d[1] < 0.0)
         {
             d[1] = 0.0;
