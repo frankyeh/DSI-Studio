@@ -1707,8 +1707,10 @@ void ConnectivityMatrix::set_atlas(atlas& data,const image::basic_image<image::v
 bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_value_type,bool use_end_only)
 {
     if(regions.size() == 0)
+    {
+        error_msg = "No region information. Please assign regions";
         return false;
-
+    }
     tract_model.get_passing_list(regions,passing_list,use_end_only);
     if(matrix_value_type == "trk")
     {
@@ -1814,8 +1816,11 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
     }
     std::vector<std::vector<float> > data;
     if(!tract_model.get_tracts_data(matrix_value_type,data) || data.empty())
+    {
+        error_msg = "Cannot quantify matrix value using ";
+        error_msg += matrix_value_type;
         return false;
-
+    }
     std::vector<std::vector<float> > sum(regions.size());
     for(unsigned int i = 0;i < sum.size();++i)
         sum[i].resize(regions.size());

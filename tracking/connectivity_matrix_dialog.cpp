@@ -1,4 +1,5 @@
 #include <QGraphicsTextItem>
+#include <QMessageBox>
 #include <QMouseEvent>
 #include <QFileDialog>
 #include "connectivity_matrix_dialog.h"
@@ -26,11 +27,15 @@ connectivity_matrix_dialog::connectivity_matrix_dialog(tracking_window *parent,Q
     ui->region_list->addItem("ROIs");
     for(int index = 0;index < atlas_list.size();++index)
         ui->region_list->addItem(atlas_list[index].name.c_str());
-    if(cur_tracking_window->regionWidget->regions.size() > 1)
-        ui->region_list->setCurrentIndex(0);
-    else
-        if(!atlas_list.empty())
+
+    if(!atlas_list.empty())
         ui->region_list->setCurrentIndex(1);
+    for(unsigned int index = 0;index < cur_tracking_window->regionWidget->regions.size();++index)
+        if(cur_tracking_window->regionWidget->item(index,0)->checkState() == Qt::Checked)
+        {
+            ui->region_list->setCurrentIndex(0);
+            break;
+        }
     on_recalculate_clicked();
 
 }
@@ -92,6 +97,7 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
 
     if(ui->region_list->currentIndex() == 0)
         {
+            cm.clear();
             data.regions.clear();
             data.region_name.clear();
             for(unsigned int index = 0;index < cur_tracking_window->regionWidget->regions.size();++index)
@@ -104,25 +110,35 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
                 data.regions.push_back(cur_region);
                 data.region_name.push_back(std::string(cur_tracking_window->regionWidget->item(index,0)->text().toLocal8Bit().begin()));
             }
+
+            if(data.regions.empty())
+            {
+                QMessageBox::information(this,"Error","No checked ROI in the region list. Please assign/check ROIs.");
+                return;
+            }
         }
     else
-    {
-        if(!cur_tracking_window->can_convert())
-            return;
-        image::basic_image<image::vector<3,float>,3 > mni_position(geo);
-        const FiberDirection& fib = cur_tracking_window->handle->fib;
-        for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))
-            if(fib.getFA(index.index(),0) > 0)
-            {
-                image::vector<3,float> mni((const unsigned int*)index.begin());
-                cur_tracking_window->subject2mni(mni);
-                mni_position[index.index()] = mni;
-            }
-        data.set_atlas(atlas_list[ui->region_list->currentIndex()-1],mni_position);
-    }
-    data.calculate(*(cur_tracking_window->tractWidget->tract_models[cur_tracking_window->tractWidget->currentRow()]),
+        {
+            if(!cur_tracking_window->can_convert())
+                return;
+            image::basic_image<image::vector<3,float>,3 > mni_position(geo);
+            const FiberDirection& fib = cur_tracking_window->handle->fib;
+            for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))
+                if(fib.getFA(index.index(),0) > 0)
+                {
+                    image::vector<3,float> mni((const unsigned int*)index.begin());
+                    cur_tracking_window->subject2mni(mni);
+                    mni_position[index.index()] = mni;
+                }
+            data.set_atlas(atlas_list[ui->region_list->currentIndex()-1],mni_position);
+        }
+    if(!data.calculate(*(cur_tracking_window->tractWidget->tract_models[cur_tracking_window->tractWidget->currentRow()]),
                    ui->matrix_value->currentText().toLocal8Bit().begin(),
-                   ui->end_only->currentIndex());
+                   ui->end_only->currentIndex()))
+    {
+        QMessageBox::information(this,"Error",data.error_msg.c_str());
+        return;
+    }
     data.save_to_image(cm);
     on_zoom_valueChanged(0);
     QString out = QString("%1 %2 was used as the brain parcellation, and the connectivity matrix was calculated by using %3 of the connecting tracks.").

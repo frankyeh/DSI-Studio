@@ -68,7 +68,7 @@ Region/Light Ambient/region_light_ambient/int/0
 Region/Emission/region_emission/int/0
 Surface/Color/surface_color/color/11184800
 Surface/Opacity/surface_alpha/float:0:1:0.1:2/0.5
-Surface/Mesh Rendering/surface_mesh_smoothed/Original:Smoothed:Smoothed2/0
+Surface/Mesh Rendering/surface_mesh_smoothed/Original:Smoothed:Smoothed2/1
 Surface/Blend Func1/surface_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
 Surface/Blend Func2/surface_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
 Surface/Light/surface_light_option/One source:Two sources:Three sources/2

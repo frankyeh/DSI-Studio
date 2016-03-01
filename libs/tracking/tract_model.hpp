@@ -141,6 +141,7 @@ public:
 public:
     std::vector<std::vector<image::vector<3,short> > > regions;
     std::vector<std::string> region_name;
+    std::string error_msg;
     void set_atlas(atlas& data,const image::basic_image<image::vector<3,float>,3 >& mni_position);
 public:
     void save_to_image(image::color_image& cm);
