@@ -761,7 +761,7 @@ void reconstruction_window::on_actionRotate_triggered()
         return;
     }
     in.get_voxel_size(vs.begin());
-    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,handle->voxel.vs,ref,vs,image::reg::rigid_body));
+    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,handle->voxel.vs,ref,vs,image::reg::rigid_body,1/*mutual info*/));
     manual->timer->start();
     if(manual->exec() != QDialog::Accepted)
         return;
@@ -996,10 +996,11 @@ bool add_other_image(ImageModel* handle,QString name,QString filename,bool full_
         }
     if(!has_registered && ref.geometry() != handle->voxel.dim)
     {
+        in.get_voxel_size(vs.begin());
+
         if(full_auto)
         {
             std::cout << "adding " << filename.toStdString() << " as " << name.toStdString() << std::endl;
-            in.get_voxel_size(vs.begin());
             image::basic_image<float,3> from(handle->voxel.dwi_sum),to(ref);
             image::normalize(from,1.0);
             image::normalize(to,1.0);
@@ -1009,7 +1010,7 @@ bool add_other_image(ImageModel* handle,QString name,QString filename,bool full_
         }
         else
         {
-            std::auto_ptr<manual_alignment> manual(new manual_alignment(0,handle->voxel.dwi_sum,handle->voxel.vs,ref,vs,image::reg::rigid_body));
+            std::auto_ptr<manual_alignment> manual(new manual_alignment(0,handle->voxel.dwi_sum,handle->voxel.vs,ref,vs,image::reg::rigid_body,1/*mutual info*/));
             manual->timer->start();
             if(manual->exec() != QDialog::Accepted)
                 return false;
