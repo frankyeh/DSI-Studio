@@ -989,7 +989,7 @@ bool add_other_image(ImageModel* handle,QString name,QString filename,bool full_
     image::transformation_matrix<float> affine;
     bool has_registered = false;
     for(unsigned int index = 0;index < handle->voxel.other_image.size();++index)
-        if(ref.dimension == handle->voxel.other_image[index].dimension)
+        if(ref.geometry() == handle->voxel.other_image[index].geometry())
         {
             affine = handle->voxel.other_image_affine[index];
             has_registered = true;
@@ -1047,3 +1047,36 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
 }
 
 
+
+void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(
+            this,"Open Images files",absolute_path,
+            "Images (*.nii *nii.gz);;All files (*)" );
+    if( filename.isEmpty())
+        return;
+    image::basic_image<float,3> ref;
+    image::vector<3> vs;
+    gz_nifti in;
+    if(!in.load_from_file(filename.toLocal8Bit().begin()) || !in.toLPS(ref))
+    {
+        QMessageBox::information(this,"Error","Not a valid nifti file",0);
+        return;
+    }
+    in.get_voxel_size(vs.begin());
+    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,handle->voxel.vs,ref,vs,image::reg::rigid_body,1/*mutual info*/));
+    manual->timer->start();
+    if(manual->exec() != QDialog::Accepted)
+        return;
+
+    begin_prog("rotating");
+    handle->rotate(ref.geometry(),manual->data.iT);
+    handle->calculate_mask();
+    handle->voxel.vs = vs;
+    image::pointer_image<unsigned short,3> I = image::make_image(handle->voxel.dim,(unsigned short*)handle->dwi_data[0]);
+    ref *= (float)(*std::max_element(I.begin(),I.end()))/(*std::max_element(ref.begin(),ref.end()));
+    std::copy(ref.begin(),ref.end(),I.begin());
+    update_image();
+    update_dimension();
+    on_SlicePos_valueChanged(ui->SlicePos->value());
+}

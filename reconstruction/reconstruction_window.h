@@ -99,6 +99,7 @@ private slots:
     void on_add_t1t2_clicked();
     void on_actionManual_Rotation_triggered();
     void on_negate_clicked();
+    void on_actionReplace_b0_by_T2W_image_triggered();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

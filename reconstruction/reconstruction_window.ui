@@ -1694,6 +1694,7 @@
     <addaction name="actionRotate"/>
     <addaction name="actionTrim_image"/>
     <addaction name="actionManual_Rotation"/>
+    <addaction name="actionReplace_b0_by_T2W_image"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menu_Edit"/>
@@ -1761,6 +1762,11 @@
   <action name="actionManual_Rotation">
    <property name="text">
     <string>Manual rotation...</string>
+   </property>
+  </action>
+  <action name="actionReplace_b0_by_T2W_image">
+   <property name="text">
+    <string>Replace b0 by T2W image...</string>
    </property>
   </action>
  </widget>
