@@ -112,7 +112,7 @@ bool atl_get_mapping(gz_mat_read& mat_reader,
         image::transformation_matrix<float> T(data.arg,from.geometry(),voxel_size,fa_template_imp.I.geometry(),fa_template_imp.vs);
         mapping.resize(from.geometry());
         for(image::pixel_index<3> index;from.geometry().is_valid(index);index.next(from.geometry()))
-            if(from[index.index()] > 0)
+            if(fa0[index.index()] > 0)
             {
                 image::vector<3,float> pos;
                 T(index,pos);// from -> new_from
