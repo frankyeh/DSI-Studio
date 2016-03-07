@@ -5,6 +5,7 @@
 #include <QTreeWidget>
 #include <QGraphicsScene>
 #include <QDockWidget>
+#include <QTextBrowser>
 #include <image/image.hpp>
 #include <vector>
 #include "SliceModel.h"
@@ -92,6 +93,7 @@ public:
     QString get_save_file_name(QString title,QString file_name,QString file_type);
     void float3dwindow(int w,int h);
     void initialize_tracking_index(int index);
+    void report(QString string);
 public slots:
     void on_SagView_clicked();
     void on_CorView_clicked();
@@ -143,7 +145,6 @@ private slots:
     void on_actionRestore_Settings_triggered();
     void on_zoom_in_clicked();
     void on_zoom_out_clicked();
-    void on_actionView_FIB_Content_triggered();
     void on_actionQuality_Assessment_triggered();
     void on_actionAuto_Rotate_triggered(bool checked);
     void on_auto_rotate_toggled(bool checked);

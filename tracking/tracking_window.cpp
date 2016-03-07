@@ -65,7 +65,7 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         ui->renderingLayout->addWidget(renderWidget = new RenderingTableWidget(*this,ui->renderingWidgetHolder));
         ui->main_layout->insertWidget(1,glWidget = new GLWidget(renderWidget->getData("anti_aliasing").toInt(),*this,renderWidget));
         ui->verticalLayout_3->addWidget(regionWidget = new RegionTableWidget(*this,ui->regionDockWidget));
-        ui->tractverticalLayout->addWidget(tractWidget = new TractTableWidget(*this,ui->TractWidgetHolder));
+        ui->track_verticalLayout->addWidget(tractWidget = new TractTableWidget(*this,ui->TractWidgetHolder));
         ui->graphicsView->setScene(&scene);
         ui->graphicsView->setCursor(Qt::CrossCursor);
         scene.statusbar = ui->statusbar;
@@ -359,7 +359,7 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         set_data("step_size",fib_data.vs[0]/2.0);
     }
 
-
+    report(handle->report.c_str());
     ui->sliceViewBox->setCurrentIndex(0);
     on_SliceModality_currentIndexChanged(ui->SliceModality->count()-1);
 
@@ -390,6 +390,11 @@ tracking_window::~tracking_window()
     handle = 0;
     //std::cout << __FUNCTION__ << " " << __FILE__ << std::endl;
 }
+void tracking_window::report(QString string)
+{
+    ui->text_report->setText(string);
+}
+
 void tracking_window::initialize_tracking_index(int index)
 {
     QStringList tracking_index_list;
@@ -499,8 +504,6 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
             ++data_index;
         }
     ui->statusbar->showMessage(status);
-
-
     return false;
 }
 
@@ -1327,11 +1330,6 @@ void tracking_window::on_zoom_out_clicked()
     set_data("roi_zoom",std::max<int>(1,renderWidget->getData("roi_zoom").toInt()-1));
     scene.center();
     scene.show_slice();
-}
-
-void tracking_window::on_actionView_FIB_Content_triggered()
-{
-    show_info_dialog("FIB content",handle->report);
 }
 
 std::pair<float,float> evaluate_fib(

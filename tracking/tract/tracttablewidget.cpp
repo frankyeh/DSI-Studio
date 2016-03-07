@@ -116,6 +116,7 @@ void TractTableWidget::start_tracking(void)
                             cur_tracking_window["thread_count"].toInt(),
                             cur_tracking_window["track_count"].toInt());
     tract_models.back()->report += thread_data.back()->report.str();
+    cur_tracking_window.report(tract_models.back()->report.c_str());
     timer->start(1000);
 }
 void TractTableWidget::filter_by_roi(void)
