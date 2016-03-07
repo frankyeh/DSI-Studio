@@ -1675,8 +1675,8 @@ void vbc_dialog::on_load_fp_mask_clicked()
 {
     QString file = QFileDialog::getOpenFileName(
                                 this,
-                                "Load ROI from file",
-                                work_dir + "/roi.nii.gz",
+                                "Load fingerprint mask from file",
+                                work_dir,
                                 "Report file (*.txt *.nii *nii.gz);;All files (*)");
     if(file.isEmpty())
         return;
@@ -1696,4 +1696,25 @@ void vbc_dialog::on_load_fp_mask_clicked()
     for(unsigned int i = 0;i < I.size();++i)
         fp_mask[i] = I[i] ? 1:0;
     on_calculate_dif_clicked();
+}
+
+void vbc_dialog::on_save_fp_mask_clicked()
+{
+    QString FileName = QFileDialog::getSaveFileName(
+                                this,
+                                "Save fingerprint mask",
+                                work_dir + "/mask.nii.gz",
+                                "Report file (*.txt *.nii *nii.gz);;All files (*)");
+    if(FileName.isEmpty())
+        return;
+    float fiber_threshold = ui->fp_coverage->value()*image::segmentation::otsu_threshold(image::make_image(vbc->handle->dim,vbc->handle->fib.fa[0]));
+    image::basic_image<float,3> mask(fp_mask);
+    for(unsigned int index = 0;index < mask.size();++index)
+        if(vbc->handle->fib.fa[0][index] < fiber_threshold)
+            mask[index] = 0;
+    gz_nifti file;
+    file.set_voxel_size(vbc->handle->vs);
+    file.set_image_transformation(vbc->handle->trans_to_mni.begin());
+    file << mask;
+    file.save_to_file(FileName.toLocal8Bit().begin());
 }

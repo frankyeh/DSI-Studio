@@ -36,7 +36,7 @@
       <item>
        <widget class="QToolBox" name="toolBox">
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <property name="tabSpacing">
          <number>0</number>
@@ -46,7 +46,7 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>636</width>
+           <width>641</width>
            <height>515</height>
           </rect>
          </property>
@@ -469,8 +469,7 @@ Plot</string>
                       <string notr="true">text-align: left</string>
                      </property>
                      <property name="text">
-                      <string>Save All
-Fingerprint</string>
+                      <string>Save Fingerprint</string>
                      </property>
                      <property name="icon">
                       <iconset resource="../icons.qrc">
@@ -486,6 +485,17 @@ Fingerprint</string>
                      <property name="icon">
                       <iconset resource="../icons.qrc">
                        <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="save_fp_mask">
+                     <property name="text">
+                      <string>Save mask...</string>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="../icons.qrc">
+                       <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
                      </property>
                     </widget>
                    </item>
@@ -854,7 +864,7 @@ subject</string>
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>-379</y>
+           <y>0</y>
            <width>611</width>
            <height>911</height>
           </rect>
