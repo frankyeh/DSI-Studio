@@ -1,7 +1,6 @@
 #include <sstream>
 #include <string>
 #include "image/image.hpp"
-#include <boost/lambda/lambda.hpp>
 #include "dwi_header.hpp"
 #include "gzip_interface.hpp"
 #include "prog_interface_static_link.h"

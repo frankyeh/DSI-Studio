@@ -5,8 +5,6 @@
 #include <cmath>
 #include <map>
 #include <algorithm>
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
 #include "basic_process.hpp"
 #include "basic_voxel.hpp"
 #include "space_mapping.hpp"
@@ -112,14 +110,13 @@ public:
     virtual void run(Voxel&, VoxelData& data)
     {
         // calculate sum(p(u*r)*r^2)dr
-        using namespace boost::lambda;
         std::fill(data.odf.begin(),data.odf.end(),0.0f);
         for(unsigned int index = 0;index < sample_group.size();++index)
             sample_group[index].sampleODFValueWeighted(data.space,data.odf);
         // normalization
         float sum = image::mean(data.odf.begin(),data.odf.end());
         if (sum != 0.0)
-            std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 *= (data.space[b0_index]/sum));
+            image::multiply_constant(data.odf,data.space[b0_index]/sum);
     }
 };
 

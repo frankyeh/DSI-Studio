@@ -1078,14 +1078,14 @@ void TractModel::trim(void)
     image::basic_image<unsigned int,3> label(geometry);
 
 
-    unsigned int total_track_number = tract_data.size();
-    unsigned int no_fiber_label = total_track_number;
-    unsigned int have_multiple_fiber_label = total_track_number+1;
+    int total_track_number = tract_data.size();
+    int no_fiber_label = total_track_number;
+    int have_multiple_fiber_label = total_track_number+1;
 
-    unsigned int width = label.width();
-    unsigned int height = label.height();
-    unsigned int depth = label.depth();
-    unsigned int wh = width*height;
+    int width = label.width();
+    int height = label.height();
+    int depth = label.depth();
+    int wh = width*height;
     std::fill(label.begin(),label.end(),no_fiber_label);
     int shift[8] = {0,1,width,wh,1+width,1+wh,width+wh,1+width+wh};
     for (unsigned int index = 0;index < total_track_number;++index)
