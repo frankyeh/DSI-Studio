@@ -1,5 +1,4 @@
 #define NOMINMAX
-#include <boost/random.hpp>
 #include <QtOpenGL>
 #include <QtGui>
 #include <QMessageBox>

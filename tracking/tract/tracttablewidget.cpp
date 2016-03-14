@@ -646,14 +646,6 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
     return false;
 }
 
-void TractTableWidget::show_method(void)
-{
-    std::ostringstream out;
-    if(currentRow() < tract_models.size())
-        out << tract_models[currentRow()]->report.c_str() << std::endl;
-    cur_tracking_window.show_info_dialog("Methods",out.str());
-}
-
 void TractTableWidget::save_tracts_data_as(void)
 {
     if(currentRow() >= tract_models.size())

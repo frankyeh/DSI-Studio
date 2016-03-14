@@ -224,6 +224,7 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
 
         connect(ui->actionNewRegion,SIGNAL(triggered()),regionWidget,SLOT(new_region()));
         connect(ui->actionOpenRegion,SIGNAL(triggered()),regionWidget,SLOT(load_region()));
+        connect(ui->actionLoad_From_Atlas,SIGNAL(triggered()),this,SLOT(on_addRegionFromAtlas_clicked()));
         connect(ui->actionSaveRegionAs,SIGNAL(triggered()),regionWidget,SLOT(save_region()));
         connect(ui->actionSave_All_Regions_As,SIGNAL(triggered()),regionWidget,SLOT(save_all_regions()));
         connect(ui->actionSave_All_Regions_As_Multiple_Files,SIGNAL(triggered()),regionWidget,SLOT(save_all_regions_to_dir()));
@@ -314,10 +315,6 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         connect(ui->actionSave_VMRL,SIGNAL(triggered()),tractWidget,SLOT(save_vrml_as()));
         connect(ui->actionSave_All_Tracts_As,SIGNAL(triggered()),tractWidget,SLOT(save_all_tracts_as()));
         connect(ui->actionSave_All_Tracts_As_Multiple_Files,SIGNAL(triggered()),tractWidget,SLOT(save_all_tracts_to_dir()));
-
-
-
-        connect(ui->actionMethod_Report,SIGNAL(triggered()),tractWidget,SLOT(show_method()));
         connect(ui->actionSave_End_Points_As,SIGNAL(triggered()),tractWidget,SLOT(save_end_point_as()));
         connect(ui->actionSave_Enpoints_In_MNI_Space,SIGNAL(triggered()),tractWidget,SLOT(save_end_point_in_mni()));
         connect(ui->actionStatistics,SIGNAL(triggered()),tractWidget,SLOT(show_tracts_statistics()));
@@ -346,7 +343,9 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         ui->renderingWidgetHolder->show();
         ui->ROIdockWidget->show();
         ui->regionDockWidget->show();
-
+        ui->show_r->setChecked((*this)["roi_label"].toBool());
+        ui->show_position->setChecked((*this)["roi_position"].toBool());
+        ui->show_fiber->setChecked((*this)["roi_fiber"].toBool());
     }
 
     {
@@ -571,22 +570,30 @@ void tracking_window::glSliderValueChanged(void)
 
 void tracking_window::on_AxiView_clicked()
 {
+    glWidget->set_view(2);
+    glWidget->updateGL();
     slice.cur_dim = 2;
     if(renderWidget->getData("roi_layout").toInt() == 0)
         scene.show_slice();
     scene.setFocus();
+
 }
 
 void tracking_window::on_CorView_clicked()
 {
+    glWidget->set_view(1);
+    glWidget->updateGL();
     slice.cur_dim = 1;
     if(renderWidget->getData("roi_layout").toInt() == 0)
         scene.show_slice();
     scene.setFocus();
+
 }
 
 void tracking_window::on_SagView_clicked()
 {
+    glWidget->set_view(0);
+    glWidget->updateGL();
     slice.cur_dim = 0;
     if(renderWidget->getData("roi_layout").toInt() == 0)
         scene.show_slice();
@@ -1060,23 +1067,6 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
         case Qt::Key_Down:
             glWidget->move_by(0,1);
             break;
-
-            /*
-        case Qt::Key_Z:
-            event->accept();
-            glWidget->set_view(0);
-            glWidget->updateGL();
-            break;
-        case Qt::Key_X:
-            event->accept();
-            glWidget->set_view(1);
-            glWidget->updateGL();
-            break;
-        case Qt::Key_C:
-            event->accept();
-            glWidget->set_view(2);
-            glWidget->updateGL();
-            break;*/
     }
 
     if(event->key() >= Qt::Key_1 && event->key() <= Qt::Key_9)
@@ -1783,4 +1773,28 @@ void tracking_window::on_actionIndividual_vs_normal_population_triggered()
         return;
     }
     initialize_tracking_index(handle->fib.index_data.size()-1);
+}
+
+void tracking_window::on_show_fiber_toggled(bool checked)
+{
+    ui->show_fiber->setChecked(checked);
+    if(ui->show_fiber->isChecked() ^ (*this)["roi_fiber"].toBool())
+        set_data("roi_fiber",ui->show_fiber->isChecked());
+    scene.show_slice();
+}
+
+void tracking_window::on_show_r_toggled(bool checked)
+{
+    ui->show_r->setChecked(checked);
+    if(ui->show_r->isChecked() ^ (*this)["roi_label"].toBool())
+        set_data("roi_label",ui->show_r->isChecked());
+    scene.show_slice();
+}
+
+void tracking_window::on_show_position_toggled(bool checked)
+{
+    ui->show_position->setChecked(checked);
+    if(ui->show_position->isChecked() ^ (*this)["roi_position"].toBool())
+        set_data("roi_position",ui->show_position->isChecked());
+    scene.show_slice();
 }

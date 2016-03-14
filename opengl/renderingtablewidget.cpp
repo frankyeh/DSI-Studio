@@ -480,6 +480,21 @@ void RenderingTableWidget::dataChanged(const QModelIndex &topLeft, const QModelI
         cur_tracking_window.on_tracking_index_currentIndexChanged(((RenderingItem*)bottomRight.internalPointer())->value.toInt());
         return;
     }
+    if(((RenderingItem*)bottomRight.internalPointer())->id == "roi_position")
+    {
+        cur_tracking_window.on_show_position_toggled(((RenderingItem*)bottomRight.internalPointer())->value.toBool());
+        return;
+    }
+    if(((RenderingItem*)bottomRight.internalPointer())->id == "roi_label")
+    {
+        cur_tracking_window.on_show_r_toggled(((RenderingItem*)bottomRight.internalPointer())->value.toBool());
+        return;
+    }
+    if(((RenderingItem*)bottomRight.internalPointer())->id == "roi_fiber")
+    {
+        cur_tracking_window.on_show_fiber_toggled(((RenderingItem*)bottomRight.internalPointer())->value.toBool());
+        return;
+    }
 
     if(((RenderingItem*)bottomRight.internalPointer())->id == "fa_threshold" ||
        ((RenderingItem*)bottomRight.internalPointer())->parent()->id == QString("ROI"))

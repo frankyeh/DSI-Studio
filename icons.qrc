@@ -21,6 +21,18 @@
         <file>icons/ruler.xpm</file>
         <file>icons/rotate.xpm</file>
         <file>dsi_studio.ico</file>
+        <file>icons/zoom-in.xpm</file>
+        <file>icons/zoom-out.xpm</file>
+        <file>icons/rgb.xpm</file>
+        <file>icons/guides.xpm</file>
+        <file>icons/stat.xpm</file>
+        <file>icons/fullscreen.xpm</file>
+        <file>icons/preferences.xpm</file>
+        <file>icons/report.xpm</file>
+        <file>icons/conn.xpm</file>
+        <file>icons/stop.xpm</file>
+        <file>icons/add_surface.xpm</file>
+        <file>icons/atlas.xpm</file>
     </qresource>
     <qresource prefix="/data">
         <file>options.txt</file>

@@ -224,9 +224,12 @@ public:
         report.str("");
         report << "\nA deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was used."
                << seed_report
-               << " The anisotropy threshold was " << fib.threshold << "."
                << " The angular threshold was " << (int)std::floor(std::acos(fib.cull_cos_angle)*180/3.1415926 + 0.5) << " degrees."
                << " The step size was " << param.step_size << " mm.";
+        if(int(fib.threshold*1000) == int(600*image::segmentation::otsu_threshold(image::make_image(fib.dim,fib.fa[0]))))
+            report << " The anisotropy threshold was determined automatically by DSI Studio.";
+        else
+            report << " The anisotropy threshold was " << fib.threshold << ".";
 
 
         if(param.smooth_fraction != 0.0)

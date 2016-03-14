@@ -99,6 +99,9 @@ public slots:
     void on_CorView_clicked();
     void on_AxiView_clicked();
     void restore_3D_window();
+    void on_show_fiber_toggled(bool checked);
+    void on_show_r_toggled(bool checked);
+    void on_show_position_toggled(bool checked);
 private slots:
     void on_actionRestore_window_layout_triggered();
     void on_actionSave_Tracts_in_Current_Mapping_triggered();
@@ -173,6 +176,7 @@ private slots:
     void on_actionIndividual_vs_atlas_triggered();
     void on_actionIndividual_vs_individual_triggered();
     void on_actionIndividual_vs_normal_population_triggered();
+
 };
 
 #endif // TRACKING_WINDOW_H
