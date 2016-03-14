@@ -15,11 +15,8 @@ struct Cluster : public::boost::noncopyable
 class BasicCluster
 {
 protected:
-    std::vector<Cluster*> clusters;
+    std::vector<std::shared_ptr<Cluster> > clusters;
     void sort_cluster(void);
-public:
-    virtual ~BasicCluster(void);
-
 public:
     virtual void add_tract(const float* points,unsigned int count) = 0;
     virtual void run_clustering(void) = 0;
@@ -71,7 +68,7 @@ public:
                 std::map<unsigned char,std::vector<unsigned int> >::iterator end = cluster_map.end();
                 for(unsigned int index = 0;iter != end;++iter,++index)
 		{
-			clusters[index] = new Cluster();
+            clusters[index] = std::make_shared<Cluster>();
 			clusters[index]->tracts.swap(iter->second);
 			clusters[index]->index= index;
 		}
@@ -94,8 +91,8 @@ private:
     void merge_tract(unsigned int tract_index1,unsigned int tract_index2);
     int get_index(short x,short y,short z);
 private:
-    std::vector<std::vector<unsigned int>*> voxel_connection;
-    const std::vector<unsigned int>* add_connection(unsigned short index,unsigned int track_index);
+    std::vector<std::shared_ptr<std::vector<unsigned int> > > voxel_connection;
+    std::shared_ptr<std::vector<unsigned int> >  add_connection(unsigned short index,unsigned int track_index);
 
 private:
     std::vector<Cluster*> tract_labels;// 0 is no cluster
@@ -107,7 +104,6 @@ private:
 
 public:
     TractCluster(const float* param);
-    ~TractCluster(void);
     void add_tract(const float* points,unsigned int count);
 	void run_clustering(void){sort_cluster();}
 

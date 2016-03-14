@@ -3,7 +3,6 @@
 #include <ctime>
 #include <random>
 #include <boost/random.hpp>
-#include <boost/lambda/lambda.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <boost/utility.hpp>

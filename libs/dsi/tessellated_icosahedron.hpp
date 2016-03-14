@@ -1,6 +1,5 @@
 #ifndef TESSELLATED_ICOSAHEDRON_HPP
 #define TESSELLATED_ICOSAHEDRON_HPP
-#include <boost/lambda/lambda.hpp>
 #include <image/image.hpp>
 #include <cmath>
 #include <vector>
@@ -326,12 +325,13 @@ public:
         get_edge_segmentation(5,opposite(3),edges[14]);
 
 		std::vector<std::vector<unsigned short> > redges(15);
-                for(unsigned int index = 0;index < redges.size();++index)
-		    std::transform(edges[index].begin(),
-						   edges[index].end(),
-						   std::back_inserter(redges[index]),
-                           (boost::lambda::_1 + half_vertices_count) % vertices_count);
+        for(unsigned int index = 0;index < redges.size();++index)
+        {
+            redges[index] = edges[index];
+            image::add_constant(redges[index],half_vertices_count);
+            image::mod_constant(redges[index],vertices_count);
 
+        }
 		// hat faces
         build_faces(edges[0].begin(),edges[5].begin(),edges[1].rbegin());
         build_faces(edges[1].begin(),edges[6].begin(),edges[2].rbegin());

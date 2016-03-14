@@ -520,7 +520,7 @@ public:
         }
         image::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
                                       image::dyndim(data.odf.size(),data.space.size()));
-        std::for_each(data.odf.begin(),data.odf.end(),boost::lambda::_1 *= data.jdet);
+        image::multiply_constant(data.odf,data.jdet);
 
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)

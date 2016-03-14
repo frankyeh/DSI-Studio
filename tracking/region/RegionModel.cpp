@@ -3,7 +3,6 @@
 #include <fstream>
 #include <sstream>
 #include <iterator>
-#include <boost/lambda/lambda.hpp>
 #include "RegionModel.h"
 #include "SliceModel.h"
 // ---------------------------------------------------------------------------
@@ -170,6 +169,6 @@ void RegionModel::move_object(const image::vector<3,float>& shift)
 {
     if(!object.get())
         return;
-    std::for_each(object->point_list.begin(),object->point_list.end(),boost::lambda::_1 += shift);
+    image::add_constant(object->point_list,shift);
 
 }

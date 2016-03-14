@@ -1,6 +1,5 @@
 #ifndef ODF_DECOMPOSITION_HPP
 #define ODF_DECOMPOSITION_HPP
-#include <boost/lambda/lambda.hpp>
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <cmath>
@@ -51,10 +50,10 @@ protected:
     template<typename iterator_type>
     void normalize_vector(iterator_type from,iterator_type to)
     {
-        std::for_each(from,to,boost::lambda::_1 -= std::accumulate(from,to,0.0)/((float)(to-from)));
+        image::minus_constant(from,to,std::accumulate(from,to,0.0)/((float)(to-from)));
         float length = image::vec::norm2(from,to);
         if(length+1.0 != 1.0)
-            std::for_each(from,to,boost::lambda::_1 /= length);
+            image::divide_constant(from,to,length);
     }
 
     void estimate_Rt(Voxel& voxel)
@@ -77,8 +76,8 @@ protected:
         for (unsigned int i = 0; i < half_odf_size; ++i)
         {
             normalize_vector(Rt.begin()+i*half_odf_size,Rt.begin()+(i+1)*half_odf_size);
-            std::for_each(oRt.begin()+i*half_odf_size,oRt.begin()+(i+1)*half_odf_size,
-                          boost::lambda::_1 /= *std::max_element(oRt.begin()+i*half_odf_size,oRt.begin()+(i+1)*half_odf_size));
+            image::divide_constant(oRt.begin()+i*half_odf_size,oRt.begin()+(i+1)*half_odf_size,
+                          *std::max_element(oRt.begin()+i*half_odf_size,oRt.begin()+(i+1)*half_odf_size));
 
         }
     }
@@ -192,8 +191,7 @@ public:
             is_neighbor[i3][i2] = 1;
         }
         // scale the free water diffusion to 1
-        std::for_each(voxel.free_water_diffusion.begin(),voxel.free_water_diffusion.end(),(boost::lambda::_1 /= voxel.reponse_function_scaling));
-
+        image::divide_constant(voxel.free_water_diffusion,voxel.reponse_function_scaling);
         estimate_Rt(voxel);
 
     }
@@ -293,7 +291,7 @@ public:
         if (!voxel.odf_decomposition)
             return;
         if(max_iso + 1.0 != 1.0)
-            std::for_each(fiber_ratio.begin(),fiber_ratio.end(),boost::lambda::_1 /= max_iso);
+            image::divide_constant(fiber_ratio,max_iso);
         mat_writer.write("fiber_ratio",&*fiber_ratio.begin(),1,fiber_ratio.size());
 
     }

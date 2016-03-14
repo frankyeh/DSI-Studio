@@ -113,7 +113,7 @@ protected:
 	{
 		float min_value = *std::min_element(odf.begin(),odf.end());
         if (min_value > 0)
-            std::for_each(odf.begin(),odf.end(),boost::lambda::_1 -= min_value);
+            image::minus_constant(odf,min_value);
         else
             for (unsigned int index = 0; index < half_odf_size; ++index)
                 if (odf[index] < 0.0)
@@ -154,11 +154,11 @@ public:
         if (!voxel.odf_deconvolusion)
             return;
         voxel.recon_report << "Diffusion ODF deconvolution (Yeh et al., Neuroimage, 2011) was conducted using a regularization parameter of " << voxel.param[2];
-        std::for_each(voxel.response_function.begin(),voxel.response_function.end(),
-                      boost::lambda::_1 /= (std::accumulate(voxel.response_function.begin(),voxel.response_function.end(),0.0)
+        image::divide_constant(voxel.response_function,
+                      (std::accumulate(voxel.response_function.begin(),voxel.response_function.end(),0.0)
                                             /((double)voxel.response_function.size())));
         // scale the free water diffusion to 1
-		std::for_each(voxel.free_water_diffusion.begin(),voxel.free_water_diffusion.end(),(boost::lambda::_1 /= voxel.reponse_function_scaling));
+        image::divide_constant(voxel.free_water_diffusion,voxel.reponse_function_scaling);
         
 
         half_odf_size = voxel.ti.half_vertices_count;
@@ -183,10 +183,8 @@ public:
         // scale the dODF using the reference to free water diffusion
         if (!voxel.odf_deconvolusion)
             return;
-        std::for_each(data.odf.begin(),data.odf.end(),(boost::lambda::_1 /= voxel.reponse_function_scaling));
-
+        image::divide_constant(data.odf,voxel.reponse_function_scaling);
 		deconvolution(data.odf);
-
         remove_isotropic(data.odf);
     }
 
@@ -201,142 +199,5 @@ public:
     }
 
 };
-
-/*
-class ODFCompressSensing : public ODFDeconvolusion
-{
-    std::vector<float> R;
-    double lambda;
-private:
-    void gradient_fun(const std::vector<double>& dODF,const std::vector<double>& fODF,std::vector<double>& g)
-    {
-        using namespace math;
-        std::vector<double> mm(half_odf_size);
-        image::mat::vector_product(&*R.begin(),&*fODF.begin(),&*mm.begin(),math::dyndim(half_odf_size,half_odf_size));
-        mm -= dODF;
-        image::mat::vector_product(&*Rt.begin(),&*mm.begin(),&*g.begin(),math::dyndim(half_odf_size,half_odf_size));
-        g *= (double)2.0;
-        double n0 = std::max((double)0.0,*std::min_element(fODF.begin(),fODF.end()));
-        for (unsigned int index = 0;index < fODF.size();++index)
-        {
-            double x = fODF[index]-n0;
-            //g[index] += lambda*x/sqrt(x*x+0.00001);
-            if (std::abs(x) < 0.001)
-                continue;
-            g[index] += lambda/std::abs(x);
-        }
-    }
-    double fun(const std::vector<double>& dODF,const std::vector<double>& fODF)
-    {
-        using namespace math;
-        std::vector<double> mm(half_odf_size);
-        image::mat::vector_product(&*R.begin(),&*fODF.begin(),&*mm.begin(),math::dyndim(half_odf_size,half_odf_size));
-        mm -= dODF;
-
-        double cost = math::vector_op_dot(&*mm.begin(),&*mm.begin()+mm.size(),&*mm.begin());
-        double n0 = std::max((double)0.0,*std::min_element(fODF.begin(),fODF.end()));
-        for (unsigned int index = 0;index < fODF.size();++index)
-        {
-            double x = fODF[index]-n0;
-            //if(x > 0.0)
-            //	cost += lambda*x;
-            //else
-            //	cost -= lambda*x;
-            cost += lambda*std::log(std::abs(x)+0.1);
-        }
-        return cost;
-    }
-
-public:
-    virtual void init(Voxel& voxel)
-    {
-        if (!voxel.odf_compress_sensing)
-            return;
-
-
-        std::for_each(voxel.response_function.begin(),voxel.response_function.end(),boost::lambda::_1 /= voxel.reponse_function_scaling);
-        half_odf_size = ti_vertices_count()/2;
-        estimate_Rt(voxel);
-
-        lambda = voxel.param[3];
-        R.resize(half_odf_size*half_odf_size);
-        image::mat::transpose(Rt.begin(),R.begin(),math::dyndim(half_odf_size,half_odf_size));
-
-    }
-
-
-    struct line_search
-    {
-        std::vector<double> fODF;
-        std::vector<double> dfODFk;
-        std::vector<double> dODF;
-        ODFCompressSensing* pointer;
-
-        double operator()(double t)
-        {
-            std::vector<double> next_fODF(fODF);
-            math::vector_op_axpy(&*next_fODF.begin(),&*next_fODF.begin()+next_fODF.size(),t,&*dfODFk.begin());
-            return pointer->fun(dODF,next_fODF);
-        }
-    };
-
-    virtual void run(Voxel& voxel, VoxelData& data)
-    {
-        using namespace math;
-        if (!voxel.odf_compress_sensing)
-            return;
-        std::for_each(data.odf.begin(),data.odf.end(),(boost::lambda::_1 /= voxel.reponse_function_scaling));
-        std::vector<double> dODF(data.odf.begin(),data.odf.end());
-        std::vector<double> fODF(data.odf.size());
-
-        double beta = 5.0;
-        std::vector<double> g_k(fODF.size());
-        gradient_fun(dODF,fODF,g_k);
-        std::vector<double> dfODFk(g_k);
-        std::for_each(dfODFk.begin(),dfODFk.end(),boost::lambda::_1 *= -1);
-        double length2_gk = math::vector_op_norm2(g_k.begin(),g_k.end());
-        double fun_mk = fun(dODF,fODF);
-
-        math::brent_method<double,double> backsearch;
-        backsearch.min = 0;
-        backsearch.max = 1000.0;
-        backsearch.param = 1;
-        line_search line;
-        line.dODF = dODF;
-        line.pointer = this;
-
-
-        for (unsigned int k = 0,j;k < 40;++k)
-        {
-            if (length2_gk < 0.001)
-                break;
-
-            line.fODF = fODF;
-            line.dfODFk.swap(dfODFk);
-            backsearch.argmin(line,0.001);
-            if (backsearch.value > fun_mk)
-                break;
-            line.dfODFk.swap(dfODFk);
-            fun_mk = backsearch.value;
-            math::vector_op_axpy(&*fODF.begin(),&*fODF.begin()+fODF.size(),backsearch.param,&*dfODFk.begin());
-
-            gradient_fun(dODF,fODF,g_k);
-            double length2_gk_1 = math::vector_op_norm2(&*g_k.begin(),&*g_k.begin()+g_k.size());
-            double gamma = length2_gk_1/length2_gk;
-            length2_gk = length2_gk_1;
-            gamma *= gamma;
-            dfODFk *= gamma;
-            dfODFk -= g_k;
-        }
-
-        for (unsigned int index = 0; index < data.odf.size(); ++index)
-            if (fODF[index] < 0.0)
-                data.odf[index] = 0.0;
-            else
-                data.odf[index] = fODF[index];
-    }
-};
-
-*/
 
 #endif//ODF_DECONVOLUSION_HPP

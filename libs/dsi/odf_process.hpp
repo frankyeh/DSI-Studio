@@ -1,6 +1,5 @@
 #ifndef ODF_TRANSFORMATION_PROCESS_HPP
 #define ODF_TRANSFORMATION_PROCESS_HPP
-#include <boost/lambda/lambda.hpp>
 #include "basic_process.hpp"
 #include "basic_voxel.hpp"
 
@@ -100,7 +99,7 @@ public:
                     effective_b += t[j]*voxel.bvalues[j];
                 }
                 double sum_t = std::accumulate(t.begin(),t.end(),0.0);
-                std::for_each(t.begin(),t.end(),boost::lambda::_1 *= (avg_b/1000.0/sum_t));
+                image::multiply_constant(t,avg_b/1000.0/sum_t);
                 std::copy(t.begin(),t.end(),trans.begin() + trans_old_size + i * b_count);
                 new_bvalues.push_back(effective_b/sum_t);
                 new_bvectors.push_back(new_dir.vertices[i]);
@@ -226,7 +225,7 @@ public:
             for (unsigned int index = 0;index < odf_data.size();++index)
             {
                 if (!voxel.odf_deconvolusion)
-                    std::for_each(odf_data[index].begin(),odf_data[index].end(),boost::lambda::_1 /= voxel.z0);
+                    image::divide_constant(odf_data[index],voxel.z0);
                 std::ostringstream out;
                 out << "odf" << index;
                 mat_writer.write(out.str().c_str(),&*odf_data[index].begin(),
@@ -354,9 +353,9 @@ public:
         if(!voxel.odf_deconvolusion && voxel.z0 + 1.0 != 1.0)
         {
             mat_writer.write("z0",&voxel.z0,1,1);
-            std::for_each(iso.begin(),iso.end(),boost::lambda::_1 /= voxel.z0);
+            image::divide_constant(iso,voxel.z0);
             for (unsigned int i = 0;i < voxel.max_fiber_number;++i)
-                std::for_each(fa[i].begin(),fa[i].end(),boost::lambda::_1 /= voxel.z0);
+                image::divide_constant(fa[i],voxel.z0);
         }
 
         mat_writer.write("iso",&*iso.begin(),1,iso.size());
@@ -381,7 +380,7 @@ public:
             if(max_qa != 0.0)
             for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             {
-                std::for_each(fa[index].begin(),fa[index].end(),boost::lambda::_1 /= max_qa);
+                image::divide_constant(fa[index],max_qa);
                 std::ostringstream out;
                 out << index;
                 std::string num = out.str();
