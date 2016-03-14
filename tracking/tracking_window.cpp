@@ -539,8 +539,8 @@ void tracking_window::SliderValueChanged(void)
         else
         {
             image::vector<3,float> p(ui->SagSlider->value(),ui->CorSlider->value(),ui->AxiSlider->value());
-            p.to(glWidget->other_slices[glWidget->current_visible_slide-1].invT);
-            if(glWidget->other_slices[glWidget->current_visible_slide-1].set_slice_pos(p[0]+0.5,p[1]+0.5,p[2]+0.5))
+            p.to(glWidget->other_slices[glWidget->current_visible_slide-1]->invT);
+            if(glWidget->other_slices[glWidget->current_visible_slide-1]->set_slice_pos(p[0]+0.5,p[1]+0.5,p[2]+0.5))
                 glWidget->updateGL();
         }
     }
@@ -553,14 +553,14 @@ void tracking_window::glSliderValueChanged(void)
     if(!glWidget->current_visible_slide)
         return;
     SliceModel& cur_slice =
-                glWidget->other_slices[glWidget->current_visible_slide-1];
+                *glWidget->other_slices[glWidget->current_visible_slide-1];
     if(!slice_no_update && cur_slice.set_slice_pos(
                 ui->glSagSlider->value(),
                 ui->glCorSlider->value(),
                 ui->glAxiSlider->value()))
     {
         image::vector<3,float> p(cur_slice.slice_pos[0],cur_slice.slice_pos[1],cur_slice.slice_pos[2]);
-        p.to(glWidget->other_slices[glWidget->current_visible_slide-1].transform);
+        p.to(glWidget->other_slices[glWidget->current_visible_slide-1]->transform);
         ui->SagSlider->setValue(p[0]+0.5);
         ui->CorSlider->setValue(p[1]+0.5);
         ui->AxiSlider->setValue(p[2]+0.5);
@@ -741,7 +741,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     {
         std::pair<float,float> range;
         if(index)
-            range = glWidget->other_slices[glWidget->current_visible_slide-1].get_value_range();
+            range = glWidget->other_slices[glWidget->current_visible_slide-1]->get_value_range();
         else
             range =  handle->get_value_range(ui->sliceViewBox->currentText().toLocal8Bit().begin());
         float r = range.second-range.first;
@@ -771,7 +771,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
         disconnect(ui->AxiSlider,SIGNAL(valueChanged(int)),ui->glAxiSlider,SLOT(setValue(int)));
 
         SliceModel& cur_slice =
-                glWidget->other_slices[glWidget->current_visible_slide-1];
+                *glWidget->other_slices[glWidget->current_visible_slide-1];
 
         ui->glSagSlider->setRange(0,cur_slice.geometry[0]-1);
         ui->glCorSlider->setRange(0,cur_slice.geometry[1]-1);
@@ -854,11 +854,11 @@ void tracking_window::add_slice_name(QString name)
     ui->sliceViewBox->addItem(name);
     handle->view_item.push_back(handle->view_item[0]);
     handle->view_item.back().name = name.toLocal8Bit().begin();
-    handle->view_item.back().image_data = image::make_image(glWidget->other_slices.back().roi_image.geometry(),
-                                                            glWidget->other_slices.back().roi_image_buf);
+    handle->view_item.back().image_data = image::make_image(glWidget->other_slices.back()->roi_image.geometry(),
+                                                            glWidget->other_slices.back()->roi_image_buf);
     handle->view_item.back().set_scale(
-                glWidget->other_slices.back().source_images.begin(),
-                glWidget->other_slices.back().source_images.end());
+                glWidget->other_slices.back()->source_images.begin(),
+                glWidget->other_slices.back()->source_images.end());
     ui->SliceModality->setCurrentIndex(ui->SliceModality->count()-1);
     ui->sliceViewBox->setCurrentIndex(ui->sliceViewBox->count()-1);
 }
@@ -1701,10 +1701,10 @@ void tracking_window::on_actionStrip_skull_for_T1w_image_triggered()
 {
     if(glWidget->current_visible_slide)
     {
-        image::basic_image<float,3> tmp = glWidget->other_slices[glWidget->current_visible_slide-1].source_images;
-        glWidget->other_slices[glWidget->current_visible_slide-1].stripskull(renderWidget->getData("fa_threshold").toFloat());
+        image::basic_image<float,3> tmp = glWidget->other_slices[glWidget->current_visible_slide-1]->source_images;
+        glWidget->other_slices[glWidget->current_visible_slide-1]->stripskull(renderWidget->getData("fa_threshold").toFloat());
         glWidget->addSurface();
-        glWidget->other_slices[glWidget->current_visible_slide-1].source_images = tmp;
+        glWidget->other_slices[glWidget->current_visible_slide-1]->source_images = tmp;
     }
     else
         QMessageBox::information(this,"Error","Load T1W image first");

@@ -1,6 +1,7 @@
 #ifndef STREAM_LINE_HPP
 #define STREAM_LINE_HPP
 #include <ctime>
+#include <random>
 #include <boost/random.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/mpl/vector.hpp>
@@ -195,11 +196,11 @@ public:
 
 
 	}
-
         bool init(unsigned char initial_direction,
                   const image::vector<3,float>& position_,
-                  boost::variate_generator<boost::mt19937&, boost::uniform_real<float> >& gen)
+                  std::mt19937& seed)
         {
+            std::uniform_real_distribution<float> gen(0,1);
             position = position_;
             terminated = false;
             forward = true;
@@ -221,8 +222,8 @@ public:
             case 1:// random direction
                 for (unsigned int index = 0;index < 10;++index)
                 {
-                    float txy = gen();
-                    float tz = gen()/2.0;
+                    float txy = gen(seed);
+                    float tz = gen(seed)/2.0;
                     float x = std::sin(txy)*std::sin(tz);
                     float y = std::cos(txy)*std::sin(tz);
                     float z = std::cos(tz);

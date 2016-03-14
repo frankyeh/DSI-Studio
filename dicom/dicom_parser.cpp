@@ -60,7 +60,7 @@ dicom_parser::~dicom_parser()
     delete ui;
 }
 
-bool load_dicom_multi_frame(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
+bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
     image::io::dicom dicom_header;// multiple frame image
     if(!dicom_header.load_from_file(file_name))
@@ -77,7 +77,7 @@ bool load_dicom_multi_frame(const char* file_name,boost::ptr_vector<DwiHeader>& 
         begin_prog("loading multi frame DICOM");
         for(unsigned int index = 0;check_prog(index,num_gradient);++index)
         {
-            std::auto_ptr<DwiHeader> new_file(new DwiHeader);
+            std::shared_ptr<DwiHeader> new_file(new DwiHeader);
             if(index == 0)
                 get_report_from_dicom(dicom_header,new_file->report);
             new_file->image.resize(image::geometry<3>(buf_image.width(),buf_image.height(),slice_num));
@@ -93,7 +93,7 @@ bool load_dicom_multi_frame(const char* file_name,boost::ptr_vector<DwiHeader>& 
             out << index;
             new_file->file_name += out.str();
             dicom_header.get_voxel_size(new_file->voxel_size);
-            dwi_files.push_back(new_file.release());
+            dwi_files.push_back(new_file);
         }
     }
     return true;
@@ -128,7 +128,7 @@ void load_bval(const char* file_name,std::vector<double>& bval)
               std::back_inserter(bval));
 }
 
-bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
+bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
     gz_nifti analyze_header;
     if(!analyze_header.load_from_file(file_name))
@@ -206,7 +206,7 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
         analyze_header.get_voxel_size(vs);
         for(unsigned int index = 0;index < analyze_header.dim(4);++index)
         {
-            std::auto_ptr<DwiHeader> new_file(new DwiHeader);
+            std::shared_ptr<DwiHeader> new_file(new DwiHeader);
             image::basic_image<float,3> data;
             if(!analyze_header.toLPS(data,false))
                 break;
@@ -236,14 +236,14 @@ bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
                 new_file->grad_dev.swap(grad_dev);
             if(index == 0 && !mask.empty())
                 new_file->mask.swap(mask);
-            dwi_files.push_back(new_file.release());
+            dwi_files.push_back(new_file);
         }
     }
 
     return true;
 }
 
-bool load_4d_2dseq(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files)
+bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
     image::io::bruker_2dseq bruker_header;
     if(!bruker_header.load_from_file(file_name))
@@ -293,7 +293,7 @@ bool load_4d_2dseq(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files
             return false;
         }
     }
-    if(dwi_files.size() && dwi_files.back().image.geometry() !=
+    if(dwi_files.size() && dwi_files.back()->image.geometry() !=
             image::geometry<3>(buf_image.width(),buf_image.height(),buf_image.depth()))
         return false;
     image::lower_threshold(buf_image,0.0);
@@ -302,7 +302,7 @@ bool load_4d_2dseq(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files
     std::istringstream bvec(method_file["PVM_DwGradVec"]);
     for (unsigned int index = 0;index < buf_image.geometry()[3];++index)
     {
-        std::auto_ptr<DwiHeader> new_file(new DwiHeader);
+        std::shared_ptr<DwiHeader> new_file(new DwiHeader);
         if(index == 0)
             get_report_from_bruker(method_file,new_file->report);
         new_file->image.resize(image::geometry<3>(buf_image.width(),buf_image.height(),buf_image.depth()));
@@ -315,17 +315,17 @@ bool load_4d_2dseq(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files
         out << index;
         new_file->file_name += out.str();
         std::copy(vs,vs+3,new_file->voxel_size);
-        dwi_files.push_back(new_file.release());
-        bvalue >> dwi_files.back().bvalue;
-        bvec >> dwi_files.back().bvec[0]
-             >> dwi_files.back().bvec[1]
-             >> dwi_files.back().bvec[2];
-        dwi_files[index].bvec.normalize();
+        dwi_files.push_back(new_file);
+        bvalue >> dwi_files.back()->bvalue;
+        bvec >> dwi_files.back()->bvec[0]
+             >> dwi_files.back()->bvec[1]
+             >> dwi_files.back()->bvec[2];
+        dwi_files[index]->bvec.normalize();
     }
     return true;
 }
 
-bool load_multiple_slice_dicom(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files)
+bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
     image::io::dicom dicom_header;// multiple frame image
     image::geometry<3> geo;
@@ -413,14 +413,14 @@ bool load_multiple_slice_dicom(QStringList file_list,boost::ptr_vector<DwiHeader
                 return false;
             if(slice_index == 0)
             {
-                dwi_files.push_back(new DwiHeader);
-                dwi_files.back().open(file_list[index].toLocal8Bit().begin());
-                dwi_files.back().file_name = file_list[index].toLocal8Bit().begin();
-                dwi_files.back().image.resize(geo);
-                dicom_header.get_voxel_size(dwi_files.back().voxel_size);
+                dwi_files.push_back(std::make_shared<DwiHeader>());
+                dwi_files.back()->open(file_list[index].toLocal8Bit().begin());
+                dwi_files.back()->file_name = file_list[index].toLocal8Bit().begin();
+                dwi_files.back()->image.resize(geo);
+                dicom_header.get_voxel_size(dwi_files.back()->voxel_size);
             }
             dicom_header2.save_to_buffer(
-                    dwi_files[b_index].image.begin() + slice_index*geo.plane_size(),geo.plane_size());
+                    dwi_files[b_index]->image.begin() + slice_index*geo.plane_size(),geo.plane_size());
             ++slice_index;
             if(slice_index >= slice_num)
             {
@@ -438,14 +438,14 @@ bool load_multiple_slice_dicom(QStringList file_list,boost::ptr_vector<DwiHeader
                 return false;
             if(slice_index == 0)
             {
-                dwi_files.push_back(new DwiHeader);
-                dwi_files.back().open(file_list[index].toLocal8Bit().begin());
-                dwi_files.back().image.resize(geo);
-                dwi_files.back().file_name = file_list[index].toLocal8Bit().begin();
-                dicom_header.get_voxel_size(dwi_files.back().voxel_size);
+                dwi_files.push_back(std::make_shared<DwiHeader>());
+                dwi_files.back()->open(file_list[index].toLocal8Bit().begin());
+                dwi_files.back()->image.resize(geo);
+                dwi_files.back()->file_name = file_list[index].toLocal8Bit().begin();
+                dicom_header.get_voxel_size(dwi_files.back()->voxel_size);
             }
             dicom_header2.save_to_buffer(
-                    dwi_files[b_index].image.begin() + slice_index*geo.plane_size(),geo.plane_size());
+                    dwi_files[b_index]->image.begin() + slice_index*geo.plane_size(),geo.plane_size());
             ++b_index;
             if(b_index >= b_num)
             {
@@ -456,7 +456,7 @@ bool load_multiple_slice_dicom(QStringList file_list,boost::ptr_vector<DwiHeader
     }
     return true;
 }
-bool load_4d_fdf(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files)
+bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
     for (unsigned int index = 0;check_prog(index,file_list.size());++index)
     {
@@ -495,17 +495,17 @@ bool load_4d_fdf(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files)
                 return false;
             for(unsigned int i = 0;i < dwi_num;++i)
             {
-                dwi_files.push_back(new DwiHeader);
-                dwi_files.back().image.resize(image::geometry<3>(width,height,depth));
-                dwi_files.back().voxel_size[0] = fov1*10.0/width;
-                dwi_files.back().voxel_size[1] = fov2*10.0/height;
-                dwi_files.back().voxel_size[2] = fov3*100.0/depth;
-                dwi_files.back().file_name = value_list["*studyid"];
+                dwi_files.push_back(std::make_shared<DwiHeader>());
+                dwi_files.back()->image.resize(image::geometry<3>(width,height,depth));
+                dwi_files.back()->voxel_size[0] = fov1*10.0/width;
+                dwi_files.back()->voxel_size[1] = fov2*10.0/height;
+                dwi_files.back()->voxel_size[2] = fov3*100.0/depth;
+                dwi_files.back()->file_name = value_list["*studyid"];
                 //dwi_files
             }
             if(dwi_files.empty())
                 return false;
-            dwi_files.back().report = " The diffusion images were acquired on a Varian scanner.";
+            dwi_files.back()->report = " The diffusion images were acquired on a Varian scanner.";
         }
         // get DWI and slice location
         int dwi_id,slice_id;
@@ -516,44 +516,44 @@ bool load_4d_fdf(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files)
                 return false;
             dwi_id = v1 - 1.0;
             slice_id = v2 - 1.0;
-            if(dwi_id < 0 || dwi_id >= dwi_files.size() || slice_id < 0 || slice_id >= dwi_files.front().image.depth())
+            if(dwi_id < 0 || dwi_id >= dwi_files.size() || slice_id < 0 || slice_id >= dwi_files.front()->image.depth())
                 return 0;
         }
         // get b_value
         if(slice_id == 0)
         {
-            if(!(std::istringstream(value_list["dro"]) >> dwi_files[dwi_id].bvec[0]) ||
-               !(std::istringstream(value_list["dpe"]) >> dwi_files[dwi_id].bvec[1]) ||
-               !(std::istringstream(value_list["dsl"]) >> dwi_files[dwi_id].bvec[2]) ||
-               !(std::istringstream(value_list["bvalue"]) >> dwi_files[dwi_id].bvalue))
+            if(!(std::istringstream(value_list["dro"]) >> dwi_files[dwi_id]->bvec[0]) ||
+               !(std::istringstream(value_list["dpe"]) >> dwi_files[dwi_id]->bvec[1]) ||
+               !(std::istringstream(value_list["dsl"]) >> dwi_files[dwi_id]->bvec[2]) ||
+               !(std::istringstream(value_list["bvalue"]) >> dwi_files[dwi_id]->bvalue))
                 return false;
-            dwi_files[dwi_id].bvec.normalize();
+            dwi_files[dwi_id]->bvec.normalize();
         }
-        std::vector<float> buf(dwi_files[dwi_id].image.width()*dwi_files[dwi_id].image.height());
+        std::vector<float> buf(dwi_files[dwi_id]->image.width()*dwi_files[dwi_id]->image.height());
         std::ifstream in(file_list[index].toLocal8Bit().begin(),std::ifstream::binary);
         in.seekg(-(int)buf.size()*4,std::ios_base::end);
         if(!in.read((char*)&*buf.begin(),buf.size()*4))
             return false;
-        std::copy(buf.begin(),buf.end(),dwi_files[dwi_id].image.begin() + slice_id*dwi_files[dwi_id].image.plane_size());
+        std::copy(buf.begin(),buf.end(),dwi_files[dwi_id]->image.begin() + slice_id*dwi_files[dwi_id]->image.plane_size());
     }
     return true;
 }
 
-bool load_3d_series(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files)
+bool load_3d_series(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
     begin_prog("loading images");
     for (unsigned int index = 0;check_prog(index,file_list.size());++index)
     {
-        std::auto_ptr<DwiHeader> new_file(new DwiHeader);
+        std::shared_ptr<DwiHeader> new_file(new DwiHeader);
         if (!new_file->open(file_list[index].toLocal8Bit().begin()))
             continue;
         new_file->file_name = file_list[index].toLocal8Bit().begin();
-        dwi_files.push_back(new_file.release());
+        dwi_files.push_back(new_file);
     }
     return !dwi_files.empty();
 }
 
-bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files)
+bool load_all_files(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
     if(QFileInfo(file_list[0]).baseName() == "2dseq")
     {
@@ -635,14 +635,14 @@ void dicom_parser::load_files(QStringList file_list)
         double max_b = 0;
         for(unsigned int index = last_index;index < dwi_files.size();++index)
         {
-            if(dwi_files[index].get_bvalue() < 100)
-                dwi_files[index].set_bvalue(0);
-            ui->tableWidget->setItem(index, 0, new QTableWidgetItem(QFileInfo(dwi_files[index].file_name.data()).fileName()));
-            ui->tableWidget->setItem(index, 1, new QTableWidgetItem(QString::number(dwi_files[index].get_bvalue())));
-            ui->tableWidget->setItem(index, 2, new QTableWidgetItem(QString::number(dwi_files[index].get_bvec()[0])));
-            ui->tableWidget->setItem(index, 3, new QTableWidgetItem(QString::number(dwi_files[index].get_bvec()[1])));
-            ui->tableWidget->setItem(index, 4, new QTableWidgetItem(QString::number(dwi_files[index].get_bvec()[2])));
-            max_b = std::max(max_b,(double)dwi_files[index].get_bvalue());
+            if(dwi_files[index]->get_bvalue() < 100)
+                dwi_files[index]->set_bvalue(0);
+            ui->tableWidget->setItem(index, 0, new QTableWidgetItem(QFileInfo(dwi_files[index]->file_name.data()).fileName()));
+            ui->tableWidget->setItem(index, 1, new QTableWidgetItem(QString::number(dwi_files[index]->get_bvalue())));
+            ui->tableWidget->setItem(index, 2, new QTableWidgetItem(QString::number(dwi_files[index]->get_bvec()[0])));
+            ui->tableWidget->setItem(index, 3, new QTableWidgetItem(QString::number(dwi_files[index]->get_bvec()[1])));
+            ui->tableWidget->setItem(index, 4, new QTableWidgetItem(QString::number(dwi_files[index]->get_bvec()[2])));
+            max_b = std::max(max_b,(double)dwi_files[index]->get_bvalue());
         }
         if(max_b == 0.0)
             QMessageBox::information(this,"DSI Studio","Cannot find b-table from the header. You may need to load an external b-table",0);
@@ -657,12 +657,12 @@ void dicom_parser::on_buttonBox_accepted()
     // save b table info to dwi header
     for (unsigned int index = 0;index < dwi_files.size();++index)
     {
-        if(QString::number(dwi_files[index].get_bvalue()) != ui->tableWidget->item(index,1)->text())
-            dwi_files[index].set_bvalue(ui->tableWidget->item(index,1)->text().toFloat());
-        if(QString::number(dwi_files[index].get_bvec()[0]) != ui->tableWidget->item(index,2)->text() ||
-           QString::number(dwi_files[index].get_bvec()[1]) != ui->tableWidget->item(index,3)->text() ||
-           QString::number(dwi_files[index].get_bvec()[2]) != ui->tableWidget->item(index,4)->text())
-            dwi_files[index].set_bvec(
+        if(QString::number(dwi_files[index]->get_bvalue()) != ui->tableWidget->item(index,1)->text())
+            dwi_files[index]->set_bvalue(ui->tableWidget->item(index,1)->text().toFloat());
+        if(QString::number(dwi_files[index]->get_bvec()[0]) != ui->tableWidget->item(index,2)->text() ||
+           QString::number(dwi_files[index]->get_bvec()[1]) != ui->tableWidget->item(index,3)->text() ||
+           QString::number(dwi_files[index]->get_bvec()[2]) != ui->tableWidget->item(index,4)->text())
+            dwi_files[index]->set_bvec(
                     ui->tableWidget->item(index,2)->text().toFloat(),
                     ui->tableWidget->item(index,3)->text().toFloat(),
                     ui->tableWidget->item(index,4)->text().toFloat());
@@ -758,9 +758,9 @@ void dicom_parser::update_b_table(void)
 {
     for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
     {
-        ui->tableWidget->item(index,2)->setText(QString::number(dwi_files[index].bvec[0]));
-        ui->tableWidget->item(index,3)->setText(QString::number(dwi_files[index].bvec[1]));
-        ui->tableWidget->item(index,4)->setText(QString::number(dwi_files[index].bvec[2]));
+        ui->tableWidget->item(index,2)->setText(QString::number(dwi_files[index]->bvec[0]));
+        ui->tableWidget->item(index,3)->setText(QString::number(dwi_files[index]->bvec[1]));
+        ui->tableWidget->item(index,4)->setText(QString::number(dwi_files[index]->bvec[2]));
     }
 }
 
@@ -877,7 +877,7 @@ void dicom_parser::on_detect_motion_clicked()
 {
     unsigned int b0_count = 0;
     for(unsigned int index = 0;index < dwi_files.size();++index)
-        if(dwi_files[index].get_bvalue() < 100)
+        if(dwi_files[index]->get_bvalue() < 100)
             ++b0_count;
     if(b0_count <= 1)
     {

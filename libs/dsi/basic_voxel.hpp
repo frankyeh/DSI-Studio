@@ -4,7 +4,6 @@
 #include <boost/mpl/for_each.hpp>
 #include <boost/mpl/inherit_linearly.hpp>
 #include <boost/utility.hpp>
-#include <boost/ptr_container/ptr_vector.hpp>
 #include <image/image.hpp>
 #include <string>
 #include "tessellated_icosahedron.hpp"
@@ -50,7 +49,7 @@ struct VoxelData
 class Voxel : public boost::noncopyable
 {
 private:
-    boost::ptr_vector<BaseProcess> process_list;
+    std::vector<std::shared_ptr<BaseProcess> > process_list;
 public:
     image::geometry<3> dim;
     image::vector<3> vs;
@@ -120,7 +119,7 @@ public:
     template<typename Process>
     void operator()(Process& X)
     {
-        process_list.push_back(new Process);
+        process_list.push_back(std::make_shared<Process>());
     }
 public:
     void init(unsigned int thread_count)
@@ -135,7 +134,7 @@ public:
             voxel_data[index].dir.resize(max_fiber_number);
         }
         for (unsigned int index = 0; index < process_list.size(); ++index)
-            process_list[index].init(*this);
+            process_list[index]->init(*this);
     }
 
     void thread_run(unsigned char thread_index,unsigned char thread_count,
@@ -163,19 +162,19 @@ public:
             voxel_data[thread_index].init();
             voxel_data[thread_index].voxel_index = voxel_index;
             for (int index = 0; index < process_list.size(); ++index)
-                process_list[index].run(*this,voxel_data[thread_index]);
+                process_list[index]->run(*this,voxel_data[thread_index]);
         }
     }
     void end(gz_mat_write& writer)
     {
         begin_prog("output data");
         for (unsigned int index = 0; check_prog(index,process_list.size()); ++index)
-            process_list[index].end(*this,writer);
+            process_list[index]->end(*this,writer);
     }
 
     BaseProcess* get(unsigned int index)
     {
-        return &process_list[index];
+        return process_list[index].get();
     }
 };
 

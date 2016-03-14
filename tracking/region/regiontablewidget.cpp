@@ -127,18 +127,18 @@ void RegionTableWidget::contextMenuEvent ( QContextMenuEvent * event )
 void RegionTableWidget::updateRegions(QTableWidgetItem* item)
 {
     if (item->column() == 1)
-        regions[item->row()].regions_feature = item->text().toInt();
+        regions[item->row()]->regions_feature = item->text().toInt();
     else
         if (item->column() == 2)
         {
-            regions[item->row()].show_region.color = item->data(Qt::UserRole).toInt();
+            regions[item->row()]->show_region.color = item->data(Qt::UserRole).toInt();
             emit need_update();
         }
 }
 
 QColor RegionTableWidget::currentRowColor(void)
 {
-    return (unsigned int)regions[currentRow()].show_region.color;
+    return (unsigned int)regions[currentRow()]->show_region.color;
 }
 
 void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
@@ -149,14 +149,14 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
         for(unsigned int index = 0;index < regions.size();++index)
         {
             for(unsigned int i = 0;i < color_n;++i)
-                if(regions[index].show_region.color.color == ((int)ROIColor[i].rgb() | 0x00333333))
+                if(regions[index]->show_region.color.color == ((int)ROIColor[i].rgb() | 0x00333333))
                     ++color_count[i];
         }
         color = 0x00333333 | ROIColor[std::min_element(color_count.begin(),color_count.end())-color_count.begin()].rgb();
     }
-    regions.push_back(new ROIRegion(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size));
-    regions.back().show_region.color = color;
-    regions.back().regions_feature = feature;
+    regions.push_back(std::make_shared<ROIRegion>(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size));
+    regions.back()->show_region.color = color;
+    regions.back()->regions_feature = feature;
 
     setRowCount(regions.size());
 
@@ -215,10 +215,10 @@ void RegionTableWidget::draw_region(QImage& qimage)
     {
         if (item(roi_index,0)->checkState() != Qt::Checked)
             continue;
-        unsigned int cur_color = regions[roi_index].show_region.color;
-        for (unsigned int index = 0;index < regions[roi_index].size();++index)
+        unsigned int cur_color = regions[roi_index]->show_region.color;
+        for (unsigned int index = 0;index < regions[roi_index]->size();++index)
         {
-            regions[roi_index].getSlicePosition(&cur_tracking_window.slice, index, X, Y, Z);
+            regions[roi_index]->getSlicePosition(&cur_tracking_window.slice, index, X, Y, Z);
             if (cur_tracking_window.slice.slice_pos[cur_tracking_window.slice.cur_dim] != Z ||
                     X < 0 || Y < 0 || X >= qimage.width() || Y >= qimage.height())
                 continue;
@@ -252,12 +252,12 @@ void RegionTableWidget::draw_mosaic_region(QImage& qimage,unsigned int mosaic_si
     {
         if (item(roi_index,0)->checkState() != Qt::Checked)
             continue;
-        unsigned int cur_color = regions[roi_index].show_region.color;
-        for (unsigned int index = 0;index < regions[roi_index].size();++index)
+        unsigned int cur_color = regions[roi_index]->show_region.color;
+        for (unsigned int index = 0;index < regions[roi_index]->size();++index)
         {
-            int X = regions[roi_index].get()[index][0];
-            int Y = regions[roi_index].get()[index][1];
-            int Z = regions[roi_index].get()[index][2];
+            int X = regions[roi_index]->get()[index][0];
+            int Y = regions[roi_index]->get()[index][1];
+            int Z = regions[roi_index]->get()[index][2];
             if(Z != ((Z / skip) * skip))
                 continue;
             X += shift_x[Z / skip];
@@ -276,10 +276,10 @@ void RegionTableWidget::new_region(void)
 void RegionTableWidget::copy_region(void)
 {
     unsigned int cur_row = currentRow();
-    add_region(item(cur_row,0)->text(),regions[cur_row].regions_feature);
-    unsigned int color = regions.back().show_region.color.color;
-    regions.back() = regions[cur_row];
-    regions.back().show_region.color.color = color;
+    add_region(item(cur_row,0)->text(),regions[cur_row]->regions_feature);
+    unsigned int color = regions.back()->show_region.color.color;
+    *regions.back() = *regions[cur_row];
+    regions.back()->show_region.color.color = color;
 }
 void load_nii_label(const char* filename,std::map<short,std::string>& label_map)
 {
@@ -368,9 +368,9 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     // searching for T1/T2 mappings
     for(unsigned int index = 0;index < cur_tracking_window.glWidget->other_slices.size();++index)
     {
-        if(from.geometry() == cur_tracking_window.glWidget->other_slices[index].source_images.geometry())
+        if(from.geometry() == cur_tracking_window.glWidget->other_slices[index]->source_images.geometry())
         {
-            convert = cur_tracking_window.glWidget->other_slices[index].invT;
+            convert = cur_tracking_window.glWidget->other_slices[index]->invT;
             has_transform = true;
             break;
         }
@@ -441,7 +441,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         region.show_region.color = max_value;
         add_region(QFileInfo(file_name).baseName(),type,color);
 
-        regions.back().assign(region.get());
+        regions.back()->assign(region.get());
         item(currentRow(),0)->setCheckState(Qt::Checked);
         item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
         return true;
@@ -462,7 +462,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
             QString name = (label_map.find(value) == label_map.end() ?
                                 QString("roi_") + QString::number(value):QString(label_map[value].c_str()));
             add_region(name,roi_id);
-            regions.back().assign(region.get());
+            regions.back()->assign(region.get());
             item(currentRow(),0)->setCheckState(Qt::Unchecked);
             item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
         }
@@ -493,7 +493,7 @@ void RegionTableWidget::load_region(void)
             return;
         }
         add_region(QFileInfo(filenames[index]).baseName(),roi_id,region.show_region.color.color);
-        regions.back().assign(region.get());
+        regions.back()->assign(region.get());
 
     }
     emit need_update();
@@ -510,7 +510,7 @@ void RegionTableWidget::merge_all(void)
 
     for(int index = merge_list.size()-1;index >= 1;--index)
     {
-        regions[merge_list[0]].add(regions[merge_list[index]]);
+        regions[merge_list[0]]->add(*regions[merge_list[index]]);
         regions.erase(regions.begin()+merge_list[index]);
         removeRow(merge_list[index]);
     }
@@ -551,10 +551,10 @@ void RegionTableWidget::move_up(void)
         closePersistentEditor(item(currentRow(),1));
         closePersistentEditor(item(currentRow()-1,2));
         closePersistentEditor(item(currentRow(),2));
-        item(currentRow()-1,1)->setData(Qt::DisplayRole,regions[currentRow()-1].regions_feature);
-        item(currentRow(),1)->setData(Qt::DisplayRole,regions[currentRow()].regions_feature);
-        item(currentRow()-1,2)->setData(Qt::UserRole,regions[currentRow()-1].show_region.color.color);
-        item(currentRow(),2)->setData(Qt::UserRole,regions[currentRow()].show_region.color.color);
+        item(currentRow()-1,1)->setData(Qt::DisplayRole,regions[currentRow()-1]->regions_feature);
+        item(currentRow(),1)->setData(Qt::DisplayRole,regions[currentRow()]->regions_feature);
+        item(currentRow()-1,2)->setData(Qt::UserRole,regions[currentRow()-1]->show_region.color.color);
+        item(currentRow(),2)->setData(Qt::UserRole,regions[currentRow()]->show_region.color.color);
         openPersistentEditor(item(currentRow()-1,1));
         openPersistentEditor(item(currentRow(),1));
         openPersistentEditor(item(currentRow()-1,2));
@@ -578,10 +578,10 @@ void RegionTableWidget::move_down(void)
         closePersistentEditor(item(currentRow(),1));
         closePersistentEditor(item(currentRow()+1,2));
         closePersistentEditor(item(currentRow(),2));
-        item(currentRow()+1,1)->setData(Qt::DisplayRole,regions[currentRow()+1].regions_feature);
-        item(currentRow(),1)->setData(Qt::DisplayRole,regions[currentRow()].regions_feature);
-        item(currentRow()+1,2)->setData(Qt::UserRole,regions[currentRow()+1].show_region.color.color);
-        item(currentRow(),2)->setData(Qt::UserRole,regions[currentRow()].show_region.color.color);
+        item(currentRow()+1,1)->setData(Qt::DisplayRole,regions[currentRow()+1]->regions_feature);
+        item(currentRow(),1)->setData(Qt::DisplayRole,regions[currentRow()]->regions_feature);
+        item(currentRow()+1,2)->setData(Qt::UserRole,regions[currentRow()+1]->show_region.color.color);
+        item(currentRow(),2)->setData(Qt::UserRole,regions[currentRow()]->show_region.color.color);
         openPersistentEditor(item(currentRow()+1,1));
         openPersistentEditor(item(currentRow(),1));
         openPersistentEditor(item(currentRow()+1,2));
@@ -603,7 +603,7 @@ void RegionTableWidget::save_region(void)
     if(QFileInfo(filename.toLower()).completeSuffix() != "mat" && QFileInfo(filename.toLower()).completeSuffix() != "txt")
         filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
     std::vector<float> no_trans;
-    regions[currentRow()].SaveToFile(filename.toLocal8Bit().begin(),
+    regions[currentRow()]->SaveToFile(filename.toLocal8Bit().begin(),
                                      cur_tracking_window.is_qsdr ? cur_tracking_window.handle->trans_to_mni: no_trans);
     item(currentRow(),0)->setText(QFileInfo(filename).baseName());
 }
@@ -623,7 +623,7 @@ void RegionTableWidget::save_all_regions_to_dir(void)
             filename  += "/";
             filename  += item(index,0)->text().toLocal8Bit().begin();
             filename  += ".nii.gz";
-            regions[index].SaveToFile(filename.c_str(),
+            regions[index]->SaveToFile(filename.c_str(),
                                          cur_tracking_window.is_qsdr ? cur_tracking_window.handle->trans_to_mni: no_trans);
         }
 }
@@ -643,12 +643,12 @@ void RegionTableWidget::save_all_regions(void)
     image::basic_image<unsigned int, 3>mask(geo);
     for (unsigned int i = 0; i < regions.size(); ++i)
         if (item(i,0)->checkState() == Qt::Checked)
-        for (unsigned int j = 0; j < regions[i].get().size(); ++j)
+        for (unsigned int j = 0; j < regions[i]->get().size(); ++j)
         {
-            if (geo.is_valid(regions[i].get()[j][0], regions[i].get()[j][1],regions[i].get()[j][2]))
-                mask[image::pixel_index<3>(regions[i].get()[j][0],
-                                           regions[i].get()[j][1],
-                                           regions[i].get()[j][2], geo).index()] = i+1;
+            if (geo.is_valid(regions[i]->get()[j][0], regions[i]->get()[j][1],regions[i]->get()[j][2]))
+                mask[image::pixel_index<3>(regions[i]->get()[j][0],
+                                           regions[i]->get()[j][1],
+                                           regions[i]->get()[j][2], geo).index()] = i+1;
         }
 
     gz_nifti header;
@@ -683,10 +683,10 @@ void RegionTableWidget::save_region_info(void)
             out << "\t" << cur_tracking_window.handle->view_item[index].name;
 
     out << std::endl;
-    for(int index = 0;index < regions[currentRow()].get().size();++index)
+    for(int index = 0;index < regions[currentRow()]->get().size();++index)
     {
         std::vector<float> data;
-        image::vector<3,short> point(regions[currentRow()].get()[index]);
+        image::vector<3,short> point(regions[currentRow()]->get()[index]);
         cur_tracking_window.handle->get_voxel_info2(point[0],point[1],point[2],data);
         cur_tracking_window.handle->get_voxel_information(point[0],point[1],point[2],data);
         std::copy(point.begin(),point.end(),std::ostream_iterator<float>(out,"\t"));
@@ -743,7 +743,7 @@ void RegionTableWidget::show_statistics(void)
         begin_prog("calculating");
         for(unsigned int index = 0;check_prog(index,regions.size());++index)
             if(item(index,0)->checkState() == Qt::Checked)
-                regions[index].get_quantitative_data(cur_tracking_window.handle,titles,data[index]);
+                regions[index]->get_quantitative_data(cur_tracking_window.handle,titles,data[index]);
         if(prog_aborted())
             return;
         std::ostringstream out;
@@ -796,7 +796,7 @@ void RegionTableWidget::add_points(std::vector<image::vector<3,short> >& points,
 {
     if (currentRow() >= regions.size())
         return;
-    regions[currentRow()].add_points(points,erase);
+    regions[currentRow()]->add_points(points,erase);
     item(currentRow(),0)->setCheckState(Qt::Checked);
     item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
 }
@@ -804,9 +804,9 @@ void RegionTableWidget::add_points(std::vector<image::vector<3,short> >& points,
 bool RegionTableWidget::has_seeding(void)
 {
     for (unsigned int index = 0;index < regions.size();++index)
-        if (!regions[index].empty() &&
+        if (!regions[index]->empty() &&
                 item(index,0)->checkState() == Qt::Checked &&
-                regions[index].regions_feature == seed_id) // either roi roa end or seed
+                regions[index]->regions_feature == seed_id) // either roi roa end or seed
             return true;
     return false;
 }
@@ -822,15 +822,15 @@ void RegionTableWidget::setROIs(ThreadData* data)
     }
     bool set_color = false;
     for (unsigned int index = 0;index < regions.size();++index)
-        if (!regions[index].empty() && item(index,0)->checkState() == Qt::Checked)
+        if (!regions[index]->empty() && item(index,0)->checkState() == Qt::Checked)
         {
             if(!set_color)
             {
-                data->color = regions[index].show_region.color;
+                data->color = regions[index]->show_region.color;
                 set_color = true;
             }
-            data->setRegions(cur_tracking_window.handle->dim,regions[index].get(),
-                             regions[index].regions_feature,item(index,0)->text().toLocal8Bit().begin());
+            data->setRegions(cur_tracking_window.handle->dim,regions[index]->get(),
+                             regions[index]->regions_feature,item(index,0)->text().toLocal8Bit().begin());
 
         }
 }
@@ -838,23 +838,23 @@ void RegionTableWidget::setROIs(ThreadData* data)
 QString RegionTableWidget::getROIname(void)
 {
     for (unsigned int index = 0;index < regions.size();++index)
-        if (!regions[index].empty() && item(index,0)->checkState() == Qt::Checked &&
-             regions[index].regions_feature == roi_id)
+        if (!regions[index]->empty() && item(index,0)->checkState() == Qt::Checked &&
+             regions[index]->regions_feature == roi_id)
                 return item(index,0)->text();
     for (unsigned int index = 0;index < regions.size();++index)
-        if (!regions[index].empty() && item(index,0)->checkState() == Qt::Checked &&
-             regions[index].regions_feature == seed_id)
+        if (!regions[index]->empty() && item(index,0)->checkState() == Qt::Checked &&
+             regions[index]->regions_feature == seed_id)
                 return item(index,0)->text();
     return "whole_brain";
 }
 void RegionTableWidget::undo(void)
 {
-    regions[currentRow()].undo();
+    regions[currentRow()]->undo();
     emit need_update();
 }
 void RegionTableWidget::redo(void)
 {
-    regions[currentRow()].redo();
+    regions[currentRow()]->redo();
     emit need_update();
 }
 
@@ -863,7 +863,7 @@ void RegionTableWidget::do_action(int id)
     if (regions.empty())
         return;
     image::basic_image<unsigned char, 3>mask;
-    ROIRegion& cur_region = regions[currentRow()];
+    ROIRegion& cur_region = *regions[currentRow()];
     switch (id)
     {
     case 0: // Smoothing
@@ -947,7 +947,7 @@ void RegionTableWidget::do_action(int id)
                         region.LoadFromBuffer(mask);
                         add_region(name + "_"+QString::number(total_count+1),
                                    roi_id,region.show_region.color.color);
-                        regions.back().assign(region.get());
+                        regions.back()->assign(region.get());
                     }
                     ++total_count;
                 }

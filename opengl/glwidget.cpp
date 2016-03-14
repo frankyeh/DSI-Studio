@@ -581,8 +581,8 @@ void GLWidget::renderLR(int eye)
 
         std::vector<image::vector<3,float> > points(4);
         SliceModel* active_slice = current_visible_slide ?
-                                   (SliceModel*)&other_slices[current_visible_slide-1] :
-                                   (SliceModel*)&cur_tracking_window.slice;
+                                        other_slices[current_visible_slide-1].get() :
+                                        (SliceModel*)&cur_tracking_window.slice;
 
         if(cur_tracking_window.ui->min_value_gl->value() != slice_min_value ||
            cur_tracking_window.ui->max_value_gl->value() != slice_max_value ||
@@ -678,8 +678,8 @@ void GLWidget::renderLR(int eye)
         for(unsigned int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
             if(cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked)
             {
-                cur_tracking_window.regionWidget->regions[index].makeMeshes(get_param("region_mesh_smoothed"));
-                drawRegion(cur_tracking_window.regionWidget->regions[index].show_region,
+                cur_tracking_window.regionWidget->regions[index]->makeMeshes(get_param("region_mesh_smoothed"));
+                drawRegion(cur_tracking_window.regionWidget->regions[index]->show_region,
                            cur_view,alpha,get_param("region_bend1"),get_param("region_bend2"));
             }
         glDisable(GL_BLEND);
@@ -1212,12 +1212,12 @@ void GLWidget::wheelEvent ( QWheelEvent * event )
 void GLWidget::slice_location(unsigned char dim,std::vector<image::vector<3,float> >& points)
 {
     SliceModel* active_slice = current_visible_slide ?
-                               (SliceModel*)&other_slices[current_visible_slide-1] :
+                               other_slices[current_visible_slide-1].get() :
                                (SliceModel*)&cur_tracking_window.slice;
     active_slice->get_slice_positions(dim,points);
     if(current_visible_slide)
     for(unsigned int index = 0;index < 4;++index)
-        points[index].to(other_slices[current_visible_slide-1].transform);
+        points[index].to(other_slices[current_visible_slide-1]->transform);
 }
 
 void GLWidget::get_view_dir(QPoint p,image::vector<3,float>& dir)
@@ -1290,7 +1290,7 @@ void GLWidget::select_object(void)
     if(!cur_tracking_window.slice.geometry.is_valid(voxel))
         continue;
     for(int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
-        if(cur_tracking_window.regionWidget->regions[index].has_point(voxel) &&
+        if(cur_tracking_window.regionWidget->regions[index]->has_point(voxel) &&
            cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked)
         {
             selected_index = index;
@@ -1509,7 +1509,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         image::vector<3,short> apply_dis(dis);
         if(apply_dis[0] != 0 || apply_dis[1] != 0 || apply_dis[2] != 0)
         {
-            cur_tracking_window.regionWidget->regions[cur_tracking_window.regionWidget->currentRow()].shift(apply_dis);
+            cur_tracking_window.regionWidget->regions[cur_tracking_window.regionWidget->currentRow()]->shift(apply_dis);
             accumulated_dis += apply_dis;
             emit region_edited();
         }
@@ -1631,9 +1631,9 @@ void GLWidget::get_current_slice_transformation(
         tr[0] = tr[5] = tr[10] = tr[15] = 1.0;
         return;
     }
-    geo = other_slices[current_visible_slide-1].geometry;
-    vs = other_slices[current_visible_slide-1].voxel_size;
-    tr = other_slices[current_visible_slide-1].invT;
+    geo = other_slices[current_visible_slide-1]->geometry;
+    vs = other_slices[current_visible_slide-1]->voxel_size;
+    tr = other_slices[current_visible_slide-1]->invT;
 }
 
 void GLWidget::saveMapping(void)
@@ -1651,7 +1651,7 @@ void GLWidget::saveMapping(void)
     for(int row = 0,index = 0;row < 4;++row)
     {
         for(int col = 0;col < 4;++col,++index)
-            out << other_slices[current_visible_slide-1].transform[index] << " ";
+            out << other_slices[current_visible_slide-1]->transform[index] << " ";
         out << std::endl;
     }
 }
@@ -1662,15 +1662,15 @@ void GLWidget::adjustMapping(void)
         return;
     std::auto_ptr<manual_alignment> manual(new manual_alignment(this,
         cur_tracking_window.slice.source_images,cur_tracking_window.slice.voxel_size,
-        other_slices[current_visible_slide-1].source_images,other_slices[current_visible_slide-1].voxel_size,
+        other_slices[current_visible_slide-1]->source_images,other_slices[current_visible_slide-1]->voxel_size,
             image::reg::rigid_body,1/*mutual info*/));
-    manual->data.arg = other_slices[current_visible_slide-1].arg_min;
+    manual->data.arg = other_slices[current_visible_slide-1]->arg_min;
     manual->timer->start();
     if(manual->exec() != QDialog::Accepted)
         return;
-    other_slices[current_visible_slide-1].terminate();
-    other_slices[current_visible_slide-1].arg_min = manual->data.arg;
-    other_slices[current_visible_slide-1].update();
+    other_slices[current_visible_slide-1]->terminate();
+    other_slices[current_visible_slide-1]->arg_min = manual->data.arg;
+    other_slices[current_visible_slide-1]->update();
     updateGL();
 }
 
@@ -1683,16 +1683,16 @@ void GLWidget::loadMapping(void)
     std::ifstream in(filename.toLocal8Bit().begin());
     if(filename.isEmpty() || !in)
         return;
-    other_slices[current_visible_slide-1].terminate();
+    other_slices[current_visible_slide-1]->terminate();
     std::vector<float> data;
     std::copy(std::istream_iterator<float>(in),
               std::istream_iterator<float>(),std::back_inserter(data));
     data.resize(16);
     data[15] = 1.0;
-    other_slices[current_visible_slide-1].transform = data;
-    other_slices[current_visible_slide-1].invT = data;
-    other_slices[current_visible_slide-1].invT.inv();
-    other_slices[current_visible_slide-1].update_roi();
+    other_slices[current_visible_slide-1]->transform = data;
+    other_slices[current_visible_slide-1]->invT = data;
+    other_slices[current_visible_slide-1]->invT.inv();
+    other_slices[current_visible_slide-1]->update_roi();
     updateGL();
 }
 
@@ -1701,13 +1701,13 @@ bool GLWidget::addSlices(QStringList filenames,bool correct_intensity)
     std::vector<std::string> files(filenames.size());
     for (unsigned int index = 0; index < filenames.size(); ++index)
             files[index] = filenames[index].toLocal8Bit().begin();
-    std::auto_ptr<CustomSliceModel> new_slice(new CustomSliceModel);
+    std::shared_ptr<CustomSliceModel> new_slice(new CustomSliceModel);
     if(!new_slice->initialize(cur_tracking_window.slice,cur_tracking_window.is_qsdr,files,correct_intensity))
     {
         QMessageBox::information(this,"Error reading image files",0);
         return false;
     }
-    other_slices.push_back(new_slice.release());
+    other_slices.push_back(new_slice);
     current_visible_slide = other_slices.size();
     if(!timer.get())
     {
@@ -1723,10 +1723,10 @@ void GLWidget::check_reg(void)
     bool all_ended = true;
     for(unsigned int index = 0;index < other_slices.size();++index)
     {
-        if(!other_slices[index].ended)
+        if(!other_slices[index]->ended)
         {
             all_ended = false;
-            other_slices[index].update();
+            other_slices[index]->update();
         }
     }
     cur_tracking_window.scene.show_slice();
@@ -1744,7 +1744,7 @@ void GLWidget::delete_slice(int index)
 void GLWidget::addSurface(void)
 {
     SliceModel* active_slice = current_visible_slide ?
-                               (SliceModel*)&other_slices[current_visible_slide-1] :
+                               other_slices[current_visible_slide-1].get():
                                (SliceModel*)&cur_tracking_window.slice;
     float threshold = image::segmentation::otsu_threshold(active_slice->get_source());
     bool ok;
@@ -1839,20 +1839,20 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
     {
         std::vector<std::string> file;
         file.push_back(param.toStdString());
-        std::auto_ptr<CustomSliceModel> new_slice(new CustomSliceModel);
+        std::shared_ptr<CustomSliceModel> new_slice(new CustomSliceModel);
         if(!new_slice->initialize(cur_tracking_window.slice,cur_tracking_window.is_qsdr,file,get_param("slice_smoothing")))
         {
             std::cout << "Invalid file format:" << param.toStdString() << std::endl;
             return true;
         }
-        other_slices.push_back(new_slice.release());
+        other_slices.push_back(new_slice);
         current_visible_slide = other_slices.size();
         cur_tracking_window.add_slice_name(QFileInfo(param).baseName());
 
         std::cout << "register image to the DWI space" << std::endl;
-        if(other_slices.back().thread.get())
-            other_slices.back().thread->join();
-        other_slices.back().update();
+        if(other_slices.back()->thread.get())
+            other_slices.back()->thread->join();
+        other_slices.back()->update();
         updateGL();
         return true;
     }
@@ -1925,7 +1925,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
     if(cmd == "add_surface")
     {
         SliceModel* active_slice = current_visible_slide ?
-                                   (SliceModel*)&other_slices[current_visible_slide-1] :
+                                   other_slices[current_visible_slide-1].get() :
                                    (SliceModel*)&cur_tracking_window.slice;
 
         float threshold = (param2.isEmpty()) ? image::segmentation::otsu_threshold(active_slice->get_source()):param2.toFloat();
@@ -1992,7 +1992,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         if(current_visible_slide)
         for(unsigned int index = 0;index < surface->get()->point_list.size();++index)
         {
-            surface->get()->point_list[index].to(other_slices[current_visible_slide-1].transform);
+            surface->get()->point_list[index].to(other_slices[current_visible_slide-1]->transform);
             surface->get()->point_list[index] += 0.5;
         }
         paintGL();

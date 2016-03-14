@@ -1,7 +1,6 @@
 #ifndef LAYOUT_HPP
 #define LAYOUT_HPP
 #include <iterator>
-#include <boost/ptr_container/ptr_vector.hpp>
 #include "mix_gaussian_model.hpp"
 #include "tessellated_icosahedron.hpp"
 #include "racian_noise.hpp"
@@ -13,13 +12,13 @@ class Layout
 
 private:
     std::vector<basic_sigal_model*> models;
-    boost::ptr_vector<RacianNoise> rician_gen;
+    std::vector<std::shared_ptr<RacianNoise> > rician_gen;
     float discrete_scale;
     float spin_density;
     float mean_dif;
     float encodeNoise(float signal)
     {
-        return rician_gen[signal/discrete_scale]();
+        return (*rician_gen[signal/discrete_scale])();
     }
 private:
     tessellated_icosahedron ti;
@@ -34,7 +33,7 @@ public:
     {
         ti.init(odf_fold);
         for (unsigned int index = 0; index * discrete_scale <= spin_density+1.0; ++index)
-            rician_gen.push_back(new RacianNoise((float)index * discrete_scale,spin_density/s0_snr));
+            rician_gen.push_back(std::make_shared<RacianNoise>((float)index * discrete_scale,spin_density/s0_snr));
     }
     ~Layout(void)
     {

@@ -598,17 +598,17 @@ void vbc_database::run_permutation_multithread(unsigned int id)
             info.resample(*model.get(),false,false);
             info.individual_data = &(individual_data[subject_id][0]);
             info.individual_data_sd = normalize_qa ? individual_data_sd[subject_id]:1.0;
-            calculate_spm(spm_maps[subject_id],info);
+            calculate_spm(*spm_maps[subject_id],info);
             if(terminated)
                 return;
-            fib.fa = spm_maps[subject_id].lesser_ptr;
+            fib.fa = spm_maps[subject_id]->lesser_ptr;
             run_track(fib,tracks,total_track_count,threads->size());
-            lesser_tracks[subject_id].add_tracts(tracks);
-            fib.fa = spm_maps[subject_id].greater_ptr;
+            lesser_tracks[subject_id]->add_tracts(tracks);
+            fib.fa = spm_maps[subject_id]->greater_ptr;
             if(terminated)
                 return;
             run_track(fib,tracks,total_track_count,threads->size());
-            greater_tracks[subject_id].add_tracts(tracks);
+            greater_tracks[subject_id]->add_tracts(tracks);
         }
 
         bool null = true;
@@ -682,7 +682,7 @@ void vbc_database::run_permutation_multithread(unsigned int id)
             if(output_resampling && !null)
             {
                 boost::mutex::scoped_lock lock(lock_lesser_tracks);
-                lesser_tracks[0].add_tracts(tracks);
+                lesser_tracks[0]->add_tracts(tracks);
                 tracks.clear();
             }
 
@@ -693,7 +693,7 @@ void vbc_database::run_permutation_multithread(unsigned int id)
             if(output_resampling && !null)
             {
                 boost::mutex::scoped_lock lock(lock_greater_tracks);
-                greater_tracks[0].add_tracts(tracks);
+                greater_tracks[0]->add_tracts(tracks);
                 tracks.clear();
             }
 
@@ -703,17 +703,17 @@ void vbc_database::run_permutation_multithread(unsigned int id)
         {
             stat_model info;
             info.resample(*model.get(),false,false);
-            calculate_spm(spm_maps[0],info);
+            calculate_spm(*spm_maps[0],info);
             if(terminated)
                 return;
-            fib.fa = spm_maps[0].lesser_ptr;
+            fib.fa = spm_maps[0]->lesser_ptr;
             run_track(fib,tracks,total_track_count,threads->size());
-            lesser_tracks[0].add_tracts(tracks);
-            fib.fa = spm_maps[0].greater_ptr;
+            lesser_tracks[0]->add_tracts(tracks);
+            fib.fa = spm_maps[0]->greater_ptr;
             if(terminated)
                 return;
             run_track(fib,tracks,total_track_count,threads->size());
-            greater_tracks[0].add_tracts(tracks);
+            greater_tracks[0]->add_tracts(tracks);
         }
     }
 }
@@ -740,7 +740,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
         if(length_threshold_greater)
         {
             TractModel tracks(handle.get());
-            tracks.add_tracts(greater_tracks[index].get_tracts(),length_threshold_greater);
+            tracks.add_tracts(greater_tracks[index]->get_tracts(),length_threshold_greater);
             if(tracks.get_visible_track_count())
             {
                 std::ostringstream out1;
@@ -755,7 +755,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
                 out1 << trk_file_names[index] << ".greater.no_trk.txt";
                 std::ofstream(out1.str().c_str());
             }
-            greater_tracks[index] = tracks;
+            *greater_tracks[index] = tracks;
         }
         {
             std::ostringstream out1;
@@ -770,12 +770,12 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
                 if(name == "fa0")
                     mat_write.write("qa_map",handle->fib.fa[0],1,handle->dim.size());
             }
-            for(unsigned int i = 0;i < spm_maps[index].greater_ptr.size();++i)
+            for(unsigned int i = 0;i < spm_maps[index]->greater_ptr.size();++i)
             {
                 std::ostringstream out1,out2;
                 out1 << "fa" << i;
                 out2 << "index" << i;
-                mat_write.write(out1.str().c_str(),spm_maps[index].greater_ptr[i],1,handle->dim.size());
+                mat_write.write(out1.str().c_str(),spm_maps[index]->greater_ptr[i],1,handle->dim.size());
                 mat_write.write(out2.str().c_str(),handle->fib.findex[i],1,handle->dim.size());
             }
         }
@@ -783,7 +783,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
         if(length_threshold_lesser)
         {
             TractModel tracks(handle.get());
-            tracks.add_tracts(lesser_tracks[index].get_tracts(),length_threshold_lesser);
+            tracks.add_tracts(lesser_tracks[index]->get_tracts(),length_threshold_lesser);
             if(tracks.get_visible_track_count())
             {
                 std::ostringstream out1;
@@ -799,7 +799,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
                 std::ofstream(out1.str().c_str());
             }
 
-            lesser_tracks[index] = tracks;
+            *lesser_tracks[index] = tracks;
         }
 
         {
@@ -815,12 +815,12 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
                 if(name == "fa0")
                     mat_write.write("qa_map",handle->fib.fa[0],1,handle->dim.size());
             }
-            for(unsigned int i = 0;i < spm_maps[index].greater_ptr.size();++i)
+            for(unsigned int i = 0;i < spm_maps[index]->greater_ptr.size();++i)
             {
                 std::ostringstream out1,out2;
                 out1 << "fa" << i;
                 out2 << "index" << i;
-                mat_write.write(out1.str().c_str(),spm_maps[index].lesser_ptr[i],1,handle->dim.size());
+                mat_write.write(out1.str().c_str(),spm_maps[index]->lesser_ptr[i],1,handle->dim.size());
                 mat_write.write(out2.str().c_str(),handle->fib.findex[i],1,handle->dim.size());
             }
         }
@@ -857,9 +857,9 @@ void vbc_database::run_permutation(unsigned int thread_count)
     unsigned int num_subjects = (model->type == 2 ? individual_data.size():1);
     for(unsigned int index = 0;index < num_subjects;++index)
     {
-        greater_tracks.push_back(new TractModel(handle.get()));
-        lesser_tracks.push_back(new TractModel(handle.get()));
-        spm_maps.push_back(new fib_data);
+        greater_tracks.push_back(std::make_shared<TractModel>(handle.get()));
+        lesser_tracks.push_back(std::make_shared<TractModel>(handle.get()));
+        spm_maps.push_back(std::make_shared<fib_data>());
     }
     threads.reset(new boost::thread_group);
     for(unsigned int index = 0;index < thread_count;++index)

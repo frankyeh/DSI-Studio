@@ -8,7 +8,6 @@
 #include <boost/random.hpp>
 #include <boost/math/distributions/normal.hpp>
 #include <boost/thread/thread.hpp>
-#include <boost/ptr_container/ptr_vector.hpp>
 #include "libs/tracking/tract_model.hpp"
 
 
@@ -243,9 +242,9 @@ public:
     bool has_greater_result,has_lesser_result;
     float seeding_density;
     boost::mutex lock_resampling,lock_greater_tracks,lock_lesser_tracks;
-    boost::ptr_vector<TractModel> greater_tracks;
-    boost::ptr_vector<TractModel> lesser_tracks;
-    boost::ptr_vector<fib_data> spm_maps;
+    std::vector<std::shared_ptr<TractModel> > greater_tracks;
+    std::vector<std::shared_ptr<TractModel> > lesser_tracks;
+    std::vector<std::shared_ptr<fib_data> > spm_maps;
     void save_tracks_files(std::vector<std::string>&);
 public:// Individual analysis
     std::vector<std::vector<float> > individual_data;

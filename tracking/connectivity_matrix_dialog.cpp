@@ -103,8 +103,7 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
             for(unsigned int index = 0;index < cur_tracking_window->regionWidget->regions.size();++index)
             if(cur_tracking_window->regionWidget->item(index,0)->checkState() == Qt::Checked)
             {
-                const std::vector<image::vector<3,short> >& cur_region =
-                        cur_tracking_window->regionWidget->regions[index].get();
+                const std::vector<image::vector<3,short> >& cur_region = cur_tracking_window->regionWidget->regions[index]->get();
                 image::vector<3,float> pos = std::accumulate(cur_region.begin(),cur_region.end(),image::vector<3,float>(0,0,0));
                 pos /= cur_region.size();
                 data.regions.push_back(cur_region);

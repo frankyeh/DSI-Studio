@@ -1,5 +1,3 @@
-#include <boost/ptr_container/ptr_vector.hpp>
-#include <boost/math/distributions/students_t.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/insert_range.hpp>
 #include <boost/mpl/begin_end.hpp>

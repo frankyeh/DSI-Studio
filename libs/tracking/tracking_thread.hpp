@@ -2,9 +2,8 @@
 #define TRACKING_THREAD_HPP
 #include <vector>
 #include <ctime>
+#include <random>
 #include <memory>
-#include <boost/ptr_container/ptr_vector.hpp>
-#include <boost/random.hpp>
 #include <boost/thread/thread.hpp>
 #include "roi.hpp"
 #include "tracking_method.hpp"
@@ -34,9 +33,7 @@ public:
     ThreadData(bool random_seed):
         color(200,100,30),
         joinning(false),
-        generator(random_seed ? std::time(0):0),
-        uniform_rand(0,1.0),
-        rand_gen(generator,uniform_rand),
+        seed(random_seed ? std::random_device()():0),
         stop_by_tract(true),
         center_seed(false),
         termination_count(1000),
@@ -98,13 +95,12 @@ public:
     }
 
 private:
-    boost::mt19937 generator;
-    boost::uniform_real<float> uniform_rand;
-    boost::variate_generator<boost::mt19937&, boost::uniform_real<float> > rand_gen;
+    std::mt19937 seed;
 public:
     void run_thread(TrackingMethod* method_ptr,unsigned int thread_count,unsigned int thread_id,unsigned int max_count)
     {
         std::auto_ptr<TrackingMethod> method(method_ptr);
+        std::uniform_real_distribution<float> rand_gen(0,1);
         unsigned int iteration = thread_id; // for center seed
         if(!seeds.empty())
         try{
@@ -120,7 +116,7 @@ public:
                 {
                     if(!method->init(initial_direction,
                                      image::vector<3,float>(seeds[iteration].x(),seeds[iteration].y(),seeds[iteration].z()),
-                                     rand_gen))
+                                     seed))
                     {
                         iteration+=thread_count;
                         continue;
@@ -133,12 +129,12 @@ public:
                     // this ensure consistency
                     boost::mutex::scoped_lock lock(lock_seed_function);
                     iteration+=thread_count;
-                    unsigned int i = rand_gen()*((float)seeds.size()-1.0);
+                    unsigned int i = rand_gen(seed)*((float)seeds.size()-1.0);
                     image::vector<3,float> pos;
-                    pos[0] = (float)seeds[i].x() + rand_gen()-0.5;
-                    pos[1] = (float)seeds[i].y() + rand_gen()-0.5;
-                    pos[2] = (float)seeds[i].z() + rand_gen()-0.5;
-                    if(!method->init(initial_direction,pos,rand_gen))
+                    pos[0] = (float)seeds[i].x() + rand_gen(seed)-0.5;
+                    pos[1] = (float)seeds[i].y() + rand_gen(seed)-0.5;
+                    pos[2] = (float)seeds[i].z() + rand_gen(seed)-0.5;
+                    if(!method->init(initial_direction,pos,seed))
                         continue;
                 }
                 unsigned int point_count;

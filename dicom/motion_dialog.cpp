@@ -19,7 +19,7 @@ void linear_reg(const image::basic_image<short,3>& from,
 }
 
 void motion_detection(boost::thread_group& threads,
-                      boost::ptr_vector<DwiHeader>& dwi_files,
+                      std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                       std::vector<unsigned int>& b0_index,
                       std::vector<image::affine_transform<double> >& arg,
                       bool& terminated,
@@ -28,7 +28,7 @@ void motion_detection(boost::thread_group& threads,
     b0_index.clear();
     for(unsigned int index = 0;index < dwi_files.size();++index)
     {
-        if(dwi_files[index].get_bvalue() < 100)
+        if(dwi_files[index]->get_bvalue() < 100)
             b0_index.push_back(index);
     }
     arg.clear();
@@ -36,20 +36,20 @@ void motion_detection(boost::thread_group& threads,
     image::vector<3> vs(1,1,1);
     for(unsigned int index = 1;index < b0_index.size();++index)
         threads.add_thread(new boost::thread(&linear_reg,
-                                             boost::ref(dwi_files[b0_index[0]].image),
+                                             boost::ref(dwi_files[b0_index[0]]->image),
                                              vs,
-                                             boost::ref(dwi_files[b0_index[index]].image),
+                                             boost::ref(dwi_files[b0_index[index]]->image),
                                              vs,
                                              boost::ref(arg[index]),
                                              boost::ref(terminated),
                                              boost::ref(finished)));
 }
 
-void motion_correction(boost::ptr_vector<DwiHeader>& dwi_files,
+void motion_correction(std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                        const std::vector<unsigned int>& b0_index,
                        const std::vector<image::affine_transform<double> >& arg)
 {
-    image::geometry<3> geo(dwi_files[0].image.geometry());
+    image::geometry<3> geo(dwi_files[0]->image.geometry());
     unsigned int b1 = 0,b2 = 1;
     for(unsigned int i = 0;i < dwi_files.size();++i)
     {
@@ -83,20 +83,20 @@ void motion_correction(boost::ptr_vector<DwiHeader>& dwi_files,
                 image::transformation_matrix<double>(interpolated_arg,geo,vs,geo,vs);
 
         image::basic_image<unsigned short,3> new_image(geo);
-        image::resample(dwi_files[i].image,new_image,T,image::linear);
-        dwi_files[i].image.swap(new_image);
+        image::resample(dwi_files[i]->image,new_image,T,image::linear);
+        dwi_files[i]->image.swap(new_image);
 
         // rotate b-table
         image::matrix<3,3,float> iT = image::inverse(T.get());
         image::vector<3> tmp;
-        image::vector_rotation(dwi_files[i].bvec.begin(),tmp.begin(),iT,image::vdim<3>());
+        image::vector_rotation(dwi_files[i]->bvec.begin(),tmp.begin(),iT,image::vdim<3>());
         tmp.normalize();
-        dwi_files[i].bvec = tmp;
+        dwi_files[i]->bvec = tmp;
     }
 }
 
 
-motion_dialog::motion_dialog(QWidget *parent,boost::ptr_vector<DwiHeader>& dwi_files_) :
+motion_dialog::motion_dialog(QWidget *parent,std::vector<std::shared_ptr<DwiHeader> >& dwi_files_) :
     QDialog(parent),dicom_gui(*(dicom_parser*)parent),dwi_files(dwi_files_),terminated(false),finished(0),
     ui(new Ui::motion_dialog)
 {
@@ -150,7 +150,7 @@ void motion_dialog::show_progress(void)
             if(i >= 3)
                 data[i][j] *= 180.0/3.14159265358979323846;
             else
-                data[i][j] *= dwi_files.front().voxel_size[i];
+                data[i][j] *= dwi_files.front()->voxel_size[i];
         }
         if(i < 3)
         {
@@ -204,9 +204,9 @@ void motion_dialog::show_progress(void)
         for(unsigned int i = 0;i < arg.size();++i)
         {
             image::vector<3> t(arg[i].translocation);
-            t[0] *= dwi_files.front().voxel_size[0];
-            t[1] *= dwi_files.front().voxel_size[1];
-            t[2] *= dwi_files.front().voxel_size[2];
+            t[0] *= dwi_files.front()->voxel_size[0];
+            t[1] *= dwi_files.front()->voxel_size[1];
+            t[2] *= dwi_files.front()->voxel_size[2];
             m[i] = t.length();
             r[i] = image::vector<3>(arg[i].rotation).length()*180.0/3.14159265358979323846;
         }

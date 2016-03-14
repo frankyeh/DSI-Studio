@@ -8,7 +8,7 @@
 #include "layout.hpp"
 
 
-boost::mt19937 RacianNoise::generator(static_cast<unsigned> (std::time(0)));
+boost::mt19937 RacianNoise::generator(static_cast<unsigned> (std::random_device()()));
 boost::normal_distribution<float> RacianNoise::normal;
 boost::uniform_real<float> RacianNoise::uniform(0.0,1.0);
 boost::variate_generator<boost::mt19937&,

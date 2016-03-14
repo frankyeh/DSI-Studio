@@ -573,8 +573,8 @@ void MainWindow::on_warpImage_clicked()
     }
 }
 */
-bool load_all_files(QStringList file_list,boost::ptr_vector<DwiHeader>& dwi_files);
-bool load_4d_nii(const char* file_name,boost::ptr_vector<DwiHeader>& dwi_files);
+bool load_all_files(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
+bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 QString get_src_name(QString file_name);
 
 void MainWindow::on_batch_src_clicked()
@@ -601,7 +601,7 @@ void MainWindow::on_batch_src_clicked()
                 dir_list << cur_dir.absolutePath() + "/" + new_list[index];
 
 
-            boost::ptr_vector<DwiHeader> dwi_files;
+            std::vector<std::shared_ptr<DwiHeader> > dwi_files;
 
 
             if(QFileInfo(dir_list[i] + "/data.nii.gz").exists() &&
@@ -687,10 +687,10 @@ void MainWindow::on_batch_src_clicked()
             else
             {
                 for(unsigned int index = 0;index < dwi_files.size();++index)
-                    if(dwi_files[index].get_bvalue() < 100)
+                    if(dwi_files[index]->get_bvalue() < 100)
                     {
-                        dwi_files[index].set_bvalue(0);
-                        dwi_files[index].set_bvec(0,0,0);
+                        dwi_files[index]->set_bvalue(0);
+                        dwi_files[index]->set_bvec(0,0,0);
                     }
                 DwiHeader::output_src(output.toLocal8Bit().begin(),dwi_files,0);
             }

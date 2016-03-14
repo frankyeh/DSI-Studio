@@ -1,5 +1,4 @@
 #ifndef ROI_HPP
-#include <boost/ptr_container/ptr_vector.hpp>
 #include <functional>
 #include <set>
 #include "image/image.hpp"
@@ -59,8 +58,8 @@ public:
 
 class RoiMgr {
 public:
-    boost::ptr_vector<Roi> inclusive;
-    boost::ptr_vector<Roi> end;
+    std::vector<std::shared_ptr<Roi> > inclusive;
+    std::vector<std::shared_ptr<Roi> > end;
     std::auto_ptr<Roi> exclusive;
     std::auto_ptr<Roi> terminate;
 
@@ -93,19 +92,19 @@ public:
         if(end.empty())
             return true;
         if(end.size() == 1)
-            return end[0].havePoint(point1) ||
-                   end[0].havePoint(point2);
+            return end[0]->havePoint(point1) ||
+                   end[0]->havePoint(point2);
         if(end.size() == 2)
-            return (end[0].havePoint(point1) && end[1].havePoint(point2)) ||
-                   (end[1].havePoint(point1) && end[0].havePoint(point2));
+            return (end[0]->havePoint(point1) && end[1]->havePoint(point2)) ||
+                   (end[1]->havePoint(point1) && end[0]->havePoint(point2));
 
         bool end_point1 = false;
         bool end_point2 = false;
         for(unsigned int index = 0; index < end.size(); ++index)
         {
-            if(end[index].havePoint(point1[0],point1[1],point1[2]))
+            if(end[index]->havePoint(point1[0],point1[1],point1[2]))
                 end_point1 = true;
-            else if(end[index].havePoint(point2[0],point2[1],point2[2]))
+            else if(end[index]->havePoint(point2[0],point2[1],point2[2]))
                 end_point2 = true;
             if(end_point1 && end_point2)
                 return true;
@@ -117,7 +116,7 @@ public:
     bool have_include(const float* track,unsigned int buffer_size) const
     {
         for(unsigned int index = 0; index < inclusive.size(); ++index)
-            if(!inclusive[index].included(track,buffer_size))
+            if(!inclusive[index]->included(track,buffer_size))
                 return false;
         return true;
     }
@@ -125,16 +124,16 @@ public:
     void add_inclusive_roi(const image::geometry<3>& geo,
                            const std::vector<image::vector<3,short> >& points)
     {
-        inclusive.push_back(new Roi(geo));
+        inclusive.push_back(std::make_shared<Roi>(geo));
         for(unsigned int index = 0; index < points.size(); ++index)
-            inclusive.back().addPoint(points[index]);
+            inclusive.back()->addPoint(points[index]);
     }
     void add_end_roi(const image::geometry<3>& geo,
                      const std::vector<image::vector<3,short> >& points)
     {
-        end.push_back(new Roi(geo));
+        end.push_back(std::make_shared<Roi>(geo));
         for(unsigned int index = 0; index < points.size(); ++index)
-            end.back().addPoint(points[index]);
+            end.back()->addPoint(points[index]);
     }
 
     void add_exclusive_roi(const image::geometry<3>& geo,

@@ -1,6 +1,5 @@
 #ifndef DICOM_PARSER_H
 #define DICOM_PARSER_H
-#include "boost/ptr_container/ptr_vector.hpp"
 #include "dwi_header.hpp"
 
 #include <QDialog>
@@ -28,7 +27,7 @@ public:
 private:
     Ui::dicom_parser *ui;
     QString cur_path;
-    boost::ptr_vector<DwiHeader> dwi_files;
+    std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     std::vector<float> slice_orientation;// for applying slice orientation
     void load_files(QStringList file_list);
 private slots:

@@ -5,7 +5,6 @@
 #include <QComboBox>
 #include <vector>
 #include "Regions.h"
-#include <boost/ptr_container/ptr_vector.hpp>
 
 class ThreadData;
 class tracking_window;
@@ -43,7 +42,7 @@ private:
 signals:
     void need_update(void);
 public:
-    boost::ptr_vector<ROIRegion> regions;
+    std::vector<std::shared_ptr<ROIRegion> > regions;
 public:
     explicit RegionTableWidget(tracking_window& cur_tracking_window,QWidget *parent = 0);
     ~RegionTableWidget();

@@ -209,7 +209,7 @@ if (sort_and_merge)
             ;
         if (j == i + 1)
             continue;
-        std::vector<unsigned int> sum(dwi_files[i].size());
+        std::vector<unsigned int> sum(dwi_files[i]->size());
         for (unsigned int l = i; l < j;++l)
         {
             const DwiHeader& dwi_image = dwi_files[l];
@@ -225,26 +225,26 @@ if (sort_and_merge)
 }
 */
 
-void sort_dwi(boost::ptr_vector<DwiHeader>& dwi_files)
+void sort_dwi(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
     // selection sort
     for (unsigned int i = 0;i < dwi_files.size();++i)
         for (unsigned int j = i+1;j < dwi_files.size();++j)
-            if (dwi_files[j] < dwi_files[i])
+            if ((*dwi_files[j]) < (*dwi_files[i]))
                 dwi_files[i].swap(dwi_files[j]);
 }
 
-void correct_t2(boost::ptr_vector<DwiHeader>& dwi_files)
+void correct_t2(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
-    image::geometry<3> geo = dwi_files.front().image.geometry();
+    image::geometry<3> geo = dwi_files.front()->image.geometry();
     //find out if there are two b0 images having different TE
     std::vector<unsigned int> b0_index;
     std::vector<float> b0_te;
     for (unsigned int index = 0;index < dwi_files.size();++index)
-        if (dwi_files[index].bvalue == 0.0)
+        if (dwi_files[index]->bvalue == 0.0)
         {
             b0_index.push_back(index);
-            b0_te.push_back(dwi_files[index].te);
+            b0_te.push_back(dwi_files[index]->te);
         }
     if (b0_index.size() <= 1)
         return;
@@ -253,7 +253,7 @@ void correct_t2(boost::ptr_vector<DwiHeader>& dwi_files)
     // average the b0 images
     {
         for (unsigned int index = 0;index < b0_index.size();++index)
-            image::add(spin_density.begin(),spin_density.end(),dwi_files[b0_index[index]].begin());
+            image::add(spin_density.begin(),spin_density.end(),dwi_files[b0_index[index]]->begin());
         image::divide_constant(spin_density.begin(),spin_density.end(),b0_index.size());
     }
 
@@ -271,11 +271,11 @@ void correct_t2(boost::ptr_vector<DwiHeader>& dwi_files)
                 image::get_neighbors(index,geo,1,neighbor_index1);
                 for (unsigned int i = 0;i < b0_te.size();++i)
                 {
-                    log_Mxy_samples.push_back(dwi_files[b0_index[i]].image[index.index()]);
+                    log_Mxy_samples.push_back(dwi_files[b0_index[i]]->image[index.index()]);
                     te_samples.push_back(b0_te[i]);
                     for (unsigned int j = 0;j < neighbor_index1.size();++j)
                     {
-                        log_Mxy_samples.push_back(dwi_files[b0_index[i]].image[neighbor_index1[j].index()]);
+                        log_Mxy_samples.push_back(dwi_files[b0_index[i]]->image[neighbor_index1[j].index()]);
                         te_samples.push_back(b0_te[i]);
                     }
                 }
@@ -285,12 +285,12 @@ void correct_t2(boost::ptr_vector<DwiHeader>& dwi_files)
                     image::get_neighbors(index,geo,2,neighbor_index2);
                     for (unsigned int i = 0;i < b0_te.size();++i)
                     {
-                        log_Mxy_samples.push_back(dwi_files[b0_index[i]].image[index.index()]);
+                        log_Mxy_samples.push_back(dwi_files[b0_index[i]]->image[index.index()]);
                         te_samples.push_back(b0_te[i]);
 
                         for (unsigned int j = 0;j < neighbor_index2.size();++j)
                         {
-                            log_Mxy_samples.push_back(dwi_files[b0_index[i]].image[neighbor_index2[j].index()]);
+                            log_Mxy_samples.push_back(dwi_files[b0_index[i]]->image[neighbor_index2[j].index()]);
                             te_samples.push_back(b0_te[i]);
                         }
                     }
@@ -334,10 +334,10 @@ void correct_t2(boost::ptr_vector<DwiHeader>& dwi_files)
         for (unsigned int index = 0;index < dwi_files.size();++index)
         {
             // b0 will be handled later
-            if (dwi_files[index].bvalue == 0.0)
+            if (dwi_files[index]->bvalue == 0.0)
                 continue;
-            DwiHeader& cur_image = dwi_files[index];
-            float cur_te = dwi_files[index].te;
+            DwiHeader& cur_image = *dwi_files[index];
+            float cur_te = dwi_files[index]->te;
             for (unsigned int i = 0;i < geo.size();++i)
                 if (neg_inv_T2[i] != 0.0)
                     cur_image[i] *= std::exp(-cur_te*neg_inv_T2[i]);
@@ -357,11 +357,11 @@ void correct_t2(boost::ptr_vector<DwiHeader>& dwi_files)
     }
 
     // replace b0 with spin density map
-    std::copy(spin_density.begin(),spin_density.end(),dwi_files[b0_index.front()].begin());
+    std::copy(spin_density.begin(),spin_density.end(),dwi_files[b0_index.front()]->begin());
     // remove additional b0
     for (unsigned int index = b0_index.front()+1;index < dwi_files.size();)
     {
-        if (dwi_files[index].bvalue == 0.0)
+        if (dwi_files[index]->bvalue == 0.0)
             dwi_files.erase(dwi_files.begin()+index);
         else
             ++index;
@@ -440,7 +440,7 @@ void get_report(const std::vector<float>& bvalues,image::vector<3> vs,std::strin
 
 
 // upsampling 1: upsampling 2: downsampling
-bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi_files,int upsampling)
+bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,int upsampling)
 {
     if(dwi_files.empty())
         return false;
@@ -451,7 +451,7 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
     if(!write_mat)
         return false;
 
-    image::geometry<3> geo = dwi_files.front().image.geometry();
+    image::geometry<3> geo = dwi_files.front()->image.geometry();
 
     //store dimension
     unsigned int output_size = 0;
@@ -459,24 +459,24 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
         short dimension[3];
         std::copy(geo.begin(),geo.end(),dimension);
         if(upsampling == 1) // upsampling 2
-            std::for_each(dimension,dimension+3,boost::lambda::_1 <<= 1);
+            std::for_each(dimension,dimension+3,[](short& i){i <<= 1;});
         if(upsampling == 2) // downsampling 2
-            std::for_each(dimension,dimension+3,boost::lambda::_1 >>= 1);
+            std::for_each(dimension,dimension+3,[](short& i){i >>= 1;});
         if(upsampling == 3) // upsampling 4
-            std::for_each(dimension,dimension+3,boost::lambda::_1 <<= 2);
+            std::for_each(dimension,dimension+3,[](short& i){i <<= 2;});
         output_size = dimension[0]*dimension[1]*dimension[2];
         write_mat.write("dimension",dimension,1,3);
     }
     //store voxel size
     {
         float voxel_size[3];
-        std::copy(dwi_files.front().voxel_size,dwi_files.front().voxel_size+3,voxel_size);
+        std::copy(dwi_files.front()->voxel_size,dwi_files.front()->voxel_size+3,voxel_size);
         if(upsampling == 1) // upsampling 2
-            std::for_each(voxel_size,voxel_size+3,boost::lambda::_1 /= 2.0);
+            std::for_each(voxel_size,voxel_size+3,[](float& i){i /= 2.0;});
         if(upsampling == 2) // downsampling 2
-            std::for_each(voxel_size,voxel_size+3,boost::lambda::_1 *= 2.0);
+            std::for_each(voxel_size,voxel_size+3,[](float& i){i *= 2.0;});
         if(upsampling == 3) // upsampling 4
-            std::for_each(voxel_size,voxel_size+3,boost::lambda::_1 /= 4.0);
+            std::for_each(voxel_size,voxel_size+3,[](float& i){i /= 4.0;});
         write_mat.write("voxel_size",voxel_size,1,3);
     }
     // store bvec file
@@ -484,15 +484,15 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
         std::vector<float> b_table;
         for (unsigned int index = 0;index < dwi_files.size();++index)
         {
-            b_table.push_back(dwi_files[index].get_bvalue());
-            std::copy(dwi_files[index].get_bvec(),dwi_files[index].get_bvec()+3,std::back_inserter(b_table));
+            b_table.push_back(dwi_files[index]->get_bvalue());
+            std::copy(dwi_files[index]->get_bvec(),dwi_files[index]->get_bvec()+3,std::back_inserter(b_table));
         }
         write_mat.write("b_table",&b_table[0],4,b_table.size()/4);
     }
-    if(!dwi_files[0].grad_dev.empty())
-        write_mat.write("grad_dev",&*dwi_files[0].grad_dev.begin(),dwi_files[0].grad_dev.size()/9,9);
-    if(!dwi_files[0].mask.empty())
-        write_mat.write("mask",&*dwi_files[0].mask.begin(),1,dwi_files[0].mask.size());
+    if(!dwi_files[0]->grad_dev.empty())
+        write_mat.write("grad_dev",&*dwi_files[0]->grad_dev.begin(),dwi_files[0]->grad_dev.size()/9,9);
+    if(!dwi_files[0]->mask.empty())
+        write_mat.write("mask",&*dwi_files[0]->mask.begin(),1,dwi_files[0]->mask.size());
 
     //store images
     begin_prog("Save Files");
@@ -502,7 +502,7 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
         image::basic_image<unsigned short,3> buffer;
         const unsigned short* ptr = 0;
         name << "image" << index;
-        ptr = (const unsigned short*)dwi_files[index].begin();
+        ptr = (const unsigned short*)dwi_files[index]->begin();
         if(upsampling)
         {
             buffer.resize(geo);
@@ -524,13 +524,13 @@ bool DwiHeader::output_src(const char* di_file,boost::ptr_vector<DwiHeader>& dwi
 
 
 
-    std::string report1 = dwi_files.front().report;
+    std::string report1 = dwi_files.front()->report;
     std::string report2;
     {
         std::vector<float> bvalues;
         for (unsigned int index = 0;index < dwi_files.size();++index)
-            bvalues.push_back(dwi_files[index].get_bvalue());
-        image::vector<3> vs(dwi_files.front().voxel_size);
+            bvalues.push_back(dwi_files[index]->get_bvalue());
+        image::vector<3> vs(dwi_files.front()->voxel_size);
         get_report(bvalues,vs,report2);
     }
     report1 += report2;

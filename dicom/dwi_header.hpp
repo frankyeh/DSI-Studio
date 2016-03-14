@@ -4,7 +4,6 @@
 #include <string>
 #include <boost/noncopyable.hpp>
 #include "image/image.hpp"
-#include "boost/ptr_container/ptr_vector.hpp"
 
 
 class DwiHeader : public boost::noncopyable
@@ -91,7 +90,7 @@ public:
                bvalue == rhs.bvalue;
 	}
 public:
-    static bool output_src(const char* file_name, boost::ptr_vector<DwiHeader>& dwi_files, int upsampling);
+    static bool output_src(const char* file_name, std::vector<std::shared_ptr<DwiHeader> >& dwi_files, int upsampling);
 };
 
 #endif//DWI_HEADER_HPP
