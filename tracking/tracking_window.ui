@@ -641,8 +641,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>276</width>
-     <height>48</height>
+     <width>0</width>
+     <height>0</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -906,12 +906,12 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>173</width>
-     <height>44</height>
+     <width>0</width>
+     <height>0</height>
     </size>
    </property>
    <property name="windowTitle">
-    <string>Options</string>
+    <string>Options Window</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
@@ -1117,6 +1117,7 @@
     <addaction name="separator"/>
     <addaction name="actionMerge_All"/>
     <addaction name="actionCopyTrack"/>
+    <addaction name="actionSeparate_Deleted"/>
     <addaction name="actionDeleteTract"/>
     <addaction name="actionDeleteTractAll"/>
     <addaction name="actionFilter_by_ROI"/>
@@ -1262,8 +1263,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>252</width>
-     <height>156</height>
+     <width>0</width>
+     <height>0</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -1273,7 +1274,7 @@
     </size>
    </property>
    <property name="windowTitle">
-    <string>Fiber Tracts</string>
+    <string>Tract list</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
@@ -1370,7 +1371,7 @@
              <item>
               <widget class="QPushButton" name="save_all_tracks">
                <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
@@ -1390,7 +1391,7 @@
              <item>
               <widget class="QPushButton" name="tbDeleteTract">
                <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
@@ -1404,13 +1405,6 @@
                <property name="icon">
                 <iconset resource="../icons.qrc">
                  <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="Line" name="line_4">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
                </property>
               </widget>
              </item>
@@ -1478,6 +1472,32 @@
               </widget>
              </item>
              <item>
+              <widget class="QPushButton" name="stop_tracking">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>40</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="icon">
+                <iconset resource="../icons.qrc">
+                 <normaloff>:/icons/icons/stop.xpm</normaloff>:/icons/icons/stop.xpm</iconset>
+               </property>
+               <property name="flat">
+                <bool>false</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
               <spacer name="horizontalSpacer_3">
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
@@ -1497,7 +1517,7 @@
          <item>
           <widget class="QPushButton" name="perform_tracking">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -1521,32 +1541,6 @@ Tracking</string>
              <width>24</width>
              <height>24</height>
             </size>
-           </property>
-           <property name="flat">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="stop_tracking">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>40</width>
-             <height>16777215</height>
-            </size>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-           <property name="icon">
-            <iconset resource="../icons.qrc">
-             <normaloff>:/icons/icons/stop.xpm</normaloff>:/icons/icons/stop.xpm</iconset>
            </property>
            <property name="flat">
             <bool>false</bool>
@@ -1630,8 +1624,8 @@ Tracking</string>
    </property>
    <property name="minimumSize">
     <size>
-     <width>292</width>
-     <height>171</height>
+     <width>0</width>
+     <height>0</height>
     </size>
    </property>
    <property name="floating">
@@ -3212,6 +3206,11 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Load From Atlas...</string>
+   </property>
+  </action>
+  <action name="actionSeparate_Deleted">
+   <property name="text">
+    <string>Separate Deleted</string>
    </property>
   </action>
  </widget>

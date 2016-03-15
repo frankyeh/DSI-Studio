@@ -86,6 +86,7 @@ public:
         void set_color(unsigned int color){std::fill(tract_color.begin(),tract_color.end(),color);}
         void set_tract_color(unsigned int index,unsigned int color){tract_color[index] = color;}
         void cut_by_mask(const char* file_name);
+        void clear_deleted(void);
         void undo(void);
         void redo(void);
         void trim(void);
@@ -100,6 +101,7 @@ public:
         
         const std::vector<float>& get_tract(unsigned int index) const{return tract_data[index];}
         const std::vector<std::vector<float> >& get_tracts(void) const{return tract_data;}
+        const std::vector<std::vector<float> >& get_deleted_tracts(void) const{return deleted_tract_data;}
         std::vector<std::vector<float> >& get_tracts(void) {return tract_data;}
         unsigned int get_tract_color(unsigned int index) const{return tract_color[index];}
         size_t get_tract_length(unsigned int index) const{return tract_data[index].size();}

@@ -288,6 +288,7 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         connect(ui->actionOpenTract,SIGNAL(triggered()),tractWidget,SLOT(load_tracts()));
         connect(ui->actionMerge_All,SIGNAL(triggered()),tractWidget,SLOT(merge_all()));
         connect(ui->actionCopyTrack,SIGNAL(triggered()),tractWidget,SLOT(copy_track()));
+        connect(ui->actionSeparate_Deleted,SIGNAL(triggered()),tractWidget,SLOT(separate_deleted_track()));
         connect(ui->actionDeleteTract,SIGNAL(triggered()),tractWidget,SLOT(delete_tract()));
         connect(ui->actionDeleteTractAll,SIGNAL(triggered()),tractWidget,SLOT(delete_all_tract()));
 

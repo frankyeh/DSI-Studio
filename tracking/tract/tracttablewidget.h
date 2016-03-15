@@ -70,6 +70,7 @@ public slots:
     void save_end_point_in_mni(void);
     void merge_all(void);
     void copy_track(void);
+    void separate_deleted_track(void);
     void delete_tract(void);
     void delete_all_tract(void);
     void edit_tracts(void);

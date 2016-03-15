@@ -704,6 +704,21 @@ void TractTableWidget::copy_track(void)
     item(currentRow(),1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     emit need_update();
 }
+void TractTableWidget::separate_deleted_track(void)
+{
+    unsigned int cur_row = currentRow();
+    addNewTracts(item(cur_row,0)->text(),false);
+    std::vector<std::vector<float> > new_tracks = tract_models[cur_row]->get_deleted_tracts();
+    if(new_tracks.empty())
+        return;
+    tract_models.back()->add_tracts(new_tracks);
+    tract_models[cur_row]->clear_deleted();
+    item(rowCount()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
+    item(rowCount()-1,2)->setText(QString::number(tract_models.back()->get_deleted_track_count()));
+    item(cur_row,1)->setText(QString::number(tract_models[cur_row]->get_visible_track_count()));
+    item(cur_row,2)->setText(QString::number(tract_models[cur_row]->get_deleted_track_count()));
+    emit need_update();
+}
 void TractTableWidget::move_up(void)
 {
     if(currentRow())

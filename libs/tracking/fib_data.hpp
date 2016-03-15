@@ -1056,6 +1056,13 @@ public:
             if(view_item[index].name != "color")
                 index_list.push_back(view_item[index].name);
     }
+    image::const_pointer_image<float,3> get_view_volume(const std::string& view_name) const
+    {
+        unsigned int view_index = get_name_index(view_name);
+        if(view_index == view_item.size() || view_item[view_index].name == "color")
+            return image::const_pointer_image<float,3>();
+        return view_item[view_index].image_data;
+    }
     std::pair<float,float> get_value_range(const std::string& view_name) const
     {
         unsigned int view_index = get_name_index(view_name);

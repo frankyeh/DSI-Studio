@@ -1123,9 +1123,18 @@ void TractModel::trim(void)
     for (unsigned int index = 0;index < label.size();++index)
         if (label[index] < total_track_number)
             tracts_to_delete.insert(label[index]);
-    delete_tracts((std::vector<unsigned int>(tracts_to_delete.begin(),tracts_to_delete.end())));
+    delete_tracts(std::vector<unsigned int>(tracts_to_delete.begin(),tracts_to_delete.end()));
 }
 //---------------------------------------------------------------------------
+void TractModel::clear_deleted(void)
+{
+    deleted_count.clear();
+    deleted_cut_count.clear();
+    deleted_tract_data.clear();
+    deleted_tract_color.clear();
+    redo_size.clear();
+}
+
 void TractModel::undo(void)
 {
     if (deleted_count.empty())
@@ -1154,6 +1163,8 @@ void TractModel::undo(void)
     deleted_cut_count.pop_back();
 
 }
+
+
 //---------------------------------------------------------------------------
 void TractModel::redo(void)
 {

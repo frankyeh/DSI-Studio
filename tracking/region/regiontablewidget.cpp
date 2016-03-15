@@ -1,5 +1,6 @@
 #include <boost/algorithm/string.hpp>
 #include <QFileDialog>
+#include <QInputDialog>
 #include <QContextMenuEvent>
 #include <QMessageBox>
 #include <QClipboard>
@@ -901,11 +902,22 @@ void RegionTableWidget::do_action(int id)
         break;
     case 8: //
         {
-            cur_region.SaveToBuffer(mask, 1);
-            float threshold = cur_tracking_window["fa_threshold"].toFloat();
+            image::const_pointer_image<float,3> I = cur_tracking_window.handle->get_view_volume(cur_tracking_window.slice.view_name);
+            if(I.empty())
+                return;
+            mask.resize(I.geometry());
+            auto m = std::minmax_element(I.begin(),I.end());
+            bool ok;
+            float threshold = QInputDialog::getDouble(this,
+                "DSI Studio","Threshold:", image::segmentation::otsu_threshold(I),
+                *m.first,
+                *m.second,
+                4, &ok);
+            if(!ok)
+                return;
+
             for(unsigned int index = 0;index < mask.size();++index)
-                if(mask[index] && threshold > cur_tracking_window.slice.source_images[index])
-                    mask[index] = 0;
+                mask[index]  = I[index] > threshold ? 1:0;
             cur_region.LoadFromBuffer(mask);
         }
         break;
