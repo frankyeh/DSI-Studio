@@ -352,7 +352,7 @@ void MainWindow::on_FiberTracking_clicked()
         header.toLPS(I);
         std::copy(header.nif_header.pixdim+1,header.nif_header.pixdim+4,vs);
     }
-    if(QFileInfo(filename).baseName() == "2dseq")
+    if(QFileInfo(filename).fileName() == "2dseq")
     {
         image::io::bruker_2dseq bruker_header;
         if(!bruker_header.load_from_file(filename.toLocal8Bit().begin()))
