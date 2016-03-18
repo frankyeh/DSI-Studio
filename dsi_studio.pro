@@ -6,7 +6,6 @@ QT += core \
     opengl \
     printsupport
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
-CONFIG += c++11
 TARGET = dsi_studio
 TEMPLATE = app
 win32* {
