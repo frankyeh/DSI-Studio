@@ -641,8 +641,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>276</width>
+     <height>48</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -906,8 +906,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>173</width>
+     <height>44</height>
     </size>
    </property>
    <property name="windowTitle">
@@ -1263,8 +1263,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>197</width>
+     <height>156</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -1481,7 +1481,7 @@
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>40</width>
+                 <width>16777215</width>
                  <height>16777215</height>
                 </size>
                </property>
@@ -1624,8 +1624,8 @@ Tracking</string>
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>292</width>
+     <height>171</height>
     </size>
    </property>
    <property name="floating">
@@ -1788,7 +1788,7 @@ Tracking</string>
           </size>
          </property>
          <property name="toolTip">
-          <string>Ball seeding</string>
+          <string>place a sphere</string>
          </property>
          <property name="text">
           <string/>
@@ -1826,7 +1826,7 @@ Tracking</string>
           </size>
          </property>
          <property name="toolTip">
-          <string>Cubic seeding</string>
+          <string>place a cube</string>
          </property>
          <property name="text">
           <string/>
@@ -2009,7 +2009,7 @@ Tracking</string>
           </sizepolicy>
          </property>
          <property name="text">
-          <string>...</string>
+          <string/>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
@@ -2035,7 +2035,7 @@ Tracking</string>
           </sizepolicy>
          </property>
          <property name="text">
-          <string>...</string>
+          <string/>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
@@ -2077,6 +2077,12 @@ Tracking</string>
        </item>
        <item>
         <widget class="QColorToolButton" name="min_color">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="text">
           <string>...</string>
          </property>
@@ -2117,6 +2123,12 @@ Tracking</string>
        </item>
        <item>
         <widget class="QColorToolButton" name="max_color">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="text">
           <string>...</string>
          </property>

@@ -13,7 +13,7 @@ struct ImageModel;
 struct VoxelParam;
 class Voxel;
 struct VoxelData;
-class BaseProcess : public boost::noncopyable
+class BaseProcess
 {
 public:
     BaseProcess(void) {}
@@ -46,7 +46,7 @@ struct VoxelData
     }
 };
 
-class Voxel : public boost::noncopyable
+class Voxel
 {
 private:
     std::vector<std::shared_ptr<BaseProcess> > process_list;
