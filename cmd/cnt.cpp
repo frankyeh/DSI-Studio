@@ -117,7 +117,8 @@ int cnt(void)
     }
     std::cout << "running connectometry" << std::endl;
     vbc->on_run_clicked();
-    vbc->vbc->threads->join_all();
+    for(int i = 0;i < vbc->vbc->threads.size();++i)
+        vbc->vbc->threads[i]->wait();
     std::cout << "output results" << std::endl;
     vbc->calculate_FDR();
     std::cout << "close GUI" << std::endl;

@@ -5,7 +5,7 @@
 #include <QGraphicsScene>
 #include <QSettings>
 #include <image/image.hpp>
-#include "boost/thread.hpp"
+
 
 namespace Ui {
     class reconstruction_window;
@@ -38,7 +38,7 @@ private:
     std::vector<image::affine_transform<float> > motion_args;
     unsigned int progress;
     bool terminated;
-    std::auto_ptr<boost::thread> motion_correction_thread;
+    std::auto_ptr<std::future<void> > motion_correction_thread;
 
 private:
     QGraphicsScene scene;

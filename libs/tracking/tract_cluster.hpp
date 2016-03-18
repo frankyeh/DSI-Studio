@@ -1,11 +1,10 @@
 #ifndef TRACT_CLUSTER_HPP
 #define TRACT_CLUSTER_HPP
 #include <vector>
-#include <boost/noncopyable.hpp>
 #include "image/image.hpp"
 #include <map>
 
-struct Cluster : public::boost::noncopyable
+struct Cluster
 {
 
     std::vector<unsigned int> tracts;

@@ -441,9 +441,9 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
                 if(name_value.size() != 2)
                     continue;
                 if(name_value[0] == "color")
-                    color = boost::lexical_cast<int>(name_value[1]);
+                    std::istringstream(name_value[1]) >> color;
                 if(name_value[0] == "roi")
-                    type = boost::lexical_cast<int>(name_value[1]);
+                    std::istringstream(name_value[1]) >> type;
             }
         }catch(...){}
 

@@ -4,7 +4,7 @@
 #include <ctime>
 #include <random>
 #include <memory>
-#include <boost/thread/thread.hpp>
+
 #include "roi.hpp"
 #include "tracking_method.hpp"
 #include "fib_data.hpp"
@@ -47,12 +47,12 @@ public:
         end_thread();
     }
 public:
-    std::auto_ptr<boost::thread_group> threads;
+    std::vector<std::shared_ptr<std::future<void> > > threads;
     std::vector<unsigned int> seed_count;
     std::vector<unsigned int> tract_count;
     std::vector<unsigned char> running;
     bool joinning;
-    boost::mutex lock_feed_function,lock_seed_function;
+    std::mutex  lock_feed_function,lock_seed_function;
     unsigned int get_total_seed_count(void)const
     {
         if(seed_count.empty())
@@ -76,7 +76,7 @@ public:
     std::vector<std::vector<float> > track_buffer;
     void push_tracts(std::vector<std::vector<float> >& local_tract_buffer)
     {
-        boost::mutex::scoped_lock lock(lock_feed_function);
+        std::lock_guard<std::mutex> lock(lock_feed_function);
         for(unsigned int index = 0;index < local_tract_buffer.size();++index)
         {
             track_buffer.push_back(std::vector<float>());
@@ -86,11 +86,12 @@ public:
     }
     void end_thread(void)
     {
-        if (threads.get())
+        if (!threads.empty())
         {
             joinning = true;
-            threads->join_all();
-            threads.reset(0);
+            for(int i = 0;i < threads.size();++i)
+                threads[i]->wait();
+            threads.clear();
         }
     }
 
@@ -127,7 +128,7 @@ public:
                 else
                 {
                     // this ensure consistency
-                    boost::mutex::scoped_lock lock(lock_seed_function);
+                    std::lock_guard<std::mutex> lock(lock_seed_function);
                     iteration+=thread_count;
                     unsigned int i = rand_gen(seed)*((float)seeds.size()-1.0);
                     image::vector<3,float> pos;
@@ -161,7 +162,7 @@ public:
         if (track_buffer.empty())
             return false;
 
-        boost::mutex::scoped_lock lock(lock_feed_function);
+        std::lock_guard<std::mutex> lock(lock_feed_function);
         handle->add_tracts(track_buffer,color);
         track_buffer.clear();
         return true;
@@ -259,19 +260,23 @@ public:
         tract_count.resize(thread_count);
         running.resize(thread_count);
         std::fill(running.begin(),running.end(),1);
-        threads.reset(new boost::thread_group);
+
+        end_thread();
         unsigned int run_count = termination_count/thread_count+1;
         unsigned int total_run_count = 0;
         for (unsigned int index = 0;index < thread_count-1;++index,total_run_count += run_count)
-            threads->add_thread(new boost::thread(&ThreadData::run_thread,this,new_method(fib),thread_count,index,run_count));
+            threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
+                    [this,&fib,thread_count,index,run_count](){run_thread(new_method(fib),thread_count,index,run_count);})));
 
         if(wait)
         {
             run_thread(new_method(fib),thread_count,thread_count-1,termination_count-total_run_count);
-            threads->join_all();
+            for(int i = 0;i < threads.size();++i)
+                threads[i]->wait();
         }
         else
-            threads->add_thread(new boost::thread(&ThreadData::run_thread,this,new_method(fib),thread_count,thread_count-1,termination_count-total_run_count));
+            threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
+                    [this,&fib,thread_count,termination_count,total_run_count](){run_thread(new_method(fib),thread_count,thread_count-1,termination_count-total_run_count);})));
 
         report << " A total of " << termination_count << (stop_by_tract ? " tracts were calculated.":" seeds were placed.");
     }

@@ -4,7 +4,6 @@
 #include <cmath>
 #include <ctime>
 #include <boost/random.hpp>
-#include <boost/noncopyable.hpp>
 
 double modified_bessel_order0(double x)
 {
@@ -28,7 +27,7 @@ double modified_bessel_order0(double x)
 
 }
 
-class RacianNoise : public boost::noncopyable
+class RacianNoise
 {
 public:
     float A;

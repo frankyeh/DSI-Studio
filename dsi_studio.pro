@@ -10,31 +10,24 @@ CONFIG += c++11
 TARGET = dsi_studio
 TEMPLATE = app
 win32* {
-#change to the directory that contains boost library
 INCLUDEPATH += ../include
 RC_FILE = dsi_studio.rc
 }
 
 linux* {
 QMAKE_CXXFLAGS += -fpermissive
-LIBS += -lboost_thread \
-        -lboost_program_options \
-        -lGLU \
+LIBS += -lGLU \
         -lz
 }
 
 mac{
 
-#change to the directory that contains boost library
 INCLUDEPATH += /Users/frankyeh/include
-LIBS += -L/Users/frankyeh/include/lib -lboost_system \
-        -L/Users/frankyeh/include/lib -lboost_thread \
-        -lz
+LIBS += -lz
 ICON = dsi_studio.icns
 }
 
 
-# you may need to change the include directory of boost library
 INCLUDEPATH += libs \
     libs/dsi \
     libs/tracking \

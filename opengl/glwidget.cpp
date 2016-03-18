@@ -1850,7 +1850,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
 
         std::cout << "register image to the DWI space" << std::endl;
         if(other_slices.back()->thread.get())
-            other_slices.back()->thread->join();
+            other_slices.back()->thread->wait();
         other_slices.back()->update();
         updateGL();
         return true;

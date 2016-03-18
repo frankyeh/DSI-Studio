@@ -110,9 +110,9 @@ public:
                 bool terminated = false;
                 mcc_thread_count = voxel.voxel_data.size();
                 image::reg::linear(VF,voxel.vs,VG,VGvs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
-                                   image::transformation_matrix<float>,boost::thread,qsdr_thread_count_functor>(0),terminated);
+                                   image::transformation_matrix<float>,qsdr_thread_count_functor>(0),terminated);
                 image::reg::linear(VF,voxel.vs,VG,VGvs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
-                                   image::transformation_matrix<float>,boost::thread,qsdr_thread_count_functor>(0),terminated);
+                                   image::transformation_matrix<float>,qsdr_thread_count_functor>(0),terminated);
                 affine = image::transformation_matrix<float>(arg_min,VF.geometry(),voxel.vs,VG.geometry(),VGvs);
             }
             affine.inverse();

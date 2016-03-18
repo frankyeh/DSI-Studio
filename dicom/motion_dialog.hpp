@@ -2,7 +2,6 @@
 #define MOTION_DIALOG_HPP
 #include <QDialog>
 #include "dwi_header.hpp"
-#include "boost/thread.hpp"
 #include "image/image.hpp"
 
 namespace Ui {
@@ -19,7 +18,7 @@ private:
     std::vector<image::affine_transform<double> > arg;
     bool terminated;
     unsigned int finished;
-    boost::thread_group threads;
+    std::vector<std::shared_ptr<std::future<void> > > threads;
     std::auto_ptr<QTimer> timer;
 public:
     explicit motion_dialog(QWidget *parent,std::vector<std::shared_ptr<DwiHeader> >& dwi_files_);

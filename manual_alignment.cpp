@@ -2,7 +2,7 @@
 #include "ui_manual_alignment.h"
 #include "tracking/tracking_window.h"
 #include "fa_template.hpp"
-#include <boost/thread.hpp>
+
 unsigned int mcc_thread_count = 4;
 struct thread_count_functor{
     unsigned int operator()(void)
@@ -29,9 +29,9 @@ void run_reg(const image::basic_image<float,3>& from,
     else
     {
         image::reg::linear(from,from_vs,to,to_vs,data.arg,data.reg_type,image::reg::mt_correlation<image::basic_image<float,3>,
-                       image::transformation_matrix<float>,boost::thread,thread_count_functor>(0),data.terminated);
+                       image::transformation_matrix<float>,thread_count_functor>(0),data.terminated);
         image::reg::linear(from,from_vs,to,to_vs,data.arg,data.reg_type,image::reg::mt_correlation<image::basic_image<float,3>,
-                       image::transformation_matrix<float>,boost::thread,thread_count_functor>(0),data.terminated);
+                       image::transformation_matrix<float>,thread_count_functor>(0),data.terminated);
     }
     if(data.terminated)
         return;
@@ -82,7 +82,8 @@ manual_alignment::manual_alignment(QWidget *parent,
     else
     {
         image::reg::get_bound(from,to,data.arg,b_upper,b_lower,reg_type_);
-        reg_thread.reset(new boost::thread(run_reg,boost::ref(from),from_vs,boost::ref(to),to_vs,boost::ref(data),boost::thread::hardware_concurrency(),cost_function));
+        reg_thread.reset(new std::future<void>(std::async(std::launch::async,
+            [this,cost_function](){run_reg(from,from_vs,to,to_vs,data,std::thread::hardware_concurrency(),cost_function);})));
     }
     ui->setupUi(this);
     if(reg_type_ == image::reg::rigid_body)
@@ -180,7 +181,7 @@ manual_alignment::~manual_alignment()
         {
             timer->stop();
             data.terminated = 1;
-            reg_thread->join();
+            reg_thread->wait();
         }
     }
     delete ui;
@@ -349,10 +350,11 @@ void manual_alignment::on_rerun_clicked()
     if(reg_thread.get())
     {
         data.terminated = 1;
-        reg_thread->join();
+        reg_thread->wait();
     }
     data.terminated = 0;
-    reg_thread.reset(new boost::thread(run_reg,boost::ref(from),from_vs,boost::ref(to),to_vs,boost::ref(data),boost::thread::hardware_concurrency(),data.cost_function));
+    reg_thread.reset(new std::future<void>(std::async(std::launch::async,
+            [this](){run_reg(from,from_vs,to,to_vs,data,std::thread::hardware_concurrency(),data.cost_function);})));
     if(timer)
         timer->start();
 

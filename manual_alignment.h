@@ -1,11 +1,10 @@
 #ifndef MANUAL_ALIGNMENT_H
 #define MANUAL_ALIGNMENT_H
-
+#include <future>
 #include <QDialog>
 #include <QTimer>
 #include <QGraphicsScene>
 #include "image/image.hpp"
-#include <boost/thread/thread.hpp>
 
 namespace Ui {
 class manual_alignment;
@@ -49,7 +48,7 @@ private:
     image::color_image buffer[3];
     QImage slice_image[3];
 private:
-    std::auto_ptr<boost::thread> reg_thread;
+    std::auto_ptr<std::future<void> > reg_thread;
     void load_param(void);
 public:
     reg_data data;

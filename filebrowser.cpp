@@ -323,7 +323,7 @@ void FileBrowser::show_image(void)
 
     if(!preview_file_name.isEmpty() && preview_thread.get() == 0)
     {
-        preview_thread.reset(new boost::thread(&FileBrowser::preview_image,this,preview_file_name));
+        preview_thread.reset(new std::future<void>(std::async(std::launch::async,&FileBrowser::preview_image,this,preview_file_name));
         preview_file_name.clear();
         preview_loaded = false;
     }*/

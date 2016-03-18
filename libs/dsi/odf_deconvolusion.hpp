@@ -8,7 +8,7 @@
 struct EstimateResponseFunction : public BaseProcess
 {
     float max_value;
-    boost::mutex mutex;
+    std::mutex  mutex;
     bool has_assigned_odf;
     unsigned int assigned_index;
 public:
@@ -32,7 +32,7 @@ public:
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        boost::mutex::scoped_lock lock(mutex);
+        std::lock_guard<std::mutex> lock(mutex);
 
         float max_diffusion_value = std::accumulate(data.odf.begin(),data.odf.end(),0.0)/data.odf.size();
         if (max_diffusion_value > voxel.reponse_function_scaling)

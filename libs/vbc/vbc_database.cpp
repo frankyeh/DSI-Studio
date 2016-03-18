@@ -1,6 +1,6 @@
 #include <cstdlib>     /* srand, rand */
 #include <ctime>
-#include <boost/thread.hpp>
+
 #include <boost/math/distributions/students_t.hpp>
 #include "vbc_database.h"
 #include "fib_data.hpp"
@@ -393,7 +393,7 @@ void stat_model::remove_missing_data(double missing_value)
 
 bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap)
 {
-    boost::mutex::scoped_lock lock(rhs.lock_random);
+    std::lock_guard<std::mutex> lock(rhs.lock_random);
     type = rhs.type;
     feature_count = rhs.feature_count;
     study_feature = rhs.study_feature;
@@ -602,12 +602,12 @@ void vbc_database::run_permutation_multithread(unsigned int id)
             if(terminated)
                 return;
             fib.fa = spm_maps[subject_id]->lesser_ptr;
-            run_track(fib,tracks,total_track_count,threads->size());
+            run_track(fib,tracks,total_track_count,threads.size());
             lesser_tracks[subject_id]->add_tracts(tracks);
             fib.fa = spm_maps[subject_id]->greater_ptr;
             if(terminated)
                 return;
-            run_track(fib,tracks,total_track_count,threads->size());
+            run_track(fib,tracks,total_track_count,threads.size());
             greater_tracks[subject_id]->add_tracts(tracks);
         }
 
@@ -641,7 +641,7 @@ void vbc_database::run_permutation_multithread(unsigned int id)
                 /*
                 if(!null)
                 {
-                    boost::mutex::scoped_lock lock(lock_lesser_tracks);
+                    std::lock_guard<std::mutex> lock(lock_lesser_tracks);
                     lesser_tracks[subject_id].add_tracts(tracks,30); // at least 30 mm
                     tracks.clear();
                 }
@@ -653,7 +653,7 @@ void vbc_database::run_permutation_multithread(unsigned int id)
                 /*
                 if(!null)
                 {
-                    boost::mutex::scoped_lock lock(lock_greater_tracks);
+                    std::lock_guard<std::mutex> lock(lock_greater_tracks);
                     greater_tracks[subject_id].add_tracts(tracks,30);  // at least 30 mm
                     tracks.clear();
                 }
@@ -681,7 +681,7 @@ void vbc_database::run_permutation_multithread(unsigned int id)
 
             if(output_resampling && !null)
             {
-                boost::mutex::scoped_lock lock(lock_lesser_tracks);
+                std::lock_guard<std::mutex> lock(lock_lesser_tracks);
                 lesser_tracks[0]->add_tracts(tracks);
                 tracks.clear();
             }
@@ -692,7 +692,7 @@ void vbc_database::run_permutation_multithread(unsigned int id)
 
             if(output_resampling && !null)
             {
-                boost::mutex::scoped_lock lock(lock_greater_tracks);
+                std::lock_guard<std::mutex> lock(lock_greater_tracks);
                 greater_tracks[0]->add_tracts(tracks);
                 tracks.clear();
             }
@@ -707,29 +707,31 @@ void vbc_database::run_permutation_multithread(unsigned int id)
             if(terminated)
                 return;
             fib.fa = spm_maps[0]->lesser_ptr;
-            run_track(fib,tracks,total_track_count,threads->size());
+            run_track(fib,tracks,total_track_count,threads.size());
             lesser_tracks[0]->add_tracts(tracks);
             fib.fa = spm_maps[0]->greater_ptr;
             if(terminated)
                 return;
-            run_track(fib,tracks,total_track_count,threads->size());
+            run_track(fib,tracks,total_track_count,threads.size());
             greater_tracks[0]->add_tracts(tracks);
         }
     }
 }
 void vbc_database::clear_thread(void)
 {
-    if(threads.get())
+    if(!threads.empty())
     {
         terminated = true;
-        threads->join_all();
-        threads.reset(0);
+        for(int i = 0;i < threads.size();++i)
+            threads[i]->wait();
+        threads.clear();
         terminated = false;
     }
 }
 void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
 {
-    threads->join_all();
+    for(int i = 0;i < threads.size();++i)
+        threads[i]->wait();
     if(trk_file_names.size() != greater_tracks.size())
         throw std::runtime_error("Please assign file name for saving trk files.");
     saved_file_name.clear();
@@ -861,9 +863,10 @@ void vbc_database::run_permutation(unsigned int thread_count)
         lesser_tracks.push_back(std::make_shared<TractModel>(handle.get()));
         spm_maps.push_back(std::make_shared<fib_data>());
     }
-    threads.reset(new boost::thread_group);
+    clear_thread();
     for(unsigned int index = 0;index < thread_count;++index)
-        threads->add_thread(new boost::thread(&vbc_database::run_permutation_multithread,this,index));
+        threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
+            [this,index](){run_permutation_multithread(index);})));
 }
 void vbc_database::calculate_FDR(void)
 {

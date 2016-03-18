@@ -174,7 +174,8 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
         {
             from = slice.source_images;
             from_vs = slice.voxel_size;
-            thread.reset(new boost::thread(&CustomSliceModel::argmin,this,image::reg::rigid_body));
+            thread.reset(new std::future<void>(
+                             std::async(std::launch::async,[this](){argmin(image::reg::rigid_body);})));
         }
     }
     else
@@ -217,10 +218,7 @@ void CustomSliceModel::terminate(void)
 {
     terminated = true;
     if(thread.get())
-    {
-        thread->joinable();
-        thread->join();
-    }
+        thread->wait();
     ended = true;
 }
 // ---------------------------------------------------------------------------

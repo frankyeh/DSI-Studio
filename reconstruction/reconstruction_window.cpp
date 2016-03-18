@@ -228,7 +228,7 @@ reconstruction_window::~reconstruction_window()
     if(motion_correction_thread.get())
     {
         terminated = true;
-        motion_correction_thread->join();
+        motion_correction_thread->wait();
         motion_correction_thread.reset(0);
     }
     delete ui;
@@ -906,14 +906,13 @@ void rec_motion_correction(ImageModel* handle,unsigned int total_thread,
                            bool& terminated)
 {
     args.resize(handle->voxel.bvalues.size());
-    boost::thread_group threads;
+    std::vector<std::shared_ptr<std::future<void> > > threads;
     for(unsigned int i = 1;i < total_thread;++i)
-        threads.add_thread(new boost::thread(&rec_motion_correction_parallel,
-                                             handle,boost::ref(args),
-                                             total_thread,i,boost::ref(progress),boost::ref(terminated)));
-    rec_motion_correction_parallel(handle,args,total_thread,0,boost::ref(progress),terminated);
-    threads.join_all();
-
+        threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
+            [&,i](){rec_motion_correction_parallel(handle,args,total_thread,i,progress,terminated);})));
+    rec_motion_correction_parallel(handle,args,total_thread,0,progress,terminated);
+    for(unsigned int i = 0;i < threads.size();++i)
+        threads[i]->wait();
     for(unsigned int i = 0;i < handle->voxel.bvalues.size();++i)
         handle->rotate_dwi(i,image::transformation_matrix<float>(args[i],handle->voxel.dim,handle->voxel.vs,handle->voxel.dim,handle->voxel.vs));
     args.clear();
@@ -925,7 +924,7 @@ void reconstruction_window::on_motion_correction_clicked()
     if(motion_correction_thread.get())
     {
         terminated = true;
-        motion_correction_thread->join();
+        motion_correction_thread->wait();
         ui->motion_correction->setText("Motion/Eddy Correction");
         timer.reset(0);
         ui->motion_correction_progress->setValue(0);
@@ -934,9 +933,8 @@ void reconstruction_window::on_motion_correction_clicked()
         return;
     }
     terminated = false;
-    motion_correction_thread.reset(new boost::thread(&rec_motion_correction,
-                                                     handle.get(),QThread::idealThreadCount(),
-                                                     boost::ref(motion_args),boost::ref(progress),boost::ref(terminated)));
+    motion_correction_thread.reset(new std::future<void>(std::async(std::launch::async,
+            [this](){rec_motion_correction(handle.get(),std::thread::hardware_concurrency(),motion_args,progress,terminated);})));
     timer.reset(new QTimer(this));
     timer->setInterval(1000);
     timer->start();
@@ -1005,7 +1003,7 @@ bool add_other_image(ImageModel* handle,QString name,QString filename,bool full_
             image::normalize(from,1.0);
             image::normalize(to,1.0);
             reg_data data(from.geometry(),image::reg::rigid_body);
-            run_reg(from,handle->voxel.vs,to,vs,data,boost::thread::hardware_concurrency(),1/*mutual infor*/);
+            run_reg(from,handle->voxel.vs,to,vs,data,std::thread::hardware_concurrency(),1/*mutual infor*/);
             affine = image::transformation_matrix<float>(data.arg,from.geometry(),handle->voxel.vs,to.geometry(),vs);
         }
         else

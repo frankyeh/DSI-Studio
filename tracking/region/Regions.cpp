@@ -183,7 +183,7 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
 
 }
 // ---------------------------------------------------------------------------
-std::vector<boost::thread*> back_thread;
+std::vector<std::future<void>*> back_thread;
 std::vector<RegionModel*> back_region;
 // ---------------------------------------------------------------------------
 ROIRegion::~ROIRegion(void)

@@ -7,7 +7,7 @@
 #include "prog_interface_static_link.h"
 #include <boost/random.hpp>
 #include <boost/math/distributions/normal.hpp>
-#include <boost/thread/thread.hpp>
+
 #include "libs/tracking/tract_model.hpp"
 
 
@@ -145,7 +145,7 @@ public:
     boost::mt19937 generator;
     boost::uniform_int<int> uniform_rand;
     boost::variate_generator<boost::mt19937&, boost::uniform_int<int> > rand_gen;
-    boost::mutex lock_random;
+    std::mutex  lock_random;
 public:
     std::vector<unsigned int> subject_index;
 public:
@@ -223,7 +223,7 @@ public:
 private: // single subject analysis result
     void run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& track,float seed_ratio = 1.0,unsigned int thread_count = 1);
 public:// for FDR analysis
-    std::auto_ptr<boost::thread_group> threads;
+    std::vector<std::shared_ptr<std::future<void> > > threads;
     std::vector<unsigned int> subject_greater_null;
     std::vector<unsigned int> subject_lesser_null;
     std::vector<unsigned int> subject_greater;
@@ -241,7 +241,7 @@ public:
     unsigned int length_threshold_greater,length_threshold_lesser;
     bool has_greater_result,has_lesser_result;
     float seeding_density;
-    boost::mutex lock_resampling,lock_greater_tracks,lock_lesser_tracks;
+    std::mutex  lock_resampling,lock_greater_tracks,lock_lesser_tracks;
     std::vector<std::shared_ptr<TractModel> > greater_tracks;
     std::vector<std::shared_ptr<TractModel> > lesser_tracks;
     std::vector<std::shared_ptr<fib_data> > spm_maps;

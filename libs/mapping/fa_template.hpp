@@ -1,6 +1,6 @@
 #ifndef FA_TEMPLATE_HPP
 #define FA_TEMPLATE_HPP
-#include <boost/thread.hpp>
+
 #include "image/image.hpp"
 struct fa_template{
     std::string template_file_name;
@@ -23,24 +23,24 @@ void multi_thread_reg(bfnorm_type& mapping,
     {
 
         bf_optimize.start();
-        boost::thread_group threads;
+        std::vector<std::shared_ptr<std::future<void> > > threads;
         bool terminated_buf = false;
         for (unsigned int index = 1;index < thread_count;++index)
-                threads.add_thread(new boost::thread(
-                                   &image::reg::bfnorm_mrqcof<image::basic_image<float,3>,float>::run<bool>,
-                                   &bf_optimize,index,boost::ref(terminated_buf)));
+            threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
+                    [&bf_optimize,index,&terminated_buf](){bf_optimize.run(index,terminated_buf);})));
+
         bf_optimize.run(0,terminated_buf);
-        if(thread_count > 1)
-            threads.join_all();
+        for(int i = 0;i < threads.size();++i)
+            threads[i]->wait();
+
         bf_optimize.end();
-        boost::thread_group threads2;
+        std::vector<std::shared_ptr<std::future<void> > > threads2;
         for (unsigned int index = 1;index < thread_count;++index)
-                threads2.add_thread(new boost::thread(
-                                    &image::reg::bfnorm_mrqcof<image::basic_image<float,3>,float>::run2,
-                                    &bf_optimize,index,40));
+                threads2.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
+                                   [&bf_optimize,index](){bf_optimize.run2(index,40);})));
         bf_optimize.run2(0,40);
-        if(thread_count > 1)
-            threads2.join_all();
+        for(int i = 0;i < threads2.size();++i)
+            threads2[i]->wait();
     }
 }
 

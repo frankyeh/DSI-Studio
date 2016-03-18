@@ -6,7 +6,7 @@
 #include <memory>
 #include <image/image.hpp>
 #include <QTableWidget>
-#include <boost/thread.hpp>
+
 
 namespace Ui {
     class FileBrowser;
@@ -36,7 +36,7 @@ private:
     float preview_voxel_size[3];
     bool preview_loaded;
     image::basic_image<float,3> preview_data;
-    std::auto_ptr<boost::thread> preview_thread;
+    std::auto_ptr<std::future<void>> preview_thread;
     void preview_image(QString file_name);
 private slots:
 

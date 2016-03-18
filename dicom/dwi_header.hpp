@@ -2,11 +2,10 @@
 #define DWI_HEADER_HPP
 #include <vector>
 #include <string>
-#include <boost/noncopyable.hpp>
 #include "image/image.hpp"
 
 
-class DwiHeader : public boost::noncopyable
+class DwiHeader
 {
 	typedef std::vector<short>::iterator image_iterator;
 public:

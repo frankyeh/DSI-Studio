@@ -1,4 +1,4 @@
-#include <boost/thread.hpp>
+
 #include <QFileInfo>
 #include <QApplication>
 #include <QDir>

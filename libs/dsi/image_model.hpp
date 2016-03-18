@@ -1,6 +1,6 @@
 #ifndef IMAGE_MODEL_HPP
 #define IMAGE_MODEL_HPP
-#include <boost/thread.hpp>
+
 #include <boost/math/special_functions/sinc.hpp>
 #include "gqi_process.hpp"
 #include "image/image.hpp"
@@ -407,12 +407,13 @@ public:
         voxel.image_model = this;
         voxel.CreateProcesses<ProcessType>();
         voxel.init(thread_count);
-        boost::thread_group threads;
+        std::vector<std::shared_ptr<std::future<void> > > threads;
         for (unsigned int index = 1;index < thread_count;++index)
-            threads.add_thread(new boost::thread(&Voxel::thread_run,&voxel,
-                                                 index,thread_count,mask));
+            threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
+                [this,index,thread_count](){voxel.thread_run(index,thread_count,mask);})));
         voxel.thread_run(0,thread_count,mask);
-        threads.join_all();
+        for(unsigned int index = 1;index < threads.size();++index)
+            threads[index]->wait();
         return !prog_aborted();
     }
 

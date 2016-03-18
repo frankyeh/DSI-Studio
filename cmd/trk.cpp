@@ -5,7 +5,6 @@
 #include <iterator>
 #include <string>
 #include "image/image.hpp"
-#include <boost/exception/diagnostic_information.hpp>
 #include "tracking/region/Regions.h"
 #include "libs/tracking/tract_model.hpp"
 #include "libs/tracking/tracking_thread.hpp"
@@ -244,7 +243,7 @@ int trk(void)
             std::cout << "Loading " << region_name << " from " << atlas_name << " atlas" << std::endl;
             if(!atl_load_atlas(atlas_name))
                 return 0;
-            if(mapping.empty() && !atl_get_mapping(handle->mat_reader,1/*7-9-7*/,boost::thread::hardware_concurrency(),mapping))
+            if(mapping.empty() && !atl_get_mapping(handle->mat_reader,1/*7-9-7*/,std::thread::hardware_concurrency(),mapping))
                 return 0;
             image::vector<3> null;
             std::vector<image::vector<3,short> > cur_region;
@@ -429,7 +428,7 @@ int trk(void)
             std::cout << "Error reading ref image file:" << po.get("ref") << std::endl;
             return 0;
         }
-        new_slice.thread->join();
+        new_slice.thread->wait();
         new_slice.update();
         std::cout << "Applying linear registration." << std::endl;
         std::cout << new_slice.transform[0] << " " << new_slice.transform[1] << " " << new_slice.transform[2] << " " << new_slice.transform[3] << std::endl;
@@ -459,11 +458,6 @@ int trk(void)
         tract_model.save_end_points(file_name.c_str());
     }
 
-    }
-    catch(boost::exception const&  ex)
-    {
-        std::cout << "program terminated due to exception:" <<
-               boost::diagnostic_information(ex) << std::endl;
     }
     catch(std::exception const&  ex)
     {

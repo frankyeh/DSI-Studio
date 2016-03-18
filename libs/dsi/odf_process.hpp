@@ -521,7 +521,7 @@ struct SearchLocalMaximum
 struct DetermineFiberDirections : public BaseProcess
 {
     SearchLocalMaximum lm;
-    boost::mutex mutex;
+    std::mutex mutex;
 public:
     virtual void init(Voxel& voxel)
     {
@@ -531,7 +531,7 @@ public:
     virtual void run(Voxel& voxel,VoxelData& data)
     {
         data.min_odf = *std::min_element(data.odf.begin(),data.odf.end());
-        boost::mutex::scoped_lock lock(mutex);
+        std::lock_guard<std::mutex> lock(mutex);
         lm.search(data.odf);
         std::map<float,unsigned short,std::greater<float> >::const_iterator iter = lm.max_table.begin();
         std::map<float,unsigned short,std::greater<float> >::const_iterator end = lm.max_table.end();

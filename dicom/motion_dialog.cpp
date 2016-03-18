@@ -18,7 +18,7 @@ void linear_reg(const image::basic_image<short,3>& from,
     ++finished;
 }
 
-void motion_detection(boost::thread_group& threads,
+void motion_detection(std::vector<std::shared_ptr<std::future<void> > >& threads,
                       std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                       std::vector<unsigned int>& b0_index,
                       std::vector<image::affine_transform<double> >& arg,
@@ -35,14 +35,10 @@ void motion_detection(boost::thread_group& threads,
     arg.resize(b0_index.size());
     image::vector<3> vs(1,1,1);
     for(unsigned int index = 1;index < b0_index.size();++index)
-        threads.add_thread(new boost::thread(&linear_reg,
-                                             boost::ref(dwi_files[b0_index[0]]->image),
-                                             vs,
-                                             boost::ref(dwi_files[b0_index[index]]->image),
-                                             vs,
-                                             boost::ref(arg[index]),
-                                             boost::ref(terminated),
-                                             boost::ref(finished)));
+        threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,[&](){
+                linear_reg(dwi_files[b0_index[0]]->image,
+                        vs,dwi_files[b0_index[index]]->image,
+                        vs,arg[index],terminated,finished);})));
 }
 
 void motion_correction(std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
@@ -118,7 +114,8 @@ motion_dialog::motion_dialog(QWidget *parent,std::vector<std::shared_ptr<DwiHead
 motion_dialog::~motion_dialog()
 {
     terminated = true;
-    threads.join_all();
+    for(int i = 0;i < threads.size();++i)
+        threads[i]->wait();
     delete ui;
 }
 

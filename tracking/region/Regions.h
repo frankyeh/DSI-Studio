@@ -3,7 +3,7 @@
 #define RegionsH
 #include <vector>
 #include <map>
-#include <boost/thread/thread.hpp>
+
 #include "image/image.hpp"
 #include "RegionModel.h"
 // ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 #ifndef SliceModelH
 #define SliceModelH
-#include <boost/thread/thread.hpp>
+#include <future>
 #include "image/image.hpp"
 #include "libs/gzip_interface.hpp"
 
@@ -119,7 +119,7 @@ public:
     image::basic_image<float,3> roi_image;
     float* roi_image_buf;
 public:
-    std::auto_ptr<boost::thread> thread;
+    std::auto_ptr<std::future<void> > thread;
     image::const_pointer_image<float,3> from;
     image::vector<3> from_vs;
     image::affine_transform<float> arg_min;
