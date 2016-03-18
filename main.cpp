@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <QApplication>
 #include <QMessageBox>
+#include <QStyleFactory>
 #include <QDir>
 #include "mainwindow.h"
 #include "image/image.hpp"
@@ -233,6 +234,7 @@ int main(int ac, char *av[])
     QFont font;
     font.setFamily(QString::fromUtf8("Arial"));
     a.setFont(font);
+    a.setStyle(QStyleFactory::create("Fusion"));
     // load template
     if(!fa_template_imp.load_from_file())
     {
