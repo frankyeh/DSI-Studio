@@ -4,21 +4,19 @@
 #include <iterator>
 #include <string>
 #include "image/image.hpp"
-#include "boost/program_options.hpp"
 #include "tracking/region/Regions.h"
 #include "libs/tracking/tract_model.hpp"
 #include "libs/tracking/tracking_thread.hpp"
 #include "fib_data.hpp"
 #include "libs/gzip_interface.hpp"
+#include "program_option.hpp"
 
-namespace po = boost::program_options;
 
 // test example
 // --action=ana --source=20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
 void get_connectivity_matrix(FibData* handle,
                              TractModel& tract_model,
-                             image::basic_image<image::vector<3>,3>& mapping,
-                             po::variables_map& vm);
+                             image::basic_image<image::vector<3>,3>& mapping);
 void export_track_info(const std::string& file_name,
                        std::string export_option,
                        FibData* handle,
@@ -119,35 +117,11 @@ void export_track_info(const std::string& file_name,
     }
 }
 
-int ana(int ac, char *av[])
+int ana(void)
 {
-    // options for fiber tracking
-    po::options_description ana_desc("analysis options");
-    ana_desc.add_options()
-    ("help", "help message")
-    ("action", po::value<std::string>(), "ana: analysis")
-    ("source", po::value<std::string>(), "assign the .fib file name")
-    ("tract", po::value<std::string>(), "assign the .trk file name")
-    ("roi", po::value<std::string>(), "file for region-based analysis")
-    ("export", po::value<std::string>(), "export additional information (e.g. --export=tdi)")
-    ("connectivity", po::value<std::string>(), "export connectivity")
-    ("connectivity_type", po::value<std::string>()->default_value("end"), "specify connectivity parameter")
-    ("connectivity_value", po::value<std::string>()->default_value("count"), "specify connectivity parameter")
-    ;
-
-    if(!ac)
-    {
-        std::cout << ana_desc << std::endl;
-        return 1;
-    }
-
-    po::variables_map vm;
-    po::store(po::command_line_parser(ac, av).options(ana_desc).run(), vm);
-    po::notify(vm);
-
     std::auto_ptr<FibData> handle(new FibData);
     {
-        std::string file_name = vm["source"].as<std::string>();
+        std::string file_name = po.get("source");
         std::cout << "loading " << file_name << "..." <<std::endl;
         if(!QFileInfo(file_name.c_str()).exists())
         {
@@ -162,21 +136,21 @@ int ana(int ac, char *av[])
     }
     image::geometry<3> geometry = handle->dim;
 
-    if(!vm.count("tract"))
+    if(!po.has("tract"))
     {
-        if(!vm.count("roi"))
+        if(!po.has("roi"))
         {
             std::cout << "No tract file or ROI file assigned." << std::endl;
             return 0;
         }
-        std::string roi_file_name = vm["roi"].as<std::string>();
+        std::string roi_file_name = po.get("roi");
         ROIRegion region(handle->fib.dim,handle->vs);
         if(!region.LoadFromFile(roi_file_name.c_str(),handle->trans_to_mni))
         {
             std::cout << "Fail to load the ROI file." << std::endl;
             return 0;
         }
-        if(vm.count("export") && vm["export"].as<std::string>() == std::string("stat"))
+        if(po.has("export") && po.get("export") == std::string("stat"))
         {
             std::string file_name_stat(roi_file_name);
             file_name_stat += ".statistics.txt";
@@ -197,7 +171,7 @@ int ana(int ac, char *av[])
     float threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(geometry,handle->fib.fa[0]));
     tract_model.get_fib().threshold = threshold;
     tract_model.get_fib().cull_cos_angle = std::cos(60.0*3.1415926/180.0);
-    std::string file_name = vm["tract"].as<std::string>();
+    std::string file_name = po.get("tract");
     {
         std::cout << "loading " << file_name << "..." <<std::endl;
         if(!QFileInfo(file_name.c_str()).exists())
@@ -213,14 +187,14 @@ int ana(int ac, char *av[])
         std::cout << file_name << " loaded" << std::endl;
 
     }
-    if(vm.count("connectivity"))
+    if(po.has("connectivity"))
     {
         image::basic_image<image::vector<3>,3> mapping;
-        get_connectivity_matrix(handle.get(),tract_model,mapping,vm);
+        get_connectivity_matrix(handle.get(),tract_model,mapping);
     }
 
-    if(vm.count("export"))
-        export_track_info(file_name,vm["export"].as<std::string>(),handle.get(),tract_model);
+    if(po.has("export"))
+        export_track_info(file_name,po.get("export"),handle.get(),tract_model);
 
     return 0;
 }

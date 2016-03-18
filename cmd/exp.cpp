@@ -3,62 +3,40 @@
 #include <iterator>
 #include <string>
 #include "image/image.hpp"
-#include "boost/program_options.hpp"
 #include "tracking/region/Regions.h"
 #include "libs/tracking/tract_model.hpp"
 #include "libs/dsi/image_model.hpp"
 #include "libs/tracking/tracking_thread.hpp"
 #include "fib_data.hpp"
 #include "libs/gzip_interface.hpp"
-
-namespace po = boost::program_options;
+#include "program_option.hpp"
 
 // test example
 
-int exp(int ac, char *av[])
+int exp(void)
 {
-    // options for fiber tracking
-    po::options_description ana_desc("analysis options");
-    ana_desc.add_options()
-    ("help", "help message")
-    ("action", po::value<std::string>(), "exp: export information")
-    ("source", po::value<std::string>(), "assign the .fib.gz or .src.gz file name")
-    ("export", po::value<std::string>(), "export additional information (e.g. --export=fa0,fa1,gfa)")
-    ;
-
-    if(!ac)
+    if(po.get("export") == "4dnii")
     {
-        std::cout << ana_desc << std::endl;
-        return 1;
-    }
-
-    po::variables_map vm;
-    po::store(po::command_line_parser(ac, av).options(ana_desc).run(), vm);
-    po::notify(vm);
-
-
-    if(vm["export"].as<std::string>() == "4dnii")
-    {
-        std::string file_name = vm["source"].as<std::string>();
+        std::string file_name = po.get("source");
         ImageModel handle;
         if(!handle.load_from_file(file_name.c_str()))
         {
             std::cout << handle.error_msg << std::endl;
             return 1;
         }
-        std::cout << "exporting " << vm["export"].as<std::string>()+".nii.gz" << std::endl;
+        std::cout << "exporting " << po.get("export")+".nii.gz" << std::endl;
         handle.save_to_nii((file_name+".nii.gz").c_str());
-        std::cout << "exporting " << vm["export"].as<std::string>()+".b_table.txt" << std::endl;
+        std::cout << "exporting " << po.get("export")+".b_table.txt" << std::endl;
         handle.save_b_table((file_name+".b_table.txt").c_str());
-        std::cout << "exporting " << vm["export"].as<std::string>()+".bvec" << std::endl;
+        std::cout << "exporting " << po.get("export")+".bvec" << std::endl;
         handle.save_bvec((file_name+".bvec").c_str());
-        std::cout << "exporting " << vm["export"].as<std::string>()+".bval" << std::endl;
+        std::cout << "exporting " << po.get("export")+".bval" << std::endl;
         handle.save_bval((file_name+".bval").c_str());
         return 1;
     }
 
     gz_mat_read mat_reader;
-    std::string file_name = vm["source"].as<std::string>();
+    std::string file_name = po.get("source");
     std::cout << "loading " << file_name << "..." <<std::endl;
     if(!QFileInfo(file_name.c_str()).exists())
     {
@@ -89,7 +67,7 @@ int exp(int ac, char *av[])
         std::cout << "Transformation matrix found." << std::endl;
 
     image::geometry<3> geo(dim_buf[0],dim_buf[1],dim_buf[2]);
-    std::string export_option = vm["export"].as<std::string>();
+    std::string export_option = po.get("export");
     std::replace(export_option.begin(),export_option.end(),',',' ');
     std::istringstream in(export_option);
     std::string cmd;

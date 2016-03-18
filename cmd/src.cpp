@@ -3,38 +3,16 @@
 #include <iterator>
 #include <string>
 #include "image/image.hpp"
-#include "boost/program_options.hpp"
 #include "dicom/dwi_header.hpp"
+#include "program_option.hpp"
 
-namespace po = boost::program_options;
 QStringList search_files(QString dir,QString filter);
 void load_bval(const char* file_name,std::vector<double>& bval);
 void load_bvec(const char* file_name,std::vector<double>& b_table);
 bool load_all_files(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
-int src(int ac, char *av[])
+int src(void)
 {
-    po::options_description rec_desc("dicom parsing options");
-    rec_desc.add_options()
-    ("help", "help message")
-    ("action", po::value<std::string>(), "src:dicom parsing")
-    ("source", po::value<std::string>(), "assign the directory for the dicom files")
-    ("recursive", po::value<std::string>(), "search subdirectories")
-    ("b_table", po::value<std::string>(), "assign the b-table")
-    ("bval", po::value<std::string>(), "assign the b value")
-    ("bvec", po::value<std::string>(), "assign the b vector")
-    ("output", po::value<std::string>(), "assign the output filename")
-    ;
-    if(!ac)
-    {
-        std::cout << rec_desc << std::endl;
-        return 1;
-    }
-    po::variables_map vm;
-    po::store(po::command_line_parser(ac, av).options(rec_desc).run(), vm);
-    po::notify(vm);
-
-
-    std::string source = vm["source"].as<std::string>();
+    std::string source = po.get("source");
     std::string ext;
     if(source.size() > 4)
         ext = std::string(source.end()-4,source.end());
@@ -50,7 +28,7 @@ int src(int ac, char *av[])
     {
         std::cout << "load files in directory " << source.c_str() << std::endl;
         QDir directory = QString(source.c_str());
-        if(vm.count("recursive"))
+        if(po.has("recursive"))
         {
             std::cout << "search recursively in the subdir" << std::endl;
             file_list = search_files(source.c_str(),"*.dcm");
@@ -77,9 +55,9 @@ int src(int ac, char *av[])
         std::cout << "Invalid file format" << std::endl;
         return -1;
     }
-    if(vm.count("b_table"))
+    if(po.has("b_table"))
     {
-        std::string table_file_name = vm["b_table"].as<std::string>();
+        std::string table_file_name = po.get("b_table");
         std::ifstream in(table_file_name.c_str());
         if(!in)
         {
@@ -107,13 +85,13 @@ int src(int ac, char *av[])
         }
         std::cout << "B-table " << table_file_name << " loaded" << std::endl;
     }
-    if(vm.count("bval") && vm.count("bvec"))
+    if(po.has("bval") && po.has("bvec"))
     {
         std::vector<double> bval,bvec;
-        std::cout << "load bval=" << vm["bval"].as<std::string>() << std::endl;
-        std::cout << "load bvec=" << vm["bvec"].as<std::string>() << std::endl;
-        load_bval(vm["bval"].as<std::string>().c_str(),bval);
-        load_bvec(vm["bvec"].as<std::string>().c_str(),bvec);
+        std::cout << "load bval=" << po.get("bval") << std::endl;
+        std::cout << "load bvec=" << po.get("bvec") << std::endl;
+        load_bval(po.get("bval").c_str(),bval);
+        load_bvec(po.get("bvec").c_str(),bvec);
         if(bval.size() != dwi_files.size())
         {
             std::cout << "Mismatch between bval file and the loaded images" << std::endl;
@@ -148,7 +126,7 @@ int src(int ac, char *av[])
         std::cout << "Cannot find b-table from the header. You may need to load an external b-table using--b_table or --bval and --bvec." << std::endl;
         return 1;
     }
-    std::cout << "Output src " << vm["output"].as<std::string>().c_str() << std::endl;
-    DwiHeader::output_src(vm["output"].as<std::string>().c_str(),dwi_files,0);
+    std::cout << "Output src " << po.get("output").c_str() << std::endl;
+    DwiHeader::output_src(po.get("output").c_str(),dwi_files,0);
     return 0;
 }

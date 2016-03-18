@@ -29,7 +29,6 @@ mac{
 INCLUDEPATH += /Users/frankyeh/include
 LIBS += -L/Users/frankyeh/include/lib -lboost_system \
         -L/Users/frankyeh/include/lib -lboost_thread \
-        -L/Users/frankyeh/include/lib -lboost_program_options \
         -lz
 ICON = dsi_studio.icns
 }
@@ -99,7 +98,8 @@ HEADERS += mainwindow.h \
     tracking/connectivity_matrix_dialog.h \
     tracking/atlasdialog.h \
     dicom/motion_dialog.hpp \
-    filebrowser.h
+    filebrowser.h \
+    program_option.hpp
 
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \

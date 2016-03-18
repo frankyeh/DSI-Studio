@@ -6,26 +6,22 @@
 #include <QMessageBox>
 #include <QDir>
 #include "mainwindow.h"
-#include "boost/program_options.hpp"
 #include "image/image.hpp"
 #include "mapping/fa_template.hpp"
 #include "mapping/atlas.hpp"
 #include <iostream>
 #include <iterator>
-
+#include "program_option.hpp"
 #include "cmd/cnt.cpp" // Qt project cannot build cnt.cpp without adding this.
 
-namespace po = boost::program_options;
-
-
-int rec(int ac, char *av[]);
-int trk(int ac, char *av[]);
-int src(int ac, char *av[]);
-int ana(int ac, char *av[]);
-int exp(int ac, char *av[]);
-int atl(int ac, char *av[]);
-int cnt(int ac, char *av[]);
-int vis(int ac, char *av[]);
+int rec(void);
+int trk(void);
+int src(void);
+int ana(void);
+int exp(void);
+int atl(void);
+int cnt(void);
+int vis(void);
 
 
 fa_template fa_template_imp;
@@ -168,7 +164,7 @@ bool load_brain_mask(void)
     image::normalize(mni_t1w,1);
     return true;
 }
-
+program_option po;
 int main(int ac, char *av[])
 { 
     if(ac > 2)
@@ -194,47 +190,30 @@ int main(int ac, char *av[])
             std::cout << "DSI Studio " << __DATE__ << ", Fang-Cheng Yeh" << std::endl;
 
         // options for general options
-            po::options_description desc("reconstruction options");
-            desc.add_options()
-            ("help", "help message")
-            ("action", po::value<std::string>(), "rec:diffusion reconstruction trk:fiber tracking")
-            ("source", po::value<std::string>(), "assign the .src or .fib file name")
-            ;
+            po.init(ac,av);
 
-
-            po::variables_map vm;
-            po::store(po::command_line_parser(ac, av).options(desc).allow_unregistered().run(),vm);
-            if (vm.count("help"))
-            {
-                std::cout << "example: perform reconstruction" << std::endl;
-                std::cout << "    --action=rec --source=test.src.gz --method=4 " << std::endl;
-                std::cout << "example: perform fiber tracking" << std::endl;
-                std::cout << "    --action=trk --source=test.src.gz.fib.gz --method=0 --fiber_count=5000" << std::endl;
-                return 1;
-            }
-
-            if (!vm.count("action") || !vm.count("source"))
+            if (!po.has("action") || !po.has("source"))
             {
                 std::cout << "invalid command, use --help for more detail" << std::endl;
                 return 1;
             }
-            QDir::setCurrent(QFileInfo(vm["action"].as<std::string>().c_str()).absolutePath());
-            if(vm["action"].as<std::string>() == std::string("rec"))
-                return rec(ac,av);
-            if(vm["action"].as<std::string>() == std::string("trk"))
-                return trk(ac,av);
-            if(vm["action"].as<std::string>() == std::string("src"))
-                return src(ac,av);
-            if(vm["action"].as<std::string>() == std::string("ana"))
-                return ana(ac,av);
-            if(vm["action"].as<std::string>() == std::string("exp"))
-                return exp(ac,av);
-            if(vm["action"].as<std::string>() == std::string("atl"))
-                return atl(ac,av);
-            if(vm["action"].as<std::string>() == std::string("cnt"))
-                return cnt(ac,av);
-            if(vm["action"].as<std::string>() == std::string("vis"))
-                return vis(ac,av);
+            QDir::setCurrent(QFileInfo(po.get("action").c_str()).absolutePath());
+            if(po.get("action") == std::string("rec"))
+                return rec();
+            if(po.get("action") == std::string("trk"))
+                return trk();
+            if(po.get("action") == std::string("src"))
+                return src();
+            if(po.get("action") == std::string("ana"))
+                return ana();
+            if(po.get("action") == std::string("exp"))
+                return exp();
+            if(po.get("action") == std::string("atl"))
+                return atl();
+            if(po.get("action") == std::string("cnt"))
+                return cnt();
+            if(po.get("action") == std::string("vis"))
+                return vis();
             std::cout << "invalid command, use --help for more detail" << std::endl;
             return 1;
         }

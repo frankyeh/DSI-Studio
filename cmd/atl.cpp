@@ -3,12 +3,12 @@
 #include <QApplication>
 #include <QDir>
 #include "image/image.hpp"
-#include "boost/program_options.hpp"
 #include "mapping/fa_template.hpp"
 #include "libs/gzip_interface.hpp"
 #include "mapping/atlas.hpp"
 #include "manual_alignment.h"
-namespace po = boost::program_options;
+#include "program_option.hpp"
+
 extern fa_template fa_template_imp;
 extern std::vector<atlas> atlas_list;
 std::string get_fa_template_path(void);
@@ -180,33 +180,12 @@ void atl_save_mapping(const std::string& file_name,const image::geometry<3>& geo
     }
 }
 
-int atl(int ac, char *av[])
+int atl(void)
 {
-    po::options_description norm_desc("fiber tracking options");
-    norm_desc.add_options()
-    ("help", "help message")
-    ("action", po::value<std::string>(), "atl: output atlas")
-    ("source", po::value<std::string>(), "assign the .fib file name")
-    ("order", po::value<int>()->default_value(0), "normalization order (0~3)")
-    ("thread_count", po::value<int>()->default_value(boost::thread::hardware_concurrency()), "thread count")
-    ("atlas", po::value<std::string>(), "atlas name")
-    ("output", po::value<std::string>()->default_value("multiple"), "output files")
-    ;
-
-    if(!ac)
-    {
-        std::cout << norm_desc << std::endl;
-        return 1;
-    }
-
-    po::variables_map vm;
-    po::store(po::command_line_parser(ac, av).options(norm_desc).run(), vm);
-    po::notify(vm);
-
     // construct an atlas
-    if(vm["order"].as<int>() == -1)
+    if(po.get("order",int(0)) == -1)
     {
-        std::string dir = vm["source"].as<std::string>();
+        std::string dir = po.get("source");
         std::cout << "Constructing an atlas" << std::endl;
         std::cout << "Loading fib file in " << dir << std::endl;
         QDir directory(QString(dir.c_str()));
@@ -239,7 +218,7 @@ int atl(int ac, char *av[])
 
 
     gz_mat_read mat_reader;
-    std::string file_name = vm["source"].as<std::string>();
+    std::string file_name = po.get("source");
     std::cout << "loading " << file_name << "..." <<std::endl;
     if(!QFileInfo(file_name.c_str()).exists())
     {
@@ -252,11 +231,11 @@ int atl(int ac, char *av[])
         return 0;
     }
 
-    if(!atl_load_atlas(vm["atlas"].as<std::string>()))
+    if(!atl_load_atlas(po.get("atlas")))
         return 0;
 
-    unsigned int factor = vm["order"].as<int>() + 1;
-    unsigned int thread_count = vm["thread_count"].as<int>();
+    unsigned int factor = po.get("order",int(0)) + 1;
+    unsigned int thread_count = po.get("thread_count",int(std::thread::hardware_concurrency()));
     std::cout << "Reg order = " << factor << std::endl;
     std::cout << "Thread count = " << thread_count << std::endl;
 
@@ -274,6 +253,6 @@ int atl(int ac, char *av[])
     image::basic_image<image::vector<3>,3> mapping;
     if(!atl_get_mapping(mat_reader,factor,thread_count,mapping))
         return 0;
-    atl_save_mapping(file_name,image::geometry<3>(dim),mapping,trans,vs,vm["output"].as<std::string>() == "multiple");
+    atl_save_mapping(file_name,image::geometry<3>(dim),mapping,trans,vs,po.get("output","multiple") == "multiple");
     return 0;
 }

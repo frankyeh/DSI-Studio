@@ -5,7 +5,6 @@
 #include <iterator>
 #include <string>
 #include "image/image.hpp"
-#include "boost/program_options.hpp"
 #include <boost/exception/diagnostic_information.hpp>
 #include "tracking/region/Regions.h"
 #include "libs/tracking/tract_model.hpp"
@@ -16,6 +15,7 @@
 #include "mapping/atlas.hpp"
 #include "SliceModel.h"
 #include "vbc/vbc_database.h"
+#include "program_option.hpp"
 bool atl_load_atlas(const std::string atlas_name);
 bool atl_get_mapping(gz_mat_read& mat_reader,
                      unsigned int factor,
@@ -27,7 +27,6 @@ void export_track_info(const std::string& file_name,
                        TractModel& tract_model);
 extern fa_template fa_template_imp;
 extern std::vector<atlas> atlas_list;
-namespace po = boost::program_options;
 
 void save_connectivity_matrix(TractModel& tract_model,
                               ConnectivityMatrix& data,
@@ -64,17 +63,16 @@ void save_connectivity_matrix(TractModel& tract_model,
 void load_nii_label(const char* filename,std::map<short,std::string>& label_map);
 void get_connectivity_matrix(FibData* handle,
                              TractModel& tract_model,
-                             image::basic_image<image::vector<3>,3>& mapping,
-                             po::variables_map& vm)
+                             image::basic_image<image::vector<3>,3>& mapping)
 {
     std::string source;
-    QStringList connectivity_list = QString(vm["connectivity"].as<std::string>().c_str()).split(",");
-    QStringList connectivity_type_list = QString( vm["connectivity_type"].as<std::string>().c_str()).split(",");
-    QStringList connectivity_value_list = QString(vm["connectivity_value"].as<std::string>().c_str()).split(",");
-    if(vm.count("output"))
-        source = vm["output"].as<std::string>();
+    QStringList connectivity_list = QString(po.get("connectivity").c_str()).split(",");
+    QStringList connectivity_type_list = QString( po.get("connectivity_type","end").c_str()).split(",");
+    QStringList connectivity_value_list = QString(po.get("connectivity_value","count").c_str()).split(",");
+    if(po.has("output"))
+        source = po.get("output");
     if(source.empty() || source == "no_file")
-        source = vm["source"].as<std::string>();
+        source = po.get("source");
     for(unsigned int i = 0;i < connectivity_list.size();++i)
     {
         std::string roi_file_name = connectivity_list[i].toStdString();
@@ -87,7 +85,7 @@ void get_connectivity_matrix(FibData* handle,
         if(from.geometry() != handle->dim)
         {
             std::cout << roi_file_name << " is used as an MNI space ROI." << std::endl;
-            if(mapping.empty() && !atl_get_mapping(handle->mat_reader,1/*7-9-7*/,vm["thread_count"].as<int>(),mapping))
+            if(mapping.empty() && !atl_get_mapping(handle->mat_reader,1/*7-9-7*/,po.get("thread_count",int(std::thread::hardware_concurrency())),mapping))
                 continue;
             atlas_list.clear(); // some atlas may be loaded in ROI
             if(atl_load_atlas(roi_file_name))
@@ -156,69 +154,15 @@ void get_connectivity_matrix(FibData* handle,
 // test example
 // --action=trk --source=./test/20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
 
-int trk(int ac, char *av[])
+
+
+int trk(void)
 {
     try{
-    // options for fiber tracking
-    po::options_description trk_desc("fiber tracking options");
-    trk_desc.add_options()
-    ("help", "help message")
-    ("action", po::value<std::string>(), "rec:diffusion reconstruction trk:fiber tracking")
-    ("source", po::value<std::string>(), "assign the .fib file name")
-    ("method", po::value<int>()->default_value(0), "tracking methods (0:streamline, 1:rk4)")
-    ("initial_dir", po::value<int>()->default_value(0), "initial direction (0:primary, 1:random 2:all directions)")
-    ("interpolation", po::value<int>()->default_value(0), "interpolation methods (0:trilinear, 1:gaussian radial)")
-    ("seed_plan", po::value<int>()->default_value(0), "seeding methods (0:subvoxel, 1:voxelwise)")
-    ("thread_count", po::value<int>()->default_value(boost::thread::hardware_concurrency()), "number of thread (default:1)")
-    ("output", po::value<std::string>(), "output file name")
-    ("end_point", po::value<std::string>(), "output end point file")
-    ("export", po::value<std::string>(), "export additional information (e.g. --export=stat,tdi)")
-    ("connectometry_source", po::value<std::string>(), "connectometry source file")
-    ("connectometry_type", po::value<std::string>(), "connectometry type")
-    ("connectometry_threshold", po::value<std::string>(), "connectometry threshold")
-    ("connectivity", po::value<std::string>(), "export connectivity")
-    ("connectivity_type", po::value<std::string>()->default_value("end"), "specify connectivity parameter")
-    ("connectivity_value", po::value<std::string>()->default_value("count"), "specify connectivity parameter")
-    ("roi", po::value<std::string>(), "file for ROI regions")
-    ("roi2", po::value<std::string>(), "file for the second ROI regions")
-    ("roi3", po::value<std::string>(), "file for the third ROI regions")
-    ("roi4", po::value<std::string>(), "file for the forth ROI regions")
-    ("roi5", po::value<std::string>(), "file for the fifth ROI regions")
-    ("roa", po::value<std::string>(), "file for ROA regions")
-    ("roa2", po::value<std::string>(), "file for ROA regions")
-    ("roa3", po::value<std::string>(), "file for ROA regions")
-    ("roa4", po::value<std::string>(), "file for ROA regions")
-    ("roa5", po::value<std::string>(), "file for ROA regions")
-    ("end", po::value<std::string>(), "file for ending regions")
-    ("end2", po::value<std::string>(), "file for ending regions")
-    ("ter", po::value<std::string>(), "file for terminative regions")
-    ("seed", po::value<std::string>(), "file for seed regions")
-    ("ref", po::value<std::string>(), "T1W or T2W file for exporting coordinate")
-    ("threshold_index", po::value<std::string>(), "index for thresholding")
-    ("step_size", po::value<float>(), "the step size in minimeter")
-    ("turning_angle", po::value<float>()->default_value(60), "the turning angle in degrees (default:60)")
-    ("fa_threshold", po::value<float>(), "the fa threshold (default:0.03)")
-    ("smoothing", po::value<float>()->default_value(0), "smoothing fiber tracts, from 0 to 1. (default:0)")
-    ("min_length", po::value<float>()->default_value(10), "minimum fiber length in minimeter (default:10)")
-    ("max_length", po::value<float>()->default_value(500), "maximum fiber length in minimeter (default:500)")
-    ("random_seed", po::value<int>()->default_value(0), "use timer as the random seed")
-    ("fiber_count", po::value<int>(), "terminate tracking if fiber count is reached (default:10000)")
-    ("seed_count", po::value<int>(), "terminate tracking if seeding count is reached  (default:10000)")
-    ;
-
-    if(!ac)
-    {
-        std::cout << trk_desc << std::endl;
-        return 1;
-    }
-
-    po::variables_map vm;
-    po::store(po::command_line_parser(ac, av).options(trk_desc).run(), vm);
-    po::notify(vm);
 
     std::auto_ptr<FibData> handle(new FibData);
     {
-        std::string file_name = vm["source"].as<std::string>();
+        std::string file_name = po.get("source");
         std::cout << "loading " << file_name << "..." <<std::endl;
         if(!QFileInfo(file_name.c_str()).exists())
         {
@@ -232,18 +176,15 @@ int trk(int ac, char *av[])
             return 0;
         }
     }
-    if (vm.count("threshold_index"))
+    if (po.has("threshold_index"))
     {
-        std::cout << "setting index to " << vm["threshold_index"].as<std::string>() << std::endl;
-        if(!handle->fib.set_tracking_index(vm["threshold_index"].as<std::string>()))
+        std::cout << "setting index to " << po.get("threshold_index") << std::endl;
+        if(!handle->fib.set_tracking_index(po.get("threshold_index")))
         {
             std::cout << "failed...cannot find the index" << std::endl;
             return 0;
         }
     }
-
-
-
 
     image::geometry<3> geometry = handle->dim;
     image::vector<3> voxel_size = handle->vs;
@@ -251,33 +192,33 @@ int trk(int ac, char *av[])
     const float *fa0 = handle->fib.fa[0];
 
 
-    ThreadData tracking_thread(vm["random_seed"].as<int>());
-    tracking_thread.param.step_size = (vm.count("step_size") ? vm["step_size"].as<float>(): voxel_size[0]/2.0);
-    tracking_thread.param.smooth_fraction = vm["smoothing"].as<float>();
-    tracking_thread.param.min_points_count3 = 3.0* vm["min_length"].as<float>()/tracking_thread.param.step_size;
+    ThreadData tracking_thread(po.get("random_seed",int(0)));
+    tracking_thread.param.step_size = po.get("step_size",float(voxel_size[0]/2.0));
+    tracking_thread.param.smooth_fraction = po.get("smoothing",float(0));
+    tracking_thread.param.min_points_count3 = 3.0* po.get("min_length",float(10))/tracking_thread.param.step_size;
     if(tracking_thread.param.min_points_count3 < 6)
         tracking_thread.param.min_points_count3 = 6;
-    tracking_thread.param.max_points_count3 = std::max<unsigned int>(6,3.0*vm["max_length"].as<float>()/tracking_thread.param.step_size);
+    tracking_thread.param.max_points_count3 = std::max<unsigned int>(6,3.0*po.get("max_length",float(500))/tracking_thread.param.step_size);
 
-    tracking_thread.tracking_method = vm["method"].as<int>();
-    tracking_thread.initial_direction  = vm["initial_dir"].as<int>();
-    tracking_thread.interpolation_strategy = vm["interpolation"].as<int>();
-    tracking_thread.center_seed = vm["seed_plan"].as<int>();
+    tracking_thread.tracking_method = po.get("method",int(0));
+    tracking_thread.initial_direction  = po.get("initial_dir",int(0));
+    tracking_thread.interpolation_strategy = po.get("interpolation",int(0));
+    tracking_thread.center_seed = po.get("seed_plan",int(0));
 
 
     unsigned int termination_count = 10000;
-    if (vm.count("fiber_count"))
+    if (po.has("fiber_count"))
     {
-        termination_count = vm["fiber_count"].as<int>();
+        termination_count = po.get("fiber_count",int(termination_count));
         tracking_thread.stop_by_tract = true;
 
-        if (vm.count("seed_count"))
-            tracking_thread.max_seed_count = vm["seed_count"].as<int>();
+        if (po.has("seed_count"))
+            tracking_thread.max_seed_count = po.get("seed_count",int(termination_count));
     }
     else
     {
-        if (vm.count("seed_count"))
-            termination_count = vm["seed_count"].as<int>();
+        if (po.has("seed_count"))
+            termination_count = po.get("seed_count",int(termination_count));
         else
             termination_count = 1000000;
         tracking_thread.stop_by_tract = false;
@@ -291,10 +232,10 @@ int trk(int ac, char *av[])
     char roi_names[total_count][5] = {"roi","roi2","roi3","roi4","roi5","roa","roa2","roa3","roa4","roa5","end","end2","seed","ter"};
     unsigned char type[total_count] = {0,0,0,0,0,1,1,1,1,1,2,2,3,4};
     for(int index = 0;index < total_count;++index)
-    if (vm.count(roi_names[index]))
+    if (po.has(roi_names[index]))
     {
         ROIRegion roi(geometry, voxel_size);
-        std::string file_name = vm[roi_names[index]].as<std::string>();
+        std::string file_name = po.get(roi_names[index]);
         if(file_name.find(':') != std::string::npos &&
            file_name.find(':') != 1)
         {
@@ -344,28 +285,25 @@ int trk(int ac, char *av[])
     QStringList cnt_file_name;
     QString cnt_type;
 
-    if(vm.count("connectometry_source"))
+    if(po.has("connectometry_source"))
     {
-        std::string names = vm["connectometry_source"].as<std::string>().c_str();
+        std::string names = po.get("connectometry_source").c_str();
         cnt_file_name = QString(names.c_str()).split(",");
-        if(!vm.count("connectometry_type"))
+        if(!po.has("connectometry_type"))
         {
             std::cout << "Please assign the connectometry analysis type." << std::endl;
             return -1;
         }
-        cnt_type = vm["connectometry_type"].as<std::string>().c_str();
+        cnt_type = po.get("connectometry_type").c_str();
     }
     TractModel tract_model(handle.get());
 
 
 
-    if (vm.count("fa_threshold") )
-        tract_model.get_fib().threshold = vm["fa_threshold"].as<float>();
-    else
-        tract_model.get_fib().threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(geometry,fa0));
-    tract_model.get_fib().cull_cos_angle = std::cos(vm["turning_angle"].as<float>()*3.1415926/180.0);
+    tract_model.get_fib().threshold = po.get("fa_threshold",float(0.6*image::segmentation::otsu_threshold(image::make_image(geometry,fa0))));
+    tract_model.get_fib().cull_cos_angle = std::cos(po.get("turning_angle",float(60))*3.1415926/180.0);
 
-    if (!vm.count("seed"))
+    if (!po.has("seed"))
     {
 
         std::vector<image::vector<3,short> > seed;
@@ -377,28 +315,28 @@ int trk(int ac, char *av[])
     }
 
     {
-        std::cout << "turning_angle=" << vm["turning_angle"].as<float>() << std::endl;
+        std::cout << "turning_angle=" << po.get("turning_angle",float(60)) << std::endl;
         std::cout << "fa_threshold=" << tract_model.get_fib().threshold << std::endl;
         std::cout << "step_size=" << tracking_thread.param.step_size << std::endl;
         std::cout << "smoothing=" << tracking_thread.param.smooth_fraction << std::endl;
-        std::cout << "min_length=" << vm["min_length"].as<float>() << std::endl;
-        std::cout << "max_length=" << vm["max_length"].as<float>() << std::endl;
+        std::cout << "min_length=" << po.get("min_length",float(10)) << std::endl;
+        std::cout << "max_length=" << po.get("max_length",float(500)) << std::endl;
         std::cout << "tracking_method=" << (int)tracking_thread.tracking_method << std::endl;
         std::cout << "initial direction=" << (int)tracking_thread.initial_direction << std::endl;
         std::cout << "interpolation=" << (int)tracking_thread.interpolation_strategy << std::endl;
         std::cout << "voxelwise=" << (int)tracking_thread.center_seed << std::endl;
-        std::cout << "thread_count=" << vm["thread_count"].as<int>() << std::endl;
+        std::cout << "thread_count=" << po.get("thread_count",int(std::thread::hardware_concurrency())) << std::endl;
     }
 
     if(!cnt_file_name.empty())
     {
         QStringList connectometry_threshold;
-        if(!vm.count("connectometry_threshold"))
+        if(!po.has("connectometry_threshold"))
         {
             std::cout << "Please assign the connectometry threshold." << std::endl;
             return -1;
         }
-        connectometry_threshold = QString(vm["connectometry_threshold"].as<std::string>().c_str()).split(",");
+        connectometry_threshold = QString(po.get("connectometry_threshold").c_str()).split(",");
         for(unsigned int i = 0;i < cnt_file_name.size();++i)
         {
             fib_data cnt;
@@ -432,7 +370,7 @@ int trk(int ac, char *av[])
                 tract_model.get_fib().threshold = std::fabs(t);
                 std::cout << "start tracking." << std::endl;
 
-                tracking_thread.run(tract_model.get_fib(),vm["thread_count"].as<int>(),termination_count,true);
+                tracking_thread.run(tract_model.get_fib(),po.get("thread_count",int(std::thread::hardware_concurrency())),termination_count,true);
                 tracking_thread.fetchTracks(&tract_model);
                 std::ostringstream out;
                 out << cnt_file_name[i].toStdString() << "." << cnt_type.toStdString()
@@ -448,7 +386,7 @@ int trk(int ac, char *av[])
 
     std::cout << "start tracking." << std::endl;
 
-    tracking_thread.run(tract_model.get_fib(),vm["thread_count"].as<int>(),termination_count,true);
+    tracking_thread.run(tract_model.get_fib(),po.get("thread_count",int(std::thread::hardware_concurrency())),termination_count,true);
     tract_model.report += tracking_thread.report.str();
     std::cout << tract_model.report << std::endl;
 
@@ -462,14 +400,14 @@ int trk(int ac, char *av[])
     }
 
     std::string file_name;
-    if (vm.count("output"))
-        file_name = vm["output"].as<std::string>();
+    if (po.has("output"))
+        file_name = po.get("output");
     else
     {
         std::ostringstream fout;
-        fout << vm["source"].as<std::string>() <<
+        fout << po.get("source") <<
             ".st" << (int)std::floor(tracking_thread.param.step_size*10.0+0.5) <<
-            ".tu" << (int)std::floor(vm["turning_angle"].as<float>()+0.5) <<
+            ".tu" << (int)std::floor(po.get("turning_angle",float(60))+0.5) <<
             ".fa" << (int)std::floor(tract_model.get_fib().threshold*100.0+0.5) <<
             ".sm" << (int)std::floor(tracking_thread.param.smooth_fraction*10.0+0.5) <<
             ".me" << (int)tracking_thread.tracking_method <<
@@ -479,16 +417,16 @@ int trk(int ac, char *av[])
         file_name = fout.str();
     }
 
-    if(vm.count("ref")) // save track in T1W/T2W space
+    if(po.has("ref")) // save track in T1W/T2W space
     {
         std::vector<std::string> files;
-        files.push_back(vm["ref"].as<std::string>());
+        files.push_back(po.get("ref"));
         FibSliceModel slice(handle.get());
         CustomSliceModel new_slice;
-        std::cout << "Loading reference image:" << vm["ref"].as<std::string>() << std::endl;
+        std::cout << "Loading reference image:" << po.get("ref") << std::endl;
         if(!new_slice.initialize(slice,!(handle->trans_to_mni.empty())/*is_qsdr*/,files,false))
         {
-            std::cout << "Error reading ref image file:" << vm["ref"].as<std::string>() << std::endl;
+            std::cout << "Error reading ref image file:" << po.get("ref") << std::endl;
             return 0;
         }
         new_slice.thread->join();
@@ -501,20 +439,20 @@ int trk(int ac, char *av[])
     }
     else
         tract_model.save_tracts_to_file(file_name.c_str());
-    if(vm.count(("end_point")))
-        tract_model.save_end_points(vm["end_point"].as<std::string>().c_str());
+    if(po.has(("end_point")))
+        tract_model.save_end_points(po.get("end_point").c_str());
 
     std::cout << "a total of " << tract_model.get_visible_track_count() << " tracts are generated" << std::endl;
     std::cout << "output file:" << file_name << std::endl;
 
-    if(vm.count("connectivity"))
-        get_connectivity_matrix(handle.get(),tract_model,mapping,vm);
+    if(po.has("connectivity"))
+        get_connectivity_matrix(handle.get(),tract_model,mapping);
 
-    if(vm.count("export"))
-        export_track_info(file_name,vm["export"].as<std::string>(),handle.get(),tract_model);
+    if(po.has("export"))
+        export_track_info(file_name,po.get("export"),handle.get(),tract_model);
 
 
-    if (vm.count("endpoint"))
+    if (po.has("endpoint"))
     {
         std::cout << "output endpoint." << std::endl;
         file_name += ".end.txt";

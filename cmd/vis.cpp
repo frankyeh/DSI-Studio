@@ -1,41 +1,17 @@
 
 #include <QApplication>
 #include <QFileInfo>
-#include "boost/program_options.hpp"
 #include "libs/tracking/tract_model.hpp"
 #include "tracking/tracking_window.h"
 #include "opengl/glwidget.h"
-
-namespace po = boost::program_options;
-
-// test example
-// --action=ana --source=20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
-
-int vis(int ac, char *av[])
+#include "program_option.hpp"
+int vis(void)
 {
-    // options for fiber tracking
-    po::options_description ana_desc("analysis options");
-    ana_desc.add_options()
-    ("help", "help message")
-    ("action", po::value<std::string>(), "cnt: connectometry analysis")
-    ("source", po::value<std::string>(), "assign the .fib file name")
-    ("track", po::value<std::string>(), "assign the .trk file name")
-    ("cmd", po::value<std::string>()->default_value("save_image"), "specify the command")
-
-    ;
-
-    if(!ac)
+    if(!po.has("cmd"))
     {
-        std::cout << ana_desc << std::endl;
-        return 1;
+        std::cout << "No command specified" << std::endl;
     }
-
-
-    po::variables_map vm;
-    po::store(po::command_line_parser(ac, av).options(ana_desc).run(), vm);
-    po::notify(vm);
-
-    std::string file_name = vm["source"].as<std::string>();
+    std::string file_name = po.get("source");
     std::cout << "loading " << file_name << std::endl;
     std::auto_ptr<FibData> new_handle(new FibData);
     if (!new_handle->load_from_file(&*file_name.begin()))
@@ -50,12 +26,12 @@ int vis(int ac, char *av[])
     new_mdi->show();
     new_mdi->hide();
 
-    if(vm.count("track"))
+    if(po.has("track"))
     {
-        std::cout << "loading tracks" << vm["track"].as<std::string>() << std::endl;
-        new_mdi->tractWidget->load_tracts(QString(vm["track"].as<std::string>().c_str()).split(","));
+        std::cout << "loading tracks" << po.get("track") << std::endl;
+        new_mdi->tractWidget->load_tracts(QString(po.get("track").c_str()).split(","));
     }
-    QStringList cmd = QString(vm["cmd"].as<std::string>().c_str()).split(';');
+    QStringList cmd = QString(po.get("cmd").c_str()).split(';');
     for(unsigned int index = 0;index < cmd.size();++index)
     {
         QStringList param = cmd[index].split(',');
