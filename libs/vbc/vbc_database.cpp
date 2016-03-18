@@ -1,7 +1,5 @@
 #include <cstdlib>     /* srand, rand */
 #include <ctime>
-
-#include <boost/math/distributions/students_t.hpp>
 #include "vbc_database.h"
 #include "fib_data.hpp"
 #include "libs/tracking/tract_model.hpp"
@@ -847,7 +845,7 @@ void vbc_database::run_permutation(unsigned int thread_count)
     fdr_lesser.clear();
     fdr_lesser.resize(200);
 
-    model->generator.seed(0);
+    model->rand_gen.reset();
     std::srand(0);
     total_count_null = 0;
     total_count = 0;

@@ -6,7 +6,6 @@
 #include <QSettings>
 #include <QTimer>
 #include <QClipboard>
-#include <math.h>
 #include <vector>
 #include "glwidget.h"
 #include "tracking/tracking_window.h"
@@ -912,11 +911,7 @@ void GLWidget::makeTracts(void)
         if(total_tracts != 0)
             skip_rate = (float)visible_tracts/(float)total_tracts;
     }
-    boost::uniform_real<> dist(0, 1.0);
-    boost::mt19937 gen;
-    boost::variate_generator<boost::mt19937&, boost::uniform_real<> >
-            uniform_gen(gen, dist);
-
+    image::uniform_dist<float> uniform_gen(0,1.0);
     {
         for (unsigned int active_tract_index = 0;
                 active_tract_index < cur_tracking_window.tractWidget->rowCount();

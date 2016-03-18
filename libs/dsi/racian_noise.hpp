@@ -3,7 +3,7 @@
 #include <map>
 #include <cmath>
 #include <ctime>
-#include <boost/random.hpp>
+#include "image/image.hpp"
 
 double modified_bessel_order0(double x)
 {
@@ -39,11 +39,8 @@ private:
     float max_prob;
     float max_int;
 private:
-    static boost::mt19937 generator;
-    static boost::variate_generator<boost::mt19937&, boost::normal_distribution<float> > gen_normal;
-    static boost::normal_distribution<float> normal;
-    static boost::uniform_real<float> uniform;
-    static boost::variate_generator<boost::mt19937&, boost::uniform_real<float> > gen_uniform;
+    static image::normal_dist<float> gen_normal;
+    static image::uniform_dist<float> gen_uniform;
 private:
     struct RicianDistribution
     {

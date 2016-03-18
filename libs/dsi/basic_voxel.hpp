@@ -3,7 +3,6 @@
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <boost/mpl/inherit_linearly.hpp>
-#include <boost/utility.hpp>
 #include <image/image.hpp>
 #include <string>
 #include "tessellated_icosahedron.hpp"

@@ -5,9 +5,6 @@
 #include "image/image.hpp"
 #include "gzip_interface.hpp"
 #include "prog_interface_static_link.h"
-#include <boost/random.hpp>
-#include <boost/math/distributions/normal.hpp>
-
 #include "libs/tracking/tract_model.hpp"
 
 
@@ -142,9 +139,7 @@ public:
 
 class stat_model{
 public:
-    boost::mt19937 generator;
-    boost::uniform_int<int> uniform_rand;
-    boost::variate_generator<boost::mt19937&, boost::uniform_int<int> > rand_gen;
+    image::uniform_dist<int> rand_gen;
     std::mutex  lock_random;
 public:
     std::vector<unsigned int> subject_index;
@@ -164,8 +159,7 @@ public: // individual
 public: // paired
     std::vector<unsigned int> paired;
 public:
-    stat_model(void):
-        generator(0),uniform_rand(),rand_gen(generator,uniform_rand),individual_data(0){}
+    stat_model(void):individual_data(0){}
 public:
     void init(unsigned int subject_count);
     void remove_subject(unsigned int index);

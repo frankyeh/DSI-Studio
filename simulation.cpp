@@ -7,14 +7,9 @@
 #include "racian_noise.hpp"
 #include "layout.hpp"
 
+image::normal_dist<float> RacianNoise::gen_normal;
+image::uniform_dist<float> RacianNoise::gen_uniform;
 
-boost::mt19937 RacianNoise::generator(static_cast<unsigned> (std::random_device()()));
-boost::normal_distribution<float> RacianNoise::normal;
-boost::uniform_real<float> RacianNoise::uniform(0.0,1.0);
-boost::variate_generator<boost::mt19937&,
-boost::normal_distribution<float> > RacianNoise::gen_normal(RacianNoise::generator,RacianNoise::normal);
-boost::variate_generator<boost::mt19937&,
-boost::uniform_real<float> > RacianNoise::gen_uniform(RacianNoise::generator,RacianNoise::uniform);
 std::string error_msg;
 
 

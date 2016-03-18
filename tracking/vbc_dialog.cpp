@@ -5,7 +5,6 @@
 #include <QThread>
 #include <QGraphicsTextItem>
 #include <QGraphicsPixmapItem>
-#include <boost/math/distributions/students_t.hpp>
 #include "vbc_dialog.hpp"
 #include "ui_vbc_dialog.h"
 #include "ui_tracking_window.h"

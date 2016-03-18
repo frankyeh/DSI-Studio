@@ -2,10 +2,8 @@
 #define STREAM_LINE_HPP
 #include <ctime>
 #include <random>
-#include <boost/random.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/for_each.hpp>
-#include <boost/utility.hpp>
 #include <deque>
 #include <vector>
 #include "image/image.hpp"
