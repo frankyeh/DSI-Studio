@@ -1,4 +1,4 @@
-#include <boost/algorithm/string.hpp>
+#include <regex>
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QContextMenuEvent>
@@ -25,6 +25,15 @@ QColor ROIColor[color_n] =
     Qt::darkRed,Qt::darkGreen, Qt::darkBlue, Qt::darkYellow,  Qt::darkMagenta, Qt::darkCyan,
     Qt::darkGray, Qt::lightGray
 };
+
+void split(std::vector<std::string>& list,const std::string& input, const std::string& regex) {
+    // passing -1 as the submatch index parameter performs splitting
+    std::regex re(regex);
+    std::sregex_token_iterator
+        first{input.begin(), input.end(), re, -1},
+        last;
+    list = {first, last};
+}
 
 QWidget *ImageDelegate::createEditor(QWidget *parent,
                                      const QStyleOptionViewItem &option,
@@ -424,11 +433,11 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 
         try{
             std::vector<std::string> info;
-            boost::split(info,header.nif_header.descrip,boost::is_any_of(";"));
+            split(info,header.nif_header.descrip,";");
             for(unsigned int index = 0;index < info.size();++index)
             {
                 std::vector<std::string> name_value;
-                boost::split(name_value,info[index],boost::is_any_of("="));
+                split(name_value,info[index],"=");
                 if(name_value.size() != 2)
                     continue;
                 if(name_value[0] == "color")
