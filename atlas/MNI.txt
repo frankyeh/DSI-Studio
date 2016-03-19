@@ -1,0 +1,9 @@
+1	Caudate
+2	Cerebellum
+3	Frontal_Lobe
+4	Insula
+5	Occipital_Lobe
+6	Parietal_Lobe
+7	Putamen
+8	Temporal_Lobe
+9	Thalamus

@@ -1,0 +1,12 @@
+1 Red_Nucleus_L
+2 Red_Nucleus_R
+3 Substantia_Nigra_L
+4 Substantia_Nigra_R
+5 Subthalamic_Nucleus_L
+6 Subthalamic_Nucleus_R
+7 Striatum_L
+8 Striatum_R
+9 Globus_Pallidus_Ext_L
+10 Globus_Pallidus_Ext_R
+11 Globus_Pallidus_Int_L
+12 Globus_Pallidus_Int_R
