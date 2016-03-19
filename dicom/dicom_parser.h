@@ -2,7 +2,7 @@
 #define DICOM_PARSER_H
 #include "dwi_header.hpp"
 
-#include <QDialog>
+#include <QMainWindow>
 
 namespace Ui {
     class dicom_parser;
@@ -15,7 +15,7 @@ struct compare_qstring{
         return lhs < rhs;
     }
 };
-class dicom_parser : public QDialog
+class dicom_parser : public QMainWindow
 {
     Q_OBJECT
 
@@ -32,20 +32,21 @@ private:
     void load_files(QStringList file_list);
 private slots:
     void on_upperDir_clicked();
-    void on_loadImage_clicked();
     void on_pushButton_clicked();
     void on_buttonBox_accepted();
-    void on_load_bval_clicked();
-    void on_load_bvec_clicked();
-    void on_load_b_table_clicked();
-    void on_save_b_table_clicked();
-    void on_flip_x_clicked();
-    void on_flip_y_clicked();
-    void on_flip_z_clicked();
-    void on_switch_xy_clicked();
-    void on_swith_xz_clicked();
-    void on_switch_yz_clicked();
-    void on_detect_motion_clicked();
+    void on_buttonBox_rejected();
+    void on_actionOpen_Images_triggered();
+    void on_actionOpen_b_table_triggered();
+    void on_actionOpen_bval_triggered();
+    void on_actionOpen_bvec_triggered();
+    void on_actionSave_b_table_triggered();
+    void on_actionFlip_bx_triggered();
+    void on_actionFlip_by_triggered();
+    void on_actionFlip_bz_triggered();
+    void on_actionSwap_bx_by_triggered();
+    void on_actionSwap_bx_bz_triggered();
+    void on_actionSwap_by_bz_triggered();
+    void on_actionDetect_Motion_triggered();
 };
 
 #endif // DICOM_PARSER_H

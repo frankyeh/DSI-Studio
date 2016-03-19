@@ -1,7 +1,5 @@
 #ifndef IMAGE_MODEL_HPP
 #define IMAGE_MODEL_HPP
-
-#include <boost/math/special_functions/sinc.hpp>
 #include "gqi_process.hpp"
 #include "image/image.hpp"
 

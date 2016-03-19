@@ -447,7 +447,8 @@ void FileBrowser::on_create_src_clicked()
     }
     if(filenames.empty())
         return;
-    dicom_parser dp(filenames,(QWidget*)parent());
-    dp.set_name(QFileInfo(filenames[0]).absolutePath() + "/" + QFileInfo(filenames[0]).baseName() + ".src.gz");
-    dp.exec();
+    dicom_parser* dp = new dicom_parser(filenames,(QWidget*)parent());
+    dp->set_name(QFileInfo(filenames[0]).absolutePath() + "/" + QFileInfo(filenames[0]).baseName() + ".src.gz");
+    dp->setAttribute(Qt::WA_DeleteOnClose);
+    dp->showNormal();
 }

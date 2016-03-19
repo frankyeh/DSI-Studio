@@ -33,9 +33,10 @@ void motion_detection(std::vector<std::shared_ptr<std::future<void> > >& threads
     }
     arg.clear();
     arg.resize(b0_index.size());
-    image::vector<3> vs(1,1,1);
+
     for(unsigned int index = 1;index < b0_index.size();++index)
-        threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,[&](){
+        threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,[&,index](){
+                image::vector<3> vs(1,1,1);
                 linear_reg(dwi_files[b0_index[0]]->image,
                         vs,dwi_files[b0_index[index]]->image,
                         vs,arg[index],terminated,finished);})));

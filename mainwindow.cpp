@@ -94,8 +94,9 @@ void MainWindow::dropEvent(QDropEvent *event)
         }
     }
 
-    dicom_parser dp(files,this);
-    dp.exec();
+    dicom_parser* dp = new dicom_parser(files,this);
+    dp->setAttribute(Qt::WA_DeleteOnClose);
+    dp->showNormal();
 
 }
 
@@ -286,9 +287,10 @@ void MainWindow::on_OpenDICOM_clicked()
         }
         std::string file_name(subject_file["SUBJECT_study_name"]);
         file_name.erase(std::remove(file_name.begin(),file_name.end(),' '),file_name.end());
-        dicom_parser dp(filenames,this);
-        dp.set_name(dir + "/" + file_name.c_str() + ".src.gz");
-        dp.exec();
+        dicom_parser* dp = new dicom_parser(filenames,this);
+        dp->set_name(dir + "/" + file_name.c_str() + ".src.gz");
+        dp->setAttribute(Qt::WA_DeleteOnClose);
+        dp->showNormal();
         return;
     }
 
@@ -313,8 +315,9 @@ void MainWindow::on_OpenDICOM_clicked()
             }
         }
     }
-    dicom_parser dp(filenames,this);
-    dp.exec();
+    dicom_parser* dp = new dicom_parser(filenames,this);
+    dp->setAttribute(Qt::WA_DeleteOnClose);
+    dp->showNormal();
 }
 
 void MainWindow::on_Reconstruction_clicked()

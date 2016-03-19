@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>dicom_parser</class>
- <widget class="QDialog" name="dicom_parser">
-  <property name="windowModality">
-   <enum>Qt::ApplicationModal</enum>
-  </property>
+ <widget class="QMainWindow" name="dicom_parser">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -13,299 +10,249 @@
     <height>478</height>
    </rect>
   </property>
-  <property name="font">
-   <font>
-    <family>Arial</family>
-   </font>
-  </property>
   <property name="windowTitle">
    <string>B-table</string>
   </property>
-  <property name="layoutDirection">
-   <enum>Qt::LeftToRight</enum>
-  </property>
-  <property name="modal">
-   <bool>false</bool>
-  </property>
-  <layout class="QHBoxLayout" name="horizontalLayout">
-   <item>
-    <layout class="QVBoxLayout" name="verticalLayout">
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_3">
-       <property name="spacing">
-        <number>0</number>
-       </property>
-       <item>
-        <widget class="QPushButton" name="loadImage">
-         <property name="text">
-          <string>Add Images...</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="load_b_table">
-         <property name="text">
-          <string>Load b-table...</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="load_bval">
-         <property name="text">
-          <string>Load bval...</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="load_bvec">
-         <property name="text">
-          <string>Load bvec...</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="save_b_table">
-         <property name="text">
-          <string>Save b-table...</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="detect_motion">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>Detect Motion by b0 IMAGES</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <spacer name="horizontalSpacer_2">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_4">
-       <property name="spacing">
-        <number>0</number>
-       </property>
-       <item>
-        <widget class="QPushButton" name="flip_x">
-         <property name="text">
-          <string>Flip bx</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="flip_y">
-         <property name="text">
-          <string>Flip by</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="flip_z">
-         <property name="text">
-          <string>Flip bz</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="switch_xy">
-         <property name="text">
-          <string>Switch bx by</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="swith_xz">
-         <property name="text">
-          <string>Switch bx bz</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="switch_yz">
-         <property name="text">
-          <string>Switch by bz</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <spacer name="horizontalSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <widget class="QTableWidget" name="tableWidget">
-       <property name="layoutDirection">
-        <enum>Qt::LeftToRight</enum>
-       </property>
-       <property name="horizontalScrollMode">
-        <enum>QAbstractItemView::ScrollPerItem</enum>
-       </property>
-       <property name="gridStyle">
-        <enum>Qt::SolidLine</enum>
-       </property>
-       <column>
-        <property name="text">
-         <string>File Name</string>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <property name="spacing">
+       <number>6</number>
+      </property>
+      <item>
+       <widget class="QTableWidget" name="tableWidget">
+        <property name="layoutDirection">
+         <enum>Qt::LeftToRight</enum>
         </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>b value</string>
+        <property name="horizontalScrollMode">
+         <enum>QAbstractItemView::ScrollPerItem</enum>
         </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>bx</string>
+        <property name="gridStyle">
+         <enum>Qt::SolidLine</enum>
         </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>by</string>
+        <column>
+         <property name="text">
+          <string>File Name</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>b value</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>bx</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>by</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>bz</string>
+         </property>
+        </column>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <property name="spacing">
+         <number>0</number>
         </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>bz</string>
-        </property>
-       </column>
-      </widget>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_2">
-       <property name="spacing">
-        <number>0</number>
-       </property>
-       <item>
-        <widget class="QComboBox" name="upsampling">
-         <item>
-          <property name="text">
-           <string>No upsampling</string>
+        <item>
+         <widget class="QComboBox" name="upsampling">
+          <item>
+           <property name="text">
+            <string>No upsampling</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>upsampling 2</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>downsampling 2</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>upsampling 4</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label">
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
           </property>
-         </item>
-         <item>
           <property name="text">
-           <string>upsampling 2</string>
+           <string>Output file:</string>
           </property>
-         </item>
-         <item>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="SrcName"/>
+        </item>
+        <item>
+         <widget class="QPushButton" name="upperDir">
           <property name="text">
-           <string>downsampling 2</string>
+           <string>Upper Directory</string>
           </property>
-         </item>
-         <item>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButton">
           <property name="text">
-           <string>upsampling 4</string>
+           <string>&amp;Browse...</string>
           </property>
-         </item>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="label">
-         <property name="frameShape">
-          <enum>QFrame::NoFrame</enum>
-         </property>
-         <property name="text">
-          <string>Output file:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="SrcName"/>
-       </item>
-       <item>
-        <widget class="QPushButton" name="upperDir">
-         <property name="text">
-          <string>Upper Directory</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pushButton">
-         <property name="text">
-          <string>&amp;Browse...</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <widget class="QDialogButtonBox" name="buttonBox">
-       <property name="layoutDirection">
-        <enum>Qt::LeftToRight</enum>
-       </property>
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="standardButtons">
-        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-  </layout>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QDialogButtonBox" name="buttonBox">
+        <property name="layoutDirection">
+         <enum>Qt::LeftToRight</enum>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="standardButtons">
+         <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>717</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFiles">
+    <property name="title">
+     <string>Files</string>
+    </property>
+    <addaction name="actionOpen_Images"/>
+    <addaction name="actionOpen_b_table"/>
+    <addaction name="actionOpen_bval"/>
+    <addaction name="actionOpen_bvec"/>
+    <addaction name="separator"/>
+    <addaction name="actionSave_b_table"/>
+   </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>Edit</string>
+    </property>
+    <addaction name="actionFlip_bx"/>
+    <addaction name="actionFlip_by"/>
+    <addaction name="actionFlip_bz"/>
+    <addaction name="separator"/>
+    <addaction name="actionSwap_bx_by"/>
+    <addaction name="actionSwap_bx_bz"/>
+    <addaction name="actionSwap_by_bz"/>
+    <addaction name="separator"/>
+    <addaction name="actionDetect_Motion"/>
+   </widget>
+   <addaction name="menuFiles"/>
+   <addaction name="menuEdit"/>
+  </widget>
+  <action name="actionOpen_Images">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Open Images...</string>
+   </property>
+  </action>
+  <action name="actionOpen_b_table">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Open b-table...</string>
+   </property>
+  </action>
+  <action name="actionOpen_bval">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Open bval...</string>
+   </property>
+  </action>
+  <action name="actionOpen_bvec">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Open bvec...</string>
+   </property>
+  </action>
+  <action name="actionSave_b_table">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save b-table...</string>
+   </property>
+  </action>
+  <action name="actionFlip_bx">
+   <property name="text">
+    <string>Flip bx</string>
+   </property>
+  </action>
+  <action name="actionFlip_by">
+   <property name="text">
+    <string>Flip by</string>
+   </property>
+  </action>
+  <action name="actionFlip_bz">
+   <property name="text">
+    <string>Flip bz</string>
+   </property>
+  </action>
+  <action name="actionSwap_bx_by">
+   <property name="text">
+    <string>Swap bx by</string>
+   </property>
+  </action>
+  <action name="actionSwap_bx_bz">
+   <property name="text">
+    <string>Swap bx bz</string>
+   </property>
+  </action>
+  <action name="actionSwap_by_bz">
+   <property name="text">
+    <string>Swap by bz</string>
+   </property>
+  </action>
+  <action name="actionDetect_Motion">
+   <property name="text">
+    <string>Detect Motion Using b0s...</string>
+   </property>
+  </action>
  </widget>
- <resources/>
- <connections>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>accepted()</signal>
-   <receiver>dicom_parser</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>157</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>rejected()</signal>
-   <receiver>dicom_parser</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>286</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <resources>
+  <include location="../icons.qrc"/>
+ </resources>
+ <connections/>
 </ui>

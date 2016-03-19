@@ -164,7 +164,7 @@ public:
     void init(unsigned int subject_count);
     void remove_subject(unsigned int index);
     void remove_missing_data(double missing_value);
-    bool resample(stat_model& rhs,bool null,bool boostrap);
+    bool resample(stat_model& rhs,bool null,bool bootstrap);
     bool pre_process(void);
     void select(const std::vector<double>& population,std::vector<double>& selected_population)const;
     double operator()(const std::vector<double>& population,unsigned int pos) const;

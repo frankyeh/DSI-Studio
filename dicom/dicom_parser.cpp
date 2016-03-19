@@ -32,7 +32,7 @@ QString get_src_name(QString file_name)
 
 
 dicom_parser::dicom_parser(QStringList file_list,QWidget *parent) :
-        QDialog(parent),
+        QMainWindow(parent),
         ui(new Ui::dicom_parser)
 {
     ui->setupUi(this);
@@ -680,50 +680,10 @@ void dicom_parser::on_buttonBox_accepted()
     QMessageBox::information(this,"DSI Studio","SRC file created",0);
     close();
 }
-
-
-
-void dicom_parser::on_load_bval_clicked()
+void dicom_parser::on_buttonBox_rejected()
 {
-    QString filename = QFileDialog::getOpenFileName(
-            this,
-            "Open bval",
-            QFileInfo(ui->SrcName->text()).absolutePath(),
-            "All files (*)" );
-    if(filename.isEmpty())
-        return;
-    std::vector<double> bval;
-    load_bval(filename.toLocal8Bit().begin(),bval);
-    if(bval.empty())
-        return;
-    for (int index = ui->tableWidget->rowCount()-1,
-             index2 = bval.size()-1;index >= 0 && index2 >= 0;--index,--index2)
-        ui->tableWidget->item(index,1)->setText(QString::number(bval[index2]));
+    close();
 }
-
-
-
-void dicom_parser::on_load_bvec_clicked()
-{
-    QString filename = QFileDialog::getOpenFileName(
-            this,
-            "Open bvec",
-            QFileInfo(ui->SrcName->text()).absolutePath(),
-            "All files (*)" );
-    if(filename.isEmpty())
-        return;
-    std::vector<double> b_table;
-    load_bvec(filename.toLocal8Bit().begin(),b_table);
-    if(b_table.empty())
-        return;
-    for (int index = ui->tableWidget->rowCount()-1,
-             b_index = b_table.size()-1;index >=0 && b_index >=0 ;--index)
-    {
-        for(int j = 2;j >= 0 && b_index >=0;--j,--b_index)
-            ui->tableWidget->item(index,j+2)->setText(QString::number(b_table[b_index]));
-    }
-}
-
 
 void dicom_parser::on_pushButton_clicked()
 {
@@ -734,16 +694,6 @@ void dicom_parser::on_pushButton_clicked()
     if(filename.isEmpty())
         return;
     ui->SrcName->setText(filename);
-}
-
-void dicom_parser::on_loadImage_clicked()
-{
-    QStringList filenames = QFileDialog::getOpenFileNames(
-            this,"Open Images files",cur_path,
-            "Images (*.dcm *.hdr *.nii *nii.gz 2dseq);;All files (*)" );
-    if( filenames.isEmpty() )
-        return;
-    load_files(filenames);
 }
 
 void dicom_parser::on_upperDir_clicked()
@@ -764,7 +714,17 @@ void dicom_parser::update_b_table(void)
     }
 }
 
-void dicom_parser::on_load_b_table_clicked()
+void dicom_parser::on_actionOpen_Images_triggered()
+{
+    QStringList filenames = QFileDialog::getOpenFileNames(
+            this,"Open Images files",cur_path,
+            "Images (*.dcm *.hdr *.nii *nii.gz 2dseq);;All files (*)" );
+    if( filenames.isEmpty() )
+        return;
+    load_files(filenames);
+}
+
+void dicom_parser::on_actionOpen_b_table_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
             this,
@@ -804,7 +764,46 @@ void dicom_parser::on_load_b_table_clicked()
     }
 }
 
-void dicom_parser::on_save_b_table_clicked()
+void dicom_parser::on_actionOpen_bval_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(
+            this,
+            "Open bval",
+            QFileInfo(ui->SrcName->text()).absolutePath(),
+            "All files (*)" );
+    if(filename.isEmpty())
+        return;
+    std::vector<double> bval;
+    load_bval(filename.toLocal8Bit().begin(),bval);
+    if(bval.empty())
+        return;
+    for (int index = ui->tableWidget->rowCount()-1,
+             index2 = bval.size()-1;index >= 0 && index2 >= 0;--index,--index2)
+        ui->tableWidget->item(index,1)->setText(QString::number(bval[index2]));
+}
+
+void dicom_parser::on_actionOpen_bvec_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(
+            this,
+            "Open bvec",
+            QFileInfo(ui->SrcName->text()).absolutePath(),
+            "All files (*)" );
+    if(filename.isEmpty())
+        return;
+    std::vector<double> b_table;
+    load_bvec(filename.toLocal8Bit().begin(),b_table);
+    if(b_table.empty())
+        return;
+    for (int index = ui->tableWidget->rowCount()-1,
+             b_index = b_table.size()-1;index >=0 && b_index >=0 ;--index)
+    {
+        for(int j = 2;j >= 0 && b_index >=0;--j,--b_index)
+            ui->tableWidget->item(index,j+2)->setText(QString::number(b_table[b_index]));
+    }
+}
+
+void dicom_parser::on_actionSave_b_table_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
             this,
@@ -823,26 +822,25 @@ void dicom_parser::on_save_b_table_clicked()
     }
 }
 
-
-void dicom_parser::on_flip_x_clicked()
+void dicom_parser::on_actionFlip_bx_triggered()
 {
     for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
         ui->tableWidget->item(index,2)->setText(QString::number(-(ui->tableWidget->item(index,2)->text().toDouble())));
 }
 
-void dicom_parser::on_flip_y_clicked()
+void dicom_parser::on_actionFlip_by_triggered()
 {
     for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
         ui->tableWidget->item(index,3)->setText(QString::number(-(ui->tableWidget->item(index,3)->text().toDouble())));
 }
 
-void dicom_parser::on_flip_z_clicked()
+void dicom_parser::on_actionFlip_bz_triggered()
 {
     for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
         ui->tableWidget->item(index,4)->setText(QString::number(-(ui->tableWidget->item(index,4)->text().toDouble())));
 }
 
-void dicom_parser::on_switch_xy_clicked()
+void dicom_parser::on_actionSwap_bx_by_triggered()
 {
     for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
     {
@@ -852,7 +850,7 @@ void dicom_parser::on_switch_xy_clicked()
     }
 }
 
-void dicom_parser::on_swith_xz_clicked()
+void dicom_parser::on_actionSwap_bx_bz_triggered()
 {
     for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
     {
@@ -862,7 +860,7 @@ void dicom_parser::on_swith_xz_clicked()
     }
 }
 
-void dicom_parser::on_switch_yz_clicked()
+void dicom_parser::on_actionSwap_by_bz_triggered()
 {
     for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
     {
@@ -872,8 +870,7 @@ void dicom_parser::on_switch_yz_clicked()
     }
 }
 
-
-void dicom_parser::on_detect_motion_clicked()
+void dicom_parser::on_actionDetect_Motion_triggered()
 {
     unsigned int b0_count = 0;
     for(unsigned int index = 0;index < dwi_files.size();++index)
@@ -888,5 +885,4 @@ void dicom_parser::on_detect_motion_clicked()
     motion_dialog* md = new motion_dialog(this,dwi_files);
     md->setAttribute(Qt::WA_DeleteOnClose);
     md->show();
-
 }

@@ -1549,6 +1549,16 @@
              </layout>
             </widget>
            </item>
+           <item>
+            <widget class="QCheckBox" name="check_btable">
+             <property name="text">
+              <string>Check b-table</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
         </item>
@@ -1592,16 +1602,6 @@
            <property name="bottomMargin">
             <number>0</number>
            </property>
-           <item>
-            <widget class="QCheckBox" name="check_btable">
-             <property name="text">
-              <string>Check b-table</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
            <item>
             <spacer name="horizontalSpacer">
              <property name="orientation">
@@ -1688,9 +1688,11 @@
     <addaction name="actionFlip_x"/>
     <addaction name="actionFlip_y"/>
     <addaction name="actionFlip_z"/>
+    <addaction name="separator"/>
     <addaction name="actionFlip_xy"/>
     <addaction name="actionFlip_xz"/>
     <addaction name="actionFlip_yz"/>
+    <addaction name="separator"/>
     <addaction name="actionRotate"/>
     <addaction name="actionTrim_image"/>
     <addaction name="actionManual_Rotation"/>
@@ -1700,21 +1702,37 @@
    <addaction name="menu_Edit"/>
   </widget>
   <action name="actionSave_4D_nifti">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
    <property name="text">
     <string>Save 4D nifti...</string>
    </property>
   </action>
   <action name="actionSave_b_table">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
    <property name="text">
     <string>Save b-table...</string>
    </property>
   </action>
   <action name="actionSave_bvals">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
    <property name="text">
     <string>Save bvals...</string>
    </property>
   </action>
   <action name="actionSave_bvecs">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
    <property name="text">
     <string>Save bvecs...</string>
    </property>
@@ -1751,17 +1769,17 @@
   </action>
   <action name="actionRotate">
    <property name="text">
-    <string>To T1w/T2w space...</string>
+    <string>To T1w/T2w Space...</string>
    </property>
   </action>
   <action name="actionTrim_image">
    <property name="text">
-    <string>Trim image</string>
+    <string>Trim Image</string>
    </property>
   </action>
   <action name="actionManual_Rotation">
    <property name="text">
-    <string>Manual rotation...</string>
+    <string>Manual Rotation...</string>
    </property>
   </action>
   <action name="actionReplace_b0_by_T2W_image">
