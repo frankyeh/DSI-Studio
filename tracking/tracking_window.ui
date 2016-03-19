@@ -641,7 +641,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>276</width>
+     <width>401</width>
      <height>48</height>
     </size>
    </property>
@@ -857,17 +857,7 @@
         </widget>
        </item>
        <item>
-        <spacer name="horizontalSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
+        <widget class="QCompleteLineEdit" name="search_atlas"/>
        </item>
        <item>
         <widget class="QPushButton" name="addRegionFromAtlas">
@@ -3231,6 +3221,11 @@ Tracking</string>
    <class>QColorToolButton</class>
    <extends>QToolButton</extends>
    <header>qcolorcombobox.h</header>
+  </customwidget>
+  <customwidget>
+   <class>QCompleteLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>qcompletelineedit.h</header>
   </customwidget>
  </customwidgets>
  <resources>

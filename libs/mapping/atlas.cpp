@@ -4,22 +4,10 @@
 #include "libs/gzip_interface.hpp"
 
 
-
-
-void atlas::load_from_file(const char* file_name)
+void atlas::load_label(void)
 {
-    {
-        gz_nifti nii;
-        if(!nii.load_from_file(file_name))
-            throw std::runtime_error("Cannot load atlas file");
-        nii >> I;
-        transform.identity();
-        nii.get_image_transformation(transform.begin());
-        transform.inv();
-    }
-    std::string file_name_str(file_name);
+    std::string file_name_str(filename);
     std::string text_file_name;
-
     if (file_name_str.length() > 3 &&
             file_name_str[file_name_str.length()-3] == '.' &&
             file_name_str[file_name_str.length()-2] == 'g' &&
@@ -28,16 +16,20 @@ void atlas::load_from_file(const char* file_name)
     else
         text_file_name = std::string(file_name_str.begin(),file_name_str.end()-3);
     text_file_name += "txt";
-    if(image::geometry<3>(141,172,110) == I.geometry())
+    std::ifstream in(text_file_name.c_str());
+    if(!in)
+        return;
+    std::vector<std::string> text;
+    std::string str;
+    while(std::getline(in,str))
+        text.push_back(str);
+
+    if(text[0] == "0\t* * * * *")//talairach
     {
-        std::ifstream in(text_file_name.c_str());
-        if(!in)
-            throw std::runtime_error("Cannot load atlas label file");
         std::map<std::string,std::set<unsigned int> > regions;
-        std::string line;
-        for(int i = 0;std::getline(in,line);++i)
+        for(int i = 0;i < text.size();++i)
         {
-            std::istringstream read_line(line);
+            std::istringstream read_line(text[i]);
             int num;
             read_line >> num;
             std::string region;
@@ -62,30 +54,39 @@ void atlas::load_from_file(const char* file_name)
         }
     }
     else
-    if(!I.empty())
+    {
+        for(auto& line : text)
+        {
+            if(line.empty() || line[0] == '#')
+                continue;
+            std::string txt;
+            int num = 0;
+            std::istringstream(line) >> num >> txt;
+            label_num.push_back(num);
+            labels.push_back(txt);
+        }
+    }
+}
+
+void atlas::load_from_file(void)
+{
+    gz_nifti nii;
+    if(!nii.load_from_file(filename.c_str()))
+        throw std::runtime_error("Cannot load atlas file");
+    nii >> I;
+    transform.identity();
+    nii.get_image_transformation(transform.begin());
+    transform.inv();
+
+    if(labels.empty())
+        load_label();
+
+    if(label2index.empty())
     {
         std::vector<unsigned short> hist(1+*std::max_element(I.begin(),I.end()));
         for(int index = 0;index < I.size();++index)
             hist[I[index]] = 1;
-
-        std::ifstream in(text_file_name.c_str());
-        if(in)
-        {
-            std::string line,txt;
-            while(std::getline(in,line))
-            {
-                if(line.empty() || line[0] == '#')
-                    continue;
-                std::istringstream read_line(line);
-                int num = 0;
-                read_line >> num >> txt;
-                if(num < 0 || num >= hist.size() || !hist[num])
-                    continue;
-                label_num.push_back(num);
-                labels.push_back(txt);
-            }
-        }
-        else
+        if(labels.empty())
         {
             for(int index = 1;index < hist.size();++index)
                 if(hist[index])
@@ -95,6 +96,37 @@ void atlas::load_from_file(const char* file_name)
                     out_name << "region " << index;
                     labels.push_back(out_name.str());
                 }
+        }
+        else
+        {
+            //bool modified_atlas = false;
+            for(int i = 0;i < labels.size();)
+                if(label_num[i] >= hist.size() || !hist[label_num[i]])
+                {
+                    labels.erase(labels.begin()+i);
+                    label_num.erase(label_num.begin()+i);
+                    //modified_atlas = true;
+                }
+            else
+                ++i;
+            // used to removed empty label
+            /*
+            if(modified_atlas)
+            {
+                std::string file_name_str(filename);
+                std::string text_file_name;
+                if (file_name_str.length() > 3 &&
+                        file_name_str[file_name_str.length()-3] == '.' &&
+                        file_name_str[file_name_str.length()-2] == 'g' &&
+                        file_name_str[file_name_str.length()-1] == 'z')
+                    text_file_name = std::string(file_name_str.begin(),file_name_str.end()-6);
+                else
+                    text_file_name = std::string(file_name_str.begin(),file_name_str.end()-3);
+                text_file_name += "txt";
+                std::ofstream out(text_file_name.c_str());
+                for(int i = 0;i < labels.size();++i)
+                    out << label_num[i] << " " << labels[i] << std::endl;
+            }*/
         }
     }
 }
@@ -113,7 +145,7 @@ void mni_to_tal(float& x,float &y, float &z)
 short atlas::get_label_at(const image::vector<3,float>& mni_space)
 {
     if(I.empty())
-        load_from_file(filename.c_str());
+        load_from_file();
     image::vector<3,float> atlas_space(mni_space);
     atlas_space.to(transform);
     atlas_space += 0.5;
@@ -126,7 +158,7 @@ short atlas::get_label_at(const image::vector<3,float>& mni_space)
 std::string atlas::get_label_name_at(const image::vector<3,float>& mni_space)
 {
     if(I.empty())
-        load_from_file(filename.c_str());
+        load_from_file();
     short l = get_label_at(mni_space);
     if(!l)
         return std::string();
@@ -146,16 +178,18 @@ std::string atlas::get_label_name_at(const image::vector<3,float>& mni_space)
     return result;
 }
 
-bool atlas::is_labeled_as(const image::vector<3,float>& mni_space,short label_name_index)
+bool atlas::is_labeled_as(const image::vector<3,float>& mni_space,unsigned int label_name_index)
 {
     if(I.empty())
-        load_from_file(filename.c_str());
+        load_from_file();
     return label_matched(get_label_at(mni_space),label_name_index);
 }
-bool atlas::label_matched(short l,short label_name_index)
+bool atlas::label_matched(short l,unsigned int label_name_index)
 {
     if(I.empty())
-        load_from_file(filename.c_str());
+        load_from_file();
+    if(label_name_index >= label_num.size())
+        return false;
     if(index2label.empty())
         return label_name_index >= label_num.size() ? false:l == label_num[label_name_index];
     if(l >= index2label.size())

@@ -45,6 +45,8 @@ void set_title(const char* title)
 }
 bool check_prog(unsigned int now,unsigned int total)
 {
+    if(progressDialog.get() && !progressDialog->isVisible())
+        return now < total;
     if(now >= total && progressDialog.get() && !lock_dialog)
     {
         prog_aborted_ = progressDialog->wasCanceled();

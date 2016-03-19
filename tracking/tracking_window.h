@@ -176,7 +176,7 @@ private slots:
     void on_actionIndividual_vs_atlas_triggered();
     void on_actionIndividual_vs_individual_triggered();
     void on_actionIndividual_vs_normal_population_triggered();
-
+    void add_roi_from_atlas();
 };
 
 #endif // TRACKING_WINDOW_H

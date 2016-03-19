@@ -1,5 +1,7 @@
 #include <utility>
 #include <QFileDialog>
+#include <QStringListModel>
+#include <QCompleter>
 #include <QSplitter>
 #include <QSettings>
 #include <QClipboard>
@@ -347,6 +349,19 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
         ui->show_r->setChecked((*this)["roi_label"].toBool());
         ui->show_position->setChecked((*this)["roi_position"].toBool());
         ui->show_fiber->setChecked((*this)["roi_fiber"].toBool());
+    }
+
+    if(is_qsdr || ui->actionManual_Registration->isEnabled())
+    {
+        QStringList items;
+        for(int i = 0;i < atlas_list.size();++i)
+        {
+            const std::vector<std::string>& label = atlas_list[i].get_list();
+            for(auto str : label)
+                items << QString(str.c_str()) + ":" + atlas_list[i].name.c_str();
+        }
+        ui->search_atlas->setList(items);
+        connect(ui->search_atlas,SIGNAL(selected()),this,SLOT(add_roi_from_atlas()));
     }
 
     {
@@ -1271,21 +1286,31 @@ void tracking_window::on_addRegionFromAtlas_clicked()
     if(atlas_dialog->exec() == QDialog::Accepted)
     {
         for(unsigned int i = 0;i < atlas_dialog->roi_list.size();++i)
-        {
-            std::vector<image::vector<3,short> > points;
-            unsigned short label = atlas_dialog->roi_list[i];
-            for (image::pixel_index<3>index; index.is_valid(slice.geometry); index.next(slice.geometry))
-            {
-                image::vector<3> mni(index.begin());
-                subject2mni(mni);
-                if (!atlas_list[atlas_dialog->atlas_index].is_labeled_as(mni, label))
-                    continue;
-                points.push_back(image::vector<3,short>(index.begin()));
-            }
-            regionWidget->add_region(atlas_dialog->roi_name[i].c_str(),roi_id);
-            regionWidget->add_points(points,false);
-        }
+            regionWidget->add_region_from_atlas(atlas_dialog->atlas_index,atlas_dialog->roi_list[i]);
+        glWidget->updateGL();
+        scene.show_slice();
     }
+}
+void tracking_window::add_roi_from_atlas()
+{
+    if(!can_convert())
+        return;
+    QStringList name_value = ui->search_atlas->text().split(":");
+    if(name_value.size() != 2)
+        return;
+    for(int i = 0;i < atlas_list.size();++i)
+        if(name_value[1].toStdString() == atlas_list[i].name)
+        {
+            for(int j = 0;j < atlas_list[i].get_list().size();++j)
+            if(atlas_list[i].get_list()[j] == name_value[0].toStdString())
+            {
+                regionWidget->add_region_from_atlas(i,j);
+                ui->search_atlas->setText("");
+                glWidget->updateGL();
+                scene.show_slice();
+                return;
+            }
+        }
 }
 
 void tracking_window::on_actionRestore_Settings_triggered()
@@ -1799,3 +1824,5 @@ void tracking_window::on_show_position_toggled(bool checked)
         set_data("roi_position",ui->show_position->isChecked());
     scene.show_slice();
 }
+
+

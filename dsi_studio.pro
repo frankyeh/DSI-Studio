@@ -92,7 +92,8 @@ HEADERS += mainwindow.h \
     tracking/atlasdialog.h \
     dicom/motion_dialog.hpp \
     filebrowser.h \
-    program_option.hpp
+    program_option.hpp \
+    qcompletelineedit.h
 
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
@@ -155,7 +156,8 @@ SOURCES += main.cpp \
     dicom/motion_dialog.cpp \
     cmd/cnt.cpp \
     cmd/vis.cpp \
-    filebrowser.cpp
+    filebrowser.cpp \
+    qcompletelineedit.cpp
 
 OTHER_FILES += \
     options.txt
