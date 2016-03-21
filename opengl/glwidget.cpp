@@ -1636,7 +1636,7 @@ void GLWidget::saveMapping(void)
         return;
     QString filename = QFileDialog::getSaveFileName(
             this,
-            "Save Mapping Matrix",QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_mapping.txt",
+            "Save Mapping Matrix",QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".mapping.txt",
             "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -1841,7 +1841,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         }
         other_slices.push_back(new_slice);
         current_visible_slide = other_slices.size();
-        cur_tracking_window.add_slice_name(QFileInfo(param).baseName());
+        cur_tracking_window.add_slice_name(QFileInfo(param).completeBaseName();
 
         std::cout << "register image to the DWI space" << std::endl;
         if(other_slices.back()->thread.get())
@@ -1995,7 +1995,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
     if(cmd == "save_image")
     {
         if(param.isEmpty())
-            param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_image.jpg";
+            param = QFileInfo(cur_tracking_window.windowTitle()).fileName()+".image.jpg";
         if(!param2.isEmpty())
         {
             std::istringstream in(param2.toLocal8Bit().begin());
@@ -2011,7 +2011,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
     if(cmd == "save_3view_image")
     {
         if(param.isEmpty())
-            param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_3view_image.jpg";
+            param = QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".3view_image.jpg";
         QImage all;
         get3View(all,0);
         all.save(param);
@@ -2020,7 +2020,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
     if(cmd == "save_lr_image")
     {
         if(param.isEmpty())
-            param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_lr_image.jpg";
+            param = QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".lr_image.jpg";
         float angle = (param2.isEmpty()) ? 5 : param2.toFloat();
         rotate_angle(angle/2.0, 0.0, 1.0, 0.0);
         QImage left = grabFrameBuffer();
@@ -2036,7 +2036,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
     if(cmd == "save_rotation_video")
     {
         if(param.isEmpty())
-            param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_rotation_movie.avi";
+            param = QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".rotation_movie.avi";
         begin_prog("save video");
         float angle = (param2.isEmpty()) ? 1 : param2.toFloat();\
         image::io::avi avi;
@@ -2064,7 +2064,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
     if(cmd == "save_stereo_rotation_video")
     {
         if(param.isEmpty())
-           param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_lr_rotation_movie.avi";
+           param = QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".lr_rotation_movie.avi";
         makeCurrent();
         float angle = (param2.isEmpty()) ? 1 : param2.toFloat();\
         image::io::avi avi;
@@ -2130,7 +2130,7 @@ void GLWidget::catchScreen(void)
     QString filename = QFileDialog::getSaveFileName(
                this,
                "Save Images files",
-               QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_image.jpg",
+               QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".image.jpg",
                "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -2147,7 +2147,7 @@ void GLWidget::catchScreen2(void)
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Save Images files",
-            QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_hd_image.jpg",
+            QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".hd_image.jpg",
             "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -2159,7 +2159,7 @@ void GLWidget::save3ViewImage(void)
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Assign image name",
-            QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_3view_image.jpg",
+            QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".3view_image.jpg",
             "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     command("save_3view_image",filename);
 
@@ -2170,7 +2170,7 @@ void GLWidget::saveLeftRight3DImage(void)
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Assign image name",
-            QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_lr_image.jpg",
+            QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".lr_image.jpg",
             "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -2188,7 +2188,7 @@ void GLWidget::saveRotationSeries(void)
     QString filename = QFileDialog::getSaveFileName(
                 this,
                 "Assign video name",
-                QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_rotation_movie.avi",
+                QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".rotation_movie.avi",
                 "Video file (*.avi);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -2206,7 +2206,7 @@ void GLWidget::saveRotationVideo2(void)
     QString filename = QFileDialog::getSaveFileName(
                 this,
                 "Assign video name",
-                QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_rotation_movie.avi",
+                QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".rotation_movie.avi",
                 "Video file (*.avi);;All files (*)");
     if(filename.isEmpty())
         return;

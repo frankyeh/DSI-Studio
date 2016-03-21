@@ -555,7 +555,7 @@ bool load_3d_series(QStringList file_list,std::vector<std::shared_ptr<DwiHeader>
 
 bool load_all_files(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
-    if(QFileInfo(file_list[0]).baseName() == "2dseq")
+    if(QFileInfo(file_list[0]).fileName() == "2dseq")
     {
         for(unsigned int index = 0;index < file_list.size();++index)
             load_4d_2dseq(file_list[index].toLocal8Bit().begin(),dwi_files);

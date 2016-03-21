@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1008</width>
+    <width>1131</width>
     <height>695</height>
    </rect>
   </property>
@@ -954,7 +954,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1008</width>
+     <width>1131</width>
      <height>21</height>
     </rect>
    </property>
@@ -1049,10 +1049,18 @@
      <property name="title">
       <string>Clustering</string>
      </property>
+     <widget class="QMenu" name="menuDeep_learning">
+      <property name="title">
+       <string>Deep learning</string>
+      </property>
+      <addaction name="actionDeep_Learning_Train"/>
+      <addaction name="actionDeep_Learning_Save"/>
+     </widget>
      <addaction name="actionOpen_Cluster_Labels"/>
      <addaction name="actionK_means"/>
      <addaction name="actionEM"/>
      <addaction name="actionHierarchical"/>
+     <addaction name="menuDeep_learning"/>
     </widget>
     <widget class="QMenu" name="menuExport_Tract_Density">
      <property name="title">
@@ -1095,6 +1103,7 @@
      <addaction name="actionSave_Enpoints_In_MNI_Space"/>
      <addaction name="separator"/>
      <addaction name="actionSave_VMRL"/>
+     <addaction name="actionSave_Profile"/>
     </widget>
     <addaction name="actionOpenTract"/>
     <addaction name="separator"/>
@@ -1253,7 +1262,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>197</width>
+     <width>281</width>
      <height>156</height>
     </size>
    </property>
@@ -3213,6 +3222,25 @@ Tracking</string>
   <action name="actionSeparate_Deleted">
    <property name="text">
     <string>Separate Deleted</string>
+   </property>
+  </action>
+  <action name="actionSave_Profile">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save Profile...</string>
+   </property>
+  </action>
+  <action name="actionDeep_Learning_Train">
+   <property name="text">
+    <string>Train</string>
+   </property>
+  </action>
+  <action name="actionDeep_Learning_Save">
+   <property name="text">
+    <string>Save...</string>
    </property>
   </action>
  </widget>

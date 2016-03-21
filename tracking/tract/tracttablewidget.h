@@ -23,6 +23,15 @@ public:
 private:
     tracking_window& cur_tracking_window;
     QTimer *timer;
+private:
+    std::vector<std::vector<float> > cnn_test_data;
+    std::vector<int> cnn_test_label;
+    std::vector<std::vector<float> > cnn_data;
+    std::vector<int> cnn_label;
+    std::vector<std::string> cnn_name;
+    image::ml::network cnn;
+    std::future<void> future;
+    bool terminated;
 public:
     unsigned int tract_serial;
     std::vector<ThreadData*> thread_data;
@@ -46,6 +55,7 @@ private:
     void delete_row(int row);
     void clustering(int method_id);
     void load_cluster_label(const std::vector<unsigned int>& labels,QString Name);
+    void get_profile(int i,int j,image::basic_image<float,3>& profile);
 public slots:
     void clustering_EM(void){clustering(2);}
     void clustering_kmeans(void){clustering(1);}
@@ -68,6 +78,9 @@ public slots:
     void save_all_tracts_to_dir(void);
     void save_end_point_as(void);
     void save_end_point_in_mni(void);
+    void save_profile(void);
+    void deep_learning_train(void);
+    void deep_learning_save(void);
     void merge_all(void);
     void copy_track(void);
     void separate_deleted_track(void);

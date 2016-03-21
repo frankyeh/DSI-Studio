@@ -376,15 +376,14 @@ void TractTableWidget::clustering(int method_id)
                 tract_models[currentRow()]->get_tract_length(index));
     }
     handle->run_clustering();
-
-    QMessageBox msgBox;
-    msgBox.setText("Separate tracks? (Yes: separate tracks according to the cluster labels, No: paint the tracks only)");
-    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-    msgBox.setDefaultButton(QMessageBox::Yes);
-    int rec = msgBox.exec();
-    if(rec == QMessageBox::Yes)
     {
-        unsigned int cluster_count = method_id ? handle->get_cluster_count() : std::min<float>(handle->get_cluster_count(),50);
+        bool ok = false;
+        int n = QInputDialog::getInt(this,
+                "DSI Studio",
+                "Assign the maximum number of groups",50,1,1000,10,&ok);
+        if(!ok)
+            return;
+        unsigned int cluster_count = method_id ? handle->get_cluster_count() : std::min<float>(handle->get_cluster_count(),n);
         std::vector<std::vector<float> > tracts;
         tract_models[currentRow()]->release_tracts(tracts);
         delete_row(currentRow());
@@ -400,21 +399,7 @@ void TractTableWidget::clustering(int method_id)
             item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
         }
     }
-    else
-    {
-        unsigned int cluster_count = handle->get_cluster_count();
-        for(int index = 0;index < cluster_count;++index)
-        {
-            image::rgb_color color;
-            color.from_hsi(3.14159265358979323846*2.0*index/cluster_count,1.0,1.0);
-            unsigned int cluster_size = 0;
-            const unsigned int* data = handle->get_cluster(index,cluster_size);
-            for(int i = 0;i < cluster_size;++i)
-                tract_models[currentRow()]->set_tract_color(data[i],color);
-        }
-        cur_tracking_window.set_data("tract_color_style",1);//manual assigned
-        emit need_update();
-    }
+
 }
 
 void TractTableWidget::save_tracts_as(void)
@@ -503,6 +488,157 @@ void TractTableWidget::save_end_point_in_mni(void)
             return;
         out.write("end_points",(const float*)&*buffer.begin(),3,buffer.size()/3);
     }
+}
+void TractTableWidget::get_profile(int i,int j,image::basic_image<float,3>& profile)
+{
+    profile.resize(image::geometry<3>(64,80,3));
+    std::fill(profile.begin(),profile.end(),0);
+    const std::vector<float>& tract_data = tract_models[i]->get_tracts()[j];
+    for(unsigned int j = 0;j < tract_data.size();j += 3)
+    {
+        image::vector<3> v(&(tract_data[j]));
+        cur_tracking_window.subject2mni(v);
+        // x = -60 ~ 60    total  120
+        // y = -90 ~ 60    total  150
+        // z = -50 ~ 70    total  120
+        int x = std::floor(v[0]+60);
+        int y = std::floor(v[1]+90);
+        int z = std::floor(v[2]+50);
+        x >>= 1; // 2 mm
+        y >>= 1; // 2 mm
+        z >>= 1; // 2 mm
+        if(x > 0 && x < profile.width())
+        {
+            if(y > 0 && y < profile.height())
+                profile.at(x,y,0) = 3;
+            if(z > 0 && z < profile.height())
+                profile.at(x,z,1) = 3;
+        }
+        if(z > 0 && z < profile.width() && y > 0 && y < profile.height())
+            profile.at(z,y,2) = 3;
+    }
+    image::filter::gaussian(profile.slice_at(0));
+    image::filter::gaussian(profile.slice_at(1));
+    image::filter::gaussian(profile.slice_at(2));
+    image::minus_constant(profile,float(1));
+}
+
+void TractTableWidget::save_profile(void)
+{
+    if(currentRow() >= tract_models.size())
+        return;
+    if(!cur_tracking_window.can_convert())
+        return;
+    QString filename;
+    filename = QFileDialog::getSaveFileName(
+                this,
+                "Save end points as",item(currentRow(),0)->text().replace(':','_') + "profile.mat",
+                "MAT files (*.mat);;All files (*)");
+    if(filename.isEmpty())
+        return;
+
+    gz_mat_write out(filename.toLocal8Bit().begin());
+    image::basic_image<float,3> profile;
+    begin_prog("converting coordinates");
+    for(unsigned int i = 0;check_prog(i,tract_models[currentRow()]->get_tracts().size());++i)
+    {
+        get_profile(currentRow(),i,profile);
+        out.write(QString("image%1").arg(i).toLocal8Bit().begin(),&profile[0],1,profile.size());
+    }
+    out.write("dimension",&*profile.geometry().begin(),1,3);
+
+}
+class timer
+{
+ public:
+    timer():  t1(std::chrono::high_resolution_clock::now()){};
+    double elapsed(){return std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - t1).count();}
+    void restart(){t1 = std::chrono::high_resolution_clock::now();}
+    void start(){t1 = std::chrono::high_resolution_clock::now();}
+    void stop(){t2 = std::chrono::high_resolution_clock::now();}
+    double total(){stop();return std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();}
+    ~timer(){}
+ private:
+    std::chrono::high_resolution_clock::time_point t1, t2;
+} t;
+
+void TractTableWidget::deep_learning_save(void)
+{
+    QString filename;
+    filename = QFileDialog::getSaveFileName(
+                this,
+                "Save network as","network.txt",
+                "Text files (*.txt);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    cnn.save_to_file(filename.toStdString().c_str());
+}
+
+void TractTableWidget::deep_learning_train(void)
+{
+
+    cnn_test_label.clear();
+    cnn_name.clear();
+    cnn_test_data.clear();
+    cnn_data.clear();
+    cnn_label.clear();
+    image::uniform_dist<int> dist;
+    for(unsigned int index = 0;check_prog(index,rowCount());++index)
+        if (item(index,0)->checkState() == Qt::Checked)
+        {
+            cnn_name.push_back(item(index,0)->text().toStdString());
+            image::basic_image<float,3> profile;
+            for(unsigned int i = 0;check_prog(i,tract_models[index]->get_tracts().size());++i)
+            {
+                get_profile(index,i,profile);
+                if(i % 20 == 0)
+                {
+                    cnn_test_data.push_back(std::vector<float>(profile.begin(),profile.end()));
+                    cnn_test_label.push_back(index);
+                }
+                else
+                {
+                    int insert_place = cnn_data.empty() ? 0:dist(cnn_data.size());
+                    cnn_data.insert(cnn_data.begin()+insert_place,std::vector<float>(profile.begin(),profile.end()));
+                    cnn_label.insert(cnn_label.begin()+insert_place,index);
+                }
+            }
+        }
+
+    try{
+        cnn.reset();
+        cnn << "64,80,3|conv,tanh,3|62,78,6|avg_pooling,tanh,2|31,39,6|full,tanh|1,1,60|full,tanh"
+            << image::geometry<3>(1,1,cnn_name.size());
+    }
+    catch(std::runtime_error error)
+    {
+        QMessageBox::information(this,"error",error.what(),0);
+        return;
+    }
+
+    terminated = false;
+    future = std::async(std::launch::async, [this]
+    {
+        auto on_enumerate_epoch = [this](){
+
+            std::cout << "time:" << t.elapsed() << std::endl;
+            int num_success(0);
+            int num_total(0);
+            std::vector<int> result;
+            cnn.test(cnn_test_data,result);
+            for (int i = 0; i < cnn_test_data.size(); i++)
+            {
+                if (result[i] == cnn_test_label[i])
+                    num_success++;
+                num_total++;
+            }
+            std::cout << "accuracy:" << num_success * 100.0 / num_total << "% (" << num_success << "/" << num_total << ")" << std::endl;
+            t.restart();
+            };
+        t.start();
+        cnn.train(cnn_data,cnn_label, 20,terminated, on_enumerate_epoch,0.002);
+        cnn.save_to_file("network.txt");
+    });
 }
 
 void TractTableWidget::saveTransformedTracts(const float* transform)

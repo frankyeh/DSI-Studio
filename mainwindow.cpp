@@ -497,7 +497,7 @@ void MainWindow::on_RenameDICOMDir_clicked()
     {
         QStringList files = QDir(dirs[index]).entryList(QStringList("*"),
                                     QDir::Files | QDir::NoSymLinks);
-        set_title(QFileInfo(dirs[index]).baseName().toLocal8Bit().begin());
+        set_title(QFileInfo(dirs[index]).fileName().toLocal8Bit().begin());
         for(unsigned int j = 0;j < files.size() && check_prog(index,dirs.size());++j)
         {
             set_title(files[j].toLocal8Bit().begin());

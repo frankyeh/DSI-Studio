@@ -355,7 +355,7 @@ void FileBrowser::show_image(void)
 void FileBrowser::preview_image(QString file_name)
 {
     preview_data.clear();
-    if(QFileInfo(file_name).baseName() == "2dseq")
+    if(QFileInfo(file_name).fileName() == "2dseq")
     {
         image::io::bruker_2dseq header;
         if(header.load_from_file(file_name.toLocal8Bit().begin()))

@@ -329,8 +329,6 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     if (!header.load_from_file(file_name.toLocal8Bit().begin()))
         return false;
 
-
-
     image::basic_image<unsigned int, 3> from;
     {
         image::basic_image<float, 3> tmp;
@@ -350,16 +348,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 
     unsigned short region_count = std::accumulate(value_map.begin(),value_map.end(),(unsigned short)0);
     bool multiple_roi = region_count > 2;
-    if(region_count > 2)
-    {
-        QMessageBox msgBox;
-        msgBox.setText("Load multiple ROIs in the nifti file?");
-        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-        msgBox.setDefaultButton(QMessageBox::Yes);
-        int rec = msgBox.exec();
-        if(rec == QMessageBox::No)
-            multiple_roi = false;
-    }
+
 
     std::map<short,std::string> label_map;
     if(multiple_roi)
@@ -368,23 +357,38 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         if(QFileInfo(base_name).suffix().toLower() == "nii")
             base_name = QFileInfo(base_name).completeBaseName();
         QString label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".txt";
-        if(!QFileInfo(label_file).exists())
+
+        if(QFileInfo(label_file).exists())
+            load_nii_label(label_file.toLocal8Bit().begin(),label_map);
+        else
         {
             QMessageBox msgBox;
-            msgBox.setText("Has label file (*.txt)?");
+            msgBox.setText("Load multiple ROIs in the nifti file?");
             msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
             msgBox.setDefaultButton(QMessageBox::Yes);
             int rec = msgBox.exec();
+            if(rec == QMessageBox::No)
+                multiple_roi = false;
             if(rec == QMessageBox::Yes)
-                label_file = QFileDialog::getOpenFileName(
-                                       this,
-                                       "Label file",
-                                       QFileInfo(file_name).absolutePath(),
-                                       "Text files (*.txt)" );
+            {
+                QMessageBox msgBox;
+                msgBox.setText("Has label file (*.txt)?");
+                msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                msgBox.setDefaultButton(QMessageBox::Yes);
+                rec = msgBox.exec();
+                if(rec == QMessageBox::Yes)
+                {
+                    label_file = QFileDialog::getOpenFileName(
+                                           this,
+                                           "Label file",
+                                           QFileInfo(file_name).absolutePath(),
+                                           "Text files (*.txt)" );
+                    load_nii_label(label_file.toLocal8Bit().begin(),label_map);
+                }
+            }
         }
-        if(QFileInfo(label_file).exists())
-            load_nii_label(label_file.toLocal8Bit().begin(),label_map);
     }
+
 
     image::matrix<4,4,float> convert;
     bool has_transform = false;
@@ -662,19 +666,27 @@ void RegionTableWidget::save_all_regions(void)
         return;
     filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
 
-
+    QString base_name = QFileInfo(filename).completeBaseName();
+    if(QFileInfo(base_name).suffix().toLower() == "nii")
+        base_name = QFileInfo(base_name).completeBaseName();
+    QString label_file = QFileInfo(filename).absolutePath()+"/"+base_name+".txt";
+    std::ofstream out(label_file.toLocal8Bit().begin());
     image::geometry<3> geo = cur_tracking_window.slice.geometry;
     image::basic_image<unsigned int, 3>mask(geo);
     for (unsigned int i = 0; i < regions.size(); ++i)
         if (item(i,0)->checkState() == Qt::Checked)
-        for (unsigned int j = 0; j < regions[i]->get().size(); ++j)
         {
-            if (geo.is_valid(regions[i]->get()[j][0], regions[i]->get()[j][1],regions[i]->get()[j][2]))
-                mask[image::pixel_index<3>(regions[i]->get()[j][0],
+            for (unsigned int j = 0; j < regions[i]->get().size(); ++j)
+            {
+                if (geo.is_valid(regions[i]->get()[j][0], regions[i]->get()[j][1],regions[i]->get()[j][2]))
+                    mask[image::pixel_index<3>(regions[i]->get()[j][0],
                                            regions[i]->get()[j][1],
                                            regions[i]->get()[j][2], geo).index()] = i+1;
-        }
 
+            }
+            out << i+1
+                << " " << item(i,0)->text().toStdString() << std::endl;
+        }
     gz_nifti header;
     header.set_voxel_size(cur_tracking_window.slice.voxel_size);
     if(cur_tracking_window.is_qsdr)

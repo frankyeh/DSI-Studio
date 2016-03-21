@@ -196,3 +196,4 @@ bool atlas::label_matched(short l,unsigned int label_name_index)
         return false;
     return std::find(index2label[l].begin(),index2label[l].end(),label_name_index) != index2label[l].end();
 }
+
