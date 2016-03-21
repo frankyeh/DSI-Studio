@@ -1841,7 +1841,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         }
         other_slices.push_back(new_slice);
         current_visible_slide = other_slices.size();
-        cur_tracking_window.add_slice_name(QFileInfo(param).completeBaseName();
+        cur_tracking_window.add_slice_name(QFileInfo(param).completeBaseName());
 
         std::cout << "register image to the DWI space" << std::endl;
         if(other_slices.back()->thread.get())
