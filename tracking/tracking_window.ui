@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1131</width>
-    <height>695</height>
+    <width>1028</width>
+    <height>800</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -116,7 +116,7 @@
            </property>
            <property name="icon">
             <iconset resource="../icons.qrc">
-             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+             <normaloff>:/icons/icons/slice.xpm</normaloff>:/icons/icons/slice.xpm</iconset>
            </property>
           </widget>
          </item>
@@ -954,7 +954,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1131</width>
+     <width>1028</width>
      <height>21</height>
     </rect>
    </property>
@@ -2674,7 +2674,7 @@ Tracking</string>
   <action name="actionInsert_T1_T2">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/slice.xpm</normaloff>:/icons/icons/slice.xpm</iconset>
    </property>
    <property name="text">
     <string>Insert T1w/T2w images...</string>
@@ -3179,6 +3179,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionStrip_skull_for_T1w_image">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/add_surface.xpm</normaloff>:/icons/icons/add_surface.xpm</iconset>
+   </property>
    <property name="text">
     <string>Add Surface using T1w...</string>
    </property>

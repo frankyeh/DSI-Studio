@@ -33,6 +33,7 @@
         <file>icons/stop.xpm</file>
         <file>icons/add_surface.xpm</file>
         <file>icons/atlas.xpm</file>
+        <file>icons/slice.xpm</file>
     </qresource>
     <qresource prefix="/data">
         <file>options.txt</file>
