@@ -141,16 +141,7 @@ void fiber_directions::check_index(unsigned int index)
 bool fiber_directions::add_data(gz_mat_read& mat_reader)
 {
     unsigned int row,col;
-    // dimension
-    {
-        const unsigned short* dim_buf = 0;
-        if (!mat_reader.read("dimension",row,col,dim_buf))
-        {
-            error_msg = "cannot find dimension matrix";
-            return false;
-        }
-        std::copy(dim_buf,dim_buf+3,dim.begin());
-    }
+
     // odf_vertices
     {
         const float* odf_buffer;
@@ -335,16 +326,16 @@ bool tracking::get_nearest_dir_fib(unsigned int space_index,
     reverse_ = reverse;
     return true;
 }
-void tracking::read(const FibData& fib_data)
+void tracking::read(const fib_data& fib)
 {
-    dim = fib_data.dim;
-    vs = fib_data.vs;
-    odf_table = fib_data.dir.odf_table;
-    fib_num = fib_data.dir.num_fiber;
-    fa = fib_data.dir.fa;
-    findex = fib_data.dir.findex;
-    dir = fib_data.dir.dir;
-    other_index = fib_data.dir.index_data;
+    dim = fib.dim;
+    vs = fib.vs;
+    odf_table = fib.dir.odf_table;
+    fib_num = fib.dir.num_fiber;
+    fa = fib.dir.fa;
+    findex = fib.dir.findex;
+    dir = fib.dir.dir;
+    other_index = fib.dir.index_data;
 }
 bool tracking::get_dir(unsigned int space_index,
                      const image::vector<3,float>& dir, // reference direction, should be unit vector
@@ -393,7 +384,7 @@ float tracking::get_track_specific_index(unsigned int space_index,unsigned int i
 
 
 
-bool FibData::load_from_file(const char* file_name)
+bool fib_data::load_from_file(const char* file_name)
 {
     if (!mat_reader.load_from_file(file_name) || prog_aborted())
     {
@@ -402,13 +393,21 @@ bool FibData::load_from_file(const char* file_name)
     }
     return load_from_mat();
 }
-bool FibData::load_from_mat(void)
+bool fib_data::load_from_mat(void)
 {
     {
         unsigned int row,col;
         const char* report_buf = 0;
         if(mat_reader.read("report",row,col,report_buf))
             report = std::string(report_buf,report_buf+row*col);
+
+        const unsigned short* dim_buf = 0;
+        if (!mat_reader.read("dimension",row,col,dim_buf))
+        {
+            error_msg = "cannot find dimension matrix";
+            return false;
+        }
+        std::copy(dim_buf,dim_buf+3,dim.begin());
     }
     if(!dir.add_data(mat_reader))
     {
@@ -421,7 +420,6 @@ bool FibData::load_from_mat(void)
         error_msg = "Empty FA matrix";
         return false;
     }
-    dim = dir.dim;
     odf.read(mat_reader);
 
     view_item.push_back(item());
@@ -506,9 +504,9 @@ bool FibData::load_from_mat(void)
                mat_reader.read((name+"_z").c_str(),row,col,mz) &&
                  mat_reader.read((name+"_d").c_str(),row,col,native_geo))
             {
-                view_item[i].mx = image::make_image(dir.dim,mx);
-                view_item[i].my = image::make_image(dir.dim,my);
-                view_item[i].mz = image::make_image(dir.dim,mz);
+                view_item[i].mx = image::make_image(dim,mx);
+                view_item[i].my = image::make_image(dim,my);
+                view_item[i].mz = image::make_image(dim,mz);
                 view_item[i].native_geo = image::geometry<3>(native_geo[0],native_geo[1],native_geo[2]);
             }
         }
@@ -518,27 +516,27 @@ bool FibData::load_from_mat(void)
     return true;
 }
 
-size_t FibData::get_name_index(const std::string& index_name) const
+size_t fib_data::get_name_index(const std::string& index_name) const
 {
     for(unsigned int index_num = 0;index_num < view_item.size();++index_num)
         if(view_item[index_num].name == index_name)
             return index_num;
     return view_item.size();
 }
-void FibData::get_index_list(std::vector<std::string>& index_list) const
+void fib_data::get_index_list(std::vector<std::string>& index_list) const
 {
     for (int index = 0; index < view_item.size(); ++index)
         if(view_item[index].name != "color")
             index_list.push_back(view_item[index].name);
 }
-image::const_pointer_image<float,3> FibData::get_view_volume(const std::string& view_name) const
+image::const_pointer_image<float,3> fib_data::get_view_volume(const std::string& view_name) const
 {
     unsigned int view_index = get_name_index(view_name);
     if(view_index == view_item.size() || view_item[view_index].name == "color")
         return image::const_pointer_image<float,3>();
     return view_item[view_index].image_data;
 }
-std::pair<float,float> FibData::get_value_range(const std::string& view_name) const
+std::pair<float,float> fib_data::get_value_range(const std::string& view_name) const
 {
     unsigned int view_index = get_name_index(view_name);
     if(view_index == view_item.size())
@@ -548,7 +546,7 @@ std::pair<float,float> FibData::get_value_range(const std::string& view_name) co
     return std::make_pair(view_item[view_index].min_value,view_item[view_index].max_value);
 }
 
-void FibData::get_slice(const std::string& view_name,
+void fib_data::get_slice(const std::string& view_name,
                unsigned char d_index,unsigned int pos,
                image::color_image& show_image,const image::value_to_color<float>& v2c)
 {
@@ -589,7 +587,7 @@ void FibData::get_slice(const std::string& view_name,
 
 }
 
-void FibData::get_voxel_info2(unsigned int x,unsigned int y,unsigned int z,std::vector<float>& buf) const
+void fib_data::get_voxel_info2(unsigned int x,unsigned int y,unsigned int z,std::vector<float>& buf) const
 {
     unsigned int index = (z*dim[1]+y)*dim[0] + x;
     if (index >= dim.size())
@@ -602,7 +600,7 @@ void FibData::get_voxel_info2(unsigned int x,unsigned int y,unsigned int z,std::
         buf.push_back(dir[2]);
     }
 }
-void FibData::get_voxel_information(unsigned int x,unsigned int y,unsigned int z,std::vector<float>& buf) const
+void fib_data::get_voxel_information(unsigned int x,unsigned int y,unsigned int z,std::vector<float>& buf) const
 {
     unsigned int index = (z*dim[1]+y)*dim[0] + x;
     if (index >= dim.size())
@@ -611,7 +609,7 @@ void FibData::get_voxel_information(unsigned int x,unsigned int y,unsigned int z
         if(view_item[i].name != "color")
             buf.push_back(view_item[i].image_data.empty() ? 0.0 : view_item[i].image_data[index]);
 }
-void FibData::get_index_titles(std::vector<std::string>& titles)
+void fib_data::get_index_titles(std::vector<std::string>& titles)
 {
     std::vector<std::string> index_list;
     get_index_list(index_list);
@@ -621,7 +619,7 @@ void FibData::get_index_titles(std::vector<std::string>& titles)
         titles.push_back(index_list[index]+" sd");
     }
 }
-void FibData::getSlicesDirColor(unsigned short order,unsigned int* pixels) const
+void fib_data::getSlicesDirColor(unsigned short order,unsigned int* pixels) const
 {
     for (unsigned int index = 0;index < dim.size();++index,++pixels)
     {

@@ -17,20 +17,19 @@ SliceModel::SliceModel(void):cur_dim(2)
     texture_need_update[2] = true;
 }
 
-FibSliceModel::FibSliceModel(FibData* handle_):handle(handle_)
+FibSliceModel::FibSliceModel(fib_data* handle_):handle(handle_)
 {
     // already setup the geometry and source image
-    FibData& fib_data = *handle;
-    geometry = fib_data.dim;
-    voxel_size = fib_data.vs;
-    source_images = image::make_image(geometry,fib_data.dir.fa[0]);
+    fib_data& fib = *handle;
+    geometry = fib.dim;
+    voxel_size = fib.vs;
+    source_images = image::make_image(geometry,fib.dir.fa[0]);
     center_point = geometry;
     center_point -= 1.0;
     center_point /= 2.0;
     slice_pos[0] = geometry.width() >> 1;
     slice_pos[1] = geometry.height() >> 1;
     slice_pos[2] = geometry.depth() >> 1;
-    //loadImage(fib_data.dir.fa[0],false);
 }
 // ---------------------------------------------------------------------------
 std::pair<float,float> FibSliceModel::get_value_range(void) const

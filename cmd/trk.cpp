@@ -22,7 +22,7 @@ bool atl_get_mapping(gz_mat_read& mat_reader,
                      image::basic_image<image::vector<3>,3>& mapping);
 void export_track_info(const std::string& file_name,
                        std::string export_option,
-                       FibData* handle,
+                       fib_data* handle,
                        TractModel& tract_model);
 extern fa_template fa_template_imp;
 extern std::vector<atlas> atlas_list;
@@ -60,7 +60,7 @@ void save_connectivity_matrix(TractModel& tract_model,
     out << report;
 }
 void load_nii_label(const char* filename,std::map<short,std::string>& label_map);
-void get_connectivity_matrix(FibData* handle,
+void get_connectivity_matrix(fib_data* handle,
                              TractModel& tract_model,
                              image::basic_image<image::vector<3>,3>& mapping)
 {
@@ -159,7 +159,7 @@ int trk(void)
 {
     try{
 
-    std::auto_ptr<FibData> handle(new FibData);
+    std::auto_ptr<fib_data> handle(new fib_data);
     {
         std::string file_name = po.get("source");
         std::cout << "loading " << file_name << "..." <<std::endl;
@@ -338,7 +338,7 @@ int trk(void)
         connectometry_threshold = QString(po.get("connectometry_threshold").c_str()).split(",");
         for(unsigned int i = 0;i < cnt_file_name.size();++i)
         {
-            fib_data cnt;
+            connectometry_result cnt;
             std::cout << "loading individual file:" << cnt_file_name[i].toStdString() << std::endl;
             if(cnt_type == "iva" && !cnt.individual_vs_atlas(handle.get(),cnt_file_name[i].toLocal8Bit().begin()))
             {

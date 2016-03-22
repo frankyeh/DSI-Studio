@@ -13,7 +13,7 @@ int vis(void)
     }
     std::string file_name = po.get("source");
     std::cout << "loading " << file_name << std::endl;
-    std::auto_ptr<FibData> new_handle(new FibData);
+    std::auto_ptr<fib_data> new_handle(new fib_data);
     if (!new_handle->load_from_file(&*file_name.begin()))
     {
         std::cout << "load fib file failed: " << new_handle->error_msg << std::endl;

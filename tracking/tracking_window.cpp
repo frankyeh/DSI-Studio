@@ -46,15 +46,15 @@ void tracking_window::set_data(QString name, QVariant value)
     renderWidget->setData(name,value);
 }
 
-tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle_release_) :
+tracking_window::tracking_window(QWidget *parent,fib_data* new_handle,bool handle_release_) :
         QMainWindow(parent),handle(new_handle),handle_release(handle_release_),
         ui(new Ui::tracking_window),scene(*this),slice(new_handle),gLdock(0),renderWidget(0)
 
 {
-    FibData& fib_data = *new_handle;
+    fib_data& fib = *new_handle;
 
-    odf_size = fib_data.dir.odf_table.size();
-    odf_face_size = fib_data.dir.odf_faces.size();
+    odf_size = fib.dir.odf_table.size();
+    odf_face_size = fib.dir.odf_faces.size();
 
     ui->setupUi(this);
     {
@@ -104,8 +104,8 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
 
         slice_no_update = false;
 
-        for (unsigned int index = 0;index < fib_data.view_item.size(); ++index)
-            ui->sliceViewBox->addItem(fib_data.view_item[index].name.c_str());
+        for (unsigned int index = 0;index < fib.view_item.size(); ++index)
+            ui->sliceViewBox->addItem(fib.view_item[index].name.c_str());
     }
 
     is_qsdr = !handle->trans_to_mni.empty();
@@ -165,7 +165,7 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
 
     {
         std::vector<std::string> index_list;
-        fib_data.get_index_list(index_list);
+        fib.get_index_list(index_list);
         for (int index = 0; index < index_list.size(); ++index)
             {
                 std::string& name = index_list[index];
@@ -393,7 +393,7 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
     // setup fa threshold
     {
         initialize_tracking_index(0);
-        set_data("step_size",fib_data.vs[0]/2.0);
+        set_data("step_size",fib.vs[0]/2.0);
     }
 
     report(handle->report.c_str());
@@ -1024,9 +1024,9 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
         scene.show_slice();
         return;
     }
-    float max_value = *std::max_element(handle->dir.fa[0],handle->dir.fa[0]+handle->dir.dim.size());
+    float max_value = *std::max_element(handle->dir.fa[0],handle->dir.fa[0]+handle->dim.size());
     renderWidget->setMinMax("fa_threshold",0.0,max_value*1.1,max_value/50.0);
-    set_data("fa_threshold",0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.dim,
+    set_data("fa_threshold",0.6*image::segmentation::otsu_threshold(image::make_image(handle->dim,
                                                                                       handle->dir.fa[0])));
     scene.show_slice();
 }
@@ -1391,7 +1391,7 @@ void tracking_window::on_actionQuality_Assessment_triggered()
             fib_dir[i][j+2] = v[2];
         }
     }
-    std::pair<float,float> result = evaluate_fib(handle->dir.dim,fib_fa,fib_dir);
+    std::pair<float,float> result = evaluate_fib(handle->dim,fib_fa,fib_dir);
     std::ostringstream out;
     out << "Number of connected fibers: " << result.first << std::endl;
     out << "Number of disconnected fibers: " << result.second << std::endl;
@@ -1404,7 +1404,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
 {
     tracking fib;
     fib.read(*handle);
-    fib.threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.dim,handle->dir.fa[0]));
+    fib.threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dim,handle->dir.fa[0]));
     if(!fib.dir.empty())
         return;
     for(float cos_angle = 0.99;check_prog(1000-cos_angle*1000,1000-866);cos_angle -= 0.005)
@@ -1413,7 +1413,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
 
         std::vector<std::vector<float> > new_fa(handle->dir.num_fiber);
         std::vector<std::vector<short> > new_index(handle->dir.num_fiber);
-        unsigned int size = handle->dir.dim.size();
+        unsigned int size = handle->dim.size();
         for(unsigned int i = 0 ;i < new_fa.size();++i)
         {
             new_fa[i].resize(size);
@@ -1422,12 +1422,12 @@ void tracking_window::on_actionImprove_Quality_triggered()
             std::copy(handle->dir.findex[i],handle->dir.findex[i]+size,new_index[i].begin());
         }
 
-        for(image::pixel_index<3> index(handle->dir.dim);index < handle->dir.dim.size();++index)
+        for(image::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
         {
             if(handle->dir.fa[0][index.index()] < fib.threshold)
                 continue;
             std::vector<image::pixel_index<3> > neighbors;
-            image::get_neighbors(index,handle->dir.dim,neighbors);
+            image::get_neighbors(index,handle->dim,neighbors);
 
             std::vector<image::vector<3> > dis(neighbors.size());
             std::vector<image::vector<3> > fib_dir(neighbors.size());
@@ -1763,9 +1763,9 @@ void tracking_window::on_actionIndividual_vs_atlas_triggered()
                            "Fib files (*fib.gz);;All files (*)");
     if (subject.isEmpty())
         return;
-    if(!connectometry_fib.individual_vs_atlas(handle,subject.toLocal8Bit().begin()))
+    if(!cnt_result.individual_vs_atlas(handle,subject.toLocal8Bit().begin()))
     {
-        QMessageBox::information(this,"Error",connectometry_fib.error_msg.c_str());
+        QMessageBox::information(this,"Error",cnt_result.error_msg.c_str());
         return;
     }
     initialize_tracking_index(handle->dir.index_data.size()-1);
@@ -1793,9 +1793,9 @@ void tracking_window::on_actionIndividual_vs_individual_triggered()
                            "Fib files (*fib.gz);;All files (*)");
     if (subject2.isEmpty())
         return;
-    if(!connectometry_fib.individual_vs_individual(handle,subject1.toLocal8Bit().begin(),subject2.toLocal8Bit().begin()))
+    if(!cnt_result.individual_vs_individual(handle,subject1.toLocal8Bit().begin(),subject2.toLocal8Bit().begin()))
     {
-        QMessageBox::information(this,"Error",connectometry_fib.error_msg.c_str());
+        QMessageBox::information(this,"Error",cnt_result.error_msg.c_str());
         return;
     }
     initialize_tracking_index(handle->dir.index_data.size()-1);
@@ -1815,9 +1815,9 @@ void tracking_window::on_actionIndividual_vs_normal_population_triggered()
                            "Fib files (*fib.gz);;All files (*)");
     if (subject.isEmpty())
         return;
-    if(!connectometry_fib.individual_vs_db(handle,subject.toLocal8Bit().begin()))
+    if(!cnt_result.individual_vs_db(handle,subject.toLocal8Bit().begin()))
     {
-        QMessageBox::information(this,"Error",connectometry_fib.error_msg.c_str());
+        QMessageBox::information(this,"Error",cnt_result.error_msg.c_str());
         return;
     }
     initialize_tracking_index(handle->dir.index_data.size()-1);

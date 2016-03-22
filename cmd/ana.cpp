@@ -14,12 +14,12 @@
 
 // test example
 // --action=ana --source=20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
-void get_connectivity_matrix(FibData* handle,
+void get_connectivity_matrix(fib_data* handle,
                              TractModel& tract_model,
                              image::basic_image<image::vector<3>,3>& mapping);
 void export_track_info(const std::string& file_name,
                        std::string export_option,
-                       FibData* handle,
+                       fib_data* handle,
                        TractModel& tract_model)
 {
     std::replace(export_option.begin(),export_option.end(),',',' ');
@@ -119,7 +119,7 @@ void export_track_info(const std::string& file_name,
 
 int ana(void)
 {
-    std::auto_ptr<FibData> handle(new FibData);
+    std::auto_ptr<fib_data> handle(new fib_data);
     {
         std::string file_name = po.get("source");
         std::cout << "loading " << file_name << "..." <<std::endl;
@@ -144,7 +144,7 @@ int ana(void)
             return 0;
         }
         std::string roi_file_name = po.get("roi");
-        ROIRegion region(handle->dir.dim,handle->vs);
+        ROIRegion region(handle->dim,handle->vs);
         if(!region.LoadFromFile(roi_file_name.c_str(),handle->trans_to_mni))
         {
             std::cout << "Fail to load the ROI file." << std::endl;

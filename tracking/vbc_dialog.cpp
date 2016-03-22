@@ -539,7 +539,7 @@ void vbc_dialog::on_open_files_clicked()
                 work_dir,"Connectometry DB files (*db?fib.gz);;All files (*)" );
     if (file_name.isEmpty())
         return;
-    std::auto_ptr<FibData> handle(new FibData);
+    std::auto_ptr<fib_data> handle(new fib_data);
     begin_prog("reading connectometry DB");
     if(!handle->load_from_file(file_name.toStdString().c_str()))
     {
@@ -1264,7 +1264,7 @@ void vbc_dialog::on_save_name_list_clicked()
 
 void vbc_dialog::on_show_result_clicked()
 {
-    std::auto_ptr<FibData> new_data(new FibData);
+    std::auto_ptr<fib_data> new_data(new fib_data);
     *(new_data.get()) = *(vbc->handle);
     if(!report.isEmpty())
     {
@@ -1275,7 +1275,7 @@ void vbc_dialog::on_show_result_clicked()
     stat_model* cur_model = vbc->model.get() ? vbc->model.get():model.get();
     if(cur_model->type != 2) // not individual
     {
-        result_fib.reset(new fib_data);
+        result_fib.reset(new connectometry_result);
         stat_model info;
         info.resample(*cur_model,false,false);
         vbc->calculate_spm(*result_fib.get(),info);
@@ -1521,7 +1521,7 @@ void vbc_dialog::on_suggest_threshold_clicked()
 {
     if(!ui->run->isEnabled())
         return;
-    result_fib.reset(new fib_data);
+    result_fib.reset(new connectometry_result);
     stat_model info;
     if(ui->rb_multiple_regression->isChecked())
         model->study_feature = ui->foi->currentIndex()+1;
@@ -1696,7 +1696,7 @@ void vbc_dialog::on_add_db_clicked()
                            "Database files (*db?fib.gz);;All files (*)");
     if (filename.isEmpty())
         return;
-    std::auto_ptr<FibData> handle(new FibData);
+    std::auto_ptr<fib_data> handle(new fib_data);
     begin_prog("reading connectometry db");
     if(!handle->load_from_file(filename.toStdString().c_str()))
     {

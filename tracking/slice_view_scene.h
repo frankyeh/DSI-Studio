@@ -4,7 +4,7 @@
 #include <vector>
 #include "image/image.hpp"
 #include <QStatusBar>
-class FibData;
+class fib_data;
 class tracking_window;
 class slice_view_scene : public QGraphicsScene
 {

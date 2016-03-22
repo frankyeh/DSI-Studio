@@ -426,7 +426,7 @@ void GLWidget::renderLR(int eye)
             odf_points.clear();
         }
 
-        FibData* handle = cur_tracking_window.handle;
+        fib_data* handle = cur_tracking_window.handle;
         unsigned char skip_mask_set[3] = {0,1,3};
         unsigned char mask = skip_mask_set[odf_skip];
         if(odf_points.empty())
@@ -760,7 +760,7 @@ void GLWidget::renderLR(int eye)
 
 void GLWidget::add_odf(image::pixel_index<3> pos)
 {
-    FibData* handle = cur_tracking_window.handle;
+    fib_data* handle = cur_tracking_window.handle;
     const float* odf_buffer =
             handle->get_odf_data(pos.index());
     if(!odf_buffer)

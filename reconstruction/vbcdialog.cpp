@@ -77,7 +77,7 @@ void VBCDialog::on_group1open_clicked()
     }
     if(group.empty())
     {
-        FibData fib;
+        fib_data fib;
         if(!fib.load_from_file(filenames[0].toLocal8Bit().begin()))
         {
             QMessageBox::information(this,"Error","Invalid FIB file format",0);

@@ -1,7 +1,7 @@
 #include "connectometry_db.hpp"
 #include "fib_data.hpp"
 
-void connectometry_db::read_db(FibData* handle_)
+void connectometry_db::read_db(fib_data* handle_)
 {
     handle = handle_;
     subject_qa.clear();
@@ -514,4 +514,429 @@ bool connectometry_db::add_db(const connectometry_db& rhs)
     subject_qa.resize(num_subjects);
     for(unsigned int index = 0;index < subject_qa_buf.size();++index)
         subject_qa[num_subjects+index-subject_qa_buf.size()] = &(subject_qa_buf[index][0]);
+}
+
+
+
+void calculate_spm(fib_data* handle,connectometry_result& data,stat_model& info,
+                   float fiber_threshold,bool normalize_qa,bool& terminated)
+{
+    data.initialize(handle);
+    std::vector<double> population(handle->db.subject_qa.size());
+    for(unsigned int s_index = 0;s_index < handle->db.si2vi.size() && !terminated;++s_index)
+    {
+        unsigned int cur_index = handle->db.si2vi[s_index];
+        for(unsigned int fib = 0,fib_offset = 0;fib < handle->dir.num_fiber && handle->dir.fa[fib][cur_index] > fiber_threshold;
+                ++fib,fib_offset+=handle->db.si2vi.size())
+        {
+            unsigned int pos = s_index + fib_offset;
+            if(normalize_qa)
+                for(unsigned int index = 0;index < population.size();++index)
+                    population[index] = handle->db.subject_qa[index][pos]/handle->db.subject_qa_sd[index];
+            else
+                for(unsigned int index = 0;index < population.size();++index)
+                    population[index] = handle->db.subject_qa[index][pos];
+
+            if(std::find(population.begin(),population.end(),0.0) != population.end())
+                continue;
+            double result = info(population,pos);
+
+            if(result > 0.0) // group 0 > group 1
+                data.greater[fib][cur_index] = result;
+            if(result < 0.0) // group 0 < group 1
+                data.lesser[fib][cur_index] = -result;
+
+        }
+    }
+}
+
+
+void connectometry_result::initialize(fib_data* handle)
+{
+    unsigned char num_fiber = handle->dir.num_fiber;
+    greater.resize(num_fiber);
+    lesser.resize(num_fiber);
+    for(unsigned char fib = 0;fib < num_fiber;++fib)
+    {
+        greater[fib].resize(handle->dim.size());
+        lesser[fib].resize(handle->dim.size());
+    }
+    greater_ptr.resize(num_fiber);
+    lesser_ptr.resize(num_fiber);
+    for(unsigned char fib = 0;fib < num_fiber;++fib)
+    {
+        greater_ptr[fib] = &greater[fib][0];
+        lesser_ptr[fib] = &lesser[fib][0];
+    }
+    for(unsigned char fib = 0;fib < num_fiber;++fib)
+    {
+        std::fill(greater[fib].begin(),greater[fib].end(),0.0);
+        std::fill(lesser[fib].begin(),lesser[fib].end(),0.0);
+    }
+}
+void connectometry_result::remove_old_index(fib_data* handle)
+{
+    for(unsigned int index = 0;index < handle->dir.index_name.size();++index)
+        if(handle->dir.index_name[index] == ">%" ||
+           handle->dir.index_name[index] == "<%" ||
+           handle->dir.index_name[index] == "inc" ||
+           handle->dir.index_name[index] == "dec")
+        {
+            handle->dir.index_name.erase(handle->dir.index_name.begin()+index);
+            handle->dir.index_data.erase(handle->dir.index_data.begin()+index);
+            index = 0;
+        }
+}
+
+void connectometry_result::add_mapping_for_tracking(fib_data* handle,const char* t1,const char* t2)
+{
+    remove_old_index(handle);
+    handle->dir.index_name.push_back(t1);
+    handle->dir.index_data.push_back(std::vector<const float*>());
+    handle->dir.index_data.back() = greater_ptr;
+    handle->dir.index_name.push_back(t2);
+    handle->dir.index_data.push_back(std::vector<const float*>());
+    handle->dir.index_data.back() = lesser_ptr;
+}
+
+bool connectometry_result::individual_vs_db(fib_data* handle,const char* file_name)
+{
+    if(!handle->db.has_db())
+    {
+        error_msg = "Please open a connectometry database first.";
+        return false;
+    }
+    handle->dir.set_tracking_index(0);
+    std::vector<float> data;
+    if(!handle->db.get_odf_profile(file_name,data))
+    {
+        error_msg = handle->error_msg;
+        return false;
+    }
+    bool normalized_qa = false;
+    bool terminated = false;
+    stat_model info;
+    info.init(handle->db.has_db());
+    info.type = 2;
+    info.individual_data = &(data[0]);
+    //info.individual_data_sd = normalize_qa ? individual_data_sd[subject_id]:1.0;
+    info.individual_data_sd = 1.0;
+    float fa_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dim,
+                                                                                       handle->dir.fa[0]));
+    calculate_spm(handle,*this,info,fa_threshold,normalized_qa,terminated);
+    add_mapping_for_tracking(handle,">%","<%");
+    return true;
+}
+bool connectometry_result::compare(fib_data* handle,const std::vector<const float*>& fa1,
+                                        const std::vector<const float*>& fa2)
+{
+    // normalization
+    float max_qa1 = 0.0,max_qa2 = 0.0;
+    max_qa1 = std::max<float>(max_qa1,*std::max_element(fa1[0],fa1[0] + handle->dim.size()));
+    max_qa2 = std::max<float>(max_qa2,*std::max_element(fa2[0],fa2[0] + handle->dim.size()));
+    if(max_qa1 == 0.0 || max_qa2 == 0.0)
+        return false;
+    //calculating dif
+    for(unsigned char fib = 0;fib < handle->dir.num_fiber;++fib)
+    {
+        for(unsigned int index = 0;index < handle->dim.size();++index)
+            if(fa1[fib][index] > 0.0 && fa2[fib][index] > 0.0)
+            {
+                float f1 = fa1[fib][index]/max_qa1;
+                float f2 = fa2[fib][index]/max_qa2;
+                if(f1 > f2)
+                    lesser[fib][index] = f1-f2;  // subject decreased connectivity
+                else
+                    greater[fib][index] = f2-f1; // subject increased connectivity
+            }
+    }
+    return true;
+}
+
+bool connectometry_result::individual_vs_atlas(fib_data* handle,const char* file_name)
+{
+    // restore fa0 to QA
+    handle->dir.set_tracking_index(0);
+    std::vector<std::vector<float> > fa_data;
+    if(!handle->db.get_qa_profile(file_name,fa_data))
+    {
+        error_msg = handle->error_msg;
+        return false;
+    }
+    std::vector<const float*> ptr(fa_data.size());
+    for(unsigned int i = 0;i < ptr.size();++i)
+        ptr[i] = &(fa_data[i][0]);
+    initialize(handle);
+    if(!compare(handle,handle->dir.fa,ptr))
+        return false;
+    add_mapping_for_tracking(handle,"inc","dec");
+    return true;
+}
+
+bool connectometry_result::individual_vs_individual(fib_data* handle,const char* file_name1,const char* file_name2)
+{
+    // restore fa0 to QA
+    handle->dir.set_tracking_index(0);
+    std::vector<std::vector<float> > data1,data2;
+    if(!handle->db.get_qa_profile(file_name1,data1))
+    {
+        error_msg = handle->error_msg;
+        return false;
+    }
+    if(!handle->db.get_qa_profile(file_name2,data2))
+    {
+        error_msg = handle->error_msg;
+        return false;
+    }
+    initialize(handle);
+    std::vector<const float*> ptr1(data1.size()),ptr2(data2.size());
+    for(unsigned int i = 0;i < ptr1.size();++i)
+    {
+        ptr1[i] = &(data1[i][0]);
+        ptr2[i] = &(data2[i][0]);
+    }
+    if(!compare(handle,ptr1,ptr2))
+        return false;
+    add_mapping_for_tracking(handle,"inc","dec");
+    return true;
+}
+
+
+
+void stat_model::init(unsigned int subject_count)
+{
+    subject_index.resize(subject_count);
+    for(unsigned int index = 0;index < subject_count;++index)
+        subject_index[index] = index;
+}
+
+bool stat_model::pre_process(void)
+{
+    switch(type)
+    {
+    case 0: // group
+        group2_count = 0;
+        for(unsigned int index = 0;index < label.size();++index)
+            if(label[index])
+                ++group2_count;
+        group1_count = label.size()-group2_count;
+        return group2_count > 3 && group1_count > 3;
+    case 1: // multiple regression
+        {
+            X_min = X_max = std::vector<double>(X.begin(),X.begin()+feature_count);
+            unsigned int subject_count = X.size()/feature_count;
+            for(unsigned int i = 1,index = feature_count;i < subject_count;++i)
+                for(unsigned int j = 0;j < feature_count;++j,++index)
+                {
+                    if(X[index] < X_min[j])
+                        X_min[j] = X[index];
+                    if(X[index] > X_max[j])
+                        X_max[j] = X[index];
+                }
+            X_range.resize(feature_count);
+            for(unsigned int j = 0;j < feature_count;++j)
+                X_range[j] = X_max[j]-X_min[j];
+        }
+        return mr.set_variables(&*X.begin(),feature_count,X.size()/feature_count);
+    case 2:
+        return true;
+    case 3: // paired
+        return subject_index.size() == paired.size() && !subject_index.empty();
+    }
+    return false;
+}
+void stat_model::remove_subject(unsigned int index)
+{
+    if(index >= subject_index.size())
+        throw std::runtime_error("remove subject out of bound");
+    if(!label.empty())
+        label.erase(label.begin()+index);
+    if(!X.empty())
+        X.erase(X.begin()+index*feature_count,X.begin()+(index+1)*feature_count);
+    subject_index.erase(subject_index.begin()+index);
+    pre_process();
+}
+
+void stat_model::remove_missing_data(double missing_value)
+{
+    std::vector<unsigned int> remove_list;
+    switch(type)
+    {
+        case 0:  // group
+            for(unsigned int index = 0;index < label.size();++index)
+            {
+                if(label[index] == missing_value)
+                    remove_list.push_back(index);
+            }
+            break;
+
+        case 1: // multiple regression
+            for(unsigned int index = 0;index < subject_index.size();++index)
+            {
+                for(unsigned int j = 1;j < feature_count;++j)
+                {
+                    if(X[index*feature_count + j] == missing_value)
+                    {
+                        remove_list.push_back(index);
+                        break;
+                    }
+                }
+            }
+            break;
+        case 3:
+            break;
+    }
+
+    if(remove_list.empty())
+        return;
+    while(!remove_list.empty())
+    {
+        unsigned int index = remove_list.back();
+        if(!label.empty())
+            label.erase(label.begin()+index);
+        if(!X.empty())
+            X.erase(X.begin()+index*feature_count,X.begin()+(index+1)*feature_count);
+        subject_index.erase(subject_index.begin()+index);
+        remove_list.pop_back();
+    }
+    pre_process();
+}
+
+bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap)
+{
+    std::lock_guard<std::mutex> lock(rhs.lock_random);
+    type = rhs.type;
+    feature_count = rhs.feature_count;
+    study_feature = rhs.study_feature;
+    subject_index.resize(rhs.subject_index.size());
+
+    unsigned int trial = 0;
+    do
+    {
+        if(trial > 100)
+            throw std::runtime_error("Invalid subject demographics for multiple regression");
+        ++trial;
+
+
+        switch(type)
+        {
+        case 0: // group
+        {
+            std::vector<unsigned int> group0,group1;
+            for(unsigned int index = 0;index < rhs.subject_index.size();++index)
+                if(rhs.label[index])
+                    group1.push_back(index);
+                else
+                    group0.push_back(index);
+            label.resize(rhs.subject_index.size());
+            for(unsigned int index = 0;index < rhs.subject_index.size();++index)
+            {
+                unsigned int new_index = index;
+                if(bootstrap)
+                    new_index = rhs.label[index] ? group1[rhs.rand_gen(group1.size())]:group0[rhs.rand_gen(group0.size())];
+                subject_index[index] = rhs.subject_index[new_index];
+                label[index] = rhs.label[new_index];
+            }
+        }
+            break;
+        case 1: // multiple regression
+            X.resize(rhs.X.size());
+            for(unsigned int index = 0,pos = 0;index < rhs.subject_index.size();++index,pos += feature_count)
+            {
+                unsigned int new_index = bootstrap ? rhs.rand_gen(rhs.subject_index.size()) : index;
+                subject_index[index] = rhs.subject_index[new_index];
+                std::copy(rhs.X.begin()+new_index*feature_count,
+                          rhs.X.begin()+new_index*feature_count+feature_count,X.begin()+pos);
+            }
+
+            break;
+        case 2: // individual
+            for(unsigned int index = 0;index < rhs.subject_index.size();++index)
+            {
+                unsigned int new_index = bootstrap ? rhs.rand_gen(rhs.subject_index.size()) : index;
+                subject_index[index] = rhs.subject_index[new_index];
+            }
+            break;
+        case 3: // paired
+            paired.resize(rhs.subject_index.size());
+            for(unsigned int index = 0;index < rhs.subject_index.size();++index)
+            {
+                unsigned int new_index = bootstrap ? rhs.rand_gen(rhs.subject_index.size()) : index;
+                subject_index[index] = rhs.subject_index[new_index];
+                paired[index] = rhs.paired[new_index];
+                if(null && rhs.rand_gen(2) == 1)
+                    std::swap(subject_index[index],paired[index]);
+            }
+            break;
+        }
+        if(null)
+            std::random_shuffle(subject_index.begin(),subject_index.end(),rhs.rand_gen);
+    }while(!pre_process());
+
+    return true;
+}
+void stat_model::select(const std::vector<double>& population,std::vector<double>& selected_population) const
+{
+    for(unsigned int index = 0;index < subject_index.size();++index)
+        selected_population[index] = population[subject_index[index]];
+    selected_population.resize(subject_index.size());
+}
+
+double stat_model::operator()(const std::vector<double>& original_population,unsigned int pos) const
+{
+    std::vector<double> population(subject_index.size());
+    select(original_population,population);
+    switch(type)
+    {
+    case 0: // group
+        {
+        float sum1 = 0.0;
+        float sum2 = 0.0;
+        for(unsigned int index = 0;index < label.size();++index)
+            if(label[index]) // group 1
+                sum2 += population[index];
+            else
+                // group 0
+                sum1 += population[index];
+        float mean1 = sum1/((double)group1_count);
+        float mean2 = sum2/((double)group2_count);
+        float result = (mean1 + mean2)/2.0;
+        if(result != 0.0)
+            result = (mean1 - mean2) / result;
+        return result;
+        }
+        break;
+    case 1: // multiple regression
+        {
+            std::vector<double> b(feature_count);
+            mr.regress(&*population.begin(),&*b.begin());
+            double mean = image::mean(population.begin(),population.end());
+            return mean == 0 ? 0:b[study_feature]*X_range[study_feature]/mean;
+        }
+        break;
+    case 2: // individual
+        {
+            float value = (individual_data_sd == 1.0) ? individual_data[pos]:individual_data[pos]/individual_data_sd;
+            if(value == 0.0)
+                return 0.0;
+            int rank = 0;
+            for(unsigned int index = 0;index < population.size();++index)
+                if(value > population[index])
+                    ++rank;
+            return (rank > (population.size() >> 1)) ?
+                                (double)rank/(double)population.size():
+                                (double)(rank-(int)population.size())/(double)population.size();
+        }
+        break;
+    case 3: // paired
+        {
+            unsigned int half_size = population.size() >> 1;
+            float g1 = std::accumulate(population.begin(),population.begin()+half_size,0.0);
+            float g2 = std::accumulate(population.begin()+half_size,population.end(),0.0);
+            return 2.0*(g1-g2)/(g1+g2);
+        }
+        break;
+    }
+
+    return 0.0;
 }

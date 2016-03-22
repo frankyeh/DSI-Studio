@@ -4,11 +4,11 @@
 #include <string>
 #include "gzip_interface.hpp"
 #include "image/image.hpp"
-class FibData;
+class fib_data;
 class connectometry_db
 {
 public:
-    FibData* handle;
+    fib_data* handle;
     std::string subject_report;
     std::vector<std::string> subject_names;
     unsigned int num_subjects;
@@ -22,7 +22,7 @@ public:
 public:
     connectometry_db():handle(0),num_subjects(0){;}
     bool has_db(void)const{return !num_subjects;}
-    void read_db(FibData* handle);
+    void read_db(fib_data* handle);
     void remove_subject(unsigned int index);
     void calculate_si2vi(void);
     bool sample_odf(gz_mat_read& m,std::vector<float>& data);
@@ -51,5 +51,84 @@ public:
     void read_subject_qa(std::vector<std::vector<float> >&data) const;
     bool add_db(const connectometry_db& rhs);
 };
+
+
+
+class stat_model{
+public:
+    image::uniform_dist<int> rand_gen;
+    std::mutex  lock_random;
+public:
+    std::vector<unsigned int> subject_index;
+public:
+    unsigned int type;
+public: // group
+    std::vector<int> label;
+    unsigned int group1_count,group2_count;
+public: // multiple regression
+    std::vector<double> X,X_min,X_max,X_range;
+    unsigned int feature_count;
+    unsigned int study_feature;
+    image::multiple_regression<double> mr;
+public: // individual
+    const float* individual_data;
+    float individual_data_sd;
+public: // paired
+    std::vector<unsigned int> paired;
+public:
+    stat_model(void):individual_data(0){}
+public:
+    void init(unsigned int subject_count);
+    void remove_subject(unsigned int index);
+    void remove_missing_data(double missing_value);
+    bool resample(stat_model& rhs,bool null,bool bootstrap);
+    bool pre_process(void);
+    void select(const std::vector<double>& population,std::vector<double>& selected_population)const;
+    double operator()(const std::vector<double>& population,unsigned int pos) const;
+    void clear(void)
+    {
+        label.clear();
+        X.clear();
+    }
+    const stat_model& operator=(const stat_model& rhs)
+    {
+        subject_index = rhs.subject_index;
+        type = rhs.type;
+        label = rhs.label;
+        group1_count = rhs.group1_count;
+        group2_count = rhs.group2_count;
+        X = rhs.X;
+        X_min = rhs.X_min;
+        X_max = rhs.X_max;
+        X_range = rhs.X_range;
+        feature_count = rhs.feature_count;
+        study_feature = rhs.study_feature;
+        mr = rhs.mr;
+        individual_data = rhs.individual_data;
+        paired = rhs.paired;
+        return *this;
+    }
+};
+
+
+
+struct connectometry_result{
+    std::vector<std::vector<float> > greater,lesser;
+    std::vector<const float*> greater_ptr,lesser_ptr;
+    void remove_old_index(fib_data* handle);
+    bool compare(fib_data* handle,const std::vector<const float*>& fa1,const std::vector<const float*>& fa2);
+public:
+    std::string error_msg;
+    void initialize(fib_data* fib_file);
+    void add_mapping_for_tracking(fib_data* handle,const char* t1,const char* t2);
+    bool individual_vs_atlas(fib_data* handle,const char* file_name);
+    bool individual_vs_db(fib_data* handle,const char* file_name);
+    bool individual_vs_individual(fib_data* handle,const char* file_name1,const char* file_name2);
+
+};
+
+void calculate_spm(fib_data* handle,connectometry_result& data,stat_model& info,
+                   float fiber_threshold,bool normalize_qa,bool& terminated);
+
 
 #endif // CONNECTOMETRY_DB_H

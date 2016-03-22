@@ -12,7 +12,7 @@
 #include "slice_view_scene.h"
 #include "tract/tracttablewidget.h"
 #include "vbc/vbc_database.h"
-class FibData;
+class fib_data;
 class RenderingTableWidget;
 class RegionTableWidget;
 
@@ -48,7 +48,7 @@ protected:
     void keyPressEvent ( QKeyEvent * event );
 
 public:
-    explicit tracking_window(QWidget *parent,FibData* handle,bool handle_release_ = true);
+    explicit tracking_window(QWidget *parent,fib_data* handle,bool handle_release_ = true);
     ~tracking_window();
 
     Ui::tracking_window *ui;
@@ -61,7 +61,7 @@ public:
 public:
     image::value_to_color<float> v2c,v2c_gl;
 public:
-    fib_data connectometry_fib;
+    connectometry_result cnt_result;
 public:
     std::auto_ptr<QTimer> timer;
     unsigned int odf_size;
@@ -80,7 +80,7 @@ public:
     std::auto_ptr<color_bar_dialog> color_bar;
     std::auto_ptr<connectivity_matrix_dialog> connectivity_matrix;
 public:
-    FibData* handle;
+    fib_data* handle;
     FibSliceModel slice;
     bool handle_release;
     bool slice_no_update;

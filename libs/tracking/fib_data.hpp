@@ -32,7 +32,6 @@ public:
 class fiber_directions
 {
 public:
-    image::geometry<3> dim;
     std::vector<const float*> dir;
     std::vector<const short*> findex;
     std::vector<std::vector<short> > findex_buf;
@@ -57,7 +56,7 @@ public:
 
 };
 
-class FibData;
+class fib_data;
 class tracking{
 public:
     image::geometry<3> dim;
@@ -75,7 +74,7 @@ public:
                          const image::vector<3,float>& ref_dir, // reference direction, should be unit vector
                          unsigned char& fib_order_,
                          unsigned char& reverse_) const;
-    void read(const FibData& fib_data);
+    void read(const fib_data& fib);
     bool get_dir(unsigned int space_index,
                          const image::vector<3,float>& dir, // reference direction, should be unit vector
                          image::vector<3,float>& main_dir) const;
@@ -109,24 +108,22 @@ struct item
     }
 };
 
-class FibData
+class fib_data
 {
 public:
     mutable std::string error_msg;
     std::string report;
     gz_mat_read mat_reader;
 public:
+    image::geometry<3> dim;
+    image::vector<3> vs;
     fiber_directions dir;
     odf_data odf;
     connectometry_db db;
-public:
-    image::geometry<3> dim;
-    image::vector<3> vs;
+    std::vector<item> view_item;
     std::vector<float> trans_to_mni;
 public:
-    std::vector<item> view_item;
-public:
-    FibData(void)
+    fib_data(void)
     {
         vs[0] = vs[1] = vs[2] = 1.0;
     }
@@ -149,7 +146,7 @@ public:
     void get_index_titles(std::vector<std::string>& titles);
     void getSlicesDirColor(unsigned short order,unsigned int* pixels) const;
 
-    };
+};
 
 
 

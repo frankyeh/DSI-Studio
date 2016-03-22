@@ -32,7 +32,7 @@ private slots:
  };
 
 class tracking_window;
-class FibData;
+class fib_data;
 class vbc_dialog : public QDialog
 {
     Q_OBJECT
@@ -50,7 +50,7 @@ private:
     QGraphicsScene vbc_scene;
     QImage vbc_slice_image;
     unsigned int vbc_slice_pos;
-    std::auto_ptr<fib_data> result_fib;
+    std::auto_ptr<connectometry_result> result_fib;
     void show_dis_table(void);
     void add_new_roi(QString name,QString source,std::vector<image::vector<3,short> >& new_roi);
 public:

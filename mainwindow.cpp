@@ -203,7 +203,7 @@ void MainWindow::loadFib(QString filename)
 {
     std::string file_name = filename.toLocal8Bit().begin();
     begin_prog("load fib");
-    std::auto_ptr<FibData> new_handle(new FibData);
+    std::auto_ptr<fib_data> new_handle(new fib_data);
     if (!new_handle->load_from_file(&*file_name.begin()))
     {
         if(!prog_aborted())
@@ -368,7 +368,7 @@ void MainWindow::on_FiberTracking_clicked()
     }
     if(!I.empty())
     {
-        std::auto_ptr<FibData> new_handle(new FibData);
+        std::auto_ptr<fib_data> new_handle(new fib_data);
         new_handle->mat_reader.add("dimension",I.geometry().begin(),3,1);
         new_handle->mat_reader.add("voxel_size",vs,3,1);
         new_handle->mat_reader.add("image",&*I.begin(),I.size(),1);

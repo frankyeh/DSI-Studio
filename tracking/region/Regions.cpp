@@ -271,7 +271,7 @@ void ROIRegion::shift(const image::vector<3,short>& dx) {
         region[index] += dx;
 }
 // ---------------------------------------------------------------------------
-void ROIRegion::get_quantitative_data(FibData* handle,std::vector<std::string>& titles,std::vector<float>& data)
+void ROIRegion::get_quantitative_data(fib_data* handle,std::vector<std::string>& titles,std::vector<float>& data)
 {
     titles.clear();
     titles.push_back("voxel counts");

@@ -91,14 +91,14 @@ public:
         }
 };
 
-class FibData;
+class fib_data;
 class FibSliceModel : public SliceModel{
 public:
-    FibData* handle;
+    fib_data* handle;
     image::const_pointer_image<float,3> source_images;
     std::string view_name;
 public:
-    FibSliceModel(FibData* new_handle);
+    FibSliceModel(fib_data* new_handle);
     void set_view_name(const std::string& view_name_)
     {
         view_name = view_name_;
