@@ -5,9 +5,6 @@
 #include "fib_data.hpp"
 #include "manual_alignment.h"
 #include "fa_template.hpp"
-extern image::basic_image<char,3> brain_mask;
-extern image::basic_image<float,3> mni_t1w;
-bool load_brain_mask(void);
 
 // ---------------------------------------------------------------------------
 SliceModel::SliceModel(void):cur_dim(2)
