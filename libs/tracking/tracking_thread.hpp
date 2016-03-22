@@ -30,9 +30,6 @@ public:
     unsigned char initial_direction;
     unsigned int max_seed_count;
 public:
-    image::ml::network cnn;
-    int track_recognition_id;
-public:
     ThreadData(bool random_seed):
         color(200,100,30),
         joinning(false),
@@ -43,8 +40,7 @@ public:
         interpolation_strategy(0),//trilinear_interpolation
         tracking_method(0),//streamline
         initial_direction(0),// main direction
-        max_seed_count(0),
-        track_recognition_id(-1)
+        max_seed_count(0)
     {}
     ~ThreadData(void)
     {
@@ -223,7 +219,10 @@ public:
         return new TrackingMethod(fib,interpo_method.release(),roi_mgr,param);
     }
 
-    void run(const fiber_orientations& fib,unsigned int thread_count,unsigned int termination_count,bool wait = false)
+    void run(const fiber_orientations& fib,
+             unsigned int thread_count,
+             unsigned int termination_count,
+             bool wait = false)
     {
         report.clear();
         report.str("");
