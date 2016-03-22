@@ -1262,8 +1262,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>235</width>
+     <height>156</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -1546,6 +1546,22 @@ Tracking</string>
            </property>
           </widget>
          </item>
+         <item>
+          <widget class="QToolButton" name="atlas_tracking">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Atlas</string>
+           </property>
+           <property name="popupMode">
+            <enum>QToolButton::MenuButtonPopup</enum>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
        <item>
@@ -1623,8 +1639,8 @@ Tracking</string>
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>292</width>
+     <height>171</height>
     </size>
    </property>
    <property name="floating">

@@ -846,16 +846,18 @@ bool RegionTableWidget::has_seeding(void)
             return true;
     return false;
 }
+void RegionTableWidget::set_whole_brain(ThreadData* data)
+{
+    std::vector<image::vector<3,short> > points;
+    whole_brain_points(points);
+    data->setRegions(cur_tracking_window.handle->dim,points,seed_id,"whole brain");
+}
 
 void RegionTableWidget::setROIs(ThreadData* data)
 {
     // check if there is seeds
     if(!has_seeding())
-    {
-        std::vector<image::vector<3,short> > points;
-        whole_brain_points(points);
-        data->setRegions(cur_tracking_window.handle->dim,points,seed_id,"whole brain");
-    }
+        set_whole_brain(data);
     bool set_color = false;
     for (unsigned int index = 0;index < regions.size();++index)
         if (!regions[index]->empty() && item(index,0)->checkState() == Qt::Checked)

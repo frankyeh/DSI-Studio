@@ -2,7 +2,31 @@
 #include <fstream>
 #include <sstream>
 #include "libs/gzip_interface.hpp"
+#include <QCoreApplication>
+#include <QDir>
 
+std::vector<atlas> atlas_list;
+void load_atlas(void)
+{
+    QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
+    QStringList atlas_name_list = dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
+    atlas_name_list << dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
+    if(atlas_name_list.empty())
+    {
+        dir = QDir::currentPath()+ "/atlas";
+        atlas_name_list = dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
+        atlas_name_list << dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
+    }
+    if(atlas_name_list.empty())
+        return;
+    atlas_list.resize(atlas_name_list.size());
+    for(int index = 0;index < atlas_name_list.size();++index)
+    {
+        atlas_list[index].name = QFileInfo(atlas_name_list[index]).baseName().toLocal8Bit().begin();
+        atlas_list[index].filename = (dir.absolutePath() + "/" + atlas_name_list[index]).toLocal8Bit().begin();
+    }
+
+}
 
 void atlas::load_label(void)
 {

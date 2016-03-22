@@ -16,6 +16,9 @@
 #include "libs/gzip_interface.hpp"
 #include "tract_cluster.hpp"
 
+extern image::ml::network track_network;
+extern std::vector<std::string> track_network_list;
+
 TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget *parent) :
     QTableWidget(parent),cur_tracking_window(cur_tracking_window_),
     tract_serial(0)
@@ -116,6 +119,30 @@ void TractTableWidget::start_tracking(void)
                             cur_tracking_window["thread_count"].toInt(),
                             cur_tracking_window["track_count"].toInt());
     tract_models.back()->report += thread_data.back()->report.str();
+    cur_tracking_window.report(tract_models.back()->report.c_str());
+    timer->start(1000);
+}
+
+void TractTableWidget::track_using_atlas(void)
+{
+    QAction *action = qobject_cast<QAction *>(sender());
+    int track_index = action->data().toInt();
+
+    ++tract_serial;
+    addNewTracts(cur_tracking_window.regionWidget->getROIname());
+    thread_data.back() = new ThreadData(cur_tracking_window["random_seed"].toInt());
+    cur_tracking_window.set_tracking_param(*thread_data.back());
+
+    cur_tracking_window.regionWidget->set_whole_brain(thread_data.back());
+
+
+    thread_data.back()->run(tract_models.back()->get_fib(),
+                            cur_tracking_window["thread_count"].toInt(),
+                            cur_tracking_window["track_count"].toInt());
+    tract_models.back()->report += thread_data.back()->report.str();
+    tract_models.back()->report += " Automatic track recognition was conducted to track ";
+    tract_models.back()->report += track_network_list[track_index];
+    tract_models.back()->report += ".";
     cur_tracking_window.report(tract_models.back()->report.c_str());
     timer->start(1000);
 }
@@ -489,11 +516,10 @@ void TractTableWidget::save_end_point_in_mni(void)
         out.write("end_points",(const float*)&*buffer.begin(),3,buffer.size()/3);
     }
 }
-void TractTableWidget::get_profile(int i,int j,image::basic_image<float,3>& profile)
+void TractTableWidget::get_profile(const std::vector<float>& tract_data,image::basic_image<float,3>& profile)
 {
     profile.resize(image::geometry<3>(64,80,3));
     std::fill(profile.begin(),profile.end(),0);
-    const std::vector<float>& tract_data = tract_models[i]->get_tracts()[j];
     for(unsigned int j = 0;j < tract_data.size();j += 3)
     {
         image::vector<3> v(&(tract_data[j]));
@@ -542,7 +568,7 @@ void TractTableWidget::save_profile(void)
     begin_prog("converting coordinates");
     for(unsigned int i = 0;check_prog(i,tract_models[currentRow()]->get_tracts().size());++i)
     {
-        get_profile(currentRow(),i,profile);
+        get_profile(tract_models[currentRow()]->get_tracts()[i],profile);
         out.write(QString("image%1").arg(i).toLocal8Bit().begin(),&profile[0],1,profile.size());
     }
     out.write("dimension",&*profile.geometry().begin(),1,3);
@@ -572,6 +598,9 @@ void TractTableWidget::deep_learning_save(void)
     if(filename.isEmpty())
         return;
     cnn.save_to_file(filename.toStdString().c_str());
+    filename += "label.txt";
+    std::ofstream out(filename.toStdString().c_str());
+    std::copy(cnn_name.begin(),cnn_name.end(),std::ostream_iterator<std::string>(out,"\n"));
 }
 
 void TractTableWidget::deep_learning_train(void)
@@ -590,7 +619,7 @@ void TractTableWidget::deep_learning_train(void)
             image::basic_image<float,3> profile;
             for(unsigned int i = 0;check_prog(i,tract_models[index]->get_tracts().size());++i)
             {
-                get_profile(index,i,profile);
+                get_profile(tract_models[index]->get_tracts()[i],profile);
                 if(i % 20 == 0)
                 {
                     cnn_test_data.push_back(std::vector<float>(profile.begin(),profile.end()));
@@ -802,6 +831,7 @@ void TractTableWidget::save_tracts_data_as(void)
         QMessageBox::information(this,"error","fail to save information",0);
     }
 }
+
 
 void TractTableWidget::merge_all(void)
 {

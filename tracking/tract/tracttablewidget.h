@@ -55,7 +55,7 @@ private:
     void delete_row(int row);
     void clustering(int method_id);
     void load_cluster_label(const std::vector<unsigned int>& labels,QString Name);
-    void get_profile(int i,int j,image::basic_image<float,3>& profile);
+    void get_profile(const std::vector<float>& tract_data,image::basic_image<float,3>& profile);
 public slots:
     void clustering_EM(void){clustering(2);}
     void clustering_kmeans(void){clustering(1);}
@@ -74,6 +74,7 @@ public slots:
     void load_tracts_color(void);
     void save_tracts_color_as(void);
     void save_tracts_data_as(void);
+    void track_using_atlas(void);
     void save_all_tracts_as(void);
     void save_all_tracts_to_dir(void);
     void save_end_point_as(void);

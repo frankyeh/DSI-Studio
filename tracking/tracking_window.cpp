@@ -26,6 +26,8 @@
 #include "tracking/atlasdialog.h"
 #include "libs/tracking/tracking_thread.hpp"
 
+
+extern std::vector<std::string> track_network_list;
 extern std::vector<atlas> atlas_list;
 extern fa_template fa_template_imp;
 QByteArray default_geo,default_state;
@@ -143,6 +145,23 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
     else
         ui->actionManual_Registration->setEnabled(false);
 
+
+    if(!track_network_list.empty() && (is_qsdr || ui->actionManual_Registration->isEnabled()))
+    {
+        QMenu* menu = new QMenu(this);
+        for (int index = 0; index < track_network_list.size(); ++index)
+            {
+                QAction* Item = new QAction(this);
+                Item->setText(QString("%1...").arg(track_network_list[index].c_str()));
+                Item->setData(index);
+                Item->setVisible(true);
+                connect(Item, SIGNAL(triggered()),tractWidget, SLOT(track_using_atlas()));
+                menu->addAction(Item);
+            }
+        ui->atlas_tracking->setMenu(menu);
+    }
+    else
+        ui->atlas_tracking->setVisible(false);
 
     {
         std::vector<std::string> index_list;
@@ -1827,5 +1846,3 @@ void tracking_window::on_show_position_toggled(bool checked)
         set_data("roi_position",ui->show_position->isChecked());
     scene.show_slice();
 }
-
-

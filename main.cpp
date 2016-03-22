@@ -15,6 +15,11 @@
 #include "program_option.hpp"
 #include "cmd/cnt.cpp" // Qt project cannot build cnt.cpp without adding this.
 
+image::ml::network track_network;
+std::vector<std::string> track_network_list;
+fa_template fa_template_imp;
+extern std::vector<atlas> atlas_list;
+void load_atlas(void);
 int rec(void);
 int trk(void);
 int src(void);
@@ -24,9 +29,22 @@ int atl(void);
 int cnt(void);
 int vis(void);
 
+void load_track_network(void)
+{
+    QString file_name = QCoreApplication::applicationDirPath()+ "/network.txt";
+    QString track_label = QCoreApplication::applicationDirPath()+ "/network_label.txt";
 
-fa_template fa_template_imp;
-std::vector<atlas> atlas_list;
+    if(QFileInfo(file_name).exists() && QFileInfo(track_label).exists())
+    {
+        track_network.load_from_file(file_name.toStdString().c_str());
+        std::ifstream in(track_label.toStdString().c_str());
+        std::string line;
+        while(std::getline(in,line))
+            track_network_list.push_back(line);
+    }
+}
+
+
 QStringList search_files(QString dir,QString filter)
 {
     QStringList dir_list,src_list;
@@ -45,27 +63,7 @@ QStringList search_files(QString dir,QString filter)
 }
 
 
-void load_atlas(void)
-{
-    QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
-    QStringList atlas_name_list = dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
-    atlas_name_list << dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
-    if(atlas_name_list.empty())
-    {
-        dir = QDir::currentPath()+ "/atlas";
-        atlas_name_list = dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
-        atlas_name_list << dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
-    }
-    if(atlas_name_list.empty())
-        return;
-    atlas_list.resize(atlas_name_list.size());
-    for(int index = 0;index < atlas_name_list.size();++index)
-    {
-        atlas_list[index].name = QFileInfo(atlas_name_list[index]).baseName().toLocal8Bit().begin();
-        atlas_list[index].filename = (dir.absolutePath() + "/" + atlas_name_list[index]).toLocal8Bit().begin();
-    }
 
-}
 
 program_option po;
 int main(int ac, char *av[])
@@ -143,8 +141,8 @@ int main(int ac, char *av[])
         QMessageBox::information(0,"Error","Cannot find HCP488_QA.nii.gz in file directory",0);
         return false;
     }
-    // load atlas
     load_atlas();
+    load_track_network();
 
     MainWindow w;
     w.setFont(font);
