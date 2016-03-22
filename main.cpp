@@ -63,8 +63,6 @@ QStringList search_files(QString dir,QString filter)
 }
 
 
-
-
 program_option po;
 int main(int ac, char *av[])
 { 

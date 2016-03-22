@@ -1705,7 +1705,7 @@ void ConnectivityMatrix::set_atlas(atlas& data,const image::basic_image<image::v
     for (unsigned int label_index = 0; label_index < data.get_list().size(); ++label_index)
     {
         std::vector<image::vector<3,short> > cur_region;
-        for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))
+        for (image::pixel_index<3> index(geo); index < geo.size();++index)
             if(mni_position[index.index()] != null &&
                data.label_matched(data.get_label_at(mni_position[index.index()]),label_index))
                 cur_region.push_back(image::vector<3,short>(index.begin()));

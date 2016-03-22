@@ -155,7 +155,7 @@ std::pair<float,float> evaluate_fib(
     for(unsigned int index = 0;index < connected.size();++index)
         connected[index].resize(dim.size());
     float connection_count = 0;
-    for(image::pixel_index<3> index;index.is_valid(dim);index.next(dim))
+    for(image::pixel_index<3> index(dim);index < dim.size();++index)
     {
         if(fib_fa[0][index.index()] <= otsu)
             continue;
@@ -188,7 +188,7 @@ std::pair<float,float> evaluate_fib(
         }
     }
     float no_connection_count = 0;
-    for(image::pixel_index<3> index;index.is_valid(dim);index.next(dim))
+    for(image::pixel_index<3> index(dim);index < dim.size();++index)
     {
         for(unsigned int i = 0;i < num_fib;++i)
             if(fib_fa[i][index.index()] > otsu && !connected[i][index.index()])

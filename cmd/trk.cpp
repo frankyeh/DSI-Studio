@@ -97,7 +97,7 @@ void get_connectivity_matrix(FibData* handle,
             std::cout << roi_file_name << " is used as a native space ROI." << std::endl;
             std::vector<unsigned char> value_map(std::numeric_limits<unsigned short>::max());
             unsigned int max_value = 0;
-            for (image::pixel_index<3>index; index.is_valid(from.geometry());index.next(from.geometry()))
+            for (image::pixel_index<3>index(from.geometry()); index < from.size();++index)
             {
                 value_map[(unsigned short)from[index.index()]] = 1;
                 max_value = std::max<unsigned short>(from[index.index()],max_value);
@@ -252,7 +252,7 @@ int trk(void)
                     for (unsigned int label_index = 0; label_index < atlas_list[i].get_list().size(); ++label_index)
                         if(atlas_list[i].get_list()[label_index] == region_name)
                     {
-                        for (image::pixel_index<3>index; index.is_valid(mapping.geometry());index.next(mapping.geometry()))
+                        for (image::pixel_index<3>index(mapping.geometry());index < mapping.size();++index)
                             if(mapping[index.index()] != null &&
                                 atlas_list[i].label_matched(atlas_list[i].get_label_at(mapping[index.index()]),label_index))
                                 cur_region.push_back(image::vector<3,short>(index.begin()));
@@ -307,7 +307,7 @@ int trk(void)
 
         std::vector<image::vector<3,short> > seed;
         std::cout << "no seeding area assigned. use whole brain seeding" << std::endl;
-        for(image::pixel_index<3> index;index.is_valid(geometry);index.next(geometry))
+        for(image::pixel_index<3> index(geometry);index < geometry.size();++index)
             if(fa0[index.index()] > tract_model.get_fib().threshold)
                 seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
         tracking_thread.setRegions(geometry,seed,3,"whole brain");

@@ -785,7 +785,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
             paint.drawPolygon(&*qpoints.begin(),qpoints.size() - 1);
             image::geometry<2> geo2(bitmap.width(),bitmap.height());
             int x, y, z;
-            for (image::pixel_index<2>index; index.is_valid(geo2);index.next(geo2))
+            for (image::pixel_index<2>index(geo2); index < geo2.size();++index)
             {
                 if (QColor(bitmap.pixel(index.x(),index.y())).red() < 64
                     || !cur_tracking_window.slice.get3dPosition(index.x(),index.y(),x, y, z))

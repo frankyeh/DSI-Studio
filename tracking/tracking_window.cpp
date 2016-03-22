@@ -1422,7 +1422,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
             std::copy(handle->fib.findex[i],handle->fib.findex[i]+size,new_index[i].begin());
         }
 
-        for(image::pixel_index<3> index;index.index() < handle->fib.dim.size();index.next(handle->fib.dim))
+        for(image::pixel_index<3> index(handle->fib.dim);index < handle->fib.dim.size();++index)
         {
             if(handle->fib.fa[0][index.index()] < fib.threshold)
                 continue;

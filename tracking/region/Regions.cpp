@@ -142,7 +142,7 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
         if(from.geometry() != geo)
             return false;
         std::vector<image::vector<3,short> > points;
-        for (image::pixel_index<3>index; index.is_valid(from.geometry()); index.next(from.geometry()))
+        for (image::pixel_index<3> index(from.geometry());index < from.size();++index)
             if (from[index.index()])
                 points.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
         region.swap(points);

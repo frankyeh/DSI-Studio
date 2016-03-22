@@ -139,14 +139,14 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
         {
             x.clear();
             y.clear();
-            for(image::pixel_index<3> i;i.index() < source_images.size();i.next(source_images.geometry()))
+            for(image::pixel_index<3> i(source_images.geometry());i < source_images.size();++i)
             if(source_images[i.index()] > t)
             {
                 x.push_back(i[dim]);
                 y.push_back(source_images[i.index()]);
             }
             std::pair<double,double> r = image::linear_regression(x.begin(),x.end(),y.begin());
-            for(image::pixel_index<3> i;i.index() < source_images.size();i.next(source_images.geometry()))
+            for(image::pixel_index<3> i(source_images.geometry());i < source_images.size();++i)
                 source_images[i.index()] -= (float)i[dim]*r.first;
             image::lower_threshold(source_images,0);
         }

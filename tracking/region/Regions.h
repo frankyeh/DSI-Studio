@@ -143,7 +143,7 @@ public:
         void LoadFromBuffer(const image_type& from,const trans_type& trans)
         {
             std::vector<image::vector<3,short> > points;
-            for (image::pixel_index<3> index; index.is_valid(geo);index.next(geo))
+            for (image::pixel_index<3> index(geo);index < geo.size();++index)
             {
                 image::vector<3> p(index.begin());
                 p.to(trans);
@@ -163,7 +163,7 @@ public:
             if(!region.empty())
                 undo_backup.push_back(region);
             region.clear();
-            for (image::pixel_index<3>index;index.is_valid(mask.geometry());index.next(mask.geometry()))
+            for (image::pixel_index<3>index(mask.geometry());index < mask.size();++index)
                 if (mask[index.index()] != 0)
                 region.push_back(image::vector<3,short>(index.x(), index.y(),index.z()));
             std::sort(region.begin(),region.end());

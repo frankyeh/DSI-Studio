@@ -153,7 +153,7 @@ void RegionTableWidget::add_region_from_atlas(unsigned int atlas,unsigned int la
 {
     std::vector<image::vector<3,short> > points;
     image::geometry<3> geo = cur_tracking_window.slice.geometry;
-    for (image::pixel_index<3>index; index.is_valid(geo); index.next(geo))
+    for (image::pixel_index<3>index(geo); index < geo.size(); ++index)
     {
         image::vector<3> mni(index.begin());
         cur_tracking_window.subject2mni(mni);
@@ -339,7 +339,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 
     std::vector<unsigned char> value_map(std::numeric_limits<unsigned short>::max());
     unsigned int max_value = 0;
-    for (image::pixel_index<3>index; index.is_valid(from.geometry());index.next(from.geometry()))
+    for (image::pixel_index<3>index(from.geometry());index < from.size();++index)
     {
         value_map[(unsigned short)from[index.index()]] = 1;
         max_value = std::max<unsigned short>(from[index.index()],max_value);
@@ -413,7 +413,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
             if(cur_tracking_window.handle->view_item[index].native_geo == from.geometry())
             {
                 new_from.resize(cur_tracking_window.slice.geometry);
-                for(image::pixel_index<3> pos;new_from.geometry().is_valid(pos);pos.next(new_from.geometry()))
+                for(image::pixel_index<3> pos(new_from.geometry());pos < new_from.size();++pos)
                 {
                     image::vector<3> new_pos(cur_tracking_window.handle->view_item[index].mx[pos.index()],
                                              cur_tracking_window.handle->view_item[index].my[pos.index()],
@@ -751,7 +751,7 @@ void RegionTableWidget::whole_brain_points(std::vector<image::vector<3,short> >&
 {
     image::geometry<3> geo = cur_tracking_window.slice.geometry;
     float threshold = cur_tracking_window["fa_threshold"].toFloat();
-    for (image::pixel_index<3>index; index.is_valid(geo);index.next(geo))
+    for (image::pixel_index<3>index(geo); index < geo.size();++index)
     {
         image::vector<3,short> pos(index);
         if(cur_tracking_window.handle->fib.fa[0][index.index()] > threshold)

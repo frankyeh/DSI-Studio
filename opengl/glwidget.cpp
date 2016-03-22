@@ -438,7 +438,7 @@ void GLWidget::renderLR(int eye)
                 odf_slide_pos = slice.slice_pos[odf_dim];
                 image::geometry<2> geo(slice.geometry[odf_dim==0?1:0],
                                        slice.geometry[odf_dim==2?1:2]);
-                for(image::pixel_index<2> index;index.is_valid(geo);index.next(geo))
+                for(image::pixel_index<2> index(geo);index < geo.size();++index)
                 {
                     if((index[0] & mask) | (index[1] & mask))
                         continue;
@@ -457,7 +457,7 @@ void GLWidget::renderLR(int eye)
                                           slice.geometry));
             break;
         case 2: //all
-            for(image::pixel_index<3> index;index.is_valid(slice.geometry);index.next(slice.geometry))
+            for(image::pixel_index<3> index(slice.geometry);index < slice.geometry.size();++index)
             {
                 if(((index[0] & mask) | (index[1] & mask) | (index[2] & mask)) ||
                    handle->fib.getFA(index.index(),0) <= fa_threshold)

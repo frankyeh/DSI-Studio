@@ -90,7 +90,7 @@ bool atl_get_mapping(gz_mat_read& mat_reader,
     if(mat_reader.read("trans",row,col,trans))
     {
         std::cout << "Transformation matrix found." << std::endl;
-        for(image::pixel_index<3> index;geo.is_valid(index);index.next(geo))
+        for(image::pixel_index<3> index(geo);index < geo.size();++index)
         {
             image::vector<3> pos(index);
             pos.to(trans);
@@ -111,7 +111,7 @@ bool atl_get_mapping(gz_mat_read& mat_reader,
         run_reg(from,voxel_size,fa_template_imp.I,fa_template_imp.vs,data,thread_count);
         image::transformation_matrix<float> T(data.arg,from.geometry(),voxel_size,fa_template_imp.I.geometry(),fa_template_imp.vs);
         mapping.resize(from.geometry());
-        for(image::pixel_index<3> index;from.geometry().is_valid(index);index.next(from.geometry()))
+        for(image::pixel_index<3> index(from.geometry());index < from.size();++index)
             if(fa0[index.index()] > 0)
             {
                 image::vector<3,float> pos;

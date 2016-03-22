@@ -1565,7 +1565,7 @@ void vbc_dialog::on_load_roi_from_atlas_clicked()
         {
             std::vector<image::vector<3,short> > new_roi;
             unsigned short label = atlas_dialog->roi_list[i];
-            for (image::pixel_index<3>index; index.is_valid(vbc->handle->dim); index.next(vbc->handle->dim))
+            for (image::pixel_index<3>index(vbc->handle->dim);index < vbc->handle->dim.size();++index)
             {
                 image::vector<3> pos((const unsigned int*)(index.begin()));
                 pos.to(vbc->handle->trans_to_mni);
@@ -1606,7 +1606,7 @@ void vbc_dialog::on_load_roi_from_file_clicked()
     nii.get_image_transformation(transform.begin());
     transform.inv();
     std::vector<image::vector<3,short> > new_roi;
-    for (image::pixel_index<3>index; index.is_valid(vbc->handle->dim); index.next(vbc->handle->dim))
+    for (image::pixel_index<3> index(vbc->handle->dim);index < vbc->handle->dim.size();++index)
     {
         image::vector<3> pos((const unsigned int*)(index.begin()));
         pos.to(vbc->handle->trans_to_mni);

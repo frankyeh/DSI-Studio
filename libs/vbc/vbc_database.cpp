@@ -189,7 +189,7 @@ bool fib_data::individual_vs_individual(FibData* handle,const char* file_name1,c
 void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& tracks,float seed_ratio, unsigned int thread_count)
 {
     std::vector<image::vector<3,short> > seed;
-    for(image::pixel_index<3> index;index.is_valid(handle->dim);index.next(handle->dim))
+    for(image::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
         if(fib.fa[0][index.index()] > fib.threshold)
             seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
     if(seed.empty() || seed.size()*seed_ratio < 1.0)
