@@ -711,7 +711,7 @@ void RegionTableWidget::save_region_info(void)
 
     std::ofstream out(filename.toLocal8Bit().begin());
     out << "x\ty\tz";
-    for(unsigned int index = 0;index < cur_tracking_window.handle->fib.num_fiber;++index)
+    for(unsigned int index = 0;index < cur_tracking_window.handle->dir.num_fiber;++index)
             out << "\tdx" << index << "\tdy" << index << "\tdz" << index;
 
     for(unsigned int index = 0;index < cur_tracking_window.handle->view_item.size();++index)
@@ -754,7 +754,7 @@ void RegionTableWidget::whole_brain_points(std::vector<image::vector<3,short> >&
     for (image::pixel_index<3>index(geo); index < geo.size();++index)
     {
         image::vector<3,short> pos(index);
-        if(cur_tracking_window.handle->fib.fa[0][index.index()] > threshold)
+        if(cur_tracking_window.handle->dir.fa[0][index.index()] > threshold)
             points.push_back(pos);
     }
 }

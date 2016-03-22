@@ -14,7 +14,7 @@ public:
     {
         image::vector<3,short> cur_pos(info.position);
         unsigned int cur_pos_index;
-        cur_pos_index = image::pixel_index<3>(cur_pos[0],cur_pos[1],cur_pos[2],info.fib.dim).index();
+        cur_pos_index = image::pixel_index<3>(cur_pos[0],cur_pos[1],cur_pos[2],info.trk.dim).index();
 
         std::vector<image::vector<3,float> > next_voxels_dir;
         std::vector<image::vector<3,short> > next_voxels_pos;
@@ -27,14 +27,14 @@ public:
             image::vector<3,float> dis(fib_dx[index],fib_dy[index],fib_dz[index]);
             image::vector<3,short> pos(cur_pos);
             pos += dis;
-            if(!info.fib.dim.is_valid(pos))
+            if(!info.trk.dim.is_valid(pos))
                 continue;
             dis.normalize();
             float angle_cos = dis*info.dir;
-            if(angle_cos < info.fib.cull_cos_angle)
+            if(angle_cos < info.trk.cull_cos_angle)
                 continue;
             next_voxels_pos.push_back(pos);
-            next_voxels_index.push_back(image::pixel_index<3>(pos[0],pos[1],pos[2],info.fib.dim).index());
+            next_voxels_index.push_back(image::pixel_index<3>(pos[0],pos[1],pos[2],info.trk.dim).index());
             next_voxels_dir.push_back(dis);
             voxel_angle.push_back(angle_cos);
         }
@@ -44,13 +44,13 @@ public:
         float max_angle_cos = 0;
         for(char i = 0;i < next_voxels_index.size();++i)
         {
-            for (char j = 0;j < info.fib.fib_num;++j)
+            for (char j = 0;j < info.trk.fib_num;++j)
             {
-                float fa_value = info.fib.fa[j][next_voxels_index[i]];
-                if (fa_value <= info.fib.threshold)
+                float fa_value = info.trk.fa[j][next_voxels_index[i]];
+                if (fa_value <= info.trk.threshold)
                     break;
-                float value = std::abs(info.fib.cos_angle(next_voxels_dir[i],next_voxels_index[i],j));
-                if(value < info.fib.cull_cos_angle)
+                float value = std::abs(info.trk.cos_angle(next_voxels_dir[i],next_voxels_index[i],j));
+                if(value < info.trk.cull_cos_angle)
                     continue;
                 if(voxel_angle[i]*value*fa_value > max_angle_cos)
                 {
@@ -67,7 +67,7 @@ public:
         }
 
 
-        info.dir = info.fib.get_dir(next_voxels_index[max_i],max_j);
+        info.dir = info.trk.get_dir(next_voxels_index[max_i],max_j);
         if(info.dir*next_voxels_dir[max_i] < 0)
             info.dir = -info.dir;
         info.position = next_voxels_pos[max_i];

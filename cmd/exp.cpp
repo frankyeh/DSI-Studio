@@ -81,8 +81,8 @@ int exp(void)
         // export fiber orientations
         if(cmd.length() > 3 && cmd.substr(0,3) == std::string("dir"))
         {
-            FiberDirection fib;
-            if(!fib.add_data(mat_reader))
+            fiber_directions dir;
+            if(!dir.add_data(mat_reader))
             {
                 std::cout << "Invalid file for exporting fiber orientations." << std::endl;
                 continue;
@@ -91,26 +91,26 @@ int exp(void)
             image::basic_image<float,4> fibers;
             if(cmd[3] == 's') // all directions
             {
-                fibers.resize(image::geometry<4>(geo[0],geo[1],geo[2],fib.num_fiber*3));
-                for(unsigned int i = 0,ptr = 0;i < fib.num_fiber;++i)
+                fibers.resize(image::geometry<4>(geo[0],geo[1],geo[2],dir.num_fiber*3));
+                for(unsigned int i = 0,ptr = 0;i < dir.num_fiber;++i)
                 for(unsigned int j = 0;j < 3;++j)
                 for(unsigned int index = 0;index < geo.size();++index,++ptr)
-                    if(fib.getFA(index,i))
-                        fibers[ptr] = fib.getDir(index,i)[j];
+                    if(dir.get_fa(index,i))
+                        fibers[ptr] = dir.get_dir(index,i)[j];
             }
             else
             {
                 unsigned char dir_index = cmd[3] - '0';
-                if(dir_index < 0 || dir_index >= fib.num_fiber)
+                if(dir_index < 0 || dir_index >= dir.num_fiber)
                 {
-                    std::cout << "Invalid fiber index. The maximum fiber per voxel is " << (int) fib.num_fiber << std::endl;
+                    std::cout << "Invalid fiber index. The maximum fiber per voxel is " << (int) dir.num_fiber << std::endl;
                     continue;
                 }
                 fibers.resize(image::geometry<4>(geo[0],geo[1],geo[2],3));
                 for(unsigned int j = 0,ptr = 0;j < 3;++j)
                 for(unsigned int index = 0;index < geo.size();++index,++ptr)
-                    if(fib.getFA(index,dir_index))
-                        fibers[ptr] = fib.getDir(index,dir_index)[j];
+                    if(dir.get_fa(index,dir_index))
+                        fibers[ptr] = dir.get_dir(index,dir_index)[j];
             }
             gz_nifti nifti_header;
             if(trans) //QSDR condition

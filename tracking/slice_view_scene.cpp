@@ -92,18 +92,18 @@ void slice_view_scene::show_fiber(QPainter& painter)
         painter.setPen(pen);
     }
     const FibData& fib_data = *(cur_tracking_window.handle);
-    char max_fiber = fib_data.fib.num_fiber-1;
+    char max_fiber = fib_data.dir.num_fiber-1;
     for (unsigned int y = 0; y < slice_image.height(); ++y)
         for (unsigned int x = 0; x < slice_image.width(); ++x)
             if (cur_tracking_window.slice.get3dPosition(x, y, X, Y, Z))
             {
                 image::pixel_index<3> pos(X,Y,Z,fib_data.dim);
-                if (pos.index() >= fib_data.dim.size() || fib_data.fib.getFA(pos.index(),0) == 0.0)
+                if (pos.index() >= fib_data.dim.size() || fib_data.dir.get_fa(pos.index(),0) == 0.0)
                     continue;
                 for (char fiber = max_fiber; fiber >= 0; --fiber)
-                    if(fib_data.fib.getFA(pos.index(),fiber) > threshold)
+                    if(fib_data.dir.get_fa(pos.index(),fiber) > threshold)
                     {
-                        const float* dir_ptr = fib_data.fib.getDir(pos.index(),fiber);
+                        const float* dir_ptr = fib_data.dir.get_dir(pos.index(),fiber);
                         if(!fiber_color)
                         {
                             QPen pen(QColor(std::abs(dir_ptr[0]) * 255.0,std::abs(dir_ptr[1]) * 255.0, std::abs(dir_ptr[2]) * 255.0));

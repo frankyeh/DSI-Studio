@@ -178,7 +178,7 @@ int trk(void)
     if (po.has("threshold_index"))
     {
         std::cout << "setting index to " << po.get("threshold_index") << std::endl;
-        if(!handle->fib.set_tracking_index(po.get("threshold_index")))
+        if(!handle->dir.set_tracking_index(po.get("threshold_index")))
         {
             std::cout << "failed...cannot find the index" << std::endl;
             return 0;
@@ -188,7 +188,7 @@ int trk(void)
     image::geometry<3> geometry = handle->dim;
     image::vector<3> voxel_size = handle->vs;
     image::basic_image<image::vector<3>,3> mapping;
-    const float *fa0 = handle->fib.fa[0];
+    const float *fa0 = handle->dir.fa[0];
 
 
     ThreadData tracking_thread(po.get("random_seed",int(0)));
@@ -364,7 +364,7 @@ int trk(void)
             for(unsigned int j = 0;j < connectometry_threshold.size();++j)
             {
                 double t = connectometry_threshold[j].toDouble();
-                handle->fib.set_tracking_index(handle->fib.index_data.size()-((t > 0) ? 2:1));
+                handle->dir.set_tracking_index(handle->dir.index_data.size()-((t > 0) ? 2:1));
                 std::cout << "mapping track with " << ((t > 0) ? "increased":"decreased") << " connectivity at " << std::fabs(t) << std::endl;
                 tract_model.get_fib().threshold = std::fabs(t);
                 std::cout << "start tracking." << std::endl;

@@ -19,8 +19,8 @@ bool vbc_database::create_database(const char* template_name)
         error_msg = handle->error_msg;
         return false;
     }
-    fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dim,handle->fib.fa[0]));
-    handle->calculate_si2vi();
+    fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dim,handle->dir.fa[0]));
+    handle->db.calculate_si2vi();
     return true;
 }
 bool vbc_database::load_database(const char* database_name)
@@ -32,13 +32,13 @@ bool vbc_database::load_database(const char* database_name)
         error_msg += handle->error_msg;
         return false;
     }
-    fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dim,handle->fib.fa[0]));
-    return !handle->subject_qa.empty();
+    fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dim,handle->dir.fa[0]));
+    return !handle->db.has_db();
 }
 
 void fib_data::initialize(FibData* handle)
 {
-    unsigned char num_fiber = handle->fib.num_fiber;
+    unsigned char num_fiber = handle->dir.num_fiber;
     greater.resize(num_fiber);
     lesser.resize(num_fiber);
     for(unsigned char fib = 0;fib < num_fiber;++fib)
@@ -61,14 +61,14 @@ void fib_data::initialize(FibData* handle)
 }
 void fib_data::remove_old_index(FibData* handle)
 {
-    for(unsigned int index = 0;index < handle->fib.index_name.size();++index)
-        if(handle->fib.index_name[index] == ">%" ||
-           handle->fib.index_name[index] == "<%" ||
-           handle->fib.index_name[index] == "inc" ||
-           handle->fib.index_name[index] == "dec")
+    for(unsigned int index = 0;index < handle->dir.index_name.size();++index)
+        if(handle->dir.index_name[index] == ">%" ||
+           handle->dir.index_name[index] == "<%" ||
+           handle->dir.index_name[index] == "inc" ||
+           handle->dir.index_name[index] == "dec")
         {
-            handle->fib.index_name.erase(handle->fib.index_name.begin()+index);
-            handle->fib.index_data.erase(handle->fib.index_data.begin()+index);
+            handle->dir.index_name.erase(handle->dir.index_name.begin()+index);
+            handle->dir.index_data.erase(handle->dir.index_data.begin()+index);
             index = 0;
         }
 }
@@ -76,24 +76,24 @@ void fib_data::remove_old_index(FibData* handle)
 void fib_data::add_mapping_for_tracking(FibData* handle,const char* t1,const char* t2)
 {
     remove_old_index(handle);
-    handle->fib.index_name.push_back(t1);
-    handle->fib.index_data.push_back(std::vector<const float*>());
-    handle->fib.index_data.back() = greater_ptr;
-    handle->fib.index_name.push_back(t2);
-    handle->fib.index_data.push_back(std::vector<const float*>());
-    handle->fib.index_data.back() = lesser_ptr;
+    handle->dir.index_name.push_back(t1);
+    handle->dir.index_data.push_back(std::vector<const float*>());
+    handle->dir.index_data.back() = greater_ptr;
+    handle->dir.index_name.push_back(t2);
+    handle->dir.index_data.push_back(std::vector<const float*>());
+    handle->dir.index_data.back() = lesser_ptr;
 }
 
 bool fib_data::individual_vs_db(FibData* handle,const char* file_name)
 {
-    if(!handle->num_subjects)
+    if(!handle->db.has_db())
     {
         error_msg = "Please open a connectometry database first.";
         return false;
     }
-    handle->fib.set_tracking_index(0);
+    handle->dir.set_tracking_index(0);
     std::vector<float> data;
-    if(!handle->get_odf_profile(file_name,data))
+    if(!handle->db.get_odf_profile(file_name,data))
     {
         error_msg = handle->error_msg;
         return false;
@@ -101,13 +101,13 @@ bool fib_data::individual_vs_db(FibData* handle,const char* file_name)
     bool normalized_qa = false;
     bool terminated = false;
     stat_model info;
-    info.init(handle->num_subjects);
+    info.init(handle->db.has_db());
     info.type = 2;
     info.individual_data = &(data[0]);
     //info.individual_data_sd = normalize_qa ? individual_data_sd[subject_id]:1.0;
     info.individual_data_sd = 1.0;
-    float fa_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->fib.dim,
-                                                                                       handle->fib.fa[0]));
+    float fa_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.dim,
+                                                                                       handle->dir.fa[0]));
     calculate_spm(handle,*this,info,fa_threshold,normalized_qa,terminated);
     add_mapping_for_tracking(handle,">%","<%");
     return true;
@@ -122,7 +122,7 @@ bool fib_data::compare(FibData* handle,const std::vector<const float*>& fa1,
     if(max_qa1 == 0.0 || max_qa2 == 0.0)
         return false;
     //calculating dif
-    for(unsigned char fib = 0;fib < handle->fib.num_fiber;++fib)
+    for(unsigned char fib = 0;fib < handle->dir.num_fiber;++fib)
     {
         for(unsigned int index = 0;index < handle->dim.size();++index)
             if(fa1[fib][index] > 0.0 && fa2[fib][index] > 0.0)
@@ -141,9 +141,9 @@ bool fib_data::compare(FibData* handle,const std::vector<const float*>& fa1,
 bool fib_data::individual_vs_atlas(FibData* handle,const char* file_name)
 {
     // restore fa0 to QA
-    handle->fib.set_tracking_index(0);
+    handle->dir.set_tracking_index(0);
     std::vector<std::vector<float> > fa_data;
-    if(!handle->get_qa_profile(file_name,fa_data))
+    if(!handle->db.get_qa_profile(file_name,fa_data))
     {
         error_msg = handle->error_msg;
         return false;
@@ -152,7 +152,7 @@ bool fib_data::individual_vs_atlas(FibData* handle,const char* file_name)
     for(unsigned int i = 0;i < ptr.size();++i)
         ptr[i] = &(fa_data[i][0]);
     initialize(handle);
-    if(!compare(handle,handle->fib.fa,ptr))
+    if(!compare(handle,handle->dir.fa,ptr))
         return false;
     add_mapping_for_tracking(handle,"inc","dec");
     return true;
@@ -161,14 +161,14 @@ bool fib_data::individual_vs_atlas(FibData* handle,const char* file_name)
 bool fib_data::individual_vs_individual(FibData* handle,const char* file_name1,const char* file_name2)
 {
     // restore fa0 to QA
-    handle->fib.set_tracking_index(0);
+    handle->dir.set_tracking_index(0);
     std::vector<std::vector<float> > data1,data2;
-    if(!handle->get_qa_profile(file_name1,data1))
+    if(!handle->db.get_qa_profile(file_name1,data1))
     {
         error_msg = handle->error_msg;
         return false;
     }
-    if(!handle->get_qa_profile(file_name2,data2))
+    if(!handle->db.get_qa_profile(file_name2,data2))
     {
         error_msg = handle->error_msg;
         return false;
@@ -186,7 +186,7 @@ bool fib_data::individual_vs_individual(FibData* handle,const char* file_name1,c
     return true;
 }
 
-void vbc_database::run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& tracks,float seed_ratio, unsigned int thread_count)
+void vbc_database::run_track(const tracking& fib,std::vector<std::vector<float> >& tracks,float seed_ratio, unsigned int thread_count)
 {
     std::vector<image::vector<3,short> > seed;
     for(image::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
@@ -233,62 +233,6 @@ void cal_hist(const std::vector<std::vector<float> >& track,std::vector<unsigned
                 ++dist.back();
     }
 }
-/*
-bool vbc_database::calculate_individual_affected_tracks(const char* file_name,
-                                                        std::vector<std::vector<std::vector<float> > >& greater,
-                                                        std::vector<std::vector<std::vector<float> > >& lesser)
-{
-    fib_data data;
-    std::vector<float> cur_subject_data;
-    if(!get_odf_profile(file_name,cur_subject_data))
-    {
-        error_msg = "Cannot read subject file ";
-        error_msg += file_name;
-        return false;
-    }
-    std::vector<unsigned int> resample;
-    calculate_percentile(&cur_subject_data[0],resample,data);
-
-    std::vector<std::vector<float> > greater_tracks;
-    std::vector<std::vector<float> > lesser_tracks;
-    fiber_orientations fib;
-    fib.read(*handle);
-    fib.threshold = tracking_threshold;
-    fib.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);
-    fib.fa = data.greater_ptr;
-    fib.findex = data.greater_dir_ptr;
-    run_track(fib,greater_tracks);
-    fib.fa = data.lesser_ptr;
-    fib.findex = data.lesser_dir_ptr;
-    run_track(fib,lesser_tracks);
-
-    greater.clear();
-    lesser.clear();
-    for(unsigned int index = 0;index < greater_tracks.size();++index)
-    {
-        float length = (float)greater_tracks[index].size()/3.0-1.0;
-        if(length <= 10.0)
-            continue;
-        length -= 10.0;
-        unsigned int pos = std::floor(length/10.0);
-        if(greater.size() <= pos)
-            greater.resize(pos+1);
-        greater[pos].push_back(greater_tracks[index]);
-    }
-    for(unsigned int index = 0;index < lesser_tracks.size();++index)
-    {
-        float length = (float)lesser_tracks[index].size()/3.0-1.0;
-        if(length <= 10.0)
-            continue;
-        length -= 10.0;
-        unsigned int pos = std::floor(length/10.0);
-        if(lesser.size() <= pos)
-            lesser.resize(pos+1);
-        lesser[pos].push_back(lesser_tracks[index]);
-    }
-    return true;
-}
-*/
 
 void stat_model::init(unsigned int subject_count)
 {
@@ -531,20 +475,20 @@ void calculate_spm(FibData* handle,fib_data& data,stat_model& info,
                    float fiber_threshold,bool normalize_qa,bool& terminated)
 {
     data.initialize(handle);
-    std::vector<double> population(handle->subject_qa.size());
-    for(unsigned int s_index = 0;s_index < handle->si2vi.size() && !terminated;++s_index)
+    std::vector<double> population(handle->db.subject_qa.size());
+    for(unsigned int s_index = 0;s_index < handle->db.si2vi.size() && !terminated;++s_index)
     {
-        unsigned int cur_index = handle->si2vi[s_index];
-        for(unsigned int fib = 0,fib_offset = 0;fib < handle->fib.num_fiber && handle->fib.fa[fib][cur_index] > fiber_threshold;
-                ++fib,fib_offset+=handle->si2vi.size())
+        unsigned int cur_index = handle->db.si2vi[s_index];
+        for(unsigned int fib = 0,fib_offset = 0;fib < handle->dir.num_fiber && handle->dir.fa[fib][cur_index] > fiber_threshold;
+                ++fib,fib_offset+=handle->db.si2vi.size())
         {
             unsigned int pos = s_index + fib_offset;
             if(normalize_qa)
                 for(unsigned int index = 0;index < population.size();++index)
-                    population[index] = handle->subject_qa[index][pos]/handle->subject_qa_sd[index];
+                    population[index] = handle->db.subject_qa[index][pos]/handle->db.subject_qa_sd[index];
             else
                 for(unsigned int index = 0;index < population.size();++index)
-                    population[index] = handle->subject_qa[index][pos];
+                    population[index] = handle->db.subject_qa[index][pos];
 
             if(std::find(population.begin(),population.end(),0.0) != population.end())
                 continue;
@@ -565,7 +509,7 @@ bool vbc_database::read_subject_data(const std::vector<std::string>& files,std::
     begin_prog("reading",true);
     data.resize(files.size());
     for(unsigned int index = 0;check_prog(index,files.size());++index)
-        if(!handle->get_odf_profile(files[index].c_str(),data[index]))
+        if(!handle->db.get_odf_profile(files[index].c_str(),data[index]))
         {
             error_msg = "Cannot read file ";
             error_msg += files[index];
@@ -580,7 +524,7 @@ bool vbc_database::read_subject_data(const std::vector<std::string>& files,std::
 void vbc_database::run_permutation_multithread(unsigned int id)
 {
     fib_data data;
-    fiber_orientations fib;
+    tracking fib;
     fib.read(*handle);
     fib.threshold = tracking_threshold;
     fib.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);
@@ -624,8 +568,8 @@ void vbc_database::run_permutation_multithread(unsigned int id)
                 if(null)
                 {
                     unsigned int random_subject_id = model->rand_gen(model->subject_index.size());
-                    info.individual_data = handle->subject_qa[random_subject_id];
-                    info.individual_data_sd = normalize_qa ? handle->subject_qa_sd[random_subject_id]:1.0;
+                    info.individual_data = handle->db.subject_qa[random_subject_id];
+                    info.individual_data_sd = normalize_qa ? handle->db.subject_qa_sd[random_subject_id]:1.0;
                 }
                 else
                 {
@@ -768,7 +712,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
                         name == "odf_vertices" || name == "odf_faces" || name == "trans")
                     mat_write.write(handle->mat_reader[i]);
                 if(name == "fa0")
-                    mat_write.write("qa_map",handle->fib.fa[0],1,handle->dim.size());
+                    mat_write.write("qa_map",handle->dir.fa[0],1,handle->dim.size());
             }
             for(unsigned int i = 0;i < spm_maps[index]->greater_ptr.size();++i)
             {
@@ -776,7 +720,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
                 out1 << "fa" << i;
                 out2 << "index" << i;
                 mat_write.write(out1.str().c_str(),spm_maps[index]->greater_ptr[i],1,handle->dim.size());
-                mat_write.write(out2.str().c_str(),handle->fib.findex[i],1,handle->dim.size());
+                mat_write.write(out2.str().c_str(),handle->dir.findex[i],1,handle->dim.size());
             }
         }
 
@@ -813,7 +757,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
                         name == "odf_vertices" || name == "odf_faces" || name == "trans")
                     mat_write.write(handle->mat_reader[i]);
                 if(name == "fa0")
-                    mat_write.write("qa_map",handle->fib.fa[0],1,handle->dim.size());
+                    mat_write.write("qa_map",handle->dir.fa[0],1,handle->dim.size());
             }
             for(unsigned int i = 0;i < spm_maps[index]->greater_ptr.size();++i)
             {
@@ -821,7 +765,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
                 out1 << "fa" << i;
                 out2 << "index" << i;
                 mat_write.write(out1.str().c_str(),spm_maps[index]->lesser_ptr[i],1,handle->dim.size());
-                mat_write.write(out2.str().c_str(),handle->fib.findex[i],1,handle->dim.size());
+                mat_write.write(out2.str().c_str(),handle->dir.findex[i],1,handle->dim.size());
             }
         }
 

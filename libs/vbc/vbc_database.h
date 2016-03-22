@@ -9,7 +9,7 @@
 
 
 class FibData;
-class fiber_orientations;
+class tracking;
 class TractModel;
 
 struct fib_data{
@@ -215,7 +215,7 @@ public:
         ::calculate_spm(handle.get(),data,info,fiber_threshold,normalize_qa,terminated);
     }
 private: // single subject analysis result
-    void run_track(const fiber_orientations& fib,std::vector<std::vector<float> >& track,float seed_ratio = 1.0,unsigned int thread_count = 1);
+    void run_track(const tracking& fib,std::vector<std::vector<float> >& track,float seed_ratio = 1.0,unsigned int thread_count = 1);
 public:// for FDR analysis
     std::vector<std::shared_ptr<std::future<void> > > threads;
     std::vector<unsigned int> subject_greater_null;

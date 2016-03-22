@@ -446,7 +446,7 @@ void GLWidget::renderLR(int eye)
                     if (!slice.get3dPosition(index[0],index[1],x,y,z))
                         continue;
                     image::pixel_index<3> pos(x,y,z,slice.geometry);
-                    if (handle->fib.getFA(pos.index(),0) <= fa_threshold)
+                    if (handle->dir.get_fa(pos.index(),0) <= fa_threshold)
                         continue;
                     add_odf(pos);
                 }
@@ -460,7 +460,7 @@ void GLWidget::renderLR(int eye)
             for(image::pixel_index<3> index(slice.geometry);index < slice.geometry.size();++index)
             {
                 if(((index[0] & mask) | (index[1] & mask) | (index[2] & mask)) ||
-                   handle->fib.getFA(index.index(),0) <= fa_threshold)
+                   handle->dir.get_fa(index.index(),0) <= fa_threshold)
                     continue;
                 add_odf(index);
             }
@@ -471,9 +471,9 @@ void GLWidget::renderLR(int eye)
             for (unsigned int index = 0; index <
                  cur_tracking_window.odf_size; ++index)
             {
-                odf_colors.push_back(std::abs(handle->fib.odf_table[index][0]));
-                odf_colors.push_back(std::abs(handle->fib.odf_table[index][1]));
-                odf_colors.push_back(std::abs(handle->fib.odf_table[index][2]));
+                odf_colors.push_back(std::abs(handle->dir.odf_table[index][0]));
+                odf_colors.push_back(std::abs(handle->dir.odf_table[index][1]));
+                odf_colors.push_back(std::abs(handle->dir.odf_table[index][2]));
             }
         }
 
@@ -491,7 +491,7 @@ void GLWidget::renderLR(int eye)
             glVertexPointer(3, GL_FLOAT, 0, (float*)&odf_points[base_index]);
             glColorPointer(3, GL_FLOAT, 0, (float*)&odf_colors.front());
             glDrawElements(GL_TRIANGLES, face_size,
-                           GL_UNSIGNED_SHORT,handle->fib.odf_faces[0].begin());
+                           GL_UNSIGNED_SHORT,handle->dir.odf_faces[0].begin());
         }
         glDisableClientState(GL_VERTEX_ARRAY);
         glDisableClientState(GL_COLOR_ARRAY);
@@ -787,7 +787,7 @@ void GLWidget::add_odf(image::pixel_index<3> pos)
         new_odf_buffer.resize(half_odf);
         std::copy(odf_buffer,odf_buffer+half_odf,new_odf_buffer.begin());
         std::vector<image::vector<3,unsigned short> >& odf_faces =
-                handle->fib.odf_faces;
+                handle->dir.odf_faces;
         for(int index = 0;index < odf_faces.size();++index)
         {
             unsigned short f1 = odf_faces[index][0];
@@ -815,7 +815,7 @@ void GLWidget::add_odf(image::pixel_index<3> pos)
 
     for(unsigned int index = 0;index < half_odf;++index,++iter)
     {
-        image::vector<3,float> displacement(handle->fib.odf_table[index]);
+        image::vector<3,float> displacement(handle->dir.odf_table[index]);
         displacement *= (odf_buffer[index]-odf_min)*scaling;
         *(iter) += displacement;
         *(iter+half_odf) -= displacement;

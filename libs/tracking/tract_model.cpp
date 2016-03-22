@@ -75,7 +75,7 @@ struct TrackVis
     }
 };
 //---------------------------------------------------------------------------
-TractModel::TractModel(FibData* handle_):handle(handle_),report(handle_->report),geometry(handle_->dim),vs(handle_->vs),fib(new fiber_orientations)
+TractModel::TractModel(FibData* handle_):handle(handle_),report(handle_->report),geometry(handle_->dim),vs(handle_->vs),fib(new tracking)
 {
     fib->read(*handle_);
 }
@@ -1419,20 +1419,20 @@ void TractModel::get_quantitative_info(std::string& result)
     for(unsigned int index = 0;index < data.size() && index < titles.size();++index)
         out << titles[index] << "\t" << data[index] << std::endl;
 
-    if(handle->num_subjects) // connectometry database
+    if(handle->db.has_db()) // connectometry database
     {
         std::vector<const float*> old_fa(fib->fa);
         std::vector<std::vector<float> > fa_data;
-        for(unsigned int subject_index = 0;subject_index < handle->num_subjects;++subject_index)
+        for(unsigned int subject_index = 0;subject_index < handle->db.num_subjects;++subject_index)
         {
-            handle->get_subject_fa(subject_index,fa_data);
+            handle->db.get_subject_fa(subject_index,fa_data);
             for(unsigned int i = 0;i < fib->fib_num;++i)
                 fib->fa[i] = &(fa_data[i][0]);
 
             data.clear();
             get_quantitative_data(data);
             for(unsigned int index = 4;index < data.size() && index < titles.size();++index)
-                out << handle->subject_names[subject_index] << " " <<
+                out << handle->db.subject_names[subject_index] << " " <<
                        titles[index] << "\t" << data[index] << std::endl;
         }
         fib->fa = old_fa;

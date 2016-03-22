@@ -121,9 +121,9 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
             if(!cur_tracking_window->can_convert())
                 return;
             image::basic_image<image::vector<3,float>,3 > mni_position(geo);
-            const FiberDirection& fib = cur_tracking_window->handle->fib;
+            const fiber_directions& dir = cur_tracking_window->handle->dir;
             for (image::pixel_index<3>index(geo); index < geo.size();++index)
-                if(fib.getFA(index.index(),0) > 0)
+                if(dir.get_fa(index.index(),0) > 0)
                 {
                     image::vector<3,float> mni((const unsigned int*)index.begin());
                     cur_tracking_window->subject2mni(mni);

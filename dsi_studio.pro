@@ -93,7 +93,8 @@ HEADERS += mainwindow.h \
     dicom/motion_dialog.hpp \
     filebrowser.h \
     program_option.hpp \
-    qcompletelineedit.h
+    qcompletelineedit.h \
+    libs/mapping/connectometry_db.hpp
 
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
@@ -157,7 +158,9 @@ SOURCES += main.cpp \
     cmd/cnt.cpp \
     cmd/vis.cpp \
     filebrowser.cpp \
-    qcompletelineedit.cpp
+    qcompletelineedit.cpp \
+    libs/tracking/fib_data.cpp \
+    libs/mapping/connectometry_db.cpp
 
 OTHER_FILES += \
     options.txt

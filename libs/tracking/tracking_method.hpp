@@ -59,7 +59,7 @@ public:// Parameters
     bool forward;
     bool failed;
 public:
-    const fiber_orientations& fib;
+    const tracking& trk;
     const TrackingParam& param;
 private:
     const RoiMgr& roi_mgr;
@@ -82,12 +82,12 @@ public:
                       const image::vector<3,float>& ref_dir,
                       image::vector<3,float>& result_dir)
     {
-        return interpolation->evaluate(fib,position,ref_dir,result_dir);
+        return interpolation->evaluate(trk,position,ref_dir,result_dir);
     }
 public:
-    TrackingMethod(const fiber_orientations& fib_,basic_interpolation* interpolation_,
+    TrackingMethod(const tracking& trk_,basic_interpolation* interpolation_,
                    const RoiMgr& roi_mgr_,const TrackingParam& param_):
-        fib(fib_),interpolation(interpolation_),roi_mgr(roi_mgr_),param(param_),init_fib_index(0)
+        trk(trk_),interpolation(interpolation_),roi_mgr(roi_mgr_),param(param_),init_fib_index(0)
 	{
         // floatd for full backward or full forward
         track_buffer.resize(param.max_points_count3 << 1);
@@ -203,17 +203,17 @@ public:
             forward = true;
             image::pixel_index<3> index(std::floor(position[0]+0.5),
                                     std::floor(position[1]+0.5),
-                                    std::floor(position[2]+0.5),fib.dim);
-            if (!fib.dim.is_valid(index))
+                                    std::floor(position[2]+0.5),trk.dim);
+            if (!trk.dim.is_valid(index))
                 return false;
 
             switch (initial_direction)
             {
             case 0:// main direction
                 {
-                    if(fib.fa[0][index.index()] < fib.threshold)
+                    if(trk.fa[0][index.index()] < trk.threshold)
                         return false;
-                    dir = fib.get_dir(index.index(),0);
+                    dir = trk.get_dir(index.index(),0);
                 }
                 return true;
             case 1:// random direction
@@ -230,14 +230,14 @@ public:
                 return false;
             case 2:// all direction
                 {
-                    if (init_fib_index >= fib.fib_num ||
-                        fib.fa[init_fib_index][index.index()] < fib.threshold)
+                    if (init_fib_index >= trk.fib_num ||
+                        trk.fa[init_fib_index][index.index()] < trk.threshold)
                     {
                         init_fib_index = 0;
                         return false;
                     }
                     else
-                        dir = fib.get_dir(index.index(),init_fib_index);
+                        dir = trk.get_dir(index.index(),init_fib_index);
                     ++init_fib_index;
                 }
                 return true;

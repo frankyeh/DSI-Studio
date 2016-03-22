@@ -200,7 +200,7 @@ public:
         seed_report += roi_name;
         seed_report += ".";
     }
-    TrackingMethod* new_method(const fiber_orientations& fib)
+    TrackingMethod* new_method(const tracking& trk)
     {
         std::auto_ptr<basic_interpolation> interpo_method;
         switch (interpolation_strategy)
@@ -216,10 +216,10 @@ public:
             break;
 
         }
-        return new TrackingMethod(fib,interpo_method.release(),roi_mgr,param);
+        return new TrackingMethod(trk,interpo_method.release(),roi_mgr,param);
     }
 
-    void run(const fiber_orientations& fib,
+    void run(const tracking& trk,
              unsigned int thread_count,
              unsigned int termination_count,
              bool wait = false)
@@ -228,12 +228,12 @@ public:
         report.str("");
         report << "\nA deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was used."
                << seed_report
-               << " The angular threshold was " << (int)std::floor(std::acos(fib.cull_cos_angle)*180/3.1415926 + 0.5) << " degrees."
+               << " The angular threshold was " << (int)std::floor(std::acos(trk.cull_cos_angle)*180/3.1415926 + 0.5) << " degrees."
                << " The step size was " << param.step_size << " mm.";
-        if(int(fib.threshold*1000) == int(600*image::segmentation::otsu_threshold(image::make_image(fib.dim,fib.fa[0]))))
+        if(int(trk.threshold*1000) == int(600*image::segmentation::otsu_threshold(image::make_image(trk.dim,trk.fa[0]))))
             report << " The anisotropy threshold was determined automatically by DSI Studio.";
         else
-            report << " The anisotropy threshold was " << fib.threshold << ".";
+            report << " The anisotropy threshold was " << trk.threshold << ".";
 
 
         if(param.smooth_fraction != 0.0)
@@ -248,9 +248,9 @@ public:
         // to ensure consistency, seed initialization with all orientation only fits with single thread
         if(initial_direction == 2)
             thread_count = 1;
-        param.step_size_in_voxel[0] = param.step_size/fib.vs[0];
-        param.step_size_in_voxel[1] = param.step_size/fib.vs[1];
-        param.step_size_in_voxel[2] = param.step_size/fib.vs[2];
+        param.step_size_in_voxel[0] = param.step_size/trk.vs[0];
+        param.step_size_in_voxel[1] = param.step_size/trk.vs[1];
+        param.step_size_in_voxel[2] = param.step_size/trk.vs[2];
 
         if(center_seed)
         {
@@ -269,17 +269,17 @@ public:
         unsigned int total_run_count = 0;
         for (unsigned int index = 0;index < thread_count-1;++index,total_run_count += run_count)
             threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
-                    [this,&fib,thread_count,index,run_count](){run_thread(new_method(fib),thread_count,index,run_count);})));
+                    [this,&trk,thread_count,index,run_count](){run_thread(new_method(trk),thread_count,index,run_count);})));
 
         if(wait)
         {
-            run_thread(new_method(fib),thread_count,thread_count-1,termination_count-total_run_count);
+            run_thread(new_method(trk),thread_count,thread_count-1,termination_count-total_run_count);
             for(int i = 0;i < threads.size();++i)
                 threads[i]->wait();
         }
         else
             threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
-                    [this,&fib,thread_count,termination_count,total_run_count](){run_thread(new_method(fib),thread_count,thread_count-1,termination_count-total_run_count);})));
+                    [this,&trk,thread_count,termination_count,total_run_count](){run_thread(new_method(trk),thread_count,thread_count-1,termination_count-total_run_count);})));
 
         report << " A total of " << termination_count << (stop_by_tract ? " tracts were calculated.":" seeds were placed.");
     }

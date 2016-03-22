@@ -53,8 +53,8 @@ tracking_window::tracking_window(QWidget *parent,FibData* new_handle,bool handle
 {
     FibData& fib_data = *new_handle;
 
-    odf_size = fib_data.fib.odf_table.size();
-    odf_face_size = fib_data.fib.odf_faces.size();
+    odf_size = fib_data.dir.odf_table.size();
+    odf_face_size = fib_data.dir.odf_faces.size();
 
     ui->setupUi(this);
     {
@@ -435,8 +435,8 @@ void tracking_window::report(QString string)
 void tracking_window::initialize_tracking_index(int index)
 {
     QStringList tracking_index_list;
-    for(int index = 0;index < handle->fib.index_name.size();++index)
-        tracking_index_list.push_back(handle->fib.index_name[index].c_str());
+    for(int index = 0;index < handle->dir.index_name.size();++index)
+        tracking_index_list.push_back(handle->dir.index_name[index].c_str());
     renderWidget->setList("tracking_index",tracking_index_list);
     set_data("tracking_index",index);
     on_tracking_index_currentIndexChanged(index);
@@ -1005,9 +1005,9 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
 {
     if(index < 0)
         return;
-    handle->fib.set_tracking_index(index);
-    if(handle->fib.index_name[index] == "<%" ||
-        handle->fib.index_name[index] == ">%")
+    handle->dir.set_tracking_index(index);
+    if(handle->dir.index_name[index] == "<%" ||
+        handle->dir.index_name[index] == ">%")
     {
         // percentile threshold
         renderWidget->setMinMax("fa_threshold",0.0,1.0,0.05);
@@ -1015,8 +1015,8 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
         scene.show_slice();
         return;
     }
-    if(handle->fib.index_name[index] == "inc" ||
-        handle->fib.index_name[index] == "dec")
+    if(handle->dir.index_name[index] == "inc" ||
+        handle->dir.index_name[index] == "dec")
     {
         // percentile threshold
         renderWidget->setMinMax("fa_threshold",0.0,1.0,0.05);
@@ -1024,10 +1024,10 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
         scene.show_slice();
         return;
     }
-    float max_value = *std::max_element(handle->fib.fa[0],handle->fib.fa[0]+handle->fib.dim.size());
+    float max_value = *std::max_element(handle->dir.fa[0],handle->dir.fa[0]+handle->dir.dim.size());
     renderWidget->setMinMax("fa_threshold",0.0,max_value*1.1,max_value/50.0);
-    set_data("fa_threshold",0.6*image::segmentation::otsu_threshold(image::make_image(handle->fib.dim,
-                                                                                      handle->fib.fa[0])));
+    set_data("fa_threshold",0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.dim,
+                                                                                      handle->dir.fa[0])));
     scene.show_slice();
 }
 
@@ -1376,22 +1376,22 @@ std::pair<float,float> evaluate_fib(
         const std::vector<std::vector<float> >& fib_dir);
 void tracking_window::on_actionQuality_Assessment_triggered()
 {
-    std::vector<std::vector<float> > fib_fa(handle->fib.num_fiber);
-    std::vector<std::vector<float> > fib_dir(handle->fib.num_fiber);
+    std::vector<std::vector<float> > fib_fa(handle->dir.num_fiber);
+    std::vector<std::vector<float> > fib_dir(handle->dir.num_fiber);
     for(unsigned int i = 0;i < fib_fa.size();++i)
     {
         fib_fa[i].resize(handle->dim.size());
-        std::copy(handle->fib.fa[i],handle->fib.fa[i]+handle->dim.size(),fib_fa[i].begin());
+        std::copy(handle->dir.fa[i],handle->dir.fa[i]+handle->dim.size(),fib_fa[i].begin());
         fib_dir[i].resize(handle->dim.size()*3);
         for(unsigned int j = 0,index = 0;j < fib_dir[i].size();j += 3,++index)
         {
-            const float* v = handle->fib.getDir(index,i);
+            const float* v = handle->dir.get_dir(index,i);
             fib_dir[i][j] = v[0];
             fib_dir[i][j+1] = v[1];
             fib_dir[i][j+2] = v[2];
         }
     }
-    std::pair<float,float> result = evaluate_fib(handle->fib.dim,fib_fa,fib_dir);
+    std::pair<float,float> result = evaluate_fib(handle->dir.dim,fib_fa,fib_dir);
     std::ostringstream out;
     out << "Number of connected fibers: " << result.first << std::endl;
     out << "Number of disconnected fibers: " << result.second << std::endl;
@@ -1402,32 +1402,32 @@ void tracking_window::on_actionQuality_Assessment_triggered()
 #include "tessellated_icosahedron.hpp"
 void tracking_window::on_actionImprove_Quality_triggered()
 {
-    fiber_orientations fib;
+    tracking fib;
     fib.read(*handle);
-    fib.threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->fib.dim,handle->fib.fa[0]));
+    fib.threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.dim,handle->dir.fa[0]));
     if(!fib.dir.empty())
         return;
     for(float cos_angle = 0.99;check_prog(1000-cos_angle*1000,1000-866);cos_angle -= 0.005)
     {
         fib.cull_cos_angle = cos_angle; // smaller than 30 degrees
 
-        std::vector<std::vector<float> > new_fa(handle->fib.num_fiber);
-        std::vector<std::vector<short> > new_index(handle->fib.num_fiber);
-        unsigned int size = handle->fib.dim.size();
+        std::vector<std::vector<float> > new_fa(handle->dir.num_fiber);
+        std::vector<std::vector<short> > new_index(handle->dir.num_fiber);
+        unsigned int size = handle->dir.dim.size();
         for(unsigned int i = 0 ;i < new_fa.size();++i)
         {
             new_fa[i].resize(size);
             new_index[i].resize(size);
-            std::copy(handle->fib.fa[i],handle->fib.fa[i]+size,new_fa[i].begin());
-            std::copy(handle->fib.findex[i],handle->fib.findex[i]+size,new_index[i].begin());
+            std::copy(handle->dir.fa[i],handle->dir.fa[i]+size,new_fa[i].begin());
+            std::copy(handle->dir.findex[i],handle->dir.findex[i]+size,new_index[i].begin());
         }
 
-        for(image::pixel_index<3> index(handle->fib.dim);index < handle->fib.dim.size();++index)
+        for(image::pixel_index<3> index(handle->dir.dim);index < handle->dir.dim.size();++index)
         {
-            if(handle->fib.fa[0][index.index()] < fib.threshold)
+            if(handle->dir.fa[0][index.index()] < fib.threshold)
                 continue;
             std::vector<image::pixel_index<3> > neighbors;
-            image::get_neighbors(index,handle->fib.dim,neighbors);
+            image::get_neighbors(index,handle->dir.dim,neighbors);
 
             std::vector<image::vector<3> > dis(neighbors.size());
             std::vector<image::vector<3> > fib_dir(neighbors.size());
@@ -1442,10 +1442,10 @@ void tracking_window::on_actionImprove_Quality_triggered()
                 unsigned char fib_order,reverse;
                 if(fib.get_nearest_dir_fib(neighbors[i].index(),dis[i],fib_order,reverse))
                 {
-                    fib_dir[i] = handle->fib.getDir(neighbors[i].index(),fib_order);
+                    fib_dir[i] = handle->dir.get_dir(neighbors[i].index(),fib_order);
                     if(reverse)
                         fib_dir[i] = -fib_dir[i];
-                    fib_fa[i] = handle->fib.fa[fib_order][neighbors[i].index()];
+                    fib_fa[i] = handle->dir.fa[fib_order][neighbors[i].index()];
                 }
             }
 
@@ -1470,17 +1470,17 @@ void tracking_window::on_actionImprove_Quality_triggered()
                     if(fib.get_nearest_dir_fib(index.index(),predict_dir,fib_order,reverse))
                     {
                         if(reverse)
-                            predict_dir -= image::vector<3>(handle->fib.getDir(index.index(),fib_order));
+                            predict_dir -= image::vector<3>(handle->dir.get_dir(index.index(),fib_order));
                         else
-                            predict_dir += image::vector<3>(handle->fib.getDir(index.index(),fib_order));
+                            predict_dir += image::vector<3>(handle->dir.get_dir(index.index(),fib_order));
                         predict_dir.normalize();
                         has_match = true;
                     }
                     short dir_index = 0;
                     float max_value = 0.0;
-                    for (unsigned int k = 0; k < handle->fib.half_odf_size; ++k)
+                    for (unsigned int k = 0; k < handle->dir.half_odf_size; ++k)
                     {
-                        float value = std::abs(predict_dir*handle->fib.odf_table[k]);
+                        float value = std::abs(predict_dir*handle->dir.odf_table[k]);
                         if (value > max_value)
                         {
                             max_value = value;
@@ -1505,8 +1505,8 @@ void tracking_window::on_actionImprove_Quality_triggered()
         }
         for(unsigned int i = 0 ;i < new_fa.size();++i)
         {
-            std::copy(new_fa[i].begin(),new_fa[i].begin()+size,(float*)handle->fib.fa[i]);
-            std::copy(new_index[i].begin(),new_index[i].begin()+size,(short*)handle->fib.findex[i]);
+            std::copy(new_fa[i].begin(),new_fa[i].begin()+size,(float*)handle->dir.fa[i]);
+            std::copy(new_index[i].begin(),new_index[i].begin()+size,(short*)handle->dir.findex[i]);
         }
     }
     scene.show_slice();
@@ -1768,7 +1768,7 @@ void tracking_window::on_actionIndividual_vs_atlas_triggered()
         QMessageBox::information(this,"Error",connectometry_fib.error_msg.c_str());
         return;
     }
-    initialize_tracking_index(handle->fib.index_data.size()-1);
+    initialize_tracking_index(handle->dir.index_data.size()-1);
 }
 
 void tracking_window::on_actionIndividual_vs_individual_triggered()
@@ -1798,7 +1798,7 @@ void tracking_window::on_actionIndividual_vs_individual_triggered()
         QMessageBox::information(this,"Error",connectometry_fib.error_msg.c_str());
         return;
     }
-    initialize_tracking_index(handle->fib.index_data.size()-1);
+    initialize_tracking_index(handle->dir.index_data.size()-1);
 }
 
 void tracking_window::on_actionIndividual_vs_normal_population_triggered()
@@ -1820,7 +1820,7 @@ void tracking_window::on_actionIndividual_vs_normal_population_triggered()
         QMessageBox::information(this,"Error",connectometry_fib.error_msg.c_str());
         return;
     }
-    initialize_tracking_index(handle->fib.index_data.size()-1);
+    initialize_tracking_index(handle->dir.index_data.size()-1);
 }
 
 void tracking_window::on_show_fiber_toggled(bool checked)

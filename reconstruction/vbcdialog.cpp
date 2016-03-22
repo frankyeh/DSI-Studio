@@ -93,7 +93,7 @@ void VBCDialog::on_group1open_clicked()
             ui->index_of_interest->addItem("sdf");
         std::vector<std::string> item_list;
         fib.get_index_list(item_list);
-        for(unsigned int i = fib.fib.index_name.size();i < item_list.size();++i)
+        for(unsigned int i = fib.dir.index_name.size();i < item_list.size();++i)
             ui->index_of_interest->addItem(item_list[i].c_str());
     }
     group << filenames;
@@ -266,12 +266,12 @@ void VBCDialog::on_create_data_base_clicked()
             name_list[index] = group[index].toLocal8Bit().begin();
             tag_list[index] = QFileInfo(group[index]).baseName().toLocal8Bit().begin();
         }
-        if(!data->handle->load_subject_files(name_list,tag_list,ui->index_of_interest->currentText().toLocal8Bit().begin()))
+        if(!data->handle->db.load_subject_files(name_list,tag_list,ui->index_of_interest->currentText().toLocal8Bit().begin()))
         {
             QMessageBox::information(this,"error in loading subject fib files",data->handle->error_msg.c_str(),0);
             return;
         }
-        data->handle->save_subject_data(ui->output_file_name->text().toLocal8Bit().begin());
+        data->handle->db.save_subject_data(ui->output_file_name->text().toLocal8Bit().begin());
         QMessageBox::information(this,"completed","Connectometry database created",0);
     }
     else

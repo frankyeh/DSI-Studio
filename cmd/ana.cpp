@@ -144,7 +144,7 @@ int ana(void)
             return 0;
         }
         std::string roi_file_name = po.get("roi");
-        ROIRegion region(handle->fib.dim,handle->vs);
+        ROIRegion region(handle->dir.dim,handle->vs);
         if(!region.LoadFromFile(roi_file_name.c_str(),handle->trans_to_mni))
         {
             std::cout << "Fail to load the ROI file." << std::endl;
@@ -168,7 +168,7 @@ int ana(void)
     }
 
     TractModel tract_model(handle.get());
-    float threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(geometry,handle->fib.fa[0]));
+    float threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(geometry,handle->dir.fa[0]));
     tract_model.get_fib().threshold = threshold;
     tract_model.get_fib().cull_cos_angle = std::cos(60.0*3.1415926/180.0);
     std::string file_name = po.get("tract");

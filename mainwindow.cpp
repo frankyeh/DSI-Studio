@@ -373,7 +373,7 @@ void MainWindow::on_FiberTracking_clicked()
         new_handle->mat_reader.add("voxel_size",vs,3,1);
         new_handle->mat_reader.add("image",&*I.begin(),I.size(),1);
         new_handle->load_from_mat();
-        new_handle->fib.index_name[0] = "image";
+        new_handle->dir.index_name[0] = "image";
         new_handle->view_item[0].name = "image";
         tracking_window* new_mdi = new tracking_window(this,new_handle.release());
         new_mdi->setAttribute(Qt::WA_DeleteOnClose);
