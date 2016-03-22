@@ -191,10 +191,6 @@ tracking_window::tracking_window(QWidget *parent,fib_data* new_handle,bool handl
         connect(ui->glCorCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(updateGL()));
         connect(ui->glAxiCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(updateGL()));
 
-        connect(ui->glSagView,SIGNAL(clicked()),this,SLOT(on_SagView_clicked()));
-        connect(ui->glCorView,SIGNAL(clicked()),this,SLOT(on_CorView_clicked()));
-        connect(ui->glAxiView,SIGNAL(clicked()),this,SLOT(on_AxiView_clicked()));
-
         connect(ui->addSlices,SIGNAL(clicked()),this,SLOT(on_actionInsert_T1_T2_triggered()));
         connect(ui->actionAdd_surface,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
         connect(ui->SliceModality,SIGNAL(currentIndexChanged(int)),glWidget,SLOT(updateGL()));
