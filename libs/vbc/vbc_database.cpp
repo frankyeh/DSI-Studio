@@ -266,7 +266,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
     {
         if(length_threshold_greater)
         {
-            TractModel tracks(handle.get());
+            TractModel tracks(handle);
             tracks.add_tracts(greater_tracks[index]->get_tracts(),length_threshold_greater);
             if(tracks.get_visible_track_count())
             {
@@ -309,7 +309,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
 
         if(length_threshold_lesser)
         {
-            TractModel tracks(handle.get());
+            TractModel tracks(handle);
             tracks.add_tracts(lesser_tracks[index]->get_tracts(),length_threshold_lesser);
             if(tracks.get_visible_track_count())
             {
@@ -384,8 +384,8 @@ void vbc_database::run_permutation(unsigned int thread_count)
     unsigned int num_subjects = (model->type == 2 ? individual_data.size():1);
     for(unsigned int index = 0;index < num_subjects;++index)
     {
-        greater_tracks.push_back(std::make_shared<TractModel>(handle.get()));
-        lesser_tracks.push_back(std::make_shared<TractModel>(handle.get()));
+        greater_tracks.push_back(std::make_shared<TractModel>(handle));
+        lesser_tracks.push_back(std::make_shared<TractModel>(handle));
         spm_maps.push_back(std::make_shared<connectometry_result>());
     }
     clear_thread();

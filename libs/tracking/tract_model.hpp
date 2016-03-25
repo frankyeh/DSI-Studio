@@ -10,7 +10,7 @@ class TractModel{
 public:
         std::string report;
 private:
-        fib_data* handle;
+        std::shared_ptr<fib_data> handle;
         image::geometry<3> geometry;
         image::vector<3> vs;
         std::auto_ptr<tracking> fib;
@@ -37,7 +37,7 @@ public:
         void delete_tracts(const std::vector<unsigned int>& tracts_to_delete);
         void select_tracts(const std::vector<unsigned int>& tracts_to_select);
 public:
-        TractModel(fib_data* handle_);
+        TractModel(std::shared_ptr<fib_data> handle_);
         const TractModel& operator=(const TractModel& rhs)
         {
             geometry = rhs.geometry;

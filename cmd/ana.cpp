@@ -14,12 +14,12 @@
 
 // test example
 // --action=ana --source=20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
-void get_connectivity_matrix(fib_data* handle,
+void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                              TractModel& tract_model,
                              image::basic_image<image::vector<3>,3>& mapping);
 void export_track_info(const std::string& file_name,
                        std::string export_option,
-                       fib_data* handle,
+                       std::shared_ptr<fib_data> handle,
                        TractModel& tract_model)
 {
     std::replace(export_option.begin(),export_option.end(),',',' ');
@@ -119,7 +119,7 @@ void export_track_info(const std::string& file_name,
 
 int ana(void)
 {
-    std::auto_ptr<fib_data> handle(new fib_data);
+    std::shared_ptr<fib_data> handle(new fib_data);
     {
         std::string file_name = po.get("source");
         std::cout << "loading " << file_name << "..." <<std::endl;
@@ -158,7 +158,7 @@ int ana(void)
             std::ofstream out(file_name_stat.c_str());
             std::vector<std::string> titles;
             std::vector<float> data;
-            region.get_quantitative_data(handle.get(),titles,data);
+            region.get_quantitative_data(handle,titles,data);
             for(unsigned int i = 0;i < titles.size() && i < data.size();++i)
                 out << titles[i] << "\t" << data[i] << std::endl;
             return 0;
@@ -167,7 +167,7 @@ int ana(void)
         return 0;
     }
 
-    TractModel tract_model(handle.get());
+    TractModel tract_model(handle);
     float threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(geometry,handle->dir.fa[0]));
     tract_model.get_fib().threshold = threshold;
     tract_model.get_fib().cull_cos_angle = std::cos(60.0*3.1415926/180.0);
@@ -190,11 +190,11 @@ int ana(void)
     if(po.has("connectivity"))
     {
         image::basic_image<image::vector<3>,3> mapping;
-        get_connectivity_matrix(handle.get(),tract_model,mapping);
+        get_connectivity_matrix(handle,tract_model,mapping);
     }
 
     if(po.has("export"))
-        export_track_info(file_name,po.get("export"),handle.get(),tract_model);
+        export_track_info(file_name,po.get("export"),handle,tract_model);
 
     return 0;
 }

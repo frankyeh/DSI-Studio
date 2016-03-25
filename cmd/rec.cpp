@@ -13,7 +13,7 @@
 
 extern fa_template fa_template_imp;
 void rec_motion_correction(ImageModel* handle,unsigned int total_thread,
-                           std::vector<image::affine_transform<float> >& args,
+                           std::vector<image::affine_transform<double> >& args,
                            unsigned int& progress,
                            bool& terminated);
 void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
@@ -47,14 +47,14 @@ int rec(void)
     {
         std::cout << "reading transformation matrix" <<std::endl;
         std::ifstream in(po.get("affine").c_str());
-        std::vector<float> T((std::istream_iterator<float>(in)),
+        std::vector<double> T((std::istream_iterator<float>(in)),
                              (std::istream_iterator<float>()));
         if(T.size() != 12)
         {
             std::cout << "Invalid transfformation matrix." <<std::endl;
             return 1;
         }
-        image::transformation_matrix<float> affine;
+        image::transformation_matrix<double> affine;
         affine.load_from_transform(T.begin());
         std::cout << "rotating images" << std::endl;
         handle->rotate(handle->voxel.dim,affine);
@@ -203,7 +203,7 @@ int rec(void)
 
     if(po.get("motion_correction",int(0)))
     {
-        std::vector<image::affine_transform<float> > arg;
+        std::vector<image::affine_transform<double> > arg;
         unsigned int progress = 0;
         bool terminated = false;
         std::cout << "correct for motion and eddy current..." << std::endl;

@@ -17,7 +17,7 @@ SliceModel::SliceModel(void):cur_dim(2)
     texture_need_update[2] = true;
 }
 
-FibSliceModel::FibSliceModel(fib_data* handle_):handle(handle_)
+FibSliceModel::FibSliceModel(std::shared_ptr<fib_data> handle_):handle(handle_)
 {
     // already setup the geometry and source image
     fib_data& fib = *handle;
@@ -185,7 +185,7 @@ std::pair<float,float> CustomSliceModel::get_value_range(void) const
     return image::min_max_value(source_images.begin(),source_images.end());
 }
 // ---------------------------------------------------------------------------
-void CustomSliceModel::argmin(int reg_type)
+void CustomSliceModel::argmin(image::reg::reg_type reg_type)
 {
     terminated = false;
     ended = false;
@@ -197,7 +197,7 @@ void CustomSliceModel::argmin(int reg_type)
 // ---------------------------------------------------------------------------
 void CustomSliceModel::update(void)
 {
-    image::transformation_matrix<float> T(arg_min,from.geometry(),from_vs,source_images.geometry(),voxel_size);
+    image::transformation_matrix<double> T(arg_min,from.geometry(),from_vs,source_images.geometry(),voxel_size);
     invT.identity();
     T.save_to_transform(invT.begin());
     transform = image::inverse(invT);

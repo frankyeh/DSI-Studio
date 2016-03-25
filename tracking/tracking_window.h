@@ -48,7 +48,7 @@ protected:
     void keyPressEvent ( QKeyEvent * event );
 
 public:
-    explicit tracking_window(QWidget *parent,fib_data* handle,bool handle_release_ = true);
+    explicit tracking_window(QWidget *parent,std::shared_ptr<fib_data> handle);
     ~tracking_window();
 
     Ui::tracking_window *ui;
@@ -80,9 +80,8 @@ public:
     std::auto_ptr<color_bar_dialog> color_bar;
     std::auto_ptr<connectivity_matrix_dialog> connectivity_matrix;
 public:
-    fib_data* handle;
+    std::shared_ptr<fib_data> handle;
     FibSliceModel slice;
-    bool handle_release;
     bool slice_no_update;
     bool eventFilter(QObject *obj, QEvent *event);
     QVariant operator[](QString name)const;

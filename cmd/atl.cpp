@@ -8,6 +8,7 @@
 #include "mapping/atlas.hpp"
 #include "manual_alignment.h"
 #include "program_option.hpp"
+#include "fib_data.hpp"
 
 extern fa_template fa_template_imp;
 extern std::vector<atlas> atlas_list;
@@ -63,60 +64,41 @@ bool atl_load_atlas(std::string atlas_name)
     }
     return true;
 }
-bool atl_get_mapping(gz_mat_read& mat_reader,
+bool atl_get_mapping(std::shared_ptr<fib_data> handle,
                      unsigned int factor,
                      unsigned int thread_count,
                      image::basic_image<image::vector<3>,3>& mapping)
 {
-    unsigned int col,row;
-    const unsigned short* dim = 0;
-    const float* vs = 0;
-    const float* fa0 = 0;
-    if(!mat_reader.read("dimension",row,col,dim) ||
-       !mat_reader.read("voxel_size",row,col,vs) ||
-       !mat_reader.read("fa0",row,col,fa0))
-    {
-        std::cout << "Invalid file format" << std::endl;
-        return false;
-    }
-    image::geometry<3> geo(dim);
-    image::vector<3> voxel_size(vs);
-
     if(fa_template_imp.I.empty() && !fa_template_imp.load_from_file())
         return false;
-    //QSDR
-    const float* trans = 0;
-    mapping.resize(geo);
-    if(mat_reader.read("trans",row,col,trans))
+    mapping.resize(handle->dim);
+    if(!handle->trans_to_mni.empty())
     {
         std::cout << "Transformation matrix found." << std::endl;
-        for(image::pixel_index<3> index(geo);index < geo.size();++index)
+        for(image::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
         {
             image::vector<3> pos(index);
-            pos.to(trans);
+            pos.to(handle->trans_to_mni);
             mapping[index.index()] = pos;
         }
     }
     else
     {
         std::cout << "Conduct spatial warping: " << thread_count << "-thread, " << factor << "-factor" << std::endl;
-        image::basic_image<float,3> from(fa0,geo),to(fa_template_imp.I);
-        reg_data data(fa_template_imp.I.geometry(),image::reg::affine,factor);
-
+        image::basic_image<float,3> from(handle->dir.fa[0],handle->dim),to(fa_template_imp.I);
         image::filter::gaussian(from);
         from -= image::segmentation::otsu_threshold(from);
         image::lower_threshold(from,0.0);
         image::normalize(from,1.0);
         image::normalize(to,1.0);
-        run_reg(from,voxel_size,fa_template_imp.I,fa_template_imp.vs,data,thread_count);
-        image::transformation_matrix<float> T(data.arg,from.geometry(),voxel_size,fa_template_imp.I.geometry(),fa_template_imp.vs);
+        handle->reg.run_reg(from,handle->vs,
+                            fa_template_imp.I,fa_template_imp.vs,
+                            factor,image::reg::corr,image::reg::affine,thread_count);
         mapping.resize(from.geometry());
         for(image::pixel_index<3> index(from.geometry());index < from.size();++index)
-            if(fa0[index.index()] > 0)
+            if(handle->dir.fa[0][index.index()] > 0)
             {
-                image::vector<3,float> pos;
-                T(index,pos);// from -> new_from
-                data.bnorm_data(pos,mapping[index.index()]);
+                handle->reg(index,mapping[index.index()]);
                 fa_template_imp.to_mni(mapping[index.index()]);
             }
     }
@@ -124,7 +106,9 @@ bool atl_get_mapping(gz_mat_read& mat_reader,
 }
 
 void atl_save_mapping(const std::string& file_name,const image::geometry<3>& geo,
-                      const image::basic_image<image::vector<3>,3>& mapping,const float* trans,const float* vs,
+                      const image::basic_image<image::vector<3>,3>& mapping,
+                      const std::vector<float>& trans,
+                      const image::vector<3>& vs,
                       bool multiple)
 {
     for(unsigned int i = 0;i < atlas_list.size();++i)
@@ -151,8 +135,8 @@ void atl_save_mapping(const std::string& file_name,const image::geometry<3>& geo
             {
                 image::io::nifti out;
                 out.set_voxel_size(vs);
-                if(trans)
-                    out.set_image_transformation(trans);
+                if(!trans.empty())
+                    out.set_image_transformation(trans.begin());
                 else
                     image::flip_xy(roi);
                 out << roi;
@@ -170,8 +154,8 @@ void atl_save_mapping(const std::string& file_name,const image::geometry<3>& geo
         base_name += ".nii.gz";
         image::io::nifti out;
         out.set_voxel_size(vs);
-        if(trans)
-            out.set_image_transformation(trans);
+        if(!trans.empty())
+            out.set_image_transformation(trans.begin());
         else
             image::flip_xy(all_roi);
         out << all_roi;
@@ -179,6 +163,7 @@ void atl_save_mapping(const std::string& file_name,const image::geometry<3>& geo
         std::cout << "save " << base_name << std::endl;
     }
 }
+std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
 
 int atl(void)
 {
@@ -217,19 +202,9 @@ int atl(void)
     }
 
 
-    gz_mat_read mat_reader;
-    std::string file_name = po.get("source");
-    std::cout << "loading " << file_name << "..." <<std::endl;
-    if(!QFileInfo(file_name.c_str()).exists())
-    {
-        std::cout << file_name << " does not exist. terminating..." << std::endl;
+    std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
+    if(!handle.get())
         return 0;
-    }
-    if (!mat_reader.load_from_file(file_name.c_str()))
-    {
-        std::cout << "Invalid MAT file format" << std::endl;
-        return 0;
-    }
 
     if(!atl_load_atlas(po.get("atlas")))
         return 0;
@@ -239,20 +214,11 @@ int atl(void)
     std::cout << "Reg order = " << factor << std::endl;
     std::cout << "Thread count = " << thread_count << std::endl;
 
-    const float *trans = 0;
-    unsigned int col,row;
-    const unsigned short* dim = 0;
-    const float* vs = 0;
-    if(!mat_reader.read("dimension",row,col,dim) ||
-       !mat_reader.read("voxel_size",row,col,vs))
-    {
-        std::cout << "Invalid file format" << std::endl;
-        return 0;
-    }
-    mat_reader.read("trans",row,col,trans);
     image::basic_image<image::vector<3>,3> mapping;
-    if(!atl_get_mapping(mat_reader,factor,thread_count,mapping))
+    if(!atl_get_mapping(handle,factor,thread_count,mapping))
         return 0;
-    atl_save_mapping(file_name,image::geometry<3>(dim),mapping,trans,vs,po.get("output","multiple") == "multiple");
+    atl_save_mapping(po.get("source"),handle->dim,
+                     mapping,handle->trans_to_mni,handle->vs,
+                     po.get("output","multiple") == "multiple");
     return 0;
 }

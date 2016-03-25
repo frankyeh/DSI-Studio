@@ -3,75 +3,25 @@
 #include "tracking/tracking_window.h"
 #include "fa_template.hpp"
 
-unsigned int mcc_thread_count = 4;
-struct thread_count_functor{
-    unsigned int operator()(void)
-    {
-        return mcc_thread_count;
-    }
-};
 
-void run_reg(const image::basic_image<float,3>& from,
-             const image::vector<3>& from_vs,
-             const image::basic_image<float,3>& to,
-             const image::vector<3>& to_vs,
-             reg_data& data,
-             unsigned int thread_count,
-             unsigned int cost_function)
-{
-    data.progress = 0;
-    mcc_thread_count = thread_count;
-    if(cost_function == 1) // mutual information
-    {
-        image::reg::linear(from,from_vs,to,to_vs,data.arg,data.reg_type,image::reg::mutual_information(),data.terminated);
-        image::reg::linear(from,from_vs,to,to_vs,data.arg,data.reg_type,image::reg::mutual_information(),data.terminated);
-    }
-    else
-    {
-        image::reg::linear(from,from_vs,to,to_vs,data.arg,data.reg_type,image::reg::mt_correlation<image::basic_image<float,3>,
-                       image::transformation_matrix<float>,thread_count_functor>(0),data.terminated);
-        image::reg::linear(from,from_vs,to,to_vs,data.arg,data.reg_type,image::reg::mt_correlation<image::basic_image<float,3>,
-                       image::transformation_matrix<float>,thread_count_functor>(0),data.terminated);
-    }
-    if(data.terminated)
-        return;
-    if(data.reg_type == image::reg::rigid_body)
-    {
-        data.progress = 2;
-        return;
-    }
-    data.T = image::transformation_matrix<float>(data.arg,from.geometry(),from_vs,to.geometry(),to_vs);
-    data.iT = data.T;
-    data.iT.inverse();
 
-    data.progress = 1;
-    image::basic_image<float,3> new_from(to.geometry());
-    image::resample(from,new_from,data.iT,image::linear);
-    if(thread_count == 1)
-        image::reg::bfnorm(new_from,to,data.bnorm_data,data.terminated);
-    else
-        multi_thread_reg(data.bnorm_data,new_from,to,thread_count,data.bn_progress,data.terminated);
-    data.bn_progress = 16;
-    if(!(data.terminated))
-        data.progress = 2;
-}
 
 manual_alignment::manual_alignment(QWidget *parent,
                                    image::basic_image<float,3> from_,
                                    const image::vector<3>& from_vs_,
                                    image::basic_image<float,3> to_,
                                    const image::vector<3>& to_vs_,
-                                   int reg_type_,int cost_function) :
-    QDialog(parent),ui(new Ui::manual_alignment),from_vs(from_vs_),to_vs(to_vs_),data(to_.geometry(),reg_type_),timer(0)
+                                   image::reg::reg_type reg_type_,
+    QDialog(parent),ui(new Ui::manual_alignment),data(data_),from_vs(from_vs_),to_vs(to_vs_),
+        reg_type(reg_type_),cost_function(cost_function_),timer(0)
 {
-    data.cost_function = cost_function;
     from.swap(from_);
     to.swap(to_);
     image::normalize(from,1.0);
     image::normalize(to,1.0);
-    if(!reg_type_) // manuall rotation
+    if(reg_type == image::reg::none) // manuall rotation
     {
-        image::reg::get_bound(from,to,data.arg,b_upper,b_lower,image::reg::rigid_body);
+        image::reg::get_bound(from,to,data.get_arg(),b_upper,b_lower,image::reg::rigid_body);
         b_upper.rotation[0] *= 2;
         b_upper.rotation[1] *= 2;
         b_upper.rotation[2] *= 2;
@@ -81,9 +31,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     }
     else
     {
-        image::reg::get_bound(from,to,data.arg,b_upper,b_lower,reg_type_);
-        reg_thread.reset(new std::future<void>(std::async(std::launch::async,
-            [this,cost_function](){run_reg(from,from_vs,to,to_vs,data,std::thread::hardware_concurrency(),cost_function);})));
+        image::reg::get_bound(from,to,data.get_arg(),b_upper,b_lower,reg_type_);
     }
     ui->setupUi(this);
     if(reg_type_ == image::reg::rigid_body)
@@ -175,15 +123,7 @@ void manual_alignment::disconnect_arg_update()
 manual_alignment::~manual_alignment()
 {
     if(timer)
-    {
         timer->stop();
-        if(reg_thread.get())
-        {
-            timer->stop();
-            data.terminated = 1;
-            reg_thread->wait();
-        }
-    }
     delete ui;
 }
 void manual_alignment::load_param(void)
@@ -193,76 +133,70 @@ void manual_alignment::load_param(void)
     // translocation
     ui->tx->setMaximum(b_upper.translocation[0]);
     ui->tx->setMinimum(b_lower.translocation[0]);
-    ui->tx->setValue(data.arg.translocation[0]);
+    ui->tx->setValue(data.get_arg().translocation[0]);
     ui->ty->setMaximum(b_upper.translocation[1]);
     ui->ty->setMinimum(b_lower.translocation[1]);
-    ui->ty->setValue(data.arg.translocation[1]);
+    ui->ty->setValue(data.get_arg().translocation[1]);
     ui->tz->setMaximum(b_upper.translocation[2]);
     ui->tz->setMinimum(b_lower.translocation[2]);
-    ui->tz->setValue(data.arg.translocation[2]);
+    ui->tz->setValue(data.get_arg().translocation[2]);
     // rotation
     ui->rx->setMaximum(b_upper.rotation[0]);
     ui->rx->setMinimum(b_lower.rotation[0]);
-    ui->rx->setValue(data.arg.rotation[0]);
+    ui->rx->setValue(data.get_arg().rotation[0]);
     ui->ry->setMaximum(b_upper.rotation[1]);
     ui->ry->setMinimum(b_lower.rotation[1]);
-    ui->ry->setValue(data.arg.rotation[1]);
+    ui->ry->setValue(data.get_arg().rotation[1]);
     ui->rz->setMaximum(b_upper.rotation[2]);
     ui->rz->setMinimum(b_lower.rotation[2]);
-    ui->rz->setValue(data.arg.rotation[2]);
+    ui->rz->setValue(data.get_arg().rotation[2]);
     //scaling
     ui->sx->setMaximum(b_upper.scaling[0]);
     ui->sx->setMinimum(b_lower.scaling[0]);
-    ui->sx->setValue(data.arg.scaling[0]);
+    ui->sx->setValue(data.get_arg().scaling[0]);
     ui->sy->setMaximum(b_upper.scaling[1]);
     ui->sy->setMinimum(b_lower.scaling[1]);
-    ui->sy->setValue(data.arg.scaling[1]);
+    ui->sy->setValue(data.get_arg().scaling[1]);
     ui->sz->setMaximum(b_upper.scaling[2]);
     ui->sz->setMinimum(b_lower.scaling[2]);
-    ui->sz->setValue(data.arg.scaling[2]);
+    ui->sz->setValue(data.get_arg().scaling[2]);
     //tilting
     ui->xy->setMaximum(b_upper.affine[0]);
     ui->xy->setMinimum(b_lower.affine[0]);
-    ui->xy->setValue(data.arg.affine[0]);
+    ui->xy->setValue(data.get_arg().affine[0]);
     ui->xz->setMaximum(b_upper.affine[1]);
     ui->xz->setMinimum(b_lower.affine[1]);
-    ui->xz->setValue(data.arg.affine[1]);
+    ui->xz->setValue(data.get_arg().affine[1]);
     ui->yz->setMaximum(b_upper.affine[2]);
     ui->yz->setMinimum(b_lower.affine[2]);
-    ui->yz->setValue(data.arg.affine[2]);
+    ui->yz->setValue(data.get_arg().affine[2]);
 
-}
-void manual_alignment::update_affine(void)
-{
-    data.T = image::transformation_matrix<float>(data.arg,from.geometry(),from_vs,to.geometry(),to_vs);
-    data.iT = data.T;
-    data.iT.inverse();
 }
 
 void manual_alignment::update_image(void)
 {
-    update_affine();
+    data.update_affine();
     warped_from.clear();
     warped_from.resize(to.geometry());
-    image::resample(from,warped_from,data.iT,image::linear);
+    image::resample(from,warped_from,data.get_iT(),image::linear);
 }
 void manual_alignment::param_changed()
 {
-    data.arg.translocation[0] = ui->tx->value();
-    data.arg.translocation[1] = ui->ty->value();
-    data.arg.translocation[2] = ui->tz->value();
+    data.get_arg().translocation[0] = ui->tx->value();
+    data.get_arg().translocation[1] = ui->ty->value();
+    data.get_arg().translocation[2] = ui->tz->value();
 
-    data.arg.rotation[0] = ui->rx->value();
-    data.arg.rotation[1] = ui->ry->value();
-    data.arg.rotation[2] = ui->rz->value();
+    data.get_arg().rotation[0] = ui->rx->value();
+    data.get_arg().rotation[1] = ui->ry->value();
+    data.get_arg().rotation[2] = ui->rz->value();
 
-    data.arg.scaling[0] = ui->sx->value();
-    data.arg.scaling[1] = ui->sy->value();
-    data.arg.scaling[2] = ui->sz->value();
+    data.get_arg().scaling[0] = ui->sx->value();
+    data.get_arg().scaling[1] = ui->sy->value();
+    data.get_arg().scaling[2] = ui->sz->value();
 
-    data.arg.affine[0] = ui->xy->value();
-    data.arg.affine[1] = ui->xz->value();
-    data.arg.affine[2] = ui->yz->value();
+    data.get_arg().affine[0] = ui->xy->value();
+    data.get_arg().affine[1] = ui->xz->value();
+    data.get_arg().affine[2] = ui->yz->value();
 
     update_image();
     slice_pos_moved();
@@ -308,23 +242,22 @@ void manual_alignment::slice_pos_moved()
 
 void manual_alignment::check_reg()
 {
-    if(reg_thread.get())
     {
         disconnect_arg_update();
-        ui->tx->setValue(data.arg.translocation[0]);
-        ui->ty->setValue(data.arg.translocation[1]);
-        ui->tz->setValue(data.arg.translocation[2]);
-        ui->rx->setValue(data.arg.rotation[0]);
-        ui->ry->setValue(data.arg.rotation[1]);
-        ui->rz->setValue(data.arg.rotation[2]);
-        ui->sx->setValue(data.arg.scaling[0]);
-        ui->sy->setValue(data.arg.scaling[1]);
-        ui->sz->setValue(data.arg.scaling[2]);
-        ui->xy->setValue(data.arg.affine[0]);
-        ui->xz->setValue(data.arg.affine[1]);
-        ui->yz->setValue(data.arg.affine[2]);
+        ui->tx->setValue(data.get_arg().translocation[0]);
+        ui->ty->setValue(data.get_arg().translocation[1]);
+        ui->tz->setValue(data.get_arg().translocation[2]);
+        ui->rx->setValue(data.get_arg().rotation[0]);
+        ui->ry->setValue(data.get_arg().rotation[1]);
+        ui->rz->setValue(data.get_arg().rotation[2]);
+        ui->sx->setValue(data.get_arg().scaling[0]);
+        ui->sy->setValue(data.get_arg().scaling[1]);
+        ui->sz->setValue(data.get_arg().scaling[2]);
+        ui->xy->setValue(data.get_arg().affine[0]);
+        ui->xz->setValue(data.get_arg().affine[1]);
+        ui->yz->setValue(data.get_arg().affine[2]);
         connect_arg_update();
-        ui->nl_progress_bar->setValue(data.bn_progress);
+        ui->nl_progress_bar->setValue(data.get_prog());
         update_image();
     }
     slice_pos_moved();
@@ -347,14 +280,6 @@ void manual_alignment::on_buttonBox_rejected()
 
 void manual_alignment::on_rerun_clicked()
 {
-    if(reg_thread.get())
-    {
-        data.terminated = 1;
-        reg_thread->wait();
-    }
-    data.terminated = 0;
-    reg_thread.reset(new std::future<void>(std::async(std::launch::async,
-            [this](){run_reg(from,from_vs,to,to_vs,data,std::thread::hardware_concurrency(),data.cost_function);})));
     if(timer)
         timer->start();
 

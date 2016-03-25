@@ -17,7 +17,7 @@ class TractModel;
 class vbc_database
 {
 public:
-    std::auto_ptr<fib_data> handle;
+    std::shared_ptr<fib_data> handle;
     std::string report;
     mutable std::string error_msg;
     vbc_database();
@@ -32,7 +32,7 @@ public:// database information
 public:
     void calculate_spm(connectometry_result& data,stat_model& info)
     {
-        ::calculate_spm(handle.get(),data,info,fiber_threshold,normalize_qa,terminated);
+        ::calculate_spm(handle,data,info,fiber_threshold,normalize_qa,terminated);
     }
 private: // single subject analysis result
     void run_track(const tracking& fib,std::vector<std::vector<float> >& track,float seed_ratio = 1.0,unsigned int thread_count = 1);

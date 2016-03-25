@@ -203,14 +203,14 @@ void MainWindow::loadFib(QString filename)
 {
     std::string file_name = filename.toLocal8Bit().begin();
     begin_prog("load fib");
-    std::auto_ptr<fib_data> new_handle(new fib_data);
+    std::shared_ptr<fib_data> new_handle(new fib_data);
     if (!new_handle->load_from_file(&*file_name.begin()))
     {
         if(!prog_aborted())
             QMessageBox::information(this,"error",new_handle->error_msg.c_str(),0);
         return;
     }
-    tracking_window* new_mdi = new tracking_window(this,new_handle.release());
+    tracking_window* new_mdi = new tracking_window(this,new_handle);
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
     new_mdi->setWindowTitle(filename);
     new_mdi->showNormal();
@@ -368,14 +368,14 @@ void MainWindow::on_FiberTracking_clicked()
     }
     if(!I.empty())
     {
-        std::auto_ptr<fib_data> new_handle(new fib_data);
+        std::shared_ptr<fib_data> new_handle(new fib_data);
         new_handle->mat_reader.add("dimension",I.geometry().begin(),3,1);
         new_handle->mat_reader.add("voxel_size",vs,3,1);
         new_handle->mat_reader.add("image",&*I.begin(),I.size(),1);
         new_handle->load_from_mat();
         new_handle->dir.index_name[0] = "image";
         new_handle->view_item[0].name = "image";
-        tracking_window* new_mdi = new tracking_window(this,new_handle.release());
+        tracking_window* new_mdi = new tracking_window(this,new_handle);
         new_mdi->setAttribute(Qt::WA_DeleteOnClose);
         new_mdi->setWindowTitle(filename);
         new_mdi->showNormal();

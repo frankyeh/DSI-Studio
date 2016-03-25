@@ -45,8 +45,6 @@ void set_title(const char* title)
 }
 bool check_prog(unsigned int now,unsigned int total)
 {
-    if(progressDialog.get() && !progressDialog->isVisible())
-        return now < total;
     if(now >= total && progressDialog.get() && !lock_dialog)
     {
         prog_aborted_ = progressDialog->wasCanceled();
@@ -54,6 +52,8 @@ bool check_prog(unsigned int now,unsigned int total)
         QApplication::processEvents();
         return false;
     }
+    if(progressDialog.get() && !progressDialog->isVisible())
+        return now < total;
     if(now == 0 || now == total)
         t_total.start();
     if(progressDialog.get() && (t_last.elapsed() > 500))

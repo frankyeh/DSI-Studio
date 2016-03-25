@@ -46,8 +46,8 @@ void tracking_window::set_data(QString name, QVariant value)
     renderWidget->setData(name,value);
 }
 
-tracking_window::tracking_window(QWidget *parent,fib_data* new_handle,bool handle_release_) :
-        QMainWindow(parent),handle(new_handle),handle_release(handle_release_),
+tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_handle) :
+        QMainWindow(parent),handle(new_handle),
         ui(new Ui::tracking_window),scene(*this),slice(new_handle),gLdock(0),renderWidget(0)
 
 {
@@ -418,9 +418,6 @@ tracking_window::~tracking_window()
     settings.setValue("rendering_quality",ui->rendering_efficiency->currentIndex());
     tractWidget->delete_all_tract();
     delete ui;
-    if(handle_release)
-        delete handle;
-    handle = 0;
     //std::cout << __FUNCTION__ << " " << __FILE__ << std::endl;
 }
 void tracking_window::report(QString string)
@@ -447,27 +444,19 @@ bool tracking_window::can_convert(void)
         return false;
     if(!mi3.get())
     {
-        begin_prog("nonlinear registration");
         image::basic_image<float,3> from = slice.source_images;
         image::filter::gaussian(from);
         from -= image::segmentation::otsu_threshold(from);
         image::lower_threshold(from,0.0);
-        check_prog(0,3);
-        mi3.reset(new manual_alignment(this,from,handle->vs,fa_template_imp.I,fa_template_imp.vs,image::reg::affine,0/*correlation*/));
-        while(!prog_aborted())
-        {
-            if(mi3->data.progress == 0)
-                check_prog(1,3);
-            if(mi3->data.progress == 1)
-                check_prog(2,3);
-            if(mi3->data.progress == 2)
-            {
-                check_prog(3,3);
-                break;
-            }
-        }
+        mi3.reset(new manual_alignment(this,handle->reg,
+                                       from,handle->vs,
+                                       fa_template_imp.I,fa_template_imp.vs,
+                                       image::reg::affine,image::reg::reg_cost_type::corr));
+        begin_prog("nonlinear registration");
+        while(check_prog(handle->reg.get_prog(),18) && !prog_aborted())
+            ;
+        check_prog(16,16);
     }
-    mi3->update_affine();
     return true;
 }
 
@@ -475,13 +464,7 @@ void tracking_window::subject2mni(image::vector<3>& pos)
 {
     if(mi3.get())
     {
-        mi3->data.T(pos);
-        if(mi3->data.progress >= 1)
-        {
-            image::vector<3> mni;
-            mi3->data.bnorm_data(pos,mni);
-            pos = mni;
-        }
+        handle->reg(pos);
         fa_template_imp.to_mni(pos);
     }
     else

@@ -20,7 +20,7 @@ public:
     std::vector<unsigned int> si2vi;
     std::vector<std::vector<float> > subject_qa_buf;// merged from other db
 public:
-    connectometry_db():handle(0),num_subjects(0){;}
+    connectometry_db():num_subjects(0){;}
     bool has_db(void)const{return !num_subjects;}
     void read_db(fib_data* handle);
     void remove_subject(unsigned int index);
@@ -115,19 +115,20 @@ public:
 struct connectometry_result{
     std::vector<std::vector<float> > greater,lesser;
     std::vector<const float*> greater_ptr,lesser_ptr;
-    void remove_old_index(fib_data* handle);
-    bool compare(fib_data* handle,const std::vector<const float*>& fa1,const std::vector<const float*>& fa2);
+    void remove_old_index(std::shared_ptr<fib_data> handle);
+    bool compare(std::shared_ptr<fib_data> handle,
+                 const std::vector<const float*>& fa1,const std::vector<const float*>& fa2);
 public:
     std::string error_msg;
-    void initialize(fib_data* fib_file);
-    void add_mapping_for_tracking(fib_data* handle,const char* t1,const char* t2);
-    bool individual_vs_atlas(fib_data* handle,const char* file_name);
-    bool individual_vs_db(fib_data* handle,const char* file_name);
-    bool individual_vs_individual(fib_data* handle,const char* file_name1,const char* file_name2);
+    void initialize(std::shared_ptr<fib_data> fib_file);
+    void add_mapping_for_tracking(std::shared_ptr<fib_data> handle,const char* t1,const char* t2);
+    bool individual_vs_atlas(std::shared_ptr<fib_data> handle,const char* file_name);
+    bool individual_vs_db(std::shared_ptr<fib_data> handle,const char* file_name);
+    bool individual_vs_individual(std::shared_ptr<fib_data> handle,const char* file_name1,const char* file_name2);
 
 };
 
-void calculate_spm(fib_data* handle,connectometry_result& data,stat_model& info,
+void calculate_spm(std::shared_ptr<fib_data> handle,connectometry_result& data,stat_model& info,
                    float fiber_threshold,bool normalize_qa,bool& terminated);
 
 

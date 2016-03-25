@@ -9,13 +9,7 @@
 #include "gqi_process.hpp"
 
 extern fa_template fa_template_imp;
-extern unsigned int mcc_thread_count;
-struct qsdr_thread_count_functor{
-    unsigned int operator()(void)
-    {
-        return mcc_thread_count;
-    }
-};
+
 
 struct terminated_class {
     unsigned int total;
@@ -37,12 +31,12 @@ struct terminated_class {
 class DWINormalization  : public BaseProcess
 {
 protected:
-    std::auto_ptr<image::reg::bfnorm_mapping<float,3> > mni;
+    std::auto_ptr<image::reg::bfnorm_mapping<double,3> > mni;
     image::geometry<3> src_geo;
     image::geometry<3> des_geo;
     int b0_index;
 protected:
-    image::transformation_matrix<float> affine;
+    image::transformation_matrix<double> affine;
 protected:
     image::basic_image<float,3> VG,VF;
     image::vector<3> VGvs;
@@ -94,7 +88,7 @@ public:
         {
             begin_prog("linear registration");
 
-            image::affine_transform<float> arg_min;
+            image::affine_transform<double> arg_min;
             // VG: FA TEMPLATE
             // VF: SUBJECT QA
             if(export_intermediate)
@@ -108,12 +102,11 @@ public:
             else
             {
                 bool terminated = false;
-                mcc_thread_count = voxel.voxel_data.size();
                 image::reg::linear(VF,voxel.vs,VG,VGvs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
-                                   image::transformation_matrix<float>,qsdr_thread_count_functor>(0),terminated);
+                                   image::transformation_matrix<double> >(0),terminated);
                 image::reg::linear(VF,voxel.vs,VG,VGvs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
-                                   image::transformation_matrix<float>,qsdr_thread_count_functor>(0),terminated);
-                affine = image::transformation_matrix<float>(arg_min,VF.geometry(),voxel.vs,VG.geometry(),VGvs);
+                                   image::transformation_matrix<double> >(0),terminated);
+                affine = image::transformation_matrix<double>(arg_min,VF.geometry(),voxel.vs,VG.geometry(),VGvs);
             }
             affine.inverse();
             VFF.resize(VG.geometry());
@@ -150,8 +143,8 @@ public:
         {
             begin_prog("normalization");
             terminated_class ter(17);
-            unsigned int factor = voxel.reg_method + 1;
-            unsigned int iteration = 0;
+            int factor = voxel.reg_method + 1;
+            int iteration = 0;
 
             if(voxel_size < 0.99)
             {
@@ -163,8 +156,8 @@ public:
                 m.sr[8] = voxel_size;
                 image::resample(VG,VG2,m,image::cubic);
                 image::resample(VFF,VFF2,m,image::cubic);
-                mni.reset(new image::reg::bfnorm_mapping<float,3>(geo2,image::geometry<3>(factor*7,factor*9,factor*7)));
-                multi_thread_reg(*mni.get(),VG2,VFF2,voxel.voxel_data.size(),iteration,ter);
+                mni.reset(new image::reg::bfnorm_mapping<double,3>(geo2,image::geometry<3>(factor*7,factor*9,factor*7)));
+                image::reg::bfnorm(*mni.get(),VG2,VFF2,voxel.voxel_data.size(),ter,iteration);
                 voxel.R2 = -image::reg::correlation()(VG2,VFF2,(*mni.get()));
                 if(export_intermediate)
                 {
@@ -175,8 +168,8 @@ public:
             }
             else
             {
-                mni.reset(new image::reg::bfnorm_mapping<float,3>(VG.geometry(),image::geometry<3>(factor*7,factor*9,factor*7)));
-                multi_thread_reg(*mni.get(),VG,VFF,voxel.voxel_data.size(),iteration,ter);
+                mni.reset(new image::reg::bfnorm_mapping<double,3>(VG.geometry(),image::geometry<3>(factor*7,factor*9,factor*7)));
+                image::reg::bfnorm(*mni.get(),VG,VFF,voxel.voxel_data.size(),ter,iteration);
                 voxel.R2 = -image::reg::correlation()(VG,VFF,(*mni.get()));
                 if(export_intermediate)
                 {
@@ -378,8 +371,7 @@ public:
         if(voxel_size < 0.99)
             pos /= voxel_size;
         pos += 0.5;
-        pos.floor();
-        (*mni.get())(pos,Jpos);
+        (*mni.get())(image::vector<3,int>(pos[0],pos[1],pos[2]),Jpos);
         if(voxel_size < 0.99)
             Jpos *= voxel_size;
         affine(Jpos);

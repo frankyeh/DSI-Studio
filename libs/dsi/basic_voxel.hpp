@@ -81,7 +81,7 @@ public:// gradient deviation
 public:// used in QSDR
     unsigned char reg_method;
     unsigned char interpo_method;
-    image::transformation_matrix<float> qsdr_trans;
+    image::transformation_matrix<double> qsdr_trans;
     bool output_jacobian;
     bool output_mapping;
     bool output_rdi;
@@ -90,7 +90,7 @@ public:// used in QSDR
 public: // for QSDR associated T1WT2W
     std::vector<image::basic_image<float,3> > other_image;
     std::vector<std::string> other_image_name;
-    std::vector<image::transformation_matrix<float> > other_image_affine;
+    std::vector<image::transformation_matrix<double> > other_image_affine;
 public: // user in fib evaluation
     std::vector<float> fib_fa;
     std::vector<float> fib_dir;

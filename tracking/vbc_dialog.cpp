@@ -539,7 +539,7 @@ void vbc_dialog::on_open_files_clicked()
                 work_dir,"Connectometry DB files (*db?fib.gz);;All files (*)" );
     if (file_name.isEmpty())
         return;
-    std::auto_ptr<fib_data> handle(new fib_data);
+    std::shared_ptr<fib_data> handle(new fib_data);
     begin_prog("reading connectometry DB");
     if(!handle->load_from_file(file_name.toStdString().c_str()))
     {
@@ -1264,7 +1264,7 @@ void vbc_dialog::on_save_name_list_clicked()
 
 void vbc_dialog::on_show_result_clicked()
 {
-    std::auto_ptr<fib_data> new_data(new fib_data);
+    std::shared_ptr<fib_data> new_data(new fib_data);
     *(new_data.get()) = *(vbc->handle);
     if(!report.isEmpty())
     {
@@ -1291,7 +1291,7 @@ void vbc_dialog::on_show_result_clicked()
                                              result_fib->greater_ptr[0]+new_data->dim.size());
 
     }
-    tracking_window* current_tracking_window = new tracking_window(this,new_data.release());
+    tracking_window* current_tracking_window = new tracking_window(this,new_data);
     current_tracking_window->setAttribute(Qt::WA_DeleteOnClose);
     current_tracking_window->setWindowTitle(saved_file_name.front().c_str());
     current_tracking_window->showNormal();
@@ -1696,7 +1696,7 @@ void vbc_dialog::on_add_db_clicked()
                            "Database files (*db?fib.gz);;All files (*)");
     if (filename.isEmpty())
         return;
-    std::auto_ptr<fib_data> handle(new fib_data);
+    std::shared_ptr<fib_data> handle(new fib_data);
     begin_prog("reading connectometry db");
     if(!handle->load_from_file(filename.toStdString().c_str()))
     {

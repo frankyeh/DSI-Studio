@@ -518,7 +518,7 @@ bool connectometry_db::add_db(const connectometry_db& rhs)
 
 
 
-void calculate_spm(fib_data* handle,connectometry_result& data,stat_model& info,
+void calculate_spm(std::shared_ptr<fib_data> handle,connectometry_result& data,stat_model& info,
                    float fiber_threshold,bool normalize_qa,bool& terminated)
 {
     data.initialize(handle);
@@ -551,7 +551,7 @@ void calculate_spm(fib_data* handle,connectometry_result& data,stat_model& info,
 }
 
 
-void connectometry_result::initialize(fib_data* handle)
+void connectometry_result::initialize(std::shared_ptr<fib_data> handle)
 {
     unsigned char num_fiber = handle->dir.num_fiber;
     greater.resize(num_fiber);
@@ -574,7 +574,7 @@ void connectometry_result::initialize(fib_data* handle)
         std::fill(lesser[fib].begin(),lesser[fib].end(),0.0);
     }
 }
-void connectometry_result::remove_old_index(fib_data* handle)
+void connectometry_result::remove_old_index(std::shared_ptr<fib_data> handle)
 {
     for(unsigned int index = 0;index < handle->dir.index_name.size();++index)
         if(handle->dir.index_name[index] == ">%" ||
@@ -588,7 +588,7 @@ void connectometry_result::remove_old_index(fib_data* handle)
         }
 }
 
-void connectometry_result::add_mapping_for_tracking(fib_data* handle,const char* t1,const char* t2)
+void connectometry_result::add_mapping_for_tracking(std::shared_ptr<fib_data> handle,const char* t1,const char* t2)
 {
     remove_old_index(handle);
     handle->dir.index_name.push_back(t1);
@@ -599,7 +599,7 @@ void connectometry_result::add_mapping_for_tracking(fib_data* handle,const char*
     handle->dir.index_data.back() = lesser_ptr;
 }
 
-bool connectometry_result::individual_vs_db(fib_data* handle,const char* file_name)
+bool connectometry_result::individual_vs_db(std::shared_ptr<fib_data> handle,const char* file_name)
 {
     if(!handle->db.has_db())
     {
@@ -627,7 +627,7 @@ bool connectometry_result::individual_vs_db(fib_data* handle,const char* file_na
     add_mapping_for_tracking(handle,">%","<%");
     return true;
 }
-bool connectometry_result::compare(fib_data* handle,const std::vector<const float*>& fa1,
+bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::vector<const float*>& fa1,
                                         const std::vector<const float*>& fa2)
 {
     // normalization
@@ -653,7 +653,7 @@ bool connectometry_result::compare(fib_data* handle,const std::vector<const floa
     return true;
 }
 
-bool connectometry_result::individual_vs_atlas(fib_data* handle,const char* file_name)
+bool connectometry_result::individual_vs_atlas(std::shared_ptr<fib_data> handle,const char* file_name)
 {
     // restore fa0 to QA
     handle->dir.set_tracking_index(0);
@@ -673,7 +673,7 @@ bool connectometry_result::individual_vs_atlas(fib_data* handle,const char* file
     return true;
 }
 
-bool connectometry_result::individual_vs_individual(fib_data* handle,const char* file_name1,const char* file_name2)
+bool connectometry_result::individual_vs_individual(std::shared_ptr<fib_data> handle,const char* file_name1,const char* file_name2)
 {
     // restore fa0 to QA
     handle->dir.set_tracking_index(0);

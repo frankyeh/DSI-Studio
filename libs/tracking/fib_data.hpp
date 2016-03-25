@@ -85,6 +85,8 @@ public:
 
 };
 
+
+
 struct item
 {
     std::string name;
@@ -120,6 +122,7 @@ public:
     fiber_directions dir;
     odf_data odf;
     connectometry_db db;
+    image::reg::normalization<double> reg;
     std::vector<item> view_item;
     std::vector<float> trans_to_mni;
 public:

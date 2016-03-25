@@ -16,13 +16,13 @@
 #include "vbc/vbc_database.h"
 #include "program_option.hpp"
 bool atl_load_atlas(const std::string atlas_name);
-bool atl_get_mapping(gz_mat_read& mat_reader,
+bool atl_get_mapping(std::shared_ptr<fib_data> handle,
                      unsigned int factor,
                      unsigned int thread_count,
                      image::basic_image<image::vector<3>,3>& mapping);
 void export_track_info(const std::string& file_name,
                        std::string export_option,
-                       fib_data* handle,
+                       std::shared_ptr<fib_data> handle,
                        TractModel& tract_model);
 extern fa_template fa_template_imp;
 extern std::vector<atlas> atlas_list;
@@ -60,7 +60,7 @@ void save_connectivity_matrix(TractModel& tract_model,
     out << report;
 }
 void load_nii_label(const char* filename,std::map<short,std::string>& label_map);
-void get_connectivity_matrix(fib_data* handle,
+void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                              TractModel& tract_model,
                              image::basic_image<image::vector<3>,3>& mapping)
 {
@@ -84,7 +84,7 @@ void get_connectivity_matrix(fib_data* handle,
         if(from.geometry() != handle->dim)
         {
             std::cout << roi_file_name << " is used as an MNI space ROI." << std::endl;
-            if(mapping.empty() && !atl_get_mapping(handle->mat_reader,1/*7-9-7*/,po.get("thread_count",int(std::thread::hardware_concurrency())),mapping))
+            if(mapping.empty() && !atl_get_mapping(handle,1/*7-9-7*/,po.get("thread_count",int(std::thread::hardware_concurrency())),mapping))
                 continue;
             atlas_list.clear(); // some atlas may be loaded in ROI
             if(atl_load_atlas(roi_file_name))
@@ -153,28 +153,31 @@ void get_connectivity_matrix(fib_data* handle,
 // test example
 // --action=trk --source=./test/20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
 
-
+std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name)
+{
+    std::shared_ptr<fib_data> handle(new fib_data);
+    std::cout << "loading " << file_name << "..." <<std::endl;
+    if(!QFileInfo(file_name.c_str()).exists())
+    {
+        std::cout << file_name << " does not exist. terminating..." << std::endl;
+        return std::shared_ptr<fib_data>();
+    }
+    if (!handle->load_from_file(file_name.c_str()))
+    {
+        std::cout << "Open file " << file_name << " failed" << std::endl;
+        std::cout << "msg:" << handle->error_msg << std::endl;
+        return std::shared_ptr<fib_data>();
+    }
+    return handle;
+}
 
 int trk(void)
 {
     try{
 
-    std::auto_ptr<fib_data> handle(new fib_data);
-    {
-        std::string file_name = po.get("source");
-        std::cout << "loading " << file_name << "..." <<std::endl;
-        if(!QFileInfo(file_name.c_str()).exists())
-        {
-            std::cout << file_name << " does not exist. terminating..." << std::endl;
-            return 0;
-        }
-        if (!handle->load_from_file(file_name.c_str()))
-        {
-            std::cout << "Open file " << file_name << " failed" << std::endl;
-            std::cout << "msg:" << handle->error_msg << std::endl;
-            return 0;
-        }
-    }
+    std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
+    if(!handle.get())
+        return 0;
     if (po.has("threshold_index"))
     {
         std::cout << "setting index to " << po.get("threshold_index") << std::endl;
@@ -243,7 +246,7 @@ int trk(void)
             std::cout << "Loading " << region_name << " from " << atlas_name << " atlas" << std::endl;
             if(!atl_load_atlas(atlas_name))
                 return 0;
-            if(mapping.empty() && !atl_get_mapping(handle->mat_reader,1/*7-9-7*/,std::thread::hardware_concurrency(),mapping))
+            if(mapping.empty() && !atl_get_mapping(handle,1/*7-9-7*/,std::thread::hardware_concurrency(),mapping))
                 return 0;
             image::vector<3> null;
             std::vector<image::vector<3,short> > cur_region;
@@ -295,7 +298,7 @@ int trk(void)
         }
         cnt_type = po.get("connectometry_type").c_str();
     }
-    TractModel tract_model(handle.get());
+    TractModel tract_model(handle);
 
 
 
@@ -340,12 +343,12 @@ int trk(void)
         {
             connectometry_result cnt;
             std::cout << "loading individual file:" << cnt_file_name[i].toStdString() << std::endl;
-            if(cnt_type == "iva" && !cnt.individual_vs_atlas(handle.get(),cnt_file_name[i].toLocal8Bit().begin()))
+            if(cnt_type == "iva" && !cnt.individual_vs_atlas(handle,cnt_file_name[i].toLocal8Bit().begin()))
             {
                 std::cout << "Error loading connectomnetry file:" << cnt.error_msg <<std::endl;
                 return -1;
             }
-            if(cnt_type == "ivp" && !cnt.individual_vs_db(handle.get(),cnt_file_name[i].toLocal8Bit().begin()))
+            if(cnt_type == "ivp" && !cnt.individual_vs_db(handle,cnt_file_name[i].toLocal8Bit().begin()))
             {
                 std::cout << "Error loading connectomnetry file:" << cnt.error_msg <<std::endl;
                 return -1;
@@ -353,7 +356,7 @@ int trk(void)
             if(cnt_type == "ivi")
             {
                 std::cout << "loading individual file:" << cnt_file_name[i+1].toStdString() << std::endl;
-                if(!cnt.individual_vs_individual(handle.get(),cnt_file_name[i].toLocal8Bit().begin(),
+                if(!cnt.individual_vs_individual(handle,cnt_file_name[i].toLocal8Bit().begin(),
                                                               cnt_file_name[i+1].toLocal8Bit().begin()))
                 {
                     std::cout << "Error loading connectomnetry file:" << cnt.error_msg <<std::endl;
@@ -420,7 +423,7 @@ int trk(void)
     {
         std::vector<std::string> files;
         files.push_back(po.get("ref"));
-        FibSliceModel slice(handle.get());
+        FibSliceModel slice(handle);
         CustomSliceModel new_slice;
         std::cout << "Loading reference image:" << po.get("ref") << std::endl;
         if(!new_slice.initialize(slice,!(handle->trans_to_mni.empty())/*is_qsdr*/,files,false))
@@ -445,10 +448,10 @@ int trk(void)
     std::cout << "output file:" << file_name << std::endl;
 
     if(po.has("connectivity"))
-        get_connectivity_matrix(handle.get(),tract_model,mapping);
+        get_connectivity_matrix(handle,tract_model,mapping);
 
     if(po.has("export"))
-        export_track_info(file_name,po.get("export"),handle.get(),tract_model);
+        export_track_info(file_name,po.get("export"),handle,tract_model);
 
 
     if (po.has("endpoint"))

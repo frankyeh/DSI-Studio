@@ -94,11 +94,11 @@ public:
 class fib_data;
 class FibSliceModel : public SliceModel{
 public:
-    fib_data* handle;
+    std::shared_ptr<fib_data> handle;
     image::const_pointer_image<float,3> source_images;
     std::string view_name;
 public:
-    FibSliceModel(fib_data* new_handle);
+    FibSliceModel(std::shared_ptr<fib_data> new_handle);
     void set_view_name(const std::string& view_name_)
     {
         view_name = view_name_;
@@ -122,7 +122,7 @@ public:
     std::auto_ptr<std::future<void> > thread;
     image::const_pointer_image<float,3> from;
     image::vector<3> from_vs;
-    image::affine_transform<float> arg_min;
+    image::affine_transform<double> arg_min;
     bool terminated;
     bool ended;
     ~CustomSliceModel(void)
@@ -131,7 +131,7 @@ public:
     }
 
     void terminate(void);
-    void argmin(int reg_type);
+    void argmin(image::reg::reg_type reg_type);
     void update(void);
     void update_roi(void);
 

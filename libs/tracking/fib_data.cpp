@@ -1,6 +1,4 @@
 #include "fib_data.hpp"
-
-
 bool odf_data::read(gz_mat_read& mat_reader)
 {
     unsigned int row,col;
@@ -384,6 +382,7 @@ float tracking::get_track_specific_index(unsigned int space_index,unsigned int i
 
 
 
+
 bool fib_data::load_from_file(const char* file_name)
 {
     if (!mat_reader.load_from_file(file_name) || prog_aborted())
@@ -511,7 +510,6 @@ bool fib_data::load_from_mat(void)
             }
         }
     }
-
     db.read_db(this);
     return true;
 }

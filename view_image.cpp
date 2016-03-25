@@ -1,6 +1,7 @@
 #include "view_image.h"
 #include "ui_view_image.h"
 #include "libs/gzip_interface.hpp"
+#include "prog_interface_static_link.h"
 #include <QPlainTextEdit>
 
 view_image::view_image(QWidget *parent) :

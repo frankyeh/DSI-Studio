@@ -426,7 +426,7 @@ void GLWidget::renderLR(int eye)
             odf_points.clear();
         }
 
-        fib_data* handle = cur_tracking_window.handle;
+        std::shared_ptr<fib_data> handle = cur_tracking_window.handle;
         unsigned char skip_mask_set[3] = {0,1,3};
         unsigned char mask = skip_mask_set[odf_skip];
         if(odf_points.empty())
@@ -760,7 +760,7 @@ void GLWidget::renderLR(int eye)
 
 void GLWidget::add_odf(image::pixel_index<3> pos)
 {
-    fib_data* handle = cur_tracking_window.handle;
+    std::shared_ptr<fib_data> handle = cur_tracking_window.handle;
     const float* odf_buffer =
             handle->get_odf_data(pos.index());
     if(!odf_buffer)
@@ -1655,15 +1655,16 @@ void GLWidget::adjustMapping(void)
     if(!current_visible_slide)
         return;
     std::auto_ptr<manual_alignment> manual(new manual_alignment(this,
+        cur_tracking_window.handle->reg,
         cur_tracking_window.slice.source_images,cur_tracking_window.slice.voxel_size,
         other_slices[current_visible_slide-1]->source_images,other_slices[current_visible_slide-1]->voxel_size,
-            image::reg::rigid_body,1/*mutual info*/));
-    manual->data.arg = other_slices[current_visible_slide-1]->arg_min;
+            image::reg::rigid_body,image::reg::reg_cost_type::mutual_info));
+    cur_tracking_window.handle->reg.set_arg(other_slices[current_visible_slide-1]->arg_min);
     manual->timer->start();
     if(manual->exec() != QDialog::Accepted)
         return;
     other_slices[current_visible_slide-1]->terminate();
-    other_slices[current_visible_slide-1]->arg_min = manual->data.arg;
+    other_slices[current_visible_slide-1]->arg_min = cur_tracking_window.handle->reg.get_arg();
     other_slices[current_visible_slide-1]->update();
     updateGL();
 }

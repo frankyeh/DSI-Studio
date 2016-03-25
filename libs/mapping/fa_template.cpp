@@ -8,9 +8,9 @@
 bool fa_template::load_from_file(void)
 {
     std::string fa_template_path = QCoreApplication::applicationDirPath().toLocal8Bit().begin();
-    fa_template_path += "/HCP488_QA.nii.gz";
+    fa_template_path += "/HCP842_QA.nii.gz";
     std::string fa_template_path2 = QDir::currentPath().toLocal8Bit().begin();
-    fa_template_path2 += "/HCP488_QA.nii.gz";
+    fa_template_path2 += "/HCP842_QA.nii.gz";
 
     gz_nifti read;
     if((!template_file_name.empty() && read.load_from_file(template_file_name.c_str())) ||
