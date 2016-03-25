@@ -7,11 +7,13 @@
 
 
 manual_alignment::manual_alignment(QWidget *parent,
+                                   image::reg::normalization<double>& data_,
                                    image::basic_image<float,3> from_,
                                    const image::vector<3>& from_vs_,
                                    image::basic_image<float,3> to_,
                                    const image::vector<3>& to_vs_,
                                    image::reg::reg_type reg_type_,
+                                   image::reg::reg_cost_type cost_function_) :
     QDialog(parent),ui(new Ui::manual_alignment),data(data_),from_vs(from_vs_),to_vs(to_vs_),
         reg_type(reg_type_),cost_function(cost_function_),timer(0)
 {
@@ -32,6 +34,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     else
     {
         image::reg::get_bound(from,to,data.get_arg(),b_upper,b_lower,reg_type_);
+        data.run_background(from,from_vs,to,to_vs,1,cost_function,reg_type);
     }
     ui->setupUi(this);
     if(reg_type_ == image::reg::rigid_body)
@@ -242,6 +245,7 @@ void manual_alignment::slice_pos_moved()
 
 void manual_alignment::check_reg()
 {
+    if(data.get_prog() < 18)
     {
         disconnect_arg_update();
         ui->tx->setValue(data.get_arg().translocation[0]);
@@ -280,6 +284,7 @@ void manual_alignment::on_buttonBox_rejected()
 
 void manual_alignment::on_rerun_clicked()
 {
+    data.run_background(from,from_vs,to,to_vs,1,cost_function,reg_type,std::thread::hardware_concurrency());
     if(timer)
         timer->start();
 
