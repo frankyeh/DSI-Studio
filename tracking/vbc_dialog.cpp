@@ -1568,7 +1568,7 @@ void vbc_dialog::on_load_roi_from_atlas_clicked()
             for (image::pixel_index<3>index(vbc->handle->dim);index < vbc->handle->dim.size();++index)
             {
                 image::vector<3> pos((const unsigned int*)(index.begin()));
-                pos.to(vbc->handle->trans_to_mni);
+                vbc->handle->subject2mni(pos);
                 if(atlas_list[atlas_dialog->atlas_index].is_labeled_as(pos, label))
                     new_roi.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
             }
@@ -1608,8 +1608,8 @@ void vbc_dialog::on_load_roi_from_file_clicked()
     std::vector<image::vector<3,short> > new_roi;
     for (image::pixel_index<3> index(vbc->handle->dim);index < vbc->handle->dim.size();++index)
     {
-        image::vector<3> pos((const unsigned int*)(index.begin()));
-        pos.to(vbc->handle->trans_to_mni);
+        image::vector<3> pos(index);
+        vbc->handle->subject2mni(pos);
         pos.to(transform);
         pos += 0.5;
         pos.floor();

@@ -119,17 +119,40 @@ public:
 public:
     image::geometry<3> dim;
     image::vector<3> vs;
+    bool is_human_data;
+    bool is_qsdr;
     fiber_directions dir;
     odf_data odf;
     connectometry_db db;
-    image::reg::normalization<double> reg;
     std::vector<item> view_item;
-    std::vector<float> trans_to_mni;
 public:
-    fib_data(void)
+    image::reg::normalization<double> reg;
+    std::shared_ptr<std::future<void> > reg_thread;
+    bool terminated;
+    void clear_thread(void)
+    {
+        if(reg_thread.get())
+        {
+            terminated = true;
+            reg_thread->wait();
+            reg_thread.reset();
+        }
+    }
+    std::vector<float> trans_to_mni;
+    void run_normalization(int factor,bool background);
+    void subject2mni(image::vector<3>& pos);
+    void get_mni_mapping(image::basic_image<image::vector<3,float>,3 >& mni_position);
+    bool has_reg(void)const{return terminated || reg_thread.get();}
+public:
+    fib_data(void):terminated(false),is_qsdr(false)
     {
         vs[0] = vs[1] = vs[2] = 1.0;
     }
+    ~fib_data(void)
+    {
+        clear_thread();
+    }
+
 public:
     bool load_from_file(const char* file_name);
     bool load_from_mat(void);
@@ -148,7 +171,6 @@ public:
     void get_voxel_information(unsigned int x,unsigned int y,unsigned int z,std::vector<float>& buf) const;
     void get_index_titles(std::vector<std::string>& titles);
     void getSlicesDirColor(unsigned short order,unsigned int* pixels) const;
-
 };
 
 

@@ -66,42 +66,16 @@ bool atl_load_atlas(std::string atlas_name)
 }
 bool atl_get_mapping(std::shared_ptr<fib_data> handle,
                      unsigned int factor,
-                     unsigned int thread_count,
                      image::basic_image<image::vector<3>,3>& mapping)
 {
     if(fa_template_imp.I.empty() && !fa_template_imp.load_from_file())
         return false;
-    mapping.resize(handle->dim);
-    if(!handle->trans_to_mni.empty())
+    if(!handle->is_qsdr)
     {
-        std::cout << "Transformation matrix found." << std::endl;
-        for(image::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
-        {
-            image::vector<3> pos(index);
-            pos.to(handle->trans_to_mni);
-            mapping[index.index()] = pos;
-        }
+        std::cout << "Conduct spatial warping with norm factor of " << factor << std::endl;
+        handle->run_normalization(factor,false/*not background*/);
     }
-    else
-    {
-        std::cout << "Conduct spatial warping: " << thread_count << "-thread, " << factor << "-factor" << std::endl;
-        image::basic_image<float,3> from(handle->dir.fa[0],handle->dim),to(fa_template_imp.I);
-        image::filter::gaussian(from);
-        from -= image::segmentation::otsu_threshold(from);
-        image::lower_threshold(from,0.0);
-        image::normalize(from,1.0);
-        image::normalize(to,1.0);
-        handle->reg.run_reg(from,handle->vs,
-                            fa_template_imp.I,fa_template_imp.vs,
-                            factor,image::reg::corr,image::reg::affine,thread_count);
-        mapping.resize(from.geometry());
-        for(image::pixel_index<3> index(from.geometry());index < from.size();++index)
-            if(handle->dir.fa[0][index.index()] > 0)
-            {
-                handle->reg(index,mapping[index.index()]);
-                fa_template_imp.to_mni(mapping[index.index()]);
-            }
-    }
+    handle->get_mni_mapping(mapping);
     return true;
 }
 
@@ -209,13 +183,8 @@ int atl(void)
     if(!atl_load_atlas(po.get("atlas")))
         return 0;
 
-    unsigned int factor = po.get("order",int(0)) + 1;
-    unsigned int thread_count = po.get("thread_count",int(std::thread::hardware_concurrency()));
-    std::cout << "Reg order = " << factor << std::endl;
-    std::cout << "Thread count = " << thread_count << std::endl;
-
     image::basic_image<image::vector<3>,3> mapping;
-    if(!atl_get_mapping(handle,factor,thread_count,mapping))
+    if(!atl_get_mapping(handle,po.get("order",int(0)) + 1,mapping))
         return 0;
     atl_save_mapping(po.get("source"),handle->dim,
                      mapping,handle->trans_to_mni,handle->vs,

@@ -216,7 +216,7 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
             image::basic_image<float,3> buf(cur_tracking_window.handle->view_item[index].image_data);
             gz_nifti file;
             file.set_voxel_size(cur_tracking_window.slice.voxel_size.begin());
-            if(cur_tracking_window.is_qsdr) //QSDR condition
+            if(cur_tracking_window.handle->is_qsdr) //QSDR condition
             {
                 file.set_image_transformation(cur_tracking_window.handle->trans_to_mni.begin());
                 file << cur_tracking_window.handle->view_item[index].image_data;

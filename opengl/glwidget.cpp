@@ -1655,7 +1655,6 @@ void GLWidget::adjustMapping(void)
     if(!current_visible_slide)
         return;
     std::auto_ptr<manual_alignment> manual(new manual_alignment(this,
-        cur_tracking_window.handle->reg,
         cur_tracking_window.slice.source_images,cur_tracking_window.slice.voxel_size,
         other_slices[current_visible_slide-1]->source_images,other_slices[current_visible_slide-1]->voxel_size,
             image::reg::rigid_body,image::reg::reg_cost_type::mutual_info));
@@ -1664,7 +1663,7 @@ void GLWidget::adjustMapping(void)
     if(manual->exec() != QDialog::Accepted)
         return;
     other_slices[current_visible_slide-1]->terminate();
-    other_slices[current_visible_slide-1]->arg_min = cur_tracking_window.handle->reg.get_arg();
+    other_slices[current_visible_slide-1]->arg_min = manual->data.get_arg();
     other_slices[current_visible_slide-1]->update();
     updateGL();
 }
@@ -1697,7 +1696,7 @@ bool GLWidget::addSlices(QStringList filenames,bool correct_intensity)
     for (unsigned int index = 0; index < filenames.size(); ++index)
             files[index] = filenames[index].toLocal8Bit().begin();
     std::shared_ptr<CustomSliceModel> new_slice(new CustomSliceModel);
-    if(!new_slice->initialize(cur_tracking_window.slice,cur_tracking_window.is_qsdr,files,correct_intensity))
+    if(!new_slice->initialize(cur_tracking_window.slice,cur_tracking_window.handle->is_qsdr,files,correct_intensity))
     {
         QMessageBox::information(this,"Error reading image files",0);
         return false;
@@ -1835,7 +1834,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         std::vector<std::string> file;
         file.push_back(param.toStdString());
         std::shared_ptr<CustomSliceModel> new_slice(new CustomSliceModel);
-        if(!new_slice->initialize(cur_tracking_window.slice,cur_tracking_window.is_qsdr,file,get_param("slice_smoothing")))
+        if(!new_slice->initialize(cur_tracking_window.slice,cur_tracking_window.handle->is_qsdr,file,get_param("slice_smoothing")))
         {
             std::cout << "Invalid file format:" << param.toStdString() << std::endl;
             return true;

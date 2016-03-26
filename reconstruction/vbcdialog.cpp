@@ -83,7 +83,7 @@ void VBCDialog::on_group1open_clicked()
             QMessageBox::information(this,"Error","Invalid FIB file format",0);
             return;
         }
-        if(fib.trans_to_mni.empty())
+        if(!fib.is_qsdr)
         {
             QMessageBox::information(this,"Error","The FIB file was not reconstructed by QSDR.",0);
             return;

@@ -592,14 +592,13 @@ void reconstruction_window::on_zoom_out_clicked()
 extern fa_template fa_template_imp;
 void reconstruction_window::on_manual_reg_clicked()
 {
-    image::reg::normalization<double> data;
-    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,data,
+    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,
             dwi,handle->voxel.vs,
             fa_template_imp.I,fa_template_imp.vs,
             image::reg::rigid_body,image::reg::reg_cost_type::corr));
     manual->timer->start();
     if(manual->exec() == QDialog::Accepted)
-        handle->voxel.qsdr_trans = data.get_T();
+        handle->voxel.qsdr_trans = manual->data.get_T();
 }
 
 void reconstruction_window::on_odf_sharpening_currentIndexChanged(int index)
@@ -765,8 +764,7 @@ void reconstruction_window::on_actionRotate_triggered()
         return;
     }
     in.get_voxel_size(vs.begin());
-    image::reg::normalization<double> data;
-    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,data,
+    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,
                                                                 dwi,handle->voxel.vs,ref,vs,
                                                                 image::reg::rigid_body,
                                                                 image::reg::reg_cost_type::mutual_info));
@@ -775,7 +773,7 @@ void reconstruction_window::on_actionRotate_triggered()
         return;
 
     begin_prog("rotating");
-    handle->rotate(ref.geometry(),data.get_iT());
+    handle->rotate(ref.geometry(),manual->data.get_iT());
     handle->calculate_mask();
     handle->voxel.vs = vs;
     update_image();
@@ -1010,18 +1008,20 @@ bool add_other_image(ImageModel* handle,QString name,QString filename,bool full_
             image::basic_image<float,3> from(handle->voxel.dwi_sum),to(ref);
             image::normalize(from,1.0);
             image::normalize(to,1.0);
-            data.run_reg(from,handle->voxel.vs,to,vs,0,image::reg::reg_cost_type::mutual_info,image::reg::rigid_body,std::thread::hardware_concurrency());
+            bool terminated = false;
+            data.run_reg(from,handle->voxel.vs,to,vs,0,image::reg::reg_cost_type::mutual_info,image::reg::rigid_body,terminated,std::thread::hardware_concurrency());
+            affine = data.get_T();
         }
         else
         {
-            std::auto_ptr<manual_alignment> manual(new manual_alignment(0,data,
+            std::auto_ptr<manual_alignment> manual(new manual_alignment(0,
                         handle->voxel.dwi_sum,handle->voxel.vs,ref,vs,image::reg::rigid_body,image::reg::reg_cost_type::mutual_info));
             manual->timer->start();
             if(manual->exec() != QDialog::Accepted)
                 return false;
-
+            affine = manual->data.get_T();
         }
-        affine = data.get_T();
+
     }
     handle->voxel.other_image.push_back(ref);
     handle->voxel.other_image_name.push_back(name.toLocal8Bit().begin());
@@ -1041,14 +1041,13 @@ void reconstruction_window::on_add_t1t2_clicked()
 
 void reconstruction_window::on_actionManual_Rotation_triggered()
 {
-    image::reg::normalization<double> data;
     std::auto_ptr<manual_alignment> manual(
-                new manual_alignment(this,data,dwi,handle->voxel.vs,dwi,handle->voxel.vs,image::reg::none,image::reg::reg_cost_type::mutual_info));
+                new manual_alignment(this,dwi,handle->voxel.vs,dwi,handle->voxel.vs,image::reg::none,image::reg::reg_cost_type::mutual_info));
 
     if(manual->exec() != QDialog::Accepted)
         return;
     begin_prog("rotating");
-    handle->rotate(dwi.geometry(),data.get_iT());
+    handle->rotate(dwi.geometry(),manual->data.get_iT());
     handle->calculate_mask();
     update_image();
     update_dimension();
@@ -1073,14 +1072,13 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
         return;
     }
     in.get_voxel_size(vs.begin());
-    image::reg::normalization<double> data;
-    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,data,dwi,handle->voxel.vs,ref,vs,image::reg::rigid_body,image::reg::reg_cost_type::corr));
+    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,handle->voxel.vs,ref,vs,image::reg::rigid_body,image::reg::reg_cost_type::corr));
     manual->timer->start();
     if(manual->exec() != QDialog::Accepted)
         return;
 
     begin_prog("rotating");
-    handle->rotate(ref.geometry(),data.get_iT());
+    handle->rotate(ref.geometry(),manual->data.get_iT());
     handle->calculate_mask();
     handle->voxel.vs = vs;
     image::pointer_image<unsigned short,3> I = image::make_image(handle->voxel.dim,(unsigned short*)handle->dwi_data[0]);

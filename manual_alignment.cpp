@@ -7,14 +7,13 @@
 
 
 manual_alignment::manual_alignment(QWidget *parent,
-                                   image::reg::normalization<double>& data_,
                                    image::basic_image<float,3> from_,
                                    const image::vector<3>& from_vs_,
                                    image::basic_image<float,3> to_,
                                    const image::vector<3>& to_vs_,
                                    image::reg::reg_type reg_type_,
                                    image::reg::reg_cost_type cost_function_) :
-    QDialog(parent),ui(new Ui::manual_alignment),data(data_),from_vs(from_vs_),to_vs(to_vs_),
+    QDialog(parent),ui(new Ui::manual_alignment),from_vs(from_vs_),to_vs(to_vs_),
         reg_type(reg_type_),cost_function(cost_function_),timer(0)
 {
     from.swap(from_);
@@ -23,6 +22,10 @@ manual_alignment::manual_alignment(QWidget *parent,
     image::normalize(to,1.0);
     if(reg_type == image::reg::none) // manuall rotation
     {
+        data.from_geo = from.geometry();
+        data.from_vs = from_vs;
+        data.to_geo = to.geometry();
+        data.to_vs = to_vs;
         image::reg::get_bound(from,to,data.get_arg(),b_upper,b_lower,image::reg::rigid_body);
         b_upper.rotation[0] *= 2;
         b_upper.rotation[1] *= 2;
@@ -34,7 +37,13 @@ manual_alignment::manual_alignment(QWidget *parent,
     else
     {
         image::reg::get_bound(from,to,data.get_arg(),b_upper,b_lower,reg_type_);
-        data.run_background(from,from_vs,to,to_vs,1,cost_function,reg_type);
+        reg_thread.reset(new std::future<void>(std::async(std::launch::async,[this]()
+        {
+            terminated = false;
+            data.run_reg(from,from_vs,to,to_vs,1,cost_function,reg_type,terminated);
+        }
+        )));
+
     }
     ui->setupUi(this);
     if(reg_type_ == image::reg::rigid_body)
@@ -85,8 +94,8 @@ manual_alignment::manual_alignment(QWidget *parent,
     }
     else
     {
-        slice_pos_moved();
         update_image();
+        slice_pos_moved();
     }
 }
 
@@ -127,6 +136,7 @@ manual_alignment::~manual_alignment()
 {
     if(timer)
         timer->stop();
+    clear_thread();
     delete ui;
 }
 void manual_alignment::load_param(void)
@@ -271,6 +281,7 @@ void manual_alignment::check_reg()
 
 void manual_alignment::on_buttonBox_accepted()
 {
+    data.update_affine();
     if(timer)
         timer->stop();
     update_image(); // to update the affine matrix
@@ -284,7 +295,13 @@ void manual_alignment::on_buttonBox_rejected()
 
 void manual_alignment::on_rerun_clicked()
 {
-    data.run_background(from,from_vs,to,to_vs,1,cost_function,reg_type,std::thread::hardware_concurrency());
+    clear_thread();
+    reg_thread.reset(new std::future<void>(std::async(std::launch::async,[this]()
+    {
+        terminated = false;
+        data.run_reg(from,from_vs,to,to_vs,1,cost_function,reg_type,terminated);
+    }
+    )));
     if(timer)
         timer->start();
 

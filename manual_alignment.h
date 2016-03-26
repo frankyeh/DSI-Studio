@@ -22,16 +22,27 @@ private:
     image::color_image buffer[3];
     QImage slice_image[3];
 private:
+    std::shared_ptr<std::future<void> > reg_thread;
+    bool terminated;
+    void clear_thread(void)
+    {
+        if(reg_thread.get())
+        {
+            terminated = 1;
+            reg_thread->wait();
+            reg_thread.reset();
+        }
+    }
+private:
 
     void load_param(void);
 public:
-    image::reg::normalization<double>& data;
+    image::reg::normalization<double> data;
     image::reg::reg_cost_type cost_function;
     image::reg::reg_type reg_type;
 public:
     QTimer* timer;
     explicit manual_alignment(QWidget *parent,
-                              image::reg::normalization<double>& data,
                               image::basic_image<float,3> from_,
                               const image::vector<3>& from_vs,
                               image::basic_image<float,3> to_,

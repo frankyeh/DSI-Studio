@@ -495,7 +495,7 @@ void TractTableWidget::save_end_point_in_mni(void)
     tract_models[currentRow()]->get_end_points(points);
     for(unsigned int index = 0;index < points.size();++index)
     {
-        cur_tracking_window.subject2mni(points[index]);
+        cur_tracking_window.handle->subject2mni(points[index]);
         buffer.push_back(points[index][0]);
         buffer.push_back(points[index][1]);
         buffer.push_back(points[index][2]);
@@ -523,7 +523,7 @@ void TractTableWidget::get_profile(const std::vector<float>& tract_data,image::b
     for(unsigned int j = 0;j < tract_data.size();j += 3)
     {
         image::vector<3> v(&(tract_data[j]));
-        cur_tracking_window.subject2mni(v);
+        cur_tracking_window.handle->subject2mni(v);
         // x = -60 ~ 60    total  120
         // y = -90 ~ 60    total  150
         // z = -50 ~ 70    total  120
@@ -692,7 +692,7 @@ void TractTableWidget::saveTransformedTracts(const float* transform)
             for(unsigned int j = 0;j < tract_data[i].size();j += 3)
             {
                 image::vector<3> v(&(tract_data[i][j]));
-                cur_tracking_window.subject2mni(v);
+                cur_tracking_window.handle->subject2mni(v);
                 tract_data[i][j] = v[0];
                 tract_data[i][j+1] = v[1];
                 tract_data[i][j+2] = v[2];
@@ -1099,7 +1099,7 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
         {
             gz_nifti nii_header;
             nii_header.set_voxel_size(vs.begin());
-            if(cur_tracking_window.is_qsdr) //QSDR condition
+            if(cur_tracking_window.handle->is_qsdr)
             {
                 image::matrix<4,4,float> new_trans(transformation),trans(cur_tracking_window.handle->trans_to_mni.begin());
                 new_trans.inv();

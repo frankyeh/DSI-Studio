@@ -18,7 +18,6 @@
 bool atl_load_atlas(const std::string atlas_name);
 bool atl_get_mapping(std::shared_ptr<fib_data> handle,
                      unsigned int factor,
-                     unsigned int thread_count,
                      image::basic_image<image::vector<3>,3>& mapping);
 void export_track_info(const std::string& file_name,
                        std::string export_option,
@@ -84,7 +83,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
         if(from.geometry() != handle->dim)
         {
             std::cout << roi_file_name << " is used as an MNI space ROI." << std::endl;
-            if(mapping.empty() && !atl_get_mapping(handle,1/*7-9-7*/,po.get("thread_count",int(std::thread::hardware_concurrency())),mapping))
+            if(mapping.empty() && !atl_get_mapping(handle,1/*7-9-7*/,mapping))
                 continue;
             atlas_list.clear(); // some atlas may be loaded in ROI
             if(atl_load_atlas(roi_file_name))
@@ -246,7 +245,7 @@ int trk(void)
             std::cout << "Loading " << region_name << " from " << atlas_name << " atlas" << std::endl;
             if(!atl_load_atlas(atlas_name))
                 return 0;
-            if(mapping.empty() && !atl_get_mapping(handle,1/*7-9-7*/,std::thread::hardware_concurrency(),mapping))
+            if(mapping.empty() && !atl_get_mapping(handle,1/*7-9-7*/,mapping))
                 return 0;
             image::vector<3> null;
             std::vector<image::vector<3,short> > cur_region;
@@ -426,7 +425,7 @@ int trk(void)
         FibSliceModel slice(handle);
         CustomSliceModel new_slice;
         std::cout << "Loading reference image:" << po.get("ref") << std::endl;
-        if(!new_slice.initialize(slice,!(handle->trans_to_mni.empty())/*is_qsdr*/,files,false))
+        if(!new_slice.initialize(slice,handle->is_qsdr,files,false))
         {
             std::cout << "Error reading ref image file:" << po.get("ref") << std::endl;
             return 0;

@@ -156,7 +156,7 @@ void RegionTableWidget::add_region_from_atlas(unsigned int atlas,unsigned int la
     for (image::pixel_index<3>index(geo); index < geo.size(); ++index)
     {
         image::vector<3> mni(index.begin());
-        cur_tracking_window.subject2mni(mni);
+        cur_tracking_window.handle->subject2mni(mni);
         if (!atlas_list[atlas].is_labeled_as(mni, label))
             continue;
         points.push_back(image::vector<3,short>(index.begin()));
@@ -405,7 +405,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     }
 
     if(from.geometry() != cur_tracking_window.slice.geometry &&
-       !cur_tracking_window.handle->trans_to_mni.empty() && !has_transform)// use transformation information
+       cur_tracking_window.handle->is_qsdr && !has_transform)// use transformation information
     {
         // searching QSDR mappings
         image::basic_image<unsigned int, 3> new_from;
@@ -515,7 +515,7 @@ void RegionTableWidget::load_region(void)
 
         ROIRegion region(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size);
         if(!region.LoadFromFile(filenames[index].toLocal8Bit().begin(),
-                cur_tracking_window.handle->trans_to_mni))
+                cur_tracking_window.handle->is_qsdr ? cur_tracking_window.handle->trans_to_mni:std::vector<float>()))
         {
             QMessageBox::information(this,"error","Unknown file format",0);
             return;
@@ -632,7 +632,7 @@ void RegionTableWidget::save_region(void)
         filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
     std::vector<float> no_trans;
     regions[currentRow()]->SaveToFile(filename.toLocal8Bit().begin(),
-                                     cur_tracking_window.is_qsdr ? cur_tracking_window.handle->trans_to_mni: no_trans);
+                                     cur_tracking_window.handle->is_qsdr ? cur_tracking_window.handle->trans_to_mni: no_trans);
     item(currentRow(),0)->setText(QFileInfo(filename).baseName());
 }
 void RegionTableWidget::save_all_regions_to_dir(void)
@@ -652,7 +652,7 @@ void RegionTableWidget::save_all_regions_to_dir(void)
             filename  += item(index,0)->text().toLocal8Bit().begin();
             filename  += ".nii.gz";
             regions[index]->SaveToFile(filename.c_str(),
-                                         cur_tracking_window.is_qsdr ? cur_tracking_window.handle->trans_to_mni: no_trans);
+                                         cur_tracking_window.handle->is_qsdr ? cur_tracking_window.handle->trans_to_mni: no_trans);
         }
 }
 void RegionTableWidget::save_all_regions(void)
@@ -689,7 +689,7 @@ void RegionTableWidget::save_all_regions(void)
         }
     gz_nifti header;
     header.set_voxel_size(cur_tracking_window.slice.voxel_size);
-    if(cur_tracking_window.is_qsdr)
+    if(cur_tracking_window.handle->is_qsdr)
         header.set_image_transformation(cur_tracking_window.handle->trans_to_mni.begin());
     else
         image::flip_xy(mask);

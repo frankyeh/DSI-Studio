@@ -66,15 +66,11 @@ public:
     std::auto_ptr<QTimer> timer;
     unsigned int odf_size;
     unsigned int odf_face_size;
-    bool is_qsdr;
+
 
     void set_tracking_param(ThreadData& tracking_thread);
 public:
-    image::affine_transform<float> mi3_arg;
-    std::auto_ptr<manual_alignment> mi3;
     bool can_convert(void);
-    void subject2mni(image::vector<3>& pos);
-
 public:
     std::auto_ptr<tract_report> tact_report_imp;
     std::auto_ptr<color_bar_dialog> color_bar;

@@ -108,8 +108,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             ui->sliceViewBox->addItem(fib.view_item[index].name.c_str());
     }
 
-    is_qsdr = !handle->trans_to_mni.empty();
-    if(is_qsdr)
+    if(handle->is_qsdr)
     {
         QStringList wm,t1;
         wm << QCoreApplication::applicationDirPath() + "/mni_icbm152_wm_tal_nlin_asym_09a.nii.gz";
@@ -134,19 +133,11 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     }
 
-    // setup atlas
-    if(!fa_template_imp.I.empty() &&
-        handle->dim[0]*handle->vs[0] > 100 &&
-        handle->dim[1]*handle->vs[1] > 120 &&
-        handle->dim[2]*handle->vs[2] > 50 && !is_qsdr)
-    {
-        // delayed background registration
-    }
-    else
+    if(!handle->is_human_data || handle->is_qsdr)
         ui->actionManual_Registration->setEnabled(false);
 
 
-    if(!track_network_list.empty() && (is_qsdr || ui->actionManual_Registration->isEnabled()))
+    if(!track_network_list.empty() && handle->is_human_data)
     {
         QMenu* menu = new QMenu(this);
         for (int index = 0; index < track_network_list.size(); ++index)
@@ -369,7 +360,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         ui->show_fiber->setChecked((*this)["roi_fiber"].toBool());
     }
 
-    if(is_qsdr || ui->actionManual_Registration->isEnabled())
+    if(handle->is_human_data)
     {
         QStringList items;
         for(int i = 0;i < atlas_list.size();++i)
@@ -438,21 +429,14 @@ void tracking_window::initialize_tracking_index(int index)
 
 bool tracking_window::can_convert(void)
 {
-    if(!handle->trans_to_mni.empty())
-        return true;
-    if(!ui->actionManual_Registration->isEnabled())
+    if(!handle->is_human_data)
         return false;
-    if(!mi3.get())
+    if(handle->is_qsdr)
+        return true;
+    if(!handle->has_reg())
     {
-        image::basic_image<float,3> from = slice.source_images;
-        image::filter::gaussian(from);
-        from -= image::segmentation::otsu_threshold(from);
-        image::lower_threshold(from,0.0);
-        mi3.reset(new manual_alignment(this,handle->reg,
-                                       from,handle->vs,
-                                       fa_template_imp.I,fa_template_imp.vs,
-                                       image::reg::affine,image::reg::reg_cost_type::corr));
-        begin_prog("nonlinear registration");
+        begin_prog("running normalization");
+        handle->run_normalization(1,true);
         while(check_prog(handle->reg.get_prog(),18) && !prog_aborted())
             ;
         check_prog(16,16);
@@ -460,17 +444,6 @@ bool tracking_window::can_convert(void)
     return true;
 }
 
-void tracking_window::subject2mni(image::vector<3>& pos)
-{
-    if(mi3.get())
-    {
-        handle->reg(pos);
-        fa_template_imp.to_mni(pos);
-    }
-    else
-    if(!handle->trans_to_mni.empty())
-        pos.to(handle->trans_to_mni);
-}
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 {
     bool has_info = false;
@@ -500,10 +473,10 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
             .arg(std::floor(pos[1]*10.0+0.5)/10.0)
             .arg(std::floor(pos[2]*10.0+0.5)/10.0);
 
-    if(!handle->trans_to_mni.empty() || mi3.get())
+    if(handle->is_qsdr || handle->has_reg())
     {
         image::vector<3,float> mni(pos);
-        subject2mni(mni);
+        handle->subject2mni(mni);
         status += QString("MNI(%1,%2,%3) ")
                 .arg(std::floor(mni[0]*10.0+0.5)/10.0)
                 .arg(std::floor(mni[1]*10.0+0.5)/10.0)
@@ -1034,10 +1007,9 @@ void tracking_window::on_actionSave_Tracts_in_MNI_space_triggered()
         QMessageBox::information(this,"Error","MNI normalization is not supported for the current image resolution",0);
         return;
     }
-    if(handle->trans_to_mni.empty())
-        tractWidget->saveTransformedTracts(0);
-    else
+    if(handle->is_qsdr)
         tractWidget->saveTransformedTracts(&*(handle->trans_to_mni.begin()));
+        tractWidget->saveTransformedTracts(0);
 }
 
 
@@ -1130,12 +1102,21 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
 
 void tracking_window::on_actionManual_Registration_triggered()
 {
-    can_convert();
-    if(mi3.get())
-    {
-        mi3->timer->start();
-        mi3->show();
-    }
+    image::basic_image<float,3> from = slice.source_images;
+    image::filter::gaussian(from);
+    from -= image::segmentation::otsu_threshold(from);
+    image::lower_threshold(from,0.0);
+    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
+                                   from,handle->vs,
+                                   fa_template_imp.I,fa_template_imp.vs,
+                                   image::reg::affine,image::reg::reg_cost_type::corr));
+
+    manual->timer->start();
+    if(manual->exec() != QDialog::Accepted)
+        return;
+    handle->clear_thread();
+    handle->reg = manual->data;
+    handle->terminated = true;
 }
 
 
@@ -1730,7 +1711,7 @@ void tracking_window::on_actionStrip_skull_for_T1w_image_triggered()
 
 void tracking_window::on_actionIndividual_vs_atlas_triggered()
 {
-    if(!is_qsdr)
+    if(!handle->is_qsdr)
     {
         QMessageBox::information(this,"Error","Please open an atlas in STEP3: fiber tracking to run individual connectometry. See online documentation for details.");
         return;
@@ -1752,7 +1733,7 @@ void tracking_window::on_actionIndividual_vs_atlas_triggered()
 
 void tracking_window::on_actionIndividual_vs_individual_triggered()
 {
-    if(!is_qsdr)
+    if(!handle->is_qsdr)
     {
         QMessageBox::information(this,"Error","Please open an atlas or a connectometry db in STEP3: fiber tracking to run individual connectometry. See online documentation for details.");
         return;
@@ -1782,7 +1763,7 @@ void tracking_window::on_actionIndividual_vs_individual_triggered()
 
 void tracking_window::on_actionIndividual_vs_normal_population_triggered()
 {
-    if(!is_qsdr)
+    if(!handle->is_qsdr)
     {
         QMessageBox::information(this,"Error","Please open a connectometry db in STEP3: fiber tracking to run individual connectometry. See online documentation for details.");
         return;

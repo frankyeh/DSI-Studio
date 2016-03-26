@@ -1,4 +1,5 @@
 #include "fib_data.hpp"
+#include "fa_template.hpp"
 bool odf_data::read(gz_mat_read& mat_reader)
 {
     unsigned int row,col;
@@ -456,6 +457,7 @@ bool fib_data::load_from_mat(void)
             mat_reader.read(index,row,col,trans);
             trans_to_mni.resize(16);
             std::copy(trans,trans+16,trans_to_mni.begin());
+            is_qsdr = true;
             continue;
         }
         if (matrix_name == "image")
@@ -486,7 +488,7 @@ bool fib_data::load_from_mat(void)
         return false;
     }
 
-    if(!trans_to_mni.empty() && !view_item.empty())
+    if(is_qsdr && !view_item.empty())
     {
         unsigned int row,col;
         const float* mx = 0;
@@ -510,6 +512,8 @@ bool fib_data::load_from_mat(void)
             }
         }
     }
+
+    is_human_data = dim[0]*vs[0] > 100 && dim[1]*vs[1] > 120 && dim[2]*vs[2] > 40;
     db.read_db(this);
     return true;
 }
@@ -637,4 +641,52 @@ void fib_data::getSlicesDirColor(unsigned short order,unsigned int* pixels) cons
         *pixels = color;
     }
 }
+extern fa_template fa_template_imp;
+void fib_data::run_normalization(int factor,bool background)
+{
+    auto lambda = [this,factor]()
+    {
+        terminated = false;
+        image::basic_image<float,3> from(dir.fa[0],dim),to(fa_template_imp.I);
+        image::filter::gaussian(from);
+        from -= image::segmentation::otsu_threshold(from);
+        image::lower_threshold(from,0.0);
+        image::normalize(from,1.0);
+        image::normalize(to,1.0);
+        reg.run_reg(from,vs,fa_template_imp.I,fa_template_imp.vs,
+                    factor,image::reg::corr,image::reg::affine,terminated,std::thread::hardware_concurrency());
+        terminated = true;
+    };
 
+    if(background)
+    {
+        clear_thread();
+        reg_thread.reset(new std::future<void>(std::async(std::launch::async,lambda)));
+    }
+    else
+        lambda();
+}
+
+void fib_data::subject2mni(image::vector<3>& pos)
+{
+    if(!is_human_data)
+        return;
+    if(is_qsdr)
+    {
+        pos.to(trans_to_mni);
+        return;
+    }
+    reg(pos);
+    fa_template_imp.to_mni(pos);
+}
+void fib_data::get_mni_mapping(image::basic_image<image::vector<3,float>,3 >& mni_position)
+{
+    mni_position.resize(dim);
+    for (image::pixel_index<3>index(dim); index < dim.size();++index)
+        if(dir.get_fa(index.index(),0) > 0)
+        {
+            image::vector<3,float> mni(index.begin());
+            subject2mni(mni);
+            mni_position[index.index()] = mni;
+        }
+}
