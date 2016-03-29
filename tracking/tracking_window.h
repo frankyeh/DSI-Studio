@@ -66,11 +66,11 @@ public:
     std::auto_ptr<QTimer> timer;
     unsigned int odf_size;
     unsigned int odf_face_size;
-
-
     void set_tracking_param(ThreadData& tracking_thread);
 public:
     bool can_convert(void);
+    QMenu* track_recog_menu;
+    void load_track_recog_menu(void);
 public:
     std::auto_ptr<tract_report> tact_report_imp;
     std::auto_ptr<color_bar_dialog> color_bar;
@@ -172,6 +172,7 @@ private slots:
     void on_actionIndividual_vs_individual_triggered();
     void on_actionIndividual_vs_normal_population_triggered();
     void add_roi_from_atlas();
+    void on_actionLoad_Deep_Learning_Network_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

@@ -37,12 +37,10 @@ manual_alignment::manual_alignment(QWidget *parent,
     else
     {
         image::reg::get_bound(from,to,data.get_arg(),b_upper,b_lower,reg_type_);
-        reg_thread.reset(new std::future<void>(std::async(std::launch::async,[this]()
+        thread.run([this]()
         {
-            terminated = false;
-            data.run_reg(from,from_vs,to,to_vs,1,cost_function,reg_type,terminated);
-        }
-        )));
+            data.run_reg(from,from_vs,to,to_vs,1,cost_function,reg_type,thread.terminated);
+        });
 
     }
     ui->setupUi(this);
@@ -136,7 +134,6 @@ manual_alignment::~manual_alignment()
 {
     if(timer)
         timer->stop();
-    clear_thread();
     delete ui;
 }
 void manual_alignment::load_param(void)
@@ -295,13 +292,10 @@ void manual_alignment::on_buttonBox_rejected()
 
 void manual_alignment::on_rerun_clicked()
 {
-    clear_thread();
-    reg_thread.reset(new std::future<void>(std::async(std::launch::async,[this]()
+    thread.run([this]()
     {
-        terminated = false;
-        data.run_reg(from,from_vs,to,to_vs,1,cost_function,reg_type,terminated);
-    }
-    )));
+        data.run_reg(from,from_vs,to,to_vs,1,cost_function,reg_type,thread.terminated);
+    });
     if(timer)
         timer->start();
 

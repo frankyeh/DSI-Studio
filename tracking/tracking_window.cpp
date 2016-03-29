@@ -48,7 +48,7 @@ void tracking_window::set_data(QString name, QVariant value)
 
 tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_handle) :
         QMainWindow(parent),handle(new_handle),
-        ui(new Ui::tracking_window),scene(*this),slice(new_handle),gLdock(0),renderWidget(0)
+        ui(new Ui::tracking_window),scene(*this),slice(new_handle),gLdock(0),renderWidget(0),track_recog_menu(0)
 
 {
     fib_data& fib = *new_handle;
@@ -137,22 +137,9 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         ui->actionManual_Registration->setEnabled(false);
 
 
+    ui->atlas_tracking->setVisible(false);
     if(!track_network_list.empty() && handle->is_human_data)
-    {
-        QMenu* menu = new QMenu(this);
-        for (int index = 0; index < track_network_list.size(); ++index)
-            {
-                QAction* Item = new QAction(this);
-                Item->setText(QString("%1...").arg(track_network_list[index].c_str()));
-                Item->setData(index);
-                Item->setVisible(true);
-                connect(Item, SIGNAL(triggered()),tractWidget, SLOT(track_using_atlas()));
-                menu->addAction(Item);
-            }
-        ui->atlas_tracking->setMenu(menu);
-    }
-    else
-        ui->atlas_tracking->setVisible(false);
+        load_track_recog_menu();
 
     {
         std::vector<std::string> index_list;
@@ -294,11 +281,13 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionFilter_by_ROI,SIGNAL(triggered()),tractWidget,SLOT(filter_by_roi()));
 
         connect(ui->actionOpenTract,SIGNAL(triggered()),tractWidget,SLOT(load_tracts()));
+        connect(ui->actionOpen_Tracts_Label,SIGNAL(triggered()),tractWidget,SLOT(load_tract_label()));
         connect(ui->actionMerge_All,SIGNAL(triggered()),tractWidget,SLOT(merge_all()));
         connect(ui->actionCopyTrack,SIGNAL(triggered()),tractWidget,SLOT(copy_track()));
-        connect(ui->actionSeparate_Deleted,SIGNAL(triggered()),tractWidget,SLOT(separate_deleted_track()));
         connect(ui->actionDeleteTract,SIGNAL(triggered()),tractWidget,SLOT(delete_tract()));
         connect(ui->actionDeleteTractAll,SIGNAL(triggered()),tractWidget,SLOT(delete_all_tract()));
+        connect(ui->actionSeparate_Deleted,SIGNAL(triggered()),tractWidget,SLOT(separate_deleted_track()));
+        connect(ui->actionSort_Tracts_By_Names,SIGNAL(triggered()),tractWidget,SLOT(sort_track_by_name()));
 
         connect(ui->actionCheck_all_tracts,SIGNAL(triggered()),tractWidget,SLOT(check_all()));
         connect(ui->actionUncheck_all_tracts,SIGNAL(triggered()),tractWidget,SLOT(uncheck_all()));
@@ -444,6 +433,22 @@ bool tracking_window::can_convert(void)
     return true;
 }
 
+void tracking_window::load_track_recog_menu(void)
+{
+    delete track_recog_menu;
+    track_recog_menu = new QMenu(this);
+    for (int index = 0; index < track_network_list.size(); ++index)
+        {
+            QAction* Item = new QAction(this);
+            Item->setText(QString("%1...").arg(track_network_list[index].c_str()));
+            Item->setData(index);
+            Item->setVisible(true);
+            connect(Item, SIGNAL(triggered()),tractWidget, SLOT(track_using_atlas()));
+            track_recog_menu->addAction(Item);
+        }
+    ui->atlas_tracking->setMenu(track_recog_menu);
+    ui->atlas_tracking->setVisible(true);
+}
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 {
     bool has_info = false;
@@ -1114,9 +1119,8 @@ void tracking_window::on_actionManual_Registration_triggered()
     manual->timer->start();
     if(manual->exec() != QDialog::Accepted)
         return;
-    handle->clear_thread();
+    handle->thread.clear();
     handle->reg = manual->data;
-    handle->terminated = true;
 }
 
 
@@ -1805,4 +1809,37 @@ void tracking_window::on_show_position_toggled(bool checked)
     if(ui->show_position->isChecked() ^ (*this)["roi_position"].toBool())
         set_data("roi_position",ui->show_position->isChecked());
     scene.show_slice();
+}
+
+extern track_recognition track_network;
+extern std::vector<std::string> track_network_list;
+void tracking_window::on_actionLoad_Deep_Learning_Network_triggered()
+{
+    QString file_name = QFileDialog::getOpenFileName(
+                           this,
+                           "Open network text files",
+                           "network.txt",
+                           "Text files (*.txt);;All files (*)");
+    if (file_name.isEmpty())
+        return;
+
+    QString track_label = QFileInfo(file_name).absolutePath()+ "/network_label.txt";
+    if(!QFileInfo(track_label).exists())
+        track_label = QFileDialog::getOpenFileName(
+                               this,
+                               "Open network label file",
+                               "network_label.txt",
+                               "Text files (*.txt);;All files (*)");
+    if (track_label.isEmpty())
+        return;
+
+    if(track_network.cnn.load_from_file(file_name.toStdString().c_str()))
+    {
+        std::ifstream in(track_label.toStdString().c_str());
+        std::string line;
+        while(std::getline(in,line))
+            track_network_list.push_back(line);
+    }
+    can_convert();
+    load_track_recog_menu();
 }

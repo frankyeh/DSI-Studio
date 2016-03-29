@@ -22,17 +22,7 @@ private:
     image::color_image buffer[3];
     QImage slice_image[3];
 private:
-    std::shared_ptr<std::future<void> > reg_thread;
-    bool terminated;
-    void clear_thread(void)
-    {
-        if(reg_thread.get())
-        {
-            terminated = 1;
-            reg_thread->wait();
-            reg_thread.reset();
-        }
-    }
+    image::thread thread;
 private:
 
     void load_param(void);

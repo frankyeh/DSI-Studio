@@ -127,32 +127,17 @@ public:
     std::vector<item> view_item;
 public:
     image::reg::normalization<double> reg;
-    std::shared_ptr<std::future<void> > reg_thread;
-    bool terminated;
-    void clear_thread(void)
-    {
-        if(reg_thread.get())
-        {
-            terminated = true;
-            reg_thread->wait();
-            reg_thread.reset();
-        }
-    }
+    image::thread thread;
     std::vector<float> trans_to_mni;
     void run_normalization(int factor,bool background);
     void subject2mni(image::vector<3>& pos);
     void get_mni_mapping(image::basic_image<image::vector<3,float>,3 >& mni_position);
-    bool has_reg(void)const{return terminated || reg_thread.get();}
+    bool has_reg(void)const{return thread.has_started();}
 public:
-    fib_data(void):terminated(false),is_qsdr(false)
+    fib_data(void):is_qsdr(false)
     {
         vs[0] = vs[1] = vs[2] = 1.0;
     }
-    ~fib_data(void)
-    {
-        clear_thread();
-    }
-
 public:
     bool load_from_file(const char* file_name);
     bool load_from_mat(void);
@@ -170,11 +155,30 @@ public:
     void get_voxel_info2(unsigned int x,unsigned int y,unsigned int z,std::vector<float>& buf) const;
     void get_voxel_information(unsigned int x,unsigned int y,unsigned int z,std::vector<float>& buf) const;
     void get_index_titles(std::vector<std::string>& titles);
-    void getSlicesDirColor(unsigned short order,unsigned int* pixels) const;
 };
 
 
 
-
+class track_recognition{
+    image::uniform_dist<int> dist;
+public:
+    image::thread thread;
+public:
+    image::ml::network cnn;
+    std::vector<std::vector<float> > cnn_test_data;
+    std::vector<int> cnn_test_label;
+    std::vector<std::vector<float> > cnn_data;
+    std::vector<int> cnn_label;
+    std::vector<std::string> cnn_name;
+    std::string err_msg;
+public:
+    void clear(void);
+    void get_profile(fib_data* handle,
+                     const std::vector<float>& tract_data,
+                     image::basic_image<float,3>& profile);
+    void add_label(const std::string& name){cnn_name.push_back(name);}
+    void add_sample(fib_data* handle,int index,const std::vector<float>& tracks,int cv_fold);
+    bool train(void);
+};
 
 #endif//FIB_DATA_HPP

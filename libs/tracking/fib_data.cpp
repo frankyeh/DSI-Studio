@@ -621,32 +621,11 @@ void fib_data::get_index_titles(std::vector<std::string>& titles)
         titles.push_back(index_list[index]+" sd");
     }
 }
-void fib_data::getSlicesDirColor(unsigned short order,unsigned int* pixels) const
-{
-    for (unsigned int index = 0;index < dim.size();++index,++pixels)
-    {
-        if (dir.get_fa(index,order) == 0.0)
-        {
-            *pixels = 0;
-            continue;
-        }
-
-        float fa = dir.get_fa(index,order)*255.0;
-        image::vector<3,float> dir(dir.get_dir(index,order));
-        unsigned int color = (unsigned char)std::abs(dir[0]*fa);
-        color <<= 8;
-        color |= (unsigned char)std::abs(dir[1]*fa);
-        color <<= 8;
-        color |= (unsigned char)std::abs(dir[2]*fa);
-        *pixels = color;
-    }
-}
 extern fa_template fa_template_imp;
 void fib_data::run_normalization(int factor,bool background)
 {
     auto lambda = [this,factor]()
     {
-        terminated = false;
         image::basic_image<float,3> from(dir.fa[0],dim),to(fa_template_imp.I);
         image::filter::gaussian(from);
         from -= image::segmentation::otsu_threshold(from);
@@ -654,14 +633,12 @@ void fib_data::run_normalization(int factor,bool background)
         image::normalize(from,1.0);
         image::normalize(to,1.0);
         reg.run_reg(from,vs,fa_template_imp.I,fa_template_imp.vs,
-                    factor,image::reg::corr,image::reg::affine,terminated,std::thread::hardware_concurrency());
-        terminated = true;
+                    factor,image::reg::corr,image::reg::affine,thread.terminated,std::thread::hardware_concurrency());
     };
 
     if(background)
     {
-        clear_thread();
-        reg_thread.reset(new std::future<void>(std::async(std::launch::async,lambda)));
+        thread.run(lambda);
     }
     else
         lambda();
@@ -689,4 +666,117 @@ void fib_data::get_mni_mapping(image::basic_image<image::vector<3,float>,3 >& mn
             subject2mni(mni);
             mni_position[index.index()] = mni;
         }
+}
+
+void track_recognition::clear(void)
+{
+    cnn_test_label.clear();
+    cnn_name.clear();
+    cnn_test_data.clear();
+    cnn_data.clear();
+    cnn_label.clear();
+    thread.clear();
+}
+
+void track_recognition::get_profile(fib_data* handle,
+                 const std::vector<float>& tract_data,
+                 image::basic_image<float,3>& profile)
+{
+    profile.resize(image::geometry<3>(64,80,3));
+    std::fill(profile.begin(),profile.end(),0);
+    for(unsigned int j = 0;j < tract_data.size();j += 3)
+    {
+        image::vector<3> v(&(tract_data[j]));
+        handle->subject2mni(v);
+        // x = -60 ~ 60    total  120
+        // y = -90 ~ 60    total  150
+        // z = -50 ~ 70    total  120
+        int x = std::floor(v[0]+60);
+        int y = std::floor(v[1]+90);
+        int z = std::floor(v[2]+50);
+        x >>= 1; // 2 mm
+        y >>= 1; // 2 mm
+        z >>= 1; // 2 mm
+        if(x > 0 && x < profile.width())
+        {
+            if(y > 0 && y < profile.height())
+                profile.at(x,y,0) = 3;
+            if(z > 0 && z < profile.height())
+                profile.at(x,z,1) = 3;
+        }
+        if(z > 0 && z < profile.width() && y > 0 && y < profile.height())
+            profile.at(z,y,2) = 3;
+    }
+    image::filter::gaussian(profile.slice_at(0));
+    image::filter::gaussian(profile.slice_at(1));
+    image::filter::gaussian(profile.slice_at(2));
+    image::minus_constant(profile,float(1));
+}
+
+void track_recognition::add_sample(fib_data* handle,int index,const std::vector<float>& tracks,int cv_fold)
+{
+    image::basic_image<float,3> profile;
+    get_profile(handle,tracks,profile);
+    if(cnn_test_data.size()*cv_fold < cnn_data.size()) // 20-fold cv
+    {
+        cnn_test_data.push_back(std::vector<float>(profile.begin(),profile.end()));
+        cnn_test_label.push_back(index);
+    }
+    else
+    {
+        int insert_place = cnn_data.empty() ? 0:dist(cnn_data.size());
+        cnn_data.insert(cnn_data.begin()+insert_place,std::vector<float>(profile.begin(),profile.end()));
+        cnn_label.insert(cnn_label.begin()+insert_place,index);
+    }
+}
+
+class timer
+{
+ public:
+    timer():  t1(std::chrono::high_resolution_clock::now()){};
+    double elapsed(){return std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - t1).count();}
+    void restart(){t1 = std::chrono::high_resolution_clock::now();}
+    void start(){t1 = std::chrono::high_resolution_clock::now();}
+    void stop(){t2 = std::chrono::high_resolution_clock::now();}
+    double total(){stop();return std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();}
+    ~timer(){}
+ private:
+    std::chrono::high_resolution_clock::time_point t1, t2;
+} t;
+
+bool track_recognition::train(void)
+{
+    try{
+        cnn.reset();
+        cnn << "64,80,3|conv,tanh,3|62,78,6|avg_pooling,tanh,2|31,39,6|full,tanh|1,1,60|full,tanh"
+            << image::geometry<3>(1,1,cnn_name.size());
+    }
+    catch(std::runtime_error error)
+    {
+        err_msg = error.what();
+        return false;
+    }
+
+    thread.run([this]
+    {
+        auto on_enumerate_epoch = [this](){
+
+            std::cout << "time:" << t.elapsed() << std::endl;
+            int num_success(0);
+            int num_total(0);
+            std::vector<int> result;
+            cnn.test(cnn_test_data,result);
+            for (int i = 0; i < cnn_test_data.size(); i++)
+            {
+                if (result[i] == cnn_test_label[i])
+                    num_success++;
+                num_total++;
+            }
+            std::cout << "accuracy:" << num_success * 100.0 / num_total << "% (" << num_success << "/" << num_total << ")" << std::endl;
+            t.restart();
+            };
+        t.start();
+        cnn.train(cnn_data,cnn_label, 20,thread.terminated, on_enumerate_epoch,0.002);
+    });
+    return true;
 }

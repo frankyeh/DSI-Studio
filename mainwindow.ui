@@ -64,8 +64,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>192</width>
-         <height>310</height>
+         <width>350</width>
+         <height>460</height>
         </rect>
        </property>
        <attribute name="label">
@@ -141,8 +141,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>255</width>
-         <height>155</height>
+         <width>350</width>
+         <height>460</height>
         </rect>
        </property>
        <attribute name="label">
@@ -204,8 +204,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>182</width>
-         <height>420</height>
+         <width>350</width>
+         <height>460</height>
         </rect>
        </property>
        <attribute name="label">
@@ -309,6 +309,9 @@
          <widget class="QCommandLinkButton" name="bruker_browser">
           <property name="text">
            <string>Image Browser</string>
+          </property>
+          <property name="description">
+           <string>File Browser (testing)</string>
           </property>
          </widget>
         </item>

@@ -5,7 +5,7 @@
 #include <QTableWidget>
 #include <QTimer>
 #include <image/image.hpp>
-
+#include "fib_data.hpp"
 class tracking_window;
 class TractModel;
 class ThreadData;
@@ -24,14 +24,8 @@ private:
     tracking_window& cur_tracking_window;
     QTimer *timer;
 private:
-    std::vector<std::vector<float> > cnn_test_data;
-    std::vector<int> cnn_test_label;
-    std::vector<std::vector<float> > cnn_data;
-    std::vector<int> cnn_label;
-    std::vector<std::string> cnn_name;
-    image::ml::network cnn;
-    std::future<void> future;
-    bool terminated;
+    track_recognition cnn;
+
 public:
     unsigned int tract_serial;
     std::vector<ThreadData*> thread_data;
@@ -55,7 +49,6 @@ private:
     void delete_row(int row);
     void clustering(int method_id);
     void load_cluster_label(const std::vector<unsigned int>& labels,QString Name);
-    void get_profile(const std::vector<float>& tract_data,image::basic_image<float,3>& profile);
 public slots:
     void clustering_EM(void){clustering(2);}
     void clustering_kmeans(void){clustering(1);}
@@ -69,6 +62,7 @@ public slots:
     void filter_by_roi(void);
     void fetch_tracts(void);
     void load_tracts(void);
+    void load_tract_label(void);
     void save_tracts_as(void);
     void save_vrml_as(void);
     void load_tracts_color(void);
@@ -85,6 +79,7 @@ public slots:
     void merge_all(void);
     void copy_track(void);
     void separate_deleted_track(void);
+    void sort_track_by_name(void);
     void delete_tract(void);
     void delete_all_tract(void);
     void edit_tracts(void);

@@ -242,7 +242,7 @@ void vbc_database::run_permutation_multithread(unsigned int id)
         }
     }
 }
-void vbc_database::clear_thread(void)
+void vbc_database::clear(void)
 {
     if(!threads.empty())
     {
@@ -357,7 +357,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
 
 void vbc_database::run_permutation(unsigned int thread_count)
 {
-    clear_thread();
+    clear();
     terminated = false;
     subject_greater_null.clear();
     subject_greater_null.resize(200);
@@ -388,7 +388,7 @@ void vbc_database::run_permutation(unsigned int thread_count)
         lesser_tracks.push_back(std::make_shared<TractModel>(handle));
         spm_maps.push_back(std::make_shared<connectometry_result>());
     }
-    clear_thread();
+    clear();
     for(unsigned int index = 0;index < thread_count;++index)
         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
             [this,index](){run_permutation_multithread(index);})));

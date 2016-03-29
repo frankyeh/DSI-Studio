@@ -158,10 +158,10 @@ public:
             std::fill(I.begin(),I.end(),0);
             std::copy(I0.begin(),I0.end(),I.begin());
         }
-        calculate_dwi_sum();
         image::crop(mask,range_min,range_max);
         voxel.dim = mask.geometry();
-
+        calculate_dwi_sum();
+        calculate_mask();
     }
     bool save_to_nii(const char* nifti_file_name) const
     {

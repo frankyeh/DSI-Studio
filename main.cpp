@@ -15,7 +15,7 @@
 #include "program_option.hpp"
 #include "cmd/cnt.cpp" // Qt project cannot build cnt.cpp without adding this.
 
-image::ml::network track_network;
+track_recognition track_network;
 std::vector<std::string> track_network_list;
 fa_template fa_template_imp;
 extern std::vector<atlas> atlas_list;
@@ -36,11 +36,13 @@ void load_track_network(void)
 
     if(QFileInfo(file_name).exists() && QFileInfo(track_label).exists())
     {
-        track_network.load_from_file(file_name.toStdString().c_str());
-        std::ifstream in(track_label.toStdString().c_str());
-        std::string line;
-        while(std::getline(in,line))
-            track_network_list.push_back(line);
+        if(track_network.cnn.load_from_file(file_name.toStdString().c_str()))
+        {
+            std::ifstream in(track_label.toStdString().c_str());
+            std::string line;
+            while(std::getline(in,line))
+                track_network_list.push_back(line);
+        }
     }
 }
 

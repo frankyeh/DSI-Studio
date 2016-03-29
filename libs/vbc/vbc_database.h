@@ -21,7 +21,7 @@ public:
     std::string report;
     mutable std::string error_msg;
     vbc_database();
-    ~vbc_database(){clear_thread();}
+    ~vbc_database(){clear();}
 public:
     bool create_database(const char* templat_name);
     bool load_database(const char* database_name);
@@ -72,7 +72,7 @@ public:// Multiple regression
     void run_permutation_multithread(unsigned int id);
     void run_permutation(unsigned int thread_count);
     void calculate_FDR(void);
-    void clear_thread(void);
+    void clear(void);
 public:
 };
 

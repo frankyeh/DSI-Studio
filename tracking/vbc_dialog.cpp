@@ -1081,7 +1081,7 @@ void vbc_dialog::on_run_clicked()
 {
     if(ui->run->text() == "Stop")
     {
-        vbc->clear_thread();
+        vbc->clear();
         timer->stop();
         timer.reset(0);
         ui->progressBar->setValue(0);
