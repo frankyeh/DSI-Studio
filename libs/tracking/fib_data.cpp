@@ -602,9 +602,11 @@ void fib_data::get_voxel_info2(unsigned int x,unsigned int y,unsigned int z,std:
         buf.push_back(dir[2]);
     }
 }
-void fib_data::get_voxel_information(unsigned int x,unsigned int y,unsigned int z,std::vector<float>& buf) const
+void fib_data::get_voxel_information(int x,int y,int z,std::vector<float>& buf) const
 {
-    unsigned int index = (z*dim[1]+y)*dim[0] + x;
+    if(!dim.is_valid(x,y,z))
+        return;
+    int index = (z*dim[1]+y)*dim[0] + x;
     if (index >= dim.size())
         return;
     for(unsigned int i = 0;i < view_item.size();++i)

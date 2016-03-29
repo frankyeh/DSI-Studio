@@ -489,7 +489,8 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     }
     status += " ";
     std::vector<float> data;
-    handle->get_voxel_information(std::floor(pos[0] + 0.5), std::floor(pos[1] + 0.5), std::floor(pos[2] + 0.5), data);
+    pos += 0.5;
+    handle->get_voxel_information(pos[0],pos[1],pos[2], data);
     for(unsigned int index = 0,data_index = 0;index < handle->view_item.size() && data_index < data.size();++index)
         if(handle->view_item[index].name != "color")
         {
