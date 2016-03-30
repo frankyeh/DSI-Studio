@@ -1122,6 +1122,7 @@
     <addaction name="actionDeleteTractAll"/>
     <addaction name="separator"/>
     <addaction name="actionSeparate_Deleted"/>
+    <addaction name="actionRemove_Repeated_Tracks"/>
     <addaction name="actionSort_Tracts_By_Names"/>
     <addaction name="actionFilter_by_ROI"/>
     <addaction name="separator"/>
@@ -3140,7 +3141,7 @@ Tracking</string>
   </action>
   <action name="actionFilter_by_ROI">
    <property name="text">
-    <string>Filter by ROI/ROA/End</string>
+    <string>Filter Tracks by ROI/ROA/End</string>
    </property>
   </action>
   <action name="actionCut_X">
@@ -3284,7 +3285,12 @@ Tracking</string>
   </action>
   <action name="actionSort_Tracts_By_Names">
    <property name="text">
-    <string>Sort And Merge</string>
+    <string>Sort By Name And Merge</string>
+   </property>
+  </action>
+  <action name="actionRemove_Repeated_Tracks">
+   <property name="text">
+    <string>Delete Repeated Tracks</string>
    </property>
   </action>
  </widget>

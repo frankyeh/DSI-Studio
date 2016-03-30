@@ -286,6 +286,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionCopyTrack,SIGNAL(triggered()),tractWidget,SLOT(copy_track()));
         connect(ui->actionDeleteTract,SIGNAL(triggered()),tractWidget,SLOT(delete_tract()));
         connect(ui->actionDeleteTractAll,SIGNAL(triggered()),tractWidget,SLOT(delete_all_tract()));
+        connect(ui->actionRemove_Repeated_Tracks,SIGNAL(triggered()),tractWidget,SLOT(delete_repeated()));
         connect(ui->actionSeparate_Deleted,SIGNAL(triggered()),tractWidget,SLOT(separate_deleted_track()));
         connect(ui->actionSort_Tracts_By_Names,SIGNAL(triggered()),tractWidget,SLOT(sort_track_by_name()));
 
@@ -1812,8 +1813,8 @@ void tracking_window::on_show_position_toggled(bool checked)
     scene.show_slice();
 }
 
-extern track_recognition track_network;
-extern std::vector<std::string> track_network_list;
+
+bool load_track_network(QString path);
 void tracking_window::on_actionLoad_Deep_Learning_Network_triggered()
 {
     QString file_name = QFileDialog::getOpenFileName(
@@ -1823,24 +1824,11 @@ void tracking_window::on_actionLoad_Deep_Learning_Network_triggered()
                            "Text files (*.txt);;All files (*)");
     if (file_name.isEmpty())
         return;
-
-    QString track_label = QFileInfo(file_name).absolutePath()+ "/network_label.txt";
-    if(!QFileInfo(track_label).exists())
-        track_label = QFileDialog::getOpenFileName(
-                               this,
-                               "Open network label file",
-                               "network_label.txt",
-                               "Text files (*.txt);;All files (*)");
-    if (track_label.isEmpty())
-        return;
-
-    if(track_network.cnn.load_from_file(file_name.toStdString().c_str()))
+    if(load_track_network(QFileInfo(file_name).absolutePath()))
     {
-        std::ifstream in(track_label.toStdString().c_str());
-        std::string line;
-        while(std::getline(in,line))
-            track_network_list.push_back(line);
+        can_convert();
+        load_track_recog_menu();
     }
-    can_convert();
-    load_track_recog_menu();
+    else
+        QMessageBox::information(this,"Error","Invalid network format",0);
 }

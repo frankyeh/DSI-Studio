@@ -131,8 +131,12 @@ public:
     std::vector<float> trans_to_mni;
     void run_normalization(int factor,bool background);
     void subject2mni(image::vector<3>& pos);
+    void get_atlas_roi(int atlas_index,int roi_index,std::vector<image::vector<3,short> >& points);
     void get_mni_mapping(image::basic_image<image::vector<3,float>,3 >& mni_position);
     bool has_reg(void)const{return thread.has_started();}
+    void get_profile(const std::vector<float>& tract_data,
+                     std::vector<float>& profile);
+
 public:
     fib_data(void):is_qsdr(false)
     {
@@ -173,9 +177,6 @@ public:
     std::string err_msg;
 public:
     void clear(void);
-    void get_profile(fib_data* handle,
-                     const std::vector<float>& tract_data,
-                     image::basic_image<float,3>& profile);
     void add_label(const std::string& name){cnn_name.push_back(name);}
     void add_sample(fib_data* handle,int index,const std::vector<float>& tracks,int cv_fold);
     bool train(void);

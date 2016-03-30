@@ -152,15 +152,7 @@ QColor RegionTableWidget::currentRowColor(void)
 void RegionTableWidget::add_region_from_atlas(unsigned int atlas,unsigned int label)
 {
     std::vector<image::vector<3,short> > points;
-    image::geometry<3> geo = cur_tracking_window.slice.geometry;
-    for (image::pixel_index<3>index(geo); index < geo.size(); ++index)
-    {
-        image::vector<3> mni(index.begin());
-        cur_tracking_window.handle->subject2mni(mni);
-        if (!atlas_list[atlas].is_labeled_as(mni, label))
-            continue;
-        points.push_back(image::vector<3,short>(index.begin()));
-    }
+    cur_tracking_window.handle->get_atlas_roi(atlas,label,points);
     add_region(atlas_list[atlas].get_list()[label].c_str(),roi_id);
     add_points(points,false);
 }

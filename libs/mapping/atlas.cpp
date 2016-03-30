@@ -48,6 +48,8 @@ void atlas::load_label(void)
     while(std::getline(in,str))
         text.push_back(str);
 
+    is_bit_labeled = false;
+
     if(text[0] == "0\t* * * * *")//talairach
     {
         std::map<std::string,std::set<unsigned int> > regions;
@@ -84,10 +86,22 @@ void atlas::load_label(void)
             if(line.empty() || line[0] == '#')
                 continue;
             std::string txt;
-            int num = 0;
+            uint64_t num = 0;
             std::istringstream(line) >> num >> txt;
             label_num.push_back(num);
             labels.push_back(txt);
+        }
+        if(label_num.size() > 6 &&
+           label_num[0] == 1 &&
+           label_num[1] == 2 &&
+           label_num[2] == 4 &&
+           label_num[3] == 8 &&
+           label_num[4] == 16 &&
+           label_num[5] == 32)
+        {
+            is_bit_labeled = true;
+            for(int i = 6;i < label_num.size();++i)
+                label_num[i] = (uint64_t(1) << i);
         }
     }
 }
@@ -105,7 +119,7 @@ void atlas::load_from_file(void)
     if(labels.empty())
         load_label();
 
-    if(label2index.empty())
+    if(label2index.empty() && !is_bit_labeled)
     {
         std::vector<unsigned short> hist(1+*std::max_element(I.begin(),I.end()));
         for(int index = 0;index < I.size();++index)
@@ -166,7 +180,7 @@ void mni_to_tal(float& x,float &y, float &z)
 }
 
 
-short atlas::get_label_at(const image::vector<3,float>& mni_space)
+uint64_t atlas::get_label_at(const image::vector<3,float>& mni_space)
 {
     if(I.empty())
         load_from_file();
@@ -183,7 +197,7 @@ std::string atlas::get_label_name_at(const image::vector<3,float>& mni_space)
 {
     if(I.empty())
         load_from_file();
-    short l = get_label_at(mni_space);
+    uint64_t l = get_label_at(mni_space);
     if(!l)
         return std::string();
     if(index2label.empty())
@@ -208,14 +222,16 @@ bool atlas::is_labeled_as(const image::vector<3,float>& mni_space,unsigned int l
         load_from_file();
     return label_matched(get_label_at(mni_space),label_name_index);
 }
-bool atlas::label_matched(short l,unsigned int label_name_index)
+bool atlas::label_matched(uint64_t l,unsigned int label_name_index)
 {
     if(I.empty())
         load_from_file();
     if(label_name_index >= label_num.size())
         return false;
+    if(is_bit_labeled)
+        return l & label_num[label_name_index];
     if(index2label.empty())
-        return label_name_index >= label_num.size() ? false:l == label_num[label_name_index];
+        return l == label_num[label_name_index];
     if(l >= index2label.size())
         return false;
     return std::find(index2label[l].begin(),index2label[l].end(),label_name_index) != index2label[l].end();

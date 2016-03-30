@@ -5,10 +5,11 @@
 #include <string>
 class atlas{
 private:
-    image::basic_image<short,3> I;
-    std::vector<short> label_num;
+    image::basic_image<uint64_t,3> I;
+    std::vector<uint64_t> label_num;
     std::vector<std::string> labels;
     image::matrix<4,4,float> transform;
+    bool is_bit_labeled;
     void load_from_file(void);
     void load_label(void);
 private:// for talairach only
@@ -18,11 +19,11 @@ public:
     std::string name,filename;
 public:
     const std::vector<std::string>& get_list(void) {if(labels.empty())load_label();return labels;}
-    const std::vector<short>& get_num(void) {if(labels.empty())load_label();return label_num;}
-    short get_label_at(const image::vector<3,float>& mni_space);
+    const std::vector<uint64_t>& get_num(void) {if(labels.empty())load_label();return label_num;}
+    uint64_t get_label_at(const image::vector<3,float>& mni_space);
     std::string get_label_name_at(const image::vector<3,float>& mni_space);
     bool is_labeled_as(const image::vector<3,float>& mni_space,unsigned int label);
-    bool label_matched(short image_label,unsigned int region_label);
+    bool label_matched(uint64_t image_label,unsigned int region_label);
 };
 
 #endif // ATLAS_HPP

@@ -1,5 +1,11 @@
 #include "fib_data.hpp"
 #include "fa_template.hpp"
+#include "atlas.hpp"
+
+
+extern std::vector<atlas> atlas_list;
+
+
 bool odf_data::read(gz_mat_read& mat_reader)
 {
     unsigned int row,col;
@@ -658,6 +664,20 @@ void fib_data::subject2mni(image::vector<3>& pos)
     reg(pos);
     fa_template_imp.to_mni(pos);
 }
+
+void fib_data::get_atlas_roi(int atlas_index,int roi_index,std::vector<image::vector<3,short> >& points)
+{
+    points.clear();
+    for (image::pixel_index<3>index(dim); index < dim.size(); ++index)
+    {
+        image::vector<3> mni(index.begin());
+        subject2mni(mni);
+        if (!atlas_list[atlas_index].is_labeled_as(mni, roi_index))
+            continue;
+        points.push_back(image::vector<3,short>(index.begin()));
+    }
+}
+
 void fib_data::get_mni_mapping(image::basic_image<image::vector<3,float>,3 >& mni_position)
 {
     mni_position.resize(dim);
@@ -669,27 +689,19 @@ void fib_data::get_mni_mapping(image::basic_image<image::vector<3,float>,3 >& mn
             mni_position[index.index()] = mni;
         }
 }
-
-void track_recognition::clear(void)
+void fib_data::get_profile(const std::vector<float>& tract_data,
+                 std::vector<float>& profile_)
 {
-    cnn_test_label.clear();
-    cnn_name.clear();
-    cnn_test_data.clear();
-    cnn_data.clear();
-    cnn_label.clear();
-    thread.clear();
-}
-
-void track_recognition::get_profile(fib_data* handle,
-                 const std::vector<float>& tract_data,
-                 image::basic_image<float,3>& profile)
-{
-    profile.resize(image::geometry<3>(64,80,3));
+    if(tract_data.size() < 6)
+        return;
+    image::geometry<3> dim(64,80,3);
+    profile_.resize(dim.size());
+    auto profile = image::make_image(dim,&profile_[0]);
     std::fill(profile.begin(),profile.end(),0);
     for(unsigned int j = 0;j < tract_data.size();j += 3)
     {
         image::vector<3> v(&(tract_data[j]));
-        handle->subject2mni(v);
+        subject2mni(v);
         // x = -60 ~ 60    total  120
         // y = -90 ~ 60    total  150
         // z = -50 ~ 70    total  120
@@ -710,24 +722,39 @@ void track_recognition::get_profile(fib_data* handle,
             profile.at(z,y,2) = 3;
     }
     image::filter::gaussian(profile.slice_at(0));
+    image::filter::gaussian(profile.slice_at(0));
+    image::filter::gaussian(profile.slice_at(1));
     image::filter::gaussian(profile.slice_at(1));
     image::filter::gaussian(profile.slice_at(2));
-    image::minus_constant(profile,float(1));
+    image::filter::gaussian(profile.slice_at(2));
+    image::minus_constant(profile,float(0.9));
 }
+
+void track_recognition::clear(void)
+{
+    cnn_test_label.clear();
+    cnn_name.clear();
+    cnn_test_data.clear();
+    cnn_data.clear();
+    cnn_label.clear();
+    thread.clear();
+}
+
+
 
 void track_recognition::add_sample(fib_data* handle,int index,const std::vector<float>& tracks,int cv_fold)
 {
-    image::basic_image<float,3> profile;
-    get_profile(handle,tracks,profile);
     if(cnn_test_data.size()*cv_fold < cnn_data.size()) // 20-fold cv
     {
-        cnn_test_data.push_back(std::vector<float>(profile.begin(),profile.end()));
+        cnn_test_data.push_back(std::vector<float>());
+        handle->get_profile(tracks,cnn_test_data.back());
         cnn_test_label.push_back(index);
     }
     else
     {
         int insert_place = cnn_data.empty() ? 0:dist(cnn_data.size());
-        cnn_data.insert(cnn_data.begin()+insert_place,std::vector<float>(profile.begin(),profile.end()));
+        cnn_data.insert(cnn_data.begin()+insert_place,std::vector<float>());
+        handle->get_profile(tracks,cnn_data[insert_place]);
         cnn_label.insert(cnn_label.begin()+insert_place,index);
     }
 }
@@ -750,7 +777,7 @@ bool track_recognition::train(void)
 {
     try{
         cnn.reset();
-        cnn << "64,80,3|conv,tanh,3|62,78,6|avg_pooling,tanh,2|31,39,6|full,tanh|1,1,60|full,tanh"
+        cnn << "64,80,3|conv,tanh,3|62,78,20|avg_pooling,tanh,2|31,39,20|full,tanh|1,1,120|full,tanh"
             << image::geometry<3>(1,1,cnn_name.size());
     }
     catch(std::runtime_error error)
@@ -778,7 +805,7 @@ bool track_recognition::train(void)
             t.restart();
             };
         t.start();
-        cnn.train(cnn_data,cnn_label, 20,thread.terminated, on_enumerate_epoch,0.002);
+        cnn.train(cnn_data,cnn_label, 20,thread.terminated, on_enumerate_epoch,0.001);
     });
     return true;
 }

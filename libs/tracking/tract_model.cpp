@@ -886,7 +886,7 @@ void TractModel::delete_tracts(const std::vector<unsigned int>& tracts_to_delete
 //---------------------------------------------------------------------------
 void TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select)
 {
-    std::vector<unsigned> selected(tract_data.size());
+    std::vector<unsigned int> selected(tract_data.size());
     for (unsigned int index = 0;index < tracts_to_select.size();++index)
         selected[tracts_to_select[index]] = 1;
 
@@ -897,8 +897,55 @@ void TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select
         if (!selected[index])
             not_selected.push_back(index);
     delete_tracts(not_selected);
-
 }
+//---------------------------------------------------------------------------
+void TractModel::delete_repeated(void)
+{
+    auto norm1 = [](const float* v1,const float* v2){return std::fabsf(v1[0]-v2[0])+std::fabsf(v1[1]-v2[1])+std::fabsf(v1[2]-v2[2]);};
+    std::vector<bool> repeated(tract_data.size());
+    image::par_for(tract_data.size(),[&](int i)
+    {
+        if(!repeated[i])
+        {
+        for(int j = i+1;j < tract_data.size();++j)
+            if(!repeated[j])
+            {
+                bool not_repeated = false;
+                for(int m = 0;m < tract_data[i].size();m += 3)
+                {
+                    float min_dis = norm1(&tract_data[i][m],&tract_data[j][0]);
+                    for(int n = 3;n < tract_data[j].size();n += 3)
+                        min_dis = std::min<float>(min_dis,norm1(&tract_data[i][m],&tract_data[j][n]));
+                    if(min_dis > 1.0f)
+                    {
+                        not_repeated = true;
+                        break;
+                    }
+                }
+                if(!not_repeated)
+                for(int m = 0;m < tract_data[j].size();m += 3)
+                {
+                    float min_dis = norm1(&tract_data[j][m],&tract_data[i][0]);
+                    for(int n = 3;n < tract_data[i].size();n += 3)
+                        min_dis = std::min<float>(min_dis,norm1(&tract_data[j][m],&tract_data[i][n]));
+                    if(min_dis > 1.0f)
+                    {
+                        not_repeated = true;
+                        break;
+                    }
+                }
+                if(!not_repeated)
+                    repeated[j] = true;
+            }
+        }
+    });
+    std::vector<unsigned int> track_to_delete;
+    for(unsigned int i = 0;i < tract_data.size();++i)
+        if(repeated[i])
+            track_to_delete.push_back(i);
+    delete_tracts(track_to_delete);
+}
+
 //---------------------------------------------------------------------------
 void TractModel::cut(float select_angle,const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
                      const image::vector<3,float>& from_pos)

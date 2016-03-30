@@ -82,6 +82,7 @@ public slots:
     void sort_track_by_name(void);
     void delete_tract(void);
     void delete_all_tract(void);
+    void delete_repeated(void);
     void edit_tracts(void);
     void undo_tracts(void);
     void redo_tracts(void);

@@ -29,21 +29,24 @@ int atl(void);
 int cnt(void);
 int vis(void);
 
-void load_track_network(void)
+bool load_track_network(QString path)
 {
-    QString file_name = QCoreApplication::applicationDirPath()+ "/network.txt";
-    QString track_label = QCoreApplication::applicationDirPath()+ "/network_label.txt";
+    QString file_name = path + "/network.txt";
+    QString track_label = path + "/network_label.txt";
 
     if(QFileInfo(file_name).exists() && QFileInfo(track_label).exists())
     {
         if(track_network.cnn.load_from_file(file_name.toStdString().c_str()))
         {
+            track_network_list.clear();
             std::ifstream in(track_label.toStdString().c_str());
             std::string line;
             while(std::getline(in,line))
                 track_network_list.push_back(line);
+            return true;
         }
     }
+    return false;
 }
 
 
@@ -142,7 +145,7 @@ int main(int ac, char *av[])
         return false;
     }
     load_atlas();
-    load_track_network();
+    load_track_network(QCoreApplication::applicationDirPath());
 
     MainWindow w;
     w.setFont(font);

@@ -26,7 +26,7 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
 {
     std::auto_ptr<TrackingMethod> method(method_ptr);
     std::uniform_real_distribution<float> rand_gen(0,1);
-    image::basic_image<float,3> profile;
+    std::vector<float> input;
     unsigned int iteration = thread_id; // for center seed
     if(!seeds.empty())
     try{
@@ -70,10 +70,9 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
                 std::vector<float> trk(result,result+point_count+point_count+point_count);
                 if(track_recog)
                 {
-                    track_network.get_profile(track_recog_handle,trk,profile);
-                    std::vector<float> input(profile.begin(),profile.end());
+                    track_recog_handle->get_profile(trk,input);
                     track_network.cnn.predict(input);
-                    float threshold = std::accumulate(input.begin(),input.end(),0.0f)*0.7;
+                    float threshold = std::accumulate(input.begin(),input.end(),0.0f)*0.5;
                     int max_index = std::max_element(input.begin(),input.end())-input.begin();
                     if(max_index != track_recog_index || input[max_index] < threshold)
                         trk.clear();

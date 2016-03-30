@@ -36,6 +36,8 @@ public:
         // selection
         void delete_tracts(const std::vector<unsigned int>& tracts_to_delete);
         void select_tracts(const std::vector<unsigned int>& tracts_to_select);
+        void delete_repeated(void);
+
 public:
         TractModel(std::shared_ptr<fib_data> handle_);
         const TractModel& operator=(const TractModel& rhs)

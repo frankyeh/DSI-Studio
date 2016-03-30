@@ -15,7 +15,9 @@
 #include "opengl/renderingtablewidget.h"
 #include "libs/gzip_interface.hpp"
 #include "tract_cluster.hpp"
+#include "atlas.hpp"
 
+extern std::vector<atlas> atlas_list;
 extern std::vector<std::string> track_network_list;
 
 TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget *parent) :
@@ -140,6 +142,19 @@ void TractTableWidget::track_using_atlas(void)
 
     cur_tracking_window.regionWidget->set_whole_brain(thread_data.back());
 
+    int atlas_index = -1;
+    for(int i = 0;i < atlas_list.size();++i)
+        if(atlas_list[i].name == "network")
+        {
+            atlas_index = i;
+            break;
+        }
+    if(atlas_index != -1)
+    {
+        std::vector<image::vector<3,short> > points;
+        cur_tracking_window.handle->get_atlas_roi(atlas_index,track_index,points);
+        thread_data.back()->setRegions(cur_tracking_window.handle->dim,points,roi_id,track_network_list[track_index].c_str());
+    }
 
     thread_data.back()->run(tract_models.back()->get_fib(),
                             cur_tracking_window["thread_count"].toInt(),
@@ -550,14 +565,15 @@ void TractTableWidget::save_profile(void)
         return;
 
     gz_mat_write out(filename.toLocal8Bit().begin());
-    image::basic_image<float,3> profile;
+    std::vector<float> profile;
     begin_prog("converting coordinates");
     for(unsigned int i = 0;check_prog(i,tract_models[currentRow()]->get_tracts().size());++i)
     {
-        cnn.get_profile(cur_tracking_window.handle.get(),tract_models[currentRow()]->get_tracts()[i],profile);
+        cur_tracking_window.handle->get_profile(tract_models[currentRow()]->get_tracts()[i],profile);
         out.write(QString("image%1").arg(i).toLocal8Bit().begin(),&profile[0],1,profile.size());
+
     }
-    out.write("dimension",&*profile.geometry().begin(),1,3);
+    //out.write("dimension",&*profile.geometry().begin(),1,3);
 }
 
 
@@ -571,24 +587,60 @@ void TractTableWidget::deep_learning_save(void)
     if(filename.isEmpty())
         return;
     cnn.cnn.save_to_file(filename.toStdString().c_str());
-    filename += "label.txt";
-    std::ofstream out(filename.toStdString().c_str());
-    std::copy(cnn.cnn_name.begin(),cnn.cnn_name.end(),std::ostream_iterator<std::string>(out,"\n"));
+    filename = QFileInfo(filename).absolutePath() + "/network_label.txt";
+    {
+        std::ofstream out(filename.toStdString().c_str());
+        std::copy(cnn.cnn_name.begin(),cnn.cnn_name.end(),std::ostream_iterator<std::string>(out,"\n"));
+    }
+    // save atlas as a nifti file
+    if(cur_tracking_window.handle->is_qsdr) //QSDR condition
+    {
+        filename = QFileInfo(filename).absolutePath() + "/network.nii.gz";
+        gz_nifti nifti;
+        nifti.set_voxel_size(cur_tracking_window.slice.voxel_size.begin());
+        nifti.set_image_transformation(cur_tracking_window.handle->trans_to_mni.begin());
+        image::basic_image<uint64_t,3> atlas(cur_tracking_window.handle->dim);
+
+        for(unsigned int index = 0;check_prog(index,rowCount());++index)
+            if (item(index,0)->checkState() == Qt::Checked)
+            {
+                uint64_t label = (uint64_t(1) << index);
+                for(unsigned int i = 0;i < tract_models[index]->get_tracts().size();++i)
+                {
+                    const std::vector<float>& tracks = tract_models[index]->get_tracts()[i];
+                    for(int j = 0;j < tracks.size();j += 3)
+                    {
+                        image::pixel_index<3> p(tracks[j]+0.5,tracks[j+1]+0.5,tracks[j+2]+0.5,atlas.geometry());
+                        atlas[p.index()] = (atlas[p.index()] | label);
+                    }
+                }
+
+            }
+        nifti << atlas;
+        nifti.save_to_file(filename.toLocal8Bit().begin());
+
+
+
+
+    }
 }
 
 void TractTableWidget::deep_learning_train(void)
 {
-
     cnn.clear();
-    image::uniform_dist<int> dist;
+    begin_prog("reading");
     for(unsigned int index = 0;check_prog(index,rowCount());++index)
         if (item(index,0)->checkState() == Qt::Checked)
         {
             cnn.add_label(item(index,0)->text().toStdString());
-            for(unsigned int i = 0;check_prog(i,tract_models[index]->get_tracts().size());++i)
+            for(unsigned int i = 0;i < tract_models[index]->get_tracts().size();++i)
                 cnn.add_sample(cur_tracking_window.handle.get(),index,tract_models[index]->get_tracts()[i],20/*20-fold cv*/);
         }
-    cnn.train();
+
+    if(!cnn.train())
+    {
+        QMessageBox::information(this,"Error",cnn.err_msg.c_str(),0);
+    }
 }
 
 void TractTableWidget::saveTransformedTracts(const float* transform)
@@ -911,7 +963,18 @@ void TractTableWidget::delete_all_tract(void)
     emit need_update();
 }
 
-
+void TractTableWidget::delete_repeated(void)
+{
+    begin_prog("deleting tracks");
+    for(int i = 0;check_prog(i,tract_models.size());++i)
+    {
+        if(item(i,0)->checkState() == Qt::Checked)
+            tract_models[i]->delete_repeated();
+        item(i,1)->setText(QString::number(tract_models[i]->get_visible_track_count()));
+        item(i,2)->setText(QString::number(tract_models[i]->get_deleted_track_count()));
+    }
+    emit need_update();
+}
 
 void TractTableWidget::edit_tracts(void)
 {
