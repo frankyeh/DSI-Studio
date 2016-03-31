@@ -204,11 +204,14 @@ void ThreadData::run(const tracking& trk,
     std::fill(running.begin(),running.end(),1);
 
     end_thread();
-    unsigned int run_count = termination_count/thread_count+1;
+    if(thread_count > termination_count)
+        thread_count = termination_count;
+    unsigned int run_count = std::max<int>(1,termination_count/thread_count);
     unsigned int total_run_count = 0;
     for (unsigned int index = 0;index < thread_count-1;++index,total_run_count += run_count)
         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
                 [this,&trk,thread_count,index,run_count](){run_thread(new_method(trk),thread_count,index,run_count);})));
+
 
     if(wait)
     {
