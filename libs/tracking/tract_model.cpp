@@ -144,14 +144,6 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                 if(trk.n_properties == 1)
                     loaded_tract_cluster.push_back(from[0]);
             }
-            unsigned int report_size = 0;
-            in.read(&report_size,sizeof(unsigned int));
-            if(in && report_size)
-            {
-                report.resize(report_size);
-                in.read(&*report.begin(),report_size);
-            }
-
         }
         else
         if (ext == std::string(".txt"))
@@ -328,9 +320,6 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
             out.write((const char*)&n_point,sizeof(int));
             out.write((const char*)&*buffer.begin(),sizeof(float)*buffer.size());
         }
-        unsigned int report_size = report.size();
-        out.write((const char*)&report_size,sizeof(unsigned int));
-        out.write((const char*)&*report.begin(),report_size);
         return true;
     }
     if (ext == std::string(".txt"))

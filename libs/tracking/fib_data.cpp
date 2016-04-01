@@ -777,7 +777,7 @@ bool track_recognition::train(void)
 {
     try{
         cnn.reset();
-        cnn << "64,80,3|conv,tanh,3|62,78,20|avg_pooling,tanh,2|31,39,20|full,tanh|1,1,120|full,tanh"
+        cnn << "64,80,3|conv,tanh,3|62,78,24|avg_pooling,tanh,2|31,39,24|full,tanh|1,1,120|full,tanh"
             << image::geometry<3>(1,1,cnn_name.size());
     }
     catch(std::runtime_error error)
