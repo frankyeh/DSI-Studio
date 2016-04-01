@@ -18,8 +18,26 @@ private:// for talairach only
 public:
     std::string name,filename;
 public:
-    const std::vector<std::string>& get_list(void) {if(labels.empty())load_label();return labels;}
-    const std::vector<uint64_t>& get_num(void) {if(labels.empty())load_label();return label_num;}
+    const std::vector<std::string>& get_list(void)
+    {
+        if(labels.empty())
+        {
+            load_label();
+            if(labels.empty())
+                load_from_file();
+        }
+        return labels;
+    }
+    const std::vector<uint64_t>& get_num(void)
+    {
+        if(labels.empty())
+        {
+            load_label();
+            if(labels.empty())
+                load_from_file();
+        }
+        return label_num;
+    }
     uint64_t get_label_at(const image::vector<3,float>& mni_space);
     std::string get_label_name_at(const image::vector<3,float>& mni_space);
     bool is_labeled_as(const image::vector<3,float>& mni_space,unsigned int label);

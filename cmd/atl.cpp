@@ -178,8 +178,10 @@ int atl(void)
 
     std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
     if(!handle.get())
+    {
+        std::cout << handle->error_msg << std::endl;
         return 0;
-
+    }
     if(!atl_load_atlas(po.get("atlas")))
         return 0;
 
