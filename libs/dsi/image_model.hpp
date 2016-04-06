@@ -392,13 +392,13 @@ public:
 
     }
 public:
-    template<typename CheckType>
+    template<class CheckType>
     bool avaliable(void) const
     {
         return CheckType::check(voxel);
     }
 
-    template<typename ProcessType>
+    template<class ProcessType>
     bool reconstruct(unsigned int thread_count)
     {
         begin_prog("reconstruction");

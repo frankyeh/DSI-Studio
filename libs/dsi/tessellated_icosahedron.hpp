@@ -131,7 +131,7 @@ public:
                 faces.push_back(image::vector<3,short>(v1,v2,v3));
                 faces.push_back(image::vector<3,short>(opposite(v1),opposite(v3),opposite(v2)));
     }
-	template<typename input_type1,typename input_type2>
+    template<class input_type1,class input_type2>
         void add_faces_in_line(input_type1 up,input_type2 down,unsigned int up_count)
 	{
                 for(unsigned int index = 0;index < up_count;++index)
@@ -141,7 +141,7 @@ public:
 			    add_face(up[index+1],up[index],down[index+1]);
 		}
 	}
-	template<typename input_type1,typename input_type2,typename input_type3>
+    template<class input_type1,class input_type2,class input_type3>
 	void add_faces_in_triangle(input_type1 edge0,
 							   input_type2 edge1,
                                                            input_type3 edge2,unsigned int folding)
@@ -167,7 +167,7 @@ public:
 		cur_vertex = old_cur_vertex;
 	}
 	// This function obtain the tessellated points and faces from a icosaheron triangle
-    template<typename input_type1,typename input_type2,typename input_type3>
+    template<class input_type1,class input_type2,class input_type3>
         void build_faces(input_type1 edge0,input_type2 edge1,input_type3 edge2)
     {
         if(fold > 8)

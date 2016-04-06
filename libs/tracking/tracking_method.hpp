@@ -94,12 +94,12 @@ public:
         reverse_buffer.resize(param.max_points_count3 << 1);
 	}
 public:
-	template<typename Process>
+	template<class Process>
     void operator()(Process)
     {
         Process()(*this);
     }
-	template<typename ProcessList>
+	template<class ProcessList>
     void tracking(ProcessList)
     {
         boost::mpl::for_each<ProcessList>(boost::ref(*this));
@@ -110,7 +110,7 @@ public:
 	std::vector<float>& get_track_buffer(void){return track_buffer;}
 	std::vector<float>& get_reverse_buffer(void){return reverse_buffer;}
 
-	template<typename ProcessList>
+	template<class ProcessList>
     bool start_tracking(bool smoothing)
     {
         image::vector<3,float> seed_pos(position);

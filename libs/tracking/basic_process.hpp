@@ -9,7 +9,7 @@ extern char fib_dz[80];
 struct LocateVoxel{
 
 public:
-    template<typename method>
+    template<class method>
     void operator()(method& info)
     {
         image::vector<3,short> cur_pos(info.position);
@@ -78,7 +78,7 @@ struct EstimateNextDirection
 {
 public:
 
-    template<typename method>
+    template<class method>
     void operator()(method& info)
     {
         if (!info.get_dir(info.position,info.dir,info.next_dir))
@@ -90,7 +90,7 @@ struct EstimateNextDirectionRungeKutta4
 {
 public:
 
-    template<typename method>
+    template<class method>
     void operator()(method& info)
     {
         image::vector<3,float> y;
@@ -144,7 +144,7 @@ struct SmoothDir
 {
 public:
 
-    template<typename method>
+    template<class method>
     void operator()(method& info)
     {
         info.next_dir += (info.dir-info.next_dir)*info.param.smooth_fraction;
@@ -156,7 +156,7 @@ struct MoveTrack
 {
 public:
 
-    template<typename method>
+    template<class method>
     void operator()(method& info)
     {
         if (info.terminated)

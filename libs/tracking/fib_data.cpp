@@ -698,7 +698,7 @@ void fib_data::get_profile(const std::vector<float>& tract_data,
     profile_.resize(dim.size());
     auto profile = image::make_image(dim,&profile_[0]);
     std::fill(profile.begin(),profile.end(),0);
-    for(unsigned int j = 0;j < tract_data.size();j += 3)
+    for(int j = 0;j < tract_data.size();j += 3)
     {
         image::vector<3> v(&(tract_data[j]));
         subject2mni(v);
@@ -711,15 +711,16 @@ void fib_data::get_profile(const std::vector<float>& tract_data,
         x >>= 1; // 2 mm
         y >>= 1; // 2 mm
         z >>= 1; // 2 mm
+        float w = std::abs(j-int(tract_data.size() >> 1));
         if(x > 0 && x < profile.width())
         {
             if(y > 0 && y < profile.height())
-                profile.at(x,y,0) = 3;
+                profile.at(x,y,0) += w;
             if(z > 0 && z < profile.height())
-                profile.at(x,z,1) = 3;
+                profile.at(x,z,1) += w;
         }
         if(z > 0 && z < profile.width() && y > 0 && y < profile.height())
-            profile.at(z,y,2) = 3;
+            profile.at(z,y,2) += w;
     }
     image::filter::gaussian(profile.slice_at(0));
     image::filter::gaussian(profile.slice_at(0));
@@ -727,7 +728,10 @@ void fib_data::get_profile(const std::vector<float>& tract_data,
     image::filter::gaussian(profile.slice_at(1));
     image::filter::gaussian(profile.slice_at(2));
     image::filter::gaussian(profile.slice_at(2));
-    image::minus_constant(profile,float(0.9));
+    float m = *std::max_element(profile.begin(),profile.end());
+    if(m != 0.0)
+        image::multiply_constant(profile,1.8/m);
+    image::minus_constant(profile,0.9);
 }
 
 void track_recognition::clear(void)
@@ -777,7 +781,7 @@ bool track_recognition::train(void)
 {
     try{
         cnn.reset();
-        cnn << "64,80,3|conv,tanh,3|62,78,24|avg_pooling,tanh,2|31,39,24|full,tanh|1,1,120|full,tanh"
+        cnn << "64,80,3|conv,tanh,3|62,78,26|avg_pooling,tanh,2|31,39,26|full,tanh|1,1,120|full,tanh"
             << image::geometry<3>(1,1,cnn_name.size());
     }
     catch(std::runtime_error error)

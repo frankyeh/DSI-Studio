@@ -31,7 +31,7 @@ public:
     }
 };
 
-template<typename method_type>
+template<class method_type>
 class FeatureBasedClutering : public BasicCluster
 {
     std::vector<std::vector<double> > features;

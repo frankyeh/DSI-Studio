@@ -27,7 +27,7 @@ typedef boost::mpl::vector<
 > dti_process;
 
 
-template<typename reco_type>
+template<class reco_type>
 struct odf_reco_type{
     typedef boost::mpl::vector<
         ODFDeconvolusion,
@@ -42,7 +42,7 @@ struct odf_reco_type{
     typedef typename boost::mpl::push_front<type0,ReadDWIData>::type type; // add ReadDWIData to the front
 };
 
-template<typename reco_type>
+template<class reco_type>
 struct estimation_type{
     typedef boost::mpl::vector<
         DetermineFiberDirections,

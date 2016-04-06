@@ -43,7 +43,7 @@ public:
             df = df_ptr;
         return df;
     }
-    template<typename value_type>
+    template<class value_type>
     value_type get(const char* name,value_type df)
     {
         auto value = options.find(name);

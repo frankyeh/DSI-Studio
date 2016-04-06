@@ -47,7 +47,7 @@ protected:
         return result;
     }
 
-    template<typename iterator_type>
+    template<class iterator_type>
     void normalize_vector(iterator_type from,iterator_type to)
     {
         image::minus_constant(from,to,std::accumulate(from,to,0.0)/((float)(to-from)));
@@ -86,7 +86,7 @@ protected:
      * xi(y-step*u) = xj(y-step*u)
      * xi*y-xj*y = step(xi*u-xj*u);
      */
-    template<typename iterator1,typename iterator2,typename iterator3>
+    template<class iterator1,class iterator2,class iterator3>
     float lar_get_step(iterator1 u,iterator2 xi,iterator2 xj,iterator3 y,unsigned int y_dim)
     {
         float t1 = 0,t2 = 0;

@@ -139,7 +139,7 @@ public:
         void Flip(unsigned int dimension);
         void shift(const image::vector<3,short>& dx);
 
-        template<typename image_type,typename trans_type>
+        template<class image_type,class trans_type>
         void LoadFromBuffer(const image_type& from,const trans_type& trans)
         {
             std::vector<image::vector<3,short> > points;
@@ -156,7 +156,7 @@ public:
             std::sort(region.begin(),region.end());
         }
 
-        template<typename image_type>
+        template<class image_type>
         void LoadFromBuffer(const image_type& mask)
         {
             modified = true;

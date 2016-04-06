@@ -850,19 +850,10 @@ void RegionTableWidget::setROIs(ThreadData* data)
     // check if there is seeds
     if(!has_seeding())
         set_whole_brain(data);
-    bool set_color = false;
     for (unsigned int index = 0;index < regions.size();++index)
         if (!regions[index]->empty() && item(index,0)->checkState() == Qt::Checked)
-        {
-            if(!set_color)
-            {
-                data->color = regions[index]->show_region.color;
-                set_color = true;
-            }
             data->setRegions(cur_tracking_window.handle->dim,regions[index]->get(),
                              regions[index]->regions_feature,item(index,0)->text().toLocal8Bit().begin());
-
-        }
 }
 
 QString RegionTableWidget::getROIname(void)

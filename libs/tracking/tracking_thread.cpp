@@ -102,7 +102,7 @@ bool ThreadData::fetchTracks(TractModel* handle)
         return false;
 
     std::lock_guard<std::mutex> lock(lock_feed_function);
-    handle->add_tracts(track_buffer,color);
+    handle->add_tracts(track_buffer);
     track_buffer.clear();
     return true;
 

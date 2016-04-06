@@ -108,14 +108,14 @@ public:
 public:
     ImageModel* image_model;
 public:
-    template<typename ProcessList>
+    template<class ProcessList>
     void CreateProcesses(void)
     {
         process_list.clear();
         boost::mpl::for_each<ProcessList>(boost::ref(*this));
     }
 
-    template<typename Process>
+    template<class Process>
     void operator()(Process& X)
     {
         process_list.push_back(std::make_shared<Process>());

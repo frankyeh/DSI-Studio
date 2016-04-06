@@ -306,7 +306,7 @@ public:
         z /= scale[2];
         return image::vector<3,int>(x,y,z);
     }
-    template<typename interpolation_type>
+    template<class interpolation_type>
     void interpolate_dwi(Voxel& voxel, VoxelData& data,const image::vector<3,double>& Jpos,interpolation_type)
     {
         interpolation_type interpolation;

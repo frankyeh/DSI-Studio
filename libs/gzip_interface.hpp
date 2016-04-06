@@ -29,7 +29,7 @@ public:
         close();
     }
 
-    template<typename char_type>
+    template<class char_type>
     bool open(const char_type* file_name)
     {
         prog_aborted_ = false;
@@ -140,7 +140,7 @@ public:
         close();
     }
 public:
-    template<typename char_type>
+    template<class char_type>
     bool open(const char_type* file_name)
     {
         if(is_gz(file_name))

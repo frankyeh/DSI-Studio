@@ -3,7 +3,7 @@
 #include <vector>
 #include <cmath>
 #include "image/image.hpp"
-template<typename value_type>
+template<class value_type>
 void rotation_matrix(value_type r[9],value_type* u)
 {
     float z[3] = {0.0,0.0,1.0};
@@ -26,7 +26,7 @@ void rotation_matrix(value_type r[9],value_type* u)
     r[4] -= 1.0;
     r[8] -= 1.0;
 }
-template<typename value_type>
+template<class value_type>
 value_type spherical_guassian(value_type d,value_type angular_variance)
 {
     if (d > 1.0)d = 1.0;

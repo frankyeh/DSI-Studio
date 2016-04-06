@@ -17,19 +17,19 @@ public:
         virtual image::const_pointer_image<float, 3> get_source(void) const = 0;
 public:
 public:
-        template<typename input_type1,typename input_type2>
+        template<class input_type1,class input_type2>
         bool get3dPosition(input_type1 x, input_type1 y, input_type2& px, input_type2& py, input_type2& pz) const {
                 image::slice2space(cur_dim, x, y, slice_pos[cur_dim], px, py, pz);
                 return geometry.is_valid(px, py, pz);
         }
 
-        template<typename input_type1,typename input_type2>
+        template<class input_type1,class input_type2>
         void getSlicePosition(input_type1 px, input_type1 py, input_type1 pz, input_type2& x, input_type2& y,
                 input_type2& slice_index) const {
                 image::space2slice(cur_dim, px, py, pz, x, y, slice_index);
         }
 
-        template<typename input_type>
+        template<class input_type>
         unsigned int get3dPosition(input_type x, input_type y) const {
                 int px, py, pz;
                 if (!get3dPosition(x, y, px, py, pz))
@@ -138,14 +138,14 @@ public:
 public:
     image::basic_image<float, 3> source_images;
     float min_value,max_value,scale;
-    template<typename loader>
+    template<class loader>
     void load(const loader& io)
     {
         io.get_voxel_size(voxel_size.begin());
         io >> source_images;
         init();
     }
-    template<typename loader>
+    template<class loader>
     void loadLPS(loader& io)
     {
         io.get_voxel_size(voxel_size.begin());

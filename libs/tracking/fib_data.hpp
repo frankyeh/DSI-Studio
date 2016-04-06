@@ -97,7 +97,7 @@ struct item
     image::basic_image<unsigned int,3> color_map_buf;
     image::const_pointer_image<float,3> mx,my,mz;
     image::geometry<3> native_geo;
-    template<typename input_iterator>
+    template<class input_iterator>
     void set_scale(input_iterator from,input_iterator to)
     {
         max_value = *std::max_element(from,to);

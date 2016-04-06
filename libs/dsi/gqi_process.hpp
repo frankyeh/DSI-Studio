@@ -213,7 +213,7 @@ public:
     }
 };
 
-template<typename value_type>
+template<class value_type>
 value_type sinint(value_type x)
 {
     bool sgn = x > 0;

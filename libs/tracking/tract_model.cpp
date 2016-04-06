@@ -1219,7 +1219,7 @@ void TractModel::redo(void)
 //---------------------------------------------------------------------------
 void TractModel::add_tracts(std::vector<std::vector<float> >& new_tracks)
 {
-    add_tracts(new_tracks,image::rgb_color(200,100,30));
+    add_tracts(new_tracks,tract_color.empty() ? image::rgb_color(200,100,30) : image::rgb_color(tract_color.back()));
 }
 //---------------------------------------------------------------------------
 void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract,image::rgb_color color)
@@ -1568,7 +1568,7 @@ void TractModel::get_report(unsigned int profile_dir,float band_width,const std:
 
 
 
-template<typename input_iterator,typename output_iterator>
+template<class input_iterator,class output_iterator>
 void gradient(input_iterator from,input_iterator to,output_iterator out)
 {
     if(from == to)
@@ -1888,7 +1888,7 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
     return true;
 
 }
-template<typename matrix_type>
+template<class matrix_type>
 void distance_bin(const matrix_type& bin,image::basic_image<float,2>& D)
 {
     unsigned int n = bin.width();
@@ -1913,7 +1913,7 @@ void distance_bin(const matrix_type& bin,image::basic_image<float,2>& D)
     }
     std::replace(D.begin(),D.end(),(float)0,std::numeric_limits<float>::max());
 }
-template<typename matrix_type>
+template<class matrix_type>
 void distance_wei(const matrix_type& W_,image::basic_image<float,2>& D)
 {
     image::basic_image<float,2> W(W_);
@@ -1962,7 +1962,7 @@ void distance_wei(const matrix_type& W_,image::basic_image<float,2>& D)
     }
     std::replace(D.begin(),D.end(),(float)0.0,std::numeric_limits<float>::max());
 }
-template<typename matrix_type>
+template<class matrix_type>
 void inv_dis(const matrix_type& D,matrix_type& e)
 {
     if(e.begin() != D.begin())
@@ -1974,7 +1974,7 @@ void inv_dis(const matrix_type& D,matrix_type& e)
         e[pos] = 0;
 }
 
-template<typename vec_type>
+template<class vec_type>
 void output_node_measures(std::ostream& out,const char* name,const vec_type& data)
 {
     out << name << "\t";

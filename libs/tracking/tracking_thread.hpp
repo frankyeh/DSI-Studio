@@ -18,7 +18,6 @@ private:
 
 public:
     RoiMgr roi_mgr;
-    image::rgb_color color;
     std::vector<image::vector<3,short> > seeds;
 public:
     std::ostringstream report;
@@ -37,7 +36,6 @@ public:
     unsigned int track_recog_index;
 public:
     ThreadData(bool random_seed):
-        color(200,100,30),
         joinning(false),
         seed(random_seed ? std::random_device()():0),
         stop_by_tract(true),
