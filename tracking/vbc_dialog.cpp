@@ -47,9 +47,9 @@ bool load_cerebrum_mask(image::basic_image<char,3>& fp_mask)
     int x2 = (-trans[3]+16)/trans[0];
     if(x2 < x1)
         std::swap(x1,x2);
-    image::pointer_image<char,2> I1 = make_image(image::geometry<2>(wm_mask.width(),wm_mask.height()),&wm_mask[0]+z*wm.geometry().plane_size());
+    auto I1 = make_image(&wm_mask[0]+z*wm.geometry().plane_size(),image::geometry<2>(wm_mask.width(),wm_mask.height()));
     image::fill_rect(I1,image::vector<2,int>(x1,y1),image::vector<2,int>(x2,y2),0);
-    image::pointer_image<char,2> I2 = make_image(image::geometry<2>(wm_mask.width(),wm_mask.height()),&wm_mask[0]+(z+1)*wm.geometry().plane_size());
+    auto I2 = make_image(&wm_mask[0]+(z+1)*wm.geometry().plane_size(),image::geometry<2>(wm_mask.width(),wm_mask.height()));
     image::fill_rect(I2,image::vector<2,int>(x1,y1),image::vector<2,int>(x2,y2),0);
     image::morphology::defragment(wm_mask);
     float trans1_[16] = {-1, 0, 0, 78,
@@ -467,7 +467,7 @@ void vbc_dialog::on_subject_list_itemSelectionChanged()
     if(ui->toolBox->currentIndex() == 0 && ui->subject_view->currentIndex() == 1)
     {
         std::vector<float> fp;
-        float threshold = ui->fp_coverage->value()*image::segmentation::otsu_threshold(image::make_image(vbc->handle->dim,vbc->handle->dir.fa[0]));
+        float threshold = ui->fp_coverage->value()*image::segmentation::otsu_threshold(image::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
         vbc->handle->db.get_subject_vector(ui->subject_list->currentRow(),fp,fp_mask,threshold,ui->normalize_fp->isChecked());
         fp_image_buf.clear();
         fp_image_buf.resize(image::geometry<2>(ui->fp_zoom->value()*25,ui->fp_zoom->value()*100));// rotated
@@ -1281,12 +1281,12 @@ void vbc_dialog::on_show_result_clicked()
         vbc->calculate_spm(*result_fib.get(),info);
         new_data->view_item.push_back(item());
         new_data->view_item.back().name = "lesser";
-        new_data->view_item.back().image_data = image::make_image(new_data->dim,result_fib->lesser_ptr[0]);
+        new_data->view_item.back().image_data = image::make_image(result_fib->lesser_ptr[0],new_data->dim);
         new_data->view_item.back().set_scale(result_fib->lesser_ptr[0],
                                              result_fib->lesser_ptr[0]+new_data->dim.size());
         new_data->view_item.push_back(item());
         new_data->view_item.back().name = "greater";
-        new_data->view_item.back().image_data = image::make_image(new_data->dim,result_fib->greater_ptr[0]);
+        new_data->view_item.back().image_data = image::make_image(result_fib->greater_ptr[0],new_data->dim);
         new_data->view_item.back().set_scale(result_fib->greater_ptr[0],
                                              result_fib->greater_ptr[0]+new_data->dim.size());
 
@@ -1481,7 +1481,8 @@ void vbc_dialog::on_save_vector_clicked()
     if(filename.isEmpty())
         return;
 
-    float threshold = ui->fp_coverage->value()*image::segmentation::otsu_threshold(image::make_image(vbc->handle->dim,vbc->handle->dir.fa[0]));
+    float threshold = ui->fp_coverage->value()*image::segmentation::otsu_threshold(
+                image::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
     vbc->handle->db.save_subject_vector(filename.toLocal8Bit().begin(),fp_mask,threshold,ui->normalize_fp->isChecked());
 
 }
@@ -1627,7 +1628,8 @@ void vbc_dialog::on_load_roi_from_file_clicked()
 
 void vbc_dialog::on_calculate_dif_clicked()
 {
-    float threshold = ui->fp_coverage->value()*image::segmentation::otsu_threshold(image::make_image(vbc->handle->dim,vbc->handle->dir.fa[0]));
+    float threshold = ui->fp_coverage->value()*image::segmentation::otsu_threshold(
+                image::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
     vbc->handle->db.get_dif_matrix(fp_matrix,fp_mask,threshold,ui->normalize_fp->isChecked());
     fp_max_value = *std::max_element(fp_matrix.begin(),fp_matrix.end());
     fp_dif_map.resize(image::geometry<2>(vbc->handle->db.num_subjects,vbc->handle->db.num_subjects));
@@ -1766,7 +1768,8 @@ void vbc_dialog::on_save_fp_mask_clicked()
                                 "Report file (*.txt *.nii *nii.gz);;All files (*)");
     if(FileName.isEmpty())
         return;
-    float fiber_threshold = ui->fp_coverage->value()*image::segmentation::otsu_threshold(image::make_image(vbc->handle->dim,vbc->handle->dir.fa[0]));
+    float fiber_threshold = ui->fp_coverage->value()*image::segmentation::otsu_threshold(
+                image::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
     image::basic_image<float,3> mask(fp_mask);
     for(unsigned int index = 0;index < mask.size();++index)
         if(vbc->handle->dir.fa[0][index] < fiber_threshold)

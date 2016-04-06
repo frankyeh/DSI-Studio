@@ -275,7 +275,7 @@ public:
 
         ptr_images.clear();
         for (unsigned int index = 0; index < voxel.image_model->dwi_data.size(); ++index)
-            ptr_images.push_back(image::make_image(src_geo,voxel.image_model->dwi_data[index]));
+            ptr_images.push_back(image::make_image(voxel.image_model->dwi_data[index],src_geo));
 
 
         std::fill(voxel.vs.begin(),voxel.vs.end(),voxel.param[1]);

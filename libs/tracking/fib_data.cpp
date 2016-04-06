@@ -430,13 +430,13 @@ bool fib_data::load_from_mat(void)
 
     view_item.push_back(item());
     view_item.back().name =  dir.fa.size() == 1 ? "fa":"qa";
-    view_item.back().image_data = image::make_image(dim,dir.fa[0]);
+    view_item.back().image_data = image::make_image(dir.fa[0],dim);
     view_item.back().set_scale(dir.fa[0],dir.fa[0]+dim.size());
     for(unsigned int index = 1;index < dir.index_name.size();++index)
     {
         view_item.push_back(item());
         view_item.back().name =  dir.index_name[index];
-        view_item.back().image_data = image::make_image(dim,dir.index_data[index][0]);
+        view_item.back().image_data = image::make_image(dir.index_data[index][0],dim);
         view_item.back().set_scale(dir.index_data[index][0],dir.index_data[index][0]+dim.size());
     }
     view_item.push_back(item());
@@ -485,7 +485,7 @@ bool fib_data::load_from_mat(void)
             continue;
         view_item.push_back(item());
         view_item.back().name = matrix_name;
-        view_item.back().image_data = image::make_image(dim,buf);
+        view_item.back().image_data = image::make_image(buf,dim);
         view_item.back().set_scale(buf,buf+dim.size());
     }
     if (!dim[2])
@@ -511,9 +511,9 @@ bool fib_data::load_from_mat(void)
                mat_reader.read((name+"_z").c_str(),row,col,mz) &&
                  mat_reader.read((name+"_d").c_str(),row,col,native_geo))
             {
-                view_item[i].mx = image::make_image(dim,mx);
-                view_item[i].my = image::make_image(dim,my);
-                view_item[i].mz = image::make_image(dim,mz);
+                view_item[i].mx = image::make_image(mx,dim);
+                view_item[i].my = image::make_image(my,dim);
+                view_item[i].mz = image::make_image(mz,dim);
                 view_item[i].native_geo = image::geometry<3>(native_geo[0],native_geo[1],native_geo[2]);
             }
         }
@@ -696,7 +696,7 @@ void fib_data::get_profile(const std::vector<float>& tract_data,
         return;
     image::geometry<3> dim(64,80,3);
     profile_.resize(dim.size());
-    image::pointer_image<float,3> profile(&profile_[0],dim);
+    auto profile = image::make_image(&profile_[0],dim);
     std::fill(profile.begin(),profile.end(),0);
     for(int j = 0;j < tract_data.size();j += 3)
     {
@@ -722,12 +722,15 @@ void fib_data::get_profile(const std::vector<float>& tract_data,
         if(z > 0 && z < profile.width() && y > 0 && y < profile.height())
             profile.at(z,y,2) += w;
     }
-    image::filter::gaussian(profile.slice_at(0));
-    image::filter::gaussian(profile.slice_at(0));
-    image::filter::gaussian(profile.slice_at(1));
-    image::filter::gaussian(profile.slice_at(1));
-    image::filter::gaussian(profile.slice_at(2));
-    image::filter::gaussian(profile.slice_at(2));
+    auto s1 = profile.slice_at(0);
+    auto s2 = profile.slice_at(1);
+    auto s3 = profile.slice_at(2);
+    image::filter::gaussian(s1);
+    image::filter::gaussian(s1);
+    image::filter::gaussian(s2);
+    image::filter::gaussian(s2);
+    image::filter::gaussian(s3);
+    image::filter::gaussian(s3);
     float m = *std::max_element(profile.begin(),profile.end());
     if(m != 0.0)
         image::multiply_constant(profile,1.8/m);

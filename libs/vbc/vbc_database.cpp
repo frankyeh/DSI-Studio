@@ -19,7 +19,7 @@ bool vbc_database::create_database(const char* template_name)
         error_msg = handle->error_msg;
         return false;
     }
-    fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dim,handle->dir.fa[0]));
+    fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim));
     handle->db.calculate_si2vi();
     return true;
 }
@@ -32,7 +32,7 @@ bool vbc_database::load_database(const char* database_name)
         error_msg += handle->error_msg;
         return false;
     }
-    fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dim,handle->dir.fa[0]));
+    fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim));
     return !handle->db.has_db();
 }
 

@@ -186,7 +186,7 @@ void reconstruction_window::on_b_table_itemSelectionChanged()
             {
                 image::vector<3> pos(x,y,ui->z_pos->value()),to;
                 T(pos,to);
-                image::estimate(image::make_image(handle->voxel.dim,handle->dwi_data[b_index]),
+                image::estimate(image::make_image(handle->dwi_data[b_index],handle->voxel.dim),
                                 to,tmp[index],image::cubic);
             }
     }
@@ -852,8 +852,8 @@ void rec_motion_correction_parallel(ImageModel* handle,
         if(i == 0)
             continue;
         image::basic_image<float,3> I0,I1;
-        I0 = image::make_image(handle->voxel.dim,handle->dwi_data[0]);
-        I1 = image::make_image(handle->voxel.dim,handle->dwi_data[i]);
+        I0 = image::make_image(handle->dwi_data[0],handle->voxel.dim);
+        I1 = image::make_image(handle->dwi_data[i],handle->voxel.dim);
         image::filter::mean(I0);
         image::filter::mean(I1);
         image::filter::mean(I0);
@@ -1081,7 +1081,7 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
     handle->rotate(ref.geometry(),manual->data.get_iT());
     handle->calculate_mask();
     handle->voxel.vs = vs;
-    image::pointer_image<unsigned short,3> I = image::make_image(handle->voxel.dim,(unsigned short*)handle->dwi_data[0]);
+    image::pointer_image<unsigned short,3> I = image::make_image((unsigned short*)handle->dwi_data[0],handle->voxel.dim);
     ref *= (float)(*std::max_element(I.begin(),I.end()))/(*std::max_element(ref.begin(),ref.end()));
     std::copy(ref.begin(),ref.end(),I.begin());
     update_image();

@@ -66,12 +66,12 @@ public:
         image::flip(mask,type);
         for(unsigned int i = 0;i < voxel.grad_dev.size();++i)
         {
-            image::pointer_image<float,3> I = image::make_image(voxel.dim,(float*)&*(voxel.grad_dev[i].begin()));
+            auto I = image::make_image((float*)&*(voxel.grad_dev[i].begin()),voxel.dim);
             image::flip(I,type);
         }
         for (unsigned int index = 0;check_prog(index,dwi_data.size());++index)
         {
-            image::pointer_image<unsigned short,3> I = image::make_image(voxel.dim,(unsigned short*)dwi_data[index]);
+            auto I = image::make_image((unsigned short*)dwi_data[index],voxel.dim);
             image::flip(I,type);
         }
         voxel.dim = voxel.dwi_sum.geometry();
@@ -80,7 +80,7 @@ public:
     void rotate_dwi(unsigned int dwi_index,const image::transformation_matrix<double>& affine)
     {
         image::basic_image<float,3> tmp(voxel.dim);
-        image::pointer_image<unsigned short,3> I = image::make_image(voxel.dim,(unsigned short*)dwi_data[dwi_index]);
+        auto I = image::make_image((unsigned short*)dwi_data[dwi_index],voxel.dim);
         image::resample(I,tmp,affine,image::cubic);
         std::copy(tmp.begin(),tmp.end(),I.begin());
 
@@ -99,7 +99,7 @@ public:
         for (unsigned int index = 0;check_prog(index,dwi_data.size());++index)
         {
             dwi[index].resize(new_geo);
-            image::pointer_image<unsigned short,3> I = image::make_image(voxel.dim,(unsigned short*)dwi_data[index]);
+            auto I = image::make_image((unsigned short*)dwi_data[index],voxel.dim);
             image::resample(I,dwi[index],affine,image::cubic);
             dwi_data[index] = &(dwi[index][0]);
         }
@@ -137,7 +137,7 @@ public:
             {
                 new_gra_dev[index].resize(new_geo);
                 image::resample(voxel.grad_dev[index],new_gra_dev[index],affine,image::cubic);
-                voxel.grad_dev[index] = image::make_image(voxel.dim,(float*)&(new_gra_dev[index][0]));
+                voxel.grad_dev[index] = image::make_image((float*)&(new_gra_dev[index][0]),voxel.dim);
             }
             new_gra_dev.swap(voxel.new_grad_dev);
         }
@@ -152,7 +152,7 @@ public:
         image::bounding_box(mask,range_min,range_max,0);
         for (unsigned int index = 0;check_prog(index,dwi_data.size());++index)
         {
-            image::pointer_image<unsigned short,3> I = image::make_image(voxel.dim,(unsigned short*)dwi_data[index]);
+            auto I = image::make_image((unsigned short*)dwi_data[index],voxel.dim);
             image::basic_image<unsigned short,3> I0 = I;
             image::crop(I0,range_min,range_max);
             std::fill(I.begin(),I.end(),0);
@@ -299,7 +299,7 @@ public:
             if(mat_reader.read("grad_dev",row,col,grad_dev) && row*col == voxel.dim.size()*9)
             {
                 for(unsigned int index = 0;index < 9;index++)
-                    voxel.grad_dev.push_back(image::make_image(voxel.dim,(float*)grad_dev+index*voxel.dim.size()));
+                    voxel.grad_dev.push_back(image::make_image((float*)grad_dev+index*voxel.dim.size(),voxel.dim));
                 if(std::fabs(voxel.grad_dev[0][0])+std::fabs(voxel.grad_dev[4][0])+std::fabs(voxel.grad_dev[8][0]) < 1.0)
                 {
                     image::add_constant(voxel.grad_dev[0].begin(),voxel.grad_dev[0].end(),1.0);

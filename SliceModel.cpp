@@ -23,7 +23,7 @@ FibSliceModel::FibSliceModel(std::shared_ptr<fib_data> handle_):handle(handle_)
     fib_data& fib = *handle;
     geometry = fib.dim;
     voxel_size = fib.vs;
-    source_images = image::make_image(geometry,fib.dir.fa[0]);
+    source_images = image::make_image(fib.dir.fa[0],geometry);
     center_point = geometry;
     center_point -= 1.0;
     center_point /= 2.0;

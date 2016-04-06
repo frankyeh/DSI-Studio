@@ -858,8 +858,8 @@ void tracking_window::add_slice_name(QString name)
     ui->sliceViewBox->addItem(name);
     handle->view_item.push_back(handle->view_item[0]);
     handle->view_item.back().name = name.toLocal8Bit().begin();
-    handle->view_item.back().image_data = image::make_image(glWidget->other_slices.back()->roi_image.geometry(),
-                                                            glWidget->other_slices.back()->roi_image_buf);
+    handle->view_item.back().image_data = image::make_image(glWidget->other_slices.back()->roi_image_buf,
+                                                            glWidget->other_slices.back()->roi_image.geometry());
     handle->view_item.back().set_scale(
                 glWidget->other_slices.back()->source_images.begin(),
                 glWidget->other_slices.back()->source_images.end());
@@ -985,8 +985,7 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
     }
     float max_value = *std::max_element(handle->dir.fa[0],handle->dir.fa[0]+handle->dim.size());
     renderWidget->setMinMax("fa_threshold",0.0,max_value*1.1,max_value/50.0);
-    set_data("fa_threshold",0.6*image::segmentation::otsu_threshold(image::make_image(handle->dim,
-                                                                                      handle->dir.fa[0])));
+    set_data("fa_threshold",0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim)));
     scene.show_slice();
 }
 
@@ -1370,7 +1369,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
 {
     tracking fib;
     fib.read(*handle);
-    fib.threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dim,handle->dir.fa[0]));
+    fib.threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim));
     if(!fib.dir.empty())
         return;
     for(float cos_angle = 0.99;check_prog(1000-cos_angle*1000,1000-866);cos_angle -= 0.005)

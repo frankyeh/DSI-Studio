@@ -301,7 +301,8 @@ int trk(void)
 
 
 
-    tract_model.get_fib().threshold = po.get("fa_threshold",float(0.6*image::segmentation::otsu_threshold(image::make_image(geometry,fa0))));
+    tract_model.get_fib().threshold = po.get("fa_threshold",
+                                             float(0.6*image::segmentation::otsu_threshold(image::make_image(fa0,geometry))));
     tract_model.get_fib().cull_cos_angle = std::cos(po.get("turning_angle",float(60))*3.1415926/180.0);
 
     if (!po.has("seed"))

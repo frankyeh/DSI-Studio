@@ -168,7 +168,7 @@ int ana(void)
     }
 
     TractModel tract_model(handle);
-    float threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(geometry,handle->dir.fa[0]));
+    float threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],geometry));
     tract_model.get_fib().threshold = threshold;
     tract_model.get_fib().cull_cos_angle = std::cos(60.0*3.1415926/180.0);
     std::string file_name = po.get("tract");
