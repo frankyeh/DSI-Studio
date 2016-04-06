@@ -602,10 +602,10 @@ void fib_data::get_voxel_info2(unsigned int x,unsigned int y,unsigned int z,std:
         return;
     for(unsigned int i = 0;i < dir.num_fiber;++i)
     {
-        image::vector<3,float> dir(dir.get_dir(index,i));
-        buf.push_back(dir[0]);
-        buf.push_back(dir[1]);
-        buf.push_back(dir[2]);
+        const float* d = dir.get_dir(index,i);
+        buf.push_back(d[0]);
+        buf.push_back(d[1]);
+        buf.push_back(d[2]);
     }
 }
 void fib_data::get_voxel_information(int x,int y,int z,std::vector<float>& buf) const
