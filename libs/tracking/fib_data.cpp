@@ -580,10 +580,10 @@ void fib_data::get_slice(const std::string& view_name,
         image::reslicing(view_item[view_index].color_map_buf, buf, d_index, pos);
         for (unsigned int index = 0;index < buf.size();++index)
         {
-            image::vector<3,float> dir(dir.get_dir(buf[index],0));
-            show_image[index].r = std::abs((float)show_image[index].r*(float)dir[0]);
-            show_image[index].g = std::abs((float)show_image[index].g*(float)dir[1]);
-            show_image[index].b = std::abs((float)show_image[index].b*(float)dir[2]);
+            const float* d = dir.get_dir(buf[index],0);
+            show_image[index].r = std::abs((float)show_image[index].r*d[0]);
+            show_image[index].g = std::abs((float)show_image[index].g*d[1]);
+            show_image[index].b = std::abs((float)show_image[index].b*d[2]);
         }
     }
     else
