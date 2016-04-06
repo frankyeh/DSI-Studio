@@ -696,7 +696,7 @@ void fib_data::get_profile(const std::vector<float>& tract_data,
         return;
     image::geometry<3> dim(64,80,3);
     profile_.resize(dim.size());
-    auto profile = image::make_image(dim,&profile_[0]);
+    image::pointer_image<float,3> profile(&profile_[0],dim);
     std::fill(profile.begin(),profile.end(),0);
     for(int j = 0;j < tract_data.size();j += 3)
     {
