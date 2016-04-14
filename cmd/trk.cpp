@@ -236,7 +236,8 @@ int trk(void)
     if (po.has(roi_names[index]))
     {
         ROIRegion roi(geometry, voxel_size);
-        std::string file_name = po.get(roi_names[index]);
+        QStringList str_list = QString(po.get(roi_names[index]).c_str()).split(",");// splitting actions
+        std::string file_name = str_list[0].toStdString();
         if(file_name.find(':') != std::string::npos &&
            file_name.find(':') != 1)
         {
@@ -273,6 +274,12 @@ int trk(void)
                 std::cout << "Invalid file format:" << file_name << std::endl;
                 return 0;
             }
+        }
+        // now perform actions
+        for(int i = 1;i < str_list.size();++i)
+        {
+            std::cout << str_list[i].toStdString() << " applied." << std::endl;
+            roi.perform(str_list[i].toStdString());
         }
         if(roi.get().empty())
         {

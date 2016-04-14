@@ -67,8 +67,47 @@ QStringList search_files(QString dir,QString filter)
     return src_list;
 }
 
-
 program_option po;
+int run_cmd(void)
+{
+    try
+    {
+        if (!po.has("action") || !po.has("source"))
+        {
+            std::cout << "invalid command, use --help for more detail" << std::endl;
+            return 1;
+        }
+        QDir::setCurrent(QFileInfo(po.get("action").c_str()).absolutePath());
+        if(po.get("action") == std::string("rec"))
+            return rec();
+        if(po.get("action") == std::string("trk"))
+            return trk();
+        if(po.get("action") == std::string("src"))
+            return src();
+        if(po.get("action") == std::string("ana"))
+            return ana();
+        if(po.get("action") == std::string("exp"))
+            return exp();
+        if(po.get("action") == std::string("atl"))
+            return atl();
+        if(po.get("action") == std::string("cnt"))
+            return cnt();
+        if(po.get("action") == std::string("vis"))
+            return vis();
+        std::cout << "invalid command, use --help for more detail" << std::endl;
+        return 1;
+    }
+    catch(const std::exception& e ) {
+        std::cout << e.what() << std::endl;
+    }
+    catch(...)
+    {
+        std::cout << "unknown error occured" << std::endl;
+    }
+    return 0;
+}
+
+
 int main(int ac, char *av[])
 { 
     if(ac > 2)
@@ -88,48 +127,9 @@ int main(int ac, char *av[])
         }
         cmd->setOrganizationName("LabSolver");
         cmd->setApplicationName("DSI Studio");
-
-        try
-        {
-            std::cout << "DSI Studio " << __DATE__ << ", Fang-Cheng Yeh" << std::endl;
-
-        // options for general options
-            po.init(ac,av);
-
-            if (!po.has("action") || !po.has("source"))
-            {
-                std::cout << "invalid command, use --help for more detail" << std::endl;
-                return 1;
-            }
-            QDir::setCurrent(QFileInfo(po.get("action").c_str()).absolutePath());
-            if(po.get("action") == std::string("rec"))
-                return rec();
-            if(po.get("action") == std::string("trk"))
-                return trk();
-            if(po.get("action") == std::string("src"))
-                return src();
-            if(po.get("action") == std::string("ana"))
-                return ana();
-            if(po.get("action") == std::string("exp"))
-                return exp();
-            if(po.get("action") == std::string("atl"))
-                return atl();
-            if(po.get("action") == std::string("cnt"))
-                return cnt();
-            if(po.get("action") == std::string("vis"))
-                return vis();
-            std::cout << "invalid command, use --help for more detail" << std::endl;
-            return 1;
-        }
-        catch(const std::exception& e ) {
-            std::cout << e.what() << std::endl;
-        }
-        catch(...)
-        {
-            std::cout << "unknown error occured" << std::endl;
-        }
-
-        return 1;
+        std::cout << "DSI Studio " << __DATE__ << ", Fang-Cheng Yeh" << std::endl;
+        po.init(ac,av);
+        return run_cmd();
     }
     QApplication a(ac,av);
     a.setOrganizationName("LabSolver");
@@ -141,7 +141,7 @@ int main(int ac, char *av[])
     // load template
     if(!fa_template_imp.load_from_file())
     {
-        QMessageBox::information(0,"Error","Cannot find HCP488_QA.nii.gz in file directory",0);
+        QMessageBox::information(0,"Error","Cannot find HCP842_QA.nii.gz in file directory",0);
         return false;
     }
     load_atlas();

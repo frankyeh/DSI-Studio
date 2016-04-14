@@ -170,7 +170,7 @@ public:
         }
         void SaveToBuffer(image::basic_image<unsigned char, 3>& mask,
                 unsigned char value=255);
-
+        void perform(const std::string& action);
         void getSlicePosition(SliceModel* slice, unsigned int pindex, int& x, int& y,int& z);
 
         void makeMeshes(bool smooth);

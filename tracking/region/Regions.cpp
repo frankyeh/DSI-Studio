@@ -1,4 +1,5 @@
 // ---------------------------------------------------------------------------
+#include <QInputDialog>
 #include <fstream>
 #include <iterator>
 #include "Regions.h"
@@ -233,13 +234,66 @@ void ROIRegion::SaveToBuffer(image::basic_image<unsigned char, 3>& mask,
                                        region[index][2], geo).index()] = value;
     }
 }
-
+// ---------------------------------------------------------------------------
+void ROIRegion::perform(const std::string& action)
+{
+    image::basic_image<unsigned char, 3>mask;
+    if(action == "smoothing")
+    {
+        SaveToBuffer(mask, 1);
+        image::morphology::smoothing(mask);
+        LoadFromBuffer(mask);
+    }
+    if(action == "erosion")
+    {
+        SaveToBuffer(mask, 1);
+        image::morphology::erosion(mask);
+        LoadFromBuffer(mask);
+    }
+    if(action == "dilation")
+    {
+        SaveToBuffer(mask, 1);
+        image::morphology::dilation(mask);
+        LoadFromBuffer(mask);
+    }
+    if(action == "defragment")
+    {
+        SaveToBuffer(mask, 1);
+        image::morphology::defragment(mask);
+        LoadFromBuffer(mask);
+    }
+    if(action == "negate")
+    {
+        SaveToBuffer(mask, 1);
+        image::morphology::negate(mask);
+        LoadFromBuffer(mask);
+    }
+    if(action == "flipx")
+        Flip(0);
+    if(action == "flipy")
+        Flip(1);
+    if(action == "flipz")
+        Flip(2);
+    if(action == "shiftx")
+        shift(image::vector<3,short>(1, 0, 0));
+    if(action == "shiftnx")
+        shift(image::vector<3,short>(-1, 0, 0));
+    if(action == "shifty")
+        shift(image::vector<3,short>(0, 1, 0));
+    if(action == "shiftny")
+        shift(image::vector<3,short>(0, -1, 0));
+    if(action == "shiftz")
+        shift(image::vector<3,short>(0, 0, 1));
+    if(action == "shiftnz")
+        shift(image::vector<3,short>(0, 0, -1));
+}
 // ---------------------------------------------------------------------------
 void ROIRegion::getSlicePosition(SliceModel* slice, unsigned int pindex, int& x, int& y,
                                  int& z) {
     slice->getSlicePosition(region[pindex].x(), region[pindex].y(),
                             region[pindex].z(), x, y, z);
 }
+
 // ---------------------------------------------------------------------------
 bool ROIRegion::has_point(const image::vector<3,short>& point)
 {

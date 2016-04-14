@@ -879,112 +879,57 @@ void RegionTableWidget::redo(void)
     emit need_update();
 }
 
-void RegionTableWidget::do_action(int id)
+void RegionTableWidget::do_action(QString action)
 {
     if (regions.empty())
         return;
-    image::basic_image<unsigned char, 3>mask;
     ROIRegion& cur_region = *regions[currentRow()];
-    switch (id)
+    cur_region.perform(action.toStdString());
+    if(action == "thresholding")
     {
-    case 0: // Smoothing
-        cur_region.SaveToBuffer(mask, 1);
-        image::morphology::smoothing(mask);
-        cur_region.LoadFromBuffer(mask);
-        break;
-    case 1: // Erosion
-        cur_region.SaveToBuffer(mask, 1);
-        image::morphology::erosion(mask);
-        cur_region.LoadFromBuffer(mask);
-        break;
-    case 2: // Expansion
-        cur_region.SaveToBuffer(mask, 1);
-        image::morphology::dilation(mask);
-        cur_region.LoadFromBuffer(mask);
-        break;
-    case 3: // Defragment
-        cur_region.SaveToBuffer(mask, 1);
-        image::morphology::defragment(mask);
-        cur_region.LoadFromBuffer(mask);
-        break;
-    case 4: // Negate
-        cur_region.SaveToBuffer(mask, 1);
-        image::morphology::negate(mask);
-        cur_region.LoadFromBuffer(mask);
-        break;
-    case 5:
-        cur_region.Flip(0);
-        break;
-    case 6:
-        cur_region.Flip(1);
-        break;
-    case 7:
-        cur_region.Flip(2);
-        break;
-    case 8: //
-        {
-            image::const_pointer_image<float,3> I = cur_tracking_window.handle->get_view_volume(cur_tracking_window.slice.view_name);
-            if(I.empty())
-                return;
-            mask.resize(I.geometry());
-            auto m = std::minmax_element(I.begin(),I.end());
-            bool ok;
-            float threshold = QInputDialog::getDouble(this,
-                "DSI Studio","Threshold:", image::segmentation::otsu_threshold(I),
-                *m.first,
-                *m.second,
-                4, &ok);
-            if(!ok)
-                return;
+        image::basic_image<unsigned char, 3>mask;
+        image::const_pointer_image<float,3> I = cur_tracking_window.handle->get_view_volume(cur_tracking_window.slice.view_name);
+        if(I.empty())
+            return;
+        mask.resize(I.geometry());
+        auto m = std::minmax_element(I.begin(),I.end());
+        bool ok;
+        float threshold = QInputDialog::getDouble(this,
+            "DSI Studio","Threshold:", image::segmentation::otsu_threshold(I),
+            *m.first,
+            *m.second,
+            4, &ok);
+        if(!ok)
+            return;
 
-            for(unsigned int index = 0;index < mask.size();++index)
-                mask[index]  = I[index] > threshold ? 1:0;
-            cur_region.LoadFromBuffer(mask);
-        }
-        break;
-    case 9: // shift
-        cur_region.shift(image::vector<3,short>(1, 0, 0));
-        break;
-    case 10: // shift
-        cur_region.shift(image::vector<3,short>(-1, 0, 0));
-        break;
-    case 11: // shift
-        cur_region.shift(image::vector<3,short>(0, 1, 0));
-        break;
-    case 12: // shift
-        cur_region.shift(image::vector<3,short>(0, -1, 0));
-        break;
-    case 13: // shift
-        cur_region.shift(image::vector<3,short>(0, 0, 1));
-        break;
-    case 14: // shift
-        cur_region.shift(image::vector<3,short>(0, 0, -1));
-        break;
-    case 15:
-        {
-            cur_region.SaveToBuffer(mask, 1);
-            QString name = item(currentRow(),0)->text();
-            image::basic_image<unsigned int,3> labels;
-            std::vector<std::vector<unsigned int> > r;
-            image::morphology::connected_component_labeling(mask,labels,r);
+        for(unsigned int index = 0;index < mask.size();++index)
+            mask[index]  = I[index] > threshold ? 1:0;
+        cur_region.LoadFromBuffer(mask);
+    }
+    if(action == "separate")
+    {
+        image::basic_image<unsigned char, 3>mask;
+        cur_region.SaveToBuffer(mask, 1);
+        QString name = item(currentRow(),0)->text();
+        image::basic_image<unsigned int,3> labels;
+        std::vector<std::vector<unsigned int> > r;
+        image::morphology::connected_component_labeling(mask,labels,r);
 
-            for(unsigned int index = 0,total_count = 0;index < r.size() && total_count < 10;++index)
-                if(!r[index].empty())
+        for(unsigned int index = 0,total_count = 0;index < r.size() && total_count < 10;++index)
+            if(!r[index].empty())
+            {
+                std::fill(mask.begin(),mask.end(),0);
+                for(unsigned int i = 0;i < r[index].size();++i)
+                    mask[r[index][i]] = 1;
                 {
-                    std::fill(mask.begin(),mask.end(),0);
-                    for(unsigned int i = 0;i < r[index].size();++i)
-                        mask[r[index][i]] = 1;
-                    {
-                        ROIRegion region(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size);
-                        region.LoadFromBuffer(mask);
-                        add_region(name + "_"+QString::number(total_count+1),
-                                   roi_id,region.show_region.color.color);
-                        regions.back()->assign(region.get());
-                    }
-                    ++total_count;
+                    ROIRegion region(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size);
+                    region.LoadFromBuffer(mask);
+                    add_region(name + "_"+QString::number(total_count+1),
+                               roi_id,region.show_region.color.color);
+                    regions.back()->assign(region.get());
                 }
-            break;
-        }
-        }
+                ++total_count;
+            }
+    }
     emit need_update();
 }

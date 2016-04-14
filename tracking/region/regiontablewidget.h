@@ -36,7 +36,7 @@ protected:
     void contextMenuEvent ( QContextMenuEvent * event );
 private:
     tracking_window& cur_tracking_window;
-    void do_action(int id);
+    void do_action(QString action);
     void whole_brain_points(std::vector<image::vector<3,short> >& points);
     bool load_multiple_roi_nii(QString file_name);
 signals:
@@ -79,22 +79,22 @@ public slots:
     void undo(void);
     void redo(void);
     // actions
-    void action_smoothing(void){do_action(0);}
-    void action_erosion(void){do_action(1);}
-    void action_dilation(void){do_action(2);}
-    void action_defragment(void){do_action(3);}
-    void action_negate(void){do_action(4);}
-    void action_flipx(void){do_action(5);}
-    void action_flipy(void){do_action(6);}
-    void action_flipz(void){do_action(7);}
-    void action_shiftx(void){do_action(9);}
-    void action_shiftnx(void){do_action(10);}
-    void action_shifty(void){do_action(11);}
-    void action_shiftny(void){do_action(12);}
-    void action_shiftz(void){do_action(13);}
-    void action_shiftnz(void){do_action(14);}
-    void action_threshold(void){do_action(8);}
-    void action_separate(void){do_action(15);}
+    void action_smoothing(void){do_action("smoothing");}
+    void action_erosion(void){do_action("erosion");}
+    void action_dilation(void){do_action("dilation");}
+    void action_defragment(void){do_action("defragment");}
+    void action_negate(void){do_action("negate");}
+    void action_flipx(void){do_action("flipx");}
+    void action_flipy(void){do_action("flipy");}
+    void action_flipz(void){do_action("flipz");}
+    void action_shiftx(void){do_action("shiftx");}
+    void action_shiftnx(void){do_action("shiftnx");}
+    void action_shifty(void){do_action("shifty");}
+    void action_shiftny(void){do_action("shiftny");}
+    void action_shiftz(void){do_action("shiftz");}
+    void action_shiftnz(void){do_action("shiftnz");}
+    void action_threshold(void){do_action("threshold");}
+    void action_separate(void){do_action("separate");}
 };
 
 #endif // REGIONTABLEWIDGET_H
