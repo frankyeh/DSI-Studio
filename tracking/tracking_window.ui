@@ -1114,20 +1114,20 @@
     <addaction name="separator"/>
     <addaction name="actionCheck_all_tracts"/>
     <addaction name="actionUncheck_all_tracts"/>
+    <addaction name="actionSort_Tracts_By_Names"/>
     <addaction name="separator"/>
     <addaction name="actionMerge_All"/>
+    <addaction name="actionMerge_Tracts_by_Name"/>
     <addaction name="actionCopyTrack"/>
     <addaction name="separator"/>
     <addaction name="actionDeleteTract"/>
     <addaction name="actionDeleteTractAll"/>
-    <addaction name="separator"/>
-    <addaction name="actionSeparate_Deleted"/>
     <addaction name="actionRemove_Repeated_Tracks"/>
-    <addaction name="actionSort_Tracts_By_Names"/>
-    <addaction name="actionFilter_by_ROI"/>
+    <addaction name="actionSeparate_Deleted"/>
     <addaction name="separator"/>
     <addaction name="actionEndpoints_to_seeding"/>
     <addaction name="actionTracts_to_seeds"/>
+    <addaction name="actionFilter_by_ROI"/>
     <addaction name="separator"/>
     <addaction name="menuTract_Color"/>
     <addaction name="menuClustering"/>
@@ -2938,7 +2938,7 @@ Tracking</string>
   </action>
   <action name="actionCopyTrack">
    <property name="text">
-    <string>Copy</string>
+    <string>Copy Tracts</string>
    </property>
   </action>
   <action name="actionSave_3D_screen_in_high_resolution">
@@ -3247,7 +3247,7 @@ Tracking</string>
   </action>
   <action name="actionSeparate_Deleted">
    <property name="text">
-    <string>Separate Deleted</string>
+    <string>Separate Deleted Tracts</string>
    </property>
   </action>
   <action name="actionSave_Profile">
@@ -3285,12 +3285,25 @@ Tracking</string>
   </action>
   <action name="actionSort_Tracts_By_Names">
    <property name="text">
-    <string>Sort By Name And Merge</string>
+    <string>Sort Tracts by Name</string>
    </property>
   </action>
   <action name="actionRemove_Repeated_Tracks">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+   </property>
    <property name="text">
     <string>Delete Repeated Tracks</string>
+   </property>
+  </action>
+  <action name="actionMerge_Tracts_by_Name">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/add.xpm</normaloff>:/icons/icons/add.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Merge Tracts by Name</string>
    </property>
   </action>
  </widget>

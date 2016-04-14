@@ -559,7 +559,7 @@ void TractTableWidget::save_profile(void)
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,
-                "Save end points as",item(currentRow(),0)->text().replace(':','_') + "profile.mat",
+                "Save profile as",item(currentRow(),0)->text().replace(':','_') + "profile.mat",
                 "MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -571,7 +571,6 @@ void TractTableWidget::save_profile(void)
     {
         cur_tracking_window.handle->get_profile(tract_models[currentRow()]->get_tracts()[i],profile);
         out.write(QString("image%1").arg(i).toLocal8Bit().begin(),&profile[0],1,profile.size());
-
     }
     //out.write("dimension",&*profile.geometry().begin(),1,3);
 }
@@ -881,18 +880,22 @@ void TractTableWidget::sort_track_by_name(void)
         std::swap(thread_data[i],thread_data[j]);
         std::swap(tract_models[i],tract_models[j]);
     }
-    for(int i= 0;i < rowCount()-1;)
-        if(item(i,0)->text() == item(i+1,0)->text())
+}
+void TractTableWidget::merge_track_by_name(void)
+{
+    for(int i= 0;i < rowCount()-1;++i)
+        for(int j= i+1;j < rowCount()-1;)
+        if(item(i,0)->text() == item(j,0)->text())
         {
-            tract_models[i]->add(*tract_models[i+1]);
-            delete_row(i+1);
+            tract_models[i]->add(*tract_models[j]);
+            delete_row(j);
             item(i,1)->setText(QString::number(tract_models[i]->get_visible_track_count()));
             item(i,2)->setText(QString::number(tract_models[i]->get_deleted_track_count()));
         }
     else
-        ++i;
-
+        ++j;
 }
+
 void TractTableWidget::move_up(void)
 {
     if(currentRow())
