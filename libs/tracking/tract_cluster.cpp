@@ -5,7 +5,7 @@
 struct compare_cluster
 {
 
-        bool operator()(std::shared_ptr<Cluster>& lhs,std::shared_ptr<Cluster>& rhs)
+        bool operator()(const std::shared_ptr<Cluster>& lhs,const std::shared_ptr<Cluster>& rhs)
         {
             return lhs->tracts.size() > rhs->tracts.size();
         }
