@@ -890,7 +890,7 @@ void TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select
 //---------------------------------------------------------------------------
 void TractModel::delete_repeated(void)
 {
-    auto norm1 = [](const float* v1,const float* v2){return std::fabsf(v1[0]-v2[0])+std::fabsf(v1[1]-v2[1])+std::fabsf(v1[2]-v2[2]);};
+    auto norm1 = [](const float* v1,const float* v2){return std::fabs(v1[0]-v2[0])+std::fabs(v1[1]-v2[1])+std::fabs(v1[2]-v2[2]);};
     std::vector<bool> repeated(tract_data.size());
     image::par_for(tract_data.size(),[&](int i)
     {
