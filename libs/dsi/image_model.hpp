@@ -38,6 +38,7 @@ public:
     // 0:xy 1:yz 2: xz
     void rotate_b_table(unsigned char dim)
     {
+        std::swap(voxel.vs[dim],voxel.vs[(dim+1)%3]);
         for (unsigned int index = 0;index < voxel.bvectors.size();++index)
             std::swap(voxel.bvectors[index][dim],voxel.bvectors[index][(dim+1)%3]);
         if(!voxel.grad_dev.empty())
@@ -61,7 +62,10 @@ public:
         if(type < 3)
             flip_b_table(type);
         else
+        {
             rotate_b_table(type-3);
+
+        }
         image::flip(voxel.dwi_sum,type);
         image::flip(mask,type);
         for(unsigned int i = 0;i < voxel.grad_dev.size();++i)
