@@ -595,7 +595,7 @@ void reconstruction_window::on_manual_reg_clicked()
     std::auto_ptr<manual_alignment> manual(new manual_alignment(this,
             dwi,handle->voxel.vs,
             fa_template_imp.I,fa_template_imp.vs,
-            image::reg::rigid_body,image::reg::reg_cost_type::corr));
+            image::reg::affine,image::reg::reg_cost_type::corr));
     manual->timer->start();
     if(manual->exec() == QDialog::Accepted)
         handle->voxel.qsdr_trans = manual->data.get_T();
