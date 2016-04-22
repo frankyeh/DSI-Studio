@@ -28,6 +28,7 @@ int exp(void);
 int atl(void);
 int cnt(void);
 int vis(void);
+int ren(void);
 
 bool load_track_network(QString path)
 {
@@ -94,6 +95,8 @@ int run_cmd(void)
             return cnt();
         if(po.get("action") == std::string("vis"))
             return vis();
+        if(po.get("action") == std::string("ren"))
+            return ren();
         std::cout << "invalid command, use --help for more detail" << std::endl;
         return 1;
     }

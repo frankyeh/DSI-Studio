@@ -161,7 +161,8 @@ SOURCES += main.cpp \
     qcompletelineedit.cpp \
     libs/tracking/fib_data.cpp \
     libs/mapping/connectometry_db.cpp \
-    libs/tracking/tracking_thread.cpp
+    libs/tracking/tracking_thread.cpp \
+    cmd/ren.cpp
 
 OTHER_FILES += \
     options.txt
