@@ -24,17 +24,3 @@ int ren(void)
     }
     return 0;
 }
-
-
-QStringList dirs = GetSubDir(path);
-for(unsigned int index = 0;check_prog(index,dirs.size());++index)
-{
-    QStringList files = QDir(dirs[index]).entryList(QStringList("*"),
-                                QDir::Files | QDir::NoSymLinks);
-    set_title(QFileInfo(dirs[index]).fileName().toLocal8Bit().begin());
-    for(unsigned int j = 0;j < files.size() && check_prog(index,dirs.size());++j)
-    {
-        set_title(files[j].toLocal8Bit().begin());
-        RenameDICOMToDir(dirs[index] + "/" + files[j],path);
-    }
-}
