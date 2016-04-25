@@ -16,6 +16,11 @@ int src(void)
     std::string ext;
     if(source.size() > 4)
         ext = std::string(source.end()-4,source.end());
+    std::string output;
+    if(po.has("output"))
+        output = po.get("output");
+    else
+        output = source + ".src.gz";
 
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     QStringList file_list;
@@ -126,7 +131,7 @@ int src(void)
         std::cout << "Cannot find b-table from the header. You may need to load an external b-table using--b_table or --bval and --bvec." << std::endl;
         return 1;
     }
-    std::cout << "Output src " << po.get("output").c_str() << std::endl;
-    DwiHeader::output_src(po.get("output").c_str(),dwi_files,0);
+    std::cout << "Output src to " << output << std::endl;
+    DwiHeader::output_src(output.c_str(),dwi_files,0);
     return 0;
 }
