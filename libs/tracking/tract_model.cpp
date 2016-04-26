@@ -1109,7 +1109,7 @@ void TractModel::cut_by_mask(const char* file_name)
     tract_data.swap(new_data);*/
 }
 //---------------------------------------------------------------------------
-void TractModel::trim(void)
+bool TractModel::trim(void)
 {
     image::basic_image<unsigned int,3> label(geometry);
 
@@ -1159,7 +1159,10 @@ void TractModel::trim(void)
     for (unsigned int index = 0;index < label.size();++index)
         if (label[index] < total_track_number)
             tracts_to_delete.insert(label[index]);
+    if(tracts_to_delete.empty())
+        return false;
     delete_tracts(std::vector<unsigned int>(tracts_to_delete.begin(),tracts_to_delete.end()));
+    return true;
 }
 //---------------------------------------------------------------------------
 void TractModel::clear_deleted(void)

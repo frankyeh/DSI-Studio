@@ -915,88 +915,120 @@ void vbc_dialog::calculate_FDR(void)
         report = vbc->handle->report.c_str();
     if(!vbc->report.empty())
         report += vbc->report.c_str();
+
+    if(!ui->rb_individual_analysis->isChecked())
+    {
+        std::ostringstream out;
+        {
+            std::vector<unsigned int> data(vbc->seed_greater);
+            data.insert(data.end(),vbc->seed_greater_null.begin(),vbc->seed_greater_null.end());
+            double p = image::permutation_test(data.begin(),data.end(),vbc->seed_greater.size());
+            out << " The analysis results showed "<< (p < 0.05 ? "": "no ")
+                << "track(s) with significantly increased connectivity ";
+
+            if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
+                out << "in group 0 ";
+            if(ui->rb_multiple_regression->isChecked())
+                out << "related to " << ui->foi->currentText().toLocal8Bit().begin() << " (positive correlation)";
+
+            if(p == 0)
+                out << "(p < 0.0005, one-side)";
+            else
+                out << "(p=" << p << ", one-side)";
+            out << " and ";
+        }
+        {
+            std::vector<unsigned int> data(vbc->seed_lesser);
+            data.insert(data.end(),vbc->seed_lesser_null.begin(),vbc->seed_lesser_null.end());
+            double p = image::permutation_test(data.begin(),data.end(),vbc->seed_lesser.size());
+            out << (p < 0.05 ? "": "no " )
+                << "track(s) with significantly decreased connectivity ";
+            if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
+                out << "in group 0 ";
+            if(ui->rb_multiple_regression->isChecked())
+                out << "related to " << ui->foi->currentText().toLocal8Bit().begin() << " (negative correlation)";
+            if(p == 0)
+                out << "(p < 0.0005, one-side).";
+            else
+                out << "(p=" << p << ", one-side).";
+        }
+        report += out.str().c_str();
+    }
+
     if(vbc->use_track_length)
     {
         if(ui->rb_individual_analysis->isChecked())
             {
                 std::ostringstream out;
-                if(vbc->fdr_greater[vbc->length_threshold] > 0.5 || !vbc->has_greater_result)
-                    out << " The analysis results showed no track with significant increase in anisotropy.";
-                else
-                    out << " The analysis results showed tracks with increased anisotropy with an FDR of "
-                        << vbc->fdr_greater[vbc->length_threshold] << ".";
-
-                if(vbc->fdr_lesser[vbc->length_threshold] > 0.5 || !vbc->has_lesser_result)
-                    out << " The analysis results showed no track with significant decrease in anisotropy.";
-                else
-                    out << " The analysis results showed tracks with decreased anisotropy with an FDR of "
-                        << vbc->fdr_lesser[vbc->length_threshold] << ".";
+                out << " Further FDR analysis results showed "
+                    << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no ":"")
+                    << "increased connectivity (FDR="
+                    << vbc->fdr_greater[vbc->length_threshold] << ") "
+                    << "and "
+                    << (vbc->fdr_lesser[vbc->length_threshold]>0.5 || !vbc->has_lesser_result ? "no ":"")
+                    << "decreased connectivity (FDR="
+                    << vbc->fdr_lesser[vbc->length_threshold] << ").";
                 report += out.str().c_str();
             }
             if(ui->rb_multiple_regression->isChecked())
             {
                 std::ostringstream out;
-                if(vbc->fdr_greater[vbc->length_threshold] > 0.5 || !vbc->has_greater_result)
-                    out << " The analysis results showed that there is no track with significantly increased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
-                else
-                    out << " The analysis results showed tracks with increased anisotropy related to "
-                        << ui->foi->currentText().toLocal8Bit().begin() << " with an FDR of "
-                        << vbc->fdr_greater[vbc->length_threshold] << ".";
-
-                if(vbc->fdr_lesser[vbc->length_threshold] > 0.5 || !vbc->has_lesser_result)
-                    out << " The analysis results showed that there is no track with significantly decreased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
-                else
-                    out << " The analysis results showed tracks with decreased anisotropy related to "
-                        << ui->foi->currentText().toLocal8Bit().begin() << " with an FDR of "
-                        << vbc->fdr_lesser[vbc->length_threshold] << ".";
+                out << " Further FDR analysis results showed "
+                    << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no ":"")
+                    << "increased connectivity related to "
+                    << ui->foi->currentText().toLocal8Bit().begin() << " (FDR="
+                    << vbc->fdr_greater[vbc->length_threshold] << ") "
+                    << "and "
+                    << (vbc->fdr_lesser[vbc->length_threshold]>0.5 || !vbc->has_lesser_result ? "no ":"")
+                    << "decreased connectivity related to "
+                    << ui->foi->currentText().toLocal8Bit().begin() << " (FDR="
+                    << vbc->fdr_lesser[vbc->length_threshold] << ").";
                 report += out.str().c_str();
             }
             if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
             {
                 std::ostringstream out;
-                if(vbc->fdr_greater[vbc->length_threshold] > 0.5 || !vbc->has_greater_result)
-                    out << " The analysis results showed that there is no track in group 0 with significantly increased anisotropy.";
-                else
-                    out << " The analysis results showed tracks with increased anisotropy in group 0 with an FDR of "
-                        << vbc->fdr_greater[vbc->length_threshold] << ".";
-
-                if(vbc->fdr_lesser[vbc->length_threshold] > 0.5 || !vbc->has_lesser_result)
-                    out << " The analysis results showed that there is no track in group 1 with significantly increased anisotropy.";
-                else
-                    out << " The analysis results showed tracks with increased anisotropy in group 1 with an FDR of "
-                        << vbc->fdr_lesser[vbc->length_threshold] << ".";
+                out << " Further FDR analysis results showed "
+                    << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no ":"")
+                    << "increased connectivity in group 0 (FDR="
+                    << vbc->fdr_greater[vbc->length_threshold] << ") "
+                    << "and "
+                    << (vbc->fdr_lesser[vbc->length_threshold]>0.5 || !vbc->has_lesser_result ? "no ":"")
+                    << "increased connectivity in group 1 (FDR="
+                    << vbc->fdr_lesser[vbc->length_threshold] << ").";
                 report += out.str().c_str();
             }
     }
     else
     {
+
         if(ui->rb_individual_analysis->isChecked())
         {
             std::ostringstream out;
             if(vbc->length_threshold_greater == 0 || !vbc->has_greater_result)
-                out << " No track showed significant increase in anisotropy.";
+                out << " Further FDR analysis results cannot identify track with increased connectivity using the assigned FDR value.";
             else
-                out << " The analysis results found tracks with significant increased anisotropy at length threshold of " << vbc->length_threshold_greater << " mm.";
+                out << " Further FDR analysis results found increased connectivity at length threshold of " << vbc->length_threshold_greater << " mm.";
 
             if(vbc->length_threshold_lesser == 0 || !vbc->has_lesser_result)
-                out << " No track showed significant decrease in anisotropy.";
+                out << " Further FDR analysis results cannot identify track with decreased connectivity using the assigned FDR value.";
             else
-                out << " The analysis results found tracks with significant decreased anisotropy at length threshold of " << vbc->length_threshold_lesser << " mm.";
+                out << " Further FDR analysis results found decreased connectivity at length threshold of " << vbc->length_threshold_lesser << " mm.";
             report += out.str().c_str();
         }
         if(ui->rb_multiple_regression->isChecked())
         {
             std::ostringstream out;
             if(vbc->length_threshold_greater == 0 || !vbc->has_greater_result)
-                out << " No track showed significantly increased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
+                out << " Further FDR analysis results cannot identify track with increased connectivity related to " << ui->foi->currentText().toLocal8Bit().begin() << " using the assigned FDR value.";
             else
-                out << " The analysis results found tracks with increased anisotropy related to "
+                out << " Further FDR analysis results found increased connectivity related to "
                     << ui->foi->currentText().toLocal8Bit().begin() << " at length threshold of " << vbc->length_threshold_greater << " mm.";
 
             if(vbc->length_threshold_lesser == 0 || !vbc->has_lesser_result)
-                out << " No track showed significantly decreased anisotropy related to " << ui->foi->currentText().toLocal8Bit().begin() << ".";
+                out << " Further FDR analysis results cannot identify track with decreased connectivity related to " << ui->foi->currentText().toLocal8Bit().begin() << " using the assigned FDR value.";
             else
-                out << " The analysis results found tracks with decreased anisotropy related to "
+                out << " Further FDR analysis results found decreased connectivity related to "
                     << ui->foi->currentText().toLocal8Bit().begin() << " at length threshold of " << vbc->length_threshold_lesser << " mm.";
             report += out.str().c_str();
         }
@@ -1004,21 +1036,22 @@ void vbc_dialog::calculate_FDR(void)
         {
             std::ostringstream out;
             if(vbc->length_threshold_greater == 0 || !vbc->has_greater_result)
-                out << " No track in group 0 showed significantly increased anisotropy.";
+                out << " Further FDR analysis results cannot identify track with increased connectivity in group 0 using the assigned FDR value.";
             else
-                out << " The analysis results found tracks with significant increased anisotropy in group 0 at length threshold of " << vbc->length_threshold_greater << " mm.";
+                out << " Further FDR analysis results found significantly increased connectivity in group 0 at length threshold of " << vbc->length_threshold_greater << " mm.";
 
             if(vbc->length_threshold_lesser == 0 || !vbc->has_lesser_result)
-                out << "No track in group 1 showed significantly increased anisotropy.";
+                out << " Further FDR analysis results cannot identify track with increased connectivity in group 1 using the assigned FDR value.";
             else
-                out << " The analysis results found tracks with significant increased anisotropy in group 1 at length threshold of " << vbc->length_threshold_lesser << " mm.";
+                out << " Further FDR analysis results found significantly increased connectivity in group 1 at length threshold of " << vbc->length_threshold_lesser << " mm.";
             report += out.str().c_str();
         }
     }
     ui->textBrowser->setText(report);
 
-    if(vbc->total_count >= vbc->permutation_count)
+    if(vbc->progress == 100)
     {
+        vbc->wait();// make sure that all threads done
         timer->stop();
         // save trk files
         vbc->save_tracks_files(saved_file_name);
@@ -1075,7 +1108,7 @@ void vbc_dialog::calculate_FDR(void)
         timer.reset(0);
     }
     else
-        ui->progressBar->setValue(100*vbc->total_count/vbc->permutation_count);
+        ui->progressBar->setValue(vbc->progress);
 }
 void vbc_dialog::on_run_clicked()
 {
@@ -1090,7 +1123,6 @@ void vbc_dialog::on_run_clicked()
     }
     ui->run->setText("Stop");
     ui->span_to->setValue(80);
-    vbc->permutation_count = ui->mr_permutation->value();
     vbc->seeding_density = ui->seeding_density->value();
     vbc->trk_file_names = file_names;
     vbc->normalize_qa = ui->normalize_qa->isChecked();
@@ -1098,6 +1130,7 @@ void vbc_dialog::on_run_clicked()
     vbc->use_track_length = ui->rb_track_length->isChecked();
     vbc->fdr_threshold = ui->fdr_control->value();
     vbc->length_threshold = ui->length_threshold->value();
+    vbc->track_trimming = ui->track_trimming->value();
     vbc->model.reset(new stat_model);
     *(vbc->model.get()) = *(model.get());
 
@@ -1228,6 +1261,11 @@ void vbc_dialog::on_run_clicked()
         vbc->roi_type.clear();
     }
 
+    if(vbc->track_trimming)
+        out << " Track trimming was conducted with " << vbc->track_trimming << " iterations.";
+
+    if(vbc->output_resampling)
+        out << " All tracks generated from bootsrap resampling were included.";
 
     if(vbc->use_track_length)
         out << " A length threshold of " << ui->length_threshold->value() << " mm were used to select tracks.";
@@ -1241,7 +1279,7 @@ void vbc_dialog::on_run_clicked()
         << " randomized permutations were applied to the group label to obtain the null distribution of the track length.";
 
     vbc->report = out.str().c_str();
-    vbc->run_permutation(ui->multithread->value());
+    vbc->run_permutation(ui->multithread->value(),ui->mr_permutation->value());
     timer.reset(new QTimer(this));
     timer->setInterval(1000);
     connect(timer.get(), SIGNAL(timeout()), this, SLOT(calculate_FDR()));

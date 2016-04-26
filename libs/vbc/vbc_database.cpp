@@ -37,7 +37,7 @@ bool vbc_database::load_database(const char* database_name)
 }
 
 
-void vbc_database::run_track(const tracking& fib,std::vector<std::vector<float> >& tracks,float seed_ratio, unsigned int thread_count)
+int vbc_database::run_track(const tracking& fib,std::vector<std::vector<float> >& tracks,float seed_ratio, unsigned int thread_count)
 {
     std::vector<image::vector<3,short> > seed;
     for(image::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
@@ -46,7 +46,7 @@ void vbc_database::run_track(const tracking& fib,std::vector<std::vector<float> 
     if(seed.empty() || seed.size()*seed_ratio < 1.0)
     {
         tracks.clear();
-        return;
+        return 0;
     }
     ThreadData tracking_thread(false);
     tracking_thread.param.step_size = 1.0; // fixed 1 mm
@@ -68,6 +68,16 @@ void vbc_database::run_track(const tracking& fib,std::vector<std::vector<float> 
     }
     tracking_thread.run(fib,thread_count,seed.size()*seed_ratio,true);
     tracking_thread.track_buffer.swap(tracks);
+
+    if(track_trimming)
+    {
+        TractModel t(handle);
+        t.add_tracts(tracks);
+        for(int i = 0;i < track_trimming && t.get_visible_track_count();++i)
+            t.trim();
+        tracks.swap(t.get_tracts());
+    }
+    return tracks.size();
 }
 
 void cal_hist(const std::vector<std::vector<float> >& track,std::vector<unsigned int>& dist)
@@ -104,7 +114,7 @@ bool vbc_database::read_subject_data(const std::vector<std::string>& files,std::
     return true;
 }
 
-void vbc_database::run_permutation_multithread(unsigned int id)
+void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thread_count,unsigned int permutation_count)
 {
     connectometry_result data;
     tracking fib;
@@ -137,12 +147,8 @@ void vbc_database::run_permutation_multithread(unsigned int id)
         }
 
         bool null = true;
-        while(total_count < permutation_count && !terminated)
+        for(int i = id;i < permutation_count && !terminated;)
         {
-            if(null)
-                ++total_count_null;
-            else
-                ++total_count;
 
             for(unsigned int subject_id = 0;subject_id < individual_data.size() && !terminated;++subject_id)
             {
@@ -184,24 +190,34 @@ void vbc_database::run_permutation_multithread(unsigned int id)
                 }
                 */
             }
+            if(!null)
+            {
+                i += thread_count;
+                if(id == 0)
+                    progress = i*100/permutation_count;
+            }
             null = !null;
         }
+
     }
     else
     {
+
         bool null = true;
-        while(total_count < permutation_count && !terminated)
+        for(int i = id;i < permutation_count && !terminated;)
         {
-            if(null)
-                ++total_count_null;
-            else
-                ++total_count;
+
             stat_model info;
             info.resample(*model.get(),null,true);
             calculate_spm(data,info);
 
             fib.fa = data.lesser_ptr;
-            run_track(fib,tracks,total_track_count/permutation_count);
+            unsigned int s = run_track(fib,tracks,total_track_count/permutation_count);
+            if(null)
+                seed_lesser_null[i] = s;
+            else
+                seed_lesser[i] = s;
+
             cal_hist(tracks,(null) ? subject_lesser_null : subject_lesser);
 
             if(output_resampling && !null)
@@ -211,8 +227,14 @@ void vbc_database::run_permutation_multithread(unsigned int id)
                 tracks.clear();
             }
 
+            info.resample(*model.get(),null,true);
+            calculate_spm(data,info);
             fib.fa = data.greater_ptr;
-            run_track(fib,tracks,total_track_count/permutation_count);
+            s = run_track(fib,tracks,total_track_count/permutation_count);
+            if(null)
+                seed_greater_null[i] = s;
+            else
+                seed_greater[i] = s;
             cal_hist(tracks,(null) ? subject_greater_null : subject_greater);
 
             if(output_resampling && !null)
@@ -221,10 +243,15 @@ void vbc_database::run_permutation_multithread(unsigned int id)
                 greater_tracks[0]->add_tracts(tracks);
                 tracks.clear();
             }
-
+            if(!null)
+            {
+                i += thread_count;
+                if(id == 0)
+                    progress = i*100/permutation_count;
+            }
             null = !null;
         }
-        if(id == 0)
+        if(!output_resampling && id == 0)
         {
             stat_model info;
             info.resample(*model.get(),false,false);
@@ -241,18 +268,25 @@ void vbc_database::run_permutation_multithread(unsigned int id)
             greater_tracks[0]->add_tracts(tracks);
         }
     }
+    if(id == 0 && !terminated)
+        progress = 100;
 }
 void vbc_database::clear(void)
 {
     if(!threads.empty())
     {
         terminated = true;
-        for(int i = 0;i < threads.size();++i)
-            threads[i]->wait();
+        wait();
         threads.clear();
         terminated = false;
     }
 }
+void vbc_database::wait(void)
+{
+    for(int i = 0;i < threads.size();++i)
+        threads[i]->wait();
+}
+
 void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
 {
     for(int i = 0;i < threads.size();++i)
@@ -268,6 +302,8 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
         {
             TractModel tracks(handle);
             tracks.add_tracts(greater_tracks[index]->get_tracts(),length_threshold_greater);
+            while(output_resampling && tracks.get_visible_track_count() && tracks.trim())
+                ;
             if(tracks.get_visible_track_count())
             {
                 std::ostringstream out1;
@@ -311,6 +347,8 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
         {
             TractModel tracks(handle);
             tracks.add_tracts(lesser_tracks[index]->get_tracts(),length_threshold_lesser);
+            while(output_resampling && tracks.get_visible_track_count() && tracks.trim())
+                ;
             if(tracks.get_visible_track_count())
             {
                 std::ostringstream out1;
@@ -355,7 +393,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
     }
 }
 
-void vbc_database::run_permutation(unsigned int thread_count)
+void vbc_database::run_permutation(unsigned int thread_count,unsigned int permutation_count)
 {
     clear();
     terminated = false;
@@ -372,10 +410,17 @@ void vbc_database::run_permutation(unsigned int thread_count)
     fdr_lesser.clear();
     fdr_lesser.resize(200);
 
+    seed_greater_null.clear();
+    seed_greater_null.resize(permutation_count);
+    seed_lesser_null.clear();
+    seed_lesser_null.resize(permutation_count);
+    seed_greater.clear();
+    seed_greater.resize(permutation_count);
+    seed_lesser.clear();
+    seed_lesser.resize(permutation_count);
+
     model->rand_gen.reset();
     std::srand(0);
-    total_count_null = 0;
-    total_count = 0;
     greater_tracks.clear();
     lesser_tracks.clear();
     spm_maps.clear();
@@ -389,9 +434,10 @@ void vbc_database::run_permutation(unsigned int thread_count)
         spm_maps.push_back(std::make_shared<connectometry_result>());
     }
     clear();
+    progress = 0;
     for(unsigned int index = 0;index < thread_count;++index)
         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
-            [this,index](){run_permutation_multithread(index);})));
+            [this,index,thread_count,permutation_count](){run_permutation_multithread(index,thread_count,permutation_count);})));
 }
 void vbc_database::calculate_FDR(void)
 {

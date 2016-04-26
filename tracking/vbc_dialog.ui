@@ -36,7 +36,7 @@
       <item>
        <widget class="QToolBox" name="toolBox">
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <property name="tabSpacing">
          <number>0</number>
@@ -864,7 +864,7 @@ subject</string>
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>0</y>
+           <y>-354</y>
            <width>666</width>
            <height>898</height>
           </rect>
@@ -1168,7 +1168,7 @@ subject</string>
           <item>
            <widget class="QGroupBox" name="groupBox">
             <property name="title">
-             <string>STEP 1.3: Assign a threshold for structural change</string>
+             <string>STEP 1.3: Configure settings</string>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_4">
              <property name="spacing">
@@ -1179,6 +1179,9 @@ subject</string>
              </property>
              <item>
               <layout class="QHBoxLayout" name="percentile_rank_layout">
+               <property name="spacing">
+                <number>0</number>
+               </property>
                <item>
                 <widget class="QWidget" name="regression_feature" native="true">
                  <property name="minimumSize">
@@ -1672,13 +1675,13 @@ subject</string>
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout">
                  <property name="leftMargin">
-                  <number>0</number>
+                  <number>10</number>
                  </property>
                  <property name="topMargin">
                   <number>0</number>
                  </property>
                  <property name="rightMargin">
-                  <number>0</number>
+                  <number>10</number>
                  </property>
                  <property name="bottomMargin">
                   <number>0</number>
@@ -1761,13 +1764,13 @@ subject</string>
                          <double>1.000000000000000</double>
                         </property>
                         <property name="maximum">
-                         <double>20.000000000000000</double>
+                         <double>100.000000000000000</double>
                         </property>
                         <property name="singleStep">
                          <double>0.500000000000000</double>
                         </property>
                         <property name="value">
-                         <double>1.000000000000000</double>
+                         <double>20.000000000000000</double>
                         </property>
                        </widget>
                       </item>
@@ -1830,13 +1833,6 @@ subject</string>
                         </property>
                        </widget>
                       </item>
-                      <item>
-                       <widget class="QCheckBox" name="output_resampling">
-                        <property name="text">
-                         <string>Output all resampling results</string>
-                        </property>
-                       </widget>
-                      </item>
                      </layout>
                     </item>
                     <item>
@@ -1854,6 +1850,66 @@ subject</string>
                     </item>
                    </layout>
                   </widget>
+                 </item>
+                 <item>
+                  <layout class="QVBoxLayout" name="verticalLayout_25">
+                   <property name="spacing">
+                    <number>0</number>
+                   </property>
+                   <property name="bottomMargin">
+                    <number>0</number>
+                   </property>
+                   <item>
+                    <layout class="QHBoxLayout" name="horizontalLayout_30">
+                     <item>
+                      <widget class="QLabel" name="label_7">
+                       <property name="text">
+                        <string>Track trimming</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QSpinBox" name="track_trimming">
+                       <property name="maximumSize">
+                        <size>
+                         <width>55</width>
+                         <height>16777215</height>
+                        </size>
+                       </property>
+                       <property name="maximum">
+                        <number>10</number>
+                       </property>
+                       <property name="value">
+                        <number>2</number>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="output_resampling">
+                     <property name="text">
+                      <string>Output all resampling results</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="verticalSpacer">
+                     <property name="orientation">
+                      <enum>Qt::Vertical</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>20</width>
+                       <height>40</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
                  </item>
                 </layout>
                </widget>

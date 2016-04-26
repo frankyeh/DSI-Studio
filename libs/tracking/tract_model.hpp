@@ -91,7 +91,7 @@ public:
         void clear_deleted(void);
         void undo(void);
         void redo(void);
-        void trim(void);
+        bool trim(void);
 
 
         void get_end_points(std::vector<image::vector<3,float> >& points);

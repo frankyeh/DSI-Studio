@@ -22,6 +22,9 @@ public:
     mutable std::string error_msg;
     vbc_database();
     ~vbc_database(){clear();}
+
+    void clear(void);
+    void wait(void);
 public:
     bool create_database(const char* templat_name);
     bool load_database(const char* database_name);
@@ -35,7 +38,7 @@ public:
         ::calculate_spm(handle,data,info,fiber_threshold,normalize_qa,terminated);
     }
 private: // single subject analysis result
-    void run_track(const tracking& fib,std::vector<std::vector<float> >& track,float seed_ratio = 1.0,unsigned int thread_count = 1);
+    int run_track(const tracking& fib,std::vector<std::vector<float> >& track,float seed_ratio = 1.0,unsigned int thread_count = 1);
 public:// for FDR analysis
     std::vector<std::shared_ptr<std::future<void> > > threads;
     std::vector<unsigned int> subject_greater_null;
@@ -43,8 +46,12 @@ public:// for FDR analysis
     std::vector<unsigned int> subject_greater;
     std::vector<unsigned int> subject_lesser;
     std::vector<float> fdr_greater,fdr_lesser;
-    unsigned int total_count,total_count_null;
-    unsigned int permutation_count;
+
+    std::vector<unsigned int> seed_greater_null;
+    std::vector<unsigned int> seed_lesser_null;
+    std::vector<unsigned int> seed_greater;
+    std::vector<unsigned int> seed_lesser;
+    unsigned int progress;// 0~100
     bool terminated;
 public:
     std::vector<std::vector<image::vector<3,short> > > roi_list;
@@ -69,10 +76,10 @@ public:// Multiple regression
     float tracking_threshold;
     bool use_track_length;
     float fdr_threshold,length_threshold;
-    void run_permutation_multithread(unsigned int id);
-    void run_permutation(unsigned int thread_count);
+    unsigned int track_trimming;
+    void run_permutation_multithread(unsigned int id,unsigned int thread_count,unsigned int permutation_count);
+    void run_permutation(unsigned int thread_count,unsigned int permutation_count);
     void calculate_FDR(void);
-    void clear(void);
 public:
 };
 
