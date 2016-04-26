@@ -43,7 +43,7 @@ int vbc_database::run_track(const tracking& fib,std::vector<std::vector<float> >
     for(image::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
         if(fib.fa[0][index.index()] > fib.threshold)
             seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
-    if(seed.empty() || seed.size()*seed_ratio < 1.0)
+    if(seed.empty())
     {
         tracks.clear();
         return 0;
@@ -66,7 +66,7 @@ int vbc_database::run_track(const tracking& fib,std::vector<std::vector<float> >
         for(unsigned int index = 0;index < roi_list.size();++index)
             tracking_thread.setRegions(fib.dim,roi_list[index],roi_type[index],"user assigned region");
     }
-    tracking_thread.run(fib,thread_count,seed.size()*seed_ratio,true);
+    tracking_thread.run(fib,thread_count,seed.size()*seed_ratio/1000.0,true);
     tracking_thread.track_buffer.swap(tracks);
 
     if(track_trimming)
@@ -121,7 +121,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
     fib.read(*handle);
     fib.threshold = tracking_threshold;
     fib.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);
-    float total_track_count = seeding_density*fib.vs[0]*fib.vs[1]*fib.vs[2];
+    float voxel_density = seeding_density*fib.vs[0]*fib.vs[1]*fib.vs[2];
     std::vector<std::vector<float> > tracks;
 
     if(model->type == 2) // individual
@@ -137,12 +137,12 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             if(terminated)
                 return;
             fib.fa = spm_maps[subject_id]->lesser_ptr;
-            run_track(fib,tracks,total_track_count,threads.size());
+            run_track(fib,tracks,voxel_density*permutation_count,threads.size());
             lesser_tracks[subject_id]->add_tracts(tracks);
             fib.fa = spm_maps[subject_id]->greater_ptr;
             if(terminated)
                 return;
-            run_track(fib,tracks,total_track_count,threads.size());
+            run_track(fib,tracks,voxel_density*permutation_count,threads.size());
             greater_tracks[subject_id]->add_tracts(tracks);
         }
 
@@ -167,7 +167,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
                 }
                 calculate_spm(data,info);
                 fib.fa = data.lesser_ptr;
-                run_track(fib,tracks,total_track_count/permutation_count);
+                run_track(fib,tracks,voxel_density);
                 cal_hist(tracks,(null) ? subject_lesser_null : subject_lesser);
                 /*
                 if(!null)
@@ -179,7 +179,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
                 */
 
                 fib.fa = data.greater_ptr;
-                run_track(fib,tracks,total_track_count/permutation_count);
+                run_track(fib,tracks,voxel_density);
                 cal_hist(tracks,(null) ? subject_greater_null : subject_greater);
                 /*
                 if(!null)
@@ -212,7 +212,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             calculate_spm(data,info);
 
             fib.fa = data.lesser_ptr;
-            unsigned int s = run_track(fib,tracks,total_track_count/permutation_count);
+            unsigned int s = run_track(fib,tracks,voxel_density);
             if(null)
                 seed_lesser_null[i] = s;
             else
@@ -230,7 +230,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             info.resample(*model.get(),null,true);
             calculate_spm(data,info);
             fib.fa = data.greater_ptr;
-            s = run_track(fib,tracks,total_track_count/permutation_count);
+            s = run_track(fib,tracks,voxel_density);
             if(null)
                 seed_greater_null[i] = s;
             else
@@ -259,12 +259,12 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             if(terminated)
                 return;
             fib.fa = spm_maps[0]->lesser_ptr;
-            run_track(fib,tracks,total_track_count,threads.size());
+            run_track(fib,tracks,voxel_density*permutation_count,threads.size());
             lesser_tracks[0]->add_tracts(tracks);
             fib.fa = spm_maps[0]->greater_ptr;
             if(terminated)
                 return;
-            run_track(fib,tracks,total_track_count,threads.size());
+            run_track(fib,tracks,voxel_density*permutation_count,threads.size());
             greater_tracks[0]->add_tracts(tracks);
         }
     }
