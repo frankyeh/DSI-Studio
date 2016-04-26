@@ -33,7 +33,7 @@ bool vbc_database::load_database(const char* database_name)
         return false;
     }
     fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim));
-    return !handle->db.has_db();
+    return handle->db.has_db();
 }
 
 

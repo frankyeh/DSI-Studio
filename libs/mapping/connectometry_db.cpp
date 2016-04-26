@@ -629,20 +629,14 @@ bool connectometry_result::individual_vs_db(std::shared_ptr<fib_data> handle,con
 bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::vector<const float*>& fa1,
                                         const std::vector<const float*>& fa2)
 {
-    // normalization
-    float max_qa1 = 0.0,max_qa2 = 0.0;
-    max_qa1 = std::max<float>(max_qa1,*std::max_element(fa1[0],fa1[0] + handle->dim.size()));
-    max_qa2 = std::max<float>(max_qa2,*std::max_element(fa2[0],fa2[0] + handle->dim.size()));
-    if(max_qa1 == 0.0 || max_qa2 == 0.0)
-        return false;
-    //calculating dif
+    std::pair<double,double> r = image::linear_regression(fa2[0],fa2[0] + handle->dim.size(),fa1[0]);
     for(unsigned char fib = 0;fib < handle->dir.num_fiber;++fib)
     {
         for(unsigned int index = 0;index < handle->dim.size();++index)
             if(fa1[fib][index] > 0.0 && fa2[fib][index] > 0.0)
             {
-                float f1 = fa1[fib][index]/max_qa1;
-                float f2 = fa2[fib][index]/max_qa2;
+                float f1 = fa1[fib][index];
+                float f2 = fa2[fib][index]*r.first+r.second;
                 if(f1 > f2)
                     lesser[fib][index] = f1-f2;  // subject decreased connectivity
                 else
