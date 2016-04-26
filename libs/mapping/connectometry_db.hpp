@@ -21,7 +21,7 @@ public:
     std::vector<std::vector<float> > subject_qa_buf;// merged from other db
 public:
     connectometry_db():num_subjects(0){;}
-    bool has_db(void)const{return !num_subjects;}
+    bool has_db(void)const{return num_subjects > 0;}
     void read_db(fib_data* handle);
     void remove_subject(unsigned int index);
     void calculate_si2vi(void);

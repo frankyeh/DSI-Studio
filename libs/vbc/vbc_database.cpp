@@ -127,25 +127,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
 
     if(model->type == 2) // individual
     {
-        if(id == 0)
-        for(unsigned int subject_id = 0;subject_id < individual_data.size() && !terminated;++subject_id)
-        {
-            stat_model info;
-            info.resample(*model.get(),false,false);
-            info.individual_data = &(individual_data[subject_id][0]);
-            info.individual_data_sd = normalize_qa ? individual_data_sd[subject_id]:1.0;
-            calculate_spm(*spm_maps[subject_id],info);
-            if(terminated)
-                return;
-            fib.fa = spm_maps[subject_id]->lesser_ptr;
-            run_track(fib,tracks,voxel_density*permutation_count,threads.size());
-            lesser_tracks[subject_id]->add_tracts(tracks);
-            fib.fa = spm_maps[subject_id]->greater_ptr;
-            if(terminated)
-                return;
-            run_track(fib,tracks,voxel_density*permutation_count,threads.size());
-            greater_tracks[subject_id]->add_tracts(tracks);
-        }
+
 
         bool null = true;
         for(int i = id;i < permutation_count && !terminated;)
@@ -170,26 +152,26 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
                 fib.fa = data.lesser_ptr;
                 run_track(fib,tracks,voxel_density);
                 cal_hist(tracks,(null) ? subject_lesser_null : subject_lesser);
-                /*
-                if(!null)
+
+                if(output_resampling && !null)
                 {
                     std::lock_guard<std::mutex> lock(lock_lesser_tracks);
-                    lesser_tracks[subject_id].add_tracts(tracks,30); // at least 30 mm
+                    lesser_tracks[subject_id]->add_tracts(tracks);
                     tracks.clear();
                 }
-                */
+
 
                 fib.fa = data.greater_ptr;
                 run_track(fib,tracks,voxel_density);
                 cal_hist(tracks,(null) ? subject_greater_null : subject_greater);
-                /*
-                if(!null)
+
+                if(output_resampling && !null)
                 {
                     std::lock_guard<std::mutex> lock(lock_greater_tracks);
-                    greater_tracks[subject_id].add_tracts(tracks,30);  // at least 30 mm
+                    greater_tracks[subject_id]->add_tracts(tracks);
                     tracks.clear();
                 }
-                */
+
             }
             if(!null)
             {
@@ -199,7 +181,25 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             }
             null = !null;
         }
-
+        if(!output_resampling && id == 0)
+        for(unsigned int subject_id = 0;subject_id < individual_data.size() && !terminated;++subject_id)
+        {
+            stat_model info;
+            info.resample(*model.get(),false,false);
+            info.individual_data = &(individual_data[subject_id][0]);
+            info.individual_data_sd = normalize_qa ? individual_data_sd[subject_id]:1.0;
+            calculate_spm(*spm_maps[subject_id],info);
+            if(terminated)
+                return;
+            fib.fa = spm_maps[subject_id]->lesser_ptr;
+            run_track(fib,tracks,voxel_density*permutation_count,threads.size());
+            lesser_tracks[subject_id]->add_tracts(tracks);
+            fib.fa = spm_maps[subject_id]->greater_ptr;
+            if(terminated)
+                return;
+            run_track(fib,tracks,voxel_density*permutation_count,threads.size());
+            greater_tracks[subject_id]->add_tracts(tracks);
+        }
     }
     else
     {
@@ -244,6 +244,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
                 greater_tracks[0]->add_tracts(tracks);
                 tracks.clear();
             }
+
             if(!null)
             {
                 i += thread_count;
