@@ -1773,7 +1773,7 @@ void tracking_window::on_actionIndividual_vs_individual_triggered()
 
 void tracking_window::on_actionIndividual_vs_normal_population_triggered()
 {
-    if(!handle->is_qsdr)
+    if(!handle->db.has_db())
     {
         QMessageBox::information(this,"Error","Please open a connectometry db in STEP3: fiber tracking to run individual connectometry. See online documentation for details.");
         return;
