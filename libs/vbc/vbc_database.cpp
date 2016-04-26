@@ -43,7 +43,8 @@ int vbc_database::run_track(const tracking& fib,std::vector<std::vector<float> >
     for(image::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
         if(fib.fa[0][index.index()] > fib.threshold)
             seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
-    if(seed.empty())
+    unsigned int count = seed.size()*seed_ratio/1000.0;
+    if(!count)
     {
         tracks.clear();
         return 0;
@@ -66,7 +67,7 @@ int vbc_database::run_track(const tracking& fib,std::vector<std::vector<float> >
         for(unsigned int index = 0;index < roi_list.size();++index)
             tracking_thread.setRegions(fib.dim,roi_list[index],roi_type[index],"user assigned region");
     }
-    tracking_thread.run(fib,thread_count,seed.size()*seed_ratio/1000.0,true);
+    tracking_thread.run(fib,thread_count,count,true);
     tracking_thread.track_buffer.swap(tracks);
 
     if(track_trimming)
