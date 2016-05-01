@@ -137,7 +137,7 @@ bool connectometry_db::is_consistent(gz_mat_read& m)
            handle->dir.odf_table[index][1] != odf_buffer[1] ||
            handle->dir.odf_table[index][2] != odf_buffer[2])
         {
-            handle->error_msg = "Inconsistent ODF dimension in ";
+            handle->error_msg = "Inconsistent ODF in ";
             return false;
         }
     }
