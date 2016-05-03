@@ -1864,7 +1864,7 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
         return true;
     }
     std::vector<std::vector<float> > data;
-    if(!tract_model.get_tracts_data(matrix_value_type,data) || data.empty())
+    if(!tract_model.get_tracts_data(matrix_value_type,data))
     {
         error_msg = "Cannot quantify matrix value using ";
         error_msg += matrix_value_type;

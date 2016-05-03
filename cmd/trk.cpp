@@ -37,7 +37,7 @@ void save_connectivity_matrix(TractModel& tract_model,
     std::cout << "calculate matrix using " << connectivity_value << std::endl;
     if(!data.calculate(tract_model,connectivity_value,use_end_only))
     {
-        std::cout << "failed...invalid connectivity_value:" << connectivity_value;
+        std::cout << data.error_msg << std::endl;
         return;
     }
     std::string file_name_stat(source);
