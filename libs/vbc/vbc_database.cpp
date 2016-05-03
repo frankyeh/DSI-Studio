@@ -304,6 +304,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
         {
             TractModel tracks(handle);
             tracks.add_tracts(greater_tracks[index]->get_tracts(),length_threshold_greater);
+            if(!track_trimming)
             while(output_resampling && tracks.get_visible_track_count() && tracks.trim())
                 ;
             if(tracks.get_visible_track_count())
@@ -349,6 +350,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
         {
             TractModel tracks(handle);
             tracks.add_tracts(lesser_tracks[index]->get_tracts(),length_threshold_lesser);
+            if(!track_trimming)
             while(output_resampling && tracks.get_visible_track_count() && tracks.trim())
                 ;
             if(tracks.get_visible_track_count())

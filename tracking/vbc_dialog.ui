@@ -46,8 +46,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>683</width>
-           <height>544</height>
+           <width>641</width>
+           <height>312</height>
           </rect>
          </property>
          <attribute name="label">
@@ -1880,7 +1880,10 @@ subject</string>
                         <number>10</number>
                        </property>
                        <property name="value">
-                        <number>2</number>
+                        <number>1</number>
+                       </property>
+                       <property name="displayIntegerBase">
+                        <number>5</number>
                        </property>
                       </widget>
                      </item>
