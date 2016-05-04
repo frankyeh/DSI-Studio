@@ -156,7 +156,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
                 if(output_resampling && !null)
                 {
                     std::lock_guard<std::mutex> lock(lock_lesser_tracks);
-                    lesser_tracks[subject_id]->add_tracts(tracks);
+                    lesser_tracks[subject_id]->add_tracts(tracks,length_threshold);
                     tracks.clear();
                 }
 
@@ -168,7 +168,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
                 if(output_resampling && !null)
                 {
                     std::lock_guard<std::mutex> lock(lock_greater_tracks);
-                    greater_tracks[subject_id]->add_tracts(tracks);
+                    greater_tracks[subject_id]->add_tracts(tracks,length_threshold);
                     tracks.clear();
                 }
 
@@ -193,12 +193,12 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
                 return;
             fib.fa = spm_maps[subject_id]->lesser_ptr;
             run_track(fib,tracks,voxel_density*permutation_count,threads.size());
-            lesser_tracks[subject_id]->add_tracts(tracks);
+            lesser_tracks[subject_id]->add_tracts(tracks,length_threshold);
             fib.fa = spm_maps[subject_id]->greater_ptr;
             if(terminated)
                 return;
             run_track(fib,tracks,voxel_density*permutation_count,threads.size());
-            greater_tracks[subject_id]->add_tracts(tracks);
+            greater_tracks[subject_id]->add_tracts(tracks,length_threshold);
         }
     }
     else
@@ -224,7 +224,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             if(output_resampling && !null)
             {
                 std::lock_guard<std::mutex> lock(lock_lesser_tracks);
-                lesser_tracks[0]->add_tracts(tracks);
+                lesser_tracks[0]->add_tracts(tracks,length_threshold);
                 tracks.clear();
             }
 
@@ -241,7 +241,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             if(output_resampling && !null)
             {
                 std::lock_guard<std::mutex> lock(lock_greater_tracks);
-                greater_tracks[0]->add_tracts(tracks);
+                greater_tracks[0]->add_tracts(tracks,length_threshold);
                 tracks.clear();
             }
 
@@ -262,12 +262,12 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
                 return;
             fib.fa = spm_maps[0]->lesser_ptr;
             run_track(fib,tracks,voxel_density*permutation_count,threads.size());
-            lesser_tracks[0]->add_tracts(tracks);
+            lesser_tracks[0]->add_tracts(tracks,length_threshold);
             fib.fa = spm_maps[0]->greater_ptr;
             if(terminated)
                 return;
             run_track(fib,tracks,voxel_density*permutation_count,threads.size());
-            greater_tracks[0]->add_tracts(tracks);
+            greater_tracks[0]->add_tracts(tracks,length_threshold);
         }
     }
     if(id == 0 && !terminated)
@@ -300,28 +300,26 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
     has_lesser_result = false;
     for(unsigned int index = 0;index < greater_tracks.size();++index)
     {
-        if(length_threshold_greater)
+        if(greater_tracks[index]->get_visible_track_count())
         {
             TractModel tracks(handle);
-            tracks.add_tracts(greater_tracks[index]->get_tracts(),length_threshold_greater);
-            if(!track_trimming)
+            tracks = *greater_tracks[index];
             while(output_resampling && tracks.get_visible_track_count() && tracks.trim())
                 ;
             if(tracks.get_visible_track_count())
-            {
-                std::ostringstream out1;
-                out1 << trk_file_names[index] << ".greater.trk.gz";
-                tracks.save_tracts_to_file(out1.str().c_str());
-                saved_file_name.push_back(out1.str().c_str());
-                has_greater_result = true;
-            }
-            else
-            {
-                std::ostringstream out1;
-                out1 << trk_file_names[index] << ".greater.no_trk.txt";
-                std::ofstream(out1.str().c_str());
-            }
-            *greater_tracks[index] = tracks;
+                *greater_tracks[index] = tracks;
+            greater_tracks[index]->delete_repeated();
+            std::ostringstream out1;
+            out1 << trk_file_names[index] << ".greater.trk.gz";
+            greater_tracks[index]->save_tracts_to_file(out1.str().c_str());
+            saved_file_name.push_back(out1.str().c_str());
+            has_greater_result = true;
+        }
+        else
+        {
+            std::ostringstream out1;
+            out1 << trk_file_names[index] << ".greater.no_trk.txt";
+            std::ofstream(out1.str().c_str());
         }
         {
             std::ostringstream out1;
@@ -346,29 +344,26 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
             }
         }
 
-        if(length_threshold_lesser)
+        if(lesser_tracks[index]->get_visible_track_count())
         {
             TractModel tracks(handle);
-            tracks.add_tracts(lesser_tracks[index]->get_tracts(),length_threshold_lesser);
-            if(!track_trimming)
+            tracks = *lesser_tracks[index];
             while(output_resampling && tracks.get_visible_track_count() && tracks.trim())
                 ;
             if(tracks.get_visible_track_count())
-            {
-                std::ostringstream out1;
-                out1 << trk_file_names[index] << ".lesser.trk.gz";
-                tracks.save_tracts_to_file(out1.str().c_str());
-                saved_file_name.push_back(out1.str().c_str());
-                has_lesser_result = true;
-            }
-            else
-            {
-                std::ostringstream out1;
-                out1 << trk_file_names[index] << ".lesser.no_trk.txt";
-                std::ofstream(out1.str().c_str());
-            }
-
-            *lesser_tracks[index] = tracks;
+                *lesser_tracks[index] = tracks;
+            lesser_tracks[index]->delete_repeated();
+            std::ostringstream out1;
+            out1 << trk_file_names[index] << ".lesser.trk.gz";
+            lesser_tracks[index]->save_tracts_to_file(out1.str().c_str());
+            saved_file_name.push_back(out1.str().c_str());
+            has_lesser_result = true;
+        }
+        else
+        {
+            std::ostringstream out1;
+            out1 << trk_file_names[index] << ".lesser.no_trk.txt";
+            std::ofstream(out1.str().c_str());
         }
 
         {
@@ -449,8 +444,6 @@ void vbc_database::calculate_FDR(void)
     double sum_lesser_null = 0;
     double sum_greater = 0;
     double sum_lesser = 0;
-    length_threshold_greater = 0;
-    length_threshold_lesser = 0;
     for(int index = subject_greater_null.size()-1;index >= 0;--index)
     {
         sum_greater_null += subject_greater_null[index];
@@ -459,14 +452,7 @@ void vbc_database::calculate_FDR(void)
         sum_lesser += subject_lesser[index];
         fdr_greater[index] = (sum_greater > 0.0 && sum_greater_null > 0.0) ? std::min(1.0,sum_greater_null/sum_greater) : 1.0;
         fdr_lesser[index] = (sum_lesser > 0.0 && sum_lesser_null > 0.0) ? std::min(1.0,sum_lesser_null/sum_lesser): 1.0;
-        if(fdr_greater[index] < fdr_threshold)
-            length_threshold_greater = index;
-        if(fdr_lesser[index] < fdr_threshold)
-            length_threshold_lesser = index;
+
     }
-    if(use_track_length)
-    {
-        length_threshold_greater = length_threshold;
-        length_threshold_lesser = length_threshold;
-    }
+
 }

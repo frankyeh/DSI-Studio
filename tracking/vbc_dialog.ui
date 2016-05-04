@@ -46,8 +46,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>641</width>
-           <height>312</height>
+           <width>683</width>
+           <height>544</height>
           </rect>
          </property>
          <attribute name="label">
@@ -1555,105 +1555,6 @@ subject</string>
              </attribute>
              <layout class="QVBoxLayout" name="verticalLayout_18">
               <item>
-               <widget class="QGroupBox" name="groupBox_5">
-                <property name="title">
-                 <string>Track selection policy</string>
-                </property>
-                <layout class="QHBoxLayout" name="horizontalLayout_25">
-                 <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_12">
-                   <property name="spacing">
-                    <number>0</number>
-                   </property>
-                   <property name="topMargin">
-                    <number>0</number>
-                   </property>
-                   <property name="bottomMargin">
-                    <number>0</number>
-                   </property>
-                   <item>
-                    <widget class="QRadioButton" name="rb_FDR">
-                     <property name="text">
-                      <string>False discovery rate</string>
-                     </property>
-                     <property name="checked">
-                      <bool>false</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QDoubleSpinBox" name="fdr_control">
-                     <property name="maximumSize">
-                      <size>
-                       <width>55</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <property name="decimals">
-                      <number>3</number>
-                     </property>
-                     <property name="minimum">
-                      <double>0.001000000000000</double>
-                     </property>
-                     <property name="maximum">
-                      <double>0.500000000000000</double>
-                     </property>
-                     <property name="singleStep">
-                      <double>0.010000000000000</double>
-                     </property>
-                     <property name="value">
-                      <double>0.050000000000000</double>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
-                 <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_5">
-                   <property name="spacing">
-                    <number>0</number>
-                   </property>
-                   <property name="topMargin">
-                    <number>0</number>
-                   </property>
-                   <property name="rightMargin">
-                    <number>0</number>
-                   </property>
-                   <item>
-                    <widget class="QRadioButton" name="rb_track_length">
-                     <property name="text">
-                      <string>Track length</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QSpinBox" name="length_threshold">
-                     <property name="maximumSize">
-                      <size>
-                       <width>55</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <property name="minimum">
-                      <number>30</number>
-                     </property>
-                     <property name="maximum">
-                      <number>200</number>
-                     </property>
-                     <property name="value">
-                      <number>40</number>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-              <item>
                <widget class="QWidget" name="widget_7" native="true">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -1723,60 +1624,6 @@ subject</string>
                      <number>0</number>
                     </property>
                     <item>
-                     <layout class="QHBoxLayout" name="horizontalLayout_2">
-                      <property name="spacing">
-                       <number>0</number>
-                      </property>
-                      <property name="topMargin">
-                       <number>0</number>
-                      </property>
-                      <property name="rightMargin">
-                       <number>0</number>
-                      </property>
-                      <property name="bottomMargin">
-                       <number>0</number>
-                      </property>
-                      <item>
-                       <widget class="QLabel" name="label_5">
-                        <property name="text">
-                         <string>Seeding density per mm cubic</string>
-                        </property>
-                        <property name="wordWrap">
-                         <bool>true</bool>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QDoubleSpinBox" name="seeding_density">
-                        <property name="maximumSize">
-                         <size>
-                          <width>55</width>
-                          <height>16777215</height>
-                         </size>
-                        </property>
-                        <property name="statusTip">
-                         <string>seeds per mm cubic</string>
-                        </property>
-                        <property name="decimals">
-                         <number>1</number>
-                        </property>
-                        <property name="minimum">
-                         <double>1.000000000000000</double>
-                        </property>
-                        <property name="maximum">
-                         <double>100.000000000000000</double>
-                        </property>
-                        <property name="singleStep">
-                         <double>1.000000000000000</double>
-                        </property>
-                        <property name="value">
-                         <double>10.000000000000000</double>
-                        </property>
-                       </widget>
-                      </item>
-                     </layout>
-                    </item>
-                    <item>
                      <layout class="QHBoxLayout" name="horizontalLayout_4">
                       <property name="rightMargin">
                        <number>0</number>
@@ -1819,21 +1666,27 @@ subject</string>
                      </layout>
                     </item>
                     <item>
-                     <layout class="QHBoxLayout" name="horizontalLayout_15">
-                      <item>
-                       <widget class="QCheckBox" name="normalize_qa">
-                        <property name="enabled">
-                         <bool>true</bool>
-                        </property>
-                        <property name="text">
-                         <string>normalize QA</string>
-                        </property>
-                        <property name="checked">
-                         <bool>false</bool>
-                        </property>
-                       </widget>
-                      </item>
-                     </layout>
+                     <widget class="QCheckBox" name="output_resampling">
+                      <property name="text">
+                       <string>Output all resampling results</string>
+                      </property>
+                      <property name="checked">
+                       <bool>true</bool>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QCheckBox" name="normalize_qa">
+                      <property name="enabled">
+                       <bool>true</bool>
+                      </property>
+                      <property name="text">
+                       <string>normalize SDF</string>
+                      </property>
+                      <property name="checked">
+                       <bool>false</bool>
+                      </property>
+                     </widget>
                     </item>
                     <item>
                      <spacer name="verticalSpacer_4">
@@ -1860,11 +1713,44 @@ subject</string>
                     <number>0</number>
                    </property>
                    <item>
+                    <layout class="QHBoxLayout" name="horizontalLayout_12">
+                     <property name="bottomMargin">
+                      <number>0</number>
+                     </property>
+                     <item>
+                      <widget class="QLabel" name="label_12">
+                       <property name="text">
+                        <string>Tract Length (mm)</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QSpinBox" name="length_threshold">
+                       <property name="maximumSize">
+                        <size>
+                         <width>55</width>
+                         <height>16777215</height>
+                        </size>
+                       </property>
+                       <property name="minimum">
+                        <number>30</number>
+                       </property>
+                       <property name="maximum">
+                        <number>200</number>
+                       </property>
+                       <property name="value">
+                        <number>40</number>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                   <item>
                     <layout class="QHBoxLayout" name="horizontalLayout_30">
                      <item>
                       <widget class="QLabel" name="label_7">
                        <property name="text">
-                        <string>Track trimming</string>
+                        <string>Track Trimming (iterations)</string>
                        </property>
                       </widget>
                      </item>
@@ -1890,14 +1776,58 @@ subject</string>
                     </layout>
                    </item>
                    <item>
-                    <widget class="QCheckBox" name="output_resampling">
-                     <property name="text">
-                      <string>Output all resampling results</string>
+                    <layout class="QHBoxLayout" name="horizontalLayout_2">
+                     <property name="spacing">
+                      <number>0</number>
                      </property>
-                     <property name="checked">
-                      <bool>true</bool>
+                     <property name="topMargin">
+                      <number>0</number>
                      </property>
-                    </widget>
+                     <property name="rightMargin">
+                      <number>0</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>0</number>
+                     </property>
+                     <item>
+                      <widget class="QLabel" name="label_5">
+                       <property name="text">
+                        <string>Seeding density per mm cubic</string>
+                       </property>
+                       <property name="wordWrap">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QDoubleSpinBox" name="seeding_density">
+                       <property name="maximumSize">
+                        <size>
+                         <width>55</width>
+                         <height>16777215</height>
+                        </size>
+                       </property>
+                       <property name="statusTip">
+                        <string>seeds per mm cubic</string>
+                       </property>
+                       <property name="decimals">
+                        <number>1</number>
+                       </property>
+                       <property name="minimum">
+                        <double>1.000000000000000</double>
+                       </property>
+                       <property name="maximum">
+                        <double>100.000000000000000</double>
+                       </property>
+                       <property name="singleStep">
+                        <double>1.000000000000000</double>
+                       </property>
+                       <property name="value">
+                        <double>20.000000000000000</double>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
                    </item>
                    <item>
                     <spacer name="verticalSpacer">
@@ -1916,6 +1846,19 @@ subject</string>
                  </item>
                 </layout>
                </widget>
+              </item>
+              <item>
+               <spacer name="verticalSpacer_3">
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>20</width>
+                  <height>40</height>
+                 </size>
+                </property>
+               </spacer>
               </item>
              </layout>
             </widget>

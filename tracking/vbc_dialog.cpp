@@ -196,7 +196,6 @@ vbc_dialog::vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString db_file_nam
     ui->toolBox->setCurrentIndex(1);
     ui->foi_widget->hide();
     on_roi_whole_brain_toggled(true);
-    on_rb_FDR_toggled(false);
     on_rb_multiple_regression_clicked();
     qApp->installEventFilter(this);
 
@@ -923,8 +922,8 @@ void vbc_dialog::calculate_FDR(void)
             std::vector<unsigned int> data(vbc->seed_greater);
             data.insert(data.end(),vbc->seed_greater_null.begin(),vbc->seed_greater_null.end());
             double p = image::permutation_test(data.begin(),data.end(),vbc->seed_greater.size());
-            out << " The analysis results showed "<< (p < 0.05 ? "": "no ")
-                << "track(s) with significantly increased connectivity ";
+            out << " The analysis results showed there "<< (p < 0.05 ? "are tracks": "is no track")
+                << " with increased connectivity ";
 
             if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
                 out << "in group 0 ";
@@ -941,8 +940,8 @@ void vbc_dialog::calculate_FDR(void)
             std::vector<unsigned int> data(vbc->seed_lesser);
             data.insert(data.end(),vbc->seed_lesser_null.begin(),vbc->seed_lesser_null.end());
             double p = image::permutation_test(data.begin(),data.end(),vbc->seed_lesser.size());
-            out << (p < 0.05 ? "": "no " )
-                << "track(s) with significantly decreased connectivity ";
+            out << (p < 0.05 ? "tracks": "no track")
+                << " with decreased connectivity ";
             if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
                 out << "in group 0 ";
             if(ui->rb_multiple_regression->isChecked())
@@ -955,98 +954,48 @@ void vbc_dialog::calculate_FDR(void)
         report += out.str().c_str();
     }
 
-    if(vbc->use_track_length)
-    {
-        if(ui->rb_individual_analysis->isChecked())
-            {
-                std::ostringstream out;
-                out << " Further FDR analysis results showed "
-                    << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no ":"")
-                    << "increased connectivity (FDR="
-                    << vbc->fdr_greater[vbc->length_threshold] << ") "
-                    << "and "
-                    << (vbc->fdr_lesser[vbc->length_threshold]>0.5 || !vbc->has_lesser_result ? "no ":"")
-                    << "decreased connectivity (FDR="
-                    << vbc->fdr_lesser[vbc->length_threshold] << ").";
-                report += out.str().c_str();
-            }
-            if(ui->rb_multiple_regression->isChecked())
-            {
-                std::ostringstream out;
-                out << " Further FDR analysis results showed "
-                    << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no ":"")
-                    << "increased connectivity related to "
-                    << ui->foi->currentText().toLocal8Bit().begin() << " (FDR="
-                    << vbc->fdr_greater[vbc->length_threshold] << ") "
-                    << "and "
-                    << (vbc->fdr_lesser[vbc->length_threshold]>0.5 || !vbc->has_lesser_result ? "no ":"")
-                    << "decreased connectivity related to "
-                    << ui->foi->currentText().toLocal8Bit().begin() << " (FDR="
-                    << vbc->fdr_lesser[vbc->length_threshold] << ").";
-                report += out.str().c_str();
-            }
-            if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
-            {
-                std::ostringstream out;
-                out << " Further FDR analysis results showed "
-                    << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no ":"")
-                    << "increased connectivity in group 0 (FDR="
-                    << vbc->fdr_greater[vbc->length_threshold] << ") "
-                    << "and "
-                    << (vbc->fdr_lesser[vbc->length_threshold]>0.5 || !vbc->has_lesser_result ? "no ":"")
-                    << "increased connectivity in group 1 (FDR="
-                    << vbc->fdr_lesser[vbc->length_threshold] << ").";
-                report += out.str().c_str();
-            }
-    }
-    else
-    {
-
-        if(ui->rb_individual_analysis->isChecked())
+    if(ui->rb_individual_analysis->isChecked())
         {
             std::ostringstream out;
-            if(vbc->length_threshold_greater == 0 || !vbc->has_greater_result)
-                out << " Further FDR analysis results cannot identify track with increased connectivity using the assigned FDR value.";
-            else
-                out << " Further FDR analysis results found increased connectivity at length threshold of " << vbc->length_threshold_greater << " mm.";
-
-            if(vbc->length_threshold_lesser == 0 || !vbc->has_lesser_result)
-                out << " Further FDR analysis results cannot identify track with decreased connectivity using the assigned FDR value.";
-            else
-                out << " Further FDR analysis results found decreased connectivity at length threshold of " << vbc->length_threshold_lesser << " mm.";
+            out << " The fiber tracking identified "
+                << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no ":"")
+                << "tracks with increased connectivity (FDR="
+                << vbc->fdr_greater[vbc->length_threshold] << ") "
+                << "and "
+                << (vbc->fdr_lesser[vbc->length_threshold]>0.5 || !vbc->has_lesser_result ? "no ":"")
+                << "tracks with decreased connectivity (FDR="
+                << vbc->fdr_lesser[vbc->length_threshold] << ").";
             report += out.str().c_str();
         }
         if(ui->rb_multiple_regression->isChecked())
         {
             std::ostringstream out;
-            if(vbc->length_threshold_greater == 0 || !vbc->has_greater_result)
-                out << " Further FDR analysis results cannot identify track with increased connectivity related to " << ui->foi->currentText().toLocal8Bit().begin() << " using the assigned FDR value.";
-            else
-                out << " Further FDR analysis results found increased connectivity related to "
-                    << ui->foi->currentText().toLocal8Bit().begin() << " at length threshold of " << vbc->length_threshold_greater << " mm.";
-
-            if(vbc->length_threshold_lesser == 0 || !vbc->has_lesser_result)
-                out << " Further FDR analysis results cannot identify track with decreased connectivity related to " << ui->foi->currentText().toLocal8Bit().begin() << " using the assigned FDR value.";
-            else
-                out << " Further FDR analysis results found decreased connectivity related to "
-                    << ui->foi->currentText().toLocal8Bit().begin() << " at length threshold of " << vbc->length_threshold_lesser << " mm.";
+            out << " The fiber tracking identified "
+                << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no ":"")
+                << "tracks with increased connectivity related to "
+                << ui->foi->currentText().toLocal8Bit().begin() << " (FDR="
+                << vbc->fdr_greater[vbc->length_threshold] << ") "
+                << "and "
+                << (vbc->fdr_lesser[vbc->length_threshold]>0.5 || !vbc->has_lesser_result ? "no ":"")
+                << "tracks with decreased connectivity related to "
+                << ui->foi->currentText().toLocal8Bit().begin() << " (FDR="
+                << vbc->fdr_lesser[vbc->length_threshold] << ").";
             report += out.str().c_str();
         }
         if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
         {
             std::ostringstream out;
-            if(vbc->length_threshold_greater == 0 || !vbc->has_greater_result)
-                out << " Further FDR analysis results cannot identify track with increased connectivity in group 0 using the assigned FDR value.";
-            else
-                out << " Further FDR analysis results found significantly increased connectivity in group 0 at length threshold of " << vbc->length_threshold_greater << " mm.";
-
-            if(vbc->length_threshold_lesser == 0 || !vbc->has_lesser_result)
-                out << " Further FDR analysis results cannot identify track with increased connectivity in group 1 using the assigned FDR value.";
-            else
-                out << " Further FDR analysis results found significantly increased connectivity in group 1 at length threshold of " << vbc->length_threshold_lesser << " mm.";
+            out << " The fiber tracking identified "
+                << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no ":"")
+                << "tracks with increased connectivity in group 0 (FDR="
+                << vbc->fdr_greater[vbc->length_threshold] << ") "
+                << "and "
+                << (vbc->fdr_lesser[vbc->length_threshold]>0.5 || !vbc->has_lesser_result ? "no ":"")
+                << "tracks with increased connectivity in group 1 (FDR="
+                << vbc->fdr_lesser[vbc->length_threshold] << ").";
             report += out.str().c_str();
         }
-    }
+
     ui->textBrowser->setText(report);
 
     if(vbc->progress == 100)
@@ -1127,8 +1076,6 @@ void vbc_dialog::on_run_clicked()
     vbc->trk_file_names = file_names;
     vbc->normalize_qa = ui->normalize_qa->isChecked();
     vbc->output_resampling = ui->output_resampling->isChecked();
-    vbc->use_track_length = ui->rb_track_length->isChecked();
-    vbc->fdr_threshold = ui->fdr_control->value();
     vbc->length_threshold = ui->length_threshold->value();
     vbc->track_trimming = ui->track_trimming->value();
     vbc->model.reset(new stat_model);
@@ -1146,10 +1093,7 @@ void vbc_dialog::on_run_clicked()
         std::ostringstream out;
         if(ui->normalize_qa->isChecked())
             out << ".nqa";
-        if(ui->rb_FDR->isChecked())
-            out << ".fdr" << ui->fdr_control->value();
-        else
-            out << ".length" << ui->length_threshold->value();
+        out << ".length" << ui->length_threshold->value();
         out << ".s" << ui->seeding_density->value() << ".p" << ui->mr_permutation->value();
         parameter_str = out.str();
     }
@@ -1220,6 +1164,9 @@ void vbc_dialog::on_run_clicked()
         vbc->trk_file_names[0] += QString::number(ui->t_threshold->value()).toLocal8Bit().begin();
     }
 
+    if(ui->normalize_qa->isChecked())
+        out << " The SDF was normalized." << std::endl;
+
     out << " A deterministic fiber tracking algorithm (Yeh et al. PLoS ONE 8(11): e80713, 2013) was conducted to connect the selected local connectomes.";
 
     // load region
@@ -1267,10 +1214,7 @@ void vbc_dialog::on_run_clicked()
     if(vbc->output_resampling)
         out << " All tracks generated from bootsrap resampling were included.";
 
-    if(vbc->use_track_length)
-        out << " A length threshold of " << ui->length_threshold->value() << " mm were used to select tracks.";
-    else
-        out << " False discovery rate was controlled at " << ui->fdr_control->value() << ".";
+    out << " A length threshold of " << ui->length_threshold->value() << " mm were used to select tracks.";
     out << " The seeding density was " <<
             ui->seeding_density->value() << " seed(s) per mm3.";
 
@@ -1536,19 +1480,6 @@ void vbc_dialog::on_show_advanced_clicked()
 void vbc_dialog::on_foi_currentIndexChanged(int index)
 {
     model->study_feature = ui->foi->currentIndex()+1;
-}
-
-
-void vbc_dialog::on_rb_FDR_toggled(bool checked)
-{
-    ui->fdr_control->setVisible(checked);
-    ui->length_threshold->setVisible(!checked);
-}
-
-void vbc_dialog::on_rb_track_length_toggled(bool checked)
-{
-    ui->fdr_control->setVisible(!checked);
-    ui->length_threshold->setVisible(checked);
 }
 
 void vbc_dialog::on_missing_data_checked_toggled(bool checked)

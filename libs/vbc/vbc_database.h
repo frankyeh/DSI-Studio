@@ -58,8 +58,6 @@ public:
     std::vector<unsigned char> roi_type;
 public:
     std::vector<std::string> trk_file_names;
-
-    unsigned int length_threshold_greater,length_threshold_lesser;
     bool has_greater_result,has_lesser_result;
     float seeding_density;
     std::mutex  lock_resampling,lock_greater_tracks,lock_lesser_tracks;
@@ -74,8 +72,7 @@ public:// Individual analysis
 public:// Multiple regression
     std::auto_ptr<stat_model> model;
     float tracking_threshold;
-    bool use_track_length;
-    float fdr_threshold,length_threshold;
+    float length_threshold;
     unsigned int track_trimming;
     void run_permutation_multithread(unsigned int id,unsigned int thread_count,unsigned int permutation_count);
     void run_permutation(unsigned int thread_count,unsigned int permutation_count);

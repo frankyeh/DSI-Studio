@@ -123,11 +123,6 @@ public slots:
 
     void on_foi_currentIndexChanged(int index);
 
-
-    void on_rb_FDR_toggled(bool checked);
-
-    void on_rb_track_length_toggled(bool checked);
-
     void on_missing_data_checked_toggled(bool checked);
 
     void on_suggest_threshold_clicked();

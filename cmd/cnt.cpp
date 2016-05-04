@@ -101,20 +101,9 @@ int cnt(void)
     {
         std::cout << "normalized qa" << std::endl;
         vbc->ui->normalize_qa->setChecked(true);
-    }
-
-    if(po.has("track_fdr")) // use FDR threshold
-    {
-        vbc->ui->rb_FDR->setChecked(true);
-        vbc->ui->fdr_control->setValue(po.get("track_fdr",float(0)));
-        std::cout << "track_fdr=" << vbc->ui->fdr_control->value() << std::endl;
-    }
-    else
-    {
-        vbc->ui->rb_track_length->setChecked(true);
-        vbc->ui->length_threshold->setValue(po.get("track_length",int(40)));
-        std::cout << "track_length=" << vbc->ui->length_threshold->value() << std::endl;
-    }
+    }    
+    vbc->ui->length_threshold->setValue(po.get("track_length",int(40)));
+    std::cout << "track_length=" << vbc->ui->length_threshold->value() << std::endl;
     std::cout << "running connectometry" << std::endl;
     vbc->on_run_clicked();
     for(int i = 0;i < vbc->vbc->threads.size();++i)
