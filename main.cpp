@@ -17,6 +17,7 @@
 
 track_recognition track_network;
 std::vector<std::string> track_network_list;
+std::vector<std::string> track_network_list_full;
 fa_template fa_template_imp;
 extern std::vector<atlas> atlas_list;
 void load_atlas(void);
@@ -34,7 +35,6 @@ bool load_track_network(QString path)
 {
     QString file_name = path + "/network.txt";
     QString track_label = path + "/network_label.txt";
-
     if(QFileInfo(file_name).exists() && QFileInfo(track_label).exists())
     {
         if(track_network.cnn.load_from_file(file_name.toStdString().c_str()))
@@ -43,7 +43,13 @@ bool load_track_network(QString path)
             std::ifstream in(track_label.toStdString().c_str());
             std::string line;
             while(std::getline(in,line))
-                track_network_list.push_back(line);
+            {
+                std::istringstream in2(line);
+                std::string str1,str2;
+                in2 >> str1 >> str2;
+                track_network_list.push_back(str1);
+                track_network_list_full.push_back(str2);
+            }
             return true;
         }
     }
@@ -148,7 +154,7 @@ int main(int ac, char *av[])
         return false;
     }
     load_atlas();
-    load_track_network(QCoreApplication::applicationDirPath());
+
 
     MainWindow w;
     w.setFont(font);

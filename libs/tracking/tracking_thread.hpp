@@ -10,7 +10,6 @@
 #include "fib_data.hpp"
 #include "tract_model.hpp"
 
-class fib_data;
 struct ThreadData
 {
 private:
@@ -31,10 +30,6 @@ public:
     unsigned char initial_direction;
     unsigned int max_seed_count;
 public:
-    bool track_recog;
-    fib_data* track_recog_handle;
-    unsigned int track_recog_index;
-public:
     ThreadData(bool random_seed):
         joinning(false),
         seed(random_seed ? std::random_device()():0),
@@ -44,10 +39,7 @@ public:
         interpolation_strategy(0),//trilinear_interpolation
         tracking_method(0),//streamline
         initial_direction(0),// main direction
-        max_seed_count(0),
-        track_recog(false),
-        track_recog_handle(0),
-        track_recog_index(0)
+        max_seed_count(0)
     {}
     ~ThreadData(void)
     {

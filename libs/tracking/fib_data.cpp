@@ -751,7 +751,7 @@ void track_recognition::clear(void)
 
 void track_recognition::add_sample(fib_data* handle,int index,const std::vector<float>& tracks,int cv_fold)
 {
-    if(cnn_test_data.size()*cv_fold < cnn_data.size()) // 20-fold cv
+    if(cv_fold && cnn_test_data.size()*cv_fold < cnn_data.size())
     {
         cnn_test_data.push_back(std::vector<float>());
         handle->get_profile(tracks,cnn_test_data.back());
@@ -795,22 +795,25 @@ bool track_recognition::train(void)
 
     thread.run([this]
     {
-        auto on_enumerate_epoch = [this](){
-
+        auto on_enumerate_epoch = [this]()
+        {
             std::cout << "time:" << t.elapsed() << std::endl;
-            int num_success(0);
-            int num_total(0);
-            std::vector<int> result;
-            cnn.test(cnn_test_data,result);
-            for (int i = 0; i < cnn_test_data.size(); i++)
+            if(!cnn_test_data.empty())
             {
-                if (result[i] == cnn_test_label[i])
-                    num_success++;
-                num_total++;
+                int num_success(0);
+                int num_total(0);
+                std::vector<int> result;
+                cnn.test(cnn_test_data,result);
+                for (int i = 0; i < cnn_test_data.size(); i++)
+                {
+                    if (result[i] == cnn_test_label[i])
+                        num_success++;
+                    num_total++;
+                }
+                std::cout << "accuracy:" << num_success * 100.0 / num_total << "% (" << num_success << "/" << num_total << ")" << std::endl;
             }
-            std::cout << "accuracy:" << num_success * 100.0 / num_total << "% (" << num_success << "/" << num_total << ")" << std::endl;
             t.restart();
-            };
+        };
         t.start();
         cnn.train(cnn_data,cnn_label, 20,thread.terminated, on_enumerate_epoch,0.001);
     });

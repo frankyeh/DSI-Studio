@@ -69,8 +69,6 @@ public:
     void set_tracking_param(ThreadData& tracking_thread);
 public:
     bool can_convert(void);
-    QMenu* track_recog_menu;
-    void load_track_recog_menu(void);
 public:
     std::auto_ptr<tract_report> tact_report_imp;
     std::auto_ptr<color_bar_dialog> color_bar;

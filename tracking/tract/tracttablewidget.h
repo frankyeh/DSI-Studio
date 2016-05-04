@@ -37,10 +37,12 @@ public:
     void export_tract_density(image::geometry<3>& dim,
                               image::vector<3,float> vs,
                               image::matrix<4,4,float>& transformation,bool color,bool endpoint);
+
     void saveTransformedTracts(const float* transform);
     void saveTransformedEndpoints(const float* transform);
     void load_tracts(QStringList filenames);
     void cut_by_slice(unsigned char dim,bool greater);
+
     QString output_format(void);
     bool command(QString cmd,QString param = "",QString param2 = "");
 signals:
@@ -68,7 +70,6 @@ public slots:
     void load_tracts_color(void);
     void save_tracts_color_as(void);
     void save_tracts_data_as(void);
-    void track_using_atlas(void);
     void save_all_tracts_as(void);
     void save_all_tracts_to_dir(void);
     void save_end_point_as(void);
@@ -93,6 +94,7 @@ public slots:
     void move_up(void);
     void move_down(void);
     void show_tracts_statistics(void);
+    void recog_tracks(void);
 
 };
 

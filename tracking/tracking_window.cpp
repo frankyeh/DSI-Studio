@@ -48,7 +48,7 @@ void tracking_window::set_data(QString name, QVariant value)
 
 tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_handle) :
         QMainWindow(parent),handle(new_handle),
-        ui(new Ui::tracking_window),scene(*this),slice(new_handle),gLdock(0),renderWidget(0),track_recog_menu(0)
+        ui(new Ui::tracking_window),scene(*this),slice(new_handle),gLdock(0),renderWidget(0)
 
 {
     fib_data& fib = *new_handle;
@@ -136,10 +136,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     if(!handle->is_human_data || handle->is_qsdr)
         ui->actionManual_Registration->setEnabled(false);
 
-
-    ui->atlas_tracking->setVisible(false);
-    if(!track_network_list.empty() && handle->is_human_data)
-        load_track_recog_menu();
 
     {
         std::vector<std::string> index_list;
@@ -325,6 +321,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionDeep_Learning_Train,SIGNAL(triggered()),tractWidget,SLOT(deep_learning_train()));
         connect(ui->actionDeep_Learning_Save,SIGNAL(triggered()),tractWidget,SLOT(deep_learning_save()));
         connect(ui->actionStatistics,SIGNAL(triggered()),tractWidget,SLOT(show_tracts_statistics()));
+        connect(ui->actionRecognize_Current_Tract,SIGNAL(triggered()),tractWidget,SLOT(recog_tracks()));
 
         connect(ui->track_up,SIGNAL(clicked()),tractWidget,SLOT(move_up()));
         connect(ui->track_down,SIGNAL(clicked()),tractWidget,SLOT(move_down()));
@@ -439,22 +436,6 @@ bool tracking_window::can_convert(void)
     return true;
 }
 
-void tracking_window::load_track_recog_menu(void)
-{
-    delete track_recog_menu;
-    track_recog_menu = new QMenu(this);
-    for (int index = 0; index < track_network_list.size(); ++index)
-        {
-            QAction* Item = new QAction(this);
-            Item->setText(QString("%1...").arg(track_network_list[index].c_str()));
-            Item->setData(index);
-            Item->setVisible(true);
-            connect(Item, SIGNAL(triggered()),tractWidget, SLOT(track_using_atlas()));
-            track_recog_menu->addAction(Item);
-        }
-    ui->atlas_tracking->setMenu(track_recog_menu);
-    ui->atlas_tracking->setVisible(true);
-}
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 {
     bool has_info = false;
@@ -1829,10 +1810,7 @@ void tracking_window::on_actionLoad_Deep_Learning_Network_triggered()
     if (file_name.isEmpty())
         return;
     if(load_track_network(QFileInfo(file_name).absolutePath()))
-    {
-        can_convert();
-        load_track_recog_menu();
-    }
-    else
         QMessageBox::information(this,"Error","Invalid network format",0);
 }
+
+

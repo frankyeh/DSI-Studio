@@ -19,6 +19,8 @@
 
 extern std::vector<atlas> atlas_list;
 extern std::vector<std::string> track_network_list;
+extern std::vector<std::string> track_network_list_full;
+extern track_recognition track_network;
 
 TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget *parent) :
     QTableWidget(parent),cur_tracking_window(cur_tracking_window_),
@@ -124,48 +126,6 @@ void TractTableWidget::start_tracking(void)
     timer->start(1000);
 }
 
-void TractTableWidget::track_using_atlas(void)
-{
-    if(!cur_tracking_window.can_convert())
-        return;
-    QAction *action = qobject_cast<QAction *>(sender());
-    int track_index = action->data().toInt();
-
-    ++tract_serial;
-    addNewTracts(track_network_list[track_index].c_str());
-    thread_data.back() = new ThreadData(cur_tracking_window["random_seed"].toInt());
-    thread_data.back()->track_recog = true;
-    thread_data.back()->track_recog_handle = cur_tracking_window.handle.get();
-    thread_data.back()->track_recog_index = track_index;
-
-    cur_tracking_window.set_tracking_param(*thread_data.back());
-
-    cur_tracking_window.regionWidget->set_whole_brain(thread_data.back());
-
-    int atlas_index = -1;
-    for(int i = 0;i < atlas_list.size();++i)
-        if(atlas_list[i].name == "network")
-        {
-            atlas_index = i;
-            break;
-        }
-    if(atlas_index != -1)
-    {
-        std::vector<image::vector<3,short> > points;
-        cur_tracking_window.handle->get_atlas_roi(atlas_index,track_index,points);
-        thread_data.back()->setRegions(cur_tracking_window.handle->dim,points,roi_id,track_network_list[track_index].c_str());
-    }
-
-    thread_data.back()->run(tract_models.back()->get_fib(),
-                            cur_tracking_window["thread_count"].toInt(),
-                            cur_tracking_window["track_count"].toInt());
-    tract_models.back()->report += thread_data.back()->report.str();
-    tract_models.back()->report += " Automatic track recognition was conducted to track ";
-    tract_models.back()->report += track_network_list[track_index];
-    tract_models.back()->report += ".";
-    cur_tracking_window.report(tract_models.back()->report.c_str());
-    timer->start(1000);
-}
 void TractTableWidget::filter_by_roi(void)
 {
     ThreadData track_thread(cur_tracking_window["random_seed"].toInt());
@@ -633,13 +593,51 @@ void TractTableWidget::deep_learning_train(void)
         {
             cnn.add_label(item(index,0)->text().toStdString());
             for(unsigned int i = 0;i < tract_models[index]->get_tracts().size();++i)
-                cnn.add_sample(cur_tracking_window.handle.get(),index,tract_models[index]->get_tracts()[i],20/*20-fold cv*/);
+                cnn.add_sample(cur_tracking_window.handle.get(),index,tract_models[index]->get_tracts()[i],0/*20-fold cv*/);
         }
 
     if(!cnn.train())
     {
         QMessageBox::information(this,"Error",cnn.err_msg.c_str(),0);
     }
+}
+bool load_track_network(QString path);
+void TractTableWidget::recog_tracks(void)
+{
+    if(currentRow() >= tract_models.size() || tract_models[currentRow()]->get_tracts().size() == 0)
+        return;
+
+    if(track_network_list.empty() && !load_track_network(QCoreApplication::applicationDirPath()))
+    {
+        QMessageBox::information(this,"Error","Cannot find network file",0);
+        return;
+    }
+    if(!cur_tracking_window.can_convert())
+        return;
+    begin_prog("recognizing");
+    std::vector<float> accu_input;
+    for(unsigned int i = 0;check_prog(i,tract_models[currentRow()]->get_tracts().size());++i)
+    {
+        std::vector<float> input;
+        cur_tracking_window.handle->get_profile(tract_models[currentRow()]->get_tracts()[i],input);
+        track_network.cnn.predict(input);
+        image::minus_constant(input,*std::min_element(input.begin(),input.end()));
+        image::multiply_constant(input,1.0f/std::accumulate(input.begin(),input.end(),0.0f));
+        if(accu_input.empty())
+            accu_input = input;
+        else
+            image::add(accu_input,input);
+    }
+    image::multiply_constant(accu_input,1.0f/std::accumulate(accu_input.begin(),accu_input.end(),0.0f));
+    std::map<float,std::string,std::greater<float> > sorted_list;
+    for(int i = 0;i < accu_input.size();++i)
+        sorted_list[accu_input[i]] = track_network_list_full[i];
+
+    std::ostringstream out;
+    auto beg = sorted_list.begin();
+    for(int i = 0;i < 5;++i,++beg)
+        out << beg->second << " prob:" << beg->first << std::endl;
+    cur_tracking_window.show_info_dialog("Tract Statistics",out.str());
 }
 
 void TractTableWidget::saveTransformedTracts(const float* transform)

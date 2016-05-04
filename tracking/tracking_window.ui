@@ -1132,6 +1132,7 @@
     <addaction name="menuTract_Color"/>
     <addaction name="menuClustering"/>
     <addaction name="separator"/>
+    <addaction name="actionRecognize_Current_Tract"/>
     <addaction name="actionTract_Analysis_Report"/>
     <addaction name="actionConnectivity_matrix"/>
     <addaction name="actionStatistics"/>
@@ -1549,22 +1550,6 @@ Tracking</string>
            </property>
            <property name="flat">
             <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QToolButton" name="atlas_tracking">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>Atlas</string>
-           </property>
-           <property name="popupMode">
-            <enum>QToolButton::MenuButtonPopup</enum>
            </property>
           </widget>
          </item>
@@ -3304,6 +3289,11 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Merge Tracts by Name</string>
+   </property>
+  </action>
+  <action name="actionRecognize_Current_Tract">
+   <property name="text">
+    <string>Recognize Current Tract...</string>
    </property>
   </action>
  </widget>

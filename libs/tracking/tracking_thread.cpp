@@ -1,6 +1,5 @@
 #include "tracking_thread.hpp"
 #include "fib_data.hpp"
-extern track_recognition track_network;
 void ThreadData::push_tracts(std::vector<std::vector<float> >& local_tract_buffer)
 {
     std::lock_guard<std::mutex> lock(lock_feed_function);
@@ -26,7 +25,6 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
 {
     std::auto_ptr<TrackingMethod> method(method_ptr);
     std::uniform_real_distribution<float> rand_gen(0,1);
-    std::vector<float> input;
     unsigned int iteration = thread_id; // for center seed
     if(!seeds.empty())
     try{
@@ -67,22 +65,8 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
             const float *result = method->tracking(tracking_method,point_count);
             if (result && point_count)
             {
-                std::vector<float> trk(result,result+point_count+point_count+point_count);
-                if(track_recog)
-                {
-                    track_recog_handle->get_profile(trk,input);
-                    track_network.cnn.predict(input);
-                    float threshold = std::accumulate(input.begin(),input.end(),0.0f)*0.5;
-                    int max_index = std::max_element(input.begin(),input.end())-input.begin();
-                    if(max_index != track_recog_index || input[max_index] < threshold)
-                        trk.clear();
-                }
-                if(!trk.empty())
-                {
-                    local_track_buffer.push_back(std::vector<float>());
-                    local_track_buffer.back().swap(trk);
-                    ++tract_count[thread_id];
-                }
+                ++tract_count[thread_id];
+                local_track_buffer.push_back(std::vector<float>(result,result+point_count+point_count+point_count));
             }
             if((iteration & 0x00000FFF) == 0x00000FFF && !local_track_buffer.empty())
                 push_tracts(local_track_buffer);
