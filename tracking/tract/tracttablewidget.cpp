@@ -545,12 +545,7 @@ void TractTableWidget::deep_learning_save(void)
                 "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    cnn.cnn.save_to_file(filename.toStdString().c_str());
-    filename = QFileInfo(filename).absolutePath() + "/network_label.txt";
-    {
-        std::ofstream out(filename.toStdString().c_str());
-        std::copy(cnn.cnn_name.begin(),cnn.cnn_name.end(),std::ostream_iterator<std::string>(out,"\n"));
-    }
+
     // save atlas as a nifti file
     if(cur_tracking_window.handle->is_qsdr) //QSDR condition
     {
@@ -561,26 +556,43 @@ void TractTableWidget::deep_learning_save(void)
         image::basic_image<uint64_t,3> atlas(cur_tracking_window.handle->dim);
 
         for(unsigned int index = 0;check_prog(index,rowCount());++index)
+        {
+            image::basic_image<unsigned char,3> track_map(cur_tracking_window.handle->dim);
             if (item(index,0)->checkState() == Qt::Checked)
             {
-                uint64_t label = (uint64_t(1) << index);
                 for(unsigned int i = 0;i < tract_models[index]->get_tracts().size();++i)
                 {
                     const std::vector<float>& tracks = tract_models[index]->get_tracts()[i];
                     for(int j = 0;j < tracks.size();j += 3)
                     {
                         image::pixel_index<3> p(tracks[j]+0.5,tracks[j+1]+0.5,tracks[j+2]+0.5,atlas.geometry());
-                        atlas[p.index()] = (atlas[p.index()] | label);
+                        if(track_map.geometry().is_valid(p))
+                            track_map[p.index()] = 1;
                     }
                 }
-
             }
+            QString track_file_name = QFileInfo(filename).absolutePath() + "/" + item(index,0)->text() + ".nii.gz";
+            gz_nifti nifti2;
+            nifti2.set_voxel_size(cur_tracking_window.slice.voxel_size.begin());
+            nifti2.set_image_transformation(cur_tracking_window.handle->trans_to_mni.begin());
+            nifti2 << track_map;
+            nifti2.save_to_file(track_file_name.toLocal8Bit().begin());
+
+            uint64_t label = (uint64_t(1) << index);
+            image::morphology::smoothing(track_map);
+            image::morphology::smoothing(track_map);
+            for(int i = 0;i < track_map.size();++i)
+                if(track_map[i])
+                    atlas[i] = (atlas[i] | label);
+        }
         nifti << atlas;
         nifti.save_to_file(filename.toLocal8Bit().begin());
-
-
-
-
+    }
+    cnn.cnn.save_to_file(filename.toStdString().c_str());
+    filename = QFileInfo(filename).absolutePath() + "/network_label.txt";
+    {
+        std::ofstream out(filename.toStdString().c_str());
+        std::copy(cnn.cnn_name.begin(),cnn.cnn_name.end(),std::ostream_iterator<std::string>(out,"\n"));
     }
 }
 
