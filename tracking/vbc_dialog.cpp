@@ -915,49 +915,10 @@ void vbc_dialog::calculate_FDR(void)
     if(!vbc->report.empty())
         report += vbc->report.c_str();
 
-    if(!ui->rb_individual_analysis->isChecked())
-    {
-        std::ostringstream out;
-        {
-            std::vector<unsigned int> data(vbc->seed_greater);
-            data.insert(data.end(),vbc->seed_greater_null.begin(),vbc->seed_greater_null.end());
-            double p = image::permutation_test(data.begin(),data.end(),vbc->seed_greater.size());
-            out << " The analysis results showed there "<< (p < 0.05 ? "are tracks": "is no track")
-                << " with increased connectivity ";
-
-            if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
-                out << "in group 0 ";
-            if(ui->rb_multiple_regression->isChecked())
-                out << "related to " << ui->foi->currentText().toLocal8Bit().begin() << " (positive correlation)";
-
-            if(p == 0)
-                out << "(p < 0.0005, one-side)";
-            else
-                out << "(p=" << p << ", one-side)";
-            out << " and ";
-        }
-        {
-            std::vector<unsigned int> data(vbc->seed_lesser);
-            data.insert(data.end(),vbc->seed_lesser_null.begin(),vbc->seed_lesser_null.end());
-            double p = image::permutation_test(data.begin(),data.end(),vbc->seed_lesser.size());
-            out << (p < 0.05 ? "tracks": "no track")
-                << " with decreased connectivity ";
-            if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
-                out << "in group 0 ";
-            if(ui->rb_multiple_regression->isChecked())
-                out << "related to " << ui->foi->currentText().toLocal8Bit().begin() << " (negative correlation)";
-            if(p == 0)
-                out << "(p < 0.0005, one-side).";
-            else
-                out << "(p=" << p << ", one-side).";
-        }
-        report += out.str().c_str();
-    }
-
     if(ui->rb_individual_analysis->isChecked())
         {
             std::ostringstream out;
-            out << " The fiber tracking identified "
+            out << " The connectometry analysis identified "
                 << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no ":"")
                 << "tracks with increased connectivity (FDR="
                 << vbc->fdr_greater[vbc->length_threshold] << ") "
@@ -970,7 +931,7 @@ void vbc_dialog::calculate_FDR(void)
         if(ui->rb_multiple_regression->isChecked())
         {
             std::ostringstream out;
-            out << " The fiber tracking identified "
+            out << " The connectometry analysis identified "
                 << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no ":"")
                 << "tracks with increased connectivity related to "
                 << ui->foi->currentText().toLocal8Bit().begin() << " (FDR="
@@ -985,7 +946,7 @@ void vbc_dialog::calculate_FDR(void)
         if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
         {
             std::ostringstream out;
-            out << " The fiber tracking identified "
+            out << " The connectometry analysis identified "
                 << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no ":"")
                 << "tracks with increased connectivity in group 0 (FDR="
                 << vbc->fdr_greater[vbc->length_threshold] << ") "
