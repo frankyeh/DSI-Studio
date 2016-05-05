@@ -549,10 +549,6 @@ void TractTableWidget::deep_learning_save(void)
     // save atlas as a nifti file
     if(cur_tracking_window.handle->is_qsdr) //QSDR condition
     {
-        filename = QFileInfo(filename).absolutePath() + "/network.nii.gz";
-        gz_nifti nifti;
-        nifti.set_voxel_size(cur_tracking_window.slice.voxel_size.begin());
-        nifti.set_image_transformation(cur_tracking_window.handle->trans_to_mni.begin());
         image::basic_image<uint64_t,3> atlas(cur_tracking_window.handle->dim);
 
         for(unsigned int index = 0;check_prog(index,rowCount());++index)
@@ -568,9 +564,22 @@ void TractTableWidget::deep_learning_save(void)
                         image::pixel_index<3> p(tracks[j]+0.5,tracks[j+1]+0.5,tracks[j+2]+0.5,atlas.geometry());
                         if(track_map.geometry().is_valid(p))
                             track_map[p.index()] = 1;
+                        if(j)
+                        {
+                            for(float r = 0.2;r < 1.0;r += 0.2)
+                            {
+                                image::pixel_index<3> p2(tracks[j]*r+tracks[j-3]*(1-r)+0.5,
+                                                         tracks[j+1]*r+tracks[j-2]*(1-r)+0.5,
+                                                         tracks[j+2]*r+tracks[j-1]*(1-r)+0.5,atlas.geometry());
+                                if(track_map.geometry().is_valid(p2))
+                                    track_map[p2.index()] = 1;
+                            }
+                        }
                     }
                 }
             }
+            while(image::morphology::smoothing_fill(track_map))
+                ;
             QString track_file_name = QFileInfo(filename).absolutePath() + "/" + item(index,0)->text() + ".nii.gz";
             gz_nifti nifti2;
             nifti2.set_voxel_size(cur_tracking_window.slice.voxel_size.begin());
@@ -579,14 +588,19 @@ void TractTableWidget::deep_learning_save(void)
             nifti2.save_to_file(track_file_name.toLocal8Bit().begin());
 
             uint64_t label = (uint64_t(1) << index);
-            image::morphology::smoothing(track_map);
-            image::morphology::smoothing(track_map);
             for(int i = 0;i < track_map.size();++i)
                 if(track_map[i])
                     atlas[i] = (atlas[i] | label);
+            if(index+1 == rowCount())
+            {
+                filename = QFileInfo(filename).absolutePath() + "/network.nii.gz";
+                gz_nifti nifti;
+                nifti.set_voxel_size(cur_tracking_window.slice.voxel_size.begin());
+                nifti.set_image_transformation(cur_tracking_window.handle->trans_to_mni.begin());
+                nifti << atlas;
+                nifti.save_to_file(track_file_name.toLocal8Bit().begin());
+            }
         }
-        nifti << atlas;
-        nifti.save_to_file(filename.toLocal8Bit().begin());
     }
     cnn.cnn.save_to_file(filename.toStdString().c_str());
     filename = QFileInfo(filename).absolutePath() + "/network_label.txt";
@@ -648,7 +662,7 @@ void TractTableWidget::recog_tracks(void)
     std::ostringstream out;
     auto beg = sorted_list.begin();
     for(int i = 0;i < 5;++i,++beg)
-        out << beg->second << " prob:" << beg->first << std::endl;
+        out << beg->second << "\t" << beg->first << std::endl;
     cur_tracking_window.show_info_dialog("Tract Statistics",out.str());
 }
 
