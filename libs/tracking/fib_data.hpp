@@ -129,6 +129,7 @@ public:
     image::reg::normalization<double> reg;
     image::thread thread;
     std::vector<float> trans_to_mni;
+    bool can_map_to_mni(void);
     void run_normalization(int factor,bool background);
     void subject2mni(image::vector<3>& pos);
     void get_atlas_roi(int atlas_index,int roi_index,std::vector<image::vector<3,short> >& points);
@@ -175,6 +176,9 @@ public:
     std::vector<int> cnn_label;
     std::vector<std::string> cnn_name;
     std::string err_msg;
+public:
+    std::vector<std::string> track_list;
+    bool can_recognize(void);
 public:
     void clear(void);
     void add_label(const std::string& name){cnn_name.push_back(name);}

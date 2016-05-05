@@ -68,8 +68,6 @@ public:
     unsigned int odf_face_size;
     void set_tracking_param(ThreadData& tracking_thread);
 public:
-    bool can_convert(void);
-public:
     std::auto_ptr<tract_report> tact_report_imp;
     std::auto_ptr<color_bar_dialog> color_bar;
     std::auto_ptr<connectivity_matrix_dialog> connectivity_matrix;
@@ -167,7 +165,6 @@ private slots:
     void on_actionImprove_Quality_triggered();
     void on_actionRestore_Tracking_Settings_triggered();
     void add_roi_from_atlas();
-    void on_actionLoad_Deep_Learning_Network_triggered();
     void on_actionIndividual_Connectometry_triggered();
 };
 

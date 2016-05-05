@@ -118,7 +118,7 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
         }
     else
         {
-            if(!cur_tracking_window->can_convert())
+            if(!cur_tracking_window->handle->can_map_to_mni())
                 return;
             image::basic_image<image::vector<3,float>,3 > mni_position;
             cur_tracking_window->handle->get_mni_mapping(mni_position);

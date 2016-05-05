@@ -27,7 +27,6 @@
 #include "libs/tracking/tracking_thread.hpp"
 #include "individual_connectometry.hpp"
 
-extern std::vector<std::string> track_network_list;
 extern std::vector<atlas> atlas_list;
 extern fa_template fa_template_imp;
 QByteArray default_geo,default_state;
@@ -418,24 +417,6 @@ void tracking_window::initialize_tracking_index(int index)
     on_tracking_index_currentIndexChanged(index);
     scene.center();
 }
-
-bool tracking_window::can_convert(void)
-{
-    if(!handle->is_human_data)
-        return false;
-    if(handle->is_qsdr)
-        return true;
-    if(!handle->has_reg())
-    {
-        begin_prog("running normalization");
-        handle->run_normalization(1,true);
-        while(check_prog(handle->reg.get_prog(),18) && !prog_aborted())
-            ;
-        check_prog(16,16);
-    }
-    return true;
-}
-
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 {
     bool has_info = false;
@@ -994,7 +975,7 @@ void tracking_window::on_deleteSlice_clicked()
 
 void tracking_window::on_actionSave_Tracts_in_MNI_space_triggered()
 {
-    if(!can_convert())
+    if(!handle->can_map_to_mni())
     {
         QMessageBox::information(this,"Error","MNI normalization is not supported for the current image resolution",0);
         return;
@@ -1250,7 +1231,7 @@ void tracking_window::on_addRegionFromAtlas_clicked()
         QMessageBox::information(0,"Error",QString("DSI Studio cannot find atlas files in ")+QCoreApplication::applicationDirPath()+ "/atlas",0);
         return;
     }
-    if(!can_convert())
+    if(!handle->can_map_to_mni())
     {
         QMessageBox::information(this,"Error","Atlas is not support for the current image resolution.",0);
         return;
@@ -1266,7 +1247,7 @@ void tracking_window::on_addRegionFromAtlas_clicked()
 }
 void tracking_window::add_roi_from_atlas()
 {
-    if(!can_convert())
+    if(!handle->can_map_to_mni())
         return;
     QStringList name_value = ui->search_atlas->text().split(":");
     if(name_value.size() != 2)
@@ -1722,23 +1703,6 @@ void tracking_window::on_show_position_toggled(bool checked)
         set_data("roi_position",ui->show_position->isChecked());
     scene.show_slice();
 }
-
-
-bool load_track_network(QString path);
-void tracking_window::on_actionLoad_Deep_Learning_Network_triggered()
-{
-    QString file_name = QFileDialog::getOpenFileName(
-                           this,
-                           "Open network text files",
-                           "network.txt",
-                           "Text files (*.txt);;All files (*)");
-    if (file_name.isEmpty())
-        return;
-    if(load_track_network(QFileInfo(file_name).absolutePath()))
-        QMessageBox::information(this,"Error","Invalid network format",0);
-}
-
-
 
 void tracking_window::on_actionIndividual_Connectometry_triggered()
 {

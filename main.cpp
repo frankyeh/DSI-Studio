@@ -16,8 +16,6 @@
 #include "cmd/cnt.cpp" // Qt project cannot build cnt.cpp without adding this.
 
 track_recognition track_network;
-std::vector<std::string> track_network_list;
-std::vector<std::string> track_network_list_full;
 fa_template fa_template_imp;
 extern std::vector<atlas> atlas_list;
 void load_atlas(void);
@@ -30,31 +28,6 @@ int atl(void);
 int cnt(void);
 int vis(void);
 int ren(void);
-
-bool load_track_network(QString path)
-{
-    QString file_name = path + "/network.bin";
-    QString track_label = path + "/network_label.txt";
-    if(QFileInfo(file_name).exists() && QFileInfo(track_label).exists())
-    {
-        if(track_network.cnn.load_from_file(file_name.toStdString().c_str()))
-        {
-            track_network_list.clear();
-            std::ifstream in(track_label.toStdString().c_str());
-            std::string line;
-            while(std::getline(in,line))
-            {
-                std::istringstream in2(line);
-                std::string str1,str2;
-                in2 >> str1 >> str2;
-                track_network_list.push_back(str1);
-                track_network_list_full.push_back(str2);
-            }
-            return true;
-        }
-    }
-    return false;
-}
 
 
 QStringList search_files(QString dir,QString filter)

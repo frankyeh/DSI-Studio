@@ -18,9 +18,6 @@
 #include "atlas.hpp"
 
 extern std::vector<atlas> atlas_list;
-extern std::vector<std::string> track_network_list;
-extern std::vector<std::string> track_network_list_full;
-extern track_recognition track_network;
 
 TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget *parent) :
     QTableWidget(parent),cur_tracking_window(cur_tracking_window_),
@@ -473,7 +470,7 @@ void TractTableWidget::save_end_point_in_mni(void)
 {
     if(currentRow() >= tract_models.size())
         return;
-    if(!cur_tracking_window.can_convert())
+    if(!cur_tracking_window.handle->can_map_to_mni())
         return;
     QString filename;
     filename = QFileDialog::getSaveFileName(
@@ -514,7 +511,7 @@ void TractTableWidget::save_profile(void)
 {
     if(currentRow() >= tract_models.size())
         return;
-    if(!cur_tracking_window.can_convert())
+    if(!cur_tracking_window.handle->can_map_to_mni())
         return;
     QString filename;
     filename = QFileDialog::getSaveFileName(
@@ -627,43 +624,21 @@ void TractTableWidget::deep_learning_train(void)
         QMessageBox::information(this,"Error",cnn.err_msg.c_str(),0);
     }
 }
-bool load_track_network(QString path);
 void TractTableWidget::recog_tracks(void)
 {
     if(currentRow() >= tract_models.size() || tract_models[currentRow()]->get_tracts().size() == 0)
         return;
-
-    if(track_network_list.empty() && !load_track_network(QCoreApplication::applicationDirPath()))
-    {
-        QMessageBox::information(this,"Error","Cannot find network file",0);
-        return;
-    }
-    if(!cur_tracking_window.can_convert())
-        return;
-    begin_prog("recognizing");
-    std::vector<float> accu_input;
-    for(unsigned int i = 0;check_prog(i,tract_models[currentRow()]->get_tracts().size());++i)
-    {
-        std::vector<float> input;
-        cur_tracking_window.handle->get_profile(tract_models[currentRow()]->get_tracts()[i],input);
-        track_network.cnn.predict(input);
-        image::minus_constant(input,*std::min_element(input.begin(),input.end()));
-        image::multiply_constant(input,1.0f/std::accumulate(input.begin(),input.end(),0.0f));
-        if(accu_input.empty())
-            accu_input = input;
-        else
-            image::add(accu_input,input);
-    }
-    image::multiply_constant(accu_input,1.0f/std::accumulate(accu_input.begin(),accu_input.end(),0.0f));
     std::map<float,std::string,std::greater<float> > sorted_list;
-    for(int i = 0;i < accu_input.size();++i)
-        sorted_list[accu_input[i]] = track_network_list_full[i];
-
+    if(!tract_models[currentRow()]->recognize(sorted_list))
+    {
+        QMessageBox::information(this,"Error","Cannot recognize tracks.",0);
+        return;
+    }
     std::ostringstream out;
     auto beg = sorted_list.begin();
     for(int i = 0;i < 5;++i,++beg)
         out << beg->second << "\t" << beg->first << std::endl;
-    cur_tracking_window.show_info_dialog("Tract Statistics",out.str());
+    cur_tracking_window.show_info_dialog("Tract Recognition Result",out.str());
 }
 
 void TractTableWidget::saveTransformedTracts(const float* transform)

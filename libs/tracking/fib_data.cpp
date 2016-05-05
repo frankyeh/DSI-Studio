@@ -1,3 +1,4 @@
+#include <QCoreApplication>
 #include "fib_data.hpp"
 #include "fa_template.hpp"
 #include "atlas.hpp"
@@ -630,6 +631,23 @@ void fib_data::get_index_titles(std::vector<std::string>& titles)
     }
 }
 extern fa_template fa_template_imp;
+bool fib_data::can_map_to_mni(void)
+{
+    if(!is_human_data)
+        return false;
+    if(is_qsdr)
+        return true;
+    if(!has_reg())
+    {
+        begin_prog("running normalization");
+        run_normalization(1,true);
+        while(check_prog(reg.get_prog(),18) && !prog_aborted())
+            ;
+        check_prog(16,16);
+    }
+    return true;
+}
+
 void fib_data::run_normalization(int factor,bool background)
 {
     auto lambda = [this,factor]()
@@ -735,7 +753,30 @@ void fib_data::get_profile(const std::vector<float>& tract_data,
     if(m != 0.0)
         image::multiply_constant(profile,1.8/m);
     image::minus_constant(profile,0.9);
+
 }
+
+bool track_recognition::can_recognize(void)
+{
+    if(!track_list.empty())
+        return true;
+    std::string file_name(QCoreApplication::applicationDirPath().toLocal8Bit().begin());
+    file_name += "/network.bin";
+    std::string track_label(QCoreApplication::applicationDirPath().toLocal8Bit().begin());
+    track_label += "/network_label.txt";
+    std::ifstream in(track_label.c_str());
+    if(in && cnn.load_from_file(file_name.c_str()))
+    {
+        std::string line;
+        while(std::getline(in,line))
+            track_list.push_back(line);
+        if(track_list.size() != cnn.output_size())
+            return false;
+        return true;
+    }
+    return false;
+}
+
 
 void track_recognition::clear(void)
 {

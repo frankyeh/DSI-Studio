@@ -115,7 +115,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset>
+            <iconset resource="../icons.qrc">
              <normaloff>:/icons/icons/slice.xpm</normaloff>:/icons/icons/slice.xpm</iconset>
            </property>
           </widget>
@@ -138,7 +138,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset>
+            <iconset resource="../icons.qrc">
              <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
            </property>
           </widget>
@@ -161,7 +161,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset>
+            <iconset resource="../icons.qrc">
              <normaloff>:/icons/icons/add_surface.xpm</normaloff>:/icons/icons/add_surface.xpm</iconset>
            </property>
           </widget>
@@ -231,7 +231,7 @@
               <string>...</string>
              </property>
              <property name="icon">
-              <iconset>
+              <iconset resource="../icons.qrc">
                <normaloff>:/icons/icons/cubic.xpm</normaloff>:/icons/icons/cubic.xpm</iconset>
              </property>
             </widget>
@@ -295,7 +295,7 @@
               <string>...</string>
              </property>
              <property name="icon">
-              <iconset>
+              <iconset resource="../icons.qrc">
                <normaloff>:/icons/icons/rec.xpm</normaloff>:/icons/icons/rec.xpm</iconset>
              </property>
             </widget>
@@ -306,7 +306,7 @@
               <string>...</string>
              </property>
              <property name="icon">
-              <iconset>
+              <iconset resource="../icons.qrc">
                <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
              </property>
             </widget>
@@ -338,7 +338,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset>
+            <iconset resource="../icons.qrc">
              <normaloff>:/icons/icons/rotate.xpm</normaloff>:/icons/icons/rotate.xpm</iconset>
            </property>
            <property name="checkable">
@@ -358,7 +358,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset>
+            <iconset resource="../icons.qrc">
              <normaloff>:/icons/icons/fullscreen.xpm</normaloff>:/icons/icons/fullscreen.xpm</iconset>
            </property>
           </widget>
@@ -413,7 +413,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset>
+            <iconset resource="../icons.qrc">
              <normaloff>:/icons/icons/sag.xpm</normaloff>:/icons/icons/sag.xpm</iconset>
            </property>
           </widget>
@@ -484,7 +484,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset>
+            <iconset resource="../icons.qrc">
              <normaloff>:/icons/icons/coronal.xpm</normaloff>:/icons/icons/coronal.xpm</iconset>
            </property>
           </widget>
@@ -561,7 +561,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset>
+            <iconset resource="../icons.qrc">
              <normaloff>:/icons/icons/axial.xpm</normaloff>:/icons/icons/axial.xpm</iconset>
            </property>
           </widget>
@@ -703,7 +703,7 @@
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/new.xpm</normaloff>:/icons/icons/new.xpm</iconset>
          </property>
         </widget>
@@ -726,7 +726,7 @@
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
          </property>
         </widget>
@@ -749,7 +749,7 @@
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
          </property>
         </widget>
@@ -772,7 +772,7 @@
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
          </property>
         </widget>
@@ -798,7 +798,7 @@
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/axial.xpm</normaloff>:/icons/icons/axial.xpm</iconset>
          </property>
         </widget>
@@ -821,7 +821,7 @@
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/up.xpm</normaloff>:/icons/icons/up.xpm</iconset>
          </property>
         </widget>
@@ -844,7 +844,7 @@
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
          </property>
         </widget>
@@ -877,7 +877,7 @@
           <string>Atlas...</string>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/atlas.xpm</normaloff>:/icons/icons/atlas.xpm</iconset>
          </property>
         </widget>
@@ -1041,7 +1041,7 @@
       <string>Save Along Tract Index</string>
      </property>
      <property name="icon">
-      <iconset>
+      <iconset resource="../icons.qrc">
        <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
      </property>
     </widget>
@@ -1067,7 +1067,7 @@
       <string>Save Tract Density</string>
      </property>
      <property name="icon">
-      <iconset>
+      <iconset resource="../icons.qrc">
        <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
      </property>
      <addaction name="actionTDI_Diffusion_Space"/>
@@ -1087,7 +1087,7 @@
       <string>Save Tracts</string>
      </property>
      <property name="icon">
-      <iconset>
+      <iconset resource="../icons.qrc">
        <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
      </property>
      <addaction name="actionSaveTractAs"/>
@@ -1234,7 +1234,6 @@
     <addaction name="actionManual_Registration"/>
     <addaction name="actionQuality_Assessment"/>
     <addaction name="actionImprove_Quality"/>
-    <addaction name="actionLoad_Deep_Learning_Network"/>
    </widget>
    <widget class="QMenu" name="menuLayout">
     <property name="title">
@@ -1341,7 +1340,7 @@
                 </size>
                </property>
                <property name="icon">
-                <iconset>
+                <iconset resource="../icons.qrc">
                  <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
                </property>
               </widget>
@@ -1361,7 +1360,7 @@
                 </size>
                </property>
                <property name="icon">
-                <iconset>
+                <iconset resource="../icons.qrc">
                  <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
                </property>
               </widget>
@@ -1381,7 +1380,7 @@
                 </size>
                </property>
                <property name="icon">
-                <iconset>
+                <iconset resource="../icons.qrc">
                  <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
                </property>
               </widget>
@@ -1401,7 +1400,7 @@
                 </size>
                </property>
                <property name="icon">
-                <iconset>
+                <iconset resource="../icons.qrc">
                  <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
                </property>
               </widget>
@@ -1444,7 +1443,7 @@
                 </size>
                </property>
                <property name="icon">
-                <iconset>
+                <iconset resource="../icons.qrc">
                  <normaloff>:/icons/icons/up.xpm</normaloff>:/icons/icons/up.xpm</iconset>
                </property>
               </widget>
@@ -1464,7 +1463,7 @@
                 </size>
                </property>
                <property name="icon">
-                <iconset>
+                <iconset resource="../icons.qrc">
                  <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
                </property>
               </widget>
@@ -1487,7 +1486,7 @@
                 <string/>
                </property>
                <property name="icon">
-                <iconset>
+                <iconset resource="../icons.qrc">
                  <normaloff>:/icons/icons/stop.xpm</normaloff>:/icons/icons/stop.xpm</iconset>
                </property>
                <property name="flat">
@@ -1531,7 +1530,7 @@
 Tracking</string>
            </property>
            <property name="icon">
-            <iconset>
+            <iconset resource="../icons.qrc">
              <normaloff>:/icons/dsi_studio.ico</normaloff>:/icons/dsi_studio.ico</iconset>
            </property>
            <property name="iconSize">
@@ -1681,7 +1680,7 @@ Tracking</string>
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/rec.xpm</normaloff>:/icons/icons/rec.xpm</iconset>
          </property>
          <property name="iconSize">
@@ -1722,7 +1721,7 @@ Tracking</string>
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/curves.xpm</normaloff>:/icons/icons/curves.xpm</iconset>
          </property>
          <property name="iconSize">
@@ -1760,7 +1759,7 @@ Tracking</string>
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/poly.xpm</normaloff>:/icons/icons/poly.xpm</iconset>
          </property>
          <property name="checkable">
@@ -1792,7 +1791,7 @@ Tracking</string>
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/ball.xpm</normaloff>:/icons/icons/ball.xpm</iconset>
          </property>
          <property name="iconSize">
@@ -1830,7 +1829,7 @@ Tracking</string>
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/cubic.xpm</normaloff>:/icons/icons/cubic.xpm</iconset>
          </property>
          <property name="iconSize">
@@ -1868,7 +1867,7 @@ Tracking</string>
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/move.xpm</normaloff>:/icons/icons/move.xpm</iconset>
          </property>
          <property name="checkable">
@@ -1900,7 +1899,7 @@ Tracking</string>
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/ruler.xpm</normaloff>:/icons/icons/ruler.xpm</iconset>
          </property>
          <property name="checkable">
@@ -1961,7 +1960,7 @@ Tracking</string>
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/zoom-in.xpm</normaloff>:/icons/icons/zoom-in.xpm</iconset>
          </property>
         </widget>
@@ -1993,7 +1992,7 @@ Tracking</string>
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/zoom-out.xpm</normaloff>:/icons/icons/zoom-out.xpm</iconset>
          </property>
         </widget>
@@ -2010,7 +2009,7 @@ Tracking</string>
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/rgb.xpm</normaloff>:/icons/icons/rgb.xpm</iconset>
          </property>
          <property name="checkable">
@@ -2036,7 +2035,7 @@ Tracking</string>
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/guides.xpm</normaloff>:/icons/icons/guides.xpm</iconset>
          </property>
          <property name="checkable">
@@ -2085,7 +2084,7 @@ Tracking</string>
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/cubic.xpm</normaloff>:/icons/icons/cubic.xpm</iconset>
          </property>
         </widget>
@@ -2131,7 +2130,7 @@ Tracking</string>
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/rec.xpm</normaloff>:/icons/icons/rec.xpm</iconset>
          </property>
         </widget>
@@ -2142,7 +2141,7 @@ Tracking</string>
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
          </property>
         </widget>
@@ -2191,7 +2190,7 @@ Tracking</string>
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/sag.xpm</normaloff>:/icons/icons/sag.xpm</iconset>
          </property>
         </widget>
@@ -2224,7 +2223,7 @@ Tracking</string>
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/coronal.xpm</normaloff>:/icons/icons/coronal.xpm</iconset>
          </property>
         </widget>
@@ -2257,7 +2256,7 @@ Tracking</string>
           <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/axial.xpm</normaloff>:/icons/icons/axial.xpm</iconset>
          </property>
         </widget>
@@ -2276,7 +2275,7 @@ Tracking</string>
   </widget>
   <action name="actionNewRegion">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/new.xpm</normaloff>:/icons/icons/new.xpm</iconset>
    </property>
    <property name="text">
@@ -2285,7 +2284,7 @@ Tracking</string>
   </action>
   <action name="actionOpenRegion">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
@@ -2294,7 +2293,7 @@ Tracking</string>
   </action>
   <action name="actionSaveRegionAs">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2303,7 +2302,7 @@ Tracking</string>
   </action>
   <action name="actionDeleteRegion">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
    </property>
    <property name="text">
@@ -2317,7 +2316,7 @@ Tracking</string>
   </action>
   <action name="actionOpenTract">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
@@ -2331,7 +2330,7 @@ Tracking</string>
   </action>
   <action name="actionSaveTractAs">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2345,7 +2344,7 @@ Tracking</string>
   </action>
   <action name="actionDeleteRegionAll">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
    </property>
    <property name="text">
@@ -2359,7 +2358,7 @@ Tracking</string>
   </action>
   <action name="actionDeleteTract">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
    </property>
    <property name="text">
@@ -2373,7 +2372,7 @@ Tracking</string>
   </action>
   <action name="actionDeleteTractAll">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
    </property>
    <property name="text">
@@ -2499,7 +2498,7 @@ Tracking</string>
   </action>
   <action name="actionWhole_brain_seeding">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/axial.xpm</normaloff>:/icons/icons/axial.xpm</iconset>
    </property>
    <property name="text">
@@ -2548,7 +2547,7 @@ Tracking</string>
   </action>
   <action name="actionSagittal_view">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/sag.xpm</normaloff>:/icons/icons/sag.xpm</iconset>
    </property>
    <property name="text">
@@ -2560,7 +2559,7 @@ Tracking</string>
   </action>
   <action name="actionCoronal_View">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/coronal.xpm</normaloff>:/icons/icons/coronal.xpm</iconset>
    </property>
    <property name="text">
@@ -2572,7 +2571,7 @@ Tracking</string>
   </action>
   <action name="actionAxial_View">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/axial.xpm</normaloff>:/icons/icons/axial.xpm</iconset>
    </property>
    <property name="text">
@@ -2584,7 +2583,7 @@ Tracking</string>
   </action>
   <action name="actionMerge_All">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/add.xpm</normaloff>:/icons/icons/add.xpm</iconset>
    </property>
    <property name="text">
@@ -2593,7 +2592,7 @@ Tracking</string>
   </action>
   <action name="actionSave_Screen">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2602,7 +2601,7 @@ Tracking</string>
   </action>
   <action name="actionSave_ROI_Screen">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2611,7 +2610,7 @@ Tracking</string>
   </action>
   <action name="actionLoad_Camera">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
@@ -2620,7 +2619,7 @@ Tracking</string>
   </action>
   <action name="actionSave_Camera">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2639,7 +2638,7 @@ Tracking</string>
   </action>
   <action name="actionSave_Rotation_Images">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2656,7 +2655,7 @@ Tracking</string>
   </action>
   <action name="actionInsert_T1_T2">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/slice.xpm</normaloff>:/icons/icons/slice.xpm</iconset>
    </property>
    <property name="text">
@@ -2665,7 +2664,7 @@ Tracking</string>
   </action>
   <action name="actionAdd_surface">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/add_surface.xpm</normaloff>:/icons/icons/add_surface.xpm</iconset>
    </property>
    <property name="text">
@@ -2674,7 +2673,7 @@ Tracking</string>
   </action>
   <action name="actionSave_mapping">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2683,7 +2682,7 @@ Tracking</string>
   </action>
   <action name="actionLoad_mapping">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
@@ -2692,7 +2691,7 @@ Tracking</string>
   </action>
   <action name="actionStatistics">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/stat.xpm</normaloff>:/icons/icons/stat.xpm</iconset>
    </property>
    <property name="text">
@@ -2721,7 +2720,7 @@ Tracking</string>
   </action>
   <action name="actionSave_Tracts_Colors_As">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2730,7 +2729,7 @@ Tracking</string>
   </action>
   <action name="actionOpen_Colors">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
@@ -2739,7 +2738,7 @@ Tracking</string>
   </action>
   <action name="actionSave_Voxel_Data_As">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2748,7 +2747,7 @@ Tracking</string>
   </action>
   <action name="actionTDI_Diffusion_Space">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2757,7 +2756,7 @@ Tracking</string>
   </action>
   <action name="actionTDI_Import_Slice_Space">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2766,7 +2765,7 @@ Tracking</string>
   </action>
   <action name="actionTDI_Subvoxel_Diffusion_Space">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2775,7 +2774,7 @@ Tracking</string>
   </action>
   <action name="actionSave_Tracts_in_Current_Mapping">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2797,7 +2796,7 @@ Tracking</string>
   </action>
   <action name="actionSave_Anisotrpy_Map_as">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2811,7 +2810,7 @@ Tracking</string>
   </action>
   <action name="actionSave_Endpoints_in_Current_Mapping">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2820,7 +2819,7 @@ Tracking</string>
   </action>
   <action name="actionMove_Object">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/move.xpm</normaloff>:/icons/icons/move.xpm</iconset>
    </property>
    <property name="text">
@@ -2832,7 +2831,7 @@ Tracking</string>
   </action>
   <action name="actionSave_Tracts_in_MNI_space">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2841,7 +2840,7 @@ Tracking</string>
   </action>
   <action name="actionOpen_Cluster_Labels">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
@@ -2850,7 +2849,7 @@ Tracking</string>
   </action>
   <action name="actionSave_All_Tracts_As">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
    </property>
    <property name="text">
@@ -2859,7 +2858,7 @@ Tracking</string>
   </action>
   <action name="actionSave_Left_Right_3D_Image">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2868,7 +2867,7 @@ Tracking</string>
   </action>
   <action name="actionRegion_statistics">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/stat.xpm</normaloff>:/icons/icons/stat.xpm</iconset>
    </property>
    <property name="text">
@@ -2877,7 +2876,7 @@ Tracking</string>
   </action>
   <action name="actionManual_Registration">
    <property name="text">
-    <string>Aedjust MNI Mapping...</string>
+    <string>Adjust MNI Mapping...</string>
    </property>
   </action>
   <action name="actionTract_Analysis_Report">
@@ -2887,7 +2886,7 @@ Tracking</string>
   </action>
   <action name="actionSave_End_Points_As">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2896,7 +2895,7 @@ Tracking</string>
   </action>
   <action name="actionConnectivity_matrix">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/conn.xpm</normaloff>:/icons/icons/conn.xpm</iconset>
    </property>
    <property name="text">
@@ -2920,7 +2919,7 @@ Tracking</string>
   </action>
   <action name="actionSave_3D_screen_in_high_resolution">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2929,7 +2928,7 @@ Tracking</string>
   </action>
   <action name="actionSave_All_Regions_As">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
    </property>
    <property name="text">
@@ -2938,7 +2937,7 @@ Tracking</string>
   </action>
   <action name="actionFloat_3D_window">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/fullscreen.xpm</normaloff>:/icons/icons/fullscreen.xpm</iconset>
    </property>
    <property name="text">
@@ -2947,7 +2946,7 @@ Tracking</string>
   </action>
   <action name="actionSave_tracking_parameters">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2956,7 +2955,7 @@ Tracking</string>
   </action>
   <action name="actionLoad_tracking_parameters">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
@@ -2980,7 +2979,7 @@ Tracking</string>
   </action>
   <action name="actionSave_Rendering_Parameters">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -2989,7 +2988,7 @@ Tracking</string>
   </action>
   <action name="actionLoad_Rendering_Parameters">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
@@ -2998,7 +2997,7 @@ Tracking</string>
   </action>
   <action name="actionSave_All_Regions_As_Multiple_Files">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
    </property>
    <property name="text">
@@ -3012,7 +3011,7 @@ Tracking</string>
   </action>
   <action name="actionMerge_All_2">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/add.xpm</normaloff>:/icons/icons/add.xpm</iconset>
    </property>
    <property name="text">
@@ -3021,7 +3020,7 @@ Tracking</string>
   </action>
   <action name="actionSave_All_Tracts_As_Multiple_Files">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
    </property>
    <property name="text">
@@ -3035,7 +3034,7 @@ Tracking</string>
   </action>
   <action name="actionSave_3D_screen_in_3_views">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -3044,7 +3043,7 @@ Tracking</string>
   </action>
   <action name="actionSave_Enpoints_In_MNI_Space">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -3056,7 +3055,7 @@ Tracking</string>
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/rotate.xpm</normaloff>:/icons/icons/rotate.xpm</iconset>
    </property>
    <property name="text">
@@ -3095,7 +3094,7 @@ Tracking</string>
   </action>
   <action name="actionSave_Rotation_Video_in_Left_Right_3D">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -3104,7 +3103,7 @@ Tracking</string>
   </action>
   <action name="actionAdjust_Mapping">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/preferences.xpm</normaloff>:/icons/icons/preferences.xpm</iconset>
    </property>
    <property name="text">
@@ -3163,7 +3162,7 @@ Tracking</string>
   </action>
   <action name="actionStrip_skull_for_T1w_image">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/add_surface.xpm</normaloff>:/icons/icons/add_surface.xpm</iconset>
    </property>
    <property name="text">
@@ -3172,7 +3171,7 @@ Tracking</string>
   </action>
   <action name="actionLoad_Color_Map">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
@@ -3189,24 +3188,9 @@ Tracking</string>
     <string>Restore Tracking Settings</string>
    </property>
   </action>
-  <action name="actionIndividual_vs_atlas">
-   <property name="text">
-    <string>Individual vs atlas</string>
-   </property>
-  </action>
-  <action name="actionIndividual_vs_individual">
-   <property name="text">
-    <string>Individual vs individual</string>
-   </property>
-  </action>
-  <action name="actionIndividual_vs_normal_population">
-   <property name="text">
-    <string>Individual vs normal population</string>
-   </property>
-  </action>
   <action name="actionSave_VMRL">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -3215,7 +3199,7 @@ Tracking</string>
   </action>
   <action name="actionLoad_From_Atlas">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/atlas.xpm</normaloff>:/icons/icons/atlas.xpm</iconset>
    </property>
    <property name="text">
@@ -3229,7 +3213,7 @@ Tracking</string>
   </action>
   <action name="actionSave_Profile">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
@@ -3246,14 +3230,9 @@ Tracking</string>
     <string>Save...</string>
    </property>
   </action>
-  <action name="actionLoad_Deep_Learning_Network">
-   <property name="text">
-    <string>Load Deep Learning Network...</string>
-   </property>
-  </action>
   <action name="actionOpen_Tracts_Label">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
@@ -3267,7 +3246,7 @@ Tracking</string>
   </action>
   <action name="actionRemove_Repeated_Tracks">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
    </property>
    <property name="text">
@@ -3276,7 +3255,7 @@ Tracking</string>
   </action>
   <action name="actionMerge_Tracts_by_Name">
    <property name="icon">
-    <iconset>
+    <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/add.xpm</normaloff>:/icons/icons/add.xpm</iconset>
    </property>
    <property name="text">
@@ -3306,7 +3285,9 @@ Tracking</string>
    <header>qcompletelineedit.h</header>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="../icons.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>glAxiBox</sender>

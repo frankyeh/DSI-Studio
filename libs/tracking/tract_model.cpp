@@ -1479,6 +1479,32 @@ void TractModel::get_quantitative_info(std::string& result)
     result = out.str();
 }
 
+extern track_recognition track_network;
+bool TractModel::recognize(std::map<float,std::string,std::greater<float> >& result)
+{
+    if(!track_network.can_recognize())
+        return false;
+    if(!handle->can_map_to_mni())
+        return false;
+    begin_prog("recognizing");
+    std::vector<float> accu_input;
+    for(unsigned int i = 0;check_prog(i,tract_data.size());++i)
+    {
+        std::vector<float> input;
+        handle->get_profile(tract_data[i],input);
+        track_network.cnn.predict(input);
+        image::minus_constant(input,*std::min_element(input.begin(),input.end()));
+        image::multiply_constant(input,1.0f/std::accumulate(input.begin(),input.end(),0.0f));
+        if(accu_input.empty())
+            accu_input = input;
+        else
+            image::add(accu_input,input);
+    }
+    image::multiply_constant(accu_input,1.0f/std::accumulate(accu_input.begin(),accu_input.end(),0.0f));
+    for(int i = 0;i < accu_input.size();++i)
+        result[accu_input[i]] = track_network.track_list[i];
+    return true;
+}
 
 void TractModel::get_report(unsigned int profile_dir,float band_width,const std::string& index_name,
                             std::vector<float>& values,
