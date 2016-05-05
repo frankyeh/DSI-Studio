@@ -33,7 +33,7 @@ int ren(void);
 
 bool load_track_network(QString path)
 {
-    QString file_name = path + "/network.txt";
+    QString file_name = path + "/network.bin";
     QString track_label = path + "/network_label.txt";
     if(QFileInfo(file_name).exists() && QFileInfo(track_label).exists())
     {
