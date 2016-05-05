@@ -75,7 +75,8 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int current
     ui->tableWidget->clear();
     ui->tableWidget->setRowCount(0);
     image_list.clear();
-
+    b_value_list.clear();
+    b_vec_list.clear();
     if(QFileInfo(directory.absolutePath() + "/subject").exists())
     {
         QStringList params1,params2;
