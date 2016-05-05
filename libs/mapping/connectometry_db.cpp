@@ -325,15 +325,25 @@ void connectometry_db::save_subject_vector(const char* output_name,
     }
     matfile.write("dimension",&*handle->dim.begin(),1,3);
     std::vector<int> voxel_location;
+    std::vector<float> mni_location;
     for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
     {
         unsigned int cur_index = si2vi[s_index];
         if(!cerebrum_mask[cur_index])
             continue;
         for(unsigned int j = 0,fib_offset = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;++j,fib_offset+=si2vi.size())
+        {
             voxel_location.push_back(cur_index);
+            image::pixel_index<3> p(cur_index,handle->dim);
+            image::vector<3> p2(p);
+            handle->subject2mni(p2);
+            mni_location.push_back(p2[0]);
+            mni_location.push_back(p2[1]);
+            mni_location.push_back(p2[2]);
+        }
     }
     matfile.write("voxel_location",&voxel_location[0],1,voxel_location.size());
+    matfile.write("mni_location",&mni_location[0],3,voxel_location.size());
 }
 void connectometry_db::save_subject_data(const char* output_name)
 {
