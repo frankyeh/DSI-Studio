@@ -1165,7 +1165,7 @@ void vbc_dialog::on_run_clicked()
     }
 
     if(ui->normalize_qa->isChecked())
-        out << " The SDF was normalized." << std::endl;
+        out << " The SDF was normalized.";
 
     out << " A deterministic fiber tracking algorithm (Yeh et al. PLoS ONE 8(11): e80713, 2013) was conducted to connect the selected local connectomes.";
 
