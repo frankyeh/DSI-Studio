@@ -117,14 +117,16 @@ struct connectometry_result{
     std::vector<const float*> greater_ptr,lesser_ptr;
     void remove_old_index(std::shared_ptr<fib_data> handle);
     bool compare(std::shared_ptr<fib_data> handle,
-                 const std::vector<const float*>& fa1,const std::vector<const float*>& fa2);
+                 const std::vector<const float*>& fa1,const std::vector<const float*>& fa2,
+                 unsigned char normalization);
 public:
     std::string error_msg;
     void initialize(std::shared_ptr<fib_data> fib_file);
     void add_mapping_for_tracking(std::shared_ptr<fib_data> handle,const char* t1,const char* t2);
-    bool individual_vs_atlas(std::shared_ptr<fib_data> handle,const char* file_name);
+    bool individual_vs_atlas(std::shared_ptr<fib_data> handle,const char* file_name,unsigned char normalization);
     bool individual_vs_db(std::shared_ptr<fib_data> handle,const char* file_name);
-    bool individual_vs_individual(std::shared_ptr<fib_data> handle,const char* file_name1,const char* file_name2);
+    bool individual_vs_individual(std::shared_ptr<fib_data> handle,
+                                  const char* file_name1,const char* file_name2,unsigned char normalization);
 
 };
 

@@ -627,26 +627,83 @@ bool connectometry_result::individual_vs_db(std::shared_ptr<fib_data> handle,con
     return true;
 }
 bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::vector<const float*>& fa1,
-                                        const std::vector<const float*>& fa2)
+                                        const std::vector<const float*>& fa2,unsigned char normalization)
 {
-    std::pair<double,double> r = image::linear_regression(fa2[0],fa2[0] + handle->dim.size(),fa1[0]);
-    for(unsigned char fib = 0;fib < handle->dir.num_fiber;++fib)
+    if(normalization == 0) // no normalization
     {
-        for(unsigned int index = 0;index < handle->dim.size();++index)
-            if(fa1[fib][index] > 0.0 && fa2[fib][index] > 0.0)
-            {
-                float f1 = fa1[fib][index];
-                float f2 = fa2[fib][index]*r.first+r.second;
-                if(f1 > f2)
-                    lesser[fib][index] = f1-f2;  // subject decreased connectivity
-                else
-                    greater[fib][index] = f2-f1; // subject increased connectivity
-            }
+        for(unsigned char fib = 0;fib < handle->dir.num_fiber;++fib)
+        {
+            for(unsigned int index = 0;index < handle->dim.size();++index)
+                if(fa1[fib][index] > 0.0 && fa2[fib][index] > 0.0)
+                {
+                    float f1 = fa1[fib][index];
+                    float f2 = fa2[fib][index];
+                    if(f1 > f2)
+                        lesser[fib][index] = f1-f2;  // subject decreased connectivity
+                    else
+                        greater[fib][index] = f2-f1; // subject increased connectivity
+                }
+        }
+    }
+    if(normalization == 1) // max to one
+    {
+        float max1 = *std::max_element(fa1[0],fa1[0] + handle->dim.size());
+        float max2 = *std::max_element(fa2[0],fa2[0] + handle->dim.size());
+
+        for(unsigned char fib = 0;fib < handle->dir.num_fiber;++fib)
+        {
+            for(unsigned int index = 0;index < handle->dim.size();++index)
+                if(fa1[fib][index] > 0.0 && fa2[fib][index] > 0.0)
+                {
+                    float f1 = fa1[fib][index]/max1;
+                    float f2 = fa2[fib][index]/max2;
+                    if(f1 > f2)
+                        lesser[fib][index] = f1-f2;  // subject decreased connectivity
+                    else
+                        greater[fib][index] = f2-f1; // subject increased connectivity
+                }
+        }
+    }
+    if(normalization == 2) // linear regression
+    {
+        std::pair<double,double> r = image::linear_regression(fa2[0],fa2[0] + handle->dim.size(),fa1[0]);
+        for(unsigned char fib = 0;fib < handle->dir.num_fiber;++fib)
+        {
+            for(unsigned int index = 0;index < handle->dim.size();++index)
+                if(fa1[fib][index] > 0.0 && fa2[fib][index] > 0.0)
+                {
+                    float f1 = fa1[fib][index];
+                    float f2 = fa2[fib][index]*r.first+r.second;
+                    if(f1 > f2)
+                        lesser[fib][index] = f1-f2;  // subject decreased connectivity
+                    else
+                        greater[fib][index] = f2-f1; // subject increased connectivity
+                }
+        }
+    }
+    if(normalization == 3) // variance to one
+    {
+        float sd1 = image::standard_deviation(fa1[0],fa1[0] + handle->dim.size());
+        float sd2 = image::standard_deviation(fa2[0],fa2[0] + handle->dim.size());
+        for(unsigned char fib = 0;fib < handle->dir.num_fiber;++fib)
+        {
+            for(unsigned int index = 0;index < handle->dim.size();++index)
+                if(fa1[fib][index] > 0.0 && fa2[fib][index] > 0.0)
+                {
+                    float f1 = fa1[fib][index]/sd1;
+                    float f2 = fa2[fib][index]/sd2;
+                    if(f1 > f2)
+                        lesser[fib][index] = f1-f2;  // subject decreased connectivity
+                    else
+                        greater[fib][index] = f2-f1; // subject increased connectivity
+                }
+        }
     }
     return true;
 }
 
-bool connectometry_result::individual_vs_atlas(std::shared_ptr<fib_data> handle,const char* file_name)
+bool connectometry_result::individual_vs_atlas(std::shared_ptr<fib_data> handle,
+                                               const char* file_name,unsigned char normalization)
 {
     // restore fa0 to QA
     handle->dir.set_tracking_index(0);
@@ -660,13 +717,13 @@ bool connectometry_result::individual_vs_atlas(std::shared_ptr<fib_data> handle,
     for(unsigned int i = 0;i < ptr.size();++i)
         ptr[i] = &(fa_data[i][0]);
     initialize(handle);
-    if(!compare(handle,handle->dir.fa,ptr))
+    if(!compare(handle,handle->dir.fa,ptr,normalization))
         return false;
     add_mapping_for_tracking(handle,"inc","dec");
     return true;
 }
 
-bool connectometry_result::individual_vs_individual(std::shared_ptr<fib_data> handle,const char* file_name1,const char* file_name2)
+bool connectometry_result::individual_vs_individual(std::shared_ptr<fib_data> handle,const char* file_name1,const char* file_name2,unsigned char normalization)
 {
     // restore fa0 to QA
     handle->dir.set_tracking_index(0);
@@ -688,7 +745,7 @@ bool connectometry_result::individual_vs_individual(std::shared_ptr<fib_data> ha
         ptr1[i] = &(data1[i][0]);
         ptr2[i] = &(data2[i][0]);
     }
-    if(!compare(handle,ptr1,ptr2))
+    if(!compare(handle,ptr1,ptr2,normalization))
         return false;
     add_mapping_for_tracking(handle,"inc","dec");
     return true;

@@ -94,7 +94,8 @@ HEADERS += mainwindow.h \
     filebrowser.h \
     program_option.hpp \
     qcompletelineedit.h \
-    libs/mapping/connectometry_db.hpp
+    libs/mapping/connectometry_db.hpp \
+    individual_connectometry.hpp
 
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
@@ -110,7 +111,8 @@ FORMS += mainwindow.ui \
     tracking/connectivity_matrix_dialog.ui \
     tracking/atlasdialog.ui \
     dicom/motion_dialog.ui \
-    filebrowser.ui
+    filebrowser.ui \
+    individual_connectometry.ui
 RESOURCES += \
     icons.qrc
 SOURCES += main.cpp \
@@ -162,7 +164,8 @@ SOURCES += main.cpp \
     libs/tracking/fib_data.cpp \
     libs/mapping/connectometry_db.cpp \
     libs/tracking/tracking_thread.cpp \
-    cmd/ren.cpp
+    cmd/ren.cpp \
+    individual_connectometry.cpp
 
 OTHER_FILES += \
     options.txt

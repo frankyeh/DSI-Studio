@@ -25,7 +25,7 @@
 #include "mapping/fa_template.hpp"
 #include "tracking/atlasdialog.h"
 #include "libs/tracking/tracking_thread.hpp"
-
+#include "individual_connectometry.hpp"
 
 extern std::vector<std::string> track_network_list;
 extern std::vector<atlas> atlas_list;
@@ -1699,81 +1699,6 @@ void tracking_window::on_actionStrip_skull_for_T1w_image_triggered()
         QMessageBox::information(this,"Error","Load T1W image first");
 }
 
-
-void tracking_window::on_actionIndividual_vs_atlas_triggered()
-{
-    if(!handle->is_qsdr)
-    {
-        QMessageBox::information(this,"Error","Please open an atlas in STEP3: fiber tracking to run individual connectometry. See online documentation for details.");
-        return;
-    }
-    QString subject = QFileDialog::getOpenFileName(
-                           this,
-                           "Open subject Fib files",
-                           "",
-                           "Fib files (*fib.gz);;All files (*)");
-    if (subject.isEmpty())
-        return;
-    if(!cnt_result.individual_vs_atlas(handle,subject.toLocal8Bit().begin()))
-    {
-        QMessageBox::information(this,"Error",cnt_result.error_msg.c_str());
-        return;
-    }
-    initialize_tracking_index(handle->dir.index_data.size()-1);
-}
-
-void tracking_window::on_actionIndividual_vs_individual_triggered()
-{
-    if(!handle->is_qsdr)
-    {
-        QMessageBox::information(this,"Error","Please open an atlas or a connectometry db in STEP3: fiber tracking to run individual connectometry. See online documentation for details.");
-        return;
-    }
-    QMessageBox::information(this,"Specify files","Please assign the baseline FIB file and then the comparison FIB.");
-    QString subject1 = QFileDialog::getOpenFileName(
-                           this,
-                           "Open baseline Fib files",
-                           "",
-                           "Fib files (*fib.gz);;All files (*)");
-    if (subject1.isEmpty())
-        return;
-    QString subject2 = QFileDialog::getOpenFileName(
-                           this,
-                           "Open comparison Fib files",
-                           "",
-                           "Fib files (*fib.gz);;All files (*)");
-    if (subject2.isEmpty())
-        return;
-    if(!cnt_result.individual_vs_individual(handle,subject1.toLocal8Bit().begin(),subject2.toLocal8Bit().begin()))
-    {
-        QMessageBox::information(this,"Error",cnt_result.error_msg.c_str());
-        return;
-    }
-    initialize_tracking_index(handle->dir.index_data.size()-1);
-}
-
-void tracking_window::on_actionIndividual_vs_normal_population_triggered()
-{
-    if(!handle->db.has_db())
-    {
-        QMessageBox::information(this,"Error","Please open a connectometry db in STEP3: fiber tracking to run individual connectometry. See online documentation for details.");
-        return;
-    }
-    QString subject = QFileDialog::getOpenFileName(
-                           this,
-                           "Open subject Fib files",
-                           "",
-                           "Fib files (*fib.gz);;All files (*)");
-    if (subject.isEmpty())
-        return;
-    if(!cnt_result.individual_vs_db(handle,subject.toLocal8Bit().begin()))
-    {
-        QMessageBox::information(this,"Error",cnt_result.error_msg.c_str());
-        return;
-    }
-    initialize_tracking_index(handle->dir.index_data.size()-1);
-}
-
 void tracking_window::on_show_fiber_toggled(bool checked)
 {
     ui->show_fiber->setChecked(checked);
@@ -1814,3 +1739,14 @@ void tracking_window::on_actionLoad_Deep_Learning_Network_triggered()
 }
 
 
+
+void tracking_window::on_actionIndividual_Connectometry_triggered()
+{
+    if(!handle->db.has_db())
+    {
+        QMessageBox::information(this,"Error","Please open a connectometry db in STEP3: fiber tracking to run individual connectometry. See online documentation for details.");
+        return;
+    }
+    std::shared_ptr<individual_connectometry> indi(new individual_connectometry(this,*this));
+    indi->exec();
+}
