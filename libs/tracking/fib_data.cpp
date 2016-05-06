@@ -769,7 +769,17 @@ bool track_recognition::can_recognize(void)
     {
         std::string line;
         while(std::getline(in,line))
+        {
             track_list.push_back(line);
+            track_name.push_back(line);
+            std::string& name = track_name.back();
+            if(name.back() == 'L' && name[name.length()-2] == '_')
+                name = std::string("left ") + name.substr(0,name.length()-2);
+            if(name.back() == 'R' && name[name.length()-2] == '_')
+                name = std::string("right ") + name.substr(0,name.length()-2);
+            std::transform(name.begin(),name.end(),name.begin(),::tolower);
+            std::replace(name.begin(),name.end(),'_',' ');
+        }
         if(track_list.size() != cnn.output_size())
             return false;
         return true;

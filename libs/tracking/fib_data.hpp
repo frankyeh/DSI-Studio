@@ -178,6 +178,7 @@ public:
     std::string err_msg;
 public:
     std::vector<std::string> track_list;
+    std::vector<std::string> track_name;
     bool can_recognize(void);
 public:
     void clear(void);

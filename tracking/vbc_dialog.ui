@@ -1681,10 +1681,10 @@ subject</string>
                        <bool>true</bool>
                       </property>
                       <property name="text">
-                       <string>normalize SDF</string>
+                       <string>normalize SDF (unchecked in neurological diseases)</string>
                       </property>
                       <property name="checked">
-                       <bool>false</bool>
+                       <bool>true</bool>
                       </property>
                      </widget>
                     </item>
@@ -1792,7 +1792,7 @@ subject</string>
                      <item>
                       <widget class="QLabel" name="label_5">
                        <property name="text">
-                        <string>Seeding density per mm cubic</string>
+                        <string>Seeding density (count/mm3)</string>
                        </property>
                        <property name="wordWrap">
                         <bool>true</bool>

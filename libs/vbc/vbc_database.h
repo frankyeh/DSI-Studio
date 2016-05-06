@@ -64,6 +64,7 @@ public:
     std::vector<std::shared_ptr<TractModel> > greater_tracks;
     std::vector<std::shared_ptr<TractModel> > lesser_tracks;
     std::vector<std::shared_ptr<connectometry_result> > spm_maps;
+    std::string greater_tracks_result,lesser_tracks_result;
     void save_tracks_files(std::vector<std::string>&);
 public:// Individual analysis
     std::vector<std::vector<float> > individual_data;

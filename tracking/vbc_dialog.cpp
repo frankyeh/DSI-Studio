@@ -909,6 +909,13 @@ void vbc_dialog::calculate_FDR(void)
     show_report();
     show_dis_table();
     show_fdr_report();
+
+    if(vbc->progress == 100)
+    {
+        vbc->wait();// make sure that all threads done
+        timer->stop();
+        vbc->save_tracks_files(saved_file_name); // prepared track recognition results
+    }
     report.clear();
     if(!vbc->handle->report.empty())
         report = vbc->handle->report.c_str();
@@ -919,12 +926,12 @@ void vbc_dialog::calculate_FDR(void)
         {
             std::ostringstream out;
             out << " The connectometry analysis identified "
-                << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no ":"")
-                << "tracks with increased connectivity (FDR="
+                << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no track": vbc->greater_tracks_result.c_str())
+                << " with increased connectivity (FDR="
                 << vbc->fdr_greater[vbc->length_threshold] << ") "
                 << "and "
-                << (vbc->fdr_lesser[vbc->length_threshold]>0.5 || !vbc->has_lesser_result ? "no ":"")
-                << "tracks with decreased connectivity (FDR="
+                << (vbc->fdr_lesser[vbc->length_threshold]>0.5 || !vbc->has_lesser_result ? "no track": vbc->lesser_tracks_result.c_str())
+                << " with decreased connectivity (FDR="
                 << vbc->fdr_lesser[vbc->length_threshold] << ").";
             report += out.str().c_str();
         }
@@ -932,13 +939,13 @@ void vbc_dialog::calculate_FDR(void)
         {
             std::ostringstream out;
             out << " The connectometry analysis identified "
-                << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no ":"")
-                << "tracks with increased connectivity related to "
+                << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no track": vbc->greater_tracks_result.c_str())
+                << " with increased connectivity related to "
                 << ui->foi->currentText().toLocal8Bit().begin() << " (FDR="
                 << vbc->fdr_greater[vbc->length_threshold] << ") "
                 << "and "
-                << (vbc->fdr_lesser[vbc->length_threshold]>0.5 || !vbc->has_lesser_result ? "no ":"")
-                << "tracks with decreased connectivity related to "
+                << (vbc->fdr_lesser[vbc->length_threshold]>0.5 || !vbc->has_lesser_result ? "no track": vbc->lesser_tracks_result.c_str())
+                << " with decreased connectivity related to "
                 << ui->foi->currentText().toLocal8Bit().begin() << " (FDR="
                 << vbc->fdr_lesser[vbc->length_threshold] << ").";
             report += out.str().c_str();
@@ -947,12 +954,12 @@ void vbc_dialog::calculate_FDR(void)
         {
             std::ostringstream out;
             out << " The connectometry analysis identified "
-                << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no ":"")
-                << "tracks with increased connectivity in group 0 (FDR="
+                << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no track": vbc->greater_tracks_result.c_str())
+                << " with increased connectivity in group 0 (FDR="
                 << vbc->fdr_greater[vbc->length_threshold] << ") "
                 << "and "
-                << (vbc->fdr_lesser[vbc->length_threshold]>0.5 || !vbc->has_lesser_result ? "no ":"")
-                << "tracks with increased connectivity in group 1 (FDR="
+                << (vbc->fdr_lesser[vbc->length_threshold]>0.5 || !vbc->has_lesser_result ? "no track": vbc->lesser_tracks_result.c_str())
+                << " with increased connectivity in group 1 (FDR="
                 << vbc->fdr_lesser[vbc->length_threshold] << ").";
             report += out.str().c_str();
         }
@@ -961,10 +968,6 @@ void vbc_dialog::calculate_FDR(void)
 
     if(vbc->progress == 100)
     {
-        vbc->wait();// make sure that all threads done
-        timer->stop();
-        // save trk files
-        vbc->save_tracks_files(saved_file_name);
         // save report in text
         std::ofstream out((vbc->trk_file_names[0]+".report.txt").c_str());
         out << report.toLocal8Bit().begin() << std::endl;

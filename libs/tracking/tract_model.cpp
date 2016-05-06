@@ -1486,24 +1486,51 @@ bool TractModel::recognize(std::map<float,std::string,std::greater<float> >& res
         return false;
     if(!handle->can_map_to_mni())
         return false;
-    begin_prog("recognizing");
-    std::vector<float> accu_input;
-    for(unsigned int i = 0;check_prog(i,tract_data.size());++i)
+    std::vector<float> accu_input(track_network.cnn.output_size());
+    image::par_for(tract_data.size(),[&](int i)
     {
         std::vector<float> input;
         handle->get_profile(tract_data[i],input);
         track_network.cnn.predict(input);
         image::minus_constant(input,*std::min_element(input.begin(),input.end()));
         image::multiply_constant(input,1.0f/std::accumulate(input.begin(),input.end(),0.0f));
-        if(accu_input.empty())
-            accu_input = input;
-        else
-            image::add(accu_input,input);
-    }
+        image::add(accu_input,input);
+    });
     image::multiply_constant(accu_input,1.0f/std::accumulate(accu_input.begin(),accu_input.end(),0.0f));
     for(int i = 0;i < accu_input.size();++i)
-        result[accu_input[i]] = track_network.track_list[i];
+        result[accu_input[i]] = track_network.track_name[i];
     return true;
+}
+void TractModel::recognize_report(std::string& report)
+{
+    if(!track_network.can_recognize())
+        return;
+    if(!handle->can_map_to_mni())
+        return;
+    std::vector<int> recog_count(track_network.cnn.output_size());
+    image::par_for(tract_data.size(),[&](int i)
+    {
+        std::vector<float> input;
+        handle->get_profile(tract_data[i],input);
+        track_network.cnn.predict(input);
+        input[20] = -100;// suppress false tracks ID:20
+        ++recog_count[std::max_element(input.begin(),input.end())-input.begin()];
+    });
+    {
+        std::map<int,std::string,std::greater<int> > sorted_result;
+        unsigned int report_threshold = tract_data.size()/20; //5%
+        for(unsigned int i = 0;i < recog_count.size();++i)
+            if(recog_count[i] > report_threshold)
+                sorted_result[recog_count[i]] = track_network.track_name[i];
+        int n = 0;
+        for(auto& r : sorted_result)
+        {
+            if(!report.empty())
+                report += (n == sorted_result.size()-1 ? (sorted_result.size() == 2 ? " and ":", and ") : ", ");
+            report += r.second;
+            ++n;
+        }
+    }
 }
 
 void TractModel::get_report(unsigned int profile_dir,float band_width,const std::string& index_name,

@@ -313,6 +313,8 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
             out1 << trk_file_names[index] << ".greater.trk.gz";
             greater_tracks[index]->save_tracts_to_file(out1.str().c_str());
             saved_file_name.push_back(out1.str().c_str());
+            greater_tracks_result = "";
+            greater_tracks[index]->recognize_report(greater_tracks_result);
             has_greater_result = true;
         }
         else
@@ -357,6 +359,8 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
             out1 << trk_file_names[index] << ".lesser.trk.gz";
             lesser_tracks[index]->save_tracts_to_file(out1.str().c_str());
             saved_file_name.push_back(out1.str().c_str());
+            lesser_tracks_result = "";
+            lesser_tracks[index]->recognize_report(lesser_tracks_result);
             has_lesser_result = true;
         }
         else
@@ -425,6 +429,8 @@ void vbc_database::run_permutation(unsigned int thread_count,unsigned int permut
     spm_maps.clear();
     has_greater_result = true;
     has_lesser_result = true;
+    greater_tracks_result = "tracks";
+    lesser_tracks_result = "tracks";
     unsigned int num_subjects = (model->type == 2 ? individual_data.size():1);
     for(unsigned int index = 0;index < num_subjects;++index)
     {
