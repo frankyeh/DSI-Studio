@@ -1176,9 +1176,9 @@ void vbc_dialog::on_run_clicked()
         out << " Track trimming was conducted with " << vbc->track_trimming << " iterations.";
 
     if(vbc->output_resampling)
-        out << " All tracks generated from bootsrap resampling were included.";
+        out << " All tracks generated from bootstrap resampling were included.";
 
-    out << " A length threshold of " << ui->length_threshold->value() << " mm were used to select tracks.";
+    out << " A length threshold of " << ui->length_threshold->value() << " mm was used to select tracks.";
     out << " The seeding density was " <<
             ui->seeding_density->value() << " seed(s) per mm3.";
 
