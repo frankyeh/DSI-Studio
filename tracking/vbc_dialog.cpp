@@ -1069,7 +1069,7 @@ void vbc_dialog::on_run_clicked()
         vbc->individual_data_sd.resize(vbc->individual_data.size());
         for(unsigned int index = 0;index < vbc->individual_data.size();++index)
             vbc->individual_data_sd[index] = image::standard_deviation(vbc->individual_data[index].begin(),vbc->individual_data[index].end());
-        out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage 2015) was conducted to identify affected pathways in "
+        out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was conducted to identify affected pathways in "
             << vbc->individual_data.size() << " study patients.";
         out << " The diffusion data of the patients were compared with "
             << vbc->handle->db.num_subjects << " normal subjects, and percentile rank was calculated for each local connectome.";
@@ -1084,7 +1084,7 @@ void vbc_dialog::on_run_clicked()
     if(ui->rb_group_difference->isChecked())
     {
         vbc->tracking_threshold = (float)ui->percentage_dif->value()*0.01;
-        out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage 2015) was conducted to compare group differences in a total of "
+        out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was conducted to compare group differences in a total of "
             << vbc->model->subject_index.size() << " subjects."
             << " The group difference was quantified using percentage measurement (i.e. 2*(d1-d2)/(d1+d2) x %), where d1 and d2 are the group averages of the local connectome."
             << " A threshold of " << ui->percentage_dif->value() << "% difference was used to select local connectomes that had substantial difference.";
@@ -1096,7 +1096,7 @@ void vbc_dialog::on_run_clicked()
     if(ui->rb_paired_difference->isChecked())
     {
         vbc->tracking_threshold = (float)ui->percentage_dif->value()*0.01;
-        out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage 2015) was conducted to compare paired group differences in a total of "
+        out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was conducted to compare paired group differences in a total of "
             << vbc->model->subject_index.size() << " pairs."
             << " A threshold of " << ui->percentage_dif->value() << "% difference was used to select local connectomes that had substantial difference.";
         vbc->trk_file_names[0] += parameter_str;
@@ -1106,7 +1106,7 @@ void vbc_dialog::on_run_clicked()
     if(ui->rb_multiple_regression->isChecked())
     {
         vbc->tracking_threshold = ui->t_threshold->value()*0.01; // percentage
-        out << "\nDiffusion MRI connectometry (Yeh et al. Neuroimage 2015) was conducted in a total of "
+        out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was conducted in a total of "
             << vbc->model->subject_index.size() << " subjects using a multiple regression model considering ";
         for(unsigned int index = 0;index < ui->foi->count();++index)
         {
