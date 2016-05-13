@@ -30,7 +30,7 @@ Rendering/3D Perspective/3d_perspective/float:0.5:3:0.5:1/1.0
 Rendering/Background Color/bkg_color/color/-1
 Rendering/Axis/show_axis/Off:On/0
 Rendering/Axis Text/show_axis_text/Off:On/0
-Rendering/Anti-aliasing/anti_aliasing/Off:On/0
+Rendering/Anti-aliasing/anti_aliasing/Off:On/1
 Rendering/Line Smooth/line_smooth/Off:On/0
 Rendering/Point Smooth/point_smooth/Off:On/0
 Rendering/Polygon Smooth/poly_smooth/Off:On/0

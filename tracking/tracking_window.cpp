@@ -1543,7 +1543,6 @@ void tracking_window::on_rendering_efficiency_currentIndexChanged(int index)
     switch(index)
     {
     case 0:
-        set_data("anti_aliasing",0);
         set_data("line_smooth",0);
         set_data("point_smooth",0);
 
@@ -1553,7 +1552,6 @@ void tracking_window::on_rendering_efficiency_currentIndexChanged(int index)
 
         break;
     case 1:
-        set_data("anti_aliasing",0);
         set_data("line_smooth",0);
         set_data("point_smooth",0);
 
@@ -1562,7 +1560,6 @@ void tracking_window::on_rendering_efficiency_currentIndexChanged(int index)
         set_data("tract_tube_detail",1);
         break;
     case 2:
-        set_data("anti_aliasing",1);
         set_data("line_smooth",1);
         set_data("point_smooth",1);
 
