@@ -139,10 +139,12 @@ public:
         void Flip(unsigned int dimension);
         void shift(const image::vector<3,short>& dx);
 
-        template<class image_type,class trans_type>
-        void LoadFromBuffer(const image_type& from,const trans_type& trans)
+        template<class image_type>
+        void LoadFromBuffer(const image_type& from,const image::matrix<4,4,float>& trans)
         {
             std::vector<image::vector<3,short> > points;
+            float det = std::fabs(trans.det());
+            if(det < 8)
             for (image::pixel_index<3> index(geo);index < geo.size();++index)
             {
                 image::vector<3> p(index.begin());
@@ -151,6 +153,22 @@ public:
                 p.floor();
                 if (from.geometry().is_valid(p) && from.at(p[0],p[1],p[2]) != 0)
                     points.push_back(image::vector<3,short>(index.begin()));
+            }
+            else
+            {
+                image::matrix<4,4,float> inv(trans);
+                if(!inv.inv())
+                    return;
+                for (image::pixel_index<3> index(from.geometry());index < from.geometry().size();++index)
+                if(from[index.index()])
+                {
+                    image::vector<3> p(index.begin());
+                    p.to(inv);
+                    p += 0.5;
+                    p.floor();
+                    if (geo.is_valid(p))
+                        points.push_back(image::vector<3,short>(p[0],p[1],p[2]));
+                }
             }
             region.swap(points);
             std::sort(region.begin(),region.end());
