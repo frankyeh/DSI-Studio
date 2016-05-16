@@ -17,6 +17,7 @@
 #include "tract_cluster.hpp"
 #include "atlas.hpp"
 
+extern QColor ROIColor[15];
 extern std::vector<atlas> atlas_list;
 
 TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget *parent) :
@@ -197,6 +198,7 @@ void TractTableWidget::load_tracts(QStringList filenames)
         if(tract_models.back()->get_cluster_info().empty()) // not multiple cluster file
         {
             item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
+            tract_models.back()->set_color((int)ROIColor[index%16].rgb() | 0x00333333);
         }
         else
         {
@@ -303,7 +305,6 @@ void TractTableWidget::set_color(void)
     cur_tracking_window.set_data("tract_color_style",1);//manual assigned
     emit need_update();
 }
-extern QColor ROIColor[15];
 void TractTableWidget::assign_colors(void)
 {
     for(unsigned int index = 0;index < tract_models.size();++index)
