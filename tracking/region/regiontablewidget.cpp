@@ -156,7 +156,7 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
     {
         image::rgb_color c;
         c.from_hsl(((color_gen++)*1.1-std::floor((color_gen++)*1.1/6)*6)*3.14159265358979323846/3.0,0.75,0.7);
-        color = unsigned int(c);
+        color = (unsigned int)c;
     }
     regions.push_back(std::make_shared<ROIRegion>(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size));
     regions.back()->show_region.color = color;
