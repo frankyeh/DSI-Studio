@@ -151,14 +151,14 @@ void manual_alignment::load_param(void)
     ui->tz->setMinimum(b_lower.translocation[2]);
     ui->tz->setValue(data.get_arg().translocation[2]);
     // rotation
-    ui->rx->setMaximum(b_upper.rotation[0]);
-    ui->rx->setMinimum(b_lower.rotation[0]);
+    ui->rx->setMaximum(3.14159265358);
+    ui->rx->setMinimum(-3.14159265358);
     ui->rx->setValue(data.get_arg().rotation[0]);
-    ui->ry->setMaximum(b_upper.rotation[1]);
-    ui->ry->setMinimum(b_lower.rotation[1]);
+    ui->ry->setMaximum(3.14159265358);
+    ui->ry->setMinimum(-3.14159265358);
     ui->ry->setValue(data.get_arg().rotation[1]);
-    ui->rz->setMaximum(b_upper.rotation[2]);
-    ui->rz->setMinimum(b_lower.rotation[2]);
+    ui->rz->setMaximum(3.14159265358);
+    ui->rz->setMinimum(-3.14159265358);
     ui->rz->setValue(data.get_arg().rotation[2]);
     //scaling
     ui->sx->setMaximum(b_upper.scaling[0]);
