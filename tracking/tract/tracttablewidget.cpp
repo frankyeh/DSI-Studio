@@ -17,7 +17,6 @@
 #include "tract_cluster.hpp"
 #include "atlas.hpp"
 
-extern QColor ROIColor[15];
 extern std::vector<atlas> atlas_list;
 
 TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget *parent) :
@@ -198,7 +197,9 @@ void TractTableWidget::load_tracts(QStringList filenames)
         if(tract_models.back()->get_cluster_info().empty()) // not multiple cluster file
         {
             item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
-            tract_models.back()->set_color((int)ROIColor[index%16].rgb() | 0x00333333);
+            image::rgb_color c;
+            c.from_hsl(((color_gen++)*1.1-std::floor((color_gen++)*1.1/6)*6)*3.14159265358979323846/3.0,0.75,0.7);
+            tract_models.back()->set_color(unsigned int(c));
         }
         else
         {
@@ -308,7 +309,11 @@ void TractTableWidget::set_color(void)
 void TractTableWidget::assign_colors(void)
 {
     for(unsigned int index = 0;index < tract_models.size();++index)
-        tract_models[index]->set_color(ROIColor[index%16].rgb());
+    {
+        image::rgb_color c;
+        c.from_hsl(((color_gen++)*1.1-std::floor((color_gen++)*1.1/6)*6)*3.14159265358979323846/3.0,0.75,0.7);
+        tract_models[index]->set_color(unsigned int(c));
+    }
     cur_tracking_window.set_data("tract_color_style",1);//manual assigned
     emit need_update();
 }
@@ -533,9 +538,17 @@ void TractTableWidget::save_profile(void)
     //out.write("dimension",&*profile.geometry().begin(),1,3);
 }
 
-
-void TractTableWidget::deep_learning_save(void)
+void TractTableWidget::deep_learning_train(void)
 {
+    if(cnn.is_running)
+    {
+        QMessageBox msgBox;
+        msgBox.setText("Trainning result");
+        msgBox.setDetailedText(cnn.msg.c_str());
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.setDefaultButton(QMessageBox::Ok);
+        return;
+    }
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,
@@ -543,6 +556,27 @@ void TractTableWidget::deep_learning_save(void)
                 "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
+
+
+    cnn.clear();
+    begin_prog("reading");
+    for(unsigned int index = 0;check_prog(index,rowCount());++index)
+        if (item(index,0)->checkState() == Qt::Checked)
+        {
+            cnn.add_label(item(index,0)->text().toStdString());
+            for(unsigned int i = 0;i < tract_models[index]->get_tracts().size();++i)
+                cnn.add_sample(cur_tracking_window.handle.get(),index,tract_models[index]->get_tracts()[i]);
+        }
+
+    filename = QFileInfo(filename).absolutePath() + "/network_label.txt";
+    {
+        std::ofstream out(filename.toStdString().c_str());
+        std::copy(cnn.cnn_name.begin(),cnn.cnn_name.end(),std::ostream_iterator<std::string>(out,"\n"));
+    }
+    filename = QFileInfo(filename).absolutePath() + "/network_data.bin";
+    cnn.cnn_data.input = image::geometry<3>(64,80,3);
+    cnn.cnn_data.output = image::geometry<3>(1,1,rowCount());
+    cnn.cnn_data.save_to_file(filename.toStdString().c_str());
 
     // save atlas as a nifti file
     if(cur_tracking_window.handle->is_qsdr) //QSDR condition
@@ -600,30 +634,7 @@ void TractTableWidget::deep_learning_save(void)
             }
         }
     }
-    cnn.cnn.save_to_file(filename.toStdString().c_str());
-    filename = QFileInfo(filename).absolutePath() + "/network_label.txt";
-    {
-        std::ofstream out(filename.toStdString().c_str());
-        std::copy(cnn.cnn_name.begin(),cnn.cnn_name.end(),std::ostream_iterator<std::string>(out,"\n"));
-    }
-}
 
-void TractTableWidget::deep_learning_train(void)
-{
-    cnn.clear();
-    begin_prog("reading");
-    for(unsigned int index = 0;check_prog(index,rowCount());++index)
-        if (item(index,0)->checkState() == Qt::Checked)
-        {
-            cnn.add_label(item(index,0)->text().toStdString());
-            for(unsigned int i = 0;i < tract_models[index]->get_tracts().size();++i)
-                cnn.add_sample(cur_tracking_window.handle.get(),index,tract_models[index]->get_tracts()[i],0/*20-fold cv*/);
-        }
-
-    if(!cnn.train())
-    {
-        QMessageBox::information(this,"Error",cnn.err_msg.c_str(),0);
-    }
 }
 void TractTableWidget::recog_tracks(void)
 {

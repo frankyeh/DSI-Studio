@@ -318,7 +318,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionSave_Enpoints_In_MNI_Space,SIGNAL(triggered()),tractWidget,SLOT(save_end_point_in_mni()));
         connect(ui->actionSave_Profile,SIGNAL(triggered()),tractWidget,SLOT(save_profile()));
         connect(ui->actionDeep_Learning_Train,SIGNAL(triggered()),tractWidget,SLOT(deep_learning_train()));
-        connect(ui->actionDeep_Learning_Save,SIGNAL(triggered()),tractWidget,SLOT(deep_learning_save()));
         connect(ui->actionStatistics,SIGNAL(triggered()),tractWidget,SLOT(show_tracts_statistics()));
         connect(ui->actionRecognize_Current_Tract,SIGNAL(triggered()),tractWidget,SLOT(recog_tracks()));
 

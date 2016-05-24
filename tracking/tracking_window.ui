@@ -1049,18 +1049,11 @@
      <property name="title">
       <string>Clustering</string>
      </property>
-     <widget class="QMenu" name="menuDeep_learning">
-      <property name="title">
-       <string>Deep learning</string>
-      </property>
-      <addaction name="actionDeep_Learning_Train"/>
-      <addaction name="actionDeep_Learning_Save"/>
-     </widget>
      <addaction name="actionOpen_Cluster_Labels"/>
      <addaction name="actionK_means"/>
      <addaction name="actionEM"/>
      <addaction name="actionHierarchical"/>
-     <addaction name="menuDeep_learning"/>
+     <addaction name="actionDeep_Learning_Train"/>
     </widget>
     <widget class="QMenu" name="menuExport_Tract_Density">
      <property name="title">
@@ -3222,7 +3215,7 @@ Tracking</string>
   </action>
   <action name="actionDeep_Learning_Train">
    <property name="text">
-    <string>Train</string>
+    <string>CNN</string>
    </property>
   </action>
   <action name="actionDeep_Learning_Save">

@@ -18,13 +18,6 @@
 extern std::vector<atlas> atlas_list;
 extern fa_template fa_template_imp;
 
-const unsigned int color_n = 15;
-QColor ROIColor[color_n] =
-{
-    Qt::red, Qt::green, Qt::blue, Qt::yellow, Qt::magenta, Qt::cyan,  Qt::gray,
-    Qt::darkRed,Qt::darkGreen, Qt::darkBlue, Qt::darkYellow,  Qt::darkMagenta, Qt::darkCyan,
-    Qt::darkGray, Qt::lightGray
-};
 
 void split(std::vector<std::string>& list,const std::string& input, const std::string& regex) {
     // passing -1 as the submatch index parameter performs splitting
@@ -161,14 +154,9 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
 {
     if(color == 0x00FFFFFF || !color)
     {
-        std::vector<unsigned char> color_count(color_n);
-        for(unsigned int index = 0;index < regions.size();++index)
-        {
-            for(unsigned int i = 0;i < color_n;++i)
-                if(regions[index]->show_region.color.color == ((int)ROIColor[i].rgb() | 0x00333333))
-                    ++color_count[i];
-        }
-        color = 0x00333333 | ROIColor[std::min_element(color_count.begin(),color_count.end())-color_count.begin()].rgb();
+        image::rgb_color c;
+        c.from_hsl(((color_gen++)*1.1-std::floor((color_gen++)*1.1/6)*6)*3.14159265358979323846/3.0,0.75,0.7);
+        color = unsigned int(c);
     }
     regions.push_back(std::make_shared<ROIRegion>(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size));
     regions.back()->show_region.color = color;

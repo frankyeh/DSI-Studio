@@ -170,12 +170,11 @@ public:
     image::thread thread;
 public:
     image::ml::network cnn;
-    std::vector<std::vector<float> > cnn_test_data;
-    std::vector<int> cnn_test_label;
-    std::vector<std::vector<float> > cnn_data;
-    std::vector<int> cnn_label;
+    image::ml::network_data<float,unsigned char> cnn_data;
+
     std::vector<std::string> cnn_name;
-    std::string err_msg;
+    std::string err_msg,msg;
+    bool is_running = false;
 public:
     std::vector<std::string> track_list;
     std::vector<std::string> track_name;
@@ -183,8 +182,7 @@ public:
 public:
     void clear(void);
     void add_label(const std::string& name){cnn_name.push_back(name);}
-    void add_sample(fib_data* handle,int index,const std::vector<float>& tracks,int cv_fold);
-    bool train(void);
+    void add_sample(fib_data* handle,unsigned char index,const std::vector<float>& tracks);
 };
 
 #endif//FIB_DATA_HPP

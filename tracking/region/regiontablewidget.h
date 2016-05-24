@@ -5,6 +5,7 @@
 #include <QComboBox>
 #include <vector>
 #include "Regions.h"
+#include "image/image.hpp"
 
 class ThreadData;
 class tracking_window;
@@ -43,6 +44,7 @@ signals:
     void need_update(void);
 public:
     std::vector<std::shared_ptr<ROIRegion> > regions;
+    int color_gen = 0;
 public:
     explicit RegionTableWidget(tracking_window& cur_tracking_window,QWidget *parent = 0);
     ~RegionTableWidget();

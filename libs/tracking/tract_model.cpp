@@ -1486,7 +1486,7 @@ bool TractModel::recognize(std::map<float,std::string,std::greater<float> >& res
         return false;
     if(!handle->can_map_to_mni())
         return false;
-    std::vector<float> accu_input(track_network.cnn.output_size());
+    std::vector<float> accu_input(track_network.cnn.get_output_size());
     image::par_for(tract_data.size(),[&](int i)
     {
         std::vector<float> input;
@@ -1507,7 +1507,7 @@ void TractModel::recognize_report(std::string& report)
         return;
     if(!handle->can_map_to_mni())
         return;
-    std::vector<int> recog_count(track_network.cnn.output_size());
+    std::vector<int> recog_count(track_network.cnn.get_output_size());
     image::par_for(tract_data.size(),[&](int i)
     {
         std::vector<float> input;

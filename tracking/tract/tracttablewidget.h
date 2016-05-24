@@ -25,7 +25,7 @@ private:
     QTimer *timer;
 private:
     track_recognition cnn;
-
+    int color_gen = 0;
 public:
     unsigned int tract_serial;
     std::vector<ThreadData*> thread_data;
@@ -76,7 +76,6 @@ public slots:
     void save_end_point_in_mni(void);
     void save_profile(void);
     void deep_learning_train(void);
-    void deep_learning_save(void);
     void merge_all(void);
     void copy_track(void);
     void separate_deleted_track(void);

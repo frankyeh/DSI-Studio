@@ -780,7 +780,7 @@ bool track_recognition::can_recognize(void)
             std::transform(name.begin(),name.end(),name.begin(),::tolower);
             std::replace(name.begin(),name.end(),'_',' ');
         }
-        if(track_list.size() != cnn.output_size())
+        if(track_list.size() != cnn.get_output_size())
             return false;
         return true;
     }
@@ -790,83 +790,17 @@ bool track_recognition::can_recognize(void)
 
 void track_recognition::clear(void)
 {
-    cnn_test_label.clear();
     cnn_name.clear();
-    cnn_test_data.clear();
     cnn_data.clear();
-    cnn_label.clear();
     thread.clear();
 }
 
 
 
-void track_recognition::add_sample(fib_data* handle,int index,const std::vector<float>& tracks,int cv_fold)
+void track_recognition::add_sample(fib_data* handle,unsigned char index,const std::vector<float>& tracks)
 {
-    if(cv_fold && cnn_test_data.size()*cv_fold < cnn_data.size())
-    {
-        cnn_test_data.push_back(std::vector<float>());
-        handle->get_profile(tracks,cnn_test_data.back());
-        cnn_test_label.push_back(index);
-    }
-    else
-    {
-        int insert_place = cnn_data.empty() ? 0:dist(cnn_data.size());
-        cnn_data.insert(cnn_data.begin()+insert_place,std::vector<float>());
-        handle->get_profile(tracks,cnn_data[insert_place]);
-        cnn_label.insert(cnn_label.begin()+insert_place,index);
-    }
-}
-
-class timer
-{
- public:
-    timer():  t1(std::chrono::high_resolution_clock::now()){};
-    double elapsed(){return std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - t1).count();}
-    void restart(){t1 = std::chrono::high_resolution_clock::now();}
-    void start(){t1 = std::chrono::high_resolution_clock::now();}
-    void stop(){t2 = std::chrono::high_resolution_clock::now();}
-    double total(){stop();return std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();}
-    ~timer(){}
- private:
-    std::chrono::high_resolution_clock::time_point t1, t2;
-} t;
-
-bool track_recognition::train(void)
-{
-    try{
-        cnn.reset();
-        cnn << "64,80,3|conv,tanh,3|62,78,26|avg_pooling,tanh,2|31,39,26|full,tanh|1,1,120|full,tanh"
-            << image::geometry<3>(1,1,cnn_name.size());
-    }
-    catch(std::runtime_error error)
-    {
-        err_msg = error.what();
-        return false;
-    }
-
-    thread.run([this]
-    {
-        auto on_enumerate_epoch = [this]()
-        {
-            std::cout << "time:" << t.elapsed() << std::endl;
-            if(!cnn_test_data.empty())
-            {
-                int num_success(0);
-                int num_total(0);
-                std::vector<int> result;
-                cnn.test(cnn_test_data,result);
-                for (int i = 0; i < cnn_test_data.size(); i++)
-                {
-                    if (result[i] == cnn_test_label[i])
-                        num_success++;
-                    num_total++;
-                }
-                std::cout << "accuracy:" << num_success * 100.0 / num_total << "% (" << num_success << "/" << num_total << ")" << std::endl;
-            }
-            t.restart();
-        };
-        t.start();
-        cnn.train(cnn_data,cnn_label, 20,thread.terminated, on_enumerate_epoch,0.001);
-    });
-    return true;
+    int insert_place = cnn_data.data.empty() ? 0:dist(cnn_data.data.size());
+    cnn_data.data.insert(cnn_data.data.begin()+insert_place,std::vector<float>());
+    handle->get_profile(tracks,cnn_data.data[insert_place]);
+    cnn_data.data_label.insert(cnn_data.data_label.begin()+insert_place,index);
 }
