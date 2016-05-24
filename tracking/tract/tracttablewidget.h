@@ -25,7 +25,7 @@ private:
     QTimer *timer;
 private:
     track_recognition cnn;
-    int color_gen = 0;
+    int color_gen = 10;
 public:
     unsigned int tract_serial;
     std::vector<ThreadData*> thread_data;
