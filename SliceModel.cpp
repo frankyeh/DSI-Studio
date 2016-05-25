@@ -1,5 +1,7 @@
 // ---------------------------------------------------------------------------
 #include <string>
+#include <QFileInfo>
+#include <QDir>
 #include "SliceModel.h"
 #include "prog_interface_static_link.h"
 #include "fib_data.hpp"
@@ -82,6 +84,7 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
     center_point = slice.center_point;
     // QSDR loaded, use MNI transformation instead
     bool has_transform = false;
+    name = QFileInfo(files[0].c_str()).completeBaseName().toStdString();
     if(is_qsdr && files.size() == 1 && nifti.load_from_file(files[0]))
     {
         loadLPS(nifti);
@@ -104,7 +107,14 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
                 bruker.get_voxel_size(voxel_size.begin());
                 bruker.get_image().swap(source_images);
                 init();
-
+                QDir d = QFileInfo(files[0].c_str()).dir();
+                if(d.cdUp() && d.cdUp())
+                {
+                    QString method_file_name = d.absolutePath()+ "/method";
+                    image::io::bruker_info method;
+                    if(method.load_from_file(method_file_name.toStdString().c_str()))
+                        name = method["Method"];
+                }
             }
             else
             {

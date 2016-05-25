@@ -118,6 +118,7 @@ public:
     image::matrix<4,4,float> transform,invT;
     image::basic_image<float,3> roi_image;
     float* roi_image_buf;
+    std::string name;
 public:
     std::auto_ptr<std::future<void> > thread;
     image::const_pointer_image<float,3> from;

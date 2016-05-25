@@ -840,7 +840,7 @@ void tracking_window::on_actionInsert_T1_T2_triggered()
     if( filenames.isEmpty())
         return;
     if(glWidget->addSlices(filenames,renderWidget->getData("slice_smoothing").toBool()))
-        add_slice_name(QFileInfo(filenames[0]).baseName());
+        add_slice_name(glWidget->other_slices.back()->name.c_str());
 }
 
 
