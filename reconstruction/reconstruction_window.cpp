@@ -45,7 +45,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->setupUi(this);
     if(!load_src(0))
         throw std::runtime_error("Cannot load src file");
-
+    ui->ThreadCount->setMaximum(std::thread::hardware_concurrency());
     ui->toolBox->setCurrentIndex(1);
     ui->graphicsView->setScene(&scene);
     ui->view_source->setScene(&source);
