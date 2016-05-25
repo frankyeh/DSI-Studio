@@ -672,6 +672,7 @@ void TractTableWidget::saveTransformedTracts(const float* transform)
         std::vector<std::vector<float> > tract_data(tract_models[currentRow()]->get_tracts());
         begin_prog("converting coordinates");
         for(unsigned int i = 0;check_prog(i,tract_data.size());++i)
+        {
             for(unsigned int j = 0;j < tract_data[i].size();j += 3)
             {
                 image::vector<3> v(&(tract_data[i][j]));
@@ -680,6 +681,39 @@ void TractTableWidget::saveTransformedTracts(const float* transform)
                 tract_data[i][j+1] = v[1];
                 tract_data[i][j+2] = v[2];
             }
+            std::vector<float> smooth_track(tract_data[i]);
+            for(unsigned int j = 0;j < tract_data[i].size();j += 3)
+            {
+                if(j > 2)
+                {
+                    smooth_track[j] += tract_data[i][j-3];
+                    smooth_track[j+1] += tract_data[i][j-2];
+                    smooth_track[j+2] += tract_data[i][j-1];
+                }
+                else
+                {
+                    smooth_track[j] += tract_data[i][j];
+                    smooth_track[j+1] += tract_data[i][j+1];
+                    smooth_track[j+2] += tract_data[i][j+2];
+                }
+
+                if(j+3 < smooth_track.size())
+                {
+                    smooth_track[j] += tract_data[i][j+3];
+                    smooth_track[j+1] += tract_data[i][j+4];
+                    smooth_track[j+2] += tract_data[i][j+5];
+                }
+                else
+                {
+                    smooth_track[j] += tract_data[i][j];
+                    smooth_track[j+1] += tract_data[i][j+1];
+                    smooth_track[j+2] += tract_data[i][j+2];
+                }
+            }
+            image::multiply_constant(smooth_track,1.0/3.0);
+            tract_data[i].swap(smooth_track);
+
+        }
         if(!prog_aborted())
         {
             tract_models[currentRow()]->get_tracts().swap(tract_data);
