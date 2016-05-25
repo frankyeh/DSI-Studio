@@ -248,78 +248,62 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
     image::io::bruker_2dseq bruker_header;
     if(!bruker_header.load_from_file(file_name))
         return false;
-    image::basic_image<float,4> buf_image;
-    float vs[4]={0};
+    float vs[3];
+    bruker_header.get_voxel_size(vs);
     image::io::bruker_info method_file;
+    QString method_name = QFileInfo(QFileInfo(QFileInfo(file_name).
+            absolutePath()).absolutePath()).absolutePath();
+
+    method_name += "/method";
+    if(!method_file.load_from_file(method_name.toLocal8Bit().begin()))
     {
-        bruker_header >> buf_image;
-        bruker_header.get_voxel_size(vs);
-        QString method_name = QFileInfo(QFileInfo(QFileInfo(file_name).
-                absolutePath()).absolutePath()).absolutePath();
-        method_name += "/method";
-        if(method_file.load_from_file(method_name.toLocal8Bit().begin()))
-        {
-            std::vector<float> bvalues;
-            std::istringstream bvalue(method_file["PVM_DwEffBval"]);
-            std::copy(std::istream_iterator<float>(bvalue),
-                      std::istream_iterator<float>(),
-                      std::back_inserter(bvalues));
-            if(buf_image.geometry()[3] == 1 && !bvalues.empty())
-            {
-                short dim[4];
-                std::copy(buf_image.geometry().begin(),
-                          buf_image.geometry().begin()+4,dim);
-                dim[2] /= bvalues.size();
-                vs[2] *= bvalues.size();
-                dim[3] = bvalues.size();
-                buf_image.resize(image::geometry<4>(dim));
-            }
-            if(vs[2] == 0.0)
-            {
-                std::istringstream slice_thick(method_file["PVM_SliceThick"]);
-                slice_thick >> vs[2];
-                if(vs[2] == 0.0)
-                        vs[2] = vs[0];
-            }
-            if(bvalues.empty())
-            {
-                QMessageBox::information(0,"error",QString("Cannot find bvalue in method file at ") + method_name,0);
-                return false;
-            }
-        }
-        else
-        {
-            QMessageBox::information(0,"error",QString("Cannot find method file at ") + method_name,0);
-            return false;
-        }
-    }
-    if(dwi_files.size() && dwi_files.back()->image.geometry() !=
-            image::geometry<3>(buf_image.width(),buf_image.height(),buf_image.depth()))
+        QMessageBox::information(0,"error",QString("Cannot find method file at ") + method_name,0);
         return false;
-    image::lower_threshold(buf_image,0.0);
-    image::normalize(buf_image,32767.0);
-    std::istringstream bvalue(method_file["PVM_DwEffBval"]);
+    }
+
+    if(!method_file.has_field("PVM_DwEffBval"))
+    {
+        QMessageBox::information(0,"error",QString("Cannot find bvalue in method file at ") + method_name,0);
+        return false;
+    }
+    std::vector<float> bvalues;
+    {
+        std::istringstream bvalue(method_file["PVM_DwEffBval"]);
+        std::copy(std::istream_iterator<float>(bvalue),std::istream_iterator<float>(),std::back_inserter(bvalues));
+    }
+    image::geometry<3> dim(bruker_header.get_image().geometry());
+    dim[2] /= bvalues.size();
+
+    if(dwi_files.size() && dwi_files.back()->image.geometry() != dim)
+        return false;
+    image::lower_threshold(bruker_header.get_image(),0.0);
+    image::normalize(bruker_header.get_image(),32767.0);
+
     std::istringstream bvec(method_file["PVM_DwGradVec"]);
-    for (unsigned int index = 0;index < buf_image.geometry()[3];++index)
+    for (unsigned int index = 0;index < bvalues.size();++index)
     {
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
         if(index == 0)
             get_report_from_bruker(method_file,new_file->report);
-        new_file->image.resize(image::geometry<3>(buf_image.width(),buf_image.height(),buf_image.depth()));
-
-        std::copy(buf_image.begin()+index*new_file->image.size(),
-              buf_image.begin()+(index+1)*new_file->image.size(),
-              new_file->image.begin());
+        new_file->image.resize(dim);
+        std::copy(bruker_header.get_image().begin()+index*new_file->image.size(),
+                  bruker_header.get_image().begin()+(index+1)*new_file->image.size(),
+                    new_file->image.begin());
         new_file->file_name = file_name;
         std::ostringstream out;
         out << index;
         new_file->file_name += out.str();
         std::copy(vs,vs+3,new_file->voxel_size);
         dwi_files.push_back(new_file);
-        bvalue >> dwi_files.back()->bvalue;
+        dwi_files.back()->bvalue = bvalues[index];
+        if(bruker_header.is_2d())
         bvec >> dwi_files.back()->bvec[0]
              >> dwi_files.back()->bvec[1]
              >> dwi_files.back()->bvec[2];
+        else
+            bvec >> dwi_files.back()->bvec[1]
+                 >> dwi_files.back()->bvec[0]
+                 >> dwi_files.back()->bvec[2];
         dwi_files[index]->bvec.normalize();
     }
     return true;

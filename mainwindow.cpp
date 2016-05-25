@@ -363,7 +363,7 @@ void MainWindow::on_FiberTracking_clicked()
             QMessageBox::information(this,"DSI Studio","Invalid 2dseq format",0);
             return;
         }
-        bruker_header >> I;
+        bruker_header.get_image().swap(I);
         bruker_header.get_voxel_size(vs);
     }
     if(!I.empty())

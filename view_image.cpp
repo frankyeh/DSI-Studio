@@ -142,7 +142,7 @@ bool view_image::open(QString file_name)
             else
             if(seq.load_from_file(file_name.toLocal8Bit().begin()))
             {
-                seq >> data;
+                seq.get_image().swap(data);
                 seq.get_voxel_size(vs);
             }
     check_prog(0,0);

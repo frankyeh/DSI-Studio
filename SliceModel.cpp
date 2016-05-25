@@ -100,7 +100,12 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
         {
             image::io::bruker_2dseq bruker;
             if(files.size() == 1 && bruker.load_from_file(files[0].c_str()))
-                load(bruker);
+            {
+                bruker.get_voxel_size(voxel_size.begin());
+                bruker.get_image().swap(source_images);
+                init();
+
+            }
             else
             {
                 image::io::volume volume;

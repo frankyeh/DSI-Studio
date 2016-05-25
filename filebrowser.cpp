@@ -360,7 +360,9 @@ void FileBrowser::preview_image(QString file_name)
     {
         image::io::bruker_2dseq header;
         if(header.load_from_file(file_name.toLocal8Bit().begin()))
-            header >> preview_data;
+        {
+            header.get_image().swap(preview_data);
+        }
         preview_loaded = true;
         return;
     }
