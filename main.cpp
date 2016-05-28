@@ -123,7 +123,7 @@ int main(int ac, char *av[])
     // load template
     if(!fa_template_imp.load_from_file())
     {
-        QMessageBox::information(0,"Error","Cannot find HCP842_QA.nii.gz in file directory",0);
+        QMessageBox::information(0,"Error",QString("Cannot find HCP842_QA.nii.gz in ") + QCoreApplication::applicationDirPath(),0);
         return false;
     }
     load_atlas();
