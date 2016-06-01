@@ -198,7 +198,7 @@ void TractTableWidget::load_tracts(QStringList filenames)
         {
             item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
             image::rgb_color c;
-            c.from_hsl(((color_gen++)*1.1-std::floor((color_gen++)*1.1/6)*6)*3.14159265358979323846/3.0,0.75,0.7);
+            c.from_hsl(((color_gen++)*1.1-std::floor((color_gen++)*1.1/6)*6)*3.14159265358979323846/3.0,0.85,0.7);
             tract_models.back()->set_color(c.color);
         }
         else
@@ -311,7 +311,7 @@ void TractTableWidget::assign_colors(void)
     for(unsigned int index = 0;index < tract_models.size();++index)
     {
         image::rgb_color c;
-        c.from_hsl(((color_gen++)*1.1-std::floor((color_gen++)*1.1/6)*6)*3.14159265358979323846/3.0,0.75,0.7);
+        c.from_hsl(((color_gen++)*1.1-std::floor((color_gen++)*1.1/6)*6)*3.14159265358979323846/3.0,0.85,0.7);
         tract_models[index]->set_color(c.color);
     }
     cur_tracking_window.set_data("tract_color_style",1);//manual assigned

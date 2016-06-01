@@ -1775,10 +1775,10 @@ void GLWidget::get3View(QImage& I,unsigned int type)
     set_view(2);
     paintGL();
     QImage image2 = grabFrameBuffer();
-    QImage image3 = cur_tracking_window.scene.view_image.scaledToWidth(image0.width()).convertToFormat(QImage::Format_ARGB32);
+    QImage image3 = cur_tracking_window.scene.view_image.scaledToWidth(image0.width()).convertToFormat(QImage::Format_RGB32);
     if(type == 0)
     {
-        QImage all(image0.width()*2,image0.height()*2,QImage::Format_ARGB32);
+        QImage all(image0.width()*2,image0.height()*2,QImage::Format_RGB32);
         QPainter painter(&all);
         painter.drawImage(0,0,image0);
         painter.drawImage(image0.width(),0,image1);
@@ -1788,7 +1788,7 @@ void GLWidget::get3View(QImage& I,unsigned int type)
     }
     if(type == 1) // horizontal
     {
-        QImage all(image0.width()*3,image0.height(),QImage::Format_ARGB32);
+        QImage all(image0.width()*3,image0.height(),QImage::Format_RGB32);
         QPainter painter(&all);
         painter.drawImage(0,0,image0);
         painter.drawImage(image0.width(),0,image1);
@@ -1797,7 +1797,7 @@ void GLWidget::get3View(QImage& I,unsigned int type)
     }
     if(type == 2)
     {
-        QImage all(image0.width(),image0.height()*3,QImage::Format_ARGB32);
+        QImage all(image0.width(),image0.height()*3,QImage::Format_RGB32);
         QPainter painter(&all);
         painter.drawImage(0,0,image0);
         painter.drawImage(0,image0.height(),image1);
@@ -2026,7 +2026,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         QImage left = grabFrameBuffer();
         rotate_angle(-angle/2.0, 0.0, 1.0, 0.0);
         QImage right = grabFrameBuffer();
-        QImage all(left.width()*2,left.height(),QImage::Format_ARGB32);
+        QImage all(left.width()*2,left.height(),QImage::Format_RGB32);
         QPainter painter(&all);
         painter.drawImage(0,0,left);
         painter.drawImage(left.width(),0,right);
