@@ -1068,7 +1068,13 @@ void vbc_dialog::on_run_clicked()
         vbc->individual_data = individual_data;
         vbc->individual_data_sd.resize(vbc->individual_data.size());
         for(unsigned int index = 0;index < vbc->individual_data.size();++index)
+        {
             vbc->individual_data_sd[index] = image::standard_deviation(vbc->individual_data[index].begin(),vbc->individual_data[index].end());
+            if(vbc->individual_data_sd[index] == 0.0)
+                vbc->individual_data_sd[index] = 1.0;
+            else
+                vbc->individual_data_sd[index] = 1.0/vbc->individual_data_sd[index];
+        }
         out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was conducted to identify affected pathways in "
             << vbc->individual_data.size() << " study patients.";
         out << " The diffusion data of the patients were compared with "

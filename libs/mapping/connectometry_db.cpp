@@ -21,6 +21,8 @@ void connectometry_db::read_db(fib_data* handle_)
         subject_qa_sd.push_back(image::standard_deviation(buf,buf+col*row));
         if(subject_qa_sd.back() == 0.0)
             subject_qa_sd.back() = 1.0;
+        else
+            subject_qa_sd.back() = 1.0/subject_qa_sd.back();
     }
     num_subjects = (unsigned int)subject_qa.size();
     subject_names.resize(num_subjects);
@@ -417,7 +419,7 @@ void connectometry_db::get_data_at(unsigned int index,unsigned int fib_index,std
     data.resize(num_subjects);
     if(normalize_qa)
         for(unsigned int index = 0;index < num_subjects;++index)
-            data[index] = subject_qa[index][s_index+fib_offset]/subject_qa_sd[index];
+            data[index] = subject_qa[index][s_index+fib_offset]*subject_qa_sd[index];
     else
     for(unsigned int index = 0;index < num_subjects;++index)
         data[index] = subject_qa[index][s_index+fib_offset];
@@ -542,7 +544,7 @@ void calculate_spm(std::shared_ptr<fib_data> handle,connectometry_result& data,s
             unsigned int pos = s_index + fib_offset;
             if(normalize_qa)
                 for(unsigned int index = 0;index < population.size();++index)
-                    population[index] = handle->db.subject_qa[index][pos]/handle->db.subject_qa_sd[index];
+                    population[index] = handle->db.subject_qa[index][pos]*handle->db.subject_qa_sd[index];
             else
                 for(unsigned int index = 0;index < population.size();++index)
                     population[index] = handle->db.subject_qa[index][pos];
@@ -976,7 +978,7 @@ double stat_model::operator()(const std::vector<double>& original_population,uns
         break;
     case 2: // individual
         {
-            float value = (individual_data_sd == 1.0) ? individual_data[pos]:individual_data[pos]/individual_data_sd;
+            float value = (individual_data_sd == 1.0) ? individual_data[pos]:individual_data[pos]*individual_data_sd;
             if(value == 0.0)
                 return 0.0;
             int rank = 0;
