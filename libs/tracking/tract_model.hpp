@@ -37,6 +37,7 @@ public:
         void delete_tracts(const std::vector<unsigned int>& tracts_to_delete);
         void select_tracts(const std::vector<unsigned int>& tracts_to_select);
         void delete_repeated(void);
+        void delete_by_length(float length);
 
 public:
         TractModel(std::shared_ptr<fib_data> handle_);

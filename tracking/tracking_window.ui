@@ -1115,6 +1115,7 @@
     <addaction name="separator"/>
     <addaction name="actionDeleteTract"/>
     <addaction name="actionDeleteTractAll"/>
+    <addaction name="actionDelete_By_Length"/>
     <addaction name="actionRemove_Repeated_Tracks"/>
     <addaction name="actionSeparate_Deleted"/>
     <addaction name="separator"/>
@@ -3263,6 +3264,15 @@ Tracking</string>
   <action name="actionIndividual_Connectometry">
    <property name="text">
     <string>Individual Connectometry...</string>
+   </property>
+  </action>
+  <action name="actionDelete_By_Length">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Delete Short Tracks</string>
    </property>
   </action>
  </widget>

@@ -934,7 +934,24 @@ void TractModel::delete_repeated(void)
             track_to_delete.push_back(i);
     delete_tracts(track_to_delete);
 }
-
+//---------------------------------------------------------------------------
+void TractModel::delete_by_length(float length)
+{
+    std::vector<unsigned int> track_to_delete;
+    for(unsigned int i = 0;i < tract_data.size();++i)
+    {
+        if(tract_data[i].size() <= 6)
+        {
+            track_to_delete.push_back(i);
+            continue;
+        }
+        image::vector<3> v1(&tract_data[i][0]),v2(&tract_data[i][3]);
+        v1 -= v2;
+        if((((tract_data[i].size()/3)-1)*v1.length()) < length)
+            track_to_delete.push_back(i);
+    }
+    delete_tracts(track_to_delete);
+}
 //---------------------------------------------------------------------------
 void TractModel::cut(float select_angle,const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
                      const image::vector<3,float>& from_pos)

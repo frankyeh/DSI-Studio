@@ -1024,6 +1024,27 @@ void TractTableWidget::delete_repeated(void)
     emit need_update();
 }
 
+
+void TractTableWidget::delete_by_length(void)
+{
+    begin_prog("filtering tracks");
+
+    float threshold = 60;
+    bool ok;
+    threshold = QInputDialog::getDouble(this,
+        "DSI Studio","Length threshold in mm:", threshold,0,500,1,&ok);
+    if (!ok)
+        return;
+
+    for(int i = 0;check_prog(i,tract_models.size());++i)
+    {
+        if(item(i,0)->checkState() == Qt::Checked)
+            tract_models[i]->delete_by_length(threshold);
+        item(i,1)->setText(QString::number(tract_models[i]->get_visible_track_count()));
+        item(i,2)->setText(QString::number(tract_models[i]->get_deleted_track_count()));
+    }
+    emit need_update();
+}
 void TractTableWidget::edit_tracts(void)
 {
     for(unsigned int index = 0;index < tract_models.size();++index)
