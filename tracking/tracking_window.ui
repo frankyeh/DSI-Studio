@@ -1073,6 +1073,7 @@
      </property>
      <addaction name="actionSet_Color"/>
      <addaction name="actionOpen_Colors"/>
+     <addaction name="actionOpen_Tract_Property"/>
      <addaction name="actionSave_Tracts_Colors_As"/>
     </widget>
     <widget class="QMenu" name="menuSave_Tracts">
@@ -3273,6 +3274,15 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Delete Short Tracks</string>
+   </property>
+  </action>
+  <action name="actionOpen_Tract_Property">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Open Tract Value...</string>
    </property>
   </action>
  </widget>

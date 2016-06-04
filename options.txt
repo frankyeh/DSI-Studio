@@ -36,13 +36,11 @@ Rendering/Point Smooth/point_smooth/Off:On/0
 Rendering/Polygon Smooth/poly_smooth/Off:On/0
 Slice/Opacity/slice_alpha/float:0:1:0.1:2/1
 Slice/Mag Filter/slice_mag_filter/NEAREST:LINEAR/1
+Slice/Smoothing/slice_smoothing/Off:On/0
 Slice/Blend Func1/slice_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
 Slice/Blend Func2/slice_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
-Slice/Smoothing/slice_smoothing/Off:On/0
 Tract/Opacity/tract_alpha/float:0:1:0.1:2/1
 Tract/Transparent Style/tract_alpha_style/Sketch:Classic/0
-Tract/Blend Func1/tract_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
-Tract/Blend Func2/tract_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
 Tract/Style/tract_style/Line:Tube:End points/1
 Tract/Color/tract_color_style/Directional:Assigned:Local index:Averaged index:Averaged Directional/0
 Tract/Visible Tracts/tract_visible_tract/int:5000:1000000:5000/25000
@@ -56,27 +54,29 @@ Tract/Light Diffuse/tract_light_diffuse/int/7
 Tract/Light Ambient/tract_light_ambient/int/0
 Tract/Tract Emission/tract_emission/int/0
 Tract/Tract Selection Angle/tract_sel_angle/int:0:90:5/45
+Tract/Blend Func1/tract_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
+Tract/Blend Func2/tract_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
 Region/Opacity/region_alpha/float:0:1:0.1:2/0.8
 Region/Mesh Rendering/region_mesh_smoothed/Original:Smoothed/1
-Region/Blend Func1/region_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
-Region/Blend Func2/region_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
 Region/Light/region_light_option/One source:Two sources:Three sources/2
 Region/Light Direction/region_light_dir/int/5
 Region/Light Shading/region_light_shading/int/4
 Region/Light Diffuse/region_light_diffuse/int/6
 Region/Light Ambient/region_light_ambient/int/0
 Region/Emission/region_emission/int/0
+Region/Blend Func1/region_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
+Region/Blend Func2/region_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
 Surface/Color/surface_color/color/11184800
 Surface/Opacity/surface_alpha/float:0:1:0.1:2/0.5
 Surface/Mesh Rendering/surface_mesh_smoothed/Original:Smoothed:Smoothed2/1
-Surface/Blend Func1/surface_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
-Surface/Blend Func2/surface_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
 Surface/Light/surface_light_option/One source:Two sources:Three sources/2
 Surface/Light Direction/surface_light_dir/int/5
 Surface/Light Shading/surface_light_shading/int/4
 Surface/Light Diffuse/surface_light_diffuse/int/6
 Surface/Light Ambient/surface_light_ambient/int/0
 Surface/Emission/surface_emission/int/0
+Surface/Blend Func1/surface_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
+Surface/Blend Func2/surface_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
 ODF/Position/odf_position/Along Slide:Slide Intersection:All/0
 ODF/Size/odf_scale/float:1:32:1:1/2
 ODF/Interleaved/odf_skip/none:2:4/0

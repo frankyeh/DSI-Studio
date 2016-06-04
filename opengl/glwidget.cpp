@@ -518,8 +518,7 @@ void GLWidget::renderLR(int eye)
 
         if(get_param("tract_color_style") != tract_color_style)
         {
-            if(get_param("tract_color_style") > 1 &&
-                    get_param("tract_color_style") <= 3) // index painting
+            if(get_param("tract_color_style") > 1)
                 cur_tracking_window.color_bar->show();
             else
                 cur_tracking_window.color_bar->hide();
@@ -845,11 +844,9 @@ void GLWidget::makeTracts(void)
     float color_r;
     std::vector<float> mean_fa;
     unsigned int mean_fa_index = 0;
-    float color_max_value = cur_tracking_window.color_bar->get_color_max_value();
-    float color_min_value = cur_tracking_window.color_bar->get_color_min_value();
     unsigned int track_num_index = cur_tracking_window.handle->get_name_index(cur_tracking_window.color_bar->get_tract_color_name().toStdString());
     // show tract by index value
-    if (tract_color_style > 1 && tract_color_style <= 3)
+    if (tract_color_style > 1)
     {
         if(tract_color_style == 3)// mean value
         {
@@ -879,12 +876,7 @@ void GLWidget::makeTracts(void)
                 }
             }
         }
-
-        color_r = color_max_value-color_min_value;
-        if(color_r + 1.0 == 1.0)
-            color_r = 1.0;
     }
-
 
     std::vector<image::vector<3,float> > points(8),previous_points(8),
                                       normals(8),previous_normals(8);
@@ -951,32 +943,8 @@ void GLWidget::makeTracts(void)
                     active_tract_model->get_tract_data(data_index,track_num_index,color);
                     break;
                 case 3:// mean
-                    paint_color_f =
-                            cur_tracking_window.color_bar->color_map[std::floor(
-                                    std::min(1.0f,(std::max<float>(mean_fa[mean_fa_index++]-color_min_value,0.0))/color_r)*255.0+0.49)];
+                    paint_color_f = cur_tracking_window.color_bar->get_color(mean_fa[mean_fa_index++]);
                     break;
-                case 4:// mean directional
-                    {
-                        const float* iter = data_iter;
-                        for (unsigned int index = 0;
-                             index < vertex_count;iter += 3, ++index)
-                        {
-                            image::vector<3,float> vec_n;
-                            if (index + 1 < vertex_count)
-                            {
-                                vec_n[0] = iter[3] - iter[0];
-                                vec_n[1] = iter[4] - iter[1];
-                                vec_n[2] = iter[5] - iter[2];
-                                vec_n.normalize();
-                                paint_color_f[0] += std::fabs(vec_n[0]);
-                                paint_color_f[1] += std::fabs(vec_n[1]);
-                                paint_color_f[2] += std::fabs(vec_n[2]);
-                            }
-                        }
-                        paint_color_f /= vertex_count;
-                    }
-                    break;
-
                 }
                 image::vector<3,float> last_pos(data_iter),pos,
                     vec_a(1,0,0),vec_b(0,1,0),
@@ -1010,8 +978,7 @@ void GLWidget::makeTracts(void)
                         break;
                     case 2://local anisotropy
                         if(index < color.size())
-                        cur_color = cur_tracking_window.color_bar->color_map[
-                        std::floor(std::min(1.0f,(std::max<float>(color[index]-color_min_value,0.0))/color_r)*255.0+0.49)];
+                            cur_color = cur_tracking_window.color_bar->get_color(color[index]);
                         break;
                     }
 

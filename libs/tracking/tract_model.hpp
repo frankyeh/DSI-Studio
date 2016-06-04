@@ -88,6 +88,7 @@ public:
                   unsigned int color);
         void set_color(unsigned int color){std::fill(tract_color.begin(),tract_color.end(),color);}
         void set_tract_color(unsigned int index,unsigned int color){tract_color[index] = color;}
+        void set_tract_color(std::vector<unsigned int>& new_color){tract_color = new_color;}
         void cut_by_mask(const char* file_name);
         void clear_deleted(void);
         void undo(void);

@@ -13,10 +13,21 @@ color_bar_dialog::color_bar_dialog(QWidget *parent) :
 {
     ui->setupUi(this);
     std::vector<std::string> index_list;
-    cur_tracking_window->handle->get_index_list(index_list);
-    for (unsigned int index = 0; index < index_list.size(); ++index)
-        ui->tract_color_index->addItem(index_list[index].c_str());
 
+    if(cur_tracking_window)
+    {
+        cur_tracking_window->handle->get_index_list(index_list);
+        for (unsigned int index = 0; index < index_list.size(); ++index)
+            ui->tract_color_index->addItem(index_list[index].c_str());
+        connect(ui->update_rendering,SIGNAL(clicked()),cur_tracking_window->glWidget,SLOT(makeTracts()));
+        connect(ui->update_rendering,SIGNAL(clicked()),cur_tracking_window->glWidget,SLOT(updateGL()));
+    }
+    else
+    {
+        ui->tract_color_index->hide();
+        ui->update_rendering->hide();
+        ui->index_label->hide();
+    }
     ui->color_bar_view->setScene(&color_bar);
     ui->color_bar_style->setCurrentIndex(1);
 
@@ -25,8 +36,6 @@ color_bar_dialog::color_bar_dialog(QWidget *parent) :
     connect(ui->color_to,SIGNAL(clicked()),this,SLOT(update_color_map()));
     connect(ui->tract_color_max_value,SIGNAL(valueChanged(double)),this,SLOT(update_color_map()));
     connect(ui->tract_color_min_value,SIGNAL(valueChanged(double)),this,SLOT(update_color_map()));
-    connect(ui->update_rendering,SIGNAL(clicked()),cur_tracking_window->glWidget,SLOT(makeTracts()));
-    connect(ui->update_rendering,SIGNAL(clicked()),cur_tracking_window->glWidget,SLOT(updateGL()));
     on_tract_color_index_currentIndexChanged(0);
 
     QSettings settings;
@@ -42,12 +51,8 @@ color_bar_dialog::~color_bar_dialog()
     delete ui;
 }
 
-
-void color_bar_dialog::on_tract_color_index_currentIndexChanged(int index)
+void color_bar_dialog::set_value(float min_value,float max_value)
 {
-    unsigned int item_index = cur_tracking_window->handle->get_name_index(ui->tract_color_index->currentText().toStdString());
-    float max_value = cur_tracking_window->handle->view_item[item_index].max_value;
-    float min_value = cur_tracking_window->handle->view_item[item_index].min_value;
     float decimal = std::floor(2.0-std::log10(max_value));
     float scale = std::pow(10.0,(double)decimal);
     if(decimal < 1.0)
@@ -69,12 +74,28 @@ void color_bar_dialog::on_tract_color_index_currentIndexChanged(int index)
     update_color_map();
 }
 
+void color_bar_dialog::on_tract_color_index_currentIndexChanged(int index)
+{
+    if(!cur_tracking_window)
+        return;
+    unsigned int item_index = cur_tracking_window->handle->get_name_index(ui->tract_color_index->currentText().toStdString());
+    float max_value = cur_tracking_window->handle->view_item[item_index].max_value;
+    float min_value = cur_tracking_window->handle->view_item[item_index].min_value;
+    set_value(max_value,min_value);
+}
+
 
 
 
 
 void color_bar_dialog::update_color_map(void)
 {
+    color_r = ui->tract_color_max_value->value()-ui->tract_color_min_value->value();
+    if(color_r + 1.0 == 1.0)
+        color_r = 1.0;
+    color_min = ui->tract_color_min_value->value();
+
+
     if(ui->color_bar_style->currentIndex() == 0)
     {
         image::rgb_color from_color = ui->color_from->color().rgb();
@@ -83,11 +104,13 @@ void color_bar_dialog::update_color_map(void)
         std::swap(from_color.r,from_color.b);
         std::swap(to_color.r,to_color.b);
         color_map.two_color(from_color,to_color);
+        color_map_rgb.two_color(from_color,to_color);
     }
 
     if(ui->color_bar_style->currentIndex() == 1)
     {
         color_map.spectrum();
+        color_map_rgb.spectrum();
         bar.spectrum();
     }
 
@@ -103,14 +126,6 @@ void color_bar_dialog::update_color_map(void)
 
 }
 
-float color_bar_dialog::get_color_max_value(void) const
-{
-    return ui->tract_color_max_value->value();
-}
-float color_bar_dialog::get_color_min_value(void) const
-{
-    return ui->tract_color_min_value->value();
-}
 QString color_bar_dialog::get_tract_color_name(void) const
 {
     return ui->tract_color_index->currentText();

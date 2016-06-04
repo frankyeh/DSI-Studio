@@ -16,6 +16,7 @@
 #include "libs/gzip_interface.hpp"
 #include "tract_cluster.hpp"
 #include "atlas.hpp"
+#include "../color_bar_dialog.hpp"
 
 extern std::vector<atlas> atlas_list;
 
@@ -753,6 +754,42 @@ void TractTableWidget::load_tracts_color(void)
 
     std::string sfilename = filename.toLocal8Bit().begin();
     tract_models[currentRow()]->load_tracts_color_from_file(&*sfilename.begin());
+    cur_tracking_window.set_data("tract_color_style",1);//manual assigned
+    emit need_update();
+}
+
+void TractTableWidget::load_tracts_value(void)
+{
+    if(currentRow() >= tract_models.size())
+        return;
+    QString filename = QFileDialog::getOpenFileName(
+            this,"Load tracts color",QDir::currentPath(),
+            "Color files (*.txt);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    std::ifstream in(filename.toStdString().c_str());
+    if (!in)
+        return;
+    std::vector<float> values;
+    std::copy(std::istream_iterator<float>(in),
+              std::istream_iterator<float>(),
+              std::back_inserter(values));
+    if(tract_models[currentRow()]->get_visible_track_count() != values.size())
+    {
+        QMessageBox::information(this,"Inconsistent track number",
+                                 QString("The text file has %1 values, but there are %2 tracks.").
+                                 arg(values.size()).arg(tract_models[currentRow()]->get_visible_track_count()),0);
+        return;
+    }
+    color_bar_dialog dialog(0);
+    auto min_max = std::minmax_element(values.begin(),values.end());
+    dialog.set_value(*min_max.first,*min_max.second);
+    dialog.exec();
+    std::vector<unsigned int> colors(values.size());
+    for(int i = 0;i < values.size();++i)
+        colors[i] = (unsigned int)dialog.get_rgb(values[i]);
+    tract_models[currentRow()]->set_tract_color(colors);
+    cur_tracking_window.set_data("tract_color_style",1);//manual assigned
     emit need_update();
 }
 
