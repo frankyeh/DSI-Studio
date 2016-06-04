@@ -136,34 +136,49 @@ public:
             process_list[index]->init(*this);
     }
 
-    void thread_run(unsigned char thread_index,unsigned char thread_count,
+    void run(unsigned char thread_count,
                     const image::basic_image<unsigned char,3>& mask)
     {
-        size_t cur_voxel = 0,total_voxel = 0;
-        if(thread_index == 0)
+        try{
+
+        size_t total_voxel = 0;
+        bool terminated = false;
+        begin_prog("reconstructing");
+        for(size_t index = 0;index < mask.size();++index)
+            if (mask[index])
+                ++total_voxel;
+
+        image::par_for2(mask.size(),
+                        [&](int voxel_index,int thread_index)
         {
-            begin_prog("reconstructing");
-            for(size_t index = 0;index < mask.size();++index)
-                if (mask[index])
-                    ++total_voxel;
-        }
-        for(unsigned int voxel_index = thread_index;voxel_index < mask.size();voxel_index += thread_count)
-        {
-            if(!thread_index && prog_aborted())
+            if(terminated || !mask[voxel_index])
                 return;
-            if (!mask[voxel_index])
-                continue;
             if(thread_index == 0)
             {
-                ++cur_voxel;
-                check_prog(cur_voxel*(size_t)thread_count,total_voxel);
+                if(prog_aborted())
+                {
+                    terminated = true;
+                    return;
+                }
+                check_prog(voxel_index,total_voxel);
             }
             voxel_data[thread_index].init();
             voxel_data[thread_index].voxel_index = voxel_index;
             for (int index = 0; index < process_list.size(); ++index)
                 process_list[index]->run(*this,voxel_data[thread_index]);
+        },thread_count);
         }
+        catch(std::exception& error)
+        {
+            std::cout << error.what() << std::endl;
+        }
+        catch(...)
+        {
+            std::cout << "unknown error" << std::endl;
+        }
+
     }
+
     void end(gz_mat_write& writer)
     {
         begin_prog("output data");

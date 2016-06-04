@@ -409,13 +409,7 @@ public:
         voxel.image_model = this;
         voxel.CreateProcesses<ProcessType>();
         voxel.init(thread_count);
-        std::vector<std::shared_ptr<std::future<void> > > threads;
-        for (unsigned int index = 1;index < thread_count;++index)
-            threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
-                [this,index,thread_count](){voxel.thread_run(index,thread_count,mask);})));
-        voxel.thread_run(0,thread_count,mask);
-        for(unsigned int index = 1;index < threads.size();++index)
-            threads[index]->wait();
+        voxel.run(thread_count,mask);
         return !prog_aborted();
     }
 
