@@ -181,7 +181,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             }
             null = !null;
         }
-        if(!output_resampling && id == 0)
+        if(id == 0)
         for(unsigned int subject_id = 0;subject_id < individual_data.size() && !terminated;++subject_id)
         {
             stat_model info;
@@ -191,14 +191,15 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             calculate_spm(*spm_maps[subject_id],info,normalize_qa);
             if(terminated)
                 return;
-            fib.fa = spm_maps[subject_id]->lesser_ptr;
-            run_track(fib,tracks,voxel_density*permutation_count,threads.size());
-            lesser_tracks[subject_id]->add_tracts(tracks,length_threshold);
-            fib.fa = spm_maps[subject_id]->greater_ptr;
-            if(terminated)
-                return;
-            run_track(fib,tracks,voxel_density*permutation_count,threads.size());
-            greater_tracks[subject_id]->add_tracts(tracks,length_threshold);
+            if(!output_resampling)
+            {
+                fib.fa = spm_maps[subject_id]->lesser_ptr;
+                run_track(fib,tracks,voxel_density*permutation_count,threads.size());
+                lesser_tracks[subject_id]->add_tracts(tracks,length_threshold);
+                fib.fa = spm_maps[subject_id]->greater_ptr;
+                run_track(fib,tracks,voxel_density*permutation_count,threads.size());
+                greater_tracks[subject_id]->add_tracts(tracks,length_threshold);
+            }
         }
     }
     else
@@ -253,21 +254,23 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             }
             null = !null;
         }
-        if(!output_resampling && id == 0)
+        if(id == 0)
         {
             stat_model info;
             info.resample(*model.get(),false,false);
             calculate_spm(*spm_maps[0],info,normalize_qa);
+
             if(terminated)
                 return;
-            fib.fa = spm_maps[0]->lesser_ptr;
-            run_track(fib,tracks,voxel_density*permutation_count,threads.size());
-            lesser_tracks[0]->add_tracts(tracks,length_threshold);
-            fib.fa = spm_maps[0]->greater_ptr;
-            if(terminated)
-                return;
-            run_track(fib,tracks,voxel_density*permutation_count,threads.size());
-            greater_tracks[0]->add_tracts(tracks,length_threshold);
+            if(!output_resampling)
+            {
+                fib.fa = spm_maps[0]->lesser_ptr;
+                run_track(fib,tracks,voxel_density*permutation_count,threads.size());
+                lesser_tracks[0]->add_tracts(tracks,length_threshold);
+                fib.fa = spm_maps[0]->greater_ptr;
+                run_track(fib,tracks,voxel_density*permutation_count,threads.size());
+                greater_tracks[0]->add_tracts(tracks,length_threshold);
+            }
         }
     }
     if(id == 0 && !terminated)
