@@ -52,12 +52,40 @@ int cnt(void)
             return 0;
         std::cout << "demographic file loaded" << std::endl;
         break;
-        /*
     case 3:
-        vbc->ui->rb_individual_analysis->setChecked(true);
-        break;
-        */
+        //vbc->ui->rb_individual_analysis->setChecked(true);
+        std::cout << "Individual connectometry has not yet been implemented in command line. Please email frank to request this function" <<std::endl;
+        return 0;
     }
+    int threshold_type = po.get("threshold_type",int(0));
+    // percentage = 0,t = 1,beta = 2,percentile = 3,mean_dif = 4
+    switch(threshold_type)
+    {
+    case 0:
+        vbc->ui->rb_percentage->setChecked(true);
+        std::cout << "threshold_type=percentage change" << std::endl;
+        break;
+    case 1:
+        vbc->ui->rb_t_stat->setChecked(true);
+        std::cout << "threshold_type=t statistics" << std::endl;
+        break;
+    case 2:
+        vbc->ui->rb_beta->setChecked(true);
+        std::cout << "threshold_type=beta coefficient" << std::endl;
+        break;
+    case 3:
+        vbc->ui->rb_percentile->setChecked(true);
+        std::cout << "threshold_type=percentile rank" << std::endl;
+        break;
+    case 4:
+        vbc->ui->rb_mean_dif->setChecked(true);
+        std::cout << "threshold_type=mean difference" << std::endl;
+        break;
+    default:
+        std::cout << "unknown threshold type:" << threshold_type << std::endl;
+        return -1;
+    }
+
     if(po.has("missing_value"))
     {
         vbc->ui->missing_data_checked->setChecked(true);
@@ -65,28 +93,13 @@ int cnt(void)
         std::cout << "missing value=" << vbc->ui->missing_value->value() << std::endl;
     }
 
-    if(po.get("threshold",float(0)) == 0.0)
-    {
-        std::cout << "default threshold used" << std::endl;
-        vbc->on_suggest_threshold_clicked();
-        if(vbc->ui->rb_individual_analysis->isChecked())
-            vbc->ui->percentile->setValue(5);
-    }
-    else
-    {
-        if(vbc->ui->rb_multiple_regression->isChecked())
-            vbc->ui->t_threshold->setValue(po.get("threshold",float(0)));
-        if(vbc->ui->rb_group_difference->isChecked() || vbc->ui->rb_paired_difference->isChecked())
-            vbc->ui->percentage_dif->setValue(po.get("threshold",float(0)));
-        if(vbc->ui->rb_individual_analysis->isChecked())
-            vbc->ui->percentile->setValue(po.get("threshold",float(0)));
-    }
-    if(vbc->ui->rb_multiple_regression->isChecked())
-        std::cout << "threshold=" << vbc->ui->t_threshold->value() << std::endl;
-    if(vbc->ui->rb_group_difference->isChecked() || vbc->ui->rb_paired_difference->isChecked())
-        std::cout << "threshold=" << vbc->ui->percentage_dif->value() << std::endl;
     if(vbc->ui->rb_individual_analysis->isChecked())
-        std::cout << "threshold=" << vbc->ui->percentile->value() << std::endl;
+        vbc->ui->threshold->setValue(5);
+    else
+        vbc->on_suggest_threshold_clicked();
+    vbc->ui->threshold->setValue(po.get("threshold",float(vbc->ui->threshold->value())));
+
+    std::cout << "threshold=" << vbc->ui->threshold->value() << std::endl;
 
     vbc->ui->seeding_density->setValue(po.get("seeding_density",float(10)));
     std::cout << "seeding_density=" << vbc->ui->seeding_density->value() << std::endl;

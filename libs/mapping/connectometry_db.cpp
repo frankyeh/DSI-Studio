@@ -951,51 +951,117 @@ double stat_model::operator()(const std::vector<double>& original_population,uns
     switch(type)
     {
     case 0: // group
+        if(threshold_type == t)
         {
-        float sum1 = 0.0;
-        float sum2 = 0.0;
-        for(unsigned int index = 0;index < label.size();++index)
-            if(label[index]) // group 1
-                sum2 += population[index];
+            std::vector<double> g0(group1_count),g1(group2_count);
+            for(unsigned int index = 0,i0 = 0,i1 = 0;index < label.size();++index)
+                if(label[index])
+                {
+                    g1[i1] = population[index];
+                    ++i1;
+                }
             else
-                // group 0
-                sum1 += population[index];
-        float mean1 = sum1/((double)group1_count);
-        float mean2 = sum2/((double)group2_count);
-        float result = (mean1 + mean2)/2.0;
-        if(result != 0.0)
-            result = (mean1 - mean2) / result;
-        return result;
+                {
+                    g0[i0] = population[index];
+                    ++i0;
+                }
+            return image::t_statistics(g0.begin(),g0.end(),g1.begin(),g1.end());
+        }
+        else
+        {
+            float sum1 = 0.0;
+            float sum2 = 0.0;
+            for(unsigned int index = 0;index < label.size();++index)
+                if(label[index]) // group 1
+                    sum2 += population[index];
+                else
+                    // group 0
+                    sum1 += population[index];
+            float mean1 = sum1/((double)group1_count);
+            float mean2 = sum2/((double)group2_count);
+
+            if(threshold_type == percentage)
+            {
+                float m = (mean1 + mean2)/2.0;
+                if(m == 0.0)
+                    return 0.0;
+                return (mean1 - mean2)/m;
+            }
+            else
+                if(threshold_type == mean_dif)
+                    return mean1-mean2;
+
         }
         break;
     case 1: // multiple regression
+        if(threshold_type == percentage)
         {
             std::vector<double> b(feature_count);
             mr.regress(&*population.begin(),&*b.begin());
             double mean = image::mean(population.begin(),population.end());
             return mean == 0 ? 0:b[study_feature]*X_range[study_feature]/mean;
         }
+        else
+            if(threshold_type == beta)
+            {
+                std::vector<double> b(feature_count);
+                mr.regress(&*population.begin(),&*b.begin());
+                return b[study_feature];
+            }
+            else
+                if(threshold_type == t)
+                {
+                    std::vector<double> b(feature_count),t(feature_count);
+                    mr.regress(&*population.begin(),&*b.begin(),&*t.begin());
+                    return t[study_feature];
+                }
         break;
     case 2: // individual
-        {
-            float value = (individual_data_sd == 1.0) ? individual_data[pos]:individual_data[pos]*individual_data_sd;
-            if(value == 0.0)
-                return 0.0;
-            int rank = 0;
-            for(unsigned int index = 0;index < population.size();++index)
-                if(value > population[index])
-                    ++rank;
-            return (rank > (population.size() >> 1)) ?
-                                (double)rank/(double)population.size():
-                                (double)(rank-(int)population.size())/(double)population.size();
-        }
+    {
+        float value = (individual_data_sd == 1.0) ? individual_data[pos]:individual_data[pos]*individual_data_sd;
+        if(value == 0.0)
+            return 0.0;
+        if(threshold_type == mean_dif)
+            return value-image::mean(population.begin(),population.end());
+        else
+            if(threshold_type == percentage)
+            {
+                float mean = image::mean(population.begin(),population.end());
+                if(mean == 0.0)
+                    return 0.0;
+                return value/mean-1.0;
+            }
+            else
+            if(threshold_type == percentile)
+            {
+                int rank = 0;
+                for(unsigned int index = 0;index < population.size();++index)
+                    if(value > population[index])
+                        ++rank;
+                return (rank > (population.size() >> 1)) ?
+                                    (double)rank/(double)population.size():
+                                    (double)(rank-(int)population.size())/(double)population.size();
+            }
+    }
         break;
     case 3: // paired
+        if(threshold_type == t)
+        {
+            unsigned int half_size = population.size() >> 1;
+            std::vector<double> dif(population.begin(),population.begin()+half_size);
+            image::minus(dif.begin(),dif.end(),population.begin()+half_size);
+            return image::t_statistics(dif.begin(),dif.end());
+        }
+        else
         {
             unsigned int half_size = population.size() >> 1;
             float g1 = std::accumulate(population.begin(),population.begin()+half_size,0.0);
             float g2 = std::accumulate(population.begin()+half_size,population.end(),0.0);
-            return 2.0*(g1-g2)/(g1+g2);
+            if(threshold_type == percentage)
+                return 2.0*(g1-g2)/(g1+g2);
+            else
+                if(threshold_type == mean_dif)
+                    return (g1-g2)/half_size;
         }
         break;
     }
