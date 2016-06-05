@@ -81,7 +81,7 @@ void color_bar_dialog::on_tract_color_index_currentIndexChanged(int index)
     unsigned int item_index = cur_tracking_window->handle->get_name_index(ui->tract_color_index->currentText().toStdString());
     float max_value = cur_tracking_window->handle->view_item[item_index].max_value;
     float min_value = cur_tracking_window->handle->view_item[item_index].min_value;
-    set_value(max_value,min_value);
+    set_value(min_value,max_value);
 }
 
 
