@@ -12,6 +12,7 @@
 #include "gzip_interface.hpp"
 #include "mapping/atlas.hpp"
 #include "gzip_interface.hpp"
+#include "../../tracking/region/Regions.h"
 
 
 struct TrackVis
@@ -351,6 +352,16 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         }
         out.write("tracts",&*buf.begin(),3,(unsigned int)buf.size()/3);
         out.write("length",&*length.begin(),1,(unsigned int)length.size());
+        return true;
+    }
+    if (ext == std::string(".nii") || ext == std::string("i.gz"))
+    {
+        std::vector<image::vector<3,short> >points;
+        get_tract_points(points);
+        ROIRegion region(geometry,vs);
+        region.add_points(points,false);
+        std::vector<float> no_trans;
+        region.SaveToFile(file_name_,handle->is_qsdr ? handle->trans_to_mni: no_trans);
         return true;
     }
     return false;
