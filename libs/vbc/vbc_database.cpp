@@ -148,7 +148,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
                     info.individual_data = &(individual_data[subject_id][0]);
                     info.individual_data_sd = normalize_qa ? individual_data_sd[subject_id]:1.0;
                 }
-                calculate_spm(data,info);
+                calculate_spm(data,info,normalize_qa);
                 fib.fa = data.lesser_ptr;
                 run_track(fib,tracks,voxel_density);
                 cal_hist(tracks,(null) ? subject_lesser_null : subject_lesser);
@@ -188,7 +188,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             info.resample(*model.get(),false,false);
             info.individual_data = &(individual_data[subject_id][0]);
             info.individual_data_sd = normalize_qa ? individual_data_sd[subject_id]:1.0;
-            calculate_spm(*spm_maps[subject_id],info);
+            calculate_spm(*spm_maps[subject_id],info,normalize_qa);
             if(terminated)
                 return;
             fib.fa = spm_maps[subject_id]->lesser_ptr;
@@ -210,7 +210,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
 
             stat_model info;
             info.resample(*model.get(),null,true);
-            calculate_spm(data,info);
+            calculate_spm(data,info,normalize_qa);
 
             fib.fa = data.lesser_ptr;
             unsigned int s = run_track(fib,tracks,voxel_density);
@@ -229,7 +229,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             }
 
             info.resample(*model.get(),null,true);
-            calculate_spm(data,info);
+            calculate_spm(data,info,normalize_qa);
             fib.fa = data.greater_ptr;
             s = run_track(fib,tracks,voxel_density);
             if(null)
@@ -257,7 +257,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
         {
             stat_model info;
             info.resample(*model.get(),false,false);
-            calculate_spm(*spm_maps[0],info);
+            calculate_spm(*spm_maps[0],info,normalize_qa);
             if(terminated)
                 return;
             fib.fa = spm_maps[0]->lesser_ptr;

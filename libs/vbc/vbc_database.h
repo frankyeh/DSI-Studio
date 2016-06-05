@@ -33,9 +33,9 @@ public:// database information
     bool normalize_qa;
     bool output_resampling;
 public:
-    void calculate_spm(connectometry_result& data,stat_model& info)
+    void calculate_spm(connectometry_result& data,stat_model& info,bool nqa)
     {
-        ::calculate_spm(handle,data,info,fiber_threshold,normalize_qa,terminated);
+        ::calculate_spm(handle,data,info,fiber_threshold,nqa,terminated);
     }
 private: // single subject analysis result
     int run_track(const tracking& fib,std::vector<std::vector<float> >& track,float seed_ratio = 1.0,unsigned int thread_count = 1);
@@ -52,7 +52,7 @@ public:// for FDR analysis
     std::vector<unsigned int> seed_greater;
     std::vector<unsigned int> seed_lesser;
     unsigned int progress;// 0~100
-    bool terminated;
+    bool terminated = false;
 public:
     std::vector<std::vector<image::vector<3,short> > > roi_list;
     std::vector<unsigned char> roi_type;

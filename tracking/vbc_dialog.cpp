@@ -210,6 +210,114 @@ vbc_dialog::~vbc_dialog()
     delete ui;
 }
 
+void vbc_dialog::on_rb_percentage_clicked()
+{
+    ui->percentage_label->show();
+    ui->threshold->setDecimals(0);
+    ui->explain_label->setText("Mean of the difference divided by the mean ×100%");
+}
+
+
+void vbc_dialog::on_rb_percentile_clicked()
+{
+    ui->percentage_label->show();
+    ui->threshold->setDecimals(0);
+    ui->explain_label->setText("Rank in the population in percentile");
+}
+
+
+void vbc_dialog::on_rb_t_stat_clicked()
+{
+    ui->percentage_label->hide();
+    ui->threshold->setDecimals(2);
+    ui->explain_label->setText("T statistics");
+}
+
+void vbc_dialog::on_rb_mean_dif_clicked()
+{
+    ui->percentage_label->hide();
+    ui->threshold->setDecimals(2);
+    ui->explain_label->setText("Mean of the difference");
+}
+
+void vbc_dialog::on_rb_beta_clicked()
+{
+    ui->percentage_label->hide();
+    ui->threshold->setDecimals(2);
+    ui->explain_label->setText("Beta coefficient");
+}
+
+
+void vbc_dialog::on_rb_individual_analysis_clicked()
+{
+    ui->individual_demo->show();
+    ui->individual_list->show();
+    ui->multiple_regression_demo->hide();
+    ui->subject_demo->hide();
+
+
+    ui->rb_percentage->setEnabled(true);
+    ui->rb_beta->setEnabled(false);
+    ui->rb_t_stat->setEnabled(false);
+    ui->rb_percentile->setEnabled(true);
+    ui->rb_mean_dif->setEnabled(true);
+
+    ui->rb_percentile->setChecked(true);
+    on_rb_percentile_clicked();
+
+}
+
+void vbc_dialog::on_rb_group_difference_clicked()
+{
+    ui->individual_demo->hide();
+    ui->individual_list->hide();
+    ui->multiple_regression_demo->show();
+    ui->subject_demo->show();
+
+    ui->rb_percentage->setEnabled(true);
+    ui->rb_beta->setEnabled(false);
+    ui->rb_t_stat->setEnabled(true);
+    ui->rb_percentile->setEnabled(false);
+    ui->rb_mean_dif->setEnabled(true);
+
+    ui->rb_percentage->setChecked(true);
+    on_rb_percentage_clicked();
+}
+
+void vbc_dialog::on_rb_multiple_regression_clicked()
+{
+    ui->individual_demo->hide();
+    ui->individual_list->hide();
+    ui->multiple_regression_demo->show();
+    ui->subject_demo->show();
+
+    ui->rb_percentage->setEnabled(true);
+    ui->rb_beta->setEnabled(true);
+    ui->rb_t_stat->setEnabled(true);
+    ui->rb_percentile->setEnabled(false);
+    ui->rb_mean_dif->setEnabled(false);
+
+    ui->rb_percentage->setChecked(true);
+    on_rb_percentage_clicked();
+}
+
+void vbc_dialog::on_rb_paired_difference_clicked()
+{
+    ui->individual_demo->hide();
+    ui->individual_list->hide();
+    ui->multiple_regression_demo->show();
+    ui->subject_demo->show();
+
+
+    ui->rb_percentage->setEnabled(true);
+    ui->rb_beta->setEnabled(false);
+    ui->rb_t_stat->setEnabled(true);
+    ui->rb_percentile->setEnabled(false);
+    ui->rb_mean_dif->setEnabled(true);
+
+    ui->rb_percentage->setChecked(true);
+    on_rb_percentage_clicked();
+}
 bool vbc_dialog::eventFilter(QObject *obj, QEvent *event)
 {
     if (event->type() != QEvent::MouseMove || obj->parent() != ui->vbc_view)
@@ -562,10 +670,11 @@ void vbc_dialog::on_open_files_clicked()
         file_names.push_back(file_name.toStdString() + "." + handle->db.subject_names[i]);
     }
     handle->db.read_subject_qa(individual_data);
-    ui->percentile->setValue(2);
+    ui->threshold->setValue(2);
     model->type = 2;
     ((QStringListModel*)ui->individual_list->model())->setStringList(name_list);
     ui->run->setEnabled(true);
+    on_suggest_threshold_clicked();
 }
 
 
@@ -828,80 +937,60 @@ bool vbc_dialog::load_demographic_file(QString filename)
     }
 
     ui->run->setEnabled(true);
+    on_suggest_threshold_clicked();
     return true;
 }
 
-void vbc_dialog::on_rb_individual_analysis_clicked()
+void vbc_dialog::setup_model(stat_model& m)
 {
-    ui->individual_demo->show();
-    ui->individual_list->show();
-
-    ui->multiple_regression_demo->hide();
-    ui->subject_demo->hide();
-
-    ui->regression_feature->hide();
-
-    ui->percentile->show();
-    ui->t_threshold->hide();
-    ui->percentage_dif->hide();
-    ui->percentage_label->show();
-    ui->threshold_label->setText("Percentile");
-    ui->range_label->hide();
-    ui->explaination->setText("25~50%:physiological difference, 5~25%:psychiatric diseases, 0~5%: neurological diseases");
+    m = *(model.get());
+    if(ui->rb_multiple_regression->isChecked())
+        m.study_feature = ui->foi->currentIndex()+1;
+    if(ui->rb_beta->isChecked())
+        m.threshold_type = stat_model::beta;
+    if(ui->rb_percentage->isChecked())
+        m.threshold_type = stat_model::percentage;
+    if(ui->rb_percentile->isChecked())
+        m.threshold_type = stat_model::percentile;
+    if(ui->rb_t_stat->isChecked())
+        m.threshold_type = stat_model::t;
+    if(ui->rb_mean_dif->isChecked())
+        m.threshold_type = stat_model::mean_dif;
+    if(ui->missing_data_checked->isChecked())
+        m.remove_missing_data(ui->missing_value->value());
 }
 
-void vbc_dialog::on_rb_group_difference_clicked()
+void vbc_dialog::on_suggest_threshold_clicked()
 {
-    ui->individual_demo->hide();
-    ui->individual_list->hide();
-    ui->multiple_regression_demo->show();
-    ui->subject_demo->show();
-    ui->regression_feature->hide();
-
-
-    ui->percentile->hide();
-    ui->t_threshold->hide();
-    ui->percentage_dif->show();
-    ui->percentage_label->show();
-    ui->threshold_label->setText("Percentage difference");
-    ui->range_label->hide();
-    ui->explaination->setText("0~30%:physiological difference, 30~50%:psychiatric diseases,  > 50%: neurological diseases");
+    if(!ui->run->isEnabled())
+        return;
+    result_fib.reset(new connectometry_result);
+    stat_model info;
+    setup_model(info);
+    bool terminated = false;
+    calculate_spm(vbc->handle,*result_fib.get(),info,
+                  vbc->fiber_threshold,ui->normalize_qa->isChecked(),terminated);
+    std::vector<float> values;
+    values.reserve(vbc->handle->dim.size()/8);
+    for(unsigned int index = 0;index < vbc->handle->dim.size();++index)
+        if(vbc->handle->dir.fa[0][index] > vbc->fiber_threshold)
+            values.push_back(result_fib->lesser_ptr[0][index] == 0 ?
+                result_fib->greater_ptr[0][index] :  result_fib->lesser_ptr[0][index]);
+    float max_value = *std::max_element(values.begin(),values.end());
+    if(ui->rb_percentage->isChecked() || ui->rb_percentile->isChecked())
+    {
+        ui->range_label->setText(QString("max:%2").arg(max_value*100));
+        ui->threshold->setMaximum(max_value*100);
+        ui->threshold->setValue(image::segmentation::otsu_threshold(values)*100);
+    }
+    else
+    {
+        ui->range_label->setText(QString("max:%2").arg(max_value));
+        ui->threshold->setMaximum(max_value);
+        ui->threshold->setValue(image::segmentation::otsu_threshold(values));
+    }
 }
 
-void vbc_dialog::on_rb_multiple_regression_clicked()
-{
-    ui->individual_demo->hide();
-    ui->individual_list->hide();
-
-    ui->multiple_regression_demo->show();
-    ui->subject_demo->show();
-
-    ui->regression_feature->show();
-    ui->percentile->hide();
-    ui->t_threshold->show();
-    ui->percentage_dif->hide();
-    ui->percentage_label->show();
-    ui->threshold_label->setText("Percentage difference");
-    ui->range_label->show();
-    ui->explaination->setText("0~30%:physiological difference, 30~50%:psychiatric diseases,  > 50%: neurological diseases");
-}
-
-void vbc_dialog::on_rb_paired_difference_clicked()
-{
-    ui->individual_demo->hide();
-    ui->individual_list->hide();
-    ui->multiple_regression_demo->show();
-    ui->subject_demo->show();
-    ui->regression_feature->hide();
-
-    ui->percentile->hide();
-    ui->t_threshold->hide();
-    ui->percentage_dif->show();
-    ui->percentage_label->show();
-    ui->threshold_label->setText("Percentage difference");
-    ui->range_label->hide();
-    ui->explaination->setText("0~30%:physiological difference, 30~50%:psychiatric diseases,  > 50%: neurological diseases");
-}
 
 void vbc_dialog::calculate_FDR(void)
 {
@@ -1042,14 +1131,13 @@ void vbc_dialog::on_run_clicked()
     vbc->output_resampling = ui->output_resampling->isChecked();
     vbc->length_threshold = ui->length_threshold->value();
     vbc->track_trimming = ui->track_trimming->value();
-    vbc->model.reset(new stat_model);
-    *(vbc->model.get()) = *(model.get());
-
-    if(ui->missing_data_checked->isChecked())
-        vbc->model->remove_missing_data(ui->missing_value->value());
-
-
     vbc->individual_data.clear();
+    vbc->tracking_threshold = (ui->rb_percentage->isChecked() || ui->rb_percentile->isChecked() ?
+                                   (float)ui->threshold->value()*0.01 : ui->threshold->value());
+
+    vbc->model.reset(new stat_model);
+    setup_model(*vbc->model.get());
+
 
     std::ostringstream out;
     std::string parameter_str;
@@ -1057,14 +1145,19 @@ void vbc_dialog::on_run_clicked()
         std::ostringstream out;
         if(ui->normalize_qa->isChecked())
             out << ".nqa";
+        char threshold_type[4][11] = {"percentage","t","beta","percentile"};
         out << ".length" << ui->length_threshold->value();
-        out << ".s" << ui->seeding_density->value() << ".p" << ui->mr_permutation->value();
+        out << ".s" << ui->seeding_density->value();
+        out << ".p" << ui->mr_permutation->value();
+        out << "." << threshold_type[vbc->model->threshold_type];
+        out << "." << ui->threshold->value();
+
         parameter_str = out.str();
     }
 
     if(ui->rb_individual_analysis->isChecked())
     {
-        vbc->tracking_threshold = 1.0-(float)ui->percentile->value()*0.01;
+        vbc->tracking_threshold = 1.0-vbc->tracking_threshold;
         vbc->individual_data = individual_data;
         vbc->individual_data_sd.resize(vbc->individual_data.size());
         for(unsigned int index = 0;index < vbc->individual_data.size();++index)
@@ -1078,42 +1171,31 @@ void vbc_dialog::on_run_clicked()
         out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was conducted to identify affected pathways in "
             << vbc->individual_data.size() << " study patients.";
         out << " The diffusion data of the patients were compared with "
-            << vbc->handle->db.num_subjects << " normal subjects, and percentile rank was calculated for each local connectome.";
-        out << " A percentile rank threshold of " << ui->percentile->value() << "% was used to select deviant local connectomes.";
+            << vbc->handle->db.num_subjects << " normal subjects.";
         for(unsigned int index = 0;index < vbc->trk_file_names.size();++index)
-        {
             vbc->trk_file_names[index] += parameter_str;
-            vbc->trk_file_names[index] += ".ind.p";
-            vbc->trk_file_names[index] += QString::number(ui->percentile->value()).toLocal8Bit().begin();
-        }
     }
     if(ui->rb_group_difference->isChecked())
     {
-        vbc->tracking_threshold = (float)ui->percentage_dif->value()*0.01;
         out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was conducted to compare group differences in a total of "
-            << vbc->model->subject_index.size() << " subjects."
-            << " The group difference was quantified using percentage measurement (i.e. 2*(d1-d2)/(d1+d2) x %), where d1 and d2 are the group averages of the local connectome."
-            << " A threshold of " << ui->percentage_dif->value() << "% difference was used to select local connectomes that had substantial difference.";
+            << vbc->model->subject_index.size() << " subjects.";
         vbc->trk_file_names[0] += parameter_str;
-        vbc->trk_file_names[0] += ".group.p";
-        vbc->trk_file_names[0] += QString::number(ui->percentage_dif->value()).toLocal8Bit().begin();
+        vbc->trk_file_names[0] += ".group";
+        vbc->trk_file_names[0] += QString::number(ui->threshold->value()).toLocal8Bit().begin();
 
     }
     if(ui->rb_paired_difference->isChecked())
     {
-        vbc->tracking_threshold = (float)ui->percentage_dif->value()*0.01;
         out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was conducted to compare paired group differences in a total of "
-            << vbc->model->subject_index.size() << " pairs."
-            << " A threshold of " << ui->percentage_dif->value() << "% difference was used to select local connectomes that had substantial difference.";
+            << vbc->model->subject_index.size() << " pairs.";
         vbc->trk_file_names[0] += parameter_str;
-        vbc->trk_file_names[0] += ".paired.p";
-        vbc->trk_file_names[0] += QString::number(ui->percentage_dif->value()).toLocal8Bit().begin();
+        vbc->trk_file_names[0] += ".paired";;
     }
     if(ui->rb_multiple_regression->isChecked())
     {
-        vbc->tracking_threshold = ui->t_threshold->value()*0.01; // percentage
-        out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was conducted in a total of "
-            << vbc->model->subject_index.size() << " subjects using a multiple regression model considering ";
+        out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was used to study the effect of "
+            << ui->foi->currentText().toStdString()
+            << ". A multiple regression model was used to consider ";
         for(unsigned int index = 0;index < ui->foi->count();++index)
         {
             if(index && ui->foi->count() > 2)
@@ -1123,21 +1205,27 @@ void vbc_dialog::on_run_clicked()
                 out << "and ";
             out << ui->foi->itemText(index).toStdString();
         }
-        out << ".";
-        out << " A percentage threshold of " << ui->t_threshold->value()
-            << " % was used to select local connectomes correlated with "
-            << ui->foi->currentText().toLower().toLocal8Bit().begin() << ".";
-        vbc->trk_file_names[0] += parameter_str;
-        vbc->trk_file_names[0] += ".";
-        vbc->trk_file_names[0] += ui->foi->currentText().toLower().toLocal8Bit().begin();
-        vbc->trk_file_names[0] += ".t";
-        vbc->trk_file_names[0] += QString::number(ui->t_threshold->value()).toLocal8Bit().begin();
-    }
+        out << " in a total of "
+            << vbc->model->subject_index.size()
+            << " subjects. ";
 
+        vbc->trk_file_names[0] += parameter_str;
+        vbc->trk_file_names[0] += ".mr.";
+        vbc->trk_file_names[0] += ui->foi->currentText().toLower().toLocal8Bit().begin();
+    }
     if(ui->normalize_qa->isChecked())
         out << " The SDF was normalized.";
-
-    out << " A deterministic fiber tracking algorithm (Yeh et al. PLoS ONE 8(11): e80713, 2013) was conducted to connect the selected local connectomes.";
+    if(ui->rb_percentage->isChecked())
+        out << " A percentage threshold of " << ui->threshold->value();
+    if(ui->rb_percentile->isChecked())
+        out << " A percentile threshold of " << ui->threshold->value();
+    if(ui->rb_beta->isChecked())
+        out << " A beta coefficient threshold of " << ui->threshold->value();
+    if(ui->rb_t_stat->isChecked())
+        out << " A t threshold of " << ui->threshold->value();
+    if(ui->rb_mean_dif->isChecked())
+        out << " A mean difference threshold of " << ui->threshold->value();
+    out << " was assigned to select local connectomes, and the local connectomes were tracked using a deterministic fiber tracking algorithm (Yeh et al. PLoS ONE 8(11): e80713, 2013).";
 
     // load region
     if(!ui->roi_whole_brain->isChecked() && !roi_list.empty())
@@ -1170,7 +1258,6 @@ void vbc_dialog::on_run_clicked()
             }
         }
         out << ".";
-
     }
     else
     {
@@ -1227,17 +1314,20 @@ void vbc_dialog::on_show_result_clicked()
     stat_model* cur_model = vbc->model.get() ? vbc->model.get():model.get();
     if(cur_model->type != 2) // not individual
     {
+        char threshold_type[4][11] = {"percentage","t","beta","percentile"};
         result_fib.reset(new connectometry_result);
         stat_model info;
         info.resample(*cur_model,false,false);
-        vbc->calculate_spm(*result_fib.get(),info);
+        vbc->calculate_spm(*result_fib.get(),info,vbc->normalize_qa);
         new_data->view_item.push_back(item());
-        new_data->view_item.back().name = "lesser";
+        new_data->view_item.back().name = threshold_type[vbc->model->threshold_type];
+        new_data->view_item.back().name += "-";
         new_data->view_item.back().image_data = image::make_image(result_fib->lesser_ptr[0],new_data->dim);
         new_data->view_item.back().set_scale(result_fib->lesser_ptr[0],
                                              result_fib->lesser_ptr[0]+new_data->dim.size());
         new_data->view_item.push_back(item());
-        new_data->view_item.back().name = "greater";
+        new_data->view_item.back().name = threshold_type[vbc->model->threshold_type];
+        new_data->view_item.back().name += "+";
         new_data->view_item.back().image_data = image::make_image(result_fib->greater_ptr[0],new_data->dim);
         new_data->view_item.back().set_scale(result_fib->greater_ptr[0],
                                              result_fib->greater_ptr[0]+new_data->dim.size());
@@ -1447,45 +1537,11 @@ void vbc_dialog::on_show_advanced_clicked()
         ui->advanced_options->show();
 }
 
-void vbc_dialog::on_foi_currentIndexChanged(int index)
-{
-    model->study_feature = ui->foi->currentIndex()+1;
-}
-
 void vbc_dialog::on_missing_data_checked_toggled(bool checked)
 {
     ui->missing_value->setEnabled(checked);
 }
 
-void vbc_dialog::on_suggest_threshold_clicked()
-{
-    if(!ui->run->isEnabled())
-        return;
-    result_fib.reset(new connectometry_result);
-    stat_model info;
-    if(ui->rb_multiple_regression->isChecked())
-        model->study_feature = ui->foi->currentIndex()+1;
-    info = *(model.get());
-    if(ui->missing_data_checked->isChecked())
-        info.remove_missing_data(ui->missing_value->value());
-    vbc->normalize_qa = ui->normalize_qa->isChecked();
-    vbc->calculate_spm(*result_fib.get(),info);
-    std::vector<float> values;
-    values.reserve(vbc->handle->dim.size()/8);
-    for(unsigned int index = 0;index < vbc->handle->dim.size();++index)
-        if(vbc->handle->dir.fa[0][index] > vbc->fiber_threshold)
-            values.push_back(result_fib->lesser_ptr[0][index] == 0 ? result_fib->greater_ptr[0][index] :  result_fib->lesser_ptr[0][index]);
-    if(ui->rb_multiple_regression->isChecked())
-    {
-        ui->t_threshold->setValue(image::segmentation::otsu_threshold(values)*100);
-        ui->range_label->setText(QString("for %1 from %2 to %3").
-                                 arg(ui->foi->currentText()).
-                                 arg(info.X_min[info.study_feature]).
-                                 arg(info.X_max[info.study_feature]));
-    }
-    if(ui->rb_group_difference->isChecked() || ui->rb_paired_difference->isChecked())
-        ui->percentage_dif->setValue(image::segmentation::otsu_threshold(values)*100);
-}
 void vbc_dialog::add_new_roi(QString name,QString source,std::vector<image::vector<3,short> >& new_roi)
 {
     ui->roi_table->setRowCount(ui->roi_table->rowCount()+1);

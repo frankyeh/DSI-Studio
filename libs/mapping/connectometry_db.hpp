@@ -69,6 +69,7 @@ public: // multiple regression
     std::vector<double> X,X_min,X_max,X_range;
     unsigned int feature_count;
     unsigned int study_feature;
+    enum {percentage = 0,t = 1,beta = 2,percentile = 3,mean_dif = 4} threshold_type;
     image::multiple_regression<double> mr;
 public: // individual
     const float* individual_data;

@@ -65,6 +65,7 @@ public:
     std::vector<std::vector<float> > individual_data;
     std::auto_ptr<QTimer> timer;
     QString report;
+    void setup_model(stat_model& model);
 
     explicit vbc_dialog(QWidget *parent,vbc_database* vbc_ptr,QString db_file_name_,bool gui_);
     ~vbc_dialog();
@@ -121,12 +122,10 @@ public slots:
 
     void on_show_advanced_clicked();
 
-    void on_foi_currentIndexChanged(int index);
-
     void on_missing_data_checked_toggled(bool checked);
 
-    void on_suggest_threshold_clicked();
 
+    void on_suggest_threshold_clicked();
 public slots:
     void calculate_FDR(void);
 public:
@@ -143,6 +142,11 @@ private slots:
     void on_view_x_toggled(bool checked);
     void on_load_fp_mask_clicked();
     void on_save_fp_mask_clicked();
+    void on_rb_percentage_clicked();
+    void on_rb_percentile_clicked();
+    void on_rb_t_stat_clicked();
+    void on_rb_beta_clicked();
+    void on_rb_mean_dif_clicked();
 };
 
 #endif // VBC_DIALOG_HPP
