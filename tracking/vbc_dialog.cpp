@@ -1181,7 +1181,6 @@ void vbc_dialog::on_run_clicked()
             << vbc->model->subject_index.size() << " subjects.";
         vbc->trk_file_names[0] += parameter_str;
         vbc->trk_file_names[0] += ".group";
-        vbc->trk_file_names[0] += QString::number(ui->threshold->value()).toLocal8Bit().begin();
 
     }
     if(ui->rb_paired_difference->isChecked())
@@ -1189,7 +1188,7 @@ void vbc_dialog::on_run_clicked()
         out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was conducted to compare paired group differences in a total of "
             << vbc->model->subject_index.size() << " pairs.";
         vbc->trk_file_names[0] += parameter_str;
-        vbc->trk_file_names[0] += ".paired";;
+        vbc->trk_file_names[0] += ".paired";
     }
     if(ui->rb_multiple_regression->isChecked())
     {
