@@ -104,6 +104,7 @@ public:
         X_range = rhs.X_range;
         feature_count = rhs.feature_count;
         study_feature = rhs.study_feature;
+        threshold_type = rhs.threshold_type;
         mr = rhs.mr;
         individual_data = rhs.individual_data;
         paired = rhs.paired;

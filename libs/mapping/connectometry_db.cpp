@@ -867,11 +867,7 @@ void stat_model::remove_missing_data(double missing_value)
 bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap)
 {
     std::lock_guard<std::mutex> lock(rhs.lock_random);
-    type = rhs.type;
-    feature_count = rhs.feature_count;
-    study_feature = rhs.study_feature;
-    subject_index.resize(rhs.subject_index.size());
-
+    *this = rhs;
     unsigned int trial = 0;
     do
     {

@@ -255,6 +255,8 @@ void vbc_dialog::on_rb_individual_analysis_clicked()
     ui->multiple_regression_demo->hide();
     ui->subject_demo->hide();
 
+    ui->foi->hide();
+    ui->foi_label->hide();
 
     ui->rb_percentage->setEnabled(true);
     ui->rb_beta->setEnabled(false);
@@ -274,6 +276,9 @@ void vbc_dialog::on_rb_group_difference_clicked()
     ui->multiple_regression_demo->show();
     ui->subject_demo->show();
 
+    ui->foi->hide();
+    ui->foi_label->hide();
+
     ui->rb_percentage->setEnabled(true);
     ui->rb_beta->setEnabled(false);
     ui->rb_t_stat->setEnabled(true);
@@ -281,7 +286,7 @@ void vbc_dialog::on_rb_group_difference_clicked()
     ui->rb_mean_dif->setEnabled(true);
 
     ui->rb_percentage->setChecked(true);
-    on_rb_percentage_clicked();
+    on_rb_t_stat_clicked();
 }
 
 void vbc_dialog::on_rb_multiple_regression_clicked()
@@ -291,6 +296,9 @@ void vbc_dialog::on_rb_multiple_regression_clicked()
     ui->multiple_regression_demo->show();
     ui->subject_demo->show();
 
+    ui->foi->show();
+    ui->foi_label->show();
+
     ui->rb_percentage->setEnabled(true);
     ui->rb_beta->setEnabled(true);
     ui->rb_t_stat->setEnabled(true);
@@ -298,7 +306,7 @@ void vbc_dialog::on_rb_multiple_regression_clicked()
     ui->rb_mean_dif->setEnabled(false);
 
     ui->rb_percentage->setChecked(true);
-    on_rb_percentage_clicked();
+    on_rb_t_stat_clicked();
 }
 
 void vbc_dialog::on_rb_paired_difference_clicked()
@@ -308,6 +316,8 @@ void vbc_dialog::on_rb_paired_difference_clicked()
     ui->multiple_regression_demo->show();
     ui->subject_demo->show();
 
+    ui->foi->hide();
+    ui->foi_label->hide();
 
     ui->rb_percentage->setEnabled(true);
     ui->rb_beta->setEnabled(false);
@@ -316,7 +326,7 @@ void vbc_dialog::on_rb_paired_difference_clicked()
     ui->rb_mean_dif->setEnabled(true);
 
     ui->rb_percentage->setChecked(true);
-    on_rb_percentage_clicked();
+    on_rb_t_stat_clicked();
 }
 bool vbc_dialog::eventFilter(QObject *obj, QEvent *event)
 {
@@ -1145,7 +1155,7 @@ void vbc_dialog::on_run_clicked()
         std::ostringstream out;
         if(ui->normalize_qa->isChecked())
             out << ".nqa";
-        char threshold_type[4][11] = {"percentage","t","beta","percentile"};
+        char threshold_type[5][11] = {"percentage","t","beta","percentile","mean_dif"};
         out << ".length" << ui->length_threshold->value();
         out << ".s" << ui->seeding_density->value();
         out << ".p" << ui->mr_permutation->value();
@@ -1313,7 +1323,7 @@ void vbc_dialog::on_show_result_clicked()
     stat_model* cur_model = vbc->model.get() ? vbc->model.get():model.get();
     if(cur_model->type != 2) // not individual
     {
-        char threshold_type[4][11] = {"percentage","t","beta","percentile"};
+        char threshold_type[5][11] = {"percentage","t","beta","percentile","mean_dif"};
         result_fib.reset(new connectometry_result);
         stat_model info;
         info.resample(*cur_model,false,false);
