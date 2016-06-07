@@ -216,7 +216,7 @@ bool ROIRegion::need_update(void)
     return false;
 }
 
-void ROIRegion::makeMeshes(bool smooth)
+void ROIRegion::makeMeshes(unsigned char smooth)
 {
     if(!modified)
         return;

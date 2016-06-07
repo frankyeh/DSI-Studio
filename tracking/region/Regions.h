@@ -191,7 +191,7 @@ public:
         void perform(const std::string& action);
         void getSlicePosition(SliceModel* slice, unsigned int pindex, int& x, int& y,int& z);
 
-        void makeMeshes(bool smooth);
+        void makeMeshes(unsigned char smooth);
         bool has_point(const image::vector<3,short>& point);
         bool has_points(const std::vector<image::vector<3,short> >& points);
         void get_quantitative_data(std::shared_ptr<fib_data> handle,std::vector<std::string>& titles,std::vector<float>& data);

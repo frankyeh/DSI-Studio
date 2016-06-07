@@ -51,7 +51,7 @@ void RegionModel::sortIndices(void)
 
 
 // ---------------------------------------------------------------------------
-bool RegionModel::load(const std::vector<image::vector<3,short> >& seeds, double scale,bool smooth)
+bool RegionModel::load(const std::vector<image::vector<3,short> >& seeds, double scale,unsigned char smooth)
 {
     if(seeds.empty())
         return false;
@@ -82,7 +82,9 @@ bool RegionModel::load(const std::vector<image::vector<3,short> >& seeds, double
         image::downsampling(buffer);
     }
 
-    if(smooth)
+    if(smooth >= 1)
+        image::filter::mean(buffer);
+    if(smooth >= 2)
         image::filter::mean(buffer);
 
     object.reset(new image::march_cube<image::vector<3,float> >(buffer, 20));
