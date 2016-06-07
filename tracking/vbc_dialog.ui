@@ -864,7 +864,7 @@ subject</string>
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>-347</y>
+           <y>-375</y>
            <width>666</width>
            <height>919</height>
           </rect>
@@ -1180,9 +1180,9 @@ subject</string>
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout_15">
                <item>
-                <widget class="QRadioButton" name="rb_percentage">
+                <widget class="QRadioButton" name="rb_t_stat">
                  <property name="text">
-                  <string>% dif </string>
+                  <string>t</string>
                  </property>
                  <property name="checked">
                   <bool>true</bool>
@@ -1190,16 +1190,19 @@ subject</string>
                 </widget>
                </item>
                <item>
-                <widget class="QRadioButton" name="rb_mean_dif">
+                <widget class="QRadioButton" name="rb_percentage">
                  <property name="text">
-                  <string>mean dif</string>
+                  <string>% dif </string>
+                 </property>
+                 <property name="checked">
+                  <bool>false</bool>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QRadioButton" name="rb_t_stat">
+                <widget class="QRadioButton" name="rb_mean_dif">
                  <property name="text">
-                  <string>t</string>
+                  <string>mean dif</string>
                  </property>
                 </widget>
                </item>
