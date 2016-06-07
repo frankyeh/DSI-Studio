@@ -133,8 +133,10 @@ public:
 public:
 
         void get_passing_list(const std::vector<std::vector<image::vector<3,short> > >& regions,
-                                     std::vector<std::vector<unsigned int> >& passing_list,
-                                     bool use_end_only) const;
+                                     std::vector<std::vector<short> >& passing_list) const;
+        void get_end_list(const std::vector<std::vector<image::vector<3,short> > >& regions,
+                                     std::vector<std::vector<short> >& end_list1,
+                                     std::vector<std::vector<short> >& end_list2) const;
 
 };
 
@@ -144,7 +146,7 @@ public:
 class atlas;
 class ConnectivityMatrix{
 public:
-    std::vector<std::vector<unsigned int> > passing_list;
+
     image::basic_image<float,2> matrix_value;
 public:
     std::vector<std::vector<image::vector<3,short> > > regions;

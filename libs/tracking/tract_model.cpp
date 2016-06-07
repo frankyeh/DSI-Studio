@@ -1740,30 +1740,35 @@ bool TractModel::get_tracts_data(
     return true;
 }
 
+void create_region_map(const image::geometry<3>& geometry,
+                      const std::vector<std::vector<image::vector<3,short> > >& regions,
+                      std::vector<std::vector<short> >& region_map)
+{
+    std::vector<std::set<short> > regions_set(geometry.size());
+    region_map.resize(geometry.size());
+    for(unsigned int roi = 0;roi < regions.size();++roi)
+    {
+        for(unsigned int index = 0;index < regions[roi].size();++index)
+        {
+            image::vector<3,short> pos = regions[roi][index];
+            regions_set[image::pixel_index<3>(pos[0],pos[1],pos[2],geometry).index()].insert(roi);
+        }
+    }
+
+    for(unsigned int index = 0;index < geometry.size();++index)
+        if(!regions_set[index].empty())
+            for(auto i : regions_set[index])
+                region_map[index].push_back(i);
+}
 
 void TractModel::get_passing_list(const std::vector<std::vector<image::vector<3,short> > >& regions,
-                                         std::vector<std::vector<unsigned int> >& passing_list,
-                                         bool use_end_only) const
+                                         std::vector<std::vector<short> >& passing_list) const
 {
     passing_list.clear();
     passing_list.resize(tract_data.size());
     // create regions maps
-    std::vector<std::vector<short> > region_map(geometry.size());
-    {
-        std::vector<std::set<short> > regions_set(geometry.size());
-        for(unsigned int roi = 0;roi < regions.size();++roi)
-        {
-            for(unsigned int index = 0;index < regions[roi].size();++index)
-            {
-                image::vector<3,short> pos = regions[roi][index];
-                regions_set[image::pixel_index<3>(pos[0],pos[1],pos[2],geometry).index()].insert(roi);
-            }
-        }
-
-        for(unsigned int index = 0;index < geometry.size();++index)
-            if(!regions_set[index].empty())
-                region_map[index] = std::vector<short>(regions_set[index].begin(),regions_set[index].end());
-    }
+    std::vector<std::vector<short> > region_map;
+    create_region_map(geometry,regions,region_map);
 
     for(unsigned int index = 0;index < tract_data.size();++index)
     {
@@ -1780,12 +1785,39 @@ void TractModel::get_passing_list(const std::vector<std::vector<image::vector<3,
             unsigned int pos_index = pos.index();
             for(unsigned int j = 0;j < region_map[pos_index].size();++j)
                 has_region[region_map[pos_index][j]] = 1;
-            if(!ptr && use_end_only)
-                ptr = tract_data[index].size()-6;
         }
         for(unsigned int i = 0;i < has_region.size();++i)
             if(has_region[i])
                 passing_list[index].push_back(i);
+    }
+}
+
+void TractModel::get_end_list(const std::vector<std::vector<image::vector<3,short> > >& regions,
+                                  std::vector<std::vector<short> >& end_pair1,
+                                  std::vector<std::vector<short> >& end_pair2) const
+{
+    end_pair1.clear();
+    end_pair1.resize(tract_data.size());
+    end_pair2.clear();
+    end_pair2.resize(tract_data.size());
+    // create regions maps
+    std::vector<std::vector<short> > region_map;
+    create_region_map(geometry,regions,region_map);
+
+    for(unsigned int index = 0;index < tract_data.size();++index)
+    {
+        if(tract_data[index].size() < 6)
+            continue;
+        image::pixel_index<3> end1(std::floor(tract_data[index][0]+0.5),
+                                    std::floor(tract_data[index][1]+0.5),
+                                    std::floor(tract_data[index][2]+0.5),geometry);
+        image::pixel_index<3> end2(std::floor(tract_data[index][tract_data[index].size()-3]+0.5),
+                                    std::floor(tract_data[index][tract_data[index].size()-2]+0.5),
+                                    std::floor(tract_data[index][tract_data[index].size()-1]+0.5),geometry);
+        if(!geometry.is_valid(end1) || !geometry.is_valid(end2))
+            continue;
+        end_pair1[index] = region_map[end1.index()];
+        end_pair2[index] = region_map[end2.index()];
     }
 }
 
@@ -1834,6 +1866,49 @@ void ConnectivityMatrix::set_atlas(atlas& data,const image::basic_image<image::v
     }
 }
 
+
+template<class m_type>
+void init_matrix(m_type& m,unsigned int size)
+{
+    m.resize(size);
+    for(unsigned int i = 0;i < size;++i)
+        m[i].resize(size);
+}
+
+template<class fun_type>
+void for_each_connectivity(const std::vector<std::vector<short> >& passing_list,
+                           const std::vector<std::vector<short> >& end_list1,
+                           const std::vector<std::vector<short> >& end_list2,
+                           bool end,fun_type& lambda_fun)
+{
+    if(end)
+    for(unsigned int index = 0;index < end_list1.size();++index)
+    {
+        const auto& r1 = end_list1[index];
+        const auto& r2 = end_list2[index];
+        for(unsigned int i = 0;i < r1.size();++i)
+            for(unsigned int j = 0;j < r2.size();++j)
+                if(r1[i] != r2[j])
+                {
+                    lambda_fun(index,r1[i],r2[j]);
+                    lambda_fun(index,r2[j],r1[i]);
+                }
+    }
+    else
+    {
+        for(unsigned int index = 0;index < passing_list.size();++index)
+        {
+            const auto& r1 = passing_list[index];
+            for(unsigned int i = 0;i < r1.size();++i)
+                for(unsigned int j = i+1;j < r1.size();++j)
+                    {
+                        lambda_fun(index,r1[i],r1[j]);
+                        lambda_fun(index,r1[j],r1[i]);
+                    }
+        }
+    }
+}
+
 bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_value_type,bool use_end_only)
 {
     if(regions.size() == 0)
@@ -1841,22 +1916,21 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
         error_msg = "No region information. Please assign regions";
         return false;
     }
-    tract_model.get_passing_list(regions,passing_list,use_end_only);
+    std::vector<std::vector<short> > passing_list;
+    std::vector<std::vector<short> > end_list1,end_list2;
+    if(use_end_only)
+        tract_model.get_end_list(regions,end_list1,end_list2);
+    else
+        tract_model.get_passing_list(regions,passing_list);
     if(matrix_value_type == "trk")
     {
-        std::vector<std::vector<std::vector<unsigned int> > > region_passing_list(regions.size());
-        for(unsigned int i = 0;i < regions.size();++i)
-            region_passing_list[i].resize(regions.size());
-        for(unsigned int index = 0;index < passing_list.size();++index)
-        {
-            std::vector<unsigned int>& region_passed = passing_list[index];
-            for(unsigned int i = 0;i < region_passed.size();++i)
-                    for(unsigned int j = i+1;j < region_passed.size();++j)
-                    {
-                        region_passing_list[region_passed[i]][region_passed[j]].push_back(index);
-                        region_passing_list[region_passed[j]][region_passed[i]].push_back(index);
-                    }
-        }
+        std::vector<std::vector<std::vector<unsigned int> > > region_passing_list;
+        init_matrix(region_passing_list,regions.size());
+
+        for_each_connectivity(passing_list,end_list1,end_list2,use_end_only,
+                              [&](unsigned int index,short i,short j){
+            region_passing_list[i][j].push_back(index);
+        });
 
         for(unsigned int i = 0;i < region_passing_list.size();++i)
             for(unsigned int j = i+1;j < region_passing_list.size();++j)
@@ -1870,19 +1944,14 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
     }
     matrix_value.clear();
     matrix_value.resize(image::geometry<2>(regions.size(),regions.size()));
-    std::vector<std::vector<unsigned int> > count(regions.size());
-    for(unsigned int i = 0;i < count.size();++i)
-        count[i].resize(regions.size());
-    for(unsigned int index = 0;index < passing_list.size();++index)
-    {
-        std::vector<unsigned int>& region_passed = passing_list[index];
-        for(unsigned int i = 0;i < region_passed.size();++i)
-                for(unsigned int j = i+1;j < region_passed.size();++j)
-                {
-                    ++count[region_passed[i]][region_passed[j]];
-                    ++count[region_passed[j]][region_passed[i]];
-                }
-    }
+    std::vector<std::vector<unsigned int> > count;
+    init_matrix(count,regions.size());
+
+    for_each_connectivity(passing_list,end_list1,end_list2,use_end_only,
+                          [&](unsigned int index,short i,short j){
+        ++count[i][j];
+    });
+
     if(matrix_value_type == "count")
     {
         for(unsigned int i = 0,index = 0;i < count.size();++i)
@@ -1892,19 +1961,14 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
     }
     if(matrix_value_type == "ncount")
     {
-        std::vector<std::vector<std::vector<unsigned int> > > length_matrix(regions.size());
-        for(unsigned int i = 0;i < regions.size();++i)
-            length_matrix[i].resize(regions.size());
-        for(unsigned int index = 0;index < passing_list.size();++index)
-        {
-            std::vector<unsigned int>& region_passed = passing_list[index];
-            for(unsigned int i = 0;i < region_passed.size();++i)
-                    for(unsigned int j = i+1;j < region_passed.size();++j)
-                    {
-                        length_matrix[region_passed[i]][region_passed[j]].push_back(tract_model.get_tract_length(index));
-                        length_matrix[region_passed[j]][region_passed[i]].push_back(tract_model.get_tract_length(index));
-                    }
-        }
+        std::vector<std::vector<std::vector<unsigned int> > > length_matrix;
+        init_matrix(length_matrix,regions.size());
+
+        for_each_connectivity(passing_list,end_list1,end_list2,use_end_only,
+                              [&](unsigned int index,short i,short j){
+            length_matrix[i][j].push_back(tract_model.get_tract_length(index));
+        });
+
         for(unsigned int i = 0,index = 0;i < count.size();++i)
             for(unsigned int j = 0;j < count[i].size();++j,++index)
                 if(!length_matrix[i][j].empty())
@@ -1918,26 +1982,16 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
     }
     if(matrix_value_type == "mean_length")
     {
-        std::vector<std::vector<unsigned int> > sum_length(regions.size());
-        std::vector<std::vector<unsigned int> > sum_n(regions.size());
+        std::vector<std::vector<unsigned int> > sum_length,sum_n;
+        init_matrix(sum_length,regions.size());
+        init_matrix(sum_n,regions.size());
 
-        for(unsigned int i = 0;i < regions.size();++i)
-        {
-            sum_length[i].resize(regions.size());
-            sum_n[i].resize(regions.size());
-        }
-        for(unsigned int index = 0;index < passing_list.size();++index)
-        {
-            std::vector<unsigned int>& region_passed = passing_list[index];
-            for(unsigned int i = 0;i < region_passed.size();++i)
-                    for(unsigned int j = i+1;j < region_passed.size();++j)
-                    {
-                        sum_length[region_passed[i]][region_passed[j]] += tract_model.get_tract_length(index);
-                        sum_length[region_passed[j]][region_passed[i]] += tract_model.get_tract_length(index);
-                        ++sum_n[region_passed[i]][region_passed[j]];
-                        ++sum_n[region_passed[j]][region_passed[i]];
-                    }
-        }
+        for_each_connectivity(passing_list,end_list1,end_list2,use_end_only,
+                              [&](unsigned int index,short i,short j){
+            sum_length[i][j] += tract_model.get_tract_length(index);
+            ++sum_n[i][j];
+        });
+
         for(unsigned int i = 0,index = 0;i < count.size();++i)
             for(unsigned int j = 0;j < count[i].size();++j,++index)
                 if(sum_n[i][j])
@@ -1951,21 +2005,19 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
         error_msg += matrix_value_type;
         return false;
     }
-    std::vector<std::vector<float> > sum(regions.size());
-    for(unsigned int i = 0;i < sum.size();++i)
-        sum[i].resize(regions.size());
+    std::vector<std::vector<float> > sum;
+    init_matrix(sum,regions.size());
 
+    std::vector<float> m(data.size());
     for(unsigned int index = 0;index < data.size();++index)
-    {
-        float m = image::mean(data[index].begin(),data[index].end());
-        std::vector<unsigned int>& region_passed = passing_list[index];
-        for(unsigned int i = 0;i < region_passed.size();++i)
-            for(unsigned int j = i+1;j < region_passed.size();++j)
-                {
-                    sum[region_passed[i]][region_passed[j]] += m;
-                    sum[region_passed[j]][region_passed[i]] += m;
-                }
-    }
+        m[index] = image::mean(data[index].begin(),data[index].end());
+
+    for_each_connectivity(passing_list,end_list1,end_list2,use_end_only,
+                          [&](unsigned int index,short i,short j){
+        sum[i][j] += m[index];
+    });
+
+
     for(unsigned int i = 0,index = 0;i < count.size();++i)
         for(unsigned int j = 0;j < count[i].size();++j,++index)
             matrix_value[index] = (count[i][j] ? sum[i][j]/(float)count[i][j] : 0);
