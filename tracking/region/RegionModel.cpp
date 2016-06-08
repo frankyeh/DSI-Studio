@@ -62,8 +62,8 @@ bool RegionModel::load(const std::vector<image::vector<3,short> >& seeds, double
                 max_value[dim] = seeds[index][dim];
             else if (seeds[index][dim] < min_value[dim])
                 min_value[dim] = seeds[index][dim];
-    max_value += image::vector<3,short>(3, 3, 3);
-    min_value -= image::vector<3,short>(3, 3, 3);
+    max_value += image::vector<3,short>(5, 5, 5);
+    min_value -= image::vector<3,short>(5, 5, 5);
     image::basic_image<unsigned char, 3>buffer
     (image::geometry<3>(max_value[0] - min_value[0],
                         max_value[1] - min_value[1], max_value[2] - min_value[2]));

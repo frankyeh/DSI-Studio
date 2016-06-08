@@ -157,7 +157,7 @@ public:
     void save_to_image(image::color_image& cm);
     void save_to_file(const char* file_name);
     bool calculate(TractModel& tract_model,std::string matrix_value_type,bool use_end_only);
-    void network_property(std::string& report);
+    void network_property(std::string& report, double threshold);
 };
 
 

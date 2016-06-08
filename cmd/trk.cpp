@@ -54,7 +54,7 @@ void save_connectivity_matrix(TractModel& tract_model,
     network_measures += ".network_measures.txt";
     std::cout << "export network measures to " << network_measures << std::endl;
     std::string report;
-    data.network_property(report);
+    data.network_property(report,0.001);
     std::ofstream out(network_measures.c_str());
     out << report;
 }

@@ -2119,7 +2119,7 @@ void output_node_measures(std::ostream& out,const char* name,const vec_type& dat
     out << std::endl;
 }
 
-void ConnectivityMatrix::network_property(std::string& report)
+void ConnectivityMatrix::network_property(std::string& report,double t)
 {
     std::ostringstream out;
     size_t n = matrix_value.width();
@@ -2127,7 +2127,7 @@ void ConnectivityMatrix::network_property(std::string& report)
     image::basic_image<float,2> norm_matrix(matrix_value.geometry());
 
     float max_value = *std::max_element(matrix_value.begin(),matrix_value.end());
-    float threshold = max_value*0.001;
+    float threshold = std::accumulate(matrix_value.begin(),matrix_value.end(),0.0)*t;
     for(unsigned int i = 0;i < binary_matrix.size();++i)
     {
         binary_matrix[i] = matrix_value[i] > threshold ? 1 : 0;
@@ -2160,6 +2160,7 @@ void ConnectivityMatrix::network_property(std::string& report)
         float d = degree[i];
         cluster_co[i] /= (d*d-d);
     }
+    out << "clustering_coeff_average(binary)=" << image::mean(cluster_co.begin(),cluster_co.end()) << std::endl;
 
     // calculate weighted clustering coefficient
     image::basic_image<float,2> cyc3(matrix_value.geometry());
@@ -2178,6 +2179,8 @@ void ConnectivityMatrix::network_property(std::string& report)
             wcluster_co[i] = cyc3[i*(n+1)]/(d*d-d);
         }
     }
+    out << "clustering_coeff_average(weighted)=" << image::mean(wcluster_co.begin(),wcluster_co.end()) << std::endl;
+
 
     // transitivity
     {
