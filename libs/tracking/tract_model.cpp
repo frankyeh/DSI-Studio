@@ -1875,11 +1875,11 @@ void init_matrix(m_type& m,unsigned int size)
         m[i].resize(size);
 }
 
-template<class fun_type>
-void for_each_connectivity(const std::vector<std::vector<short> >& passing_list,
-                           const std::vector<std::vector<short> >& end_list1,
-                           const std::vector<std::vector<short> >& end_list2,
-                           bool end,fun_type& lambda_fun)
+template<class T,class fun_type>
+void for_each_connectivity(const T& passing_list,
+                           const T& end_list1,
+                           const T& end_list2,
+                           bool end,fun_type lambda_fun)
 {
     if(end)
     for(unsigned int index = 0;index < end_list1.size();++index)
