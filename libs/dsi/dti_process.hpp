@@ -10,8 +10,6 @@ class Dwi2Tensor : public BaseProcess
     float get_fa(float l1,float l2,float l3)
     {
         float ll = (l1+l2+l3)/3.0;
-        if (ll == 0.0 || l2 == 0.0 || l3 == 0.0)
-            return 0.0;
         float ll1 = l1-ll;
         float ll2 = l2-ll;
         float ll3 = l3-ll;
