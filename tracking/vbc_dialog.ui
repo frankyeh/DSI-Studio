@@ -46,8 +46,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>683</width>
-           <height>544</height>
+           <width>641</width>
+           <height>312</height>
           </rect>
          </property>
          <attribute name="label">
@@ -1168,7 +1168,7 @@ subject</string>
           <item>
            <widget class="QGroupBox" name="groupBox">
             <property name="title">
-             <string>STEP 1.3: Choose staticas and the threshold</string>
+             <string>STEP 1.3: Choose staticas and threshold</string>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_4">
              <property name="spacing">
@@ -1882,8 +1882,8 @@ subject</string>
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>683</width>
-           <height>544</height>
+           <width>631</width>
+           <height>222</height>
           </rect>
          </property>
          <attribute name="label">
