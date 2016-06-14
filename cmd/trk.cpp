@@ -170,6 +170,61 @@ std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name)
     return handle;
 }
 
+bool load_region(std::shared_ptr<fib_data> handle,
+                 ROIRegion& roi,const std::string& region_text,
+                 image::basic_image<image::vector<3>,3>& mapping)
+{
+    QStringList str_list = QString(region_text.c_str()).split(",");// splitting actions
+    std::string file_name = str_list[0].toStdString();
+
+    if(file_name.find(':') != std::string::npos &&
+       file_name.find(':') != 1)
+    {
+        std::string atlas_name = file_name.substr(0,file_name.find(':'));
+        std::string region_name = file_name.substr(file_name.find(':')+1);
+        std::cout << "Loading " << region_name << " from " << atlas_name << " atlas" << std::endl;
+        if(!atl_load_atlas(atlas_name))
+            return false;
+        if(mapping.empty() && !atl_get_mapping(handle,1/*7-9-7*/,mapping))
+            return false;
+        image::vector<3> null;
+        std::vector<image::vector<3,short> > cur_region;
+        for(unsigned int i = 0;i < atlas_list.size();++i)
+            if(atlas_list[i].name == atlas_name)
+                for (unsigned int label_index = 0; label_index < atlas_list[i].get_list().size(); ++label_index)
+                    if(atlas_list[i].get_list()[label_index] == region_name)
+                {
+                    for (image::pixel_index<3>index(mapping.geometry());index < mapping.size();++index)
+                        if(mapping[index.index()] != null &&
+                            atlas_list[i].label_matched(atlas_list[i].get_label_at(mapping[index.index()]),label_index))
+                            cur_region.push_back(image::vector<3,short>(index.begin()));
+                }
+        roi.add_points(cur_region,false);
+    }
+    else
+    {
+        if(!QFileInfo(file_name.c_str()).exists())
+        {
+            std::cout << file_name << " does not exist. terminating..." << std::endl;
+            return false;
+        }
+        if(!roi.LoadFromFile(file_name.c_str(),handle->trans_to_mni))
+        {
+            std::cout << "Invalid file format:" << file_name << std::endl;
+            return false;
+        }
+    }
+    // now perform actions
+    for(int i = 1;i < str_list.size();++i)
+    {
+        std::cout << str_list[i].toStdString() << " applied." << std::endl;
+        roi.perform(str_list[i].toStdString());
+    }
+    if(roi.get().empty())
+        std::cout << "Warning: " << file_name << " is an empty region file" << std::endl;
+    return true;
+}
+
 int trk(void)
 {
     try{
@@ -236,58 +291,10 @@ int trk(void)
     if (po.has(roi_names[index]))
     {
         ROIRegion roi(geometry, voxel_size);
-        QStringList str_list = QString(po.get(roi_names[index]).c_str()).split(",");// splitting actions
-        std::string file_name = str_list[0].toStdString();
-        if(file_name.find(':') != std::string::npos &&
-           file_name.find(':') != 1)
-        {
-            std::string atlas_name = file_name.substr(0,file_name.find(':'));
-            std::string region_name = file_name.substr(file_name.find(':')+1);
-            std::cout << "Loading " << region_name << " from " << atlas_name << " atlas" << std::endl;
-            if(!atl_load_atlas(atlas_name))
-                return 0;
-            if(mapping.empty() && !atl_get_mapping(handle,1/*7-9-7*/,mapping))
-                return 0;
-            image::vector<3> null;
-            std::vector<image::vector<3,short> > cur_region;
-            for(unsigned int i = 0;i < atlas_list.size();++i)
-                if(atlas_list[i].name == atlas_name)
-                    for (unsigned int label_index = 0; label_index < atlas_list[i].get_list().size(); ++label_index)
-                        if(atlas_list[i].get_list()[label_index] == region_name)
-                    {
-                        for (image::pixel_index<3>index(mapping.geometry());index < mapping.size();++index)
-                            if(mapping[index.index()] != null &&
-                                atlas_list[i].label_matched(atlas_list[i].get_label_at(mapping[index.index()]),label_index))
-                                cur_region.push_back(image::vector<3,short>(index.begin()));
-                    }
-            roi.add_points(cur_region,false);
-        }
-        else
-        {
-            if(!QFileInfo(file_name.c_str()).exists())
-            {
-                std::cout << file_name << " does not exist. terminating..." << std::endl;
-                return 0;
-            }
-            if(!roi.LoadFromFile(file_name.c_str(),handle->trans_to_mni))
-            {
-                std::cout << "Invalid file format:" << file_name << std::endl;
-                return 0;
-            }
-        }
-        // now perform actions
-        for(int i = 1;i < str_list.size();++i)
-        {
-            std::cout << str_list[i].toStdString() << " applied." << std::endl;
-            roi.perform(str_list[i].toStdString());
-        }
-        if(roi.get().empty())
-        {
-            std::cout << "No region found in " << file_name << std::endl;
-            continue;
-        }
-        tracking_thread.setRegions(geometry,roi.get(),type[index],file_name.c_str());
-        std::cout << roi_names[index] << "=" << file_name << std::endl;
+        if(!load_region(handle,roi,po.get(roi_names[index]),mapping))
+            return -1;
+        tracking_thread.setRegions(geometry,roi.get(),type[index],po.get(roi_names[index]).c_str());
+        std::cout << roi_names[index] << "=" << po.get(roi_names[index]) << std::endl;
     }
 
     QStringList cnt_file_name;

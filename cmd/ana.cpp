@@ -116,6 +116,9 @@ void export_track_info(const std::string& file_name,
         }
     }
 }
+bool load_region(std::shared_ptr<fib_data> handle,
+                 ROIRegion& roi,const std::string& region_text,
+                 image::basic_image<image::vector<3>,3>& mapping);
 
 int ana(void)
 {
@@ -143,16 +146,18 @@ int ana(void)
             std::cout << "No tract file or ROI file assigned." << std::endl;
             return 0;
         }
-        std::string roi_file_name = po.get("roi");
+        image::basic_image<image::vector<3>,3> mapping;
         ROIRegion region(handle->dim,handle->vs);
-        if(!region.LoadFromFile(roi_file_name.c_str(),handle->trans_to_mni))
+        if(!load_region(handle,region,po.get("roi"),mapping))
         {
             std::cout << "Fail to load the ROI file." << std::endl;
             return 0;
         }
         if(po.has("export") && po.get("export") == std::string("stat"))
         {
-            std::string file_name_stat(roi_file_name);
+            std::string file_name_stat(po.get("roi"));
+            std::replace(file_name_stat.begin(),file_name_stat.end(),':','_');
+            std::replace(file_name_stat.begin(),file_name_stat.end(),',','_');
             file_name_stat += ".statistics.txt";
             std::cout << "export ROI statistics..." << std::endl;
             std::ofstream out(file_name_stat.c_str());
