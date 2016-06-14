@@ -16,7 +16,6 @@ std::string get_fa_template_path(void);
 const char* odf_average(const char* out_name,std::vector<std::string>& file_names);
 bool atl_load_atlas(std::string atlas_name)
 {
-    std::cout << "loading atlas..." << std::endl;
     QStringList name_list = QString(atlas_name.c_str()).split(",");
 
 

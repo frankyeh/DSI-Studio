@@ -123,15 +123,15 @@ bool load_region(std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text,
                  image::basic_image<image::vector<3>,3>& mapping);
 
-void export_indices(std::shared_ptr<fib_data> handle,ROIRegion& region)
+void export_indices(std::shared_ptr<fib_data> handle,ROIRegion& region,const std::string& file_name)
 {
     if(po.has("export") && po.get("export") == std::string("stat"))
     {
-        std::string file_name_stat(po.get("roi"));
+        std::string file_name_stat(file_name);
         std::replace(file_name_stat.begin(),file_name_stat.end(),':','_');
         std::replace(file_name_stat.begin(),file_name_stat.end(),',','_');
         file_name_stat += ".statistics.txt";
-        std::cout << "export ROI statistics..." << std::endl;
+        std::cout << "export ROI statistics to file:" << file_name_stat << std::endl;
         std::ofstream out(file_name_stat.c_str());
         std::vector<std::string> titles;
         std::vector<float> data;
@@ -165,6 +165,7 @@ int ana(void)
 
     if(po.has("atlas"))
     {
+        std::cout << "export information from " << po.get("atlas") << std::endl;
         if(!atl_load_atlas(po.get("atlas")))
             return 0;
         for(unsigned int i = 0;i < atlas_list.size();++i)
@@ -180,7 +181,7 @@ int ana(void)
                     std::cout << "Fail to load the ROI file:" << region_name << std::endl;
                     return 0;
                 }
-                export_indices(handle,region);
+                export_indices(handle,region,region_name);
             }
         }
         return 0;
@@ -188,7 +189,7 @@ int ana(void)
 
     if(!po.has("tract"))
     {
-        if(!po.has("roi") || !po.has("atlas"))
+        if(!po.has("roi"))
         {
             std::cout << "No tract file or ROI file assigned." << std::endl;
             return 0;
@@ -199,7 +200,7 @@ int ana(void)
             std::cout << "Fail to load the ROI file." << std::endl;
             return 0;
         }
-        export_indices(handle,region);
+        export_indices(handle,region,po.get("roi"));
         return 0;
     }
 

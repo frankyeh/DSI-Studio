@@ -174,6 +174,7 @@ bool load_region(std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text,
                  image::basic_image<image::vector<3>,3>& mapping)
 {
+    std::cout << "read region from " << region_text << std::endl;
     QStringList str_list = QString(region_text.c_str()).split(",");// splitting actions
     std::string file_name = str_list[0].toStdString();
 
