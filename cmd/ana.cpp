@@ -10,10 +10,13 @@
 #include "fib_data.hpp"
 #include "libs/gzip_interface.hpp"
 #include "program_option.hpp"
-
+#include "atlas.hpp"
 
 // test example
 // --action=ana --source=20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
+
+extern std::vector<atlas> atlas_list;
+bool atl_load_atlas(std::string atlas_name);
 void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                              TractModel& tract_model,
                              image::basic_image<image::vector<3>,3>& mapping);
@@ -120,6 +123,26 @@ bool load_region(std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text,
                  image::basic_image<image::vector<3>,3>& mapping);
 
+void export_indices(std::shared_ptr<fib_data> handle,ROIRegion& region)
+{
+    if(po.has("export") && po.get("export") == std::string("stat"))
+    {
+        std::string file_name_stat(po.get("roi"));
+        std::replace(file_name_stat.begin(),file_name_stat.end(),':','_');
+        std::replace(file_name_stat.begin(),file_name_stat.end(),',','_');
+        file_name_stat += ".statistics.txt";
+        std::cout << "export ROI statistics..." << std::endl;
+        std::ofstream out(file_name_stat.c_str());
+        std::vector<std::string> titles;
+        std::vector<float> data;
+        region.get_quantitative_data(handle,titles,data);
+        for(unsigned int i = 0;i < titles.size() && i < data.size();++i)
+            out << titles[i] << "\t" << data[i] << std::endl;
+    }
+    else
+        std::cout << "Please specify the export parameters" << std::endl;
+}
+
 int ana(void)
 {
     std::shared_ptr<fib_data> handle(new fib_data);
@@ -138,37 +161,45 @@ int ana(void)
         }
     }
     image::geometry<3> geometry = handle->dim;
+    image::basic_image<image::vector<3>,3> mapping;
+
+    if(po.has("atlas"))
+    {
+        if(!atl_load_atlas(po.get("atlas")))
+            return 0;
+        for(unsigned int i = 0;i < atlas_list.size();++i)
+        {
+            for(unsigned int j = 0;j < atlas_list[i].get_list().size();++j)
+            {
+                ROIRegion region(handle->dim,handle->vs);
+                std::string region_name = atlas_list[i].name;
+                region_name += ":";
+                region_name += atlas_list[i].get_list()[j];
+                if(!load_region(handle,region,region_name,mapping))
+                {
+                    std::cout << "Fail to load the ROI file:" << region_name << std::endl;
+                    return 0;
+                }
+                export_indices(handle,region);
+            }
+        }
+        return 0;
+    }
 
     if(!po.has("tract"))
     {
-        if(!po.has("roi"))
+        if(!po.has("roi") || !po.has("atlas"))
         {
             std::cout << "No tract file or ROI file assigned." << std::endl;
             return 0;
         }
-        image::basic_image<image::vector<3>,3> mapping;
         ROIRegion region(handle->dim,handle->vs);
         if(!load_region(handle,region,po.get("roi"),mapping))
         {
             std::cout << "Fail to load the ROI file." << std::endl;
             return 0;
         }
-        if(po.has("export") && po.get("export") == std::string("stat"))
-        {
-            std::string file_name_stat(po.get("roi"));
-            std::replace(file_name_stat.begin(),file_name_stat.end(),':','_');
-            std::replace(file_name_stat.begin(),file_name_stat.end(),',','_');
-            file_name_stat += ".statistics.txt";
-            std::cout << "export ROI statistics..." << std::endl;
-            std::ofstream out(file_name_stat.c_str());
-            std::vector<std::string> titles;
-            std::vector<float> data;
-            region.get_quantitative_data(handle,titles,data);
-            for(unsigned int i = 0;i < titles.size() && i < data.size();++i)
-                out << titles[i] << "\t" << data[i] << std::endl;
-            return 0;
-        }
-        std::cout << "unknown export specification" << std::endl;
+        export_indices(handle,region);
         return 0;
     }
 
