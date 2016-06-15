@@ -70,7 +70,7 @@ public:// DTI
     bool output_tensor;
 public://used in GQI
     bool r2_weighted;// used in GQI only
-    bool scheme_balance;
+    bool scheme_balance,csf_calibration;
 public:// odf sharpening
     bool odf_deconvolusion;
     bool odf_decomposition;
@@ -85,7 +85,7 @@ public:// used in QSDR
     bool output_jacobian;
     bool output_mapping;
     bool output_rdi;
-    image::vector<3,int> csf_pos1,csf_pos2;
+    image::vector<3,int> csf_pos1,csf_pos2,csf_pos3,csf_pos4;
     double R2;
 public: // for QSDR associated T1WT2W
     std::vector<image::basic_image<float,3> > other_image;
@@ -192,5 +192,40 @@ public:
     }
 };
 
+struct terminated_class {
+    unsigned int total;
+    mutable unsigned int now;
+    mutable bool terminated;
+    terminated_class(int total_):total(total_),now(0),terminated(false){}
+    bool operator!() const
+    {
+        terminated = prog_aborted();
+        return check_prog(std::min(now++,total-1),total);
+    }
+    ~terminated_class()
+    {
+        check_prog(total,total);
+    }
+};
+
+template<class T>
+void match_signal(const T& VG,T& VFF)
+{
+    std::vector<float> x,y;
+    x.reserve(VG.size());
+    y.reserve(VG.size());
+    for(unsigned int index = 0;index < VG.size();++index)
+        if(VG[index] > 0)
+        {
+            x.push_back(VFF[index]);
+            y.push_back(VG[index]);
+        }
+    std::pair<double,double> r = image::linear_regression(x.begin(),x.end(),y.begin());
+    for(unsigned int index = 0;index < VG.size();++index)
+        if(VG[index] > 0)
+            VFF[index] = std::max<float>(0,VFF[index]*r.first+r.second);
+        else
+            VFF[index] = 0;
+}
 
 #endif//BASIC_VOXEL_HPP

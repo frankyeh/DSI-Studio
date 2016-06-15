@@ -249,6 +249,8 @@ const char* reconstruction(ImageModel* image_model,
                 out << ".bal";
             if (image_model->voxel.half_sphere)
                 out << ".hs";
+            if (image_model->voxel.csf_calibration && method_id == 4)
+                out << ".csfc";
             if (image_model->voxel.odf_deconvolusion)
             {
                 out << ".de" << param_values[2];

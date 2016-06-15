@@ -779,6 +779,13 @@
             </widget>
            </item>
            <item>
+            <widget class="QCheckBox" name="csf_calibration">
+             <property name="text">
+              <string>CSF calibration</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QDoubleSpinBox" name="diffusion_sampling">
              <property name="maximumSize">
               <size>

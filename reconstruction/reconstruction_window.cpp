@@ -93,6 +93,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
 
     ui->diffusion_sampling->setValue(settings.value("rec_gqi_sampling",1.25).toDouble());
+    ui->csf_calibration->setChecked(settings.value("csf_calibration",1).toInt());
     ui->regularization_param->setValue(settings.value("rec_qbi_reg",0.006).toDouble());
     ui->SHOrder->setValue(settings.value("rec_qbi_sh_order",8).toInt());
     ui->hamming_filter->setValue(settings.value("rec_hamming_filter",17).toDouble());
@@ -144,6 +145,13 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
             ui->scheme_balance->setChecked((shell.size() <= 5) && !shell.empty() &&
                 handle->voxel.bvalues.size()-shell.back() < 100);
         }
+    }
+    if(handle->voxel.dim[0]*handle->voxel.vs[0] < 100 ||
+       handle->voxel.dim[1]*handle->voxel.vs[1] < 120 ||
+       handle->voxel.dim[2]*handle->voxel.vs[2] < 40)
+    {
+        ui->csf_calibration->setEnabled(false);
+        ui->csf_calibration->setVisible(false);
     }
 }
 void reconstruction_window::update_dimension(void)
@@ -268,6 +276,8 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     settings.setValue("rec_gqi_def",ui->ODFDef->currentIndex());
     settings.setValue("rec_reg_method",ui->reg_method->currentIndex());
     settings.setValue("qsdr_interpo_method",ui->interpo_method->currentIndex());
+    settings.setValue("csf_calibration",ui->csf_calibration->isChecked() ? 1 : 0);
+
 
     settings.setValue("odf_order",ui->ODFDim->currentIndex());
     settings.setValue("rec_record_odf",ui->RecordODF->isChecked() ? 1 : 0);
@@ -286,6 +296,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.odf_xyz[0] = ui->x->value();
     handle->voxel.odf_xyz[1] = ui->y->value();
     handle->voxel.odf_xyz[2] = ui->z->value();
+    handle->voxel.csf_calibration = (ui->csf_calibration->isVisible() && ui->csf_calibration->isChecked()) ? 1: 0;
     handle->voxel.max_fiber_number = ui->NumOfFibers->value();
     handle->voxel.r2_weighted = ui->ODFDef->currentIndex();
     handle->voxel.reg_method = ui->reg_method->currentIndex();
@@ -536,6 +547,8 @@ void reconstruction_window::on_GQI_toggled(bool checked)
     ui->rdi->setVisible(checked);
     if(checked)
         ui->rdi->setChecked(true);
+    if(ui->csf_calibration->isEnabled())
+        ui->csf_calibration->setVisible(!ui->QDif->isChecked());
 }
 
 void reconstruction_window::on_QDif_toggled(bool checked)

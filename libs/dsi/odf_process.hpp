@@ -3,6 +3,10 @@
 #include "basic_process.hpp"
 #include "basic_voxel.hpp"
 
+
+#include "mapping/fa_template.hpp"
+extern fa_template fa_template_imp;
+
 class ReadDWIData : public BaseProcess{
 public:
     virtual void init(Voxel&) {}
@@ -349,6 +353,78 @@ public:
     {
         set_title("output data");
         mat_writer.write("gfa",&*gfa.begin(),1,gfa.size());
+
+        if(voxel.csf_calibration)
+        {
+            image::basic_image<float,3> VG = fa_template_imp.I;
+            image::basic_image<float,3> VF(&*fa[0].begin(),voxel.dim);
+
+            image::filter::gaussian(VF);
+            VF -= image::segmentation::otsu_threshold(VF);
+            image::lower_threshold(VF,0.0);
+
+            image::basic_image<float,3> VFF;
+
+            image::transformation_matrix<double> affine;
+            image::reg::bfnorm_mapping<double,3> mni(VG.geometry(),image::geometry<3>(7,9,7));
+
+            {
+                begin_prog("linear registration");
+
+                image::affine_transform<double> arg_min;
+
+                {
+                    bool terminated = false;
+                    image::reg::linear(VF,voxel.vs,VG,fa_template_imp.vs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
+                                       image::transformation_matrix<double> >(0),terminated);
+                    image::reg::linear(VF,voxel.vs,VG,fa_template_imp.vs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
+                                       image::transformation_matrix<double> >(0),terminated);
+                    affine = image::transformation_matrix<double>(arg_min,VF.geometry(),voxel.vs,VG.geometry(),fa_template_imp.vs);
+                }
+                affine.inverse();
+                VFF.resize(VG.geometry());
+                image::resample(VF,VFF,affine,image::cubic);
+                if(prog_aborted())
+                    throw std::runtime_error("Reconstruction canceled");
+            }
+            match_signal(VG,VFF);
+
+            begin_prog("normalization");
+            terminated_class ter(17);
+            int iteration = 0;
+            image::reg::bfnorm(mni,VG,VFF,std::thread::hardware_concurrency(),ter,iteration);
+            if(-image::reg::correlation()(VG,VFF,mni) < 0.5)
+                throw std::runtime_error("Cannot use CSF for calibration");
+            // choose CSF at the following voxel location
+
+            image::vector<3,int> pos1(84,76,68),pos2(72,76,68),pos3(74,58,60),pos4(82,58,60);
+            std::vector<image::vector<3,int> > list_pos;
+            {
+                for(int dz = -2;dz <= 2;++dz)
+                    for(int dy = -2;dy <= 2;++dy)
+                        for(int dx = -2;dx <= 2;++dx)
+                        {
+                            list_pos.push_back(image::vector<3,int>(pos1[0]+dx,pos1[1]+dy,pos1[2]+dz));
+                            list_pos.push_back(image::vector<3,int>(pos2[0]+dx,pos2[1]+dy,pos2[2]+dz));
+                            list_pos.push_back(image::vector<3,int>(pos3[0]+dx,pos3[1]+dy,pos3[2]+dz));
+                            list_pos.push_back(image::vector<3,int>(pos4[0]+dx,pos4[1]+dy,pos4[2]+dz));
+                        }
+
+            }
+
+            std::vector<image::vector<3,double> > list_np(list_pos.size());
+            auto iso_I = image::make_image(&*iso.begin(),voxel.dim);
+            voxel.z0 = 0;
+            for(int i = 0;i < list_pos.size();++i)
+            {
+                mni(list_pos[i],list_np[i]);
+                affine(list_np[i]);
+                list_np[i] += 0.5;
+                voxel.z0 = std::max<float>(iso_I.at(list_np[i][0],list_np[i][1],list_np[i][2]),voxel.z0);
+            }
+
+        }
+
 
         if(!voxel.odf_deconvolusion && voxel.z0 + 1.0 != 1.0)
         {
