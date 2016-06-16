@@ -424,8 +424,8 @@ public:
         // perform csf cross-subject normalization
         {
             image::vector<3,int> cur_pos(image::pixel_index<3>(data.voxel_index,voxel.dim));
-            if((cur_pos-voxel.csf_pos1).length() <= 2.0 || (cur_pos-voxel.csf_pos2).length() <= 2.0 ||
-               (cur_pos-voxel.csf_pos3).length() <= 2.0 || (cur_pos-voxel.csf_pos4).length() <= 2.0)
+            if((cur_pos-voxel.csf_pos1).length() <= 1.0 || (cur_pos-voxel.csf_pos2).length() <= 1.0 ||
+               (cur_pos-voxel.csf_pos3).length() <= 1.0 || (cur_pos-voxel.csf_pos4).length() <= 1.0)
             {
                 float odf_dif = *std::min_element(data.odf.begin(),data.odf.end());
                 odf_dif /= data.jdet;

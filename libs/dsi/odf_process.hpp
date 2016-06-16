@@ -400,9 +400,9 @@ public:
             image::vector<3,int> pos1(84,76,68),pos2(72,76,68),pos3(74,58,60),pos4(82,58,60);
             std::vector<image::vector<3,int> > list_pos;
             {
-                for(int dz = -2;dz <= 2;++dz)
-                    for(int dy = -2;dy <= 2;++dy)
-                        for(int dx = -2;dx <= 2;++dx)
+                for(int dz = -1;dz <= 1;++dz)
+                    for(int dy = -1;dy <= 1;++dy)
+                        for(int dx = -1;dx <= 1;++dx)
                         {
                             list_pos.push_back(image::vector<3,int>(pos1[0]+dx,pos1[1]+dy,pos1[2]+dz));
                             list_pos.push_back(image::vector<3,int>(pos2[0]+dx,pos2[1]+dy,pos2[2]+dz));
