@@ -88,6 +88,8 @@ void atlas::load_label(void)
             std::string txt;
             uint64_t num = 0;
             std::istringstream(line) >> num >> txt;
+            if(txt.empty())
+                continue;
             label_num.push_back(num);
             labels.push_back(txt);
         }
