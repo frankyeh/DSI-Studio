@@ -93,7 +93,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
 
     ui->diffusion_sampling->setValue(settings.value("rec_gqi_sampling",1.25).toDouble());
-    ui->csf_calibration->setChecked(settings.value("csf_calibration",1).toInt());
+    ui->csf_calibration->setChecked(settings.value("csf_calibration",0).toInt());
     ui->regularization_param->setValue(settings.value("rec_qbi_reg",0.006).toDouble());
     ui->SHOrder->setValue(settings.value("rec_qbi_sh_order",8).toInt());
     ui->hamming_filter->setValue(settings.value("rec_hamming_filter",17).toDouble());
