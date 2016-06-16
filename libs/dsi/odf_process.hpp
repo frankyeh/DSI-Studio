@@ -412,16 +412,17 @@ public:
 
             }
 
-            std::vector<image::vector<3,double> > list_np(list_pos.size());
             auto iso_I = image::make_image(&*iso.begin(),voxel.dim);
-            voxel.z0 = 0;
+            std::vector<float> values;
             for(int i = 0;i < list_pos.size();++i)
             {
-                mni(list_pos[i],list_np[i]);
-                affine(list_np[i]);
-                list_np[i] += 0.5;
-                voxel.z0 = std::max<float>(iso_I.at(list_np[i][0],list_np[i][1],list_np[i][2]),voxel.z0);
+                image::vector<3,double> pos;
+                mni(list_pos[i],pos);
+                affine(pos);
+                values.push_back(0.0);
+                image::estimate(iso_I,pos,values.back());
             }
+            voxel.z0 = image::median(values.begin(),values.end());
 
         }
 

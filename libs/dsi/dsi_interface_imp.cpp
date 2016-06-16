@@ -251,6 +251,8 @@ const char* reconstruction(ImageModel* image_model,
                 out << ".hs";
             if (image_model->voxel.csf_calibration && method_id == 4)
                 out << ".csfc";
+            else
+                image_model->voxel.csf_calibration = false;
             if (image_model->voxel.odf_deconvolusion)
             {
                 out << ".de" << param_values[2];

@@ -414,10 +414,13 @@ public:
 
 class EstimateZ0_MNI : public BaseProcess
 {
+    std::vector<float> samples;
+    unsigned int total_sample;
 public:
     void init(Voxel& voxel)
     {
         voxel.z0 = 0.0;
+        samples.resize(20);
     }
     void run(Voxel& voxel, VoxelData& data)
     {
@@ -426,16 +429,12 @@ public:
             image::vector<3,int> cur_pos(image::pixel_index<3>(data.voxel_index,voxel.dim));
             if((cur_pos-voxel.csf_pos1).length() <= 1.0 || (cur_pos-voxel.csf_pos2).length() <= 1.0 ||
                (cur_pos-voxel.csf_pos3).length() <= 1.0 || (cur_pos-voxel.csf_pos4).length() <= 1.0)
-            {
-                float odf_dif = *std::min_element(data.odf.begin(),data.odf.end());
-                odf_dif /= data.jdet;
-                if(odf_dif > voxel.z0)
-                    voxel.z0 = odf_dif;
-            }
+                samples[total_sample++] = *std::min_element(data.odf.begin(),data.odf.end())/data.jdet;
         }
     }
     void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
+        voxel.z0 = image::median(samples.begin(),samples.begin() + total_sample);
         if(voxel.z0 == 0.0)
             voxel.z0 = 1.0;
         mat_writer.write("z0",&voxel.z0,1,1);
