@@ -982,6 +982,8 @@ void TractModel::cut(float select_angle,const image::vector<3,float>& from_dir,c
             new_tract_color.push_back(tract_color[index]);
             tract_to_delete.push_back(index);
         }
+    if(tract_to_delete.empty())
+        return;
     delete_tracts(tract_to_delete);
     deleted_cut_count.back().second = new_tract.size();
     for (unsigned int index = 0;index < new_tract.size();++index)
