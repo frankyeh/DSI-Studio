@@ -373,15 +373,19 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
         if(handle->view_item[data_index].name == "color")
             continue;
         float sum = 0.0,sum2 = 0.0;
+        unsigned int count = 0;
         image::const_pointer_image<float, 3> I(handle->view_item[data_index].image_data);
         for(unsigned int index = 0; index < pos_index.size(); ++index)
         {
             float value = I[pos_index[index]];
+            if(value == 0.0)
+                continue;
             sum += value;
             sum2 += value*value;
+            ++count;
         }
-        sum /= pos_index.size();
-        sum2 /= pos_index.size();
+        sum /= count;
+        sum2 /= count;
         data.push_back(sum);
         data.push_back(std::sqrt(std::max<float>(0.0,sum2-sum*sum)));
     }
