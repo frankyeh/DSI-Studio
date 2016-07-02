@@ -2137,7 +2137,7 @@ void ConnectivityMatrix::network_property(std::string& report,double t)
     }
     // density
     size_t edge = std::accumulate(binary_matrix.begin(),binary_matrix.end(),size_t(0))/2;
-    out << "density=" << (float)edge*2.0/(float)(n*n-n) << std::endl;
+    out << "density\t" << (float)edge*2.0/(float)(n*n-n) << std::endl;
 
     // calculate degree
     std::vector<float> degree(n);
@@ -2162,7 +2162,7 @@ void ConnectivityMatrix::network_property(std::string& report,double t)
         float d = degree[i];
         cluster_co[i] /= (d*d-d);
     }
-    out << "clustering_coeff_average(binary)=" << image::mean(cluster_co.begin(),cluster_co.end()) << std::endl;
+    out << "clustering_coeff_average(binary)\t" << image::mean(cluster_co.begin(),cluster_co.end()) << std::endl;
 
     // calculate weighted clustering coefficient
     image::basic_image<float,2> cyc3(matrix_value.geometry());
@@ -2181,7 +2181,7 @@ void ConnectivityMatrix::network_property(std::string& report,double t)
             wcluster_co[i] = cyc3[i*(n+1)]/(d*d-d);
         }
     }
-    out << "clustering_coeff_average(weighted)=" << image::mean(wcluster_co.begin(),wcluster_co.end()) << std::endl;
+    out << "clustering_coeff_average(weighted)\t" << image::mean(wcluster_co.begin(),wcluster_co.end()) << std::endl;
 
 
     // transitivity
@@ -2190,12 +2190,12 @@ void ConnectivityMatrix::network_property(std::string& report,double t)
         image::basic_image<float,2> norm_matrix3(norm_matrix.geometry());
         image::mat::product(norm_matrix.begin(),norm_matrix.begin(),norm_matrix2.begin(),image::dyndim(n,n),image::dyndim(n,n));
         image::mat::product(norm_matrix2.begin(),norm_matrix.begin(),norm_matrix3.begin(),image::dyndim(n,n),image::dyndim(n,n));
-        out << "transitivity(binary)=" << image::mat::trace(norm_matrix3.begin(),image::dyndim(n,n)) /
+        out << "transitivity(binary)\t" << image::mat::trace(norm_matrix3.begin(),image::dyndim(n,n)) /
                 (std::accumulate(norm_matrix2.begin(),norm_matrix2.end(),0.0) - image::mat::trace(norm_matrix2.begin(),image::dyndim(n,n))) << std::endl;
         float k = 0;
         for(unsigned int i = 0;i < n;++i)
             k += degree[i]*(degree[i]-1);
-        out << "transitivity(weighted)=" << (k == 0 ? 0 : image::mat::trace(cyc3.begin(),image::dyndim(n,n))/k) << std::endl;
+        out << "transitivity(weighted)\t" << (k == 0 ? 0 : image::mat::trace(cyc3.begin(),image::dyndim(n,n))/k) << std::endl;
     }
 
     std::vector<float> eccentricity_bin(n),eccentricity_wei(n);
@@ -2208,13 +2208,13 @@ void ConnectivityMatrix::network_property(std::string& report,double t)
         unsigned int inf_count_wei = std::count(dis_wei.begin(),dis_wei.end(),std::numeric_limits<float>::max());
         std::replace(dis_bin.begin(),dis_bin.end(),std::numeric_limits<float>::max(),(float)0);
         std::replace(dis_wei.begin(),dis_wei.end(),std::numeric_limits<float>::max(),(float)0);
-        out << "network_characteristic_path_length(binary)=" << std::accumulate(dis_bin.begin(),dis_bin.end(),0.0)/(n*n-inf_count_bin) << std::endl;
-        out << "network_characteristic_path_length(weighted)=" << std::accumulate(dis_wei.begin(),dis_wei.end(),0.0)/(n*n-inf_count_wei) << std::endl;
+        out << "network_characteristic_path_length(binary)\t" << std::accumulate(dis_bin.begin(),dis_bin.end(),0.0)/(n*n-inf_count_bin) << std::endl;
+        out << "network_characteristic_path_length(weighted)\t" << std::accumulate(dis_wei.begin(),dis_wei.end(),0.0)/(n*n-inf_count_wei) << std::endl;
         image::basic_image<float,2> invD;
         inv_dis(dis_bin,invD);
-        out << "global_efficiency(binary)=" << std::accumulate(invD.begin(),invD.end(),0.0)/(n*n-inf_count_bin) << std::endl;
+        out << "global_efficiency(binary)\t" << std::accumulate(invD.begin(),invD.end(),0.0)/(n*n-inf_count_bin) << std::endl;
         inv_dis(dis_wei,invD);
-        out << "global_efficiency(weighted)=" << std::accumulate(invD.begin(),invD.end(),0.0)/(n*n-inf_count_wei) << std::endl;
+        out << "global_efficiency(weighted)\t" << std::accumulate(invD.begin(),invD.end(),0.0)/(n*n-inf_count_wei) << std::endl;
 
         for(unsigned int i = 0,ipos = 0;i < n;++i,ipos += n)
         {
@@ -2224,14 +2224,14 @@ void ConnectivityMatrix::network_property(std::string& report,double t)
                                                  dis_wei.begin()+ipos+n);
 
         }
-        out << "diameter_of_graph(binary)=" << *std::max_element(eccentricity_bin.begin(),eccentricity_bin.end()) <<std::endl;
-        out << "diameter_of_graph(weighted)=" << *std::max_element(eccentricity_wei.begin(),eccentricity_wei.end()) <<std::endl;
+        out << "diameter_of_graph(binary)\t" << *std::max_element(eccentricity_bin.begin(),eccentricity_bin.end()) <<std::endl;
+        out << "diameter_of_graph(weighted)\t" << *std::max_element(eccentricity_wei.begin(),eccentricity_wei.end()) <<std::endl;
 
 
         std::replace(eccentricity_bin.begin(),eccentricity_bin.end(),(float)0,std::numeric_limits<float>::max());
         std::replace(eccentricity_wei.begin(),eccentricity_wei.end(),(float)0,std::numeric_limits<float>::max());
-        out << "radius_of_graph(binary)=" << *std::min_element(eccentricity_bin.begin(),eccentricity_bin.end()) <<std::endl;
-        out << "radius_of_graph(weighted)=" << *std::min_element(eccentricity_wei.begin(),eccentricity_wei.end()) <<std::endl;
+        out << "radius_of_graph(binary)\t" << *std::min_element(eccentricity_bin.begin(),eccentricity_bin.end()) <<std::endl;
+        out << "radius_of_graph(weighted)\t" << *std::min_element(eccentricity_wei.begin(),eccentricity_wei.end()) <<std::endl;
         std::replace(eccentricity_bin.begin(),eccentricity_bin.end(),std::numeric_limits<float>::max(),(float)0);
         std::replace(eccentricity_wei.begin(),eccentricity_wei.end(),std::numeric_limits<float>::max(),(float)0);
     }
@@ -2260,6 +2260,8 @@ void ConnectivityMatrix::network_property(std::string& report,double t)
             inv_dis(invD,invD);
             local_efficiency_bin[i] = std::accumulate(invD.begin(),invD.end(),0.0)/(new_n*new_n-new_n);
         }
+        out << "local_efficiency(binary)\t" << std::accumulate(local_efficiency_bin.begin(),local_efficiency_bin.end(),0.0) << std::endl;
+
     }
 
     std::vector<float> local_efficiency_wei(n);
@@ -2294,6 +2296,8 @@ void ConnectivityMatrix::network_property(std::string& report,double t)
                     numer += std::pow(invD[index],(float)(1.0/3.0))*sw[j]*sw[k];
             local_efficiency_wei[i] = numer/(new_n*new_n-new_n);
         }
+        out << "local_efficiency(weighted)\t" << std::accumulate(local_efficiency_wei.begin(),local_efficiency_wei.end(),0.0) << std::endl;
+
     }
 
 
@@ -2315,7 +2319,7 @@ void ConnectivityMatrix::network_property(std::string& report,double t)
         float b = (std::accumulate(degi.begin(),degi.end(),0.0)+
                    std::accumulate(degj.begin(),degj.end(),0.0))/2.0/degi.size();
         a = a*a;
-        out << "assortativity_coefficient(binary) = " << (b == a ? 0 : ( sum  - a)/ ( b - a )) << std::endl;
+        out << "assortativity_coefficient(binary)\t" << (b == a ? 0 : ( sum  - a)/ ( b - a )) << std::endl;
     }
 
 
@@ -2336,7 +2340,7 @@ void ConnectivityMatrix::network_property(std::string& report,double t)
         image::square(degj);
         float b = (std::accumulate(degi.begin(),degi.end(),0.0)+
                    std::accumulate(degj.begin(),degj.end(),0.0))/2.0/degi.size();
-        out << "assortativity_coefficient(weighted) = " << ( sum  - a*a)/ ( b - a*a ) << std::endl;
+        out << "assortativity_coefficient(weighted)\t" << ( sum  - a*a)/ ( b - a*a ) << std::endl;
     }
     // betweenness
     std::vector<float> betweenness_bin(n);
