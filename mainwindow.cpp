@@ -25,6 +25,7 @@
 #include "tracking/vbc_dialog.hpp"
 #include "vbc/vbc_database.h"
 #include "libs/tracking/fib_data.hpp"
+#include "manual_alignment.h"
 
 extern std::vector<atlas> atlas_list;
 extern std::auto_ptr<QProgressDialog> progressDialog;
@@ -781,4 +782,41 @@ void MainWindow::on_bruker_browser_clicked()
     FileBrowser* bw = new FileBrowser(this);
     bw->setAttribute(Qt::WA_DeleteOnClose);
     bw->showNormal();
+}
+bool load_image_from_files(QStringList filenames,image::basic_image<float,3>& ref,image::vector<3>& vs);
+void MainWindow::on_rigid_body_reg_clicked()
+{
+    QStringList filename1 = QFileDialog::getOpenFileNames(
+            this,"Open Warpping Image",ui->workDir->currentText(),
+            "Images (*.nii *nii.gz *.dcm);;All files (*)" );
+    if(filename1.isEmpty())
+        return;
+
+
+    QStringList filename2 = QFileDialog::getOpenFileNames(
+            this,"Open Reference Image",QFileInfo(filename1[0]).absolutePath(),
+            "Images (*.nii *nii.gz *.dcm);;All files (*)" );
+    if(filename2.isEmpty())
+        return;
+
+
+    image::basic_image<float,3> ref1,ref2;
+    image::vector<3> vs1,vs2;
+
+    if(!load_image_from_files(filename1,ref1,vs1) ||
+       !load_image_from_files(filename2,ref2,vs2))
+        return;
+
+    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,ref1,vs1,ref2,vs2,image::reg::rigid_body,image::reg::mutual_info));
+    manual->timer->start();
+    if(manual->exec() != QDialog::Accepted)
+        return;
+    image::basic_image<float,3> I(ref2.geometry());
+    image::resample(ref1,I,manual->data.get_iT(),image::cubic);
+    gz_nifti nii;
+    nii.set_voxel_size(vs2.begin());
+    image::flip_xy(I);
+    nii << I;
+    QString out_name = QFileInfo(filename2[0]).absolutePath() + "/" + QFileInfo(filename2[0]).baseName() +".warp.nii.gz";
+    nii.save_to_file(out_name.toStdString().c_str());
 }

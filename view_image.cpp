@@ -3,6 +3,45 @@
 #include "libs/gzip_interface.hpp"
 #include "prog_interface_static_link.h"
 #include <QPlainTextEdit>
+#include <QMessageBox>
+bool load_image_from_files(QStringList filenames,image::basic_image<float,3>& ref,image::vector<3>& vs)
+{
+    if(filenames.size() == 1 && filenames[0].toLower().contains("nii"))
+    {
+        gz_nifti in;
+        if(!in.load_from_file(filenames[0].toLocal8Bit().begin()) || !in.toLPS(ref))
+        {
+            QMessageBox::information(0,"Error","Not a valid nifti file",0);
+            return false;
+        }
+        in.get_voxel_size(vs.begin());
+        return true;
+    }
+    else
+        if(filenames.size() == 1 && filenames[0].contains("2dseq"))
+        {
+            image::io::bruker_2dseq seq;
+            if(!seq.load_from_file(filenames[0].toLocal8Bit().begin()))
+            {
+                QMessageBox::information(0,"Error","Not a valid 2dseq file",0);
+                return false;
+            }
+            seq.get_image().swap(ref);
+            seq.get_voxel_size(vs.begin());
+            return true;
+        }
+    else
+    {
+        image::io::volume v;
+        std::vector<std::string> file_list;
+        for(int i = 0;i < filenames.size();++i)
+            file_list.push_back(filenames[i].toStdString());
+        v.load_from_files(file_list,file_list.size());
+        v >> ref;
+        v.get_voxel_size(vs.begin());
+        return true;
+    }
+}
 
 view_image::view_image(QWidget *parent) :
     QDialog(parent),

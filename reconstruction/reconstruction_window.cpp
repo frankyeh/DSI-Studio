@@ -761,6 +761,8 @@ void reconstruction_window::on_actionFlip_xz_triggered()
 }
 
 
+
+bool load_image_from_files(QStringList filenames,image::basic_image<float,3>& ref,image::vector<3>& vs);
 void reconstruction_window::on_actionRotate_triggered()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
@@ -771,26 +773,8 @@ void reconstruction_window::on_actionRotate_triggered()
 
     image::basic_image<float,3> ref;
     image::vector<3> vs;
-    if(filenames.size() == 1 && filenames[0].toLower().contains("nii"))
-    {
-        gz_nifti in;
-        if(!in.load_from_file(filenames[0].toLocal8Bit().begin()) || !in.toLPS(ref))
-        {
-            QMessageBox::information(this,"Error","Not a valid nifti file",0);
-            return;
-        }
-        in.get_voxel_size(vs.begin());
-    }
-    else
-    {
-        image::io::volume v;
-        std::vector<std::string> file_list;
-        for(int i = 0;i < filenames.size();++i)
-            file_list.push_back(filenames[i].toStdString());
-        v.load_from_files(file_list,file_list.size());
-        v >> ref;
-        v.get_voxel_size(vs.begin());
-    }
+    if(!load_image_from_files(filenames,ref,vs))
+        return;
     std::auto_ptr<manual_alignment> manual(new manual_alignment(this,
                                                                 dwi,handle->voxel.vs,ref,vs,
                                                                 image::reg::rigid_body,
