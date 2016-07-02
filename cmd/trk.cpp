@@ -31,6 +31,7 @@ void save_connectivity_matrix(TractModel& tract_model,
                               const std::string& source,
                               const std::string& connectivity_roi,
                               const std::string& connectivity_value,
+                              double t,
                               bool use_end_only)
 {
     std::cout << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
@@ -54,7 +55,7 @@ void save_connectivity_matrix(TractModel& tract_model,
     network_measures += ".network_measures.txt";
     std::cout << "export network measures to " << network_measures << std::endl;
     std::string report;
-    data.network_property(report,0.001);
+    data.network_property(report,t);
     std::ofstream out(network_measures.c_str());
     out << report;
 }
@@ -145,6 +146,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
         for(unsigned int j = 0;j < connectivity_type_list.size();++j)
         for(unsigned int k = 0;k < connectivity_value_list.size();++k)
             save_connectivity_matrix(tract_model,data,source,roi_file_name,connectivity_value_list[k].toStdString(),
+                                     std::stod(po.get("connectivity_threshold","0.001")),
                                      connectivity_type_list[j].toLower() == QString("end"));
     }
 }
