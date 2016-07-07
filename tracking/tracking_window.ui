@@ -1010,8 +1010,6 @@
     <addaction name="actionLoad_From_Atlas"/>
     <addaction name="separator"/>
     <addaction name="actionSaveRegionAs"/>
-    <addaction name="actionSave_Voxel_Data_As"/>
-    <addaction name="separator"/>
     <addaction name="actionSave_All_Regions_As"/>
     <addaction name="actionSave_All_Regions_As_Multiple_Files"/>
     <addaction name="separator"/>
@@ -1031,6 +1029,7 @@
     <addaction name="actionWhole_brain_seeding"/>
     <addaction name="separator"/>
     <addaction name="actionRegion_statistics"/>
+    <addaction name="actionSave_Voxel_Data_As"/>
    </widget>
    <widget class="QMenu" name="menuTracts">
     <property name="title">
@@ -2737,7 +2736,7 @@ Tracking</string>
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save &amp;Region Data As...</string>
+    <string>Save Indices As...</string>
    </property>
   </action>
   <action name="actionTDI_Diffusion_Space">
