@@ -1050,11 +1050,17 @@ void TractTableWidget::delete_all_tract(void)
 
 void TractTableWidget::delete_repeated(void)
 {
+    float distance = 1.0;
+    bool ok;
+    distance = QInputDialog::getDouble(this,
+        "DSI Studio","Distance threshold", distance,0,10,1,&ok);
+    if (!ok)
+        return;
     begin_prog("deleting tracks");
     for(int i = 0;check_prog(i,tract_models.size());++i)
     {
         if(item(i,0)->checkState() == Qt::Checked)
-            tract_models[i]->delete_repeated();
+            tract_models[i]->delete_repeated(distance);
         item(i,1)->setText(QString::number(tract_models[i]->get_visible_track_count()));
         item(i,2)->setText(QString::number(tract_models[i]->get_deleted_track_count()));
     }

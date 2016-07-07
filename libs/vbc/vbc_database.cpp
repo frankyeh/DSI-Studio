@@ -311,7 +311,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
                 ;
             if(tracks.get_visible_track_count())
                 *greater_tracks[index] = tracks;
-            greater_tracks[index]->delete_repeated();
+            greater_tracks[index]->delete_repeated(1.0);
             std::ostringstream out1;
             out1 << trk_file_names[index] << ".greater.trk.gz";
             greater_tracks[index]->save_tracts_to_file(out1.str().c_str());
@@ -357,7 +357,7 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
                 ;
             if(tracks.get_visible_track_count())
                 *lesser_tracks[index] = tracks;
-            lesser_tracks[index]->delete_repeated();
+            lesser_tracks[index]->delete_repeated(1.0);
             std::ostringstream out1;
             out1 << trk_file_names[index] << ".lesser.trk.gz";
             lesser_tracks[index]->save_tracts_to_file(out1.str().c_str());

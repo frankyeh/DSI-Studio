@@ -899,7 +899,7 @@ void TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select
     delete_tracts(not_selected);
 }
 //---------------------------------------------------------------------------
-void TractModel::delete_repeated(void)
+void TractModel::delete_repeated(double d)
 {
     auto norm1 = [](const float* v1,const float* v2){return std::fabs(v1[0]-v2[0])+std::fabs(v1[1]-v2[1])+std::fabs(v1[2]-v2[2]);};
     std::vector<bool> repeated(tract_data.size());
@@ -916,7 +916,7 @@ void TractModel::delete_repeated(void)
                     float min_dis = norm1(&tract_data[i][m],&tract_data[j][0]);
                     for(int n = 3;n < tract_data[j].size();n += 3)
                         min_dis = std::min<float>(min_dis,norm1(&tract_data[i][m],&tract_data[j][n]));
-                    if(min_dis > 1.0f)
+                    if(min_dis > d)
                     {
                         not_repeated = true;
                         break;
@@ -928,7 +928,7 @@ void TractModel::delete_repeated(void)
                     float min_dis = norm1(&tract_data[j][m],&tract_data[i][0]);
                     for(int n = 3;n < tract_data[i].size();n += 3)
                         min_dis = std::min<float>(min_dis,norm1(&tract_data[j][m],&tract_data[i][n]));
-                    if(min_dis > 1.0f)
+                    if(min_dis > d)
                     {
                         not_repeated = true;
                         break;
@@ -1764,10 +1764,13 @@ void create_region_map(const image::geometry<3>& geometry,
 }
 
 void TractModel::get_passing_list(const std::vector<std::vector<image::vector<3,short> > >& regions,
-                                         std::vector<std::vector<short> >& passing_list) const
+                                  std::vector<std::vector<short> >& passing_list1,
+                                  std::vector<std::vector<short> >& passing_list2) const
 {
-    passing_list.clear();
-    passing_list.resize(tract_data.size());
+    passing_list1.clear();
+    passing_list1.resize(tract_data.size());
+    passing_list2.clear();
+    passing_list2.resize(tract_data.size());
     // create regions maps
     std::vector<std::vector<short> > region_map;
     create_region_map(geometry,regions,region_map);
@@ -1777,6 +1780,7 @@ void TractModel::get_passing_list(const std::vector<std::vector<image::vector<3,
         if(tract_data[index].size() < 6)
             continue;
         std::vector<unsigned char> has_region(regions.size());
+        unsigned int half_length = tract_data[index].size()/2;
         for(unsigned int ptr = 0;ptr < tract_data[index].size();ptr += 3)
         {
             image::pixel_index<3> pos(std::floor(tract_data[index][ptr]+0.5),
@@ -1786,11 +1790,15 @@ void TractModel::get_passing_list(const std::vector<std::vector<image::vector<3,
                 continue;
             unsigned int pos_index = pos.index();
             for(unsigned int j = 0;j < region_map[pos_index].size();++j)
-                has_region[region_map[pos_index][j]] = 1;
+                has_region[region_map[pos_index][j]] = (ptr > half_length ? 1: 2);
         }
         for(unsigned int i = 0;i < has_region.size();++i)
-            if(has_region[i])
-                passing_list[index].push_back(i);
+        {
+            if(has_region[i] == 1)
+                passing_list1[index].push_back(i);
+            if(has_region[i] == 2)
+                passing_list2[index].push_back(i);
+        }
     }
 }
 
@@ -1878,12 +1886,10 @@ void init_matrix(m_type& m,unsigned int size)
 }
 
 template<class T,class fun_type>
-void for_each_connectivity(const T& passing_list,
-                           const T& end_list1,
+void for_each_connectivity(const T& end_list1,
                            const T& end_list2,
-                           bool end,fun_type lambda_fun)
+                           fun_type lambda_fun)
 {
-    if(end)
     for(unsigned int index = 0;index < end_list1.size();++index)
     {
         const auto& r1 = end_list1[index];
@@ -1896,19 +1902,6 @@ void for_each_connectivity(const T& passing_list,
                     lambda_fun(index,r2[j],r1[i]);
                 }
     }
-    else
-    {
-        for(unsigned int index = 0;index < passing_list.size();++index)
-        {
-            const auto& r1 = passing_list[index];
-            for(unsigned int i = 0;i < r1.size();++i)
-                for(unsigned int j = i+1;j < r1.size();++j)
-                    {
-                        lambda_fun(index,r1[i],r1[j]);
-                        lambda_fun(index,r1[j],r1[i]);
-                    }
-        }
-    }
 }
 
 bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_value_type,bool use_end_only)
@@ -1918,18 +1911,18 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
         error_msg = "No region information. Please assign regions";
         return false;
     }
-    std::vector<std::vector<short> > passing_list;
+
     std::vector<std::vector<short> > end_list1,end_list2;
     if(use_end_only)
         tract_model.get_end_list(regions,end_list1,end_list2);
     else
-        tract_model.get_passing_list(regions,passing_list);
+        tract_model.get_passing_list(regions,end_list1,end_list2);
     if(matrix_value_type == "trk")
     {
         std::vector<std::vector<std::vector<unsigned int> > > region_passing_list;
         init_matrix(region_passing_list,regions.size());
 
-        for_each_connectivity(passing_list,end_list1,end_list2,use_end_only,
+        for_each_connectivity(end_list1,end_list2,
                               [&](unsigned int index,short i,short j){
             region_passing_list[i][j].push_back(index);
         });
@@ -1949,7 +1942,7 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
     std::vector<std::vector<unsigned int> > count;
     init_matrix(count,regions.size());
 
-    for_each_connectivity(passing_list,end_list1,end_list2,use_end_only,
+    for_each_connectivity(end_list1,end_list2,
                           [&](unsigned int index,short i,short j){
         ++count[i][j];
     });
@@ -1966,7 +1959,7 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
         std::vector<std::vector<std::vector<unsigned int> > > length_matrix;
         init_matrix(length_matrix,regions.size());
 
-        for_each_connectivity(passing_list,end_list1,end_list2,use_end_only,
+        for_each_connectivity(end_list1,end_list2,
                               [&](unsigned int index,short i,short j){
             length_matrix[i][j].push_back(tract_model.get_tract_length(index));
         });
@@ -1988,7 +1981,7 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
         init_matrix(sum_length,regions.size());
         init_matrix(sum_n,regions.size());
 
-        for_each_connectivity(passing_list,end_list1,end_list2,use_end_only,
+        for_each_connectivity(end_list1,end_list2,
                               [&](unsigned int index,short i,short j){
             sum_length[i][j] += tract_model.get_tract_length(index);
             ++sum_n[i][j];
@@ -2014,7 +2007,7 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
     for(unsigned int index = 0;index < data.size();++index)
         m[index] = image::mean(data[index].begin(),data[index].end());
 
-    for_each_connectivity(passing_list,end_list1,end_list2,use_end_only,
+    for_each_connectivity(end_list1,end_list2,
                           [&](unsigned int index,short i,short j){
         sum[i][j] += m[index];
     });
