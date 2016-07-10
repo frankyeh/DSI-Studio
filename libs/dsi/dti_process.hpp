@@ -169,11 +169,20 @@ public:
         mat_writer.write("dir0",&*voxel.fib_dir.begin(),1,voxel.fib_dir.size());
         if(voxel.output_diffusivity)
         {
-            mat_writer.write("adc",&*md.begin(),1,md.size());
-            mat_writer.write("axial_dif",&*d0.begin(),1,d0.size());
-            mat_writer.write("radial_dif",&*d1.begin(),1,d1.size());
-            mat_writer.write("radial_dif1",&*d2.begin(),1,d2.size());
-            mat_writer.write("radial_dif2",&*d3.begin(),1,d3.size());
+            mat_writer.write("md",&*md.begin(),1,md.size());
+            mat_writer.write("ad",&*d0.begin(),1,d0.size());
+            mat_writer.write("rd",&*d1.begin(),1,d1.size());
+            mat_writer.write("rd1",&*d2.begin(),1,d2.size());
+            mat_writer.write("rd2",&*d3.begin(),1,d3.size());
+            /*
+            std::vector<float> cl(d0.size()),cp(d0.size());
+            for(int i = 0;i < cl.size();++i)
+                cl[i] = (md[i] == 0 ? 0 : (d0[i]-d1[i])/md[i]);
+            mat_writer.write("cl",&*cl.begin(),1,cl.size());
+            for(int i = 0;i < cp.size();++i)
+                cp[i] = (md[i] == 0 ? 0 : (d2[i]-d3[i])/md[i]*2.0);
+            mat_writer.write("cp",&*cp.begin(),1,cp.size());
+            */
         }
         if(voxel.output_tensor)
         {
