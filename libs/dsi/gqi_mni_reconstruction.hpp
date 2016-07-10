@@ -420,6 +420,7 @@ public:
     void init(Voxel& voxel)
     {
         voxel.z0 = 0.0;
+        total_sample = 0;
         samples.resize(20);
     }
     void run(Voxel& voxel, VoxelData& data)
