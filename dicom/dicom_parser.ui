@@ -85,6 +85,11 @@
             <string>upsampling 4</string>
            </property>
           </item>
+          <item>
+           <property name="text">
+            <string>downsampling 4</string>
+           </property>
+          </item>
          </widget>
         </item>
         <item>

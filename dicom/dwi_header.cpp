@@ -463,6 +463,8 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
             std::for_each(dimension,dimension+3,[](short& i){i >>= 1;});
         if(upsampling == 3) // upsampling 4
             std::for_each(dimension,dimension+3,[](short& i){i <<= 2;});
+        if(upsampling == 4) // downsampling 4
+            std::for_each(dimension,dimension+3,[](short& i){i >>= 2;});
         output_size = dimension[0]*dimension[1]*dimension[2];
         write_mat.write("dimension",dimension,1,3);
     }
@@ -476,6 +478,8 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
             std::for_each(voxel_size,voxel_size+3,[](float& i){i *= 2.0;});
         if(upsampling == 3) // upsampling 4
             std::for_each(voxel_size,voxel_size+3,[](float& i){i /= 4.0;});
+        if(upsampling == 4) // downsampling 4
+            std::for_each(voxel_size,voxel_size+3,[](float& i){i *= 4.0;});
         write_mat.write("voxel_size",voxel_size,1,3);
     }
     // store bvec file
@@ -514,6 +518,11 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
             {
                 image::upsampling(buffer);
                 image::upsampling(buffer);
+            }
+            if(upsampling == 4)
+            {
+                image::downsampling(buffer);
+                image::downsampling(buffer);
             }
             ptr = (const unsigned short*)&*buffer.begin();
         }
