@@ -300,7 +300,7 @@ void TractTableWidget::set_color(void)
 {
     if(tract_models.empty())
         return;
-    QColor color = QColorDialog::getColor(Qt::red);
+    QColor color = QColorDialog::getColor(Qt::red,(QWidget*)this,"Select color",QColorDialog::ShowAlphaChannel);
     if(!color.isValid())
         return;
     tract_models[currentRow()]->set_color(color.rgb());
@@ -1119,7 +1119,7 @@ void TractTableWidget::edit_tracts(void)
                         cur_tracking_window["tract_sel_angle"].toFloat():0.0,
                              cur_tracking_window.glWidget->dir1,
                              cur_tracking_window.glWidget->dir2,
-                             cur_tracking_window.glWidget->pos,QColorDialog::getColor(Qt::red).rgb());
+                             cur_tracking_window.glWidget->pos,QColorDialog::getColor(Qt::red,this,"Select color",QColorDialog::ShowAlphaChannel).rgb());
             cur_tracking_window.set_data("tract_color_style",1);//manual assigned
             break;
         }
