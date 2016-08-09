@@ -405,6 +405,7 @@ tracking_window::~tracking_window()
 }
 void tracking_window::report(QString string)
 {
+    string += " The analysis was conducted using DSI Studio (http://dsi-studio.labsolver.org).";
     ui->text_report->setText(string);
 }
 

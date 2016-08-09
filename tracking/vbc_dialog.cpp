@@ -1063,6 +1063,7 @@ void vbc_dialog::calculate_FDR(void)
             report += out.str().c_str();
         }
 
+    report += " The analysis was conducted using DSI Studio (http://dsi-studio.labsolver.org).";
     ui->textBrowser->setText(report);
 
     if(vbc->progress == 100)
