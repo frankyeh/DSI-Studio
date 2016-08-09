@@ -5,6 +5,7 @@
 #include "tracking/tracking_window.h"
 #include "opengl/glwidget.h"
 #include "program_option.hpp"
+
 int vis(void)
 {
     if(!po.has("cmd"))
@@ -20,11 +21,12 @@ int vis(void)
         return 0;
     }
     std::cout << "starting gui" << std::endl;
-    std::auto_ptr<tracking_window> new_mdi(new tracking_window(0,new_handle));
+    tracking_window* new_mdi = new tracking_window(0,new_handle);
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
     new_mdi->setWindowTitle(file_name.c_str());
     new_mdi->show();
-    new_mdi->hide();
+    if(!po.has("stay_open"))
+        new_mdi->hide();
 
     if(po.has("track"))
     {
@@ -46,6 +48,11 @@ int vis(void)
             std::cout << "unknown command:" << param[0].toStdString() << std::endl;
         }
     }
-    new_mdi->close();
+
+    if(!po.has("stay_open"))
+    {
+        new_mdi->close();
+        delete new_mdi;
+    }
     return 0;
 }

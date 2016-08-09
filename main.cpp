@@ -47,11 +47,47 @@ QStringList search_files(QString dir,QString filter)
     return src_list;
 }
 
+
+void init_application(QApplication& a)
+{
+    a.setOrganizationName("LabSolver");
+    a.setApplicationName("DSI Studio");
+    QFont font;
+    font.setFamily(QString::fromUtf8("Arial"));
+    a.setFont(font);
+    a.setStyle(QStyleFactory::create("Fusion"));
+    if(!fa_template_imp.load_from_file())
+    {
+        QMessageBox::information(0,"Error",QString("Cannot find HCP842_QA.nii.gz in ") + QCoreApplication::applicationDirPath(),0);
+        return;
+    }
+    load_atlas();
+}
+
 program_option po;
-int run_cmd(void)
+int run_cmd(int ac, char *av[])
 {
     try
     {
+        std::cout << "DSI Studio " << __DATE__ << ", Fang-Cheng Yeh" << std::endl;
+        po.init(ac,av);
+        std::auto_ptr<QApplication> gui;
+        std::auto_ptr<QCoreApplication> cmd;
+        for (int i = 1; i < ac; ++i)
+            if (std::string(av[i]) == std::string("--action=cnt") ||
+                std::string(av[i]) == std::string("--action=vis"))
+            {
+                gui.reset(new QApplication(ac, av));
+                init_application(*gui.get());
+                std::cout << "Starting GUI-based command line interface." << std::endl;
+                break;
+            }
+        if(!gui.get())
+        {
+            cmd.reset(new QCoreApplication(ac, av));
+            cmd->setOrganizationName("LabSolver");
+            cmd->setApplicationName("DSI Studio");
+        }
         if (!po.has("action") || !po.has("source"))
         {
             std::cout << "invalid command, use --help for more detail" << std::endl;
@@ -59,24 +95,25 @@ int run_cmd(void)
         }
         QDir::setCurrent(QFileInfo(po.get("action").c_str()).absolutePath());
         if(po.get("action") == std::string("rec"))
-            return rec();
+            rec();
         if(po.get("action") == std::string("trk"))
-            return trk();
+            trk();
         if(po.get("action") == std::string("src"))
-            return src();
+            src();
         if(po.get("action") == std::string("ana"))
-            return ana();
+            ana();
         if(po.get("action") == std::string("exp"))
-            return exp();
+            exp();
         if(po.get("action") == std::string("atl"))
-            return atl();
+            atl();
         if(po.get("action") == std::string("cnt"))
-            return cnt();
+            cnt();
         if(po.get("action") == std::string("vis"))
-            return vis();
+            vis();
         if(po.get("action") == std::string("ren"))
-            return ren();
-        std::cout << "invalid command, use --help for more detail" << std::endl;
+            ren();
+        if(gui.get() && po.get("stay_open") == std::string("1"))
+            gui->exec();
         return 1;
     }
     catch(const std::exception& e ) {
@@ -90,47 +127,14 @@ int run_cmd(void)
 }
 
 
+
 int main(int ac, char *av[])
 { 
     if(ac > 2)
-    {
-        std::auto_ptr<QCoreApplication> cmd;
-        {
-            for (int i = 1; i < ac; ++i)
-                if (std::string(av[i]) == std::string("--action=cnt") ||
-                    std::string(av[i]) == std::string("--action=vis"))
-                {
-                    cmd.reset(new QApplication(ac, av));
-                    std::cout << "Starting GUI-based command line interface." << std::endl;
-                    break;
-                }
-            if(!cmd.get())
-                cmd.reset(new QCoreApplication(ac, av));
-        }
-        cmd->setOrganizationName("LabSolver");
-        cmd->setApplicationName("DSI Studio");
-        std::cout << "DSI Studio " << __DATE__ << ", Fang-Cheng Yeh" << std::endl;
-        po.init(ac,av);
-        return run_cmd();
-    }
+        return run_cmd(ac,av);
     QApplication a(ac,av);
-    a.setOrganizationName("LabSolver");
-    a.setApplicationName("DSI Studio");
-    QFont font;
-    font.setFamily(QString::fromUtf8("Arial"));
-    a.setFont(font);
-    a.setStyle(QStyleFactory::create("Fusion"));
-    // load template
-    if(!fa_template_imp.load_from_file())
-    {
-        QMessageBox::information(0,"Error",QString("Cannot find HCP842_QA.nii.gz in ") + QCoreApplication::applicationDirPath(),0);
-        return false;
-    }
-    load_atlas();
-
-
+    init_application(a);
     MainWindow w;
-    w.setFont(font);
     w.show();
     w.setWindowTitle(QString("DSI Studio ") + __DATE__ + " build");
     return a.exec();
