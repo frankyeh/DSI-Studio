@@ -630,6 +630,19 @@ void MainWindow::on_batch_src_clicked()
                 continue;
             }
 
+            QStringList nifti_file_list = cur_dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
+            for (unsigned int index = 0;index < nifti_file_list.size();++index)
+            {
+                if(QFileInfo(dir_list[i] + "/" + QFileInfo(nifti_file_list[index]).baseName()+".bval").exists() &&
+                   QFileInfo(dir_list[i] + "/" + QFileInfo(nifti_file_list[index]).baseName()+".bvec").exists() &&
+                    load_4d_nii(QString(dir_list[i] + "/" + nifti_file_list[index]).toLocal8Bit().begin(),dwi_files))
+                {
+                    DwiHeader::output_src(QString(dir_list[i] + "/" +
+                        QFileInfo(nifti_file_list[index]).baseName() + ".src.gz").toLocal8Bit().begin(),dwi_files,0);
+                    continue;
+                }
+            }
+
             QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
             if(dicom_file_list.empty())
                 continue;
