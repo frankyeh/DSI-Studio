@@ -85,6 +85,7 @@ public:
     void float3dwindow(int w,int h);
     void initialize_tracking_index(int index);
     void report(QString string);
+    bool command(QString cmd,QString param = "",QString param2 = "");
 public slots:
     void on_SagView_clicked();
     void on_CorView_clicked();

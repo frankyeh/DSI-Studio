@@ -408,6 +408,38 @@ void tracking_window::report(QString string)
     string += " The analysis was conducted using DSI Studio (http://dsi-studio.labsolver.org).";
     ui->text_report->setText(string);
 }
+bool tracking_window::command(QString cmd,QString param,QString param2)
+{
+    if(glWidget->command(cmd,param,param2) ||
+       scene.command(cmd,param,param2) ||
+       tractWidget->command(cmd,param,param2))
+        return true;
+
+    if(cmd == "set_roi_view_index")
+    {
+        bool okay = true;
+        int index = param.toInt(&okay);
+        if(okay)
+        {
+            ui->sliceViewBox->setCurrentIndex(index);
+            return true;
+        }
+        index = ui->sliceViewBox->findText(param);
+        if(index == -1)
+        {
+            std::cout << "Cannot find index:" << param.toStdString() << std::endl;
+            return false;
+        }
+        ui->sliceViewBox->setCurrentIndex(index);
+        return true;
+    }
+    if(cmd == "set_param")
+    {
+        renderWidget->setData(param,param2);
+        return true;
+    }
+    return false;
+}
 
 void tracking_window::initialize_tracking_index(int index)
 {
