@@ -57,7 +57,6 @@ public:// Parameters
     image::vector<3,float> next_dir;
     bool terminated;
     bool forward;
-    bool failed;
 public:
     const tracking& trk;
     const TrackingParam& param;
@@ -118,7 +117,6 @@ public:
         buffer_front_pos = param.max_points_count3;
         buffer_back_pos = param.max_points_count3;
         image::vector<3,float> end_point1;
-        failed = false;
         terminated = false;
 		do
 		{
@@ -137,9 +135,6 @@ public:
 			
 		}
         while(!terminated);
-
-        if(failed)
-			return false;
 		
         end_point1 = position;
         terminated = false;
@@ -186,8 +181,7 @@ public:
             smoothed.swap(track_buffer);
         }
 
-        return !failed &&
-               get_buffer_size() >= param.min_points_count3 &&
+        return get_buffer_size() >= param.min_points_count3 &&
                roi_mgr.have_include(get_result(),get_buffer_size()) &&
                roi_mgr.fulfill_end_point(position,end_point1);
 
