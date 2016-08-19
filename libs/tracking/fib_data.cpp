@@ -297,7 +297,7 @@ const float* fiber_directions::get_dir(unsigned int index,unsigned int order) co
 }
 
 
-bool tracking::get_nearest_dir_fib(unsigned int space_index,
+bool tracking_data::get_nearest_dir_fib(unsigned int space_index,
                      const image::vector<3,float>& ref_dir, // reference direction, should be unit vector
                      unsigned char& fib_order_,
                      unsigned char& reverse_) const
@@ -332,7 +332,7 @@ bool tracking::get_nearest_dir_fib(unsigned int space_index,
     reverse_ = reverse;
     return true;
 }
-void tracking::read(const fib_data& fib)
+void tracking_data::read(const fib_data& fib)
 {
     dim = fib.dim;
     vs = fib.vs;
@@ -343,7 +343,7 @@ void tracking::read(const fib_data& fib)
     dir = fib.dir.dir;
     other_index = fib.dir.index_data;
 }
-bool tracking::get_dir(unsigned int space_index,
+bool tracking_data::get_dir(unsigned int space_index,
                      const image::vector<3,float>& dir, // reference direction, should be unit vector
                      image::vector<3,float>& main_dir) const
 {
@@ -361,14 +361,14 @@ bool tracking::get_dir(unsigned int space_index,
     return true;
 }
 
-const float* tracking::get_dir(unsigned int space_index,unsigned char fib_order) const
+const float* tracking_data::get_dir(unsigned int space_index,unsigned char fib_order) const
 {
     if(!dir.empty())
         return dir[fib_order] + space_index + (space_index << 1);
     return &*(odf_table[findex[fib_order][space_index]].begin());
 }
 
-float tracking::cos_angle(const image::vector<3>& cur_dir,unsigned int space_index,unsigned char fib_order) const
+float tracking_data::cos_angle(const image::vector<3>& cur_dir,unsigned int space_index,unsigned char fib_order) const
 {
     if(!dir.empty())
     {
@@ -378,7 +378,7 @@ float tracking::cos_angle(const image::vector<3>& cur_dir,unsigned int space_ind
     return cur_dir*odf_table[findex[fib_order][space_index]];
 }
 
-float tracking::get_track_specific_index(unsigned int space_index,unsigned int index_num,
+float tracking_data::get_track_specific_index(unsigned int space_index,unsigned int index_num,
                          const image::vector<3,float>& dir) const
 {
     unsigned char fib_order;
@@ -388,7 +388,10 @@ float tracking::get_track_specific_index(unsigned int space_index,unsigned int i
     return other_index[index_num][fib_order][space_index];
 }
 
-
+bool tracking_data::is_white_matter(const image::vector<3,float>& pos,float t) const
+{
+    return image::estimate(image::make_image(fa[0],dim),pos) > t;
+}
 
 
 bool fib_data::load_from_file(const char* file_name)

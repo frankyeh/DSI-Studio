@@ -76,7 +76,8 @@ struct TrackVis
     }
 };
 //---------------------------------------------------------------------------
-TractModel::TractModel(std::shared_ptr<fib_data> handle_):handle(handle_),report(handle_->report),geometry(handle_->dim),vs(handle_->vs),fib(new tracking)
+TractModel::TractModel(std::shared_ptr<fib_data> handle_):handle(handle_),
+        report(handle_->report),geometry(handle_->dim),vs(handle_->vs),fib(new tracking_data)
 {
     fib->read(*handle_);
 }

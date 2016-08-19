@@ -520,6 +520,7 @@ void tracking_window::set_tracking_param(ThreadData& tracking_thread)
     tracking_thread.interpolation_strategy = renderWidget->getData("interpolation").toInt();
     tracking_thread.stop_by_tract = renderWidget->getData("tracking_plan").toInt();
     tracking_thread.center_seed = renderWidget->getData("seed_plan").toInt();
+    tracking_thread.check_ending = renderWidget->getData("check_ending").toInt();
 }
 
 void tracking_window::SliderValueChanged(void)
@@ -1368,7 +1369,7 @@ void tracking_window::on_actionQuality_Assessment_triggered()
 #include "tessellated_icosahedron.hpp"
 void tracking_window::on_actionImprove_Quality_triggered()
 {
-    tracking fib;
+    tracking_data fib;
     fib.read(*handle);
     fib.threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim));
     if(!fib.dir.empty())

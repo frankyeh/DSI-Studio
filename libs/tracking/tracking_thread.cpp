@@ -3,12 +3,14 @@
 void ThreadData::push_tracts(std::vector<std::vector<float> >& local_tract_buffer)
 {
     std::lock_guard<std::mutex> lock(lock_feed_function);
+    pushing_data = true;
     for(unsigned int index = 0;index < local_tract_buffer.size();++index)
     {
         track_buffer.push_back(std::vector<float>());
         track_buffer.back().swap(local_tract_buffer[index]);
     }
     local_tract_buffer.clear();
+    pushing_data = false;
 }
 void ThreadData::end_thread(void)
 {
@@ -26,6 +28,7 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
     std::auto_ptr<TrackingMethod> method(method_ptr);
     std::uniform_real_distribution<float> rand_gen(0,1);
     unsigned int iteration = thread_id; // for center seed
+    float white_matter_t = method_ptr->trk.threshold*1.2;
     if(!seeds.empty())
     try{
         std::vector<std::vector<float> > local_track_buffer;
@@ -35,6 +38,8 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
               (max_seed_count == 0 || seed_count[thread_id] < max_seed_count) &&
               (!center_seed || iteration < seeds.size()))
         {
+            if(!pushing_data && (iteration & 0x00000FFF) == 0x00000FFF && !local_track_buffer.empty())
+                push_tracts(local_track_buffer);
             ++seed_count[thread_id];
             if(center_seed)
             {
@@ -63,13 +68,24 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
             }
             unsigned int point_count;
             const float *result = method->tracking(tracking_method,point_count);
-            if (result && point_count)
+            if(!result)
+                continue;
+            const float* end = result+point_count+point_count+point_count;
+            if(check_ending)
             {
-                ++tract_count[thread_id];
-                local_track_buffer.push_back(std::vector<float>(result,result+point_count+point_count+point_count));
+                if(point_count < 2)
+                    continue;
+                image::vector<3> p0(result),p1(result+3),p2(end-6),p3(end-3);
+                p1 -= p0;
+                p0 -= p1;
+                p2 -= p3;
+                p3 -= p2;
+                if(method->trk.is_white_matter(p0,white_matter_t) ||
+                   method->trk.is_white_matter(p3,white_matter_t))
+                    continue;
             }
-            if((iteration & 0x00000FFF) == 0x00000FFF && !local_track_buffer.empty())
-                push_tracts(local_track_buffer);
+            ++tract_count[thread_id];
+            local_track_buffer.push_back(std::vector<float>(result,end));
         }
         push_tracts(local_track_buffer);
     }
@@ -123,7 +139,7 @@ void ThreadData::setRegions(image::geometry<3> dim,
     seed_report += roi_name;
     seed_report += ".";
 }
-TrackingMethod* ThreadData::new_method(const tracking& trk)
+TrackingMethod* ThreadData::new_method(const tracking_data& trk)
 {
     std::auto_ptr<basic_interpolation> interpo_method;
     switch (interpolation_strategy)
@@ -142,7 +158,7 @@ TrackingMethod* ThreadData::new_method(const tracking& trk)
     return new TrackingMethod(trk,interpo_method.release(),roi_mgr,param);
 }
 
-void ThreadData::run(const tracking& trk,
+void ThreadData::run(const tracking_data& trk,
          unsigned int thread_count,
          unsigned int termination_count,
          bool wait)
@@ -186,6 +202,7 @@ void ThreadData::run(const tracking& trk,
     seed_count.resize(thread_count);
     tract_count.resize(thread_count);
     running.resize(thread_count);
+    pushing_data = false;
     std::fill(running.begin(),running.end(),1);
 
     end_thread();

@@ -263,6 +263,7 @@ int trk(void)
     tracking_thread.initial_direction  = po.get("initial_dir",int(0));
     tracking_thread.interpolation_strategy = po.get("interpolation",int(0));
     tracking_thread.center_seed = po.get("seed_plan",int(0));
+    tracking_thread.check_ending = po.get("check_ending",int(1));
 
 
     unsigned int termination_count = 10000;

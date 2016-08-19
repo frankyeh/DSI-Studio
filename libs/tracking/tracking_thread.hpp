@@ -24,6 +24,7 @@ public:
     TrackingParam param;
     bool stop_by_tract;
     bool center_seed;
+    bool check_ending;
     unsigned int termination_count;
     unsigned char interpolation_strategy;
     unsigned char tracking_method;
@@ -35,6 +36,7 @@ public:
         seed(random_seed ? std::random_device()():0),
         stop_by_tract(true),
         center_seed(false),
+        check_ending(true),
         termination_count(1000),
         interpolation_strategy(0),//trilinear_interpolation
         tracking_method(0),//streamline
@@ -50,7 +52,7 @@ public:
     std::vector<unsigned int> seed_count;
     std::vector<unsigned int> tract_count;
     std::vector<unsigned char> running;
-    bool joinning;
+    bool joinning,pushing_data;
     std::mutex  lock_feed_function,lock_seed_function;
     unsigned int get_total_seed_count(void)const
     {
@@ -83,8 +85,8 @@ public:
                     const std::vector<image::vector<3,short> >& points,
                     unsigned char type,
                     const char* roi_name);
-    TrackingMethod* new_method(const tracking& trk);
-    void run(const tracking& trk,
+    TrackingMethod* new_method(const tracking_data& trk);
+    void run(const tracking_data& trk,
              unsigned int thread_count,
              unsigned int termination_count,
              bool wait = false);

@@ -2,11 +2,11 @@
 #define INTERPOLATION_PROCESS_HPP
 #include <cstdlib>
 #include "image/image.hpp"
-class tracking;
+class tracking_data;
 class basic_interpolation
 {
 public:
-    virtual bool evaluate(const tracking& fib,
+    virtual bool evaluate(const tracking_data& fib,
                           const image::vector<3,float>& position,
                           const image::vector<3,float>& ref_dir,
                           image::vector<3,float>& result) = 0;
@@ -15,7 +15,7 @@ public:
 class trilinear_interpolation_with_gaussian_basis : public basic_interpolation
 {
 public:
-    virtual bool evaluate(const tracking& fib,
+    virtual bool evaluate(const tracking_data& fib,
                           const image::vector<3,float>& position,
                           const image::vector<3,float>& ref_dir,
                           image::vector<3,float>& result);
@@ -25,7 +25,7 @@ public:
 class trilinear_interpolation : public basic_interpolation
 {
 public:
-    virtual bool evaluate(const tracking& fib,
+    virtual bool evaluate(const tracking_data& fib,
                           const image::vector<3,float>& position,
                           const image::vector<3,float>& ref_dir,
                           image::vector<3,float>& result);
@@ -35,7 +35,7 @@ public:
 class nearest_direction : public basic_interpolation
 {
 public:
-    virtual bool evaluate(const tracking& fib,
+    virtual bool evaluate(const tracking_data& fib,
                           const image::vector<3,float>& position,
                           const image::vector<3,float>& ref_dir,
                           image::vector<3,float>& result);

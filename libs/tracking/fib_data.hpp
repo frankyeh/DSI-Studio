@@ -57,7 +57,7 @@ public:
 };
 
 class fib_data;
-class tracking{
+class tracking_data{
 public:
     image::geometry<3> dim;
     image::vector<3> vs;
@@ -82,6 +82,7 @@ public:
     float cos_angle(const image::vector<3>& cur_dir,unsigned int space_index,unsigned char fib_order) const;
     float get_track_specific_index(unsigned int space_index,unsigned int index_num,
                              const image::vector<3,float>& dir) const;
+    bool is_white_matter(const image::vector<3,float>& pos,float t) const;
 
 };
 

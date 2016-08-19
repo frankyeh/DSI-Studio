@@ -58,7 +58,7 @@ public:// Parameters
     bool terminated;
     bool forward;
 public:
-    const tracking& trk;
+    const tracking_data& trk;
     const TrackingParam& param;
 private:
     const RoiMgr& roi_mgr;
@@ -84,7 +84,7 @@ public:
         return interpolation->evaluate(trk,position,ref_dir,result_dir);
     }
 public:
-    TrackingMethod(const tracking& trk_,basic_interpolation* interpolation_,
+    TrackingMethod(const tracking_data& trk_,basic_interpolation* interpolation_,
                    const RoiMgr& roi_mgr_,const TrackingParam& param_):
         trk(trk_),interpolation(interpolation_),roi_mgr(roi_mgr_),param(param_),init_fib_index(0)
 	{

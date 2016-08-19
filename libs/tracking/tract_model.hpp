@@ -13,7 +13,7 @@ private:
         std::shared_ptr<fib_data> handle;
         image::geometry<3> geometry;
         image::vector<3> vs;
-        std::auto_ptr<tracking> fib;
+        std::auto_ptr<tracking_data> fib;
 private:
         std::vector<std::vector<float> > tract_data;
         std::vector<std::vector<float> > deleted_tract_data;
@@ -51,8 +51,8 @@ public:
             report = rhs.report;
             return *this;
         }
-        const tracking& get_fib(void) const{return *fib.get();}
-        tracking& get_fib(void){return *fib.get();}
+        const tracking_data& get_fib(void) const{return *fib.get();}
+        tracking_data& get_fib(void){return *fib.get();}
         void add(const TractModel& rhs);
         bool load_from_file(const char* file_name,bool append = false);
 

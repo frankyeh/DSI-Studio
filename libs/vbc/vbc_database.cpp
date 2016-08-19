@@ -37,7 +37,7 @@ bool vbc_database::load_database(const char* database_name)
 }
 
 
-int vbc_database::run_track(const tracking& fib,std::vector<std::vector<float> >& tracks,float seed_ratio, unsigned int thread_count)
+int vbc_database::run_track(const tracking_data& fib,std::vector<std::vector<float> >& tracks,float seed_ratio, unsigned int thread_count)
 {
     std::vector<image::vector<3,short> > seed;
     for(image::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
@@ -118,7 +118,7 @@ bool vbc_database::read_subject_data(const std::vector<std::string>& files,std::
 void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thread_count,unsigned int permutation_count)
 {
     connectometry_result data;
-    tracking fib;
+    tracking_data fib;
     fib.read(*handle);
     fib.threshold = tracking_threshold;
     fib.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);

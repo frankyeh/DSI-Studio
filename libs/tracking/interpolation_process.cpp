@@ -5,7 +5,7 @@
 char fib_dx[80] = {0,0,1,0,0,1,1,1,1,1,1,1,1,0,0,2,0,0,0,0,1,1,1,1,2,2,2,2,1,1,1,1,1,1,1,1,2,2,2,2,0,0,-1,0,0,-1,-1,-1,-1,-1,-1,-1,-1,0,0,-2,0,0,0,0,-1,-1,-1,-1,-2,-2,-2,-2,-1,-1,-1,-1,-1,-1,-1,-1,-2,-2,-2,-2};
 char fib_dy[80] = {1,0,0,1,1,1,0,0,-1,1,1,-1,-1,2,0,0,2,2,1,1,2,0,0,-2,1,0,0,-1,2,2,1,1,-1,-1,-2,-2,1,1,-1,-1,-1,0,0,-1,-1,-1,0,0,1,-1,-1,1,1,-2,0,0,-2,-2,-1,-1,-2,0,0,2,-1,0,0,1,-2,-2,-1,-1,1,1,2,2,-1,-1,1,1};
 char fib_dz[80] = {0,1,0,1,-1,0,1,-1,0,1,-1,1,-1,0,2,0,1,-1,2,-2,0,2,-2,0,0,1,-1,0,1,-1,2,-2,2,-2,1,-1,1,-1,1,-1,0,-1,0,-1,1,0,-1,1,0,-1,1,-1,1,0,-2,0,-1,1,-2,2,0,-2,2,0,0,-1,1,0,-1,1,-2,2,-2,2,-1,1,-1,1,-1,1};
-bool trilinear_interpolation_with_gaussian_basis::evaluate(const tracking& fib,
+bool trilinear_interpolation_with_gaussian_basis::evaluate(const tracking_data& fib,
                                                            const image::vector<3,float>& position,
                                                            const image::vector<3,float>& ref_dir,
                                                            image::vector<3,float>& result)
@@ -35,7 +35,7 @@ bool trilinear_interpolation_with_gaussian_basis::evaluate(const tracking& fib,
 }
 
 
-bool trilinear_interpolation::evaluate(const tracking& fib,
+bool trilinear_interpolation::evaluate(const tracking_data& fib,
                                        const image::vector<3,float>& position,
                                        const image::vector<3,float>& ref_dir,
                                        image::vector<3,float>& result)
@@ -62,7 +62,7 @@ bool trilinear_interpolation::evaluate(const tracking& fib,
     return true;
 }
 
-bool nearest_direction::evaluate(const tracking& fib,
+bool nearest_direction::evaluate(const tracking_data& fib,
                                  const image::vector<3,float>& position,
                                  const image::vector<3,float>& ref_dir,
                                  image::vector<3,float>& result)
