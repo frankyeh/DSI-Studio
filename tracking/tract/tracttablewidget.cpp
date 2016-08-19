@@ -391,13 +391,7 @@ void TractTableWidget::clustering(int method_id)
         break;
     }
 
-    for(int index = 0;index < tract_models[currentRow()]->get_visible_track_count();++index)
-    {
-        if(tract_models[currentRow()]->get_tract_length(index))
-            handle->add_tract(
-                &*(tract_models[currentRow()]->get_tract(index).begin()),
-                tract_models[currentRow()]->get_tract_length(index));
-    }
+    handle->add_tracts(tract_models[currentRow()]->get_tracts());
     handle->run_clustering();
     {
         bool ok = false;

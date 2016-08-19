@@ -61,6 +61,7 @@ void TractCluster::merge_tract(unsigned int tract_index1,unsigned int tract_inde
 {
     if (tract_index1 == tract_index2)
         return;
+    std::lock_guard<std::mutex> lock(lock_merge);
     Cluster* cluster_index = tract_labels[tract_index1];
     if (cluster_index == 0) // no cluster
     {
@@ -111,76 +112,87 @@ void TractCluster::merge_tract(unsigned int tract_index1,unsigned int tract_inde
     }
 }
 
-
-std::shared_ptr<std::vector<unsigned int> >  TractCluster::add_connection(unsigned short index,unsigned int track_index)
+void TractCluster::add_tracts(const std::vector<std::vector<float> >& tracks)
 {
-    if(!voxel_connection[index].get())
-        voxel_connection[index] = std::make_shared<std::vector<unsigned int> >();
-    voxel_connection[index]->push_back(track_index);
-    return voxel_connection[index];
-}
+    tract_labels.clear();
+    tract_passed_voxels.clear();
+    tract_ranged_voxels.clear();
+    tract_labels.resize(tracks.size());
+    tract_length.resize(tracks.size());
+    tract_passed_voxels.resize(tracks.size());
+    tract_ranged_voxels.resize(tracks.size());
+    for(unsigned int tract_index = 0;tract_index < tracks.size();++tract_index)
+        tract_length[tract_index] = tracks[tract_index].size();
 
-
-void TractCluster::add_tract(const float* points,unsigned int count)
-{
-    unsigned int tract_index = tract_labels.size();
-    tract_labels.push_back(0);
-    tract_length.push_back(count);
-
-    // get the passed region and the regoin with error
-    std::vector<unsigned short> passed_points;
-    std::vector<unsigned short> ranged_points;
-    const float* points_end = points + count;
-    for (;points_end != points;points += 3)
+    // build passing points and ranged points
+    image::par_for(tracks.size(),[&](unsigned int tract_index)
     {
-        image::vector<3,float> cur_point(points);
-		cur_point /= error_distance;
-        cur_point.round();
-        if(!dim.is_valid(cur_point))
-			continue;
-		image::pixel_index<3> center(cur_point[0],cur_point[1],cur_point[2],dim);
-		passed_points.push_back(center.index() & 0xFFFF);
-		std::vector<image::pixel_index<3> > iterations;
-		image::get_neighbors(center,dim,iterations);
-        for(unsigned int index = 0;index < iterations.size();++index)
-            if (dim.is_valid(iterations[index]))
-				ranged_points.push_back(iterations[index].index() & 0xFFFF);
-    }
+        if(tracks[tract_index].empty())
+            return;
+        unsigned int count = tracks[tract_index].size();
+        const float* points = &tracks[tract_index][0];
+        const float* points_end = points + count;
+        std::vector<unsigned short>& passed_points = tract_passed_voxels[tract_index];
+        std::vector<unsigned short>& ranged_points = tract_ranged_voxels[tract_index];
 
-    // delete repeated points
-    {
-        std::set<unsigned short> unique_passed_points(passed_points.begin(),passed_points.end());
-        passed_points = std::vector<unsigned short>(unique_passed_points.begin(),unique_passed_points.end());
-
-        std::set<unsigned short> unique_ranged_points(ranged_points.begin(),ranged_points.end());
-        ranged_points = std::vector<unsigned short>(unique_ranged_points.begin(),unique_ranged_points.end());
-    }
-
-
-    // get the eligible fibers for merging, and also register the ending points
-    std::vector<unsigned int> passing_tracts;
-    if(passed_points.empty() || ranged_points.empty())
-        goto end;
-    {
-
-        std::shared_ptr<std::vector<unsigned int> >  connection_set1 = add_connection(passed_points.front(),tract_index);
-        passing_tracts.insert(passing_tracts.end(),connection_set1->begin(),connection_set1->end());
-        std::shared_ptr<std::vector<unsigned int> >  connection_set2 = add_connection(passed_points.back(),tract_index);
-        passing_tracts.insert(passing_tracts.end(),connection_set2->begin(),connection_set2->end());
-		passing_tracts.erase(std::remove(passing_tracts.begin(),passing_tracts.end(),tract_index),passing_tracts.end());
-        std::set<unsigned int> unique_tracts(passing_tracts.begin(),passing_tracts.end());
-        passing_tracts = std::vector<unsigned int>(unique_tracts.begin(),unique_tracts.end());
-    }
-
-
-    // check each tract to see if anyone is included in the error range
-    {
-        std::vector<unsigned int>::const_iterator iter = passing_tracts.begin();
-        std::vector<unsigned int>::const_iterator end = passing_tracts.end();
-        for (;iter !=end;++iter)
+        for (;points_end != points;points += 3)
         {
-            unsigned int cur_index = *iter;
-            Cluster* label1 = tract_labels.back();
+            image::vector<3,float> cur_point(points);
+            cur_point /= error_distance;
+            cur_point.round();
+            if(!dim.is_valid(cur_point))
+                continue;
+            image::pixel_index<3> center(cur_point[0],cur_point[1],cur_point[2],dim);
+            passed_points.push_back(center.index() & 0xFFFF);
+            std::vector<image::pixel_index<3> > iterations;
+            image::get_neighbors(center,dim,iterations);
+            for(unsigned int index = 0;index < iterations.size();++index)
+                if (dim.is_valid(iterations[index]))
+                    ranged_points.push_back(iterations[index].index() & 0xFFFF);
+        }
+
+        // delete repeated points
+        {
+            std::set<unsigned short> unique_passed_points(passed_points.begin(),passed_points.end());
+            passed_points = std::vector<unsigned short>(unique_passed_points.begin(),unique_passed_points.end());
+
+            std::set<unsigned short> unique_ranged_points(ranged_points.begin(),ranged_points.end());
+            ranged_points = std::vector<unsigned short>(unique_ranged_points.begin(),unique_ranged_points.end());
+        }
+    });
+    // book keeping passing points
+    for(unsigned int tract_index = 0;tract_index < tracks.size();++tract_index)
+    {
+        voxel_connection[tract_passed_voxels[tract_index].front()].push_back(tract_index);
+        voxel_connection[tract_passed_voxels[tract_index].back()].push_back(tract_index);
+    }
+
+    image::par_for(tracks.size(),[&](unsigned int tract_index)
+    {
+        if(tracks[tract_index].empty())
+            return;
+        unsigned int count = tracks[tract_index].size();
+        std::vector<unsigned short>& passed_points = tract_passed_voxels[tract_index];
+        std::vector<unsigned short>& ranged_points = tract_ranged_voxels[tract_index];
+        if(passed_points.empty() || ranged_points.empty())
+            return;
+
+        // get the eligible fibers for merging, and also register the ending points
+        std::vector<unsigned int> passing_tracts;
+        {
+            std::vector<unsigned int> p1(voxel_connection[tract_passed_voxels[tract_index].front()]);
+            std::vector<unsigned int> p2(voxel_connection[tract_passed_voxels[tract_index].back()]);
+            p1.insert(p1.end(),p2.begin(),p2.end());
+            p1.erase(std::remove(p1.begin(),p1.end(),tract_index),p1.end());
+            std::set<unsigned int> unique_tracts(p1.begin(),p1.end());
+            passing_tracts = std::vector<unsigned int>(unique_tracts.begin(),unique_tracts.end());
+        }
+
+        // check each tract to see if anyone is included in the error range
+        for (int i = 0;i < passing_tracts.size();++i)
+        {
+            unsigned int cur_index = passing_tracts[i];
+            Cluster* label1 = tract_labels[tract_index];
             Cluster* label2 = tract_labels[cur_index];
             if (label1 != 0 && label1 == label2)
                 continue;
@@ -192,15 +204,9 @@ void TractCluster::add_tract(const float* points,unsigned int count)
                 continue;
             if (std::includes(ranged_points.begin(),ranged_points.end(),
                               tract_passed_voxels[cur_index].begin(),tract_passed_voxels[cur_index].end()) &&
-                    std::includes(tract_ranged_voxels[cur_index].begin(),tract_ranged_voxels[cur_index].end(),
+                std::includes(tract_ranged_voxels[cur_index].begin(),tract_ranged_voxels[cur_index].end(),
                                   passed_points.begin(),passed_points.end()))
                 merge_tract(tract_index,cur_index);
         }
-    }
-    end:
-    tract_passed_voxels.push_back(std::vector<unsigned short>());
-    tract_passed_voxels.back().swap(passed_points);
-    tract_ranged_voxels.push_back(std::vector<unsigned short>());
-    tract_ranged_voxels.back().swap(ranged_points);
-
+    });
 }

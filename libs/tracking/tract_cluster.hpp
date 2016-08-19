@@ -17,7 +17,7 @@ protected:
     std::vector<std::shared_ptr<Cluster> > clusters;
     void sort_cluster(void);
 public:
-    virtual void add_tract(const float* points,unsigned int count) = 0;
+    virtual void add_tracts(const std::vector<std::vector<float> >& tracks) = 0;
     virtual void run_clustering(void) = 0;
 public:
     unsigned int get_cluster_count(void) const
@@ -44,16 +44,22 @@ public:
     virtual ~FeatureBasedClutering(void) {}
 
 public:
-    virtual void add_tract(const float* points,unsigned int count)
+    virtual void add_tracts(const std::vector<std::vector<float> >& tracks)
     {
-        std::vector<double> feature(10);
-        std::copy(points,points+3,feature.begin());
-        std::copy(points+count-3,points+count,feature.begin()+3);
-        count >>= 1;
-        count -= count%3;
-        std::copy(points+count-3,points+count,feature.begin()+6);
-        feature.back() = count;
-        features.push_back(feature);
+        for(int i = 0;i < tracks.size();++i)
+            if(!tracks[i].empty())
+            {
+                const float* points = &tracks[i][0];
+                unsigned int count = tracks[i].size();
+                std::vector<double> feature(10);
+                std::copy(points,points+3,feature.begin());
+                std::copy(points+count-3,points+count,feature.begin()+3);
+                count >>= 1;
+                count -= count%3;
+                std::copy(points+count-3,points+count,feature.begin()+6);
+                feature.back() = count;
+                features.push_back(feature);
+            }
     }
     virtual void run_clustering(void)
     {
@@ -83,6 +89,7 @@ class TractCluster : public BasicCluster
     image::geometry<3> dim;
     unsigned int w,wh;
     float error_distance;
+    std::mutex  lock_merge;
 private:
 
 
@@ -90,9 +97,7 @@ private:
     void merge_tract(unsigned int tract_index1,unsigned int tract_index2);
     int get_index(short x,short y,short z);
 private:
-    std::vector<std::shared_ptr<std::vector<unsigned int> > > voxel_connection;
-    std::shared_ptr<std::vector<unsigned int> >  add_connection(unsigned short index,unsigned int track_index);
-
+    std::vector<std::vector<unsigned int> > voxel_connection;
 private:
     std::vector<Cluster*> tract_labels;// 0 is no cluster
     std::vector<std::vector<unsigned short> > tract_passed_voxels;
@@ -103,7 +108,7 @@ private:
 
 public:
     TractCluster(const float* param);
-    void add_tract(const float* points,unsigned int count);
+    void add_tracts(const std::vector<std::vector<float> >& tracks);
 	void run_clustering(void){sort_cluster();}
 
 };

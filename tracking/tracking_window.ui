@@ -1049,8 +1049,6 @@
       <string>Clustering</string>
      </property>
      <addaction name="actionOpen_Cluster_Labels"/>
-     <addaction name="actionK_means"/>
-     <addaction name="actionEM"/>
      <addaction name="actionHierarchical"/>
      <addaction name="actionDeep_Learning_Train"/>
     </widget>
@@ -2704,7 +2702,7 @@ Tracking</string>
   </action>
   <action name="actionHierarchical">
    <property name="text">
-    <string>Hierarchical</string>
+    <string>Single-Linkage Clustering</string>
    </property>
   </action>
   <action name="actionSet_Color">
@@ -3216,7 +3214,7 @@ Tracking</string>
   </action>
   <action name="actionDeep_Learning_Train">
    <property name="text">
-    <string>CNN</string>
+    <string>Testing</string>
    </property>
   </action>
   <action name="actionDeep_Learning_Save">

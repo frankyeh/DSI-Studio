@@ -306,8 +306,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
         connect(ui->actionSet_Color,SIGNAL(triggered()),tractWidget,SLOT(set_color()));
 
-        connect(ui->actionK_means,SIGNAL(triggered()),tractWidget,SLOT(clustering_kmeans()));
-        connect(ui->actionEM,SIGNAL(triggered()),tractWidget,SLOT(clustering_EM()));
         connect(ui->actionHierarchical,SIGNAL(triggered()),tractWidget,SLOT(clustering_hie()));
         connect(ui->actionOpen_Cluster_Labels,SIGNAL(triggered()),tractWidget,SLOT(open_cluster_label()));
 

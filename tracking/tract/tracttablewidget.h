@@ -52,8 +52,6 @@ private:
     void clustering(int method_id);
     void load_cluster_label(const std::vector<unsigned int>& labels,QString Name);
 public slots:
-    void clustering_EM(void){clustering(2);}
-    void clustering_kmeans(void){clustering(1);}
     void clustering_hie(void){clustering(0);}
     void open_cluster_label(void);
     void set_color(void);
