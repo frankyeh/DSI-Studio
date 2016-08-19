@@ -909,6 +909,11 @@ void TractModel::delete_repeated(double d)
         for(int j = i+1;j < tract_data.size();++j)
             if(!repeated[j])
             {
+                // check endpoints
+                if(norm1(&tract_data[i][0],&tract_data[j][0]) > d ||
+                   norm1(&tract_data[i][tract_data[i].size()-3],&tract_data[j][tract_data[j].size()-3]) > d)
+                    continue;
+
                 bool not_repeated = false;
                 for(int m = 0;m < tract_data[i].size();m += 3)
                 {
