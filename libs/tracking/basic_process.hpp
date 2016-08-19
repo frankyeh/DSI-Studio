@@ -74,17 +74,6 @@ public:
     }
 };
 
-struct EstimateNextDirection
-{
-public:
-
-    template<class method>
-    void operator()(method& info)
-    {
-        if (!info.get_dir(info.position,info.dir,info.next_dir))
-            info.terminated = true;
-    }
-};
 
 struct EstimateNextDirectionRungeKutta4
 {
@@ -140,6 +129,19 @@ public:
 };
 
 
+struct EstimateNextDirection
+{
+public:
+
+    template<class method>
+    void operator()(method& info)
+    {
+        if (!info.get_dir(info.position,info.dir,info.next_dir))
+            info.terminated = true;
+
+    }
+};
+
 struct SmoothDir
 {
 public:
@@ -147,8 +149,11 @@ public:
     template<class method>
     void operator()(method& info)
     {
-        info.next_dir += (info.dir-info.next_dir)*info.param.smooth_fraction;
-        info.next_dir.normalize();
+        if(info.param.smooth_fraction != 0.0f)
+        {
+            info.next_dir += (info.dir-info.next_dir)*info.param.smooth_fraction;
+            info.next_dir.normalize();
+        }
     }
 };
 
