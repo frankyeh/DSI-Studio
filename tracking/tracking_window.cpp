@@ -476,22 +476,22 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
         return false;
 
     QString status;
-    status = QString("(%1,%2,%3) ").arg(std::floor(pos[0]*10.0+0.5)/10.0)
-            .arg(std::floor(pos[1]*10.0+0.5)/10.0)
-            .arg(std::floor(pos[2]*10.0+0.5)/10.0);
+    status = QString("(%1,%2,%3) ").arg(std::round(pos[0]*10.0)/10.0)
+            .arg(std::round(pos[1]*10.0)/10.0)
+            .arg(std::round(pos[2]*10.0)/10.0);
 
     if(handle->is_qsdr || handle->has_reg())
     {
         image::vector<3,float> mni(pos);
         handle->subject2mni(mni);
         status += QString("MNI(%1,%2,%3) ")
-                .arg(std::floor(mni[0]*10.0+0.5)/10.0)
-                .arg(std::floor(mni[1]*10.0+0.5)/10.0)
-                .arg(std::floor(mni[2]*10.0+0.5)/10.0);
+                .arg(std::round(mni[0]*10.0)/10.0)
+                .arg(std::round(mni[1]*10.0)/10.0)
+                .arg(std::round(mni[2]*10.0)/10.0);
     }
     status += " ";
     std::vector<float> data;
-    pos += 0.5;
+    pos.round();
     handle->get_voxel_information(pos[0],pos[1],pos[2], data);
     for(unsigned int index = 0,data_index = 0;index < handle->view_item.size() && data_index < data.size();++index)
         if(handle->view_item[index].name != "color")
@@ -538,7 +538,8 @@ void tracking_window::SliderValueChanged(void)
         {
             image::vector<3,float> p(ui->SagSlider->value(),ui->CorSlider->value(),ui->AxiSlider->value());
             p.to(glWidget->other_slices[glWidget->current_visible_slide-1]->invT);
-            if(glWidget->other_slices[glWidget->current_visible_slide-1]->set_slice_pos(p[0]+0.5,p[1]+0.5,p[2]+0.5))
+            p.round();
+            if(glWidget->other_slices[glWidget->current_visible_slide-1]->set_slice_pos(p[0],p[1],p[2]))
                 glWidget->updateGL();
         }
     }
@@ -559,9 +560,10 @@ void tracking_window::glSliderValueChanged(void)
     {
         image::vector<3,float> p(cur_slice.slice_pos[0],cur_slice.slice_pos[1],cur_slice.slice_pos[2]);
         p.to(glWidget->other_slices[glWidget->current_visible_slide-1]->transform);
-        ui->SagSlider->setValue(p[0]+0.5);
-        ui->CorSlider->setValue(p[1]+0.5);
-        ui->AxiSlider->setValue(p[2]+0.5);
+        p.round();
+        ui->SagSlider->setValue(p[0]);
+        ui->CorSlider->setValue(p[1]);
+        ui->AxiSlider->setValue(p[2]);
         scene.show_slice();
         glWidget->updateGL();
     }

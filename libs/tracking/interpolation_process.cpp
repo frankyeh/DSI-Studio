@@ -67,9 +67,9 @@ bool nearest_direction::evaluate(const tracking_data& fib,
                                  const image::vector<3,float>& ref_dir,
                                  image::vector<3,float>& result)
 {
-    int x = std::floor(position[0]+0.5);
-    int y = std::floor(position[1]+0.5);
-    int z = std::floor(position[2]+0.5);
+    int x = std::round(position[0]);
+    int y = std::round(position[1]);
+    int z = std::round(position[2]);
     if(!fib.dim.is_valid(x,y,z))
         return false;
     if(!fib.get_dir(image::pixel_index<3>(x,y,z,fib.dim).index(),ref_dir,result))

@@ -149,8 +149,7 @@ public:
             {
                 image::vector<3> p(index.begin());
                 p.to(trans);
-                p += 0.5;
-                p.floor();
+                p.round();
                 if (from.geometry().is_valid(p) && from.at(p[0],p[1],p[2]) != 0)
                     points.push_back(image::vector<3,short>(index.begin()));
             }
@@ -164,8 +163,7 @@ public:
                 {
                     image::vector<3> p(index.begin());
                     p.to(inv);
-                    p += 0.5;
-                    p.floor();
+                    p.round();
                     if (geo.is_valid(p))
                         points.push_back(image::vector<3,short>(p[0],p[1],p[2]));
                 }

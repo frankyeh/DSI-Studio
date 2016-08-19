@@ -188,8 +188,7 @@ int64_t atlas::get_label_at(const image::vector<3,float>& mni_space)
         load_from_file();
     image::vector<3,float> atlas_space(mni_space);
     atlas_space.to(transform);
-    atlas_space += 0.5;
-    atlas_space.floor();
+    atlas_space.round();
     if(!I.geometry().is_valid(atlas_space))
         return 0;
     return I.at(atlas_space[0],atlas_space[1],atlas_space[2]);

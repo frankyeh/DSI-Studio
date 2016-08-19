@@ -65,7 +65,7 @@ void slice_view_scene::show_ruler(QPainter& paint)
             {
                 paint.drawText(npos[0]-40,npos[1]-40,80,80,
                                Qt::AlignHCenter|Qt::AlignVCenter,
-                               QString::number(std::floor(L*10.0/precision+0.5)*precision/10.0)+" mm");
+                               QString::number(std::round(L*10.0/precision)*precision/10.0)+" mm");
                 break;
             }
 
@@ -459,8 +459,7 @@ void slice_view_scene::mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseE
         image::vector<3,float> pos;
         if(!get_location(X,Y,pos))
             return;
-        pos += 0.5;
-        pos.floor();
+        pos.round();
         cur_tracking_window.ui->SagSlider->setValue(pos[0]);
         cur_tracking_window.ui->CorSlider->setValue(pos[1]);
         cur_tracking_window.ui->AxiSlider->setValue(pos[2]);
@@ -505,9 +504,9 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         unsigned char old_dim = cur_tracking_window.slice.cur_dim;
         if(!get_location(X,Y,pos))
             return;
-        x = std::floor(pos[0]+0.5);
-        y = std::floor(pos[1]+0.5);
-        z = std::floor(pos[2]+0.5);
+        x = std::round(pos[0]);
+        y = std::round(pos[1]);
+        z = std::round(pos[2]);
         if(old_dim != cur_tracking_window.slice.cur_dim)
         {
             sel_point.clear();
@@ -601,9 +600,9 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     {
         image::vector<3> pos;
         this->get_location(cX,cY,pos);
-        x = std::floor(pos[0]+0.5);
-        y = std::floor(pos[1]+0.5);
-        z = std::floor(pos[2]+0.5);
+        x = std::round(pos[0]);
+        y = std::round(pos[1]);
+        z = std::round(pos[2]);
     }
 
     if(cur_tracking_window["roi_layout"].toInt() == 1)

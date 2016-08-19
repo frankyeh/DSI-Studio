@@ -167,7 +167,7 @@ void ThreadData::run(const tracking_data& trk,
     report.str("");
     report << "\nA deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was used."
            << seed_report
-           << " The angular threshold was " << (int)std::floor(std::acos(trk.cull_cos_angle)*180/3.1415926 + 0.5) << " degrees."
+           << " The angular threshold was " << (int)std::round(std::acos(trk.cull_cos_angle)*180/3.1415926) << " degrees."
            << " The step size was " << param.step_size << " mm.";
     if(int(trk.threshold*1000) == int(600*image::segmentation::otsu_threshold(image::make_image(trk.fa[0],trk.dim))))
         report << " The anisotropy threshold was determined automatically by DSI Studio.";
@@ -177,11 +177,11 @@ void ThreadData::run(const tracking_data& trk,
 
     if(param.smooth_fraction != 0.0)
         report << " The fiber trajectories were smoothed by averaging the propagation direction with "
-               << (int)std::floor(param.smooth_fraction * 100.0+0.5) << "% of the previous direction.";
+               << (int)std::round(param.smooth_fraction * 100.0) << "% of the previous direction.";
 
     if(param.min_points_count3 != 6)
         report << " Tracks with length less than "
-               << (int)std::floor(param.min_points_count3 * param.step_size /3.0+0.5) << " mm were discarded.";
+               << (int)std::round(param.min_points_count3 * param.step_size /3.0) << " mm were discarded.";
 
     if(!termination_count)
         return;

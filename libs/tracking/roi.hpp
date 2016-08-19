@@ -37,9 +37,9 @@ public:
     }
     bool havePoint(float dx,float dy,float dz) const
     {
-        short x = std::floor(dx+0.5);
-        short y = std::floor(dy+0.5);
-        short z = std::floor(dz+0.5);
+        short x = std::round(dx);
+        short y = std::round(dy);
+        short z = std::round(dz);
         return in_range(x,y,z) && roi_filter[x][y][z];
     }
     bool havePoint(const image::vector<3,float>& point) const

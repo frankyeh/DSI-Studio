@@ -594,16 +594,16 @@ void TractTableWidget::deep_learning_train(void)
                     const std::vector<float>& tracks = tract_models[index]->get_tracts()[i];
                     for(int j = 0;j < tracks.size();j += 3)
                     {
-                        image::pixel_index<3> p(tracks[j]+0.5,tracks[j+1]+0.5,tracks[j+2]+0.5,atlas.geometry());
+                        image::pixel_index<3> p(std::round(tracks[j]),std::round(tracks[j+1]),std::round(tracks[j+2]),atlas.geometry());
                         if(track_map.geometry().is_valid(p))
                             track_map[p.index()] = 1;
                         if(j)
                         {
                             for(float r = 0.2;r < 1.0;r += 0.2)
                             {
-                                image::pixel_index<3> p2(tracks[j]*r+tracks[j-3]*(1-r)+0.5,
-                                                         tracks[j+1]*r+tracks[j-2]*(1-r)+0.5,
-                                                         tracks[j+2]*r+tracks[j-1]*(1-r)+0.5,atlas.geometry());
+                                image::pixel_index<3> p2(std::round(tracks[j]*r+tracks[j-3]*(1-r)),
+                                                         std::round(tracks[j+1]*r+tracks[j-2]*(1-r)),
+                                                         std::round(tracks[j+2]*r+tracks[j-1]*(1-r)),atlas.geometry());
                                 if(track_map.geometry().is_valid(p2))
                                     track_map[p2.index()] = 1;
                             }

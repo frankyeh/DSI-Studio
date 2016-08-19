@@ -135,8 +135,7 @@ void TractCluster::add_tract(const float* points,unsigned int count)
     {
         image::vector<3,float> cur_point(points);
 		cur_point /= error_distance;
-        cur_point += 0.5;
-		cur_point.floor();
+        cur_point.round();
         if(!dim.is_valid(cur_point))
 			continue;
 		image::pixel_index<3> center(cur_point[0],cur_point[1],cur_point[2],dim);

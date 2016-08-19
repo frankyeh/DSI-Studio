@@ -40,9 +40,9 @@ public:
             image::vector<3,float> bvec = voxel.bvectors[index];
             bvec.normalize();
             bvec *= std::sqrt(std::abs(voxel.bvalues[index]/b_min));
-            bvec[0] = std::floor(bvec[0]+0.5);
-            bvec[1] = std::floor(bvec[1]+0.5);
-            bvec[2] = std::floor(bvec[2]+0.5);
+            bvec[0] = std::round(bvec[0]);
+            bvec[1] = std::round(bvec[1]);
+            bvec[2] = std::round(bvec[2]);
             q_table.push_back(image::vector<3,int>(bvec[0],bvec[1],bvec[2]));
         }
 

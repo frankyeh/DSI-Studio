@@ -398,8 +398,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
                     image::vector<3> new_pos(cur_tracking_window.handle->view_item[index].mx[pos.index()],
                                              cur_tracking_window.handle->view_item[index].my[pos.index()],
                                              cur_tracking_window.handle->view_item[index].mz[pos.index()]);
-                    new_pos += 0.5;
-                    new_pos.floor();
+                    new_pos.round();
                     new_from[pos.index()] = from.at(new_pos[0],new_pos[1],new_pos[2]);
                 }
                 break;

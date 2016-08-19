@@ -195,9 +195,9 @@ public:
             position = position_;
             terminated = false;
             forward = true;
-            image::pixel_index<3> index(std::floor(position[0]+0.5),
-                                    std::floor(position[1]+0.5),
-                                    std::floor(position[2]+0.5),trk.dim);
+            image::pixel_index<3> index(std::round(position[0]),
+                                    std::round(position[1]),
+                                    std::round(position[2]),trk.dim);
             if (!trk.dim.is_valid(index))
                 return false;
 
@@ -253,9 +253,9 @@ public:
                     return 0;
                 break;
             case 2:
-                position[0] = std::floor(position[0]+0.5);
-                position[1] = std::floor(position[1]+0.5);
-                position[2] = std::floor(position[2]+0.5);
+                position[0] = std::round(position[0]);
+                position[1] = std::round(position[1]);
+                position[2] = std::round(position[2]);
                 if (!start_tracking<voxel_tracking>(true))
                     return 0;
                 break;

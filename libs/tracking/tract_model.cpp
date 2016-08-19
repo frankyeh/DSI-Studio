@@ -775,10 +775,8 @@ void TractModel::get_end_points(std::vector<image::vector<3,short> >& points)
             return;
         image::vector<3,float> p1(&tract_data[index][0]);
         image::vector<3,float> p2(&tract_data[index][tract_data[index].size()-3]);
-        p1 += 0.5;
-        p2 += 0.5;
-        points.push_back(image::vector<3,short>(std::floor(p1[0]),std::floor(p1[1]),std::floor(p1[2])));
-        points.push_back(image::vector<3,short>(std::floor(p2[0]),std::floor(p2[1]),std::floor(p2[2])));
+        points.push_back(image::vector<3,short>(std::round(p1[0]),std::round(p1[1]),std::round(p1[2])));
+        points.push_back(image::vector<3,short>(std::round(p2[0]),std::round(p2[1]),std::round(p2[2])));
     }
 }
 //---------------------------------------------------------------------------
@@ -788,9 +786,9 @@ void TractModel::get_tract_points(std::vector<image::vector<3,short> >& points)
         for (unsigned int j = 0;j < tract_data[index].size();j += 3)
         {
             image::vector<3,short> point;
-            point[0] = std::floor(tract_data[index][j]+0.5);
-            point[1] = std::floor(tract_data[index][j+1]+0.5);
-            point[2] = std::floor(tract_data[index][j+2]+0.5);
+            point[0] = std::round(tract_data[index][j]);
+            point[1] = std::round(tract_data[index][j+1]);
+            point[2] = std::round(tract_data[index][j+2]);
             points.push_back(point);
         }
 }
@@ -1113,8 +1111,8 @@ void TractModel::cut_by_mask(const char* file_name)
         std::vector<float>::const_iterator end = tract_data[index].end();
         for (;iter < end;iter += 3)
         {
-            image::vector<3,short> p(std::floor(iter[0]+0.5),
-                                  std::floor(iter[1]+0.5),std::floor(iter[2]+0.5));
+            image::vector<3,short> p(std::round(iter[0]),
+                                  std::round(iter[1]),std::round(iter[2]));
 
             if (mask.find(p) == mask.end())
             {
@@ -1300,9 +1298,9 @@ void TractModel::get_density_map(image::basic_image<unsigned int,3>& mapping,
             image::vector_transformation(tract_data[i].begin()+j, tmp.begin(),
                 transformation.begin(), image::vdim<3>());
 
-            int x = std::floor(tmp[0]+0.5);
-            int y = std::floor(tmp[1]+0.5);
-            int z = std::floor(tmp[2]+0.5);
+            int x = std::round(tmp[0]);
+            int y = std::round(tmp[1]);
+            int z = std::round(tmp[2]);
             if (!geometry.is_valid(x,y,z))
                 continue;
             point_set.insert((z*mapping.height()+y)*mapping.width()+x);
@@ -1335,9 +1333,9 @@ void TractModel::get_density_map(
                 transformation.begin(), image::vdim<3>());
             dir -= tmp;
             dir.normalize();
-            int x = std::floor(tmp[0]+0.5);
-            int y = std::floor(tmp[1]+0.5);
-            int z = std::floor(tmp[2]+0.5);
+            int x = std::round(tmp[0]);
+            int y = std::round(tmp[1]);
+            int z = std::round(tmp[2]);
             if (!geometry.is_valid(x,y,z))
                 continue;
             unsigned int ptr = (z*mapping.height()+y)*mapping.width()+x;
@@ -1440,9 +1438,9 @@ void TractModel::get_quantitative_data(std::vector<float>& data)
         std::set<image::vector<3,int> > pass_map;
         for (unsigned int i = 0;i < tract_data.size();++i)
             for (unsigned int j = 0;j < tract_data[i].size();j += 3)
-                pass_map.insert(image::vector<3,int>(std::floor(tract_data[i][j]+0.5),
-                                              std::floor(tract_data[i][j+1]+0.5),
-                                              std::floor(tract_data[i][j+2]+0.5)));
+                pass_map.insert(image::vector<3,int>(std::round(tract_data[i][j]),
+                                              std::round(tract_data[i][j+1]),
+                                              std::round(tract_data[i][j+2])));
 
         data.push_back(pass_map.size()*voxel_volume);
     }
@@ -1618,7 +1616,7 @@ void TractModel::get_report(unsigned int profile_dir,float band_width,const std:
                 {
                     int pos = profile_on_length ?
                               j*(int)profile_width/data[i].size() :
-                              std::floor(tract_data[i][j + j + j + profile_dir]*detail+0.5);
+                              std::round(tract_data[i][j + j + j + profile_dir]*detail);
                     if(pos < 0)
                         pos = 0;
                     if(pos >= profile_width)
@@ -1784,9 +1782,9 @@ void TractModel::get_passing_list(const std::vector<std::vector<image::vector<3,
         unsigned int half_length = tract_data[index].size()/2;
         for(unsigned int ptr = 0;ptr < tract_data[index].size();ptr += 3)
         {
-            image::pixel_index<3> pos(std::floor(tract_data[index][ptr]+0.5),
-                                        std::floor(tract_data[index][ptr+1]+0.5),
-                                        std::floor(tract_data[index][ptr+2]+0.5),geometry);
+            image::pixel_index<3> pos(std::round(tract_data[index][ptr]),
+                                        std::round(tract_data[index][ptr+1]),
+                                        std::round(tract_data[index][ptr+2]),geometry);
             if(!geometry.is_valid(pos))
                 continue;
             unsigned int pos_index = pos.index();
@@ -1819,12 +1817,12 @@ void TractModel::get_end_list(const std::vector<std::vector<image::vector<3,shor
     {
         if(tract_data[index].size() < 6)
             continue;
-        image::pixel_index<3> end1(std::floor(tract_data[index][0]+0.5),
-                                    std::floor(tract_data[index][1]+0.5),
-                                    std::floor(tract_data[index][2]+0.5),geometry);
-        image::pixel_index<3> end2(std::floor(tract_data[index][tract_data[index].size()-3]+0.5),
-                                    std::floor(tract_data[index][tract_data[index].size()-2]+0.5),
-                                    std::floor(tract_data[index][tract_data[index].size()-1]+0.5),geometry);
+        image::pixel_index<3> end1(std::round(tract_data[index][0]),
+                                    std::round(tract_data[index][1]),
+                                    std::round(tract_data[index][2]),geometry);
+        image::pixel_index<3> end2(std::round(tract_data[index][tract_data[index].size()-3]),
+                                    std::round(tract_data[index][tract_data[index].size()-2]),
+                                    std::round(tract_data[index][tract_data[index].size()-1]),geometry);
         if(!geometry.is_valid(end1) || !geometry.is_valid(end2))
             continue;
         end_pair1[index] = region_map[end1.index()];

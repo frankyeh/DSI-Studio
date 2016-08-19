@@ -1487,7 +1487,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         move_dis *= slice_distance;
         if(std::fabs(move_dis) < 1.0)
             return;
-        move_dis = std::floor(move_dis+0.5);
+        move_dis = std::round(move_dis);
         switch(moving_at_slice_index)
         {
         case 0:

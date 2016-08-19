@@ -340,9 +340,9 @@ bool vbc_dialog::eventFilter(QObject *obj, QEvent *event)
     pos[2] = ui->slice_pos->value();
     if(!vbc->handle->dim.is_valid(pos))
         return true;
-    ui->x_pos->setValue(std::floor(pos[0] + 0.5));
-    ui->y_pos->setValue(std::floor(pos[1] + 0.5));
-    ui->z_pos->setValue(std::floor(pos[2] + 0.5));
+    ui->x_pos->setValue(std::round(pos[0]));
+    ui->y_pos->setValue(std::round(pos[1]));
+    ui->z_pos->setValue(std::round(pos[2]));
 
 
     return true;
@@ -1617,8 +1617,7 @@ void vbc_dialog::on_load_roi_from_file_clicked()
         image::vector<3> pos(index);
         vbc->handle->subject2mni(pos);
         pos.to(transform);
-        pos += 0.5;
-        pos.floor();
+        pos.round();
         if(!I.geometry().is_valid(pos) || I.at(pos[0],pos[1],pos[2]) == 0)
             continue;
         new_roi.push_back(image::vector<3,short>((const unsigned int*)index.begin()));

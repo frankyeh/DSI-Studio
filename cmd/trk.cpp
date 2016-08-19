@@ -426,10 +426,10 @@ int trk(void)
     {
         std::ostringstream fout;
         fout << po.get("source") <<
-            ".st" << (int)std::floor(tracking_thread.param.step_size*10.0+0.5) <<
-            ".tu" << (int)std::floor(po.get("turning_angle",float(60))+0.5) <<
-            ".fa" << (int)std::floor(tract_model.get_fib().threshold*100.0+0.5) <<
-            ".sm" << (int)std::floor(tracking_thread.param.smooth_fraction*10.0+0.5) <<
+            ".st" << (int)std::round(tracking_thread.param.step_size*10.0) <<
+            ".tu" << (int)std::round(po.get("turning_angle",float(60))) <<
+            ".fa" << (int)std::round(tract_model.get_fib().threshold*100.0) <<
+            ".sm" << (int)std::round(tracking_thread.param.smooth_fraction*10.0) <<
             ".me" << (int)tracking_thread.tracking_method <<
             ".sd" << (int)tracking_thread.initial_direction <<
             ".pd" << (int)tracking_thread.interpolation_strategy <<

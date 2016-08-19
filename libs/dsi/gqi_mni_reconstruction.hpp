@@ -206,8 +206,7 @@ public:
                 mni_pos[1] /= VGvs[1];
                 mni_pos[2] /= VGvs[2];
                 mni_pos += des_offset;
-                mni_pos += 0.5;
-                mni_pos.floor();
+                mni_pos.round();
                 if(fa_template_imp.I.geometry().is_valid(mni_pos) &&
                         fa_template_imp.I.at(mni_pos[0],mni_pos[1],mni_pos[2]) > 0.0)
                     voxel.image_model->mask[index.index()] = 1;
@@ -342,14 +341,15 @@ public:
         pos += des_offset;
         if(voxel_size < 0.99)
             pos /= voxel_size;
-        pos += 0.5;
-        (*mni.get())(image::vector<3,int>(pos[0],pos[1],pos[2]),Jpos);
+        pos.round();
+        image::vector<3,int> ipos(pos[0],pos[1],pos[2]);
+        (*mni.get())(ipos,Jpos);
         if(voxel_size < 0.99)
             Jpos *= voxel_size;
         affine(Jpos);
 
         image::matrix<3,3,float> M;
-        image::reg::bfnorm_get_jacobian(*mni.get(),pos,M.begin());
+        image::reg::bfnorm_get_jacobian(*mni.get(),ipos,M.begin());
         std::copy(affine.get(),affine.get()+9,data.jacobian.begin());
         data.jacobian *= M;
 
