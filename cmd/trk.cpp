@@ -252,6 +252,8 @@ int trk(void)
 
 
     ThreadData tracking_thread(po.get("random_seed",int(0)));
+    tracking_thread.param.threshold = po.get("fa_threshold",float(0.6*image::segmentation::otsu_threshold(image::make_image(fa0,geometry))));
+    tracking_thread.param.cull_cos_angle = std::cos(po.get("turning_angle",float(60))*3.1415926/180.0);
     tracking_thread.param.step_size = po.get("step_size",float(voxel_size[0]/2.0));
     tracking_thread.param.smooth_fraction = po.get("smoothing",float(0));
     tracking_thread.param.min_points_count3 = 3.0* po.get("min_length",float(10))/tracking_thread.param.step_size;
@@ -317,26 +319,20 @@ int trk(void)
     }
     TractModel tract_model(handle);
 
-
-
-    tract_model.get_fib().threshold = po.get("fa_threshold",
-                                             float(0.6*image::segmentation::otsu_threshold(image::make_image(fa0,geometry))));
-    tract_model.get_fib().cull_cos_angle = std::cos(po.get("turning_angle",float(60))*3.1415926/180.0);
-
     if (!po.has("seed"))
     {
 
         std::vector<image::vector<3,short> > seed;
         std::cout << "no seeding area assigned. use whole brain seeding" << std::endl;
         for(image::pixel_index<3> index(geometry);index < geometry.size();++index)
-            if(fa0[index.index()] > tract_model.get_fib().threshold)
+            if(fa0[index.index()] > tracking_thread.param.threshold)
                 seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
         tracking_thread.setRegions(geometry,seed,3,"whole brain");
     }
 
     {
-        std::cout << "turning_angle=" << po.get("turning_angle",float(60)) << std::endl;
-        std::cout << "fa_threshold=" << tract_model.get_fib().threshold << std::endl;
+        std::cout << "turning_angle=" << (int)std::round(po.get("turning_angle",float(60))) << std::endl;
+        std::cout << "fa_threshold=" << tracking_thread.param.threshold << std::endl;
         std::cout << "step_size=" << tracking_thread.param.step_size << std::endl;
         std::cout << "smoothing=" << tracking_thread.param.smooth_fraction << std::endl;
         std::cout << "min_length=" << po.get("min_length",float(10)) << std::endl;
@@ -387,9 +383,8 @@ int trk(void)
                 double t = connectometry_threshold[j].toDouble();
                 handle->dir.set_tracking_index(handle->dir.index_data.size()-((t > 0) ? 2:1));
                 std::cout << "mapping track with " << ((t > 0) ? "increased":"decreased") << " connectivity at " << std::fabs(t) << std::endl;
-                tract_model.get_fib().threshold = std::fabs(t);
                 std::cout << "start tracking." << std::endl;
-
+                tracking_thread.param.threshold = std::fabs(t);
                 tracking_thread.run(tract_model.get_fib(),po.get("thread_count",int(std::thread::hardware_concurrency())),termination_count,true);
                 tracking_thread.fetchTracks(&tract_model);
                 std::ostringstream out;
@@ -428,7 +423,7 @@ int trk(void)
         fout << po.get("source") <<
             ".st" << (int)std::round(tracking_thread.param.step_size*10.0) <<
             ".tu" << (int)std::round(po.get("turning_angle",float(60))) <<
-            ".fa" << (int)std::round(tract_model.get_fib().threshold*100.0) <<
+            ".fa" << (int)std::round(tracking_thread.param.threshold*100.0) <<
             ".sm" << (int)std::round(tracking_thread.param.smooth_fraction*10.0) <<
             ".me" << (int)tracking_thread.tracking_method <<
             ".sd" << (int)tracking_thread.initial_direction <<

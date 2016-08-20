@@ -32,11 +32,11 @@ typedef boost::mpl::vector<
 
 struct TrackingParam
 {
+    float threshold;
+    float cull_cos_angle;
     float step_size;
     float step_size_in_voxel[3];
-
     float smooth_fraction;
-
     unsigned int min_points_count3;
     unsigned int max_points_count3;
     void scaling_in_voxel(image::vector<3,float>& dir) const
@@ -81,7 +81,7 @@ public:
                       const image::vector<3,float>& ref_dir,
                       image::vector<3,float>& result_dir)
     {
-        return interpolation->evaluate(trk,position,ref_dir,result_dir);
+        return interpolation->evaluate(trk,position,ref_dir,result_dir,param.threshold,param.cull_cos_angle);
     }
 public:
     TrackingMethod(const tracking_data& trk_,basic_interpolation* interpolation_,
@@ -205,7 +205,7 @@ public:
             {
             case 0:// main direction
                 {
-                    if(trk.fa[0][index.index()] < trk.threshold)
+                    if(trk.fa[0][index.index()] < param.threshold)
                         return false;
                     dir = trk.get_dir(index.index(),0);
                 }
@@ -225,7 +225,7 @@ public:
             case 2:// all direction
                 {
                     if (init_fib_index >= trk.fib_num ||
-                        trk.fa[init_fib_index][index.index()] < trk.threshold)
+                        trk.fa[init_fib_index][index.index()] < param.threshold)
                     {
                         init_fib_index = 0;
                         return false;

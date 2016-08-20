@@ -67,17 +67,19 @@ public:
     std::vector<const short*> findex;
     std::vector<std::vector<const float*> > other_index;
     std::vector<image::vector<3,float> > odf_table;
-    float threshold;
-    float cull_cos_angle;
 public:
     bool get_nearest_dir_fib(unsigned int space_index,
                          const image::vector<3,float>& ref_dir, // reference direction, should be unit vector
                          unsigned char& fib_order_,
-                         unsigned char& reverse_) const;
+                         unsigned char& reverse_,
+                             float threshold,
+                             float cull_cos_angle) const;
     void read(const fib_data& fib);
     bool get_dir(unsigned int space_index,
                          const image::vector<3,float>& dir, // reference direction, should be unit vector
-                         image::vector<3,float>& main_dir) const;
+                         image::vector<3,float>& main_dir,
+                 float threshold,
+                 float cull_cos_angle) const;
     const float* get_dir(unsigned int space_index,unsigned char fib_order) const;
     float cos_angle(const image::vector<3>& cur_dir,unsigned int space_index,unsigned char fib_order) const;
     float get_track_specific_index(unsigned int space_index,unsigned int index_num,

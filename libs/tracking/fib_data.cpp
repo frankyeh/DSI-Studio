@@ -300,7 +300,9 @@ const float* fiber_directions::get_dir(unsigned int index,unsigned int order) co
 bool tracking_data::get_nearest_dir_fib(unsigned int space_index,
                      const image::vector<3,float>& ref_dir, // reference direction, should be unit vector
                      unsigned char& fib_order_,
-                     unsigned char& reverse_) const
+                     unsigned char& reverse_,
+                     float threshold,
+                     float cull_cos_angle) const
 {
     if(space_index >= dim.size() || fa[0][space_index] <= threshold)
         return false;
@@ -345,11 +347,13 @@ void tracking_data::read(const fib_data& fib)
 }
 bool tracking_data::get_dir(unsigned int space_index,
                      const image::vector<3,float>& dir, // reference direction, should be unit vector
-                     image::vector<3,float>& main_dir) const
+                     image::vector<3,float>& main_dir,
+                            float threshold,
+                            float cull_cos_angle) const
 {
     unsigned char fib_order;
     unsigned char reverse;
-    if (!get_nearest_dir_fib(space_index,dir,fib_order,reverse))
+    if (!get_nearest_dir_fib(space_index,dir,fib_order,reverse,threshold,cull_cos_angle))
         return false;
     main_dir = get_dir(space_index,fib_order);
     if(reverse)
@@ -381,10 +385,27 @@ float tracking_data::cos_angle(const image::vector<3>& cur_dir,unsigned int spac
 float tracking_data::get_track_specific_index(unsigned int space_index,unsigned int index_num,
                          const image::vector<3,float>& dir) const
 {
-    unsigned char fib_order;
-    unsigned char reverse;
-    if (!get_nearest_dir_fib(space_index,dir,fib_order,reverse))
+    if(space_index >= dim.size() || fa[0][space_index] == 0.0)
         return 0.0;
+    unsigned char fib_order = 0;
+    float max_value = std::abs(cos_angle(dir,space_index,0));
+    for (unsigned char index = 1;index < fib_num;++index)
+    {
+        if (fa[index][space_index] == 0.0)
+            continue;
+        float value = cos_angle(dir,space_index,index);
+        if (-value > max_value)
+        {
+            max_value = -value;
+            fib_order = index;
+        }
+        else
+            if (value > max_value)
+            {
+                max_value = value;
+                fib_order = index;
+            }
+    }
     return other_index[index_num][fib_order][space_index];
 }
 

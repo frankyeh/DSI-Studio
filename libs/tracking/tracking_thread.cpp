@@ -28,7 +28,7 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
     std::auto_ptr<TrackingMethod> method(method_ptr);
     std::uniform_real_distribution<float> rand_gen(0,1);
     unsigned int iteration = thread_id; // for center seed
-    float white_matter_t = method_ptr->trk.threshold*1.2;
+    float white_matter_t = method_ptr->param.threshold*1.2;
     if(!seeds.empty())
     try{
         std::vector<std::vector<float> > local_track_buffer;
@@ -167,12 +167,12 @@ void ThreadData::run(const tracking_data& trk,
     report.str("");
     report << "\nA deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was used."
            << seed_report
-           << " The angular threshold was " << (int)std::round(std::acos(trk.cull_cos_angle)*180/3.1415926) << " degrees."
+           << " The angular threshold was " << (int)std::round(std::acos(param.cull_cos_angle)*180/3.1415926) << " degrees."
            << " The step size was " << param.step_size << " mm.";
-    if(int(trk.threshold*1000) == int(600*image::segmentation::otsu_threshold(image::make_image(trk.fa[0],trk.dim))))
+    if(int(param.threshold*1000) == int(600*image::segmentation::otsu_threshold(image::make_image(trk.fa[0],trk.dim))))
         report << " The anisotropy threshold was determined automatically by DSI Studio.";
     else
-        report << " The anisotropy threshold was " << trk.threshold << ".";
+        report << " The anisotropy threshold was " << param.threshold << ".";
 
 
     if(param.smooth_fraction != 0.0)

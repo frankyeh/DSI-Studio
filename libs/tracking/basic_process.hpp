@@ -31,7 +31,7 @@ public:
                 continue;
             dis.normalize();
             float angle_cos = dis*info.dir;
-            if(angle_cos < info.trk.cull_cos_angle)
+            if(angle_cos < info.param.cull_cos_angle)
                 continue;
             next_voxels_pos.push_back(pos);
             next_voxels_index.push_back(image::pixel_index<3>(pos[0],pos[1],pos[2],info.trk.dim).index());
@@ -47,10 +47,10 @@ public:
             for (char j = 0;j < info.trk.fib_num;++j)
             {
                 float fa_value = info.trk.fa[j][next_voxels_index[i]];
-                if (fa_value <= info.trk.threshold)
+                if (fa_value <= info.param.threshold)
                     break;
                 float value = std::abs(info.trk.cos_angle(next_voxels_dir[i],next_voxels_index[i],j));
-                if(value < info.trk.cull_cos_angle)
+                if(value < info.param.cull_cos_angle)
                     continue;
                 if(voxel_angle[i]*value*fa_value > max_angle_cos)
                 {

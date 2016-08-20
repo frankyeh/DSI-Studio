@@ -41,7 +41,7 @@ int vbc_database::run_track(const tracking_data& fib,std::vector<std::vector<flo
 {
     std::vector<image::vector<3,short> > seed;
     for(image::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
-        if(fib.fa[0][index.index()] > fib.threshold)
+        if(fib.fa[0][index.index()] > tracking_threshold)
             seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
     unsigned int count = seed.size()*seed_ratio/1000.0;
     if(!count)
@@ -50,6 +50,8 @@ int vbc_database::run_track(const tracking_data& fib,std::vector<std::vector<flo
         return 0;
     }
     ThreadData tracking_thread(false);
+    tracking_thread.param.threshold = tracking_threshold;
+    tracking_thread.param.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);
     tracking_thread.param.step_size = 1.0; // fixed 1 mm
     tracking_thread.param.smooth_fraction = 0;
     tracking_thread.param.min_points_count3 = 6;
@@ -120,8 +122,6 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
     connectometry_result data;
     tracking_data fib;
     fib.read(*handle);
-    fib.threshold = tracking_threshold;
-    fib.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);
     float voxel_density = seeding_density*fib.vs[0]*fib.vs[1]*fib.vs[2];
     std::vector<std::vector<float> > tracks;
 

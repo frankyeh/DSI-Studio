@@ -504,6 +504,8 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 
 void tracking_window::set_tracking_param(ThreadData& tracking_thread)
 {
+    tracking_thread.param.threshold = renderWidget->getData("fa_threshold").toFloat();
+    tracking_thread.param.cull_cos_angle = std::cos(renderWidget->getData("turning_angle").toDouble() * 3.1415926 / 180.0);
     tracking_thread.param.step_size = renderWidget->getData("step_size").toDouble();
     tracking_thread.param.smooth_fraction = renderWidget->getData("smoothing").toDouble();
     tracking_thread.param.min_points_count3 = 3.0*renderWidget->getData("min_length").toDouble()/renderWidget->getData("step_size").toDouble();
@@ -1371,13 +1373,11 @@ void tracking_window::on_actionImprove_Quality_triggered()
 {
     tracking_data fib;
     fib.read(*handle);
-    fib.threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim));
+    float threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim));
     if(!fib.dir.empty())
         return;
     for(float cos_angle = 0.99;check_prog(1000-cos_angle*1000,1000-866);cos_angle -= 0.005)
     {
-        fib.cull_cos_angle = cos_angle; // smaller than 30 degrees
-
         std::vector<std::vector<float> > new_fa(handle->dir.num_fiber);
         std::vector<std::vector<short> > new_index(handle->dir.num_fiber);
         unsigned int size = handle->dim.size();
@@ -1391,7 +1391,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
 
         for(image::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
         {
-            if(handle->dir.fa[0][index.index()] < fib.threshold)
+            if(handle->dir.fa[0][index.index()] < threshold)
                 continue;
             std::vector<image::pixel_index<3> > neighbors;
             image::get_neighbors(index,handle->dim,neighbors);
@@ -1407,7 +1407,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
                 dis[i] -= image::vector<3>(index);
                 dis[i].normalize();
                 unsigned char fib_order,reverse;
-                if(fib.get_nearest_dir_fib(neighbors[i].index(),dis[i],fib_order,reverse))
+                if(fib.get_nearest_dir_fib(neighbors[i].index(),dis[i],fib_order,reverse,threshold,cos_angle))
                 {
                     fib_dir[i] = handle->dir.get_dir(neighbors[i].index(),fib_order);
                     if(reverse)
@@ -1418,13 +1418,13 @@ void tracking_window::on_actionImprove_Quality_triggered()
 
 
             for(unsigned char i = 0;i < neighbors.size();++i)
-            if(fib_fa[i] > fib.threshold)
+            if(fib_fa[i] > threshold)
             {
                 for(unsigned char j = i+1;j < neighbors.size();++j)
-                if(fib_fa[j] > fib.threshold)
+                if(fib_fa[j] > threshold)
                 {
                     float angle = fib_dir[i]*fib_dir[j];
-                    if(angle > -fib.cull_cos_angle) // select opposite side
+                    if(angle > -cos_angle) // select opposite side
                         continue;
                     image::vector<3> predict_dir(fib_dir[i]);
                     if(angle > 0)
@@ -1434,7 +1434,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
                     predict_dir.normalize();
                     unsigned char fib_order,reverse;
                     bool has_match = false;
-                    if(fib.get_nearest_dir_fib(index.index(),predict_dir,fib_order,reverse))
+                    if(fib.get_nearest_dir_fib(index.index(),predict_dir,fib_order,reverse,threshold,cos_angle))
                     {
                         if(reverse)
                             predict_dir -= image::vector<3>(handle->dir.get_dir(index.index(),fib_order));

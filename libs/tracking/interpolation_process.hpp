@@ -9,7 +9,9 @@ public:
     virtual bool evaluate(const tracking_data& fib,
                           const image::vector<3,float>& position,
                           const image::vector<3,float>& ref_dir,
-                          image::vector<3,float>& result) = 0;
+                          image::vector<3,float>& result,
+                          float threshold,
+                          float cull_cos_angle) = 0;
 };
 
 class trilinear_interpolation_with_gaussian_basis : public basic_interpolation
@@ -18,7 +20,9 @@ public:
     virtual bool evaluate(const tracking_data& fib,
                           const image::vector<3,float>& position,
                           const image::vector<3,float>& ref_dir,
-                          image::vector<3,float>& result);
+                          image::vector<3,float>& result,
+                          float threshold,
+                          float cull_cos_angle);
 };
 
 
@@ -28,7 +32,9 @@ public:
     virtual bool evaluate(const tracking_data& fib,
                           const image::vector<3,float>& position,
                           const image::vector<3,float>& ref_dir,
-                          image::vector<3,float>& result);
+                          image::vector<3,float>& result,
+                          float threshold,
+                          float cull_cos_angle);
 };
 
 
@@ -38,7 +44,9 @@ public:
     virtual bool evaluate(const tracking_data& fib,
                           const image::vector<3,float>& position,
                           const image::vector<3,float>& ref_dir,
-                          image::vector<3,float>& result);
+                          image::vector<3,float>& result,
+                          float threshold,
+                          float cull_cos_angle);
 };
 
 

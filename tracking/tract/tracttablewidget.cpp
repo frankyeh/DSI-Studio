@@ -65,9 +65,6 @@ void TractTableWidget::addNewTracts(QString tract_name,bool checked)
 {
     thread_data.push_back(0);
     tract_models.push_back(new TractModel(cur_tracking_window.handle));
-    tract_models.back()->get_fib().threshold = cur_tracking_window["fa_threshold"].toFloat();
-    tract_models.back()->get_fib().cull_cos_angle =
-            std::cos(cur_tracking_window["turning_angle"].toDouble() * 3.1415926 / 180.0);
 
     setRowCount(tract_models.size());
     QTableWidgetItem *item0 = new QTableWidgetItem(tract_name);
