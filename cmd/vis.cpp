@@ -8,10 +8,6 @@
 
 int vis(void)
 {
-    if(!po.has("cmd"))
-    {
-        std::cout << "No command specified" << std::endl;
-    }
     std::string file_name = po.get("source");
     std::cout << "loading " << file_name << std::endl;
     std::shared_ptr<fib_data> new_handle(new fib_data);
