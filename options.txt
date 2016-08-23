@@ -18,7 +18,7 @@ Tracking/Max Length(mm)/max_length/float:0:800:50:1/300
 Tracking/Seed Orientation/initial_direction/Primary:Random:All/0
 Tracking/Seed Position/seed_plan/Subvoxel:Voxel Center/0
 Tracking/Randomize Seeding/random_seed/Off:On/0
-Tracking/Check Ending/check_ending/Off:On/1
+Tracking/Check Ending/check_ending/Off:On/0
 Tracking/Direction Interpoation/interpolation/Trilinear:Gaussian radial basis:nearest/0
 Tracking/Tracking Algorithm/tracking_method/Stremline(Euler):RK4:Voxel tracking/0
 Tracking/Terminate if/track_count/int:1:100000000:1000/5000
