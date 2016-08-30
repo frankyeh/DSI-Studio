@@ -1743,9 +1743,9 @@ void tracking_window::on_show_position_toggled(bool checked)
 
 void tracking_window::on_actionIndividual_Connectometry_triggered()
 {
-    if(!handle->db.has_db())
+    if(!handle->is_qsdr)
     {
-        QMessageBox::information(this,"Error","Please open a connectometry db in STEP3: fiber tracking to run individual connectometry. See online documentation for details.");
+        QMessageBox::information(this,"Error","Please open an atlas in STEP3: fiber tracking to run individual connectometry. See online documentation for details.");
         return;
     }
     std::shared_ptr<individual_connectometry> indi(new individual_connectometry(this,*this));
