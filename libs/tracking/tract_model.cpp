@@ -2159,7 +2159,8 @@ void ConnectivityMatrix::network_property(std::string& report,double t)
         float d = degree[i];
         cluster_co[i] /= (d*d-d);
     }
-    out << "clustering_coeff_average(binary)\t" << image::mean(cluster_co.begin(),cluster_co.end()) << std::endl;
+    float cc_bin = image::mean(cluster_co.begin(),cluster_co.end());
+    out << "clustering_coeff_average(binary)\t" << cc_bin << std::endl;
 
     // calculate weighted clustering coefficient
     image::basic_image<float,2> cyc3(matrix_value.geometry());
@@ -2178,7 +2179,8 @@ void ConnectivityMatrix::network_property(std::string& report,double t)
             wcluster_co[i] = cyc3[i*(n+1)]/(d*d-d);
         }
     }
-    out << "clustering_coeff_average(weighted)\t" << image::mean(wcluster_co.begin(),wcluster_co.end()) << std::endl;
+    float cc_wei = image::mean(wcluster_co.begin(),wcluster_co.end());
+    out << "clustering_coeff_average(weighted)\t" << cc_wei << std::endl;
 
 
     // transitivity
@@ -2205,8 +2207,12 @@ void ConnectivityMatrix::network_property(std::string& report,double t)
         unsigned int inf_count_wei = std::count(dis_wei.begin(),dis_wei.end(),std::numeric_limits<float>::max());
         std::replace(dis_bin.begin(),dis_bin.end(),std::numeric_limits<float>::max(),(float)0);
         std::replace(dis_wei.begin(),dis_wei.end(),std::numeric_limits<float>::max(),(float)0);
-        out << "network_characteristic_path_length(binary)\t" << std::accumulate(dis_bin.begin(),dis_bin.end(),0.0)/(n*n-inf_count_bin) << std::endl;
-        out << "network_characteristic_path_length(weighted)\t" << std::accumulate(dis_wei.begin(),dis_wei.end(),0.0)/(n*n-inf_count_wei) << std::endl;
+        float ncpl_bin = std::accumulate(dis_bin.begin(),dis_bin.end(),0.0)/(n*n-inf_count_bin);
+        float ncpl_wei = std::accumulate(dis_wei.begin(),dis_wei.end(),0.0)/(n*n-inf_count_wei);
+        out << "network_characteristic_path_length(binary)\t" << ncpl_bin << std::endl;
+        out << "network_characteristic_path_length(weighted)\t" << ncpl_bin << std::endl;
+        out << "small-worldness(binary)\t" << (ncpl_bin == 0.0 ? 0.0:cc_bin/ncpl_bin) << std::endl;
+        out << "small-worldness(weighted)\t" << (ncpl_wei == 0.0 ? 0.0:cc_wei/ncpl_wei) << std::endl;
         image::basic_image<float,2> invD;
         inv_dis(dis_bin,invD);
         out << "global_efficiency(binary)\t" << std::accumulate(invD.begin(),invD.end(),0.0)/(n*n-inf_count_bin) << std::endl;
