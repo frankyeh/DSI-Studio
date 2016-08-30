@@ -29,6 +29,8 @@
 
 extern std::vector<atlas> atlas_list;
 extern std::auto_ptr<QProgressDialog> progressDialog;
+
+std::vector<tracking_window*> track_windows;
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
         ui(new Ui::MainWindow)
@@ -218,6 +220,7 @@ void MainWindow::loadFib(QString filename)
     addFib(filename);
     add_work_dir(QFileInfo(filename).absolutePath());
     QDir::setCurrent(QFileInfo(filename).absolutePath());
+    track_windows.push_back(new_mdi);
 }
 
 void MainWindow::loadSrc(QStringList filenames)

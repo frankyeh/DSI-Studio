@@ -29,6 +29,7 @@
 
 extern std::vector<atlas> atlas_list;
 extern fa_template fa_template_imp;
+extern std::vector<tracking_window*> track_windows;
 QByteArray default_geo,default_state;
 
 void tracking_window::closeEvent(QCloseEvent *event)
@@ -392,6 +393,12 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
 tracking_window::~tracking_window()
 {
+    for(int i = 0;i < track_windows.size();++i)
+        if(track_windows[i] == this)
+        {
+            track_windows.erase(track_windows.begin()+i);
+            break;
+        }
     qApp->removeEventFilter(this);
     QSettings settings;
     settings.setValue("geometry", saveGeometry());
@@ -1144,8 +1151,6 @@ void tracking_window::on_actionConnectivity_matrix_triggered()
         QMessageBox::information(this,"DSI Studio","Run fiber tracking first",0);
         return;
     }
-    if(tractWidget->tract_models[tractWidget->currentRow()]->get_visible_track_count() < 10000)
-        QMessageBox::information(this,"DSI Studio","Tracks count not enough. It is recommended to increase the tracks count to get a more reliable estimation.",0);
     if(atlas_list.empty())
         QMessageBox::information(0,"Error",QString("DSI Studio cannot find atlas files in ")+QCoreApplication::applicationDirPath()+ "/atlas",0);
     std::ostringstream out;
