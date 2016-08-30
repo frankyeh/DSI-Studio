@@ -124,9 +124,12 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
             cur_tracking_window->handle->get_mni_mapping(mni_position);
             data.set_atlas(atlas_list[ui->region_list->currentIndex()-1],mni_position);
         }
-    if(!data.calculate(*(cur_tracking_window->tractWidget->tract_models[cur_tracking_window->tractWidget->currentRow()]),
-                   ui->matrix_value->currentText().toLocal8Bit().begin(),
-                   ui->end_only->currentIndex()))
+
+    TractModel tracks(cur_tracking_window->handle);
+    for(int index = 0;index < cur_tracking_window->tractWidget->tract_models.size();++index)
+        if(cur_tracking_window->tractWidget->item(index,0)->checkState() == Qt::Checked)
+            tracks.add(*cur_tracking_window->tractWidget->tract_models[index]);
+    if(!data.calculate(tracks,ui->matrix_value->currentText().toLocal8Bit().begin(),ui->end_only->currentIndex()))
     {
         QMessageBox::information(this,"Error",data.error_msg.c_str());
         return;

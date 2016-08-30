@@ -139,7 +139,7 @@
         </property>
         <widget class="QTabWidget" name="tabWidget">
          <property name="currentIndex">
-          <number>0</number>
+          <number>1</number>
          </property>
          <widget class="QWidget" name="tab">
           <attribute name="title">
@@ -252,7 +252,7 @@
              <item>
               <widget class="QDoubleSpinBox" name="network_threshold">
                <property name="decimals">
-                <number>4</number>
+                <number>5</number>
                </property>
                <property name="maximum">
                 <double>0.100000000000000</double>
@@ -261,7 +261,7 @@
                 <double>0.001000000000000</double>
                </property>
                <property name="value">
-                <double>0.001000000000000</double>
+                <double>0.000100000000000</double>
                </property>
               </widget>
              </item>
