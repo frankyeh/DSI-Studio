@@ -1573,7 +1573,7 @@ void GLWidget::loadCamera(void)
 {
     QString filename = QFileDialog::getOpenFileName(
             this,
-            "Open Translocation Matrix",QDir::currentPath(),"Text files (*.txt);;All files (*)");
+            "Open Translocation Matrix",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),"Text files (*.txt);;All files (*)");
     std::ifstream in(filename.toLocal8Bit().begin());
     if(filename.isEmpty() || !in)
         return;
@@ -1643,7 +1643,7 @@ void GLWidget::loadMapping(void)
     if(!current_visible_slide)
         return;
     QString filename = QFileDialog::getOpenFileName(
-            this,"Open Mapping Matrix",QDir::currentPath(),"Text files (*.txt);;All files (*)");
+            this,"Open Mapping Matrix",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),"Text files (*.txt);;All files (*)");
     std::ifstream in(filename.toLocal8Bit().begin());
     if(filename.isEmpty() || !in)
         return;

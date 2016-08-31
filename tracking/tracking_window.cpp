@@ -882,7 +882,7 @@ void tracking_window::add_slice_name(QString name)
 void tracking_window::on_actionInsert_T1_T2_triggered()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
-        this,"Open Images files",QDir::currentPath(),"Image files (*.dcm *.hdr *.nii *nii.gz 2dseq);;All files (*)" );
+        this,"Open Images files",QFileInfo(windowTitle()).absolutePath(),"Image files (*.dcm *.hdr *.nii *nii.gz 2dseq);;All files (*)" );
     if( filenames.isEmpty())
         return;
     if(glWidget->addSlices(filenames,renderWidget->getData("slice_smoothing").toBool()))
@@ -1218,7 +1218,7 @@ void tracking_window::on_actionSave_tracking_parameters_triggered()
 void tracking_window::on_actionLoad_tracking_parameters_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
-                           this,"Open INI files",QDir::currentPath(),"Setting file (*.ini);;All files (*)");
+                           this,"Open INI files",QFileInfo(windowTitle()).absolutePath(),"Setting file (*.ini);;All files (*)");
     if (filename.isEmpty())
         return;
     QSettings s(filename, QSettings::IniFormat);
@@ -1250,7 +1250,7 @@ void tracking_window::on_actionSave_Rendering_Parameters_triggered()
 void tracking_window::on_actionLoad_Rendering_Parameters_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
-                           this,"Open INI files",QDir::currentPath(),"Setting file (*.ini);;All files (*)");
+                           this,"Open INI files",QFileInfo(windowTitle()).absolutePath(),"Setting file (*.ini);;All files (*)");
     if (filename.isEmpty())
         return;
     QSettings s(filename, QSettings::IniFormat);

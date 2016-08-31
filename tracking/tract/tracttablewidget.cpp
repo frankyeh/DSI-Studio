@@ -212,14 +212,14 @@ void TractTableWidget::load_tracts(QStringList filenames)
 void TractTableWidget::load_tracts(void)
 {
     load_tracts(QFileDialog::getOpenFileNames(
-            this,"Load tracts as",QDir::currentPath(),
+            this,"Load tracts as",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),
             "Tract files (*.txt *.trk *trk.gz *.tck);;All files (*)"));
 
 }
 void TractTableWidget::load_tract_label(void)
 {
     QString filename = QFileDialog::getOpenFileName(
-                this,"Load tracts as",QDir::currentPath(),
+                this,"Load tracts as",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),
                 "Tract files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -344,7 +344,7 @@ void TractTableWidget::open_cluster_label(void)
     if(tract_models.empty())
         return;
     QString filename = QFileDialog::getOpenFileName(
-            this,"Load cluster label",QDir::currentPath(),
+            this,"Load cluster label",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),
             "Cluster label files (*.txt);;All files (*)");
     if(!filename.size())
         return;
@@ -738,7 +738,7 @@ void TractTableWidget::load_tracts_color(void)
     if(currentRow() >= tract_models.size())
         return;
     QString filename = QFileDialog::getOpenFileName(
-            this,"Load tracts color",QDir::currentPath(),
+            this,"Load tracts color",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),
             "Color files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -754,7 +754,7 @@ void TractTableWidget::load_tracts_value(void)
     if(currentRow() >= tract_models.size())
         return;
     QString filename = QFileDialog::getOpenFileName(
-            this,"Load tracts color",QDir::currentPath(),
+            this,"Load tracts color",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),
             "Color files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
