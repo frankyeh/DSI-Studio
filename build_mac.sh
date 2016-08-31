@@ -19,9 +19,11 @@ rm -rf DSI-Studio
 rm -rf TIPL
 cd DSI-Studio-master
 qmake -project
-qmake
+qmake -config release
+make clean
 make
 macdeployqt dsi_studio.app -dmg
 mv dsi_studio.dmg dsi_studio_64.dmg
+cp dsi_studio_64.dmg /Users/frank/Dropbox/DSI\ Studio/
 
 
