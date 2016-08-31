@@ -1671,6 +1671,12 @@ bool GLWidget::addSlices(QStringList filenames,bool correct_intensity)
         QMessageBox::information(this,"Error reading image files",0);
         return false;
     }
+    for(int i = 0;i < other_slices.size();++i)
+        if(new_slice->name == other_slices[i]->name)
+        {
+            new_slice->name += "'";
+            i = -1;
+        }
     other_slices.push_back(new_slice);
     current_visible_slide = other_slices.size();
     if(!timer.get())
