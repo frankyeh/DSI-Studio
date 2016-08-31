@@ -210,11 +210,6 @@ void RegionTableWidget::check_check_status(int row, int col)
 void RegionTableWidget::draw_region(QImage& qimage)
 {
     int X, Y, Z;
-    int cur_row = currentRow();
-    image::basic_image<unsigned char,2> cur_image_mask;
-    bool outline = cur_tracking_window["roi_outline"].toInt();
-    if(outline)
-        cur_image_mask.resize(image::geometry<2>(qimage.width(),qimage.height()));
     for (unsigned int roi_index = 0;roi_index < regions.size();++roi_index)
     {
         if (item(roi_index,0)->checkState() != Qt::Checked)
@@ -226,21 +221,68 @@ void RegionTableWidget::draw_region(QImage& qimage)
             if (cur_tracking_window.slice.slice_pos[cur_tracking_window.slice.cur_dim] != Z ||
                     X < 0 || Y < 0 || X >= qimage.width() || Y >= qimage.height())
                 continue;
-            if(outline && roi_index == cur_row)
-                cur_image_mask.at(X,Y) = 1;
             qimage.setPixel(X,Y,(unsigned int)qimage.pixel(X,Y) | cur_color);
-        }
-        if(outline && roi_index == cur_row)
-        {
-            image::morphology::inner_edge(cur_image_mask);
-            for(int y = 0,index = 0;y < qimage.height();++y)
-                 for(int x = 0;x < qimage.width();++x,++index)
-                     if(cur_image_mask[index])
-                         qimage.setPixel(x,y,0x00FFFFFF);
-
         }
     }
 }
+
+void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image)
+{
+    if(rowCount() == 0 || currentRow() == -1 || item(currentRow(),0)->checkState() != Qt::Checked)
+        return;
+    int X, Y, Z;
+    image::basic_image<unsigned char,2> cur_image_mask;
+    cur_image_mask.resize(image::geometry<2>(qimage.width(),qimage.height()));
+    for (unsigned int index = 0;index < regions[currentRow()]->size();++index)
+    {
+        regions[currentRow()]->getSlicePosition(&cur_tracking_window.slice, index, X, Y, Z);
+        if (cur_tracking_window.slice.slice_pos[cur_tracking_window.slice.cur_dim] != Z ||
+                X < 0 || Y < 0 || X >= qimage.width() || Y >= qimage.height())
+            continue;
+        cur_image_mask.at(X,Y) = 1;
+    }
+
+    QPainter paint(&scaled_image);
+    paint.setBrush(Qt::NoBrush);
+    float display_ratio = (float)scaled_image.width()/(float)qimage.width();
+    for(int y = 1,cur_index = qimage.width();y < qimage.height()-1;++y)
+    for(int x = 0;x < qimage.width();++x,++cur_index)
+    {
+        if(x == 0 || x+1 >= qimage.width() || !cur_image_mask[cur_index])
+            continue;
+        float xd = x*display_ratio;
+        float xd_1 = xd+display_ratio;
+        float yd = y*display_ratio;
+        float yd_1 = yd+display_ratio;
+        {
+            if(!(cur_image_mask[cur_index]))
+                continue;
+            bool upper_edge = !(cur_image_mask[cur_index-qimage.width()]);
+            bool lower_edge = !(cur_image_mask[cur_index+qimage.width()]);
+            bool left_edge = !(cur_image_mask[cur_index-1]);
+            bool right_edge = !(cur_image_mask[cur_index+1]);
+            // upper edge
+            paint.setPen((y+x) % 2 ? Qt::black : Qt::white);
+            if(upper_edge)
+                paint.drawLine(xd+(left_edge ? 1 : 0),yd+1,
+                               xd_1+(right_edge ? -1 : 0),yd+1);
+
+            if(lower_edge)
+                paint.drawLine(xd+(left_edge ? 1 : 0),yd_1-1,
+                               xd_1+(right_edge ? -1 : 0),yd_1-1);
+
+            // left edge
+            if(left_edge)
+                paint.drawLine(xd+1,yd+(upper_edge? 1:0),
+                               xd+1,yd_1+(lower_edge? -1:0));
+
+            if(right_edge)
+                paint.drawLine(xd_1-1,yd+(upper_edge? 1:0),
+                               xd_1-1,yd_1+(lower_edge? -1:0));
+        }
+    }
+}
+
 void RegionTableWidget::draw_mosaic_region(QImage& qimage,unsigned int mosaic_size,unsigned int skip)
 {
     image::geometry<3> geo = cur_tracking_window.slice.geometry;

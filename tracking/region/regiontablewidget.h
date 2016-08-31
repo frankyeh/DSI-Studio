@@ -58,6 +58,7 @@ public:
     QString getROIname(void);
 public slots:
     void draw_region(QImage& image);
+    void draw_edge(QImage& image,QImage& scaledimage);
     void draw_mosaic_region(QImage& image,unsigned int mosaic_size,unsigned int skip);
     void updateRegions(QTableWidgetItem* item);
     void new_region(void);

@@ -142,14 +142,15 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
     // draw region colors on the image
     cur_tracking_window.regionWidget->draw_region(qimage);
     QImage scaled_image = qimage.scaled(slice_image.width()*display_ratio,slice_image.height()*display_ratio);
+    if(cur_tracking_window["roi_outline"].toInt())
+        cur_tracking_window.regionWidget->draw_edge(qimage,scaled_image);
 
     QPainter painter(&scaled_image);
-
     if(cur_tracking_window["roi_fiber"].toInt())
         show_fiber(painter);
-
     if(cur_tracking_window["roi_position"].toInt())
         show_pos(painter);
+
 
 
     bool flip_x = false;
