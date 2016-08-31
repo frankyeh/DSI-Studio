@@ -13,7 +13,6 @@ class GLWidget : public QGLWidget
 Q_OBJECT
 
  public:
-     bool stereoscopy;
      GLWidget(bool samplebuffer,
               tracking_window& cur_tracking_window_,
               RenderingTableWidget* renderWidget_,
@@ -95,8 +94,8 @@ Q_OBJECT
  protected:
      void initializeGL();
      void resizeGL(int width, int height);
-     void setFrustum(int eye);
-     void renderLR(int);
+     void setFrustum(void);
+     void renderLR(void);
      void mousePressEvent(QMouseEvent *event);
      void mouseReleaseEvent(QMouseEvent *event);
      void mouseMoveEvent(QMouseEvent *event);

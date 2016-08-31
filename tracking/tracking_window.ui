@@ -1613,7 +1613,7 @@ Tracking</string>
    </property>
    <property name="minimumSize">
     <size>
-     <width>292</width>
+     <width>307</width>
      <height>171</height>
     </size>
    </property>
@@ -1918,6 +1918,17 @@ Tracking</string>
          </property>
          <property name="sizeAdjustPolicy">
           <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="save_roi_map">
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../icons.qrc">
+           <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
          </property>
         </widget>
        </item>

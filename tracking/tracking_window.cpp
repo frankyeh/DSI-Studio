@@ -201,6 +201,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
 
         connect(ui->sliceViewBox,SIGNAL(currentIndexChanged(int)),&scene,SLOT(show_slice()));
+        connect(ui->save_roi_map,SIGNAL(clicked()),&scene,SLOT(save_slice_as()));
 
 
     }

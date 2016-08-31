@@ -35,6 +35,7 @@ Rendering/Anti-aliasing/anti_aliasing/Off:On/1
 Rendering/Line Smooth/line_smooth/Off:On/0
 Rendering/Point Smooth/point_smooth/Off:On/0
 Rendering/Polygon Smooth/poly_smooth/Off:On/0
+Rendering/Stereoscopy/stereoscopy/Off:On/0
 Slice/Opacity/slice_alpha/float:0:1:0.1:2/1
 Slice/Mag Filter/slice_mag_filter/NEAREST:LINEAR/1
 Slice/Smoothing/slice_smoothing/Off:On/0
