@@ -327,6 +327,25 @@
           </spacer>
          </item>
          <item>
+          <widget class="QComboBox" name="glView">
+           <item>
+            <property name="text">
+             <string>Single View</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Double Views</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Stereoscope</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item>
           <widget class="QPushButton" name="auto_rotate">
            <property name="maximumSize">
             <size>
@@ -364,6 +383,34 @@
           </widget>
          </item>
         </layout>
+       </item>
+       <item>
+        <widget class="QWidget" name="widget_2" native="true">
+         <layout class="QHBoxLayout" name="horizontalLayout_9">
+          <property name="spacing">
+           <number>0</number>
+          </property>
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <layout class="QHBoxLayout" name="glLayout">
+            <property name="spacing">
+             <number>0</number>
+            </property>
+           </layout>
+          </item>
+         </layout>
+        </widget>
        </item>
        <item>
         <layout class="QHBoxLayout" name="centralLayout2">
@@ -2701,16 +2748,6 @@ Tracking</string>
     <string>&amp;Statistics...</string>
    </property>
   </action>
-  <action name="actionK_means">
-   <property name="text">
-    <string>K-means</string>
-   </property>
-  </action>
-  <action name="actionEM">
-   <property name="text">
-    <string>EM</string>
-   </property>
-  </action>
   <action name="actionHierarchical">
    <property name="text">
     <string>Single-Linkage Clustering</string>
@@ -3226,11 +3263,6 @@ Tracking</string>
   <action name="actionDeep_Learning_Train">
    <property name="text">
     <string>Testing</string>
-   </property>
-  </action>
-  <action name="actionDeep_Learning_Save">
-   <property name="text">
-    <string>Save...</string>
    </property>
   </action>
   <action name="actionOpen_Tracts_Label">

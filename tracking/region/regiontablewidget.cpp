@@ -416,11 +416,11 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     bool has_transform = false;
 
     // searching for T1/T2 mappings
-    for(unsigned int index = 0;index < cur_tracking_window.glWidget->other_slices.size();++index)
+    for(unsigned int index = 0;index < cur_tracking_window.other_slices.size();++index)
     {
-        if(from.geometry() == cur_tracking_window.glWidget->other_slices[index]->source_images.geometry())
+        if(from.geometry() == cur_tracking_window.other_slices[index]->source_images.geometry())
         {
-            convert = cur_tracking_window.glWidget->other_slices[index]->invT;
+            convert = cur_tracking_window.other_slices[index]->invT;
             has_transform = true;
             break;
         }

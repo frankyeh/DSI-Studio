@@ -20,7 +20,7 @@ color_bar_dialog::color_bar_dialog(QWidget *parent) :
         for (unsigned int index = 0; index < index_list.size(); ++index)
             ui->tract_color_index->addItem(index_list[index].c_str());
         connect(ui->update_rendering,SIGNAL(clicked()),cur_tracking_window->glWidget,SLOT(makeTracts()));
-        connect(ui->update_rendering,SIGNAL(clicked()),cur_tracking_window->glWidget,SLOT(updateGL()));
+        connect(ui->update_rendering,SIGNAL(clicked()),cur_tracking_window,SLOT(update_gl()));
     }
     else
     {

@@ -13,6 +13,8 @@ class GLWidget : public QGLWidget
 Q_OBJECT
 
  public:
+     GLWidget* bind_gl;
+     float bind_rotate;
      GLWidget(bool samplebuffer,
               tracking_window& cur_tracking_window_,
               RenderingTableWidget* renderWidget_,
@@ -43,17 +45,12 @@ Q_OBJECT
      float object_distance;
      void select_object(void);
  public:// other slices
-     std::auto_ptr<QTimer> timer;
      QTime time;
      int last_time;
-     std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
+
 
 
      unsigned int current_visible_slide;
-     bool addSlices(QStringList filenames,bool correct_intensity);
-     void delete_slice(int index);
-     const image::geometry<3>& getCurrentGeo(void) const
-     {return other_slices[current_visible_slide-1]->geometry;}
      void get_current_slice_transformation(image::geometry<3>& geo,
                                            image::vector<3,float>& vs,
                                            image::matrix<4,4,float>& tr);
@@ -82,11 +79,7 @@ Q_OBJECT
      void saveRotationVideo2(void);
      void saveLeftRight3DImage(void);
      void save3ViewImage(void);
-     void saveMapping(void);
-     void adjustMapping(void);
-     void loadMapping(void);
      void copyToClipboard(void);
-     void check_reg(void);
      void rotate(void);
  signals:
      void edited();
@@ -130,6 +123,7 @@ Q_OBJECT
      unsigned char slice_index;
  public:
      GLuint tracts,slice_texture[3];
+     int slice_pos[3];
      QPoint lastPos;
      image::matrix<4,4,float> mat,transformation_matrix,rotation_matrix;
 

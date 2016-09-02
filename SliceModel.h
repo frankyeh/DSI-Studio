@@ -41,7 +41,6 @@ public:
         unsigned char cur_dim;
         int slice_pos[3];
         bool slice_visible[3];
-        bool texture_need_update[3];
         void get_texture(unsigned char dim,image::color_image& cur_rendering_image,const image::value_to_color<float>& v2c)
         {
             unsigned char cur_dim_backup = cur_dim;
@@ -56,7 +55,6 @@ public:
                     value -= (value-230)*10;
                 cur_rendering_image[index].data[3] = value;
             }
-            texture_need_update[dim] = false;
         }
         void get_slice_positions(unsigned int dim,std::vector<image::vector<3,float> >& points)
         {
@@ -75,17 +73,17 @@ public:
             if(slice_pos[0] != x)
             {
                 slice_pos[0] = x;
-                texture_need_update[0] = has_updated = true;
+                has_updated = true;
             }
             if(slice_pos[1] != y)
             {
                 slice_pos[1] = y;
-                texture_need_update[1] = has_updated = true;
+                has_updated = true;
             }
             if(slice_pos[2] != z)
             {
                 slice_pos[2] = z;
-                texture_need_update[2] = has_updated = true;
+                has_updated = true;
             }
             return has_updated;
         }

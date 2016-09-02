@@ -52,7 +52,7 @@ public:
     ~tracking_window();
 
     Ui::tracking_window *ui;
-    GLWidget *glWidget;
+    GLWidget *glWidget,*glWidget2;
     std::auto_ptr<QGLDockWidget> gLdock;
     RegionTableWidget *regionWidget;
     TractTableWidget *tractWidget;
@@ -63,7 +63,7 @@ public:
 public:
     connectometry_result cnt_result;
 public:
-    std::auto_ptr<QTimer> timer;
+    std::auto_ptr<QTimer> timer,timer2;
     unsigned int odf_size;
     unsigned int odf_face_size;
     void set_tracking_param(ThreadData& tracking_thread);
@@ -74,7 +74,11 @@ public:
 public:
     std::shared_ptr<fib_data> handle;
     FibSliceModel slice;
+    std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
     bool slice_no_update;
+    bool addSlices(QStringList filenames,bool correct_intensity,bool cmd);
+
+public:
     bool eventFilter(QObject *obj, QEvent *event);
     QVariant operator[](QString name)const;
     void set_data(QString name, QVariant value);
@@ -94,6 +98,8 @@ public slots:
     void on_show_fiber_toggled(bool checked);
     void on_show_r_toggled(bool checked);
     void on_show_position_toggled(bool checked);
+    void check_reg(void);
+    void update_gl(void);
 private slots:
     void on_actionRestore_window_layout_triggered();
     void on_actionSave_Tracts_in_Current_Mapping_triggered();
@@ -167,6 +173,10 @@ private slots:
     void on_actionRestore_Tracking_Settings_triggered();
     void add_roi_from_atlas();
     void on_actionIndividual_Connectometry_triggered();
+    void on_actionAdjust_Mapping_triggered();
+    void on_actionSave_mapping_triggered();
+    void on_actionLoad_mapping_triggered();
+    void on_glView_currentIndexChanged(int index);
 };
 
 #endif // TRACKING_WINDOW_H

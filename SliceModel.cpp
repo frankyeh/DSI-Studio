@@ -14,9 +14,6 @@ SliceModel::SliceModel(void):cur_dim(2)
     slice_visible[0] = false;
     slice_visible[1] = false;
     slice_visible[2] = false;
-    texture_need_update[0] = true;
-    texture_need_update[1] = true;
-    texture_need_update[2] = true;
 }
 
 FibSliceModel::FibSliceModel(std::shared_ptr<fib_data> handle_):handle(handle_)
@@ -221,7 +218,6 @@ void CustomSliceModel::update(void)
 // ---------------------------------------------------------------------------
 void CustomSliceModel::update_roi(void)
 {
-    std::fill(texture_need_update,texture_need_update+3,1);
     image::resample(source_images,roi_image,invT,image::linear);
 }
 // ---------------------------------------------------------------------------
