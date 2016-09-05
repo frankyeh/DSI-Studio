@@ -1904,4 +1904,5 @@ void tracking_window::on_glView_currentIndexChanged(int index)
     glWidget->bind_gl = (index == 2) ? glWidget2: 0;
     if(glWidget2)
         glWidget2->bind_gl = (index == 2) ? glWidget: 0;
+    update_gl();
 }

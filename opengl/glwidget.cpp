@@ -1175,9 +1175,9 @@ void GLWidget::makeTracts(void)
 }
 void GLWidget::resizeGL(int width_, int height_)
 {
-    cur_width = width_;
+    cur_width = bind_gl ? width_*2.0 : width_;
     cur_height = height_;
-    glViewport(0,0, cur_width, cur_height);
+    glViewport(0,0, width_, height_);
     glMatrixMode(GL_MODELVIEW);
     check_error(__FUNCTION__);
 }
