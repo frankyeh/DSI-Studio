@@ -52,7 +52,7 @@ public:
     ~tracking_window();
 
     Ui::tracking_window *ui;
-    GLWidget *glWidget,*glWidget2;
+    GLWidget *glWidget;
     std::auto_ptr<QGLDockWidget> gLdock;
     RegionTableWidget *regionWidget;
     TractTableWidget *tractWidget;
@@ -99,7 +99,6 @@ public slots:
     void on_show_r_toggled(bool checked);
     void on_show_position_toggled(bool checked);
     void check_reg(void);
-    void update_gl(void);
 private slots:
     void on_actionRestore_window_layout_triggered();
     void on_actionSave_Tracts_in_Current_Mapping_triggered();

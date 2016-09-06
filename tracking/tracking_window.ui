@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1028</width>
+    <width>1122</width>
     <height>800</height>
    </rect>
   </property>
@@ -1001,7 +1001,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1028</width>
+     <width>1122</width>
      <height>21</height>
     </rect>
    </property>
@@ -1229,10 +1229,7 @@
     <addaction name="actionSave_Screen"/>
     <addaction name="actionSave_3D_screen_in_3_views"/>
     <addaction name="actionSave_3D_screen_in_high_resolution"/>
-    <addaction name="actionSave_Left_Right_3D_Image"/>
-    <addaction name="separator"/>
     <addaction name="actionSave_Rotation_Images"/>
-    <addaction name="actionSave_Rotation_Video_in_Left_Right_3D"/>
     <addaction name="separator"/>
     <addaction name="actionSave_ROI_Screen"/>
     <addaction name="actionSave_Anisotrpy_Map_as"/>

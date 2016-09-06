@@ -503,8 +503,5 @@ void RenderingTableWidget::dataChanged(const QModelIndex &topLeft, const QModelI
         return;
     }
     else
-    {
         cur_tracking_window.glWidget->updateGL();
-        if(cur_tracking_window.glWidget2)cur_tracking_window.glWidget2->updateGL();
-    }
 }

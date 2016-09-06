@@ -13,8 +13,6 @@ class GLWidget : public QGLWidget
 Q_OBJECT
 
  public:
-     GLWidget* bind_gl;
-     float bind_rotate;
      GLWidget(bool samplebuffer,
               tracking_window& cur_tracking_window_,
               RenderingTableWidget* renderWidget_,
@@ -76,8 +74,6 @@ Q_OBJECT
      void saveCamera(void);
      void loadCamera(void);
      void saveRotationSeries(void);
-     void saveRotationVideo2(void);
-     void saveLeftRight3DImage(void);
      void save3ViewImage(void);
      void copyToClipboard(void);
      void rotate(void);
@@ -89,6 +85,9 @@ Q_OBJECT
      void resizeGL(int width, int height);
      void setFrustum(void);
      void renderLR(void);
+protected:
+     bool edit_right;
+     QPoint convert_pos(QMouseEvent *event);
      void mousePressEvent(QMouseEvent *event);
      void mouseReleaseEvent(QMouseEvent *event);
      void mouseMoveEvent(QMouseEvent *event);
@@ -125,9 +124,9 @@ Q_OBJECT
      GLuint tracts,slice_texture[3];
      int slice_pos[3];
      QPoint lastPos;
-     image::matrix<4,4,float> mat,transformation_matrix,rotation_matrix;
+     image::matrix<4,4,float> mat,transformation_matrix,transformation_matrix2,rotation_matrix,rotation_matrix2;
+     enum class view_mode_type { single, two, stereo} view_mode;
 
-     float current_scale;
      bool set_view_flip;
      void update_slice(void){slice_index = 255;}
      void get3View(QImage& I,unsigned int type);

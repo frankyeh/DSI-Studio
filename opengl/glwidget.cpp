@@ -35,14 +35,12 @@ GLWidget::GLWidget(bool samplebuffer,
         cur_tracking_window(cur_tracking_window_),
         renderWidget(renderWidget_),
         tracts(0),
-        current_scale(1),
         cur_height(1),
         cur_width(1),
         editing_option(0),
         current_visible_slide(0),
         set_view_flip(false),
-        bind_gl(0),
-        bind_rotate(0)
+        view_mode(view_mode_type::single)
 {
     std::fill(slice_texture,slice_texture+3,0);
     odf_dim = 0;
@@ -51,6 +49,10 @@ GLWidget::GLWidget(bool samplebuffer,
     if(max_fa == 0.0)
         max_fa = 1.0;
     slice_pos[0] = slice_pos[1] = slice_pos[2] = -1;
+    transformation_matrix.identity();
+    rotation_matrix.identity();
+    transformation_matrix2.identity();
+    rotation_matrix2.identity();
 }
 
 GLWidget::~GLWidget()
@@ -106,9 +108,11 @@ void check_error(const char* line)
 
 void GLWidget::set_view(unsigned char view_option)
 {
+    float scale = std::powf(transformation_matrix.det(),1.0/3.0);
     // initialize world matrix
     transformation_matrix.identity();
     rotation_matrix.identity();
+
 
     if(get_param("scale_voxel") && cur_tracking_window.slice.voxel_size[0] > 0.0)
     {
@@ -116,9 +120,9 @@ void GLWidget::set_view(unsigned char view_option)
         transformation_matrix[10] = cur_tracking_window.slice.voxel_size[2] / cur_tracking_window.slice.voxel_size[0];
     }
 
-    transformation_matrix[0] *= current_scale;
-    transformation_matrix[5] *= current_scale;
-    transformation_matrix[10] *= current_scale;
+    transformation_matrix[0] *= scale;
+    transformation_matrix[5] *= scale;
+    transformation_matrix[10] *= scale;
     transformation_matrix[12] = -transformation_matrix[0]*cur_tracking_window.slice.center_point[0];
     transformation_matrix[13] = -transformation_matrix[5]*cur_tracking_window.slice.center_point[1];
     transformation_matrix[14] = -transformation_matrix[10]*cur_tracking_window.slice.center_point[2];
@@ -154,6 +158,8 @@ void GLWidget::set_view(unsigned char view_option)
         transformation_matrix *= m;
         rotation_matrix *= m;
     }
+    transformation_matrix2 = transformation_matrix;
+    rotation_matrix2 =rotation_matrix;
     set_view_flip = !set_view_flip;
 }
 
@@ -322,7 +328,7 @@ void GLWidget::setFrustum(void)
     GLfloat perspective = p[get_param("pespective")];
     GLfloat zNear = 1.0f;
     GLfloat zFar = 1000.0f;
-    GLfloat aspect = float(cur_width)/float(cur_height);
+    GLfloat aspect = float(view_mode == view_mode_type::two ? cur_width/2:cur_width)/float(cur_height);
     GLfloat fH = 0.25;
     GLfloat fW = fH * aspect;
     glFrustum( -fW, fW, -fH, fH, zNear*perspective, zFar*perspective);
@@ -398,92 +404,50 @@ void GLWidget::paintGL()
 
     check_error("others");
 
-    if(bind_gl)
+    switch(view_mode)
     {
-        bind_gl->transformation_matrix = transformation_matrix;
-        bind_gl->rotation_matrix = rotation_matrix;
-        bind_gl->current_scale = current_scale;
-    }
+        case view_mode_type::single:
+            glViewport(0,0, cur_width, cur_height);
+            if(!get_param("stereoscopy"))
+                renderLR();
+            else
+            {
+                glDrawBuffer(GL_BACK_RIGHT);
+                renderLR();
+                glDrawBuffer(GL_BACK_LEFT);
+                renderLR();
+                glDrawBuffer(GL_BACK);
+            }
+            break;
+        case view_mode_type::two:
+            glViewport(0,0, cur_width/2, cur_height);
+            renderLR();
+            transformation_matrix.swap(transformation_matrix2);
+            rotation_matrix.swap(rotation_matrix2);
+            glViewport(cur_width/2,0, cur_width/2, cur_height);
+            renderLR();
+            transformation_matrix.swap(transformation_matrix2);
+            rotation_matrix.swap(rotation_matrix2);
+            break;
+        case view_mode_type::stereo:
+            glViewport(0,0, cur_width/2, cur_height);
+            renderLR();
+            image::matrix<4,4,float> T(transformation_matrix);
+            // add a rotation to the transofrmation matrix
+            glPushMatrix();
+            glLoadIdentity();
+            glRotated(get_param_float("stereoscopy_angle"),0,1,0);
+            glMultMatrixf(transformation_matrix.begin());
+            glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
+            glPopMatrix();
 
-    // rotate to create stereoscopy
-    if(bind_gl && bind_rotate != 0.0)
-    {
-        glPushMatrix();
-        glLoadIdentity();
-        glRotated(bind_rotate,0,1,0);
-        glMultMatrixf(transformation_matrix.begin());
-        glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
-        glPopMatrix();
-    }
+            glViewport(cur_width/2,0, cur_width/2, cur_height);
+            renderLR();
+            transformation_matrix2 = transformation_matrix;
+            rotation_matrix2 = rotation_matrix;
+            transformation_matrix = T;
+            break;
 
-    // This is the opengl built in stereoscopy
-    if(!get_param("stereoscopy"))
-        renderLR();
-    else
-    {
-        glDrawBuffer(GL_BACK_RIGHT);
-        renderLR();
-        glDrawBuffer(GL_BACK_LEFT);
-        renderLR();
-    }
-
-    // rotate back
-    if(bind_gl && bind_rotate != 0.0)
-    {
-        glPushMatrix();
-        glLoadIdentity();
-        glRotated(-bind_rotate,0,1,0);
-        glMultMatrixf(transformation_matrix.begin());
-        glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
-        glPopMatrix();
-    }
-
-
-    glDrawBuffer(GL_BACK);
-    if (get_param("show_axis"))
-    {
-        glEnable(GL_COLOR_MATERIAL);
-        glDisable(GL_LIGHTING);
-
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glLoadIdentity();
-        float p[11] = {0.35,0.4,0.45,0.5,0.6,0.8,1.0,1.5,2.0,12.0,50.0};
-        GLfloat perspective = p[get_param("pespective")];
-        GLfloat zNear = 1.0f;
-        GLfloat zFar = 1000.0f;
-        GLfloat aspect = float(cur_width)/float(cur_height);
-        GLfloat fH = 0.25;
-        GLfloat fW = fH * aspect;
-        glFrustum( -fW, 0.015, -0.015, fH, zNear*perspective, zFar*perspective);
-
-
-        glDisable(GL_DEPTH_TEST);
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glLoadIdentity();
-        my_gluLookAt(0,0,-200.0*perspective,0,0,0,0,-1.0,0);
-        glMultMatrixf(rotation_matrix.begin());
-        glLineWidth (1.5);
-        glBegin (GL_LINES);
-        glColor3f (1.0,0.3,0.3);  glVertex3f(0,0,0);  glVertex3f(1.5,0,0);    // X axis is red.
-        glColor3f (0.3,1.0,0.3);  glVertex3f(0,0,0);  glVertex3f(0,1.5,0);    // Y axis is green.
-        glColor3f (0.3,0.3,1.0);  glVertex3f(0,0,0);  glVertex3f(0,0,1.5);    // z axis is blue.
-        glEnd();
-        if(get_param("show_axis_text"))
-        {
-            renderText(0,0,2,"S");
-            glColor3f (1.0,0.3,0.3);
-            renderText(2,0,0,"L");
-            glColor3f (0.3,1.0,0.3);
-            renderText(0,2,0,"P");
-        }
-        glEnable(GL_DEPTH_TEST);
-        glPopMatrix();
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        check_error("axis");
     }
 }
 
@@ -788,6 +752,51 @@ void GLWidget::renderLR()
         check_error("show_surface");
     }
 
+    if (get_param("show_axis"))
+    {
+        glEnable(GL_COLOR_MATERIAL);
+        glDisable(GL_LIGHTING);
+
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        float p[11] = {0.35,0.4,0.45,0.5,0.6,0.8,1.0,1.5,2.0,12.0,50.0};
+        GLfloat perspective = p[get_param("pespective")];
+        GLfloat zNear = 1.0f;
+        GLfloat zFar = 1000.0f;
+        GLfloat aspect = float(view_mode == view_mode_type::two ? cur_width/2:cur_width)/float(cur_height);
+        GLfloat fH = 0.25;
+        GLfloat fW = fH * aspect;
+        glFrustum( -fW, 0.015, -0.015, fH, zNear*perspective, zFar*perspective);
+
+
+        glDisable(GL_DEPTH_TEST);
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+        my_gluLookAt(0,0,-200.0*perspective,0,0,0,0,-1.0,0);
+        glMultMatrixf(rotation_matrix.begin());
+        glLineWidth (1.5);
+        glBegin (GL_LINES);
+        glColor3f (1.0,0.3,0.3);  glVertex3f(0,0,0);  glVertex3f(1.5,0,0);    // X axis is red.
+        glColor3f (0.3,1.0,0.3);  glVertex3f(0,0,0);  glVertex3f(0,1.5,0);    // Y axis is green.
+        glColor3f (0.3,0.3,1.0);  glVertex3f(0,0,0);  glVertex3f(0,0,1.5);    // z axis is blue.
+        glEnd();
+        if(get_param("show_axis_text"))
+        {
+            renderText(0,0,2,"S");
+            glColor3f (1.0,0.3,0.3);
+            renderText(2,0,0,"L");
+            glColor3f (0.3,1.0,0.3);
+            renderText(0,2,0,"P");
+        }
+        glEnable(GL_DEPTH_TEST);
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        check_error("axis");
+    }
 }
 
 
@@ -1175,11 +1184,8 @@ void GLWidget::makeTracts(void)
 }
 void GLWidget::resizeGL(int width_, int height_)
 {
-    cur_width = bind_gl ? width_*2.0 : width_;
+    cur_width = width_;
     cur_height = height_;
-    glViewport(0,0, width_, height_);
-    glMatrixMode(GL_MODELVIEW);
-    check_error(__FUNCTION__);
 }
 void GLWidget::scale_by(float scalefactor)
 {
@@ -1187,22 +1193,29 @@ void GLWidget::scale_by(float scalefactor)
     glPushMatrix();
     glLoadIdentity();
     glScaled(scalefactor,scalefactor,scalefactor);
-    glMultMatrixf(transformation_matrix.begin());
-    glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
+    if(edit_right && view_mode == view_mode_type::two)
+    {
+        glMultMatrixf(transformation_matrix2.begin());
+        glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix2.begin());
+    }
+    else
+    {
+        glMultMatrixf(transformation_matrix.begin());
+        glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
+    }
     glPopMatrix();
     updateGL();
-    if(bind_gl)
-        bind_gl->updateGL();
 }
 
 void GLWidget::wheelEvent ( QWheelEvent * event )
 {
+    edit_right = (view_mode != view_mode_type::single && (event->x() > cur_width / 2));
     double scalefactor = event->delta();
     scalefactor /= 1200.0;
     scalefactor = 1.0+scalefactor;
     scale_by(scalefactor);
-    current_scale *= scalefactor;
-    cur_tracking_window.ui->zoom_3d->setValue(current_scale);
+    if(!edit_right || view_mode != view_mode_type::two)
+        cur_tracking_window.ui->zoom_3d->setValue(std::powf(transformation_matrix.det(),1.0/3.0));
     event->ignore();
 }
 
@@ -1223,7 +1236,7 @@ void GLWidget::get_view_dir(QPoint p,image::vector<3,float>& dir)
     float v[3];
     glGetFloatv(GL_PROJECTION_MATRIX,m.begin());
     // Compute the vector of the pick ray in screen space
-    v[0] = (( 2.0f * ((float)p.x() * devicePixelRatio())/((float)cur_width)) - 1 ) / m[0];
+    v[0] = (( 2.0f * ((float)p.x() * devicePixelRatio())/float(view_mode == view_mode_type::two ? cur_width/2:cur_width)) - 1 ) / m[0];
     v[1] = -(( 2.0f * ((float)p.y() * devicePixelRatio())/((float)cur_height)) - 1 ) / m[5];
     v[2] = -1.0f;
     // Transform the screen space pick ray into 3D space
@@ -1328,7 +1341,7 @@ void GLWidget::get_pos(void)
 {
     //glMultMatrixf(transformation_matrix);
     glGetFloatv(GL_MODELVIEW_MATRIX,mat.begin());
-    image::matrix<4,4,float> view = transformation_matrix*mat;
+    image::matrix<4,4,float> view = (edit_right) ? transformation_matrix2*mat : transformation_matrix*mat;
     mat = image::inverse(view);
     pos[0] = mat[12];
     pos[1] = mat[13];
@@ -1338,8 +1351,9 @@ void GLWidget::get_pos(void)
 void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
     makeCurrent();
+    QPoint cur_pos = convert_pos(event);
     get_pos();
-    get_view_dir(event->pos(),dir1);
+    get_view_dir(cur_pos,dir1);
     select_object();
     select_slice();
     if(!object_selected && !slice_selected)
@@ -1370,9 +1384,13 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
 }
 bool GLWidget::get_mouse_pos(QMouseEvent *event,image::vector<3,float>& position)
 {
+    QPoint cur_pos = event->pos();
+    if(edit_right)
+        cur_pos.setX(cur_pos.x() - cur_width / 2);
+
     get_pos();
     image::vector<3,float> cur_dir;
-    get_view_dir(event->pos(),cur_dir);
+    get_view_dir(cur_pos,cur_dir);
 
     bool show_slice[3];
     show_slice[0] = cur_tracking_window.ui->glSagCheck->checkState();
@@ -1402,12 +1420,22 @@ bool GLWidget::get_mouse_pos(QMouseEvent *event,image::vector<3,float>& position
     }
     return false;
 }
+QPoint GLWidget::convert_pos(QMouseEvent *event)
+{
+    QPoint p = event->pos();
+    if(edit_right)
+        p.setX(p.x() - cur_width / 2);
+    if(view_mode == view_mode_type::stereo)
+        p.setX(p.x()*2);
+    return p;
+}
 
 void GLWidget::mousePressEvent(QMouseEvent *event)
 {
     setFocus();// for key stroke to work
     makeCurrent();
-    lastPos = event->pos();
+    edit_right = (view_mode != view_mode_type::single && (event->x() > cur_width / 2));
+    lastPos = convert_pos(event);
     if(editing_option)
         get_pos();
 
@@ -1467,8 +1495,9 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
         editing_option = 0;
         return;
     }
+    QPoint cur_pos = convert_pos(event);
     get_view_dir(lastPos,dir1);
-    get_view_dir(QPoint(event->x(),event->y()),dir2);
+    get_view_dir(cur_pos,dir2);
     editing_option = 0;
     angular_selection = event->button() == Qt::RightButton;
     emit edited();
@@ -1479,16 +1508,24 @@ void GLWidget::move_by(int x,int y)
     glPushMatrix();
     glLoadIdentity();
     glTranslated(x/5.0,y/5.0,0);
-    glMultMatrixf(transformation_matrix.begin());
-    glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
+    if(edit_right && view_mode == view_mode_type::two)
+    {
+        glMultMatrixf(transformation_matrix2.begin());
+        glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix2.begin());
+    }
+    else
+    {
+        glMultMatrixf(transformation_matrix.begin());
+        glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
+    }
     glPopMatrix();
     updateGL();
-    if(bind_gl)
-        bind_gl->updateGL();
 }
 
 void GLWidget::mouseMoveEvent(QMouseEvent *event)
 {
+    QPoint cur_pos = convert_pos(event);
+
     makeCurrent();
     // move object
     if(editing_option == 2)
@@ -1496,7 +1533,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 
         std::vector<image::vector<3,float> > points(4);
         slice_location(moving_at_slice_index,points);
-        get_view_dir(event->pos(),dir2);
+        get_view_dir(cur_pos,dir2);
         float dx,dy;
         if(get_slice_projection_point(moving_at_slice_index,pos,dir2,dx,dy) == 0.0)
             return;
@@ -1520,7 +1557,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 
         std::vector<image::vector<3,float> > points(4);
         slice_location(moving_at_slice_index,points);
-        get_view_dir(event->pos(),dir2);
+        get_view_dir(cur_pos,dir2);
         float move_dis = (dir2-dir1)*get_norm(points);
         move_dis *= slice_distance;
         if(std::fabs(move_dis) < 1.0)
@@ -1545,8 +1582,8 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     if(editing_option)
         return;
 
-    float dx = event->x() - lastPos.x();
-    float dy = event->y() - lastPos.y();
+    float dx = cur_pos.x() - lastPos.x();
+    float dy = cur_pos.y() - lastPos.y();
     if(event->modifiers() & Qt::ControlModifier)
     {
         dx /= 16.0;
@@ -1563,8 +1600,16 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
             glRotated(dy / 2.0, 1.0, 0.0, 0.0);
             if(!(event->modifiers() & Qt::ShiftModifier))
                 glRotated(-dx / 2.0, 0.0, 1.0, 0.0);
-            glMultMatrixf(rotation_matrix.begin());
-            glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix.begin());
+            if(edit_right && view_mode == view_mode_type::two)
+            {
+                glMultMatrixf(rotation_matrix2.begin());
+                glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix2.begin());
+            }
+            else
+            {
+                glMultMatrixf(rotation_matrix.begin());
+                glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix.begin());
+            }
             glLoadIdentity();
         }
         glRotated(dy / 2.0, 1.0, 0.0, 0.0);
@@ -1576,19 +1621,24 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     {
         double scalefactor = (-dx-dy+100.0)/100.0;
         glScaled(scalefactor,scalefactor,scalefactor);
-        current_scale *= scalefactor;
-        cur_tracking_window.ui->zoom_3d->setValue(current_scale);
+        cur_tracking_window.ui->zoom_3d->setValue(std::powf(transformation_matrix.det(),1.0/3.0));
     }
     else
         glTranslated(dx/5.0,dy/5.0,0);
 
-    glMultMatrixf(transformation_matrix.begin());
-    glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
+    if(edit_right && view_mode == view_mode_type::two)
+    {
+        glMultMatrixf(transformation_matrix2.begin());
+        glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix2.begin());
+    }
+    else
+    {
+        glMultMatrixf(transformation_matrix.begin());
+        glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
+    }
     glPopMatrix();
     updateGL();
-    if(bind_gl)
-        bind_gl->updateGL();
-    lastPos = event->pos();
+    lastPos = cur_pos;
 }
 
 void GLWidget::saveCamera(void)
@@ -1620,8 +1670,6 @@ void GLWidget::loadCamera(void)
     data.resize(16);
     std::copy(data.begin(),data.end(),transformation_matrix.begin());
     updateGL();
-    if(bind_gl)
-        bind_gl->updateGL();
 }
 void GLWidget::get_current_slice_transformation(
             image::geometry<3>& geo,image::vector<3,float>& vs,image::matrix<4,4,float>& tr)
@@ -1720,8 +1768,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         float zoom = param.toFloat();
         if(zoom == 0)
             return true;
-        scale_by(zoom/current_scale);
-        current_scale = zoom;
+        scale_by(zoom/std::powf(transformation_matrix.det(),1.0/3.0));
         paintGL();
         return true;
     }
@@ -1901,22 +1948,6 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         all.save(param);
         return true;
     }
-    if(cmd == "save_lr_image")
-    {
-        if(param.isEmpty())
-            param = QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".lr_image.jpg";
-        float angle = (param2.isEmpty()) ? 5 : param2.toFloat();
-        rotate_angle(angle/2.0, 0.0, 1.0, 0.0);
-        QImage left = grabFrameBuffer();
-        rotate_angle(-angle/2.0, 0.0, 1.0, 0.0);
-        QImage right = grabFrameBuffer();
-        QImage all(left.width()*2,left.height(),QImage::Format_RGB32);
-        QPainter painter(&all);
-        painter.drawImage(0,0,left);
-        painter.drawImage(left.width(),0,right);
-        all.save(param);
-        return true;
-    }
     if(cmd == "save_rotation_video")
     {
         if(param.isEmpty())
@@ -1940,68 +1971,6 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             QByteArray data = buffer.data();
             if(index == 0.0)
                 avi.open(param.toLocal8Bit().begin(),I_.width(),I_.height(), "MJPG", 30/*fps*/);
-            avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
-        }
-        avi.close();
-        return true;
-    }
-    if(cmd == "save_stereo_rotation_video")
-    {
-        if(param.isEmpty())
-           param = QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".lr_rotation_movie.avi";
-        makeCurrent();
-        float angle = (param2.isEmpty()) ? 1 : param2.toFloat();\
-        image::io::avi avi;
-        double eye_shift = cur_tracking_window["3d_perspective"].toDouble();
-        begin_prog("save video");
-        for(float index = 0;check_prog(index,360);index += angle)
-        {
-
-            // output 2048x768
-            glPushMatrix();
-            glLoadIdentity();
-            glRotated(angle,0,1.0,0.0);
-            glMultMatrixf(rotation_matrix.begin());
-            glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix.begin());
-
-            glLoadIdentity();
-            glRotated(angle,0,1.0,0.0);
-            glTranslatef(-eye_shift,0,0);
-            glMultMatrixf(transformation_matrix.begin());
-            glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
-            glPopMatrix();
-            paintGL();
-            QImage I1 = grabFrameBuffer().scaledToWidth(1024*devicePixelRatio());
-
-            glPushMatrix();
-            glLoadIdentity();
-            glTranslatef(eye_shift*2.0,0,0);
-            glMultMatrixf(transformation_matrix.begin());
-            glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
-            glPopMatrix();
-            paintGL();
-            QImage I2 = grabFrameBuffer().scaledToWidth(1024*devicePixelRatio());
-
-            glPushMatrix();
-            glLoadIdentity();
-            glTranslatef(-eye_shift,0,0);
-            glMultMatrixf(transformation_matrix.begin());
-            glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
-            glPopMatrix();
-
-            QImage I(2048,768,QImage::Format_RGB32);
-            QPainter painter;
-            painter.begin(&I);
-            painter.drawImage(0, (768*devicePixelRatio()-I1.height())/2/devicePixelRatio(), I1);
-            painter.drawImage(1024, (768*devicePixelRatio()-I1.height())/2/devicePixelRatio(), I2);
-            painter.end();
-
-            QBuffer buffer;
-            QImageWriter writer(&buffer, "JPG");
-            writer.write(I);
-            QByteArray data = buffer.data();
-            if(index == 0.0)
-                avi.open(param.toLocal8Bit().begin(),I.width(),I.height(), "MJPG", 30/*fps*/);
             avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
         }
         avi.close();
@@ -2049,23 +2018,6 @@ void GLWidget::save3ViewImage(void)
 
 }
 
-void GLWidget::saveLeftRight3DImage(void)
-{
-    QString filename = QFileDialog::getSaveFileName(
-            this,
-            "Assign image name",
-            QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".lr_image.jpg",
-            "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    bool ok;
-    int angle = QInputDialog::getInt(this,
-            "DSI Studio",
-            "Assign left angle difference in degrees (negative value for right/left view)):",5,-60,60,5,&ok);
-    if(!ok)
-        return;
-    command("save_lr_image",filename,QString::number(angle));
-}
 
 void GLWidget::saveRotationSeries(void)
 {
@@ -2085,24 +2037,6 @@ void GLWidget::saveRotationSeries(void)
     command("save_rotation_video",filename,QString::number(angle));
 }
 
-void GLWidget::saveRotationVideo2(void)
-{
-    QString filename = QFileDialog::getSaveFileName(
-                this,
-                "Assign video name",
-                QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".rotation_movie.avi",
-                "Video file (*.avi);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    bool ok;
-    int angle = QInputDialog::getInt(this,
-            "DSI Studio",
-            "Assign angle increament in degree(s):",1,1,10,1,&ok);
-    if(!ok)
-        return;
-    command("save_stereo_rotation_video",filename,QString::number(angle));
-}
-
 void GLWidget::rotate_angle(float angle,float x,float y,float z)
 {
     makeCurrent();
@@ -2117,7 +2051,18 @@ void GLWidget::rotate_angle(float angle,float x,float y,float z)
     glRotated(angle,x,y,z);
     glMultMatrixf(transformation_matrix.begin());
     glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
+
+    glLoadIdentity();
+    glRotated(angle,x,y,z);
+    glMultMatrixf(rotation_matrix2.begin());
+    glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix2.begin());
+
+    glLoadIdentity();
+    glRotated(angle,x,y,z);
+    glMultMatrixf(transformation_matrix2.begin());
+    glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix2.begin());
     glPopMatrix();
+
     paintGL();
 }
 
@@ -2127,8 +2072,6 @@ void GLWidget::rotate(void)
     rotate_angle((now_time-last_time)/100.0,0,1.0,0.0);
     last_time = now_time;
     updateGL();
-    if(bind_gl)
-        bind_gl->updateGL();
 }
 
 
