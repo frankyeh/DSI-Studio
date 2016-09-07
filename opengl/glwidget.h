@@ -19,8 +19,9 @@ Q_OBJECT
               QWidget *parent = 0);
      ~GLWidget();
  public:// editing
-     unsigned char editing_option;
+     enum {none = 0,selecting = 1, moving = 2, dragging = 3} editing_option;
      image::vector<3,float> pos,dir1,dir2;
+     std::vector<image::vector<3,float> > dirs;
      bool angular_selection;
      void get_pos(void);
      void set_view(unsigned char view_option);
@@ -45,9 +46,6 @@ Q_OBJECT
  public:// other slices
      QTime time;
      int last_time;
-
-
-
      unsigned int current_visible_slide;
      void get_current_slice_transformation(image::geometry<3>& geo,
                                            image::vector<3,float>& vs,
@@ -123,7 +121,7 @@ protected:
  public:
      GLuint tracts,slice_texture[3];
      int slice_pos[3];
-     QPoint lastPos;
+     QPoint lastPos,last_select_point;
      image::matrix<4,4,float> mat,transformation_matrix,transformation_matrix2,rotation_matrix,rotation_matrix2;
      enum class view_mode_type { single, two, stereo} view_mode;
 

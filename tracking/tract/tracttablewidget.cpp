@@ -1087,29 +1087,26 @@ void TractTableWidget::edit_tracts(void)
             continue;
         switch(edit_option)
         {
-        case 1:
-        case 2:
+        case select:
+        case del:
             tract_models[index]->cull(
                              cur_tracking_window.glWidget->angular_selection ?
                              cur_tracking_window["tract_sel_angle"].toFloat():0.0,
-                             cur_tracking_window.glWidget->dir1,
-                             cur_tracking_window.glWidget->dir2,
-                             cur_tracking_window.glWidget->pos,edit_option == 2);
+                             cur_tracking_window.glWidget->dirs,
+                             cur_tracking_window.glWidget->pos,edit_option == del);
             break;
-        case 3:
+        case cut:
             tract_models[index]->cut(
                         cur_tracking_window.glWidget->angular_selection ?
                         cur_tracking_window["tract_sel_angle"].toFloat():0.0,
-                             cur_tracking_window.glWidget->dir1,
-                             cur_tracking_window.glWidget->dir2,
+                             cur_tracking_window.glWidget->dirs,
                              cur_tracking_window.glWidget->pos);
             break;
-        case 4:
+        case paint:
             tract_models[index]->paint(
                         cur_tracking_window.glWidget->angular_selection ?
                         cur_tracking_window["tract_sel_angle"].toFloat():0.0,
-                             cur_tracking_window.glWidget->dir1,
-                             cur_tracking_window.glWidget->dir2,
+                             cur_tracking_window.glWidget->dirs,
                              cur_tracking_window.glWidget->pos,QColorDialog::getColor(Qt::red,this,"Select color",QColorDialog::ShowAlphaChannel).rgb());
             cur_tracking_window.set_data("tract_color_style",1);//manual assigned
             break;

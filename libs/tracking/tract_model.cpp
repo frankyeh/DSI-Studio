@@ -794,49 +794,54 @@ void TractModel::get_tract_points(std::vector<image::vector<3,short> >& points)
 }
 //---------------------------------------------------------------------------
 void TractModel::select(float select_angle,
-                        const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
+                        const std::vector<image::vector<3,float> >& dirs,
                         const image::vector<3,float>& from_pos,std::vector<unsigned int>& selected)
 {
-    image::vector<3,float> z_axis = from_dir.cross_product(to_dir);
-    z_axis.normalize();
-    float view_angle = from_dir*to_dir;
     selected.resize(tract_data.size());
     std::fill(selected.begin(),selected.end(),0);
-
-    float select_angle_cos = std::cos(select_angle*3.141592654/180);
-    unsigned int total_track_number = tract_data.size();
-    for (unsigned int index = 0;index < total_track_number;++index)
+    for(int i = 1;i < dirs.size();++i)
     {
-        float angle = 0.0;
-        const float* ptr = &*tract_data[index].begin();
-        const float* end = ptr + tract_data[index].size();
-        for (;ptr < end;ptr += 3)
+        image::vector<3,float> from_dir = dirs[i-1];
+        image::vector<3,float> to_dir = (i+1 < dirs.size() ? dirs[i+1] : dirs[i]);
+        image::vector<3,float> z_axis = from_dir.cross_product(to_dir);
+        z_axis.normalize();
+        float view_angle = from_dir*to_dir;
+
+        float select_angle_cos = std::cos(select_angle*3.141592654/180);
+        unsigned int total_track_number = tract_data.size();
+        for (unsigned int index = 0;index < total_track_number;++index)
         {
-            image::vector<3,float> p(ptr);
-            p -= from_pos;
-            float next_angle = z_axis*p;
-            if ((angle < 0.0 && next_angle >= 0.0) ||
-                    (angle > 0.0 && next_angle <= 0.0))
+            float angle = 0.0;
+            const float* ptr = &*tract_data[index].begin();
+            const float* end = ptr + tract_data[index].size();
+            for (;ptr < end;ptr += 3)
             {
-
-                p.normalize();
-                if (p*from_dir > view_angle &&
-                        p*to_dir > view_angle)
+                image::vector<3,float> p(ptr);
+                p -= from_pos;
+                float next_angle = z_axis*p;
+                if ((angle < 0.0 && next_angle >= 0.0) ||
+                        (angle > 0.0 && next_angle <= 0.0))
                 {
-                    if(select_angle != 0.0)
-                    {
-                        image::vector<3,float> p1(ptr),p2(ptr-3);
-                        p1 -= p2;
-                        p1.normalize();
-                        if(std::abs(p1*z_axis) < select_angle_cos)
-                            continue;
-                    }
-                    selected[index] = ptr - &*tract_data[index].begin();
-                    break;
-                }
 
+                    p.normalize();
+                    if (p*from_dir > view_angle &&
+                            p*to_dir > view_angle)
+                    {
+                        if(select_angle != 0.0)
+                        {
+                            image::vector<3,float> p1(ptr),p2(ptr-3);
+                            p1 -= p2;
+                            p1.normalize();
+                            if(std::abs(p1*z_axis) < select_angle_cos)
+                                continue;
+                        }
+                        selected[index] = ptr - &*tract_data[index].begin();
+                        break;
+                    }
+
+                }
+                angle = next_angle;
             }
-            angle = next_angle;
         }
     }
 }
@@ -968,11 +973,11 @@ void TractModel::delete_by_length(float length)
     delete_tracts(track_to_delete);
 }
 //---------------------------------------------------------------------------
-void TractModel::cut(float select_angle,const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
+void TractModel::cut(float select_angle,const std::vector<image::vector<3,float> >& dirs,
                      const image::vector<3,float>& from_pos)
 {
     std::vector<unsigned int> selected;
-    select(select_angle,from_dir,to_dir,from_pos,selected);
+    select(select_angle,dirs,from_pos,selected);
     std::vector<std::vector<float> > new_tract;
     std::vector<unsigned int> new_tract_color;
 
@@ -1072,13 +1077,12 @@ void TractModel::filter_by_roi(RoiMgr& roi_mgr)
 }
 //---------------------------------------------------------------------------
 void TractModel::cull(float select_angle,
-                      const image::vector<3,float>& from_dir,
-                      const image::vector<3,float>& to_dir,
+                      const std::vector<image::vector<3,float> >& dirs,
                       const image::vector<3,float>& from_pos,
                       bool delete_track)
 {
     std::vector<unsigned int> selected;
-    select(select_angle,from_dir,to_dir,from_pos,selected);
+    select(select_angle,dirs,from_pos,selected);
     std::vector<unsigned int> tracts_to_delete;
     tracts_to_delete.reserve(100 + (selected.size() >> 4));
     for (unsigned int index = 0;index < selected.size();++index)
@@ -1087,12 +1091,13 @@ void TractModel::cull(float select_angle,
     delete_tracts(tracts_to_delete);
 }
 //---------------------------------------------------------------------------
-void TractModel::paint(float select_angle,const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
+void TractModel::paint(float select_angle,
+                       const std::vector<image::vector<3,float> >& dirs,
                        const image::vector<3,float>& from_pos,
                        unsigned int color)
 {
     std::vector<unsigned int> selected;
-    select(select_angle,from_dir,to_dir,from_pos,selected);
+    select(select_angle,dirs,from_pos,selected);
     for (unsigned int index = 0;index < selected.size();++index)
         if (selected[index] > 0)
             tract_color[index] = color;

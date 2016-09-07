@@ -37,7 +37,7 @@ GLWidget::GLWidget(bool samplebuffer,
         tracts(0),
         cur_height(1),
         cur_width(1),
-        editing_option(0),
+        editing_option(none),
         current_visible_slide(0),
         set_view_flip(false),
         view_mode(view_mode_type::single)
@@ -1436,10 +1436,16 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
     makeCurrent();
     edit_right = (view_mode != view_mode_type::single && (event->x() > cur_width / 2));
     lastPos = convert_pos(event);
-    if(editing_option)
+    if(editing_option != none)
         get_pos();
-
-    if(editing_option == 2) // move object
+    if(editing_option == selecting)
+    {
+        dirs.clear();
+        last_select_point = lastPos;
+        dirs.push_back(image::vector<3,float>());
+        get_view_dir(last_select_point,dirs.back());
+    }
+    if(editing_option == moving)
     {
         get_view_dir(lastPos,dir1);
         dir1.normalize();
@@ -1450,14 +1456,14 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
 
         if(!object_selected && !slice_selected)
         {
-            editing_option = 0;
+            editing_option = none;
             setCursor(Qt::ArrowCursor);
             return;
         }
         // if only slice is selected or slice is at the front, then move slice
         if(!object_selected || object_distance > slice_distance)
         {
-            editing_option = 3;
+            editing_option = dragging;
             return;
         }
         cur_tracking_window.regionWidget->selectRow(selected_index);
@@ -1477,7 +1483,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
         moving_at_slice_index = std::max_element(angle,angle+3)-angle;
         if(get_slice_projection_point(moving_at_slice_index,pos,dir1,slice_dx,slice_dy) == 0.0)
         {
-            editing_option = 0;
+            editing_option = none;
             setCursor(Qt::ArrowCursor);
             return;
         }
@@ -1487,18 +1493,17 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
 void GLWidget::mouseReleaseEvent(QMouseEvent *event)
 {
     makeCurrent();
-    if(!editing_option)
+    if(editing_option == none)
         return;
+    editing_option = none;
     setCursor(Qt::ArrowCursor);
-    if(editing_option >= 2)
-    {
-        editing_option = 0;
+    if(editing_option == moving || editing_option == dragging)
         return;
-    }
-    QPoint cur_pos = convert_pos(event);
-    get_view_dir(lastPos,dir1);
-    get_view_dir(cur_pos,dir2);
-    editing_option = 0;
+
+    last_select_point = convert_pos(event);
+    dirs.push_back(image::vector<3,float>());
+    get_view_dir(last_select_point,dirs.back());
+
     angular_selection = event->button() == Qt::RightButton;
     emit edited();
 }
@@ -1527,8 +1532,22 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     QPoint cur_pos = convert_pos(event);
 
     makeCurrent();
-    // move object
-    if(editing_option == 2)
+    if(editing_option == selecting)
+    {
+        if(event->modifiers() & Qt::ShiftModifier)
+        {
+            QPoint dis(cur_pos);
+            dis -= last_select_point;
+            if(dis.manhattanLength() < 20)
+                return;
+            last_select_point = cur_pos;
+            dirs.push_back(image::vector<3,float>());
+            get_view_dir(last_select_point,dirs.back());
+        }
+        return;
+    }
+
+    if(editing_option == moving)
     {
 
         std::vector<image::vector<3,float> > points(4);
@@ -1552,7 +1571,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         return;
     }
     // move slice
-    if(editing_option == 3)
+    if(editing_option == dragging)
     {
 
         std::vector<image::vector<3,float> > points(4);
@@ -1578,9 +1597,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         dir1 = dir2;
         return;
     }
-    // go tract editing
-    if(editing_option)
-        return;
+
 
     float dx = cur_pos.x() - lastPos.x();
     float dy = cur_pos.y() - lastPos.y();

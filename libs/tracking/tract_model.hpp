@@ -31,7 +31,7 @@ public:
         const std::vector<unsigned int>& get_cluster_info(void) const{return tract_cluster;}
         std::vector<unsigned int>& get_cluster_info(void) {return tract_cluster;}
         void select(float select_angle,
-                    const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
+                    const std::vector<image::vector<3,float> >& dirs,
                     const image::vector<3,float>& from_pos,std::vector<unsigned int>& selected);
         // selection
         void delete_tracts(const std::vector<unsigned int>& tracts_to_delete);
@@ -76,14 +76,13 @@ public:
         void add_tracts(std::vector<std::vector<float> >& new_tracks,unsigned int length_threshold);
         void filter_by_roi(RoiMgr& roi_mgr);
         void cull(float select_angle,
-                  const image::vector<3,float>& from_dir,
-                  const image::vector<3,float>& to_dir,
+                  const std::vector<image::vector<3,float> > & dirs,
                   const image::vector<3,float>& from_pos,
                   bool delete_track);
-        void cut(float select_angle,const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
+        void cut(float select_angle,const std::vector<image::vector<3,float> > & dirs,
                   const image::vector<3,float>& from_pos);
         void cut_by_slice(unsigned int dim, unsigned int pos,bool greater);
-        void paint(float select_angle,const image::vector<3,float>& from_dir,const image::vector<3,float>& to_dir,
+        void paint(float select_angle,const std::vector<image::vector<3,float> > & dirs,
                   const image::vector<3,float>& from_pos,
                   unsigned int color);
         void set_color(unsigned int color){std::fill(tract_color.begin(),tract_color.end(),color);}

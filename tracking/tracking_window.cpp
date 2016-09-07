@@ -702,37 +702,37 @@ void tracking_window::on_sliceViewBox_currentIndexChanged(int index)
 void tracking_window::on_actionSelect_Tracts_triggered()
 {
     glWidget->setCursor(Qt::CrossCursor);
-    glWidget->editing_option = 1;
-    tractWidget->edit_option = 1;
+    glWidget->editing_option = GLWidget::selecting;
+    tractWidget->edit_option = TractTableWidget::select;
 
 }
 
 void tracking_window::on_actionDelete_triggered()
 {
     glWidget->setCursor(Qt::CrossCursor);
-    glWidget->editing_option = 1;
-    tractWidget->edit_option = 2;
+    glWidget->editing_option = GLWidget::selecting;
+    tractWidget->edit_option = TractTableWidget::del;
 }
 
 void tracking_window::on_actionCut_triggered()
 {
     glWidget->setCursor(Qt::CrossCursor);
-    glWidget->editing_option = 1;
-    tractWidget->edit_option = 3;
+    glWidget->editing_option = GLWidget::selecting;
+    tractWidget->edit_option = TractTableWidget::cut;
 }
 
 
 void tracking_window::on_actionPaint_triggered()
 {
     glWidget->setCursor(Qt::CrossCursor);
-    glWidget->editing_option = 1;
-    tractWidget->edit_option = 4;
+    glWidget->editing_option = GLWidget::selecting;
+    tractWidget->edit_option = TractTableWidget::paint;
 }
 
 void tracking_window::on_actionMove_Object_triggered()
 {
     glWidget->setCursor(Qt::CrossCursor);
-    glWidget->editing_option = 2;
+    glWidget->editing_option = GLWidget::moving;
 }
 
 
