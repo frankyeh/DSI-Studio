@@ -330,6 +330,7 @@ struct SaveFA : public BaseProcess
 protected:
     std::vector<float> iso,gfa;
     std::vector<std::vector<float> > fa;
+    std::vector<std::vector<float> > rdi;
 public:
     virtual void init(Voxel& voxel)
     {
@@ -341,6 +342,15 @@ public:
         gfa.resize(voxel.dim.size());
         iso.clear();
         iso.resize(voxel.dim.size());
+        if(voxel.output_rdi)
+        {
+            float sigma = voxel.param[0]; //optimal 1.24
+            for(float L = 0.2;L <= sigma;L+= 0.2)
+            {
+                rdi.push_back(std::vector<float>());
+                rdi.back().resize(voxel.dim.size());
+            }
+        }
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
@@ -348,6 +358,9 @@ public:
         gfa[data.voxel_index] = GeneralizedFA()(data.odf);
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             fa[index][data.voxel_index] = data.fa[index];
+        if(voxel.output_rdi)
+            for (unsigned int index = 0;index < data.rdi.size();++index)
+                rdi[index][data.voxel_index] = data.rdi[index];
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
@@ -465,6 +478,31 @@ public:
                 fa_str += num;
                 set_title(fa_str.c_str());
                 mat_writer.write(fa_str.c_str(),&*fa[index].begin(),1,fa[index].size());
+            }
+        }
+
+        if(voxel.output_rdi)
+        {
+            for(unsigned int i = 0;i < rdi.size();++i)
+                image::divide_constant(rdi[i],voxel.z0);
+            float L = 0.2;
+            for(unsigned int i = 0;i < rdi.size();++i,L += 0.2)
+            {
+                std::ostringstream out;
+                out.precision(2);
+                out << "rdi" << L << "L";
+                mat_writer.write(out.str().c_str(),&*rdi[i].begin(),1,rdi[i].size());
+            }
+            for(unsigned int i = 0;i < voxel.dim.size();++i)
+            for(unsigned int j = 0;j < rdi.size();++j)
+                rdi[j][i] = rdi[rdi.size()-1][i]-rdi[j][i];
+            L = 0.2;
+            for(unsigned int i = 0;i < rdi.size();++i,L += 0.2)
+            {
+                std::ostringstream out2;
+                out2.precision(2);
+                out2 << "nrdi" << L << "L";
+                mat_writer.write(out2.str().c_str(),&*rdi[i].begin(),1,rdi[i].size());
             }
         }
     }

@@ -567,8 +567,9 @@ void reconstruction_window::on_QDif_toggled(bool checked)
     ui->output_diffusivity->setVisible(!checked);
     ui->output_tensor->setVisible(!checked);
     ui->RecordODF->setVisible(checked);
-    ui->rdi->setVisible(!checked);
-
+    ui->rdi->setVisible(checked);
+    if(checked)
+        ui->rdi->setChecked(true);
 
 }
 

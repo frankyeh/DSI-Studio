@@ -376,19 +376,16 @@ class RestrictedDiffusionImaging  : public BaseProcess
 {
 private:
     std::vector<std::vector<float> > rdi;
-    std::vector<std::vector<float> > rdi_value;
 public:
     virtual void init(Voxel& voxel)
     {
         float sigma = voxel.param[0]; //optimal 1.24
         if(!voxel.output_rdi)
             return;
-        for(float L = 0.1;L <= sigma;L+= 0.1)
+        for(float L = 0.2;L <= sigma;L+= 0.2)
         {
             rdi.push_back(std::vector<float>());
-            rdi_value.push_back(std::vector<float>());
             rdi.back().resize(voxel.bvalues.size());
-            rdi_value.back().resize(voxel.dim.size());
             for(unsigned int index = 0;index < voxel.bvalues.size();++index)
             {
                 float q = std::sqrt(voxel.bvalues[index]*0.018);
@@ -401,36 +398,14 @@ public:
         if(!voxel.output_rdi)
             return;
         float last_value = 0;
+        std::vector<float> rdi_values(rdi.size());
         for(unsigned int index = 0;index < rdi.size();++index)
         {
             // force incremental
-            rdi_value[index][data.voxel_index] = std::max<float>(last_value,image::vec::dot(rdi[index].begin(),rdi[index].end(),data.space.begin()));
-            last_value = rdi_value[index][data.voxel_index];
+            rdi_values[index] = std::max<float>(last_value,image::vec::dot(rdi[index].begin(),rdi[index].end(),data.space.begin()));
+            last_value = rdi_values[index];
         }
-    }
-    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
-    {
-        if(!voxel.output_rdi)
-            return;
-        float L = 0.1;
-        for(unsigned int i = 0;i < rdi.size();++i,L += 0.1)
-        {
-            std::ostringstream out;
-            out.precision(2);
-            out << "rdi" << L << "L";
-            mat_writer.write(out.str().c_str(),&*rdi_value[i].begin(),1,rdi_value[i].size());
-        }
-        for(unsigned int i = 0;i < voxel.dim.size();++i)
-        for(unsigned int j = 0;j < rdi.size();++j)
-            rdi_value[j][i] = rdi_value[rdi.size()-1][i]-rdi_value[j][i];
-        L = 0.1;
-        for(unsigned int i = 0;i < rdi.size();++i,L += 0.1)
-        {
-            std::ostringstream out2;
-            out2.precision(2);
-            out2 << "nrdi" << L << "L";
-            mat_writer.write(out2.str().c_str(),&*rdi_value[i].begin(),1,rdi_value[i].size());
-        }
+        data.rdi.swap(rdi_values);
     }
 };
 #endif//DDI_PROCESS_HPP

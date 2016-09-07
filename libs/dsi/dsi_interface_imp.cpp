@@ -118,6 +118,7 @@ typedef boost::mpl::vector<
     DWINormalization,
     BalanceScheme,
     QSDR,
+    RestrictedDiffusionImaging,
     ODFDeconvolusion,
     ODFDecomposition,
     EstimateZ0_MNI,

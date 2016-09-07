@@ -30,6 +30,7 @@ struct VoxelData
     std::vector<float> space;
     std::vector<float> odf;
     std::vector<float> fa;
+    std::vector<float> rdi;
     std::vector<image::vector<3,float> > dir;
     std::vector<short> dir_index;
     float min_odf;
