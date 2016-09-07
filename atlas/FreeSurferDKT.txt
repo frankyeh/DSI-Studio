@@ -29,6 +29,7 @@
 1031 left_supramarginal
 1034 left_transverse_temporal
 1035 left_insula
+2001 right_superior_temporal
 2002 right_caudal_anterior_cingulate
 2003 right_caudal_middle_frontal
 2005 right_cuneus
