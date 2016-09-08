@@ -108,7 +108,7 @@ void check_error(const char* line)
 
 void GLWidget::set_view(unsigned char view_option)
 {
-    float scale = std::powf(transformation_matrix.det(),1.0/3.0);
+    float scale = std::pow(transformation_matrix.det(),1.0/3.0);
     // initialize world matrix
     transformation_matrix.identity();
     rotation_matrix.identity();
@@ -1215,7 +1215,7 @@ void GLWidget::wheelEvent ( QWheelEvent * event )
     scalefactor = 1.0+scalefactor;
     scale_by(scalefactor);
     if(!edit_right || view_mode != view_mode_type::two)
-        cur_tracking_window.ui->zoom_3d->setValue(std::powf(transformation_matrix.det(),1.0/3.0));
+        cur_tracking_window.ui->zoom_3d->setValue(std::pow(transformation_matrix.det(),1.0/3.0));
     event->ignore();
 }
 
@@ -1638,7 +1638,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     {
         double scalefactor = (-dx-dy+100.0)/100.0;
         glScaled(scalefactor,scalefactor,scalefactor);
-        cur_tracking_window.ui->zoom_3d->setValue(std::powf(transformation_matrix.det(),1.0/3.0));
+        cur_tracking_window.ui->zoom_3d->setValue(std::pow(transformation_matrix.det(),1.0/3.0));
     }
     else
         glTranslated(dx/5.0,dy/5.0,0);
@@ -1785,7 +1785,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         float zoom = param.toFloat();
         if(zoom == 0)
             return true;
-        scale_by(zoom/std::powf(transformation_matrix.det(),1.0/3.0));
+        scale_by(zoom/std::pow(transformation_matrix.det(),1.0/3.0));
         paintGL();
         return true;
     }
