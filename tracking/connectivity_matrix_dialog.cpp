@@ -193,3 +193,14 @@ void connectivity_matrix_dialog::on_save_network_property_clicked()
     std::ofstream out(filename.toStdString().c_str());
     out << report;
 }
+
+void connectivity_matrix_dialog::on_save_connectogram_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                this,"Save as",cur_tracking_window->tractWidget->item(cur_tracking_window->tractWidget->currentRow(),0)->text() + "_" +
+                ui->region_list->currentText() + "_cg.txt",
+                "Text File (*.txt)");
+    if(filename.isEmpty())
+        return;
+    data.save_to_connectogram(filename.toStdString().c_str());
+}

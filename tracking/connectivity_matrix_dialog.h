@@ -40,6 +40,8 @@ private slots:
 
     void on_save_network_property_clicked();
 
+    void on_save_connectogram_clicked();
+
 private:
     Ui::connectivity_matrix_dialog *ui;
 };
