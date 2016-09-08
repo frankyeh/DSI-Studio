@@ -1867,6 +1867,32 @@ void ConnectivityMatrix::save_to_file(const char* file_name)
     mat_header.write("name",result.c_str(),1,result.length());
 }
 
+void ConnectivityMatrix::save_to_connectogram(const char* file_name)
+{
+    std::ofstream out(file_name);
+    int w = matrix_value.width();
+    std::vector<float> sum(w);
+    out << "data\tdata\t";
+    for(int i = 0;i < w;++i)
+    {
+        sum[i] = std::max<int>(1,std::accumulate(matrix_value.begin()+i*w,matrix_value.begin()+i*w+w,0.0)*2);
+        out << sum[i] << "\t";
+    }
+    out << std::endl;
+    out << "data\tdata\t";
+    for(int i = 0;i < w;++i)
+        out << region_name[i] << "\t";
+    out << std::endl;
+
+    for(int i = 0;i < w;++i)
+    {
+        out << sum[i] << "\t" << region_name[i] << "\t";
+        for(int j = 0;j < w;++j)
+            out << matrix_value[i*w+j] << "\t";
+        out << std::endl;
+    }
+}
+
 void ConnectivityMatrix::set_atlas(atlas& data,const image::basic_image<image::vector<3,float>,3 >& mni_position)
 {
     image::geometry<3> geo(mni_position.geometry());
