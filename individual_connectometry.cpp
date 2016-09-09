@@ -101,6 +101,11 @@ void individual_connectometry::on_compare_clicked()
         QMessageBox::information(this,"error","The study file does not exist.",0);
         return;
     }
+    if(!QFileInfo(ui->Template->text()).exists())
+    {
+        QMessageBox::information(this,"error","The template file does not exist.",0);
+        return;
+    }
 
     begin_prog("reading",0);
 
@@ -122,10 +127,9 @@ void individual_connectometry::on_compare_clicked()
     {
         two_subjects = true;
         baseline = std::make_shared<fib_data>();
-        if(fib_template_file_name.isEmpty() ||
-           !baseline->load_from_file(fib_template_file_name.toStdString().c_str()))
+        if(!baseline->load_from_file(ui->Template->text().toStdString().c_str()))
         {
-            QMessageBox::information(this,"error","Cannot load the HCP842_2mm.fib.gz file. Please place the file under the DSI Studio directory",0);
+            QMessageBox::information(this,"error",baseline->error_msg.c_str(),0);
             check_prog(0,0);
             return;
         }

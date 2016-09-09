@@ -64,8 +64,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>350</width>
-         <height>460</height>
+         <width>192</width>
+         <height>310</height>
         </rect>
        </property>
        <attribute name="label">
@@ -189,6 +189,9 @@
           <property name="text">
            <string>Individual Connectometry Analysis</string>
           </property>
+          <property name="description">
+           <string>Compare logitudinal scans of an individual</string>
+          </property>
          </widget>
         </item>
         <item>
@@ -211,8 +214,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>350</width>
-         <height>460</height>
+         <width>182</width>
+         <height>420</height>
         </rect>
        </property>
        <attribute name="label">
@@ -294,8 +297,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>350</width>
-         <height>460</height>
+         <width>250</width>
+         <height>428</height>
         </rect>
        </property>
        <attribute name="label">
