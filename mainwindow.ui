@@ -219,7 +219,7 @@
         </rect>
        </property>
        <attribute name="label">
-        <string>Tools: batch processing</string>
+        <string>Tools: Batch Processing</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_8">
         <property name="spacing">
@@ -302,7 +302,7 @@
         </rect>
        </property>
        <attribute name="label">
-        <string>Tools: others</string>
+        <string>Tools: Others</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
