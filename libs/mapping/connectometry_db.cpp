@@ -441,6 +441,10 @@ bool connectometry_db::get_odf_profile(const char* file_name,std::vector<float>&
         handle->error_msg += file_name;
         return false;
     }
+    const char* report_buf = 0;
+    unsigned int row,col;
+    if(single_subject.read("report",row,col,report_buf))
+        read_report = std::string(report_buf,report_buf+row*col);
     return true;
 }
 bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vector<float> >& data)
@@ -478,6 +482,10 @@ bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vec
                 data[i][index] = odf[handle->dir.findex[i][index]]-min_value;
             }
         }
+    const char* report_buf = 0;
+    unsigned int row,col;
+    if(single_subject.read("report",row,col,report_buf))
+        read_report = std::string(report_buf,report_buf+row*col);
     return true;
 }
 bool connectometry_db::is_db_compatible(const connectometry_db& rhs)
@@ -613,6 +621,7 @@ void connectometry_result::add_mapping_for_tracking(std::shared_ptr<fib_data> ha
 
 bool connectometry_result::individual_vs_db(std::shared_ptr<fib_data> handle,const char* file_name)
 {
+    report = " Individual connectometry was conducted by comparing individuals to a group of subjects.";
     if(!handle->db.has_db())
     {
         error_msg = "Please open a connectometry database first.";
@@ -641,6 +650,7 @@ bool connectometry_result::individual_vs_db(std::shared_ptr<fib_data> handle,con
 bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::vector<const float*>& fa1,
                                         const std::vector<const float*>& fa2,unsigned char normalization)
 {
+    std::ostringstream out;
     if(normalization == 0) // no normalization
     {
         for(unsigned char fib = 0;fib < handle->dir.num_fiber;++fib)
@@ -659,6 +669,7 @@ bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::v
     }
     if(normalization == 1) // max to one
     {
+        out << " Normalization was conducted to make the highest anisotropy to one.";
         float max1 = *std::max_element(fa1[0],fa1[0] + handle->dim.size());
         float max2 = *std::max_element(fa2[0],fa2[0] + handle->dim.size());
 
@@ -678,6 +689,7 @@ bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::v
     }
     if(normalization == 2) // linear regression
     {
+        out << " Normalization was conducted by a linear regression between the comparison scans.";
         std::pair<double,double> r = image::linear_regression(fa2[0],fa2[0] + handle->dim.size(),fa1[0]);
         for(unsigned char fib = 0;fib < handle->dir.num_fiber;++fib)
         {
@@ -695,6 +707,7 @@ bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::v
     }
     if(normalization == 3) // variance to one
     {
+        out << " Normalization was conducted by scaling the variance to one.";
         float sd1 = image::standard_deviation(fa1[0],fa1[0] + handle->dim.size());
         float sd2 = image::standard_deviation(fa2[0],fa2[0] + handle->dim.size());
         for(unsigned char fib = 0;fib < handle->dir.num_fiber;++fib)
@@ -711,12 +724,14 @@ bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::v
                 }
         }
     }
+    report += out.str();
     return true;
 }
 
 bool connectometry_result::individual_vs_atlas(std::shared_ptr<fib_data> handle,
                                                const char* file_name,unsigned char normalization)
 {
+    report = " Individual connectometry was conducted by comparing individuals to a group-averaged template.";
     // restore fa0 to QA
     handle->dir.set_tracking_index(0);
     std::vector<std::vector<float> > fa_data;
@@ -735,8 +750,11 @@ bool connectometry_result::individual_vs_atlas(std::shared_ptr<fib_data> handle,
     return true;
 }
 
-bool connectometry_result::individual_vs_individual(std::shared_ptr<fib_data> handle,const char* file_name1,const char* file_name2,unsigned char normalization)
+bool connectometry_result::individual_vs_individual(std::shared_ptr<fib_data> handle,
+                                                    const char* file_name1,const char* file_name2,
+                                                    unsigned char normalization)
 {
+    report = " Individual connectometry was conducted by comparing individual scans.";
     // restore fa0 to QA
     handle->dir.set_tracking_index(0);
     std::vector<std::vector<float> > data1,data2;

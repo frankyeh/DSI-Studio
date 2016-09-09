@@ -26,11 +26,11 @@
 #include "vbc/vbc_database.h"
 #include "libs/tracking/fib_data.hpp"
 #include "manual_alignment.h"
+#include "individual_connectometry.hpp"
 
 extern std::vector<atlas> atlas_list;
 extern std::auto_ptr<QProgressDialog> progressDialog;
 
-std::vector<tracking_window*> track_windows;
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
         ui(new Ui::MainWindow)
@@ -220,7 +220,6 @@ void MainWindow::loadFib(QString filename)
     addFib(filename);
     add_work_dir(QFileInfo(filename).absolutePath());
     QDir::setCurrent(QFileInfo(filename).absolutePath());
-    track_windows.push_back(new_mdi);
 }
 
 void MainWindow::loadSrc(QStringList filenames)
@@ -835,4 +834,11 @@ void MainWindow::on_rigid_body_reg_clicked()
     nii << I;
     QString out_name = QFileInfo(filename2[0]).absolutePath() + "/" + QFileInfo(filename2[0]).baseName() +".warp.nii.gz";
     nii.save_to_file(out_name.toStdString().c_str());
+}
+
+void MainWindow::on_individual_connectometry_clicked()
+{
+    individual_connectometry* indi = new individual_connectometry(this);
+    indi->setAttribute(Qt::WA_DeleteOnClose);
+    indi->showNormal();
 }

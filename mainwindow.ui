@@ -54,7 +54,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>1</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -167,7 +167,7 @@
         <item>
          <widget class="QCommandLinkButton" name="vbc">
           <property name="text">
-           <string>STEP1: Create connectometry database</string>
+           <string>Create connectometry database</string>
           </property>
           <property name="description">
            <string>Load a group of subjects to create a connectometry dataset</string>
@@ -177,10 +177,17 @@
         <item>
          <widget class="QCommandLinkButton" name="connectometry">
           <property name="text">
-           <string>STEP2: Group Connectometry Analysis </string>
+           <string>Group Connectometry Analysis </string>
           </property>
           <property name="description">
            <string>Analysis group difference</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="individual_connectometry">
+          <property name="text">
+           <string>Individual Connectometry Analysis</string>
           </property>
          </widget>
         </item>

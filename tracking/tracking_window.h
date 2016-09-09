@@ -171,7 +171,6 @@ private slots:
     void on_actionImprove_Quality_triggered();
     void on_actionRestore_Tracking_Settings_triggered();
     void add_roi_from_atlas();
-    void on_actionIndividual_Connectometry_triggered();
     void on_actionAdjust_Mapping_triggered();
     void on_actionSave_mapping_triggered();
     void on_actionLoad_mapping_triggered();

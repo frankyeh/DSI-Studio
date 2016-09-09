@@ -17,6 +17,7 @@
 
 track_recognition track_network;
 fa_template fa_template_imp;
+QString fa_template_file_name,fib_template_file_name;
 extern std::vector<atlas> atlas_list;
 void load_atlas(void);
 int rec(void);
@@ -47,6 +48,23 @@ QStringList search_files(QString dir,QString filter)
     return src_list;
 }
 
+void load_file_name(void)
+{
+    QString filename;
+    filename = QCoreApplication::applicationDirPath() + "/HCP842_QA.nii.gz";
+    if(QFileInfo(filename).exists())
+        fa_template_file_name = filename;
+    filename = QDir::currentPath() + "/HCP842_QA.nii.gz";
+    if(QFileInfo(filename).exists())
+        fa_template_file_name = filename;
+
+    filename = QCoreApplication::applicationDirPath() + "/HCP842_2mm.fib.gz";
+    if(QFileInfo(filename).exists())
+        fib_template_file_name = filename;
+    filename = QDir::currentPath() + "/HCP842_2mm.fib.gz";
+    if(QFileInfo(filename).exists())
+        fib_template_file_name = filename;
+}
 
 void init_application(QApplication& a)
 {
@@ -61,6 +79,8 @@ void init_application(QApplication& a)
         QMessageBox::information(0,"Error",QString("Cannot find HCP842_QA.nii.gz in ") + QCoreApplication::applicationDirPath(),0);
         return;
     }
+
+
     load_atlas();
 }
 
@@ -78,13 +98,16 @@ int run_cmd(int ac, char *av[])
                 std::string(av[i]) == std::string("--action=vis"))
             {
                 gui.reset(new QApplication(ac, av));
+                load_file_name();
                 init_application(*gui.get());
                 std::cout << "Starting GUI-based command line interface." << std::endl;
                 break;
             }
+
         if(!gui.get())
         {
             cmd.reset(new QCoreApplication(ac, av));
+            load_file_name();
             cmd->setOrganizationName("LabSolver");
             cmd->setApplicationName("DSI Studio");
         }
@@ -133,6 +156,7 @@ int main(int ac, char *av[])
     if(ac > 2)
         return run_cmd(ac,av);
     QApplication a(ac,av);
+    load_file_name();
     init_application(a);
     MainWindow w;
     w.show();

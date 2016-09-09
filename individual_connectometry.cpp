@@ -6,12 +6,17 @@
 #include "individual_connectometry.hpp"
 #include "ui_individual_connectometry.h"
 #include "tracking/tracking_window.h"
+#include "fib_data.hpp"
 
-individual_connectometry::individual_connectometry(QWidget *parent,tracking_window& cur_tracking_window_) :
-    QDialog(parent),cur_tracking_window(cur_tracking_window_),
+extern QString fib_template_file_name;
+individual_connectometry::individual_connectometry(QWidget *parent) :
+    QDialog(parent),
     ui(new Ui::individual_connectometry)
 {
     ui->setupUi(this);
+    ui->norm_method->hide();
+    ui->Template->setText(fib_template_file_name);
+    resize(width(),0);
     QSettings settings;
     switch(settings.value("individual_connectometry_norm").toInt())
     {
@@ -29,7 +34,7 @@ individual_connectometry::individual_connectometry(QWidget *parent,tracking_wind
         break;
 
     }
-    on_inv_inv_toggled(true);
+
 }
 
 individual_connectometry::~individual_connectometry()
@@ -38,89 +43,44 @@ individual_connectometry::~individual_connectometry()
 }
 
 
-void individual_connectometry::on_load_subject_clicked()
-{
-    subject_file = QFileDialog::getOpenFileName(
-                           this,
-                           "Open subject Fib files",
-                           "",
-                           "Fib files (*fib.gz);;All files (*)");
-    if (subject_file.isEmpty())
-        return;
-    ui->subject_file_label->setText(QFileInfo(subject_file).fileName());
-}
-
 void individual_connectometry::on_open_template_clicked()
 {
-    subject_file = QFileDialog::getOpenFileName(
+    QString subject_file = QFileDialog::getOpenFileName(
                            this,
-                           "Open template files",
+                           "Open template Fib files",
                            "",
                            "Fib files (*fib.gz);;All files (*)");
     if (subject_file.isEmpty())
         return;
-    ui->subject_file_label->setText(QFileInfo(subject_file).fileName());
-    if(ui->inv_inv)
-        ui->compare->setEnabled(QFileInfo(subject_file).exists() && QFileInfo(subject2_file).exists());
+    ui->Template->setText(subject_file);
+}
+
+
+void individual_connectometry::on_load_baseline_clicked()
+{
+    QString subject_file = QFileDialog::getOpenFileName(
+                           this,
+                           "Open baseline Fib files",
+                           "",
+                           "Fib files (*fib.gz);;All files (*)");
+    if (subject_file.isEmpty())
+        return;
+    ui->File1->setText(subject_file);
+
 }
 
 void individual_connectometry::on_open_subject2_clicked()
 {
-    subject2_file = QFileDialog::getOpenFileName(
+    QString subject2_file = QFileDialog::getOpenFileName(
                            this,
                            "Open subject Fib files",
                            "",
                            "Fib files (*fib.gz);;All files (*)");
     if (subject2_file.isEmpty())
         return;
-    ui->subject2_file_label->setText(QFileInfo(subject2_file).fileName());
-    if(ui->inv_inv)
-        ui->compare->setEnabled(QFileInfo(subject_file).exists() && QFileInfo(subject2_file).exists());
-    if(ui->inv_db)
-        ui->compare->setEnabled(QFileInfo(subject2_file).exists());
+    ui->File2->setText(subject2_file);
 }
 
-void individual_connectometry::on_inv_inv_toggled(bool checked)
-{
-    if(checked)
-    {
-        ui->norm_method->setEnabled(true);
-        ui->widget->setVisible(true);
-        ui->widget_2->setVisible(true);
-        ui->subject_file->setText("Subject baseline (pre-treatment) FIB file:");
-        ui->subject2_file->setText("Subject current (post-treatment) FIB file:");
-        subject_file = "";
-        subject2_file = "";
-        ui->compare->setEnabled(false);
-    }
-}
-
-
-void individual_connectometry::on_inv_template_toggled(bool checked)
-{
-    if(checked)
-    {
-        ui->norm_method->setEnabled(true);
-        ui->widget->setVisible(false);
-        ui->widget_2->setVisible(true);
-        ui->subject2_file->setText("Subject current FIB file:");
-        subject2_file = "";
-        ui->compare->setEnabled(false);
-    }
-}
-
-void individual_connectometry::on_inv_db_toggled(bool checked)
-{
-    if(checked)
-    {
-        ui->norm_method->setEnabled(false);
-        ui->widget->setVisible(false);
-        ui->widget_2->setVisible(true);
-        ui->subject2_file->setText("Subject current FIB file:");
-        subject2_file = "";
-        ui->compare->setEnabled(false);
-    }
-}
 
 void individual_connectometry::on_Close_clicked()
 {
@@ -130,6 +90,53 @@ void individual_connectometry::on_Close_clicked()
 
 void individual_connectometry::on_compare_clicked()
 {
+    if(!QFileInfo(ui->File1->text()).exists())
+    {
+        QMessageBox::information(this,"error","The baseline file does not exist.",0);
+        return;
+
+    }
+    if(!QFileInfo(ui->File2->text()).exists())
+    {
+        QMessageBox::information(this,"error","The study file does not exist.",0);
+        return;
+    }
+
+    begin_prog("reading",0);
+
+    std::shared_ptr<fib_data> baseline(std::make_shared<fib_data>());
+    if (!baseline->load_from_file(ui->File1->text().toStdString().c_str()))
+    {
+        QMessageBox::information(this,"error",baseline->error_msg.c_str(),0);
+        check_prog(0,0);
+        return;
+    }
+    if(!baseline->is_qsdr)
+    {
+        QMessageBox::information(this,"error","Please open a QSDR reconstructed FIB file. Please see online document for details.",0);
+        check_prog(0,0);
+        return;
+    }
+    bool two_subjects = false;
+    if(baseline->has_odfs())
+    {
+        two_subjects = true;
+        baseline = std::make_shared<fib_data>();
+        if(fib_template_file_name.isEmpty() ||
+           !baseline->load_from_file(fib_template_file_name.toStdString().c_str()))
+        {
+            QMessageBox::information(this,"error","Cannot load the HCP842_2mm.fib.gz file. Please place the file under the DSI Studio directory",0);
+            check_prog(0,0);
+            return;
+        }
+    }
+
+
+    tracking_window* new_mdi = new tracking_window(this,baseline);
+    new_mdi->setAttribute(Qt::WA_DeleteOnClose);
+    new_mdi->setWindowTitle(ui->File1->text());
+    new_mdi->showNormal();
+
     unsigned char normalization;
     if(ui->norm0->isChecked())
         normalization = 0;
@@ -142,29 +149,61 @@ void individual_connectometry::on_compare_clicked()
     QSettings settings;
     settings.setValue("individual_connectometry_norm",(int)normalization);
 
-    begin_prog("comparing");
-    if(ui->inv_db->isChecked())
+    begin_prog("reading",0);
+    if(two_subjects)
     {
-        if(!cur_tracking_window.cnt_result.individual_vs_db(cur_tracking_window.handle,subject2_file.toLocal8Bit().begin()))
-            QMessageBox::information(this,"Error",cur_tracking_window.cnt_result.error_msg.c_str());
+        if(!new_mdi->cnt_result.individual_vs_individual(new_mdi->handle,
+            ui->File1->text().toStdString().c_str(),ui->File2->text().toStdString().c_str(),normalization))
+            goto error;
+        else
+            goto run;
     }
 
-    if(ui->inv_template->isChecked())
+    if(baseline->db.has_db())
     {
-        if(!cur_tracking_window.cnt_result.individual_vs_atlas(cur_tracking_window.handle,subject2_file.toLocal8Bit().begin(),normalization))
-            QMessageBox::information(this,"Error",cur_tracking_window.cnt_result.error_msg.c_str());
+        if(!new_mdi->cnt_result.individual_vs_db(new_mdi->handle,ui->File2->text().toStdString().c_str()))
+            goto error;
+        else
+            goto run;
     }
 
-    if(ui->inv_inv->isChecked())
+    // versus template
     {
-        if(!cur_tracking_window.cnt_result.individual_vs_individual(cur_tracking_window.handle,
-                                                                    subject_file.toLocal8Bit().begin(),subject2_file.toLocal8Bit().begin(),normalization))
-            QMessageBox::information(this,"Error",cur_tracking_window.cnt_result.error_msg.c_str());
+        if(normalization == 0)
+            normalization = 1;
+        if(!new_mdi->cnt_result.individual_vs_atlas(new_mdi->handle,ui->File2->text().toStdString().c_str(),normalization))
+            goto error;
+        else
+            goto run;
     }
-    cur_tracking_window.initialize_tracking_index(cur_tracking_window.handle->dir.index_data.size()-1);
-    cur_tracking_window.scene.show_slice();
-    check_prog(0,0);
-    hide();
-    accept();
 
+    {
+        run:
+        baseline->report = baseline->db.read_report + new_mdi->cnt_result.report;
+        new_mdi->initialize_tracking_index(new_mdi->handle->dir.index_data.size()-1);
+        new_mdi->scene.show_slice();
+        check_prog(0,0);
+        QDir::setCurrent(QFileInfo(ui->File1->text()).absolutePath());
+        return;
+    }
+
+    {
+        error:
+        QMessageBox::information(this,"Error",new_mdi->cnt_result.error_msg.c_str());
+        new_mdi->close();
+        delete new_mdi;
+        check_prog(0,0);
+        return;
+    }
+
+}
+
+
+void individual_connectometry::on_pushButton_clicked()
+{
+    if(ui->norm_method->isVisible())
+        ui->norm_method->hide();
+    else
+        ui->norm_method->show();
+    resize(width(),0);
 }

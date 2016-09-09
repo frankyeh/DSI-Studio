@@ -165,7 +165,7 @@ void ThreadData::run(const tracking_data& trk,
 {
     report.clear();
     report.str("");
-    report << "\nA deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was used."
+    report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was used."
            << seed_report
            << " The angular threshold was " << (int)std::round(std::acos(param.cull_cos_angle)*180/3.1415926) << " degrees."
            << " The step size was " << param.step_size << " mm.";

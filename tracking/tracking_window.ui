@@ -1266,7 +1266,6 @@
     <property name="title">
      <string>Analysis</string>
     </property>
-    <addaction name="actionIndividual_Connectometry"/>
     <addaction name="actionManual_Registration"/>
     <addaction name="actionQuality_Assessment"/>
     <addaction name="actionImprove_Quality"/>
@@ -3129,15 +3128,6 @@ Tracking</string>
     <string>Track Report</string>
    </property>
   </action>
-  <action name="actionSave_Rotation_Video_in_Left_Right_3D">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
-   </property>
-   <property name="text">
-    <string>Save Rotation Video in Left/Right 3D...</string>
-   </property>
-  </action>
   <action name="actionAdjust_Mapping">
    <property name="icon">
     <iconset resource="../icons.qrc">
@@ -3297,11 +3287,6 @@ Tracking</string>
   <action name="actionRecognize_Current_Tract">
    <property name="text">
     <string>Recognize Tract...</string>
-   </property>
-  </action>
-  <action name="actionIndividual_Connectometry">
-   <property name="text">
-    <string>Individual Connectometry...</string>
    </property>
   </action>
   <action name="actionDelete_By_Length">

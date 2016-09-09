@@ -9,7 +9,7 @@ class connectometry_db
 {
 public:
     fib_data* handle;
-    std::string subject_report;
+    std::string subject_report,read_report;
     std::vector<std::string> subject_names;
     unsigned int num_subjects;
     std::vector<float> R2;
@@ -122,6 +122,7 @@ struct connectometry_result{
                  const std::vector<const float*>& fa1,const std::vector<const float*>& fa2,
                  unsigned char normalization);
 public:
+    std::string report;
     std::string error_msg;
     void initialize(std::shared_ptr<fib_data> fib_file);
     void add_mapping_for_tracking(std::shared_ptr<fib_data> handle,const char* t1,const char* t2);
