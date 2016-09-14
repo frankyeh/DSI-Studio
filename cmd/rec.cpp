@@ -185,7 +185,6 @@ int rec(void)
                 std::cout << "Invalid command: " << file_list[i].toStdString() << std::endl;
                 return 0;
             }
-            std::cout << "adding " << name_value[0].toStdString() << " as " << name_value[1].toStdString() << std::endl;
             if(!add_other_image(handle.get(),name_value[0],name_value[1],true))
                 return 0;
         }

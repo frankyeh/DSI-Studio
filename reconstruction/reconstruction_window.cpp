@@ -1016,12 +1016,12 @@ bool add_other_image(ImageModel* handle,QString name,QString filename,bool full_
         image::reg::normalization<double> data;
         if(full_auto)
         {
-            std::cout << "adding " << filename.toStdString() << " as " << name.toStdString() << std::endl;
+            std::cout << "add " << filename.toStdString() << " as " << name.toStdString() << std::endl;
             image::basic_image<float,3> from(handle->voxel.dwi_sum),to(ref);
             image::normalize(from,1.0);
             image::normalize(to,1.0);
             bool terminated = false;
-            data.run_reg(from,handle->voxel.vs,to,vs,0,image::reg::reg_cost_type::mutual_info,image::reg::rigid_body,terminated,std::thread::hardware_concurrency());
+            data.run_reg(from,handle->voxel.vs,to,vs,1,image::reg::reg_cost_type::mutual_info,image::reg::rigid_body,terminated,std::thread::hardware_concurrency());
             affine = data.get_T();
         }
         else
