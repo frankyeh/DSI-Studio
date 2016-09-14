@@ -273,13 +273,12 @@ void vbc_database::wait(void)
         threads[i]->wait();
 }
 
-void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
+void vbc_database::save_tracks_files(void)
 {
     for(int i = 0;i < threads.size();++i)
         threads[i]->wait();
     if(trk_file_names.size() != greater_tracks.size())
         throw std::runtime_error("Please assign file name for saving trk files.");
-    saved_file_name.clear();
     has_greater_result = false;
     has_lesser_result = false;
     for(unsigned int index = 0;index < greater_tracks.size();++index)
@@ -296,7 +295,6 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
             std::ostringstream out1;
             out1 << trk_file_names[index] << ".greater.trk.gz";
             greater_tracks[index]->save_tracts_to_file(out1.str().c_str());
-            saved_file_name.push_back(out1.str().c_str());
             greater_tracks_result = "";
             greater_tracks[index]->recognize_report(greater_tracks_result);
             has_greater_result = true;
@@ -342,7 +340,6 @@ void vbc_database::save_tracks_files(std::vector<std::string>& saved_file_name)
             std::ostringstream out1;
             out1 << trk_file_names[index] << ".lesser.trk.gz";
             lesser_tracks[index]->save_tracts_to_file(out1.str().c_str());
-            saved_file_name.push_back(out1.str().c_str());
             lesser_tracks_result = "";
             lesser_tracks[index]->recognize_report(lesser_tracks_result);
             has_lesser_result = true;

@@ -172,6 +172,10 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionSave_Camera,SIGNAL(triggered()),glWidget,SLOT(saveCamera()));
         connect(ui->actionSave_Rotation_Images,SIGNAL(triggered()),glWidget,SLOT(saveRotationSeries()));
         connect(ui->actionSave_3D_screen_in_3_views,SIGNAL(triggered()),glWidget,SLOT(save3ViewImage()));
+
+        connect(ui->reset_rendering,SIGNAL(clicked()),this,SLOT(on_actionRestore_Settings_triggered()));
+        connect(ui->reset_rendering,SIGNAL(clicked()),this,SLOT(on_actionRestore_Tracking_Settings_triggered()));
+
     }
     // scene view
     {
@@ -407,7 +411,19 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
        scene.command(cmd,param,param2) ||
        tractWidget->command(cmd,param,param2))
         return true;
-
+    if(cmd == "restore_rendering")
+    {
+        renderWidget->setDefault("ROI");
+        renderWidget->setDefault("Rendering");
+        renderWidget->setDefault("show_slice");
+        renderWidget->setDefault("show_tract");
+        renderWidget->setDefault("show_region");
+        renderWidget->setDefault("show_surface");
+        renderWidget->setDefault("show_odf");
+        glWidget->updateGL();
+        scene.show_slice();
+        return true;
+    }
     if(cmd == "set_roi_view_index")
     {
         bool okay = true;
@@ -1311,15 +1327,7 @@ void tracking_window::add_roi_from_atlas()
 
 void tracking_window::on_actionRestore_Settings_triggered()
 {
-    renderWidget->setDefault("ROI");
-    renderWidget->setDefault("Rendering");
-    renderWidget->setDefault("show_slice");
-    renderWidget->setDefault("show_tract");
-    renderWidget->setDefault("show_region");
-    renderWidget->setDefault("show_surface");
-    renderWidget->setDefault("show_odf");
-    glWidget->updateGL();
-    scene.show_slice();
+    command("restore_rendering");
 }
 
 

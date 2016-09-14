@@ -840,6 +840,16 @@ void TractTableWidget::show_tracts_statistics(void)
 
 bool TractTableWidget::command(QString cmd,QString param,QString param2)
 {
+    if(cmd == "update_track")
+    {
+        for(int index = 0;index < tract_models.size();++index)
+        {
+            item(index,1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
+            item(index,2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
+        }
+        emit need_update();
+        return true;
+    }
     if(cmd == "run_tracking")
     {
         start_tracking();
@@ -851,6 +861,19 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
     if(cmd == "cut_by_slice")
     {
         cut_by_slice(param.toInt(),param2.toInt());
+        return true;
+    }
+    if(cmd == "delete_all_tract")
+    {
+        setRowCount(0);
+        for(unsigned int index = 0;index < tract_models.size();++index)
+        {
+            delete thread_data[index];
+            delete tract_models[index];
+        }
+        thread_data.clear();
+        tract_models.clear();
+        emit need_update();
         return true;
     }
     return false;
@@ -1028,15 +1051,7 @@ void TractTableWidget::delete_all_tract(void)
         QMessageBox::information(this,"Error","Please wait for the termination of data processing",0);
         return;
     }
-    setRowCount(0);
-    for(unsigned int index = 0;index < tract_models.size();++index)
-    {
-        delete thread_data[index];
-        delete tract_models[index];
-    }
-    thread_data.clear();
-    tract_models.clear();
-    emit need_update();
+    command("delete_all_tract");
 }
 
 void TractTableWidget::delete_repeated(void)

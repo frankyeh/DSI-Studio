@@ -1965,6 +1965,24 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         all.save(param);
         return true;
     }
+    if(cmd == "save_h3view_image")
+    {
+        if(param.isEmpty())
+            param = QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".h3view_image.jpg";
+        QImage all;
+        get3View(all,1);
+        all.save(param);
+        return true;
+    }
+    if(cmd == "save_v3view_image")
+    {
+        if(param.isEmpty())
+            param = QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".v3view_image.jpg";
+        QImage all;
+        get3View(all,2);
+        all.save(param);
+        return true;
+    }
     if(cmd == "save_rotation_video")
     {
         if(param.isEmpty())

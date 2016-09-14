@@ -44,7 +44,7 @@ private:
 public:
     bool gui;
     QString work_dir;
-    std::vector<std::string> file_names,saved_file_name;
+    std::vector<std::string> file_names;
 public:
     std::vector<std::vector<image::vector<3,short> > > roi_list;
 public:

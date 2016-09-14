@@ -558,7 +558,6 @@ void group_connectometry::calculate_FDR(void)
     {
         vbc->wait();// make sure that all threads done
         timer->stop();
-        vbc->save_tracks_files(saved_file_name); // prepared track recognition results
     }
     report.clear();
     if(!vbc->handle->report.empty())
@@ -585,30 +584,44 @@ void group_connectometry::calculate_FDR(void)
 
     if(vbc->progress == 100)
     {
+        if(ui->output_track_data->isChecked())
+            vbc->save_tracks_files(); // prepared track recognition results
+
+
         // save report in text
-        std::ofstream out((vbc->trk_file_names[0]+".report.txt").c_str());
-        out << report.toLocal8Bit().begin() << std::endl;
-        // save pdf plot and value txt
-        ui->show_null_greater->setChecked(true);
-        ui->show_greater->setChecked(true);
-        ui->show_null_lesser->setChecked(false);
-        ui->show_lesser->setChecked(false);
-        ui->null_dist->saveBmp((vbc->trk_file_names[0]+".greater.dist.bmp").c_str(),300,300,3);
+        if(ui->output_report->isChecked())
+        {
+            std::ofstream out((vbc->trk_file_names[0]+".report.txt").c_str());
+            out << report.toLocal8Bit().begin() << std::endl;
+        }
+        if(ui->output_dist->isChecked())
+        {
+            ui->show_null_greater->setChecked(true);
+            ui->show_greater->setChecked(true);
+            ui->show_null_lesser->setChecked(false);
+            ui->show_lesser->setChecked(false);
+            ui->null_dist->saveBmp((vbc->trk_file_names[0]+".greater.dist.bmp").c_str(),300,300,3);
 
-        ui->show_null_greater->setChecked(false);
-        ui->show_greater->setChecked(false);
-        ui->show_null_lesser->setChecked(true);
-        ui->show_lesser->setChecked(true);
-        ui->null_dist->saveBmp((vbc->trk_file_names[0]+".lesser.dist.bmp").c_str(),300,300,3);
+            ui->show_null_greater->setChecked(false);
+            ui->show_greater->setChecked(false);
+            ui->show_null_lesser->setChecked(true);
+            ui->show_lesser->setChecked(true);
+            ui->null_dist->saveBmp((vbc->trk_file_names[0]+".lesser.dist.bmp").c_str(),300,300,3);
+            ui->null_dist->saveTxt((vbc->trk_file_names[0]+".dist_value.txt").c_str());
+        }
 
-        ui->show_greater_2->setChecked(true);
-        ui->show_lesser_2->setChecked(false);
-        ui->fdr_dist->saveBmp((vbc->trk_file_names[0]+".greater.fdr.bmp").c_str(),300,300,3);
+        if(ui->output_fdr->isChecked())
+        {
+            ui->show_greater_2->setChecked(true);
+            ui->show_lesser_2->setChecked(false);
+            ui->fdr_dist->saveBmp((vbc->trk_file_names[0]+".greater.fdr.bmp").c_str(),300,300,3);
 
-        ui->show_greater_2->setChecked(false);
-        ui->show_lesser_2->setChecked(true);
-        ui->fdr_dist->saveBmp((vbc->trk_file_names[0]+".lesser.fdr.bmp").c_str(),300,300,3);
+            ui->show_greater_2->setChecked(false);
+            ui->show_lesser_2->setChecked(true);
+            ui->fdr_dist->saveBmp((vbc->trk_file_names[0]+".lesser.fdr.bmp").c_str(),300,300,3);
 
+            ui->fdr_dist->saveTxt((vbc->trk_file_names[0]+".fdr_value.txt").c_str());
+        }
 
         // restore all checked status
         ui->show_null_greater->setChecked(true);
@@ -616,9 +629,31 @@ void group_connectometry::calculate_FDR(void)
         ui->show_greater_2->setChecked(true);
 
 
-        ui->fdr_dist->saveTxt((vbc->trk_file_names[0]+".fdr_value.txt").c_str());
-        ui->null_dist->saveTxt((vbc->trk_file_names[0]+".dist_value.txt").c_str());
 
+        if(ui->output_track_image->isChecked())
+        {
+            std::shared_ptr<fib_data> new_data(new fib_data);
+            *(new_data.get()) = *(vbc->handle);
+            tracking_window* new_mdi = new tracking_window(0,new_data);
+            new_mdi->setWindowTitle(vbc->trk_file_names[0].c_str());
+            new_mdi->resize(1024,800);
+            new_mdi->show();
+            new_mdi->command("set_param","show_slice","0");
+            new_mdi->command("set_param","show_region","0");
+            new_mdi->command("set_param","show_surface","1");
+            new_mdi->command("set_param","surface_alpha","0.1");
+            new_mdi->command("add_surface");
+            new_mdi->tractWidget->addNewTracts("greater");
+            new_mdi->tractWidget->tract_models[0]->add(*vbc->greater_tracks[0].get());
+            new_mdi->command("update_track");
+            new_mdi->command("save_h3view_image",(vbc->trk_file_names[0]+".positive.jpg").c_str());
+            new_mdi->command("delete_all_tract");
+            new_mdi->tractWidget->addNewTracts("lesser");
+            new_mdi->tractWidget->tract_models[0]->add(*vbc->lesser_tracks[0].get());
+            new_mdi->command("update_track");
+            new_mdi->command("save_h3view_image",(vbc->trk_file_names[0]+".negative.jpg").c_str());
+            new_mdi->close();
+        }
         if(gui)
         {
             if(vbc->has_greater_result || vbc->has_lesser_result)
@@ -808,16 +843,20 @@ void group_connectometry::on_show_result_clicked()
     }
     tracking_window* current_tracking_window = new tracking_window(this,new_data);
     current_tracking_window->setAttribute(Qt::WA_DeleteOnClose);
-    if(!saved_file_name.empty())
-        current_tracking_window->setWindowTitle(saved_file_name.front().c_str());
+    current_tracking_window->setWindowTitle(vbc->trk_file_names[0].c_str());
     current_tracking_window->showNormal();
     current_tracking_window->tractWidget->delete_all_tract();
-    QStringList filenames;
-    for(unsigned int index = 0;index < saved_file_name.size();++index)
-        if(QFileInfo(saved_file_name[index].c_str()).exists())
-            filenames << saved_file_name[index].c_str();
-    if(!filenames.empty())
-        current_tracking_window->tractWidget->load_tracts(filenames);
+    current_tracking_window->tractWidget->addNewTracts("Positive Correlation");
+    current_tracking_window->tractWidget->addNewTracts("Negative Correlation");
+
+    current_tracking_window->tractWidget->tract_models[0]->add(*(vbc->greater_tracks[0].get()));
+    current_tracking_window->tractWidget->tract_models[1]->add(*(vbc->lesser_tracks[0].get()));
+    current_tracking_window->command("update_track");
+    current_tracking_window->command("set_param","show_slice","0");
+    current_tracking_window->command("set_param","show_region","0");
+    current_tracking_window->command("set_param","show_surface","1");
+    current_tracking_window->command("set_param","surface_alpha","0.1");
+    current_tracking_window->command("add_surface");
 
 }
 
