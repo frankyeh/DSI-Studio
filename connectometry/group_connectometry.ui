@@ -72,7 +72,7 @@
          </sizepolicy>
         </property>
         <property name="title">
-         <string>STEP 1: Load demographics</string>
+         <string>STEP1: Load demographics</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <property name="spacing">
@@ -507,7 +507,7 @@
            <bool>false</bool>
           </property>
           <property name="text">
-           <string>STEP5: Run connectometry</string>
+           <string>STEP4: Run connectometry</string>
           </property>
           <property name="icon">
            <iconset resource="../icons.qrc">

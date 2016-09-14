@@ -144,32 +144,8 @@ void db_window::update_subject_list()
     ui->subject_list->setColumnCount(1);
     ui->subject_list->setColumnWidth(0,500);
     ui->subject_list->setRowCount(vbc->handle->db.num_subjects);
-    std::string check_quality,bad_r2;
     for(unsigned int index = 0;index < vbc->handle->db.num_subjects;++index)
-    {
         ui->subject_list->setItem(index,0, new QTableWidgetItem(QString(vbc->handle->db.subject_names[index].c_str())));
-        if(vbc->handle->db.R2[index] < 0.5)
-        {
-            if(check_quality.empty())
-                check_quality = "Low R2 value found in subject(s):";
-            std::ostringstream out;
-            out << " #" << index+1 << " " << vbc->handle->db.subject_names[index];
-            check_quality += out.str();
-        }
-        if(vbc->handle->db.R2[index] != vbc->handle->db.R2[index])
-        {
-            if(bad_r2.empty())
-                bad_r2 = "Invalid data found in subject(s):";
-            std::ostringstream out;
-            out << " #" << index+1 << " " << vbc->handle->db.subject_names[index];
-            bad_r2 += out.str();
-        }
-
-    }
-    if(!check_quality.empty())
-        QMessageBox::information(this,"Warning",check_quality.c_str());
-    if(!bad_r2.empty())
-        QMessageBox::information(this,"Warning",bad_r2.c_str());
 }
 
 void db_window::on_subject_list_itemSelectionChanged()

@@ -108,6 +108,22 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<vbc_dat
     on_rb_t_stat_clicked();
 
 
+    // CHECK R2
+    std::string check_quality;
+    for(unsigned int index = 0;index < vbc->handle->db.num_subjects;++index)
+    {
+        if(vbc->handle->db.R2[index] < 0.5)
+        {
+            if(check_quality.empty())
+                check_quality = "Poor image quality found found in subject(s):";
+            std::ostringstream out;
+            out << " #" << index+1 << " " << vbc->handle->db.subject_names[index];
+            check_quality += out.str();
+        }
+    }
+    if(!check_quality.empty())
+        QMessageBox::information(this,"Warning",check_quality.c_str());
+
 }
 
 group_connectometry::~group_connectometry()
