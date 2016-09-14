@@ -1,20 +1,19 @@
 #include <QApplication>
 #include <QFileInfo>
-#include "tracking/vbc_dialog.hpp"
-#include "ui_vbc_dialog.h"
+#include "connectometry/group_connectometry.hpp"
+#include "ui_group_connectometry.h"
 #include "program_option.hpp"
 
 int cnt(void)
 {
-    std::auto_ptr<vbc_database> database(new vbc_database);
-    database.reset(new vbc_database);
+    std::shared_ptr<vbc_database> database(new vbc_database);
     std::cout << "reading connectometry db" <<std::endl;
     if(!database->load_database(po.get("source").c_str()))
     {
         std::cout << "invalid database format" << std::endl;
         return 0;
     }
-    std::auto_ptr<vbc_dialog> vbc(new vbc_dialog(0,database.release(),po.get("source").c_str(),false));
+    std::auto_ptr<group_connectometry> vbc(new group_connectometry(0,database,po.get("source").c_str(),false));
     vbc->setAttribute(Qt::WA_DeleteOnClose);
     vbc->show();
     vbc->hide();
@@ -28,7 +27,6 @@ int cnt(void)
     switch(po.get("model",int(0)))
     {
     case 0:
-        vbc->ui->rb_multiple_regression->setChecked(true);
         if(!vbc->load_demographic_file(po.get("demo").c_str()))
             return 0;
         std::cout << "demographic file loaded" << std::endl;
@@ -40,21 +38,8 @@ int cnt(void)
         vbc->ui->foi->setCurrentIndex(po.get("foi",int(0)));
         std::cout << "feature of interest=" << vbc->ui->foi->currentText().toLocal8Bit().begin() << std::endl;
         break;
-    case 1:
-        vbc->ui->rb_group_difference->setChecked(true);
-        if(!vbc->load_demographic_file(po.get("demo").c_str()))
-            return 0;
-        std::cout << "demographic file loaded" << std::endl;
-        break;
-    case 2:
-        vbc->ui->rb_paired_difference->setChecked(true);
-        if(!vbc->load_demographic_file(po.get("demo").c_str()))
-            return 0;
-        std::cout << "demographic file loaded" << std::endl;
-        break;
-    case 3:
-        //vbc->ui->rb_individual_analysis->setChecked(true);
-        std::cout << "Individual connectometry has not yet been implemented in command line. Please email frank to request this function" <<std::endl;
+    default:
+        std::cout << "Unknown model" <<std::endl;
         return 0;
     }
     int threshold_type = po.get("threshold_type",int(0));
@@ -73,14 +58,6 @@ int cnt(void)
         vbc->ui->rb_beta->setChecked(true);
         std::cout << "threshold_type=beta coefficient" << std::endl;
         break;
-    case 3:
-        vbc->ui->rb_percentile->setChecked(true);
-        std::cout << "threshold_type=percentile rank" << std::endl;
-        break;
-    case 4:
-        vbc->ui->rb_mean_dif->setChecked(true);
-        std::cout << "threshold_type=mean difference" << std::endl;
-        break;
     default:
         std::cout << "unknown threshold type:" << threshold_type << std::endl;
         return -1;
@@ -93,19 +70,16 @@ int cnt(void)
         std::cout << "missing value=" << vbc->ui->missing_value->value() << std::endl;
     }
 
-    if(vbc->ui->rb_individual_analysis->isChecked())
-        vbc->ui->threshold->setValue(5);
-    else
-        vbc->on_suggest_threshold_clicked();
+    vbc->on_suggest_threshold_clicked();
     vbc->ui->threshold->setValue(po.get("threshold",float(vbc->ui->threshold->value())));
 
     std::cout << "threshold=" << vbc->ui->threshold->value() << std::endl;
 
-    vbc->ui->seeding_density->setValue(po.get("seeding_density",float(10)));
-    std::cout << "seeding_density=" << vbc->ui->seeding_density->value() << std::endl;
+    vbc->ui->seed_density->setValue(po.get("seeding_density",float(10)));
+    std::cout << "seeding_density=" << vbc->ui->seed_density->value() << std::endl;
 
-    vbc->ui->mr_permutation->setValue(po.get("permutation",int(5000)));
-    std::cout << "permutation=" << vbc->ui->mr_permutation->value() << std::endl;
+    vbc->ui->permutation_count->setValue(po.get("permutation",int(5000)));
+    std::cout << "permutation=" << vbc->ui->permutation_count->value() << std::endl;
 
     vbc->ui->multithread->setValue(po.get("thread_count",int(std::thread::hardware_concurrency())));
     std::cout << "thread=" << vbc->ui->multithread->value() << std::endl;

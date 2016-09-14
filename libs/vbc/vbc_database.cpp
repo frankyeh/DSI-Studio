@@ -98,25 +98,6 @@ void cal_hist(const std::vector<std::vector<float> >& track,std::vector<unsigned
     }
 }
 
-
-
-bool vbc_database::read_subject_data(const std::vector<std::string>& files,std::vector<std::vector<float> >& data)
-{
-    begin_prog("reading",true);
-    data.resize(files.size());
-    for(unsigned int index = 0;check_prog(index,files.size());++index)
-        if(!handle->db.get_odf_profile(files[index].c_str(),data[index]))
-        {
-            error_msg = "Cannot read file ";
-            error_msg += files[index];
-            check_prog(0,0);
-            return false;
-        }
-    begin_prog("reading",false);
-    check_prog(0,0);
-    return true;
-}
-
 void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thread_count,unsigned int permutation_count)
 {
     connectometry_result data;
@@ -463,5 +444,10 @@ void vbc_database::calculate_FDR(void)
         fdr_lesser[index] = (sum_lesser > 0.0 && sum_lesser_null > 0.0) ? std::min(1.0,sum_lesser_null/sum_lesser): 1.0;
 
     }
-
+    if(*std::min_element(fdr_greater.begin(),fdr_greater.end()) < 0.05)
+        std::replace(fdr_greater.begin(),fdr_greater.end(),1.0,0.0);
+    if(*std::min_element(fdr_lesser.begin(),fdr_lesser.end()) < 0.05)
+        std::replace(fdr_lesser.begin(),fdr_lesser.end(),1.0,0.0);
 }
+
+

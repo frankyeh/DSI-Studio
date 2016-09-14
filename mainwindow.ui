@@ -54,7 +54,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -175,12 +175,22 @@
          </widget>
         </item>
         <item>
-         <widget class="QCommandLinkButton" name="connectometry">
+         <widget class="QCommandLinkButton" name="open_db">
           <property name="text">
-           <string>Group Connectometry Analysis </string>
+           <string>Edit a Connectometry Database</string>
           </property>
           <property name="description">
-           <string>Analysis group difference</string>
+           <string>Add subjects, calculate change, fingerprinting</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="group_connectometry">
+          <property name="text">
+           <string>Group Connectometry Analysis</string>
+          </property>
+          <property name="description">
+           <string>Correlate study variables with tracks</string>
           </property>
          </widget>
         </item>

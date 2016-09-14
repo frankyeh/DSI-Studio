@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>vbc_dialog</class>
- <widget class="QDialog" name="vbc_dialog">
+ <class>connectometry_dialog</class>
+ <widget class="QDialog" name="connectometry_dialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -14,7 +14,7 @@
    <string>Connectometry</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../icons.qrc">
+   <iconset>
     <normaloff>:/icons/icons/axial.xpm</normaloff>:/icons/icons/axial.xpm</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -36,7 +36,7 @@
       <item>
        <widget class="QToolBox" name="toolBox">
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <property name="tabSpacing">
          <number>0</number>
@@ -46,8 +46,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>641</width>
-           <height>312</height>
+           <width>683</width>
+           <height>544</height>
           </rect>
          </property>
          <attribute name="label">
@@ -254,7 +254,7 @@
                            <string/>
                           </property>
                           <property name="icon">
-                           <iconset resource="../icons.qrc">
+                           <iconset>
                             <normaloff>:/icons/icons/sag.xpm</normaloff>:/icons/icons/sag.xpm</iconset>
                           </property>
                          </widget>
@@ -265,7 +265,7 @@
                            <string/>
                           </property>
                           <property name="icon">
-                           <iconset resource="../icons.qrc">
+                           <iconset>
                             <normaloff>:/icons/icons/coronal.xpm</normaloff>:/icons/icons/coronal.xpm</iconset>
                           </property>
                          </widget>
@@ -276,7 +276,7 @@
                            <string/>
                           </property>
                           <property name="icon">
-                           <iconset resource="../icons.qrc">
+                           <iconset>
                             <normaloff>:/icons/icons/axial.xpm</normaloff>:/icons/icons/axial.xpm</iconset>
                           </property>
                           <property name="checked">
@@ -403,7 +403,7 @@
 Plot</string>
                         </property>
                         <property name="icon">
-                         <iconset resource="../icons.qrc">
+                         <iconset>
                           <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
                         </property>
                        </widget>
@@ -472,7 +472,7 @@ Plot</string>
                       <string>Save Fingerprint</string>
                      </property>
                      <property name="icon">
-                      <iconset resource="../icons.qrc">
+                      <iconset>
                        <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
                      </property>
                     </widget>
@@ -483,7 +483,7 @@ Plot</string>
                       <string>Load mask...</string>
                      </property>
                      <property name="icon">
-                      <iconset resource="../icons.qrc">
+                      <iconset>
                        <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
                      </property>
                     </widget>
@@ -494,7 +494,7 @@ Plot</string>
                       <string>Save mask...</string>
                      </property>
                      <property name="icon">
-                      <iconset resource="../icons.qrc">
+                      <iconset>
                        <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
                      </property>
                     </widget>
@@ -522,7 +522,7 @@ Plot</string>
 Difference</string>
                      </property>
                      <property name="icon">
-                      <iconset resource="../icons.qrc">
+                      <iconset>
                        <normaloff>:/icons/icons/sag.xpm</normaloff>:/icons/icons/sag.xpm</iconset>
                      </property>
                     </widget>
@@ -543,7 +543,7 @@ Difference</string>
 Difference</string>
                      </property>
                      <property name="icon">
-                      <iconset resource="../icons.qrc">
+                      <iconset>
                        <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
                      </property>
                     </widget>
@@ -716,7 +716,7 @@ Difference</string>
                      <string>Add  DB</string>
                     </property>
                     <property name="icon">
-                     <iconset resource="../icons.qrc">
+                     <iconset>
                       <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
                     </property>
                    </widget>
@@ -749,7 +749,7 @@ Difference</string>
 Name</string>
                     </property>
                     <property name="icon">
-                     <iconset resource="../icons.qrc">
+                     <iconset>
                       <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
                     </property>
                    </widget>
@@ -781,7 +781,7 @@ Name</string>
                      <string>Save R2</string>
                     </property>
                     <property name="icon">
-                     <iconset resource="../icons.qrc">
+                     <iconset>
                       <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
                     </property>
                     <property name="checkable">
@@ -814,7 +814,7 @@ Name</string>
 subject</string>
                     </property>
                     <property name="icon">
-                     <iconset resource="../icons.qrc">
+                     <iconset>
                       <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
                     </property>
                    </widget>
@@ -864,9 +864,9 @@ subject</string>
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>-375</y>
+           <y>0</y>
            <width>666</width>
-           <height>919</height>
+           <height>902</height>
           </rect>
          </property>
          <attribute name="label">
@@ -902,16 +902,6 @@ subject</string>
                </property>
                <property name="text">
                 <string>Group difference (e.g. to study connectivity difference between male and female groups)</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QRadioButton" name="rb_paired_difference">
-               <property name="enabled">
-                <bool>true</bool>
-               </property>
-               <property name="text">
-                <string>Paired difference (e.g. to study connectivity difference before and after a treatment)</string>
                </property>
               </widget>
              </item>
@@ -982,7 +972,7 @@ subject</string>
                      <string/>
                     </property>
                     <property name="icon">
-                     <iconset resource="../icons.qrc">
+                     <iconset>
                       <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
                     </property>
                    </widget>
@@ -1059,7 +1049,7 @@ subject</string>
                      <string/>
                     </property>
                     <property name="icon">
-                     <iconset resource="../icons.qrc">
+                     <iconset>
                       <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
                     </property>
                    </widget>
@@ -1482,7 +1472,7 @@ subject</string>
                    <string>From atlas...</string>
                   </property>
                   <property name="icon">
-                   <iconset resource="../icons.qrc">
+                   <iconset>
                     <normaloff>:/icons/icons/sag.xpm</normaloff>:/icons/icons/sag.xpm</iconset>
                   </property>
                  </widget>
@@ -1496,7 +1486,7 @@ subject</string>
                    <string>Clear all</string>
                   </property>
                   <property name="icon">
-                   <iconset resource="../icons.qrc">
+                   <iconset>
                     <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
                   </property>
                  </widget>
@@ -1510,7 +1500,7 @@ subject</string>
                    <string>Load from file...</string>
                   </property>
                   <property name="icon">
-                   <iconset resource="../icons.qrc">
+                   <iconset>
                     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
                   </property>
                  </widget>
@@ -1692,10 +1682,10 @@ subject</string>
                        <bool>true</bool>
                       </property>
                       <property name="text">
-                       <string>normalize SDF (unchecked in neurological diseases)</string>
+                       <string>normalize SDF</string>
                       </property>
                       <property name="checked">
-                       <bool>true</bool>
+                       <bool>false</bool>
                       </property>
                      </widget>
                     </item>
@@ -1882,8 +1872,8 @@ subject</string>
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>631</width>
-           <height>222</height>
+           <width>683</width>
+           <height>544</height>
           </rect>
          </property>
          <attribute name="label">
@@ -2223,8 +2213,6 @@ subject</string>
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources>
-  <include location="../icons.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

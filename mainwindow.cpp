@@ -18,15 +18,16 @@
 #include "dicom/dicom_parser.h"
 #include "ui_mainwindow.h"
 #include "simulation.h"
-#include "reconstruction/vbcdialog.h"
 #include "view_image.h"
 #include "mapping/atlas.hpp"
 #include "libs/gzip_interface.hpp"
-#include "tracking/vbc_dialog.hpp"
 #include "vbc/vbc_database.h"
 #include "libs/tracking/fib_data.hpp"
 #include "manual_alignment.h"
-#include "individual_connectometry.hpp"
+#include "connectometry/individual_connectometry.hpp"
+#include "connectometry/createdbdialog.h"
+#include "connectometry/db_window.h"
+#include "connectometry/group_connectometry.hpp"
 
 extern std::vector<atlas> atlas_list;
 extern std::auto_ptr<QProgressDialog> progressDialog;
@@ -524,14 +525,14 @@ void MainWindow::on_RenameDICOMDir_clicked()
 
 void MainWindow::on_vbc_clicked()
 {
-    VBCDialog* new_mdi = new VBCDialog(this,true);
+    CreateDBDialog* new_mdi = new CreateDBDialog(this,true);
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
     new_mdi->show();
 }
 
 void MainWindow::on_averagefib_clicked()
 {
-    VBCDialog* new_mdi = new VBCDialog(this,false);
+    CreateDBDialog* new_mdi = new CreateDBDialog(this,false);
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
     new_mdi->show();
 }
@@ -765,26 +766,7 @@ void MainWindow::on_view_image_clicked()
 
 void MainWindow::on_connectometry_clicked()
 {
-    QString filename = QFileDialog::getOpenFileName(
-                           this,
-                           "Open Database files",
-                           ui->workDir->currentText(),
-                           "Database files (*db?fib.gz);;All files (*)");
-    if (filename.isEmpty())
-        return;
-    QDir::setCurrent(QFileInfo(filename).absolutePath());
-    add_work_dir(QFileInfo(filename).absolutePath());
-    std::auto_ptr<vbc_database> database(new vbc_database);
-    database.reset(new vbc_database);
-    begin_prog("reading connectometry db");
-    if(!database->load_database(filename.toLocal8Bit().begin()))
-    {
-        QMessageBox::information(this,"Error","Invalid database format",0);
-        return;
-    }
-    vbc_dialog* vbc = new vbc_dialog(this,database.release(),filename,true);
-    vbc->setAttribute(Qt::WA_DeleteOnClose);
-    vbc->show();
+
 }
 
 void MainWindow::on_workDir_currentTextChanged(const QString &arg1)
@@ -839,6 +821,51 @@ void MainWindow::on_rigid_body_reg_clicked()
 void MainWindow::on_individual_connectometry_clicked()
 {
     individual_connectometry* indi = new individual_connectometry(this);
-    indi->setAttribute(Qt::WA_DeleteOnClose);
-    indi->showNormal();
+        indi->setAttribute(Qt::WA_DeleteOnClose);
+        indi->showNormal();
+}
+
+
+bool MainWindow::load_db(std::shared_ptr<vbc_database>& database,QString& filename)
+{
+    filename = QFileDialog::getOpenFileName(
+                           this,
+                           "Open Database files",
+                           ui->workDir->currentText(),
+                           "Database files (*db?fib.gz);;All files (*)");
+    if (filename.isEmpty())
+        return false;
+    QDir::setCurrent(QFileInfo(filename).absolutePath());
+    add_work_dir(QFileInfo(filename).absolutePath());
+    database = std::make_shared<vbc_database>();
+    begin_prog("reading connectometry db");
+    if(!database->load_database(filename.toLocal8Bit().begin()))
+    {
+        QMessageBox::information(this,"Error","Invalid database format",0);
+        return false;
+    }
+    return true;
+}
+
+void MainWindow::on_open_db_clicked()
+{
+    QString filename;
+    std::shared_ptr<vbc_database> database;
+    if(!load_db(database,filename))
+        return;
+    db_window* db = new db_window(this,database);
+    db->setWindowTitle(filename);
+    db->setAttribute(Qt::WA_DeleteOnClose);
+    db->show();
+}
+
+void MainWindow::on_group_connectometry_clicked()
+{
+    QString filename;
+    std::shared_ptr<vbc_database> database;
+    if(!load_db(database,filename))
+        return;
+    group_connectometry* group_cnt = new group_connectometry(this,database,filename,true);
+    group_cnt->setAttribute(Qt::WA_DeleteOnClose);
+    group_cnt->show();
 }

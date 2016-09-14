@@ -9,16 +9,23 @@ class connectometry_db
 {
 public:
     fib_data* handle;
-    std::string subject_report,read_report;
-    std::vector<std::string> subject_names;
+    std::string report,subject_report;
     unsigned int num_subjects;
+public:// subject specific data
+    std::vector<std::string> subject_names;
     std::vector<float> R2;
     std::vector<const float*> subject_qa;
-    unsigned int subject_qa_length;
     std::vector<float> subject_qa_sd;
+public:
+    std::list<std::vector<float> > subject_qa_buf;// merged from other db
+    unsigned int subject_qa_length;
     image::basic_image<unsigned int,3> vi2si;
     std::vector<unsigned int> si2vi;
-    std::vector<std::vector<float> > subject_qa_buf;// merged from other db
+    std::string index_name;
+public://longitudinal studies
+    std::vector<std::pair<int,int> > match;
+    void auto_match(const image::basic_image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp);
+    void calculate_change(unsigned char dif_type,bool norm);
 public:
     connectometry_db():num_subjects(0){;}
     bool has_db(void)const{return num_subjects > 0;}
@@ -28,9 +35,8 @@ public:
     bool sample_odf(gz_mat_read& m,std::vector<float>& data);
     bool sample_index(gz_mat_read& m,std::vector<float>& data,const char* index_name);
     bool is_consistent(gz_mat_read& m);
-    bool load_subject_files(const std::vector<std::string>& file_names,
-                            const std::vector<std::string>& subject_names_,
-                            const char* index_name);
+    bool add_subject_file(const std::string& file_name,
+                            const std::string& subject_name);
     void get_subject_vector(std::vector<std::vector<float> >& subject_vector,
                             const image::basic_image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp) const;
     void get_subject_vector(unsigned int subject_index,std::vector<float>& subject_vector,
@@ -50,6 +56,9 @@ public:
     bool is_db_compatible(const connectometry_db& rhs);
     void read_subject_qa(std::vector<std::vector<float> >&data) const;
     bool add_db(const connectometry_db& rhs);
+    void move_up(int id);
+    void move_down(int id);
+
 };
 
 
@@ -71,11 +80,10 @@ public: // multiple regression
     unsigned int study_feature;
     enum {percentage = 0,t = 1,beta = 2,percentile = 3,mean_dif = 4} threshold_type;
     image::multiple_regression<double> mr;
+    void select_variables(const std::vector<char>& sel);
 public: // individual
     const float* individual_data;
     float individual_data_sd;
-public: // paired
-    std::vector<unsigned int> paired;
 public:
     stat_model(void):individual_data(0){}
 public:
@@ -107,7 +115,6 @@ public:
         threshold_type = rhs.threshold_type;
         mr = rhs.mr;
         individual_data = rhs.individual_data;
-        paired = rhs.paired;
         return *this;
     }
 };

@@ -30,6 +30,12 @@ void connectometry_db::read_db(fib_data* handle_)
     if(!num_subjects)
         return;
     {
+        const char* report_buf = 0;
+        if(handle->mat_reader.read("report",row,col,report_buf))
+            report = std::string(report_buf,report_buf+row*col);
+        if(handle->mat_reader.read("subject_report",row,col,report_buf))
+            subject_report = std::string(report_buf,report_buf+row*col);
+
         const char* str = 0;
         handle->mat_reader.read("subject_names",row,col,str);
         if(str)
@@ -38,6 +44,11 @@ void connectometry_db::read_db(fib_data* handle_)
             for(unsigned int index = 0;in && index < num_subjects;++index)
                 std::getline(in,subject_names[index]);
         }
+        handle->mat_reader.read("index_name",row,col,str);
+        if(str)
+            index_name = std::string(str,str+row*col);
+        else
+            index_name = "sdf";
         const float* r2_values = 0;
         handle->mat_reader.read("R2",row,col,r2_values);
         if(r2_values == 0)
@@ -74,6 +85,7 @@ void connectometry_db::calculate_si2vi(void)
             si2vi.push_back(index);
         }
     }
+    subject_qa_length = handle->dir.num_fiber*si2vi.size();
 }
 bool connectometry_db::sample_odf(gz_mat_read& m,std::vector<float>& data)
 {
@@ -159,81 +171,71 @@ bool connectometry_db::is_consistent(gz_mat_read& m)
     }
     return true;
 }
-
-bool connectometry_db::load_subject_files(const std::vector<std::string>& file_names,
-                        const std::vector<std::string>& subject_names_,
-                        const char* index_name)
+bool connectometry_db::add_subject_file(const std::string& file_name,
+                                         const std::string& subject_name)
 {
-    num_subjects = (unsigned int)file_names.size();
-    subject_qa.clear();
-    subject_qa.resize(num_subjects);
-    subject_qa_buf.resize(num_subjects);
-    R2.resize(num_subjects);
-    for(unsigned int index = 0;index < num_subjects;++index)
-        subject_qa_buf[index].resize(handle->dir.num_fiber*si2vi.size());
-    for(unsigned int index = 0;index < num_subjects;++index)
-        subject_qa[index] = &(subject_qa_buf[index][0]);
-    for(unsigned int subject_index = 0;check_prog(subject_index,num_subjects);++subject_index)
+    gz_mat_read m;
+    if(!m.load_from_file(file_name.c_str()))
     {
-        if(prog_aborted())
+        handle->error_msg = "failed to load subject data ";
+        handle->error_msg += file_name;
+        return false;
+    }
+    std::vector<float> new_subject_qa(subject_qa_length);
+
+    // check if the odf table is consistent or not
+    std::cout << index_name << std::endl;
+    if(index_name == "sdf" || index_name.empty())
+    {
+        if(!is_consistent(m))
         {
-            check_prog(1,1);
+            handle->error_msg += file_name;
             return false;
         }
-        gz_mat_read m;
-        if(!m.load_from_file(file_names[subject_index].c_str()))
+        if(!sample_odf(m,new_subject_qa))
         {
-            handle->error_msg = "failed to load subject data ";
-            handle->error_msg += file_names[subject_index];
+            handle->error_msg = "Failed to read odf ";
+            handle->error_msg += file_name;
             return false;
-        }
-        // check if the odf table is consistent or not
-        if(std::string(index_name) == "sdf")
-        {
-            if(!is_consistent(m))
-            {
-                handle->error_msg += file_names[subject_index];
-                return false;
-            }
-            if(!sample_odf(m,subject_qa_buf[subject_index]))
-            {
-                handle->error_msg = "Failed to read odf ";
-                handle->error_msg += file_names[subject_index];
-                return false;
-            }
-        }
-        else
-        {
-            if(!sample_index(m,subject_qa_buf[subject_index],index_name))
-            {
-                handle->error_msg = "failed to sample ";
-                handle->error_msg += index_name;
-                handle->error_msg += " in ";
-                handle->error_msg += file_names[subject_index];
-                return false;
-            }
-        }
-        // load R2
-        const float* value= 0;
-        unsigned int row,col;
-        m.read("R2",row,col,value);
-        if(!value || *value != *value)
-        {
-            handle->error_msg = "Invalid R2 value in ";
-            handle->error_msg += file_names[subject_index];
-            return false;
-        }
-        R2[subject_index] = *value;
-        if(subject_index == 0)
-        {
-            const char* report_buf = 0;
-            if(m.read("report",row,col,report_buf))
-                subject_report = std::string(report_buf,report_buf+row*col);
         }
     }
-    subject_names = subject_names_;
-    return true;
+    else
+    {
+        if(!sample_index(m,new_subject_qa,index_name.c_str()))
+        {
+            handle->error_msg = "Failed to sample ";
+            handle->error_msg += index_name;
+            handle->error_msg += " in ";
+            handle->error_msg += file_name;
+            return false;
+        }
+    }
+    // load R2
+    const float* value= 0;
+    unsigned int row,col;
+    m.read("R2",row,col,value);
+    if(!value || *value != *value)
+    {
+        handle->error_msg = "Invalid R2 value in ";
+        handle->error_msg += file_name;
+        return false;
+    }
+    R2.push_back(*value);
+    const char* report_buf = 0;
+    if(subject_report.empty() && m.read("report",row,col,report_buf))
+        subject_report = std::string(report_buf,report_buf+row*col);
+    subject_qa_buf.push_back(std::move(new_subject_qa));
+    subject_qa.push_back(&(subject_qa_buf.back()[0]));
+    subject_names.push_back(subject_name);
+    subject_qa_sd.push_back(image::standard_deviation(subject_qa.back(),
+                                                      subject_qa.back()+subject_qa_length));
+    if(subject_qa_sd.back() == 0.0)
+        subject_qa_sd.back() = 1.0;
+    else
+        subject_qa_sd.back() = 1.0/subject_qa_sd.back();
+    num_subjects++;
 }
+
 void connectometry_db::get_subject_vector(std::vector<std::vector<float> >& subject_vector,
                         const image::basic_image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp) const
 {
@@ -373,12 +375,15 @@ void connectometry_db::save_subject_data(const char* output_name)
         name_string += "\n";
     }
     matfile.write("subject_names",name_string.c_str(),1,(unsigned int)name_string.size());
+    matfile.write("index_name",index_name.c_str(),1,(unsigned int)index_name.size());
     matfile.write("R2",&*R2.begin(),1,(unsigned int)R2.size());
 
     {
         std::ostringstream out;
-        out << "A total of " << num_subjects << " subjects were included in the connectometry database." << subject_report.c_str();
+        out << "A total of " << num_subjects << " diffusion MRI scans were included in the connectometry database." << subject_report.c_str();
+        out << " The " << index_name << " values were used in the connectometry analysis.";
         std::string report = out.str();
+        matfile.write("subject_report",&*subject_report.c_str(),1,(unsigned int)subject_report.length());
         matfile.write("report",&*report.c_str(),1,(unsigned int)report.length());
     }
 }
@@ -444,7 +449,7 @@ bool connectometry_db::get_odf_profile(const char* file_name,std::vector<float>&
     const char* report_buf = 0;
     unsigned int row,col;
     if(single_subject.read("report",row,col,report_buf))
-        read_report = std::string(report_buf,report_buf+row*col);
+        subject_report = std::string(report_buf,report_buf+row*col);
     return true;
 }
 bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vector<float> >& data)
@@ -485,7 +490,7 @@ bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vec
     const char* report_buf = 0;
     unsigned int row,col;
     if(single_subject.read("report",row,col,report_buf))
-        read_report = std::string(report_buf,report_buf+row*col);
+        subject_report = std::string(report_buf,report_buf+row*col);
     return true;
 }
 bool connectometry_db::is_db_compatible(const connectometry_db& rhs)
@@ -517,26 +522,148 @@ bool connectometry_db::add_db(const connectometry_db& rhs)
 {
     if(!is_db_compatible(rhs))
         return false;
-    num_subjects += rhs.num_subjects;
     R2.insert(R2.end(),rhs.R2.begin(),rhs.R2.end());
     subject_qa_sd.insert(subject_qa_sd.end(),rhs.subject_qa_sd.begin(),rhs.subject_qa_sd.end());
     subject_names.insert(subject_names.end(),rhs.subject_names.begin(),rhs.subject_names.end());
     // copy the qa memeory
     for(unsigned int index = 0;index < rhs.num_subjects;++index)
     {
-        subject_qa_buf.push_back(std::vector<float>());
-        subject_qa_buf.back().resize(subject_qa_length);
+        subject_qa_buf.push_back(std::vector<float>(subject_qa_length));
         std::copy(rhs.subject_qa[index],
                   rhs.subject_qa[index]+subject_qa_length,subject_qa_buf.back().begin());
+        subject_qa.push_back(&(subject_qa_buf.back()[0]));
     }
-
-    // everytime subject_qa_buf has a change, its memory may have been reallocated. Thus we need to assign all pointers.
-    subject_qa.resize(num_subjects);
-    for(unsigned int index = 0;index < subject_qa_buf.size();++index)
-        subject_qa[num_subjects+index-subject_qa_buf.size()] = &(subject_qa_buf[index][0]);
+    num_subjects += rhs.num_subjects;
+}
+void connectometry_db::move_up(int id)
+{
+    if(id == 0)
+        return;
+    std::swap(subject_names[id],subject_names[id-1]);
+    std::swap(R2[id],R2[id-1]);
+    std::swap(subject_qa[id],subject_qa[id-1]);
+    std::swap(subject_qa_sd[id],subject_qa_sd[id-1]);
 }
 
+void connectometry_db::move_down(int id)
+{
+    if(id >= num_subjects-1)
+        return;
+    std::swap(subject_names[id],subject_names[id+1]);
+    std::swap(R2[id],R2[id+1]);
+    std::swap(subject_qa[id],subject_qa[id+1]);
+    std::swap(subject_qa_sd[id],subject_qa_sd[id+1]);
+}
 
+void connectometry_db::auto_match(const image::basic_image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp)
+{
+    std::vector<float> dif;
+    get_dif_matrix(dif,cerebrum_mask,fiber_threshold,normalize_fp);
+
+    std::vector<float> half_dif;
+    for(int i = 0;i < handle->db.num_subjects;++i)
+        for(int j = i+1;j < handle->db.num_subjects;++j)
+            half_dif.push_back(dif[i*handle->db.num_subjects+j]);
+
+    // find the largest gap
+    std::vector<float> v(half_dif);
+    std::sort(v.begin(),v.end());
+    float max_dif = 0,t = 0;
+    for(int i = 1;i < v.size()/2;++i)
+    {
+        float dif = v[i]-v[i-1];
+        if(dif > max_dif)
+        {
+            max_dif = dif;
+            t = v[i]+v[i-1];
+            t *= 0.5;
+        }
+    }
+    std::cout << std::endl;
+
+    match.clear();
+    for(int i = 0,index = 0;i < handle->db.num_subjects;++i)
+        for(int j = i+1;j < handle->db.num_subjects;++j,++index)
+            if(half_dif[index] < t)
+                match.push_back(std::make_pair(i,j));
+}
+void connectometry_db::calculate_change(unsigned char dif_type,bool norm)
+{
+    std::ostringstream out;
+
+
+    std::vector<std::string> new_subject_names(match.size());
+    std::vector<float> new_R2(match.size());
+    std::vector<float> new_subject_qa_sd(match.size());
+
+
+    std::list<std::vector<float> > new_subject_qa_buf;
+    std::vector<const float*> new_subject_qa;
+    begin_prog("calculating");
+    for(unsigned int index = 0;check_prog(index,match.size());++index)
+    {
+        const float* baseline = subject_qa[match[index].first];
+        const float* study = subject_qa[match[index].second];
+        new_R2[index] = std::min<float>(R2[match[index].first],R2[match[index].second]);
+        new_subject_names[index] = subject_names[match[index].second] + " - " + subject_names[match[index].first];
+        std::vector<float> change(subject_qa_length);
+        if(norm)
+        {
+            float ratio = subject_qa_sd[match[index].first] == 0 ?
+                            0:subject_qa_sd[match[index].second]/subject_qa_sd[match[index].first];
+            if(dif_type == 0)
+            {
+                out << " The difference between longitudinal scans were calculated";
+                new_subject_qa_sd[index] = subject_qa_sd[match[index].first];
+                for(int i = 0;i < subject_qa_length;++i)
+                    change[i] = study[i]*ratio-baseline[i];
+            }
+            else
+            {
+                out << " The percentage difference between longitudinal scans were calculated";
+                new_subject_qa_sd[index] = 1.0;
+                for(int i = 0;i < subject_qa_length;++i)
+                {
+                    float new_s = study[i]*ratio;
+                    float s = new_s+baseline[i];
+                    change[i] = (s == 0 ? 0 : (new_s-baseline[i])/s);
+                }
+            }
+            out << " after the data variance in each individual was normalized to one";
+        }
+        else
+        {
+            if(dif_type == 0)
+            {
+                out << " The difference between longitudinal scans were calculated";
+                new_subject_qa_sd[index] = subject_qa_sd[match[index].first];
+                for(int i = 0;i < subject_qa_length;++i)
+                    change[i] = study[i]-baseline[i];
+            }
+            else
+            {
+                out << " The percentage difference between longitudinal scans were calculated";
+                new_subject_qa_sd[index] = 1.0;
+                for(int i = 0;i < subject_qa_length;++i)
+                {
+                    float s = study[i]+baseline[i];
+                    change[i] = (s == 0? 0 : (study[i]-baseline[i])/s);
+                }
+            }
+        }
+        new_subject_qa_buf.push_back(change);
+        new_subject_qa.push_back(&(new_subject_qa_buf.back()[0]));
+    }
+    out << " (n=" << match.size() << ").";
+    R2.swap(new_R2);
+    subject_names.swap(new_subject_names);
+    subject_qa_sd.swap(new_subject_qa_sd);
+    subject_qa_buf.swap(new_subject_qa_buf);
+    subject_qa.swap(new_subject_qa);
+    num_subjects = match.size();
+    match.clear();
+
+}
 
 void calculate_spm(std::shared_ptr<fib_data> handle,connectometry_result& data,stat_model& info,
                    float fiber_threshold,bool normalize_qa,bool& terminated)
@@ -790,6 +917,26 @@ void stat_model::init(unsigned int subject_count)
         subject_index[index] = index;
 }
 
+void stat_model::select_variables(const std::vector<char>& sel)
+{
+    unsigned int subject_count = X.size()/feature_count;
+    unsigned int new_feature_count = 0;
+    std::vector<int> feature_map;
+    for(int i = 0;i < sel.size();++i)
+        if(sel[i])
+        {
+            ++new_feature_count;
+            feature_map.push_back(i);
+        }
+    std::vector<double> new_X(subject_count*new_feature_count);
+    for(int i = 0,index = 0;i < subject_count;++i)
+        for(int j = 0;j < new_feature_count;++j,++index)
+            new_X[index] = X[i*feature_count+feature_map[j]];
+    feature_count = new_feature_count;
+    X.swap(new_X);
+    pre_process();
+}
+
 bool stat_model::pre_process(void)
 {
     switch(type)
@@ -820,8 +967,6 @@ bool stat_model::pre_process(void)
         return mr.set_variables(&*X.begin(),feature_count,X.size()/feature_count);
     case 2:
         return true;
-    case 3: // paired
-        return subject_index.size() == paired.size() && !subject_index.empty();
     }
     return false;
 }
@@ -862,8 +1007,6 @@ void stat_model::remove_missing_data(double missing_value)
                     }
                 }
             }
-            break;
-        case 3:
             break;
     }
 
@@ -931,17 +1074,6 @@ bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap)
             {
                 unsigned int new_index = bootstrap ? rhs.rand_gen(rhs.subject_index.size()) : index;
                 subject_index[index] = rhs.subject_index[new_index];
-            }
-            break;
-        case 3: // paired
-            paired.resize(rhs.subject_index.size());
-            for(unsigned int index = 0;index < rhs.subject_index.size();++index)
-            {
-                unsigned int new_index = bootstrap ? rhs.rand_gen(rhs.subject_index.size()) : index;
-                subject_index[index] = rhs.subject_index[new_index];
-                paired[index] = rhs.paired[new_index];
-                if(null && rhs.rand_gen(2) == 1)
-                    std::swap(subject_index[index],paired[index]);
             }
             break;
         }
@@ -1057,26 +1189,6 @@ double stat_model::operator()(const std::vector<double>& original_population,uns
                                     (double)(rank-(int)population.size())/(double)population.size();
             }
     }
-        break;
-    case 3: // paired
-        if(threshold_type == t)
-        {
-            unsigned int half_size = population.size() >> 1;
-            std::vector<double> dif(population.begin(),population.begin()+half_size);
-            image::minus(dif.begin(),dif.end(),population.begin()+half_size);
-            return image::t_statistics(dif.begin(),dif.end());
-        }
-        else
-        {
-            unsigned int half_size = population.size() >> 1;
-            float g1 = std::accumulate(population.begin(),population.begin()+half_size,0.0);
-            float g2 = std::accumulate(population.begin()+half_size,population.end(),0.0);
-            if(threshold_type == percentage)
-                return 2.0*(g1-g2)/(g1+g2);
-            else
-                if(threshold_type == mean_dif)
-                    return (g1-g2)/half_size;
-        }
         break;
     }
 

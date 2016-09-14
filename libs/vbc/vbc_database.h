@@ -69,7 +69,6 @@ public:
 public:// Individual analysis
     std::vector<std::vector<float> > individual_data;
     std::vector<float> individual_data_sd;
-    bool read_subject_data(const std::vector<std::string>& files,std::vector<std::vector<float> >& data);
 public:// Multiple regression
     std::auto_ptr<stat_model> model;
     float tracking_threshold;
@@ -78,7 +77,7 @@ public:// Multiple regression
     void run_permutation_multithread(unsigned int id,unsigned int thread_count,unsigned int permutation_count);
     void run_permutation(unsigned int thread_count,unsigned int permutation_count);
     void calculate_FDR(void);
-public:
+
 };
 
 #endif // VBC_DATABASE_H

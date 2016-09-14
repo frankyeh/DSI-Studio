@@ -75,7 +75,6 @@ HEADERS += mainwindow.h \
     libs/tracking/tracking_thread.hpp \
     libs/prog_interface_static_link.h \
     simulation.h \
-    reconstruction/vbcdialog.h \
     libs/mapping/atlas.hpp \
     libs/mapping/fa_template.hpp \
     plot/qcustomplot.h \
@@ -86,7 +85,6 @@ HEADERS += mainwindow.h \
     libs/dsi/mix_gaussian_model.hpp \
     libs/dsi/layout.hpp \
     manual_alignment.h \
-    tracking/vbc_dialog.hpp \
     tracking/tract_report.hpp \
     tracking/color_bar_dialog.hpp \
     tracking/connectivity_matrix_dialog.h \
@@ -96,24 +94,32 @@ HEADERS += mainwindow.h \
     program_option.hpp \
     qcompletelineedit.h \
     libs/mapping/connectometry_db.hpp \
-    individual_connectometry.hpp
+    individual_connectometry.hpp \
+    connectometry/createdbdialog.h \
+    libs/dsi/qbi_voxel.hpp \
+    connectometry/individual_connectometry.hpp \
+    connectometry/match_db.h \
+    connectometry/db_window.h \
+    connectometry/group_connectometry.hpp
 
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
     reconstruction/reconstruction_window.ui \
     dicom/dicom_parser.ui \
     simulation.ui \
-    reconstruction/vbcdialog.ui \
     view_image.ui \
     manual_alignment.ui \
-    tracking/vbc_dialog.ui \
     tracking/tract_report.ui \
     tracking/color_bar_dialog.ui \
     tracking/connectivity_matrix_dialog.ui \
     tracking/atlasdialog.ui \
     dicom/motion_dialog.ui \
     filebrowser.ui \
-    individual_connectometry.ui
+    connectometry/createdbdialog.ui \
+    connectometry/individual_connectometry.ui \
+    connectometry/match_db.ui \
+    connectometry/db_window.ui \
+    connectometry/group_connectometry.ui
 RESOURCES += \
     icons.qrc
 SOURCES += main.cpp \
@@ -140,7 +146,6 @@ SOURCES += main.cpp \
     cmd/trk.cpp \
     cmd/rec.cpp \
     simulation.cpp \
-    reconstruction/vbcdialog.cpp \
     cmd/src.cpp \
     libs/mapping/atlas.cpp \
     libs/mapping/fa_template.cpp \
@@ -149,7 +154,6 @@ SOURCES += main.cpp \
     view_image.cpp \
     libs/vbc/vbc_database.cpp \
     manual_alignment.cpp \
-    tracking/vbc_dialog.cpp \
     tracking/tract_report.cpp \
     tracking/color_bar_dialog.cpp \
     cmd/exp.cpp \
@@ -166,7 +170,12 @@ SOURCES += main.cpp \
     libs/mapping/connectometry_db.cpp \
     libs/tracking/tracking_thread.cpp \
     cmd/ren.cpp \
-    individual_connectometry.cpp
+    connectometry/createdbdialog.cpp \
+    connectometry/createdbdialog.cpp \
+    connectometry/individual_connectometry.cpp \
+    connectometry/match_db.cpp \
+    connectometry/db_window.cpp \
+    connectometry/group_connectometry.cpp
 
 OTHER_FILES += \
     options.txt

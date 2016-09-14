@@ -34,7 +34,6 @@ individual_connectometry::individual_connectometry(QWidget *parent) :
         break;
 
     }
-
 }
 
 individual_connectometry::~individual_connectometry()
@@ -183,7 +182,7 @@ void individual_connectometry::on_compare_clicked()
 
     {
         run:
-        baseline->report = baseline->db.read_report + new_mdi->cnt_result.report;
+        baseline->report = baseline->db.report + new_mdi->cnt_result.report;
         new_mdi->initialize_tracking_index(new_mdi->handle->dir.index_data.size()-1);
         new_mdi->scene.show_slice();
         check_prog(0,0);

@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QSettings>
+#include "vbc/vbc_database.h"
 
 namespace Ui {
     class MainWindow;
@@ -26,6 +27,7 @@ private:
     void loadFib(QString Filename);
     void loadSrc(QStringList filenames);
     void add_work_dir(QString dir);
+    bool load_db(std::shared_ptr<vbc_database>& database,QString& file_name);
 private slots:
     void on_averagefib_clicked();
     void on_vbc_clicked();
@@ -48,6 +50,8 @@ private slots:
     void on_bruker_browser_clicked();
     void on_rigid_body_reg_clicked();
     void on_individual_connectometry_clicked();
+    void on_open_db_clicked();
+    void on_group_connectometry_clicked();
 };
 
 #endif // MAINWINDOW_H
