@@ -66,7 +66,7 @@
             <item>
              <widget class="QRadioButton" name="change_dif_percentage">
               <property name="text">
-               <string>(a-b)/(a+b)%</string>
+               <string>(a-b)/(a+b)</string>
               </property>
              </widget>
             </item>
