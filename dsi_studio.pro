@@ -171,7 +171,6 @@ SOURCES += main.cpp \
     libs/tracking/tracking_thread.cpp \
     cmd/ren.cpp \
     connectometry/createdbdialog.cpp \
-    connectometry/createdbdialog.cpp \
     connectometry/individual_connectometry.cpp \
     connectometry/match_db.cpp \
     connectometry/db_window.cpp \
