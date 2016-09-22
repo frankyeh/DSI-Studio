@@ -234,6 +234,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
     else
         subject_qa_sd.back() = 1.0/subject_qa_sd.back();
     num_subjects++;
+    return true;
 }
 
 void connectometry_db::get_subject_vector(std::vector<std::vector<float> >& subject_vector,
