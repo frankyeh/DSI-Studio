@@ -1177,10 +1177,12 @@ void tracking_window::on_actionConnectivity_matrix_triggered()
 }
 
 
+
 void tracking_window::on_zoom_3d_valueChanged(double arg1)
 {
     glWidget->command("set_zoom",QString::number(ui->zoom_3d->value()));
 }
+
 
 void tracking_window::restore_3D_window()
 {
@@ -1878,3 +1880,5 @@ void tracking_window::on_glView_currentIndexChanged(int index)
 
     glWidget->updateGL();
 }
+
+

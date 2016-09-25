@@ -135,7 +135,6 @@ private slots:
     void on_actionManual_Registration_triggered();
     void on_actionTract_Analysis_Report_triggered();
     void on_actionConnectivity_matrix_triggered();
-    void on_zoom_3d_valueChanged(double arg1);
     void on_actionFloat_3D_window_triggered();
     void on_actionSave_tracking_parameters_triggered();
     void on_actionLoad_tracking_parameters_triggered();
@@ -175,6 +174,7 @@ private slots:
     void on_actionSave_mapping_triggered();
     void on_actionLoad_mapping_triggered();
     void on_glView_currentIndexChanged(int index);
+    void on_zoom_3d_valueChanged(double arg1);
 };
 
 #endif // TRACKING_WINDOW_H

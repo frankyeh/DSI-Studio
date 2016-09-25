@@ -1202,6 +1202,7 @@ void GLWidget::scale_by(float scalefactor)
     {
         glMultMatrixf(transformation_matrix.begin());
         glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
+        cur_tracking_window.ui->zoom_3d->setValue(std::pow(transformation_matrix.det(),1.0/3.0));
     }
     glPopMatrix();
     updateGL();
@@ -1214,9 +1215,8 @@ void GLWidget::wheelEvent ( QWheelEvent * event )
     scalefactor /= 1200.0;
     scalefactor = 1.0+scalefactor;
     scale_by(scalefactor);
-    if(!edit_right || view_mode != view_mode_type::two)
-        cur_tracking_window.ui->zoom_3d->setValue(std::pow(transformation_matrix.det(),1.0/3.0));
     event->ignore();
+
 }
 
 void GLWidget::slice_location(unsigned char dim,std::vector<image::vector<3,float> >& points)
@@ -1612,23 +1612,6 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     // the joystick mode is the second step transformation
     if (event->buttons() & Qt::LeftButton)
     {
-        // bookeeping the rotation matrix
-        {
-            glRotated(dy / 2.0, 1.0, 0.0, 0.0);
-            if(!(event->modifiers() & Qt::ShiftModifier))
-                glRotated(-dx / 2.0, 0.0, 1.0, 0.0);
-            if(edit_right && view_mode == view_mode_type::two)
-            {
-                glMultMatrixf(rotation_matrix2.begin());
-                glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix2.begin());
-            }
-            else
-            {
-                glMultMatrixf(rotation_matrix.begin());
-                glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix.begin());
-            }
-            glLoadIdentity();
-        }
         glRotated(dy / 2.0, 1.0, 0.0, 0.0);
         if(!(event->modifiers() & Qt::ShiftModifier))
             glRotated(-dx / 2.0, 0.0, 1.0, 0.0);
@@ -1638,7 +1621,6 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     {
         double scalefactor = (-dx-dy+100.0)/100.0;
         glScaled(scalefactor,scalefactor,scalefactor);
-        cur_tracking_window.ui->zoom_3d->setValue(std::pow(transformation_matrix.det(),1.0/3.0));
     }
     else
         glTranslated(dx/5.0,dy/5.0,0);
@@ -1652,6 +1634,8 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     {
         glMultMatrixf(transformation_matrix.begin());
         glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
+        if(event->buttons() & Qt::RightButton)
+            cur_tracking_window.ui->zoom_3d->setValue(std::pow(transformation_matrix.det(),1.0/3.0));
     }
     glPopMatrix();
     updateGL();
@@ -1782,11 +1766,16 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
     {
         if(param.isEmpty())
             return true;
-        float zoom = param.toFloat();
+        double zoom = param.toFloat();
         if(zoom == 0)
             return true;
-        scale_by(zoom/std::pow(transformation_matrix.det(),1.0/3.0));
-        paintGL();
+        zoom /= std::pow(transformation_matrix.det(),1.0/3.0);
+
+        if(zoom < 0.99 || zoom > 1.01)
+        {
+            scale_by(zoom);
+            paintGL();
+        }
         return true;
     }
     if(cmd == "set_view")
