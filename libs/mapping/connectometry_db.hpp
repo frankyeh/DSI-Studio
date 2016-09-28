@@ -11,6 +11,7 @@ public:
     fib_data* handle;
     std::string report,subject_report;
     unsigned int num_subjects;
+    bool modified;
 public:// subject specific data
     std::vector<std::string> subject_names;
     std::vector<float> R2;
@@ -27,7 +28,7 @@ public://longitudinal studies
     void auto_match(const image::basic_image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp);
     void calculate_change(unsigned char dif_type,bool norm);
 public:
-    connectometry_db():num_subjects(0){;}
+    connectometry_db():num_subjects(0),modified(false){;}
     bool has_db(void)const{return num_subjects > 0;}
     void read_db(fib_data* handle);
     void remove_subject(unsigned int index);

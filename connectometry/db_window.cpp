@@ -117,6 +117,44 @@ db_window::~db_window()
     delete ui;
 }
 
+void db_window::closeEvent (QCloseEvent *event)
+{
+    if(!vbc->handle->db.modified)
+    {
+        event->accept();
+        return;
+    }
+
+    QMessageBox::StandardButton r = QMessageBox::question( this, "DSI Studio",
+                                                                tr("Modification not saved. Save now?\n"),
+                                                                QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,
+                                                                QMessageBox::Cancel);
+    if (r == QMessageBox::Cancel)
+    {
+        event->ignore();
+        return;
+    }
+    if (r == QMessageBox::No)
+    {
+        event->accept();
+        return;
+    }
+    if (r == QMessageBox::Yes)
+    {
+        on_actionSave_DB_as_triggered();
+        if(!vbc->handle->db.modified)
+        {
+            event->accept();
+            return;
+        }
+        else
+        {
+            event->ignore();
+            return;
+        }
+    }
+}
+
 
 bool db_window::eventFilter(QObject *obj, QEvent *event)
 {

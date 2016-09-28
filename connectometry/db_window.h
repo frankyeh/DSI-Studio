@@ -32,7 +32,7 @@ private:
 public:
     explicit db_window(QWidget *parent,std::shared_ptr<vbc_database> vbc);
     ~db_window();
-
+    void closeEvent(QCloseEvent *event);
     bool eventFilter(QObject *obj, QEvent *event);
 private slots:
 

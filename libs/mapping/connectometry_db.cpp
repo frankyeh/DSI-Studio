@@ -73,6 +73,7 @@ void connectometry_db::remove_subject(unsigned int index)
     subject_names.erase(subject_names.begin()+index);
     R2.erase(R2.begin()+index);
     --num_subjects;
+    modified = true;
 }
 void connectometry_db::calculate_si2vi(void)
 {
@@ -234,6 +235,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
     else
         subject_qa_sd.back() = 1.0/subject_qa_sd.back();
     num_subjects++;
+    modified = true;
     return true;
 }
 
@@ -387,6 +389,7 @@ void connectometry_db::save_subject_data(const char* output_name)
         matfile.write("subject_report",&*subject_report.c_str(),1,(unsigned int)subject_report.length());
         matfile.write("report",&*report.c_str(),1,(unsigned int)report.length());
     }
+    modified = false;
 }
 
 void connectometry_db::get_subject_slice(unsigned int subject_index,unsigned char dim,unsigned int pos,
@@ -535,6 +538,7 @@ bool connectometry_db::add_db(const connectometry_db& rhs)
         subject_qa.push_back(&(subject_qa_buf.back()[0]));
     }
     num_subjects += rhs.num_subjects;
+    modified = true;
 }
 void connectometry_db::move_up(int id)
 {
