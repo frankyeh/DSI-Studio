@@ -242,9 +242,12 @@ void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image)
         cur_image_mask.at(X,Y) = 1;
     }
 
+    float display_ratio = (float)scaled_image.width()/(float)qimage.width();
+    unsigned int cur_color = ((unsigned int)regions[currentRow()]->show_region.color) ^ 0x00FFFFFF;
     QPainter paint(&scaled_image);
     paint.setBrush(Qt::NoBrush);
-    float display_ratio = (float)scaled_image.width()/(float)qimage.width();
+    QPen pen(QColor(cur_color), 3, Qt::DashDotLine, Qt::RoundCap, Qt::RoundJoin);
+    paint.setPen(pen);
     for(int y = 1,cur_index = qimage.width();y < qimage.height()-1;++y)
     for(int x = 0;x < qimage.width();++x,++cur_index)
     {
@@ -254,32 +257,14 @@ void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image)
         float xd_1 = xd+display_ratio;
         float yd = y*display_ratio;
         float yd_1 = yd+display_ratio;
-        {
-            if(!(cur_image_mask[cur_index]))
-                continue;
-            bool upper_edge = !(cur_image_mask[cur_index-qimage.width()]);
-            bool lower_edge = !(cur_image_mask[cur_index+qimage.width()]);
-            bool left_edge = !(cur_image_mask[cur_index-1]);
-            bool right_edge = !(cur_image_mask[cur_index+1]);
-            // upper edge
-            paint.setPen((y+x) % 2 ? Qt::black : Qt::white);
-            if(upper_edge)
-                paint.drawLine(xd+(left_edge ? 1 : 0),yd+1,
-                               xd_1+(right_edge ? -1 : 0),yd+1);
-
-            if(lower_edge)
-                paint.drawLine(xd+(left_edge ? 1 : 0),yd_1-1,
-                               xd_1+(right_edge ? -1 : 0),yd_1-1);
-
-            // left edge
-            if(left_edge)
-                paint.drawLine(xd+1,yd+(upper_edge? 1:0),
-                               xd+1,yd_1+(lower_edge? -1:0));
-
-            if(right_edge)
-                paint.drawLine(xd_1-1,yd+(upper_edge? 1:0),
-                               xd_1-1,yd_1+(lower_edge? -1:0));
-        }
+        if(!(cur_image_mask[cur_index-qimage.width()]))
+            paint.drawLine(xd,yd,xd_1,yd);
+        if(!(cur_image_mask[cur_index+qimage.width()]))
+            paint.drawLine(xd,yd_1,xd_1,yd_1);
+        if(!(cur_image_mask[cur_index-1]))
+            paint.drawLine(xd,yd,xd,yd_1);
+        if(!(cur_image_mask[cur_index+1]))
+            paint.drawLine(xd_1,yd,xd_1,yd_1);
     }
 }
 
