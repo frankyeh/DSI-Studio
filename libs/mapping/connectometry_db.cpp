@@ -667,6 +667,7 @@ void connectometry_db::calculate_change(unsigned char dif_type,bool norm)
     subject_qa.swap(new_subject_qa);
     num_subjects = match.size();
     match.clear();
+    modified = true;
 
 }
 

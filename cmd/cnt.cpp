@@ -88,7 +88,14 @@ int cnt(void)
     {
         std::cout << "normalized qa" << std::endl;
         vbc->ui->normalize_qa->setChecked(true);
-    }    
+    }
+
+    vbc->ui->output_report->setChecked(po.get("output_report",int(1)));
+    vbc->ui->output_track_image->setChecked(po.get("output_track_image",int(1)));
+    vbc->ui->output_track_data->setChecked(po.get("output_track_data",int(1)));
+    vbc->ui->output_fdr->setChecked(po.get("output_fdr",int(0)));
+    vbc->ui->output_dist->setChecked(po.get("output_dist",int(0)));
+
     vbc->ui->length_threshold->setValue(po.get("track_length",int(40)));
     std::cout << "track_length=" << vbc->ui->length_threshold->value() << std::endl;
     std::cout << "running connectometry" << std::endl;
