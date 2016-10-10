@@ -94,7 +94,6 @@ HEADERS += mainwindow.h \
     program_option.hpp \
     qcompletelineedit.h \
     libs/mapping/connectometry_db.hpp \
-    individual_connectometry.hpp \
     connectometry/createdbdialog.h \
     libs/dsi/qbi_voxel.hpp \
     connectometry/individual_connectometry.hpp \
