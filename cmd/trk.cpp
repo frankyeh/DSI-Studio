@@ -369,6 +369,11 @@ int trk(void)
         tracking_thread.setRegions(geometry,seed,3,"whole brain");
     }
 
+    if(po.get("thread_count",int(std::thread::hardware_concurrency())) < 1)
+    {
+        std::cout << "Invalid thread_count number" << std::endl;
+        return -1;
+    }
     {
         std::cout << "turning_angle=" << (int)std::round(po.get("turning_angle",float(60))) << std::endl;
         std::cout << "fa_threshold=" << tracking_thread.param.threshold << std::endl;
