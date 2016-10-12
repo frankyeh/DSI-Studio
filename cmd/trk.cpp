@@ -428,7 +428,7 @@ int trk(void)
             ".me" << (int)tracking_thread.tracking_method <<
             ".sd" << (int)tracking_thread.initial_direction <<
             ".pd" << (int)tracking_thread.interpolation_strategy <<
-            ".trk";
+            ".trk.gz";
         file_name = fout.str();
     }
 
