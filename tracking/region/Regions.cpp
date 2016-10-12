@@ -325,6 +325,26 @@ void ROIRegion::shift(const image::vector<3,short>& dx) {
         region[index] += dx;
 }
 // ---------------------------------------------------------------------------
+template<class Image,class Points>
+void calculate_region_stat(const Image& I, const Points& p,float& mean,float& sd)
+{
+    float sum = 0.0,sum2 = 0.0;
+    unsigned int count = 0;
+    for(unsigned int index = 0; index < p.size(); ++index)
+    {
+        float value = I[p[index]];
+        if(value == 0.0)
+            continue;
+        sum += value;
+        sum2 += value*value;
+        ++count;
+    }
+    sum /= count;
+    sum2 /= count;
+    mean = sum;
+    sd = std::sqrt(std::max<float>(0.0,sum2-sum*sum));
+}
+
 void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vector<std::string>& titles,std::vector<float>& data)
 {
     titles.clear();
@@ -368,25 +388,36 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
     for (unsigned int index = 0; index < region.size(); ++index)
         pos_index.push_back(image::pixel_index<3>(region[index][0],region[index][1],region[index][2],geo).index());
 
+
     for(int data_index = 0;data_index < handle->view_item.size(); ++data_index)
     {
         if(handle->view_item[data_index].name == "color")
             continue;
-        float sum = 0.0,sum2 = 0.0;
-        unsigned int count = 0;
+        float mean,sd;
         image::const_pointer_image<float, 3> I(handle->view_item[data_index].image_data);
-        for(unsigned int index = 0; index < pos_index.size(); ++index)
+        calculate_region_stat(I,pos_index,mean,sd);
+        data.push_back(mean);
+        data.push_back(sd);
+    }
+
+    if(handle->db.has_db()) // connectometry database
+    {
+        for(unsigned int subject_index = 0;subject_index < handle->db.num_subjects;++subject_index)
         {
-            float value = I[pos_index[index]];
-            if(value == 0.0)
-                continue;
-            sum += value;
-            sum2 += value*value;
-            ++count;
+            std::vector<std::vector<float> > fa_data;
+            handle->db.get_subject_fa(subject_index,fa_data);
+            float mean,sd;
+            image::const_pointer_image<float, 3> I(&fa_data[0][0],handle->dim);
+            calculate_region_stat(I,pos_index,mean,sd);
+            data.push_back(mean);
+            data.push_back(sd);
+
+            std::ostringstream out1,out2;
+            out1 << handle->db.subject_names[subject_index] << " mean " << handle->db.index_name;
+            out2 << handle->db.subject_names[subject_index] << " std " << handle->db.index_name;
+            titles.push_back(out1.str());
+            titles.push_back(out2.str());
+
         }
-        sum /= count;
-        sum2 /= count;
-        data.push_back(sum);
-        data.push_back(std::sqrt(std::max<float>(0.0,sum2-sum*sum)));
     }
 }
