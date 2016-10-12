@@ -688,8 +688,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>332</width>
+     <height>48</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -943,8 +943,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>233</width>
+     <height>47</height>
     </size>
    </property>
    <property name="windowTitle">
@@ -1311,8 +1311,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>197</width>
+     <height>156</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -2807,7 +2807,7 @@ Tracking</string>
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Indices As...</string>
+    <string>Save Voxel Data As...</string>
    </property>
   </action>
   <action name="actionTDI_Diffusion_Space">

@@ -626,12 +626,19 @@ void fib_data::get_voxel_info2(unsigned int x,unsigned int y,unsigned int z,std:
     if (index >= dim.size())
         return;
     for(unsigned int i = 0;i < dir.num_fiber;++i)
-    {
-        const float* d = dir.get_dir(index,i);
-        buf.push_back(d[0]);
-        buf.push_back(d[1]);
-        buf.push_back(d[2]);
-    }
+        if(dir.get_fa(index,i) == 0.0f)
+        {
+            buf.push_back(0.0f);
+            buf.push_back(0.0f);
+            buf.push_back(0.0f);
+        }
+        else
+        {
+            const float* d = dir.get_dir(index,i);
+            buf.push_back(d[0]);
+            buf.push_back(d[1]);
+            buf.push_back(d[2]);
+        }
 }
 void fib_data::get_voxel_information(int x,int y,int z,std::vector<float>& buf) const
 {
