@@ -208,6 +208,8 @@ void ThreadData::run(const tracking_data& trk,
     end_thread();
     if(thread_count > termination_count)
         thread_count = termination_count;
+    if(thread_count < 1)
+        thread_count = 1;
     unsigned int run_count = std::max<int>(1,termination_count/thread_count);
     unsigned int total_run_count = 0;
     for (unsigned int index = 0;index < thread_count-1;++index,total_run_count += run_count)
