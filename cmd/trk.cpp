@@ -206,6 +206,29 @@ bool load_region(std::shared_ptr<fib_data> handle,
     }
     else
     {
+        image::geometry<3> t1t2_geo;
+        image::matrix<4,4,float> convert;
+
+        if(po.has("t1t2"))
+        {
+            std::shared_ptr<CustomSliceModel> other_slice(std::make_shared<CustomSliceModel>());
+            FibSliceModel slice(handle);
+            std::vector<std::string> files;
+            files.push_back(po.get("t1t2"));
+            if(!other_slice->initialize(slice,handle->is_qsdr,files,true))
+            {
+                std::cout << "Fail to insert T1T2" << std::endl;
+                return false;
+            }
+            other_slice->thread->wait();
+            t1t2_geo = other_slice->source_images.geometry();
+            convert = other_slice->invT;
+            std::cout << "Registeration complete" << std::endl;
+            std::cout << convert[0] << " " << convert[1] << " " << convert[2] << " " << convert[3] << std::endl;
+            std::cout << convert[4] << " " << convert[5] << " " << convert[6] << " " << convert[7] << std::endl;
+            std::cout << convert[8] << " " << convert[9] << " " << convert[10] << " " << convert[11] << std::endl;
+        }
+
         if(!QFileInfo(file_name.c_str()).exists())
         {
             std::cout << file_name << " does not exist. terminating..." << std::endl;
@@ -213,8 +236,26 @@ bool load_region(std::shared_ptr<fib_data> handle,
         }
         if(!roi.LoadFromFile(file_name.c_str(),handle->trans_to_mni))
         {
-            std::cout << "Invalid file format:" << file_name << std::endl;
-            return false;
+            gz_nifti header;
+            if (!header.load_from_file(file_name.c_str()))
+            {
+                std::cout << "Not a valid nifti file:" << file_name << std::endl;
+                return false;
+            }
+            image::basic_image<unsigned int, 3> from;
+            {
+                image::basic_image<float, 3> tmp;
+                header.toLPS(tmp);
+                image::add_constant(tmp,0.5);
+                from = tmp;
+            }
+            if(t1t2_geo != from.geometry())
+            {
+                std::cout << "Invalid region dimension:" << file_name << std::endl;
+                return false;
+            }
+            std::cout << "Region loaded using T1T2 ref image" << std::endl;
+            roi.LoadFromBuffer(from,convert);
         }
     }
     // now perform actions
@@ -287,8 +328,6 @@ int trk(void)
     }
     std::cout << (tracking_thread.stop_by_tract ? "fiber_count=" : "seed_count=") <<
             termination_count << std::endl;
-
-
 
     const int total_count = 14;
     char roi_names[total_count][5] = {"roi","roi2","roi3","roi4","roi5","roa","roa2","roa3","roa4","roa5","end","end2","seed","ter"};

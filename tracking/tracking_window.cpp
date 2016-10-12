@@ -1827,6 +1827,7 @@ bool tracking_window::addSlices(QStringList filenames,bool correct_intensity,boo
             QMessageBox::information(this,"Error reading image files",0);
         return false;
     }
+    // check for repeated slice name
     for(int i = 0;i < other_slices.size();++i)
         if(new_slice->name == other_slices[i]->name)
         {
