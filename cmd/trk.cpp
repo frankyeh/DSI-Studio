@@ -313,12 +313,14 @@ int trk_post(std::shared_ptr<fib_data> handle,
         std::istringstream in(cmd);
         unsigned int size = 500;
         float detail = handle->vs[0];
-        std::string file_name;
-        in >> file_name;
+        std::string name;
+        in >> name;
         in >> size >> detail;
+        std::cout << "Clustering with size of " << size << " and resolution of" << detail << " mm" << std::endl;
         tract_model.run_clustering(0,size,detail);
-        std::ofstream out(file_name);
+        std::ofstream out(name);
         std::copy(tract_model.get_cluster_info().begin(),tract_model.get_cluster_info().end(),std::ostream_iterator<int>(out," "));
+        std::cout << "Cluster file saved to " << name << std::endl;
     }
 
     if(po.has(("end_point")))
