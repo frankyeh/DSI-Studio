@@ -12,6 +12,7 @@
 #include "gzip_interface.hpp"
 #include "mapping/atlas.hpp"
 #include "gzip_interface.hpp"
+#include "tract_cluster.hpp"
 #include "../../tracking/region/Regions.h"
 
 
@@ -1841,7 +1842,46 @@ void TractModel::get_end_list(const std::vector<std::vector<image::vector<3,shor
 }
 
 
+void TractModel::run_clustering(unsigned char method_id,unsigned int cluster_count,float detail)
+{
+    float param[4] = {0};
+    if(method_id)// k-means or EM
+        param[0] = cluster_count;
+    else
+    {
+        std::copy(handle->dim.begin(),
+                  handle->dim.end(),param);
+        param[3] = detail;
+    }
+    std::unique_ptr<BasicCluster> c;
+    switch (method_id)
+    {
+    case 0:
+        c.reset(new TractCluster(param));
+        break;
+    case 1:
+        c.reset(new FeatureBasedClutering<image::ml::k_means<double,unsigned char> >(param));
+        break;
+    case 2:
+        c.reset(new FeatureBasedClutering<image::ml::expectation_maximization<double,unsigned char> >(param));
+        break;
+    }
 
+    c->add_tracts(tract_data);
+    c->run_clustering();
+    {
+        cluster_count = method_id ? c->get_cluster_count() : std::min<float>(c->get_cluster_count(),cluster_count);
+        tract_cluster.resize(tract_data.size());
+        std::fill(tract_cluster.begin(),tract_cluster.end(),cluster_count);
+        for(int index = 0;index < cluster_count;++index)
+        {
+            unsigned int cluster_size;
+            const unsigned int* data = c->get_cluster(index,cluster_size);
+            for(int i = 0;i < cluster_size;++i)
+                tract_cluster[data[i]] = index;
+        }
+    }
+}
 
 void ConnectivityMatrix::save_to_image(image::color_image& cm)
 {

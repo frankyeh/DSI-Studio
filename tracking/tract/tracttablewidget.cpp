@@ -14,7 +14,6 @@
 #include "ui_tracking_window.h"
 #include "opengl/renderingtablewidget.h"
 #include "libs/gzip_interface.hpp"
-#include "tract_cluster.hpp"
 #include "atlas.hpp"
 #include "../color_bar_dialog.hpp"
 
@@ -362,58 +361,20 @@ void TractTableWidget::clustering(int method_id)
 {
     if(tract_models.empty())
         return;
-    float param[4] = {0};
-    if(method_id)// k-means or EM
-    {
-        param[0] = QInputDialog::getInt(this,"DSI Studio","Number of clusters:",5,2,100,1);
-    }
-    else
-    {
-        std::copy(cur_tracking_window.slice.geometry.begin(),
-                  cur_tracking_window.slice.geometry.end(),param);
-        param[3] = QInputDialog::getDouble(this,
-            "DSI Studio","Clustering detail (mm):",4.0,0.2,50.0,2);
-    }
-    std::auto_ptr<BasicCluster> handle;
-    switch (method_id)
-    {
-    case 0:
-        handle.reset(new TractCluster(param));
-        break;
-    case 1:
-        handle.reset(new FeatureBasedClutering<image::ml::k_means<double,unsigned char> >(param));
-        break;
-    case 2:
-        handle.reset(new FeatureBasedClutering<image::ml::expectation_maximization<double,unsigned char> >(param));
-        break;
-    }
-
-    handle->add_tracts(tract_models[currentRow()]->get_tracts());
-    handle->run_clustering();
-    {
-        bool ok = false;
-        int n = QInputDialog::getInt(this,
-                "DSI Studio",
-                "Assign the maximum number of groups",50,1,1000,10,&ok);
-        if(!ok)
-            return;
-        unsigned int cluster_count = method_id ? handle->get_cluster_count() : std::min<float>(handle->get_cluster_count(),n);
-        std::vector<std::vector<float> > tracts;
-        tract_models[currentRow()]->release_tracts(tracts);
-        delete_row(currentRow());
-        for(int index = 0;index < cluster_count;++index)
-        {
-            addNewTracts(QString("Cluster")+QString::number(index));
-            unsigned int cluster_size;
-            const unsigned int* data = handle->get_cluster(index,cluster_size);
-            std::vector<std::vector<float> > add_tracts(cluster_size);
-            for(int i = 0;i < cluster_size;++i)
-                add_tracts[i].swap(tracts[data[i]]);
-            tract_models.back()->add_tracts(add_tracts);
-            item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
-        }
-    }
-
+    bool ok = false;
+    int n = QInputDialog::getInt(this,
+            "DSI Studio",
+            "Assign the maximum number of groups",50,1,1000,10,&ok);
+    if(!ok)
+        return;
+    ok = true;
+    double detail = method_id ? 0.0 : QInputDialog::getDouble(this,
+            "DSI Studio","Clustering detail (mm):",cur_tracking_window.handle->vs[0],0.2,50.0,2,&ok);
+    if(!ok)
+        return;
+    tract_models[currentRow()]->run_clustering(method_id,n,detail);
+    std::vector<unsigned int> c = tract_models[currentRow()]->get_cluster_info();
+    load_cluster_label(c,"cluster");
 }
 
 void TractTableWidget::save_tracts_as(void)

@@ -137,6 +137,7 @@ public:
         void get_end_list(const std::vector<std::vector<image::vector<3,short> > >& regions,
                                      std::vector<std::vector<short> >& end_list1,
                                      std::vector<std::vector<short> >& end_list2) const;
+        void run_clustering(unsigned char method_id,unsigned int cluster_count,float param);
 
 };
 
