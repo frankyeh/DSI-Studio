@@ -142,7 +142,10 @@ void export_indices(std::shared_ptr<fib_data> handle,ROIRegion& region,const std
     else
         std::cout << "Please specify the export parameters" << std::endl;
 }
-
+int trk_post(std::shared_ptr<fib_data> handle,
+             TractModel& tract_model,
+             image::basic_image<image::vector<3>,3>& mapping,
+             const std::string& file_name);
 int ana(void)
 {
     std::shared_ptr<fib_data> handle(new fib_data);
@@ -160,7 +163,6 @@ int ana(void)
             return 0;
         }
     }
-    image::geometry<3> geometry = handle->dim;
     image::basic_image<image::vector<3>,3> mapping;
 
     if(po.has("atlas"))
@@ -205,8 +207,6 @@ int ana(void)
     }
 
     TractModel tract_model(handle);
-    float threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],geometry));
-    float cull_cos_angle = std::cos(60.0*3.1415926/180.0);
     std::string file_name = po.get("tract");
     {
         std::cout << "loading " << file_name << "..." <<std::endl;
@@ -223,14 +223,5 @@ int ana(void)
         std::cout << file_name << " loaded" << std::endl;
 
     }
-    if(po.has("connectivity"))
-    {
-        image::basic_image<image::vector<3>,3> mapping;
-        get_connectivity_matrix(handle,tract_model,mapping);
-    }
-
-    if(po.has("export"))
-        export_track_info(file_name,po.get("export"),handle,tract_model);
-
-    return 0;
+    return trk_post(handle,tract_model,mapping,po.get("output"));
 }

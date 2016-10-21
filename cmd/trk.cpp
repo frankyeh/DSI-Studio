@@ -269,6 +269,70 @@ bool load_region(std::shared_ptr<fib_data> handle,
     return true;
 }
 
+int trk_post(std::shared_ptr<fib_data> handle,
+             TractModel& tract_model,
+             image::basic_image<image::vector<3>,3>& mapping,
+             const std::string& file_name)
+{
+    if(!file_name.empty())
+    {
+        if(po.has("ref")) // save track in T1W/T2W space
+        {
+            std::vector<std::string> files;
+            files.push_back(po.get("ref"));
+            FibSliceModel slice(handle);
+            CustomSliceModel new_slice;
+            std::cout << "Loading reference image:" << po.get("ref") << std::endl;
+            if(!new_slice.initialize(slice,handle->is_qsdr,files,false))
+            {
+                std::cout << "Error reading ref image file:" << po.get("ref") << std::endl;
+                return 0;
+            }
+            new_slice.thread->wait();
+            new_slice.update();
+            std::cout << "Applying linear registration." << std::endl;
+            std::cout << new_slice.transform[0] << " " << new_slice.transform[1] << " " << new_slice.transform[2] << " " << new_slice.transform[3] << std::endl;
+            std::cout << new_slice.transform[4] << " " << new_slice.transform[5] << " " << new_slice.transform[6] << " " << new_slice.transform[7] << std::endl;
+            std::cout << new_slice.transform[8] << " " << new_slice.transform[9] << " " << new_slice.transform[10] << " " << new_slice.transform[11] << std::endl;
+            tract_model.save_transformed_tracts_to_file(file_name.c_str(),&*new_slice.invT.begin(),false);
+        }
+        else
+        {
+            if (!tract_model.save_tracts_to_file(file_name.c_str()))
+            {
+                std::cout << "Invalid format:" << file_name << std::endl;
+                return -1;
+            }
+            std::cout << "File saved to " << file_name << std::endl;
+        }
+    }
+    if(po.has("cluster"))
+    {
+        std::string cmd = po.get("cluster");
+        std::replace(cmd.begin(),cmd.end(),',',' ');
+        std::istringstream in(cmd);
+        unsigned int size = 500;
+        float detail = handle->vs[0];
+        std::string file_name;
+        in >> file_name;
+        in >> size >> detail;
+        tract_model.run_clustering(0,size,detail);
+        std::ofstream out(file_name);
+        std::copy(tract_model.get_cluster_info().begin(),tract_model.get_cluster_info().end(),std::ostream_iterator<int>(out," "));
+    }
+
+    if(po.has(("end_point")))
+        tract_model.save_end_points(po.get("end_point").c_str());
+
+    if(po.has("connectivity"))
+        get_connectivity_matrix(handle,tract_model,mapping);
+
+    if(po.has("export"))
+        export_track_info(file_name,po.get("export"),handle,tract_model);
+    return 0;
+
+}
+
 int trk(void)
 {
     try{
@@ -464,59 +528,13 @@ int trk(void)
     else
     {
         std::ostringstream fout;
-        fout << po.get("source") <<
-            ".st" << (int)std::round(tracking_thread.param.step_size*10.0) <<
-            ".tu" << (int)std::round(po.get("turning_angle",float(60))) <<
-            ".fa" << (int)std::round(tracking_thread.param.threshold*100.0) <<
-            ".sm" << (int)std::round(tracking_thread.param.smooth_fraction*10.0) <<
-            ".me" << (int)tracking_thread.tracking_method <<
-            ".sd" << (int)tracking_thread.initial_direction <<
-            ".pd" << (int)tracking_thread.interpolation_strategy <<
-            ".trk.gz";
+        fout << po.get("source") << ".trk.gz";
         file_name = fout.str();
     }
-
-    if(po.has("ref")) // save track in T1W/T2W space
-    {
-        std::vector<std::string> files;
-        files.push_back(po.get("ref"));
-        FibSliceModel slice(handle);
-        CustomSliceModel new_slice;
-        std::cout << "Loading reference image:" << po.get("ref") << std::endl;
-        if(!new_slice.initialize(slice,handle->is_qsdr,files,false))
-        {
-            std::cout << "Error reading ref image file:" << po.get("ref") << std::endl;
-            return 0;
-        }
-        new_slice.thread->wait();
-        new_slice.update();
-        std::cout << "Applying linear registration." << std::endl;
-        std::cout << new_slice.transform[0] << " " << new_slice.transform[1] << " " << new_slice.transform[2] << " " << new_slice.transform[3] << std::endl;
-        std::cout << new_slice.transform[4] << " " << new_slice.transform[5] << " " << new_slice.transform[6] << " " << new_slice.transform[7] << std::endl;
-        std::cout << new_slice.transform[8] << " " << new_slice.transform[9] << " " << new_slice.transform[10] << " " << new_slice.transform[11] << std::endl;
-        tract_model.save_transformed_tracts_to_file(file_name.c_str(),&*new_slice.invT.begin(),false);
-    }
-    else
-        tract_model.save_tracts_to_file(file_name.c_str());
-    if(po.has(("end_point")))
-        tract_model.save_end_points(po.get("end_point").c_str());
-
     std::cout << "a total of " << tract_model.get_visible_track_count() << " tracts are generated" << std::endl;
     std::cout << "output file:" << file_name << std::endl;
 
-    if(po.has("connectivity"))
-        get_connectivity_matrix(handle,tract_model,mapping);
-
-    if(po.has("export"))
-        export_track_info(file_name,po.get("export"),handle,tract_model);
-
-
-    if (po.has("endpoint"))
-    {
-        std::cout << "output endpoint." << std::endl;
-        file_name += ".end.txt";
-        tract_model.save_end_points(file_name.c_str());
-    }
+    return trk_post(handle,tract_model,mapping,file_name);
 
     }
     catch(std::exception const&  ex)
