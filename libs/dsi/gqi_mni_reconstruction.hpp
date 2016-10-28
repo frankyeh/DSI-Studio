@@ -112,9 +112,8 @@ public:
         try
         {
             begin_prog("normalization");
-            terminated_class ter(17);
+            terminated_class ter(64);
             int factor = voxel.reg_method + 1;
-            int iteration = 0;
 
             if(voxel_size < 0.99)
             {
@@ -127,7 +126,7 @@ public:
                 image::resample(VG,VG2,m,image::cubic);
                 image::resample(VFF,VFF2,m,image::cubic);
                 mni.reset(new image::reg::bfnorm_mapping<double,3>(geo2,image::geometry<3>(factor*7,factor*9,factor*7)));
-                image::reg::bfnorm(*mni.get(),VG2,VFF2,voxel.voxel_data.size(),ter,iteration);
+                image::reg::bfnorm(*mni.get(),VG2,VFF2,voxel.voxel_data.size(),ter);
                 voxel.R2 = -image::reg::correlation()(VG2,VFF2,(*mni.get()));
                 if(export_intermediate)
                 {
@@ -139,7 +138,7 @@ public:
             else
             {
                 mni.reset(new image::reg::bfnorm_mapping<double,3>(VG.geometry(),image::geometry<3>(factor*7,factor*9,factor*7)));
-                image::reg::bfnorm(*mni.get(),VG,VFF,voxel.voxel_data.size(),ter,iteration);
+                image::reg::bfnorm(*mni.get(),VG,VFF,voxel.voxel_data.size(),ter);
                 voxel.R2 = -image::reg::correlation()(VG,VFF,(*mni.get()));
                 if(export_intermediate)
                 {

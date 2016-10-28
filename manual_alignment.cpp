@@ -252,7 +252,7 @@ void manual_alignment::slice_pos_moved()
 
 void manual_alignment::check_reg()
 {
-    if(data.get_prog() < 18)
+    if(data.get_prog() != 3)
     {
         disconnect_arg_update();
         ui->tx->setValue(data.get_arg().translocation[0]);

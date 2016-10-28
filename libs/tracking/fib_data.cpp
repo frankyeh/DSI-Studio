@@ -672,9 +672,9 @@ bool fib_data::can_map_to_mni(void)
     {
         begin_prog("running normalization");
         run_normalization(1,true);
-        while(check_prog(reg.get_prog(),18) && !prog_aborted())
+        while(check_prog(reg.get_prog(),3) && !prog_aborted())
             ;
-        check_prog(16,16);
+        check_prog(1,1);
     }
     return true;
 }

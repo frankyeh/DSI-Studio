@@ -404,8 +404,7 @@ public:
 
             begin_prog("normalization");
             terminated_class ter(17);
-            int iteration = 0;
-            image::reg::bfnorm(mni,VG,VFF,std::thread::hardware_concurrency(),ter,iteration);
+            image::reg::bfnorm(mni,VG,VFF,std::thread::hardware_concurrency(),ter);
             if(-image::reg::correlation()(VG,VFF,mni) < 0.5)
                 throw std::runtime_error("Cannot use CSF for calibration");
             // choose CSF at the following voxel location
