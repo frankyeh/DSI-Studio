@@ -425,8 +425,8 @@ void get_report(const std::vector<float>& bvalues,image::vector<3> vs,std::strin
 
         out << " The number of diffusion sampling directions were ";
         for(unsigned int index = 0;index < shell.size()-1;++index)
-            out << shell[index+1] - shell[index] << ", ";
-        out << "and " << bvalues.size()-shell.back() << ".";
+            out << shell[index+1] - shell[index] << (shell.size() == 2 ? " ":", ");
+        out << "and " << bvalues.size()-shell.back() << ", respectively.";
     }
     else
         if(shell.size() == 1)

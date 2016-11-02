@@ -1746,37 +1746,37 @@
   </action>
   <action name="actionFlip_x">
    <property name="text">
-    <string>Flip x</string>
+    <string>Image flip x</string>
    </property>
   </action>
   <action name="actionFlip_y">
    <property name="text">
-    <string>Flip y</string>
+    <string>Image flip y</string>
    </property>
   </action>
   <action name="actionFlip_z">
    <property name="text">
-    <string>Flip z</string>
+    <string>Image flip z</string>
    </property>
   </action>
   <action name="actionFlip_xy">
    <property name="text">
-    <string>Swap x y</string>
+    <string>Image swap x y</string>
    </property>
   </action>
   <action name="actionFlip_xz">
    <property name="text">
-    <string>Swap x z</string>
+    <string>Image swap x z</string>
    </property>
   </action>
   <action name="actionFlip_yz">
    <property name="text">
-    <string>Swap y z</string>
+    <string>Image swap y z</string>
    </property>
   </action>
   <action name="actionRotate">
    <property name="text">
-    <string>To T1w/T2w Space...</string>
+    <string>Image register to T1w/T2w...</string>
    </property>
   </action>
   <action name="actionTrim_image">

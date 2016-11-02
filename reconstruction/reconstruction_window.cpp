@@ -788,6 +788,10 @@ void reconstruction_window::on_actionRotate_triggered()
     handle->rotate(ref.geometry(),manual->data.get_iT());
     handle->calculate_mask();
     handle->voxel.vs = vs;
+    handle->voxel.report += " The diffusion images were rotated and scaled to the space of ";
+    handle->voxel.report += filenames[0].toStdString();
+    handle->voxel.report += ". The b-table was also rotated accordingly.";
+    ui->report->setText(handle->voxel.report.c_str());
     update_image();
     update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
