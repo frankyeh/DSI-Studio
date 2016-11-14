@@ -74,6 +74,16 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
         dicom_header >> buf_image;
         unsigned short num_gradient = buf_image.depth()/slice_num;
         unsigned int plane_size = buf_image.width()*buf_image.height();
+        std::vector<float> b,bx,by,bz;
+        dicom_header.get_values(0x2001,0x1003,b);
+        dicom_header.get_values(0x2005,0x10B0,bx);
+        dicom_header.get_values(0x2005,0x10B1,by);
+        dicom_header.get_values(0x2005,0x10B2,bz);
+        b.resize(num_gradient);
+        bx.resize(num_gradient);
+        by.resize(num_gradient);
+        bz.resize(num_gradient);
+
         begin_prog("loading multi frame DICOM");
         for(unsigned int index = 0;check_prog(index,num_gradient);++index)
         {
@@ -86,15 +96,17 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
             std::copy(buf_image.begin()+(j*num_gradient + index)*plane_size,
                       buf_image.begin()+(j*num_gradient + index+1)*plane_size,
                       new_file->image.begin()+j*plane_size);
-            // Philips use neurology convention. Now changes it to radiology
-            image::flip_x(new_file->image);
             new_file->file_name = file_name;
             std::ostringstream out;
             out << index;
             new_file->file_name += out.str();
             dicom_header.get_voxel_size(new_file->voxel_size);
+            image::vector<3, float> bvec(bx[index],by[index],bz[index]);
+            new_file->bvalue = b[index]*bvec.length();
+            new_file->bvec = bvec;
             dwi_files.push_back(new_file);
         }
+
     }
     return true;
 }
