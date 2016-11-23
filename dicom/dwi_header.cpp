@@ -41,13 +41,7 @@ void get_report_from_bruker(const image::io::bruker_info& header,std::string& re
 bool DwiHeader::open(const char* filename)
 {
     image::io::dicom header;
-    if (header.load_from_file(filename))
-    {
-        header >> image;
-        header.get_voxel_size(voxel_size);
-        get_report_from_dicom(header,report);
-    }
-    else
+    if (!header.load_from_file(filename))
     {
         image::io::nifti analyze_header;
         if (!analyze_header.load_from_file(filename))
@@ -57,6 +51,20 @@ bool DwiHeader::open(const char* filename)
         analyze_header.get_voxel_size(voxel_size);
         return true;
     }
+    float orientation_matrix[9];
+    char dim_order[3] = {0,1,2};
+    char flip[3] = {0,0,0};
+
+    header >> image;
+    header.get_voxel_size(voxel_size);
+    get_report_from_dicom(header,report);
+
+    header.get_image_orientation(orientation_matrix);
+    image::get_orientation(3,orientation_matrix,dim_order,flip);
+    image::reorientation(voxel_size,dim_order);
+    image::reorientation(orientation_matrix,dim_order,flip);
+    image::reorder(image,dim_order,flip);
+
 
     unsigned char man_id = 0;
     {
@@ -182,12 +190,17 @@ bool DwiHeader::open(const char* filename)
         break;
     }
 
-    // apply slices orientation
-    float A[9];
-    header.get_image_orientation(A);
-    // corrected bvec = A'*bvec
+    {
+        image::reorientation(bvec.begin(),dim_order);
+        float x = bvec[dim_order[0]];
+        float y = bvec[dim_order[1]];
+        float z = bvec[dim_order[2]];
+        bvec[0] = x;
+        bvec[1] = y;
+        bvec[2] = z;
+    }
     image::vector<3,float> cbvec;
-    image::vector_rotation(bvec.begin(),cbvec.begin(),A,image::vdim<3>());
+    image::vector_rotation(bvec.begin(),cbvec.begin(),orientation_matrix,image::vdim<3>());
     bvec = cbvec;
     bvec.normalize();
     if(bvalue == 0.0)
