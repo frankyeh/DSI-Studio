@@ -61,8 +61,8 @@ bool DwiHeader::open(const char* filename)
 
     header.get_image_orientation(orientation_matrix);
     image::get_orientation(3,orientation_matrix,dim_order,flip);
-    image::reorientation(voxel_size,dim_order);
-    image::reorientation(orientation_matrix,dim_order,flip);
+    image::reorient_vector(voxel_size,dim_order);
+    image::reorient_matrix(orientation_matrix,dim_order,flip);
     image::reorder(image,dim_order,flip);
 
 
@@ -191,7 +191,7 @@ bool DwiHeader::open(const char* filename)
     }
 
     {
-        image::reorientation(bvec.begin(),dim_order);
+        image::reorient_vector(bvec.begin(),dim_order);
         float x = bvec[dim_order[0]];
         float y = bvec[dim_order[1]];
         float z = bvec[dim_order[2]];
