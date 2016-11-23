@@ -202,18 +202,25 @@ std::pair<float,float> evaluate_fib(
     return std::make_pair(connection_count,no_connection_count);
 }
 
-void flip_fib_dir(std::vector<float>& fib_dir,bool x,bool y,bool z)
+void flip_fib_dir(std::vector<float>& fib_dir,const unsigned char* order)
 {
     for(unsigned int j = 0;j+2 < fib_dir.size();j += 3)
     {
-        if(x)
+        float x = fib_dir[j+order[0]];
+        float y = fib_dir[j+order[1]];
+        float z = fib_dir[j+order[2]];
+        fib_dir[j] = x;
+        fib_dir[j+1] = y;
+        fib_dir[j+2] = z;
+        if(order[3])
             fib_dir[j] = -fib_dir[j];
-        if(y)
+        if(order[4])
             fib_dir[j+1] = -fib_dir[j+1];
-        if(z)
+        if(order[5])
             fib_dir[j+2] = -fib_dir[j+2];
     }
 }
+
 
 
 const char* reconstruction(ImageModel* image_model,
@@ -291,37 +298,50 @@ const char* reconstruction(ImageModel* image_model,
             std::vector<std::vector<float> > fib_dir(1);
             fib_fa[0].swap(image_model->voxel.fib_fa);
             fib_dir[0].swap(image_model->voxel.fib_dir);
+
+            const unsigned char order[18][6] = {
+                                    {0,1,2,1,0,0},
+                                    {0,1,2,0,1,0},
+                                    {0,1,2,0,0,1},
+                                    {0,2,1,1,0,0},
+                                    {0,2,1,0,1,0},
+                                    {0,2,1,0,0,1},
+                                    {1,0,2,1,0,0},
+                                    {1,0,2,0,1,0},
+                                    {1,0,2,0,0,1},
+                                    {1,2,0,1,0,0},
+                                    {1,2,0,0,1,0},
+                                    {1,2,0,0,0,1},
+                                    {2,1,0,1,0,0},
+                                    {2,1,0,0,1,0},
+                                    {2,1,0,0,0,1},
+                                    {2,0,1,1,0,0},
+                                    {2,0,1,0,1,0},
+                                    {2,0,1,0,0,1}};
+            const char txt[18][6] = {"012fx","012fy","012fz",
+                                     "021fx","021fy","021fz",
+                                     "102fx","102fy","102fz",
+                                     "120fx","120fy","120fz",
+                                     "210fx","210fy","210fz",
+                                     "201fx","201fy","201fz"};
+
+            float result[18] = {0};
             float cur_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
-            flip_fib_dir(fib_dir[0],true,false,false);
-            float flip_x_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
-            flip_fib_dir(fib_dir[0],true,true,false);
-            float flip_y_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
-            flip_fib_dir(fib_dir[0],false,true,true);
-            float flip_z_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
-            if(flip_x_score > cur_score &&
-               flip_x_score > flip_y_score && flip_x_score > flip_z_score)
+
+            for(int i = 0;i < 18;++i)
             {
-                std::cout << "b-table flipped x" << std::endl;
-                out << ".fx";
-                image_model->flip_b_table(0);
+                std::vector<std::vector<float> > new_dir(fib_dir);
+                flip_fib_dir(new_dir[0],order[i]);
+                result[i] = evaluate_fib(image_model->voxel.dim,fib_fa,new_dir).first;
             }
-            if(flip_y_score > cur_score &&
-               flip_y_score > flip_x_score && flip_y_score > flip_z_score)
+            int best = std::max_element(result,result+18)-result;
+
+            if(result[best] > cur_score)
             {
-                std::cout << "b-table flipped y" << std::endl;
-                out << ".fy";
-                image_model->flip_b_table(1);
-            }
-            if(flip_z_score > cur_score &&
-               flip_z_score > flip_y_score && flip_z_score > flip_x_score)
-            {
-                std::cout << "b-table flipped z" << std::endl;
-                out << ".fz";
-                image_model->flip_b_table(2);
+                out << "." << txt[best];
+                image_model->flip_b_table(order[best]);
             }
         }
-
-
 
 
         switch (method_id)

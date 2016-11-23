@@ -15,6 +15,25 @@ public:
     std::vector<const unsigned short*> dwi_data;
     image::basic_image<unsigned char,3> mask;
 public:
+    void flip_b_table(const unsigned char* order)
+    {
+        for(unsigned int index = 0;index < voxel.bvectors.size();++index)
+        {
+            float x = voxel.bvectors[index][order[0]];
+            float y = voxel.bvectors[index][order[1]];
+            float z = voxel.bvectors[index][order[2]];
+            voxel.bvectors[index][0] = x;
+            voxel.bvectors[index][1] = y;
+            voxel.bvectors[index][2] = z;
+            if(order[3])
+                voxel.bvectors[index][0] = -voxel.bvectors[index][0];
+            if(order[4])
+                voxel.bvectors[index][1] = -voxel.bvectors[index][1];
+            if(order[5])
+                voxel.bvectors[index][2] = -voxel.bvectors[index][2];
+        }
+        voxel.grad_dev.clear();
+    }
     void flip_b_table(unsigned char dim)
     {
         for(unsigned int index = 0;index < voxel.bvectors.size();++index)
