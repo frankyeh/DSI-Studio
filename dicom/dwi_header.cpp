@@ -150,6 +150,8 @@ bool DwiHeader::open(const char* filename)
         header.get_value(0x0019,0x10BD,bvec[2]);
         bvec[2] = -bvec[2];
         header.get_value(0x0043,0x1039,bvalue);
+        bvalue *= bvec.length();
+        bvec.normalize();
         break;
     case 3://Phillips
         // get b-table
