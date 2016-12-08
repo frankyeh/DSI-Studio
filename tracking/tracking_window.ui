@@ -1113,6 +1113,8 @@
      </property>
      <addaction name="actionOpen_Cluster_Labels"/>
      <addaction name="actionHierarchical"/>
+     <addaction name="actionK_means_Clustering"/>
+     <addaction name="actionEM_Clustering"/>
      <addaction name="actionDeep_Learning_Train"/>
     </widget>
     <widget class="QMenu" name="menuExport_Tract_Density">
@@ -3334,6 +3336,16 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Open Tract Value...</string>
+   </property>
+  </action>
+  <action name="actionK_means_Clustering">
+   <property name="text">
+    <string>K-means Clustering</string>
+   </property>
+  </action>
+  <action name="actionEM_Clustering">
+   <property name="text">
+    <string>EM Clustering</string>
    </property>
   </action>
  </widget>
