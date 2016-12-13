@@ -489,7 +489,7 @@ public:
             {
                 std::ostringstream out;
                 out.precision(2);
-                out << "rdi" << L << "L";
+                out << "rdi" << std::setfill('0') << std::setw(2) << int(L*10) << "L";
                 mat_writer.write(out.str().c_str(),&*rdi[i].begin(),1,rdi[i].size());
             }
             for(unsigned int i = 0;i < voxel.dim.size();++i)
@@ -500,7 +500,7 @@ public:
             {
                 std::ostringstream out2;
                 out2.precision(2);
-                out2 << "nrdi" << L << "L";
+                out2 << "nrdi" << std::setfill('0') << std::setw(2) << int(L*10) << "L";
                 mat_writer.write(out2.str().c_str(),&*rdi[i].begin(),1,rdi[i].size());
             }
         }
