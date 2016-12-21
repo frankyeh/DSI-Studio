@@ -447,6 +447,8 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     if(cmd == "set_param")
     {
         renderWidget->setData(param,param2);
+        glWidget->updateGL();
+        scene.show_slice();
         return true;
     }
 
