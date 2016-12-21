@@ -180,7 +180,9 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
         if(param.isEmpty())
             param = QFileInfo(cur_tracking_window.windowTitle()).absolutePath() + "/" +
                     QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+
-                    QString(cur_tracking_window.handle->view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str())+".jpg";
+                    QString(cur_tracking_window.handle->view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str())+"_"+
+                    QString(cur_tracking_window["roi_layout"].toString())+
+                    ".jpg";
         if(param2 != "0")// mosaic
         {
             view_image.save(param);
