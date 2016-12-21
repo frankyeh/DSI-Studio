@@ -52,6 +52,9 @@ private slots:
     void on_individual_connectometry_clicked();
     void on_open_db_clicked();
     void on_group_connectometry_clicked();
+
+    void on_run_cmd_clicked();
+    void on_set_dir_clicked();
 };
 
 #endif // MAINWINDOW_H

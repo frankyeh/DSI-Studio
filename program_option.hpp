@@ -4,6 +4,16 @@
 #include <sstream>
 class program_option{
     std::map<std::string,std::string> options;
+    void add_option(const std::string& str)
+    {
+        if(str.length() < 3 || str[0] != '-' || str[1] != '-')
+            return;
+        auto pos = std::find(str.begin(),str.end(),'=');
+        if(pos == str.end())
+            return;
+        options[std::string(str.begin()+2,pos)] = std::string(pos+1,str.end());
+    }
+
 public:
     void init(int ac, char *av[])
     {
@@ -11,14 +21,21 @@ public:
         for(int i = 1;i < ac;++i)
         {
             std::string str(av[i]);
-            if(str.length() < 3 || str[0] != '-' || str[1] != '-')
-                continue;
-            auto pos = std::find(str.begin(),str.end(),'=');
-            if(pos == str.end())
-                continue;
-            options[std::string(str.begin()+2,pos)] = std::string(pos+1,str.end());
+            add_option(str);
         }
     }
+    void init(const std::string& str)
+    {
+        options.clear();
+        std::istringstream in(str);
+        while(in)
+        {
+            std::string str;
+            in >> str;
+            add_option(str);
+        }
+    }
+
     bool has(const char* name)
     {
         return options.find(name) != options.end();

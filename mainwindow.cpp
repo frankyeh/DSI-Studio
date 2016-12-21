@@ -28,7 +28,17 @@
 #include "connectometry/createdbdialog.h"
 #include "connectometry/db_window.h"
 #include "connectometry/group_connectometry.hpp"
-
+#include "program_option.hpp"
+extern program_option po;
+int rec(void);
+int trk(void);
+int src(void);
+int ana(void);
+int exp(void);
+int atl(void);
+int cnt(void);
+int vis(void);
+int ren(void);
 extern std::vector<atlas> atlas_list;
 extern std::auto_ptr<QProgressDialog> progressDialog;
 
@@ -868,4 +878,43 @@ void MainWindow::on_group_connectometry_clicked()
     group_connectometry* group_cnt = new group_connectometry(this,database,filename,true);
     group_cnt->setAttribute(Qt::WA_DeleteOnClose);
     group_cnt->show();
+}
+
+
+void MainWindow::on_run_cmd_clicked()
+{
+    po.init(ui->cmd_line->text().toStdString());
+    if (!po.has("action") || !po.has("source"))
+    {
+        std::cout << "invalid command, use --help for more detail" << std::endl;
+        return;
+    }
+    QDir::setCurrent(QFileInfo(po.get("source").c_str()).absolutePath());
+    if(po.get("action") == std::string("rec"))
+        rec();
+    if(po.get("action") == std::string("trk"))
+        trk();
+    if(po.get("action") == std::string("src"))
+        src();
+    if(po.get("action") == std::string("ana"))
+        ana();
+    if(po.get("action") == std::string("exp"))
+        exp();
+    if(po.get("action") == std::string("atl"))
+        atl();
+    if(po.get("action") == std::string("cnt"))
+        cnt();
+    if(po.get("action") == std::string("vis"))
+        vis();
+    if(po.get("action") == std::string("ren"))
+        ren();
+}
+
+void MainWindow::on_set_dir_clicked()
+{
+    QString dir =
+        QFileDialog::getExistingDirectory(this,"Browse Directory","");
+    if ( dir.isEmpty() )
+        return;
+    QDir::setCurrent(dir);
 }

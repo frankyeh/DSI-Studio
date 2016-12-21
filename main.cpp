@@ -116,7 +116,7 @@ int run_cmd(int ac, char *av[])
             std::cout << "invalid command, use --help for more detail" << std::endl;
             return 1;
         }
-        QDir::setCurrent(QFileInfo(po.get("action").c_str()).absolutePath());
+        QDir::setCurrent(QFileInfo(po.get("source").c_str()).absolutePath());
         if(po.get("action") == std::string("rec"))
             rec();
         if(po.get("action") == std::string("trk"))
