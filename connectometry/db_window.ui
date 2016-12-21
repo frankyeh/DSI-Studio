@@ -83,6 +83,16 @@
        </widget>
       </item>
       <item>
+       <widget class="QCheckBox" name="normalize_fp">
+        <property name="text">
+         <string>Normalize FP</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="horizontalSpacer_2">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
@@ -439,16 +449,6 @@
                 <property name="bottomMargin">
                  <number>0</number>
                 </property>
-                <item>
-                 <widget class="QCheckBox" name="normalize_fp">
-                  <property name="text">
-                   <string>Normalize FP</string>
-                  </property>
-                  <property name="checked">
-                   <bool>true</bool>
-                  </property>
-                 </widget>
-                </item>
                 <item>
                  <layout class="QHBoxLayout" name="horizontalLayout_26">
                   <property name="spacing">

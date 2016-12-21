@@ -2046,8 +2046,12 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
                     std::nth_element(length_matrix[i][j].begin(),
                                      length_matrix[i][j].begin()+(length_matrix[i][j].size() >> 1),
                                      length_matrix[i][j].end());
-                    matrix_value[index] = count[i][j]/(float)length_matrix[i][j][length_matrix[i][j].size() >> 1];
+                    float length = (float)length_matrix[i][j][length_matrix[i][j].size() >> 1];
+                    matrix_value[index] = (length == 0? 0:count[i][j]/length);
                 }
+            else
+                    matrix_value[index] = 0;
+
         return true;
     }
     if(matrix_value_type == "mean_length")
