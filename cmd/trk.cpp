@@ -335,6 +335,7 @@ int trk_post(std::shared_ptr<fib_data> handle,
 
 }
 
+bool load_roi(std::shared_ptr<fib_data> handle,image::basic_image<image::vector<3>,3>& mapping,RoiMgr& roi_mgr)
 {
     const int total_count = 14;
     char roi_names[total_count][5] = {"roi","roi2","roi3","roi4","roi5","roa","roa2","roa3","roa4","roa5","end","end2","seed","ter"};
@@ -411,6 +412,7 @@ int trk(void)
     std::cout << (tracking_thread.stop_by_tract ? "fiber_count=" : "seed_count=") <<
             termination_count << std::endl;
 
+    if(!load_roi(handle,mapping,tracking_thread.roi_mgr))
         return -1;
 
     QStringList cnt_file_name;
