@@ -17,10 +17,9 @@ private:
 
 public:
     RoiMgr roi_mgr;
-    std::vector<image::vector<3,short> > seeds;
+
 public:
     std::ostringstream report;
-    std::string seed_report;
     TrackingParam param;
     bool stop_by_tract;
     bool center_seed;
@@ -81,10 +80,6 @@ public:
 public:
     void run_thread(TrackingMethod* method_ptr,unsigned int thread_count,unsigned int thread_id,unsigned int max_count);
     bool fetchTracks(TractModel* handle);
-    void setRegions(image::geometry<3> dim,
-                    const std::vector<image::vector<3,short> >& points,
-                    unsigned char type,
-                    const char* roi_name);
     TrackingMethod* new_method(const tracking_data& trk);
     void run(const tracking_data& trk,
              unsigned int thread_count,

@@ -29,14 +29,14 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
     std::uniform_real_distribution<float> rand_gen(0,1);
     unsigned int iteration = thread_id; // for center seed
     float white_matter_t = method_ptr->param.threshold*1.2;
-    if(!seeds.empty())
+    if(!roi_mgr.seeds.empty())
     try{
         std::vector<std::vector<float> > local_track_buffer;
         while(!joinning &&
               (!stop_by_tract || tract_count[thread_id] < max_count) &&
               (stop_by_tract || seed_count[thread_id] < max_count) &&
               (max_seed_count == 0 || seed_count[thread_id] < max_seed_count) &&
-              (!center_seed || iteration < seeds.size()))
+              (!center_seed || iteration < roi_mgr.seeds.size()))
         {
             if(!pushing_data && (iteration & 0x00000FFF) == 0x00000FFF && !local_track_buffer.empty())
                 push_tracts(local_track_buffer);
@@ -44,7 +44,9 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
             if(center_seed)
             {
                 if(!method->init(initial_direction,
-                                 image::vector<3,float>(seeds[iteration].x(),seeds[iteration].y(),seeds[iteration].z()),
+                                 image::vector<3,float>(roi_mgr.seeds[iteration].x(),
+                                                        roi_mgr.seeds[iteration].y(),
+                                                        roi_mgr.seeds[iteration].z()),
                                  seed))
                 {
                     iteration+=thread_count;
@@ -58,11 +60,11 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
                 // this ensure consistency
                 std::lock_guard<std::mutex> lock(lock_seed_function);
                 iteration+=thread_count;
-                unsigned int i = rand_gen(seed)*((float)seeds.size()-1.0);
+                unsigned int i = rand_gen(seed)*((float)roi_mgr.seeds.size()-1.0);
                 image::vector<3,float> pos;
-                pos[0] = (float)seeds[i].x() + rand_gen(seed)-0.5;
-                pos[1] = (float)seeds[i].y() + rand_gen(seed)-0.5;
-                pos[2] = (float)seeds[i].z() + rand_gen(seed)-0.5;
+                pos[0] = (float)roi_mgr.seeds[i].x() + rand_gen(seed)-0.5;
+                pos[1] = (float)roi_mgr.seeds[i].y() + rand_gen(seed)-0.5;
+                pos[2] = (float)roi_mgr.seeds[i].z() + rand_gen(seed)-0.5;
                 if(!method->init(initial_direction,pos,seed))
                     continue;
             }
@@ -107,38 +109,6 @@ bool ThreadData::fetchTracks(TractModel* handle)
     return true;
 
 }
-void ThreadData::setRegions(image::geometry<3> dim,
-                const std::vector<image::vector<3,short> >& points,
-                unsigned char type,
-                const char* roi_name)
-{
-    switch(type)
-    {
-    case 0: //ROI
-        roi_mgr.add_inclusive_roi(dim,points);
-        seed_report += " An ROI was placed at ";
-        break;
-    case 1: //ROA
-        roi_mgr.add_exclusive_roi(dim,points);
-        seed_report += " An ROA was placed at ";
-        break;
-    case 2: //End
-        roi_mgr.add_end_roi(dim,points);
-        seed_report += " An ending region was placed at ";
-        break;
-    case 4: //Terminate
-        roi_mgr.add_terminate_roi(dim,points);
-        seed_report += " A terminative region was placed at ";
-        break;
-    case 3: //seed
-        for (unsigned int index = 0;index < points.size();++index)
-            seeds.push_back(points[index]);
-        seed_report += " A seeding region was placed at ";
-        break;
-    }
-    seed_report += roi_name;
-    seed_report += ".";
-}
 TrackingMethod* ThreadData::new_method(const tracking_data& trk)
 {
     std::auto_ptr<basic_interpolation> interpo_method;
@@ -166,7 +136,7 @@ void ThreadData::run(const tracking_data& trk,
     report.clear();
     report.str("");
     report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was used."
-           << seed_report
+           << roi_mgr.report
            << " The angular threshold was " << (int)std::round(std::acos(param.cull_cos_angle)*180/3.1415926) << " degrees."
            << " The step size was " << param.step_size << " mm.";
     if(int(param.threshold*1000) == int(600*image::segmentation::otsu_threshold(image::make_image(trk.fa[0],trk.dim))))
@@ -195,7 +165,7 @@ void ThreadData::run(const tracking_data& trk,
     if(center_seed)
     {
         std::srand(0);
-        std::random_shuffle(seeds.begin(),seeds.end());
+        std::random_shuffle(roi_mgr.seeds.begin(),roi_mgr.seeds.end());
     }
     seed_count.clear();
     tract_count.clear();

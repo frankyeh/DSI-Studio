@@ -58,6 +58,8 @@ public:
 
 class RoiMgr {
 public:
+    std::string report;
+    std::vector<image::vector<3,short> > seeds;
     std::vector<std::shared_ptr<Roi> > inclusive;
     std::vector<std::shared_ptr<Roi> > end;
     std::auto_ptr<Roi> exclusive;
@@ -70,6 +72,7 @@ public:
         end.clear();
         exclusive.reset(0);
         terminate.reset(0);
+        report.clear();
     }
 
     bool is_excluded_point(const image::vector<3,float>& point) const
@@ -155,6 +158,38 @@ public:
 
 
 
+    void setRegions(image::geometry<3> dim,
+                    const std::vector<image::vector<3,short> >& points,
+                    unsigned char type,
+                    const char* roi_name)
+    {
+        switch(type)
+        {
+        case 0: //ROI
+            add_inclusive_roi(dim,points);
+            report += " An ROI was placed at ";
+            break;
+        case 1: //ROA
+            add_exclusive_roi(dim,points);
+            report += " An ROA was placed at ";
+            break;
+        case 2: //End
+            add_end_roi(dim,points);
+            report += " An ending region was placed at ";
+            break;
+        case 4: //Terminate
+            add_terminate_roi(dim,points);
+            report += " A terminative region was placed at ";
+            break;
+        case 3: //seed
+            for (unsigned int index = 0;index < points.size();++index)
+                seeds.push_back(points[index]);
+            report += " A seeding region was placed at ";
+            break;
+        }
+        report += roi_name;
+        report += ".";
+    }
 };
 
 
