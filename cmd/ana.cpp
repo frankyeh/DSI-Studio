@@ -226,7 +226,7 @@ int ana(void)
     }
     RoiMgr roi_mgr;
     if(!load_roi(handle,mapping,roi_mgr))
-        return;
+        return -1;
     tract_model.filter_by_roi(roi_mgr);
     return trk_post(handle,tract_model,mapping,po.get("output"));
 }
