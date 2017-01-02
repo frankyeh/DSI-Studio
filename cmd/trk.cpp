@@ -335,6 +335,22 @@ int trk_post(std::shared_ptr<fib_data> handle,
 
 }
 
+{
+    const int total_count = 14;
+    char roi_names[total_count][5] = {"roi","roi2","roi3","roi4","roi5","roa","roa2","roa3","roa4","roa5","end","end2","seed","ter"};
+    unsigned char type[total_count] = {0,0,0,0,0,1,1,1,1,1,2,2,3,4};
+    for(int index = 0;index < total_count;++index)
+    if (po.has(roi_names[index]))
+    {
+        ROIRegion roi(handle->dim, handle->vs);
+        if(!load_region(handle,roi,po.get(roi_names[index]),mapping))
+            return false;
+        roi_mgr.setRegions(handle->dim,roi.get(),type[index],po.get(roi_names[index]).c_str());
+        std::cout << roi_names[index] << "=" << po.get(roi_names[index]) << std::endl;
+    }
+    return true;
+}
+
 int trk(void)
 {
     try{
@@ -395,18 +411,7 @@ int trk(void)
     std::cout << (tracking_thread.stop_by_tract ? "fiber_count=" : "seed_count=") <<
             termination_count << std::endl;
 
-    const int total_count = 14;
-    char roi_names[total_count][5] = {"roi","roi2","roi3","roi4","roi5","roa","roa2","roa3","roa4","roa5","end","end2","seed","ter"};
-    unsigned char type[total_count] = {0,0,0,0,0,1,1,1,1,1,2,2,3,4};
-    for(int index = 0;index < total_count;++index)
-    if (po.has(roi_names[index]))
-    {
-        ROIRegion roi(geometry, voxel_size);
-        if(!load_region(handle,roi,po.get(roi_names[index]),mapping))
-            return -1;
-        tracking_thread.roi_mgr.setRegions(geometry,roi.get(),type[index],po.get(roi_names[index]).c_str());
-        std::cout << roi_names[index] << "=" << po.get(roi_names[index]) << std::endl;
-    }
+        return -1;
 
     QStringList cnt_file_name;
     QString cnt_type;

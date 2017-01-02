@@ -17,6 +17,7 @@
 
 extern std::vector<atlas> atlas_list;
 bool atl_load_atlas(std::string atlas_name);
+bool load_roi(std::shared_ptr<fib_data> handle,image::basic_image<image::vector<3>,3>& mapping,RoiMgr& roi_mgr);
 void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                              TractModel& tract_model,
                              image::basic_image<image::vector<3>,3>& mapping);
@@ -223,5 +224,9 @@ int ana(void)
         std::cout << file_name << " loaded" << std::endl;
 
     }
+    RoiMgr roi_mgr;
+    if(!load_roi(handle,mapping,roi_mgr))
+        return;
+    tract_model.filter_by_roi(roi_mgr);
     return trk_post(handle,tract_model,mapping,po.get("output"));
 }
