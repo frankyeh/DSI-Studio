@@ -55,6 +55,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->b_table->setColumnWidth(3,80);
     ui->b_table->setHorizontalHeaderLabels(QStringList() << "b value" << "bx" << "by" << "bz");
     ui->gqi_spectral->hide();
+    ui->ODFSharpening->hide();
 
     update_dimension();
 
@@ -291,8 +292,8 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     begin_prog("reconstruction",true);
     int odf_order[8] = {4, 5, 6, 8, 10, 12, 16, 20};
     handle->voxel.ti.init(odf_order[ui->ODFDim->currentIndex()]);
-    handle->voxel.odf_deconvolusion = ui->odf_sharpening->currentIndex() == 1 ? 1 : 0;
-    handle->voxel.odf_decomposition = ui->odf_sharpening->currentIndex() == 2 ? 1 : 0;
+    handle->voxel.odf_deconvolusion = 0;//ui->odf_sharpening->currentIndex() == 1 ? 1 : 0;
+    handle->voxel.odf_decomposition = 0;//ui->odf_sharpening->currentIndex() == 2 ? 1 : 0;
     handle->voxel.odf_xyz[0] = ui->x->value();
     handle->voxel.odf_xyz[1] = ui->y->value();
     handle->voxel.odf_xyz[2] = ui->z->value();
@@ -468,7 +469,7 @@ void reconstruction_window::on_doDTI_clicked()
 void reconstruction_window::on_DTI_toggled(bool checked)
 {
     ui->ResolutionBox->setVisible(!checked);
-    ui->ODFSharpening->setVisible(!checked);
+    //ui->ODFSharpening->setVisible(!checked);
     ui->DSIOption_2->setVisible(!checked);
     ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(!checked);
@@ -489,7 +490,7 @@ void reconstruction_window::on_DTI_toggled(bool checked)
 void reconstruction_window::on_DSI_toggled(bool checked)
 {
     ui->ResolutionBox->setVisible(!checked);
-    ui->ODFSharpening->setVisible(checked);
+    //ui->ODFSharpening->setVisible(checked);
     ui->DSIOption_2->setVisible(checked);
     ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(!checked);
@@ -510,7 +511,7 @@ void reconstruction_window::on_DSI_toggled(bool checked)
 void reconstruction_window::on_QBI_toggled(bool checked)
 {
     ui->ResolutionBox->setVisible(!checked);
-    ui->ODFSharpening->setVisible(checked);
+    //ui->ODFSharpening->setVisible(checked);
     ui->DSIOption_2->setVisible(!checked);
     ui->QBIOption_2->setVisible(checked);
     ui->GQIOption_2->setVisible(!checked);
@@ -530,7 +531,7 @@ void reconstruction_window::on_QBI_toggled(bool checked)
 void reconstruction_window::on_GQI_toggled(bool checked)
 {
     ui->ResolutionBox->setVisible(!checked);
-    ui->ODFSharpening->setVisible(checked);
+    //ui->ODFSharpening->setVisible(checked);
     ui->DSIOption_2->setVisible(!checked);
     ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(checked);
@@ -554,7 +555,7 @@ void reconstruction_window::on_GQI_toggled(bool checked)
 void reconstruction_window::on_QDif_toggled(bool checked)
 {
     ui->ResolutionBox->setVisible(checked);
-    ui->ODFSharpening->setVisible(checked);
+    //ui->ODFSharpening->setVisible(checked);
     ui->DSIOption_2->setVisible(!checked);
     ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(checked);

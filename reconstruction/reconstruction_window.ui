@@ -1047,8 +1047,11 @@
            </property>
            <item>
             <widget class="QGroupBox" name="ODFSharpening">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="title">
-              <string>ODF Sharpening</string>
+              <string>ODF Sharpening (NOT RECOMMENDED)</string>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_10">
               <property name="spacing">
@@ -1364,35 +1367,21 @@
              <property name="title">
               <string>Output</string>
              </property>
-             <layout class="QHBoxLayout" name="horizontalLayout_16">
+             <layout class="QGridLayout" name="gridLayout_3">
               <property name="topMargin">
                <number>0</number>
               </property>
               <property name="bottomMargin">
                <number>6</number>
               </property>
-              <item>
-               <widget class="QCheckBox" name="RecordODF">
+              <item row="4" column="0">
+               <widget class="QCheckBox" name="output_tensor">
                 <property name="text">
-                 <string>ODFs</string>
+                 <string>Tensor</string>
                 </property>
                </widget>
               </item>
-              <item>
-               <widget class="QCheckBox" name="output_mapping">
-                <property name="text">
-                 <string>Spatial mapping</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="output_jacobian">
-                <property name="text">
-                 <string>Jacobian determinant</string>
-                </property>
-               </widget>
-              </item>
-              <item>
+              <item row="1" column="1">
                <widget class="QCheckBox" name="rdi">
                 <property name="text">
                  <string>Restricted diffusion imaging</string>
@@ -1402,17 +1391,31 @@
                 </property>
                </widget>
               </item>
-              <item>
-               <widget class="QCheckBox" name="output_diffusivity">
+              <item row="3" column="0">
+               <widget class="QCheckBox" name="output_mapping">
                 <property name="text">
-                 <string>Diffusivity</string>
+                 <string>Spatial mapping</string>
                 </property>
                </widget>
               </item>
-              <item>
-               <widget class="QCheckBox" name="output_tensor">
+              <item row="1" column="0">
+               <widget class="QCheckBox" name="RecordODF">
                 <property name="text">
-                 <string>Tensor</string>
+                 <string>ODFs (Only needed in connectometry)</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QCheckBox" name="output_jacobian">
+                <property name="text">
+                 <string>Jacobian determinant</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="1">
+               <widget class="QCheckBox" name="output_diffusivity">
+                <property name="text">
+                 <string>Diffusivity</string>
                 </property>
                </widget>
               </item>
