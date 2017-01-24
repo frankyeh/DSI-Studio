@@ -394,11 +394,10 @@ public:
                                        image::transformation_matrix<double> >(0),terminated);
                     affine = image::transformation_matrix<double>(arg_min,VF.geometry(),voxel.vs,VG.geometry(),fa_template_imp.vs);
                 }
+                begin_prog("warping image");
                 affine.inverse();
                 VFF.resize(VG.geometry());
                 image::resample(VF,VFF,affine,image::cubic);
-                if(prog_aborted())
-                    throw std::runtime_error("Reconstruction canceled");
             }
             match_signal(VG,VFF);
 
