@@ -774,39 +774,49 @@ void RegionTableWidget::whole_brain(void)
     emit need_update();
 }
 
+void get_regions_statistics(std::shared_ptr<fib_data> handle,
+                            const std::vector<std::shared_ptr<ROIRegion> >& regions,
+                            const std::vector<std::string>& region_name,
+                            std::string& result)
+{
+    std::vector<std::string> titles;
+    std::vector<std::vector<float> > data(regions.size());
+    for(unsigned int index = 0;index < regions.size();++index)
+        regions[index]->get_quantitative_data(handle,titles,data[index]);
+    std::ostringstream out;
+    out << "Name\t";
+    for(unsigned int index = 0;index < regions.size();++index)
+        out << region_name[index] << "\t";
+    out << std::endl;
+    for(unsigned int i = 0;i < titles.size();++i)
+    {
+        out << titles[i] << "\t";
+        for(unsigned int j = 0;j < regions.size();++j)
+        {
+            if(i < data[j].size())
+                out << data[j][i];
+            out << "\t";
+        }
+        out << std::endl;
+    }
+    result = out.str();
+}
+
 void RegionTableWidget::show_statistics(void)
 {
     if(currentRow() >= regions.size())
         return;
     std::string result;
     {
-        std::vector<std::string> titles;
-        std::vector<std::vector<float> > data(regions.size());
-        begin_prog("calculating");
-        for(unsigned int index = 0;check_prog(index,regions.size());++index)
-            if(item(index,0)->checkState() == Qt::Checked)
-                regions[index]->get_quantitative_data(cur_tracking_window.handle,titles,data[index]);
-        if(prog_aborted())
-            return;
-        std::ostringstream out;
-        out << "Name\t";
+        std::vector<std::shared_ptr<ROIRegion> > active_regions;
+        std::vector<std::string> region_name;
         for(unsigned int index = 0;index < regions.size();++index)
             if(item(index,0)->checkState() == Qt::Checked)
-                out << item(index,0)->text().toLocal8Bit().begin() << "\t";
-        out << std::endl;
-        for(unsigned int i = 0;i < titles.size();++i)
-        {
-            out << titles[i] << "\t";
-            for(unsigned int j = 0;j < regions.size();++j)
-            if(item(j,0)->checkState() == Qt::Checked)
             {
-                if(i < data[j].size())
-                    out << data[j][i];
-                out << "\t";
+                active_regions.push_back(regions[index]);
+                region_name.push_back(item(index,0)->text().toStdString());
             }
-            out << std::endl;
-        }
-        result = out.str();
+        get_regions_statistics(cur_tracking_window.handle,regions,region_name,result);
     }
     QMessageBox msgBox;
     msgBox.setText("Region Statistics");
