@@ -89,20 +89,22 @@ int rec(void)
     }
     if(method_index == 7)
     {
-        if (po.has("template"))
-        {
-            std::cout << "loading external template:" << po.get("template") << std::endl;
-            fa_template_imp.template_file_name = po.get("template");
-        }
-        if(!fa_template_imp.load_from_file())
-        {
-            std::cout << "failed to locate template for QSDR reconstruction" << std::endl;
-            return -1;
-        }
         param[0] = 1.2;
         param[1] = 2.0;
         std::fill(handle->mask.begin(),handle->mask.end(),1.0);
     }
+
+    if (po.has("template"))
+    {
+        std::cout << "loading external template:" << po.get("template") << std::endl;
+        fa_template_imp.template_file_name = po.get("template");
+    }
+    if(!fa_template_imp.load_from_file())
+    {
+        std::cout << "failed to locate template for QSDR reconstruction" << std::endl;
+        return -1;
+    }
+
     param[3] = 0.0002;
 
     if(po.get("deconvolution",int(0)))
