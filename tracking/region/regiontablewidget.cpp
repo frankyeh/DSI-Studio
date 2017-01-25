@@ -228,7 +228,8 @@ void RegionTableWidget::draw_region(QImage& qimage)
 
 void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image)
 {
-    if(rowCount() == 0 || currentRow() == -1 || item(currentRow(),0)->checkState() != Qt::Checked)
+    if(rowCount() == 0 || currentRow() == -1 || currentRow() >= regions.size() ||
+       item(currentRow(),0)->checkState() != Qt::Checked)
         return;
     int X, Y, Z;
     image::basic_image<unsigned char,2> cur_image_mask;
