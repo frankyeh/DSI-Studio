@@ -401,12 +401,37 @@ void TractTableWidget::save_vrml_as(void)
                  "Tract files (*.wrl);;All files (*)");
     if(filename.isEmpty())
         return;
+    std::string surface_text;
+    if(cur_tracking_window.glWidget->surface.get() && cur_tracking_window["show_surface"].toInt())
+    {
+        std::ostringstream out;
+        QString Coordinate, CoordinateIndex;
+        const auto& point_list = cur_tracking_window.glWidget->surface->get()->point_list;
+        for(unsigned int index = 0;index < point_list.size();++index)
+            Coordinate += QString("%1 %2 %3 ").arg(point_list[index][0]).arg(point_list[index][1]).arg(point_list[index][2]);
+        const auto& tri_list = cur_tracking_window.glWidget->surface->get()->tri_list;
+        for (unsigned int j = 0;j < tri_list.size();++j)
+            CoordinateIndex += QString("%1 %2 %3 -1 ").arg(tri_list[j][0]).arg(tri_list[j][1]).arg(tri_list[j][2]);
+
+        out << "Shape {" << std::endl;
+        out << "appearance Appearance { " << std::endl;
+        out << "material Material { " << std::endl;
+        out << " specularColor 1 1 1" << std::endl;
+        out << " shininess 0.5" << std::endl;
+        out << " transparency 0.8 } }" << std::endl;
+        out << "geometry IndexedFaceSet {" << std::endl;
+        out << "coord Coordinate { point [" << Coordinate.toStdString() << " ] }" << std::endl;
+        out << "coordIndex ["<< CoordinateIndex.toStdString() <<"] } }" << std::endl;
+        surface_text = out.str();
+    }
+
     std::string sfilename = filename.toLocal8Bit().begin();
+
     tract_models[currentRow()]->save_vrml(&*sfilename.begin(),
                                                 cur_tracking_window["tract_style"].toInt(),
                                                 cur_tracking_window["tract_color_style"].toInt(),
                                                 cur_tracking_window["tube_diameter"].toFloat(),
-                                                cur_tracking_window["tract_tube_detail"].toInt());
+                                                cur_tracking_window["tract_tube_detail"].toInt(),surface_text);
 }
 
 void TractTableWidget::save_end_point_as(void)

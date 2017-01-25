@@ -61,7 +61,8 @@ public:
                        unsigned char tract_style,
                        unsigned char tract_color_style,
                        float tube_diameter,
-                       unsigned char tract_tube_detail);
+                       unsigned char tract_tube_detail,
+                       const std::string& surface_text);
         bool save_transformed_tracts_to_file(const char* file_name,const float* transform,bool end_point);
         bool save_data_to_file(const char* file_name,const std::string& index_name);
         void save_end_points(const char* file_name) const;

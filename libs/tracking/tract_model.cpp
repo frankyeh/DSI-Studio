@@ -372,7 +372,8 @@ void TractModel::save_vrml(const char* file_name,
                            unsigned char tract_style,
                            unsigned char tract_color_style,
                            float tube_diameter,
-                           unsigned char tract_tube_detail)
+                           unsigned char tract_tube_detail,
+                           const std::string& surface_text)
 {
     std::ofstream out(file_name);
     out << "#VRML V2.0 utf8" << std::endl;
@@ -508,8 +509,8 @@ void TractModel::save_vrml(const char* file_name,
                 {
                     Coordinate += QString("%1 %2 %3 ").arg(previous_points[k][0]).arg(previous_points[k][1]).arg(previous_points[k][2]);
                     Coordinate += QString("%1 %2 %3 ").arg(points[k][0]).arg(points[k][1]).arg(points[k][2]);
-                    ColorIndex += QString("%1, ").arg(vrml_color_count);
-                    ColorIndex += QString("%1, ").arg(vrml_color_count);
+                    ColorIndex += QString("%1 ").arg(vrml_color_count);
+                    ColorIndex += QString("%1 ").arg(vrml_color_count);
                 }
                 Coordinate += QString("%1 %2 %3 ").arg(points[0][0]).arg(points[0][1]).arg(points[0][2]);
                 ColorIndex += QString("%1 ").arg(vrml_color_count);
@@ -551,13 +552,14 @@ void TractModel::save_vrml(const char* file_name,
             CoordinateIndexPos.push_back(CoordinateIndex.size());
         }
         out << "Shape {" << std::endl;
-        out << "geometry DEF IFS IndexedFaceSet {" << std::endl;
+        out << "geometry IndexedFaceSet {" << std::endl;
         out << "coord Coordinate { point [" << Coordinate.toStdString() << " ] }" << std::endl;
         out << "coordIndex ["<< CoordinateIndex.left(CoordinateIndexPos[vrml_coordinate_count-1]-1).toStdString() <<"]" << std::endl;
         out << "color Color { color ["<< Color.toStdString() <<"] }" << std::endl;
         out << "colorPerVertex FALSE" << std::endl;
         out << "colorIndex ["<< ColorIndex.toStdString() << "] } }" << std::endl;
     }
+    out << surface_text;
 }
 
 //---------------------------------------------------------------------------

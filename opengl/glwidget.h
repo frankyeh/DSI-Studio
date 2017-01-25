@@ -53,7 +53,7 @@ Q_OBJECT
      bool get_mouse_pos(QMouseEvent *mouseEvent,image::vector<3,float>& position);
      void paintGL();
 
- private://surface
+ public://surface
      std::auto_ptr<RegionModel> surface;
 
  private://odf
