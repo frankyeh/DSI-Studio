@@ -401,6 +401,10 @@ const char* reconstruction(ImageModel* image_model,
             }
             image_model->voxel.recon_report <<
             " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010) with a diffusion sampling length ratio of " << (float)param_values[0] << ".";
+            if(image_model->voxel.output_rdi)
+                image_model->voxel.recon_report <<
+                    " The restricted diffusion was quantified using restricted diffusion imaging (Yeh et al., MRM, 77:603–612 (2017)).";
+
             if (image_model->voxel.odf_deconvolusion || image_model->voxel.odf_decomposition)
             {
                 if (!image_model->reconstruct<gqi_estimate_response_function>(thread_count))
@@ -429,6 +433,11 @@ const char* reconstruction(ImageModel* image_model,
             << " A diffusion sampling length ratio of "
             << (float)param_values[0] << " was used, and the output resolution was " << param_values[1] << " mm.";
             // run gqi to get the spin quantity
+
+            if(image_model->voxel.output_rdi)
+                image_model->voxel.recon_report <<
+                    " The restricted diffusion was quantified using restricted diffusion imaging (Yeh et al., MRM, 77:603–612 (2017)).";
+
             std::vector<image::pointer_image<float,3> > tmp;
             tmp.swap(image_model->voxel.grad_dev);
             if (!image_model->reconstruct<gqi_estimate_response_function>(thread_count))
