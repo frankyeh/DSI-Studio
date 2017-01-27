@@ -415,8 +415,11 @@ void slice_view_scene::save_slice_as()
 
 void slice_view_scene::catch_screen()
 {
+    auto* region = cur_tracking_window.regionWidget;
     QString filename = QFileDialog::getSaveFileName(
                 0,"Save Images files",
+                region->currentRow() >= 0 ?
+                    region->item(region->currentRow(),0)->text()+".png" :
                     QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+
                     QString(cur_tracking_window.handle->view_item[cur_tracking_window.ui->sliceViewBox->currentIndex()].name.c_str())+".jpg",
                     "Image files (*.png *.bmp *.jpg);;All files (*)");
