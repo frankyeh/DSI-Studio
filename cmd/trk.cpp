@@ -274,6 +274,12 @@ int trk_post(std::shared_ptr<fib_data> handle,
              image::basic_image<image::vector<3>,3>& mapping,
              const std::string& file_name)
 {
+    if (po.has("delete_repeat"))
+    {
+        float distance = po.get("delete_repeat",float(1));
+        tract_model.delete_repeated(distance);
+        std::cout << "Repeat tracks with distance smaller than " << distance <<" are deleted" << std::endl;
+    }
     if(!file_name.empty())
     {
         if(po.has("ref")) // save track in T1W/T2W space
@@ -350,16 +356,6 @@ bool load_roi(std::shared_ptr<fib_data> handle,image::basic_image<image::vector<
         std::cout << roi_names[index] << "=" << po.get(roi_names[index]) << std::endl;
     }
     return true;
-}
-
-void check_delete(TractModel& tract_model)
-{
-    if (po.has("delete_repeat"))
-    {
-        float distance = po.get("delete_repeat",float(1));
-        tract_model.delete_repeated(distance);
-        std::cout << "Repeat tracks with distance smaller than " << distance <<" are deleted" << std::endl;
-    }
 }
 
 
@@ -541,8 +537,6 @@ int trk(void)
         std::cout << "No tract generated. Terminating..." << std::endl;
         return 0;
     }
-
-    check_delete(tract_model);
 
     std::string file_name;
     if (po.has("output"))

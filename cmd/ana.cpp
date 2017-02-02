@@ -147,7 +147,6 @@ int trk_post(std::shared_ptr<fib_data> handle,
              TractModel& tract_model,
              image::basic_image<image::vector<3>,3>& mapping,
              const std::string& file_name);
-void check_delete(TractModel& tract_model);
 int ana(void)
 {
     std::shared_ptr<fib_data> handle(new fib_data);
@@ -228,7 +227,6 @@ int ana(void)
     RoiMgr roi_mgr;
     if(!load_roi(handle,mapping,roi_mgr))
         return -1;
-    check_delete(tract_model);
     tract_model.filter_by_roi(roi_mgr);
     return trk_post(handle,tract_model,mapping,po.get("output"));
 }
