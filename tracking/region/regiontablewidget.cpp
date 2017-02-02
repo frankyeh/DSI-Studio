@@ -368,35 +368,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 
         if(QFileInfo(label_file).exists())
             load_nii_label(label_file.toLocal8Bit().begin(),label_map);
-        else
-        {
-            QMessageBox msgBox;
-            msgBox.setText("Load multiple ROIs in the nifti file?");
-            msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-            msgBox.setDefaultButton(QMessageBox::Yes);
-            int rec = msgBox.exec();
-            if(rec == QMessageBox::No)
-                multiple_roi = false;
-            if(rec == QMessageBox::Yes)
-            {
-                QMessageBox msgBox;
-                msgBox.setText("Has label file (*.txt)?");
-                msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-                msgBox.setDefaultButton(QMessageBox::Yes);
-                rec = msgBox.exec();
-                if(rec == QMessageBox::Yes)
-                {
-                    label_file = QFileDialog::getOpenFileName(
-                                           this,
-                                           "Label file",
-                                           QFileInfo(file_name).absolutePath(),
-                                           "Text files (*.txt)" );
-                    load_nii_label(label_file.toLocal8Bit().begin(),label_map);
-                }
-            }
-        }
     }
-
 
     image::matrix<4,4,float> convert;
     bool has_transform = false;
