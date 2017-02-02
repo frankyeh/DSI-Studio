@@ -36,7 +36,7 @@ void save_connectivity_matrix(TractModel& tract_model,
 {
     std::cout << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
     std::cout << "calculate matrix using " << connectivity_value << std::endl;
-    if(!data.calculate(tract_model,connectivity_value,use_end_only))
+    if(!data.calculate(tract_model,connectivity_value,use_end_only,t))
     {
         std::cout << data.error_msg << std::endl;
         return;
@@ -352,6 +352,17 @@ bool load_roi(std::shared_ptr<fib_data> handle,image::basic_image<image::vector<
     return true;
 }
 
+void check_delete(TractModel& tract_model)
+{
+    if (po.has("delete_repeat"))
+    {
+        float distance = po.get("delete_repeat",float(1));
+        tract_model.delete_repeated(distance);
+        std::cout << "Repeat tracks with distance smaller than " << distance <<" are deleted" << std::endl;
+    }
+}
+
+
 int trk(void)
 {
     try{
@@ -530,6 +541,8 @@ int trk(void)
         std::cout << "No tract generated. Terminating..." << std::endl;
         return 0;
     }
+
+    check_delete(tract_model);
 
     std::string file_name;
     if (po.has("output"))
