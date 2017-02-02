@@ -391,8 +391,8 @@ void TractModel::save_vrml(const char* file_name,
     float tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0;
 
 
-    QString CoordinateIndex;
-    std::vector<int> CoordinateIndexPos(2);
+    QString Coordinate,CoordinateIndex,Color;
+    unsigned int vrml_coordinate_count = 0,vrml_color_count = 0;
     for (unsigned int data_index = 0; data_index < tract_data.size(); ++data_index)
     {
         unsigned int vertex_count = get_tract_length(data_index)/3;
@@ -410,8 +410,7 @@ void TractModel::save_vrml(const char* file_name,
             break;
         break;
         }
-        unsigned int vrml_coordinate_count = 0,vrml_color_count = 0;
-        QString Coordinate,Color,ColorIndex;
+        unsigned int prev_coordinate_count = vrml_coordinate_count;
         image::vector<3,float> last_pos(data_iter),
                 vec_a(1,0,0),vec_b(0,1,0),
                 vec_n,prev_vec_n,vec_ab,vec_ba,cur_color;
@@ -447,14 +446,14 @@ void TractModel::save_vrml(const char* file_name,
                 if (displacement.length() < tube_detail)
                     continue;
             }
-            Color += QString("%1 %2 %3 ").arg(cur_color[0]).arg(cur_color[1]).arg(cur_color[2]);
             // add end
             if(tract_style == 0)// line
             {
                 Coordinate += QString("%1 %2 %3 ").arg(pos[0]).arg(pos[1]).arg(pos[2]);
-                ColorIndex += QString("%1 ").arg(vrml_color_count);
+                Color += QString("%1 %2 %3 ").arg(cur_color[0]).arg(cur_color[1]).arg(cur_color[2]);
                 prev_vec_n = vec_n;
                 last_pos = pos;
+                ++vrml_coordinate_count;
                 ++vrml_color_count;
                 continue;
             }
@@ -495,7 +494,7 @@ void TractModel::save_vrml(const char* file_name,
                 for (unsigned int k = 0;k < 8;++k)
                 {
                     Coordinate += QString("%1 %2 %3 ").arg(points[end_sequence[k]][0]).arg(points[end_sequence[k]][1]).arg(points[end_sequence[k]][2]);
-                    ColorIndex += QString("%1 ").arg(vrml_color_count);
+                    Color += QString("%1 %2 %3 ").arg(cur_color[0]).arg(cur_color[1]).arg(cur_color[2]);
                 }
                 vrml_coordinate_count+=8;
             }
@@ -504,16 +503,16 @@ void TractModel::save_vrml(const char* file_name,
             {
 
                 Coordinate += QString("%1 %2 %3 ").arg(points[0][0]).arg(points[0][1]).arg(points[0][2]);
-                ColorIndex += QString("%1, ").arg(vrml_color_count);
+                Color += QString("%1 %2 %3 ").arg(cur_color[0]).arg(cur_color[1]).arg(cur_color[2]);
                 for (unsigned int k = 1;k < 8;++k)
                 {
                     Coordinate += QString("%1 %2 %3 ").arg(previous_points[k][0]).arg(previous_points[k][1]).arg(previous_points[k][2]);
                     Coordinate += QString("%1 %2 %3 ").arg(points[k][0]).arg(points[k][1]).arg(points[k][2]);
-                    ColorIndex += QString("%1 ").arg(vrml_color_count);
-                    ColorIndex += QString("%1 ").arg(vrml_color_count);
+                    Color += QString("%1 %2 %3 ").arg(cur_color[0]).arg(cur_color[1]).arg(cur_color[2]);
+                    Color += QString("%1 %2 %3 ").arg(cur_color[0]).arg(cur_color[1]).arg(cur_color[2]);
                 }
                 Coordinate += QString("%1 %2 %3 ").arg(points[0][0]).arg(points[0][1]).arg(points[0][2]);
-                ColorIndex += QString("%1 ").arg(vrml_color_count);
+                Color += QString("%1 %2 %3 ").arg(cur_color[0]).arg(cur_color[1]).arg(cur_color[2]);
                 vrml_coordinate_count+=16;
 
                 if(index +1 == vertex_count)
@@ -521,7 +520,7 @@ void TractModel::save_vrml(const char* file_name,
                     for (int k = 7;k >= 0;--k)
                     {
                         Coordinate += QString("%1 %2 %3 ").arg(points[end_sequence[k]][0]).arg(points[end_sequence[k]][1]).arg(points[end_sequence[k]][2]);
-                        ColorIndex += QString("%1 ").arg(vrml_color_count);
+                        Color += QString("%1 %2 %3 ").arg(cur_color[0]).arg(cur_color[1]).arg(cur_color[2]);
                     }
                     vrml_coordinate_count+=8;
                 }
@@ -532,33 +531,51 @@ void TractModel::save_vrml(const char* file_name,
             ++vrml_color_count;
 
         }
+
         if(tract_style == 0)// line
         {
-            for (unsigned int j = CoordinateIndexPos.size();j < vrml_coordinate_count;++j)
-            {
-                CoordinateIndex += QString("%1 ").arg(j-2).arg(j-1).arg(j);
-                CoordinateIndexPos.push_back(CoordinateIndex.size());
-            }
-            out << "Shape {" << std::endl;
-            out << "geometry DEF IFS IndexedLineSet {" << std::endl;
-            out << "point [" << Coordinate.toStdString() << " ]" << std::endl;
-            out << "coordIndex ["<< ColorIndex.toStdString() <<"]" << std::endl;
-            out << "color Color { color ["<< Color.toStdString() <<"] } } }" << std::endl;
-            continue;
+            for (unsigned int j = prev_coordinate_count;j < vrml_coordinate_count;++j)
+                CoordinateIndex += QString("%1 ").arg(j);
+            CoordinateIndex += QString("-1 ");
         }
-        for (unsigned int j = CoordinateIndexPos.size();j < vrml_coordinate_count;++j)
+        else
         {
-            CoordinateIndex += QString("%1 %2 %3 -1 ").arg(j-2).arg(j-1).arg(j);
-            CoordinateIndexPos.push_back(CoordinateIndex.size());
+            for (unsigned int j = prev_coordinate_count;j+2 < vrml_coordinate_count;++j)
+                CoordinateIndex += QString("%1 %2 %3 -1 ").arg(j).arg(j+1).arg(j+2);
         }
-        out << "Shape {" << std::endl;
-        out << "geometry IndexedFaceSet {" << std::endl;
-        out << "coord Coordinate { point [" << Coordinate.toStdString() << " ] }" << std::endl;
-        out << "coordIndex ["<< CoordinateIndex.left(CoordinateIndexPos[vrml_coordinate_count-1]-1).toStdString() <<"]" << std::endl;
-        out << "color Color { color ["<< Color.toStdString() <<"] }" << std::endl;
-        out << "colorPerVertex FALSE" << std::endl;
-        out << "colorIndex ["<< ColorIndex.toStdString() << "] } }" << std::endl;
     }
+
+
+    if(tract_style == 0)// line
+    {
+
+        out << "Shape {" << std::endl;
+        out << "geometry IndexedLineSet {" << std::endl;
+        out << "coord Coordinate { point [" << Coordinate.toStdString() << " ] }" << std::endl;
+        out << "color Color { color ["<< Color.toStdString() <<"] } " << std::endl;
+        out << "coordIndex ["<< CoordinateIndex.toStdString() <<"] }" << std::endl;
+    }
+    else
+    {
+
+        out << "Shape {" << std::endl;
+        out << "appearance Appearance { " << std::endl;
+        out << "material Material { " << std::endl;
+        out << "ambientIntensity 0.0" << std::endl;
+        out << "diffuseColor 0.6 0.6 0.6" << std::endl;
+        out << "specularColor 0.1 0.1 0.1" << std::endl;
+        out << "emissiveColor 0.0 0.0 0.0" << std::endl;
+        out << "shininess 0.1" << std::endl;
+        out << "transparency 0" << std::endl;
+        out << "} }" << std::endl;
+        out << "geometry IndexedFaceSet {" << std::endl;
+        out << "creaseAngle 3.14" << std::endl;
+        out << "solid TRUE" << std::endl;
+        out << "coord Coordinate { point [" << Coordinate.toStdString() << " ] }" << std::endl;
+        out << "color Color { color ["<< Color.toStdString() <<"] }" << std::endl;
+        out << "coordIndex ["<< CoordinateIndex.toStdString() <<"] } }" << std::endl;
+    }
+
     out << surface_text;
 }
 
@@ -1981,7 +1998,7 @@ void for_each_connectivity(const T& end_list1,
     }
 }
 
-bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_value_type,bool use_end_only)
+bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_value_type,bool use_end_only,float threshold)
 {
     if(regions.size() == 0)
     {
@@ -2056,6 +2073,14 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
 
         return true;
     }
+
+    // determine the threshold for counting the connectivity
+    unsigned int threshold_count = 0;
+    for(unsigned int i = 0,index = 0;i < count.size();++i)
+        for(unsigned int j = 0;j < count[i].size();++j,++index)
+            threshold_count = std::max<unsigned int>(threshold_count,count[i][j]);
+    threshold_count *= threshold;
+
     if(matrix_value_type == "mean_length")
     {
         std::vector<std::vector<unsigned int> > sum_length,sum_n;
@@ -2070,7 +2095,7 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
 
         for(unsigned int i = 0,index = 0;i < count.size();++i)
             for(unsigned int j = 0;j < count[i].size();++j,++index)
-                if(sum_n[i][j])
+                if(sum_n[i][j] && count[i][j] > threshold_count)
                     matrix_value[index] = (float)sum_length[i][j]/(float)sum_n[i][j]/3.0;
         return true;
     }
@@ -2096,7 +2121,7 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
 
     for(unsigned int i = 0,index = 0;i < count.size();++i)
         for(unsigned int j = 0;j < count[i].size();++j,++index)
-            matrix_value[index] = (count[i][j] ? sum[i][j]/(float)count[i][j] : 0);
+            matrix_value[index] = (count[i][j] > threshold_count ? sum[i][j]/(float)count[i][j] : 0);
     return true;
 
 }
