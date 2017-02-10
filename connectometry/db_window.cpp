@@ -178,17 +178,20 @@ bool db_window::eventFilter(QObject *obj, QEvent *event)
 
 void db_window::update_subject_list()
 {
+    ui->subject_list->setCurrentCell(0,0);
     ui->subject_list->clear();
     ui->subject_list->setColumnCount(1);
     ui->subject_list->setColumnWidth(0,500);
     ui->subject_list->setRowCount(vbc->handle->db.num_subjects);
     for(unsigned int index = 0;index < vbc->handle->db.num_subjects;++index)
         ui->subject_list->setItem(index,0, new QTableWidgetItem(QString(vbc->handle->db.subject_names[index].c_str())));
+
 }
 
 void db_window::on_subject_list_itemSelectionChanged()
 {
-    if(ui->subject_list->currentRow() == -1)
+    if(ui->subject_list->currentRow() == -1 ||
+            ui->subject_list->currentRow() >= vbc->handle->db.subject_qa.size())
         return;
     if(ui->view_x->isChecked())
         ui->x_pos->setValue(ui->slice_pos->value());
