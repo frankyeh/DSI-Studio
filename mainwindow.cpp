@@ -29,6 +29,7 @@
 #include "connectometry/db_window.h"
 #include "connectometry/group_connectometry.hpp"
 #include "program_option.hpp"
+#include "libs/dsi/image_model.hpp"
 extern program_option po;
 int rec(void);
 int trk(void);
@@ -910,6 +911,77 @@ void MainWindow::on_run_cmd_clicked()
         ren();
 }
 
+
+void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
+void MainWindow::on_ReconstructSRC_clicked()
+{
+    QString dir = QFileDialog::getExistingDirectory(
+                                this,
+                                "Open directory",
+                                ui->workDir->currentText());
+    if(dir.isEmpty())
+        return;
+
+    QStringList list = search_files(dir,"*.src.gz");
+
+    for(int i = 0;i < list.size();++i)
+    {
+        std::shared_ptr<ImageModel> handle(std::make_shared<ImageModel>());
+        if (!handle->load_from_file(list[i].toLocal8Bit().begin()))
+        {
+            QMessageBox::information(this,"error",QString("Cannot open ") +
+                list[i] + " : " +handle->error_msg.c_str(),0);
+            return;
+        }
+
+        float params[5] = {1.25,0,0,0,0};
+        // determine the spatial resolution
+        if(handle->voxel.vs[0] < 2.0)
+            params[1] = 1; // 1 mm
+        else
+            params[1] = 2; // 2 mm
+
+        handle->voxel.ti.init(8); // odf order of 8
+        handle->voxel.odf_deconvolusion = 0;//ui->odf_sharpening->currentIndex() == 1 ? 1 : 0;
+        handle->voxel.odf_decomposition = 0;//ui->odf_sharpening->currentIndex() == 2 ? 1 : 0;
+        handle->voxel.odf_xyz[0] = 0;
+        handle->voxel.odf_xyz[1] = 0;
+        handle->voxel.odf_xyz[2] = 0;
+        handle->voxel.csf_calibration = 0;
+        handle->voxel.max_fiber_number = 5;
+        handle->voxel.r2_weighted = 0;
+        handle->voxel.reg_method = 0; // 7-9-7
+        handle->voxel.interpo_method = 2; // cubic spline
+        handle->voxel.need_odf = 1; // output ODF
+        handle->voxel.output_jacobian = 0;
+        handle->voxel.output_mapping = 0;
+        handle->voxel.output_diffusivity = 0;
+        handle->voxel.output_tensor = 0;
+        handle->voxel.output_rdi = 1;
+
+        //checking half shell
+        {
+            std::vector<unsigned int> shell;
+            calculate_shell(handle->voxel.bvalues,shell);
+            handle->voxel.half_sphere = (shell.size() > 5) && (shell[1] - shell[0] <= 3);
+            if(!handle->voxel.half_sphere)
+            {
+                handle->voxel.scheme_balance = (shell.size() <= 5) && !shell.empty() &&
+                    handle->voxel.bvalues.size()-shell.back() < 100;
+            }
+        }
+
+        const char* msg = (const char*)reconstruction(handle.get(), 7 /*QSDR*/,
+                                                      params,true /*check b-table*/,
+                                                      std::thread::hardware_concurrency());
+        if (QFileInfo(msg).exists())
+            continue;
+        QMessageBox::information(this,"error",msg,0);
+            return;
+    }
+}
+
+
 void MainWindow::on_set_dir_clicked()
 {
     QString dir =
@@ -918,3 +990,4 @@ void MainWindow::on_set_dir_clicked()
         return;
     QDir::setCurrent(dir);
 }
+

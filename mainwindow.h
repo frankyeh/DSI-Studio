@@ -55,6 +55,7 @@ private slots:
 
     void on_run_cmd_clicked();
     void on_set_dir_clicked();
+    void on_ReconstructSRC_clicked();
 };
 
 #endif // MAINWINDOW_H
