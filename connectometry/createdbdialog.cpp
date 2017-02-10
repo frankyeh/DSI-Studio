@@ -41,12 +41,42 @@ void CreateDBDialog::on_close_clicked()
     close();
 }
 
+QString CreateDBDialog::get_file_name(QString file_path)
+{
+    if(dir_length)
+    {
+        for(int j = dir_length;j < file_path.length();++j)
+            if(file_path[j] == '\\' || file_path[j] == '/' || file_path[j] == ' ')
+                file_path[j] = '_';
+
+    }
+    return QFileInfo(file_path).baseName();
+}
 
 void CreateDBDialog::update_list(void)
 {
+    if(group.size() > 1)
+    {
+        QDir dir1(QFileInfo(group[0]).dir()),dir2(QFileInfo(group[group.size()-1]).dir());
+        if(dir1.absolutePath() == dir2.absolutePath())
+            dir_length = 0;
+        else
+        if(dir1.cdUp() && dir2.cdUp() && dir1.absolutePath() == dir2.absolutePath())
+            dir_length = dir1.absolutePath().length()+1;
+        else
+        if(dir1.cdUp() && dir2.cdUp() && dir1.absolutePath() == dir2.absolutePath())
+            dir_length = dir1.absolutePath().length()+1;
+
+    }
+    else
+        dir_length = 0;
+
+    if(ui->output_file_name->text().isEmpty())
+        on_index_of_interest_currentIndexChanged(QString());
+
     QStringList filenames;
     for(unsigned int index = 0;index < group.size();++index)
-        filenames << QFileInfo(group[index]).baseName();
+        filenames << get_file_name(group[index]);
     ((QStringListModel*)ui->group_list->model())->setStringList(filenames);
 }
 
@@ -98,10 +128,7 @@ void CreateDBDialog::on_group1open_clicked()
     }
     group << filenames;
     update_list();
-    if(create_db)
-        ui->output_file_name->setText(QFileInfo(filenames[0]).absolutePath() + "/connectometry." + ui->index_of_interest->currentText() + ".db.fib.gz");
-    else
-        ui->output_file_name->setText(QFileInfo(filenames[0]).absolutePath() + "/template.fib.gz");
+    on_index_of_interest_currentIndexChanged(QString());
 }
 
 void CreateDBDialog::on_group1delete_clicked()
@@ -267,7 +294,7 @@ void CreateDBDialog::on_create_data_base_clicked()
         for (unsigned int index = 0;index < group.count();++index)
         {
             begin_prog(QFileInfo(group[index]).baseName().toStdString().c_str());
-            if(!data->handle->db.add_subject_file(group[index].toStdString(),QFileInfo(group[index]).baseName().toStdString()))
+            if(!data->handle->db.add_subject_file(group[index].toStdString(),get_file_name(group[index]).toStdString()))
             {
                 QMessageBox::information(this,"error in loading subject fib files",data->handle->error_msg.c_str(),0);
                 check_prog(0,0);
@@ -301,7 +328,15 @@ void CreateDBDialog::on_create_data_base_clicked()
 
 
 void CreateDBDialog::on_index_of_interest_currentIndexChanged(const QString &arg1)
-{
+{       
     if(!group.empty())
-        ui->output_file_name->setText(QFileInfo(group[0]).absolutePath() + "/connectometry." + arg1.toLower() + ".db.fib.gz");
+    {
+        QString path = QFileInfo(group[0]).absolutePath();
+        if(dir_length && ui->output_file_name->text().isEmpty())
+            path = group[0].left(dir_length-1);
+        if(create_db)
+            ui->output_file_name->setText(path + "/connectometry." + ui->index_of_interest->currentText() + ".db.fib.gz");
+        else
+            ui->output_file_name->setText(path + "/template.fib.gz");
+    }
 }

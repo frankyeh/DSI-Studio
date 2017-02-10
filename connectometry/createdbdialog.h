@@ -16,10 +16,12 @@ private:
     bool create_db;
 public:
     QStringList group;
+    unsigned int dir_length;
     explicit CreateDBDialog(QWidget *parent,bool create_db_);
     ~CreateDBDialog();
 private:
     Ui::CreateDBDialog *ui;
+    QString get_file_name(QString);
     void update_list(void);
     void load_data(void);
 
