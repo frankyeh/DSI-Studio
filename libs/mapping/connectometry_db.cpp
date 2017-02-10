@@ -615,14 +615,16 @@ void connectometry_db::calculate_change(unsigned char dif_type,bool norm)
                             0:subject_qa_sd[match[index].second]/subject_qa_sd[match[index].first];
             if(dif_type == 0)
             {
-                out << " The difference between longitudinal scans were calculated";
+                if(!index)
+                    out << " The difference between longitudinal scans were calculated";
                 new_subject_qa_sd[index] = subject_qa_sd[match[index].first];
                 for(int i = 0;i < subject_qa_length;++i)
                     change[i] = study[i]*ratio-baseline[i];
             }
             else
             {
-                out << " The percentage difference between longitudinal scans were calculated";
+                if(!index)
+                    out << " The percentage difference between longitudinal scans were calculated";
                 new_subject_qa_sd[index] = 1.0;
                 for(int i = 0;i < subject_qa_length;++i)
                 {
@@ -631,20 +633,23 @@ void connectometry_db::calculate_change(unsigned char dif_type,bool norm)
                     change[i] = (s == 0 ? 0 : (new_s-baseline[i])/s);
                 }
             }
-            out << " after the data variance in each individual was normalized to one";
+            if(!index)
+                out << " after the data variance in each individual was normalized to one";
         }
         else
         {
             if(dif_type == 0)
             {
-                out << " The difference between longitudinal scans were calculated";
+                if(!index)
+                    out << " The difference between longitudinal scans were calculated";
                 new_subject_qa_sd[index] = subject_qa_sd[match[index].first];
                 for(int i = 0;i < subject_qa_length;++i)
                     change[i] = study[i]-baseline[i];
             }
             else
             {
-                out << " The percentage difference between longitudinal scans were calculated";
+                if(!index)
+                    out << " The percentage difference between longitudinal scans were calculated";
                 new_subject_qa_sd[index] = 1.0;
                 for(int i = 0;i < subject_qa_length;++i)
                 {
@@ -664,6 +669,7 @@ void connectometry_db::calculate_change(unsigned char dif_type,bool norm)
     subject_qa.swap(new_subject_qa);
     num_subjects = match.size();
     match.clear();
+    report += out.str();
     modified = true;
 
 }

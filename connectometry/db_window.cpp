@@ -419,6 +419,8 @@ void db_window::update_db(void)
     update_subject_list();
     if(!fp_dif_map.empty())
         on_calculate_dif_clicked();
+    ui->report->setText(vbc->handle->db.report.c_str());
+
 }
 
 
