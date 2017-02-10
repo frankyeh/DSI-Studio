@@ -477,24 +477,10 @@ bool group_connectometry::load_demographic_file(QString filename)
         }
         ui->missing_data_checked->setChecked(std::find(X.begin(),X.end(),ui->missing_value->value()) != X.end());
     }
-    if(!model->pre_process())
-    {
-        if(gui)
-            QMessageBox::information(this,"Error","Invalid subjet information for statistical analysis",0);
-        else
-            std::cout << "invalid subjet information for statistical analysis" << std::endl;
-        ui->run->setEnabled(false);
-        ui->show_result->setEnabled(false);
-        return false;
-    }
-
-    ui->run->setEnabled(true);
-    ui->show_result->setEnabled(true);
-    on_suggest_threshold_clicked();
     return true;
 }
 
-void group_connectometry::setup_model(stat_model& m)
+bool group_connectometry::setup_model(stat_model& m)
 {
     m = *(model.get());
     m.study_feature = ui->foi->currentIndex()+1; // this index is after selection
@@ -504,7 +490,6 @@ void group_connectometry::setup_model(stat_model& m)
         if(ui->variable_list->item(i-1)->checkState() == Qt::Checked)
             sel[i] = 1;
     m.select_variables(sel);
-
     if(ui->rb_beta->isChecked())
         m.threshold_type = stat_model::beta;
     if(ui->rb_percentage->isChecked())
@@ -513,15 +498,20 @@ void group_connectometry::setup_model(stat_model& m)
         m.threshold_type = stat_model::t;
     if(ui->missing_data_checked->isChecked())
         m.remove_missing_data(ui->missing_value->value());
+    return m.pre_process();
 }
 
 void group_connectometry::on_suggest_threshold_clicked()
 {
-    if(!ui->run->isEnabled())
+    if(ui->foi->currentIndex() == -1)
         return;
     result_fib.reset(new connectometry_result);
     stat_model info;
-    setup_model(info);
+    if(!setup_model(info))
+    {
+        QMessageBox::information(this,"Error","Cannot run a regression model. Not enough subject count?",0);
+        return;
+    }
     bool terminated = false;
     calculate_spm(vbc->handle,*result_fib.get(),info,
                   vbc->fiber_threshold,ui->normalize_qa->isChecked(),terminated);
@@ -698,7 +688,11 @@ void group_connectometry::on_run_clicked()
     vbc->tracking_threshold = (ui->rb_percentage->isChecked() ? (float)ui->threshold->value()*0.01 : ui->threshold->value());
 
     vbc->model.reset(new stat_model);
-    setup_model(*vbc->model.get());
+    if(!setup_model(*vbc->model.get()))
+    {
+        QMessageBox::information(this,"Error","Cannot run the statistics. Subject number not enough?",0);
+        return;
+    }
 
 
     std::ostringstream out;
@@ -820,7 +814,12 @@ void group_connectometry::on_show_result_clicked()
         new_data->report += out.str();
     }
     stat_model cur_model;
-    setup_model(cur_model);
+    if(!setup_model(cur_model))
+    {
+        QMessageBox::information(this,"Error","Cannot run the statistics. Subject number not enough?",0);
+        return;
+    }
+
     {
         char threshold_type[5][11] = {"percentage","t","beta","percentile","mean_dif"};
         result_fib.reset(new connectometry_result);

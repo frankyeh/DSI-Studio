@@ -183,9 +183,6 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
         return false;
     }
     std::vector<float> new_subject_qa(subject_qa_length);
-
-    // check if the odf table is consistent or not
-    std::cout << index_name << std::endl;
     if(index_name == "sdf" || index_name.empty())
     {
         if(!is_consistent(m))
@@ -940,7 +937,6 @@ void stat_model::select_variables(const std::vector<char>& sel)
             new_X[index] = X[i*feature_count+feature_map[j]];
     feature_count = new_feature_count;
     X.swap(new_X);
-    pre_process();
 }
 
 bool stat_model::pre_process(void)
@@ -985,7 +981,6 @@ void stat_model::remove_subject(unsigned int index)
     if(!X.empty())
         X.erase(X.begin()+index*feature_count,X.begin()+(index+1)*feature_count);
     subject_index.erase(subject_index.begin()+index);
-    pre_process();
 }
 
 void stat_model::remove_missing_data(double missing_value)
@@ -1028,7 +1023,6 @@ void stat_model::remove_missing_data(double missing_value)
         subject_index.erase(subject_index.begin()+index);
         remove_list.pop_back();
     }
-    pre_process();
 }
 
 bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap)
