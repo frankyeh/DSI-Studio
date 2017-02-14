@@ -754,8 +754,10 @@ void get_regions_statistics(std::shared_ptr<fib_data> handle,
 {
     std::vector<std::string> titles;
     std::vector<std::vector<float> > data(regions.size());
-    for(unsigned int index = 0;index < regions.size();++index)
-        regions[index]->get_quantitative_data(handle,titles,data[index]);
+    image::par_for(regions.size(),[&](unsigned int index){
+        std::vector<std::string> dummy;
+        regions[index]->get_quantitative_data(handle,(index == 0) ? titles : dummy,data[index]);
+    });
     std::ostringstream out;
     out << "Name\t";
     for(unsigned int index = 0;index < regions.size();++index)
