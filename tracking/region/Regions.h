@@ -17,14 +17,14 @@ const unsigned int seed_id = 3;
 const unsigned int terminate_id = 4;
 
 class ROIRegion {
-private:
+public:
         std::vector<image::vector<3,short> > region;
         image::geometry<3> geo;
         image::vector<3> vs;
         bool modified;
         std::vector<std::vector<image::vector<3,short> > > undo_backup;
         std::vector<std::vector<image::vector<3,short> > > redo_backup;
-private:
+public:
         bool has_back_thread;
         unsigned int back_thread_id;
 public:

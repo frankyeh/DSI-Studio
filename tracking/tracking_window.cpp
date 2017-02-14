@@ -1305,6 +1305,7 @@ void tracking_window::on_addRegionFromAtlas_clicked()
     {
         for(unsigned int i = 0;i < atlas_dialog->roi_list.size();++i)
             regionWidget->add_region_from_atlas(atlas_dialog->atlas_index,atlas_dialog->roi_list[i]);
+
         glWidget->updateGL();
         scene.show_slice();
     }

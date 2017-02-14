@@ -714,10 +714,21 @@ void GLWidget::renderLR()
 
         float alpha = get_param_float("region_alpha");
         unsigned char cur_view = (alpha == 1.0 ? 0 : getCurView(transformation_matrix));
+
+        std::vector<unsigned int> region_need_update;
+        for(unsigned int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
+            if(cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked &&
+                    cur_tracking_window.regionWidget->regions[index]->modified)
+                region_need_update.push_back(index);
+
+        int smoothed = get_param("region_mesh_smoothed");
+        image::par_for(region_need_update.size(),[&](unsigned int index){
+            cur_tracking_window.regionWidget->regions[region_need_update[index]]->makeMeshes(smoothed);
+        });
+
         for(unsigned int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
             if(cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked)
             {
-                cur_tracking_window.regionWidget->regions[index]->makeMeshes(get_param("region_mesh_smoothed"));
                 drawRegion(cur_tracking_window.regionWidget->regions[index]->show_region,
                            cur_view,alpha,get_param("region_bend1"),get_param("region_bend2"));
             }

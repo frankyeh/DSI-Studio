@@ -821,11 +821,9 @@ extern image::basic_image<float,3> mni_fa0_template;
 
 void RegionTableWidget::add_points(std::vector<image::vector<3,short> >& points,bool erase)
 {
-    if (currentRow() >= regions.size())
+    if (currentRow() < 0 || currentRow() >= regions.size())
         return;
     regions[currentRow()]->add_points(points,erase);
-    item(currentRow(),0)->setCheckState(Qt::Checked);
-    item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
 }
 
 bool RegionTableWidget::has_seeding(void)
