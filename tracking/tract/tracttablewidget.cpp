@@ -188,9 +188,15 @@ void TractTableWidget::load_tracts(QStringList filenames)
         label.remove(".trk");
         label.remove(".gz");
         label.remove(".txt");
-        std::string sfilename = filename.toLocal8Bit().begin();
+        std::string sfilename = filename.toStdString();
         addNewTracts(label);
-        tract_models.back()->load_from_file(&*sfilename.begin(),false);
+        if(!tract_models.back()->load_from_file(&*sfilename.begin(),false))
+        {
+            QMessageBox::information(this,"Error",
+                                     QString("Fail to open the tracks file named %1. \
+                                Please check file access privelige or move file to other location.").arg(QFileInfo(filename).baseName()),0);
+            break;
+        }
         if(tract_models.back()->get_cluster_info().empty()) // not multiple cluster file
         {
             item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
