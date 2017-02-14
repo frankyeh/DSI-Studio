@@ -804,7 +804,7 @@ void TractTableWidget::show_tracts_statistics(void)
     std::ostringstream out;
     std::vector<std::vector<std::string> > track_results(tract_models.size());
     begin_prog("calculating");
-    for(unsigned int index = 0;check_prog(index,tract_models.size());++index)
+    image::par_for(tract_models.size(),[&](unsigned int index)
     {
         std::string tmp,line;
         tract_models[index]->get_quantitative_info(tmp);
@@ -819,7 +819,8 @@ void TractTableWidget::show_tracts_statistics(void)
             }
             track_results[index].push_back(line);
         }
-    }
+    });
+
     out << std::endl;
     out << "Tract Name\t";
     for(unsigned int index = 0;index < tract_models.size();++index)
