@@ -898,14 +898,7 @@ void group_connectometry::on_load_roi_from_atlas_clicked()
         for(unsigned int i = 0;i < atlas_dialog->roi_list.size();++i)
         {
             std::vector<image::vector<3,short> > new_roi;
-            unsigned short label = atlas_dialog->roi_list[i];
-            for (image::pixel_index<3>index(vbc->handle->dim);index < vbc->handle->dim.size();++index)
-            {
-                image::vector<3> pos((const unsigned int*)(index.begin()));
-                vbc->handle->subject2mni(pos);
-                if(atlas_list[atlas_dialog->atlas_index].is_labeled_as(pos, label))
-                    new_roi.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
-            }
+            vbc->handle->get_atlas_roi(atlas_dialog->atlas_index,atlas_dialog->roi_list[i],new_roi);
             if(!new_roi.empty())
                 add_new_roi(atlas_dialog->roi_name[i].c_str(),atlas_dialog->atlas_name.c_str(),new_roi);
         }
