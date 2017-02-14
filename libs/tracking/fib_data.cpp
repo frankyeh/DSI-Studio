@@ -716,15 +716,22 @@ void fib_data::subject2mni(image::vector<3>& pos)
 
 void fib_data::get_atlas_roi(int atlas_index,int roi_index,std::vector<image::vector<3,short> >& points)
 {
-    points.clear();
-    for (image::pixel_index<3>index(dim); index < dim.size(); ++index)
+    // this will load the files from storage to prevent GUI multishread crash
+    atlas_list[atlas_index].is_labeled_as(image::vector<3>(0,0,0), roi_index);
+
+    unsigned int thread_count = std::thread::hardware_concurrency();
+    std::vector<std::vector<image::vector<3,short> > > buf(thread_count);
+    image::par_for2(dim.size(),[&](unsigned int i,unsigned int id)
     {
+        image::pixel_index<3>index(i,dim);
         image::vector<3> mni(index.begin());
         subject2mni(mni);
-        if (!atlas_list[atlas_index].is_labeled_as(mni, roi_index))
-            continue;
-        points.push_back(image::vector<3,short>(index.begin()));
-    }
+        if (atlas_list[atlas_index].is_labeled_as(mni, roi_index))
+            buf[id].push_back(image::vector<3,short>(index.begin()));
+    });
+    points.clear();
+    for(int i = 0;i < buf.size();++i)
+        points.insert(points.end(),buf[i].begin(),buf[i].end());
 }
 
 void fib_data::get_mni_mapping(image::basic_image<image::vector<3,float>,3 >& mni_position)
