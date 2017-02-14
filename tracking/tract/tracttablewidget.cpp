@@ -571,7 +571,7 @@ void TractTableWidget::deep_learning_train(void)
     // save atlas as a nifti file
     if(cur_tracking_window.handle->is_qsdr) //QSDR condition
     {
-        image::basic_image<uint64_t,3> atlas(cur_tracking_window.handle->dim);
+        image::basic_image<int,3> atlas(cur_tracking_window.handle->dim);
 
         for(unsigned int index = 0;check_prog(index,rowCount());++index)
         {
@@ -609,7 +609,7 @@ void TractTableWidget::deep_learning_train(void)
             nifti2 << track_map;
             nifti2.save_to_file(track_file_name.toLocal8Bit().begin());
 
-            uint64_t label = (uint64_t(1) << index);
+            int label = (int(1) << index);
             for(int i = 0;i < track_map.size();++i)
                 if(track_map[i])
                     atlas[i] = (atlas[i] | label);

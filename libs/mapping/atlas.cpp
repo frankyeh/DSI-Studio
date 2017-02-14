@@ -86,7 +86,7 @@ void atlas::load_label(void)
             if(line.empty() || line[0] == '#')
                 continue;
             std::string txt;
-            int64_t num = 0;
+            int num = 0;
             std::istringstream(line) >> num >> txt;
             if(txt.empty())
                 continue;
@@ -103,7 +103,7 @@ void atlas::load_label(void)
         {
             is_bit_labeled = true;
             for(int i = 6;i < label_num.size();++i)
-                label_num[i] = (int64_t(1) << i);
+                label_num[i] = (int(1) << i);
         }
     }
 }
@@ -182,7 +182,7 @@ void mni_to_tal(float& x,float &y, float &z)
 }
 
 
-int64_t atlas::get_label_at(const image::vector<3,float>& mni_space)
+int atlas::get_label_at(const image::vector<3,float>& mni_space)
 {
     if(I.empty())
         load_from_file();
@@ -198,7 +198,7 @@ std::string atlas::get_label_name_at(const image::vector<3,float>& mni_space)
 {
     if(I.empty())
         load_from_file();
-    int64_t l = get_label_at(mni_space);
+    int l = get_label_at(mni_space);
     if(!l)
         return std::string();
     if(index2label.empty())
@@ -223,7 +223,7 @@ bool atlas::is_labeled_as(const image::vector<3,float>& mni_space,unsigned int l
         load_from_file();
     return label_matched(get_label_at(mni_space),label_name_index);
 }
-bool atlas::label_matched(int64_t l,unsigned int label_name_index)
+bool atlas::label_matched(int l,unsigned int label_name_index)
 {
     if(I.empty())
         load_from_file();
