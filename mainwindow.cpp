@@ -775,11 +775,6 @@ void MainWindow::on_view_image_clicked()
 
 }
 
-void MainWindow::on_connectometry_clicked()
-{
-
-}
-
 void MainWindow::on_workDir_currentTextChanged(const QString &arg1)
 {
     QDir::setCurrent(arg1);

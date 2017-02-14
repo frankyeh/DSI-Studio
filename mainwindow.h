@@ -45,7 +45,6 @@ private slots:
     void on_batch_src_clicked();
     void on_batch_reconstruction_clicked();
     void on_view_image_clicked();
-    void on_connectometry_clicked();
     void on_workDir_currentTextChanged(const QString &arg1);
     void on_bruker_browser_clicked();
     void on_rigid_body_reg_clicked();
