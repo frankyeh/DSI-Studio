@@ -894,8 +894,6 @@ void GLWidget::makeTracts(void)
     bool show_end_points = tract_style == 2;
     float tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0;
     float skip_rate = 1.0;
-
-    float color_r;
     std::vector<float> mean_fa;
     unsigned int mean_fa_index = 0;
     unsigned int track_num_index = cur_tracking_window.handle->get_name_index(cur_tracking_window.color_bar->get_tract_color_name().toStdString());
