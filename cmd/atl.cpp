@@ -89,7 +89,6 @@ void atl_save_mapping(const std::string& file_name,const image::geometry<3>& geo
         std::string base_name = file_name;
         base_name += ".";
         base_name += atlas_list[i].name;
-        image::basic_image<short,3> all_roi(geo);
         for(unsigned int j = 0;j < atlas_list[i].get_list().size();++j)
         {
             std::string output = base_name;
@@ -100,10 +99,7 @@ void atl_save_mapping(const std::string& file_name,const image::geometry<3>& geo
             image::basic_image<unsigned char,3> roi(geo);
             for(unsigned int k = 0;k < mapping.size();++k)
                 if (atlas_list[i].is_labeled_as(mapping[k], j))
-                {
                     roi[k] = 1;
-                    all_roi[k] = atlas_list[i].get_label_at(mapping[k]);
-                }
             if(multiple)
             {
                 image::io::nifti out;
@@ -124,16 +120,6 @@ void atl_save_mapping(const std::string& file_name,const image::geometry<3>& geo
             for(unsigned int j = 0;j < atlas_list[i].get_list().size();++j)
                 txt_out << atlas_list[i].get_num()[j] << " " << atlas_list[i].get_list()[j] << std::endl;
         }
-        base_name += ".nii.gz";
-        image::io::nifti out;
-        out.set_voxel_size(vs);
-        if(!trans.empty())
-            out.set_image_transformation(trans.begin());
-        else
-            image::flip_xy(all_roi);
-        out << all_roi;
-        out.save_to_file(base_name.c_str());
-        std::cout << "save " << base_name << std::endl;
     }
 }
 std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
