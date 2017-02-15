@@ -202,20 +202,20 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         }
     }
     // check data range
+    float vs[4];
     float max_value = 0.0;
     for(unsigned int index = 0;index < analyze_header.dim(4);++index)
     {
         std::auto_ptr<DwiHeader> new_file(new DwiHeader);
         image::basic_image<float,3> data;
-        if(!analyze_header.toLPS(data,false))
+        if(!analyze_header.toLPS(data,index == 0))
             break;
         max_value = std::max<float>(max_value,*std::max_element(data.begin(),data.end()));
     }
+    analyze_header.get_voxel_size(vs);
     if(!analyze_header.load_from_file(file_name))
         return false;
     {
-        float vs[4];
-        analyze_header.get_voxel_size(vs);
         for(unsigned int index = 0;index < analyze_header.dim(4);++index)
         {
             std::shared_ptr<DwiHeader> new_file(new DwiHeader);
