@@ -48,8 +48,6 @@ void atlas::load_label(void)
     while(std::getline(in,str))
         text.push_back(str);
 
-    is_bit_labeled = false;
-
     if(text[0] == "0\t* * * * *")//talairach
     {
         std::map<std::string,std::set<unsigned int> > regions;
@@ -93,18 +91,7 @@ void atlas::load_label(void)
             label_num.push_back(num);
             labels.push_back(txt);
         }
-        if(label_num.size() > 6 &&
-           label_num[0] == 1 &&
-           label_num[1] == 2 &&
-           label_num[2] == 4 &&
-           label_num[3] == 8 &&
-           label_num[4] == 16 &&
-           label_num[5] == 32)
-        {
-            is_bit_labeled = true;
-            for(int i = 6;i < label_num.size();++i)
-                label_num[i] = (int(1) << i);
-        }
+
     }
 }
 
@@ -113,7 +100,17 @@ void atlas::load_from_file(void)
     gz_nifti nii;
     if(!nii.load_from_file(filename.c_str()))
         throw std::runtime_error("Cannot load atlas file");
-    nii >> I;
+    is_track = (nii.dim(4) > 1); // 4d nifti as track files
+    if(is_track)
+    {
+        nii >> track;
+        I.resize(image::geometry<3>(track.width(),track.height(),track.depth()));
+        for(unsigned int i = 0;i < track.size();i += I.size())
+            track_base_pos.push_back(i);
+    }
+    else
+        nii >> I;
+
     transform.identity();
     nii.get_image_transformation(transform.begin());
     transform.inv();
@@ -121,7 +118,7 @@ void atlas::load_from_file(void)
     if(labels.empty())
         load_label();
 
-    if(label2index.empty() && !is_bit_labeled)
+    if(label2index.empty() && !is_track) // not talairach not tracks
     {
         std::vector<unsigned short> hist(1+*std::max_element(I.begin(),I.end()));
         for(int index = 0;index < I.size();++index)
@@ -182,18 +179,7 @@ void mni_to_tal(float& x,float &y, float &z)
 }
 
 
-int atlas::get_label_at(const image::vector<3,float>& mni_space)
-{
-    if(I.empty())
-        load_from_file();
-    image::vector<3,float> atlas_space(mni_space);
-    atlas_space.to(transform);
-    atlas_space.round();
-    if(!I.geometry().is_valid(atlas_space))
-        return 0;
-    return I.at(atlas_space[0],atlas_space[1],atlas_space[2]);
-}
-
+/*
 std::string atlas::get_label_name_at(const image::vector<3,float>& mni_space)
 {
     if(I.empty())
@@ -216,23 +202,35 @@ std::string atlas::get_label_name_at(const image::vector<3,float>& mni_space)
     }
     return result;
 }
-
+*/
 bool atlas::is_labeled_as(const image::vector<3,float>& mni_space,unsigned int label_name_index)
-{
-    if(I.empty())
-        load_from_file();
-    return label_matched(get_label_at(mni_space),label_name_index);
-}
-bool atlas::label_matched(int l,unsigned int label_name_index)
 {
     if(I.empty())
         load_from_file();
     if(label_name_index >= label_num.size())
         return false;
-    if(is_bit_labeled)
-        return l & label_num[label_name_index];
-    if(index2label.empty())
+
+    image::vector<3,float> atlas_space(mni_space);
+    atlas_space.to(transform);
+    atlas_space.round();
+    if(!I.geometry().is_valid(atlas_space))
+        return false;
+
+    int offset = ((int)atlas_space[2]*I.height()+(int)atlas_space[1])*I.width()+(int)atlas_space[0];
+    if(is_track)
+    {
+        if(label_name_index >= track_base_pos.size())
+            return false;
+        unsigned int pos = track_base_pos[label_name_index] + offset;
+        if(pos >= track.size())
+            return false;
+        return track[pos];
+    }
+    int l = I[offset];
+    if(index2label.empty()) // not talairach
         return l == label_num[label_name_index];
+
+    // The following is for talairach
     if(l >= index2label.size())
         return false;
     return std::find(index2label[l].begin(),index2label[l].end(),label_name_index) != index2label[l].end();

@@ -558,50 +558,58 @@ void TractTableWidget::deep_learning_train(void)
                 cnn.add_sample(cur_tracking_window.handle.get(),index,tract_models[index]->get_tracts()[i]);
         }
 
-    filename = QFileInfo(filename).absolutePath() + "/network_label.txt";
+    filename = QFileInfo(filename).absolutePath() + "/tracks.txt";
     {
         std::ofstream out(filename.toStdString().c_str());
         std::copy(cnn.cnn_name.begin(),cnn.cnn_name.end(),std::ostream_iterator<std::string>(out,"\n"));
     }
+
+    /*
     filename = QFileInfo(filename).absolutePath() + "/network_data.bin";
     cnn.cnn_data.input = image::geometry<3>(64,80,3);
     cnn.cnn_data.output = image::geometry<3>(1,1,rowCount());
     cnn.cnn_data.save_to_file(filename.toStdString().c_str());
+    */
 
     // save atlas as a nifti file
     if(cur_tracking_window.handle->is_qsdr) //QSDR condition
     {
-        image::basic_image<int,3> atlas(cur_tracking_window.handle->dim);
+        image::basic_image<int,4> atlas(image::geometry<4>(
+                cur_tracking_window.handle->dim[0],
+                cur_tracking_window.handle->dim[1],
+                cur_tracking_window.handle->dim[2],
+                rowCount()));
 
         for(unsigned int index = 0;check_prog(index,rowCount());++index)
         {
             image::basic_image<unsigned char,3> track_map(cur_tracking_window.handle->dim);
-            if (item(index,0)->checkState() == Qt::Checked)
+            for(unsigned int i = 0;i < tract_models[index]->get_tracts().size();++i)
             {
-                for(unsigned int i = 0;i < tract_models[index]->get_tracts().size();++i)
+                const std::vector<float>& tracks = tract_models[index]->get_tracts()[i];
+                for(int j = 0;j < tracks.size();j += 3)
                 {
-                    const std::vector<float>& tracks = tract_models[index]->get_tracts()[i];
-                    for(int j = 0;j < tracks.size();j += 3)
+                    image::pixel_index<3> p(std::round(tracks[j]),std::round(tracks[j+1]),std::round(tracks[j+2]),track_map.geometry());
+                    if(track_map.geometry().is_valid(p))
+                        track_map[p.index()] = 1;
+                    if(j)
                     {
-                        image::pixel_index<3> p(std::round(tracks[j]),std::round(tracks[j+1]),std::round(tracks[j+2]),atlas.geometry());
-                        if(track_map.geometry().is_valid(p))
-                            track_map[p.index()] = 1;
-                        if(j)
+                        for(float r = 0.2;r < 1.0;r += 0.2)
                         {
-                            for(float r = 0.2;r < 1.0;r += 0.2)
-                            {
-                                image::pixel_index<3> p2(std::round(tracks[j]*r+tracks[j-3]*(1-r)),
-                                                         std::round(tracks[j+1]*r+tracks[j-2]*(1-r)),
-                                                         std::round(tracks[j+2]*r+tracks[j-1]*(1-r)),atlas.geometry());
-                                if(track_map.geometry().is_valid(p2))
-                                    track_map[p2.index()] = 1;
-                            }
+                            image::pixel_index<3> p2(std::round(tracks[j]*r+tracks[j-3]*(1-r)),
+                                                     std::round(tracks[j+1]*r+tracks[j-2]*(1-r)),
+                                                     std::round(tracks[j+2]*r+tracks[j-1]*(1-r)),track_map.geometry());
+                            if(track_map.geometry().is_valid(p2))
+                                track_map[p2.index()] = 1;
                         }
                     }
                 }
             }
             while(image::morphology::smoothing_fill(track_map))
-                ;
+                image::morphology::defragment(track_map);
+            image::morphology::smoothing(track_map);
+            image::morphology::defragment(track_map);
+
+
             QString track_file_name = QFileInfo(filename).absolutePath() + "/" + item(index,0)->text() + ".nii.gz";
             gz_nifti nifti2;
             nifti2.set_voxel_size(cur_tracking_window.slice.voxel_size.begin());
@@ -609,18 +617,16 @@ void TractTableWidget::deep_learning_train(void)
             nifti2 << track_map;
             nifti2.save_to_file(track_file_name.toLocal8Bit().begin());
 
-            int label = (int(1) << index);
-            for(int i = 0;i < track_map.size();++i)
-                if(track_map[i])
-                    atlas[i] = (atlas[i] | label);
+            std::copy(track_map.begin(),track_map.end(),atlas.begin() + index*track_map.size());
+
             if(index+1 == rowCount())
             {
-                filename = QFileInfo(filename).absolutePath() + "/network.nii.gz";
+                filename = QFileInfo(filename).absolutePath() + "/tracks.nii.gz";
                 gz_nifti nifti;
                 nifti.set_voxel_size(cur_tracking_window.slice.voxel_size.begin());
                 nifti.set_image_transformation(cur_tracking_window.handle->trans_to_mni.begin());
                 nifti << atlas;
-                nifti.save_to_file(track_file_name.toLocal8Bit().begin());
+                nifti.save_to_file(filename.toLocal8Bit().begin());
             }
         }
     }

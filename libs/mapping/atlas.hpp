@@ -9,12 +9,15 @@ private:
     std::vector<int> label_num;
     std::vector<std::string> labels;
     image::matrix<4,4,float> transform;
-    bool is_bit_labeled;
     void load_from_file(void);
     void load_label(void);
 private:// for talairach only
     std::vector<std::vector<unsigned int> > index2label;
     std::vector<std::vector<unsigned int> > label2index;
+private:// for track atlas only
+    image::basic_image<char,4> track;
+    std::vector<unsigned int> track_base_pos;
+    bool is_track;
 public:
     std::string name,filename;
 public:
@@ -38,10 +41,8 @@ public:
         }
         return label_num;
     }
-    int get_label_at(const image::vector<3,float>& mni_space);
-    std::string get_label_name_at(const image::vector<3,float>& mni_space);
+    //std::string get_label_name_at(const image::vector<3,float>& mni_space);
     bool is_labeled_as(const image::vector<3,float>& mni_space,unsigned int label);
-    bool label_matched(int image_label,unsigned int region_label);
 };
 
 #endif // ATLAS_HPP
