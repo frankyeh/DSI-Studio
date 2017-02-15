@@ -198,8 +198,7 @@ bool load_region(std::shared_ptr<fib_data> handle,
                     if(atlas_list[i].get_list()[label_index] == region_name)
                 {
                     for (image::pixel_index<3>index(mapping.geometry());index < mapping.size();++index)
-                        if(mapping[index.index()] != null &&
-                            atlas_list[i].label_matched(atlas_list[i].get_label_at(mapping[index.index()]),label_index))
+                        if(mapping[index.index()] != null && atlas_list[i].is_labeled_as(mapping[index.index()],label_index))
                             cur_region.push_back(image::vector<3,short>(index.begin()));
                 }
         roi.add_points(cur_region,false);
