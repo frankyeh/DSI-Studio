@@ -13,6 +13,7 @@ extern QString fib_template_file_name;
 CreateDBDialog::CreateDBDialog(QWidget *parent,bool create_db_) :
     QDialog(parent),
     create_db(create_db_),
+    dir_length(0),
     ui(new Ui::CreateDBDialog)
 {
     ui->setupUi(this);
@@ -55,21 +56,22 @@ QString CreateDBDialog::get_file_name(QString file_path)
 
 void CreateDBDialog::update_list(void)
 {
+    dir_length = 0;
     if(group.size() > 1)
     {
         QDir dir1(QFileInfo(group[0]).dir()),dir2(QFileInfo(group[group.size()-1]).dir());
         if(dir1.absolutePath() == dir2.absolutePath())
             dir_length = 0;
         else
-        if(dir1.cdUp() && dir2.cdUp() && dir1.absolutePath() == dir2.absolutePath())
-            dir_length = dir1.absolutePath().length()+1;
-        else
-        if(dir1.cdUp() && dir2.cdUp() && dir1.absolutePath() == dir2.absolutePath())
-            dir_length = dir1.absolutePath().length()+1;
-
-    }
-    else
-        dir_length = 0;
+        while(dir1.cdUp() && dir2.cdUp())
+        {
+            if(dir1.absolutePath() == dir2.absolutePath())
+            {
+                dir_length = dir1.absolutePath().length()+1;
+                break;
+            }
+        }
+    }    
 
     if(ui->output_file_name->text().isEmpty())
         on_index_of_interest_currentIndexChanged(QString());
