@@ -491,7 +491,7 @@ public:
                 out << "rdi" << std::setfill('0') << std::setw(2) << int(L*10) << "L";
                 mat_writer.write(out.str().c_str(),&*rdi[i].begin(),1,rdi[i].size());
             }
-            for(unsigned int i = 0;i < voxel.dim.size();++i)
+            for(unsigned int i = 0;i < rdi[0].size();++i)
             for(unsigned int j = 0;j < rdi.size();++j)
                 rdi[j][i] = rdi[rdi.size()-1][i]-rdi[j][i];
             L = 0.2;
