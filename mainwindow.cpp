@@ -236,6 +236,11 @@ void MainWindow::loadFib(QString filename)
 
 void MainWindow::loadSrc(QStringList filenames)
 {
+    if(filenames.empty())
+    {
+        QMessageBox::information(this,"Error","Cannot find SRC.gz files in the directory. Please create SRC files first.");
+        return;
+    }
     try
     {
         reconstruction_window* new_mdi = new reconstruction_window(filenames,this);
@@ -644,7 +649,7 @@ void MainWindow::on_batch_src_clicked()
                 continue;
             }
 
-            QStringList nifti_file_list = cur_dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
+            QStringList nifti_file_list = cur_dir.entryList(QStringList("*.nii.gz") << "*.nii",QDir::Files|QDir::NoSymLinks);
             for (unsigned int index = 0;index < nifti_file_list.size();++index)
             {
                 if(QFileInfo(dir_list[i] + "/" + QFileInfo(nifti_file_list[index]).baseName()+".bval").exists() &&
