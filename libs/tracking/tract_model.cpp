@@ -1560,8 +1560,53 @@ bool TractModel::recognize(std::map<float,std::string,std::greater<float> >& res
         result[accu_input[i]] = track_network.track_name[i];
     return true;
 }
+extern atlas* track_atlas;
 void TractModel::recognize_report(std::string& report)
 {
+    /*
+    if(!handle->can_map_to_mni())
+        return;
+    if(track_atlas)
+    {
+        image::vector<3> dummy;
+        track_atlas->is_labeled_as(dummy,0);// invoke loading file
+        std::vector<int> recog_count(track_atlas->get_list().size());
+        image::par_for(tract_data.size(),[&](int i)
+        {
+            std::vector<image::vector<3> > points;
+            for(int j = 0;j < tract_data[i].size();j += 3)
+            {
+                points.push_back(image::vector<3>(&(tract_data[i][j])));
+                handle->subject2mni(points.back());
+            }
+            int result = track_atlas->get_track_label(points);
+            if(result >= 0 && result < recog_count.size())
+                ++recog_count[result];
+        });
+        int sum = std::accumulate(recog_count.begin(),recog_count.end(),(int)0);
+        std::multimap<float,std::string,std::greater<float> > sorted_result;
+        for(int i = 0;i < recog_count.size();++i)
+        {
+            float p = recog_count[i];
+            p /= sum;
+            if(p > 0.05)
+                sorted_result.insert(std::make_pair(p,track_atlas->get_list()[i]));
+        }
+        std::ostringstream out;
+        int n = 0;
+        for(auto& r : sorted_result)
+        {
+            if(n)
+                out << ((n == sorted_result.size()-1 ? (sorted_result.size() == 2 ? " and ":", and ") : ", "));
+            out << r.second << " (" << (float)(int(r.first*10000.0))/100.0 << "%)";
+            ++n;
+        }
+        report = out.str();
+    }
+    else
+        report = "tracks";
+
+    */
     if(!track_network.can_recognize())
         return;
     if(!handle->can_map_to_mni())

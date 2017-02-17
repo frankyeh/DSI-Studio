@@ -6,6 +6,7 @@
 #include <QDir>
 
 std::vector<atlas> atlas_list;
+atlas* track_atlas = 0;
 void load_atlas(void)
 {
     QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
@@ -24,6 +25,8 @@ void load_atlas(void)
     {
         atlas_list[index].name = QFileInfo(atlas_name_list[index]).baseName().toLocal8Bit().begin();
         atlas_list[index].filename = (dir.absolutePath() + "/" + atlas_name_list[index]).toLocal8Bit().begin();
+        if(atlas_list[index].name == "tracks")
+            track_atlas = &atlas_list[index];
     }
 
 }
@@ -203,6 +206,15 @@ std::string atlas::get_label_name_at(const image::vector<3,float>& mni_space)
     return result;
 }
 */
+int atlas::get_index(image::vector<3,float> atlas_space)
+{
+    atlas_space.to(transform);
+    atlas_space.round();
+    if(!I.geometry().is_valid(atlas_space))
+        return 0;
+    return ((int)atlas_space[2]*I.height()+(int)atlas_space[1])*I.width()+(int)atlas_space[0];
+}
+
 bool atlas::is_labeled_as(const image::vector<3,float>& mni_space,unsigned int label_name_index)
 {
     if(I.empty())
@@ -210,13 +222,9 @@ bool atlas::is_labeled_as(const image::vector<3,float>& mni_space,unsigned int l
     if(label_name_index >= label_num.size())
         return false;
 
-    image::vector<3,float> atlas_space(mni_space);
-    atlas_space.to(transform);
-    atlas_space.round();
-    if(!I.geometry().is_valid(atlas_space))
+    int offset = get_index(mni_space);
+    if(!offset)
         return false;
-
-    int offset = ((int)atlas_space[2]*I.height()+(int)atlas_space[1])*I.width()+(int)atlas_space[0];
     if(is_track)
     {
         if(label_name_index >= track_base_pos.size())
@@ -234,5 +242,23 @@ bool atlas::is_labeled_as(const image::vector<3,float>& mni_space,unsigned int l
     if(l >= index2label.size())
         return false;
     return std::find(index2label[l].begin(),index2label[l].end(),label_name_index) != index2label[l].end();
+}
+int atlas::get_track_label(const std::vector<image::vector<3> >& points)
+{
+    if(I.empty())
+        load_from_file();
+    if(!is_track)
+        return -1;
+    std::vector<int> vote(track_base_pos.size());
+    for(int i = 0;i < points.size();++i)
+    {
+        int offset = get_index(points[i]);
+        if(!offset)
+            continue;
+        for(int j = 0;j < track_base_pos.size();++j)
+            if(track[track_base_pos[j] + offset])
+                ++vote[j];
+    }
+    return std::max_element(vote.begin(),vote.end())-vote.begin();
 }
 

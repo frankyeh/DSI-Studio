@@ -636,6 +636,7 @@ void TractTableWidget::recog_tracks(void)
 {
     if(currentRow() >= tract_models.size() || tract_models[currentRow()]->get_tracts().size() == 0)
         return;
+
     std::map<float,std::string,std::greater<float> > sorted_list;
     if(!tract_models[currentRow()]->recognize(sorted_list))
     {
@@ -647,6 +648,11 @@ void TractTableWidget::recog_tracks(void)
     for(int i = 0;i < 5;++i,++beg)
         out << beg->second << "\t" << beg->first << std::endl;
     cur_tracking_window.show_info_dialog("Tract Recognition Result",out.str());
+
+    /*
+    std::string result;
+    tract_models[currentRow()]->recognize_report(result);
+    QMessageBox::information(this,"Result",result.c_str(),0);*/
 }
 
 void TractTableWidget::saveTransformedTracts(const float* transform)

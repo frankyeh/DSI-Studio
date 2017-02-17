@@ -11,6 +11,7 @@ private:
     image::matrix<4,4,float> transform;
     void load_from_file(void);
     void load_label(void);
+    int get_index(image::vector<3,float> atlas_space);
 private:// for talairach only
     std::vector<std::vector<unsigned int> > index2label;
     std::vector<std::vector<unsigned int> > label2index;
@@ -43,6 +44,7 @@ public:
     }
     //std::string get_label_name_at(const image::vector<3,float>& mni_space);
     bool is_labeled_as(const image::vector<3,float>& mni_space,unsigned int label);
+    int get_track_label(const std::vector<image::vector<3> >& points);
 };
 
 #endif // ATLAS_HPP
