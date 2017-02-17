@@ -555,6 +555,12 @@ void group_connectometry::calculate_FDR(void)
     if(!vbc->report.empty())
         report += vbc->report.c_str();
 
+    if(vbc->progress == 100)
+    {
+        if(ui->output_track_data->isChecked())
+            vbc->save_tracks_files(); // this also give track recognition
+    }
+
     std::ostringstream out;
     out << " The connectometry analysis identified "
         << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no track": vbc->greater_tracks_result.c_str())
@@ -574,8 +580,6 @@ void group_connectometry::calculate_FDR(void)
 
     if(vbc->progress == 100)
     {
-        if(ui->output_track_data->isChecked())
-            vbc->save_tracks_files(); // prepared track recognition results
 
 
         // save report in text
