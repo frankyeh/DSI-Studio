@@ -78,8 +78,6 @@ public slots:
 
     void on_missing_data_checked_toggled(bool checked);
 
-
-    void on_suggest_threshold_clicked();
 public slots:
     void calculate_FDR(void);
 public:
@@ -88,9 +86,6 @@ private slots:
     void on_load_roi_from_atlas_clicked();
     void on_clear_all_roi_clicked();
     void on_load_roi_from_file_clicked();
-    void on_rb_percentage_clicked();
-    void on_rb_t_stat_clicked();
-    void on_rb_beta_clicked();
     void on_variable_list_clicked(const QModelIndex &index);
 };
 

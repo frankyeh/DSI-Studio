@@ -105,8 +105,6 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<vbc_dat
 
     ui->foi_widget->hide();
     on_roi_whole_brain_toggled(true);
-    on_rb_t_stat_clicked();
-
 
     // CHECK R2
     std::string check_quality;
@@ -130,27 +128,6 @@ group_connectometry::~group_connectometry()
 {
     qApp->removeEventFilter(this);
     delete ui;
-}
-
-void group_connectometry::on_rb_percentage_clicked()
-{
-    ui->percentage_label->show();
-    ui->threshold->setDecimals(0);
-    ui->explain_label->setText("Mean of the difference divided by the mean ×100%");
-}
-
-void group_connectometry::on_rb_t_stat_clicked()
-{
-    ui->percentage_label->hide();
-    ui->threshold->setDecimals(2);
-    ui->explain_label->setText("T statistics");
-}
-
-void group_connectometry::on_rb_beta_clicked()
-{
-    ui->percentage_label->hide();
-    ui->threshold->setDecimals(2);
-    ui->explain_label->setText("Beta coefficient");
 }
 
 void group_connectometry::show_fdr_report()
@@ -490,50 +467,10 @@ bool group_connectometry::setup_model(stat_model& m)
         if(ui->variable_list->item(i-1)->checkState() == Qt::Checked)
             sel[i] = 1;
     m.select_variables(sel);
-    if(ui->rb_beta->isChecked())
-        m.threshold_type = stat_model::beta;
-    if(ui->rb_percentage->isChecked())
-        m.threshold_type = stat_model::percentage;
-    if(ui->rb_t_stat->isChecked())
-        m.threshold_type = stat_model::t;
+    m.threshold_type = stat_model::t;
     if(ui->missing_data_checked->isChecked())
         m.remove_missing_data(ui->missing_value->value());
     return m.pre_process();
-}
-
-void group_connectometry::on_suggest_threshold_clicked()
-{
-    if(ui->foi->currentIndex() == -1)
-        return;
-    result_fib.reset(new connectometry_result);
-    stat_model info;
-    if(!setup_model(info))
-    {
-        QMessageBox::information(this,"Error","Cannot run a regression model. Not enough subject count?",0);
-        return;
-    }
-    bool terminated = false;
-    calculate_spm(vbc->handle,*result_fib.get(),info,
-                  vbc->fiber_threshold,ui->normalize_qa->isChecked(),terminated);
-    std::vector<float> values;
-    values.reserve(vbc->handle->dim.size()/8);
-    for(unsigned int index = 0;index < vbc->handle->dim.size();++index)
-        if(vbc->handle->dir.fa[0][index] > vbc->fiber_threshold)
-            values.push_back(result_fib->lesser_ptr[0][index] == 0 ?
-                result_fib->greater_ptr[0][index] :  result_fib->lesser_ptr[0][index]);
-    float max_value = *std::max_element(values.begin(),values.end());
-    if(ui->rb_percentage->isChecked())
-    {
-        ui->range_label->setText(QString("max:%2").arg(max_value*100));
-        ui->threshold->setMaximum(max_value*100);
-        ui->threshold->setValue(2.0*image::segmentation::otsu_threshold(values)*100);
-    }
-    else
-    {
-        ui->range_label->setText(QString("max:%2").arg(max_value));
-        ui->threshold->setMaximum(max_value);
-        ui->threshold->setValue(2.0*image::segmentation::otsu_threshold(values));
-    }
 }
 
 
@@ -630,8 +567,9 @@ void group_connectometry::calculate_FDR(void)
             *(new_data.get()) = *(vbc->handle);
             tracking_window* new_mdi = new tracking_window(0,new_data);
             new_mdi->setWindowTitle(vbc->trk_file_names[0].c_str());
-            new_mdi->resize(1024,800);
             new_mdi->show();
+            new_mdi->resize(1024,800);
+            new_mdi->command("set_zoom","0.9");
             new_mdi->command("set_param","show_slice","0");
             new_mdi->command("set_param","show_region","0");
             new_mdi->command("set_param","show_surface","1");
@@ -689,7 +627,7 @@ void group_connectometry::on_run_clicked()
     vbc->length_threshold = ui->length_threshold->value();
     vbc->track_trimming = ui->track_trimming->value();
     vbc->individual_data.clear();
-    vbc->tracking_threshold = (ui->rb_percentage->isChecked() ? (float)ui->threshold->value()*0.01 : ui->threshold->value());
+    vbc->tracking_threshold = ui->threshold->value();
 
     vbc->model.reset(new stat_model);
     if(!setup_model(*vbc->model.get()))
@@ -738,13 +676,7 @@ void group_connectometry::on_run_clicked()
 
     if(ui->normalize_qa->isChecked())
         out << " The SDF was normalized.";
-    if(ui->rb_percentage->isChecked())
-        out << " A percentage threshold of " << ui->threshold->value();
-    if(ui->rb_beta->isChecked())
-        out << " A beta coefficient threshold of " << ui->threshold->value();
-    if(ui->rb_t_stat->isChecked())
-        out << " A t threshold of " << ui->threshold->value();
-
+    out << " A T-score threshold of " << ui->threshold->value();
     out << " was assigned to select local connectomes, and the local connectomes were tracked using a deterministic fiber tracking algorithm (Yeh et al. PLoS ONE 8(11): e80713, 2013).";
 
     // load region
@@ -809,6 +741,12 @@ void group_connectometry::on_run_clicked()
 
 void group_connectometry::on_show_result_clicked()
 {
+    if((vbc->greater_tracks.empty()))\
+    {
+        QMessageBox::information(this,"Error","Run connectometry analysis to get the results");
+        return;
+    }
+
     std::shared_ptr<fib_data> new_data(new fib_data);
     *(new_data.get()) = *(vbc->handle);
     if(!report.isEmpty())

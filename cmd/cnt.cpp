@@ -42,26 +42,6 @@ int cnt(void)
         std::cout << "Unknown model" <<std::endl;
         return 0;
     }
-    int threshold_type = po.get("threshold_type",int(0));
-    // percentage = 0,t = 1,beta = 2,percentile = 3,mean_dif = 4
-    switch(threshold_type)
-    {
-    case 0:
-        vbc->ui->rb_percentage->setChecked(true);
-        std::cout << "threshold_type=percentage change" << std::endl;
-        break;
-    case 1:
-        vbc->ui->rb_t_stat->setChecked(true);
-        std::cout << "threshold_type=t statistics" << std::endl;
-        break;
-    case 2:
-        vbc->ui->rb_beta->setChecked(true);
-        std::cout << "threshold_type=beta coefficient" << std::endl;
-        break;
-    default:
-        std::cout << "unknown threshold type:" << threshold_type << std::endl;
-        return -1;
-    }
 
     if(po.has("missing_value"))
     {
@@ -70,7 +50,6 @@ int cnt(void)
         std::cout << "missing value=" << vbc->ui->missing_value->value() << std::endl;
     }
 
-    vbc->on_suggest_threshold_clicked();
     vbc->ui->threshold->setValue(po.get("threshold",float(vbc->ui->threshold->value())));
 
     std::cout << "threshold=" << vbc->ui->threshold->value() << std::endl;

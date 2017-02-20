@@ -86,7 +86,7 @@ public: // individual
     const float* individual_data;
     float individual_data_sd;
 public:
-    stat_model(void):individual_data(0){}
+    stat_model(void):individual_data(0),threshold_type(t){}
 public:
     void init(unsigned int subject_count);
     void remove_subject(unsigned int index);
