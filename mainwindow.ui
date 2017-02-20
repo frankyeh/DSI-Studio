@@ -54,7 +54,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>1</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -64,8 +64,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>350</width>
-         <height>460</height>
+         <width>192</width>
+         <height>310</height>
         </rect>
        </property>
        <attribute name="label">
@@ -187,7 +187,7 @@
         <item>
          <widget class="QCommandLinkButton" name="open_db">
           <property name="text">
-           <string>Edit a Connectometry Database</string>
+           <string>Open a Connectometry Database</string>
           </property>
           <property name="description">
            <string>Add subjects, calculate change, fingerprinting</string>
@@ -396,8 +396,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>350</width>
-         <height>460</height>
+         <width>250</width>
+         <height>428</height>
         </rect>
        </property>
        <attribute name="label">

@@ -122,6 +122,12 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<vbc_dat
     if(!check_quality.empty())
         QMessageBox::information(this,"Warning",check_quality.c_str());
 
+    ui->subject_demo->clear();
+    ui->subject_demo->setColumnCount(1);
+    ui->subject_demo->setHorizontalHeaderLabels(QStringList("Subject ID"));
+    ui->subject_demo->setRowCount(vbc->handle->db.num_subjects);
+    for(unsigned int row = 0;row < ui->subject_demo->rowCount();++row)
+        ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->handle->db.subject_names[row].c_str())));
 }
 
 group_connectometry::~group_connectometry()
@@ -358,7 +364,7 @@ bool group_connectometry::load_demographic_file(QString filename)
         std::vector<unsigned int> age(vbc->handle->db.num_subjects),sex(vbc->handle->db.num_subjects);
         if((QString(vbc->handle->db.subject_names[0].c_str()).contains("_M0") || QString(vbc->handle->db.subject_names[0].c_str()).contains("_F0")) &&
             QString(vbc->handle->db.subject_names[0].c_str()).contains("Y_") && gui &&
-            QMessageBox::information(this,"Connectomtetry aanalysis","Pull age and sex (1 = male, 0 = female) information from connectometry db?",QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
+            QMessageBox::information(this,"Connectomtetry analysis","Pull age and sex (1 = male, 0 = female) information from connectometry db?",QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
             {
                 add_age_and_sex = true;
                 for(unsigned int index = 0;index < vbc->handle->db.num_subjects;++index)
