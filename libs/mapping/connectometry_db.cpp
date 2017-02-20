@@ -330,6 +330,8 @@ void connectometry_db::save_subject_vector(const char* output_name,
     matfile.write("dimension",&*handle->dim.begin(),1,3);
     std::vector<int> voxel_location;
     std::vector<float> mni_location;
+    std::vector<float> fiber_direction;
+
     for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
     {
         unsigned int cur_index = si2vi[s_index];
@@ -344,10 +346,16 @@ void connectometry_db::save_subject_vector(const char* output_name,
             mni_location.push_back(p2[0]);
             mni_location.push_back(p2[1]);
             mni_location.push_back(p2[2]);
+
+            const float* dir = handle->dir.get_dir(cur_index,j);
+            fiber_direction.push_back(dir[0]);
+            fiber_direction.push_back(dir[1]);
+            fiber_direction.push_back(dir[2]);
         }
     }
     matfile.write("voxel_location",&voxel_location[0],1,voxel_location.size());
     matfile.write("mni_location",&mni_location[0],3,voxel_location.size());
+    matfile.write("fiber_direction",&fiber_direction[0],3,voxel_location.size());
 }
 void connectometry_db::save_subject_data(const char* output_name)
 {
