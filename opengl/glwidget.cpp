@@ -1731,6 +1731,10 @@ void GLWidget::get3View(QImage& I,unsigned int type)
     paintGL();
     QImage image0 = grabFrameBuffer();
     set_view_flip = true;
+    set_view(0);
+    paintGL();
+    QImage image00 = grabFrameBuffer();
+    set_view_flip = true;
     set_view(1);
     paintGL();
     QImage image1 = grabFrameBuffer();
@@ -1751,20 +1755,22 @@ void GLWidget::get3View(QImage& I,unsigned int type)
     }
     if(type == 1) // horizontal
     {
-        QImage all(image0.width()*3,image0.height(),QImage::Format_RGB32);
+        QImage all(image0.width()*4,image0.height(),QImage::Format_RGB32);
         QPainter painter(&all);
         painter.drawImage(0,0,image0);
-        painter.drawImage(image0.width(),0,image1);
-        painter.drawImage(image0.width()*2,0,image2);
+        painter.drawImage(image0.width(),0,image00);
+        painter.drawImage(image0.width()*2,0,image1);
+        painter.drawImage(image0.width()*3,((int)image0.height()-(int)image2.height())/2,image2);
         I = all;
     }
     if(type == 2)
     {
-        QImage all(image0.width(),image0.height()*3,QImage::Format_RGB32);
+        QImage all(image0.width(),image0.height()*4,QImage::Format_RGB32);
         QPainter painter(&all);
         painter.drawImage(0,0,image0);
-        painter.drawImage(0,image0.height(),image1);
-        painter.drawImage(0,image0.height()*2,image2);
+        painter.drawImage(0,image0.height(),image00);
+        painter.drawImage(0,image0.height()*2,image1);
+        painter.drawImage(0,image0.height()*3,image2);
         I = all;
     }
 }
