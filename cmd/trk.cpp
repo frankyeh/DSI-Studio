@@ -303,12 +303,17 @@ int trk_post(std::shared_ptr<fib_data> handle,
         }
         else
         {
+            std::cout << "output file:" << file_name << std::endl;
             if (!tract_model.save_tracts_to_file(file_name.c_str()))
             {
-                std::cout << "Invalid format:" << file_name << std::endl;
+                std::cout << "Invalid file format " << file_name << std::endl;
                 return -1;
             }
-            std::cout << "File saved to " << file_name << std::endl;
+            if(QFileInfo(file_name.c_str()).exists())
+                std::cout << "Track file saved to " << file_name << std::endl;
+            else
+                std::cout << "Failed to save file to " << file_name << std::endl;
+
         }
     }
     if(po.has("cluster"))
@@ -530,12 +535,12 @@ int trk(void)
 
     tracking_thread.fetchTracks(&tract_model);
     std::cout << "finished tracking." << std::endl;
-
     if(tract_model.get_visible_track_count() == 0)
     {
         std::cout << "No tract generated. Terminating..." << std::endl;
         return 0;
     }
+    std::cout << "a total of " << tract_model.get_visible_track_count() << " tracts are generated" << std::endl;
 
     std::string file_name;
     if (po.has("output"))
@@ -546,9 +551,6 @@ int trk(void)
         fout << po.get("source") << ".trk.gz";
         file_name = fout.str();
     }
-    std::cout << "a total of " << tract_model.get_visible_track_count() << " tracts are generated" << std::endl;
-    std::cout << "output file:" << file_name << std::endl;
-
     return trk_post(handle,tract_model,mapping,file_name);
 
     }
