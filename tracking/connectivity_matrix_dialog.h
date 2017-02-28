@@ -42,6 +42,8 @@ private slots:
 
     void on_save_connectogram_clicked();
 
+    void on_copy_to_clipboard_clicked();
+
 private:
     Ui::connectivity_matrix_dialog *ui;
 };

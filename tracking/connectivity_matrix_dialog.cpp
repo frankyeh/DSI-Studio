@@ -2,6 +2,7 @@
 #include <QMessageBox>
 #include <QMouseEvent>
 #include <QFileDialog>
+#include <QClipboard>
 #include "connectivity_matrix_dialog.h"
 #include "ui_connectivity_matrix_dialog.h"
 #include "region/regiontablewidget.h"
@@ -205,4 +206,12 @@ void connectivity_matrix_dialog::on_save_connectogram_clicked()
     if(filename.isEmpty())
         return;
     data.save_to_connectogram(filename.toStdString().c_str());
+}
+
+void connectivity_matrix_dialog::on_copy_to_clipboard_clicked()
+{
+    std::string text;
+    data.save_to_text(text);
+    QApplication::clipboard()->setText(text.c_str());
+    QMessageBox::information(this,"DSI Studio","Results copied to clipboard",0);
 }

@@ -242,6 +242,13 @@
               </spacer>
              </item>
              <item>
+              <widget class="QPushButton" name="copy_to_clipboard">
+               <property name="text">
+                <string>Copy to clipboard</string>
+               </property>
+              </widget>
+             </item>
+             <item>
               <widget class="QPushButton" name="save_connectogram">
                <property name="text">
                 <string>Save connectogram...</string>

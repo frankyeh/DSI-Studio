@@ -1971,6 +1971,19 @@ void ConnectivityMatrix::save_to_file(const char* file_name)
     mat_header.write("name",result.c_str(),1,result.length());
 }
 
+void ConnectivityMatrix::save_to_text(std::string& text)
+{
+    std::ostringstream out;
+    int w = matrix_value.width();
+    for(int i = 0;i < w;++i)
+    {
+        for(int j = 0;j < w;++j)
+            out << matrix_value[i*w+j] << "\t";
+        out << std::endl;
+    }
+    text = out.str();
+}
+
 void ConnectivityMatrix::save_to_connectogram(const char* file_name)
 {
     std::ofstream out(file_name);
