@@ -6,20 +6,17 @@
 #include "opengl/glwidget.h"
 #include "program_option.hpp"
 
+std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
+
 int vis(void)
 {
-    std::string file_name = po.get("source");
-    std::cout << "loading " << file_name << std::endl;
-    std::shared_ptr<fib_data> new_handle(new fib_data);
-    if (!new_handle->load_from_file(&*file_name.begin()))
-    {
-        std::cout << "load fib file failed: " << new_handle->error_msg << std::endl;
+    std::shared_ptr<fib_data> new_handle = cmd_load_fib(po.get("source"));
+    if(!new_handle.get())
         return 0;
-    }
     std::cout << "starting gui" << std::endl;
     tracking_window* new_mdi = new tracking_window(0,new_handle);
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
-    new_mdi->setWindowTitle(file_name.c_str());
+    new_mdi->setWindowTitle(po.get("source").c_str());
     new_mdi->show();
     if(!po.has("stay_open"))
         new_mdi->hide();

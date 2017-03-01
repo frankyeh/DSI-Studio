@@ -152,23 +152,13 @@ int trk_post(std::shared_ptr<fib_data> handle,
              TractModel& tract_model,
              image::basic_image<image::vector<3>,3>& mapping,
              const std::string& file_name);
+std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
 int ana(void)
 {
-    std::shared_ptr<fib_data> handle(new fib_data);
-    {
-        std::string file_name = po.get("source");
-        std::cout << "loading " << file_name << "..." <<std::endl;
-        if(!QFileInfo(file_name.c_str()).exists())
-        {
-            std::cout << file_name << " does not exist. terminating..." << std::endl;
-            return 0;
-        }
-        if (!handle->load_from_file(file_name.c_str()))
-        {
-            std::cout << "Cannot open file " << file_name.c_str() <<std::endl;
-            return 0;
-        }
-    }
+    std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
+    if(!handle.get())
+        return 0;
+
     image::basic_image<image::vector<3>,3> mapping;
 
     if(po.has("atlas"))

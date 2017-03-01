@@ -310,7 +310,7 @@ int trk_post(std::shared_ptr<fib_data> handle,
                 return -1;
             }
             if(QFileInfo(file_name.c_str()).exists())
-                std::cout << "Track file saved to " << file_name << std::endl;
+                std::cout << "File saved to " << file_name << std::endl;
             else
                 std::cout << "Failed to save file to " << file_name << std::endl;
 
