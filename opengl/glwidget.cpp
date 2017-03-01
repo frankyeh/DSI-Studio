@@ -1997,19 +1997,12 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         for(float index = 0;check_prog(index,360);index += angle)
         {
             rotate_angle(angle,0,1.0,0.0);
-            QImage I_ = grabFrameBuffer();
-            QImage I(I_.width(),I_.height(),QImage::Format_RGB32);
-            QPainter painter;
-            painter.begin(&I);
-            painter.drawImage(0, 0, I_);
-            painter.end();
-
             QBuffer buffer;
             QImageWriter writer(&buffer, "JPG");
-            writer.write(I);
+            writer.write(renderPixmap(1920,1080).toImage());
             QByteArray data = buffer.data();
             if(index == 0.0)
-                avi.open(param.toLocal8Bit().begin(),I_.width(),I_.height(), "MJPG", 30/*fps*/);
+                avi.open(param.toLocal8Bit().begin(),1920,1080, "MJPG", 30/*fps*/);
             avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
         }
         avi.close();
