@@ -1281,7 +1281,7 @@ void TractModel::redo(void)
 //---------------------------------------------------------------------------
 void TractModel::add_tracts(std::vector<std::vector<float> >& new_tracks)
 {
-    add_tracts(new_tracks,tract_color.empty() ? image::rgb_color(200,100,30) : image::rgb_color(tract_color.back()));
+    add_tracts(new_tracks,tract_color.empty() ? image::rgb_color(255,160,60) : image::rgb_color(tract_color.back()));
 }
 //---------------------------------------------------------------------------
 void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract,image::rgb_color color)
