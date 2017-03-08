@@ -327,10 +327,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     }
 
-    // slice
-    {
-        connect(ui->actionLoad_Color_Map,SIGNAL(triggered()),this,SLOT(on_load_color_map_gl_released()));
-    }
 
     // recall the setting
     {
@@ -1512,8 +1508,6 @@ void tracking_window::on_actionAuto_Rotate_triggered(bool checked)
         }
     else
         timer->stop();
-    if(ui->auto_rotate->isChecked() != checked)
-        ui->auto_rotate->setChecked(checked);
 }
 
 void tracking_window::on_auto_rotate_toggled(bool checked)
@@ -1626,42 +1620,6 @@ void tracking_window::on_rendering_efficiency_currentIndexChanged(int index)
     glWidget->updateGL();
 }
 
-void tracking_window::on_load_color_map_clicked()
-{
-    QMessageBox::information(this,"Load color map","Please assign a text file of RGB numbers as the colormap.");
-    QString filename;
-    filename = QFileDialog::getOpenFileName(this,
-                "Load color map","color_map.txt",
-                "Text files (*.txt);;All files|(*)");
-    if(filename.isEmpty())
-        return;
-    image::color_map_rgb new_color_map;
-    if(!new_color_map.load_from_file(filename.toStdString().c_str()))
-    {
-          QMessageBox::information(this,"Error","Invalid color map format");
-          return;
-    }
-    v2c.set_color_map(new_color_map);
-    scene.show_slice();
-}
-void tracking_window::on_load_color_map_gl_released()
-{
-    QMessageBox::information(this,"Load color map","Please assign a text file of RGB numbers as the colormap.");
-    QString filename;
-    filename = QFileDialog::getOpenFileName(this,
-                "Load color map","color_map.txt",
-                "Text files (*.txt);;All files|(*)");
-    if(filename.isEmpty())
-        return;
-    image::color_map_rgb new_color_map;
-    if(!new_color_map.load_from_file(filename.toStdString().c_str()))
-    {
-          QMessageBox::information(this,"Error","Invalid color map format");
-          return;
-    }
-    v2c_gl.set_color_map(new_color_map);
-    glWidget->update_slice();
-}
 
 
 void tracking_window::on_max_value_valueChanged(double arg1)
@@ -1888,3 +1846,93 @@ void tracking_window::on_glView_currentIndexChanged(int index)
 }
 
 
+
+void tracking_window::on_actionLoad_Color_Map_Region_Window_triggered()
+{
+    QMessageBox::information(this,"Load color map","Please assign a text file of RGB numbers as the colormap.");
+    QString filename;
+    filename = QFileDialog::getOpenFileName(this,
+                "Load color map","color_map.txt",
+                "Text files (*.txt);;All files|(*)");
+    if(filename.isEmpty())
+        return;
+    image::color_map_rgb new_color_map;
+    if(!new_color_map.load_from_file(filename.toStdString().c_str()))
+    {
+          QMessageBox::information(this,"Error","Invalid color map format");
+          return;
+    }
+    v2c.set_color_map(new_color_map);
+    scene.show_slice();
+}
+
+void tracking_window::on_actionLoad_Color_Map_triggered()
+{
+    QMessageBox::information(this,"Load color map","Please assign a text file of RGB numbers as the colormap.");
+    QString filename;
+    filename = QFileDialog::getOpenFileName(this,
+                "Load color map","color_map.txt",
+                "Text files (*.txt);;All files|(*)");
+    if(filename.isEmpty())
+        return;
+    image::color_map_rgb new_color_map;
+    if(!new_color_map.load_from_file(filename.toStdString().c_str()))
+    {
+          QMessageBox::information(this,"Error","Invalid color map format");
+          return;
+    }
+    v2c_gl.set_color_map(new_color_map);
+    glWidget->update_slice();
+}
+
+void tracking_window::on_track_style_currentIndexChanged(int index)
+{
+    switch(index)
+    {
+        case 0:
+            set_data("tract_style",1);
+            set_data("bkg_color",-1);
+            set_data("tract_alpha",1);
+            set_data("tract_alpha_style",0);
+            set_data("tract_variant_color",0);
+            set_data("tract_variant_size",0);
+            set_data("tube_diameter",0.2);
+            set_data("tract_light_option",2);
+            set_data("tract_light_dir",5);
+            set_data("tract_light_diffuse",7);
+            set_data("tract_light_ambient",0);
+            set_data("tract_emission",0);
+            set_data("tract_bend2",5);
+            break;
+        case 1:
+            set_data("tract_style",1);
+            set_data("bkg_color",0);
+            set_data("tract_alpha",1);
+            set_data("tract_alpha_style",0);
+            set_data("tract_variant_color",1);
+            set_data("tract_variant_size",1);
+            set_data("tube_diameter",0.3);
+            set_data("tract_light_option",0);
+            set_data("tract_light_dir",10);
+            set_data("tract_light_diffuse",10);
+            set_data("tract_light_ambient",0);
+            set_data("tract_emission",0);
+            set_data("tract_bend2",5);
+            break;
+        case 2:
+            set_data("tract_style",0);
+            set_data("bkg_color",-1);
+            set_data("tract_alpha",1);
+            set_data("tract_alpha_style",0);
+            set_data("tract_bend2",5);
+            break;
+        case 3:
+            set_data("tract_style",0);
+            set_data("bkg_color",0);
+            set_data("tract_alpha",0.9);
+            set_data("tract_alpha_style",0);
+            set_data("tract_bend2",1);
+            break;
+    }
+    glWidget->update();
+}

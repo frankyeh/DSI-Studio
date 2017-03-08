@@ -154,12 +154,10 @@ private slots:
     void on_actionROI_triggered();
     void on_actionTrack_Report_triggered();
     void on_rendering_efficiency_currentIndexChanged(int index);
-    void on_load_color_map_clicked();
     void on_max_value_valueChanged(double arg1);
     void on_min_value_valueChanged(double arg1);
     void on_max_color_released();
     void on_min_color_released();
-    void on_load_color_map_gl_released();
     void on_actionCut_X_triggered();
     void on_actionCut_X_2_triggered();
     void on_actionCut_Y_triggered();
@@ -175,6 +173,9 @@ private slots:
     void on_actionLoad_mapping_triggered();
     void on_glView_currentIndexChanged(int index);
     void on_zoom_3d_valueChanged(double arg1);
+    void on_actionLoad_Color_Map_Region_Window_triggered();
+    void on_actionLoad_Color_Map_triggered();
+    void on_track_style_currentIndexChanged(int index);
 };
 
 #endif // TRACKING_WINDOW_H
