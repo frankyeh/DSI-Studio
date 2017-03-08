@@ -1,0 +1,14 @@
+
+varying vec3 normal, pos, v;
+in vec3 color;
+void main()
+{
+    vec3 nlight = normalize(gl_LightSource[0].position.xyz - pos);
+    vec3 neye = normalize(-pos);
+    vec3 nnormal = normalize(normal+vec3(sin(v[0]*50.0),sin(v[1]*50.0),sin(v[2]*50.0))*0.2);
+    vec3 nhalf = normalize(neye + nlight);
+
+
+    gl_FragColor = vec4(color*gl_LightSource[0].diffuse*max(0.0, dot(nlight, nnormal)) +
+                        vec3(1.0)*gl_LightSource[0].specular*pow (max (dot (nhalf, normal), 0.0), 2.0),1);
+}

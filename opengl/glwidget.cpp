@@ -74,6 +74,29 @@ float GLWidget::get_param_float(const char* name)
     return renderWidget->getData(name).toFloat();
 }
 
+bool GLWidget::check_change(const char* name,unsigned char& var)
+{
+    int v = renderWidget->getData(name).toInt();
+    if(v != var)
+    {
+        var = v;
+        return true;
+    }
+    return false;
+}
+bool GLWidget::check_change(const char* name,float& var)
+{
+    float v = renderWidget->getData(name).toFloat();
+    if(v != var)
+    {
+        var = v;
+        return true;
+    }
+    return false;
+}
+
+
+
 void check_error(const char* line)
 {
     GLenum code;
@@ -163,7 +186,7 @@ void GLWidget::set_view(unsigned char view_option)
     set_view_flip = !set_view_flip;
 }
 
-void setupLight(float ambient,float diffuse,float angle,float angle1,unsigned char light_option)
+void setupLight(float ambient,float diffuse,float specular,float angle,float angle1,unsigned char light_option)
 {
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
@@ -189,6 +212,12 @@ void setupLight(float ambient,float diffuse,float angle,float angle1,unsigned ch
     glLightfv(GL_LIGHT0, GL_AMBIENT, light);
     glLightfv(GL_LIGHT1, GL_AMBIENT, light);
     glLightfv(GL_LIGHT2, GL_AMBIENT, light);
+
+    std::fill(light,light+3,specular);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, light);
+    glLightfv(GL_LIGHT1, GL_SPECULAR, light);
+    glLightfv(GL_LIGHT2, GL_SPECULAR, light);
+
 
     GLfloat lightDir[4] = { 1.0f, 1.0f, -1.0f, 0.0f};
     angle1 = 3.1415926f-angle1;
@@ -346,6 +375,17 @@ void GLWidget::initializeGL()
     tracts = glGenLists(1);
     tract_alpha = -1; // ensure that make_track is called
     odf_position = 255;//ensure ODFs is renderred
+
+    QFile source1(":/data/shader_fragment.txt"),source2(":/data/shader_vertex.txt");
+    if (source1.open(QIODevice::ReadOnly | QIODevice::Text) &&
+        source2.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        QTextStream in1(&source1),in2(&source2);
+        shader = std::make_shared<QOpenGLShaderProgram>(this);
+        shader->addShaderFromSourceCode(QOpenGLShader::Vertex, in2.readAll().toStdString().c_str());
+        shader->addShaderFromSourceCode(QOpenGLShader::Fragment, in1.readAll().toStdString().c_str());
+        shader->link();
+    }
     check_error(__FUNCTION__);
 }
 void GLWidget::paintGL()
@@ -363,9 +403,8 @@ void GLWidget::paintGL()
     setFrustum();
     check_error("basic");
     {
-        if(scale_voxel != get_param("scale_voxel"))
+        if(check_change("scale_voxel",scale_voxel))
         {
-            scale_voxel = get_param("scale_voxel");
             set_view(2);// initialize view to axial
             if(get_param("orientation_convention") == 1)
                 set_view(2);
@@ -547,12 +586,15 @@ void GLWidget::renderLR()
 
     if (tracts && get_param("show_tract"))
     {
+        if(shader.get() && get_param("tract_shader"))
+            shader->bind();
         glEnable(GL_COLOR_MATERIAL);
         if(get_param("tract_style") != 1)// 1 = tube
             glDisable(GL_LIGHTING);
         else
             setupLight((float)(get_param("tract_light_ambient"))/10.0,
                    (float)(get_param("tract_light_diffuse"))/10.0,
+                   (float)(get_param("tract_light_specular"))/10.0,
                    (float)(get_param("tract_light_dir"))*3.1415926*2.0/10.0,
                    (float)(get_param("tract_light_shading"))*3.1415926/20.0,
                    get_param("tract_light_option"));
@@ -570,23 +612,19 @@ void GLWidget::renderLR()
         }
 
 
-        if(get_param_float("tract_alpha") != tract_alpha ||
-           get_param("tract_alpha_style") != tract_alpha_style ||
-           get_param("tract_style") != tract_style ||
-           get_param("tract_color_style") != tract_color_style ||
-           get_param_float("tube_diameter") != tube_diameter ||
-           get_param("tract_tube_detail") != tract_tube_detail ||
-           get_param("end_point_shift") != end_point_shift)
-        {
-            tract_alpha = get_param_float("tract_alpha");
-            tract_alpha_style = get_param("tract_alpha_style");
-            tract_style = get_param("tract_style");
-            tract_color_style = get_param("tract_color_style");
-            tube_diameter = get_param_float("tube_diameter");
-            tract_tube_detail = get_param("tract_tube_detail");
-            end_point_shift = get_param("end_point_shift");
+        bool changed =
+           check_change("tract_alpha",tract_alpha) ||
+           check_change("tract_alpha_style",tract_alpha_style) ||
+           check_change("tract_style",tract_style) ||
+           check_change("tract_color_style",tract_color_style) ||
+           check_change("tube_diameter",tube_diameter) ||
+           check_change("tract_tube_detail",tract_tube_detail) ||
+           check_change("tract_variant_size",tract_variant_size) ||
+           check_change("tract_variant_color",tract_variant_color) ||
+           check_change("end_point_shift",end_point_shift);
+        if(changed)
             makeTracts();
-        }
+
         if(get_param_float("tract_alpha") != 1.0)
         {
             glEnable(GL_BLEND);
@@ -605,6 +643,8 @@ void GLWidget::renderLR()
         glDisable(GL_BLEND);
         glDisable(GL_TEXTURE_2D);
         glDepthMask(true);
+        if(shader.get() && get_param("tract_shader"))
+            shader->release();
         check_error("show_tract");
     }
 
@@ -703,6 +743,7 @@ void GLWidget::renderLR()
         glDisable(GL_COLOR_MATERIAL);
         setupLight((float)(get_param("region_light_ambient"))/10.0,
                    (float)(get_param("region_light_diffuse"))/10.0,
+                   (float)(get_param("region_light_specular"))/10.0,
                    (float)(get_param("region_light_dir"))*3.1415926*2.0/10.0,
                    (float)(get_param("region_light_shading"))*3.1415926/20.0,
                    get_param("region_light_option"));
@@ -743,6 +784,7 @@ void GLWidget::renderLR()
         glDisable(GL_COLOR_MATERIAL);
         setupLight((float)(get_param("surface_light_ambient"))/10.0,
                    (float)(get_param("surface_light_diffuse"))/10.0,
+                   (float)(get_param("surface_light_specular"))/10.0,
                    (float)(get_param("surface_light_dir"))*3.1415926*2.0/10.0,
                    (float)(get_param("surface_light_shading"))*3.1415926/20.0,
                    get_param("surface_light_option"));
@@ -892,6 +934,8 @@ void GLWidget::makeTracts(void)
     float alpha = (tract_alpha_style == 0)? tract_alpha/2.0:tract_alpha;
     const float detail_option[] = {1.0,0.5,0.25,0.0,0.0};
     bool show_end_points = tract_style == 2;
+    const float variant_prob_option[] = {0.1,0.2,0.4,0.95,2};
+    float variant_prob = variant_prob_option[tract_tube_detail];
     float tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0;
     float skip_rate = 1.0;
     std::vector<float> mean_fa;
@@ -955,7 +999,7 @@ void GLWidget::makeTracts(void)
         if(total_tracts != 0)
             skip_rate = (float)visible_tracts/(float)total_tracts;
     }
-    image::uniform_dist<float> uniform_gen(0,1.0);
+    image::uniform_dist<float> uniform_gen(0,1.0),random_size(-0.5,0.5),random_color(-0.05,0.05);
     {
         for (unsigned int active_tract_index = 0;
                 active_tract_index < cur_tracking_window.tractWidget->rowCount();
@@ -1034,6 +1078,13 @@ void GLWidget::makeTracts(void)
                         break;
                     }
 
+                    if(tract_variant_color)
+                    {
+                        cur_color[0] += random_color();
+                        cur_color[1] += random_color();
+                        cur_color[2] += random_color();
+                    }
+
                     // skip straight line!
                     if(tract_style)
                     {
@@ -1068,6 +1119,13 @@ void GLWidget::makeTracts(void)
                         normals[5] = -vec_ab;
                         normals[6] = -vec_b;
                         normals[7] = vec_ba;
+                    }
+                    if(tract_variant_size && uniform_gen() > variant_prob)
+                    {
+                        vec_ab += random_size();
+                        vec_ba += random_size();
+                        vec_a += random_size();
+                        vec_b += random_size();
                     }
                     vec_ab *= tube_diameter;
                     vec_ba *= tube_diameter;
@@ -1953,11 +2011,15 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             std::istringstream in(param2.toLocal8Bit().begin());
             int w = 0;
             int h = 0;
+            int ow = width(),oh = height();
             in >> w >> h;
-            renderPixmap(w,h).save(param);
+            resize(w,h);
+            updateGL();
+            grabFrameBuffer().save(param);
+            resize(ow,oh);
         }
         else
-            renderPixmap().save(param);
+            grabFrameBuffer().save(param);
         return true;
     }
     if(cmd == "save_3view_image")
@@ -1992,20 +2054,24 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         if(param.isEmpty())
             param = QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".rotation_movie.avi";
         begin_prog("save video");
-        float angle = (param2.isEmpty()) ? 1 : param2.toFloat();\
+        float angle = (param2.isEmpty()) ? 1 : param2.toFloat();
+        int ow = width(),oh = height();
         image::io::avi avi;
         for(float index = 0;check_prog(index,360);index += angle)
         {
             rotate_angle(angle,0,1.0,0.0);
             QBuffer buffer;
             QImageWriter writer(&buffer, "JPG");
-            writer.write(renderPixmap(1920,1080).toImage());
+            resize(1980,1080);
+            updateGL();
+            writer.write(grabFrameBuffer());
             QByteArray data = buffer.data();
             if(index == 0.0)
                 avi.open(param.toLocal8Bit().begin(),1920,1080, "MJPG", 30/*fps*/);
             avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
         }
         avi.close();
+        resize(ow,oh);
         return true;
     }
     return false;

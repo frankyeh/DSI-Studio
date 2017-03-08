@@ -1,0 +1,10 @@
+varying vec3 normal, pos, v;
+out vec3 color;
+void main()
+{
+    v = gl_Vertex;
+    color = gl_Color.rgb;
+    normal = normalize(gl_NormalMatrix * gl_Normal);
+    pos = vec3(gl_ModelViewMatrix * gl_Vertex);
+    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+}

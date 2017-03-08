@@ -2,6 +2,7 @@
 #define GLWIDGET_H
 #include <QTimer>
 #include <QTime>
+#include <QOpenGLShaderProgram>
 #define NOMINMAX
 #include <memory>
 #include "QtOpenGL/QGLWidget"
@@ -18,6 +19,8 @@ Q_OBJECT
               RenderingTableWidget* renderWidget_,
               QWidget *parent = 0);
      ~GLWidget();
+public:
+     std::shared_ptr<QOpenGLShaderProgram> shader;
  public:// editing
      enum {none = 0,selecting = 1, moving = 2, dragging = 3} editing_option;
      image::vector<3,float> pos,dir1,dir2;
@@ -100,6 +103,8 @@ protected:
  private:
      int get_param(const char* name);
      float get_param_float(const char* name);
+     bool check_change(const char* name,unsigned char& var);
+     bool check_change(const char* name,float& var);
  private:
      float tract_alpha;
      unsigned char scale_voxel;
@@ -109,6 +114,8 @@ protected:
      float tube_diameter;
      unsigned char tract_color_contrast;
      unsigned char tract_tube_detail;
+     unsigned char tract_variant_size;
+     unsigned char tract_variant_color;
      unsigned char end_point_shift;
      unsigned char odf_position;
      unsigned char odf_skip;

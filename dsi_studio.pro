@@ -176,4 +176,6 @@ SOURCES += main.cpp \
     connectometry/group_connectometry.cpp
 
 OTHER_FILES += \
-    options.txt
+    options.txt \
+    shader_fragment.txt \
+    shader_vertex.txt

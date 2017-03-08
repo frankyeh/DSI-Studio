@@ -37,5 +37,7 @@
     </qresource>
     <qresource prefix="/data">
         <file>options.txt</file>
+        <file>shader_fragment.txt</file>
+        <file>shader_vertex.txt</file>
     </qresource>
 </RCC>
