@@ -1899,8 +1899,12 @@ void tracking_window::on_track_style_currentIndexChanged(int index)
             set_data("tube_diameter",0.2);
             set_data("tract_light_option",2);
             set_data("tract_light_dir",5);
+            set_data("tract_light_shading",6);
             set_data("tract_light_diffuse",7);
             set_data("tract_light_ambient",0);
+            set_data("tract_light_specular",0);
+            set_data("tract_specular",0);
+            set_data("tract_shininess",0);
             set_data("tract_emission",0);
             set_data("tract_bend2",5);
             break;
@@ -1914,8 +1918,12 @@ void tracking_window::on_track_style_currentIndexChanged(int index)
             set_data("tube_diameter",0.3);
             set_data("tract_light_option",0);
             set_data("tract_light_dir",10);
+            set_data("tract_light_shading",4);
             set_data("tract_light_diffuse",10);
             set_data("tract_light_ambient",0);
+            set_data("tract_light_specular",5);
+            set_data("tract_specular",5);
+            set_data("tract_shininess",1);
             set_data("tract_emission",0);
             set_data("tract_bend2",5);
             break;

@@ -188,6 +188,7 @@ void GLWidget::set_view(unsigned char view_option)
 
 void setupLight(float ambient,float diffuse,float specular,float angle,float angle1,unsigned char light_option)
 {
+    glShadeModel(GL_SMOOTH);
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
 
@@ -238,14 +239,16 @@ void setupLight(float ambient,float diffuse,float specular,float angle,float ang
     check_error(__FUNCTION__);
 }
 
-void setupMaterial(float emission)
+void setupMaterial(float emission,float specular,int shininess)
 {
     GLfloat material2[4] = { 0.0f, 0.0f, 0.0f, 0.0f};
     std::fill(material2,material2+3,emission);
     glMaterialfv(GL_FRONT_AND_BACK,GL_EMISSION,material2);
 
-    std::fill(material2,material2+3,emission);
+    std::fill(material2,material2+3,specular);
     glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,material2);
+
+    glMateriali(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
     check_error(__FUNCTION__);
 }
 
@@ -601,7 +604,9 @@ void GLWidget::renderLR()
 
         glPushMatrix();
         glMultMatrixf(transformation_matrix.begin());
-        setupMaterial((float)(get_param("tract_emission"))/10.0);
+        setupMaterial((float)(get_param("tract_emission"))/10.0,
+                      (float)(get_param("tract_specular"))/10.0,
+                      get_param("tract_shininess")*10);
 
         if(get_param("tract_color_style") != tract_color_style)
         {
@@ -751,7 +756,9 @@ void GLWidget::renderLR()
         glPushMatrix();
         glMultMatrixf(transformation_matrix.begin());
 
-        setupMaterial((float)(get_param("region_emission"))/10.0);
+        setupMaterial((float)(get_param("region_emission"))/10.0,
+                      (float)(get_param("region_specular"))/10.0,
+                      get_param("region_shininess")*10);
 
         float alpha = get_param_float("region_alpha");
         unsigned char cur_view = (alpha == 1.0 ? 0 : getCurView(transformation_matrix));
@@ -791,7 +798,9 @@ void GLWidget::renderLR()
 
         glPushMatrix();
         glMultMatrixf(transformation_matrix.begin());
-        setupMaterial((float)(get_param("surface_emission"))/10.0);
+        setupMaterial((float)(get_param("surface_emission"))/10.0,
+                      (float)(get_param("surface_specular"))/10.0,
+                      get_param("surface_shininess")*10);
 
         float alpha = get_param_float("surface_alpha");
         surface->color = (unsigned int)get_param("surface_color");

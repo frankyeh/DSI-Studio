@@ -59,7 +59,9 @@ Tract/Light Shading/tract_light_shading/int/6
 Tract/Light Diffuse/tract_light_diffuse/int/7
 Tract/Light Ambient/tract_light_ambient/int/0
 Tract/Light Specular/tract_light_specular/int/0
-Tract/Tract Emission/tract_emission/int/0
+Tract/Material Specular/tract_specular/int/0
+Tract/Material Emission/tract_emission/int/0
+Tract/Material Shininess/tract_shininess/int/0
 Tract/Tract Selection Angle/tract_sel_angle/int:0:90:5/45
 Tract/Blend Func1/tract_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
 Tract/Blend Func2/tract_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
@@ -71,7 +73,9 @@ Region/Light Shading/region_light_shading/int/4
 Region/Light Diffuse/region_light_diffuse/int/6
 Region/Light Ambient/region_light_ambient/int/0
 Region/Light Specular/region_light_specular/int/0
-Region/Emission/region_emission/int/0
+Region/Material Specular/region_specular/int/0
+Region/Material Emission/region_emission/int/0
+Region/Material Shininess/region_shininess/int/0
 Region/Blend Func1/region_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
 Region/Blend Func2/region_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
 Surface/Color/surface_color/color/11184800
@@ -83,7 +87,9 @@ Surface/Light Shading/surface_light_shading/int/4
 Surface/Light Diffuse/surface_light_diffuse/int/6
 Surface/Light Ambient/surface_light_ambient/int/0
 Surface/Light Specular/surface_light_specular/int/0
-Surface/Emission/surface_emission/int/0
+Surface/Material Specular/surface_specular/int/0
+Surface/Material Emission/surface_emission/int/0
+Surface/Material Shininess/surface_shininess/int/0
 Surface/Blend Func1/surface_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
 Surface/Blend Func2/surface_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
 ODF/Position/odf_position/Along Slide:Slide Intersection:All/0
