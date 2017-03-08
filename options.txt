@@ -47,6 +47,9 @@ Tract/Transparent Style/tract_alpha_style/Sketch:Classic/0
 Tract/Style/tract_style/Line:Tube:End points/1
 Tract/Color/tract_color_style/Directional:Assigned:Local index:Averaged index:Averaged Directional/0
 Tract/Visible Tracts/tract_visible_tract/int:5000:1000000:5000/25000
+Tract/Variant Color/tract_variant_color/Off:On/1
+Tract/Variant Size/tract_variant_size/Off:On/1
+Tract/Shader/tract_shader/Off:On/0
 Tract/Tube Detail/tract_tube_detail/Coarse:Fine:Finer:Finest/1
 Tract/Tube Diameter (voxel)/tube_diameter/float:0.01:1:0.1:2/0.2
 Tract/Endpoint Shift (voxel)/end_point_shift/int:0:10:1/0
@@ -55,6 +58,7 @@ Tract/Light Direction/tract_light_dir/int/5
 Tract/Light Shading/tract_light_shading/int/6
 Tract/Light Diffuse/tract_light_diffuse/int/7
 Tract/Light Ambient/tract_light_ambient/int/0
+Tract/Light Specular/tract_light_specular/int/0
 Tract/Tract Emission/tract_emission/int/0
 Tract/Tract Selection Angle/tract_sel_angle/int:0:90:5/45
 Tract/Blend Func1/tract_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
@@ -66,17 +70,19 @@ Region/Light Direction/region_light_dir/int/5
 Region/Light Shading/region_light_shading/int/4
 Region/Light Diffuse/region_light_diffuse/int/6
 Region/Light Ambient/region_light_ambient/int/0
+Region/Light Specular/region_light_specular/int/0
 Region/Emission/region_emission/int/0
 Region/Blend Func1/region_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
 Region/Blend Func2/region_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
 Surface/Color/surface_color/color/11184800
-Surface/Opacity/surface_alpha/float:0:1:0.1:2/0.5
+Surface/Opacity/surface_alpha/float:0:1:0.1:2/0.2
 Surface/Mesh Rendering/surface_mesh_smoothed/Original:Smoothed:Smoothed2/1
 Surface/Light/surface_light_option/One source:Two sources:Three sources/2
 Surface/Light Direction/surface_light_dir/int/5
 Surface/Light Shading/surface_light_shading/int/4
 Surface/Light Diffuse/surface_light_diffuse/int/6
 Surface/Light Ambient/surface_light_ambient/int/0
+Surface/Light Specular/surface_light_specular/int/0
 Surface/Emission/surface_emission/int/0
 Surface/Blend Func1/surface_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
 Surface/Blend Func2/surface_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
