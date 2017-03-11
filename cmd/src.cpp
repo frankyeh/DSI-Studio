@@ -21,7 +21,11 @@ int src(void)
         output = po.get("output");
     else
         output = source + ".src.gz";
-
+    if(QFileInfo(output.c_str()).exists())
+    {
+        std::cout << output << " exists. skipping..." << std::endl;
+        return -1;
+    }
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     QStringList file_list;
     if(ext ==".nii" || ext == ".dcm" || ext == "dseq" || ext == "i.gz")
