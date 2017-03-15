@@ -497,6 +497,7 @@ bool output_odfs(const image::basic_image<unsigned char,3>& mni_mask,
     image_model.voxel.template_odfs.swap(odfs);
     image_model.voxel.param = mni;
     image_model.voxel.csf_calibration = false;
+    image_model.voxel.output_rdi = 0;
     image_model.file_name = out_name;
     image_model.mask = mni_mask;
     std::copy(vs,vs+3,image_model.voxel.vs.begin());
