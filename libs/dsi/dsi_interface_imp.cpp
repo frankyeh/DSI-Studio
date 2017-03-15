@@ -488,16 +488,10 @@ bool output_odfs(const image::basic_image<unsigned char,3>& mni_mask,
         image_model.voxel.report = report.c_str();
     image_model.voxel.dim = mni_mask.geometry();
     image_model.voxel.ti = ti;
-    image_model.voxel.odf_decomposition = false;
-    image_model.voxel.odf_deconvolusion = false;
-    image_model.voxel.half_sphere = false;
     image_model.voxel.max_fiber_number = 5;
-    image_model.voxel.z0 = 0.0;
     image_model.voxel.need_odf = record_odf;
     image_model.voxel.template_odfs.swap(odfs);
     image_model.voxel.param = mni;
-    image_model.voxel.csf_calibration = false;
-    image_model.voxel.output_rdi = 0;
     image_model.file_name = out_name;
     image_model.mask = mni_mask;
     std::copy(vs,vs+3,image_model.voxel.vs.begin());

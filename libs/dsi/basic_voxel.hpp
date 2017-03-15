@@ -62,30 +62,31 @@ public:// parameters;
     tessellated_icosahedron ti;
     const float* param;
     std::string file_name;
-    bool need_odf;
-    bool half_sphere;
-    unsigned int max_fiber_number;
+    bool need_odf = false;
+    bool half_sphere = false;
+    unsigned int max_fiber_number = 5;
     std::vector<std::string> file_list;
 public:// DTI
-    bool output_diffusivity;
-    bool output_tensor;
+    bool output_diffusivity = false;
+    bool output_tensor = false;
 public://used in GQI
-    bool r2_weighted;// used in GQI only
-    bool scheme_balance,csf_calibration;
+    bool r2_weighted = false;// used in GQI only
+    bool scheme_balance = false;
+    bool csf_calibration = false;
 public:// odf sharpening
-    bool odf_deconvolusion;
-    bool odf_decomposition;
+    bool odf_deconvolusion = false;
+    bool odf_decomposition = false;
     image::vector<3,short> odf_xyz;
 public:// gradient deviation
     std::vector<image::basic_image<float,3> > new_grad_dev;
     std::vector<image::pointer_image<float,3> > grad_dev;
 public:// used in QSDR
-    unsigned char reg_method;
-    unsigned char interpo_method;
+    unsigned char reg_method = 0;
+    unsigned char interpo_method = 0;
     image::transformation_matrix<double> qsdr_trans;
-    bool output_jacobian;
-    bool output_mapping;
-    bool output_rdi;
+    bool output_jacobian = false;
+    bool output_mapping = false;
+    bool output_rdi = false;
     image::vector<3,int> csf_pos1,csf_pos2,csf_pos3,csf_pos4;
     double R2;
 public: // for QSDR associated T1WT2W
@@ -96,7 +97,7 @@ public: // user in fib evaluation
     std::vector<float> fib_fa;
     std::vector<float> fib_dir;
 public:
-    float z0;
+    float z0 = 0.0;
     // other information for second pass processing
     std::vector<float> response_function,free_water_diffusion;
     image::basic_image<float,3> qa_map;
