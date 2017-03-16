@@ -690,7 +690,7 @@ void fib_data::run_normalization(int factor,bool background)
         image::normalize(from,1.0);
         image::normalize(to,1.0);
         reg.run_reg(from,vs,fa_template_imp.I,fa_template_imp.vs,
-                    factor,image::reg::corr,image::reg::affine,thread.terminated,std::thread::hardware_concurrency());
+                    factor,image::reg::corr,image::reg::affine,thread.terminated);
     };
 
     if(background)

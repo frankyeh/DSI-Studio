@@ -126,7 +126,7 @@ public:
                 image::resample(VG,VG2,m,image::cubic);
                 image::resample(VFF,VFF2,m,image::cubic);
                 mni.reset(new image::reg::bfnorm_mapping<double,3>(geo2,image::geometry<3>(factor*7,factor*9,factor*7)));
-                image::reg::bfnorm(*mni.get(),VG2,VFF2,voxel.voxel_data.size(),ter);
+                image::reg::bfnorm(*mni.get(),VG2,VFF2,ter);
                 voxel.R2 = -image::reg::correlation()(VG2,VFF2,(*mni.get()));
                 if(export_intermediate)
                 {
@@ -138,8 +138,9 @@ public:
             else
             {
                 mni.reset(new image::reg::bfnorm_mapping<double,3>(VG.geometry(),image::geometry<3>(factor*7,factor*9,factor*7)));
-                image::reg::bfnorm(*mni.get(),VG,VFF,voxel.voxel_data.size(),ter);
+                image::reg::bfnorm(*mni.get(),VG,VFF,ter);
                 voxel.R2 = -image::reg::correlation()(VG,VFF,(*mni.get()));
+                std::cout << "R2=" << voxel.R2 << std::endl;
                 if(export_intermediate)
                 {
                     image::basic_image<float,3> VFFF(VG.geometry());
