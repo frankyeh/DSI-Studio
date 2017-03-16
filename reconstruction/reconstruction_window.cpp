@@ -248,9 +248,6 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     if(!handle.get())
         return;
 
-    if(method_id == 7)
-        std::fill(handle->mask.begin(),handle->mask.end(),1.0);
-    else
     if (*std::max_element(handle->mask.begin(),handle->mask.end()) == 0)
     {
         QMessageBox::information(this,"error","Please select mask for reconstruction",0);
@@ -1026,7 +1023,7 @@ bool add_other_image(ImageModel* handle,QString name,QString filename,bool full_
             image::normalize(from,1.0);
             image::normalize(to,1.0);
             bool terminated = false;
-            data.run_reg(from,handle->voxel.vs,to,vs,1,image::reg::reg_cost_type::mutual_info,image::reg::rigid_body,terminated,std::thread::hardware_concurrency());
+            data.run_reg(from,handle->voxel.vs,to,vs,1,image::reg::reg_cost_type::mutual_info,image::reg::rigid_body,terminated);
             affine = data.get_T();
         }
         else

@@ -327,7 +327,6 @@ const char* reconstruction(ImageModel* image_model,
 
             float result[18] = {0};
             float cur_score = evaluate_fib(image_model->voxel.dim,fib_fa,fib_dir).first;
-
             for(int i = 0;i < 18;++i)
             {
                 std::vector<std::vector<float> > new_dir(fib_dir);
@@ -440,6 +439,8 @@ const char* reconstruction(ImageModel* image_model,
 
             std::vector<image::pointer_image<float,3> > tmp;
             tmp.swap(image_model->voxel.grad_dev);
+            // clear mask to create whole volume QA map
+            std::fill(image_model->mask.begin(),image_model->mask.end(),1.0);
             if (!image_model->reconstruct<gqi_estimate_response_function>(thread_count))
                 return "reconstruction canceled";
             tmp.swap(image_model->voxel.grad_dev);
