@@ -2083,7 +2083,8 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
             {
                 std::string file_name = region_name[i]+"_"+region_name[j]+".trk";
                 tract_model.select_tracts(region_passing_list[i][j]);
-                tract_model.save_tracts_to_file(file_name.c_str());
+                if(!tract_model.save_tracts_to_file(file_name.c_str()))
+                    return false;
                 tract_model.undo();
             }
         return true;
