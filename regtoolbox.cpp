@@ -181,15 +181,15 @@ void RegToolBox::on_timer()
         while(J_view.width() > dis_view.width())
         {
             geo_stack.push_back(J_view.geometry());
-            image::reg::dmdm_downsample(J_view,J_view);
+            image::reg::cdm_downsample(J_view,J_view);
         }
         if(J_view.geometry() == dis_view.geometry())
             image::compose_displacement(J_view,dis_view,J_view2);
         while(!geo_stack.empty())
         {
-            image::reg::dmdm_upsample(J_view,J_view,geo_stack.back());
-            image::reg::dmdm_upsample(J_view2,J_view2,geo_stack.back());
-            image::reg::dmdm_upsample(dis_view,dis_view,geo_stack.back());
+            image::reg::cdm_upsample(J_view,J_view,geo_stack.back());
+            image::reg::cdm_upsample(J_view2,J_view2,geo_stack.back());
+            image::reg::cdm_upsample(dis_view,dis_view,geo_stack.back());
             geo_stack.pop_back();
         }
         image::normalize(J_view,1.0);
@@ -250,7 +250,7 @@ void RegToolBox::on_run_reg_clicked()
 
         if(running_type > 0) // nonlinear
         {
-            image::reg::dmdm(It,J2,dis,speed,thread.terminated,resolution);
+            image::reg::cdm(It,J2,dis,speed,thread.terminated,resolution);
             image::compose_displacement(J2,dis,JJ);
         }
         reg_done = true;
