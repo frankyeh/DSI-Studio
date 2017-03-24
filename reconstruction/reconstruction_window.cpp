@@ -17,7 +17,6 @@
 #include "gzip_interface.hpp"
 #include "manual_alignment.h"
 
-
 void show_view(QGraphicsScene& scene,QImage I);
 bool reconstruction_window::load_src(int index)
 {
@@ -91,8 +90,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->NumOfFibers->setValue(settings.value("rec_num_fiber",5).toInt());
     ui->ODFDef->setCurrentIndex(settings.value("rec_gqi_def",0).toInt());
     ui->reg_method->setCurrentIndex(settings.value("rec_reg_method",0).toInt());
-    ui->interpo_method->setCurrentIndex(settings.value("qsdr_interpo_method",2).toInt());
-
 
     ui->diffusion_sampling->setValue(settings.value("rec_gqi_sampling",1.25).toDouble());
     ui->csf_calibration->setChecked(settings.value("csf_calibration",0).toInt());
@@ -265,6 +262,17 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
         settings.setValue("rec_decomposition_param",params[3]);
         settings.setValue("rec_decom_m",params[4]);
     }
+    //T1W DMDM
+    if(method_id == 7 && ui->reg_method->currentIndex() == 3)
+    {
+        QMessageBox::information(0,"Reconstruction","Please Assign T1W file for normalization",0);
+        QString filename = QFileDialog::getOpenFileName(
+                this,"Open T1W files",absolute_path,
+                "Images (*.nii *nii.gz);;All files (*)" );
+        if( filename.isEmpty())
+            return;
+        handle->voxel.t1w_file_name = filename.toStdString();
+    }
 
     settings.setValue("rec_method_id",method_id);
     settings.setValue("rec_thread_num",ui->ThreadCount->value());
@@ -272,7 +280,6 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     settings.setValue("rec_num_fiber",ui->NumOfFibers->value());
     settings.setValue("rec_gqi_def",ui->ODFDef->currentIndex());
     settings.setValue("rec_reg_method",ui->reg_method->currentIndex());
-    settings.setValue("qsdr_interpo_method",ui->interpo_method->currentIndex());
     settings.setValue("csf_calibration",ui->csf_calibration->isChecked() ? 1 : 0);
 
 
@@ -297,7 +304,6 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.max_fiber_number = ui->NumOfFibers->value();
     handle->voxel.r2_weighted = ui->ODFDef->currentIndex();
     handle->voxel.reg_method = ui->reg_method->currentIndex();
-    handle->voxel.interpo_method = ui->interpo_method->currentIndex();
     handle->voxel.need_odf = ui->RecordODF->isChecked() ? 1 : 0;
     handle->voxel.output_jacobian = ui->output_jacobian->isChecked() ? 1 : 0;
     handle->voxel.output_mapping = ui->output_mapping->isChecked() ? 1 : 0;
