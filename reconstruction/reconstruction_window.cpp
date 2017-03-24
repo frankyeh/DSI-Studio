@@ -18,6 +18,7 @@
 #include "manual_alignment.h"
 
 
+void show_view(QGraphicsScene& scene,QImage I);
 bool reconstruction_window::load_src(int index)
 {
     begin_prog("load src");
@@ -206,12 +207,10 @@ void reconstruction_window::on_b_table_itemSelectionChanged()
 
     image::geometry<3> dim(handle->voxel.dim);
     buffer_source.resize(image::geometry<2>(dim[0],dim[1]));
-    std::copy(tmp.begin(),tmp.end(),buffer_source.begin());
-    source.setSceneRect(0, 0, dim.width()*source_ratio,dim.height()*source_ratio);
+    std::copy(tmp.begin(),tmp.end(),buffer_source.begin());    
     source_image = QImage((unsigned char*)&*buffer_source.begin(),dim.width(),dim.height(),QImage::Format_RGB32).
                     scaled(dim.width()*source_ratio,dim.height()*source_ratio);
-    source.clear();
-    source.addRect(0, 0, dim.width()*source_ratio,dim.height()*source_ratio,QPen(),source_image);
+    show_view(source,source_image);
 }
 
 
@@ -607,7 +606,7 @@ void reconstruction_window::on_manual_reg_clicked()
     std::auto_ptr<manual_alignment> manual(new manual_alignment(this,
             dwi,handle->voxel.vs,
             fa_template_imp.I,fa_template_imp.vs,
-            image::reg::affine,image::reg::reg_cost_type::corr));
+            image::reg::affine,image::reg::cost_type::corr));
     manual->timer->start();
     if(manual->exec() == QDialog::Accepted)
         handle->voxel.qsdr_trans = manual->data.get_T();
@@ -777,7 +776,7 @@ void reconstruction_window::on_actionRotate_triggered()
     std::auto_ptr<manual_alignment> manual(new manual_alignment(this,
                                                                 dwi,handle->voxel.vs,ref,vs,
                                                                 image::reg::rigid_body,
-                                                                image::reg::reg_cost_type::mutual_info));
+                                                                image::reg::cost_type::mutual_info));
     manual->timer->start();
     if(manual->exec() != QDialog::Accepted)
         return;
@@ -847,11 +846,9 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
     double ratio = std::max(1.0,
         std::min(((double)ui->graphicsView->width()-5)/(double)dwi.width(),
                  ((double)ui->graphicsView->height()-5)/(double)dwi.height()));
-    scene.setSceneRect(0, 0, dwi.width()*ratio,dwi.height()*ratio);
     slice_image = QImage((unsigned char*)&*buffer.begin(),dwi.width(),dwi.height(),QImage::Format_RGB32).
                     scaled(dwi.width()*ratio,dwi.height()*ratio);
-    scene.clear();
-    scene.addRect(0, 0, dwi.width()*ratio,dwi.height()*ratio,QPen(),slice_image);
+    show_view(scene,slice_image);
 }
 
 void rec_motion_correction_parallel(ImageModel* handle,
@@ -1023,13 +1020,13 @@ bool add_other_image(ImageModel* handle,QString name,QString filename,bool full_
             image::normalize(from,1.0);
             image::normalize(to,1.0);
             bool terminated = false;
-            data.run_reg(from,handle->voxel.vs,to,vs,1,image::reg::reg_cost_type::mutual_info,image::reg::rigid_body,terminated);
+            data.run_reg(from,handle->voxel.vs,to,vs,1,image::reg::cost_type::mutual_info,image::reg::rigid_body,terminated);
             affine = data.get_T();
         }
         else
         {
             std::auto_ptr<manual_alignment> manual(new manual_alignment(0,
-                        handle->voxel.dwi_sum,handle->voxel.vs,ref,vs,image::reg::rigid_body,image::reg::reg_cost_type::mutual_info));
+                        handle->voxel.dwi_sum,handle->voxel.vs,ref,vs,image::reg::rigid_body,image::reg::cost_type::mutual_info));
             manual->timer->start();
             if(manual->exec() != QDialog::Accepted)
                 return false;
@@ -1056,7 +1053,7 @@ void reconstruction_window::on_add_t1t2_clicked()
 void reconstruction_window::on_actionManual_Rotation_triggered()
 {
     std::auto_ptr<manual_alignment> manual(
-                new manual_alignment(this,dwi,handle->voxel.vs,dwi,handle->voxel.vs,image::reg::none,image::reg::reg_cost_type::mutual_info));
+                new manual_alignment(this,dwi,handle->voxel.vs,dwi,handle->voxel.vs,image::reg::none,image::reg::cost_type::mutual_info));
 
     if(manual->exec() != QDialog::Accepted)
         return;
@@ -1086,7 +1083,7 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
         return;
     }
     in.get_voxel_size(vs.begin());
-    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,handle->voxel.vs,ref,vs,image::reg::rigid_body,image::reg::reg_cost_type::corr));
+    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,dwi,handle->voxel.vs,ref,vs,image::reg::rigid_body,image::reg::cost_type::corr));
     manual->timer->start();
     if(manual->exec() != QDialog::Accepted)
         return;
