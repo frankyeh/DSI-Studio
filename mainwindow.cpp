@@ -8,6 +8,7 @@
 #include <QProgressDialog>
 #include <QDragEnterEvent>
 #include <QMimeData>
+#include <regtoolbox.h>
 #include <qmessagebox.h>
 #include "filebrowser.h"
 #include "reconstruction/reconstruction_window.h"
@@ -794,7 +795,10 @@ void MainWindow::on_bruker_browser_clicked()
 bool load_image_from_files(QStringList filenames,image::basic_image<float,3>& ref,image::vector<3>& vs);
 void MainWindow::on_rigid_body_reg_clicked()
 {
-    QStringList filename1 = QFileDialog::getOpenFileNames(
+    RegToolBox* rt = new RegToolBox(this);
+    rt->setAttribute(Qt::WA_DeleteOnClose);
+    rt->showNormal();
+    /*QStringList filename1 = QFileDialog::getOpenFileNames(
             this,"Open Warpping Image",ui->workDir->currentText(),
             "Images (*.nii *nii.gz *.dcm);;All files (*)" );
     if(filename1.isEmpty())
@@ -827,6 +831,7 @@ void MainWindow::on_rigid_body_reg_clicked()
     nii << I;
     QString out_name = QFileInfo(filename2[0]).absolutePath() + "/" + QFileInfo(filename2[0]).baseName() +".warp.nii.gz";
     nii.save_to_file(out_name.toStdString().c_str());
+    */
 }
 
 void MainWindow::on_individual_connectometry_clicked()

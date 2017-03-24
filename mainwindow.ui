@@ -54,7 +54,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>3</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -64,8 +64,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>192</width>
-         <height>310</height>
+         <width>350</width>
+         <height>452</height>
         </rect>
        </property>
        <attribute name="label">
@@ -142,7 +142,7 @@
          <x>0</x>
          <y>0</y>
          <width>350</width>
-         <height>460</height>
+         <height>452</height>
         </rect>
        </property>
        <attribute name="label">
@@ -234,8 +234,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>350</width>
-         <height>460</height>
+         <width>329</width>
+         <height>511</height>
         </rect>
        </property>
        <attribute name="label">
@@ -396,8 +396,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>250</width>
-         <height>428</height>
+         <width>329</width>
+         <height>477</height>
         </rect>
        </property>
        <attribute name="label">
@@ -411,16 +411,6 @@
           </property>
           <property name="description">
            <string>Open image and header information</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCommandLinkButton" name="bruker_browser">
-          <property name="text">
-           <string>Image Browser</string>
-          </property>
-          <property name="description">
-           <string>File Browser (testing)</string>
           </property>
          </widget>
         </item>
@@ -445,12 +435,22 @@
          </widget>
         </item>
         <item>
-         <widget class="QCommandLinkButton" name="rigid_body_reg">
+         <widget class="QCommandLinkButton" name="bruker_browser">
           <property name="text">
-           <string>Rigid Body Registration</string>
+           <string>Image Browser</string>
           </property>
           <property name="description">
-           <string>Transform images to other imaging modality</string>
+           <string>File Browser (testing)</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="rigid_body_reg">
+          <property name="text">
+           <string>Registration Toolbox</string>
+          </property>
+          <property name="description">
+           <string>Spatially transform images (testing)</string>
           </property>
          </widget>
         </item>
