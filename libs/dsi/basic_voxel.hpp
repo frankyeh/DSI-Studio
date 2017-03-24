@@ -82,7 +82,6 @@ public:// gradient deviation
     std::vector<image::pointer_image<float,3> > grad_dev;
 public:// used in QSDR
     unsigned char reg_method = 0;
-    unsigned char interpo_method = 0;
     image::transformation_matrix<double> qsdr_trans;
     bool output_jacobian = false;
     bool output_mapping = false;
@@ -93,6 +92,12 @@ public: // for QSDR associated T1WT2W
     std::vector<image::basic_image<float,3> > other_image;
     std::vector<std::string> other_image_name;
     std::vector<image::transformation_matrix<double> > other_image_affine;
+public: // for T1W based DMDM
+    image::basic_image<float,3> t1w,t1wt,t1wt_mask;
+    image::vector<3> t1w_vs,t1wt_vs;
+    float t1wt_tran[16];
+    std::string t1w_file_name;
+
 public: // user in fib evaluation
     std::vector<float> fib_fa;
     std::vector<float> fib_dir;
