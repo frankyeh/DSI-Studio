@@ -400,12 +400,13 @@ public:
                 image::resample(VF,VFF,affine,image::cubic);
             }
             match_signal(VG,VFF);
+            if(-image::reg::correlation()(VG,VFF,mni) < 0.4)
+                throw std::runtime_error("Cannot use CSF for calibration");
 
             begin_prog("normalization");
+
             terminated_class ter(17);
             image::reg::bfnorm(mni,VG,VFF,ter);
-            if(-image::reg::correlation()(VG,VFF,mni) < 0.5)
-                throw std::runtime_error("Cannot use CSF for calibration");
             // choose CSF at the following voxel location
 
             image::vector<3,int> pos1(84,76,68),pos2(72,76,68),pos3(74,58,60),pos4(82,58,60);
@@ -434,6 +435,45 @@ public:
                 image::estimate(iso_I,pos,values.back());
             }
             voxel.z0 = image::median(values.begin(),values.end());
+            //record mapping
+            /*
+            {
+                std::vector<short> mni_x(voxel.dim.size()),mni_y(voxel.dim.size()),mni_z(voxel.dim.size());
+                std::vector<float> dis(voxel.dim.size());
+                std::fill(mni_x.begin(),mni_x.end(),-78);
+                std::fill(mni_y.begin(),mni_y.end(),-112);
+                std::fill(mni_z.begin(),mni_z.end(),-50);
+                std::fill(dis.begin(),dis.end(),10.0);
+                begin_prog("mapping");
+                for(image::pixel_index<3> index(VG.geometry());check_prog(index.index(),VG.size());++index)
+                {
+                    image::vector<3,float> to,to_round;
+                    to = index.begin();
+                    to += d[index.index()];
+                    affine(to);
+                    to_round = to;
+                    to_round.round();
+                    to -= to_round;
+                    if(!voxel.dim.is_valid(to_round))
+                        continue;
+                    double d = to.length();
+                    int pos = std::round((to_round[2]*voxel.dim.height()+to_round[1])*voxel.dim.width()+to_round[0]);
+                    if(dis[pos] > d && pos >= 0 && pos < voxel.dim.size())
+                    {
+                        dis[pos] = d;
+                        image::vector<3,float> m(index.begin());
+                        fa_template_imp.to_mni(m);
+                        mni_x[pos] = (short)std::round(m[0]);
+                        mni_y[pos] = (short)std::round(m[1]);
+                        mni_z[pos] = (short)std::round(m[2]);
+                    }
+
+                }
+                mat_writer.write("mni_x",&mni_x[0],1,mni_x.size());
+                mat_writer.write("mni_y",&mni_y[0],1,mni_y.size());
+                mat_writer.write("mni_z",&mni_z[0],1,mni_z.size());
+            }
+            */
 
         }
 
