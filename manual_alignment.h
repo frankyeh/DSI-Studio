@@ -28,7 +28,7 @@ private:
     void load_param(void);
 public:
     image::reg::normalization<double> data;
-    image::reg::reg_cost_type cost_function;
+    image::reg::cost_type cost_function;
     image::reg::reg_type reg_type;
 public:
     QTimer* timer;
@@ -38,7 +38,7 @@ public:
                               image::basic_image<float,3> to_,
                               const image::vector<3>& to_vs,
                               image::reg::reg_type reg_type,
-                              image::reg::reg_cost_type cost_function);
+                              image::reg::cost_type cost_function);
     ~manual_alignment();
     void connect_arg_update();
     void disconnect_arg_update();

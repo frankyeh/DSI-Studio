@@ -99,7 +99,8 @@ HEADERS += mainwindow.h \
     connectometry/individual_connectometry.hpp \
     connectometry/match_db.h \
     connectometry/db_window.h \
-    connectometry/group_connectometry.hpp
+    connectometry/group_connectometry.hpp \
+    regtoolbox.h
 
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
@@ -118,7 +119,8 @@ FORMS += mainwindow.ui \
     connectometry/individual_connectometry.ui \
     connectometry/match_db.ui \
     connectometry/db_window.ui \
-    connectometry/group_connectometry.ui
+    connectometry/group_connectometry.ui \
+    regtoolbox.ui
 RESOURCES += \
     icons.qrc
 SOURCES += main.cpp \
@@ -173,7 +175,8 @@ SOURCES += main.cpp \
     connectometry/individual_connectometry.cpp \
     connectometry/match_db.cpp \
     connectometry/db_window.cpp \
-    connectometry/group_connectometry.cpp
+    connectometry/group_connectometry.cpp \
+    regtoolbox.cpp
 
 OTHER_FILES += \
     options.txt \

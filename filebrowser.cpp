@@ -10,6 +10,7 @@
 #include "dicom/dicom_parser.h"
 #include "gzip_interface.hpp"
 #include "prog_interface_static_link.h"
+void show_view(QGraphicsScene& scene,QImage I);
 FileBrowser::FileBrowser(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::FileBrowser)
@@ -347,10 +348,7 @@ void FileBrowser::show_image(void)
         image::normalize(data_buffer,slice_image,255);
     }
     view_image = QImage((unsigned char*)&*slice_image.begin(),slice_image.width(),slice_image.height(),QImage::Format_RGB32);
-    scene.setSceneRect(0, 0, view_image.width(),view_image.height());
-    scene.clear();
-    scene.setItemIndexMethod(QGraphicsScene::NoIndex);
-    scene.addRect(0, 0, view_image.width(),view_image.height(),QPen(),view_image);
+    show_view(scene,view_image);
 
 }
 void FileBrowser::preview_image(QString file_name)

@@ -5,6 +5,7 @@
 
 
 
+void show_view(QGraphicsScene& scene,QImage I);
 
 manual_alignment::manual_alignment(QWidget *parent,
                                    image::basic_image<float,3> from_,
@@ -12,7 +13,7 @@ manual_alignment::manual_alignment(QWidget *parent,
                                    image::basic_image<float,3> to_,
                                    const image::vector<3>& to_vs_,
                                    image::reg::reg_type reg_type_,
-                                   image::reg::reg_cost_type cost_function_) :
+                                   image::reg::cost_type cost_function_) :
     QDialog(parent),ui(new Ui::manual_alignment),from_vs(from_vs_),to_vs(to_vs_),
         reg_type(reg_type_),cost_function(cost_function_),timer(0)
 {
@@ -240,13 +241,11 @@ void manual_alignment::slice_pos_moved()
             float value = slice[index]*w2+slice2[index]*w1;
             buffer[dim][index] = image::rgb_color(value,value,value);
         }
-        scene[dim].setSceneRect(0, 0, buffer[dim].width()*ratio,buffer[dim].height()*ratio);
         slice_image[dim] = QImage((unsigned char*)&*buffer[dim].begin(),buffer[dim].width(),buffer[dim].height(),QImage::Format_RGB32).
                         scaled(buffer[dim].width()*ratio,buffer[dim].height()*ratio);
         if(dim != 2)
             slice_image[dim] = slice_image[dim].mirrored();
-        scene[dim].clear();
-        scene[dim].addRect(0, 0, buffer[dim].width()*ratio,buffer[dim].height()*ratio,QPen(),slice_image[dim]);
+        show_view(scene[dim],slice_image[dim]);
     }
 }
 

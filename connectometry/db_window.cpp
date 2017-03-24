@@ -9,7 +9,7 @@
 #include "db_window.h"
 #include "ui_db_window.h"
 #include "match_db.h"
-
+void show_view(QGraphicsScene& scene,QImage I);
 
 bool load_cerebrum_mask(image::basic_image<char,3>& fp_mask)
 {
@@ -211,10 +211,7 @@ void db_window::on_subject_list_itemSelectionChanged()
     vbc_slice_image = qimage.scaled(color_slice.width()*ui->zoom->value(),color_slice.height()*ui->zoom->value());
     if(!ui->view_z->isChecked())
         vbc_slice_image = vbc_slice_image.mirrored();
-    vbc_scene.clear();
-    vbc_scene.setSceneRect(0, 0, vbc_slice_image.width(),vbc_slice_image.height());
-    vbc_scene.setItemIndexMethod(QGraphicsScene::NoIndex);
-    vbc_scene.addRect(0, 0, vbc_slice_image.width(),vbc_slice_image.height(),QPen(),vbc_slice_image);
+    show_view(vbc_scene,vbc_slice_image);
     vbc_slice_pos = ui->slice_pos->value();
 
     //if(ui->subject_view->currentIndex() == 1)
@@ -255,11 +252,7 @@ void db_window::on_subject_list_itemSelectionChanged()
         image::flip_y(fp_image_buf);
         QImage fp_image_tmp((unsigned char*)&*fp_image_buf.begin(),fp_image_buf.width(),fp_image_buf.height(),QImage::Format_RGB32);
         fp_image = fp_image_tmp;
-        fp_scene.setSceneRect(0, 0, fp_image.width(),fp_image.height());
-        fp_scene.clear();
-        fp_scene.setItemIndexMethod(QGraphicsScene::NoIndex);
-        fp_scene.addRect(0, 0, fp_image.width(),fp_image.height(),QPen(),fp_image);
-
+        show_view(fp_scene,fp_image);
     }
 
     if(!fp_dif_map.empty() && fp_dif_map.width() == vbc->handle->db.num_subjects)
