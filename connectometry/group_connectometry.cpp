@@ -883,8 +883,8 @@ void group_connectometry::on_load_roi_from_file_clicked()
     std::vector<image::vector<3,short> > new_roi;
     for (image::pixel_index<3> index(vbc->handle->dim);index < vbc->handle->dim.size();++index)
     {
-        image::vector<3> pos(index);
-        vbc->handle->subject2mni(pos);
+        image::vector<3> pos;
+        vbc->handle->subject2mni(index,pos);
         pos.to(transform);
         pos.round();
         if(!I.geometry().is_valid(pos) || I.at(pos[0],pos[1],pos[2]) == 0)

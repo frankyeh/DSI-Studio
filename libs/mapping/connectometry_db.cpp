@@ -341,8 +341,8 @@ void connectometry_db::save_subject_vector(const char* output_name,
         {
             voxel_location.push_back(cur_index);
             image::pixel_index<3> p(cur_index,handle->dim);
-            image::vector<3> p2(p);
-            handle->subject2mni(p2);
+            image::vector<3> p2;
+            handle->subject2mni(p,p2);
             mni_location.push_back(p2[0]);
             mni_location.push_back(p2[1]);
             mni_location.push_back(p2[2]);

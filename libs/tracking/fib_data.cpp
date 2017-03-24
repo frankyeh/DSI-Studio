@@ -519,6 +519,25 @@ bool fib_data::load_from_mat(void)
         return false;
     }
 
+    {
+        const float* mx = 0;
+        const float* my = 0;
+        const float* mz = 0;
+        if(mat_reader.read("mni_x",row,col,mx) &&
+           mat_reader.read("mni_y",row,col,my) &&
+           mat_reader.read("mni_z",row,col,mz) && !is_qsdr)
+        {
+            mni_position.resize(dim);
+            for(int i = 0;i < dim.size();++i)
+            {
+                mni_position[i][0] = mx[i];
+                mni_position[i][1] = my[i];
+                mni_position[i][2] = mz[i];
+            }
+        }
+    }
+
+
     if(is_qsdr && !view_item.empty())
     {
         unsigned int row,col;
@@ -666,7 +685,7 @@ bool fib_data::can_map_to_mni(void)
 {
     if(!is_human_data)
         return false;
-    if(is_qsdr)
+    if(is_qsdr || !mni_position.empty())
         return true;
     if(!has_reg())
     {
@@ -713,6 +732,18 @@ void fib_data::subject2mni(image::vector<3>& pos)
     reg(pos);
     fa_template_imp.to_mni(pos);
 }
+void fib_data::subject2mni(image::pixel_index<3>& index,image::vector<3>& pos)
+{
+    if(mni_position.empty())
+    {
+        pos = index.begin();
+        subject2mni(pos);
+    }
+    else
+    {
+        pos = mni_position[index.index()];
+    }
+}
 
 void fib_data::get_atlas_roi(int atlas_index,int roi_index,std::vector<image::vector<3,short> >& points)
 {
@@ -724,8 +755,8 @@ void fib_data::get_atlas_roi(int atlas_index,int roi_index,std::vector<image::ve
     image::par_for2(dim.size(),[&](unsigned int i,unsigned int id)
     {
         image::pixel_index<3>index(i,dim);
-        image::vector<3> mni(index.begin());
-        subject2mni(mni);
+        image::vector<3> mni;
+        subject2mni(index,mni);
         if (atlas_list[atlas_index].is_labeled_as(mni, roi_index))
             buf[id].push_back(image::vector<3,short>(index.begin()));
     });
@@ -734,15 +765,20 @@ void fib_data::get_atlas_roi(int atlas_index,int roi_index,std::vector<image::ve
         points.insert(points.end(),buf[i].begin(),buf[i].end());
 }
 
-void fib_data::get_mni_mapping(image::basic_image<image::vector<3,float>,3 >& mni_position)
+void fib_data::get_mni_mapping(image::basic_image<image::vector<3,float>,3 >& pos)
 {
-    mni_position.resize(dim);
+    if(!mni_position.empty())
+    {
+        pos = mni_position;
+        return;
+    }
+    pos.resize(dim);
     for (image::pixel_index<3>index(dim); index < dim.size();++index)
         if(dir.get_fa(index.index(),0) > 0)
         {
-            image::vector<3,float> mni(index.begin());
-            subject2mni(mni);
-            mni_position[index.index()] = mni;
+            image::vector<3,float> mni;
+            subject2mni(index,mni);
+            pos[index.index()] = mni;
         }
 }
 void fib_data::get_profile(const std::vector<float>& tract_data,

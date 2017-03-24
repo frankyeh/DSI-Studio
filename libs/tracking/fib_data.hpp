@@ -132,9 +132,12 @@ public:
     image::reg::normalization<double> reg;
     image::thread thread;
     std::vector<float> trans_to_mni;
+    image::basic_image<image::vector<3,float>,3 > mni_position;
+public:
     bool can_map_to_mni(void);
     void run_normalization(int factor,bool background);
     void subject2mni(image::vector<3>& pos);
+    void subject2mni(image::pixel_index<3>& index,image::vector<3>& pos);
     void get_atlas_roi(int atlas_index,int roi_index,std::vector<image::vector<3,short> >& points);
     void get_mni_mapping(image::basic_image<image::vector<3,float>,3 >& mni_position);
     bool has_reg(void)const{return thread.has_started();}
