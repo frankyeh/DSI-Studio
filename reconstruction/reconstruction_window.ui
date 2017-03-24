@@ -61,7 +61,7 @@
          <x>0</x>
          <y>0</y>
          <width>731</width>
-         <height>535</height>
+         <height>524</height>
         </rect>
        </property>
        <attribute name="label">
@@ -374,7 +374,7 @@
          <x>0</x>
          <y>0</y>
          <width>731</width>
-         <height>535</height>
+         <height>524</height>
         </rect>
        </property>
        <attribute name="label">
@@ -497,8 +497,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>731</width>
-         <height>535</height>
+         <width>717</width>
+         <height>567</height>
         </rect>
        </property>
        <property name="minimumSize">
@@ -880,32 +880,9 @@
                  <string>norm 21-27-21</string>
                 </property>
                </item>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="interpo_method">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="currentIndex">
-                <number>0</number>
-               </property>
                <item>
                 <property name="text">
-                 <string>Trilinear</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Gaussian</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Tricubic</string>
+                 <string>T1W DMDM</string>
                 </property>
                </item>
               </widget>
@@ -988,7 +965,7 @@
                 </sizepolicy>
                </property>
                <property name="text">
-                <string>Add T1w/T2w</string>
+                <string>Add T1W/T2W...</string>
                </property>
               </widget>
              </item>
@@ -1679,7 +1656,7 @@
      <x>0</x>
      <y>0</y>
      <width>731</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

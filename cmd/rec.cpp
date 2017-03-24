@@ -153,7 +153,6 @@ int rec(void)
     handle->voxel.max_fiber_number = po.get("num_fiber",int(5));
     handle->voxel.r2_weighted = po.get("r2_weighted",int(0));
     handle->voxel.reg_method = po.get("reg_method",int(0));
-    handle->voxel.interpo_method = po.get("interpo_method",int(2));
     handle->voxel.csf_calibration = po.get("csf_calibration",int(0)) && method_index == 4;
 
     std::vector<unsigned int> shell;

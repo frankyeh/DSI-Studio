@@ -956,7 +956,6 @@ void MainWindow::on_ReconstructSRC_clicked()
         handle->voxel.max_fiber_number = 5;
         handle->voxel.r2_weighted = 0;
         handle->voxel.reg_method = 0; // 7-9-7
-        handle->voxel.interpo_method = 2; // cubic spline
         handle->voxel.need_odf = 1; // output ODF
         handle->voxel.output_jacobian = 0;
         handle->voxel.output_mapping = 0;
