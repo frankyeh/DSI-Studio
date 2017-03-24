@@ -25,12 +25,6 @@ bool fa_template::load_from_file(void)
     return false;
 }
 
-void fa_template::to_mni(image::vector<3,float>& p)
-{
-    p[0] = p[0]*tran[0];
-    p[1] = p[1]*tran[5];
-    p[2] = p[2]*tran[10];
-    p += shift;
-}
+
 
 

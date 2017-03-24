@@ -8,7 +8,14 @@ struct fa_template{
     image::basic_image<float,3> I;
     float tran[16];
     bool load_from_file(void);
-    void to_mni(image::vector<3,float>& p);
+    template<typename v_type>
+    void to_mni(v_type& p)
+    {
+        p[0] = p[0]*tran[0];
+        p[1] = p[1]*tran[5];
+        p[2] = p[2]*tran[10];
+        p += shift;
+    }
 };
 
 
