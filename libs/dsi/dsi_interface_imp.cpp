@@ -21,6 +21,10 @@
 #include "odf_deconvolusion.hpp"
 #include "odf_decomposition.hpp"
 #include "image_model.hpp"
+
+
+extern std::string t1w_template_file_name,t1w_mask_template_file_name;
+
 typedef boost::mpl::vector<
     ReadDWIData,
     Dwi2Tensor
@@ -427,6 +431,30 @@ const char* reconstruction(ImageModel* image_model,
                 return "reconstruction canceled";
             break;
         case 7:
+
+            if(image_model->voxel.reg_method == 3) // DMDM
+            {
+                {
+                    gz_nifti in;
+                    if(!in.load_from_file(t1w_template_file_name.c_str()) || !in.toLPS(image_model->voxel.t1wt))
+                        return "Cannot load T1W template";
+                    in.get_voxel_size(image_model->voxel.t1wt_vs.begin());
+                    in.get_image_transformation(image_model->voxel.t1wt_tran);
+                }
+                {
+                    gz_nifti in;
+                    if(!in.load_from_file(t1w_mask_template_file_name.c_str()) || !in.toLPS(image_model->voxel.t1wt_mask))
+                        return "Cannot load T1W mask";
+                }
+                {
+                    gz_nifti in;
+                    if(!in.load_from_file(image_model->voxel.t1w_file_name.c_str()) || !in.toLPS(image_model->voxel.t1w))
+                        return "Cannot load T1W for DMDM normaliztion";
+                    in.get_voxel_size(image_model->voxel.t1w_vs.begin());
+                }
+            }
+
+
             image_model->voxel.recon_report
             << " The diffusion data were reconstructed in the MNI space using q-space diffeomorphic reconstruction (Yeh et al., Neuroimage, 58(1):91-9, 2011) to obtain the spin distribution function (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010). "
             << " A diffusion sampling length ratio of "
@@ -436,16 +464,20 @@ const char* reconstruction(ImageModel* image_model,
             if(image_model->voxel.output_rdi)
                 image_model->voxel.recon_report <<
                     " The restricted diffusion was quantified using restricted diffusion imaging (Yeh et al., MRM, 77:603–612 (2017)).";
+            if(image_model->voxel.reg_method == 3 && !image_model->voxel.t1w.empty()) // T1W CDM
+                out << ".cdm";
+            else
+            {
+                std::vector<image::pointer_image<float,3> > tmp;
+                tmp.swap(image_model->voxel.grad_dev);
+                // clear mask to create whole volume QA map
+                std::fill(image_model->mask.begin(),image_model->mask.end(),1.0);
+                if (!image_model->reconstruct<gqi_estimate_response_function>(thread_count))
+                    return "reconstruction canceled";
+                tmp.swap(image_model->voxel.grad_dev);
+                out << ".reg" << (int)image_model->voxel.reg_method;
+            }
 
-            std::vector<image::pointer_image<float,3> > tmp;
-            tmp.swap(image_model->voxel.grad_dev);
-            // clear mask to create whole volume QA map
-            std::fill(image_model->mask.begin(),image_model->mask.end(),1.0);
-            if (!image_model->reconstruct<gqi_estimate_response_function>(thread_count))
-                return "reconstruction canceled";
-            tmp.swap(image_model->voxel.grad_dev);
-            out << ".reg" << (int)image_model->voxel.reg_method;
-            out << "i" << (int)image_model->voxel.interpo_method;
             out << (image_model->voxel.r2_weighted ? ".qsdr2.":".qsdr.");
             out << param_values[0] << "." << param_values[1] << "mm";
             if(image_model->voxel.output_jacobian)
