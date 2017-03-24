@@ -4,6 +4,8 @@
 #include "prog_interface_static_link.h"
 #include <QPlainTextEdit>
 #include <QMessageBox>
+
+void show_view(QGraphicsScene& scene,QImage I);
 bool load_image_from_files(QStringList filenames,image::basic_image<float,3>& ref,image::vector<3>& vs)
 {
     if(filenames.size() == 1 && filenames[0].toLower().contains("nii"))
@@ -236,11 +238,10 @@ void view_image::update_image(void)
     buffer.resize(image::geometry<2>(data.width(),data.height()));
     std::copy(tmp.begin(),tmp.end(),buffer.begin());
 
-    source.setSceneRect(0, 0, data.width()*source_ratio,data.height()*source_ratio);
     source_image = QImage((unsigned char*)&*buffer.begin(),data.width(),data.height(),QImage::Format_RGB32).
                     scaled(data.width()*source_ratio,data.height()*source_ratio);
-    source.clear();
-    source.addRect(0, 0, data.width()*source_ratio,data.height()*source_ratio,QPen(),source_image);
+
+    show_view(source,source_image);
 }
 
 void view_image::on_zoom_in_clicked()

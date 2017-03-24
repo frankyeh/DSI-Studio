@@ -1142,7 +1142,7 @@ void tracking_window::on_actionManual_Registration_triggered()
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
                                    from,handle->vs,
                                    fa_template_imp.I,fa_template_imp.vs,
-                                   image::reg::affine,image::reg::reg_cost_type::corr));
+                                   image::reg::affine,image::reg::cost_type::corr));
 
     manual->timer->start();
     if(manual->exec() != QDialog::Accepted)
@@ -1723,7 +1723,7 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
     std::auto_ptr<manual_alignment> manual(new manual_alignment(this,
         slice.source_images,slice.voxel_size,
         other_slices[current_visible_slide-1]->source_images,other_slices[current_visible_slide-1]->voxel_size,
-            image::reg::rigid_body,image::reg::reg_cost_type::mutual_info));
+            image::reg::rigid_body,image::reg::cost_type::mutual_info));
     handle->reg.set_arg(other_slices[current_visible_slide-1]->arg_min);
     manual->timer->start();
     if(manual->exec() != QDialog::Accepted)

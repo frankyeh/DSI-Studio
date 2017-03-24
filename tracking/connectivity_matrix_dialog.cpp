@@ -12,6 +12,7 @@
 #include "mapping/atlas.hpp"
 #include "libs/tracking/fib_data.hpp"
 extern std::vector<atlas> atlas_list;
+void show_view(QGraphicsScene& scene,QImage I);
 connectivity_matrix_dialog::connectivity_matrix_dialog(tracking_window *parent,QString method_) :
     QDialog(parent),cur_tracking_window(parent),
     ui(new Ui::connectivity_matrix_dialog),method(method_)
@@ -156,10 +157,7 @@ void connectivity_matrix_dialog::on_zoom_valueChanged(double arg1)
         return;
     QImage qimage((unsigned char*)&*cm.begin(),cm.width(),cm.height(),QImage::Format_RGB32);
     view_image = qimage.scaled(cm.width()*ui->zoom->value(),cm.height()*ui->zoom->value());
-    scene.setSceneRect(0, 0, view_image.width(),view_image.height());
-    scene.clear();
-    scene.setItemIndexMethod(QGraphicsScene::NoIndex);
-    scene.addRect(0, 0, view_image.width(),view_image.height(),QPen(),view_image);
+    show_view(scene,view_image);
 }
 
 

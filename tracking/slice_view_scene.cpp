@@ -11,7 +11,13 @@
 #include "region/regiontablewidget.h"
 #include "libs/gzip_interface.hpp"
 #include "libs/tracking/fib_data.hpp"
-
+void show_view(QGraphicsScene& scene,QImage I)
+{
+    scene.setSceneRect(0, 0, I.width(),I.height());
+    scene.clear();
+    scene.setItemIndexMethod(QGraphicsScene::NoIndex);
+    scene.addRect(0, 0, I.width(),I.height(),QPen(),I);
+}
 void slice_view_scene::show_ruler(QPainter& paint)
 {
     if(sel_mode != 6 || sel_point.size() < 2)
@@ -390,10 +396,7 @@ void slice_view_scene::show_slice(void)
             view_image = I.mirrored(true,false);
         }
     }
-    setSceneRect(0, 0, view_image.width(),view_image.height());
-    clear();
-    setItemIndexMethod(QGraphicsScene::NoIndex);
-    addRect(0, 0, view_image.width(),view_image.height(),QPen(),view_image);
+    show_view(*this,view_image);
 }
 
 void slice_view_scene::save_slice_as()
