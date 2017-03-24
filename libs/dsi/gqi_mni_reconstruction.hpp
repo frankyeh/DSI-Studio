@@ -1,5 +1,6 @@
 #ifndef MNI_RECONSTRUCTION_HPP
 #define MNI_RECONSTRUCTION_HPP
+#include <chrono>
 #include "gqi_process.hpp"
 #include "mapping/fa_template.hpp"
 #include "basic_voxel.hpp"
@@ -9,23 +10,18 @@
 #include "gqi_process.hpp"
 
 extern fa_template fa_template_imp;
-
-
-
-
-
 class DWINormalization  : public BaseProcess
 {
 protected:
-    std::auto_ptr<image::reg::bfnorm_mapping<double,3> > mni;
     image::geometry<3> src_geo;
     image::geometry<3> des_geo;
     int b0_index;
 protected:
-    image::transformation_matrix<double> affine;
+    std::auto_ptr<image::reg::bfnorm_mapping<double,3> > mni;
 protected:
-    image::basic_image<float,3> VG,VF;
-    image::vector<3> VGvs;
+    image::basic_image<image::vector<3>,3> cdm_dis;
+protected:
+    image::transformation_matrix<double> affine;
     float voxel_size; // output resolution
 protected: // for warping other image modality
     std::vector<image::basic_image<float,3> > other_image,other_image_x,other_image_y,other_image_z;
@@ -54,21 +50,108 @@ public:
         bool export_intermediate = false;
         begin_prog("normalization");
         voxel_size = voxel.param[1];
+        src_geo = voxel.dim;
+        voxel_volume_scale = (voxel.vs[0]*voxel.vs[1]*voxel.vs[2]);
+
+        if(voxel.reg_method == 3 && !voxel.t1w.empty()) //CDM
+        {
+            int prog = 0;
+            // calculate the space shift between DWI and T1W
+            image::vector<3> from(fa_template_imp.shift),to;
+            from[0] -= (int)fa_template_imp.I.width()+voxel.t1wt_tran[3]-(int)voxel.t1wt.width();
+            from[1] -= (int)fa_template_imp.I.height()+voxel.t1wt_tran[7]-(int)voxel.t1wt.height();
+            from[2] -= voxel.t1wt_tran[11];
+            to = from;
+            to += image::vector<3>(fa_template_imp.I.geometry());
+
+            image::thread thread1,thread2;
+            image::affine_transform<double> reg1,reg2;
+            thread1.run([&](){
+                image::basic_image<float,3> b0(voxel.dim);
+                b0 = image::make_image(voxel.image_model->dwi_data[0],voxel.dim);
+                if(export_intermediate)
+                {
+                    image::flip_xy(b0);
+                    gz_nifti nii;
+                    nii.set_voxel_size(voxel.vs);
+                    nii << b0;
+                    nii.save_to_file("b0.nii.gz");
+                    image::flip_xy(b0);
+                }
+                image::reg::linear(voxel.t1w,voxel.t1w_vs,b0,voxel.vs,
+                               reg1,image::reg::rigid_scaling,image::reg::mutual_information(),thread1.terminated);
+                image::reg::linear(voxel.t1w,voxel.t1w_vs,b0,voxel.vs,
+                               reg1,image::reg::rigid_scaling,image::reg::mutual_information(),thread1.terminated);
+            });
+            thread2.run([&](){
+                prog = 1;
+                image::reg::linear(voxel.t1wt,voxel.t1wt_vs,voxel.t1w,voxel.t1w_vs,
+                               reg2,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
+                               image::transformation_matrix<double> >(0),thread2.terminated);
+                prog = 2;
+                image::reg::linear(voxel.t1wt,voxel.t1wt_vs,voxel.t1w,voxel.t1w_vs,
+                               reg2,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
+                               image::transformation_matrix<double> >(0),thread2.terminated);
+
+
+                image::basic_image<float,3> J(voxel.t1wt.geometry());
+                image::resample_mt(voxel.t1w,J,
+                    image::transformation_matrix<double>(reg2,voxel.t1wt.geometry(),voxel.t1wt_vs,voxel.t1w.geometry(),voxel.t1w_vs),image::cubic);
+
+                prog = 3;
+                image::reg::cdm(voxel.t1wt,J,cdm_dis,0.5/*speed*/,thread2.terminated,voxel_size/*resolution*/);
+                image::compose_displacement(J,cdm_dis,voxel.t1w);
+                voxel.R2 = image::correlation(voxel.t1w.begin(),voxel.t1w.end(),voxel.t1wt.begin());
+                voxel.R2 *= voxel.R2;
+                // From T1W template space to FA template space
+                image::crop(voxel.t1w,from,to);
+                image::crop(voxel.t1wt_mask,from,to);
+                image::crop(cdm_dis,from,to);
+
+                if(export_intermediate)
+                {
+                    J.save_to_file<gz_nifti>("J.nii.gz");
+                    voxel.t1w.save_to_file<gz_nifti>("cdm_JJ.nii.gz");
+                }
+                prog = 4;
+            });
+            begin_prog("Normalization");
+            for(;check_prog(prog,4);)
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+            thread1.wait();
+            thread2.wait();
+
+
+            affine.sr[0] = 1.0;
+            affine.sr[4] = 1.0;
+            affine.sr[8] = 1.0;
+            affine.shift[0] = from[0];
+            affine.shift[1] = from[1];
+            affine.shift[2] = from[2];
+            // affine = FA template -> T1W template
+            affine += image::transformation_matrix<double> (reg2,voxel.t1wt.geometry(),voxel.t1wt_vs,voxel.t1w.geometry(),voxel.t1w_vs);
+            // affine = FA template -> T1W template -> Subject T1W
+            affine += image::transformation_matrix<double>(reg1,voxel.t1w.geometry(),voxel.t1w_vs,voxel.dim,voxel.vs);
+            // affine = FA template -> T1W template -> Subject T1W -> DWI
+
+            if(export_intermediate)
+            {
+                image::basic_image<float,3> b0J(fa_template_imp.I.geometry());
+                image::resample_mt(voxel.dwi_sum,b0J,affine,image::cubic);
+                b0J.save_to_file<gz_nifti>("b0j.nii.gz");
+            }
+            goto end_normalization;
+        }
+        {
+        image::basic_image<float,3> VG,VF;
         VG = fa_template_imp.I;
         VF = voxel.qa_map;
 
         image::filter::gaussian(VF);
         VF -= image::segmentation::otsu_threshold(VF);
         image::lower_threshold(VF,0.0);
-
-        src_geo = VF.geometry();
-
         image::normalize(VG,1.0);
         image::normalize(VF,1.0);
-
-        VGvs = fa_template_imp.vs;
-
-        voxel_volume_scale = (voxel.vs[0]*voxel.vs[1]*voxel.vs[2])/(VGvs[0]*VGvs[1]*VGvs[2]);
 
         image::basic_image<float,3> VFF;
         {
@@ -79,8 +162,8 @@ public:
             // VF: SUBJECT QA
             if(export_intermediate)
             {
-                VG.save_to_file<image::io::nifti>("Template_QA.nii.gz");
-                VF.save_to_file<image::io::nifti>("Subject_QA.nii.gz");
+                VG.save_to_file<gz_nifti>("Template_QA.nii.gz");
+                VF.save_to_file<gz_nifti>("Subject_QA.nii.gz");
             }
 
             if(voxel.qsdr_trans.data[0] != 0.0) // has manual reg data
@@ -88,11 +171,11 @@ public:
             else
             {
                 bool terminated = false;
-                image::reg::linear(VF,voxel.vs,VG,VGvs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
+                image::reg::linear(VF,voxel.vs,VG,fa_template_imp.vs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
                                    image::transformation_matrix<double> >(0),terminated);
-                image::reg::linear(VF,voxel.vs,VG,VGvs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
+                image::reg::linear(VF,voxel.vs,VG,fa_template_imp.vs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
                                    image::transformation_matrix<double> >(0),terminated);
-                affine = image::transformation_matrix<double>(arg_min,VF.geometry(),voxel.vs,VG.geometry(),VGvs);
+                affine = image::transformation_matrix<double>(arg_min,VF.geometry(),voxel.vs,VG.geometry(),fa_template_imp.vs);
             }
             affine.inverse();
             VFF.resize(VG.geometry());
@@ -106,7 +189,7 @@ public:
 
 
         if(export_intermediate)
-            VFF.save_to_file<image::io::nifti>("Subject_QA_linear_reg.nii.gz");
+            VFF.save_to_file<gz_nifti>("Subject_QA_linear_reg.nii.gz");
 
 
         try
@@ -145,7 +228,7 @@ public:
                 {
                     image::basic_image<float,3> VFFF(VG.geometry());
                     image::resample(VFF,VFFF,*mni.get(),image::cubic);
-                    VFFF.save_to_file<image::io::nifti>("Subject_QA_nonlinear_reg.nii.gz");
+                    VFFF.save_to_file<gz_nifti>("Subject_QA_nonlinear_reg.nii.gz");
                 }
             }
         }
@@ -153,6 +236,9 @@ public:
         {
             throw std::runtime_error("Registration failed due to memory insufficiency.");
         }
+
+        }
+        end_normalization:
 
         // setup output bounding box
         {
@@ -172,14 +258,10 @@ public:
             des_offset[0] = fa_template_imp.shift[0]-bounding_box_upper[0];
             des_offset[1] = fa_template_imp.shift[1]-bounding_box_upper[1];
             des_offset[2] = bounding_box_lower[2]-fa_template_imp.shift[2];
-            // units in template space
-            des_offset[0] /= VGvs[0];
-            des_offset[1] /= VGvs[1];
-            des_offset[2] /= VGvs[2];
 
-            scale[0] = voxel_size/VGvs[0];
-            scale[1] = voxel_size/VGvs[1];
-            scale[2] = voxel_size/VGvs[2];
+            scale[0] = voxel_size;
+            scale[1] = voxel_size;
+            scale[2] = voxel_size;
 
             // setup transformation matrix
             std::fill(trans_to_mni,trans_to_mni+16,0.0);
@@ -192,25 +274,41 @@ public:
             trans_to_mni[11] = bounding_box_lower[2];
         }
 
+        voxel.dim = des_geo;
+        voxel.image_model->mask.resize(des_geo);
+        std::fill(voxel.image_model->mask.begin(),voxel.image_model->mask.end(),0);
+
         // setup mask
+        if(cdm_dis.empty())
         {
             // set the current mask to template space
-            voxel.dim = des_geo;
-            voxel.image_model->mask.resize(des_geo);
-            std::fill(voxel.image_model->mask.begin(),voxel.image_model->mask.end(),0);
             for(image::pixel_index<3> index(des_geo);index < des_geo.size();++index)
             {
                 image::vector<3,float> mni_pos(index);
-                mni_pos *= voxel.param[1];
-                mni_pos[0] /= VGvs[0];
-                mni_pos[1] /= VGvs[1];
-                mni_pos[2] /= VGvs[2];
+                mni_pos *= voxel_size;
                 mni_pos += des_offset;
                 mni_pos.round();
                 if(fa_template_imp.I.geometry().is_valid(mni_pos) &&
                         fa_template_imp.I.at(mni_pos[0],mni_pos[1],mni_pos[2]) > 0.0)
                     voxel.image_model->mask[index.index()] = 1;
             }
+        }
+        else
+        {
+            image::transformation_matrix<double> T;
+            T.sr[0] = voxel_size;
+            T.sr[4] = voxel_size;
+            T.sr[8] = voxel_size;
+            T.shift[0] = des_offset[0];
+            T.shift[1] = des_offset[1];
+            T.shift[2] = des_offset[2];
+            image::basic_image<float,3> t1wJ(des_geo),t1w_maskJ(des_geo);
+            t1wJ.swap(voxel.t1w);
+            image::resample_mt(t1wJ,voxel.t1w,T,image::cubic);
+            image::resample_mt(voxel.t1wt_mask,t1w_maskJ,T,image::cubic);
+            for(int i =0;i < t1w_maskJ.size();++i)
+                if(t1w_maskJ[i] > 0.5)
+                    voxel.image_model->mask[i] = 1;
         }
 
         // other image
@@ -343,30 +441,38 @@ public:
             pos /= voxel_size;
         pos.round();
         image::vector<3,int> ipos(pos[0],pos[1],pos[2]);
-        (*mni.get())(ipos,Jpos);
-        if(voxel_size < 0.99)
-            Jpos *= voxel_size;
-        affine(Jpos);
-
-        image::matrix<3,3,float> M;
-        image::reg::bfnorm_get_jacobian(*mni.get(),ipos,M.begin());
         std::copy(affine.get(),affine.get()+9,data.jacobian.begin());
-        data.jacobian *= M;
 
-
-        switch(voxel.interpo_method)
+        if(cdm_dis.empty())
         {
-        case 0:
-            interpolate_dwi(voxel,data,Jpos,image::interpolation<image::linear_weighting,3>());
-            break;
-        case 1:
-            interpolate_dwi(voxel,data,Jpos,image::interpolation<image::gaussian_radial_basis_weighting,3>());
-            break;
-        case 2:
-            interpolate_dwi(voxel,data,Jpos,image::cubic_interpolation<3>());
-            break;
+            (*mni.get())(ipos,Jpos);
+            if(voxel_size < 0.99)
+                Jpos *= voxel_size;
+            affine(Jpos);
+            image::matrix<3,3,float> M;
+            image::reg::bfnorm_get_jacobian(*mni.get(),ipos,M.begin());
+            data.jacobian *= M;
+            data.jdet = std::abs(data.jacobian.det()*voxel_volume_scale);
         }
-        data.jdet = std::abs(data.jacobian.det()*voxel_volume_scale);
+        else
+        {
+            image::pixel_index<3> pos_index(ipos[0],ipos[1],ipos[2],cdm_dis.geometry());
+            if(!cdm_dis.geometry().is_valid(pos_index))
+                return;
+            Jpos = pos;
+            Jpos += cdm_dis[pos_index.index()];
+            affine(Jpos);
+            data.jdet = std::abs(data.jacobian.det()*voxel_volume_scale);
+            if(!cdm_dis.geometry().is_edge(pos_index))
+            {
+                image::matrix<3,3,float> M;
+                image::jacobian_dis_at(cdm_dis,pos_index,M.begin());
+                data.jacobian *= M;
+            }
+        }
+
+        interpolate_dwi(voxel,data,Jpos,image::cubic_interpolation<3>());
+
         if(voxel.output_jacobian)
             jdet[data.voxel_index] = data.jdet;
     }
@@ -378,15 +484,21 @@ public:
             mat_writer.write("jdet",&*jdet.begin(),1,jdet.size());
         if(voxel.output_mapping)
         {
-            mat_writer.write("native_x",&*mx.begin(),1,mx.size());
-            mat_writer.write("native_y",&*my.begin(),1,my.size());
-            mat_writer.write("native_z",&*mz.begin(),1,mz.size());
-            short dimension[3];
-            dimension[0] = voxel.qa_map.width();
-            dimension[1] = voxel.qa_map.height();
-            dimension[2] = voxel.qa_map.depth();
-            mat_writer.write("native_d",dimension,1,3);
-            mat_writer.write("native_fa0",&*voxel.qa_map.begin(),1,voxel.qa_map.size());
+            if(!mx.empty())
+            {
+                mat_writer.write("native_x",&*mx.begin(),1,mx.size());
+                mat_writer.write("native_y",&*my.begin(),1,my.size());
+                mat_writer.write("native_z",&*mz.begin(),1,mz.size());
+            }
+            if(!voxel.qa_map.empty())
+            {
+                short dimension[3];
+                dimension[0] = voxel.qa_map.width();
+                dimension[1] = voxel.qa_map.height();
+                dimension[2] = voxel.qa_map.depth();
+                mat_writer.write("native_d",dimension,1,3);
+                mat_writer.write("native_fa0",&*voxel.qa_map.begin(),1,voxel.qa_map.size());
+            }
         }
         for(unsigned int index = 0;index < other_image.size();++index)
         {
@@ -406,6 +518,8 @@ public:
             }
         }
 
+        if(!cdm_dis.empty())
+            mat_writer.write("t1w",&voxel.t1w[0],1,voxel.t1w.size());
         mat_writer.write("trans",&*trans_to_mni,4,4);
         mat_writer.write("R2",&voxel.R2,1,1);
     }
