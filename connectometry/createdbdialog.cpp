@@ -9,7 +9,7 @@
 #include "prog_interface_static_link.h"
 #include "dsi_interface_static_link.h"
 
-extern QString fib_template_file_name;
+extern std::string fib_template_file_name;
 CreateDBDialog::CreateDBDialog(QWidget *parent,bool create_db_) :
     QDialog(parent),
     create_db(create_db_),
@@ -19,7 +19,7 @@ CreateDBDialog::CreateDBDialog(QWidget *parent,bool create_db_) :
     ui->setupUi(this);
     ui->group_list->setModel(new QStringListModel);
     ui->group_list->setSelectionModel(new QItemSelectionModel(ui->group_list->model()));
-    ui->skeleton->setText(fib_template_file_name);
+    ui->skeleton->setText(fib_template_file_name.c_str());
     if(!create_db)
     {
         ui->index_of_interest->hide();

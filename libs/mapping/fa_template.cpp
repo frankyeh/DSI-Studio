@@ -5,11 +5,11 @@
 #include <QApplication>
 #include <QDir>
 
-extern QString fa_template_file_name;
+extern std::string fa_template_file_name;
 bool fa_template::load_from_file(void)
 {
     gz_nifti read;
-    if(!fa_template_file_name.isEmpty() && read.load_from_file(fa_template_file_name.toStdString().c_str()))
+    if(read.load_from_file(fa_template_file_name.c_str()))
     {
         read.toLPS(I);
         read.get_image_transformation(tran);
