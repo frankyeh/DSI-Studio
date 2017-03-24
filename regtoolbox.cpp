@@ -250,7 +250,7 @@ void RegToolBox::on_run_reg_clicked()
 
         if(running_type > 0) // nonlinear
         {
-            image::reg::dmdm_pair(It,J2,dis,speed,thread.terminated,resolution);
+            image::reg::dmdm(It,J2,dis,speed,thread.terminated,resolution);
             image::compose_displacement(J2,dis,JJ);
         }
         reg_done = true;
