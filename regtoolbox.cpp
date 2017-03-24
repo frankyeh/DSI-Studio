@@ -65,8 +65,6 @@ void RegToolBox::on_OpenSubject_clicked()
         return;
     }
     nifti.toLPS(I);
-    I -= image::segmentation::otsu_threshold(I);
-    image::lower_threshold(I,0.0);
     image::normalize(I,1.0);
     nifti.get_voxel_size(Ivs.begin());
     show_image();

@@ -64,6 +64,9 @@ public:
             to = from;
             to += image::vector<3>(fa_template_imp.I.geometry());
 
+            image::normalize(voxel.t1w,1.0);
+            image::normalize(voxel.t1wt,1.0);
+
             image::thread thread1,thread2;
             image::affine_transform<double> reg1,reg2;
             thread1.run([&](){
