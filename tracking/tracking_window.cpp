@@ -124,8 +124,9 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         }
 
 
-        if(QFileInfo(t1[0]).exists() && addSlices(t1,false,false))
-            add_slice_name("T1w");
+        if(handle->get_name_index("t1w") == handle->view_item.size() &&
+           QFileInfo(t1[0]).exists() && addSlices(t1,false,false))
+            add_slice_name("t1w");
         if(QFileInfo(wm[0]).exists() && addSlices(wm,false,false))
             add_slice_name("wm");
 
