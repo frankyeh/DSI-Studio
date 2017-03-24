@@ -207,6 +207,16 @@ int rec(void)
             std::cout << "fail reading the mask...using default mask" << std::endl;
     }
 
+    if(method_index == 7 && handle->voxel.reg_method == 3)
+    {
+        if(!po.has("t1w"))
+        {
+            std::cout << "Please assign --t1w with T1W file for CDM normalization" << std::endl;
+            return 0;
+        }
+        handle->voxel.t1w_file_name = po.get("t1w");
+    }
+
     if(po.get("motion_correction",int(0)))
     {
         std::vector<image::affine_transform<double> > arg;
