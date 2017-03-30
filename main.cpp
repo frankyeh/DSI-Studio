@@ -126,6 +126,7 @@ int run_cmd(int ac, char *av[])
             cmd->setOrganizationName("LabSolver");
             cmd->setApplicationName("DSI Studio");
         }
+        load_file_name();
         if (!po.has("action") || !po.has("source"))
         {
             std::cout << "invalid command, use --help for more detail" << std::endl;
@@ -168,10 +169,10 @@ int run_cmd(int ac, char *av[])
 
 int main(int ac, char *av[])
 { 
-    load_file_name();
     if(ac > 2)
         return run_cmd(ac,av);
     QApplication a(ac,av);
+    load_file_name();
     init_application(a);
     MainWindow w;
     w.show();
