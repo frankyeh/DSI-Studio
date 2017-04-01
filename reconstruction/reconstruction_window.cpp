@@ -265,14 +265,26 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     //T1W DMDM
     if(method_id == 7 && ui->reg_method->currentIndex() == 3)
     {
-        QMessageBox::information(0,"Reconstruction","Please Assign T1W file for normalization",0);
-        QString filename = QFileDialog::getOpenFileName(
-                this,"Open T1W files",absolute_path,
-                "Images (*.nii *nii.gz);;All files (*)" );
-        if( filename.isEmpty())
-            return;
-        handle->voxel.t1w_file_name = filename.toStdString();
-    }
+        QString t1w_file_name1 =
+                QFileInfo(handle->file_name.c_str()).absolutePath() + "/" + QFileInfo(handle->file_name.c_str()).baseName() + "_t1w.nii.gz";
+        QString t1w_file_name2 =
+                QFileInfo(handle->file_name.c_str()).absolutePath() + "/" + QFileInfo(handle->file_name.c_str()).baseName() + "_MPRAGE.nii.gz";
+        if(QFileInfo(t1w_file_name1).exists())
+            handle->voxel.t1w_file_name = t1w_file_name1.toStdString();
+        else
+        if(QFileInfo(t1w_file_name2).exists())
+            handle->voxel.t1w_file_name = t1w_file_name2.toStdString();
+        else
+        {
+            QMessageBox::information(0,"Reconstruction","Please Assign T1W file for normalization",0);
+            QString filename = QFileDialog::getOpenFileName(
+                    this,"Open T1W files",absolute_path,
+                    "Images (*.nii *nii.gz);;All files (*)" );
+            if( filename.isEmpty())
+                return;
+            handle->voxel.t1w_file_name = filename.toStdString();
+        }
+     }
 
     settings.setValue("rec_method_id",method_id);
     settings.setValue("rec_thread_num",ui->ThreadCount->value());
