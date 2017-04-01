@@ -125,7 +125,7 @@ void RegToolBox::show_image(void)
         QPainter paint(&qcJ);
         paint.setBrush(Qt::NoBrush);
         paint.setPen(Qt::red);
-        auto& dis_slice = dis_view.slice_at(ui->slice_pos->value());
+        auto dis_slice = dis_view.slice_at(ui->slice_pos->value());
         int cur_dis = 1 << (ui->dis_spacing->currentIndex()-1);
         for(int x = 0;x < dis_slice.width();x += cur_dis)
         {
@@ -201,6 +201,7 @@ void RegToolBox::on_timer()
     }
 }
 
+extern std::string t1w_mask_template_file_name;
 void RegToolBox::on_run_reg_clicked()
 {
 
@@ -208,8 +209,6 @@ void RegToolBox::on_run_reg_clicked()
     running_type = ui->reg_type->currentIndex();
     thread.run([this]()
     {
-        float speed = ui->speed->value();
-        float resolution = ui->resolution->value();
         linear_done = false;
         reg_done = false;
         linear_reg.clear();
@@ -220,35 +219,37 @@ void RegToolBox::on_run_reg_clicked()
         image::basic_image<float,3> J2(It.geometry());
         if(It.geometry() != I.geometry() || running_type == 0)
         {
-            image::reg::reg_type linear_type[2] = { image::reg::rigid_scaling,image::reg::affine};
-            if(ui->cost_func->currentIndex() == 1) // MI
-            {
-                image::reg::linear(It,Itvs,I,Ivs,linear_reg,linear_type[ui->linear_type->currentIndex()],image::reg::mutual_information(),thread.terminated);
-                image::reg::linear(It,Itvs,I,Ivs,linear_reg,linear_type[ui->linear_type->currentIndex()],image::reg::mutual_information(),thread.terminated);
-            }
-            if(ui->cost_func->currentIndex() == 0) // correlation
-            {
-                image::reg::linear(It,Itvs,I,Ivs,linear_reg,linear_type[ui->linear_type->currentIndex()],image::reg::mt_correlation<image::basic_image<float,3>,
-                               image::transformation_matrix<double> >(0),thread.terminated);
-                image::reg::linear(It,Itvs,I,Ivs,linear_reg,linear_type[ui->linear_type->currentIndex()],image::reg::mt_correlation<image::basic_image<float,3>,
-                               image::transformation_matrix<double> >(0),thread.terminated);
-            }
+            image::reg::reg_type linear_type[2] = { image::reg::rigid_body,image::reg::affine};
+            image::reg::linear(It,Itvs,I,Ivs,linear_reg,linear_type[ui->linear_type->currentIndex()],image::reg::mutual_information_mt(),thread.terminated);
+            image::reg::linear(It,Itvs,I,Ivs,linear_reg,linear_type[ui->linear_type->currentIndex()],image::reg::mutual_information_mt(),thread.terminated);
             image::resample_mt(I,J2,
                                image::transformation_matrix<double>(linear_reg,It.geometry(),Itvs,I.geometry(),Ivs),image::cubic);
         }
         else
             J2 = I;
-        linear_done = true;
 
-        std::pair<double,double> r = image::linear_regression(J2.begin(),J2.end(),It.begin());
-        for(unsigned int index = 0;index < J2.size();++index)
-            J2[index] = std::max<float>(0,J2[index]*r.first+r.second);
-
+        gz_nifti in;
+        image::basic_image<float,3> mask;
+        if(!in.load_from_file(t1w_mask_template_file_name.c_str()) || !in.toLPS(mask))
+            return;
+        if(mask.geometry() == It.geometry())
+        {
+            image::filter::gaussian(mask);
+            image::filter::gaussian(mask);
+            mask += 0.5;
+            mask /= 1.5;
+            It *= mask;
+            J2 *= mask;
+        }
+        image::homogenize(J2,It,It.width()/8);
         J = J2;
+
+        linear_done = true;
 
         if(running_type > 0) // nonlinear
         {
-            image::reg::cdm(It,J2,dis,speed,thread.terminated,resolution);
+            image::filter::gaussian(J2);
+            image::reg::cdm(It,J2,dis,thread.terminated,2.0);
             image::compose_displacement(J2,dis,JJ);
         }
         reg_done = true;
