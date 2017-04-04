@@ -411,7 +411,7 @@ public:
 
         for(unsigned int index = 0;index < voxel.other_image.size();++index)
         {
-            if(voxel.other_image[index].geometry() != voxel.qa_map.geometry())
+            if(voxel.other_image[index].geometry() != src_geo)
             {
                 interpolation_type interpo;
                 image::vector<3,double> Opos;
@@ -484,6 +484,12 @@ public:
             mat_writer.write("jdet",&*jdet.begin(),1,jdet.size());
         if(voxel.output_mapping)
         {
+            short dimension[3];
+            dimension[0] = src_geo.width();
+            dimension[1] = src_geo.height();
+            dimension[2] = src_geo.depth();
+            mat_writer.write("native_d",dimension,1,3);
+
             if(!mx.empty())
             {
                 mat_writer.write("native_x",&*mx.begin(),1,mx.size());
@@ -491,19 +497,12 @@ public:
                 mat_writer.write("native_z",&*mz.begin(),1,mz.size());
             }
             if(!voxel.qa_map.empty())
-            {
-                short dimension[3];
-                dimension[0] = voxel.qa_map.width();
-                dimension[1] = voxel.qa_map.height();
-                dimension[2] = voxel.qa_map.depth();
-                mat_writer.write("native_d",dimension,1,3);
                 mat_writer.write("native_fa0",&*voxel.qa_map.begin(),1,voxel.qa_map.size());
-            }
         }
         for(unsigned int index = 0;index < other_image.size();++index)
         {
             mat_writer.write(voxel.other_image_name[index].c_str(),&*other_image[index].begin(),1,other_image[index].size());
-            if(voxel.other_image[index].geometry() == voxel.qa_map.geometry())
+            if(voxel.other_image[index].geometry() == src_geo)
                 continue;
             short dimension[3];
             dimension[0] = voxel.other_image[index].width();
