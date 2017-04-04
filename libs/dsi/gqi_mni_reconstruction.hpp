@@ -70,31 +70,22 @@ public:
             image::thread thread1,thread2;
             image::affine_transform<double> reg1,reg2;
             thread1.run([&](){
-                image::basic_image<float,3> b0(voxel.dim);
-                b0 = image::make_image(voxel.image_model->dwi_data[0],voxel.dim);
                 if(export_intermediate)
                 {
-                    image::flip_xy(b0);
+                    image::flip_xy(voxel.dwi_sum);
                     gz_nifti nii;
                     nii.set_voxel_size(voxel.vs);
-                    nii << b0;
+                    nii << voxel.dwi_sum;
                     nii.save_to_file("b0.nii.gz");
-                    image::flip_xy(b0);
+                    image::flip_xy(voxel.dwi_sum);
                 }
-                image::reg::linear(voxel.t1w,voxel.t1w_vs,b0,voxel.vs,
-                               reg1,image::reg::rigid_scaling,image::reg::mutual_information_mt(),thread1.terminated);
-                image::reg::linear(voxel.t1w,voxel.t1w_vs,b0,voxel.vs,
-                               reg1,image::reg::rigid_scaling,image::reg::mutual_information_mt(),thread1.terminated);
+                image::reg::linear_mr(voxel.t1w,voxel.t1w_vs,voxel.dwi_sum,voxel.vs,
+                               reg1,image::reg::rigid_body,image::reg::mutual_information_mt(),thread1.terminated);
             });
             thread2.run([&](){
                 prog = 1;
-                image::reg::linear(voxel.t1wt,voxel.t1wt_vs,voxel.t1w,voxel.t1w_vs,
+                image::reg::linear_mr(voxel.t1wt,voxel.t1wt_vs,voxel.t1w,voxel.t1w_vs,
                                reg2,image::reg::affine,image::reg::mutual_information_mt(),thread2.terminated);
-                prog = 2;
-                image::reg::linear(voxel.t1wt,voxel.t1wt_vs,voxel.t1w,voxel.t1w_vs,
-                               reg2,image::reg::affine,image::reg::mutual_information_mt(),thread2.terminated);
-
-
                 image::basic_image<float,3> J(voxel.t1wt.geometry());
                 image::resample_mt(voxel.t1w,J,
                     image::transformation_matrix<double>(reg2,voxel.t1wt.geometry(),voxel.t1wt_vs,voxel.t1w.geometry(),voxel.t1w_vs),image::cubic);
@@ -132,7 +123,6 @@ public:
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             thread1.wait();
             thread2.wait();
-
 
             affine.sr[0] = 1.0;
             affine.sr[4] = 1.0;
@@ -183,9 +173,7 @@ public:
             else
             {
                 bool terminated = false;
-                image::reg::linear(VF,voxel.vs,VG,fa_template_imp.vs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
-                                   image::transformation_matrix<double> >(0),terminated);
-                image::reg::linear(VF,voxel.vs,VG,fa_template_imp.vs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
+                image::reg::linear_mr(VF,voxel.vs,VG,fa_template_imp.vs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
                                    image::transformation_matrix<double> >(0),terminated);
                 affine = image::transformation_matrix<double>(arg_min,VF.geometry(),voxel.vs,VG.geometry(),fa_template_imp.vs);
             }
