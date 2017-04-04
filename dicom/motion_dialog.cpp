@@ -13,7 +13,7 @@ void linear_reg(const image::basic_image<short,3>& from,
                 bool& terminated,
                 unsigned int& finished)
 {
-    image::reg::linear(from,from_vs,to,to_vs,arg,image::reg::rigid_body,
+    image::reg::linear_mr(from,from_vs,to,to_vs,arg,image::reg::rigid_body,
                        image::reg::square_error(),terminated);
     ++finished;
 }

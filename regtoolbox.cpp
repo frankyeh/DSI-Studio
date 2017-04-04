@@ -179,15 +179,16 @@ void RegToolBox::on_timer()
         while(J_view.width() > dis_view.width())
         {
             geo_stack.push_back(J_view.geometry());
-            image::reg::cdm_downsample(J_view,J_view);
+            image::downsample_with_padding(J_view,J_view);
         }
-        if(J_view.geometry() == dis_view.geometry())
-            image::compose_displacement(J_view,dis_view,J_view2);
+        if(J_view.geometry() != dis_view.geometry())
+            return;
+        image::compose_displacement(J_view,dis_view,J_view2);
         while(!geo_stack.empty())
         {
-            image::reg::cdm_upsample(J_view,J_view,geo_stack.back());
-            image::reg::cdm_upsample(J_view2,J_view2,geo_stack.back());
-            image::reg::cdm_upsample(dis_view,dis_view,geo_stack.back());
+            image::upsample_with_padding(J_view,J_view,geo_stack.back());
+            image::upsample_with_padding(J_view2,J_view2,geo_stack.back());
+            image::upsample_with_padding(dis_view,dis_view,geo_stack.back());
             geo_stack.pop_back();
         }
         image::normalize(J_view,1.0);
@@ -215,19 +216,20 @@ void RegToolBox::on_run_reg_clicked()
         dis.clear();
         J.clear();
         JJ.clear();
-
         image::basic_image<float,3> J2(It.geometry());
         if(It.geometry() != I.geometry() || running_type == 0)
         {
             image::reg::reg_type linear_type[2] = { image::reg::rigid_body,image::reg::affine};
-            image::reg::linear(It,Itvs,I,Ivs,linear_reg,linear_type[ui->linear_type->currentIndex()],image::reg::mutual_information_mt(),thread.terminated);
-            image::reg::linear(It,Itvs,I,Ivs,linear_reg,linear_type[ui->linear_type->currentIndex()],image::reg::mutual_information_mt(),thread.terminated);
-            image::resample_mt(I,J2,
-                               image::transformation_matrix<double>(linear_reg,It.geometry(),Itvs,I.geometry(),Ivs),image::cubic);
+            image::reg::linear_mr(It,Itvs,I,Ivs,linear_reg,linear_type[ui->linear_type->currentIndex()],image::reg::mutual_information_mt(),thread.terminated);
+            J2.resize(It.geometry());
+            image::resample_mt(I,J2,image::transformation_matrix<double>(linear_reg,It.geometry(),Itvs,I.geometry(),Ivs),image::cubic);
+            J = J2;
+            linear_done = true;
+            if(running_type == 0)
+                return;
         }
         else
             J2 = I;
-
         gz_nifti in;
         image::basic_image<float,3> mask;
         if(!in.load_from_file(t1w_mask_template_file_name.c_str()) || !in.toLPS(mask))
@@ -243,9 +245,7 @@ void RegToolBox::on_run_reg_clicked()
         }
         image::homogenize(J2,It,It.width()/8);
         J = J2;
-
         linear_done = true;
-
         if(running_type > 0) // nonlinear
         {
             image::filter::gaussian(J2);

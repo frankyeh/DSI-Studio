@@ -388,9 +388,7 @@ public:
 
                 {
                     bool terminated = false;
-                    image::reg::linear(VF,voxel.vs,VG,fa_template_imp.vs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
-                                       image::transformation_matrix<double> >(0),terminated);
-                    image::reg::linear(VF,voxel.vs,VG,fa_template_imp.vs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
+                    image::reg::linear_mr(VF,voxel.vs,VG,fa_template_imp.vs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
                                        image::transformation_matrix<double> >(0),terminated);
                     affine = image::transformation_matrix<double>(arg_min,VF.geometry(),voxel.vs,VG.geometry(),fa_template_imp.vs);
                 }
