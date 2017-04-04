@@ -364,15 +364,13 @@ public:
 
         image::minus_constant(voxel.dwi_sum,min_value);
         image::lower_threshold(voxel.dwi_sum,0.0f);
+        float t = image::segmentation::otsu_threshold(voxel.dwi_sum);
+        image::upper_threshold(voxel.dwi_sum,t*3.0);
         image::normalize(voxel.dwi_sum,1.0);
-        image::add_constant(voxel.dwi_sum,1.0);
-        image::log(voxel.dwi_sum);
-        image::divide_constant(voxel.dwi_sum,0.301);
-        image::upper_threshold(voxel.dwi_sum,1.0f);
     }
     void calculate_mask(void)
     {
-        image::threshold(voxel.dwi_sum,mask,image::segmentation::otsu_threshold(voxel.dwi_sum)*0.8,1,0);
+        image::threshold(voxel.dwi_sum,mask,0.2,1,0);
         if(voxel.dwi_sum.depth() < 10)
         {
             for(unsigned int i = 0;i < mask.depth();++i)

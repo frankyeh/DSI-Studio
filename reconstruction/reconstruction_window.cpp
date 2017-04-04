@@ -41,7 +41,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     QMainWindow(parent),filenames(filenames_),terminated(false),motion_correction_thread(0),
         ui(new Ui::reconstruction_window)
 {
-
     ui->setupUi(this);
     if(!load_src(0))
         throw std::runtime_error("Cannot load src file");
@@ -152,6 +151,8 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui->csf_calibration->setEnabled(false);
         ui->csf_calibration->setVisible(false);
     }
+
+
 }
 void reconstruction_window::update_dimension(void)
 {
@@ -388,7 +389,7 @@ void reconstruction_window::on_thresholding_clicked()
     int threshold = QInputDialog::getInt(this,"DSI Studio","Please assign the threshold",
                                          (int)image::segmentation::otsu_threshold(dwi),
                                          (int)*std::min_element(dwi.begin(),dwi.end()),
-                                         (int)*std::max_element(dwi.begin(),dwi.end()),1,&ok);
+                                         (int)*std::max_element(dwi.begin(),dwi.end())+1,1,&ok);
     if (!ok)
         return;
     image::threshold(dwi,handle->mask,threshold);
@@ -726,7 +727,7 @@ void reconstruction_window::update_image(void)
 {
     dwi.resize(handle->voxel.dim);
     for(unsigned int index = 0;index < dwi.size();++index)
-        dwi[index] = handle->voxel.dwi_sum[index]*255.0;
+        dwi[index] = std::min<float>(254.0,handle->voxel.dwi_sum[index]*255.0);
     load_b_table();
 }
 
@@ -852,20 +853,24 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
 
     unsigned char* slice_image_ptr = &*dwi.begin() + buffer.size()* position;
     unsigned char* slice_mask = &*handle->mask.begin() + buffer.size()* position;
+
+    image::color_image buffer2(image::geometry<2>(dwi.width()*2,dwi.height()));
+    image::draw(buffer,buffer2,image::vector<2,int>());
     for (unsigned int index = 0; index < buffer.size(); ++index)
     {
-        unsigned char value = slice_image_ptr[index]*0.8;
+        unsigned char value = slice_image_ptr[index];
         if (slice_mask[index])
             buffer[index] = image::rgb_color(255, value, value);
         else
             buffer[index] = image::rgb_color(value, value, value);
     }
-
+    image::draw(buffer,buffer2,image::vector<2,int>(dwi.width(),0));
+    buffer2.swap(buffer);
     double ratio = std::max(1.0,
-        std::min(((double)ui->graphicsView->width()-5)/(double)dwi.width(),
-                 ((double)ui->graphicsView->height()-5)/(double)dwi.height()));
-    slice_image = QImage((unsigned char*)&*buffer.begin(),dwi.width(),dwi.height(),QImage::Format_RGB32).
-                    scaled(dwi.width()*ratio,dwi.height()*ratio);
+        std::min(((double)ui->graphicsView->width()-5)/(double)buffer.width(),
+                 ((double)ui->graphicsView->height()-5)/(double)buffer.height()));
+    slice_image = QImage((unsigned char*)&*buffer.begin(),buffer.width(),buffer.height(),QImage::Format_RGB32).
+                    scaled(buffer.width()*ratio,buffer.height()*ratio);
     show_view(scene,slice_image);
 }
 
@@ -1117,3 +1122,4 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
     update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
+
