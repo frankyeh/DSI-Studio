@@ -35,16 +35,10 @@ struct TrackingParam
     float threshold;
     float cull_cos_angle;
     float step_size;
-    float step_size_in_voxel[3];
     float smooth_fraction;
     unsigned int min_points_count3;
     unsigned int max_points_count3;
-    void scaling_in_voxel(image::vector<3,float>& dir) const
-    {
-        dir[0] *= step_size_in_voxel[0];
-        dir[1] *= step_size_in_voxel[1];
-        dir[2] *= step_size_in_voxel[2];
-    }
+
 };
 
 
@@ -60,12 +54,22 @@ public:// Parameters
 public:
     const tracking_data& trk;
     const TrackingParam& param;
+    float current_tracking_angle;
+    float current_tracking_smoothing;
+    float current_step_size_in_voxel[3];
+    void scaling_in_voxel(image::vector<3,float>& dir) const
+    {
+        dir[0] *= current_step_size_in_voxel[0];
+        dir[1] *= current_step_size_in_voxel[1];
+        dir[2] *= current_step_size_in_voxel[2];
+    }
 private:
     const RoiMgr& roi_mgr;
 	std::vector<float> track_buffer;
 	mutable std::vector<float> reverse_buffer;
     unsigned int buffer_front_pos;
     unsigned int buffer_back_pos;
+
 private:
     unsigned int init_fib_index;
 public:
@@ -81,7 +85,7 @@ public:
                       const image::vector<3,float>& ref_dir,
                       image::vector<3,float>& result_dir)
     {
-        return interpolation->evaluate(trk,position,ref_dir,result_dir,param.threshold,param.cull_cos_angle);
+        return interpolation->evaluate(trk,position,ref_dir,result_dir,param.threshold,current_tracking_angle);
     }
 public:
     TrackingMethod(const tracking_data& trk_,basic_interpolation* interpolation_,
@@ -143,7 +147,7 @@ public:
         forward = false;
 		do
 		{
-		    tracking(ProcessList());	
+            tracking(ProcessList());
 			// make sure that the length won't overflow
             if(get_buffer_size() > param.max_points_count3 || buffer_front_pos < 3)
 				return false;			

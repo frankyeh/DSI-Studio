@@ -1,3 +1,6 @@
+#ifndef M_PI
+#define M_PI        3.14159265358979323846
+#endif
 #include "tracking_thread.hpp"
 #include "fib_data.hpp"
 void ThreadData::push_tracts(std::vector<std::vector<float> >& local_tract_buffer)
@@ -26,7 +29,10 @@ void ThreadData::end_thread(void)
 void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count,unsigned int thread_id,unsigned int max_count)
 {
     std::auto_ptr<TrackingMethod> method(method_ptr);
-    std::uniform_real_distribution<float> rand_gen(0,1);
+    std::uniform_real_distribution<float> rand_gen(0,1),
+            angle_gen(15.0*M_PI/180.0,90.0*M_PI/180.0),
+            smoothing_gen(0.0,0.95),
+            step_gen(0.1,3.0);
     unsigned int iteration = thread_id; // for center seed
     float white_matter_t = method_ptr->param.threshold*1.2;
     if(!roi_mgr.seeds.empty())
@@ -40,6 +46,17 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
         {
             if(!pushing_data && (iteration & 0x00000FFF) == 0x00000FFF && !local_track_buffer.empty())
                 push_tracts(local_track_buffer);
+            if(param.cull_cos_angle == 1.0)
+                method->current_tracking_angle = std::cos(angle_gen(seed));
+            if(param.smooth_fraction == 1.0)
+                method->current_tracking_smoothing = smoothing_gen(seed);
+            if(param.step_size == 0.0)
+            {
+                float step_size_in_voxel = step_gen(seed);
+                method->current_step_size_in_voxel[0] = step_size_in_voxel;
+                method->current_step_size_in_voxel[1] = step_size_in_voxel;
+                method->current_step_size_in_voxel[2] = step_size_in_voxel;
+            }
             ++seed_count[thread_id];
             if(center_seed)
             {
@@ -111,6 +128,7 @@ bool ThreadData::fetchTracks(TractModel* handle)
 }
 TrackingMethod* ThreadData::new_method(const tracking_data& trk)
 {
+
     std::auto_ptr<basic_interpolation> interpo_method;
     switch (interpolation_strategy)
     {
@@ -125,7 +143,13 @@ TrackingMethod* ThreadData::new_method(const tracking_data& trk)
         break;
 
     }
-    return new TrackingMethod(trk,interpo_method.release(),roi_mgr,param);
+    TrackingMethod* method = new TrackingMethod(trk,interpo_method.release(),roi_mgr,param);
+    method->current_tracking_angle = method->param.cull_cos_angle;
+    method->current_tracking_smoothing = method->param.smooth_fraction;
+    method->current_step_size_in_voxel[0] = method->param.step_size/method->trk.vs[0];
+    method->current_step_size_in_voxel[1] = method->param.step_size/method->trk.vs[1];
+    method->current_step_size_in_voxel[2] = method->param.step_size/method->trk.vs[2];
+    return method;
 }
 
 void ThreadData::run(const tracking_data& trk,
@@ -136,9 +160,17 @@ void ThreadData::run(const tracking_data& trk,
     report.clear();
     report.str("");
     report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was used."
-           << roi_mgr.report
-           << " The angular threshold was " << (int)std::round(std::acos(param.cull_cos_angle)*180/3.1415926) << " degrees."
-           << " The step size was " << param.step_size << " mm.";
+           << roi_mgr.report;
+    if(param.cull_cos_angle != 1.0)
+        report << " The angular threshold was " << (int)std::round(std::acos(param.cull_cos_angle)*180/3.1415926) << " degrees.";
+    else
+        report << " The angular threshold was randomly selected from 15 degrees to 90 degrees.";
+
+    if(param.step_size != 0.0)
+        report << " The step size was " << param.step_size << " mm.";
+    else
+        report << " The step size was randomly selected from 0.1 voxel to 3 voxels.";
+
     if(int(param.threshold*1000) == int(600*image::segmentation::otsu_threshold(image::make_image(trk.fa[0],trk.dim))))
         report << " The anisotropy threshold was determined automatically by DSI Studio.";
     else
@@ -146,21 +178,25 @@ void ThreadData::run(const tracking_data& trk,
 
 
     if(param.smooth_fraction != 0.0)
-        report << " The fiber trajectories were smoothed by averaging the propagation direction with "
-               << (int)std::round(param.smooth_fraction * 100.0) << "% of the previous direction.";
-
+    {
+        if(param.smooth_fraction != 1.0)
+            report << " The fiber trajectories were smoothed by averaging the propagation direction with "
+                   << (int)std::round(param.smooth_fraction * 100.0) << "% of the previous direction.";
+        else
+            report << " The fiber trajectories were smoothed by averaging the propagation direction with \
+a percentage of the previous direction. The percentage was randomly selected from 0% to 95%.";
+    }
     if(param.min_points_count3 != 6)
         report << " Tracks with length less than "
                << (int)std::round(param.min_points_count3 * param.step_size /3.0) << " mm were discarded.";
+
+
 
     if(!termination_count)
         return;
     // to ensure consistency, seed initialization with all orientation only fits with single thread
     if(initial_direction == 2)
         thread_count = 1;
-    param.step_size_in_voxel[0] = param.step_size/trk.vs[0];
-    param.step_size_in_voxel[1] = param.step_size/trk.vs[1];
-    param.step_size_in_voxel[2] = param.step_size/trk.vs[2];
 
     if(center_seed)
     {

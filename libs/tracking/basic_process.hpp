@@ -31,7 +31,7 @@ public:
                 continue;
             dis.normalize();
             float angle_cos = dis*info.dir;
-            if(angle_cos < info.param.cull_cos_angle)
+            if(angle_cos < info.current_tracking_angle)
                 continue;
             next_voxels_pos.push_back(pos);
             next_voxels_index.push_back(image::pixel_index<3>(pos[0],pos[1],pos[2],info.trk.dim).index());
@@ -50,7 +50,7 @@ public:
                 if (fa_value <= info.param.threshold)
                     break;
                 float value = std::abs(info.trk.cos_angle(next_voxels_dir[i],next_voxels_index[i],j));
-                if(value < info.param.cull_cos_angle)
+                if(value < info.current_tracking_angle)
                     continue;
                 if(voxel_angle[i]*value*fa_value > max_angle_cos)
                 {
@@ -92,7 +92,7 @@ public:
 
         y = k1;
         y *= 0.5;
-        info.param.scaling_in_voxel(y);
+        info.scaling_in_voxel(y);
         y += info.position;
         if (!info.get_dir(y,k1,k2))
         {
@@ -101,7 +101,7 @@ public:
         }
         y = k2;
         y *= 0.5;
-        info.param.scaling_in_voxel(y);
+        info.scaling_in_voxel(y);
         y += info.position;
         if (!info.get_dir(y,k2,k3))
         {
@@ -110,7 +110,7 @@ public:
         }
 
         y = k3;
-        info.param.scaling_in_voxel(y);
+        info.scaling_in_voxel(y);
         y += info.position;
         if (!info.get_dir(y,k3,k4))
         {
@@ -149,9 +149,9 @@ public:
     template<class method>
     void operator()(method& info)
     {
-        if(info.param.smooth_fraction != 0.0f)
+        if(info.current_tracking_smoothing != 0.0f)
         {
-            info.next_dir += (info.dir-info.next_dir)*info.param.smooth_fraction;
+            info.next_dir += (info.dir-info.next_dir)*info.current_tracking_smoothing;
             info.next_dir.normalize();
         }
     }
@@ -167,7 +167,7 @@ public:
         if (info.terminated)
             return;
         image::vector<3,float> step(info.next_dir);
-        info.param.scaling_in_voxel(step);
+        info.scaling_in_voxel(step);
         info.position += step;
         info.dir = info.next_dir;
     }

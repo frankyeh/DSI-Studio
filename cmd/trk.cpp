@@ -378,20 +378,19 @@ int trk(void)
     }
 
     image::geometry<3> geometry = handle->dim;
-    image::vector<3> voxel_size = handle->vs;
     image::basic_image<image::vector<3>,3> mapping;
     const float *fa0 = handle->dir.fa[0];
 
 
     ThreadData tracking_thread(po.get("random_seed",int(0)));
     tracking_thread.param.threshold = po.get("fa_threshold",float(0.6*image::segmentation::otsu_threshold(image::make_image(fa0,geometry))));
-    tracking_thread.param.cull_cos_angle = std::cos(po.get("turning_angle",float(60))*3.1415926/180.0);
-    tracking_thread.param.step_size = po.get("step_size",float(voxel_size[0]/2.0));
-    tracking_thread.param.smooth_fraction = po.get("smoothing",float(0));
-    tracking_thread.param.min_points_count3 = 3.0* po.get("min_length",float(10))/tracking_thread.param.step_size;
+    tracking_thread.param.cull_cos_angle = std::cos(po.get("turning_angle",0));
+    tracking_thread.param.step_size = po.get("step_size",0);
+    tracking_thread.param.smooth_fraction = po.get("smoothing",1.0);
+    tracking_thread.param.min_points_count3 = 3.0* po.get("min_length",float(10))/handle->vs[0];
     if(tracking_thread.param.min_points_count3 < 6)
         tracking_thread.param.min_points_count3 = 6;
-    tracking_thread.param.max_points_count3 = std::max<unsigned int>(6,3.0*po.get("max_length",float(500))/tracking_thread.param.step_size);
+    tracking_thread.param.max_points_count3 = std::max<unsigned int>(6,3.0*po.get("max_length",float(500))/handle->vs[0]);
 
     tracking_thread.tracking_method = po.get("method",int(0));
     tracking_thread.initial_direction  = po.get("initial_dir",int(0));

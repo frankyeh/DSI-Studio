@@ -368,7 +368,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     // setup fa threshold
     {
         initialize_tracking_index(0);
-        set_data("step_size",fib.vs[0]/2.0);
     }
 
     report(handle->report.c_str());
@@ -533,12 +532,11 @@ void tracking_window::set_tracking_param(ThreadData& tracking_thread)
     tracking_thread.param.cull_cos_angle = std::cos(renderWidget->getData("turning_angle").toDouble() * 3.1415926 / 180.0);
     tracking_thread.param.step_size = renderWidget->getData("step_size").toDouble();
     tracking_thread.param.smooth_fraction = renderWidget->getData("smoothing").toDouble();
-    tracking_thread.param.min_points_count3 = 3.0*renderWidget->getData("min_length").toDouble()/renderWidget->getData("step_size").toDouble();
+    tracking_thread.param.min_points_count3 = 3.0*renderWidget->getData("min_length").toDouble()/handle->vs[0];
     if(tracking_thread.param.min_points_count3 < 6)
         tracking_thread.param.min_points_count3 = 6;
     tracking_thread.param.max_points_count3 =
-            std::max<unsigned int>(tracking_thread.param.min_points_count3,
-                                   3.0*renderWidget->getData("max_length").toDouble()/renderWidget->getData("step_size").toDouble());
+            std::max<unsigned int>(tracking_thread.param.min_points_count3,3.0*renderWidget->getData("max_length").toDouble()/handle->vs[0]);
 
     tracking_thread.tracking_method = renderWidget->getData("tracking_method").toInt();
     tracking_thread.initial_direction = renderWidget->getData("initial_direction").toInt();
