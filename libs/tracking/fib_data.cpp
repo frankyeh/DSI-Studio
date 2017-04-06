@@ -411,7 +411,7 @@ float tracking_data::get_track_specific_index(unsigned int space_index,unsigned 
 
 bool tracking_data::is_white_matter(const image::vector<3,float>& pos,float t) const
 {
-    return image::estimate(image::make_image(fa[0],dim),pos) > t;
+    return image::estimate(image::make_image(fa[0],dim),pos) > t && pos[2] > 0.5;
 }
 
 

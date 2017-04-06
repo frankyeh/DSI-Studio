@@ -32,7 +32,7 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
     std::uniform_real_distribution<float> rand_gen(0,1),
             angle_gen(15.0*M_PI/180.0,90.0*M_PI/180.0),
             smoothing_gen(0.0,0.95),
-            step_gen(0.1,3.0);
+            step_gen(0.1,1.0);
     unsigned int iteration = thread_id; // for center seed
     float white_matter_t = method_ptr->param.threshold*1.2;
     if(!roi_mgr.seeds.empty())
