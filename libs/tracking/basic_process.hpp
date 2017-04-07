@@ -47,7 +47,7 @@ public:
             for (char j = 0;j < info.trk.fib_num;++j)
             {
                 float fa_value = info.trk.fa[j][next_voxels_index[i]];
-                if (fa_value <= info.param.threshold)
+                if (fa_value <= info.current_fa_threshold)
                     break;
                 float value = std::abs(info.trk.cos_angle(next_voxels_dir[i],next_voxels_index[i],j));
                 if(value < info.current_tracking_angle)

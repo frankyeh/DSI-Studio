@@ -32,7 +32,7 @@ typedef boost::mpl::vector<
 
 struct TrackingParam
 {
-    float threshold;
+    float threshold,otsu_threshold;
     float cull_cos_angle;
     float step_size;
     float smooth_fraction;
@@ -54,6 +54,7 @@ public:// Parameters
 public:
     const tracking_data& trk;
     const TrackingParam& param;
+    float current_fa_threshold;
     float current_tracking_angle;
     float current_tracking_smoothing;
     float current_step_size_in_voxel[3];
@@ -85,7 +86,7 @@ public:
                       const image::vector<3,float>& ref_dir,
                       image::vector<3,float>& result_dir)
     {
-        return interpolation->evaluate(trk,position,ref_dir,result_dir,param.threshold,current_tracking_angle);
+        return interpolation->evaluate(trk,position,ref_dir,result_dir,current_fa_threshold,current_tracking_angle);
     }
 public:
     TrackingMethod(const tracking_data& trk_,basic_interpolation* interpolation_,
@@ -209,7 +210,7 @@ public:
             {
             case 0:// main direction
                 {
-                    if(trk.fa[0][index.index()] < param.threshold)
+                    if(trk.fa[0][index.index()] < current_fa_threshold)
                         return false;
                     dir = trk.get_dir(index.index(),0);
                 }
@@ -229,7 +230,7 @@ public:
             case 2:// all direction
                 {
                     if (init_fib_index >= trk.fib_num ||
-                        trk.fa[init_fib_index][index.index()] < param.threshold)
+                        trk.fa[init_fib_index][index.index()] < current_fa_threshold)
                     {
                         init_fib_index = 0;
                         return false;

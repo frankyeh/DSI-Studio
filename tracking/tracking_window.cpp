@@ -1011,7 +1011,8 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
     }
     float max_value = *std::max_element(handle->dir.fa[0],handle->dir.fa[0]+handle->dim.size());
     renderWidget->setMinMax("fa_threshold",0.0,max_value*1.1,max_value/50.0);
-    set_data("fa_threshold",0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim)));
+    if(renderWidget->getData("fa_threshold").toFloat() != 0.0)
+        set_data("fa_threshold",0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim)));
     scene.show_slice();
 }
 

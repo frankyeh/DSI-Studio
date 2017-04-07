@@ -32,7 +32,8 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
     std::uniform_real_distribution<float> rand_gen(0,1),
             angle_gen(15.0*M_PI/180.0,90.0*M_PI/180.0),
             smoothing_gen(0.0,0.95),
-            step_gen(0.1,1.0);
+            step_gen(0.1,1.0),
+            threshold_gen(0.5*param.otsu_threshold,0.7*param.otsu_threshold);
     unsigned int iteration = thread_id; // for center seed
     float white_matter_t = method_ptr->param.threshold*1.2;
     if(!roi_mgr.seeds.empty())
@@ -46,6 +47,11 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
         {
             if(!pushing_data && (iteration & 0x00000FFF) == 0x00000FFF && !local_track_buffer.empty())
                 push_tracts(local_track_buffer);
+            if(param.threshold == 0.0)
+            {
+                method->current_fa_threshold = threshold_gen(seed);
+                white_matter_t = method->current_fa_threshold*1.2;
+            }
             if(param.cull_cos_angle == 1.0)
                 method->current_tracking_angle = std::cos(angle_gen(seed));
             if(param.smooth_fraction == 1.0)
@@ -144,6 +150,7 @@ TrackingMethod* ThreadData::new_method(const tracking_data& trk)
 
     }
     TrackingMethod* method = new TrackingMethod(trk,interpo_method.release(),roi_mgr,param);
+    method->current_fa_threshold = method->param.threshold;
     method->current_tracking_angle = method->param.cull_cos_angle;
     method->current_tracking_smoothing = method->param.smooth_fraction;
     method->current_step_size_in_voxel[0] = method->param.step_size/method->trk.vs[0];
@@ -171,11 +178,16 @@ void ThreadData::run(const tracking_data& trk,
     else
         report << " The step size was randomly selected from 0.1 voxel to 3 voxels.";
 
-    if(int(param.threshold*1000) == int(600*image::segmentation::otsu_threshold(image::make_image(trk.fa[0],trk.dim))))
-        report << " The anisotropy threshold was determined automatically by DSI Studio.";
+    param.otsu_threshold = image::segmentation::otsu_threshold(image::make_image(trk.fa[0],trk.dim));
+    if(int(param.threshold*1000) == int(600*param.otsu_threshold))
+        report << " The default anisotropy threshold was used.";
     else
-        report << " The anisotropy threshold was " << param.threshold << ".";
-
+    {
+        if(param.threshold == 0.0)
+            report << " The anisotropy threshold was randomly selected.";
+        else
+            report << " The anisotropy threshold was " << param.threshold << ".";
+    }
 
     if(param.smooth_fraction != 0.0)
     {

@@ -380,10 +380,11 @@ int trk(void)
     image::geometry<3> geometry = handle->dim;
     image::basic_image<image::vector<3>,3> mapping;
     const float *fa0 = handle->dir.fa[0];
+    float otsu06 = 0.6*image::segmentation::otsu_threshold(image::make_image(fa0,geometry));
 
 
     ThreadData tracking_thread(po.get("random_seed",int(0)));
-    tracking_thread.param.threshold = po.get("fa_threshold",float(0.6*image::segmentation::otsu_threshold(image::make_image(fa0,geometry))));
+    tracking_thread.param.threshold = po.get("fa_threshold",0);
     tracking_thread.param.cull_cos_angle = std::cos(po.get("turning_angle",0));
     tracking_thread.param.step_size = po.get("step_size",0);
     tracking_thread.param.smooth_fraction = po.get("smoothing",1.0);
@@ -440,11 +441,13 @@ int trk(void)
 
     if (!po.has("seed"))
     {
-
+        float seed_threshold = tracking_thread.param.threshold;
+        if(seed_threshold == 0)
+            seed_threshold = otsu06;
         std::vector<image::vector<3,short> > seed;
         std::cout << "no seeding area assigned. use whole brain seeding" << std::endl;
         for(image::pixel_index<3> index(geometry);index < geometry.size();++index)
-            if(fa0[index.index()] > tracking_thread.param.threshold)
+            if(fa0[index.index()] > seed_threshold)
                 seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
         tracking_thread.roi_mgr.setRegions(geometry,seed,3,"whole brain");
     }
