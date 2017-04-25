@@ -793,7 +793,7 @@ void RegionTableWidget::show_statistics(void)
                 active_regions.push_back(regions[index]);
                 region_name.push_back(item(index,0)->text().toStdString());
             }
-        get_regions_statistics(cur_tracking_window.handle,regions,region_name,result);
+        get_regions_statistics(cur_tracking_window.handle,active_regions,region_name,result);
     }
     QMessageBox msgBox;
     msgBox.setText("Region Statistics");
