@@ -809,13 +809,12 @@ void TractTableWidget::save_tracts_color_as(void)
     tract_models[currentRow()]->save_tracts_color_to_file(&*sfilename.begin());
 }
 
-void TractTableWidget::show_tracts_statistics(void)
+void get_track_statistics(const std::vector<TractModel*>& tract_models,
+                          const std::vector<std::string>& track_name,
+                          std::string& result)
 {
-    if(currentRow() >= tract_models.size())
-        return;
     std::ostringstream out;
     std::vector<std::vector<std::string> > track_results(tract_models.size());
-    begin_prog("calculating");
     image::par_for(tract_models.size(),[&](unsigned int index)
     {
         std::string tmp,line;
@@ -836,7 +835,7 @@ void TractTableWidget::show_tracts_statistics(void)
     out << std::endl;
     out << "Tract Name\t";
     for(unsigned int index = 0;index < tract_models.size();++index)
-        out << item(index,0)->text().toLocal8Bit().begin() << "\t";
+        out << track_name[index] << "\t";
     out << std::endl;
     for(unsigned int index = 0;index < track_results[0].size();++index)
     {
@@ -845,7 +844,26 @@ void TractTableWidget::show_tracts_statistics(void)
             out << track_results[i][index].substr(track_results[i][index].find("\t"));
         out << std::endl;
     }
-    cur_tracking_window.show_info_dialog("Tract Statistics",out.str());
+    result = out.str();
+}
+
+void TractTableWidget::show_tracts_statistics(void)
+{
+    if(tract_models.empty())
+        return;
+    std::string result;
+    {
+        std::vector<TractModel*> active_tracks;
+        std::vector<std::string> track_name;
+        for(unsigned int index = 0;index < tract_models.size();++index)
+            if(item(index,0)->checkState() == Qt::Checked)
+            {
+                active_tracks.push_back(tract_models[index]);
+                track_name.push_back(item(index,0)->text().toStdString());
+            }
+        get_track_statistics(active_tracks,track_name,result);
+    }
+    cur_tracking_window.show_info_dialog("Tract Statistics",result);
 
 }
 
