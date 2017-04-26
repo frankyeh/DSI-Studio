@@ -316,7 +316,7 @@ void group_connectometry::on_open_mr_files_clicked()
                 this,
                 "Open demographics",
                 work_dir,
-                "Text file (*.txt);;All files (*)");
+                "Text or CSV file (*.txt *.csv);;All files (*)");
     if(filename.isEmpty())
         return;
     load_demographic_file(filename);
@@ -329,36 +329,65 @@ bool group_connectometry::load_demographic_file(QString filename)
     file_names.clear();
     file_names.push_back(filename.toLocal8Bit().begin());
 
+    int row_count = 0,col_count = 0,last_item_size = 0;
     std::vector<std::string> items;
-    std::ifstream in(filename.toLocal8Bit().begin());
-    if(!in)
-    {
-        if(gui)
-            QMessageBox::information(this,"Error",QString("Cannot find the demographic file."));
-        else
-            std::cout << "cannot find the demographic file at" << filename.toLocal8Bit().begin() << std::endl;
-        return false;
-    }
-    std::copy(std::istream_iterator<std::string>(in),
-              std::istream_iterator<std::string>(),std::back_inserter(items));
 
     {
-        unsigned int feature_count = items.size()/(vbc->handle->db.num_subjects+1);
-        if(feature_count*(vbc->handle->db.num_subjects+1) != items.size())
+        bool is_csv = (QFileInfo(filename).completeSuffix() == "csv");
+        std::ifstream in(filename.toLocal8Bit().begin());
+        if(!in)
         {
             if(gui)
+                QMessageBox::information(this,"Error",QString("Cannot find the demographic file."));
+            else
+                std::cout << "cannot find the demographic file at" << filename.toLocal8Bit().begin() << std::endl;
+            return false;
+        }
+
+        std::string line;
+        while(std::getline(in,line))
+        {
+            if(is_csv)
             {
-                int result = QMessageBox::information(this,"Warning",QString("Subject number mismatch. text file has %1 elements while database has %2 subjects. Try to match the data?").
-                                                                arg(items.size()).arg(vbc->handle->db.num_subjects),QMessageBox::Yes|QMessageBox::No);
-                if(result == QMessageBox::No)
-                    return false;
-                items.resize(feature_count*(vbc->handle->db.num_subjects+1));
+            QString str(line.c_str());
+            QStringList values = str.split(',');
+            for(int i = 0;i < values.size();++i)
+                items.push_back(values[i].toStdString());
             }
             else
             {
-                std::cout << "subject number mismatch in the demographic file" <<std::endl;
-                return false;
+                std::istringstream in2(line);
+                std::copy(std::istream_iterator<std::string>(in2),
+                          std::istream_iterator<std::string>(),std::back_inserter(items));
             }
+            ++row_count;
+            if(col_count == 0)
+                col_count = items.size();
+            else
+                if(items.size()-last_item_size != col_count)
+                {
+                    QString error_msg = QString("Row number %1 has %2 fields, which is different from the column size %3.").arg(row_count).arg(items.size()-last_item_size).arg(col_count);
+                    if(gui)
+                        QMessageBox::information(this,"Error",error_msg);
+                    else
+                        std::cout << error_msg.toStdString() << std::endl;
+                    return false;
+                }
+            last_item_size = items.size();
+        }
+
+    }
+
+    {
+        unsigned int feature_count = col_count;
+        if(row_count != vbc->handle->db.num_subjects+1)
+        {
+            QString error_msg = QString("Subject number mismatch. The demographic file has %1 subjects, but the database has %2 subjects.").arg(row_count-1).arg(vbc->handle->db.num_subjects);
+            if(gui)
+                QMessageBox::information(this,"Error",error_msg);
+            else
+                std::cout << error_msg.toStdString() << std::endl;
+            return false;
         }
         bool add_age_and_sex = false;
         std::vector<unsigned int> age(vbc->handle->db.num_subjects),sex(vbc->handle->db.num_subjects);
