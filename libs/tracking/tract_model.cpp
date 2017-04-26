@@ -274,16 +274,43 @@ bool TractModel::save_data_to_file(const char* file_name,const std::string& inde
     std::vector<std::vector<float> > data;
     if(!get_tracts_data(index_name,data) || data.empty())
         return false;
-    std::ofstream out(file_name,std::ios::binary);
-    if (!out)
-        return false;
-    begin_prog("saving");
-    for (unsigned int i = 0;check_prog(i,data.size());++i)
+
+    std::string file_name_s(file_name);
+    std::string ext;
+    if(file_name_s.length() > 4)
+        ext = std::string(file_name_s.end()-4,file_name_s.end());
+
+    if (ext == std::string(".txt"))
     {
-        std::copy(data[i].begin(),data[i].end(),std::ostream_iterator<float>(out," "));
-        out << std::endl;
+        std::ofstream out(file_name,std::ios::binary);
+        if (!out)
+            return false;
+        begin_prog("saving");
+        for (unsigned int i = 0;check_prog(i,data.size());++i)
+        {
+            std::copy(data[i].begin(),data[i].end(),std::ostream_iterator<float>(out," "));
+            out << std::endl;
+        }
+        return true;
     }
-    return true;
+    if (ext == std::string(".mat"))
+    {
+        image::io::mat_write out(file_name);
+        if(!out)
+            return false;
+        std::vector<float> buf;
+        std::vector<unsigned int> length;
+        for(unsigned int index = 0;index < data.size();++index)
+        {
+            length.push_back((unsigned int)data[index].size());
+            std::copy(data[index].begin(),data[index].end(),std::back_inserter(buf));
+        }
+        out.write("data",&*buf.begin(),1,(unsigned int)buf.size());
+        out.write("length",&*length.begin(),1,(unsigned int)length.size());
+        return true;
+    }
+
+    return false;
 }
 //---------------------------------------------------------------------------
 bool TractModel::save_tracts_to_file(const char* file_name_)

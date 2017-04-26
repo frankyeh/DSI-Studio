@@ -917,7 +917,7 @@ void TractTableWidget::save_tracts_data_as(void)
         return;
     QString filename = QFileDialog::getSaveFileName(
                 this,"Save as",item(currentRow(),0)->text() + "_" + action->data().toString() + ".txt",
-                "Text files (*.txt);;All files (*)");
+                "Text files (*.txt);;MATLAB file (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
 
@@ -927,6 +927,8 @@ void TractTableWidget::save_tracts_data_as(void)
     {
         QMessageBox::information(this,"error","fail to save information",0);
     }
+    else
+        QMessageBox::information(this,"DSI Studio","file saved",0);
 }
 
 
