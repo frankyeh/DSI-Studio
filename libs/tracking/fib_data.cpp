@@ -763,6 +763,29 @@ void fib_data::get_atlas_roi(int atlas_index,int roi_index,std::vector<image::ve
     points.clear();
     for(int i = 0;i < buf.size();++i)
         points.insert(points.end(),buf[i].begin(),buf[i].end());
+
+    if(points.empty()) // region too small to show on the subject
+    {
+        image::par_for2(dim.size(),[&](unsigned int i,unsigned int id)
+        {
+            image::pixel_index<3>index(i,dim);
+            image::vector<3> mni;
+            subject2mni(index,mni);
+            for(int z = -1;z <=1;++z)
+                for(int y = -1;y <=1;++y)
+                    for(int x = -1;x <=1;++x)
+                    {
+                        image::vector<3> neighbors(mni[0] + x,mni[1] + y,mni[2] + z);
+                        if (atlas_list[atlas_index].is_labeled_as(neighbors, roi_index))
+                        {
+                            buf[id].push_back(image::vector<3,short>(index.begin()));
+                            return;
+                        }
+                    }
+        });
+        for(int i = 0;i < buf.size();++i)
+            points.insert(points.end(),buf[i].begin(),buf[i].end());
+    }
 }
 
 void fib_data::get_mni_mapping(image::basic_image<image::vector<3,float>,3 >& pos)
