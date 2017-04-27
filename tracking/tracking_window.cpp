@@ -385,6 +385,11 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                          SIGNAL(activated()), a, SLOT(trigger()));
     }
     #endif
+
+    glWidget->set_view(2);
+    if((*this)["orientation_convention"].toInt() == 1)
+        glWidget->set_view(2);
+    glWidget->updateGL();
 }
 
 tracking_window::~tracking_window()
