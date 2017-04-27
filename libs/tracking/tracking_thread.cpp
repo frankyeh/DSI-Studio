@@ -32,7 +32,7 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
     std::uniform_real_distribution<float> rand_gen(0,1),
             angle_gen(15.0*M_PI/180.0,90.0*M_PI/180.0),
             smoothing_gen(0.0,0.95),
-            step_gen(0.1,1.0),
+            step_gen(method->trk.vs[0]*0.1,method->trk.vs[0]),
             threshold_gen(0.5*param.otsu_threshold,0.7*param.otsu_threshold);
     unsigned int iteration = thread_id; // for center seed
     float white_matter_t = method_ptr->param.threshold*1.2;
@@ -58,10 +58,12 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
                 method->current_tracking_smoothing = smoothing_gen(seed);
             if(param.step_size == 0.0)
             {
-                float step_size_in_voxel = step_gen(seed);
-                method->current_step_size_in_voxel[0] = step_size_in_voxel;
-                method->current_step_size_in_voxel[1] = step_size_in_voxel;
-                method->current_step_size_in_voxel[2] = step_size_in_voxel;
+                float step_size_in_mm = step_gen(seed);
+                method->current_step_size_in_voxel[0] = step_size_in_mm/method->trk.vs[0];
+                method->current_step_size_in_voxel[1] = step_size_in_mm/method->trk.vs[1];
+                method->current_step_size_in_voxel[2] = step_size_in_mm/method->trk.vs[2];
+                method->current_max_steps3 = std::round(3.0*param.max_length/step_size_in_mm);
+                method->current_min_steps3 = std::round(3.0*param.min_length/step_size_in_mm);
             }
             ++seed_count[thread_id];
             if(center_seed)
@@ -156,6 +158,11 @@ TrackingMethod* ThreadData::new_method(const tracking_data& trk)
     method->current_step_size_in_voxel[0] = method->param.step_size/method->trk.vs[0];
     method->current_step_size_in_voxel[1] = method->param.step_size/method->trk.vs[1];
     method->current_step_size_in_voxel[2] = method->param.step_size/method->trk.vs[2];
+    if(method->param.step_size != 0.0)
+    {
+        method->current_max_steps3 = std::round(3.0*method->param.max_length/method->param.step_size);
+        method->current_min_steps3 = std::round(3.0*method->param.min_length/method->param.step_size);
+    }
     return method;
 }
 
@@ -198,11 +205,7 @@ void ThreadData::run(const tracking_data& trk,
             report << " The fiber trajectories were smoothed by averaging the propagation direction with \
 a percentage of the previous direction. The percentage was randomly selected from 0% to 95%.";
     }
-    if(param.min_points_count3 != 6)
-        report << " Tracks with length less than "
-               << (int)std::round(param.min_points_count3 * param.step_size /3.0) << " mm were discarded.";
-
-
+    report << " Tracks with length shorter than " << param.min_length << " or longer than " << param.max_length  << " mm were discarded.";
 
     if(!termination_count)
         return;

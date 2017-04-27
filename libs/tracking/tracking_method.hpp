@@ -36,8 +36,8 @@ struct TrackingParam
     float cull_cos_angle;
     float step_size;
     float smooth_fraction;
-    unsigned int min_points_count3;
-    unsigned int max_points_count3;
+    float min_length;
+    float max_length;
 
 };
 
@@ -58,6 +58,8 @@ public:
     float current_tracking_angle;
     float current_tracking_smoothing;
     float current_step_size_in_voxel[3];
+    int current_min_steps3;
+    int current_max_steps3;
     void scaling_in_voxel(image::vector<3,float>& dir) const
     {
         dir[0] *= current_step_size_in_voxel[0];
@@ -93,9 +95,8 @@ public:
                    const RoiMgr& roi_mgr_,const TrackingParam& param_):
         trk(trk_),interpolation(interpolation_),roi_mgr(roi_mgr_),param(param_),init_fib_index(0)
 	{
-        // floatd for full backward or full forward
-        track_buffer.resize(param.max_points_count3 << 1);
-        reverse_buffer.resize(param.max_points_count3 << 1);
+
+
 	}
 public:
 	template<class Process>
@@ -119,13 +120,16 @@ public:
     {
         image::vector<3,float> seed_pos(position);
         image::vector<3,float> begin_dir(dir);
-        buffer_front_pos = param.max_points_count3;
-        buffer_back_pos = param.max_points_count3;
+        // floatd for full backward or full forward
+        track_buffer.resize(current_max_steps3 << 1);
+        reverse_buffer.resize(current_max_steps3 << 1);
+        buffer_front_pos = current_max_steps3;
+        buffer_back_pos = current_max_steps3;
         image::vector<3,float> end_point1;
         terminated = false;
 		do
 		{
-            if(get_buffer_size() > param.max_points_count3 || buffer_back_pos + 3 >= track_buffer.size())
+            if(get_buffer_size() > current_max_steps3 || buffer_back_pos + 3 >= track_buffer.size())
 				return false;
             if(roi_mgr.is_excluded_point(position))
 				return false;
@@ -150,7 +154,7 @@ public:
 		{
             tracking(ProcessList());
 			// make sure that the length won't overflow
-            if(get_buffer_size() > param.max_points_count3 || buffer_front_pos < 3)
+            if(get_buffer_size() > current_max_steps3 || buffer_front_pos < 3)
 				return false;			
             if(terminated)
 				break;
@@ -186,7 +190,7 @@ public:
             smoothed.swap(track_buffer);
         }
 
-        return get_buffer_size() >= param.min_points_count3 &&
+        return get_buffer_size() > current_min_steps3 &&
                roi_mgr.have_include(get_result(),get_buffer_size()) &&
                roi_mgr.fulfill_end_point(position,end_point1);
 

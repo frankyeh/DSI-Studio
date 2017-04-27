@@ -54,8 +54,8 @@ int vbc_database::run_track(const tracking_data& fib,std::vector<std::vector<flo
     tracking_thread.param.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);
     tracking_thread.param.step_size = 1.0; // fixed 1 mm
     tracking_thread.param.smooth_fraction = 0;
-    tracking_thread.param.min_points_count3 = 6;
-    tracking_thread.param.max_points_count3 = std::max<unsigned int>(6,3.0*500/tracking_thread.param.step_size);
+    tracking_thread.param.min_length = 0;
+    tracking_thread.param.max_length = 400;
     tracking_thread.tracking_method = 0;// streamline fiber tracking
     tracking_thread.initial_direction = 0;// main directions
     tracking_thread.interpolation_strategy = 0; // trilinear interpolation

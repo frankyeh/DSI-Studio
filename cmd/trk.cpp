@@ -388,10 +388,8 @@ int trk(void)
     tracking_thread.param.cull_cos_angle = std::cos(po.get("turning_angle",0));
     tracking_thread.param.step_size = po.get("step_size",0);
     tracking_thread.param.smooth_fraction = po.get("smoothing",1.0);
-    tracking_thread.param.min_points_count3 = 3.0* po.get("min_length",float(10))/handle->vs[0];
-    if(tracking_thread.param.min_points_count3 < 6)
-        tracking_thread.param.min_points_count3 = 6;
-    tracking_thread.param.max_points_count3 = std::max<unsigned int>(6,3.0*po.get("max_length",float(500))/handle->vs[0]);
+    tracking_thread.param.min_length = po.get("min_length",float(0));
+    tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,po.get("max_length",float(400)));
 
     tracking_thread.tracking_method = po.get("method",int(0));
     tracking_thread.initial_direction  = po.get("initial_dir",int(0));
@@ -462,8 +460,8 @@ int trk(void)
         std::cout << "fa_threshold=" << tracking_thread.param.threshold << std::endl;
         std::cout << "step_size=" << tracking_thread.param.step_size << std::endl;
         std::cout << "smoothing=" << tracking_thread.param.smooth_fraction << std::endl;
-        std::cout << "min_length=" << po.get("min_length",float(10)) << std::endl;
-        std::cout << "max_length=" << po.get("max_length",float(500)) << std::endl;
+        std::cout << "min_length=" << tracking_thread.param.min_length << std::endl;
+        std::cout << "max_length=" << tracking_thread.param.max_length << std::endl;
         std::cout << "tracking_method=" << (int)tracking_thread.tracking_method << std::endl;
         std::cout << "initial direction=" << (int)tracking_thread.initial_direction << std::endl;
         std::cout << "interpolation=" << (int)tracking_thread.interpolation_strategy << std::endl;
