@@ -8,6 +8,7 @@ QT += core \
     printsupport
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 CONFIG += c++11
+#CONFIG += console
 TARGET = dsi_studio
 TEMPLATE = app
 
