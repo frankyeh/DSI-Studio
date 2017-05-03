@@ -165,10 +165,8 @@ int run_cmd(int ac, char *av[])
     return 0;
 }
 
-
-
 int main(int ac, char *av[])
-{ 
+{
     if(ac > 2)
         return run_cmd(ac,av);
     QApplication a(ac,av);

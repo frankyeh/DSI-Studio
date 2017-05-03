@@ -564,12 +564,12 @@ void TractTableWidget::deep_learning_train(void)
         std::copy(cnn.cnn_name.begin(),cnn.cnn_name.end(),std::ostream_iterator<std::string>(out,"\n"));
     }
 
-    /*
+
     filename = QFileInfo(filename).absolutePath() + "/network_data.bin";
     cnn.cnn_data.input = image::geometry<3>(64,80,3);
     cnn.cnn_data.output = image::geometry<3>(1,1,rowCount());
     cnn.cnn_data.save_to_file(filename.toStdString().c_str());
-    */
+
 
     // save atlas as a nifti file
     if(cur_tracking_window.handle->is_qsdr) //QSDR condition

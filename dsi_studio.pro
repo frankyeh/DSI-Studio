@@ -10,6 +10,9 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 CONFIG += c++11
 TARGET = dsi_studio
 TEMPLATE = app
+
+#LIBS += -lcudart -lcudadevrt -lcuda -lnvrtc -lcublas
+
 win32* {
 INCLUDEPATH += ../include
 RC_FILE = dsi_studio.rc
