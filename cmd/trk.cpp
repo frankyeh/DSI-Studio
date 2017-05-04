@@ -211,10 +211,9 @@ bool load_region(std::shared_ptr<fib_data> handle,
         if(po.has("t1t2"))
         {
             std::shared_ptr<CustomSliceModel> other_slice(std::make_shared<CustomSliceModel>());
-            FibSliceModel slice(handle);
             std::vector<std::string> files;
             files.push_back(po.get("t1t2"));
-            if(!other_slice->initialize(slice,handle->is_qsdr,files,true))
+            if(!other_slice->initialize(handle,handle->is_qsdr,files,true))
             {
                 std::cout << "Fail to insert T1T2" << std::endl;
                 return false;
@@ -285,10 +284,9 @@ int trk_post(std::shared_ptr<fib_data> handle,
         {
             std::vector<std::string> files;
             files.push_back(po.get("ref"));
-            FibSliceModel slice(handle);
             CustomSliceModel new_slice;
             std::cout << "Loading reference image:" << po.get("ref") << std::endl;
-            if(!new_slice.initialize(slice,handle->is_qsdr,files,false))
+            if(!new_slice.initialize(handle,handle->is_qsdr,files,false))
             {
                 std::cout << "Error reading ref image file:" << po.get("ref") << std::endl;
                 return 0;

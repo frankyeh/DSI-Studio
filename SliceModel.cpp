@@ -9,23 +9,43 @@
 #include "fa_template.hpp"
 
 // ---------------------------------------------------------------------------
-SliceModel::SliceModel(void):cur_dim(2)
+SliceModel::SliceModel(void)
 {
     slice_visible[0] = false;
     slice_visible[1] = false;
     slice_visible[2] = false;
+    std::fill(transform.begin(),transform.end(),0.0);
+    transform[0] = transform[5] = transform[10] = transform[15] = 1.0;
+    invT = transform;
+}
+// ---------------------------------------------------------------------------
+void SliceModel::get_mosaic(image::color_image& show_image,
+                               unsigned int mosaic_size,
+                               const image::value_to_color<float>& v2c,
+                               unsigned int skip)
+{
+    unsigned slice_num = geometry[2] / skip;
+    show_image.clear();
+    show_image.resize(image::geometry<2>(geometry[0]*mosaic_size,
+                                          geometry[1]*(std::ceil((float)slice_num/(float)mosaic_size))));
+    int old_z = slice_pos[2];
+    for(unsigned int z = 0;z < slice_num;++z)
+    {
+        slice_pos[2] = z*skip;
+        image::color_image slice_image;
+        get_slice(slice_image,2,v2c);
+        image::vector<2,int> pos(geometry[0]*(z%mosaic_size),
+                                 geometry[1]*(z/mosaic_size));
+        image::draw(slice_image,show_image,pos);
+    }
+    slice_pos[2] = old_z;
 }
 
-FibSliceModel::FibSliceModel(std::shared_ptr<fib_data> handle_):handle(handle_)
+FibSliceModel::FibSliceModel(std::shared_ptr<fib_data> handle_,int view_id_):handle(handle_),view_id(view_id_)
 {
     // already setup the geometry and source image
-    fib_data& fib = *handle;
-    geometry = fib.dim;
-    voxel_size = fib.vs;
-    source_images = image::make_image(fib.dir.fa[0],geometry);
-    center_point = geometry;
-    center_point -= 1.0;
-    center_point /= 2.0;
+    geometry = handle_->dim;
+    voxel_size = handle_->vs;
     slice_pos[0] = geometry.width() >> 1;
     slice_pos[1] = geometry.height() >> 1;
     slice_pos[2] = geometry.depth() >> 1;
@@ -33,32 +53,20 @@ FibSliceModel::FibSliceModel(std::shared_ptr<fib_data> handle_):handle(handle_)
 // ---------------------------------------------------------------------------
 std::pair<float,float> FibSliceModel::get_value_range(void) const
 {
-    return image::min_max_value(source_images.begin(),source_images.end());
+    return std::make_pair(handle->view_item[view_id].min_value,handle->view_item[view_id].max_value);
 }
 // ---------------------------------------------------------------------------
-void FibSliceModel::get_slice(image::color_image& show_image,const image::value_to_color<float>& v2c) const
+void FibSliceModel::get_slice(image::color_image& show_image,unsigned char cur_dim,const image::value_to_color<float>& v2c) const
 {
-    handle->get_slice(view_name,cur_dim, slice_pos[cur_dim],show_image,v2c);
+    handle->get_slice(view_id,cur_dim, slice_pos[cur_dim],show_image,v2c);
 }
 // ---------------------------------------------------------------------------
-void FibSliceModel::get_mosaic(image::color_image& show_image,
-                               unsigned int mosaic_size,
-                               const image::value_to_color<float>& v2c,
-                               unsigned int skip) const
+image::const_pointer_image<float, 3> FibSliceModel::get_source(void) const
 {
-    unsigned slice_num = geometry[2] / skip;
-    show_image.clear();
-    show_image.resize(image::geometry<2>(geometry[0]*mosaic_size,
-                                          geometry[1]*(std::ceil((float)slice_num/(float)mosaic_size))));
-    for(unsigned int z = 0;z < slice_num;++z)
-    {
-        image::color_image slice_image;
-        handle->get_slice(view_name,2, z * skip,slice_image,v2c);
-        image::vector<2,int> pos(geometry[0]*(z%mosaic_size),
-                                 geometry[1]*(z/mosaic_size));
-        image::draw(slice_image,show_image,pos);
-    }
+    return handle->view_item[view_id].image_data;
 }
+
+
 // ---------------------------------------------------------------------------
 void CustomSliceModel::init(void)
 {
@@ -72,13 +80,15 @@ void CustomSliceModel::init(void)
     if(scale != 0.0)
         scale = 255.0/scale;
 }
-bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::vector<std::string>& files,bool correct_intensity)
+bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
+                                  const std::vector<std::string>& files,
+                                  bool correct_intensity)
 {
     terminated = true;
     ended = true;
+    is_diffusion_space = false;
 
     gz_nifti nifti;
-    center_point = slice.center_point;
     // QSDR loaded, use MNI transformation instead
     bool has_transform = false;
     name = QFileInfo(files[0].c_str()).completeBaseName().toStdString();
@@ -88,7 +98,7 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
         invT.identity();
         nifti.get_image_transformation(invT.begin());
         invT.inv();
-        invT *= slice.handle->trans_to_mni;
+        invT *= handle->trans_to_mni;
         transform = image::inverse(invT);
         has_transform = true;
     }
@@ -123,10 +133,11 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
             }
         }
         // same dimension, no registration required.
-        if(source_images.geometry() == slice.source_images.geometry())
+        if(source_images.geometry() == handle->dim)
         {
             transform.identity();
             invT.identity();
+            is_diffusion_space = true;
         }
     }
 
@@ -163,25 +174,25 @@ bool CustomSliceModel::initialize(FibSliceModel& slice,bool is_qsdr,const std::v
         }
     }
 
-    roi_image.resize(slice.handle->dim);
+    roi_image.resize(handle->dim);
     roi_image_buf = &*roi_image.begin();
     if(!has_transform)
     {
-        if(slice.source_images.depth() < 10) // 2d assume FOV is the same
+        if(handle->dim.depth() < 10) // 2d assume FOV is the same
         {
             transform.identity();
             invT.identity();
-            invT[0] = (float)source_images.width()/(float)slice.source_images.width();
-            invT[5] = (float)source_images.height()/(float)slice.source_images.height();
-            invT[10] = (float)source_images.depth()/(float)slice.source_images.depth();
+            invT[0] = (float)source_images.width()/(float)handle->dim.width();
+            invT[5] = (float)source_images.height()/(float)handle->dim.height();
+            invT[10] = (float)source_images.depth()/(float)handle->dim.depth();
             invT[15] = 1.0;
             transform = image::inverse(invT);
             update_roi();
         }
         else
         {
-            from = slice.source_images;
-            from_vs = slice.voxel_size;
+            from = image::make_image(handle->dir.fa[0],handle->dim);
+            from_vs = handle->vs;
             thread.reset(new std::future<void>(
                              std::async(std::launch::async,[this](){argmin(image::reg::rigid_body);})));
         }
@@ -229,7 +240,7 @@ void CustomSliceModel::terminate(void)
     ended = true;
 }
 // ---------------------------------------------------------------------------
-void CustomSliceModel::get_slice(image::color_image& show_image,const image::value_to_color<float>& v2c) const
+void CustomSliceModel::get_slice(image::color_image& show_image,unsigned char cur_dim,const image::value_to_color<float>& v2c) const
 {
     image::basic_image<float,2> buf;
     image::reslicing(source_images, buf, cur_dim, slice_pos[cur_dim]);

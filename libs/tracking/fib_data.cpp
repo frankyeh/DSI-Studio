@@ -465,6 +465,7 @@ bool fib_data::load_from_mat(void)
         view_item.back().set_scale(dir.index_data[index][0],dir.index_data[index][0]+dim.size());
     }
     view_item.push_back(item());
+    view_item.back() = view_item[0];
     view_item.back().name = "color";
 
     unsigned int row,col;
@@ -598,14 +599,10 @@ std::pair<float,float> fib_data::get_value_range(const std::string& view_name) c
     return std::make_pair(view_item[view_index].min_value,view_item[view_index].max_value);
 }
 
-void fib_data::get_slice(const std::string& view_name,
+void fib_data::get_slice(unsigned int view_index,
                unsigned char d_index,unsigned int pos,
                image::color_image& show_image,const image::value_to_color<float>& v2c)
 {
-    unsigned int view_index = get_name_index(view_name);
-    if(view_index == view_item.size())
-        return;
-
     if(view_item[view_index].name == "color")
     {
         {

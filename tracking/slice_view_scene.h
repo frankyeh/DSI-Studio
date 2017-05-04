@@ -26,7 +26,7 @@ private:
     image::color_image slice_image,mosaic_image;
 public:
     unsigned int mosaic_size;
-    bool get_location(float x,float y,image::vector<3,float>& pos);
+    bool to_3d_space(float x,float y,image::vector<3,float>& pos);
 public:    // record the mouse press points
     std::vector<image::vector<3,short> >sel_coord;
     std::vector<image::vector<2,short> >sel_point;

@@ -52,7 +52,7 @@ void tract_report::on_refresh_report_clicked()
 
     double max_y = 0.0,min_y = 0.0,min_x = 0.0,max_x = 0;
     if(ui->profile_dir->currentIndex() <= 2)
-        min_x = cur_tracking_window->slice.geometry[ui->profile_dir->currentIndex()];
+        min_x = cur_tracking_window->handle->dim[ui->profile_dir->currentIndex()];
     for(unsigned int index = 0;index < cur_tracking_window->tractWidget->tract_models.size();++index)
     {
         if(cur_tracking_window->tractWidget->item(index,0)->checkState() != Qt::Checked)

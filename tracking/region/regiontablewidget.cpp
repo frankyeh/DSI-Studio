@@ -158,7 +158,7 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
         c.from_hsl(((color_gen++)*1.1-std::floor((color_gen++)*1.1/6)*6)*3.14159265358979323846/3.0,0.85,0.7);
         color = c.color;
     }
-    regions.push_back(std::make_shared<ROIRegion>(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size));
+    regions.push_back(std::make_shared<ROIRegion>(cur_tracking_window.handle->dim,cur_tracking_window.current_slice->voxel_size));
     regions.back()->show_region.color = color;
     regions.back()->regions_feature = feature;
 
@@ -210,24 +210,62 @@ void RegionTableWidget::check_check_status(int row, int col)
 void RegionTableWidget::draw_region(QImage& qimage)
 {
     int X, Y, Z;
-    for (unsigned int roi_index = 0;roi_index < regions.size();++roi_index)
+    auto current_slice = cur_tracking_window.current_slice;
+    int slice_pos = current_slice->slice_pos[cur_tracking_window.cur_dim];
+
+    if(current_slice->is_diffusion_space)
     {
-        if (item(roi_index,0)->checkState() != Qt::Checked)
-            continue;
-        unsigned int cur_color = regions[roi_index]->show_region.color;
-        for (unsigned int index = 0;index < regions[roi_index]->size();++index)
+        for (unsigned int roi_index = 0;roi_index < regions.size();++roi_index)
         {
-            regions[roi_index]->getSlicePosition(&cur_tracking_window.slice, index, X, Y, Z);
-            if (cur_tracking_window.slice.slice_pos[cur_tracking_window.slice.cur_dim] != Z ||
-                    X < 0 || Y < 0 || X >= qimage.width() || Y >= qimage.height())
+            if (item(roi_index,0)->checkState() != Qt::Checked)
                 continue;
-            qimage.setPixel(X,Y,(unsigned int)qimage.pixel(X,Y) | cur_color);
+            unsigned int cur_color = regions[roi_index]->show_region.color;
+            for (unsigned int index = 0;index < regions[roi_index]->size();++index)
+            {
+                regions[roi_index]->getSlicePosition(cur_tracking_window.cur_dim,index, X, Y, Z);
+                if (slice_pos != Z || X < 0 || Y < 0 || X >= qimage.width() || Y >= qimage.height())
+                    continue;
+                qimage.setPixel(X,Y,(unsigned int)qimage.pixel(X,Y) | cur_color);
+            }
         }
+    }
+    else
+    {
+        image::basic_image<unsigned short,3> buf(cur_tracking_window.handle->dim);
+        for (unsigned short roi_index = 0;roi_index < regions.size();++roi_index)
+        {
+            if (item(roi_index,0)->checkState() != Qt::Checked)
+                continue;
+            for (unsigned int index = 0;index < regions[roi_index]->size();++index)
+            {
+                auto& p = regions[roi_index]->region[index];
+                image::pixel_index<3> pindex(p[0],p[1],p[2],buf.geometry());
+                if(pindex.index() >= buf.size())
+                    continue;
+                buf[pindex.index()] = roi_index+1;
+            }
+        }
+
+        for(int y = 0;y < qimage.height();++y)
+            for(int x = 0;x < qimage.width();++x)
+            {
+                int dx,dy,dz;
+                current_slice->toDiffusionSpace(cur_tracking_window.cur_dim,x,y,dx,dy,dz);
+                if(!buf.geometry().is_valid(dx,dy,dz))
+                    continue;
+                image::pixel_index<3> pindex(dx,dy,dz,buf.geometry());
+                if(buf[pindex.index()] == 0)
+                    continue;
+                qimage.setPixel(x,y,(unsigned int)qimage.pixel(x,y) |
+                                (unsigned int)regions[buf[pindex.index()]-1]->show_region.color);
+            }
     }
 }
 
 void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image)
 {
+    if(!cur_tracking_window.current_slice->is_diffusion_space)
+        return;
     if(rowCount() == 0 || currentRow() == -1 || currentRow() >= regions.size() ||
        item(currentRow(),0)->checkState() != Qt::Checked)
         return;
@@ -236,8 +274,8 @@ void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image)
     cur_image_mask.resize(image::geometry<2>(qimage.width(),qimage.height()));
     for (unsigned int index = 0;index < regions[currentRow()]->size();++index)
     {
-        regions[currentRow()]->getSlicePosition(&cur_tracking_window.slice, index, X, Y, Z);
-        if (cur_tracking_window.slice.slice_pos[cur_tracking_window.slice.cur_dim] != Z ||
+        regions[currentRow()]->getSlicePosition(cur_tracking_window.cur_dim, index, X, Y, Z);
+        if (cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim] != Z ||
                 X < 0 || Y < 0 || X >= qimage.width() || Y >= qimage.height())
             continue;
         cur_image_mask.at(X,Y) = 1;
@@ -271,7 +309,7 @@ void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image)
 
 void RegionTableWidget::draw_mosaic_region(QImage& qimage,unsigned int mosaic_size,unsigned int skip)
 {
-    image::geometry<3> geo = cur_tracking_window.slice.geometry;
+    image::geometry<3> geo = cur_tracking_window.handle->dim;
     unsigned int slice_number = geo[2] / skip;
     std::vector<int> shift_x(slice_number),shift_y(slice_number);
     for(unsigned int z = 0;z < slice_number;++z)
@@ -374,17 +412,18 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     bool has_transform = false;
 
     // searching for T1/T2 mappings
-    for(unsigned int index = 0;index < cur_tracking_window.other_slices.size();++index)
+    for(unsigned int index = 0;index < cur_tracking_window.slices.size();++index)
     {
-        if(from.geometry() == cur_tracking_window.other_slices[index]->source_images.geometry())
+        CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.slices[index].get());
+        if(slice && from.geometry() == slice->geometry)
         {
-            convert = cur_tracking_window.other_slices[index]->invT;
+            convert = slice->invT;
             has_transform = true;
             break;
         }
     }
 
-    if(from.geometry() != cur_tracking_window.slice.geometry &&
+    if(from.geometry() != cur_tracking_window.handle->dim &&
        cur_tracking_window.handle->is_qsdr && !has_transform)// use transformation information
     {
         // searching QSDR mappings
@@ -392,7 +431,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         for(unsigned int index = 0;index < cur_tracking_window.handle->view_item.size();++index)
             if(cur_tracking_window.handle->view_item[index].native_geo == from.geometry())
             {
-                new_from.resize(cur_tracking_window.slice.geometry);
+                new_from.resize(cur_tracking_window.handle->dim);
                 for(image::pixel_index<3> pos(new_from.geometry());pos < new_from.size();++pos)
                 {
                     image::vector<3> new_pos(cur_tracking_window.handle->view_item[index].mx[pos.index()],
@@ -419,7 +458,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 
     if(!multiple_roi)
     {
-        ROIRegion region(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size);
+        ROIRegion region(cur_tracking_window.handle->dim,cur_tracking_window.current_slice->voxel_size);
 
         if(has_transform)
             region.LoadFromBuffer(from,convert);
@@ -461,7 +500,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
             for(unsigned int i = 0;i < mask.size();++i)
                 if(from[i] == value)
                     mask[i] = 1;
-            ROIRegion region(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size);
+            ROIRegion region(cur_tracking_window.handle->dim,cur_tracking_window.current_slice->voxel_size);
             if(has_transform)
                 region.LoadFromBuffer(mask,convert);
             else
@@ -492,7 +531,7 @@ void RegionTableWidget::load_region(void)
                 load_multiple_roi_nii(filenames[index]))
             continue;
 
-        ROIRegion region(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size);
+        ROIRegion region(cur_tracking_window.handle->dim,cur_tracking_window.current_slice->voxel_size);
         if(!region.LoadFromFile(filenames[index].toLocal8Bit().begin(),
                 cur_tracking_window.handle->is_qsdr ? cur_tracking_window.handle->trans_to_mni:std::vector<float>()))
         {
@@ -650,7 +689,7 @@ void RegionTableWidget::save_all_regions(void)
         base_name = QFileInfo(base_name).completeBaseName();
     QString label_file = QFileInfo(filename).absolutePath()+"/"+base_name+".txt";
     std::ofstream out(label_file.toLocal8Bit().begin());
-    image::geometry<3> geo = cur_tracking_window.slice.geometry;
+    image::geometry<3> geo = cur_tracking_window.handle->dim;
     image::basic_image<unsigned int, 3>mask(geo);
     for (unsigned int i = 0; i < regions.size(); ++i)
         if (item(i,0)->checkState() == Qt::Checked)
@@ -667,7 +706,7 @@ void RegionTableWidget::save_all_regions(void)
                 << " " << item(i,0)->text().toStdString() << std::endl;
         }
     gz_nifti header;
-    header.set_voxel_size(cur_tracking_window.slice.voxel_size);
+    header.set_voxel_size(cur_tracking_window.current_slice->voxel_size);
     if(cur_tracking_window.handle->is_qsdr)
         header.set_image_transformation(cur_tracking_window.handle->trans_to_mni.begin());
     else
@@ -728,7 +767,7 @@ void RegionTableWidget::delete_all_region(void)
 
 void RegionTableWidget::whole_brain_points(std::vector<image::vector<3,short> >& points)
 {
-    image::geometry<3> geo = cur_tracking_window.slice.geometry;
+    image::geometry<3> geo = cur_tracking_window.handle->dim;
     float threshold = cur_tracking_window["fa_threshold"].toFloat();
     if(threshold == 0)
         threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(cur_tracking_window.handle->dir.fa[0],cur_tracking_window.handle->dim));
@@ -828,6 +867,21 @@ void RegionTableWidget::add_points(std::vector<image::vector<3,short> >& points,
     regions[currentRow()]->add_points(points,erase);
 }
 
+void RegionTableWidget::add_points(std::vector<image::vector<3,short> >& points,const image::matrix<4,4,float>&T,bool erase)
+{
+    if (currentRow() < 0 || currentRow() >= regions.size())
+        return;
+    for(int index = 0;index < points.size();++index)
+    {
+        image::vector<3,float> v(points[index]);
+        v.to(T);
+        v.round();
+        points[index] = v;
+    }
+    regions[currentRow()]->add_points(points,erase);
+}
+
+
 bool RegionTableWidget::has_seeding(void)
 {
     for (unsigned int index = 0;index < regions.size();++index)
@@ -890,7 +944,7 @@ void RegionTableWidget::do_action(QString action)
         if(action == "thresholding")
         {
             image::basic_image<unsigned char, 3>mask;
-            image::const_pointer_image<float,3> I = cur_tracking_window.handle->get_view_volume(cur_tracking_window.slice.view_name);
+            image::const_pointer_image<float,3> I = cur_tracking_window.current_slice->get_source();
             if(I.empty())
                 return;
             mask.resize(I.geometry());
@@ -924,7 +978,7 @@ void RegionTableWidget::do_action(QString action)
                     for(unsigned int i = 0;i < r[index].size();++i)
                         mask[r[index][i]] = 1;
                     {
-                        ROIRegion region(cur_tracking_window.slice.geometry,cur_tracking_window.slice.voxel_size);
+                        ROIRegion region(cur_tracking_window.handle->dim,cur_tracking_window.current_slice->voxel_size);
                         region.LoadFromBuffer(mask);
                         add_region(name + "_"+QString::number(total_count+1),
                                    roi_id,region.show_region.color.color);

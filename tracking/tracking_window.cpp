@@ -45,8 +45,8 @@ void tracking_window::set_data(QString name, QVariant value)
 }
 
 tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_handle) :
-        QMainWindow(parent),handle(new_handle),
-        ui(new Ui::tracking_window),scene(*this),slice(new_handle),gLdock(0),renderWidget(0)
+        QMainWindow(parent),handle(new_handle),cur_dim(2),
+        ui(new Ui::tracking_window),scene(*this),gLdock(0),renderWidget(0)
 
 {
     fib_data& fib = *new_handle;
@@ -78,32 +78,25 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     // setup sliders
     {
-        slice_no_update = true;
-        ui->SagSlider->setRange(0,slice.geometry[0]-1);
-        ui->CorSlider->setRange(0,slice.geometry[1]-1);
-        ui->AxiSlider->setRange(0,slice.geometry[2]-1);
-        ui->SagSlider->setValue(slice.slice_pos[0]);
-        ui->CorSlider->setValue(slice.slice_pos[1]);
-        ui->AxiSlider->setValue(slice.slice_pos[2]);
 
-        ui->glSagBox->setRange(0,slice.geometry[0]-1);
-        ui->glCorBox->setRange(0,slice.geometry[1]-1);
-        ui->glAxiBox->setRange(0,slice.geometry[2]-1);
-        ui->glSagBox->setValue(slice.slice_pos[0]);
-        ui->glCorBox->setValue(slice.slice_pos[1]);
-        ui->glAxiBox->setValue(slice.slice_pos[2]);
 
-        ui->min_color->setColor(QColor(0,0,0));
-        ui->max_color->setColor(QColor(255,255,255));
         ui->min_color_gl->setColor(QColor(0,0,0));
         ui->max_color_gl->setColor(QColor(255,255,255));
-        v2c.two_color(ui->min_color->color().rgb(),ui->max_color->color().rgb());
-        v2c_gl.two_color(ui->min_color->color().rgb(),ui->max_color->color().rgb());
+        v2c.two_color(ui->min_color_gl->color().rgb(),ui->max_color_gl->color().rgb());
 
-        slice_no_update = false;
 
+    }
+
+    {
         for (unsigned int index = 0;index < fib.view_item.size(); ++index)
-            ui->sliceViewBox->addItem(fib.view_item[index].name.c_str());
+            slices.push_back(std::make_shared<FibSliceModel>(handle,index));
+        current_slice = slices[0];
+    }
+    {
+        ui->SliceModality->clear();
+        for (unsigned int index = 0;index < fib.view_item.size(); ++index)
+            ui->SliceModality->addItem(fib.view_item[index].name.c_str());
+        ui->SliceModality->setCurrentIndex(0);
     }
 
     if(handle->is_qsdr)
@@ -125,10 +118,12 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
 
         if(handle->get_name_index("t1w") == handle->view_item.size() &&
-           QFileInfo(t1[0]).exists() && addSlices(t1,false,false))
-            add_slice_name("t1w");
-        if(QFileInfo(wm[0]).exists() && addSlices(wm,false,false))
-            add_slice_name("wm");
+           QFileInfo(t1[0]).exists())
+            addSlices(t1,"t1w",false,false);
+
+        if(QFileInfo(wm[0]).exists())
+            addSlices(wm,"wm",false,false);
+
 
     }
 
@@ -153,20 +148,16 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     // opengl
     {
-        connect(ui->glSagSlider,SIGNAL(valueChanged(int)),this,SLOT(glSliderValueChanged()));
-        connect(ui->glCorSlider,SIGNAL(valueChanged(int)),this,SLOT(glSliderValueChanged()));
-        connect(ui->glAxiSlider,SIGNAL(valueChanged(int)),this,SLOT(glSliderValueChanged()));
-
-        connect(ui->min_value_gl,SIGNAL(valueChanged(double)),glWidget,SLOT(updateGL()));
-        connect(ui->max_value_gl,SIGNAL(valueChanged(double)),glWidget,SLOT(updateGL()));
-
+        connect(ui->glSagSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
+        connect(ui->glCorSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
+        connect(ui->glAxiSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
         connect(ui->glSagCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(updateGL()));
         connect(ui->glCorCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(updateGL()));
         connect(ui->glAxiCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(updateGL()));
 
-        connect(ui->addSlices,SIGNAL(clicked()),this,SLOT(on_actionInsert_T1_T2_triggered()));
-        connect(ui->actionAdd_surface,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
-        connect(ui->SliceModality,SIGNAL(currentIndexChanged(int)),glWidget,SLOT(updateGL()));
+        connect(ui->min_value_gl,SIGNAL(valueChanged(double)),glWidget,SLOT(updateGL()));
+        connect(ui->max_value_gl,SIGNAL(valueChanged(double)),glWidget,SLOT(updateGL()));
+
         connect(ui->actionSave_Screen,SIGNAL(triggered()),glWidget,SLOT(catchScreen()));
         connect(ui->actionSave_3D_screen_in_high_resolution,SIGNAL(triggered()),glWidget,SLOT(catchScreen2()));
         connect(ui->actionLoad_Camera,SIGNAL(triggered()),glWidget,SLOT(loadCamera()));
@@ -177,30 +168,29 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->reset_rendering,SIGNAL(clicked()),this,SLOT(on_actionRestore_Settings_triggered()));
         connect(ui->reset_rendering,SIGNAL(clicked()),this,SLOT(on_actionRestore_Tracking_Settings_triggered()));
 
+        connect(ui->actionFull,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
+        connect(ui->actionRight,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
+        connect(ui->actionLeft,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
+        connect(ui->actionLower,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
+        connect(ui->actionUpper,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
+        connect(ui->actionAnterior,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
+        connect(ui->actionPosterior,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
+
     }
     // scene view
     {
-        connect(ui->SagSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
-        connect(ui->CorSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
-        connect(ui->AxiSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
-
 
         connect(&scene,SIGNAL(need_update()),&scene,SLOT(show_slice()));
         connect(&scene,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
 
-        connect(ui->actionAxial_View,SIGNAL(triggered()),this,SLOT(on_AxiView_clicked()));
-        connect(ui->actionCoronal_View,SIGNAL(triggered()),this,SLOT(on_CorView_clicked()));
-        connect(ui->actionSagittal_view,SIGNAL(triggered()),this,SLOT(on_SagView_clicked()));
+        connect(ui->actionAxial_View,SIGNAL(triggered()),this,SLOT(on_glAxiView_clicked()));
+        connect(ui->actionCoronal_View,SIGNAL(triggered()),this,SLOT(on_glCorView_clicked()));
+        connect(ui->actionSagittal_view,SIGNAL(triggered()),this,SLOT(on_glSagView_clicked()));
 
 
         connect(ui->actionSave_ROI_Screen,SIGNAL(triggered()),&scene,SLOT(catch_screen()));
 
         connect(ui->actionSave_Anisotrpy_Map_as,SIGNAL(triggered()),&scene,SLOT(save_slice_as()));
-
-
-        connect(ui->sliceViewBox,SIGNAL(currentIndexChanged(int)),&scene,SLOT(show_slice()));
-        connect(ui->save_roi_map,SIGNAL(clicked()),&scene,SLOT(save_slice_as()));
-
 
     }
 
@@ -361,18 +351,12 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->search_atlas,SIGNAL(selected()),this,SLOT(add_roi_from_atlas()));
     }
 
-    {
-        slice_no_update = false;
-    }
-
     // setup fa threshold
     {
         initialize_tracking_index(0);
     }
 
     report(handle->report.c_str());
-    ui->sliceViewBox->setCurrentIndex(0);
-    on_SliceModality_currentIndexChanged(ui->SliceModality->count()-1);
 
 
     if(handle->dim[0] > 80)
@@ -386,7 +370,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     }
     #endif
 
-    glWidget->set_view(2);
+    on_glAxiView_clicked();
     if((*this)["orientation_convention"].toInt() == 1)
         glWidget->set_view(2);
     glWidget->updateGL();
@@ -433,16 +417,16 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         int index = param.toInt(&okay);
         if(okay)
         {
-            ui->sliceViewBox->setCurrentIndex(index);
+            ui->SliceModality->setCurrentIndex(index);
             return true;
         }
-        index = ui->sliceViewBox->findText(param);
+        index = ui->SliceModality->findText(param);
         if(index == -1)
         {
             std::cout << "Cannot find index:" << param.toStdString() << std::endl;
             return false;
         }
-        ui->sliceViewBox->setCurrentIndex(index);
+        ui->SliceModality->setCurrentIndex(index);
         return true;
     }
     if(cmd == "set_param")
@@ -455,13 +439,13 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
 
     if(cmd == "add_slice")
     {
-        if(!addSlices(QStringList() << param,renderWidget->getData("slice_smoothing").toBool(),true))
+        if(!addSlices(QStringList() << param,param,renderWidget->getData("slice_smoothing").toBool(),true))
             return true;
-        add_slice_name(other_slices.back()->name.c_str());
         std::cout << "register image to the DWI space" << std::endl;
-        if(other_slices.back()->thread.get())
-            other_slices.back()->thread->wait();
-        other_slices.back()->update();
+        CustomSliceModel* cur_slice = (CustomSliceModel*)slices.back().get();
+        if(cur_slice->thread.get())
+            cur_slice->thread->wait();
+        cur_slice->update();
 
         return true;
     }
@@ -492,7 +476,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
         {
             QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
             QPointF point = ui->graphicsView->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
-            has_info = scene.get_location(point.x(),point.y(),pos);
+            has_info = scene.to_3d_space(point.x(),point.y(),pos);
         }
         // for connectivity matrix
         if(connectivity_matrix.get() && connectivity_matrix->is_graphic_view(obj->parent()))
@@ -547,84 +531,26 @@ void tracking_window::set_tracking_param(ThreadData& tracking_thread)
     tracking_thread.center_seed = renderWidget->getData("seed_plan").toInt();
     tracking_thread.check_ending = renderWidget->getData("check_ending").toInt();
 }
+float tracking_window::get_scene_zoom(void)
+{
+    float display_ratio = (*this)["roi_zoom"].toInt();
+    if(!current_slice->is_diffusion_space)
+        display_ratio *= current_slice->voxel_size[0]/handle->vs[0];
+    return display_ratio;
+}
 
 void tracking_window::SliderValueChanged(void)
 {
-    if(!slice_no_update && slice.set_slice_pos(
-            ui->SagSlider->value(),
-            ui->CorSlider->value(),
-            ui->AxiSlider->value()))
+    if(current_slice->set_slice_pos(
+            ui->glSagSlider->value(),
+            ui->glCorSlider->value(),
+            ui->glAxiSlider->value()))
     {
-        if(renderWidget->getData("roi_layout").toInt() <= 1)
-            scene.show_slice();
-        if(glWidget->current_visible_slide == 0)
-            glWidget->updateGL();
-        else
-        {
-            image::vector<3,float> p(ui->SagSlider->value(),ui->CorSlider->value(),ui->AxiSlider->value());
-            p.to(other_slices[glWidget->current_visible_slide-1]->invT);
-            p.round();
-            if(other_slices[glWidget->current_visible_slide-1]->set_slice_pos(p[0],p[1],p[2]))
-                glWidget->updateGL();
-        }
-    }
-
-
-
-}
-void tracking_window::glSliderValueChanged(void)
-{
-    if(!glWidget->current_visible_slide)
-        return;
-    SliceModel& cur_slice =
-                *other_slices[glWidget->current_visible_slide-1];
-    if(!slice_no_update && cur_slice.set_slice_pos(
-                ui->glSagSlider->value(),
-                ui->glCorSlider->value(),
-                ui->glAxiSlider->value()))
-    {
-        image::vector<3,float> p(cur_slice.slice_pos[0],cur_slice.slice_pos[1],cur_slice.slice_pos[2]);
-        p.to(other_slices[glWidget->current_visible_slide-1]->transform);
-        p.round();
-        ui->SagSlider->setValue(p[0]);
-        ui->CorSlider->setValue(p[1]);
-        ui->AxiSlider->setValue(p[2]);
         scene.show_slice();
         glWidget->updateGL();
     }
 }
 
-void tracking_window::on_AxiView_clicked()
-{
-    glWidget->set_view(2);
-    glWidget->updateGL();
-    slice.cur_dim = 2;
-    if(renderWidget->getData("roi_layout").toInt() == 0)
-        scene.show_slice();
-    scene.setFocus();
-
-}
-
-void tracking_window::on_CorView_clicked()
-{
-    glWidget->set_view(1);
-    glWidget->updateGL();
-    slice.cur_dim = 1;
-    if(renderWidget->getData("roi_layout").toInt() == 0)
-        scene.show_slice();
-    scene.setFocus();
-
-}
-
-void tracking_window::on_SagView_clicked()
-{
-    glWidget->set_view(0);
-    glWidget->updateGL();
-    slice.cur_dim = 0;
-    if(renderWidget->getData("roi_layout").toInt() == 0)
-        scene.show_slice();
-    scene.setFocus();
-}
 
 void tracking_window::on_tool0_pressed()
 {
@@ -673,41 +599,6 @@ void tracking_window::on_tool6_pressed()
 
 }
 
-void tracking_window::on_sliceViewBox_currentIndexChanged(int index)
-{
-    ui->actionSave_Anisotrpy_Map_as->setText(QString("Save ") +
-                                             ui->sliceViewBox->currentText()+" volume as...");
-    ui->actionSave_Anisotrpy_Map_as->setEnabled(ui->sliceViewBox->currentText() != "color");
-    slice.set_view_name(ui->sliceViewBox->currentText().toLocal8Bit().begin());
-    std::pair<float,float> range = handle->get_value_range(ui->sliceViewBox->currentText().toLocal8Bit().begin());
-    float r = std::fabs(range.first-range.second);
-    if(r == 0.0)
-        r = 1;
-    float step = r/20.0;
-    ui->min_value->setMinimum(range.first-r);
-    ui->min_value->setMaximum(range.second+r);
-    ui->min_value->setSingleStep(step);
-    ui->min_value->setValue(range.first);
-    ui->max_value->setMinimum(range.first-r);
-    ui->max_value->setMaximum(range.second+r);
-    ui->max_value->setSingleStep(step);
-    ui->max_value->setValue(range.second);
-    v2c.set_range(range.first,range.second);
-
-    if(glWidget->current_visible_slide == 0) // Show diffusion
-    {
-        ui->min_value_gl->setMinimum(range.first-r);
-        ui->min_value_gl->setMaximum(range.second+r);
-        ui->min_value_gl->setSingleStep(step);
-        ui->min_value_gl->setValue(range.first);
-        ui->max_value_gl->setMinimum(range.first-r);
-        ui->max_value_gl->setMaximum(range.second+r);
-        ui->max_value_gl->setSingleStep(step);
-        ui->max_value_gl->setValue(range.second);
-        v2c_gl.set_range(range.first,range.second);
-    }
-}
-
 void tracking_window::on_actionSelect_Tracts_triggered()
 {
     glWidget->setCursor(Qt::CrossCursor);
@@ -747,109 +638,91 @@ void tracking_window::on_actionMove_Object_triggered()
 
 void tracking_window::on_glSagView_clicked()
 {
+    cur_dim = 0;
+    ui->SlicePos->setRange(0,current_slice->geometry[cur_dim]-1);
+    ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
     glWidget->set_view(0);
     glWidget->updateGL();
     glWidget->setFocus();
+
+    scene.show_slice();
 }
 
 void tracking_window::on_glCorView_clicked()
 {
+    cur_dim = 1;
+    ui->SlicePos->setRange(0,current_slice->geometry[cur_dim]-1);
+    ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
     glWidget->set_view(1);
     glWidget->updateGL();
     glWidget->setFocus();
+    scene.show_slice();
 }
 
 void tracking_window::on_glAxiView_clicked()
 {
+    cur_dim = 2;
+    ui->SlicePos->setRange(0,current_slice->geometry[cur_dim]-1);
+    ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
     glWidget->set_view(2);
     glWidget->updateGL();
     glWidget->setFocus();
+    scene.show_slice();
+
 }
 
 void tracking_window::on_SliceModality_currentIndexChanged(int index)
 {
-    glWidget->current_visible_slide = index;
-    slice_no_update = true;
+    if(index == -1 || !current_slice.get())
+        return;
+    ui->actionSave_Anisotrpy_Map_as->setText(QString("Save ") +
+                                             ui->SliceModality->currentText()+" volume as...");
+    ui->actionSave_Anisotrpy_Map_as->setEnabled(ui->SliceModality->currentText() != "color");
 
-    {
-        std::pair<float,float> range;
-        if(index)
-            range = other_slices[glWidget->current_visible_slide-1]->get_value_range();
-        else
-            range =  handle->get_value_range(ui->sliceViewBox->currentText().toLocal8Bit().begin());
-        float r = range.second-range.first;
-        if(r == 0.0)
-            r = 1;
-        float step = r/20.0;
+    image::vector<3,float> slice_position(current_slice->slice_pos);
+    if(!current_slice->is_diffusion_space)
+        slice_position.to(current_slice->transform);
 
-        ui->min_value_gl->setMinimum(range.first-r);
-        ui->min_value_gl->setMaximum(range.second+r);
-        ui->min_value_gl->setSingleStep(step);
-        ui->min_value_gl->setValue(range.first);
-        ui->max_value_gl->setMinimum(range.first-r);
-        ui->max_value_gl->setMaximum(range.second+r);
-        ui->max_value_gl->setSingleStep(step);
-        ui->max_value_gl->setValue(range.second);
-        v2c_gl.set_range(range.first,range.second);
-    }
+    current_slice = slices[index];
 
-    if(index)
-    {
-        disconnect(ui->sliceViewBox,SIGNAL(currentIndexChanged(int)),glWidget,SLOT(updateGL()));
-        disconnect(ui->glSagSlider,SIGNAL(valueChanged(int)),ui->SagSlider,SLOT(setValue(int)));
-        disconnect(ui->glCorSlider,SIGNAL(valueChanged(int)),ui->CorSlider,SLOT(setValue(int)));
-        disconnect(ui->glAxiSlider,SIGNAL(valueChanged(int)),ui->AxiSlider,SLOT(setValue(int)));
-        disconnect(ui->SagSlider,SIGNAL(valueChanged(int)),ui->glSagSlider,SLOT(setValue(int)));
-        disconnect(ui->CorSlider,SIGNAL(valueChanged(int)),ui->glCorSlider,SLOT(setValue(int)));
-        disconnect(ui->AxiSlider,SIGNAL(valueChanged(int)),ui->glAxiSlider,SLOT(setValue(int)));
+    if(!current_slice->is_diffusion_space)
+        slice_position.to(current_slice->invT);
+    slice_position.round();
+    current_slice->slice_pos = slice_position;
 
-        SliceModel& cur_slice =
-                *other_slices[glWidget->current_visible_slide-1];
+    std::pair<float,float> range = current_slice->get_value_range();
+    float r = range.second-range.first;
+    if(r == 0.0)
+        r = 1;
+    float step = r/20.0;
 
-        ui->glSagSlider->setRange(0,cur_slice.geometry[0]-1);
-        ui->glCorSlider->setRange(0,cur_slice.geometry[1]-1);
-        ui->glAxiSlider->setRange(0,cur_slice.geometry[2]-1);
-        ui->glSagBox->setRange(0,cur_slice.geometry[0]-1);
-        ui->glCorBox->setRange(0,cur_slice.geometry[1]-1);
-        ui->glAxiBox->setRange(0,cur_slice.geometry[2]-1);
-        ui->glSagSlider->setValue(cur_slice.slice_pos[0]);
-        ui->glCorSlider->setValue(cur_slice.slice_pos[1]);
-        ui->glAxiSlider->setValue(cur_slice.slice_pos[2]);
-        ui->glSagBox->setValue(ui->glSagSlider->value());
-        ui->glCorBox->setValue(ui->glCorSlider->value());
-        ui->glAxiBox->setValue(ui->glAxiSlider->value());
-    }
-    else
-    //diffusion
-    {
-        ui->glSagSlider->setRange(0,slice.geometry[0]-1);
-        ui->glCorSlider->setRange(0,slice.geometry[1]-1);
-        ui->glAxiSlider->setRange(0,slice.geometry[2]-1);
-        ui->glSagBox->setRange(0,slice.geometry[0]-1);
-        ui->glCorBox->setRange(0,slice.geometry[1]-1);
-        ui->glAxiBox->setRange(0,slice.geometry[2]-1);
+    ui->min_value_gl->setMinimum(range.first-r);
+    ui->min_value_gl->setMaximum(range.second+r);
+    ui->min_value_gl->setSingleStep(step);
+    ui->min_value_gl->setValue(range.first);
+    ui->max_value_gl->setMinimum(range.first-r);
+    ui->max_value_gl->setMaximum(range.second+r);
+    ui->max_value_gl->setSingleStep(step);
+    ui->max_value_gl->setValue(range.second);
+    v2c.set_range(range.first,range.second);
 
-        ui->glSagSlider->setValue(ui->SagSlider->value());
-        ui->glCorSlider->setValue(ui->CorSlider->value());
-        ui->glAxiSlider->setValue(ui->AxiSlider->value());
-        ui->glSagBox->setValue(ui->glSagSlider->value());
-        ui->glCorBox->setValue(ui->glCorSlider->value());
-        ui->glAxiBox->setValue(ui->glAxiSlider->value());
 
-        connect(ui->sliceViewBox,SIGNAL(currentIndexChanged(int)),glWidget,SLOT(updateGL()));
-        connect(ui->glSagSlider,SIGNAL(valueChanged(int)),ui->SagSlider,SLOT(setValue(int)));
-        connect(ui->glCorSlider,SIGNAL(valueChanged(int)),ui->CorSlider,SLOT(setValue(int)));
-        connect(ui->glAxiSlider,SIGNAL(valueChanged(int)),ui->AxiSlider,SLOT(setValue(int)));
-        connect(ui->SagSlider,SIGNAL(valueChanged(int)),ui->glSagSlider,SLOT(setValue(int)));
-        connect(ui->CorSlider,SIGNAL(valueChanged(int)),ui->glCorSlider,SLOT(setValue(int)));
-        connect(ui->AxiSlider,SIGNAL(valueChanged(int)),ui->glAxiSlider,SLOT(setValue(int)));
 
-        glWidget->slice_pos[0] = glWidget->slice_pos[1] = glWidget->slice_pos[2] = -1;
-
-        ui->sliceViewBox->setCurrentIndex(0);
-    }
-    slice_no_update = false;
-
+    ui->glSagSlider->setRange(0,current_slice->geometry[0]-1);
+    ui->glCorSlider->setRange(0,current_slice->geometry[1]-1);
+    ui->glAxiSlider->setRange(0,current_slice->geometry[2]-1);
+    ui->glSagBox->setRange(0,current_slice->geometry[0]-1);
+    ui->glCorBox->setRange(0,current_slice->geometry[1]-1);
+    ui->glAxiBox->setRange(0,current_slice->geometry[2]-1);
+    ui->glSagSlider->setValue(slice_position[0]);
+    ui->glCorSlider->setValue(slice_position[1]);
+    ui->glAxiSlider->setValue(slice_position[2]);
+    ui->glSagBox->setValue(slice_position[0]);
+    ui->glCorBox->setValue(slice_position[1]);
+    ui->glAxiBox->setValue(slice_position[2]);
+    ui->SlicePos->setRange(0,current_slice->geometry[cur_dim]-1);
+    ui->SlicePos->setValue(slice_position[cur_dim]);
+    scene.show_slice();
 }
 
 void tracking_window::on_actionEndpoints_to_seeding_triggered()
@@ -880,32 +753,6 @@ void tracking_window::on_actionTracts_to_seeds_triggered()
     glWidget->updateGL();
 }
 
-void tracking_window::add_slice_name(QString name)
-{
-    ui->SliceModality->addItem(name);
-    ui->sliceViewBox->addItem(name);
-    handle->view_item.push_back(handle->view_item[0]);
-    handle->view_item.back().name = name.toLocal8Bit().begin();
-    handle->view_item.back().image_data = image::make_image(other_slices.back()->roi_image_buf,
-                                                            other_slices.back()->roi_image.geometry());
-    handle->view_item.back().set_scale(
-                other_slices.back()->source_images.begin(),
-                other_slices.back()->source_images.end());
-    ui->SliceModality->setCurrentIndex(ui->SliceModality->count()-1);
-    ui->sliceViewBox->setCurrentIndex(ui->sliceViewBox->count()-1);
-}
-
-void tracking_window::on_actionInsert_T1_T2_triggered()
-{
-    QStringList filenames = QFileDialog::getOpenFileNames(
-        this,"Open Images files",QFileInfo(windowTitle()).absolutePath(),"Image files (*.dcm *.hdr *.nii *nii.gz 2dseq);;All files (*)" );
-    if( filenames.isEmpty())
-        return;
-    if(addSlices(filenames,renderWidget->getData("slice_smoothing").toBool(),false))
-        add_slice_name(other_slices.back()->name.c_str());
-}
-
-
 bool ask_TDI_options(int& rec,int& rec2)
 {
     QMessageBox msgBox;
@@ -931,7 +778,7 @@ void tracking_window::on_actionTDI_Diffusion_Space_triggered()
     int rec,rec2;
     if(!ask_TDI_options(rec,rec2))
         return;
-    tractWidget->export_tract_density(slice.geometry,slice.voxel_size,tr,rec == QMessageBox::Yes,rec2 != QMessageBox::Yes);
+    tractWidget->export_tract_density(handle->dim,handle->vs,tr,rec == QMessageBox::Yes,rec2 != QMessageBox::Yes);
 }
 
 
@@ -940,8 +787,8 @@ void tracking_window::on_actionTDI_Subvoxel_Diffusion_Space_triggered()
     image::matrix<4,4,float> tr;
     tr.identity();
     tr[0] = tr[5] = tr[10] = 4.0;
-    image::geometry<3> new_geo(slice.geometry[0]*4,slice.geometry[1]*4,slice.geometry[2]*4);
-    image::vector<3,float> new_vs(slice.voxel_size);
+    image::geometry<3> new_geo(handle->dim[0]*4,handle->dim[1]*4,handle->dim[2]*4);
+    image::vector<3,float> new_vs(handle->vs);
     new_vs /= 4.0;
     int rec,rec2;
     if(!ask_TDI_options(rec,rec2))
@@ -951,10 +798,9 @@ void tracking_window::on_actionTDI_Subvoxel_Diffusion_Space_triggered()
 
 void tracking_window::on_actionTDI_Import_Slice_Space_triggered()
 {
-    image::matrix<4,4,float> tr;
-    image::geometry<3> geo;
-    image::vector<3,float> vs;
-    glWidget->get_current_slice_transformation(geo,vs,tr);
+    image::matrix<4,4,float> tr = current_slice->invT;
+    image::geometry<3> geo = current_slice->geometry;
+    image::vector<3,float> vs = current_slice->voxel_size;
     int rec,rec2;
     if(!ask_TDI_options(rec,rec2))
         return;
@@ -964,19 +810,11 @@ void tracking_window::on_actionTDI_Import_Slice_Space_triggered()
 
 void tracking_window::on_actionSave_Tracts_in_Current_Mapping_triggered()
 {
-    image::matrix<4,4,float> tr;
-    image::geometry<3> geo;
-    image::vector<3,float> vs;
-    glWidget->get_current_slice_transformation(geo,vs,tr);
-    tractWidget->saveTransformedTracts(&*tr.begin());
+    tractWidget->saveTransformedTracts(&*current_slice->invT.begin());
 }
 void tracking_window::on_actionSave_Endpoints_in_Current_Mapping_triggered()
 {
-    image::matrix<4,4,float> tr;
-    image::geometry<3> geo;
-    image::vector<3,float> vs;
-    glWidget->get_current_slice_transformation(geo,vs,tr);
-    tractWidget->saveTransformedEndpoints(&*tr.begin());
+    tractWidget->saveTransformedEndpoints(&*current_slice->invT.begin());
 }
 
 
@@ -1021,16 +859,12 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
 
 void tracking_window::on_deleteSlice_clicked()
 {
-    if(ui->SliceModality->currentIndex() == 0)
+    if(dynamic_cast<CustomSliceModel*>(current_slice.get()) == 0)
         return;
     int index = ui->SliceModality->currentIndex();
-    unsigned int view_item_index = handle->view_item.size()-other_slices.size()+index-1;
-    if(ui->sliceViewBox->currentIndex() == view_item_index)
-        ui->sliceViewBox->setCurrentIndex(0);
-    ui->sliceViewBox->removeItem(view_item_index);
-    handle->view_item.erase(handle->view_item.begin()+view_item_index);
+    handle->view_item.erase(handle->view_item.begin()+index);
+    slices.erase(slices.begin()+index);
     ui->SliceModality->setCurrentIndex(0);
-    other_slices.pop_back();
     ui->SliceModality->removeItem(index);
 }
 
@@ -1055,27 +889,27 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
     switch(event->key())
     {
         case Qt::Key_Q:
-            ui->SagSlider->setValue(ui->SagSlider->value()+1);
+            ui->glSagSlider->setValue(ui->glSagSlider->value()+1);
             event->accept();
             break;
         case Qt::Key_A:
-            ui->SagSlider->setValue(ui->SagSlider->value()-1);
+            ui->glSagSlider->setValue(ui->glSagSlider->value()-1);
             event->accept();
             break;
         case Qt::Key_W:
-            ui->CorSlider->setValue(ui->CorSlider->value()+1);
+            ui->glCorSlider->setValue(ui->glCorSlider->value()+1);
             event->accept();
             break;
         case Qt::Key_S:
-            ui->CorSlider->setValue(ui->CorSlider->value()-1);
+            ui->glCorSlider->setValue(ui->glCorSlider->value()-1);
             event->accept();
             break;
         case Qt::Key_E:
-            ui->AxiSlider->setValue(ui->AxiSlider->value()+1);
+            ui->glAxiSlider->setValue(ui->glAxiSlider->value()+1);
             event->accept();
             break;
         case Qt::Key_D:
-            ui->AxiSlider->setValue(ui->AxiSlider->value()-1);
+            ui->glAxiSlider->setValue(ui->glAxiSlider->value()-1);
             event->accept();
             break;
 
@@ -1124,7 +958,6 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
             ui->glSagSlider->setValue(sag);
             ui->glCorSlider->setValue(cor);
             ui->glAxiSlider->setValue(axi);
-            glWidget->updateGL();
         }
     }
     if(event->isAccepted())
@@ -1137,7 +970,7 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
 
 void tracking_window::on_actionManual_Registration_triggered()
 {
-    image::basic_image<float,3> from = slice.source_images;
+    image::basic_image<float,3> from = current_slice->get_source();
     image::filter::gaussian(from);
     from -= image::segmentation::otsu_threshold(from);
     image::lower_threshold(from,0.0);
@@ -1512,13 +1345,6 @@ void tracking_window::on_actionAuto_Rotate_triggered(bool checked)
         timer->stop();
 }
 
-void tracking_window::on_auto_rotate_toggled(bool checked)
-{
-    if(ui->actionAuto_Rotate->isChecked() != checked)
-        ui->actionAuto_Rotate->setChecked(checked);
-    on_actionAuto_Rotate_triggered(checked);
-}
-
 void tracking_window::on_action3D_Screen_triggered()
 {
     glWidget->copyToClipboard();
@@ -1622,33 +1448,6 @@ void tracking_window::on_rendering_efficiency_currentIndexChanged(int index)
     glWidget->updateGL();
 }
 
-
-
-void tracking_window::on_max_value_valueChanged(double arg1)
-{
-    v2c.set_range(ui->min_value->value(),ui->max_value->value());
-    scene.show_slice();
-}
-
-void tracking_window::on_min_value_valueChanged(double arg1)
-{
-    v2c.set_range(ui->min_value->value(),ui->max_value->value());
-    scene.show_slice();
-}
-
-void tracking_window::on_max_color_released()
-{
-    v2c.two_color(ui->min_color->color().rgb(),ui->max_color->color().rgb());
-    scene.show_slice();
-}
-
-void tracking_window::on_min_color_released()
-{
-    v2c.two_color(ui->min_color->color().rgb(),ui->max_color->color().rgb());
-    scene.show_slice();
-}
-
-
 void tracking_window::on_actionCut_X_triggered()
 {
     tractWidget->cut_by_slice(0,true);
@@ -1681,15 +1480,11 @@ void tracking_window::on_actionCut_Z_2_triggered()
 
 void tracking_window::on_actionStrip_skull_for_T1w_image_triggered()
 {
-    if(glWidget->current_visible_slide)
-    {
-        image::basic_image<float,3> tmp = other_slices[glWidget->current_visible_slide-1]->source_images;
-        other_slices[glWidget->current_visible_slide-1]->stripskull(renderWidget->getData("fa_threshold").toFloat());
-        glWidget->addSurface();
-        other_slices[glWidget->current_visible_slide-1]->source_images = tmp;
-    }
-    else
-        QMessageBox::information(this,"Error","Load T1W image first");
+    CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
+    if(!reg_slice)
+        return;
+    reg_slice->stripskull(renderWidget->getData("fa_threshold").toFloat());
+    scene.show_slice();
 }
 
 void tracking_window::on_show_fiber_toggled(bool checked)
@@ -1719,28 +1514,33 @@ void tracking_window::on_show_position_toggled(bool checked)
 
 void tracking_window::on_actionAdjust_Mapping_triggered()
 {
-    int current_visible_slide = ui->SliceModality->currentIndex();
-    if(!current_visible_slide)
+    if(!ui->SliceModality->currentIndex())
+        return;
+    CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
+    if(!reg_slice)
         return;
     std::auto_ptr<manual_alignment> manual(new manual_alignment(this,
-        slice.source_images,slice.voxel_size,
-        other_slices[current_visible_slide-1]->source_images,other_slices[current_visible_slide-1]->voxel_size,
+        slices[0]->get_source(),slices[0]->voxel_size,
+        reg_slice->get_source(),reg_slice->voxel_size,
             image::reg::rigid_body,image::reg::cost_type::mutual_info));
-    handle->reg.set_arg(other_slices[current_visible_slide-1]->arg_min);
+    handle->reg.set_arg(reg_slice->arg_min);
     manual->timer->start();
     if(manual->exec() != QDialog::Accepted)
         return;
-    other_slices[current_visible_slide-1]->terminate();
-    other_slices[current_visible_slide-1]->arg_min = manual->data.get_arg();
-    other_slices[current_visible_slide-1]->update();
+    reg_slice->terminate();
+    reg_slice->arg_min = manual->data.get_arg();
+    reg_slice->update();
     glWidget->updateGL();
 }
 
 void tracking_window::on_actionSave_mapping_triggered()
 {
-    int current_visible_slide = ui->SliceModality->currentIndex();
-    if(!current_visible_slide)
+    if(!ui->SliceModality->currentIndex())
         return;
+    CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
+    if(!reg_slice)
+        return;
+
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Save Mapping Matrix",QFileInfo(windowTitle()).completeBaseName()+".mapping.txt",
@@ -1752,74 +1552,81 @@ void tracking_window::on_actionSave_mapping_triggered()
     for(int row = 0,index = 0;row < 4;++row)
     {
         for(int col = 0;col < 4;++col,++index)
-            out << other_slices[current_visible_slide-1]->transform[index] << " ";
+            out << reg_slice->transform[index] << " ";
         out << std::endl;
     }
 }
 
 void tracking_window::on_actionLoad_mapping_triggered()
 {
-    int current_visible_slide = ui->SliceModality->currentIndex();
-    if(!current_visible_slide)
+    if(!ui->SliceModality->currentIndex())
+        return;
+    CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
+    if(!reg_slice)
         return;
     QString filename = QFileDialog::getOpenFileName(
             this,"Open Mapping Matrix",QFileInfo(windowTitle()).absolutePath(),"Text files (*.txt);;All files (*)");
     std::ifstream in(filename.toLocal8Bit().begin());
     if(filename.isEmpty() || !in)
         return;
-    other_slices[current_visible_slide-1]->terminate();
+    reg_slice->terminate();
     std::vector<float> data;
     std::copy(std::istream_iterator<float>(in),
               std::istream_iterator<float>(),std::back_inserter(data));
     data.resize(16);
     data[15] = 1.0;
-    other_slices[current_visible_slide-1]->transform = data;
-    other_slices[current_visible_slide-1]->invT = data;
-    other_slices[current_visible_slide-1]->invT.inv();
-    other_slices[current_visible_slide-1]->update_roi();
+    reg_slice->transform = data;
+    reg_slice->invT = data;
+    reg_slice->invT.inv();
+    reg_slice->update_roi();
     glWidget->updateGL();
 }
 
-bool tracking_window::addSlices(QStringList filenames,bool correct_intensity,bool cmd)
+bool tracking_window::addSlices(QStringList filenames,QString name,bool correct_intensity,bool cmd)
 {
     std::vector<std::string> files(filenames.size());
     for (unsigned int index = 0; index < filenames.size(); ++index)
             files[index] = filenames[index].toLocal8Bit().begin();
-    std::shared_ptr<CustomSliceModel> new_slice(new CustomSliceModel);
-    if(!new_slice->initialize(slice,handle->is_qsdr,files,correct_intensity))
+    std::shared_ptr<SliceModel> new_slice(new CustomSliceModel);
+    CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(new_slice.get());
+    if(!reg_slice_ptr)
+        return false;
+    if(!reg_slice_ptr->initialize(handle,handle->is_qsdr,files,correct_intensity))
     {
         if(!cmd)
             QMessageBox::information(this,"Error reading image files",0);
         return false;
     }
-    // check for repeated slice name
-    for(int i = 0;i < other_slices.size();++i)
-        if(new_slice->name == other_slices[i]->name)
-        {
-            new_slice->name += "'";
-            i = -1;
-        }
-    other_slices.push_back(new_slice);
-    glWidget->current_visible_slide = other_slices.size();
+    slices.push_back(new_slice);
+    ui->SliceModality->addItem(name);
+    handle->view_item.push_back(handle->view_item[0]);
+    handle->view_item.back().name = name.toLocal8Bit().begin();
+    handle->view_item.back().image_data = image::make_image(reg_slice_ptr->roi_image_buf,
+                                                            reg_slice_ptr->roi_image.geometry());
+    handle->view_item.back().set_scale(reg_slice_ptr->source_images.begin(),reg_slice_ptr->source_images.end());
+
     if(!cmd && !timer2.get())
     {
         timer2.reset(new QTimer());
         timer2->setInterval(200);
         connect(timer2.get(), SIGNAL(timeout()), this, SLOT(check_reg()));
         timer2->start();
+        check_reg();
     }
+    ui->SliceModality->setCurrentIndex(handle->view_item.size()-1);
     return true;
 }
 
 void tracking_window::check_reg(void)
 {
     bool all_ended = true;
-    for(unsigned int index = 0;index < other_slices.size();++index)
+    for(unsigned int index = 0;index < slices.size();++index)
     {
-        if(!other_slices[index]->ended)
+        CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(slices[index].get());
+        if(reg_slice && !reg_slice->ended)
         {
             all_ended = false;
-            other_slices[index]->update();
+            reg_slice->update();
         }
     }
     scene.show_slice();
@@ -1828,46 +1635,6 @@ void tracking_window::check_reg(void)
     else
         glWidget->updateGL();
 }
-
-
-void tracking_window::on_glView_currentIndexChanged(int index)
-{
-    if(index == 0)
-        glWidget->view_mode = GLWidget::view_mode_type::single;
-    if(index == 1)
-    {
-        glWidget->view_mode = GLWidget::view_mode_type::two;
-        glWidget->transformation_matrix2 = glWidget->transformation_matrix;
-        glWidget->rotation_matrix2 = glWidget->rotation_matrix;
-    }
-    if(index == 2)
-        glWidget->view_mode = GLWidget::view_mode_type::stereo;
-
-
-    glWidget->updateGL();
-}
-
-
-
-void tracking_window::on_actionLoad_Color_Map_Region_Window_triggered()
-{
-    QMessageBox::information(this,"Load color map","Please assign a text file of RGB numbers as the colormap.");
-    QString filename;
-    filename = QFileDialog::getOpenFileName(this,
-                "Load color map","color_map.txt",
-                "Text files (*.txt);;All files|(*)");
-    if(filename.isEmpty())
-        return;
-    image::color_map_rgb new_color_map;
-    if(!new_color_map.load_from_file(filename.toStdString().c_str()))
-    {
-          QMessageBox::information(this,"Error","Invalid color map format");
-          return;
-    }
-    v2c.set_color_map(new_color_map);
-    scene.show_slice();
-}
-
 void tracking_window::on_actionLoad_Color_Map_triggered()
 {
     QMessageBox::information(this,"Load color map","Please assign a text file of RGB numbers as the colormap.");
@@ -1883,8 +1650,9 @@ void tracking_window::on_actionLoad_Color_Map_triggered()
           QMessageBox::information(this,"Error","Invalid color map format");
           return;
     }
-    v2c_gl.set_color_map(new_color_map);
+    v2c.set_color_map(new_color_map);
     glWidget->update_slice();
+    scene.show_slice();
 }
 
 void tracking_window::on_track_style_currentIndexChanged(int index)
@@ -1946,3 +1714,53 @@ void tracking_window::on_track_style_currentIndexChanged(int index)
     }
     glWidget->update();
 }
+
+void tracking_window::on_SlicePos_sliderMoved(int position)
+{
+    if(cur_dim ==0)
+    {
+        if(ui->glSagSlider->value() != position)
+            ui->glSagSlider->setValue(position);
+    }
+    if(cur_dim ==1)
+    {
+        if(ui->glCorSlider->value() != position)
+            ui->glCorSlider->setValue(position);
+    }
+    if(cur_dim ==2)
+    {
+        if(ui->glAxiSlider->value() != position)
+            ui->glAxiSlider->setValue(position);
+    }
+    SliderValueChanged();
+}
+
+void tracking_window::on_addSlices_clicked()
+{
+    QStringList filenames = QFileDialog::getOpenFileNames(
+        this,"Open Images files",QFileInfo(windowTitle()).absolutePath(),"Image files (*.dcm *.hdr *.nii *nii.gz 2dseq);;All files (*)" );
+    if( filenames.isEmpty())
+        return;
+    addSlices(filenames,QFileInfo(filenames[0]).baseName(),renderWidget->getData("slice_smoothing").toBool(),false);
+}
+
+void tracking_window::on_actionSingle_triggered()
+{
+    glWidget->view_mode = GLWidget::view_mode_type::single;
+    glWidget->updateGL();
+}
+
+void tracking_window::on_actionDouble_triggered()
+{
+    glWidget->view_mode = GLWidget::view_mode_type::two;
+    glWidget->transformation_matrix2 = glWidget->transformation_matrix;
+    glWidget->rotation_matrix2 = glWidget->rotation_matrix;
+    glWidget->updateGL();
+}
+
+void tracking_window::on_actionStereoscopic_triggered()
+{
+    glWidget->view_mode = GLWidget::view_mode_type::stereo;
+    glWidget->updateGL();
+}
+

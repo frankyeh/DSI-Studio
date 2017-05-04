@@ -95,8 +95,6 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
 {
     if(cur_tracking_window->tractWidget->tract_models.size() == 0)
         return;
-    image::geometry<3> geo = cur_tracking_window->slice.geometry;
-
     if(ui->region_list->currentIndex() == 0)
         {
             cm.clear();

@@ -160,7 +160,7 @@ public:
     void get_index_list(std::vector<std::string>& index_list) const;
     image::const_pointer_image<float,3> get_view_volume(const std::string& view_name) const;
     std::pair<float,float> get_value_range(const std::string& view_name) const;
-    void get_slice(const std::string& view_name,
+    void get_slice(unsigned int view_index,
                    unsigned char d_index,unsigned int pos,
                    image::color_image& show_image,const image::value_to_color<float>& v2c);
     void get_voxel_info2(unsigned int x,unsigned int y,unsigned int z,std::vector<float>& buf) const;

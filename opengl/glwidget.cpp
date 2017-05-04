@@ -38,16 +38,12 @@ GLWidget::GLWidget(bool samplebuffer,
         cur_height(1),
         cur_width(1),
         editing_option(none),
-        current_visible_slide(0),
         set_view_flip(false),
         view_mode(view_mode_type::single)
 {
     std::fill(slice_texture,slice_texture+3,0);
     odf_dim = 0;
     odf_slide_pos = 0;
-    max_fa = *std::max_element(cur_tracking_window.slice.source_images.begin(),cur_tracking_window.slice.source_images.end());
-    if(max_fa == 0.0)
-        max_fa = 1.0;
     slice_pos[0] = slice_pos[1] = slice_pos[2] = -1;
     transformation_matrix.identity();
     rotation_matrix.identity();
@@ -137,18 +133,21 @@ void GLWidget::set_view(unsigned char view_option)
     rotation_matrix.identity();
 
 
-    if(get_param("scale_voxel") && cur_tracking_window.slice.voxel_size[0] > 0.0)
+    if(get_param("scale_voxel") && cur_tracking_window.handle->vs[0] > 0.0)
     {
-        transformation_matrix[5] = cur_tracking_window.slice.voxel_size[1] / cur_tracking_window.slice.voxel_size[0];
-        transformation_matrix[10] = cur_tracking_window.slice.voxel_size[2] / cur_tracking_window.slice.voxel_size[0];
+        transformation_matrix[5] = cur_tracking_window.handle->vs[1] / cur_tracking_window.handle->vs[0];
+        transformation_matrix[10] = cur_tracking_window.handle->vs[2] / cur_tracking_window.handle->vs[0];
     }
 
+    image::vector<3,float> center_point(cur_tracking_window.handle->dim[0]/2.0-0.5,
+                                        cur_tracking_window.handle->dim[1]/2.0-0.5,
+                                        cur_tracking_window.handle->dim[2]/2.0-0.5);
     transformation_matrix[0] *= scale;
     transformation_matrix[5] *= scale;
     transformation_matrix[10] *= scale;
-    transformation_matrix[12] = -transformation_matrix[0]*cur_tracking_window.slice.center_point[0];
-    transformation_matrix[13] = -transformation_matrix[5]*cur_tracking_window.slice.center_point[1];
-    transformation_matrix[14] = -transformation_matrix[10]*cur_tracking_window.slice.center_point[2];
+    transformation_matrix[12] = -transformation_matrix[0]*center_point[0];
+    transformation_matrix[13] = -transformation_matrix[5]*center_point[1];
+    transformation_matrix[14] = -transformation_matrix[10]*center_point[2];
     image::matrix<4,4,float> m;
     if(view_option != 2)
     {
@@ -496,15 +495,18 @@ void GLWidget::paintGL()
 
 void GLWidget::renderLR()
 {
+    std::shared_ptr<SliceModel> current_slice = cur_tracking_window.current_slice;
+
+
     if (cur_tracking_window.handle->has_odfs() &&
         get_param("show_odf"))
     {
-        SliceModel& slice = cur_tracking_window.slice;
         float fa_threshold = cur_tracking_window["fa_threshold"].toFloat();
         if(odf_position != get_param("odf_position") ||
            odf_skip != get_param("odf_skip") ||
            odf_scale != get_param("odf_scale") ||
-           (get_param("odf_position") == 0 && (odf_dim != slice.cur_dim || odf_slide_pos != slice.slice_pos[slice.cur_dim]))||
+           (get_param("odf_position") == 0 && (odf_dim != cur_tracking_window.cur_dim ||
+                                               odf_slide_pos != current_slice->slice_pos[cur_tracking_window.cur_dim]))||
             get_param("odf_position") == 1)
         {
             odf_position = get_param("odf_position");
@@ -516,23 +518,26 @@ void GLWidget::renderLR()
         std::shared_ptr<fib_data> handle = cur_tracking_window.handle;
         unsigned char skip_mask_set[3] = {0,1,3};
         unsigned char mask = skip_mask_set[odf_skip];
+        auto& slice = cur_tracking_window.slices[0];
+        auto& geo = cur_tracking_window.handle->dim;
         if(odf_points.empty())
         switch(odf_position) // along slide
         {
+
         case 0:
             {
-                odf_dim = slice.cur_dim;
-                odf_slide_pos = slice.slice_pos[odf_dim];
-                image::geometry<2> geo(slice.geometry[odf_dim==0?1:0],
-                                       slice.geometry[odf_dim==2?1:2]);
-                for(image::pixel_index<2> index(geo);index < geo.size();++index)
+                odf_dim = cur_tracking_window.cur_dim;
+                odf_slide_pos = slice->slice_pos[odf_dim];
+                image::geometry<2> geo2(slice->geometry[odf_dim==0?1:0],
+                                       slice->geometry[odf_dim==2?1:2]);
+                for(image::pixel_index<2> index(geo2);index < geo2.size();++index)
                 {
                     if((index[0] & mask) | (index[1] & mask))
                         continue;
                     int x,y,z;
-                    if (!slice.get3dPosition(index[0],index[1],x,y,z))
+                    if (!slice->to3DSpace(cur_tracking_window.cur_dim,index[0],index[1],x,y,z))
                         continue;
-                    image::pixel_index<3> pos(x,y,z,slice.geometry);
+                    image::pixel_index<3> pos(x,y,z,geo);
                     if (handle->dir.get_fa(pos.index(),0) <= fa_threshold)
                         continue;
                     add_odf(pos);
@@ -540,11 +545,11 @@ void GLWidget::renderLR()
             }
             break;
         case 1: // intersection
-            add_odf(image::pixel_index<3>(slice.slice_pos[0],slice.slice_pos[1],slice.slice_pos[2],
-                                          slice.geometry));
+            add_odf(image::pixel_index<3>(slice->slice_pos[0],slice->slice_pos[1],slice->slice_pos[2],
+                                          geo));
             break;
         case 2: //all
-            for(image::pixel_index<3> index(slice.geometry);index < slice.geometry.size();++index)
+            for(image::pixel_index<3> index(geo);index < geo.size();++index)
             {
                 if(((index[0] & mask) | (index[1] & mask) | (index[2] & mask)) ||
                    handle->dir.get_fa(index.index(),0) <= fa_threshold)
@@ -667,20 +672,16 @@ void GLWidget::renderLR()
         glMultMatrixf(transformation_matrix.begin());
 
         std::vector<image::vector<3,float> > points(4);
-        SliceModel* active_slice = current_visible_slide ?
-                                        cur_tracking_window.other_slices[current_visible_slide-1].get() :
-                                        (SliceModel*)&cur_tracking_window.slice;
 
         if(cur_tracking_window.ui->min_value_gl->value() != slice_min_value ||
            cur_tracking_window.ui->max_value_gl->value() != slice_max_value ||
-
-            slice_index != current_visible_slide)
+            slice_index != cur_tracking_window.ui->SliceModality->currentIndex())
         {
             slice_min_value = cur_tracking_window.ui->min_value_gl->value();
             slice_max_value = cur_tracking_window.ui->max_value_gl->value();
-            cur_tracking_window.v2c_gl.set_range(slice_min_value,slice_max_value);
+            cur_tracking_window.v2c.set_range(slice_min_value,slice_max_value);
 
-            slice_index = current_visible_slide;
+            slice_index = cur_tracking_window.ui->SliceModality->currentIndex();
             slice_pos[0] = slice_pos[1] = slice_pos[2] = -1;
         }
         if(
@@ -690,7 +691,7 @@ void GLWidget::renderLR()
             slice_min_color = cur_tracking_window.ui->min_color_gl->color().rgb();
             slice_max_color = cur_tracking_window.ui->max_color_gl->color().rgb();
 
-            cur_tracking_window.v2c_gl.two_color(slice_min_color,slice_max_color);
+            cur_tracking_window.v2c.two_color(slice_min_color,slice_max_color);
             slice_pos[0] = slice_pos[1] = slice_pos[2] = -1;
         }
 
@@ -704,16 +705,16 @@ void GLWidget::renderLR()
             if(!show_slice[dim])
                 continue;
 
-            if(slice_pos[dim] != active_slice->slice_pos[dim])
+            if(slice_pos[dim] != current_slice->slice_pos[dim])
             {
                 if(slice_texture[dim])
                     deleteTexture(slice_texture[dim]);
                 image::color_image texture;
-                active_slice->get_texture(dim,texture,cur_tracking_window.v2c_gl);
+                current_slice->get_texture(dim,texture,cur_tracking_window.v2c);
                 slice_texture[dim] =
                     bindTexture(QImage((unsigned char*)&*texture.begin(),
                 texture.width(),texture.height(),QImage::Format_RGB32));
-                slice_pos[dim] = active_slice->slice_pos[dim];
+                slice_pos[dim] = current_slice->slice_pos[dim];
             }
 
             glBindTexture(GL_TEXTURE_2D, slice_texture[dim]);
@@ -877,6 +878,9 @@ void GLWidget::add_odf(image::pixel_index<3> pos)
     std::fill(iter,end,pos);
 
     float odf_min = *std::min_element(odf_buffer,odf_buffer+half_odf);
+    float max_fa = *std::max_element(cur_tracking_window.handle->dir.fa[0],cur_tracking_window.handle->dir.fa[0] + cur_tracking_window.handle->dim.size());
+    if(max_fa == 0.0)
+        max_fa = 1.0;
     float scaling = odf_scale/max_fa;
     if(!get_param("odf_min_max"))
     {
@@ -1297,13 +1301,7 @@ void GLWidget::wheelEvent ( QWheelEvent * event )
 
 void GLWidget::slice_location(unsigned char dim,std::vector<image::vector<3,float> >& points)
 {
-    SliceModel* active_slice = current_visible_slide ?
-                               cur_tracking_window.other_slices[current_visible_slide-1].get() :
-                               (SliceModel*)&cur_tracking_window.slice;
-    active_slice->get_slice_positions(dim,points);
-    if(current_visible_slide)
-    for(unsigned int index = 0;index < 4;++index)
-        points[index].to(cur_tracking_window.other_slices[current_visible_slide-1]->transform);
+    cur_tracking_window.current_slice->get_slice_positions(dim,points);
 }
 
 void GLWidget::get_view_dir(QPoint p,image::vector<3,float>& dir)
@@ -1373,7 +1371,7 @@ void GLWidget::select_object(void)
     cur_pos *= object_distance;
     cur_pos += pos;
     image::vector<3,short> voxel(cur_pos);
-    if(!cur_tracking_window.slice.geometry.is_valid(voxel))
+    if(!cur_tracking_window.handle->dim.is_valid(voxel))
         continue;
     for(int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
         if(cur_tracking_window.regionWidget->regions[index]->has_point(voxel) &&
@@ -1748,38 +1746,37 @@ void GLWidget::loadCamera(void)
     std::copy(data.begin(),data.end(),transformation_matrix.begin());
     updateGL();
 }
-void GLWidget::get_current_slice_transformation(
-            image::geometry<3>& geo,image::vector<3,float>& vs,image::matrix<4,4,float>& tr)
-{
-    if(!current_visible_slide)
-    {
-        geo = cur_tracking_window.slice.geometry;
-        vs = cur_tracking_window.slice.voxel_size;
-        std::fill(tr.begin(),tr.end(),0.0);
-        tr[0] = tr[5] = tr[10] = tr[15] = 1.0;
-        return;
-    }
-    geo = cur_tracking_window.other_slices[current_visible_slide-1]->geometry;
-    vs = cur_tracking_window.other_slices[current_visible_slide-1]->voxel_size;
-    tr = cur_tracking_window.other_slices[current_visible_slide-1]->invT;
-}
-
-
 void GLWidget::addSurface(void)
 {
-    SliceModel* active_slice = current_visible_slide ?
-                               cur_tracking_window.other_slices[current_visible_slide-1].get():
-                               (SliceModel*)&cur_tracking_window.slice;
-    float threshold = image::segmentation::otsu_threshold(active_slice->get_source());
+    float threshold = image::segmentation::otsu_threshold(cur_tracking_window.current_slice->get_source());
     bool ok;
     threshold = QInputDialog::getDouble(this,
         "DSI Studio","Threshold:", threshold,
-        *std::min_element(active_slice->get_source().begin(),active_slice->get_source().end()),
-        *std::max_element(active_slice->get_source().begin(),active_slice->get_source().end()),
+        *std::min_element(cur_tracking_window.current_slice->get_source().begin(),cur_tracking_window.current_slice->get_source().end()),
+        *std::max_element(cur_tracking_window.current_slice->get_source().begin(),cur_tracking_window.current_slice->get_source().end()),
         4, &ok);
     if (!ok)
         return;
-    command("add_surface",QString::number(cur_tracking_window.ui->surfaceStyle->currentIndex()),QString::number(threshold));
+    QAction* pAction = qobject_cast<QAction*>(sender());
+    int id = 0;
+    if(pAction)
+    {
+        if(pAction->text() == "Full")
+            id = 0;
+        if(pAction->text() == "Right")
+            id = 1;
+        if(pAction->text() == "Left")
+            id = 2;
+        if(pAction->text() == "Lower")
+            id = 3;
+        if(pAction->text() == "Upper")
+            id = 4;
+        if(pAction->text() == "Anterior")
+            id = 5;
+        if(pAction->text() == "Posterior")
+            id = 6;
+    }
+    command("add_surface",QString::number(id),QString::number(threshold));
 }
 
 void GLWidget::copyToClipboard(void)
@@ -1883,7 +1880,6 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             cur_tracking_window.ui->glAxiSlider->setValue(param2.toInt());
             break;
         }
-        paintGL();
         return true;
     }
     if(cmd == "slice_off")
@@ -1937,21 +1933,17 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "add_surface")
     {
-        SliceModel* active_slice = current_visible_slide ?
-                                   cur_tracking_window.other_slices[current_visible_slide-1].get() :
-                                   (SliceModel*)&cur_tracking_window.slice;
-
-        float threshold = (param2.isEmpty()) ? image::segmentation::otsu_threshold(active_slice->get_source()):param2.toFloat();
+        float threshold = (param2.isEmpty()) ? image::segmentation::otsu_threshold(cur_tracking_window.current_slice->get_source()):param2.toFloat();
         {
             surface.reset(new RegionModel);
-            image::basic_image<float, 3> crop_image(active_slice->get_source());
+            image::basic_image<float, 3> crop_image(cur_tracking_window.current_slice->get_source());
             if(!param.isEmpty())
             switch(param.toInt())
             {
             case 1: //right hemi
                 for(unsigned int index = 0;index < crop_image.size();index += crop_image.width())
                 {
-                    std::fill(crop_image.begin()+index+active_slice->slice_pos[0],
+                    std::fill(crop_image.begin()+index+cur_tracking_window.current_slice->slice_pos[0],
                               crop_image.begin()+index+crop_image.width(),crop_image[0]);
                 }
                 break;
@@ -1959,21 +1951,21 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
                 for(unsigned int index = 0;index < crop_image.size();index += crop_image.width())
                 {
                     std::fill(crop_image.begin()+index,
-                              crop_image.begin()+index+active_slice->slice_pos[0],crop_image[0]);
+                              crop_image.begin()+index+cur_tracking_window.current_slice->slice_pos[0],crop_image[0]);
                 }
                 break;
             case 3: //lower
-                std::fill(crop_image.begin()+active_slice->slice_pos[2]*crop_image.plane_size(),
+                std::fill(crop_image.begin()+cur_tracking_window.current_slice->slice_pos[2]*crop_image.plane_size(),
                           crop_image.end(),crop_image[0]);
                 break;
             case 4: // higher
                 std::fill(crop_image.begin(),
-                          crop_image.begin()+active_slice->slice_pos[2]*crop_image.plane_size(),crop_image[0]);
+                          crop_image.begin()+cur_tracking_window.current_slice->slice_pos[2]*crop_image.plane_size(),crop_image[0]);
                 break;
             case 5: //anterior
                 for(unsigned int index = 0;index < crop_image.size();index += crop_image.plane_size())
                 {
-                    std::fill(crop_image.begin()+index+active_slice->slice_pos[1]*crop_image.width(),
+                    std::fill(crop_image.begin()+index+cur_tracking_window.current_slice->slice_pos[1]*crop_image.width(),
                               crop_image.begin()+index+crop_image.plane_size(),crop_image[0]);
                 }
                 break;
@@ -1981,7 +1973,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
                 for(unsigned int index = 0;index < crop_image.size();index += crop_image.plane_size())
                 {
                     std::fill(crop_image.begin()+index,
-                              crop_image.begin()+index+active_slice->slice_pos[1]*crop_image.width(),crop_image[0]);
+                              crop_image.begin()+index+cur_tracking_window.current_slice->slice_pos[1]*crop_image.width(),crop_image[0]);
                 }
                 break;
             }
@@ -2002,10 +1994,10 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             }
         }
 
-        if(current_visible_slide)
+        if(!cur_tracking_window.current_slice->is_diffusion_space)
         for(unsigned int index = 0;index < surface->get()->point_list.size();++index)
         {
-            surface->get()->point_list[index].to(cur_tracking_window.other_slices[current_visible_slide-1]->transform);
+            surface->get()->point_list[index].to(cur_tracking_window.current_slice->transform);
             surface->get()->point_list[index] += 0.5;
         }
         paintGL();

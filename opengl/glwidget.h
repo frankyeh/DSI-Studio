@@ -49,10 +49,6 @@ public:
  public:// other slices
      QTime time;
      int last_time;
-     unsigned int current_visible_slide;
-     void get_current_slice_transformation(image::geometry<3>& geo,
-                                           image::vector<3,float>& vs,
-                                           image::matrix<4,4,float>& tr);
      bool get_mouse_pos(QMouseEvent *mouseEvent,image::vector<3,float>& position);
      void paintGL();
 
@@ -98,8 +94,6 @@ protected:
      tracking_window& cur_tracking_window;
      RenderingTableWidget* renderWidget;
      int cur_width,cur_height;
-     float max_fa;
-
  private:
      int get_param(const char* name);
      float get_param_float(const char* name);

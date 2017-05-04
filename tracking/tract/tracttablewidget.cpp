@@ -612,7 +612,7 @@ void TractTableWidget::deep_learning_train(void)
 
             QString track_file_name = QFileInfo(filename).absolutePath() + "/" + item(index,0)->text() + ".nii.gz";
             gz_nifti nifti2;
-            nifti2.set_voxel_size(cur_tracking_window.slice.voxel_size.begin());
+            nifti2.set_voxel_size(cur_tracking_window.current_slice->voxel_size.begin());
             nifti2.set_image_transformation(cur_tracking_window.handle->trans_to_mni.begin());
             nifti2 << track_map;
             nifti2.save_to_file(track_file_name.toLocal8Bit().begin());
@@ -623,7 +623,7 @@ void TractTableWidget::deep_learning_train(void)
             {
                 filename = QFileInfo(filename).absolutePath() + "/tracks.nii.gz";
                 gz_nifti nifti;
-                nifti.set_voxel_size(cur_tracking_window.slice.voxel_size.begin());
+                nifti.set_voxel_size(cur_tracking_window.current_slice->voxel_size.begin());
                 nifti.set_image_transformation(cur_tracking_window.handle->trans_to_mni.begin());
                 nifti << atlas;
                 nifti.save_to_file(filename.toLocal8Bit().begin());
@@ -1182,7 +1182,7 @@ void TractTableWidget::cut_by_slice(unsigned char dim,bool greater)
     {
         if(item(index,0)->checkState() != Qt::Checked)
             continue;
-        tract_models[index]->cut_by_slice(dim,cur_tracking_window.slice.slice_pos[dim],greater);
+        tract_models[index]->cut_by_slice(dim,cur_tracking_window.current_slice->slice_pos[dim],greater);
         item(index,1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
         item(index,2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
     }

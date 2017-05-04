@@ -7,46 +7,50 @@
 // ---------------------------------------------------------------------------
 struct SliceModel {
 public:
+        bool is_diffusion_space = true;
+        image::matrix<4,4,float> transform,invT;
         image::geometry<3>geometry;
         image::vector<3,float>voxel_size;
-        image::vector<3,float>center_point;
         SliceModel(void);
 public:
         virtual std::pair<float,float> get_value_range(void) const = 0;
-        virtual void get_slice(image::color_image& image,const image::value_to_color<float>& v2c) const = 0;
+        virtual void get_slice(image::color_image& image,unsigned char,const image::value_to_color<float>& v2c) const = 0;
         virtual image::const_pointer_image<float, 3> get_source(void) const = 0;
+
 public:
-public:
-        template<class input_type1,class input_type2>
-        bool get3dPosition(input_type1 x, input_type1 y, input_type2& px, input_type2& py, input_type2& pz) const {
+
+        template<typename value_type1,typename value_type2>
+        void toDiffusionSpace(unsigned char cur_dim,value_type1 x, value_type1 y,
+                              value_type2& px, value_type2& py, value_type2& pz) const
+        {
+            if(!is_diffusion_space)
+            {
+                image::vector<3,float> v;
+                image::slice2space(cur_dim, x, y, slice_pos[cur_dim], v[0],v[1],v[2]);
+                v.to(transform);
+                v.round();
+                px = v[0];
+                py = v[1];
+                pz = v[2];
+            }
+            else
                 image::slice2space(cur_dim, x, y, slice_pos[cur_dim], px, py, pz);
-                return geometry.is_valid(px, py, pz);
+        }
+        template<typename value_type>
+        bool to3DSpace(unsigned char cur_dim,value_type x, value_type y,
+                       value_type& px, value_type& py, value_type& pz) const
+        {
+            image::slice2space(cur_dim, x, y, slice_pos[cur_dim], px, py, pz);
+            return geometry.is_valid(px, py, pz);
         }
 
-        template<class input_type1,class input_type2>
-        void getSlicePosition(input_type1 px, input_type1 py, input_type1 pz, input_type2& x, input_type2& y,
-                input_type2& slice_index) const {
-                image::space2slice(cur_dim, px, py, pz, x, y, slice_index);
-        }
-
-        template<class input_type>
-        unsigned int get3dPosition(input_type x, input_type y) const {
-                int px, py, pz;
-                if (!get3dPosition(x, y, px, py, pz))
-                        return 0;
-                return image::pixel_index<3>(px, py, pz, geometry).index();
-        }
 public:
         // for directx
-        unsigned char cur_dim;
-        int slice_pos[3];
+        image::vector<3,int> slice_pos;
         bool slice_visible[3];
         void get_texture(unsigned char dim,image::color_image& cur_rendering_image,const image::value_to_color<float>& v2c)
         {
-            unsigned char cur_dim_backup = cur_dim;
-            cur_dim = dim;
-            get_slice(cur_rendering_image,v2c);
-            cur_dim = cur_dim_backup;
+            get_slice(cur_rendering_image,dim,v2c);
             for(unsigned int index = 0;index < cur_rendering_image.size();++index)
             {
                 unsigned char value =
@@ -56,12 +60,8 @@ public:
                 cur_rendering_image[index].data[3] = value;
             }
         }
-        void get_slice_positions(unsigned int dim,std::vector<image::vector<3,float> >& points)
-        {
-            points.resize(4);
-            image::get_slice_positions(dim, slice_pos[dim], geometry,points);
-        }
-        void get_other_slice_pos(int& x, int& y) const {
+
+        void get_other_slice_pos(unsigned char cur_dim,int& x, int& y) const {
                 x = slice_pos[(cur_dim + 1) % 3];
                 y = slice_pos[(cur_dim + 2) % 3];
                 if (cur_dim == 1)
@@ -87,33 +87,36 @@ public:
             }
             return has_updated;
         }
+        void get_slice_positions(unsigned int dim,std::vector<image::vector<3,float> >& points)
+        {
+            points.resize(4);
+            image::get_slice_positions(dim, slice_pos[dim], geometry,points);
+            if(!is_diffusion_space)
+            for(unsigned int index = 0;index < points.size();++index)
+                points[index].to(transform);
+        }
+        void get_mosaic(image::color_image& image,
+                        unsigned int mosaic_size,
+                        const image::value_to_color<float>& v2c,
+                        unsigned int skip);
 };
 
 class fib_data;
 class FibSliceModel : public SliceModel{
 public:
     std::shared_ptr<fib_data> handle;
-    image::const_pointer_image<float,3> source_images;
-    std::string view_name;
+    int view_id;
 public:
-    FibSliceModel(std::shared_ptr<fib_data> new_handle);
-    void set_view_name(const std::string& view_name_)
-    {
-        view_name = view_name_;
-    }
+    FibSliceModel(std::shared_ptr<fib_data> new_handle,int view_id_);
 public:
     std::pair<float,float> get_value_range(void) const;
-    void get_slice(image::color_image& image,const image::value_to_color<float>& v2c) const;
-    image::const_pointer_image<float, 3> get_source(void) const{return source_images;}
-    void get_mosaic(image::color_image& image,
-                    unsigned int mosaic_size,
-                    const image::value_to_color<float>& v2c,
-                    unsigned int skip) const;
+    void get_slice(image::color_image& image,unsigned char cur_dim,const image::value_to_color<float>& v2c) const;
+    image::const_pointer_image<float, 3> get_source(void) const;
+
 };
 
 class CustomSliceModel : public SliceModel{
 public:
-    image::matrix<4,4,float> transform,invT;
     image::basic_image<float,3> roi_image;
     float* roi_image_buf;
     std::string name;
@@ -152,10 +155,10 @@ public:
         init();
     }
     void init(void);
-    bool initialize(FibSliceModel& slice,bool is_qsdr,const std::vector<std::string>& files,bool correct_intensity);
+    bool initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,const std::vector<std::string>& files,bool correct_intensity);
 public:
     std::pair<float,float> get_value_range(void) const;
-    void get_slice(image::color_image& image,const image::value_to_color<float>& v2c) const;
+    void get_slice(image::color_image& image,unsigned char cur_dim,const image::value_to_color<float>& v2c) const;
     bool stripskull(float qa_threshold);
     image::const_pointer_image<float, 3> get_source(void) const  {return source_images;}
 };

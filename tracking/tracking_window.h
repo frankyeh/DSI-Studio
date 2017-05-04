@@ -57,9 +57,12 @@ public:
     RegionTableWidget *regionWidget;
     TractTableWidget *tractWidget;
     RenderingTableWidget *renderWidget;
-    slice_view_scene scene;
 public:
-    image::value_to_color<float> v2c,v2c_gl;
+    slice_view_scene scene;
+    float get_scene_zoom(void);
+public:
+    unsigned char cur_dim;
+    image::value_to_color<float> v2c;
 public:
     connectometry_result cnt_result;
 public:
@@ -73,17 +76,15 @@ public:
     std::auto_ptr<connectivity_matrix_dialog> connectivity_matrix;
 public:
     std::shared_ptr<fib_data> handle;
-    FibSliceModel slice;
-    std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
-    bool slice_no_update;
-    bool addSlices(QStringList filenames,bool correct_intensity,bool cmd);
+    std::vector<std::shared_ptr<SliceModel> > slices;
+    std::shared_ptr<SliceModel> current_slice;
+    bool addSlices(QStringList filenames,QString name,bool correct_intensity,bool cmd);
 
 public:
     bool eventFilter(QObject *obj, QEvent *event);
     QVariant operator[](QString name)const;
     void set_data(QString name, QVariant value);
     void on_tracking_index_currentIndexChanged(int index);
-    void add_slice_name(QString name);
     void show_info_dialog(const std::string& title,const std::string& result);
     QString get_save_file_name(QString title,QString file_name,QString file_type);
     void float3dwindow(int w,int h);
@@ -91,9 +92,6 @@ public:
     void report(QString string);
     bool command(QString cmd,QString param = "",QString param2 = "");
 public slots:
-    void on_SagView_clicked();
-    void on_CorView_clicked();
-    void on_AxiView_clicked();
     void restore_3D_window();
     void on_show_fiber_toggled(bool checked);
     void on_show_r_toggled(bool checked);
@@ -105,7 +103,6 @@ private slots:
     void on_actionTDI_Import_Slice_Space_triggered();
     void on_actionTDI_Subvoxel_Diffusion_Space_triggered();
     void on_actionTDI_Diffusion_Space_triggered();
-    void on_actionInsert_T1_T2_triggered();
     void on_actionPaint_triggered();
     void on_actionTracts_to_seeds_triggered();
     void on_actionEndpoints_to_seeding_triggered();
@@ -117,14 +114,12 @@ private slots:
     void on_actionCut_triggered();
     void on_actionDelete_triggered();
     void on_actionSelect_Tracts_triggered();
-    void on_sliceViewBox_currentIndexChanged(int index);
     void on_tool3_pressed();
     void on_tool2_pressed();
     void on_tool1_pressed();
     void on_tool0_pressed();
 
     void SliderValueChanged(void);
-    void glSliderValueChanged(void);
 
     void on_actionSave_Endpoints_in_Current_Mapping_triggered();
     void on_deleteSlice_clicked();
@@ -146,7 +141,6 @@ private slots:
     void on_zoom_out_clicked();
     void on_actionQuality_Assessment_triggered();
     void on_actionAuto_Rotate_triggered(bool checked);
-    void on_auto_rotate_toggled(bool checked);
     void on_action3D_Screen_triggered();
     void on_action3D_Screen_3_Views_triggered();
     void on_action3D_Screen_3_Views_Horizontal_triggered();
@@ -154,10 +148,6 @@ private slots:
     void on_actionROI_triggered();
     void on_actionTrack_Report_triggered();
     void on_rendering_efficiency_currentIndexChanged(int index);
-    void on_max_value_valueChanged(double arg1);
-    void on_min_value_valueChanged(double arg1);
-    void on_max_color_released();
-    void on_min_color_released();
     void on_actionCut_X_triggered();
     void on_actionCut_X_2_triggered();
     void on_actionCut_Y_triggered();
@@ -171,11 +161,14 @@ private slots:
     void on_actionAdjust_Mapping_triggered();
     void on_actionSave_mapping_triggered();
     void on_actionLoad_mapping_triggered();
-    void on_glView_currentIndexChanged(int index);
     void on_zoom_3d_valueChanged(double arg1);
-    void on_actionLoad_Color_Map_Region_Window_triggered();
     void on_actionLoad_Color_Map_triggered();
     void on_track_style_currentIndexChanged(int index);
+    void on_SlicePos_sliderMoved(int position);
+    void on_addSlices_clicked();
+    void on_actionSingle_triggered();
+    void on_actionDouble_triggered();
+    void on_actionStereoscopic_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

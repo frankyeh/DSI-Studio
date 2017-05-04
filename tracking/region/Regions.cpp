@@ -288,10 +288,9 @@ void ROIRegion::perform(const std::string& action)
         shift(image::vector<3,short>(0, 0, -1));
 }
 // ---------------------------------------------------------------------------
-void ROIRegion::getSlicePosition(SliceModel* slice, unsigned int pindex, int& x, int& y,
-                                 int& z) {
-    slice->getSlicePosition(region[pindex].x(), region[pindex].y(),
-                            region[pindex].z(), x, y, z);
+void ROIRegion::getSlicePosition(unsigned char cur_dim,unsigned int pindex, int& x, int& y,int& z)
+{
+    image::space2slice(cur_dim,region[pindex].x(), region[pindex].y(),region[pindex].z(), x, y, z);
 }
 
 // ---------------------------------------------------------------------------
