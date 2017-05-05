@@ -404,7 +404,7 @@ public:
             begin_prog("normalization");
 
             terminated_class ter(17);
-            image::reg::bfnorm(mni,VG,VFF,ter);
+            image::reg::bfnorm(mni,VG,VFF,ter,voxel.thread_count);
             // choose CSF at the following voxel location
 
             image::vector<3,int> pos1(84,76,68),pos2(72,76,68),pos3(74,58,60),pos4(82,58,60);

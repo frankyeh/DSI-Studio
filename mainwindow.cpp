@@ -962,7 +962,7 @@ void MainWindow::on_ReconstructSRC_clicked()
         handle->voxel.output_diffusivity = 0;
         handle->voxel.output_tensor = 0;
         handle->voxel.output_rdi = 1;
-
+        handle->voxel.thread_count = std::thread::hardware_concurrency();
         //checking half shell
         {
             std::vector<unsigned int> shell;
@@ -976,8 +976,7 @@ void MainWindow::on_ReconstructSRC_clicked()
         }
 
         const char* msg = (const char*)reconstruction(handle.get(), 7 /*QSDR*/,
-                                                      params,true /*check b-table*/,
-                                                      std::thread::hardware_concurrency());
+                                                      params,true /*check b-table*/);
         if (QFileInfo(msg).exists())
             continue;
         QMessageBox::information(this,"error",msg,0);

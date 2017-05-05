@@ -154,6 +154,7 @@ int rec(void)
     handle->voxel.r2_weighted = po.get("r2_weighted",int(0));
     handle->voxel.reg_method = po.get("reg_method",int(0));
     handle->voxel.csf_calibration = po.get("csf_calibration",int(0)) && method_index == 4;
+    handle->voxel.thread_count = po.get("thread_count",int(std::thread::hardware_concurrency()));
 
     std::vector<unsigned int> shell;
     calculate_shell(handle->voxel.bvalues,shell);
@@ -229,8 +230,7 @@ int rec(void)
     }
     std::cout << "start reconstruction..." <<std::endl;
     const char* msg = reconstruction(handle.get(),method_index,
-                                     param,po.get("check_btable",int(1)),
-                                     po.get("thread_count",int(std::thread::hardware_concurrency())));
+                                     param,po.get("check_btable",int(1)));
     if (!msg)
         std::cout << "Reconstruction finished:" << msg << std::endl;
     return 0;

@@ -323,6 +323,8 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.output_diffusivity = ui->output_diffusivity->isChecked() ? 1 : 0;
     handle->voxel.output_tensor = ui->output_tensor->isChecked() ? 1 : 0;
     handle->voxel.output_rdi = ui->rdi->isChecked() ? 1 : 0;
+    handle->voxel.thread_count = ui->ThreadCount->value();
+
     if(method_id == 7 || method_id == 4)
     {
         handle->voxel.half_sphere = ui->half_sphere->isChecked() ? 1:0;
@@ -335,8 +337,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     }
 
     const char* msg = (const char*)reconstruction(handle.get(), method_id,
-                                                  params,ui->check_btable->isChecked(),
-                                                  ui->ThreadCount->value());
+                                                  params,ui->check_btable->isChecked());
     if (!QFileInfo(msg).exists())
     {
         QMessageBox::information(this,"error",msg,0);

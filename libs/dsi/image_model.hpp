@@ -420,13 +420,13 @@ public:
     }
 
     template<class ProcessType>
-    bool reconstruct(unsigned int thread_count)
+    bool reconstruct(void)
     {
         begin_prog("reconstruction");
         voxel.image_model = this;
         voxel.CreateProcesses<ProcessType>();
-        voxel.init(thread_count);
-        voxel.run(thread_count,mask);
+        voxel.init();
+        voxel.run(mask);
         return !prog_aborted();
     }
 

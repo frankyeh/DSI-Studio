@@ -58,6 +58,7 @@ public:
     image::basic_image<float,3> dwi_sum;
     std::string report;
     std::ostringstream recon_report;
+    unsigned int thread_count = 1;
 public:// parameters;
     tessellated_icosahedron ti;
     const float* param;
@@ -128,7 +129,7 @@ public:
         process_list.push_back(std::make_shared<Process>());
     }
 public:
-    void init(unsigned int thread_count)
+    void init(void)
     {
         voxel_data.resize(thread_count);
         for (unsigned int index = 0; index < thread_count; ++index)
@@ -143,8 +144,7 @@ public:
             process_list[index]->init(*this);
     }
 
-    void run(unsigned char thread_count,
-                    const image::basic_image<unsigned char,3>& mask)
+    void run(const image::basic_image<unsigned char,3>& mask)
     {
         try{
 
