@@ -14,33 +14,35 @@ private:
 public:
     Roi(const image::geometry<3>& geo):dim(geo),roi_filter(dim[0])
     {
-        for(unsigned int x = 0; x < dim[0]; ++x)
-        {
-            std::vector<std::vector<unsigned char> >&
-            roi_filter_x = roi_filter[x];
-            roi_filter_x.resize(dim[1]);
-            for(unsigned int y = 0; y < dim[1]; ++y)
-                roi_filter_x[y].resize(dim[2]);
-        }
     }
     void clear(void)
     {
-        for(unsigned int x = 0; x < roi_filter.size(); ++x)
-            for(unsigned int y = 0; y < roi_filter[x].size(); ++y)
-                for(unsigned int z = 0; z < roi_filter[x][y].size(); ++z)
-                    roi_filter[x][y][z] = 0;
+        roi_filter.clear();
+        roi_filter.resize(dim[0]);
     }
     void addPoint(const image::vector<3,short>& new_point)
     {
         if(in_range(new_point.x(),new_point.y(),new_point.z()))
+        {
+            if(roi_filter[new_point.x()].empty())
+                roi_filter[new_point.x()].resize(dim[1]);
+            if(roi_filter[new_point.x()][new_point.y()].empty())
+                roi_filter[new_point.x()][new_point.y()].resize(dim[2]);
             roi_filter[new_point.x()][new_point.y()][new_point.z()] = 1;
+        }
     }
     bool havePoint(float dx,float dy,float dz) const
     {
         short x = std::round(dx);
         short y = std::round(dy);
         short z = std::round(dz);
-        return in_range(x,y,z) && roi_filter[x][y][z];
+        if(!in_range(x,y,z))
+            return false;
+        if(roi_filter[x].empty())
+            return false;
+        if(roi_filter[x][y].empty())
+            return false;
+        return roi_filter[x][y][z];
     }
     bool havePoint(const image::vector<3,float>& point) const
     {
