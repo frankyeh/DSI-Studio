@@ -69,9 +69,9 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
             if(center_seed)
             {
                 if(!method->init(initial_direction,
-                                 image::vector<3,float>(roi_mgr.seeds[iteration].x(),
-                                                        roi_mgr.seeds[iteration].y(),
-                                                        roi_mgr.seeds[iteration].z()),
+                    image::vector<3,float>(roi_mgr.seeds[iteration].x()/roi_mgr.seeds_r[iteration],
+                                           roi_mgr.seeds[iteration].y()/roi_mgr.seeds_r[iteration],
+                                           roi_mgr.seeds[iteration].z()/roi_mgr.seeds_r[iteration]),
                                  seed))
                 {
                     iteration+=thread_count;
@@ -85,11 +85,13 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
                 // this ensure consistency
                 std::lock_guard<std::mutex> lock(lock_seed_function);
                 iteration+=thread_count;
-                unsigned int i = rand_gen(seed)*((float)roi_mgr.seeds.size()-1.0);
+                unsigned int i = rand_gen(seed)*((float)roi_mgr.seeds.size()-1.0f);
                 image::vector<3,float> pos;
-                pos[0] = (float)roi_mgr.seeds[i].x() + rand_gen(seed)-0.5;
-                pos[1] = (float)roi_mgr.seeds[i].y() + rand_gen(seed)-0.5;
-                pos[2] = (float)roi_mgr.seeds[i].z() + rand_gen(seed)-0.5;
+                pos[0] = (float)roi_mgr.seeds[i].x() + rand_gen(seed)-0.5f;
+                pos[1] = (float)roi_mgr.seeds[i].y() + rand_gen(seed)-0.5f;
+                pos[2] = (float)roi_mgr.seeds[i].z() + rand_gen(seed)-0.5f;
+                if(roi_mgr.seeds_r[i] != 1.0)
+                    pos /= roi_mgr.seeds_r[i];
                 if(!method->init(initial_direction,pos,seed))
                     continue;
             }

@@ -5,6 +5,7 @@
 
 class Roi {
 private:
+    float ratio;
     image::geometry<3> dim;
     std::vector<std::vector<std::vector<unsigned char> > > roi_filter;
     bool in_range(int x,int y,int z) const
@@ -12,8 +13,13 @@ private:
         return dim.is_valid(x,y,z);
     }
 public:
-    Roi(const image::geometry<3>& geo):dim(geo),roi_filter(dim[0])
+    Roi(const image::geometry<3>& geo,float r):ratio(r)
     {
+        if(r == 1.0)
+            dim = geo;
+        else
+            dim = image::geometry<3>(geo[0]*r,geo[1]*r,geo[2]*r);
+        roi_filter.resize(dim[0]);
     }
     void clear(void)
     {
@@ -33,9 +39,19 @@ public:
     }
     bool havePoint(float dx,float dy,float dz) const
     {
-        short x = std::round(dx);
-        short y = std::round(dy);
-        short z = std::round(dz);
+        short x,y,z;
+        if(ratio != 1.0)
+        {
+            x = std::round(dx*ratio);
+            y = std::round(dy*ratio);
+            z = std::round(dz*ratio);
+        }
+        else
+        {
+            x = std::round(dx);
+            y = std::round(dy);
+            z = std::round(dz);
+        }
         if(!in_range(x,y,z))
             return false;
         if(roi_filter[x].empty())
@@ -62,32 +78,35 @@ class RoiMgr {
 public:
     std::string report;
     std::vector<image::vector<3,short> > seeds;
+    std::vector<float> seeds_r;
     std::vector<std::shared_ptr<Roi> > inclusive;
     std::vector<std::shared_ptr<Roi> > end;
-    std::auto_ptr<Roi> exclusive;
-    std::auto_ptr<Roi> terminate;
+    std::vector<std::shared_ptr<Roi> > exclusive;
+    std::vector<std::shared_ptr<Roi> > terminate;
 
 public:
     void clear(void)
     {
         inclusive.clear();
         end.clear();
-        exclusive.reset(0);
-        terminate.reset(0);
+        exclusive.clear();
+        terminate.clear();
         report.clear();
     }
 
     bool is_excluded_point(const image::vector<3,float>& point) const
     {
-        if(!exclusive.get())
-            return false;
-        return exclusive->havePoint(point[0],point[1],point[2]);
+        for(unsigned int index = 0; index < exclusive.size(); ++index)
+            if(exclusive[index]->havePoint(point[0],point[1],point[2]))
+                return true;
+        return false;
     }
     bool is_terminate_point(const image::vector<3,float>& point) const
     {
-        if(!terminate.get())
-            return false;
-        return terminate->havePoint(point[0],point[1],point[2]);
+        for(unsigned int index = 0; index < terminate.size(); ++index)
+            if(terminate[index]->havePoint(point[0],point[1],point[2]))
+                return true;
+        return false;
     }
 
 
@@ -116,8 +135,6 @@ public:
         }
         return false;
     }
-
-
     bool have_include(const float* track,unsigned int buffer_size) const
     {
         for(unsigned int index = 0; index < inclusive.size(); ++index)
@@ -125,67 +142,44 @@ public:
                 return false;
         return true;
     }
-
-    void add_inclusive_roi(const image::geometry<3>& geo,
-                           const std::vector<image::vector<3,short> >& points)
-    {
-        inclusive.push_back(std::make_shared<Roi>(geo));
-        for(unsigned int index = 0; index < points.size(); ++index)
-            inclusive.back()->addPoint(points[index]);
-    }
-    void add_end_roi(const image::geometry<3>& geo,
-                     const std::vector<image::vector<3,short> >& points)
-    {
-        end.push_back(std::make_shared<Roi>(geo));
-        for(unsigned int index = 0; index < points.size(); ++index)
-            end.back()->addPoint(points[index]);
-    }
-
-    void add_exclusive_roi(const image::geometry<3>& geo,
-                           const std::vector<image::vector<3,short> >& points)
-    {
-        if(!exclusive.get())
-            exclusive.reset(new Roi(geo));
-        for(unsigned int index = 0; index < points.size(); ++index)
-            exclusive->addPoint(points[index]);
-    }
-    void add_terminate_roi(const image::geometry<3>& geo,
-                           const std::vector<image::vector<3,short> >& points)
-    {
-        if(!terminate.get())
-            terminate.reset(new Roi(geo));
-        for(unsigned int index = 0; index < points.size(); ++index)
-            terminate->addPoint(points[index]);
-    }
-
-
-
-    void setRegions(image::geometry<3> dim,
+    void setRegions(image::geometry<3> geo,
                     const std::vector<image::vector<3,short> >& points,
+                    float r,
                     unsigned char type,
                     const char* roi_name)
     {
         switch(type)
         {
         case 0: //ROI
-            add_inclusive_roi(dim,points);
+            inclusive.push_back(std::make_shared<Roi>(geo,r));
+            for(unsigned int index = 0; index < points.size(); ++index)
+                inclusive.back()->addPoint(points[index]);
             report += " An ROI was placed at ";
             break;
         case 1: //ROA
-            add_exclusive_roi(dim,points);
+            exclusive.push_back(std::make_shared<Roi>(geo,r));
+            for(unsigned int index = 0; index < points.size(); ++index)
+                exclusive.back()->addPoint(points[index]);
             report += " An ROA was placed at ";
             break;
         case 2: //End
-            add_end_roi(dim,points);
+            end.push_back(std::make_shared<Roi>(geo,r));
+            for(unsigned int index = 0; index < points.size(); ++index)
+                end.back()->addPoint(points[index]);
             report += " An ending region was placed at ";
             break;
         case 4: //Terminate
-            add_terminate_roi(dim,points);
+            terminate.push_back(std::make_shared<Roi>(geo,r));
+            for(unsigned int index = 0; index < points.size(); ++index)
+                terminate.back()->addPoint(points[index]);
             report += " A terminative region was placed at ";
             break;
         case 3: //seed
             for (unsigned int index = 0;index < points.size();++index)
+            {
                 seeds.push_back(points[index]);
+                seeds_r.push_back(r);
+            };
             report += " A seeding region was placed at ";
             break;
         }

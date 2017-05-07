@@ -69,6 +69,8 @@ public:
         }
         bool set_slice_pos(int x,int y,int z)
         {
+            if(!geometry.is_valid(x,y,z))
+                return false;
             bool has_updated = false;
             if(slice_pos[0] != x)
             {

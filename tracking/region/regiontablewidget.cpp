@@ -147,7 +147,13 @@ void RegionTableWidget::add_region_from_atlas(unsigned int atlas,unsigned int la
     std::vector<image::vector<3,short> > points;
     cur_tracking_window.handle->get_atlas_roi(atlas,label,points);
     add_region(atlas_list[atlas].get_list()[label].c_str(),roi_id);
+    if(!cur_tracking_window.current_slice->is_diffusion_space)
+        image::par_for(points.size(),[&](int i)
+        {
+            points[i].to(cur_tracking_window.current_slice->invT);
+        });
     add_points(points,false);
+
 }
 
 void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
@@ -220,13 +226,13 @@ void RegionTableWidget::draw_region(QImage& qimage)
             if (item(roi_index,0)->checkState() != Qt::Checked)
                 continue;
             unsigned int cur_color = regions[roi_index]->show_region.color;
-            for (unsigned int index = 0;index < regions[roi_index]->size();++index)
+            image::par_for(regions[roi_index]->size(),[&](unsigned int index)
             {
                 regions[roi_index]->getSlicePosition(cur_tracking_window.cur_dim,index, X, Y, Z);
                 if (slice_pos != Z || X < 0 || Y < 0 || X >= qimage.width() || Y >= qimage.height())
-                    continue;
+                    return;
                 qimage.setPixel(X,Y,(unsigned int)qimage.pixel(X,Y) | cur_color);
-            }
+            });
         }
     }
     else
@@ -236,14 +242,19 @@ void RegionTableWidget::draw_region(QImage& qimage)
         {
             if (item(roi_index,0)->checkState() != Qt::Checked)
                 continue;
-            for (unsigned int index = 0;index < regions[roi_index]->size();++index)
+            image::par_for(regions[roi_index]->size(),[&](unsigned int index)
             {
-                auto& p = regions[roi_index]->region[index];
+                image::vector<3,float> p(regions[roi_index]->region[index]);
+                if(regions[roi_index]->resolution_ratio != 1.0)
+                {
+                    p /= regions[roi_index]->resolution_ratio;
+                    p.round();
+                }
                 image::pixel_index<3> pindex(p[0],p[1],p[2],buf.geometry());
                 if(pindex.index() >= buf.size())
-                    continue;
+                    return;
                 buf[pindex.index()] = roi_index+1;
-            }
+            });
         }
 
         for(int y = 0;y < qimage.height();++y)
@@ -342,7 +353,23 @@ void RegionTableWidget::draw_mosaic_region(QImage& qimage,unsigned int mosaic_si
 void RegionTableWidget::new_region(void)
 {
     add_region("New Region",roi_id);
+    regions.back()->resolution_ratio =
+            std::min<float>(1.0,std::round(
+            cur_tracking_window.handle->vs[0]/
+            cur_tracking_window.current_slice->voxel_size[0]));
 }
+void RegionTableWidget::new_high_resolution_region(void)
+{
+    bool ok;
+    int ratio = QInputDialog::getInt(this,
+            "DSI Studio",
+            "Input resolution ratio (e.g. 2 for 2X, 8 for 8X",8,2,256,2,&ok);
+    if(!ok)
+        return;
+    add_region("New High Resolution Region",roi_id);
+    regions.back()->resolution_ratio = ratio;
+}
+
 void RegionTableWidget::copy_region(void)
 {
     unsigned int cur_row = currentRow();
@@ -864,23 +891,20 @@ void RegionTableWidget::add_points(std::vector<image::vector<3,short> >& points,
 {
     if (currentRow() < 0 || currentRow() >= regions.size())
         return;
-    regions[currentRow()]->add_points(points,erase);
-}
-
-void RegionTableWidget::add_points(std::vector<image::vector<3,short> >& points,const image::matrix<4,4,float>&T,bool erase)
-{
-    if (currentRow() < 0 || currentRow() >= regions.size())
-        return;
-    for(int index = 0;index < points.size();++index)
+    if(cur_tracking_window.current_slice->is_diffusion_space)
+        regions[currentRow()]->add_points(points,erase);
+    else
     {
-        image::vector<3,float> v(points[index]);
-        v.to(T);
-        v.round();
-        points[index] = v;
+        float ratio = cur_tracking_window.handle->vs[0]/cur_tracking_window.current_slice->voxel_size[0];
+        std::vector<image::vector<3,float> > new_points(points.begin(),points.end());
+        for(int index = 0;index < new_points.size();++index)
+        {
+            new_points[index].to(cur_tracking_window.current_slice->transform);
+            new_points[index] *= ratio;
+        }
+        regions[currentRow()]->add_points(new_points,erase,ratio);
     }
-    regions[currentRow()]->add_points(points,erase);
 }
-
 
 bool RegionTableWidget::has_seeding(void)
 {
@@ -895,7 +919,7 @@ void RegionTableWidget::set_whole_brain(ThreadData* data)
 {
     std::vector<image::vector<3,short> > points;
     whole_brain_points(points);
-    data->roi_mgr.setRegions(cur_tracking_window.handle->dim,points,seed_id,"whole brain");
+    data->roi_mgr.setRegions(cur_tracking_window.handle->dim,points,1.0,seed_id,"whole brain");
 }
 
 void RegionTableWidget::setROIs(ThreadData* data)
@@ -906,6 +930,7 @@ void RegionTableWidget::setROIs(ThreadData* data)
     for (unsigned int index = 0;index < regions.size();++index)
         if (!regions[index]->empty() && item(index,0)->checkState() == Qt::Checked)
             data->roi_mgr.setRegions(cur_tracking_window.handle->dim,regions[index]->get(),
+                                     regions[index]->resolution_ratio,
                              regions[index]->regions_feature,item(index,0)->text().toLocal8Bit().begin());
 }
 

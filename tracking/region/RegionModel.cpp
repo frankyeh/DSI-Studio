@@ -102,7 +102,7 @@ bool RegionModel::load(const std::vector<image::vector<3,short> >& seeds, double
             object->point_list[index] += shift;
         sortIndices();
     }
-    if (scale != 1.0)
+    if (object.get() && scale != 1.0)
         for (unsigned int index = 0; index < object->point_list.size(); ++index)
             object->point_list[index]/= scale;
 

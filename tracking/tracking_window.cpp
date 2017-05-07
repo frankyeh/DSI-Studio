@@ -157,6 +157,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
         connect(ui->min_value_gl,SIGNAL(valueChanged(double)),glWidget,SLOT(updateGL()));
         connect(ui->max_value_gl,SIGNAL(valueChanged(double)),glWidget,SLOT(updateGL()));
+        connect(ui->min_value_gl,SIGNAL(valueChanged(double)),&scene,SLOT(show_slice()));
+        connect(ui->max_value_gl,SIGNAL(valueChanged(double)),&scene,SLOT(show_slice()));
 
         connect(ui->actionSave_Screen,SIGNAL(triggered()),glWidget,SLOT(catchScreen()));
         connect(ui->actionSave_3D_screen_in_high_resolution,SIGNAL(triggered()),glWidget,SLOT(catchScreen2()));
@@ -203,6 +205,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->whole_brain,SIGNAL(clicked()),regionWidget,SLOT(whole_brain()));
 
         connect(ui->actionNewRegion,SIGNAL(triggered()),regionWidget,SLOT(new_region()));
+        connect(ui->actionNew_Super_Resolution_Region,SIGNAL(triggered()),regionWidget,SLOT(new_high_resolution_region()));
         connect(ui->actionOpenRegion,SIGNAL(triggered()),regionWidget,SLOT(load_region()));
         connect(ui->actionLoad_From_Atlas,SIGNAL(triggered()),this,SLOT(on_addRegionFromAtlas_clicked()));
         connect(ui->actionSaveRegionAs,SIGNAL(triggered()),regionWidget,SLOT(save_region()));
@@ -541,7 +544,7 @@ float tracking_window::get_scene_zoom(void)
 
 void tracking_window::SliderValueChanged(void)
 {
-    if(current_slice->set_slice_pos(
+    if(!no_update && current_slice->set_slice_pos(
             ui->glSagSlider->value(),
             ui->glCorSlider->value(),
             ui->glAxiSlider->value()))
@@ -675,6 +678,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
 {
     if(index == -1 || !current_slice.get())
         return;
+    no_update = true;
     ui->actionSave_Anisotrpy_Map_as->setText(QString("Save ") +
                                              ui->SliceModality->currentText()+" volume as...");
     ui->actionSave_Anisotrpy_Map_as->setEnabled(ui->SliceModality->currentText() != "color");
@@ -690,21 +694,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     slice_position.round();
     current_slice->slice_pos = slice_position;
 
-    std::pair<float,float> range = current_slice->get_value_range();
-    float r = range.second-range.first;
-    if(r == 0.0)
-        r = 1;
-    float step = r/20.0;
 
-    ui->min_value_gl->setMinimum(range.first-r);
-    ui->min_value_gl->setMaximum(range.second+r);
-    ui->min_value_gl->setSingleStep(step);
-    ui->min_value_gl->setValue(range.first);
-    ui->max_value_gl->setMinimum(range.first-r);
-    ui->max_value_gl->setMaximum(range.second+r);
-    ui->max_value_gl->setSingleStep(step);
-    ui->max_value_gl->setValue(range.second);
-    v2c.set_range(range.first,range.second);
 
 
 
@@ -722,7 +712,22 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     ui->glAxiBox->setValue(slice_position[2]);
     ui->SlicePos->setRange(0,current_slice->geometry[cur_dim]-1);
     ui->SlicePos->setValue(slice_position[cur_dim]);
-    scene.show_slice();
+    no_update = false;
+
+    std::pair<float,float> range = current_slice->get_value_range();
+    float r = range.second-range.first;
+    if(r == 0.0)
+        r = 1;
+    float step = r/20.0;
+    ui->min_value_gl->setMinimum(range.first-r);
+    ui->min_value_gl->setMaximum(range.second+r);
+    ui->min_value_gl->setSingleStep(step);
+    ui->min_value_gl->setValue(range.first);
+    ui->max_value_gl->setMinimum(range.first-r);
+    ui->max_value_gl->setMaximum(range.second+r);
+    ui->max_value_gl->setSingleStep(step);
+    ui->max_value_gl->setValue(range.second);
+    v2c.set_range(range.first,range.second);
 }
 
 void tracking_window::on_actionEndpoints_to_seeding_triggered()

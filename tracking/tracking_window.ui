@@ -738,6 +738,7 @@
     <addaction name="separator"/>
     <addaction name="actionRegion_statistics"/>
     <addaction name="actionSave_Voxel_Data_As"/>
+    <addaction name="actionNew_Super_Resolution_Region"/>
    </widget>
    <widget class="QMenu" name="menuTracts">
     <property name="title">
@@ -3182,6 +3183,15 @@ Tracking</string>
   <action name="actionPosterior">
    <property name="text">
     <string>Posterior</string>
+   </property>
+  </action>
+  <action name="actionNew_Super_Resolution_Region">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/new.xpm</normaloff>:/icons/icons/new.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>New Super Resolution Region</string>
    </property>
   </action>
  </widget>

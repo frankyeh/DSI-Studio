@@ -1108,7 +1108,7 @@ void TractModel::filter_by_roi(RoiMgr& roi_mgr)
             tracts_to_delete.push_back(index);
             continue;
         }
-        if(roi_mgr.exclusive.get())
+        if(!roi_mgr.exclusive.empty())
         {
             for(unsigned int i = 0;i < tract_data[index].size();i+=3)
                 if(roi_mgr.is_excluded_point(image::vector<3,float>(tract_data[index][i],

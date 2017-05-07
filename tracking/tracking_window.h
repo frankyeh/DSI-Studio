@@ -79,7 +79,7 @@ public:
     std::vector<std::shared_ptr<SliceModel> > slices;
     std::shared_ptr<SliceModel> current_slice;
     bool addSlices(QStringList filenames,QString name,bool correct_intensity,bool cmd);
-
+    bool no_update = false;
 public:
     bool eventFilter(QObject *obj, QEvent *event);
     QVariant operator[](QString name)const;

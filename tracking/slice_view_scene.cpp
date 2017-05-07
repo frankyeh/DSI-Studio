@@ -896,10 +896,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         return;
     }
     }
-    if(cur_tracking_window.current_slice->is_diffusion_space)
-        cur_tracking_window.regionWidget->add_points(points,mouseEvent->button() == Qt::RightButton);
-    else
-        cur_tracking_window.regionWidget->add_points(points,cur_tracking_window.current_slice->transform,mouseEvent->button() == Qt::RightButton);
+    cur_tracking_window.regionWidget->add_points(points,mouseEvent->button() == Qt::RightButton);
     need_update();
 }
 

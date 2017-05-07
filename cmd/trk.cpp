@@ -351,7 +351,7 @@ bool load_roi(std::shared_ptr<fib_data> handle,image::basic_image<image::vector<
         ROIRegion roi(handle->dim, handle->vs);
         if(!load_region(handle,roi,po.get(roi_names[index]),mapping))
             return false;
-        roi_mgr.setRegions(handle->dim,roi.get(),type[index],po.get(roi_names[index]).c_str());
+        roi_mgr.setRegions(handle->dim,roi.get(),roi.resolution_ratio,type[index],po.get(roi_names[index]).c_str());
         std::cout << roi_names[index] << "=" << po.get(roi_names[index]) << std::endl;
     }
     return true;
@@ -445,7 +445,7 @@ int trk(void)
         for(image::pixel_index<3> index(geometry);index < geometry.size();++index)
             if(fa0[index.index()] > seed_threshold)
                 seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
-        tracking_thread.roi_mgr.setRegions(geometry,seed,3,"whole brain");
+        tracking_thread.roi_mgr.setRegions(geometry,seed,1.0,3,"whole brain");
     }
 
     if(po.get("thread_count",int(std::thread::hardware_concurrency())) < 1)
