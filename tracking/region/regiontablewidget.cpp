@@ -226,13 +226,13 @@ void RegionTableWidget::draw_region(QImage& qimage)
             if (item(roi_index,0)->checkState() != Qt::Checked)
                 continue;
             unsigned int cur_color = regions[roi_index]->show_region.color;
-            image::par_for(regions[roi_index]->size(),[&](unsigned int index)
+            for(unsigned int index = 0;index < regions[roi_index]->size();++index)
             {
                 regions[roi_index]->getSlicePosition(cur_tracking_window.cur_dim,index, X, Y, Z);
                 if (slice_pos != Z || X < 0 || Y < 0 || X >= qimage.width() || Y >= qimage.height())
-                    return;
+                    continue;
                 qimage.setPixel(X,Y,(unsigned int)qimage.pixel(X,Y) | cur_color);
-            });
+            }
         }
     }
     else
