@@ -85,17 +85,35 @@ bool view_image::eventFilter(QObject *obj, QEvent *event)
     return true;
 }
 
-bool view_image::open(QString file_name)
+bool view_image::open(QStringList file_names)
 {
     gz_nifti nifti;
     image::io::dicom dicom;
     image::io::bruker_2dseq seq;
     gz_mat_read mat;
     data.clear();
-    float vs[3];
+    float vs[3] = {1.0,1.0,1.0};
     QString info;
+    QString file_name = file_names[0];
     begin_prog("loading...");
     check_prog(0,1);
+    if(file_names.size() > 1 && file_name.contains("bmp"))
+    {
+        for(unsigned int i = 0;check_prog(i,file_names.size());++i)
+        {
+            image::color_image I;
+            image::io::bitmap bmp;
+            if(!bmp.load_from_file(file_names[i].toStdString().c_str()))
+                return false;
+            bmp >> I;
+            if(i == 0)
+                data.resize(image::geometry<3>(I.width(),I.height(),file_names.size()));
+            unsigned int pos = i*I.size();
+            for(unsigned int j = 0;j < I.size();++j)
+                data[pos+j] = ((float)I[j].r+(float)I[j].r+(float)I[j].r)/3.0;
+        }
+    }
+    else
     if(nifti.load_from_file(file_name.toLocal8Bit().begin()))
     {
         nifti.toLPS(data);
