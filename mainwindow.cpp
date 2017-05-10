@@ -763,7 +763,7 @@ void MainWindow::on_batch_reconstruction_clicked()
 
 void MainWindow::on_view_image_clicked()
 {
-    QString filename = QFileDialog::getOpenFileName(
+    QStringList filename = QFileDialog::getOpenFileNames(
                                 this,
                                 "Open Image",
                                 ui->workDir->currentText(),
