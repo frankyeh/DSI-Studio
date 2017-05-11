@@ -67,7 +67,7 @@ int vbc_database::run_track(const tracking_data& fib,std::vector<std::vector<flo
     if(!roi_list.empty())
     {
         for(unsigned int index = 0;index < roi_list.size();++index)
-            tracking_thread.roi_mgr.setRegions(fib.dim,roi_list[index],1.0,roi_type[index],"user assigned region");
+            tracking_thread.roi_mgr.setRegions(fib.dim,roi_list[index],roi_r_list[index],roi_type[index],"user assigned region");
     }
     tracking_thread.run(fib,thread_count,count,true);
     tracking_thread.track_buffer.swap(tracks);

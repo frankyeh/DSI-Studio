@@ -119,13 +119,15 @@ public:
 
 class CustomSliceModel : public SliceModel{
 public:
-    image::basic_image<float,3> roi_image;
-    float* roi_image_buf;
     std::string name;
 public:
     std::auto_ptr<std::future<void> > thread;
+
     image::const_pointer_image<float,3> from;
     image::vector<3> from_vs;
+    image::basic_image<float,3> source_buf;
+    image::vector<3> source_buf_vs;
+    float size_ratio = 1.0f;
     image::affine_transform<double> arg_min;
     bool terminated;
     bool ended;
@@ -137,7 +139,6 @@ public:
     void terminate(void);
     void argmin(image::reg::reg_type reg_type);
     void update(void);
-    void update_roi(void);
 
 public:
     image::basic_image<float, 3> source_images;

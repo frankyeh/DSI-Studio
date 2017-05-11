@@ -56,8 +56,15 @@ public:
     void set_whole_brain(ThreadData* data);
     void setROIs(ThreadData* data);
     QString getROIname(void);
+    template<typename value_type>
+    void add_points(std::vector<image::vector<3,value_type> >& points,bool erase,float resolution = 1.0)
+    {
+        if (currentRow() < 0 || currentRow() >= regions.size())
+            return;
+        regions[currentRow()]->add_points(points,erase,resolution);
+    }
 public slots:
-    void draw_region(QImage& image);
+    void draw_region(image::color_image& I);
     void draw_edge(QImage& image,QImage& scaledimage);
     void draw_mosaic_region(QImage& image,unsigned int mosaic_size,unsigned int skip);
     void updateRegions(QTableWidgetItem* item);
@@ -71,7 +78,7 @@ public slots:
     void load_region(void);
     void delete_region(void);
     void delete_all_region(void);
-    void add_points(std::vector<image::vector<3,short> >& points,bool erase);
+
     void check_check_status(int,int);
     void whole_brain(void);
     void show_statistics(void);

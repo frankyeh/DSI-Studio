@@ -392,8 +392,6 @@ void GLWidget::initializeGL()
 }
 void GLWidget::paintGL()
 {
-
-
     glDrawBuffer(GL_BACK);
     int color = get_param("bkg_color");
     qglClearColor(QColor((float)((color & 0x00FF0000) >> 16),
@@ -1635,11 +1633,11 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         v2 -= points[0];
         dis = v1*(dx-slice_dx)+v2*(dy-slice_dy);
         dis -= accumulated_dis;
-        image::vector<3,short> apply_dis(dis);
-        if(apply_dis[0] != 0 || apply_dis[1] != 0 || apply_dis[2] != 0)
+        dis.round();
+        if(dis[0] != 0 || dis[1] != 0 || dis[2] != 0)
         {
-            cur_tracking_window.regionWidget->regions[cur_tracking_window.regionWidget->currentRow()]->shift(apply_dis);
-            accumulated_dis += apply_dis;
+            cur_tracking_window.regionWidget->regions[cur_tracking_window.regionWidget->currentRow()]->shift(dis);
+            accumulated_dis += dis;
             emit region_edited();
         }
         return;

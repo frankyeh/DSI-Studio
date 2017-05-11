@@ -55,6 +55,7 @@ public:// for FDR analysis
     bool terminated = false;
 public:
     std::vector<std::vector<image::vector<3,short> > > roi_list;
+    std::vector<float> roi_r_list;
     std::vector<unsigned char> roi_type;
 public:
     std::vector<std::string> trk_file_names;

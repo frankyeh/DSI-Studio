@@ -813,7 +813,6 @@ void get_track_statistics(const std::vector<TractModel*>& tract_models,
                           const std::vector<std::string>& track_name,
                           std::string& result)
 {
-    std::ostringstream out;
     std::vector<std::vector<std::string> > track_results(tract_models.size());
     image::par_for(tract_models.size(),[&](unsigned int index)
     {
@@ -823,16 +822,12 @@ void get_track_statistics(const std::vector<TractModel*>& tract_models,
         while(std::getline(in,line))
         {
             if(line.find("\t") == std::string::npos)
-            {
-                if(index == 0)
-                    out << line;
                 continue;
-            }
             track_results[index].push_back(line);
         }
     });
 
-    out << std::endl;
+    std::ostringstream out;
     out << "Tract Name\t";
     for(unsigned int index = 0;index < tract_models.size();++index)
         out << track_name[index] << "\t";

@@ -178,6 +178,9 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionAnterior,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
         connect(ui->actionPosterior,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
 
+        connect(ui->actionInsert_T1_T2,SIGNAL(triggered()),this,SLOT(on_addSlices_clicked()));
+
+
     }
     // scene view
     {
@@ -732,7 +735,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
 
 void tracking_window::on_actionEndpoints_to_seeding_triggered()
 {
-    std::vector<image::vector<3,short> >points;
+    std::vector<image::vector<3,float> >points;
 
     if(tractWidget->tract_models.empty())
         return;
@@ -740,20 +743,22 @@ void tracking_window::on_actionEndpoints_to_seeding_triggered()
     regionWidget->add_region(
             tractWidget->item(tractWidget->currentRow(),0)->text()+
             QString(" end points"),roi_id);
-    regionWidget->add_points(points,false);
+    regionWidget->add_points(points,false,1.0);
     scene.show_slice();
     glWidget->updateGL();
 }
 
 void tracking_window::on_actionTracts_to_seeds_triggered()
 {
-    std::vector<image::vector<3,short> >points;
+    std::vector<image::vector<3,float> >points;
     if(tractWidget->tract_models.empty())
         return;
     tractWidget->tract_models[tractWidget->currentRow()]->get_tract_points(points);
+    if(points.size() < 2)
+        return;
     regionWidget->add_region(
             tractWidget->item(tractWidget->currentRow(),0)->text(),roi_id);
-    regionWidget->add_points(points,false);
+    regionWidget->add_points(points,false,1.0);
     scene.show_slice();
     glWidget->updateGL();
 }
@@ -1583,7 +1588,6 @@ void tracking_window::on_actionLoad_mapping_triggered()
     reg_slice->transform = data;
     reg_slice->invT = data;
     reg_slice->invT.inv();
-    reg_slice->update_roi();
     glWidget->updateGL();
 }
 
@@ -1599,15 +1603,15 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool correct_
     if(!reg_slice_ptr->initialize(handle,handle->is_qsdr,files,correct_intensity))
     {
         if(!cmd)
-            QMessageBox::information(this,"Error reading image files",0);
+            QMessageBox::information(this,"DSI Studio","Error reading image files",0);
         return false;
     }
     slices.push_back(new_slice);
     ui->SliceModality->addItem(name);
     handle->view_item.push_back(handle->view_item[0]);
     handle->view_item.back().name = name.toLocal8Bit().begin();
-    handle->view_item.back().image_data = image::make_image(reg_slice_ptr->roi_image_buf,
-                                                            reg_slice_ptr->roi_image.geometry());
+    handle->view_item.back().image_data = image::make_image(&*reg_slice_ptr->source_images.begin(),
+                                                            reg_slice_ptr->source_images.geometry());
     handle->view_item.back().set_scale(reg_slice_ptr->source_images.begin(),reg_slice_ptr->source_images.end());
 
     if(!cmd && !timer2.get())
@@ -1743,7 +1747,7 @@ void tracking_window::on_SlicePos_sliderMoved(int position)
 void tracking_window::on_addSlices_clicked()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
-        this,"Open Images files",QFileInfo(windowTitle()).absolutePath(),"Image files (*.dcm *.hdr *.nii *nii.gz 2dseq);;All files (*)" );
+        this,"Open Images files",QFileInfo(windowTitle()).absolutePath(),"Image files (*.dcm *.hdr *.nii *nii.gz *.bmp 2dseq);;All files (*)" );
     if( filenames.isEmpty())
         return;
     addSlices(filenames,QFileInfo(filenames[0]).baseName(),renderWidget->getData("slice_smoothing").toBool(),false);

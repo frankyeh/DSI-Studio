@@ -27,12 +27,6 @@ public:
 public:
         bool super_resolution = false;
         float resolution_ratio = 1.0;
-public:
-        bool has_back_thread;
-        unsigned int back_thread_id;
-public:
-        bool need_update(void);
-        bool has_thread(void) const{return has_back_thread;}
 public: // rendering options
         RegionModel show_region;
         unsigned char regions_feature;
@@ -40,11 +34,10 @@ public: // rendering options
         ROIRegion(const ROIRegion& rhs,float resolution_ratio_ = 1.0) :
             region(rhs.region), geo(rhs.geo),vs(rhs.vs),super_resolution(resolution_ratio_ != 1.0),
             resolution_ratio(resolution_ratio_),
-            regions_feature(rhs.regions_feature), modified(true),has_back_thread(false)
+            regions_feature(rhs.regions_feature), modified(true)
         {
             show_region = rhs.show_region;
         }
-        ~ROIRegion(void);
         const ROIRegion& operator = (const ROIRegion & rhs) {
             region = rhs.region;
             geo = rhs.geo;
@@ -54,8 +47,6 @@ public: // rendering options
             regions_feature = rhs.regions_feature;
             show_region = rhs.show_region;
             modified = true;
-            has_back_thread = rhs.has_back_thread;
-            back_thread_id = rhs.back_thread_id;
             super_resolution = rhs.super_resolution;
             resolution_ratio = rhs.resolution_ratio;
             return *this;
@@ -69,19 +60,18 @@ public: // rendering options
             std::swap(regions_feature,rhs.regions_feature);
             show_region.swap(rhs.show_region);
             std::swap(modified,rhs.modified);
-            std::swap(has_back_thread,rhs.has_back_thread);
-            std::swap(back_thread_id,rhs.back_thread_id);
             std::swap(super_resolution,rhs.super_resolution);
             std::swap(resolution_ratio,rhs.resolution_ratio);
         }
 
         ROIRegion(const image::geometry<3>& geo_, const image::vector<3>& vs_)
-            : geo(geo_), vs(vs_),has_back_thread(false),modified(false){}
+            : geo(geo_), vs(vs_),modified(false){}
 
         const std::vector<image::vector<3,short> >& get(void) const {return region;}
-        void assign(const std::vector<image::vector<3,short> >& region_)
+        void assign(const std::vector<image::vector<3,short> >& region_,float r)
         {
             region = region_;
+            resolution_ratio = r;
             modified = true;
         }
 
@@ -120,25 +110,25 @@ public:
             float ratio = resolution_ratio/point_resolution;
             if(resolution_ratio > point_resolution)
             {
-                float v_size = (float)point_resolution/(float)resolution_ratio;
+                short limit = std::ceil(ratio);
+                std::vector<image::vector<3,short> > new_points;
+                for(short dz = -limit;dz <= limit;++dz)
+                    for(short dy = -limit;dy <= limit;++dy)
+                        for(short dx = -limit;dx <= limit;++dx)
+                            new_points.push_back(image::vector<3,short>(dx,dy,dz));
 
-                std::vector<image::vector<3,float> > new_points;
-                for(float dz = -0.5;dz <= 0.5;dz += v_size)
-                    for(float dy = -0.5;dy <= 0.5;dy += v_size)
-                        for(float dx = -0.5;dx <= 0.5;dx += v_size)
-                            new_points.push_back(image::vector<3,float>(dx,dy,dz));
 
-                unsigned int total_points = points.size();
-                std::vector<image::vector<3,value_type> > pp(total_points*new_points.size());
-                image::par_for(total_points,[&](int i)
+                std::vector<image::vector<3,value_type> > pp(points.size()*new_points.size());
+                image::par_for(points.size(),[&](int i)
                 {
-                    for(int j = 0;j < new_points.size();++j)
+                    points[i] *= ratio;
+                    points[i].round();
+                    unsigned int pos = i*new_points.size();
+                    for(int j = 0;j < new_points.size();++j)// 1 for skip 0 0 0
                     {
-                        image::vector<3,float> p(new_points[j]);
+                        image::vector<3,short> p(new_points[j]);
                         p += points[i];
-                        p *= ratio;
-                        p.round();
-                        pp[i*new_points.size() + j] = p;
+                        pp[pos + j] = p;
                     }
                 });
                 pp.swap(points);
@@ -176,7 +166,7 @@ public:
         void SaveToFile(const char* FileName,const std::vector<float>& trans);
         bool LoadFromFile(const char* FileName,const std::vector<float>& trans);
         void Flip(unsigned int dimension);
-        void shift(const image::vector<3,short>& dx);
+        void shift(image::vector<3,float> dx);
 
         template<class image_type>
         void LoadFromBuffer(const image_type& from,const image::matrix<4,4,float>& trans)
@@ -223,16 +213,36 @@ public:
             for (image::pixel_index<3>index(mask.geometry());index < mask.size();++index)
                 if (mask[index.index()] != 0)
                     points.push_back(image::vector<3,short>(index.x(), index.y(),index.z()));
-            add_points(points,false,((float)mask.width()/(float)geo[0]));
+            if(mask.width() != geo[0])
+                resolution_ratio = (float)mask.width()/(float)geo[0];
+            region.swap(points);
         }
-        void SaveToBuffer(image::basic_image<unsigned char, 3>& mask,
-                unsigned char value=255);
+        void SaveToBuffer(image::basic_image<unsigned char, 3>& mask,unsigned char value=255);
         void perform(const std::string& action);
-        void getSlicePosition(unsigned char cur_dim,unsigned int pindex, int& x, int& y,int& z);
-
         void makeMeshes(unsigned char smooth);
-        bool has_point(const image::vector<3,short>& point);
-        bool has_points(const std::vector<image::vector<3,short> >& points);
+        template<typename value_type>
+        bool has_point(const image::vector<3,value_type>& point) const
+        {
+            if(resolution_ratio != 1.0)
+            {
+                image::vector<3,short> p(std::round(point[0]*resolution_ratio),
+                                         std::round(point[1]*resolution_ratio),
+                                         std::round(point[2]*resolution_ratio));
+                return std::binary_search(region.begin(),region.end(),p);
+            }
+            image::vector<3,short> p(std::round(point[0]),
+                                     std::round(point[1]),
+                                     std::round(point[2]));
+            return std::binary_search(region.begin(),region.end(),p);
+        }
+        template<typename value_type>
+        bool has_points(const std::vector<image::vector<3,value_type> >& points) const
+        {
+            for(unsigned int index = 0; index < points.size(); ++index)
+                if(has_point(points[index]))
+                    return true;
+            return false;
+        }
         void get_quantitative_data(std::shared_ptr<fib_data> handle,std::vector<std::string>& titles,std::vector<float>& data);
 };
 

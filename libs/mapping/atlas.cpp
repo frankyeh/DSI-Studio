@@ -223,7 +223,7 @@ bool atlas::is_labeled_as(const image::vector<3,float>& mni_space,unsigned int l
         return false;
 
     int offset = get_index(mni_space);
-    if(!offset)
+    if(!offset || offset >= I.size())
         return false;
     if(is_track)
     {

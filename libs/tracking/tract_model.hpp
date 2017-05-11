@@ -97,8 +97,7 @@ public:
 
 
         void get_end_points(std::vector<image::vector<3,float> >& points);
-        void get_end_points(std::vector<image::vector<3,short> >& points);
-        void get_tract_points(std::vector<image::vector<3,short> >& points);
+        void get_tract_points(std::vector<image::vector<3,float> >& points);
 
         size_t get_deleted_track_count(void) const{return deleted_tract_data.size();}
         size_t get_visible_track_count(void) const{return tract_data.size();}
@@ -130,6 +129,7 @@ public:
         bool get_tracts_data(
                 const std::string& index_name,
                 std::vector<std::vector<float> >& data) const;
+        void get_tracts_data(unsigned int index_num,float& mean, float& sd) const;
 public:
 
         void get_passing_list(const std::vector<std::vector<image::vector<3,short> > >& regions,

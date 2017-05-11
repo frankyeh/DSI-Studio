@@ -721,6 +721,7 @@ void group_connectometry::on_run_clicked()
         const char roi_type_name[5][20] = {"region of interst","region of avoidance","ending region","seeding region","terminating region"};
         const char roi_type_name2[5][5] = {"roi","roa","end","seed"};
         vbc->roi_list = roi_list;
+        vbc->roi_r_list = roi_r_list;
         vbc->roi_type.resize(roi_list.size());
         for(unsigned int index = 0;index < roi_list.size();++index)
         {
@@ -749,6 +750,7 @@ void group_connectometry::on_run_clicked()
     else
     {
         vbc->roi_list.clear();
+        vbc->roi_r_list.clear();
         vbc->roi_type.clear();
     }
 
@@ -857,7 +859,9 @@ void group_connectometry::on_missing_data_checked_toggled(bool checked)
     ui->missing_value->setEnabled(checked);
 }
 
-void group_connectometry::add_new_roi(QString name,QString source,std::vector<image::vector<3,short> >& new_roi)
+void group_connectometry::add_new_roi(QString name,QString source,
+                                      const std::vector<image::vector<3,short> >& new_roi,
+                                      float r)
 {
     ui->roi_table->setRowCount(ui->roi_table->rowCount()+1);
     ui->roi_table->setItem(ui->roi_table->rowCount()-1,0,new QTableWidgetItem(name));
@@ -865,6 +869,7 @@ void group_connectometry::add_new_roi(QString name,QString source,std::vector<im
     ui->roi_table->setItem(ui->roi_table->rowCount()-1,2,new QTableWidgetItem(QString::number(0)));
     ui->roi_table->openPersistentEditor(ui->roi_table->item(ui->roi_table->rowCount()-1,2));
     roi_list.push_back(new_roi);
+    roi_r_list.push_back(r);
 }
 
 void group_connectometry::on_load_roi_from_atlas_clicked()
@@ -875,9 +880,10 @@ void group_connectometry::on_load_roi_from_atlas_clicked()
         for(unsigned int i = 0;i < atlas_dialog->roi_list.size();++i)
         {
             std::vector<image::vector<3,short> > new_roi;
-            vbc->handle->get_atlas_roi(atlas_dialog->atlas_index,atlas_dialog->roi_list[i],new_roi);
+            float r;
+            vbc->handle->get_atlas_roi(atlas_dialog->atlas_index,atlas_dialog->roi_list[i],new_roi,r);
             if(!new_roi.empty())
-                add_new_roi(atlas_dialog->roi_name[i].c_str(),atlas_dialog->atlas_name.c_str(),new_roi);
+                add_new_roi(atlas_dialog->roi_name[i].c_str(),atlas_dialog->atlas_name.c_str(),new_roi,r);
         }
     }
 }
@@ -885,6 +891,7 @@ void group_connectometry::on_load_roi_from_atlas_clicked()
 void group_connectometry::on_clear_all_roi_clicked()
 {
     roi_list.clear();
+    roi_r_list.clear();
     ui->roi_table->setRowCount(0);
 }
 
@@ -925,7 +932,7 @@ void group_connectometry::on_load_roi_from_file_clicked()
         QMessageBox::information(this,"Error","The nifti contain no voxel with value greater than 0.",0);
         return;
     }
-    add_new_roi(QFileInfo(file).baseName(),"Local File",new_roi);
+    add_new_roi(QFileInfo(file).baseName(),"Local File",new_roi,1.0);
 }
 
 

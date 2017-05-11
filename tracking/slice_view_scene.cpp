@@ -153,9 +153,12 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
 {
     float display_ratio = cur_tracking_window.get_scene_zoom();
     cur_tracking_window.current_slice->get_slice(slice_image,cur_tracking_window.cur_dim,cur_tracking_window.v2c);
-    QImage qimage((unsigned char*)&*slice_image.begin(),slice_image.width(),slice_image.height(),QImage::Format_RGB32);
     // draw region colors on the image
-    cur_tracking_window.regionWidget->draw_region(qimage);
+    image::color_image slice_image_with_region(slice_image);
+    cur_tracking_window.regionWidget->draw_region(slice_image_with_region);
+    QImage qimage((unsigned char*)&*slice_image_with_region.begin(),slice_image_with_region.width(),slice_image_with_region.height(),QImage::Format_RGB32);
+    // make sure that qimage get a hard copy
+    qimage.setPixel(0,0,qimage.pixel(0,0));
     QImage scaled_image = qimage.scaled(slice_image.width()*display_ratio,slice_image.height()*display_ratio);
     if(cur_tracking_window["roi_outline"].toInt())
         cur_tracking_window.regionWidget->draw_edge(qimage,scaled_image);
@@ -252,6 +255,16 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
     return false;
 }
 
+bool slice_view_scene::to_3d_space_single_slice(float x,float y,image::vector<3,float>& pos)
+{
+    image::geometry<3> geo(cur_tracking_window.current_slice->geometry);
+    if(cur_tracking_window["orientation_convention"].toInt())
+        x = (cur_tracking_window.cur_dim ? geo[0]:geo[1])-x;
+    if(cur_tracking_window.cur_dim != 2)
+        y = geo[2] - y;
+    return cur_tracking_window.current_slice->to3DSpace(cur_tracking_window.cur_dim,x - 0.5f,y - 0.5f,pos[0], pos[1], pos[2]);
+}
+
 bool slice_view_scene::to_3d_space(float x,float y,image::vector<3,float>& pos)
 {
     image::geometry<3> geo(cur_tracking_window.current_slice->geometry);
@@ -259,14 +272,7 @@ bool slice_view_scene::to_3d_space(float x,float y,image::vector<3,float>& pos)
     x /= display_ratio;
     y /= display_ratio;
     if(cur_tracking_window["roi_layout"].toInt() == 0)// single slice
-    {
-        if(cur_tracking_window["orientation_convention"].toInt())
-            x = (cur_tracking_window.cur_dim ? geo[0]:geo[1])-x;
-        if(cur_tracking_window.cur_dim != 2)
-            y = geo[2] - y;
-        return cur_tracking_window.current_slice->to3DSpace(cur_tracking_window.cur_dim,x - 0.5f,y - 0.5f,pos[0], pos[1], pos[2]);
-    }
-    else
+        return to_3d_space_single_slice(x,y,pos);
     if(cur_tracking_window["roi_layout"].toInt() == 1)// 3 slice
     {
 
@@ -331,28 +337,24 @@ bool slice_view_scene::to_3d_space(float x,float y,image::vector<3,float>& pos)
             cur_tracking_window.cur_dim = new_dim;
         }
 
-        if(cur_tracking_window["orientation_convention"].toInt())
-            x = (cur_tracking_window.cur_dim ? geo[0]:geo[1])-x;
-        if(cur_tracking_window.cur_dim != 2)
-            y = geo[2] - y;
-        return cur_tracking_window.current_slice->to3DSpace(cur_tracking_window.cur_dim,x - 0.5f,y - 0.5f,pos[0], pos[1], pos[2]);
+        return to_3d_space_single_slice(x,y,pos);
     }
-    else
-    {
-        if(cur_tracking_window["orientation_convention"].toInt())
-            return false;
-        pos[0] = x*(float)mosaic_size;
-        pos[1] = y*(float)mosaic_size;
-        pos[2] = std::floor(pos[1]/geo[1])*mosaic_size +
-                 std::floor(pos[0]/geo[0]);
-        pos[0] -= std::floor(pos[0]/geo[0])*geo[0];
-        pos[1] -= std::floor(pos[1]/geo[1])*geo[1];
-    }
+    // mosaic
+    if(cur_tracking_window["orientation_convention"].toInt())
+        return false;
+    pos[0] = x*(float)mosaic_size;
+    pos[1] = y*(float)mosaic_size;
+    pos[2] = std::floor(pos[1]/geo[1])*mosaic_size +
+             std::floor(pos[0]/geo[0]);
+    pos[0] -= std::floor(pos[0]/geo[0])*geo[0];
+    pos[1] -= std::floor(pos[1]/geo[1])*geo[1];
     return geo.is_valid(pos);
 }
 
 void slice_view_scene::show_slice(void)
 {
+    if(no_show)
+        return;
     float display_ratio = cur_tracking_window.get_scene_zoom();
 
     if(cur_tracking_window["roi_layout"].toInt() == 0)// single slice
@@ -509,29 +511,14 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         sel_coord.clear();
     }
 
-    int x, y, z;
+    image::vector<3,float> pos;
     float Y = mouseEvent->scenePos().y();
     float X = mouseEvent->scenePos().x();
     float display_ratio = cur_tracking_window.get_scene_zoom();
 
     image::geometry<3> geo(cur_tracking_window.current_slice->geometry);
-
-
-    {
-        image::vector<3,float> pos;
-        unsigned char old_dim = cur_tracking_window.cur_dim;
-        if(!to_3d_space(X,Y,pos))
-            return;
-        x = std::round(pos[0]);
-        y = std::round(pos[1]);
-        z = std::round(pos[2]);
-        if(old_dim != cur_tracking_window.cur_dim)
-        {
-            sel_point.clear();
-            sel_coord.clear();
-        }
-    }
-
+    if(!to_3d_space(X,Y,pos))
+        return;
     if(cur_tracking_window["roi_layout"].toInt() == 1)
     {
         if(cur_tracking_window["orientation_convention"].toInt())
@@ -549,16 +536,18 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     if(sel_mode == 5)// move object
     {
         bool find_region = false;
-        image::vector<3,short> cur_point(x, y, z);
+        image::vector<3,float> p(pos);
+        if(!cur_tracking_window.current_slice->is_diffusion_space)
+            p.to(cur_tracking_window.current_slice->transform);
         for(unsigned int index = 0;index <
             cur_tracking_window.regionWidget->regions.size();++index)
             if(cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked &&
-               cur_tracking_window.regionWidget->regions[index]->has_point(cur_point))
+               cur_tracking_window.regionWidget->regions[index]->has_point(p))
             {
                 find_region = true;
                 cur_tracking_window.regionWidget->selectRow(index);
                 std::vector<image::vector<3,short> > dummy;
-                cur_tracking_window.regionWidget->regions[index]->add_points(dummy,true); // create a undo point
+                cur_tracking_window.regionWidget->add_points(dummy,true); // create a undo point
                 break;
             }
         if(!find_region)
@@ -573,7 +562,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
             sel_coord.clear();
         }
         sel_point.push_back(image::vector<2,short>(X, Y));
-        sel_coord.push_back(image::vector<3,short>(x, y, z));
+        sel_coord.push_back(pos);
     }
 
     switch (sel_mode)
@@ -583,7 +572,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     case 3:
     case 4:
     case 6:
-        sel_coord.push_back(image::vector<3,short>(x, y, z));
+        sel_coord.push_back(pos);
         sel_point.push_back(image::vector<2,short>(X, Y));
         break;
     default:
@@ -611,18 +600,10 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 
     cX = X;
     cY = Y;
-    int x, y, z;
+    image::vector<3,float> pos;
     if (!mouse_down || sel_mode == 4)
         return;
-
-    {
-        image::vector<3> pos;
-        to_3d_space(cX,cY,pos);
-        x = std::round(pos[0]);
-        y = std::round(pos[1]);
-        z = std::round(pos[2]);
-    }
-
+    to_3d_space(cX,cY,pos);
     if(cur_tracking_window["roi_layout"].toInt() == 1)
     {
         if(cur_tracking_window["orientation_convention"].toInt())
@@ -639,13 +620,25 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 
     if(sel_mode == 5 && !cur_tracking_window.regionWidget->regions.empty()) // move object
     {
-        image::vector<3,short> cur_point(x, y, z);
-        if(!sel_coord.empty() && cur_point != sel_coord.back())
+        if(!sel_coord.empty() && pos != sel_coord.back())
         {
-            cur_point -= sel_coord.back();
-            cur_tracking_window.regionWidget->regions[cur_tracking_window.regionWidget->currentRow()]->shift(cur_point);
-            sel_coord.back() += cur_point;
-            emit need_update();
+            image::vector<3,float> p1(pos),p2(sel_coord.back());
+            if(!cur_tracking_window.current_slice->is_diffusion_space)
+            {
+                p1.to(cur_tracking_window.current_slice->transform);
+                p2.to(cur_tracking_window.current_slice->transform);
+            }
+            p1 -= p2;
+            p1.round();
+            if(p1.length() != 0)
+            {
+                cur_tracking_window.regionWidget->regions[cur_tracking_window.regionWidget->currentRow()]->shift(p1);
+                p1.to(cur_tracking_window.current_slice->invT);
+                image::vector<3> zero;
+                zero.to(cur_tracking_window.current_slice->invT);
+                sel_coord.back() += p1-zero;
+                emit need_update();
+            }
         }
         return;
     }
@@ -667,7 +660,7 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 
     if(sel_mode == 6) // ruler
     {
-        sel_coord.back() = image::vector<3,short>(x, y, z);
+        sel_coord.back() = pos;
         sel_point.back() = image::vector<2,short>(X, Y);
         QPainter paint(&annotated_image);
         show_ruler(paint);
@@ -682,11 +675,11 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     {
     case 0: // draw rectangle
         paint.drawRect(X, Y, sel_point.front()[0]-X,sel_point.front()[1]-Y);
-        sel_coord.back() = image::vector<3,short>(x, y, z);
+        sel_coord.back() = pos;
         sel_point.back() = image::vector<2,short>(X, Y);
         break;
     case 1: //free hand
-        sel_coord.push_back(image::vector<3,short>(x, y, z));
+        sel_coord.push_back(pos);
         sel_point.push_back(image::vector<2,short>(X, Y));
 
         for (unsigned int index = 1; index < sel_point.size(); ++index)
@@ -698,7 +691,7 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         int dy = Y - sel_point.front()[1];
         int dis = std::sqrt((double)(dx * dx + dy * dy));
         paint.drawEllipse(QPoint(sel_point.front()[0],sel_point.front()[1]),dis,dis);
-        sel_coord.back() = image::vector<3,short>(x, y, z);
+        sel_coord.back() = pos;
         sel_point.back() = image::vector<2,short>(X, Y);
     }
     break;
@@ -709,7 +702,7 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         int dis = std::sqrt((double)(dx * dx + dy * dy));
         paint.drawRect(sel_point.front()[0] - dis,
                         sel_point.front()[1] - dis, dis*2, dis*2);
-        sel_coord.back() = image::vector<3,short>(x, y, z);
+        sel_coord.back() = pos;
         sel_point.back() = image::vector<2,short>(X, Y);
     }
     break;
@@ -738,29 +731,29 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 
 void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {
-    if(cur_tracking_window["roi_layout"].toInt() > 1)
-        return;
-
     if (!mouse_down && !mid_down)
         return;
+    mouse_down = false;
     if(mid_down || sel_mode == 5)
     {
+        sel_point.clear();
+        sel_coord.clear();
         mid_down = false;
         return;
     }
-    mouse_down = false;
+
     image::geometry<3> geo(cur_tracking_window.current_slice->geometry);
     float display_ratio = cur_tracking_window.get_scene_zoom();
 
 
-    std::vector<image::vector<3,short> >points;
+    std::vector<image::vector<3,float> >points;
     switch (sel_mode)
     {
     case 0: // rectangle
     {
         if (sel_coord.size() < 2)
             return;
-        image::vector<3,short>min_cood, max_cood;
+        image::vector<3,float> min_cood, max_cood;
         for (unsigned int i = 0; i < 3; ++i)
             if (sel_coord[0][i] > sel_coord[1][i])
             {
@@ -772,11 +765,12 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
                 max_cood[i] = sel_coord[1][i];
                 min_cood[i] = sel_coord[0][i];
             }
-        for (int z = min_cood[2]; z <= max_cood[2]; ++z)
-            for (int y = min_cood[1]; y <= max_cood[1]; ++y)
-                for (int x = min_cood[0]; x <= max_cood[0]; ++x)
+        float dis = 1.0f/display_ratio;
+        for (float z = min_cood[2]; z <= max_cood[2]; z += dis)
+            for (float y = min_cood[1]; y <= max_cood[1]; y += dis)
+                for (float x = min_cood[0]; x <= max_cood[0]; x += dis)
                     if (cur_tracking_window.current_slice->geometry.is_valid(x, y, z))
-                        points.push_back(image::vector<3,short>(x, y, z));
+                        points.push_back(image::vector<3,float>(x, y, z));
     }
     break;
     case 1: //free hand
@@ -787,30 +781,26 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
             break;
         }
         {
-            QImage bitmap(cur_tracking_window.cur_dim == 0 ? geo[1]:geo[0],
-                          cur_tracking_window.cur_dim != 2 ? geo[2]:geo[1],QImage::Format_Mono);
+            QImage bitmap(slice_image.width()*display_ratio,slice_image.height()*display_ratio,QImage::Format_Mono);
             QPainter paint(&bitmap);
             paint.setBrush(Qt::black);
             paint.drawRect(0,0,bitmap.width(),bitmap.height());
             paint.setBrush(Qt::white);
             std::vector<QPoint> qpoints(sel_point.size());
             for(unsigned int index = 0;index < sel_point.size();++index)
-                qpoints[index] = QPoint(
-                            !cur_tracking_window["orientation_convention"].toInt() ?
-                                sel_point[index][0]/display_ratio:(cur_tracking_window.cur_dim ? geo[0]:geo[1]) - sel_point[index][0]/display_ratio,
-                            cur_tracking_window.cur_dim == 2 ?
-                                sel_point[index][1]/display_ratio:geo[2] - sel_point[index][1]/display_ratio);
+                qpoints[index] = QPoint(sel_point[index][0],sel_point[index][1]);
             paint.drawPolygon(&*qpoints.begin(),qpoints.size() - 1);
             image::geometry<2> geo2(bitmap.width(),bitmap.height());
-            int x, y, z;
             for (image::pixel_index<2>index(geo2); index < geo2.size();++index)
             {
+                image::vector<3,float> pos;
                 if (QColor(bitmap.pixel(index.x(),index.y())).red() < 64
-                    || !cur_tracking_window.current_slice->to3DSpace(cur_tracking_window.cur_dim,
-                                                                     index.x(),index.y(),x, y, z))
+                    || !to_3d_space_single_slice((float)index.x()/display_ratio,(float)index.y()/display_ratio,pos))
                     continue;
-                points.push_back(image::vector<3,short>(x, y, z));
+                points.push_back(pos);
             }
+            sel_point.clear();
+            sel_coord.clear();
         }
     }
     break;
@@ -818,18 +808,19 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     {
         if (sel_coord.size() < 2)
             return;
-        int dx = sel_coord[1][0] - sel_coord[0][0];
-        int dy = sel_coord[1][1] - sel_coord[0][1];
-        int dz = sel_coord[1][2] - sel_coord[0][2];
-        int distance2 = (dx * dx + dy * dy + dz * dz);
-        int dis = std::sqrt((double)distance2);
-        for (int z = -dis; z <= dis; ++z)
-            for (int y = -dis; y <= dis; ++y)
-                for (int x = -dis; x <= dis; ++x)
+        float dx = sel_coord[1][0] - sel_coord[0][0];
+        float dy = sel_coord[1][1] - sel_coord[0][1];
+        float dz = sel_coord[1][2] - sel_coord[0][2];
+        float distance2 = (dx * dx + dy * dy + dz * dz);
+        float dis = std::sqrt((double)distance2);
+        float interval = 1.0f/(std::min<float>(16.0,display_ratio));
+        for (float z = -dis; z <= dis; z += interval)
+            for (float y = -dis; y <= dis; y += interval)
+                for (float x = -dis; x <= dis; x += interval)
                     if (cur_tracking_window.current_slice->geometry.is_valid(sel_coord[0][0] + x,
                                                  sel_coord[0][1] + y, sel_coord[0][2] + z) && x*x +
                             y*y + z*z <= distance2)
-                        points.push_back(image::vector<3,short>(sel_coord[0][0] + x,
+                        points.push_back(image::vector<3,float>(sel_coord[0][0] + x,
                                             sel_coord[0][1] + y, sel_coord[0][2] + z));
     }
     break;
@@ -837,15 +828,16 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     {
         if (sel_coord.size() < 2)
             return;
-        int dx = sel_coord[1][0] - sel_coord[0][0];
-        int dy = sel_coord[1][1] - sel_coord[0][1];
-        int dz = sel_coord[1][2] - sel_coord[0][2];
-        int distance2 = (dx * dx + dy * dy + dz * dz);
-        int dis = std::sqrt((double)distance2);
-        for (int z = -dis; z <= dis; ++z)
-            for (int y = -dis; y <= dis; ++y)
-                for (int x = -dis; x <= dis; ++x)
-                    points.push_back(image::vector<3,short>(sel_coord[0][0] + x,
+        float dx = sel_coord[1][0] - sel_coord[0][0];
+        float dy = sel_coord[1][1] - sel_coord[0][1];
+        float dz = sel_coord[1][2] - sel_coord[0][2];
+        float distance2 = (dx * dx + dy * dy + dz * dz);
+        float dis = std::sqrt((double)distance2);
+        float interval = 1.0f/(std::min<float>(16.0,display_ratio));
+        for (float z = -dis; z <= dis; z += interval)
+            for (float y = -dis; y <= dis; y += interval)
+                for (float x = -dis; x <= dis; x += interval)
+                    points.push_back(image::vector<3,float>(sel_coord[0][0] + x,
                                                         sel_coord[0][1] + y, sel_coord[0][2] + z));
 
     }
@@ -896,7 +888,27 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         return;
     }
     }
-    cur_tracking_window.regionWidget->add_points(points,mouseEvent->button() == Qt::RightButton);
+
+    float resolution = display_ratio;
+    if(!cur_tracking_window.current_slice->is_diffusion_space)
+    {
+        // resolution difference between DWI and current slices;
+        resolution = std::min<float>(16.0f,display_ratio*std::floor(cur_tracking_window.handle->vs[0]/cur_tracking_window.current_slice->voxel_size[0]));
+        image::par_for(points.size(),[&](int index)
+        {
+            points[index].to(cur_tracking_window.current_slice->transform);
+            points[index] *= resolution;
+        });
+    }
+    else
+    {
+        image::par_for(points.size(),[&](int index)
+        {
+            points[index] *= resolution;
+        });
+    }
+
+    cur_tracking_window.regionWidget->add_points(points,mouseEvent->button() == Qt::RightButton,resolution);
     need_update();
 }
 

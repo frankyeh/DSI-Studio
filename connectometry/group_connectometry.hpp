@@ -40,13 +40,15 @@ class group_connectometry : public QDialog
 private:
     std::auto_ptr<connectometry_result> result_fib;
     void show_dis_table(void);
-    void add_new_roi(QString name,QString source,std::vector<image::vector<3,short> >& new_roi);
+    void add_new_roi(QString name,QString source,const std::vector<image::vector<3,short> >& new_roi,float r);
 public:
     bool gui;
     QString work_dir;
     std::vector<std::string> file_names;
 public:
     std::vector<std::vector<image::vector<3,short> > > roi_list;
+    std::vector<float> roi_r_list;
+
 public:
     std::shared_ptr<vbc_database> vbc;
     std::auto_ptr<stat_model> model;

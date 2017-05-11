@@ -138,7 +138,7 @@ public:
     void run_normalization(int factor,bool background);
     void subject2mni(image::vector<3>& pos);
     void subject2mni(image::pixel_index<3>& index,image::vector<3>& pos);
-    void get_atlas_roi(int atlas_index,int roi_index,std::vector<image::vector<3,short> >& points);
+    void get_atlas_roi(int atlas_index,int roi_index,std::vector<image::vector<3,short> >& points,float& r);
     void get_mni_mapping(image::basic_image<image::vector<3,float>,3 >& mni_position);
     bool has_reg(void)const{return thread.has_started();}
     void get_profile(const std::vector<float>& tract_data,

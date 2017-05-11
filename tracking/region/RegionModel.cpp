@@ -50,63 +50,65 @@ void RegionModel::sortIndices(void)
 }
 
 
-// ---------------------------------------------------------------------------
+
+
 bool RegionModel::load(const std::vector<image::vector<3,short> >& seeds, double scale,unsigned char smooth)
 {
     if(seeds.empty())
         return false;
     image::vector<3,short> max_value(seeds[0]), min_value(seeds[0]);
-    for (unsigned int index = 0; index < seeds.size(); ++index)
-        for (unsigned int dim = 0; dim < 3; ++dim)
-            if (seeds[index][dim] > max_value[dim])
-                max_value[dim] = seeds[index][dim];
-            else if (seeds[index][dim] < min_value[dim])
-                min_value[dim] = seeds[index][dim];
+    image::bounding_box_mt(seeds,max_value,min_value);
     max_value += image::vector<3,short>(5, 5, 5);
     min_value -= image::vector<3,short>(5, 5, 5);
-    image::basic_image<unsigned char, 3>buffer
-    (image::geometry<3>(max_value[0] - min_value[0],
-                        max_value[1] - min_value[1], max_value[2] - min_value[2]));
 
-    for (unsigned int index = 0; index < seeds.size(); ++index)
+    image::geometry<3> geo(max_value[0] - min_value[0],
+            max_value[1] - min_value[1], max_value[2] - min_value[2]);
+    float cur_scale = 1.0;
+    while(geo.width() > 256 || geo.height() > 256 || geo.depth() > 256)
+    {
+        cur_scale *= 2.0;
+        geo[0] /= 2.0;
+        geo[1] /= 2.0;
+        geo[2] /= 2.0;
+    }
+
+
+    image::basic_image<unsigned char, 3>buffer(geo);
+    image::par_for(seeds.size(),[&](unsigned int index)
     {
         image::vector<3,short> point(seeds[index]);
         point -= min_value;
+        point /= cur_scale;
         buffer[image::pixel_index<3>(point[0], point[1], point[2],
                                      buffer.geometry()).index()] = 200;
-    }
-    float cur_scale = 1.0;
-    while(buffer.width() > 256 || buffer.height() > 256 || buffer.depth() > 256)
-    {
-        cur_scale *= 2.0;
-        image::downsampling(buffer);
-    }
+    });
 
-    if(smooth >= 1)
+
+    while(smooth)
+    {
         image::filter::mean(buffer);
-    if(smooth >= 2)
-        image::filter::mean(buffer);
+        --smooth;
+    }
 
     object.reset(new image::march_cube<image::vector<3,float> >(buffer, 20));
-
-    if (cur_scale != 1.0)
-        for (unsigned int index = 0; index < object->point_list.size(); ++index)
-            object->point_list[index] *= cur_scale;
-
-    image::vector<3,float>shift(min_value);
     if (object->point_list.empty())
-        object.reset(0);
-    else
     {
-        for (unsigned int index = 0; index < object->point_list.size(); ++index)
-            object->point_list[index] += shift;
-        sortIndices();
+        object.reset(0);
+        return 0;
     }
-    if (object.get() && scale != 1.0)
-        for (unsigned int index = 0; index < object->point_list.size(); ++index)
-            object->point_list[index]/= scale;
-
-
+    image::vector<3,float>shift(min_value);
+    if (scale != 1.0)
+    {
+        cur_scale /= scale;
+        shift /= scale;
+    }
+    image::par_for(object->point_list.size(),[&](unsigned int index)
+    {
+        if (cur_scale != 1.0)
+            object->point_list[index] *= cur_scale;
+        object->point_list[index] += shift;
+    });
+    sortIndices();
     return object.get();
 }
 
