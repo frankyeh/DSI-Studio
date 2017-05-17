@@ -397,7 +397,7 @@
          <x>0</x>
          <y>0</y>
          <width>329</width>
-         <height>477</height>
+         <height>524</height>
         </rect>
        </property>
        <attribute name="label">
@@ -445,9 +445,16 @@
          </widget>
         </item>
         <item>
-         <widget class="QCommandLinkButton" name="rigid_body_reg">
+         <widget class="QCommandLinkButton" name="linear_reg">
           <property name="text">
-           <string>Registration Toolbox</string>
+           <string>Linear Registration Toolbox</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="nonlinear_reg">
+          <property name="text">
+           <string>Nonlinear Registration Toolbox</string>
           </property>
           <property name="description">
            <string>Spatially transform images (testing)</string>

@@ -47,7 +47,6 @@ private slots:
     void on_view_image_clicked();
     void on_workDir_currentTextChanged(const QString &arg1);
     void on_bruker_browser_clicked();
-    void on_rigid_body_reg_clicked();
     void on_individual_connectometry_clicked();
     void on_open_db_clicked();
     void on_group_connectometry_clicked();
@@ -55,6 +54,8 @@ private slots:
     void on_run_cmd_clicked();
     void on_set_dir_clicked();
     void on_ReconstructSRC_clicked();
+    void on_linear_reg_clicked();
+    void on_nonlinear_reg_clicked();
 };
 
 #endif // MAINWINDOW_H
