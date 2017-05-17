@@ -155,10 +155,10 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->glCorCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(updateGL()));
         connect(ui->glAxiCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(updateGL()));
 
-        connect(ui->min_value_gl,SIGNAL(valueChanged(double)),glWidget,SLOT(updateGL()));
-        connect(ui->max_value_gl,SIGNAL(valueChanged(double)),glWidget,SLOT(updateGL()));
-        connect(ui->min_value_gl,SIGNAL(valueChanged(double)),&scene,SLOT(show_slice()));
-        connect(ui->max_value_gl,SIGNAL(valueChanged(double)),&scene,SLOT(show_slice()));
+        connect(ui->min_value_gl,SIGNAL(valueChanged(double)),this,SLOT(on_change_contrast()));
+        connect(ui->max_value_gl,SIGNAL(valueChanged(double)),this,SLOT(on_change_contrast()));
+        connect(ui->max_color_gl,SIGNAL(clicked()),this,SLOT(on_change_contrast()));
+        connect(ui->min_color_gl,SIGNAL(clicked()),this,SLOT(on_change_contrast()));
 
         connect(ui->actionSave_Screen,SIGNAL(triggered()),glWidget,SLOT(catchScreen()));
         connect(ui->actionSave_3D_screen_in_high_resolution,SIGNAL(triggered()),glWidget,SLOT(catchScreen2()));
@@ -731,6 +731,14 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     ui->max_value_gl->setSingleStep(step);
     ui->max_value_gl->setValue(range.second);
     v2c.set_range(range.first,range.second);
+}
+void tracking_window::on_change_contrast()
+{
+    v2c.set_range(ui->min_value_gl->value(),ui->max_value_gl->value());
+    v2c.two_color(ui->min_color_gl->color().rgb(),ui->max_color_gl->color().rgb());
+    glWidget->slice_pos[0] = glWidget->slice_pos[1] = glWidget->slice_pos[2] = -1;
+    glWidget->updateGL();
+    scene.show_slice();
 }
 
 void tracking_window::on_actionEndpoints_to_seeding_triggered()
@@ -1660,7 +1668,8 @@ void tracking_window::on_actionLoad_Color_Map_triggered()
           return;
     }
     v2c.set_color_map(new_color_map);
-    glWidget->update_slice();
+    glWidget->slice_pos[0] = glWidget->slice_pos[1] = glWidget->slice_pos[2] = -1;
+    glWidget->updateGL();
     scene.show_slice();
 }
 

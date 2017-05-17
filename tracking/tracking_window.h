@@ -169,6 +169,7 @@ private slots:
     void on_actionSingle_triggered();
     void on_actionDouble_triggered();
     void on_actionStereoscopic_triggered();
+    void on_change_contrast();
 };
 
 #endif // TRACKING_WINDOW_H

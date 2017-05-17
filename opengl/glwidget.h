@@ -114,11 +114,6 @@ protected:
      unsigned char odf_position;
      unsigned char odf_skip;
      float odf_scale;
-     float slice_min_value;
-     float slice_max_value;
-     image::rgb_color slice_min_color;
-     image::rgb_color slice_max_color;
-     unsigned char slice_index;
  public:
      GLuint tracts,slice_texture[3];
      int slice_pos[3];
@@ -127,7 +122,6 @@ protected:
      enum class view_mode_type { single, two, stereo} view_mode;
 
      bool set_view_flip;
-     void update_slice(void){slice_index = 255;}
      void get3View(QImage& I,unsigned int type);
      bool command(QString cmd,QString param = "",QString param2 = "");
  };

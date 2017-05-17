@@ -670,27 +670,7 @@ void GLWidget::renderLR()
 
         std::vector<image::vector<3,float> > points(4);
 
-        if(cur_tracking_window.ui->min_value_gl->value() != slice_min_value ||
-           cur_tracking_window.ui->max_value_gl->value() != slice_max_value ||
-            slice_index != cur_tracking_window.ui->SliceModality->currentIndex())
-        {
-            slice_min_value = cur_tracking_window.ui->min_value_gl->value();
-            slice_max_value = cur_tracking_window.ui->max_value_gl->value();
-            cur_tracking_window.v2c.set_range(slice_min_value,slice_max_value);
 
-            slice_index = cur_tracking_window.ui->SliceModality->currentIndex();
-            slice_pos[0] = slice_pos[1] = slice_pos[2] = -1;
-        }
-        if(
-            cur_tracking_window.ui->min_color_gl->color().rgb() != slice_min_color.color ||
-            cur_tracking_window.ui->max_color_gl->color().rgb() != slice_max_color.color)
-        {
-            slice_min_color = cur_tracking_window.ui->min_color_gl->color().rgb();
-            slice_max_color = cur_tracking_window.ui->max_color_gl->color().rgb();
-
-            cur_tracking_window.v2c.two_color(slice_min_color,slice_max_color);
-            slice_pos[0] = slice_pos[1] = slice_pos[2] = -1;
-        }
 
         bool show_slice[3];
         show_slice[0] = cur_tracking_window.ui->glSagCheck->checkState();
