@@ -1077,7 +1077,7 @@ void reconstruction_window::on_add_t1t2_clicked()
 void reconstruction_window::on_actionManual_Rotation_triggered()
 {
     std::auto_ptr<manual_alignment> manual(
-                new manual_alignment(this,dwi,handle->voxel.vs,dwi,handle->voxel.vs,image::reg::none,image::reg::cost_type::mutual_info));
+                new manual_alignment(this,dwi,handle->voxel.vs,dwi,handle->voxel.vs,image::reg::rigid_body,image::reg::cost_type::mutual_info));
 
     if(manual->exec() != QDialog::Accepted)
         return;

@@ -221,6 +221,7 @@ void RegToolBox::on_run_reg_clicked()
         {
             image::reg::reg_type linear_type[2] = { image::reg::rigid_body,image::reg::affine};
             image::reg::linear_mr(It,Itvs,I,Ivs,linear_reg,linear_type[ui->linear_type->currentIndex()],image::reg::mutual_information_mt(),thread.terminated);
+            image::reg::linear_mr(It,Itvs,I,Ivs,linear_reg,linear_type[ui->linear_type->currentIndex()],image::reg::mutual_information_mt(),thread.terminated);
             J2.resize(It.geometry());
             image::resample_mt(I,J2,image::transformation_matrix<double>(linear_reg,It.geometry(),Itvs,I.geometry(),Ivs),image::cubic);
             J = J2;
