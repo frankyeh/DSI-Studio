@@ -1,3 +1,4 @@
+#include <QFileDialog>
 #include "manual_alignment.h"
 #include "ui_manual_alignment.h"
 #include "tracking/tracking_window.h"
@@ -12,55 +13,27 @@ manual_alignment::manual_alignment(QWidget *parent,
                                    const image::vector<3>& from_vs_,
                                    image::basic_image<float,3> to_,
                                    const image::vector<3>& to_vs_,
-                                   image::reg::reg_type reg_type_,
-                                   image::reg::cost_type cost_function_) :
-    QDialog(parent),ui(new Ui::manual_alignment),from_vs(from_vs_),to_vs(to_vs_),
-        reg_type(reg_type_),cost_function(cost_function_),timer(0)
+                                   image::reg::reg_type reg_type,
+                                   image::reg::cost_type cost_function) :
+    QDialog(parent),ui(new Ui::manual_alignment),from_vs(from_vs_),to_vs(to_vs_),timer(0)
 {
+    from_original = from_;
     from.swap(from_);
     to.swap(to_);
     image::normalize(from,1.0);
     image::normalize(to,1.0);
-    if(reg_type == image::reg::none) // manuall rotation
-    {
-        data.from_geo = from.geometry();
-        data.from_vs = from_vs;
-        data.to_geo = to.geometry();
-        data.to_vs = to_vs;
-        image::reg::get_bound(from,to,data.get_arg(),b_upper,b_lower,image::reg::rigid_body);
-        b_upper.rotation[0] *= 2;
-        b_upper.rotation[1] *= 2;
-        b_upper.rotation[2] *= 2;
-        b_lower.rotation[0] *= 2;
-        b_lower.rotation[1] *= 2;
-        b_lower.rotation[2] *= 2;
-    }
-    else
-    {
-        image::reg::get_bound(from,to,data.get_arg(),b_upper,b_lower,reg_type_);
-        thread.run([this]()
-        {
-            data.run_reg(from,from_vs,to,to_vs,1,cost_function,reg_type,thread.terminated);
-        });
+    data.from_geo = from.geometry();
+    data.from_vs = from_vs;
+    data.to_geo = to.geometry();
+    data.to_vs = to_vs;
+    image::reg::get_bound(from,to,data.get_arg(),b_upper,b_lower,reg_type);
 
-    }
+
     ui->setupUi(this);
-    if(reg_type_ == image::reg::rigid_body)
-    {
-        ui->scaling_group->hide();
-        ui->tilting_group->hide();
-        ui->nl_group_box->hide();
-    }
-    if(!reg_type_)
-    {
-        ui->blend_pos->setValue(0);
-        ui->scaling_group->hide();
-        ui->tilting_group->hide();
-        ui->rerun->hide();
-        ui->blend_pos->hide();
-        ui->switch_view->hide();
-        ui->label_13->hide();
-    }
+    ui->reg_type->setCurrentIndex(reg_type == image::reg::rigid_body? 0: 1);
+    ui->cost_type->setCurrentIndex(cost_function == image::reg::mutual_info ? 1 : 0);
+
+
     ui->sag_view->setScene(&scene[0]);
     ui->cor_view->setScene(&scene[1]);
     ui->axi_view->setScene(&scene[2]);
@@ -79,23 +52,22 @@ manual_alignment::manual_alignment(QWidget *parent,
     ui->axi_slice_pos->setMinimum(0);
     ui->axi_slice_pos->setValue(to.geometry()[2] >> 1);
 
+
+
     connect_arg_update();
     connect(ui->sag_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(ui->cor_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(ui->axi_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(ui->blend_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
 
-    if(reg_type_)
-    {
-        timer = new QTimer(this);
-        timer->setInterval(1000);
-        connect(timer, SIGNAL(timeout()), this, SLOT(check_reg()));
-    }
-    else
-    {
-        update_image();
-        slice_pos_moved();
-    }
+    timer = new QTimer(this);
+    timer->stop();
+    timer->setInterval(1000);
+    connect(timer, SIGNAL(timeout()), this, SLOT(check_reg()));
+
+    update_image();
+    slice_pos_moved();
+
 }
 
 
@@ -267,7 +239,6 @@ void manual_alignment::check_reg()
         ui->xz->setValue(data.get_arg().affine[1]);
         ui->yz->setValue(data.get_arg().affine[2]);
         connect_arg_update();
-        ui->nl_progress_bar->setValue(data.get_prog());
         update_image();
     }
     slice_pos_moved();
@@ -285,6 +256,7 @@ void manual_alignment::on_buttonBox_accepted()
 
 void manual_alignment::on_buttonBox_rejected()
 {
+    thread.terminated = true;
     if(timer)
         timer->stop();
 }
@@ -293,7 +265,9 @@ void manual_alignment::on_rerun_clicked()
 {
     thread.run([this]()
     {
-        data.run_reg(from,from_vs,to,to_vs,1,cost_function,reg_type,thread.terminated);
+        data.run_reg(from,from_vs,to,to_vs,1,
+                     ui->cost_type->currentIndex() == 0 ? image::reg::corr : image::reg::mutual_info,
+                     ui->reg_type->currentIndex() == 0 ? image::reg::rigid_body : image::reg::affine,thread.terminated);
     });
     if(timer)
         timer->start();
@@ -303,4 +277,36 @@ void manual_alignment::on_rerun_clicked()
 void manual_alignment::on_switch_view_clicked()
 {
     ui->blend_pos->setValue(ui->blend_pos->value() > ui->blend_pos->maximum()/2 ? 0:ui->blend_pos->maximum());
+}
+
+void manual_alignment::on_save_warpped_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(
+            this,"Open Warpping Image","","Images (*.nii *nii.gz);;All files (*)" );
+    if(filename.isEmpty())
+        return;
+
+    image::basic_image<float,3> I(from_original.geometry());
+    image::resample(from_original,I,data.get_iT(),image::cubic);
+    gz_nifti nii;
+    nii.set_voxel_size(to_vs.begin());
+    image::flip_xy(I);
+    nii << I;
+    nii.save_to_file(filename.toStdString().c_str());
+}
+
+void manual_alignment::on_reg_type_currentIndexChanged(int index)
+{
+    image::reg::get_bound(from,to,data.get_arg(),b_upper,b_lower,
+                          ui->reg_type->currentIndex() == 0 ? image::reg::rigid_body : image::reg::affine);
+    if(index == 0) // rigid body
+    {
+        ui->scaling_group->hide();
+        ui->tilting_group->hide();
+    }
+    else
+    {
+        ui->scaling_group->show();
+        ui->tilting_group->show();
+    }
 }
