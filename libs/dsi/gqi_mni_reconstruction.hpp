@@ -81,9 +81,13 @@ public:
                 }
                 image::reg::linear_mr(voxel.t1w,voxel.t1w_vs,voxel.dwi_sum,voxel.vs,
                                reg1,image::reg::rigid_body,image::reg::mutual_information_mt(),thread1.terminated);
+                image::reg::linear_mr(voxel.t1w,voxel.t1w_vs,voxel.dwi_sum,voxel.vs,
+                               reg1,image::reg::rigid_body,image::reg::mutual_information_mt(),thread1.terminated);
             });
             thread2.run([&](){
                 prog = 1;
+                image::reg::linear_mr(voxel.t1wt,voxel.t1wt_vs,voxel.t1w,voxel.t1w_vs,
+                               reg2,image::reg::affine,image::reg::mutual_information_mt(),thread2.terminated);
                 image::reg::linear_mr(voxel.t1wt,voxel.t1wt_vs,voxel.t1w,voxel.t1w_vs,
                                reg2,image::reg::affine,image::reg::mutual_information_mt(),thread2.terminated);
                 image::basic_image<float,3> J(voxel.t1wt.geometry());
@@ -102,6 +106,11 @@ public:
                     It *= mask;
                     image::homogenize(Is,It,It.width()/8);
                     image::filter::gaussian(Is);
+                    if(export_intermediate)
+                    {
+                        It.save_to_file<gz_nifti>("It.nii.gz");
+                        Is.save_to_file<gz_nifti>("Is.nii.gz");
+                    }
                     voxel.R2 = image::reg::cdm(It,Is,cdm_dis,thread2.terminated,2.0/*resolution*/);
                     voxel.R2 *= voxel.R2;
                 }
@@ -173,6 +182,8 @@ public:
             else
             {
                 bool terminated = false;
+                image::reg::linear_mr(VF,voxel.vs,VG,fa_template_imp.vs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
+                                   image::transformation_matrix<double> >(0),terminated);
                 image::reg::linear_mr(VF,voxel.vs,VG,fa_template_imp.vs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
                                    image::transformation_matrix<double> >(0),terminated);
                 affine = image::transformation_matrix<double>(arg_min,VF.geometry(),voxel.vs,VG.geometry(),fa_template_imp.vs);
@@ -309,6 +320,8 @@ public:
             for(int i =0;i < t1w_maskJ.size();++i)
                 if(t1w_maskJ[i] > 0.5)
                     voxel.image_model->mask[i] = 1;
+            if(export_intermediate)
+                t1w_maskJ.save_to_file<gz_nifti>("t1w_mask.nii.gz");
         }
 
         // other image
