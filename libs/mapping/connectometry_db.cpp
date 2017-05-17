@@ -18,12 +18,18 @@ void connectometry_db::read_db(fib_data* handle_)
         if(!index)
             subject_qa_length = row*col;
         subject_qa.push_back(buf);
-        subject_qa_sd.push_back(image::standard_deviation(buf,buf+col*row));
-        if(subject_qa_sd.back() == 0.0)
-            subject_qa_sd.back() = 1.0;
-        else
-            subject_qa_sd.back() = 1.0/subject_qa_sd.back();
+        subject_qa_sd.push_back(0);
     }
+
+    image::par_for(subject_qa.size(),[&](int i){
+        subject_qa_sd[i] = image::standard_deviation(subject_qa[i],subject_qa[i]+subject_qa_length);
+        if(subject_qa_sd[i] == 0.0)
+            subject_qa_sd[i] = 1.0;
+        else
+            subject_qa_sd[i] = 1.0/subject_qa_sd[i];
+
+    });
+
     num_subjects = (unsigned int)subject_qa.size();
     subject_names.resize(num_subjects);
     R2.resize(num_subjects);
@@ -236,31 +242,33 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
     return true;
 }
 
-void connectometry_db::get_subject_vector(std::vector<std::vector<float> >& subject_vector,
+void connectometry_db::get_subject_vector(unsigned int from,unsigned int to,
+                                          std::vector<std::vector<float> >& subject_vector,
                         const image::basic_image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp) const
 {
+    unsigned int total_count = to-from;
     subject_vector.clear();
-    subject_vector.resize(num_subjects);
-    for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
+    subject_vector.resize(total_count);
+    image::par_for(total_count,[&](unsigned int index)
     {
-        unsigned int cur_index = si2vi[s_index];
-        if(!cerebrum_mask[cur_index])
-            continue;
-        for(unsigned int j = 0,fib_offset = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;
-                ++j,fib_offset+=si2vi.size())
+        unsigned int subject_index = index + from;
+        for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
         {
-            unsigned int pos = s_index + fib_offset;
-            for(unsigned int index = 0;index < num_subjects;++index)
-                subject_vector[index].push_back(subject_qa[index][pos]);
+            unsigned int cur_index = si2vi[s_index];
+            if(!cerebrum_mask[cur_index])
+                continue;
+            for(unsigned int j = 0,fib_offset = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;
+                    ++j,fib_offset+=si2vi.size())
+                subject_vector[index].push_back(subject_qa[subject_index][s_index + fib_offset]);
         }
-    }
+    });
     if(normalize_fp)
-    for(unsigned int index = 0;index < num_subjects;++index)
+    image::par_for(num_subjects,[&](unsigned int index)
     {
         float sd = image::standard_deviation(subject_vector[index].begin(),subject_vector[index].end(),image::mean(subject_vector[index].begin(),subject_vector[index].end()));
         if(sd > 0.0)
             image::multiply_constant(subject_vector[index].begin(),subject_vector[index].end(),1.0/sd);
-    }
+    });
 }
 
 void connectometry_db::get_subject_vector(unsigned int subject_index,std::vector<float>& subject_vector,
@@ -288,9 +296,11 @@ void connectometry_db::get_dif_matrix(std::vector<float>& matrix,const image::ba
     matrix.clear();
     matrix.resize(num_subjects*num_subjects);
     std::vector<std::vector<float> > subject_vector;
-    get_subject_vector(subject_vector,cerebrum_mask,fiber_threshold,normalize_fp);
+    get_subject_vector(0,num_subjects,subject_vector,cerebrum_mask,fiber_threshold,normalize_fp);
     begin_prog("calculating");
-    for(unsigned int i = 0; check_prog(i,num_subjects);++i)
+    image::par_for2(num_subjects,[&](int i,int id){
+        if(id == 0)
+            check_prog(i,num_subjects);
         for(unsigned int j = i+1; j < num_subjects;++j)
         {
             double result = image::root_mean_suqare_error(
@@ -299,6 +309,8 @@ void connectometry_db::get_dif_matrix(std::vector<float>& matrix,const image::ba
             matrix[i*num_subjects+j] = result;
             matrix[j*num_subjects+i] = result;
         }
+    });
+    check_prog(0,0);
 }
 
 void connectometry_db::save_subject_vector(const char* output_name,
@@ -306,56 +318,76 @@ void connectometry_db::save_subject_vector(const char* output_name,
                          float fiber_threshold,
                          bool normalize_fp) const
 {
-    gz_mat_write matfile(output_name);
-    if(!matfile)
+    const unsigned int block_size = 400;
+    std::string file_name = output_name;
+    file_name = file_name.substr(0,file_name.length()-4); // remove .mat
+    begin_prog("saving");
+    for(unsigned int from = 0,iter = 0;from < num_subjects;from += block_size,++iter)
     {
-        handle->error_msg = "Cannot output file";
-        return;
-    }
-    std::vector<std::vector<float> > subject_vector;
-    get_subject_vector(subject_vector,cerebrum_mask,fiber_threshold,normalize_fp);
-    std::string name_string;
-    for(unsigned int index = 0;index < num_subjects;++index)
-    {
-        name_string += subject_names[index];
-        name_string += "\n";
-    }
-    matfile.write("subject_names",name_string.c_str(),1,(unsigned int)name_string.size());
-    for(unsigned int index = 0;index < num_subjects;++index)
-    {
+        unsigned int to = std::min<unsigned int>(from+block_size,num_subjects);
         std::ostringstream out;
-        out << "subject" << index;
-        matfile.write(out.str().c_str(),&subject_vector[index][0],1,(unsigned int)subject_vector[index].size());
-    }
-    matfile.write("dimension",&*handle->dim.begin(),1,3);
-    std::vector<int> voxel_location;
-    std::vector<float> mni_location;
-    std::vector<float> fiber_direction;
-
-    for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
-    {
-        unsigned int cur_index = si2vi[s_index];
-        if(!cerebrum_mask[cur_index])
-            continue;
-        for(unsigned int j = 0,fib_offset = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;++j,fib_offset+=si2vi.size())
+        out << file_name << iter << ".mat";
+        std::string out_name = out.str();
+        gz_mat_write matfile(out_name.c_str());
+        if(!matfile)
         {
-            voxel_location.push_back(cur_index);
-            image::pixel_index<3> p(cur_index,handle->dim);
-            image::vector<3> p2;
-            handle->subject2mni(p,p2);
-            mni_location.push_back(p2[0]);
-            mni_location.push_back(p2[1]);
-            mni_location.push_back(p2[2]);
+            handle->error_msg = "Cannot output file";
+            return;
+        }
+        std::string name_string;
+        for(unsigned int index = from;index < to;++index)
+        {
+            name_string += subject_names[index];
+            name_string += "\n";
+        }
+        matfile.write("subject_names",name_string.c_str(),1,(unsigned int)name_string.size());
+        for(unsigned int index = from,i = 0;index < to;++index,++i)
+        {
+            check_prog(from,num_subjects);
+            std::vector<float> subject_vector;
+            get_subject_vector(index,subject_vector,cerebrum_mask,fiber_threshold,normalize_fp);
 
-            const float* dir = handle->dir.get_dir(cur_index,j);
-            fiber_direction.push_back(dir[0]);
-            fiber_direction.push_back(dir[1]);
-            fiber_direction.push_back(dir[2]);
+            std::ostringstream out;
+            out << "subject" << index;
+            matfile.write(out.str().c_str(),&subject_vector[0],1,(unsigned int)subject_vector.size());
+        }
+
+        if(iter == 0)
+        {
+            matfile.write("dimension",&*handle->dim.begin(),1,3);
+
+
+            std::vector<int> voxel_location;
+            std::vector<float> mni_location;
+            std::vector<float> fiber_direction;
+
+            for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
+            {
+                unsigned int cur_index = si2vi[s_index];
+                if(!cerebrum_mask[cur_index])
+                    continue;
+                for(unsigned int j = 0,fib_offset = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;++j,fib_offset+=si2vi.size())
+                {
+                    voxel_location.push_back(cur_index);
+                    image::pixel_index<3> p(cur_index,handle->dim);
+                    image::vector<3> p2;
+                    handle->subject2mni(p,p2);
+                    mni_location.push_back(p2[0]);
+                    mni_location.push_back(p2[1]);
+                    mni_location.push_back(p2[2]);
+
+                    const float* dir = handle->dir.get_dir(cur_index,j);
+                    fiber_direction.push_back(dir[0]);
+                    fiber_direction.push_back(dir[1]);
+                    fiber_direction.push_back(dir[2]);
+                }
+            }
+            matfile.write("voxel_location",&voxel_location[0],1,voxel_location.size());
+            matfile.write("mni_location",&mni_location[0],3,voxel_location.size());
+            matfile.write("fiber_direction",&fiber_direction[0],3,voxel_location.size());
         }
     }
-    matfile.write("voxel_location",&voxel_location[0],1,voxel_location.size());
-    matfile.write("mni_location",&mni_location[0],3,voxel_location.size());
-    matfile.write("fiber_direction",&fiber_direction[0],3,voxel_location.size());
+    check_prog(0,0);
 }
 void connectometry_db::save_subject_data(const char* output_name)
 {

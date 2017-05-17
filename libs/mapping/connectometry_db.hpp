@@ -38,7 +38,8 @@ public:
     bool is_consistent(gz_mat_read& m);
     bool add_subject_file(const std::string& file_name,
                             const std::string& subject_name);
-    void get_subject_vector(std::vector<std::vector<float> >& subject_vector,
+    void get_subject_vector(unsigned int from,unsigned int to,
+                            std::vector<std::vector<float> >& subject_vector,
                             const image::basic_image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp) const;
     void get_subject_vector(unsigned int subject_index,std::vector<float>& subject_vector,
                             const image::basic_image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp) const;
