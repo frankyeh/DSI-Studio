@@ -503,13 +503,14 @@ void GLWidget::renderLR()
         if(odf_position != get_param("odf_position") ||
            odf_skip != get_param("odf_skip") ||
            odf_scale != get_param("odf_scale") ||
-           (get_param("odf_position") == 0 && (odf_dim != cur_tracking_window.cur_dim ||
-                                               odf_slide_pos != current_slice->slice_pos[cur_tracking_window.cur_dim]))||
-            get_param("odf_position") == 1)
+           (get_param("odf_position") <=1 && (odf_dim != cur_tracking_window.cur_dim ||
+                                               odf_slide_pos != current_slice->slice_pos[cur_tracking_window.cur_dim])))
         {
             odf_position = get_param("odf_position");
             odf_skip = get_param("odf_skip");
             odf_scale = get_param("odf_scale");
+            odf_dim = cur_tracking_window.cur_dim;
+            odf_slide_pos = current_slice->slice_pos[cur_tracking_window.cur_dim];
             odf_points.clear();
         }
 
@@ -524,8 +525,6 @@ void GLWidget::renderLR()
 
         case 0:
             {
-                odf_dim = cur_tracking_window.cur_dim;
-                odf_slide_pos = slice->slice_pos[odf_dim];
                 image::geometry<2> geo2(slice->geometry[odf_dim==0?1:0],
                                        slice->geometry[odf_dim==2?1:2]);
                 for(image::pixel_index<2> index(geo2);index < geo2.size();++index)

@@ -58,8 +58,8 @@ public:
  private://odf
      std::vector<image::vector<3,float> >odf_points;
      std::vector<float>odf_colors;
-     unsigned char odf_dim;
-     unsigned char odf_slide_pos;
+     int odf_dim;
+     int odf_slide_pos;
      void add_odf(image::pixel_index<3> pos);
  private:
      void rotate_angle(float angle,float x,float y,float z);
