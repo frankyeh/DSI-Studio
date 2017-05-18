@@ -83,12 +83,37 @@
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="normalize_fp">
+       <widget class="QLabel" name="label_6">
         <property name="text">
-         <string>Normalize FP</string>
+         <string>Fiber threshold (otsu)</string>
         </property>
-        <property name="checked">
-         <bool>true</bool>
+       </widget>
+      </item>
+      <item>
+       <widget class="QDoubleSpinBox" name="fp_coverage">
+        <property name="minimumSize">
+         <size>
+          <width>50</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>50</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="minimum">
+         <double>0.100000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>5.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.100000000000000</double>
+        </property>
+        <property name="value">
+         <double>0.600000000000000</double>
         </property>
        </widget>
       </item>
@@ -104,6 +129,16 @@
          </size>
         </property>
        </spacer>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="normalize_fp">
+        <property name="text">
+         <string>Normalize FP</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
       </item>
      </layout>
     </item>
@@ -183,7 +218,7 @@
          </widget>
          <widget class="QTabWidget" name="subject_view">
           <property name="currentIndex">
-           <number>1</number>
+           <number>0</number>
           </property>
           <widget class="QWidget" name="tab_3">
            <attribute name="title">
@@ -450,51 +485,6 @@
                  <number>0</number>
                 </property>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_26">
-                  <property name="spacing">
-                   <number>0</number>
-                  </property>
-                  <property name="topMargin">
-                   <number>0</number>
-                  </property>
-                  <item>
-                   <widget class="QLabel" name="label_6">
-                    <property name="text">
-                     <string>Coverage</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QDoubleSpinBox" name="fp_coverage">
-                    <property name="minimumSize">
-                     <size>
-                      <width>50</width>
-                      <height>0</height>
-                     </size>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>50</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="minimum">
-                     <double>0.100000000000000</double>
-                    </property>
-                    <property name="maximum">
-                     <double>5.000000000000000</double>
-                    </property>
-                    <property name="singleStep">
-                     <double>0.100000000000000</double>
-                    </property>
-                    <property name="value">
-                     <double>0.600000000000000</double>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
-                </item>
-                <item>
                  <layout class="QHBoxLayout" name="horizontalLayout_23">
                   <item>
                    <widget class="QLabel" name="label_15">
@@ -532,6 +522,19 @@
                    </widget>
                   </item>
                   <item>
+                   <spacer name="horizontalSpacer_3">
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>40</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                  <item>
                    <widget class="QPushButton" name="calculate_dif">
                     <property name="text">
                      <string>Re-calculate</string>
@@ -560,7 +563,7 @@
      <x>0</x>
      <y>0</y>
      <width>699</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
