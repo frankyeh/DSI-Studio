@@ -349,10 +349,10 @@ bool group_connectometry::load_demographic_file(QString filename)
         {
             if(is_csv)
             {
-            QString str(line.c_str());
-            QStringList values = str.split(',');
-            for(int i = 0;i < values.size();++i)
-                items.push_back(values[i].toStdString());
+                QString str(line.c_str());
+                QStringList values = str.split(',');
+                for(int i = 0;i < values.size();++i)
+                    items.push_back(values[i].toStdString());
             }
             else
             {
@@ -360,6 +360,8 @@ bool group_connectometry::load_demographic_file(QString filename)
                 std::copy(std::istream_iterator<std::string>(in2),
                           std::istream_iterator<std::string>(),std::back_inserter(items));
             }
+            if(items.size() == last_item_size)
+                break;
             ++row_count;
             if(col_count == 0)
                 col_count = items.size();
