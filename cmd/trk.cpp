@@ -383,7 +383,7 @@ int trk(void)
 
     ThreadData tracking_thread(po.get("random_seed",int(0)));
     tracking_thread.param.threshold = po.get("fa_threshold",0.0f);
-    tracking_thread.param.cull_cos_angle = std::cos(po.get("turning_angle",0.0f)*3.14159265358979323846/180.0f);
+    tracking_thread.param.cull_cos_angle = std::cos(po.get("turning_angle",0.0)*3.14159265358979323846/180.0);
     tracking_thread.param.step_size = po.get("step_size",0.0f);
     tracking_thread.param.smooth_fraction = po.get("smoothing",1.0f);
     tracking_thread.param.min_length = po.get("min_length",0.0f);

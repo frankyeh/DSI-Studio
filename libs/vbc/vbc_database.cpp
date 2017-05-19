@@ -51,7 +51,7 @@ int vbc_database::run_track(const tracking_data& fib,std::vector<std::vector<flo
     }
     ThreadData tracking_thread(false);
     tracking_thread.param.threshold = tracking_threshold;
-    tracking_thread.param.cull_cos_angle = std::cos(60 * 3.1415926 / 180.0);
+    tracking_thread.param.cull_cos_angle = std::cos(60.0*3.14159265358979323846/180.0);
     tracking_thread.param.step_size = 1.0; // fixed 1 mm
     tracking_thread.param.smooth_fraction = 0;
     tracking_thread.param.min_length = 0;
