@@ -382,12 +382,12 @@ int trk(void)
 
 
     ThreadData tracking_thread(po.get("random_seed",int(0)));
-    tracking_thread.param.threshold = po.get("fa_threshold",0);
-    tracking_thread.param.cull_cos_angle = std::cos(po.get("turning_angle",0));
-    tracking_thread.param.step_size = po.get("step_size",0);
-    tracking_thread.param.smooth_fraction = po.get("smoothing",1.0);
-    tracking_thread.param.min_length = po.get("min_length",float(0));
-    tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,po.get("max_length",float(400)));
+    tracking_thread.param.threshold = po.get("fa_threshold",0.0f);
+    tracking_thread.param.cull_cos_angle = std::cos(po.get("turning_angle",0.0f)*3.14159265358979323846/180.0f);
+    tracking_thread.param.step_size = po.get("step_size",0.0f);
+    tracking_thread.param.smooth_fraction = po.get("smoothing",1.0f);
+    tracking_thread.param.min_length = po.get("min_length",0.0f);
+    tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,po.get("max_length",400.0f));
 
     tracking_thread.tracking_method = po.get("method",int(0));
     tracking_thread.initial_direction  = po.get("initial_dir",int(0));
@@ -454,7 +454,7 @@ int trk(void)
         return -1;
     }
     {
-        std::cout << "turning_angle=" << (int)std::round(po.get("turning_angle",float(60))) << std::endl;
+        std::cout << "turning_angle=" << (int)std::round(po.get("turning_angle",float(0))) << std::endl;
         std::cout << "fa_threshold=" << tracking_thread.param.threshold << std::endl;
         std::cout << "step_size=" << tracking_thread.param.step_size << std::endl;
         std::cout << "smoothing=" << tracking_thread.param.smooth_fraction << std::endl;
