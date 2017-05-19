@@ -178,7 +178,7 @@ void ThreadData::run(const tracking_data& trk,
     report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was used."
            << roi_mgr.report;
     if(param.cull_cos_angle != 1.0)
-        report << " The angular threshold was " << (int)std::round(std::acos(param.cull_cos_angle)*180/3.1415926) << " degrees.";
+        report << " The angular threshold was " << (int)std::round(std::acos(param.cull_cos_angle)*180/3.14159265358979323846) << " degrees.";
     else
         report << " The angular threshold was randomly selected from 15 degrees to 90 degrees.";
 

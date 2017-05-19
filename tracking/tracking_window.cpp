@@ -524,7 +524,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 void tracking_window::set_tracking_param(ThreadData& tracking_thread)
 {
     tracking_thread.param.threshold = renderWidget->getData("fa_threshold").toFloat();
-    tracking_thread.param.cull_cos_angle = std::cos(renderWidget->getData("turning_angle").toDouble() * 3.1415926 / 180.0);
+    tracking_thread.param.cull_cos_angle = std::cos(renderWidget->getData("turning_angle").toDouble() * 3.14159265358979323846 / 180.0);
     tracking_thread.param.step_size = renderWidget->getData("step_size").toDouble();
     tracking_thread.param.smooth_fraction = renderWidget->getData("smoothing").toDouble();
     tracking_thread.param.min_length = renderWidget->getData("min_length").toDouble();
