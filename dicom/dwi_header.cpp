@@ -390,24 +390,18 @@ void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>
             dif_dis.push_back(bvalues[i] - bvalues[i-1]);
     std::sort(dif_dis.begin(),dif_dis.end());
 
-    float gap = 0;
-    float max_dif = 0;
-    for(int i = 1;i < dif_dis.size();++i)
-        if(dif_dis[i]-dif_dis[i-1] > max_dif)
-        {
-            max_dif = dif_dis[i]-dif_dis[i-1];
-            gap = 0.5*(dif_dis[i]+dif_dis[i-1]);
-        }
+    float gap = *std::max_element(dif_dis.begin(),dif_dis.end())*0.1;
     if(gap < 100)
         gap = 100;
 
-    if(bvalues.front() != 0.0)
+    if(bvalues.front() != 0.0f)
         shell.push_back(0);
     else
         shell.push_back(1);
     for(unsigned int index = shell.back()+1;index < bvalues.size();++index)
         if(std::abs(bvalues[index]-bvalues[shell.back()]) > gap)
             shell.push_back(index);
+
 }
 
 void get_report(const std::vector<float>& bvalues,image::vector<3> vs,std::string& report)
