@@ -274,7 +274,7 @@ int trk_post(std::shared_ptr<fib_data> handle,
 {
     if (po.has("delete_repeat"))
     {
-        std::cout << "Deleting repeat tracks..." << std:endl;
+        std::cout << "Deleting repeat tracks..." << std::endl;
         float distance = po.get("delete_repeat",float(1));
         tract_model.delete_repeated(distance);
         std::cout << "Repeat tracks with distance smaller than " << distance <<" are deleted" << std::endl;
