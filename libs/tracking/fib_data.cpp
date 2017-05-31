@@ -806,31 +806,31 @@ void fib_data::get_profile(const std::vector<float>& tract_data,
         x >>= 1; // 2 mm
         y >>= 1; // 2 mm
         z >>= 1; // 2 mm
-        float w = std::abs(j-int(tract_data.size() >> 1));
+        //float length_2 = tract_data.size() >> 1;
+        //float w = std::fabs(j-length_2)/length_2-0.5f;
         if(x > 0 && x < profile.width())
         {
             if(y > 0 && y < profile.height())
-                profile.at(x,y,0) += w;
+                profile.at(x,y,0) += 1.0f;
             if(z > 0 && z < profile.height())
-                profile.at(x,z,1) += w;
+                profile.at(x,z,1) += 1.0f;
         }
         if(z > 0 && z < profile.width() && y > 0 && y < profile.height())
-            profile.at(z,y,2) += w;
+            profile.at(z,y,2) += 1.0f;
     }
     auto s1 = profile.slice_at(0);
     auto s2 = profile.slice_at(1);
     auto s3 = profile.slice_at(2);
-    image::filter::gaussian(s1);
-    image::filter::gaussian(s1);
-    image::filter::gaussian(s2);
-    image::filter::gaussian(s2);
-    image::filter::gaussian(s3);
-    image::filter::gaussian(s3);
+    for(int i = 0;i < 6;++i)
+    {
+        image::filter::gaussian(s1);
+        image::filter::gaussian(s2);
+        image::filter::gaussian(s3);
+    }
     float m = *std::max_element(profile.begin(),profile.end());
     if(m != 0.0)
         image::multiply_constant(profile,1.8/m);
     image::minus_constant(profile,0.9);
-
 }
 
 bool track_recognition::can_recognize(void)

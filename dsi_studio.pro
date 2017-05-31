@@ -180,7 +180,8 @@ SOURCES += main.cpp \
     connectometry/match_db.cpp \
     connectometry/db_window.cpp \
     connectometry/group_connectometry.cpp \
-    regtoolbox.cpp
+    regtoolbox.cpp \
+    cmd/cnn.cpp
 
 OTHER_FILES += \
     options.txt \
