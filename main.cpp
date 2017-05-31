@@ -32,6 +32,7 @@ int atl(void);
 int cnt(void);
 int vis(void);
 int ren(void);
+int cnn(void);
 
 
 QStringList search_files(QString dir,QString filter)
@@ -151,6 +152,8 @@ int run_cmd(int ac, char *av[])
             vis();
         if(po.get("action") == std::string("ren"))
             ren();
+        if(po.get("action") == std::string("cnn"))
+            cnn();
         if(gui.get() && po.get("stay_open") == std::string("1"))
             gui->exec();
         return 1;
