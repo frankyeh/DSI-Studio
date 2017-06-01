@@ -50,11 +50,15 @@ void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool de
     }
     if(points.empty())
         return;
-    if(points.size()+ region.size() > 1000000)
+    if(points.size()+ region.size() > 5000000)
     {
         // for roll back
         unsigned int region_size = region.size();
-        region.insert(region.end(),points.begin(),points.end());
+        if(!del)
+        {
+            region.insert(region.end(),points.begin(),points.end());
+            points.clear();
+        }
         image::vector<3,short> min_value,max_value,geo_size;
         image::bounding_box_mt(region,max_value,min_value);
 
@@ -73,18 +77,21 @@ void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool de
             goto alternative;
         }
 
-
         image::par_for (region.size(),[&](unsigned int index)
         {
             auto p = region[index];
             p -= min_value;
             if (mask.geometry().is_valid(p))
-            {
-                if(del)
-                    mask.at(p[0],p[1],p[2]) = 0;
-                else
-                    mask.at(p[0],p[1],p[2]) = 1;
-            }
+                mask.at(p[0],p[1],p[2]) = 1;
+        });
+
+        if(points.size())
+        image::par_for (points.size(),[&](unsigned int index)
+        {
+            auto p = points[index];
+            p -= min_value;
+            if (mask.geometry().is_valid(p))
+                mask.at(p[0],p[1],p[2]) = 0;
         });
 
         points.clear();
