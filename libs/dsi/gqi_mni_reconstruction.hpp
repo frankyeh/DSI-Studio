@@ -288,40 +288,15 @@ public:
         voxel.dim = des_geo;
         voxel.image_model->mask.resize(des_geo);
         std::fill(voxel.image_model->mask.begin(),voxel.image_model->mask.end(),0);
-
-        // setup mask
-        if(cdm_dis.empty())
+        for(image::pixel_index<3> index(des_geo);index < des_geo.size();++index)
         {
-            // set the current mask to template space
-            for(image::pixel_index<3> index(des_geo);index < des_geo.size();++index)
-            {
-                image::vector<3,float> mni_pos(index);
-                mni_pos *= voxel_size;
-                mni_pos += des_offset;
-                mni_pos.round();
-                if(fa_template_imp.I.geometry().is_valid(mni_pos) &&
-                        fa_template_imp.I.at(mni_pos[0],mni_pos[1],mni_pos[2]) > 0.0)
-                    voxel.image_model->mask[index.index()] = 1;
-            }
-        }
-        else
-        {
-            image::transformation_matrix<double> T;
-            T.sr[0] = voxel_size;
-            T.sr[4] = voxel_size;
-            T.sr[8] = voxel_size;
-            T.shift[0] = des_offset[0];
-            T.shift[1] = des_offset[1];
-            T.shift[2] = des_offset[2];
-            image::basic_image<float,3> t1wJ(des_geo),t1w_maskJ(des_geo);
-            t1wJ.swap(voxel.t1w);
-            image::resample_mt(t1wJ,voxel.t1w,T,image::cubic);
-            image::resample_mt(voxel.t1wt_mask,t1w_maskJ,T,image::cubic);
-            for(int i =0;i < t1w_maskJ.size();++i)
-                if(t1w_maskJ[i] > 0.5)
-                    voxel.image_model->mask[i] = 1;
-            if(export_intermediate)
-                t1w_maskJ.save_to_file<gz_nifti>("t1w_mask.nii.gz");
+            image::vector<3,float> mni_pos(index);
+            mni_pos *= voxel_size;
+            mni_pos += des_offset;
+            mni_pos.round();
+            if(fa_template_imp.mask.geometry().is_valid(mni_pos) &&
+                    fa_template_imp.mask.at(mni_pos[0],mni_pos[1],mni_pos[2]) > 0.0)
+                voxel.image_model->mask[index.index()] = 1;
         }
 
         // other image

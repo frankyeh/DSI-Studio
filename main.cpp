@@ -17,7 +17,7 @@
 
 track_recognition track_network;
 fa_template fa_template_imp;
-std::string fa_template_file_name,
+std::string fa_template_file_name,fa_mask_file_name,
         fib_template_file_name,
         t1w_template_file_name,
         t1w_mask_template_file_name;
@@ -62,6 +62,14 @@ void load_file_name(void)
     if(QFileInfo(filename).exists())
         fa_template_file_name = filename.toStdString();
 
+    filename = QCoreApplication::applicationDirPath() + "/brain_mask.nii.gz";
+    if(QFileInfo(filename).exists())
+        fa_mask_file_name = filename.toStdString();
+    filename = QDir::currentPath() + "/brain_mask.nii.gz";
+    if(QFileInfo(filename).exists())
+        fa_mask_file_name = filename.toStdString();
+
+
     filename = QCoreApplication::applicationDirPath() + "/HCP842_2mm.fib.gz";
     if(QFileInfo(filename).exists())
         fib_template_file_name = filename.toStdString();
@@ -76,7 +84,7 @@ void load_file_name(void)
     if(QFileInfo(filename).exists())
         t1w_template_file_name = filename.toStdString();
 
-    filename = QCoreApplication::applicationDirPath() + "/mni_icbm152_t1_tal_nlin_asym_09a.nii.gz";
+    filename = QCoreApplication::applicationDirPath() + "/mni_icbm152_t1_tal_nlin_asym_09a_mask.nii.gz";
     if(QFileInfo(filename).exists())
         t1w_mask_template_file_name = filename.toStdString();
     filename = QDir::currentPath() + "/mni_icbm152_t1_tal_nlin_asym_09a_mask.nii.gz";
