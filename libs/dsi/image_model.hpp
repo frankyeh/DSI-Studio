@@ -119,13 +119,16 @@ public:
     void rotate(image::geometry<3> new_geo,const image::transformation_matrix<double>& affine)
     {
         std::vector<image::basic_image<unsigned short,3> > dwi(dwi_data.size());
-        for (unsigned int index = 0;check_prog(index,dwi_data.size());++index)
+        image::par_for2(dwi_data.size(),[&](unsigned int index,unsigned int id)
         {
+            if(!id)
+                check_prog(index,dwi_data.size());
             dwi[index].resize(new_geo);
             auto I = image::make_image((unsigned short*)dwi_data[index],voxel.dim);
             image::resample(I,dwi[index],affine,image::cubic);
             dwi_data[index] = &(dwi[index][0]);
-        }
+        });
+        check_prog(0,0);
         dwi.swap(new_dwi);
 
         // rotate b-table
@@ -352,8 +355,11 @@ public:
     {
         voxel.dwi_sum.clear();
         voxel.dwi_sum.resize(voxel.dim);
-        for (unsigned int index = 0;index < voxel.bvalues.size();++index)
-            image::add(voxel.dwi_sum.begin(),voxel.dwi_sum.end(),dwi_data[index]);
+        image::par_for(voxel.dwi_sum.size(),[&](unsigned int pos)
+        {
+            for (unsigned int index = 0;index < dwi_data.size();++index)
+                voxel.dwi_sum[pos] += dwi_data[index][pos];
+        });
 
         float max_value = *std::max_element(voxel.dwi_sum.begin(),voxel.dwi_sum.end());
         float min_value = max_value;
