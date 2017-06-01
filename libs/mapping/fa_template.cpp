@@ -5,7 +5,7 @@
 #include <QApplication>
 #include <QDir>
 
-extern std::string fa_template_file_name;
+extern std::string fa_template_file_name,fa_mask_file_name;
 bool fa_template::load_from_file(void)
 {
     gz_nifti read;
@@ -20,7 +20,12 @@ bool fa_template::load_from_file(void)
         shift[0] = tran[3];
         shift[1] = tran[7];
         shift[2] = tran[11];
-        return true;
+        gz_nifti read_mask;
+        if(read_mask.load_from_file(fa_mask_file_name.c_str()))
+        {
+            read_mask.toLPS(mask);
+            return mask.geometry() == I.geometry();
+        }
     }
     return false;
 }
