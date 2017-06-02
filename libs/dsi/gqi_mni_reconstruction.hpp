@@ -80,16 +80,16 @@ public:
                     image::flip_xy(voxel.dwi_sum);
                 }
                 image::reg::linear_mr(voxel.t1w,voxel.t1w_vs,voxel.dwi_sum,voxel.vs,
-                               reg1,image::reg::rigid_body,image::reg::mutual_information_mt(),thread1.terminated);
+                               reg1,image::reg::rigid_body,image::reg::mutual_information(),thread1.terminated);
                 image::reg::linear_mr(voxel.t1w,voxel.t1w_vs,voxel.dwi_sum,voxel.vs,
-                               reg1,image::reg::rigid_body,image::reg::mutual_information_mt(),thread1.terminated);
+                               reg1,image::reg::rigid_body,image::reg::mutual_information(),thread1.terminated);
             });
             thread2.run([&](){
                 prog = 1;
                 image::reg::linear_mr(voxel.t1wt,voxel.t1wt_vs,voxel.t1w,voxel.t1w_vs,
-                               reg2,image::reg::affine,image::reg::mutual_information_mt(),thread2.terminated);
+                               reg2,image::reg::affine,image::reg::mutual_information(),thread2.terminated);
                 image::reg::linear_mr(voxel.t1wt,voxel.t1wt_vs,voxel.t1w,voxel.t1w_vs,
-                               reg2,image::reg::affine,image::reg::mutual_information_mt(),thread2.terminated);
+                               reg2,image::reg::affine,image::reg::mutual_information(),thread2.terminated);
                 image::basic_image<float,3> J(voxel.t1wt.geometry());
                 image::resample_mt(voxel.t1w,J,
                     image::transformation_matrix<double>(reg2,voxel.t1wt.geometry(),voxel.t1wt_vs,voxel.t1w.geometry(),voxel.t1w_vs),image::cubic);
@@ -97,14 +97,7 @@ public:
                 prog = 3;
 
                 {
-                    image::basic_image<float,3> mask(voxel.t1wt_mask),Is(J),It(voxel.t1wt);
-                    image::filter::gaussian(mask);
-                    image::filter::gaussian(mask);
-                    mask += 0.5;
-                    mask /= 1.5;
-                    Is *= mask;
-                    It *= mask;
-                    image::homogenize(Is,It,It.width()/8);
+                    image::basic_image<float,3> Is(J),It(voxel.t1wt);
                     image::filter::gaussian(Is);
                     if(export_intermediate)
                     {
@@ -117,7 +110,6 @@ public:
                 image::compose_displacement(J,cdm_dis,voxel.t1w);
                 // From T1W template space to FA template space
                 image::crop(voxel.t1w,from,to);
-                image::crop(voxel.t1wt_mask,from,to);
                 image::crop(cdm_dis,from,to);
 
                 if(export_intermediate)

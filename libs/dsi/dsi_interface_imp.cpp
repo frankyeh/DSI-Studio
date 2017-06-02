@@ -23,7 +23,7 @@
 #include "image_model.hpp"
 
 
-extern std::string t1w_template_file_name,t1w_mask_template_file_name;
+extern std::string t1w_template_file_name;
 
 typedef boost::mpl::vector<
     ReadDWIData,
@@ -439,11 +439,6 @@ const char* reconstruction(ImageModel* image_model,
                         return "Cannot load T1W template";
                     in.get_voxel_size(image_model->voxel.t1wt_vs.begin());
                     in.get_image_transformation(image_model->voxel.t1wt_tran);
-                }
-                {
-                    gz_nifti in;
-                    if(!in.load_from_file(t1w_mask_template_file_name.c_str()) || !in.toLPS(image_model->voxel.t1wt_mask))
-                        return "Cannot load T1W mask";
                 }
                 {
                     gz_nifti in;

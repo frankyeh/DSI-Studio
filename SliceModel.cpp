@@ -365,8 +365,8 @@ void CustomSliceModel::argmin(image::reg::reg_type reg_type)
     else*/
     {
         image::const_pointer_image<float,3> to = source_images;
-        image::reg::linear_mr(from,from_vs,to,voxel_size,arg_min,reg_type,image::reg::mutual_information_mt(),terminated);
-        image::reg::linear_mr(from,from_vs,to,voxel_size,arg_min,reg_type,image::reg::mutual_information_mt(),terminated);
+        image::reg::linear_mr(from,from_vs,to,voxel_size,arg_min,reg_type,image::reg::mutual_information(),terminated);
+        image::reg::linear_mr(from,from_vs,to,voxel_size,arg_min,reg_type,image::reg::mutual_information(),terminated);
     }
     ended = true;
 

@@ -202,7 +202,6 @@ void RegToolBox::on_timer()
     }
 }
 
-extern std::string t1w_mask_template_file_name;
 void RegToolBox::on_run_reg_clicked()
 {
 
@@ -220,8 +219,8 @@ void RegToolBox::on_run_reg_clicked()
         if(It.geometry() != I.geometry() || running_type == 0)
         {
             image::reg::reg_type linear_type[2] = { image::reg::rigid_body,image::reg::affine};
-            image::reg::linear_mr(It,Itvs,I,Ivs,linear_reg,linear_type[ui->linear_type->currentIndex()],image::reg::mutual_information_mt(),thread.terminated);
-            image::reg::linear_mr(It,Itvs,I,Ivs,linear_reg,linear_type[ui->linear_type->currentIndex()],image::reg::mutual_information_mt(),thread.terminated);
+            image::reg::linear_mr(It,Itvs,I,Ivs,linear_reg,linear_type[ui->linear_type->currentIndex()],image::reg::mutual_information(),thread.terminated);
+            image::reg::linear_mr(It,Itvs,I,Ivs,linear_reg,linear_type[ui->linear_type->currentIndex()],image::reg::mutual_information(),thread.terminated);
             J2.resize(It.geometry());
             image::resample_mt(I,J2,image::transformation_matrix<double>(linear_reg,It.geometry(),Itvs,I.geometry(),Ivs),image::cubic);
             J = J2;
@@ -231,26 +230,14 @@ void RegToolBox::on_run_reg_clicked()
         }
         else
             J2 = I;
-        gz_nifti in;
-        image::basic_image<float,3> mask;
-        if(!in.load_from_file(t1w_mask_template_file_name.c_str()) || !in.toLPS(mask))
-            return;
-        if(mask.geometry() == It.geometry())
-        {
-            image::filter::gaussian(mask);
-            image::filter::gaussian(mask);
-            mask += 0.5;
-            mask /= 1.5;
-            It *= mask;
-            J2 *= mask;
-        }
-        image::homogenize(J2,It,It.width()/8);
+
         J = J2;
         linear_done = true;
         if(running_type > 0) // nonlinear
         {
             image::filter::gaussian(J2);
-            image::reg::cdm(It,J2,dis,thread.terminated,2.0);
+            float r = image::reg::cdm(It,J2,dis,thread.terminated,2.0);
+            std::cout << "R2=" << r*r << std::endl;
             image::compose_displacement(J2,dis,JJ);
         }
         reg_done = true;

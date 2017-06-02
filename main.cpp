@@ -84,12 +84,6 @@ void load_file_name(void)
     if(QFileInfo(filename).exists())
         t1w_template_file_name = filename.toStdString();
 
-    filename = QCoreApplication::applicationDirPath() + "/mni_icbm152_t1_tal_nlin_asym_09a_mask.nii.gz";
-    if(QFileInfo(filename).exists())
-        t1w_mask_template_file_name = filename.toStdString();
-    filename = QDir::currentPath() + "/mni_icbm152_t1_tal_nlin_asym_09a_mask.nii.gz";
-    if(QFileInfo(filename).exists())
-        t1w_mask_template_file_name = filename.toStdString();
 }
 
 void init_application(QApplication& a)
@@ -102,7 +96,7 @@ void init_application(QApplication& a)
     a.setStyle(QStyleFactory::create("Fusion"));
     if(!fa_template_imp.load_from_file())
     {
-        QMessageBox::information(0,"Error",QString("Cannot find HCP842_QA.nii.gz in ") + QCoreApplication::applicationDirPath(),0);
+        QMessageBox::information(0,"Error",QString("Cannot find template files in ") + QCoreApplication::applicationDirPath(),0);
         return;
     }
 
