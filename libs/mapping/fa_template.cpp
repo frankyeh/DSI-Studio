@@ -13,6 +13,8 @@ bool fa_template::load_from_file(void)
     {
         read.toLPS(I);
         read.get_image_transformation(tran);
+        tran[12] = tran[13] = tran[14] = 0.0f;
+        tran[15] = 1.0f;
         vs[0] = tran[0];
         vs[1] = tran[5];
         vs[2] = tran[10];
