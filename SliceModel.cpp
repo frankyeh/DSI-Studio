@@ -5,7 +5,6 @@
 #include "SliceModel.h"
 #include "prog_interface_static_link.h"
 #include "fib_data.hpp"
-#include "manual_alignment.h"
 #include "fa_template.hpp"
 
 // ---------------------------------------------------------------------------

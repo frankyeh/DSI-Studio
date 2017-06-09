@@ -14,10 +14,10 @@ class manual_alignment;
 class manual_alignment : public QDialog
 {
     Q_OBJECT
-private:
+public:
     image::basic_image<float,3> from_original;
     image::basic_image<float,3> from,to,warped_from;
-    image::affine_transform<double> b_upper,b_lower;
+    image::affine_transform<double> arg,b_upper,b_lower;
     image::vector<3> from_vs,to_vs;
     QGraphicsScene scene[3];
     image::color_image buffer[3];
@@ -28,7 +28,7 @@ private:
 
     void load_param(void);
 public:
-    image::reg::normalization<double> data;
+    image::transformation_matrix<double> T,iT;
 public:
     QTimer* timer;
     explicit manual_alignment(QWidget *parent,
@@ -49,14 +49,15 @@ private slots:
 
     void on_buttonBox_rejected();
 
-    void on_rerun_clicked();
+
 
     void on_switch_view_clicked();
 
     void on_save_warpped_clicked();
 
     void on_reg_type_currentIndexChanged(int index);
-
+public slots:
+    void on_rerun_clicked();
 private:
     Ui::manual_alignment *ui;
     void update_image(void);

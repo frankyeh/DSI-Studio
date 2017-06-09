@@ -8,7 +8,6 @@
 #include "mapping/fa_template.hpp"
 #include "libs/gzip_interface.hpp"
 #include "reconstruction/reconstruction_window.h"
-#include "manual_alignment.h"
 #include "program_option.hpp"
 
 extern fa_template fa_template_imp;

@@ -6,7 +6,6 @@
 #include "mapping/fa_template.hpp"
 #include "libs/gzip_interface.hpp"
 #include "mapping/atlas.hpp"
-#include "manual_alignment.h"
 #include "program_option.hpp"
 #include "fib_data.hpp"
 
