@@ -104,7 +104,7 @@
          </size>
         </property>
         <property name="minimum">
-         <double>0.100000000000000</double>
+         <double>0.000000000000000</double>
         </property>
         <property name="maximum">
          <double>5.000000000000000</double>
@@ -382,6 +382,9 @@
                        <height>16777215</height>
                       </size>
                      </property>
+                     <property name="decimals">
+                      <number>1</number>
+                     </property>
                      <property name="minimum">
                       <double>0.100000000000000</double>
                      </property>
@@ -389,7 +392,14 @@
                       <double>20.000000000000000</double>
                      </property>
                      <property name="value">
-                      <double>2.000000000000000</double>
+                      <double>4.000000000000000</double>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="show_mask">
+                     <property name="text">
+                      <string>mask</string>
                      </property>
                     </widget>
                    </item>

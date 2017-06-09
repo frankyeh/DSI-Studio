@@ -11,69 +11,6 @@
 #include "match_db.h"
 void show_view(QGraphicsScene& scene,QImage I);
 
-bool load_cerebrum_mask(image::basic_image<char,3>& fp_mask)
-{
-
-    QString wm_path;
-    wm_path = QCoreApplication::applicationDirPath() + "/mni_icbm152_wm_tal_nlin_asym_09a.nii.gz";
-    if(!QFileInfo(wm_path).exists())
-        wm_path = QDir::currentPath() + "/mni_icbm152_wm_tal_nlin_asym_09a.nii.gz";
-    if(!QFileInfo(wm_path).exists())
-        return false;
-
-    gz_nifti read_wm;
-    image::basic_image<float,3> wm;
-    if(read_wm.load_from_file(wm_path.toStdString().c_str()))
-        read_wm.toLPS(wm);
-    image::basic_image<char,3> wm_mask(wm.geometry());
-    for(unsigned int index = 0;index < wm_mask.size();++index)
-        if(wm[index] > 0)
-            wm_mask[index] = 1;
-
-    image::matrix<4,4,float> trans,trans1,trans2;
-    trans.identity();
-    trans1.identity();
-    trans2.identity();
-    read_wm.get_image_transformation(trans.begin());
-    int z = (-trans[11]-23)/trans[10]; // cut off at mni z = -22
-    int y1 = (-trans[7]-10)/trans[5];
-    int y2 = (-trans[7]-37)/trans[5];
-    if(y2 < y1)
-        std::swap(y1,y2);
-    int x1 = (-trans[3]-16)/trans[0];
-    int x2 = (-trans[3]+16)/trans[0];
-    if(x2 < x1)
-        std::swap(x1,x2);
-    auto I1 = make_image(&wm_mask[0]+z*wm.geometry().plane_size(),image::geometry<2>(wm_mask.width(),wm_mask.height()));
-    image::fill_rect(I1,image::vector<2,int>(x1,y1),image::vector<2,int>(x2,y2),0);
-    auto I2 = make_image(&wm_mask[0]+(z+1)*wm.geometry().plane_size(),image::geometry<2>(wm_mask.width(),wm_mask.height()));
-    image::fill_rect(I2,image::vector<2,int>(x1,y1),image::vector<2,int>(x2,y2),0);
-    image::morphology::defragment(wm_mask);
-    float trans1_[16] = {-1, 0, 0, 78,
-                          0,-1, 0, 76,
-                          0, 0, 1,-50,
-                          0, 0, 0,  1};
-    float trans2_[16] = {-2, 0, 0, 78,
-                          0,-2, 0, 76,
-                          0, 0, 2,-50,
-                          0, 0, 0,  1};
-    trans.inv();
-    trans1 = trans*trans1_;
-    trans2 = trans*trans2_;
-    if(fp_mask.geometry() == image::geometry<3>(157,189,136)) // 1mm
-    {
-        image::resample(wm_mask,fp_mask,trans1,image::linear);
-        return true;
-    }
-    if(fp_mask.geometry() == image::geometry<3>(79,95,69)) // 2mm
-    {
-        image::resample(wm_mask,fp_mask,trans2,image::linear);
-        return true;
-    }
-    return false;
-}
-
-
 db_window::db_window(QWidget *parent,std::shared_ptr<vbc_database> vbc_) :
     QMainWindow(parent),color_bar(10,256),vbc(vbc_),
     ui(new Ui::db_window)
@@ -99,11 +36,15 @@ db_window::db_window(QWidget *parent,std::shared_ptr<vbc_database> vbc_) :
     connect(ui->view_z,SIGNAL(toggled(bool)),this,SLOT(on_view_x_toggled(bool)));
 
     connect(ui->zoom,SIGNAL(valueChanged(double)),this,SLOT(on_subject_list_itemSelectionChanged()));
+    connect(ui->show_mask,SIGNAL(clicked()),this,SLOT(on_subject_list_itemSelectionChanged()));
     connect(ui->add,SIGNAL(clicked()),this,SLOT(on_actionAdd_DB_triggered()));
 
     fp_mask.resize(vbc->handle->dim);
-    if(!load_cerebrum_mask(fp_mask))
-        std::fill(fp_mask.begin(),fp_mask.end(),1);
+    for(int i = 0;i < fp_mask.size() > 0.0f;++i)
+        if(vbc->handle->dir.get_fa(i,0) > 0.0f)
+            fp_mask[i] = 1.0;
+        else
+            fp_mask[i] = 0.0;
     on_view_x_toggled(true);
     update_subject_list();
     ui->subject_list->selectRow(0);
@@ -207,6 +148,13 @@ void db_window::on_subject_list_itemSelectionChanged()
     image::normalize(slice);
     image::color_image color_slice(slice.geometry());
     std::copy(slice.begin(),slice.end(),color_slice.begin());
+    if(ui->show_mask->isChecked())
+    {
+        auto mask_slice = fp_mask.slice_at(ui->slice_pos->value());
+        for(int i = 0;i < color_slice.size();++i)
+            if(mask_slice[i])
+                color_slice[i][2] = 255;
+    }
     QImage qimage((unsigned char*)&*color_slice.begin(),color_slice.width(),color_slice.height(),QImage::Format_RGB32);
     vbc_slice_image = qimage.scaled(color_slice.width()*ui->zoom->value(),color_slice.height()*ui->zoom->value());
     if(!ui->view_z->isChecked())
@@ -235,6 +183,7 @@ void db_window::on_subject_list_itemSelectionChanged()
         {
             unsigned int from_index = (i)*ifp.size()/fp_image_buf.height();
             unsigned int to_index = (i+1)*ifp.size()/fp_image_buf.height();
+            if(from_index < to_index)
             for(++from_index;from_index != to_index;++from_index)
             {
                 unsigned int from = ifp[from_index-1];
@@ -246,6 +195,7 @@ void db_window::on_subject_list_itemSelectionChanged()
         }
         base = (unsigned int*)&fp_image_buf[0];
         unsigned int max_value = *std::max_element(base,base+fp_image_buf.size());
+        if(max_value)
         for(unsigned int index = 0;index < fp_image_buf.size();++index)
             fp_image_buf[index] = image::rgb_color((unsigned char)(255-std::min<int>(255,(fp_image_buf[index].color*512/max_value))));
         image::swap_xy(fp_image_buf);
@@ -382,8 +332,11 @@ void db_window::on_actionLoad_mask_triggered()
         return;
     }
     for(unsigned int i = 0;i < I.size();++i)
-        fp_mask[i] = I[i] ? 1:0;
-    on_calculate_dif_clicked();
+        fp_mask[i] = I[i] > 0.0f ? 1:0;
+
+    ui->show_mask->setChecked(true);
+    on_subject_list_itemSelectionChanged();
+
 }
 
 void db_window::on_actionSave_mask_triggered()
