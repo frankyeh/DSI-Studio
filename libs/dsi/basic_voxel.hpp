@@ -155,9 +155,11 @@ public:
             if (mask[index])
                 ++total_voxel;
 
+        unsigned int total = 0;
         image::par_for2(mask.size(),
                         [&](int voxel_index,int thread_index)
         {
+            ++total;
             if(terminated || !mask[voxel_index])
                 return;
             if(thread_index == 0)
@@ -167,13 +169,14 @@ public:
                     terminated = true;
                     return;
                 }
-                check_prog(voxel_index,total_voxel);
+                check_prog(total,mask.size());
             }
             voxel_data[thread_index].init();
             voxel_data[thread_index].voxel_index = voxel_index;
             for (int index = 0; index < process_list.size(); ++index)
                 process_list[index]->run(*this,voxel_data[thread_index]);
         },thread_count);
+        check_prog(1,1);
         }
         catch(std::exception& error)
         {
