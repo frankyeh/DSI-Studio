@@ -39,5 +39,6 @@
         <file>options.txt</file>
         <file>shader_fragment.txt</file>
         <file>shader_vertex.txt</file>
+        <file>icons/ajax-loader.gif</file>
     </qresource>
 </RCC>

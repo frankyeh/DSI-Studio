@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QTimer>
 #include <QGraphicsScene>
+#include <QProgressBar>
 #include "image/image.hpp"
 namespace Ui {
 class RegToolBox;
@@ -23,11 +24,20 @@ public:
     image::basic_image<float,3> J_view,J_view2;
     image::basic_image<image::vector<3>,3> dis_view;
 public:
-    image::affine_transform<double> linear_reg;
+    image::affine_transform<double> arg;
     image::thread thread;
     std::shared_ptr<QTimer> timer;
-    int running_type;
-    bool reg_done,linear_done;
+    std::string status;
+public:
+    std::shared_ptr<image::reg::bfnorm_mapping<float,3> > bnorm_data;
+
+    int reg_type;
+    bool reg_done;
+private:
+    void clear(void);
+    void linear_reg(image::reg::reg_type reg_type);
+    void nonlinear_reg(int method);
+
 public:
     explicit RegToolBox(QWidget *parent = 0);
     ~RegToolBox();
@@ -44,9 +54,18 @@ private slots:
     void show_image();
     void on_action_Save_Warpped_Image_triggered();
 
+
+    void on_reg_type_currentIndexChanged(int index);
+
+    void on_stop_clicked();
+
+    void on_reg_method_currentIndexChanged(int index);
+
+    void on_actionRemove_Skull_triggered();
+
 private:
     Ui::RegToolBox *ui;
-    QGraphicsScene It_scene,I_scene,main_scene;
+    QGraphicsScene It_scene,I_scene;
 private:
     image::color_image cIt,cI,cJ;
 
