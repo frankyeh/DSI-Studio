@@ -12,9 +12,16 @@ struct fa_template{
     template<typename v_type>
     void to_mni(v_type& p)
     {
-        p[0] = p[0]*tran[0];
-        p[1] = p[1]*tran[5];
-        p[2] = p[2]*tran[10];
+        if(tran[0] == -1)
+            p[0] = -p[0];
+        else
+            p[0] = p[0]*tran[0];
+        if(tran[5] == -1)
+            p[1] = -p[1];
+        else
+            p[1] = p[1]*tran[5];
+        if(tran[10] != 1)
+            p[2] = p[2]*tran[10];
         p += shift;
     }
 };
