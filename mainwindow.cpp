@@ -978,8 +978,8 @@ void MainWindow::on_linear_reg_clicked()
        !load_image_from_files(filename2,ref2,vs2))
         return;
 
-    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,ref1,vs1,ref2,vs2,image::reg::affine,image::reg::mutual_info));
-    manual->timer->start();
+    std::shared->ptr<manual_alignment> manual(new manual_alignment(this,ref1,vs1,ref2,vs2,image::reg::affine,image::reg::mutual_info));
+    manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)
         return;
 }

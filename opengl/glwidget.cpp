@@ -15,7 +15,6 @@
 #include "SliceModel.h"
 #include "fib_data.hpp"
 #include "tracking/color_bar_dialog.hpp"
-#include "manual_alignment.h"
 #include "libs/tracking/tract_model.hpp"
 
 GLenum BlendFunc1[] = {GL_ZERO,GL_ONE,GL_DST_COLOR,
