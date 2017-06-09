@@ -958,14 +958,14 @@ bool load_image_from_files(QStringList filenames,image::basic_image<float,3>& re
 void MainWindow::on_linear_reg_clicked()
 {
     QStringList filename1 = QFileDialog::getOpenFileNames(
-            this,"Open Warpping Image",ui->workDir->currentText(),
+            this,"Open Subject Image",ui->workDir->currentText(),
             "Images (*.nii *nii.gz *.dcm);;All files (*)" );
     if(filename1.isEmpty())
         return;
 
 
     QStringList filename2 = QFileDialog::getOpenFileNames(
-            this,"Open Reference Image",QFileInfo(filename1[0]).absolutePath(),
+            this,"Open Template Image",QFileInfo(filename1[0]).absolutePath(),
             "Images (*.nii *nii.gz *.dcm);;All files (*)" );
     if(filename2.isEmpty())
         return;
