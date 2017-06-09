@@ -736,7 +736,10 @@ void fib_data::run_normalization(bool background)
         thread.run(lambda);
     }
     else
+    {
+        std::cout << "Subject normalization to MNI space." << std::endl;
         lambda();
+    }
 }
 
 void fib_data::subject2mni(image::vector<3>& pos)
