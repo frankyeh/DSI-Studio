@@ -104,7 +104,9 @@ public:
                         It.save_to_file<gz_nifti>("It.nii.gz");
                         Is.save_to_file<gz_nifti>("Is.nii.gz");
                     }
-                    voxel.R2 = image::reg::cdm(It,Is,cdm_dis,thread2.terminated,2.0/*resolution*/);
+                    float resolution = 2.0f;
+                    float smoothness = 0.4f;
+                    voxel.R2 = image::reg::cdm(It,Is,cdm_dis,thread2.terminated,resolution,smoothness);
                     voxel.R2 *= voxel.R2;
                 }
                 image::compose_displacement(J,cdm_dis,voxel.t1w);
@@ -174,13 +176,12 @@ public:
             else
             {
                 bool terminated = false;
-                image::reg::linear_mr(VF,voxel.vs,VG,fa_template_imp.vs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
+                image::reg::linear_mr(VG,fa_template_imp.vs,VF,voxel.vs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
                                    image::transformation_matrix<double> >(0),terminated);
-                image::reg::linear_mr(VF,voxel.vs,VG,fa_template_imp.vs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
+                image::reg::linear_mr(VG,fa_template_imp.vs,VF,voxel.vs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
                                    image::transformation_matrix<double> >(0),terminated);
-                affine = image::transformation_matrix<double>(arg_min,VF.geometry(),voxel.vs,VG.geometry(),fa_template_imp.vs);
+                affine = image::transformation_matrix<double>(arg_min,VG.geometry(),fa_template_imp.vs,VF.geometry(),voxel.vs);
             }
-            affine.inverse();
             VFF.resize(VG.geometry());
             image::resample(VF,VFF,affine,image::cubic);
             if(prog_aborted())
