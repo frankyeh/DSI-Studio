@@ -129,17 +129,16 @@ public:
     connectometry_db db;
     std::vector<item> view_item;
 public:
-    image::reg::normalization<double> reg;
     image::thread thread;
+    int prog;
     std::vector<float> trans_to_mni;
     image::basic_image<image::vector<3,float>,3 > mni_position;
 public:
-    bool can_map_to_mni(void);
-    void run_normalization(int factor,bool background);
+    void run_normalization(bool background);
     void subject2mni(image::vector<3>& pos);
     void subject2mni(image::pixel_index<3>& index,image::vector<3>& pos);
     void get_atlas_roi(int atlas_index,int roi_index,std::vector<image::vector<3,short> >& points,float& r);
-    void get_mni_mapping(image::basic_image<image::vector<3,float>,3 >& mni_position);
+    const image::basic_image<image::vector<3,float>,3 >& get_mni_mapping(void);
     bool has_reg(void)const{return thread.has_started();}
     void get_profile(const std::vector<float>& tract_data,
                      std::vector<float>& profile);

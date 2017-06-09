@@ -17,10 +17,9 @@
 
 extern std::vector<atlas> atlas_list;
 bool atl_load_atlas(std::string atlas_name);
-bool load_roi(std::shared_ptr<fib_data> handle,image::basic_image<image::vector<3>,3>& mapping,RoiMgr& roi_mgr);
+bool load_roi(std::shared_ptr<fib_data> handle,RoiMgr& roi_mgr);
 void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
-                             TractModel& tract_model,
-                             image::basic_image<image::vector<3>,3>& mapping);
+                             TractModel& tract_model);
 
 void get_regions_statistics(std::shared_ptr<fib_data> handle,
                             const std::vector<std::shared_ptr<ROIRegion> >& regions,
@@ -145,12 +144,10 @@ void export_track_info(const std::string& file_name,
     }
 }
 bool load_region(std::shared_ptr<fib_data> handle,
-                 ROIRegion& roi,const std::string& region_text,
-                 image::basic_image<image::vector<3>,3>& mapping);
+                 ROIRegion& roi,const std::string& region_text);
 
 int trk_post(std::shared_ptr<fib_data> handle,
              TractModel& tract_model,
-             image::basic_image<image::vector<3>,3>& mapping,
              const std::string& file_name);
 std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
 int ana(void)
@@ -158,9 +155,6 @@ int ana(void)
     std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
     if(!handle.get())
         return 0;
-
-    image::basic_image<image::vector<3>,3> mapping;
-
     if(po.has("atlas"))
     {
         std::cout << "export information from " << po.get("atlas") << std::endl;
@@ -176,7 +170,7 @@ int ana(void)
                 std::string region_name = atlas_list[i].name;
                 region_name += ":";
                 region_name += atlas_list[i].get_list()[j];
-                if(!load_region(handle,*region.get(),region_name,mapping))
+                if(!load_region(handle,*region.get(),region_name))
                 {
                     std::cout << "Fail to load the ROI file:" << region_name << std::endl;
                     return 0;
@@ -206,7 +200,7 @@ int ana(void)
             return 0;
         }
         ROIRegion region(handle->dim,handle->vs);
-        if(!load_region(handle,region,po.get("roi"),mapping))
+        if(!load_region(handle,region,po.get("roi")))
         {
             std::cout << "Fail to load the ROI file." << std::endl;
             return 0;
@@ -233,8 +227,8 @@ int ana(void)
 
     }
     RoiMgr roi_mgr;
-    if(!load_roi(handle,mapping,roi_mgr))
+    if(!load_roi(handle,roi_mgr))
         return -1;
     tract_model.filter_by_roi(roi_mgr);
-    return trk_post(handle,tract_model,mapping,po.get("output"));
+    return trk_post(handle,tract_model,po.get("output"));
 }

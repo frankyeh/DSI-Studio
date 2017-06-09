@@ -1539,8 +1539,6 @@ bool TractModel::recognize(std::map<float,std::string,std::greater<float> >& res
 {
     if(!track_network.can_recognize())
         return false;
-    if(!handle->can_map_to_mni())
-        return false;
     std::vector<float> accu_input(track_network.cnn.get_output_size());
     image::par_for(tract_data.size(),[&](int i)
     {
@@ -1560,8 +1558,6 @@ extern atlas* track_atlas;
 void TractModel::recognize_report(std::string& report)
 {
     /*
-    if(!handle->can_map_to_mni())
-        return;
     if(track_atlas)
     {
         image::vector<3> dummy;
@@ -1604,8 +1600,6 @@ void TractModel::recognize_report(std::string& report)
 
     */
     if(!track_network.can_recognize())
-        return;
-    if(!handle->can_map_to_mni())
         return;
     std::vector<int> recog_count(track_network.cnn.get_output_size());
     image::par_for(tract_data.size(),[&](int i)
@@ -2031,6 +2025,8 @@ void ConnectivityMatrix::save_to_connectogram(const char* file_name)
 
 void ConnectivityMatrix::set_atlas(atlas& data,const image::basic_image<image::vector<3,float>,3 >& mni_position)
 {
+    if(mni_position.empty())
+        return;
     image::geometry<3> geo(mni_position.geometry());
     image::vector<3> null;
     regions.clear();

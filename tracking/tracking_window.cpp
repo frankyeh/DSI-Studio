@@ -25,6 +25,7 @@
 #include "mapping/fa_template.hpp"
 #include "tracking/atlasdialog.h"
 #include "libs/tracking/tracking_thread.hpp"
+#include "regtoolbox.h"
 
 extern std::vector<atlas> atlas_list;
 extern fa_template fa_template_imp;
@@ -887,9 +888,27 @@ void tracking_window::on_deleteSlice_clicked()
 }
 
 
+bool tracking_window::can_map_to_mni(void)
+{
+    if(!handle->is_human_data)
+        return false;
+    if(handle->is_qsdr || !handle->mni_position.empty())
+        return true;
+    begin_prog("running normalization");
+    handle->run_normalization(true);
+    while(check_prog(handle->prog,5) && handle->mni_position.empty())
+        ;
+    if(prog_aborted())
+    {
+        handle->thread.clear();
+        return false;
+    }
+    return true;
+}
+
 void tracking_window::on_actionSave_Tracts_in_MNI_space_triggered()
 {
-    if(!handle->can_map_to_mni())
+    if(!can_map_to_mni())
     {
         QMessageBox::information(this,"Error","MNI normalization is not supported for the current image resolution",0);
         return;
@@ -997,11 +1016,9 @@ void tracking_window::on_actionManual_Registration_triggered()
                                    fa_template_imp.I,fa_template_imp.vs,
                                    image::reg::affine,image::reg::cost_type::corr));
 
-    manual->timer->start();
+    manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)
         return;
-    handle->thread.clear();
-    handle->reg = manual->data;
 }
 
 
@@ -1144,7 +1161,7 @@ void tracking_window::on_addRegionFromAtlas_clicked()
         QMessageBox::information(0,"Error",QString("DSI Studio cannot find atlas files in ")+QCoreApplication::applicationDirPath()+ "/atlas",0);
         return;
     }
-    if(!handle->can_map_to_mni())
+    if(!can_map_to_mni())
     {
         QMessageBox::information(this,"Error","Atlas is not support for the current image resolution.",0);
         return;
@@ -1161,7 +1178,7 @@ void tracking_window::on_addRegionFromAtlas_clicked()
 }
 void tracking_window::add_roi_from_atlas()
 {
-    if(!handle->can_map_to_mni())
+    if(!can_map_to_mni())
         return;
     QStringList name_value = ui->search_atlas->text().split(":");
     if(name_value.size() != 2)
@@ -1537,16 +1554,15 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
     CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
     if(!reg_slice)
         return;
-    std::auto_ptr<manual_alignment> manual(new manual_alignment(this,
+    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
         slices[0]->get_source(),slices[0]->voxel_size,
         reg_slice->get_source(),reg_slice->voxel_size,
             image::reg::rigid_body,image::reg::cost_type::mutual_info));
-    handle->reg.set_arg(reg_slice->arg_min);
-    manual->timer->start();
+    manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)
         return;
     reg_slice->terminate();
-    reg_slice->arg_min = manual->data.get_arg();
+    reg_slice->arg_min = manual->arg;
     reg_slice->update();
     glWidget->updateGL();
 }

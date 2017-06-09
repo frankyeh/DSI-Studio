@@ -21,7 +21,6 @@ namespace Ui {
 }
 
 class GLWidget;
-class manual_alignment;
 class tract_report;
 class color_bar_dialog;
 class connectivity_matrix_dialog;
@@ -90,6 +89,7 @@ public:
     void float3dwindow(int w,int h);
     void initialize_tracking_index(int index);
     void report(QString string);
+    bool can_map_to_mni(void);
     bool command(QString cmd,QString param = "",QString param2 = "");
 public slots:
     void restore_3D_window();

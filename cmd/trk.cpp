@@ -16,9 +16,6 @@
 #include "vbc/vbc_database.h"
 #include "program_option.hpp"
 bool atl_load_atlas(const std::string atlas_name);
-bool atl_get_mapping(std::shared_ptr<fib_data> handle,
-                     unsigned int factor,
-                     image::basic_image<image::vector<3>,3>& mapping);
 void export_track_info(const std::string& file_name,
                        std::string export_option,
                        std::shared_ptr<fib_data> handle,
@@ -61,8 +58,7 @@ void save_connectivity_matrix(TractModel& tract_model,
 }
 void load_nii_label(const char* filename,std::map<short,std::string>& label_map);
 void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
-                             TractModel& tract_model,
-                             image::basic_image<image::vector<3>,3>& mapping)
+                             TractModel& tract_model)
 {
     std::string source;
     QStringList connectivity_list = QString(po.get("connectivity").c_str()).split(",");
@@ -84,11 +80,14 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
         if(from.geometry() != handle->dim)
         {
             std::cout << roi_file_name << " is used as an MNI space ROI." << std::endl;
-            if(mapping.empty() && !atl_get_mapping(handle,1/*7-9-7*/,mapping))
+            if(handle->get_mni_mapping().empty())
+            {
+                std::cout << "Cannot output connectivity: no mni mapping" << std::endl;
                 continue;
+            }
             atlas_list.clear(); // some atlas may be loaded in ROI
             if(atl_load_atlas(roi_file_name))
-                data.set_atlas(atlas_list[0],mapping);
+                data.set_atlas(atlas_list[0],handle->get_mni_mapping());
             else
                 continue;
         }
@@ -173,8 +172,7 @@ std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name)
 }
 
 bool load_region(std::shared_ptr<fib_data> handle,
-                 ROIRegion& roi,const std::string& region_text,
-                 image::basic_image<image::vector<3>,3>& mapping)
+                 ROIRegion& roi,const std::string& region_text)
 {
     std::cout << "read region from " << region_text << std::endl;
     QStringList str_list = QString(region_text.c_str()).split(",");// splitting actions
@@ -183,13 +181,18 @@ bool load_region(std::shared_ptr<fib_data> handle,
     if(file_name.find(':') != std::string::npos &&
        file_name.find(':') != 1)
     {
+        if(handle->get_mni_mapping().empty())
+        {
+            std::cout << "Cannot output connectivity: no mni mapping." << std::endl;
+            return false;
+        }
+        const image::basic_image<image::vector<3,float>,3 >& mapping = handle->get_mni_mapping();
         std::string atlas_name = file_name.substr(0,file_name.find(':'));
         std::string region_name = file_name.substr(file_name.find(':')+1);
         std::cout << "Loading " << region_name << " from " << atlas_name << " atlas" << std::endl;
         if(!atl_load_atlas(atlas_name))
             return false;
-        if(mapping.empty() && !atl_get_mapping(handle,1/*7-9-7*/,mapping))
-            return false;
+
         image::vector<3> null;
         std::vector<image::vector<3,short> > cur_region;
         for(unsigned int i = 0;i < atlas_list.size();++i)
@@ -269,7 +272,6 @@ bool load_region(std::shared_ptr<fib_data> handle,
 
 int trk_post(std::shared_ptr<fib_data> handle,
              TractModel& tract_model,
-             image::basic_image<image::vector<3>,3>& mapping,
              const std::string& file_name)
 {
     if (po.has("delete_repeat"))
@@ -333,7 +335,7 @@ int trk_post(std::shared_ptr<fib_data> handle,
         tract_model.save_end_points(po.get("end_point").c_str());
 
     if(po.has("connectivity"))
-        get_connectivity_matrix(handle,tract_model,mapping);
+        get_connectivity_matrix(handle,tract_model);
 
     if(po.has("export"))
         export_track_info(file_name,po.get("export"),handle,tract_model);
@@ -341,7 +343,7 @@ int trk_post(std::shared_ptr<fib_data> handle,
 
 }
 
-bool load_roi(std::shared_ptr<fib_data> handle,image::basic_image<image::vector<3>,3>& mapping,RoiMgr& roi_mgr)
+bool load_roi(std::shared_ptr<fib_data> handle,RoiMgr& roi_mgr)
 {
     const int total_count = 14;
     char roi_names[total_count][5] = {"roi","roi2","roi3","roi4","roi5","roa","roa2","roa3","roa4","roa5","end","end2","seed","ter"};
@@ -350,7 +352,7 @@ bool load_roi(std::shared_ptr<fib_data> handle,image::basic_image<image::vector<
     if (po.has(roi_names[index]))
     {
         ROIRegion roi(handle->dim, handle->vs);
-        if(!load_region(handle,roi,po.get(roi_names[index]),mapping))
+        if(!load_region(handle,roi,po.get(roi_names[index])))
             return false;
         roi_mgr.setRegions(handle->dim,roi.get(),roi.resolution_ratio,type[index],po.get(roi_names[index]).c_str());
         std::cout << roi_names[index] << "=" << po.get(roi_names[index]) << std::endl;
@@ -377,7 +379,6 @@ int trk(void)
     }
 
     image::geometry<3> geometry = handle->dim;
-    image::basic_image<image::vector<3>,3> mapping;
     const float *fa0 = handle->dir.fa[0];
     float otsu06 = 0.6*image::segmentation::otsu_threshold(image::make_image(fa0,geometry));
 
@@ -417,7 +418,7 @@ int trk(void)
     std::cout << (tracking_thread.stop_by_tract ? "fiber_count=" : "seed_count=") <<
             termination_count << std::endl;
 
-    if(!load_roi(handle,mapping,tracking_thread.roi_mgr))
+    if(!load_roi(handle,tracking_thread.roi_mgr))
         return -1;
 
     QStringList cnt_file_name;
@@ -552,7 +553,7 @@ int trk(void)
         fout << po.get("source") << ".trk.gz";
         file_name = fout.str();
     }
-    return trk_post(handle,tract_model,mapping,file_name);
+    return trk_post(handle,tract_model,file_name);
 
     }
     catch(std::exception const&  ex)

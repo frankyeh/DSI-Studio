@@ -118,11 +118,9 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
         }
     else
         {
-            if(!cur_tracking_window->handle->can_map_to_mni())
+            if(!cur_tracking_window->can_map_to_mni())
                 return;
-            image::basic_image<image::vector<3,float>,3 > mni_position;
-            cur_tracking_window->handle->get_mni_mapping(mni_position);
-            data.set_atlas(atlas_list[ui->region_list->currentIndex()-1],mni_position);
+            data.set_atlas(atlas_list[ui->region_list->currentIndex()-1],cur_tracking_window->handle->get_mni_mapping());
         }
 
     TractModel tracks(cur_tracking_window->handle);

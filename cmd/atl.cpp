@@ -62,20 +62,6 @@ bool atl_load_atlas(std::string atlas_name)
     }
     return true;
 }
-bool atl_get_mapping(std::shared_ptr<fib_data> handle,
-                     unsigned int factor,
-                     image::basic_image<image::vector<3>,3>& mapping)
-{
-    if(fa_template_imp.I.empty() && !fa_template_imp.load_from_file())
-        return false;
-    if(!handle->is_qsdr)
-    {
-        std::cout << "Conduct spatial warping with norm factor of " << factor << std::endl;
-        handle->run_normalization(factor,false/*not background*/);
-    }
-    handle->get_mni_mapping(mapping);
-    return true;
-}
 
 void atl_save_mapping(const std::string& file_name,const image::geometry<3>& geo,
                       const image::basic_image<image::vector<3>,3>& mapping,
@@ -169,11 +155,8 @@ int atl(void)
     if(!atl_load_atlas(po.get("atlas")))
         return 0;
 
-    image::basic_image<image::vector<3>,3> mapping;
-    if(!atl_get_mapping(handle,po.get("order",int(0)) + 1,mapping))
-        return 0;
     atl_save_mapping(po.get("source"),handle->dim,
-                     mapping,handle->trans_to_mni,handle->vs,
+                     handle->get_mni_mapping(),handle->trans_to_mni,handle->vs,
                      po.get("output","multiple") == "multiple");
     return 0;
 }

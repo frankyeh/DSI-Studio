@@ -678,35 +678,57 @@ void fib_data::get_index_titles(std::vector<std::string>& titles)
     }
 }
 extern fa_template fa_template_imp;
-bool fib_data::can_map_to_mni(void)
-{
-    if(!is_human_data)
-        return false;
-    if(is_qsdr || !mni_position.empty())
-        return true;
-    if(!has_reg())
-    {
-        begin_prog("running normalization");
-        run_normalization(1,true);
-        while(check_prog(reg.get_prog(),3) && !prog_aborted())
-            ;
-        check_prog(1,1);
-    }
-    return true;
-}
 
-void fib_data::run_normalization(int factor,bool background)
+void fib_data::run_normalization(bool background)
 {
-    auto lambda = [this,factor]()
+    prog = 0;
+    auto lambda = [this]()
     {
-        image::basic_image<float,3> from(dir.fa[0],dim),to(fa_template_imp.I);
-        image::filter::gaussian(from);
-        from -= image::segmentation::otsu_threshold(from);
-        image::lower_threshold(from,0.0);
-        image::normalize(from,1.0);
-        image::normalize(to,1.0);
-        reg.run_reg(from,vs,fa_template_imp.I,fa_template_imp.vs,
-                    factor,image::reg::corr,image::reg::affine,thread.terminated);
+        if(fa_template_imp.I.empty() && !fa_template_imp.load_from_file())
+        {
+            prog = 5;
+            return;
+        }
+        image::affine_transform<float> arg;
+        image::transformation_matrix<float> T;
+        image::basic_image<float,3> S(dir.fa[0],dim);
+        image::filter::gaussian(S);
+        S -= image::segmentation::otsu_threshold(S);
+        image::lower_threshold(S,0.0);
+        image::normalize(S,1.0);
+        prog = 1;
+        image::reg::linear_mr(fa_template_imp.I,fa_template_imp.vs,S,vs,arg,image::reg::affine,
+                              image::reg::mutual_information(),thread.terminated);
+        prog = 2;
+        T = image::transformation_matrix<float>(arg,fa_template_imp.I.geometry(),fa_template_imp.vs,S.geometry(),vs);
+        if(thread.terminated)
+            return;
+        image::reg::bfnorm_mapping<float,3> bf(fa_template_imp.I.geometry(),image::geometry<3>(7,9,7));
+        image::basic_image<float,3> new_S(fa_template_imp.I.geometry());
+        image::resample_mt(S,new_S,T,image::linear);
+        prog = 3;
+        image::reg::bfnorm(bf,new_S,fa_template_imp.I,thread.terminated,std::thread::hardware_concurrency());
+        if(thread.terminated)
+            return;
+        prog = 4;
+        image::basic_image<image::vector<3,float>,3 > mni(S.geometry());
+        T.inverse();
+        if(thread.terminated)
+            return;
+        mni.for_each_mt([&](image::vector<3,float>& v,const image::pixel_index<3>& pos)
+        {
+            image::vector<3> p(pos);
+            T(p);
+            v = p;
+            p.round();
+            bf.get_displacement(image::vector<3,int>(p[0],p[1],p[2]),p);
+            v += p;
+            fa_template_imp.to_mni(v);
+        });
+        if(thread.terminated)
+            return;
+        mni_position.swap(mni);
+        prog = 5;
     };
 
     if(background)
@@ -726,39 +748,39 @@ void fib_data::subject2mni(image::vector<3>& pos)
         pos.to(trans_to_mni);
         return;
     }
-    reg(pos);
-    fa_template_imp.to_mni(pos);
+    image::vector<3> p;
+    image::estimate(mni_position,pos,p);
+    pos = p;
 }
 void fib_data::subject2mni(image::pixel_index<3>& index,image::vector<3>& pos)
 {
-    if(mni_position.empty())
+    if(!is_human_data)
+        return;
+    if(is_qsdr)
     {
-        pos = index.begin();
-        subject2mni(pos);
+        pos = index;
+        pos.to(trans_to_mni);
+        return;
     }
-    else
-    {
-        pos = mni_position[index.index()];
-    }
+    if(!mni_position.empty())
+        mni_position[index.index()];
+    return;
 }
 
 void fib_data::get_atlas_roi(int atlas_index,int roi_index,std::vector<image::vector<3,short> >& points,float& r)
 {
+    if(get_mni_mapping().empty())
+        return;
     // this will load the files from storage to prevent GUI multishread crash
     atlas_list[atlas_index].is_labeled_as(image::vector<3>(0,0,0), roi_index);
-
     unsigned int thread_count = std::thread::hardware_concurrency();
     std::vector<std::vector<image::vector<3,short> > > buf(thread_count);
-    r = std::round(vs[0]);
-    image::geometry<3> geo(dim[0]*r,dim[1]*r,dim[2]*r);
-    image::par_for2(geo.size(),[&](unsigned int i,unsigned int id)
+    r = 1.0;
+    mni_position.for_each_mt2([&](const image::vector<3>& mni,const image::pixel_index<3>& index,int id)
     {
-        image::pixel_index<3>index(i,geo);
-        image::vector<3> mni(index[0],index[1],index[2]);
-        mni /= r;
-        subject2mni(mni);
-        mni.round();
-        if (atlas_list[atlas_index].is_labeled_as(mni, roi_index))
+        image::vector<3> rmni(mni);
+        rmni.round();
+        if (atlas_list[atlas_index].is_labeled_as(rmni, roi_index))
             buf[id].push_back(image::vector<3,short>(index.begin()));
     });
     points.clear();
@@ -767,23 +789,24 @@ void fib_data::get_atlas_roi(int atlas_index,int roi_index,std::vector<image::ve
 
 
 }
-
-void fib_data::get_mni_mapping(image::basic_image<image::vector<3,float>,3 >& pos)
+const image::basic_image<image::vector<3,float>,3 >& fib_data::get_mni_mapping(void)
 {
     if(!mni_position.empty())
+        return mni_position;
+    if(is_qsdr)
     {
-        pos = mni_position;
-        return;
-    }
-    pos.resize(dim);
-    for (image::pixel_index<3>index(dim); index < dim.size();++index)
-        if(dir.get_fa(index.index(),0) > 0)
+        mni_position.resize(dim);
+        mni_position.for_each_mt([&](image::vector<3>& mni,const image::pixel_index<3>& index)
         {
-            image::vector<3,float> mni;
-            subject2mni(index,mni);
-            pos[index.index()] = mni;
-        }
+            mni = index.begin();
+            mni.to(trans_to_mni);
+        });
+        return mni_position;
+    }
+    run_normalization(false);
+    return mni_position;
 }
+
 void fib_data::get_profile(const std::vector<float>& tract_data,
                  std::vector<float>& profile_)
 {

@@ -466,7 +466,7 @@ void TractTableWidget::save_end_point_in_mni(void)
 {
     if(currentRow() >= tract_models.size())
         return;
-    if(!cur_tracking_window.handle->can_map_to_mni())
+    if(!cur_tracking_window.can_map_to_mni())
         return;
     QString filename;
     filename = QFileDialog::getSaveFileName(
@@ -507,7 +507,7 @@ void TractTableWidget::save_profile(void)
 {
     if(currentRow() >= tract_models.size())
         return;
-    if(!cur_tracking_window.handle->can_map_to_mni())
+    if(!cur_tracking_window.can_map_to_mni())
         return;
     QString filename;
     filename = QFileDialog::getSaveFileName(
@@ -636,7 +636,8 @@ void TractTableWidget::recog_tracks(void)
 {
     if(currentRow() >= tract_models.size() || tract_models[currentRow()]->get_tracts().size() == 0)
         return;
-
+    if(!cur_tracking_window.can_map_to_mni())
+        return;
     std::map<float,std::string,std::greater<float> > sorted_list;
     if(!tract_models[currentRow()]->recognize(sorted_list))
     {
