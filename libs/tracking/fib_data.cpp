@@ -689,18 +689,32 @@ void fib_data::run_normalization(bool background)
             prog = 5;
             return;
         }
-        image::affine_transform<float> arg;
-        image::transformation_matrix<float> T;
+        image::affine_transform<float> arg,arg2;
+        image::transformation_matrix<float> T,T2;
         image::basic_image<float,3> S(dir.fa[0],dim);
         image::filter::gaussian(S);
         S -= image::segmentation::otsu_threshold(S);
         image::lower_threshold(S,0.0);
         image::normalize(S,1.0);
         prog = 1;
-        image::reg::linear_mr(fa_template_imp.I,fa_template_imp.vs,S,vs,arg,image::reg::affine,
-                              image::reg::mutual_information(),thread.terminated);
-        prog = 2;
+        image::par_for(2,[&](int i){
+            if(i)
+            {
+                image::reg::linear_mr(fa_template_imp.I,fa_template_imp.vs,S,vs,arg,image::reg::affine,
+                    image::reg::mutual_information(),thread.terminated);
+            }
+            else
+            {
+                image::reg::linear_mr(S,vs,fa_template_imp.I,fa_template_imp.vs,arg2,image::reg::affine,
+                    image::reg::mutual_information(),thread.terminated);
+            }
+        });
         T = image::transformation_matrix<float>(arg,fa_template_imp.I.geometry(),fa_template_imp.vs,S.geometry(),vs);
+        T2 = image::transformation_matrix<float>(arg2,S.geometry(),vs,fa_template_imp.I.geometry(),fa_template_imp.vs);
+        T2.inverse();
+        if(image::reg::mutual_information()(fa_template_imp.I,S,T2) < image::reg::mutual_information()(fa_template_imp.I,S,T))
+            T = T2;
+        prog = 2;
         if(thread.terminated)
             return;
         image::reg::bfnorm_mapping<float,3> bf(fa_template_imp.I.geometry(),image::geometry<3>(7,9,7));
