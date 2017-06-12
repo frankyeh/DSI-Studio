@@ -218,24 +218,6 @@ struct terminated_class {
     }
 };
 
-template<class T>
-void match_signal(const T& VG,T& VFF)
-{
-    std::vector<float> x,y;
-    x.reserve(VG.size());
-    y.reserve(VG.size());
-    for(unsigned int index = 0;index < VG.size();++index)
-        if(VG[index] > 0)
-        {
-            x.push_back(VFF[index]);
-            y.push_back(VG[index]);
-        }
-    std::pair<double,double> r = image::linear_regression(x.begin(),x.end(),y.begin());
-    for(unsigned int index = 0;index < VG.size();++index)
-        if(VG[index] > 0)
-            VFF[index] = std::max<float>(0,VFF[index]*r.first+r.second);
-        else
-            VFF[index] = 0;
-}
+
 
 #endif//BASIC_VOXEL_HPP
