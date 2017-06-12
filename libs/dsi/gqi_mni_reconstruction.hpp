@@ -162,7 +162,6 @@ public:
         {
             begin_prog("linear registration");
 
-            image::affine_transform<double> arg_min;
             // VG: FA TEMPLATE
             // VF: SUBJECT QA
             if(export_intermediate)
@@ -176,11 +175,8 @@ public:
             else
             {
                 bool terminated = false;
-                image::reg::linear_mr(VG,fa_template_imp.vs,VF,voxel.vs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
-                                   image::transformation_matrix<double> >(0),terminated);
-                image::reg::linear_mr(VG,fa_template_imp.vs,VF,voxel.vs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
-                                   image::transformation_matrix<double> >(0),terminated);
-                affine = image::transformation_matrix<double>(arg_min,VG.geometry(),fa_template_imp.vs,VF.geometry(),voxel.vs);
+                image::reg::two_way_linear_mr(VG,fa_template_imp.vs,VF,voxel.vs,affine,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
+                                              image::transformation_matrix<double> >(0),terminated);
             }
             VFF.resize(VG.geometry());
             image::resample(VF,VFF,affine,image::cubic);
@@ -189,7 +185,7 @@ public:
 
         }
         //linear regression
-        match_signal(VG,VFF);
+        image::match_signal(VG,VFF);
 
 
         if(export_intermediate)
