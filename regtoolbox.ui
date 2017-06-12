@@ -133,7 +133,7 @@
              </size>
             </property>
             <property name="currentIndex">
-             <number>1</number>
+             <number>0</number>
             </property>
             <item>
              <property name="text">
@@ -148,6 +148,11 @@
             <item>
              <property name="text">
               <string>Nonlinear only (subject-template)</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Linear affine only (subject-template)</string>
              </property>
             </item>
            </widget>
@@ -172,6 +177,9 @@
              </property>
              <item>
               <widget class="QComboBox" name="reg_method">
+               <property name="currentIndex">
+                <number>1</number>
+               </property>
                <item>
                 <property name="text">
                  <string>SPM norm</string>
@@ -288,7 +296,7 @@
        <item>
         <widget class="QLabel" name="running_label">
          <property name="text">
-          <string>                   </string>
+          <string/>
          </property>
         </widget>
        </item>
@@ -622,6 +630,8 @@
      <string>Edit</string>
     </property>
     <addaction name="actionRemove_Skull"/>
+    <addaction name="actionMatch_Intensity"/>
+    <addaction name="actionRemove_Background"/>
    </widget>
    <addaction name="menu_Open"/>
    <addaction name="menuEdit"/>
@@ -634,6 +644,16 @@
   <action name="actionRemove_Skull">
    <property name="text">
     <string>Remove Skull...</string>
+   </property>
+  </action>
+  <action name="actionMatch_Intensity">
+   <property name="text">
+    <string>Match Intensity...</string>
+   </property>
+  </action>
+  <action name="actionRemove_Background">
+   <property name="text">
+    <string>Remove Background...</string>
    </property>
   </action>
  </widget>

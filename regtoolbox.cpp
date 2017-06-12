@@ -73,6 +73,8 @@ void RegToolBox::on_OpenTemplate_clicked()
     ui->slice_pos->setValue(It.depth()/2);
     clear();
     show_image();
+    if(It.geometry() == I.geometry())
+        ui->reg_type->setCurrentIndex(2);
 }
 
 void RegToolBox::on_OpenSubject_clicked()
@@ -94,6 +96,8 @@ void RegToolBox::on_OpenSubject_clicked()
     nifti.get_voxel_size(Ivs.begin());
     clear();
     show_image();
+    if(It.geometry() == I.geometry())
+        ui->reg_type->setCurrentIndex(2);
 }
 
 
@@ -250,13 +254,33 @@ void RegToolBox::on_timer()
 void RegToolBox::linear_reg(image::reg::reg_type reg_type)
 {
     status = "linear registration";
-    image::reg::linear_mr(It,Itvs,I,Ivs,arg,reg_type,image::reg::mutual_information(),thread.terminated);
-    status += "..first round done";
-    image::reg::linear_mr(It,Itvs,I,Ivs,arg,reg_type,image::reg::mutual_information(),thread.terminated);
-    status += "..second round done";
+    image::affine_transform<double> arg2;
+    image::par_for(2,[&](int i){
+        if(i)
+        {
+            image::reg::linear_mr(It,Itvs,I,Ivs,arg,reg_type,image::reg::mutual_information(),thread.terminated);
+            image::reg::linear_mr(It,Itvs,I,Ivs,arg,reg_type,image::reg::mutual_information(),thread.terminated);
+        }
+        else
+        {
+            image::reg::linear_mr(I,Ivs,It,Itvs,arg2,reg_type,image::reg::mutual_information(),thread.terminated);
+            image::reg::linear_mr(I,Ivs,It,Itvs,arg2,reg_type,image::reg::mutual_information(),thread.terminated);
+        }
+    });
+
+    image::transformation_matrix<double> T(arg,It.geometry(),Itvs,I.geometry(),Ivs);
+    image::transformation_matrix<double> T2(arg2,I.geometry(),Ivs,It.geometry(),Itvs);
+    T2.inverse();
+    if(image::reg::mutual_information()(It,I,T2) < image::reg::mutual_information()(It,I,T))
+        T = T2;
+
     image::basic_image<float,3> J2(It.geometry());
-    image::resample_mt(I,J2,image::transformation_matrix<double>(arg,It.geometry(),Itvs,I.geometry(),Ivs),image::cubic);
+    image::resample_mt(I,J2,T,image::cubic);
+    float r2 = image::correlation(J2.begin(),J2.end(),It.begin());
+    std::cout << "linear:" << r2 << std::endl;
     J.swap(J2);
+    J_view = J;
+
 }
 
 void RegToolBox::nonlinear_reg(int method)
@@ -279,6 +303,7 @@ void RegToolBox::nonlinear_reg(int method)
         dis2.swap(dis);
     }
     image::compose_displacement(J,dis,JJ);
+    std::cout << "nonlinear:" << image::correlation(JJ.begin(),JJ.end(),It.begin()) << std::endl;
 }
 
 void RegToolBox::on_run_reg_clicked()
@@ -313,6 +338,14 @@ void RegToolBox::on_run_reg_clicked()
             else
                 J = I;
             nonlinear_reg(ui->reg_method->currentIndex());
+            reg_done = true;
+            status = "registration done";
+        });
+        break;
+    case 3: // nonlinear only
+        thread.run([this]()
+        {
+            linear_reg(image::reg::affine);
             reg_done = true;
             status = "registration done";
         });
@@ -406,30 +439,27 @@ void RegToolBox::on_actionRemove_Skull_triggered()
                return;
            v = 0.0f;
         });
-        if(!J.empty())
-        {
-
-            if(!dis.empty())
-            {
-                image::transformation_matrix<double> T(arg,It.geometry(),Itvs,I.geometry(),Ivs);
-                T.inverse();
-                image::basic_image<image::vector<3>,3>  inv_dis;
-                image::invert_displacement(dis,inv_dis);
-                I.for_each_mt([&](float& v,const image::pixel_index<3>& pos)
-                {
-                    image::vector<3> p(pos),p2;
-                    T(p);
-                    image::estimate(inv_dis,p,p2);
-                    p += p2;
-                    p.round();
-                    if(It.geometry().is_valid(p) && It.at(p[0],p[1],p[2]) != 0)
-                        return;
-                    v = 0.0f;
-                });
-            }
-        }
-
     }
 
     show_image();
+}
+
+void RegToolBox::on_actionMatch_Intensity_triggered()
+{
+    if(I.geometry() == It.geometry())
+    {
+        image::homogenize(I,It);
+        show_image();
+    }
+}
+
+void RegToolBox::on_actionRemove_Background_triggered()
+{
+    if(!I.empty())
+    {
+        I -= image::segmentation::otsu_threshold(I);
+        image::lower_threshold(I,0.0);
+        image::normalize(I,1.0);
+        show_image();
+    }
 }
