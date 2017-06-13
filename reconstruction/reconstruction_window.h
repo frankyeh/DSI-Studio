@@ -34,13 +34,6 @@ private:
 
     void load_b_table(void);
 private:
-    std::auto_ptr<QTimer> timer;
-    std::vector<image::affine_transform<double> > motion_args;
-    unsigned int progress;
-    bool terminated;
-    std::auto_ptr<std::future<void> > motion_correction_thread;
-
-private:
     QGraphicsScene scene;
     image::color_image buffer;
     QImage slice_image;
@@ -93,7 +86,6 @@ private slots:
     void on_diffusion_sampling_valueChanged(double arg1);
     void on_SlicePos_valueChanged(int value);
     void on_motion_correction_clicked();
-    void check_progress(void);
     void on_scheme_balance_toggled(bool checked);
     void on_half_sphere_toggled(bool checked);
     void on_add_t1t2_clicked();

@@ -11,10 +11,7 @@
 #include "program_option.hpp"
 
 extern fa_template fa_template_imp;
-void rec_motion_correction(ImageModel* handle,unsigned int total_thread,
-                           std::vector<image::affine_transform<double> >& args,
-                           unsigned int& progress,
-                           bool& terminated);
+void rec_motion_correction(ImageModel* handle);
 void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 
 /**
@@ -219,12 +216,8 @@ int rec(void)
 
     if(po.get("motion_correction",int(0)))
     {
-        std::vector<image::affine_transform<double> > arg;
-        unsigned int progress = 0;
-        bool terminated = false;
         std::cout << "correct for motion and eddy current..." << std::endl;
-        rec_motion_correction(handle.get(),po.get("thread_count",int(std::thread::hardware_concurrency())),
-                arg,progress,terminated);
+        rec_motion_correction(handle.get());
         std::cout << "Done." <<std::endl;
     }
     std::cout << "start reconstruction..." <<std::endl;

@@ -38,8 +38,7 @@ bool reconstruction_window::load_src(int index)
 void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 
 reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *parent) :
-    QMainWindow(parent),filenames(filenames_),terminated(false),motion_correction_thread(0),
-        ui(new Ui::reconstruction_window)
+    QMainWindow(parent),filenames(filenames_),ui(new Ui::reconstruction_window)
 {
     ui->setupUi(this);
     if(!load_src(0))
@@ -183,21 +182,8 @@ void reconstruction_window::on_b_table_itemSelectionChanged()
 {
     image::basic_image<float,2> tmp(image::geometry<2>(handle->voxel.dim[0],handle->voxel.dim[1]));
     unsigned int b_index = ui->b_table->currentRow();
-    if(motion_args.empty())
-        std::copy(handle->dwi_data[b_index] + ui->z_pos->value()*tmp.size(),
-                  handle->dwi_data[b_index] + ui->z_pos->value()*tmp.size() + tmp.size(),tmp.begin());
-    else
-    {
-        image::transformation_matrix<double> T(motion_args[b_index],handle->voxel.dim,handle->voxel.vs,handle->voxel.dim,handle->voxel.vs);
-        for(int y = 0,index = 0;y < handle->voxel.dim[1];++y)
-            for(int x = 0;x < handle->voxel.dim[0];++x,++index)
-            {
-                image::vector<3> pos(x,y,ui->z_pos->value()),to;
-                T(pos,to);
-                image::estimate(image::make_image(handle->dwi_data[b_index],handle->voxel.dim),
-                                to,tmp[index],image::cubic);
-            }
-    }
+    std::copy(handle->dwi_data[b_index] + ui->z_pos->value()*tmp.size(),
+              handle->dwi_data[b_index] + ui->z_pos->value()*tmp.size() + tmp.size(),tmp.begin());
     tmp += ui->brightness->value();
     if( ui->contrast->value() != 0.0)
         tmp *= 255.99/ui->contrast->value();
@@ -231,12 +217,6 @@ void reconstruction_window::closeEvent(QCloseEvent *event)
 
 reconstruction_window::~reconstruction_window()
 {
-    if(motion_correction_thread.get())
-    {
-        terminated = true;
-        motion_correction_thread->wait();
-        motion_correction_thread.reset(0);
-    }
     delete ui;
 }
 
@@ -874,32 +854,25 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
     show_view(scene,slice_image);
 }
 
-void rec_motion_correction_parallel(ImageModel* handle,
-                                    std::vector<image::affine_transform<double> >& args,
-                                    unsigned int total_thread,unsigned int id,unsigned int& progress,bool& terminated)
+void rec_motion_correction(ImageModel* handle)
 {
-    for(unsigned int i = id;i < handle->voxel.bvalues.size() && !terminated;i += total_thread)
+    begin_prog("correcting");
+    image::basic_image<float,3> I0;
+    I0 = image::make_image(handle->dwi_data[0],handle->voxel.dim);
+    image::mean(I0);
+    image::filter::gradient_magnitude(I0);
+    image::normalize(I0,1);
+    image::par_for2(handle->voxel.bvalues.size(),[&](int i,int id)
     {
-
+        if(i == 0 || prog_aborted())
+            return;
         if(id == 0)
-            progress = i*99/handle->voxel.bvalues.size();
-        if(i == 0)
-            continue;
-        image::basic_image<float,3> I0,I1;
-        I0 = image::make_image(handle->dwi_data[0],handle->voxel.dim);
+            check_prog(i*99/handle->voxel.bvalues.size(),100);
+        image::basic_image<float,3> I1;
         I1 = image::make_image(handle->dwi_data[i],handle->voxel.dim);
-        image::filter::mean(I0);
-        image::filter::mean(I1);
-        image::filter::mean(I0);
-        image::filter::mean(I1);
-        image::filter::mean(I0);
-        image::filter::mean(I1);
-        image::filter::gradient_magnitude(I0);
+        image::mean(I1);
         image::filter::gradient_magnitude(I1);
-        image::normalize(I0);
-        image::normalize(I1);
-
-
+        image::normalize(I1,1);
         image::affine_transform<float> upper,lower;
         upper.translocation[0] = 2;
         upper.translocation[1] = 2;
@@ -907,95 +880,55 @@ void rec_motion_correction_parallel(ImageModel* handle,
         lower.translocation[0] = -2;
         lower.translocation[1] = -2;
         lower.translocation[2] = -2;
-        upper.rotation[0] = 3.1415926*3.0/180.0;
-        upper.rotation[1] = 3.1415926*3.0/180.0;
-        upper.rotation[2] = 3.1415926*3.0/180.0;
-        lower.rotation[0] = -3.1415926*3.0/180.0;
-        lower.rotation[1] = -3.1415926*3.0/180.0;
-        lower.rotation[2] = -3.1415926*3.0/180.0;
-        upper.scaling[0] = 1.03;
-        upper.scaling[1] = 1.03;
-        upper.scaling[2] = 1.03;
-        lower.scaling[0] = 0.96;
-        lower.scaling[1] = 0.96;
-        lower.scaling[2] = 0.96;
+        upper.rotation[0] = 3.1415926*2.0/180.0;
+        upper.rotation[1] = 3.1415926*2.0/180.0;
+        upper.rotation[2] = 3.1415926*2.0/180.0;
+        lower.rotation[0] = -3.1415926*2.0/180.0;
+        lower.rotation[1] = -3.1415926*2.0/180.0;
+        lower.rotation[2] = -3.1415926*2.0/180.0;
+        upper.scaling[0] = 1.02;
+        upper.scaling[1] = 1.02;
+        upper.scaling[2] = 1.02;
+        lower.scaling[0] = 0.98;
+        lower.scaling[1] = 0.98;
+        lower.scaling[2] = 0.98;
         upper.affine[0] = 0.04;
         upper.affine[1] = 0.04;
         upper.affine[2] = 0.04;
         lower.affine[0] = -0.04;
         lower.affine[1] = -0.04;
         lower.affine[2] = -0.04;
-        image::normalize(I1);
+        image::affine_transform<double> arg;
         image::reg::fun_adoptor<image::basic_image<float,3>,
                                 image::vector<3>,
                                 image::affine_transform<double>,
                                 image::affine_transform<double>,
-                                image::reg::square_error> fun(I0,handle->voxel.vs,I1,handle->voxel.vs,args[i]);
-        double optimal_value = fun(args[i][0]);
-        image::optimization::graient_descent(args[i].begin(),args[i].end(),
-                                             upper.begin(),lower.begin(),fun,optimal_value,terminated,0.05);
-        //for(unsigned int index = 0;index < 12;++index)
-        //    std::cout << args[i][index] << " ";
-        //std::cout << std::endl;
-    }
-}
+                                image::reg::mutual_information> fun(I0,handle->voxel.vs,I1,handle->voxel.vs,arg);
+        bool terminated = false;
+        double optimal_value = fun(arg);
+        image::optimization::graient_descent(arg.begin(),arg.end(),
+                                             upper.begin(),lower.begin(),fun,optimal_value,terminated,0.001);
+        for(unsigned int i = 0;i < handle->voxel.bvalues.size();++i)
+            handle->rotate_dwi(i,image::transformation_matrix<double>(arg,handle->voxel.dim,handle->voxel.vs,handle->voxel.dim,handle->voxel.vs));
 
-void rec_motion_correction(ImageModel* handle,unsigned int total_thread,
-                           std::vector<image::affine_transform<double> >& args,
-                           unsigned int& progress,
-                           bool& terminated)
-{
-    args.resize(handle->voxel.bvalues.size());
-    std::vector<std::shared_ptr<std::future<void> > > threads;
-    for(unsigned int i = 1;i < total_thread;++i)
-        threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
-            [&,i](){rec_motion_correction_parallel(handle,args,total_thread,i,progress,terminated);})));
-    rec_motion_correction_parallel(handle,args,total_thread,0,progress,terminated);
-    for(unsigned int i = 0;i < threads.size();++i)
-        threads[i]->wait();
-    for(unsigned int i = 0;i < handle->voxel.bvalues.size();++i)
-        handle->rotate_dwi(i,image::transformation_matrix<double>(args[i],handle->voxel.dim,handle->voxel.vs,handle->voxel.dim,handle->voxel.vs));
-    args.clear();
-    progress = 100;
+        if(i == 1)
+            for(int i=0;i < 12;++i)
+                std::cout << arg[i] << " " << std::endl;
+    });
+    check_prog(1,1);
+
 }
 
 void reconstruction_window::on_motion_correction_clicked()
 {
-    if(motion_correction_thread.get())
+    rec_motion_correction(handle.get());
+    if(!prog_aborted())
     {
-        terminated = true;
-        motion_correction_thread->wait();
-        ui->motion_correction->setText("Motion/Eddy Correction");
-        timer.reset(0);
-        ui->motion_correction_progress->setValue(0);
-        motion_args.clear();
-        motion_correction_thread.reset(0);
-        return;
-    }
-    terminated = false;
-    motion_correction_thread.reset(new std::future<void>(std::async(std::launch::async,
-            [this](){rec_motion_correction(handle.get(),std::thread::hardware_concurrency(),motion_args,progress,terminated);})));
-    timer.reset(new QTimer(this));
-    timer->setInterval(1000);
-    timer->start();
-    connect(timer.get(), SIGNAL(timeout()), this, SLOT(check_progress()));
-    ui->motion_correction->setText("Stop");
-}
-
-void reconstruction_window::check_progress(void)
-{
-    ui->motion_correction_progress->setValue(progress);
-    if(progress == 100)
-    {
-        on_motion_correction_clicked();
         handle->calculate_dwi_sum();
         handle->calculate_mask();
         update_image();
     }
 }
-
-
-
 
 void reconstruction_window::on_scheme_balance_toggled(bool checked)
 {

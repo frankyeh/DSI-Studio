@@ -105,6 +105,7 @@ public:
         image::basic_image<float,3> tmp(voxel.dim);
         auto I = image::make_image((unsigned short*)dwi_data[dwi_index],voxel.dim);
         image::resample(I,tmp,affine,image::cubic);
+        image::lower_threshold(tmp,0);
         std::copy(tmp.begin(),tmp.end(),I.begin());
 
 
