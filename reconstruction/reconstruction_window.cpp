@@ -910,10 +910,6 @@ void rec_motion_correction(ImageModel* handle)
                                              upper.begin(),lower.begin(),fun,optimal_value,terminated,0.001);
         for(unsigned int i = 0;i < handle->voxel.bvalues.size();++i)
             handle->rotate_dwi(i,image::transformation_matrix<double>(arg,handle->voxel.dim,handle->voxel.vs,handle->voxel.dim,handle->voxel.vs));
-
-        if(i == 1)
-            for(int i=0;i < 12;++i)
-                std::cout << arg[i] << " " << std::endl;
     });
     check_prog(1,1);
 
