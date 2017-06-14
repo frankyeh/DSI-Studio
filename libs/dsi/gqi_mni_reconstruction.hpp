@@ -100,7 +100,7 @@ public:
                         Is.save_to_file<gz_nifti>("Is.nii.gz");
                     }
                     float resolution = 2.0f;
-                    float smoothness = 0.1f;
+                    float smoothness = 0.5f;
                     voxel.R2 = image::reg::cdm(It,Is,cdm_dis,thread2.terminated,resolution,smoothness);
                     voxel.R2 *= voxel.R2;
                 }
@@ -230,7 +230,7 @@ public:
                 else
                 {
                     bool terminated = false;
-                    image::reg::cdm(VG,VFF,cdm_dis,terminated,2.0,0.4);
+                    image::reg::cdm(VG,VFF,cdm_dis,terminated,2.0,0.5);
                     image::basic_image<float,3> VFFF;
                     image::compose_displacement(VFF,cdm_dis,VFFF);
                     float r = image::correlation(VG.begin(),VG.end(),VFFF.begin());
