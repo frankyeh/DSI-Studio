@@ -431,7 +431,7 @@ const char* reconstruction(ImageModel* image_model,
             break;
         case 7:
 
-            if(image_model->voxel.reg_method == 3) // DMDM
+            if(image_model->voxel.reg_method == 4) // DMDM
             {
                 {
                     gz_nifti in;
@@ -458,9 +458,7 @@ const char* reconstruction(ImageModel* image_model,
             if(image_model->voxel.output_rdi)
                 image_model->voxel.recon_report <<
                     " The restricted diffusion was quantified using restricted diffusion imaging (Yeh et al., MRM, 77:603–612 (2017)).";
-            if(image_model->voxel.reg_method == 3 && !image_model->voxel.t1w.empty()) // T1W CDM
-                out << ".cdm";
-            else
+            if(image_model->voxel.reg_method < 4) // 0,1,2 SPM norm, 3 CDM, 4 CDM-T1W
             {
                 std::vector<image::pointer_image<float,3> > tmp;
                 tmp.swap(image_model->voxel.grad_dev);
@@ -469,8 +467,13 @@ const char* reconstruction(ImageModel* image_model,
                 if (!image_model->reconstruct<gqi_estimate_response_function>())
                     return "reconstruction canceled";
                 tmp.swap(image_model->voxel.grad_dev);
-                out << ".reg" << (int)image_model->voxel.reg_method;
+                if(image_model->voxel.reg_method == 3)
+                    out << ".cdm";
+                else
+                    out << ".reg" << (int)image_model->voxel.reg_method;
             }
+            else
+                out << ".cdmt1w";
 
             out << (image_model->voxel.r2_weighted ? ".qsdr2.":".qsdr.");
             out << param_values[0] << "." << param_values[1] << "mm";

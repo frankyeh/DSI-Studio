@@ -53,7 +53,7 @@ public:
         src_geo = voxel.dim;
         voxel_volume_scale = (voxel.vs[0]*voxel.vs[1]*voxel.vs[2]);
 
-        if(voxel.reg_method == 3 && !voxel.t1w.empty()) //CDM
+        if(voxel.reg_method == 4 && !voxel.t1w.empty()) //CDM
         {
             int prog = 0;
             // calculate the space shift between DWI and T1W
@@ -68,7 +68,7 @@ public:
             image::normalize(voxel.t1wt,1.0);
 
             image::thread thread1,thread2;
-            image::affine_transform<double> reg1,reg2;
+            image::transformation_matrix<double> reg1T,reg2T;
             thread1.run([&](){
                 if(export_intermediate)
                 {
@@ -79,20 +79,15 @@ public:
                     nii.save_to_file("b0.nii.gz");
                     image::flip_xy(voxel.dwi_sum);
                 }
-                image::reg::linear_mr(voxel.t1w,voxel.t1w_vs,voxel.dwi_sum,voxel.vs,
-                               reg1,image::reg::rigid_body,image::reg::mutual_information(),thread1.terminated);
-                image::reg::linear_mr(voxel.t1w,voxel.t1w_vs,voxel.dwi_sum,voxel.vs,
-                               reg1,image::reg::rigid_body,image::reg::mutual_information(),thread1.terminated);
+                image::reg::two_way_linear_mr(voxel.t1w,voxel.t1w_vs,voxel.dwi_sum,voxel.vs,
+                               reg1T,image::reg::rigid_body,image::reg::mutual_information(),thread1.terminated);
             });
             thread2.run([&](){
                 prog = 1;
-                image::reg::linear_mr(voxel.t1wt,voxel.t1wt_vs,voxel.t1w,voxel.t1w_vs,
-                               reg2,image::reg::affine,image::reg::mutual_information(),thread2.terminated);
-                image::reg::linear_mr(voxel.t1wt,voxel.t1wt_vs,voxel.t1w,voxel.t1w_vs,
-                               reg2,image::reg::affine,image::reg::mutual_information(),thread2.terminated);
+                image::reg::two_way_linear_mr(voxel.t1wt,voxel.t1wt_vs,voxel.t1w,voxel.t1w_vs,
+                               reg2T,image::reg::affine,image::reg::mutual_information(),thread2.terminated);
                 image::basic_image<float,3> J(voxel.t1wt.geometry());
-                image::resample_mt(voxel.t1w,J,
-                    image::transformation_matrix<double>(reg2,voxel.t1wt.geometry(),voxel.t1wt_vs,voxel.t1w.geometry(),voxel.t1w_vs),image::cubic);
+                image::resample_mt(voxel.t1w,J,reg2T,image::cubic);
 
                 prog = 3;
 
@@ -105,7 +100,7 @@ public:
                         Is.save_to_file<gz_nifti>("Is.nii.gz");
                     }
                     float resolution = 2.0f;
-                    float smoothness = 0.4f;
+                    float smoothness = 0.1f;
                     voxel.R2 = image::reg::cdm(It,Is,cdm_dis,thread2.terminated,resolution,smoothness);
                     voxel.R2 *= voxel.R2;
                 }
@@ -134,9 +129,9 @@ public:
             affine.shift[1] = from[1];
             affine.shift[2] = from[2];
             // affine = FA template -> T1W template
-            affine += image::transformation_matrix<double> (reg2,voxel.t1wt.geometry(),voxel.t1wt_vs,voxel.t1w.geometry(),voxel.t1w_vs);
+            affine += reg2T;
             // affine = FA template -> T1W template -> Subject T1W
-            affine += image::transformation_matrix<double>(reg1,voxel.t1w.geometry(),voxel.t1w_vs,voxel.dim,voxel.vs);
+            affine += reg1T;
             // affine = FA template -> T1W template -> Subject T1W -> DWI
 
             if(export_intermediate)
@@ -220,16 +215,29 @@ public:
             }
             else
             {
-                mni.reset(new image::reg::bfnorm_mapping<double,3>(VG.geometry(),image::geometry<3>(factor*7,factor*9,factor*7)));
-                image::reg::bfnorm(*mni.get(),VG,VFF,ter,voxel.thread_count);
-                voxel.R2 = -image::reg::correlation()(VG,VFF,(*mni.get()));
-                std::cout << "R2=" << voxel.R2 << std::endl;
-                if(export_intermediate)
+                if(factor <= 3)
                 {
-                    image::basic_image<float,3> VFFF(VG.geometry());
-                    image::resample(VFF,VFFF,*mni.get(),image::cubic);
-                    VFFF.save_to_file<gz_nifti>("Subject_QA_nonlinear_reg.nii.gz");
+                    mni.reset(new image::reg::bfnorm_mapping<double,3>(VG.geometry(),image::geometry<3>(factor*7,factor*9,factor*7)));
+                    image::reg::bfnorm(*mni.get(),VG,VFF,ter,voxel.thread_count);
+                    voxel.R2 = -image::reg::correlation()(VG,VFF,(*mni.get()));
+                    if(export_intermediate)
+                    {
+                        image::basic_image<float,3> VFFF(VG.geometry());
+                        image::resample(VFF,VFFF,*mni.get(),image::cubic);
+                        VFFF.save_to_file<gz_nifti>("Subject_QA_nonlinear_reg.nii.gz");
+                    }
                 }
+                else
+                {
+                    bool terminated = false;
+                    image::reg::cdm(VG,VFF,cdm_dis,terminated,2.0,0.4);
+                    image::basic_image<float,3> VFFF;
+                    image::compose_displacement(VFF,cdm_dis,VFFF);
+                    float r = image::correlation(VG.begin(),VG.end(),VFFF.begin());
+                    voxel.R2 = r*r;
+                }
+                std::cout << "R2=" << voxel.R2 << std::endl;
+
             }
         }
         catch(...)
@@ -494,7 +502,7 @@ public:
             }
         }
 
-        if(!cdm_dis.empty())
+        if(!cdm_dis.empty() && !voxel.t1w.empty())
             mat_writer.write("t1w",&voxel.t1w[0],1,voxel.t1w.size());
         mat_writer.write("trans",&*trans_to_mni,4,4);
         mat_writer.write("R2",&voxel.R2,1,1);

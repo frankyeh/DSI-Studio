@@ -50,7 +50,7 @@
     <item>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -855,6 +855,11 @@
                <item>
                 <property name="text">
                  <string>norm 21-27-21</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>CDM</string>
                 </property>
                </item>
                <item>

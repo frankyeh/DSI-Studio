@@ -244,7 +244,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
         settings.setValue("rec_decom_m",params[4]);
     }
     //T1W DMDM
-    if(method_id == 7 && ui->reg_method->currentIndex() == 3)
+    if(method_id == 7 && ui->reg_method->currentIndex() == 4)
     {
         QString t1w_file_name1 =
                 QFileInfo(handle->file_name.c_str()).absolutePath() + "/" + QFileInfo(handle->file_name.c_str()).baseName() + "_t1w.nii.gz";

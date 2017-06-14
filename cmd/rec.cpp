@@ -204,7 +204,7 @@ int rec(void)
             std::cout << "fail reading the mask...using default mask" << std::endl;
     }
 
-    if(method_index == 7 && handle->voxel.reg_method == 3)
+    if(method_index == 7 && handle->voxel.reg_method == 4)
     {
         if(!po.has("t1w"))
         {
