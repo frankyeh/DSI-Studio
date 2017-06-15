@@ -152,6 +152,12 @@ int rec(void)
     handle->voxel.csf_calibration = po.get("csf_calibration",int(0)) && method_index == 4;
     handle->voxel.thread_count = po.get("thread_count",int(std::thread::hardware_concurrency()));
 
+    if(handle->voxel.csf_calibration && !handle->is_human_data())
+    {
+        std::cout << "Not a human brain data set. Disable CSF calibratoin" << std::endl;
+        handle->voxel.csf_calibration = 0;
+    }
+
     std::vector<unsigned int> shell;
     calculate_shell(handle->voxel.bvalues,shell);
     handle->voxel.half_sphere = po.get("half_sphere",
@@ -224,6 +230,8 @@ int rec(void)
     const char* msg = reconstruction(handle.get(),method_index,
                                      param,po.get("check_btable",int(1)));
     if (!msg)
-        std::cout << "Reconstruction finished:" << msg << std::endl;
+        std::cout << "Reconstruction finished." << std::endl;
+    else
+        std::cout << msg << std::endl;
     return 0;
 }
