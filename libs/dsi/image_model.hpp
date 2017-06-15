@@ -15,6 +15,10 @@ public:
     std::vector<const unsigned short*> dwi_data;
     image::basic_image<unsigned char,3> mask;
 public:
+    bool is_human_data(void) const
+    {
+        return voxel.dim[0]*voxel.vs[0] > 100 && voxel.dim[1]*voxel.vs[1] > 120 && voxel.dim[2]*voxel.vs[2] > 40;
+    }
     void flip_b_table(const unsigned char* order)
     {
         for(unsigned int index = 0;index < voxel.bvectors.size();++index)
