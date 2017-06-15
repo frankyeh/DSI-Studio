@@ -143,9 +143,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
                 handle->voxel.bvalues.size()-shell.back() < 100);
         }
     }
-    if(handle->voxel.dim[0]*handle->voxel.vs[0] < 100 ||
-       handle->voxel.dim[1]*handle->voxel.vs[1] < 120 ||
-       handle->voxel.dim[2]*handle->voxel.vs[2] < 40)
+    if(!handle->is_human_data())
     {
         ui->csf_calibration->setEnabled(false);
         ui->csf_calibration->setVisible(false);
