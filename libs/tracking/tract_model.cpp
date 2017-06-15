@@ -166,13 +166,9 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                 std::istringstream in(line);
                 std::copy(std::istream_iterator<float>(in),
                           std::istream_iterator<float>(),std::back_inserter(loaded_tract_data.back()));
-                if (loaded_tract_data.back().size() < 6)
-                {
-                    if(loaded_tract_data.back().size() == 1)// cluster info
-                        loaded_tract_cluster.push_back(loaded_tract_data.back()[0]);
-                    loaded_tract_data.pop_back();
-                    continue;
-                }
+
+                if(loaded_tract_data.back().size() == 1)// cluster info
+                    loaded_tract_cluster.push_back(loaded_tract_data.back()[0]);
             }
 
         }
