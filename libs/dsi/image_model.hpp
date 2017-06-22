@@ -215,6 +215,15 @@ public:
         header << buffer;
         return header.save_to_file(nifti_file_name);
     }
+    bool save_b0_to_nii(const char* nifti_file_name) const
+    {
+        gz_nifti header;
+        header.set_voxel_size(voxel.vs);
+        image::basic_image<unsigned short,3> buffer(dwi_data[0],voxel.dim);
+        image::flip_xy(buffer);
+        header << buffer;
+        return header.save_to_file(nifti_file_name);
+    }
     bool save_b_table(const char* file_name) const
     {
         std::ofstream out(file_name);

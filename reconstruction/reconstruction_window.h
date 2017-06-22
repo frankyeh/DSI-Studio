@@ -92,6 +92,8 @@ private slots:
     void on_actionManual_Rotation_triggered();
     void on_negate_clicked();
     void on_actionReplace_b0_by_T2W_image_triggered();
+    void on_actionCorrect_AP_PA_scans_triggered();
+    void on_actionSave_b0_triggered();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H
