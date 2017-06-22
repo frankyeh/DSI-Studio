@@ -20,7 +20,6 @@ void export_track_info(const std::string& file_name,
                        std::string export_option,
                        std::shared_ptr<fib_data> handle,
                        TractModel& tract_model);
-extern fa_template fa_template_imp;
 extern std::vector<atlas> atlas_list;
 
 void save_connectivity_matrix(TractModel& tract_model,

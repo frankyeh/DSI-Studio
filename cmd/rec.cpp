@@ -96,7 +96,7 @@ int rec(void)
     }
     if(!fa_template_imp.load_from_file())
     {
-        std::cout << "failed to locate template for QSDR reconstruction" << std::endl;
+        std::cout << fa_template_imp.error_msg << std::endl;
         return -1;
     }
 

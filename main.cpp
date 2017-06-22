@@ -96,11 +96,9 @@ void init_application(QApplication& a)
     a.setStyle(QStyleFactory::create("Fusion"));
     if(!fa_template_imp.load_from_file())
     {
-        QMessageBox::information(0,"Error",QString("Cannot find template files in ") + QCoreApplication::applicationDirPath(),0);
+        QMessageBox::information(0,"Error",fa_template_imp.error_msg.c_str(),0);
         return;
     }
-
-
     load_atlas();
 }
 

@@ -28,7 +28,12 @@ bool fa_template::load_from_file(void)
             read_mask.toLPS(mask);
             return mask.geometry() == I.geometry();
         }
+        error_msg = "Failed to load mask file at ";
+        error_msg += fa_mask_file_name;
+        return false;
     }
+    error_msg = "Failed to load template file at ";
+    error_msg += fa_template_file_name;
     return false;
 }
 

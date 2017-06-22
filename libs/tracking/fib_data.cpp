@@ -686,6 +686,7 @@ void fib_data::run_normalization(bool background)
     {
         if(fa_template_imp.I.empty() && !fa_template_imp.load_from_file())
         {
+            std::cout << fa_template_imp.error_msg << std::endl;
             prog = 5;
             return;
         }

@@ -9,7 +9,6 @@
 #include "program_option.hpp"
 #include "fib_data.hpp"
 
-extern fa_template fa_template_imp;
 extern std::vector<atlas> atlas_list;
 std::string get_fa_template_path(void);
 const char* odf_average(const char* out_name,std::vector<std::string>& file_names);
