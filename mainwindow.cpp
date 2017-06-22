@@ -816,7 +816,7 @@ bool MainWindow::load_db(std::shared_ptr<vbc_database>& database,QString& filena
     begin_prog("reading connectometry db");
     if(!database->load_database(filename.toLocal8Bit().begin()))
     {
-        QMessageBox::information(this,"Error","Invalid database format",0);
+        QMessageBox::information(this,"Error",database->error_msg.c_str(),0);
         return false;
     }
     return true;
