@@ -463,3 +463,166 @@ void RegToolBox::on_actionRemove_Background_triggered()
         show_image();
     }
 }
+
+template<class pixel_type>
+double topup_compose(image::basic_image<pixel_type,3>& It,
+            image::basic_image<pixel_type,3>& Is,
+            const image::basic_image<pixel_type,3>& I,
+            const image::basic_image<float,3>& d)
+{
+    float max_x = I.width()-2;
+    It.clear();
+    Is.clear();
+    It.resize(I.geometry());
+    Is.resize(I.geometry());
+    I.for_each_mt([&](pixel_type v,const image::pixel_index<dimension>& index){
+        if(I.geometry().is_edge(index))
+            return;
+        int i = index.index();
+        if(d[i] == 0.0f)
+        {
+            It[i] += v;
+            Is[i] += v;
+            return;
+        }
+        float p1 = i;
+        float p2 = i;
+        p1 += d[i];
+        p2 -= d[i];
+        p1 = std::max<float>(0.0f,std::min<float>(p1,max_x));
+        p2 = std::max<float>(0.0f,std::min<float>(p2,max_x));
+        float w1 = p1-std::floor(p1);
+        float w2 = p2-std::floor(p2);
+        int i1 = p1;
+        int i2 = p2;
+        float vw1 = v*w1;
+        float vw2 = v*w2;
+        It[i1] += v-vw1;
+        It[i1+1] += vw1;
+        Is[i2] += v-vw2;
+        Is[i2+1] += vw2;
+    });
+}
+
+
+
+template<class pixel_type,unsigned int dimension,class terminate_type>
+double topup(const image::basic_image<pixel_type,dimension>& It,
+            const image::basic_image<pixel_type,dimension>& Is,
+            image::basic_image<pixel_type,dimension>& I,
+            image::basic_image<float,dimension>& d,// displacement field
+            terminate_type& terminated,
+            unsigned int steps = 30)
+{
+    image::geometry<dimension> geo = It.geometry();
+    d.resize(geo);
+    // multi resolution
+    if (*std::min_element(geo.begin(),geo.end()) > 32)
+    {
+        //downsampling
+        basic_image<pixel_type,dimension> rIs,rIt,I;
+        downsample_with_padding(It,rIt);
+        downsample_with_padding(Is,rIs);
+        float r = topup(rIt,rIs,I,d,terminated,steps);
+        upsample_with_padding(d,d,geo);
+        d *= 2.0f;
+    }
+    image::basic_image<pixel_type,dimension> Js;// transformed I
+    image::basic_image<float,dimension> new_d(d.geometry());// new displacements
+
+    for (unsigned int index = 0;index < steps && !terminated;++index)
+    {
+        image::compose_displacement(Is,d,Js);
+        r = image::correlation(Js.begin(),Js.end(),It.begin());
+        if(r <= prev_r)
+        {
+            new_d.swap(d);
+            break;
+        }
+        // dJ(cJ-I)
+        image::gradient_sobel(Js,new_d);
+        Js.for_each_mt([&](pixel_type&,image::pixel_index<dimension>& index){
+            if(It[index.index()] == 0.0 || It.geometry().is_edge(index))
+            {
+                new_d[index.index()] = vtor_type();
+                return;
+            }
+            std::vector<pixel_type> Itv,Jv;
+            image::get_window(index,It,window_size,Itv);
+            image::get_window(index,Js,window_size,Jv);
+            double a,b,r2;
+            image::linear_regression(Jv.begin(),Jv.end(),Itv.begin(),a,b,r2);
+            if(a <= 0.0f)
+                new_d[index.index()] = vtor_type();
+            else
+                new_d[index.index()] *= (Js[index.index()]*a+b-It[index.index()]);
+        });
+        // solving the poisson equation using Jacobi method
+        basic_image<vtor_type,dimension> solve_d(new_d);
+        image::multiply_constant_mt(solve_d,-inv_d2);
+        for(int iter = 0;iter < window_size*2 & !terminated;++iter)
+        {
+            basic_image<vtor_type,dimension> new_solve_d(new_d.geometry());
+            image::par_for(solve_d.size(),[&](int pos)
+            {
+                for(int d = 0;d < dimension;++d)
+                {
+                    int p1 = pos-shift[d];
+                    int p2 = pos+shift[d];
+                    if(p1 >= 0)
+                       new_solve_d[pos] += solve_d[p1];
+                    if(p2 < solve_d.size())
+                       new_solve_d[pos] += solve_d[p2];
+                }
+                new_solve_d[pos] -= new_d[pos];
+                new_solve_d[pos] *= inv_d2;
+            });
+            solve_d.swap(new_solve_d);
+        }
+        image::minus_constant_mt(solve_d,solve_d[0]);
+
+        new_d = solve_d;
+        if(theta == 0.0f)
+        {
+            image::par_for(new_d.size(),[&](int i)
+            {
+               float l = new_d[i].length();
+               if(l > theta)
+                   theta = l;
+            });
+        }
+        image::multiply_constant_mt(new_d,0.5f/theta);
+        image::add(new_d,d);
+
+        basic_image<vtor_type,dimension> new_ds(new_d);
+        image::filter::gaussian2(new_ds);
+        image::par_for(new_d.size(),[&](int i){
+           new_ds[i] *= cdm_smoothness;
+           new_d[i] *= cdm_smoothness2;
+           new_d[i] += new_ds[i];
+        });
+        new_d.swap(d);
+    }
+    return r;
+}
+
+void RegToolBox::on_actionTOPUP_triggered()
+{
+    /*
+    clear();
+    thread.terminated = false;
+    reg_type = ui->reg_type->currentIndex();
+    thread.run([this]()
+    {
+        cdm_y(It,I,dis,thread.terminated,1.0f,ui->smoothness->value());
+        reg_done = true;
+        status = "registration done";
+    });
+
+    ui->running_label->movie()->start();
+    ui->running_label->show();
+    timer->start();
+    ui->stop->show();
+    ui->run_reg->hide();
+    */
+}

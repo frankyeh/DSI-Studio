@@ -632,6 +632,7 @@
     <addaction name="actionRemove_Skull"/>
     <addaction name="actionMatch_Intensity"/>
     <addaction name="actionRemove_Background"/>
+    <addaction name="actionTOPUP"/>
    </widget>
    <addaction name="menu_Open"/>
    <addaction name="menuEdit"/>
@@ -654,6 +655,11 @@
   <action name="actionRemove_Background">
    <property name="text">
     <string>Remove Background...</string>
+   </property>
+  </action>
+  <action name="actionTOPUP">
+   <property name="text">
+    <string>TOPUP</string>
    </property>
   </action>
  </widget>

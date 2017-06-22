@@ -67,6 +67,8 @@ private slots:
 
     void on_actionRemove_Background_triggered();
 
+    void on_actionTOPUP_triggered();
+
 private:
     Ui::RegToolBox *ui;
     QGraphicsScene It_scene,I_scene;
