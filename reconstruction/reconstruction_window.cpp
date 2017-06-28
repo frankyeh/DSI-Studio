@@ -30,7 +30,15 @@ bool reconstruction_window::load_src(int index)
         check_prog(0,0);
         return false;
     }
-
+    float m = (float)*std::max_element(handle->dwi_data[0],handle->dwi_data[0]+handle->voxel.dim.size());
+    ui->max_value->setMaximum(m*1.5f);
+    ui->max_value->setMinimum(0.0f);
+    ui->max_value->setSingleStep(m*0.05f);
+    ui->max_value->setValue(m*1.2f);
+    ui->min_value->setMaximum(m*1.5f);
+    ui->min_value->setMinimum(0.0f);
+    ui->min_value->setSingleStep(m*0.05f);
+    ui->min_value->setValue(0.0f);
     update_image();
     return true;
 }
@@ -54,7 +62,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->b_table->setHorizontalHeaderLabels(QStringList() << "b value" << "bx" << "by" << "bz");
     ui->gqi_spectral->hide();
     ui->ODFSharpening->hide();
-
+    v2c.two_color(image::rgb_color(0,0,0),image::rgb_color(255,255,255));
     update_dimension();
 
     absolute_path = QFileInfo(filenames[0]).absolutePath();
@@ -115,20 +123,13 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     max_source_value = *std::max_element(handle->dwi_data.back(),
                                          handle->dwi_data.back()+handle->voxel.dim.size());
-    ui->brightness->setMaximum(max_source_value);
-    ui->brightness->setMinimum(-max_source_value);
-    ui->brightness->setSingleStep(max_source_value/50.0);
-    ui->contrast->setMaximum(max_source_value*11.0);
-    ui->contrast->setMinimum(max_source_value/11.0);
-    ui->contrast->setSingleStep(max_source_value/50.0);
-    ui->contrast->setValue(max_source_value);
-    ui->brightness->setValue(0.0);
+
 
 
     on_odf_sharpening_currentIndexChanged(ui->odf_sharpening->currentIndex());
     connect(ui->z_pos,SIGNAL(valueChanged(int)),this,SLOT(on_b_table_itemSelectionChanged()));
-    connect(ui->contrast,SIGNAL(valueChanged(int)),this,SLOT(on_b_table_itemSelectionChanged()));
-    connect(ui->brightness,SIGNAL(valueChanged(int)),this,SLOT(on_b_table_itemSelectionChanged()));
+    connect(ui->max_value,SIGNAL(valueChanged(double)),this,SLOT(on_b_table_itemSelectionChanged()));
+    connect(ui->min_value,SIGNAL(valueChanged(double)),this,SLOT(on_b_table_itemSelectionChanged()));
 
     on_b_table_itemSelectionChanged();
 
@@ -178,20 +179,16 @@ void reconstruction_window::load_b_table(void)
 }
 void reconstruction_window::on_b_table_itemSelectionChanged()
 {
+    v2c.set_range(ui->min_value->value(),ui->max_value->value());
     image::basic_image<float,2> tmp(image::geometry<2>(handle->voxel.dim[0],handle->voxel.dim[1]));
     unsigned int b_index = ui->b_table->currentRow();
     std::copy(handle->dwi_data[b_index] + ui->z_pos->value()*tmp.size(),
               handle->dwi_data[b_index] + ui->z_pos->value()*tmp.size() + tmp.size(),tmp.begin());
-    tmp += ui->brightness->value();
-    if( ui->contrast->value() != 0.0)
-        tmp *= 255.99/ui->contrast->value();
-    image::upper_lower_threshold(tmp,(float)0.0,(float)255.0);
-
-    image::geometry<3> dim(handle->voxel.dim);
-    buffer_source.resize(image::geometry<2>(dim[0],dim[1]));
-    std::copy(tmp.begin(),tmp.end(),buffer_source.begin());    
-    source_image = QImage((unsigned char*)&*buffer_source.begin(),dim.width(),dim.height(),QImage::Format_RGB32).
-                    scaled(dim.width()*source_ratio,dim.height()*source_ratio);
+    buffer_source.resize(tmp.geometry());
+    for(int i = 0;i < tmp.size();++i)
+        buffer_source[i] = v2c[tmp[i]];
+    source_image = QImage((unsigned char*)&*buffer_source.begin(),tmp.width(),tmp.height(),QImage::Format_RGB32).
+                    scaled(tmp.width()*source_ratio,tmp.height()*source_ratio);
     show_view(source,source_image);
 }
 

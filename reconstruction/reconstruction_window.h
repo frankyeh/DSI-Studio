@@ -37,6 +37,7 @@ private:
     QGraphicsScene scene;
     image::color_image buffer;
     QImage slice_image;
+    image::value_to_color<float> v2c;
 private:
     Ui::reconstruction_window *ui;
     std::auto_ptr<ImageModel> handle;

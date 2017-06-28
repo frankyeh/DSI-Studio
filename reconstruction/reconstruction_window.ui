@@ -50,7 +50,7 @@
     <item>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -288,42 +288,35 @@
                </widget>
               </item>
               <item>
-               <widget class="QLabel" name="label_14">
-                <property name="text">
-                 <string>Contrast</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QSlider" name="contrast">
-                <property name="minimum">
-                 <number>1</number>
-                </property>
-                <property name="maximum">
-                 <number>30</number>
-                </property>
+               <spacer name="horizontalSpacer_4">
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
                 </property>
-               </widget>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
               </item>
               <item>
                <widget class="QLabel" name="label_13">
                 <property name="text">
-                 <string>Brightness</string>
+                 <string>min</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QSlider" name="brightness">
-                <property name="minimum">
-                 <number>-10</number>
-                </property>
-                <property name="maximum">
-                 <number>10</number>
-                </property>
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
+               <widget class="QDoubleSpinBox" name="min_value"/>
+              </item>
+              <item>
+               <widget class="QDoubleSpinBox" name="max_value"/>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_14">
+                <property name="text">
+                 <string>max</string>
                 </property>
                </widget>
               </item>
