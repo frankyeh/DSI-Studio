@@ -521,16 +521,16 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
             b_table.push_back(dwi_files[index]->get_bvalue());
             std::copy(dwi_files[index]->get_bvec(),dwi_files[index]->get_bvec()+3,std::back_inserter(b_table));
         }
-        write_mat.write("b_table",&b_table[0],4,unsigned int(b_table.size()/4));
+        write_mat.write("b_table",&b_table[0],4,(unsigned int)(b_table.size()/4));
     }
     if(!dwi_files[0]->grad_dev.empty())
-        write_mat.write("grad_dev",&*dwi_files[0]->grad_dev.begin(),unsigned int(dwi_files[0]->grad_dev.size()/9),9);
+        write_mat.write("grad_dev",&*dwi_files[0]->grad_dev.begin(),(unsigned int)(dwi_files[0]->grad_dev.size()/9),9);
     if(!dwi_files[0]->mask.empty())
-        write_mat.write("mask",&*dwi_files[0]->mask.begin(),1,unsigned int(dwi_files[0]->mask.size()));
+        write_mat.write("mask",&*dwi_files[0]->mask.begin(),1,(unsigned int)(dwi_files[0]->mask.size()));
 
     //store images
     begin_prog("Save Files");
-    for (unsigned int index = 0;check_prog(index,unsigned int(dwi_files.size()));++index)
+    for (unsigned int index = 0;check_prog(index,(unsigned int)(dwi_files.size()));++index)
     {
         std::ostringstream name;
         image::basic_image<unsigned short,3> buffer;
@@ -573,6 +573,6 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
         get_report(bvalues,vs,report2);
     }
     report1 += report2;
-    write_mat.write("report",report1.c_str(),1,unsigned int(report1.length()));
+    write_mat.write("report",report1.c_str(),1,(unsigned int)report1.length());
     return true;
 }
