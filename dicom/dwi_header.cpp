@@ -101,7 +101,11 @@ bool DwiHeader::open(const char* filename)
         unsigned int gev_length = 0;
         const double* gvec = (const double*)header.get_data(0x0019,0x100E,gev_length);// B-vector
         if(gvec)
-            std::copy(gvec,gvec+3,bvec.begin());
+        {
+            bvec[0] = float(gvec[0]);
+            bvec[1] = float(gvec[1]);
+            bvec[2] = float(gvec[2]);
+        }
         else
         // from b-matrix
         {
@@ -109,7 +113,11 @@ bool DwiHeader::open(const char* filename)
             if (gvec)
             {
                 if (gvec[0] != 0.0)
-                    std::copy(gvec,gvec+3,bvec.begin());
+                {
+                    bvec[0] = float(gvec[0]);
+                    bvec[1] = float(gvec[1]);
+                    bvec[2] = float(gvec[2]);
+                }
                 else
                     if (gvec[3] != 0.0)
                     {
@@ -160,7 +168,11 @@ bool DwiHeader::open(const char* filename)
         // GE header
         const double* gvalue = (const double*)header.get_data(0x0018,0x9089,gvalue_length);// B-vector
         if(gvalue && gvalue_length == 24)
-            std::copy(gvalue,gvalue+3,bvec.begin());
+        {
+            bvec[0] = float(gvalue[0]);
+            bvec[1] = float(gvalue[1]);
+            bvec[2] = float(gvalue[2]);
+        }
         gvalue = (const double*)header.get_data(0x0018,0x9087,gvalue_length);//B-Value
         if(gvalue && gvalue_length == 8)
             bvalue = gvalue[0];
@@ -352,12 +364,12 @@ void correct_t2(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
                 continue;
             DwiHeader& cur_image = *dwi_files[index];
             float cur_te = dwi_files[index]->te;
-            for (unsigned int i = 0;i < geo.size();++i)
+            for (int i = 0;i < geo.size();++i)
                 if (neg_inv_T2[i] != 0.0)
                     cur_image[i] *= std::exp(-cur_te*neg_inv_T2[i]);
         }
 
-        for (unsigned int index = 0;index < geo.size();++index)
+        for (int index = 0;index < geo.size();++index)
         {
             if (neg_inv_T2[index] != 0.0)
                 neg_inv_T2[index] = -1.0/neg_inv_T2[index];
@@ -440,7 +452,7 @@ void get_report(const std::vector<float>& bvalues,image::vector<3> vs,std::strin
     else
         if(shell.size() == 1)
         {
-            unsigned int dir_num = bvalues.size()-(bvalues.front() == 0 ? 1:0);
+            int dir_num = int(bvalues.size()-(bvalues.front() == 0 ? 1:0));
             if(dir_num < 100)
                 out << " A DTI diffusion scheme was used, and a total of ";
             else
@@ -509,16 +521,16 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
             b_table.push_back(dwi_files[index]->get_bvalue());
             std::copy(dwi_files[index]->get_bvec(),dwi_files[index]->get_bvec()+3,std::back_inserter(b_table));
         }
-        write_mat.write("b_table",&b_table[0],4,b_table.size()/4);
+        write_mat.write("b_table",&b_table[0],4,unsigned int(b_table.size()/4));
     }
     if(!dwi_files[0]->grad_dev.empty())
-        write_mat.write("grad_dev",&*dwi_files[0]->grad_dev.begin(),dwi_files[0]->grad_dev.size()/9,9);
+        write_mat.write("grad_dev",&*dwi_files[0]->grad_dev.begin(),unsigned int(dwi_files[0]->grad_dev.size()/9),9);
     if(!dwi_files[0]->mask.empty())
-        write_mat.write("mask",&*dwi_files[0]->mask.begin(),1,dwi_files[0]->mask.size());
+        write_mat.write("mask",&*dwi_files[0]->mask.begin(),1,unsigned int(dwi_files[0]->mask.size()));
 
     //store images
     begin_prog("Save Files");
-    for (unsigned int index = 0;check_prog(index,dwi_files.size());++index)
+    for (unsigned int index = 0;check_prog(index,unsigned int(dwi_files.size()));++index)
     {
         std::ostringstream name;
         image::basic_image<unsigned short,3> buffer;
@@ -561,6 +573,6 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
         get_report(bvalues,vs,report2);
     }
     report1 += report2;
-    write_mat.write("report",report1.c_str(),1,report1.length());
+    write_mat.write("report",report1.c_str(),1,unsigned int(report1.length()));
     return true;
 }

@@ -39,7 +39,7 @@ public:
     {
         return image[index];
     }
-    unsigned int size(void) const
+    size_t size(void) const
     {
         return image.size();
     }
