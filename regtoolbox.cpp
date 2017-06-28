@@ -463,6 +463,34 @@ void RegToolBox::on_actionRemove_Background_triggered()
         show_image();
     }
 }
+/*
+
+void phase_distortion_matrix(const std::vector<float>& location,std::vector<float>& m)
+{
+    int n = d.size();
+    m.clear();
+    m.resize(n*n);
+    for(int i = 0,pos = 0;i < n;++i)
+        for(int j = 0;j < n;++j,++pos)
+        {
+            float dis = std::fabs((float)i-location[j]);
+            if(dis > 1.0f)
+                continue;
+            m[pos] += 1.0-dis;
+        }
+}
+
+void get_location_vector(const std::vector<float>& d,std::vector<float>& location,bool ap)
+{
+    location.resize(n);
+    if(ap)
+    for(int i = 0;i < n;++i)
+        location[i] = d[i] + (float)i;
+    else
+        for(int i = 0;i < n;++i)
+            location[i] = d[i] - (float)i;
+}
+
 
 template<class pixel_type>
 double topup_compose(image::basic_image<pixel_type,3>& It,
@@ -605,7 +633,7 @@ double topup(const image::basic_image<pixel_type,dimension>& It,
     }
     return r;
 }
-
+*/
 void RegToolBox::on_actionTOPUP_triggered()
 {
     /*
