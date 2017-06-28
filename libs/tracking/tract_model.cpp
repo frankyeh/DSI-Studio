@@ -1381,7 +1381,7 @@ void TractModel::get_density_map(
             map_b[ptr] += std::fabs(dir[2]);
         }
     }
-    float max_value = 0;
+    float max_value = 0.0f;
     for(unsigned int index = 0;index < mapping.size();++index)
     {
         float sum = map_r[index]+map_g[index]+map_b[index];
@@ -1391,9 +1391,10 @@ void TractModel::get_density_map(
     for(unsigned int index = 0;index < mapping.size();++index)
     {
         float sum = map_r[index]+map_g[index]+map_b[index];
+        if(sum == 0.0f)
+            continue;
         image::vector<3,float> cmap(map_r[index],map_g[index],map_b[index]);
-        cmap.normalize();
-        cmap *= 255.0*sum/max_value;
+        cmap *= 255.0f*sum/max_value;
         mapping[index] = image::rgb_color(cmap[0],cmap[1],cmap[2]);
     }
 }
