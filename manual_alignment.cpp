@@ -22,7 +22,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     to.swap(to_);
     image::normalize(from,1.0);
     image::normalize(to,1.0);
-    image::reg::get_bound(from,to,arg,b_upper,b_lower,reg_type);
+    image::reg::get_bound(from,arg,b_upper,b_lower,reg_type);
 
 
     ui->setupUi(this);
@@ -305,7 +305,7 @@ void manual_alignment::on_save_warpped_clicked()
 
 void manual_alignment::on_reg_type_currentIndexChanged(int index)
 {
-    image::reg::get_bound(from,to,arg,b_upper,b_lower,
+    image::reg::get_bound(from,arg,b_upper,b_lower,
                           ui->reg_type->currentIndex() == 0 ? image::reg::rigid_body : image::reg::affine);
     if(index == 0) // rigid body
     {

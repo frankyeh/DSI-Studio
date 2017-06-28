@@ -58,7 +58,7 @@ public:
             return false;
         if(roi_filter[x][y].empty())
             return false;
-        return roi_filter[x][y][z];
+        return roi_filter[x][y][z] != 0;
     }
     bool havePoint(const image::vector<3,float>& point) const
     {

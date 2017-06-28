@@ -204,19 +204,19 @@ public:
             position = position_;
             terminated = false;
             forward = true;
-            image::pixel_index<3> index(std::round(position[0]),
+            image::pixel_index<3> pindex(std::round(position[0]),
                                     std::round(position[1]),
                                     std::round(position[2]),trk.dim);
-            if (!trk.dim.is_valid(index))
+            if (!trk.dim.is_valid(pindex))
                 return false;
 
             switch (initial_direction)
             {
             case 0:// main direction
                 {
-                    if(trk.fa[0][index.index()] < current_fa_threshold)
+                    if(trk.fa[0][pindex.index()] < current_fa_threshold)
                         return false;
-                    dir = trk.get_dir(index.index(),0);
+                    dir = trk.get_dir(pindex.index(),0);
                 }
                 return true;
             case 1:// random direction
@@ -234,13 +234,13 @@ public:
             case 2:// all direction
                 {
                     if (init_fib_index >= trk.fib_num ||
-                        trk.fa[init_fib_index][index.index()] < current_fa_threshold)
+                        trk.fa[init_fib_index][pindex.index()] < current_fa_threshold)
                     {
                         init_fib_index = 0;
                         return false;
                     }
                     else
-                        dir = trk.get_dir(index.index(),init_fib_index);
+                        dir = trk.get_dir(pindex.index(),init_fib_index);
                     ++init_fib_index;
                 }
                 return true;

@@ -459,14 +459,14 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     return false;
 }
 
-void tracking_window::initialize_tracking_index(int index)
+void tracking_window::initialize_tracking_index(int p)
 {
     QStringList tracking_index_list;
     for(int index = 0;index < handle->dir.index_name.size();++index)
         tracking_index_list.push_back(handle->dir.index_name[index].c_str());
     renderWidget->setList("tracking_index",tracking_index_list);
-    set_data("tracking_index",index);
-    on_tracking_index_currentIndexChanged(index);
+    set_data("tracking_index",p);
+    on_tracking_index_currentIndexChanged(p);
     scene.center();
 }
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)
@@ -854,8 +854,8 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
         handle->dir.index_name[index] == ">%")
     {
         // percentile threshold
-        renderWidget->setMinMax("fa_threshold",0.0,1.0,0.05);
-        set_data("fa_threshold",0.95);
+        renderWidget->setMinMax("fa_threshold",0.0f,1.0f,0.05f);
+        set_data("fa_threshold",0.95f);
         scene.show_slice();
         return;
     }
@@ -863,8 +863,8 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
         handle->dir.index_name[index] == "dec")
     {
         // percentile threshold
-        renderWidget->setMinMax("fa_threshold",0.0,1.0,0.05);
-        set_data("fa_threshold",0.05);
+        renderWidget->setMinMax("fa_threshold",0.0f,1.0f,0.05f);
+        set_data("fa_threshold",0.05f);
         scene.show_slice();
         return;
     }
@@ -1048,7 +1048,7 @@ void tracking_window::on_actionConnectivity_matrix_triggered()
 
 
 
-void tracking_window::on_zoom_3d_valueChanged(double arg1)
+void tracking_window::on_zoom_3d_valueChanged(double)
 {
     glWidget->command("set_zoom",QString::number(ui->zoom_3d->value()));
 }
@@ -1262,7 +1262,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
     float threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim));
     if(!fib.dir.empty())
         return;
-    for(float cos_angle = 0.99;check_prog(1000-cos_angle*1000,1000-866);cos_angle -= 0.005)
+    for(float cos_angle = 0.99f;check_prog(1000-cos_angle*1000,1000-866);cos_angle -= 0.005f)
     {
         std::vector<std::vector<float> > new_fa(handle->dir.num_fiber);
         std::vector<std::vector<short> > new_index(handle->dir.num_fiber);

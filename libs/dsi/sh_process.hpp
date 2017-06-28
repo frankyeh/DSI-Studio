@@ -54,8 +54,8 @@ public:
             for (unsigned int n = 0; n < voxel.bvectors.size(); ++n,++index)
             {
                 float atan2_xy = std::atan2(voxel.bvectors[n][1],voxel.bvectors[n][0]);
-                if (atan2_xy < 0.0)
-                    atan2_xy += 2.0*M_PI;
+                if (atan2_xy < 0.0f)
+                    atan2_xy += float(2.0f*M_PI);
                 Bt[index] = Yj(j_map[j].second,j_map[j].first,std::acos(voxel.bvectors[n][2]),atan2_xy);
             }
         std::vector<float> UP(half_odf_size*R);
@@ -65,8 +65,8 @@ public:
                 for (unsigned int j = 0; j < R; ++j,++index)
                 {
                     float atan2_xy = std::atan2(voxel.ti.vertices[n][1],voxel.ti.vertices[n][0]);
-                    if (atan2_xy < 0.0)
-                        atan2_xy += 2.0*M_PI;
+                    if (atan2_xy < 0.0f)
+                        atan2_xy += float(2.0f*M_PI);
                     U[index] = Yj(j_map[j].second,j_map[j].first,std::acos(voxel.ti.vertices[n][2]),atan2_xy);
                 }
             std::vector<float> P(R*R);
@@ -101,7 +101,7 @@ public:
 
     }
 public:
-    virtual void run(Voxel& voxel, VoxelData& data)
+    virtual void run(Voxel&, VoxelData& data)
     {
 
 		// remove the b0 signal

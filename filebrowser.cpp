@@ -65,7 +65,7 @@ FileBrowser::~FileBrowser()
 
 
 
-void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int currentColumn, int previousRow, int previousColumn)
+void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int , int previousRow, int )
 {
     if(currentRow == -1 || currentRow == previousRow)
         return;
@@ -403,7 +403,7 @@ void FileBrowser::preview_image(QString file_name)
     preview_loaded = true;
 }
 
-void FileBrowser::on_tableWidget_currentCellChanged(int currentRow, int currentColumn, int previousRow, int previousColumn)
+void FileBrowser::on_tableWidget_currentCellChanged(int currentRow, int, int previousRow, int)
 {
     if(currentRow == previousRow || currentRow == -1)
         return;

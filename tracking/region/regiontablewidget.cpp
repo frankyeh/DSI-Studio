@@ -327,7 +327,7 @@ void RegionTableWidget::draw_region(image::color_image& I)
     }
 }
 
-void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image)
+void RegionTableWidget::draw_edge(QImage&,QImage&)
 {
     if(!cur_tracking_window.current_slice->is_diffusion_space)
         return;

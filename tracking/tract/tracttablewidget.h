@@ -8,7 +8,7 @@
 #include "fib_data.hpp"
 class tracking_window;
 class TractModel;
-class ThreadData;
+struct ThreadData;
 
 
 class TractTableWidget : public QTableWidget

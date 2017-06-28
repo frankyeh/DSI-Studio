@@ -124,7 +124,7 @@ public:
     }
 
     template<class Process>
-    void operator()(Process& X)
+    void operator()(Process&)
     {
         process_list.push_back(std::make_shared<Process>());
     }

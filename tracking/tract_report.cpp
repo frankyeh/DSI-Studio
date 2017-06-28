@@ -157,13 +157,13 @@ void tract_report::on_save_image_clicked()
         ui->report_widget->savePdf(filename,true);
 }
 
-void tract_report::on_max_y_valueChanged(double arg1)
+void tract_report::on_max_y_valueChanged(double)
 {
     ui->report_widget->yAxis->setRange(ui->min_y->value(),ui->max_y->value());
     ui->report_widget->replot();
 }
 
-void tract_report::on_min_y_valueChanged(double arg1)
+void tract_report::on_min_y_valueChanged(double)
 {
     ui->report_widget->yAxis->setRange(ui->min_y->value(),ui->max_y->value());
     ui->report_widget->replot();

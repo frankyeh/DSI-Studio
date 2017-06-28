@@ -56,7 +56,7 @@ private:
 public:
     RacianNoise(float A_,float nsd_):A(A_),nsd(nsd_),rician_dis(A_,nsd_)
     {
-        const float prob_precision = 0.01;
+        const float prob_precision = 0.01f;
         // if snr > 3.0 the racian distribution is similar to Gaussian distribution
         if (A/nsd >= 3.0)
         {
@@ -67,7 +67,7 @@ public:
         {
             max_prob = 0.0;
             float x = 0.0;
-            for (; 1; x += 0.2)
+            for (; 1; x += 0.2f)
             {
                 float prob = rician_dis(x);
                 if (prob < max_prob)

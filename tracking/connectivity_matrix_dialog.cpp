@@ -147,7 +147,7 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
 }
 
 
-void connectivity_matrix_dialog::on_zoom_valueChanged(double arg1)
+void connectivity_matrix_dialog::on_zoom_valueChanged(double)
 {
     if(cm.empty())
         return;

@@ -330,7 +330,7 @@ void CreateDBDialog::on_create_data_base_clicked()
 
 
 
-void CreateDBDialog::on_index_of_interest_currentIndexChanged(const QString &arg1)
+void CreateDBDialog::on_index_of_interest_currentIndexChanged(const QString &)
 {       
     if(!group.empty())
     {

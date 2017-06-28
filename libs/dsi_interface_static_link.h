@@ -1,4 +1,4 @@
-class ImageModel;
+struct ImageModel;
 const char* reconstruction(ImageModel* image_model,
                    unsigned int method_id,
                    const float* param_values,

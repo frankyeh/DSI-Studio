@@ -86,14 +86,14 @@ void load_file_name(void)
 
 }
 
-void init_application(QApplication& a)
+void init_application(QApplication* a)
 {
-    a.setOrganizationName("LabSolver");
-    a.setApplicationName("DSI Studio");
+    a->setOrganizationName("LabSolver");
+    a->setApplicationName("DSI Studio");
     QFont font;
     font.setFamily(QString::fromUtf8("Arial"));
-    a.setFont(font);
-    a.setStyle(QStyleFactory::create("Fusion"));
+    a->setFont(font);
+    a->setStyle(QStyleFactory::create("Fusion"));
     if(!fa_template_imp.load_from_file())
     {
         QMessageBox::information(0,"Error",fa_template_imp.error_msg.c_str(),0);
@@ -116,7 +116,7 @@ int run_cmd(int ac, char *av[])
                 std::string(av[i]) == std::string("--action=vis"))
             {
                 gui.reset(new QApplication(ac, av));
-                init_application(*gui.get());
+                init_application(gui.get());
                 std::cout << "Starting GUI-based command line interface." << std::endl;
                 break;
             }
@@ -174,7 +174,7 @@ int main(int ac, char *av[])
         return run_cmd(ac,av);
     QApplication a(ac,av);
     load_file_name();
-    init_application(a);
+    init_application(&a);
     MainWindow w;
     w.show();
     w.setWindowTitle(QString("DSI Studio ") + __DATE__ + " build");

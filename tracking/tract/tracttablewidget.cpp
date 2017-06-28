@@ -53,7 +53,7 @@ void TractTableWidget::contextMenuEvent ( QContextMenuEvent * event )
         cur_tracking_window.ui->menuTracts->popup(event->globalPos());
 }
 
-void TractTableWidget::check_check_status(int row, int col)
+void TractTableWidget::check_check_status(int, int col)
 {
     if(col != 0)
         return;
@@ -264,6 +264,7 @@ QString TractTableWidget::output_format(void)
     case 2:
         return ".txt";
     }
+    return "";
 }
 
 void TractTableWidget::save_all_tracts_to_dir(void)
@@ -593,7 +594,7 @@ void TractTableWidget::deep_learning_train(void)
                         track_map[p.index()] = 1;
                     if(j)
                     {
-                        for(float r = 0.2;r < 1.0;r += 0.2)
+                        for(float r = 0.2f;r < 1.0f;r += 0.2f)
                         {
                             image::pixel_index<3> p2(std::round(tracks[j]*r+tracks[j-3]*(1-r)),
                                                      std::round(tracks[j+1]*r+tracks[j-2]*(1-r)),

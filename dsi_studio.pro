@@ -16,6 +16,7 @@ TEMPLATE = app
 
 win32* {
 INCLUDEPATH += ../include
+QMAKE_CXXFLAGS += -wd4244 -wd4267 -wd4018
 RC_FILE = dsi_studio.rc
 }
 

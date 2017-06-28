@@ -81,8 +81,8 @@ void slice_view_scene::show_ruler(QPainter& paint)
 void slice_view_scene::show_fiber(QPainter& painter)
 {
     float threshold = cur_tracking_window["fa_threshold"].toFloat();
-    if (threshold == 0.0)
-        threshold = 0.00000001;
+    if (threshold == 0.0f)
+        threshold = 0.00000001f;
     int X,Y,Z;
     float display_ratio = cur_tracking_window.get_scene_zoom();
     const char dir_x[3] = {1,0,0};

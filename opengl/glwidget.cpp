@@ -354,12 +354,12 @@ void GLWidget::setFrustum(void)
 {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    float p[11] = {0.35,0.4,0.45,0.5,0.6,0.8,1.0,1.5,2.0,12.0,50.0};
+    float p[11] = {0.35f,0.4f,0.45f,0.5f,0.6f,0.8f,1.0f,1.5f,2.0f,12.0f,50.0f};
     GLfloat perspective = p[get_param("pespective")];
     GLfloat zNear = 1.0f;
     GLfloat zFar = 1000.0f;
     GLfloat aspect = float(view_mode == view_mode_type::two ? cur_width/2:cur_width)/float(cur_height);
-    GLfloat fH = 0.25;
+    GLfloat fH = 0.25f;
     GLfloat fW = fH * aspect;
     glFrustum( -fW, fW, -fH, fH, zNear*perspective, zFar*perspective);
     glMatrixMode(GL_MODELVIEW);
@@ -799,12 +799,12 @@ void GLWidget::renderLR()
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
         glLoadIdentity();
-        float p[11] = {0.35,0.4,0.45,0.5,0.6,0.8,1.0,1.5,2.0,12.0,50.0};
+        float p[11] = {0.35f,0.4f,0.45f,0.5f,0.6f,0.8f,1.0f,1.5f,2.0f,12.0f,50.0f};
         GLfloat perspective = p[get_param("pespective")];
         GLfloat zNear = 1.0f;
         GLfloat zFar = 1000.0f;
         GLfloat aspect = float(view_mode == view_mode_type::two ? cur_width/2:cur_width)/float(cur_height);
-        GLfloat fH = 0.25;
+        GLfloat fH = 0.25f;
         GLfloat fW = fH * aspect;
         glFrustum( -fW, 0.015, -0.015, fH, zNear*perspective, zFar*perspective);
 
@@ -813,20 +813,20 @@ void GLWidget::renderLR()
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
         glLoadIdentity();
-        my_gluLookAt(0,0,-200.0*perspective,0,0,0,0,-1.0,0);
+        my_gluLookAt(0,0,-200.0f*perspective,0,0,0,0,-1.0f,0);
         glMultMatrixf(rotation_matrix.begin());
         glLineWidth (1.5);
         glBegin (GL_LINES);
-        glColor3f (1.0,0.3,0.3);  glVertex3f(0,0,0);  glVertex3f(1.5,0,0);    // X axis is red.
-        glColor3f (0.3,1.0,0.3);  glVertex3f(0,0,0);  glVertex3f(0,1.5,0);    // Y axis is green.
-        glColor3f (0.3,0.3,1.0);  glVertex3f(0,0,0);  glVertex3f(0,0,1.5);    // z axis is blue.
+        glColor3f (1.0f,0.3f,0.3f);  glVertex3f(0,0,0);  glVertex3f(1.5f,0,0);    // X axis is red.
+        glColor3f (0.3f,1.0f,0.3f);  glVertex3f(0,0,0);  glVertex3f(0,1.5f,0);    // Y axis is green.
+        glColor3f (0.3f,0.3f,1.0f);  glVertex3f(0,0,0);  glVertex3f(0,0,1.5f);    // z axis is blue.
         glEnd();
         if(get_param("show_axis_text"))
         {
             renderText(0,0,2,"S");
-            glColor3f (1.0,0.3,0.3);
+            glColor3f (1.0f,0.3f,0.3f);
             renderText(2,0,0,"L");
-            glColor3f (0.3,1.0,0.3);
+            glColor3f (0.3f,1.0f,0.3f);
             renderText(0,2,0,"P");
         }
         glEnable(GL_DEPTH_TEST);
@@ -884,7 +884,7 @@ void GLWidget::add_odf(image::pixel_index<3> pos)
             if(f3 >= half_odf)
                 f3 -= half_odf;
             float sum = odf_buffer[f1]+odf_buffer[f2]+odf_buffer[f3]-odf_min-odf_min-odf_min;
-            sum *= 0.1;
+            sum *= 0.1f;
             sum += odf_min;
             if(odf_buffer[f1] == odf_min)
                 new_odf_buffer[f1] = std::max(sum,new_odf_buffer[f1]);
@@ -920,12 +920,12 @@ void GLWidget::makeTracts(void)
     makeCurrent();
     glDeleteLists(tracts, 1);
     glNewList(tracts, GL_COMPILE);
-    float alpha = (tract_alpha_style == 0)? tract_alpha/2.0:tract_alpha;
-    const float detail_option[] = {1.0,0.5,0.25,0.0,0.0};
+    float alpha = (tract_alpha_style == 0)? tract_alpha/2.0f:tract_alpha;
+    const float detail_option[] = {1.0f,0.5f,0.25f,0.0f,0.0f};
     bool show_end_points = tract_style == 2;
-    const float variant_prob_option[] = {0.1,0.2,0.4,0.95,2};
+    const float variant_prob_option[] = {0.1f,0.2f,0.4f,0.95f,2.0f};
     float variant_prob = variant_prob_option[tract_tube_detail];
-    float tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0;
+    float tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0f;
     float skip_rate = 1.0;
     std::vector<float> mean_fa;
     unsigned int mean_fa_index = 0;
@@ -988,7 +988,7 @@ void GLWidget::makeTracts(void)
         if(total_tracts != 0)
             skip_rate = (float)visible_tracts/(float)total_tracts;
     }
-    image::uniform_dist<float> uniform_gen(0,1.0),random_size(-0.5,0.5),random_color(-0.05,0.05);
+    image::uniform_dist<float> uniform_gen(0.0f,1.0f),random_size(-0.5f,0.5f),random_color(-0.05f,0.05f);
     {
         for (unsigned int active_tract_index = 0;
                 active_tract_index < cur_tracking_window.tractWidget->rowCount();

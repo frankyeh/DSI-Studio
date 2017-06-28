@@ -218,7 +218,7 @@ value_type sinint(value_type x)
 {
     bool sgn = x > 0;
     x = std::fabs(x);
-    value_type eps = 1e-15;
+    value_type eps = 1e-15f;
     value_type x2 = x*x;
     value_type si;
     if(x == 0.0)
@@ -240,8 +240,8 @@ value_type sinint(value_type x)
     {
         unsigned int m = std::floor(47.2+0.82*x);
         std::vector<double> bj(m+1);
-        value_type xa1 = 0.0;
-        value_type xa0 = 1.0e-100;
+        value_type xa1 = 0.0f;
+        value_type xa0 = 1.0e-100f;
         for(unsigned int k=m;k>=1;--k)
         {
             value_type xa = 4.0*(value_type)k*xa0/x-xa1;
@@ -382,7 +382,7 @@ public:
         float sigma = voxel.param[0]; //optimal 1.24
         if(!voxel.output_rdi)
             return;
-        for(float L = 0.2;L <= sigma;L+= 0.2)
+        for(float L = 0.2f;L <= sigma;L+= 0.2f)
         {
             rdi.push_back(std::vector<float>());
             rdi.back().resize(voxel.bvalues.size());

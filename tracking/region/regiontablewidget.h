@@ -7,7 +7,7 @@
 #include "Regions.h"
 #include "image/image.hpp"
 
-class ThreadData;
+struct ThreadData;
 class tracking_window;
 
 

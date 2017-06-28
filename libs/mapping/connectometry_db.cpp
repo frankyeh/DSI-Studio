@@ -576,6 +576,7 @@ bool connectometry_db::add_db(const connectometry_db& rhs)
     }
     num_subjects += rhs.num_subjects;
     modified = true;
+    return true;
 }
 void connectometry_db::move_up(int id)
 {

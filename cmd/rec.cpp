@@ -64,29 +64,29 @@ int rec(void)
     std::cout << "method=" << method_index << std::endl;
 
     if(method_index == 0) // DSI
-        param[0] = 17.0;
+        param[0] = 17.0f;
     if(method_index == 2)
     {
-        param[0] = 5;
-        param[1] = 15;
+        param[0] = 5.0f;
+        param[1] = 15.0f;
     }
     if(method_index == 3) // QBI-SH
     {
-        param[0] = 0.006;
-        param[1] = 8;
+        param[0] = 0.006f;
+        param[1] = 8.0f;
     }
     if(method_index == 4)
-        param[0] = 1.2;
+        param[0] = 1.2f;
     if(method_index == 6) // Convert to HARDI
     {
-        param[0] = 1.25;
-        param[1] = 3000;
-        param[2] = 0.05;
+        param[0] = 1.25f;
+        param[1] = 3000.0f;
+        param[2] = 0.05f;
     }
     if(method_index == 7)
     {
-        param[0] = 1.2;
-        param[1] = 2.0;
+        param[0] = 1.2f;
+        param[1] = 2.0f;
     }
 
     if (po.has("template"))
@@ -100,16 +100,16 @@ int rec(void)
         return -1;
     }
 
-    param[3] = 0.0002;
+    param[3] = 0.0002f;
 
     if(po.get("deconvolution",int(0)))
     {
-        param[2] = 7;
+        param[2] = 7.0f;
     }
     if(po.get("decomposition",int(0)))
     {
-        param[3] = 0.05;
-        param[4] = 10;
+        param[3] = 0.05f;
+        param[4] = 10.0f;
     }
     if (po.has("param0"))
     {

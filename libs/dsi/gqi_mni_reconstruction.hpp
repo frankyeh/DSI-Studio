@@ -588,7 +588,7 @@ public:
         image::multiply_constant(data.odf,data.jdet);
 
     }
-    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
+    virtual void end(Voxel&,gz_mat_write&)
     {
 
     }

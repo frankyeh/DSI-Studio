@@ -585,13 +585,13 @@ void reconstruction_window::on_remove_background_clicked()
 
 void reconstruction_window::on_zoom_in_clicked()
 {
-    source_ratio *= 1.1;
+    source_ratio *= 1.1f;
     on_b_table_itemSelectionChanged();
 }
 
 void reconstruction_window::on_zoom_out_clicked()
 {
-    source_ratio *= 0.9;
+    source_ratio *= 0.9f;
     on_b_table_itemSelectionChanged();
 }
 
@@ -606,7 +606,7 @@ void reconstruction_window::on_manual_reg_clicked()
         handle->voxel.qsdr_trans = manual->T;
 }
 
-void reconstruction_window::on_odf_sharpening_currentIndexChanged(int index)
+void reconstruction_window::on_odf_sharpening_currentIndexChanged(int)
 {
     ui->xyz_widget->setVisible(ui->odf_sharpening->currentIndex() > 0);
     ui->decom_panel->setVisible(ui->odf_sharpening->currentIndex() == 2);
@@ -614,7 +614,7 @@ void reconstruction_window::on_odf_sharpening_currentIndexChanged(int index)
     on_RFSelection_currentIndexChanged(0);
 }
 
-void reconstruction_window::on_RFSelection_currentIndexChanged(int index)
+void reconstruction_window::on_RFSelection_currentIndexChanged(int)
 {
     ui->ODFSelection->setVisible(ui->RFSelection->currentIndex() > 0);
 }
@@ -881,30 +881,30 @@ void rec_motion_correction(ImageModel* handle)
         image::filter::gradient_magnitude(I1);
         image::normalize(I1,1);
         image::affine_transform<float> upper,lower;
-        upper.translocation[0] = 2;
-        upper.translocation[1] = 2;
-        upper.translocation[2] = 2;
-        lower.translocation[0] = -2;
-        lower.translocation[1] = -2;
-        lower.translocation[2] = -2;
-        upper.rotation[0] = 3.1415926*2.0/180.0;
-        upper.rotation[1] = 3.1415926*2.0/180.0;
-        upper.rotation[2] = 3.1415926*2.0/180.0;
-        lower.rotation[0] = -3.1415926*2.0/180.0;
-        lower.rotation[1] = -3.1415926*2.0/180.0;
-        lower.rotation[2] = -3.1415926*2.0/180.0;
-        upper.scaling[0] = 1.02;
-        upper.scaling[1] = 1.02;
-        upper.scaling[2] = 1.02;
-        lower.scaling[0] = 0.98;
-        lower.scaling[1] = 0.98;
-        lower.scaling[2] = 0.98;
-        upper.affine[0] = 0.04;
-        upper.affine[1] = 0.04;
-        upper.affine[2] = 0.04;
-        lower.affine[0] = -0.04;
-        lower.affine[1] = -0.04;
-        lower.affine[2] = -0.04;
+        upper.translocation[0] = 2.0f;
+        upper.translocation[1] = 2.0f;
+        upper.translocation[2] = 2.0f;
+        lower.translocation[0] = -2.0f;
+        lower.translocation[1] = -2.0f;
+        lower.translocation[2] = -2.0f;
+        upper.rotation[0] = 3.1415926f*2.0f/180.0f;
+        upper.rotation[1] = 3.1415926f*2.0f/180.0f;
+        upper.rotation[2] = 3.1415926f*2.0f/180.0f;
+        lower.rotation[0] = -3.1415926f*2.0f/180.0f;
+        lower.rotation[1] = -3.1415926f*2.0f/180.0f;
+        lower.rotation[2] = -3.1415926f*2.0f/180.0f;
+        upper.scaling[0] = 1.02f;
+        upper.scaling[1] = 1.02f;
+        upper.scaling[2] = 1.02f;
+        lower.scaling[0] = 0.98f;
+        lower.scaling[1] = 0.98f;
+        lower.scaling[2] = 0.98f;
+        upper.affine[0] = 0.04f;
+        upper.affine[1] = 0.04f;
+        upper.affine[2] = 0.04f;
+        lower.affine[0] = -0.04f;
+        lower.affine[1] = -0.04f;
+        lower.affine[2] = -0.04f;
         image::affine_transform<double> arg;
         image::reg::fun_adoptor<image::basic_image<float,3>,
                                 image::vector<3>,

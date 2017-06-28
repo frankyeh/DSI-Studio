@@ -74,7 +74,7 @@ void color_bar_dialog::set_value(float min_value,float max_value)
     update_color_map();
 }
 
-void color_bar_dialog::on_tract_color_index_currentIndexChanged(int index)
+void color_bar_dialog::on_tract_color_index_currentIndexChanged(int)
 {
     if(!cur_tracking_window)
         return;

@@ -71,10 +71,10 @@ void motion_correction(std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
             w2 /= dis;
         }
         image::affine_transform<double> interpolated_arg;
-        for(unsigned int i = 0;i < 6;++i)
-            interpolated_arg.translocation[i] =
-                    arg[b1].translocation[i]*w1 +
-                    arg[b2].translocation[i]*w2;
+        for(unsigned int j = 0;j < 6;++j)
+            interpolated_arg.translocation[j] =
+                    arg[b1].translocation[j]*w1 +
+                    arg[b2].translocation[j]*w2;
         image::vector<3> vs(1,1,1);
         image::transformation_matrix<double> T =
                 image::transformation_matrix<double>(interpolated_arg,geo,vs,geo,vs);

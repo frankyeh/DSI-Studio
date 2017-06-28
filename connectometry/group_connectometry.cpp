@@ -944,7 +944,7 @@ void group_connectometry::on_load_roi_from_file_clicked()
 
 
 
-void group_connectometry::on_variable_list_clicked(const QModelIndex &index)
+void group_connectometry::on_variable_list_clicked(const QModelIndex &)
 {
     ui->foi->clear();
     for(int i =0;i < ui->variable_list->count();++i)

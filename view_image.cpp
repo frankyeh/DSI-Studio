@@ -264,12 +264,12 @@ void view_image::update_image(void)
 
 void view_image::on_zoom_in_clicked()
 {
-     source_ratio *= 1.1;
+     source_ratio *= 1.1f;
      update_image();
 }
 
 void view_image::on_zoom_out_clicked()
 {
-    source_ratio *= 0.9;
+    source_ratio *= 0.9f;
     update_image();
 }

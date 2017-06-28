@@ -40,7 +40,7 @@ db_window::db_window(QWidget *parent,std::shared_ptr<vbc_database> vbc_) :
     connect(ui->add,SIGNAL(clicked()),this,SLOT(on_actionAdd_DB_triggered()));
 
     fp_mask.resize(vbc->handle->dim);
-    for(int i = 0;i < fp_mask.size() > 0.0f;++i)
+    for(int i = 0;i < fp_mask.size();++i)
         if(vbc->handle->dir.get_fa(i,0) > 0.0f)
             fp_mask[i] = 1.0;
         else
@@ -383,7 +383,7 @@ void db_window::on_calculate_dif_clicked()
 
 }
 
-void db_window::on_fp_zoom_valueChanged(double arg1)
+void db_window::on_fp_zoom_valueChanged(double)
 {
     QImage qimage((unsigned char*)&*fp_dif_map.begin(),fp_dif_map.width(),fp_dif_map.height(),QImage::Format_RGB32);
     fp_dif_image = qimage.scaled(fp_dif_map.width()*ui->fp_zoom->value(),fp_dif_map.height()*ui->fp_zoom->value());

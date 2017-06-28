@@ -263,7 +263,7 @@ TreeModel::~TreeModel()
     settings.endGroup();
 }
 
-int TreeModel::columnCount(const QModelIndex &parent) const
+int TreeModel::columnCount(const QModelIndex &) const
 {
     return 2;
 }
@@ -473,7 +473,7 @@ void RenderingTableWidget::setDefault(QString parent_id)
 {
     treemodel->setDefault(parent_id);
 }
-void RenderingTableWidget::dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
+void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &bottomRight)
 {
     if(((RenderingItem*)bottomRight.internalPointer())->id == "tracking_index")
     {

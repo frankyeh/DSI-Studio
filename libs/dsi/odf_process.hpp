@@ -16,7 +16,7 @@ public:
         for (unsigned int index = 0; index < data.space.size(); ++index)
             data.space[index] = voxel.image_model->dwi_data[index][data.voxel_index];
     }
-    virtual void end(Voxel&,gz_mat_write& mat_writer) {}
+    virtual void end(Voxel&,gz_mat_write&) {}
 };
 
 void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
@@ -319,7 +319,7 @@ public:
     {
         voxel.qa_map[data.voxel_index] = data.fa[0];
     }
-    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
+    virtual void end(Voxel&,gz_mat_write&)
     {
 
     }
@@ -345,7 +345,7 @@ public:
         if(voxel.output_rdi)
         {
             float sigma = voxel.param[0]; //optimal 1.24
-            for(float L = 0.2;L <= sigma;L+= 0.2)
+            for(float L = 0.2f;L <= sigma;L+= 0.2f)
             {
                 rdi.push_back(std::vector<float>());
                 rdi.back().resize(voxel.dim.size());
@@ -521,8 +521,8 @@ public:
         {
             for(unsigned int i = 0;i < rdi.size();++i)
                 image::divide_constant(rdi[i],voxel.z0);
-            float L = 0.2;
-            for(unsigned int i = 0;i < rdi.size();++i,L += 0.2)
+            float L = 0.2f;
+            for(unsigned int i = 0;i < rdi.size();++i,L += 0.2f)
             {
                 std::ostringstream out;
                 out.precision(2);
@@ -532,8 +532,8 @@ public:
             for(unsigned int i = 0;i < rdi[0].size();++i)
             for(unsigned int j = 0;j < rdi.size();++j)
                 rdi[j][i] = rdi[rdi.size()-1][i]-rdi[j][i];
-            L = 0.2;
-            for(unsigned int i = 0;i < rdi.size();++i,L += 0.2)
+            L = 0.2f;
+            for(unsigned int i = 0;i < rdi.size();++i,L += 0.2f)
             {
                 std::ostringstream out2;
                 out2.precision(2);

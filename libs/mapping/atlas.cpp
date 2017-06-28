@@ -174,9 +174,9 @@ void atlas::load_from_file(void)
 
 void mni_to_tal(float& x,float &y, float &z)
 {
-    x *= 0.9900;
-    float ty = 0.9688*y + ((z >= 0) ? 0.0460*z : 0.0420*z) ;
-    float tz = -0.0485*y + ((z >= 0) ? 0.9189*z : 0.8390*z) ;
+    x *= 0.9900f;
+    float ty = 0.9688f*y + ((z >= 0) ? 0.0460f*z : 0.0420f*z) ;
+    float tz = -0.0485f*y + ((z >= 0) ? 0.9189f*z : 0.8390f*z) ;
     y = ty;
     z = tz;
 }

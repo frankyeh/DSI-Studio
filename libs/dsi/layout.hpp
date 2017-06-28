@@ -71,8 +71,8 @@ public:
                       unsigned int phantom_width,
                       unsigned int boundary)
     {
-        float iso_fraction = 0.2;
-        float fiber_fraction = 1.0-iso_fraction;
+        float iso_fraction = 0.2f;
+        float fiber_fraction = 1.0f-iso_fraction;
         dim[0] = phantom_width+boundary+boundary;
         dim[1] = phantom_width+boundary+boundary;
         dim[2] = std::max<int>(1,angle_iteration.size())*repeat_num;
@@ -116,11 +116,11 @@ public:
                                     y < boundary+phantom_width)
                                 {
                                     float xf = ((float)x - boundary + 1)/((float)phantom_width);//from 0.02 to 1.00
-                                    xf = 1.0-xf;//0.00 to 0.98
-                                    xf = 0.5+0.5*xf;//0.50 to 0.99
+                                    xf = 1.0f-xf;//0.00 to 0.98
+                                    xf = 0.5f+0.5f*xf;//0.50 to 0.99
                                     float angle = ((float)y - boundary)/((float)phantom_width);//0.00 to 0.98
-                                    angle = 1.0-angle;//0.02 to 1.00
-                                    angle *= M_PI*0.5;//1.8 degrees 90 degrees
+                                    angle = 1.0f-angle;//0.02 to 1.00
+                                    angle *= float(M_PI*0.5f);//1.8 degrees 90 degrees
                                     models[index] = new MixGaussianModel(l1,l2,mean_dif,angle,
                                                                          fiber_fraction*xf,
                                                                          fiber_fraction*(1.0-xf));

@@ -30,12 +30,12 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
 {
     std::auto_ptr<TrackingMethod> method(method_ptr);
     std::uniform_real_distribution<float> rand_gen(0,1),
-            angle_gen(15.0*M_PI/180.0,90.0*M_PI/180.0),
-            smoothing_gen(0.0,0.95),
-            step_gen(method->trk.vs[0]*0.1,method->trk.vs[0]),
-            threshold_gen(0.5*param.otsu_threshold,0.7*param.otsu_threshold);
+            angle_gen(float(15.0*M_PI/180.0),float(90.0*M_PI/180.0)),
+            smoothing_gen(0.0f,0.95f),
+            step_gen(method->trk.vs[0]*0.1f,method->trk.vs[0]),
+            threshold_gen(0.5f*param.otsu_threshold,0.7f*param.otsu_threshold);
     unsigned int iteration = thread_id; // for center seed
-    float white_matter_t = method_ptr->param.threshold*1.2;
+    float white_matter_t = method_ptr->param.threshold*1.2f;
     if(!roi_mgr.seeds.empty())
     try{
         std::vector<std::vector<float> > local_track_buffer;
@@ -47,23 +47,23 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
         {
             if(!pushing_data && (iteration & 0x00000FFF) == 0x00000FFF && !local_track_buffer.empty())
                 push_tracts(local_track_buffer);
-            if(param.threshold == 0.0)
+            if(param.threshold == 0.0f)
             {
                 method->current_fa_threshold = threshold_gen(seed);
-                white_matter_t = method->current_fa_threshold*1.2;
+                white_matter_t = method->current_fa_threshold*1.2f;
             }
-            if(param.cull_cos_angle == 1.0)
+            if(param.cull_cos_angle == 1.0f)
                 method->current_tracking_angle = std::cos(angle_gen(seed));
-            if(param.smooth_fraction == 1.0)
+            if(param.smooth_fraction == 1.0f)
                 method->current_tracking_smoothing = smoothing_gen(seed);
-            if(param.step_size == 0.0)
+            if(param.step_size == 0.0f)
             {
                 float step_size_in_mm = step_gen(seed);
                 method->current_step_size_in_voxel[0] = step_size_in_mm/method->trk.vs[0];
                 method->current_step_size_in_voxel[1] = step_size_in_mm/method->trk.vs[1];
                 method->current_step_size_in_voxel[2] = step_size_in_mm/method->trk.vs[2];
-                method->current_max_steps3 = std::round(3.0*param.max_length/step_size_in_mm);
-                method->current_min_steps3 = std::round(3.0*param.min_length/step_size_in_mm);
+                method->current_max_steps3 = std::round(3.0f*param.max_length/step_size_in_mm);
+                method->current_min_steps3 = std::round(3.0f*param.min_length/step_size_in_mm);
             }
             ++seed_count[thread_id];
             if(center_seed)
@@ -90,7 +90,7 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
                 pos[0] = (float)roi_mgr.seeds[i].x() + rand_gen(seed)-0.5f;
                 pos[1] = (float)roi_mgr.seeds[i].y() + rand_gen(seed)-0.5f;
                 pos[2] = (float)roi_mgr.seeds[i].z() + rand_gen(seed)-0.5f;
-                if(roi_mgr.seeds_r[i] != 1.0)
+                if(roi_mgr.seeds_r[i] != 1.0f)
                     pos /= roi_mgr.seeds_r[i];
                 if(!method->init(initial_direction,pos,seed))
                     continue;

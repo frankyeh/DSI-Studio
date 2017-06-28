@@ -116,13 +116,13 @@ void MainWindow::dropEvent(QDropEvent *event)
 
 }
 
-void MainWindow::open_fib_at(int row,int col)
+void MainWindow::open_fib_at(int row,int)
 {
     loadFib(ui->recentFib->item(row,1)->text() + "/" +
             ui->recentFib->item(row,0)->text());
 }
 
-void MainWindow::open_src_at(int row,int col)
+void MainWindow::open_src_at(int row,int)
 {
     loadSrc(QStringList() << (ui->recentSrc->item(row,1)->text() + "/" +
             ui->recentSrc->item(row,0)->text()));

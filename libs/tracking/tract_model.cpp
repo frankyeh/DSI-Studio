@@ -1041,7 +1041,7 @@ void TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater)
         bool adding = false;
         for(unsigned int j = 0;j < tract_data[i].size();j += 3)
         {
-            if(tract_data[i][j+dim] < pos ^ greater)
+            if((tract_data[i][j+dim] < pos) ^ greater)
             {
                 if(!adding)
                     continue;
@@ -1131,7 +1131,7 @@ void TractModel::paint(float select_angle,
 }
 
 //---------------------------------------------------------------------------
-void TractModel::cut_by_mask(const char* file_name)
+void TractModel::cut_by_mask(const char*)
 {
     /*
     std::ifstream in(file_name,std::ios::in);
@@ -1963,7 +1963,7 @@ void ConnectivityMatrix::save_to_image(image::color_image& cm)
     cm.resize(matrix_value.geometry());
     std::vector<float> values(matrix_value.size());
     std::copy(matrix_value.begin(),matrix_value.end(),values.begin());
-    image::normalize(values,255.99);
+    image::normalize(values,255.99f);
     for(unsigned int index = 0;index < values.size();++index)
     {
         cm[index] = image::rgb_color((unsigned char)values[index],(unsigned char)values[index],(unsigned char)values[index]);
@@ -2106,7 +2106,7 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
     init_matrix(count,regions.size());
 
     for_each_connectivity(end_list1,end_list2,
-                          [&](unsigned int index,short i,short j){
+                          [&](unsigned int,short i,short j){
         ++count[i][j];
     });
 
@@ -2656,10 +2656,10 @@ void ConnectivityMatrix::network_property(std::string& report,double t)
 
     std::vector<float> pagerank_centrality_bin(n),pagerank_centrality_wei(n);
     {
-        float d = 0.85;
+        float d = 0.85f;
         std::vector<float> deg_bin(degree.begin(),degree.end()),deg_wei(strength.begin(),strength.end());
-        std::replace(deg_bin.begin(),deg_bin.end(),0.0,1.0);
-        std::replace(deg_wei.begin(),deg_wei.end(),0.0,1.0);
+        std::replace(deg_bin.begin(),deg_bin.end(),0.0f,1.0f);
+        std::replace(deg_wei.begin(),deg_wei.end(),0.0f,1.0f);
 
         image::basic_image<float,2> B_bin(binary_matrix.geometry()),B_wei(binary_matrix.geometry());
         for(unsigned int i = 0,index = 0;i < n;++i)

@@ -16,7 +16,7 @@ public:
         float alpha;
         image::rgb_color color;
         RegionModel(void) {
-                alpha = 0.6;
+                alpha = 0.6f;
 		color = (unsigned int)0x00FFFFFF;
         }
         void swap(RegionModel& rhs) {
