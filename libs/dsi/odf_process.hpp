@@ -6,6 +6,7 @@
 
 #include "mapping/fa_template.hpp"
 extern fa_template fa_template_imp;
+void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 
 class ReadDWIData : public BaseProcess{
 public:
@@ -36,6 +37,7 @@ public:
             return;
         unsigned int b_count = voxel.bvalues.size();
         std::vector<unsigned int> shell;
+        calculate_shell(voxel.bvalues,shell);
         unsigned int total_signals = 0;
 
         tessellated_icosahedron new_dir;
