@@ -416,19 +416,34 @@ void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>
 
 }
 
+bool is_dsi_half_sphere(const std::vector<unsigned int>& shell)
+{
+    return shell.size() > 4 && (shell[1] - shell[0] <= 3);
+}
+
+bool is_dsi(const std::vector<unsigned int>& shell)
+{
+    return shell.size() > 4 && (shell[1] - shell[0] <= 6);
+}
+
+bool is_multishell(const std::vector<unsigned int>& shell)
+{
+    return (shell.size() > 1) && !is_dsi(shell);
+}
+
 void get_report(const std::vector<float>& bvalues,image::vector<3> vs,std::string& report)
 {
-    std::ostringstream out;
     std::vector<unsigned int> shell;
     calculate_shell(bvalues,shell);
-    if(shell.size() > 5)
+    std::ostringstream out;
+    if(is_dsi(shell))
     {
         out << " A diffusion spectrum imaging scheme was used, and a total of " << bvalues.size()-(bvalues.front() == 0 ? 1:0)
             << " diffusion sampling were acquired."
-            << " The maximum b-value was " << bvalues.back() << " s/mm2.";
+            << " The maximum b-value was " << (int)std::round(bvalues.back()) << " s/mm2.";
     }
     else
-    if(shell.size() > 1)
+    if(is_multishell(shell))
     {
         out << " A multishell diffusion scheme was used, and the b-values were ";
         for(unsigned int index = 0;index < shell.size();++index)
@@ -440,7 +455,7 @@ void get_report(const std::vector<float>& bvalues,image::vector<3> vs,std::strin
                 else
                     out << " ,";
             }
-            out << bvalues[shell[index]];
+            out << (int)std::round(bvalues[shell[index]]);
         }
         out << " s/mm2.";
 

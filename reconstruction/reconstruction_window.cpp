@@ -31,10 +31,11 @@ bool reconstruction_window::load_src(int index)
         return false;
     }
     float m = (float)*std::max_element(handle->dwi_data[0],handle->dwi_data[0]+handle->voxel.dim.size());
+    float otsu = image::segmentation::otsu_threshold(image::make_image(handle->dwi_data[0],handle->voxel.dim));
     ui->max_value->setMaximum(m*1.5f);
     ui->max_value->setMinimum(0.0f);
     ui->max_value->setSingleStep(m*0.05f);
-    ui->max_value->setValue(m*1.2f);
+    ui->max_value->setValue(otsu*3.0f);
     ui->min_value->setMaximum(m*1.5f);
     ui->min_value->setMinimum(0.0f);
     ui->min_value->setSingleStep(m*0.05f);
@@ -44,6 +45,9 @@ bool reconstruction_window::load_src(int index)
 }
 
 void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
+bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
+bool is_dsi(const std::vector<unsigned int>& shell);
+bool is_multishell(const std::vector<unsigned int>& shell);
 
 reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *parent) :
     QMainWindow(parent),filenames(filenames_),ui(new Ui::reconstruction_window)
@@ -137,11 +141,31 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     {
         std::vector<unsigned int> shell;
         calculate_shell(handle->voxel.bvalues,shell);
-        ui->half_sphere->setChecked((shell.size() > 5) && (shell[1] - shell[0] <= 3));
-        if(!ui->half_sphere->isChecked())
+        ui->half_sphere->setChecked(is_dsi_half_sphere(shell));
+        ui->scheme_balance->setChecked(is_multishell(shell) && handle->voxel.bvalues.size()-shell.back() < 100);
+        if(is_dsi(shell))
         {
-            ui->scheme_balance->setChecked((shell.size() <= 5) && !shell.empty() &&
-                handle->voxel.bvalues.size()-shell.back() < 100);
+            ui->scheme_balance->setEnabled(false);
+        }
+        else
+        // not dsi
+        {
+            if(ui->DSI->isChecked())
+            {
+                ui->GQI->setChecked(true);
+                on_GQI_toggled(true);
+            }
+            ui->DSI->setEnabled(false);
+            ui->half_sphere->setEnabled(false);
+        }
+        if(is_dsi(shell) || is_multishell(shell))
+        {
+            if(ui->QBI->isChecked())
+            {
+                ui->GQI->setChecked(true);
+                on_GQI_toggled(true);
+            }
+            ui->QBI->setEnabled(false);
         }
     }
     if(!handle->is_human_data())

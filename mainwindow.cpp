@@ -877,6 +877,8 @@ void MainWindow::on_run_cmd_clicked()
 
 
 void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
+bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
+bool is_multishell(const std::vector<unsigned int>& shell);
 void MainWindow::on_ReconstructSRC_clicked()
 {
     QString dir = QFileDialog::getExistingDirectory(
@@ -926,12 +928,8 @@ void MainWindow::on_ReconstructSRC_clicked()
         {
             std::vector<unsigned int> shell;
             calculate_shell(handle->voxel.bvalues,shell);
-            handle->voxel.half_sphere = (shell.size() > 5) && (shell[1] - shell[0] <= 3);
-            if(!handle->voxel.half_sphere)
-            {
-                handle->voxel.scheme_balance = (shell.size() <= 5) && !shell.empty() &&
-                    handle->voxel.bvalues.size()-shell.back() < 100;
-            }
+            handle->voxel.half_sphere = is_dsi_half_sphere(shell);
+            handle->voxel.scheme_balance = is_multishell(shell) && handle->voxel.bvalues.size()-shell.back() < 100;
         }
 
         const char* msg = (const char*)reconstruction(handle.get(), 7 /*QSDR*/,

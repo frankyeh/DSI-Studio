@@ -19,7 +19,6 @@ public:
     virtual void end(Voxel&,gz_mat_write&) {}
 };
 
-void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 class BalanceScheme : public BaseProcess{
     std::vector<float> trans;
     unsigned int new_q_count;
@@ -37,13 +36,6 @@ public:
             return;
         unsigned int b_count = voxel.bvalues.size();
         std::vector<unsigned int> shell;
-        calculate_shell(voxel.bvalues,shell);
-        if(shell.size() > 5) // more than 3 shell
-        {
-            voxel.scheme_balance = false;
-            return;
-        }
-
         unsigned int total_signals = 0;
 
         tessellated_icosahedron new_dir;
