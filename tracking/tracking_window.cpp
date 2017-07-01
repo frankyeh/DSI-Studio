@@ -1,5 +1,6 @@
 #include <utility>
 #include <QFileDialog>
+#include <QInputDialog>
 #include <QStringListModel>
 #include <QCompleter>
 #include <QSplitter>
@@ -803,15 +804,21 @@ void tracking_window::on_actionTDI_Diffusion_Space_triggered()
 
 void tracking_window::on_actionTDI_Subvoxel_Diffusion_Space_triggered()
 {
-    image::matrix<4,4,float> tr;
-    tr.identity();
-    tr[0] = tr[5] = tr[10] = 4.0;
-    image::geometry<3> new_geo(handle->dim[0]*4,handle->dim[1]*4,handle->dim[2]*4);
-    image::vector<3,float> new_vs(handle->vs);
-    new_vs /= 4.0;
     int rec,rec2;
     if(!ask_TDI_options(rec,rec2))
         return;
+    bool ok;
+    int ratio = QInputDialog::getInt(this,
+            "DSI Studio",
+            "Input super-resolution ratio (e.g. 2, 3, or 4):",2,2,8,1,&ok);
+    if(!ok)
+        return;
+    image::matrix<4,4,float> tr;
+    tr.identity();
+    tr[0] = tr[5] = tr[10] = ratio;
+    image::geometry<3> new_geo(handle->dim[0]*ratio,handle->dim[1]*ratio,handle->dim[2]*ratio);
+    image::vector<3,float> new_vs(handle->vs);
+    new_vs /= (float)ratio;
     tractWidget->export_tract_density(new_geo,new_vs,tr,rec == QMessageBox::Yes,rec2 != QMessageBox::Yes);
 }
 

@@ -1231,8 +1231,10 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
                 continue;
             tract_models[index]->get_density_map(tdi,transformation,end_point);
         }
-        QImage qimage((unsigned char*)&*tdi.begin(),
-                      tdi.width(),tdi.height()*tdi.depth(),QImage::Format_RGB32);
+        image::basic_image<image::rgb_color,2> mosaic;
+        image::mosaic(tdi,mosaic,std::sqrt(tdi.depth()));
+        QImage qimage((unsigned char*)&*mosaic.begin(),
+                      mosaic.width(),mosaic.height(),QImage::Format_RGB32);
         qimage.save(filename);
     }
     else
