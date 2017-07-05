@@ -248,6 +248,7 @@ TreeModel::TreeModel(RenderingTableWidget *parent)
     root_mapping["Tract"] = (RenderingItem*)addItem("Root","show_tract","Tract Rendering",QString("check"),Qt::Checked).internalPointer();
     root_mapping["Region"] = (RenderingItem*)addItem("Root","show_region","Region Rendering",QString("check"),Qt::Checked).internalPointer();
     root_mapping["Surface"] = (RenderingItem*)addItem("Root","show_surface","Surface Rendering",QString("check"),Qt::Checked).internalPointer();
+    root_mapping["Label"] = (RenderingItem*)addItem("Root","show_label","Label Rendering",QString("check"),Qt::Checked).internalPointer();
     root_mapping["ODF"] = (RenderingItem*)addItem("Root","show_odf","ODF Rendering",QString("check"),Qt::Checked).internalPointer();
 
 }

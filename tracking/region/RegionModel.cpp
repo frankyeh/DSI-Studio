@@ -58,9 +58,14 @@ bool RegionModel::load(const std::vector<image::vector<3,short> >& seeds, double
         return false;
     image::vector<3,short> max_value(seeds[0]), min_value(seeds[0]);
     image::bounding_box_mt(seeds,max_value,min_value);
+
+    center = max_value;
+    center += min_value;
+    center *= 0.5;
+    center /= scale;
+
     max_value += image::vector<3,short>(5, 5, 5);
     min_value -= image::vector<3,short>(5, 5, 5);
-
     image::geometry<3> geo(max_value[0] - min_value[0],
             max_value[1] - min_value[1], max_value[2] - min_value[2]);
     float cur_scale = 1.0;

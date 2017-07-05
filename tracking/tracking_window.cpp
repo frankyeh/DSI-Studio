@@ -414,6 +414,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         renderWidget->setDefault("show_tract");
         renderWidget->setDefault("show_region");
         renderWidget->setDefault("show_surface");
+        renderWidget->setDefault("show_label");
         renderWidget->setDefault("show_odf");
         glWidget->updateGL();
         scene.show_slice();

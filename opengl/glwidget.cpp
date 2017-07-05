@@ -790,6 +790,60 @@ void GLWidget::renderLR()
         glPopMatrix();
         check_error("show_surface");
     }
+    if (get_param("show_label"))
+    {
+        glEnable(GL_COLOR_MATERIAL);
+        glDisable(GL_LIGHTING);
+        glDisable(GL_DEPTH_TEST);
+        glPushMatrix();
+        glMultMatrixf(transformation_matrix.begin());
+        if (get_param("show_track_label"))
+        {
+            int color = get_param("track_label_color");
+            glColor3ub((color & 0x00FF0000) >> 16,(color & 0x0000FF00) >> 8,color & 0x000000FF);
+            QFont font;
+            font.setPointSize(get_param("track_label_size"));
+            font.setBold(get_param("track_label_bold"));
+            for (unsigned int i = 0;i < cur_tracking_window.tractWidget->rowCount();++i)
+            if(cur_tracking_window.tractWidget->item(i,0)->checkState() == Qt::Checked)
+            {
+                TractModel* active_tract_model =
+                    cur_tracking_window.tractWidget->tract_models[i];
+                if (active_tract_model->get_visible_track_count() == 0)
+                    continue;
+                const auto& t = active_tract_model->get_tract(0);
+                int pos = t.size()/6*3;
+                renderText(t[pos],t[pos+1],t[pos+2],cur_tracking_window.tractWidget->item(i,0)->text(),font);
+            }
+        }
+        if (get_param("show_region_label"))
+        {
+            int color = get_param("region_label_color");
+            glColor3ub((color & 0x00FF0000) >> 16,(color & 0x0000FF00) >> 8,color & 0x000000FF);
+            QFont font;
+            font.setPointSize(get_param("region_label_size"));
+            font.setBold(get_param("region_label_bold"));
+            for(unsigned int i = 0;i < cur_tracking_window.regionWidget->regions.size();++i)
+                if(cur_tracking_window.regionWidget->item(i,0)->checkState() == Qt::Checked &&
+                   !cur_tracking_window.regionWidget->regions[i]->region.empty())
+                {
+                    const auto& p = cur_tracking_window.regionWidget->regions[i]->show_region.center;
+                    if(p[0] == 0.0 && p[1] == 0.0 && p[2] == 0.0)
+                    {
+                        const auto& p2 = cur_tracking_window.regionWidget->regions[i]->show_region.center;
+                        image::vector<3> p3(p2);
+                        p3 /= cur_tracking_window.regionWidget->regions[i]->resolution_ratio;
+                        renderText(p3[0],p3[1],p3[2],cur_tracking_window.regionWidget->item(i,0)->text(),font);
+                    }
+                    else
+                    renderText(p[0],p[1],p[2],cur_tracking_window.regionWidget->item(i,0)->text(),font);
+                }
+        }
+        glPopMatrix();
+        glEnable(GL_LIGHTING);
+        glEnable(GL_DEPTH_TEST);
+
+    }
 
     if (get_param("show_axis"))
     {
@@ -1659,34 +1713,69 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 
     glPushMatrix();
     glLoadIdentity();
-    // the joystick mode is the second step transformation
+    // left button down
     if (event->buttons() & Qt::LeftButton)
     {
-        glRotated(dy / 2.0, 1.0, 0.0, 0.0);
-        if(!(event->modifiers() & Qt::ShiftModifier))
-            glRotated(-dx / 2.0, 0.0, 1.0, 0.0);
+        if(edit_right && view_mode == view_mode_type::two)
+        {
+            // book keeping the transformation matrix
+            glRotated(dy / 2.0, 1.0, 0.0, 0.0);
+            if(!(event->modifiers() & Qt::ShiftModifier))
+                glRotated(-dx / 2.0, 0.0, 1.0, 0.0);
+            glMultMatrixf(transformation_matrix2.begin());
+            glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix2.begin());
+            // book keeping the rotation matrix
+            glLoadIdentity();
+            glRotated(dy / 2.0, 1.0, 0.0, 0.0);
+            if(!(event->modifiers() & Qt::ShiftModifier))
+                glRotated(-dx / 2.0, 0.0, 1.0, 0.0);
+            glMultMatrixf(rotation_matrix2.begin());
+            glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix2.begin());
 
-    }
-    else if (event->buttons() & Qt::RightButton)
-    {
-        double scalefactor = (-dx-dy+100.0)/100.0;
-        glScaled(scalefactor,scalefactor,scalefactor);
+        }
+        else
+        {
+            // book keeping the transformation matrix
+            glRotated(dy / 2.0, 1.0, 0.0, 0.0);
+            if(!(event->modifiers() & Qt::ShiftModifier))
+                glRotated(-dx / 2.0, 0.0, 1.0, 0.0);
+            glMultMatrixf(transformation_matrix.begin());
+            glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
+            // book keeping the rotation matrix
+            glLoadIdentity();
+            glRotated(dy / 2.0, 1.0, 0.0, 0.0);
+            if(!(event->modifiers() & Qt::ShiftModifier))
+                glRotated(-dx / 2.0, 0.0, 1.0, 0.0);
+            glMultMatrixf(rotation_matrix.begin());
+            glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix.begin());
+        }
     }
     else
-        glTranslated(dx/5.0,dy/5.0,0);
+    // right button or middle button down
+    {
+        if (event->buttons() & Qt::RightButton)
+        {
+            double scalefactor = (-dx-dy+100.0)/100.0;
+            glScaled(scalefactor,scalefactor,scalefactor);
+        }
+        else
+            glTranslated(dx/5.0,dy/5.0,0);
 
-    if(edit_right && view_mode == view_mode_type::two)
-    {
-        glMultMatrixf(transformation_matrix2.begin());
-        glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix2.begin());
+        if(edit_right && view_mode == view_mode_type::two)
+        {
+            glMultMatrixf(transformation_matrix2.begin());
+            glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix2.begin());
+        }
+        else
+        {
+            glMultMatrixf(transformation_matrix.begin());
+            glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
+            if(event->buttons() & Qt::RightButton)
+                cur_tracking_window.ui->zoom_3d->setValue(std::pow(transformation_matrix.det(),1.0/3.0));
+        }
     }
-    else
-    {
-        glMultMatrixf(transformation_matrix.begin());
-        glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
-        if(event->buttons() & Qt::RightButton)
-            cur_tracking_window.ui->zoom_3d->setValue(std::pow(transformation_matrix.det(),1.0/3.0));
-    }
+
+
     glPopMatrix();
     updateGL();
     lastPos = cur_pos;

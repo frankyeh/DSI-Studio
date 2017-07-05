@@ -11,6 +11,7 @@ public:
         typedef image::march_cube<image::vector<3,float> >mesh_type;
         std::auto_ptr<mesh_type> object;
         std::vector<std::vector<unsigned int> > sorted_index;
+        image::vector<3,float> center;
         void sortIndices(void);
 public:
         float alpha;
