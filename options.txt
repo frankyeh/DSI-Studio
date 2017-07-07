@@ -29,8 +29,12 @@ Rendering/Scale with voxel size/scale_voxel/Off:On/1
 Rendering/Perspective/pespective/int/5
 Rendering/3D Perspective/3d_perspective/float:0.5:3:0.5:1/1.0
 Rendering/Background Color/bkg_color/color/0
-Rendering/Axis/show_axis/Off:On/0
-Rendering/Axis Text/show_axis_text/Off:On/0
+Rendering/Axis/show_axis/Off:On/1
+Rendering/Axis Line Thickness/axis_line_thickness/float:1.0:10.0:0.5:1/3
+Rendering/Axis Line Length/axis_line_length/float:1.0:10.0:0.5:1/3
+Rendering/Axis Label/show_axis_label/Off:On/1
+Rendering/Axis Label Size/axis_label_size/int:2:24:2/12
+Rendering/Axis Label Bold/axis_label_bold/Off:On/1
 Rendering/Anti-aliasing/anti_aliasing/Off:On/1
 Rendering/Line Smooth/line_smooth/Off:On/0
 Rendering/Point Smooth/point_smooth/Off:On/0

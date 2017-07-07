@@ -847,6 +847,10 @@ void GLWidget::renderLR()
 
     if (get_param("show_axis"))
     {
+        float L = get_param_float("axis_line_length");
+        float L2 = L*0.75f;
+
+
         glEnable(GL_COLOR_MATERIAL);
         glDisable(GL_LIGHTING);
 
@@ -860,7 +864,7 @@ void GLWidget::renderLR()
         GLfloat aspect = float(view_mode == view_mode_type::two ? cur_width/2:cur_width)/float(cur_height);
         GLfloat fH = 0.25f;
         GLfloat fW = fH * aspect;
-        glFrustum( -fW, 0.015, -0.015, fH, zNear*perspective, zFar*perspective);
+        glFrustum( -fW, L2*0.01f,L2*-0.01f, fH, zNear*perspective, zFar*perspective);
 
 
         glDisable(GL_DEPTH_TEST);
@@ -869,19 +873,22 @@ void GLWidget::renderLR()
         glLoadIdentity();
         my_gluLookAt(0,0,-200.0f*perspective,0,0,0,0,-1.0f,0);
         glMultMatrixf(rotation_matrix.begin());
-        glLineWidth (1.5);
+        glLineWidth (get_param_float("axis_line_thickness"));
         glBegin (GL_LINES);
-        glColor3f (1.0f,0.3f,0.3f);  glVertex3f(0,0,0);  glVertex3f(1.5f,0,0);    // X axis is red.
-        glColor3f (0.3f,1.0f,0.3f);  glVertex3f(0,0,0);  glVertex3f(0,1.5f,0);    // Y axis is green.
-        glColor3f (0.3f,0.3f,1.0f);  glVertex3f(0,0,0);  glVertex3f(0,0,1.5f);    // z axis is blue.
+        glColor3f (1.0f,0.3f,0.3f);  glVertex3f(0,0,0);  glVertex3f(L2,0,0);    // X axis is red.
+        glColor3f (0.3f,1.0f,0.3f);  glVertex3f(0,0,0);  glVertex3f(0,L2,0);    // Y axis is green.
+        glColor3f (0.3f,0.3f,1.0f);  glVertex3f(0,0,0);  glVertex3f(0,0,L2);    // z axis is blue.
         glEnd();
-        if(get_param("show_axis_text"))
+        if(get_param("show_axis_label"))
         {
-            renderText(0,0,2,"S");
+            QFont font;
+            font.setPointSize(get_param("axis_label_size"));
+            font.setBold(get_param("axis_label_bold"));
+            renderText(0,0,L,"S",font);
             glColor3f (1.0f,0.3f,0.3f);
-            renderText(2,0,0,"L");
+            renderText(L,0,0,"L",font);
             glColor3f (0.3f,1.0f,0.3f);
-            renderText(0,2,0,"P");
+            renderText(0,L,0,"P",font);
         }
         glEnable(GL_DEPTH_TEST);
         glPopMatrix();
