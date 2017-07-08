@@ -29,7 +29,6 @@ protected:
     image::vector<3,int> bounding_box_lower;
     image::vector<3,int> bounding_box_upper;
     image::vector<3,int> des_offset;// = {6,7,11};	// the offset due to bounding box
-    image::vector<3,float> scale;
     double trans_to_mni[16];
 protected:
     float voxel_volume_scale;
@@ -267,10 +266,6 @@ public:
             des_offset[1] = fa_template_imp.shift[1]-bounding_box_upper[1];
             des_offset[2] = bounding_box_lower[2]-fa_template_imp.shift[2];
 
-            scale[0] = voxel_size;
-            scale[1] = voxel_size;
-            scale[2] = voxel_size;
-
             // setup transformation matrix
             std::fill(trans_to_mni,trans_to_mni+16,0.0);
             trans_to_mni[15] = 1.0;
@@ -355,9 +350,9 @@ public:
         x = bounding_box_upper[0]-x;
         y = bounding_box_upper[1]-y;
         z -= bounding_box_lower[2];
-        x /= scale[0];
-        y /= scale[1];
-        z /= scale[2];
+        x /= voxel_size;
+        y /= voxel_size;
+        z /= voxel_size;
         return image::vector<3,int>(x,y,z);
     }
     template<class interpolation_type>
@@ -394,11 +389,11 @@ public:
             data.jacobian = new_j;
         }
 
+
         for(unsigned int index = 0;index < voxel.other_image.size();++index)
         {
             if(voxel.other_image[index].geometry() != src_geo)
             {
-                interpolation_type interpo;
                 image::vector<3,double> Opos;
                 voxel.other_image_affine[index](Jpos,Opos);
                 if(voxel.output_mapping)
@@ -407,8 +402,7 @@ public:
                     other_image_y[index][data.voxel_index] = Opos[1];
                     other_image_z[index][data.voxel_index] = Opos[2];
                 }
-                interpo.get_location(voxel.other_image[index].geometry(),Opos);
-                interpo.estimate(voxel.other_image[index],other_image[index][data.voxel_index]);
+                image::estimate(voxel.other_image[index],Opos,other_image[index][data.voxel_index]);
             }
             else
                 interpolation.estimate(voxel.other_image[index],other_image[index][data.voxel_index]);
@@ -418,9 +412,9 @@ public:
     virtual void run(Voxel& voxel, VoxelData& data)
     {
         image::vector<3,double> pos(image::pixel_index<3>(data.voxel_index,voxel.dim)),Jpos;
-        pos[0] *= scale[0];
-        pos[1] *= scale[1];
-        pos[2] *= scale[2];
+        pos[0] *= voxel_size;
+        pos[1] *= voxel_size;
+        pos[2] *= voxel_size;
         pos += des_offset;
         if(voxel_size < 0.99)
             pos /= voxel_size;
@@ -503,7 +497,18 @@ public:
         }
 
         if(!cdm_dis.empty() && !voxel.t1w.empty())
-            mat_writer.write("t1w",&voxel.t1w[0],1,voxel.t1w.size());
+        {
+            //convert T1W from FA template space to QSDR space
+            image::basic_image<float,3> output_t1w(des_geo);
+            output_t1w.for_each_mt([&](float& v,const image::pixel_index<3>& index){
+               image::vector<3,float> p(index);
+               p += des_offset;
+               p *= voxel_size;
+               if(voxel.t1w.geometry().is_valid(p))
+                v = voxel.t1w.at(p[0],p[1],p[2]);
+            });
+            mat_writer.write("t1w",&output_t1w[0],1,output_t1w.size());
+        }
         mat_writer.write("trans",&*trans_to_mni,4,4);
         mat_writer.write("R2",&voxel.R2,1,1);
     }
