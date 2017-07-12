@@ -57,11 +57,12 @@ public:
             sinc_ql[index] = voxel.r2_weighted ?
                          base_function(sinc_ql[index]*sigma):
                          boost::math::sinc_pi(sinc_ql[index]*sigma);
+
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
         if(b0_images.size() == 1 && voxel.half_sphere)
-            data.space[b0_images.front()] /= 2.0;
+            data.space[b0_images.front()] *= 0.5;
         if(!voxel.grad_dev.empty()) // correction for gradient nonlinearity
         {
             /*
@@ -336,7 +337,7 @@ public:
     virtual void run(Voxel& voxel, VoxelData& data)
     {
         if(b0_images.size() == 1 && voxel.half_sphere)
-            data.space[b0_images.front()] /= 2.0;
+            data.space[b0_images.front()] *= 0.5;
         for(unsigned int index = 0;index < max_length;++index)
         {
             dis[index][data.voxel_index] =

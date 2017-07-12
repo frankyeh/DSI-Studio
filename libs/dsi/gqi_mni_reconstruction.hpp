@@ -370,7 +370,7 @@ public:
         for (unsigned int i = 0; i < ptr_images.size(); ++i)
             interpolation.estimate(ptr_images[i],data.space[i]);
         if(voxel.half_sphere && b0_index != -1)
-            data.space[b0_index] /= 2.0;
+            data.space[b0_index] *= 0.5;
         // output mapping position
         if(voxel.output_mapping)
         {
@@ -534,7 +534,10 @@ public:
                (cur_pos-voxel.csf_pos3).length() <= 1.0 || (cur_pos-voxel.csf_pos4).length() <= 1.0)
             {
                 std::lock_guard<std::mutex> lock(mutex);
-                samples.push_back(*std::min_element(data.odf.begin(),data.odf.end())/data.jdet);
+                if(voxel.r2_weighted) // multishell GQI2 gives negative ODF, use b0 as the scaling reference
+                    samples.push_back(data.space[0]);
+                else
+                    samples.push_back(*std::min_element(data.odf.begin(),data.odf.end())/data.jdet);
             }
         }
     }
