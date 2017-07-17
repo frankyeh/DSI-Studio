@@ -71,14 +71,14 @@ public:
             thread1.run([&](){
                 if(export_intermediate)
                 {
-                    image::flip_xy(voxel.dwi_sum);
+                    image::flip_xy(voxel.qa_map);
                     gz_nifti nii;
                     nii.set_voxel_size(voxel.vs);
-                    nii << voxel.dwi_sum;
+                    nii << voxel.qa_map;
                     nii.save_to_file("b0.nii.gz");
-                    image::flip_xy(voxel.dwi_sum);
+                    image::flip_xy(voxel.qa_map);
                 }
-                image::reg::two_way_linear_mr(voxel.t1w,voxel.t1w_vs,voxel.dwi_sum,voxel.vs,
+                image::reg::two_way_linear_mr(voxel.t1w,voxel.t1w_vs,voxel.qa_map,voxel.vs,
                                reg1T,image::reg::rigid_body,image::reg::mutual_information(),thread1.terminated);
             });
             thread2.run([&](){
