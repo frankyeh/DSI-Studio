@@ -382,6 +382,7 @@ void TractTableWidget::clustering(int method_id)
     tract_models[currentRow()]->run_clustering(method_id,n,detail);
     std::vector<unsigned int> c = tract_models[currentRow()]->get_cluster_info();
     load_cluster_label(c,"cluster");
+    assign_colors();
 }
 
 void TractTableWidget::save_tracts_as(void)
