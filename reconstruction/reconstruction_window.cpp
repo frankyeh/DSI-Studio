@@ -142,7 +142,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         std::vector<unsigned int> shell;
         calculate_shell(handle->voxel.bvalues,shell);
         ui->half_sphere->setChecked(is_dsi_half_sphere(shell));
-        ui->scheme_balance->setChecked(is_multishell(shell) && handle->voxel.bvalues.size()-shell.back() < 100);
+        ui->scheme_balance->setChecked(!is_dsi(shell) && handle->voxel.bvalues.size()-shell.back() < 100);
         if(is_dsi(shell))
         {
             ui->scheme_balance->setEnabled(false);
@@ -888,10 +888,8 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
 void rec_motion_correction(ImageModel* handle)
 {
     begin_prog("correcting");
-    image::basic_image<float,3> I0;
-    I0 = image::make_image(handle->dwi_data[0],handle->voxel.dim);
-    image::mean(I0);
-    image::filter::gradient_magnitude(I0);
+    image::basic_image<float,3> I0 = image::make_image(handle->dwi_data[0],handle->voxel.dim);
+    image::filter::gaussian(I0);
     image::normalize(I0,1);
     image::par_for2(handle->voxel.bvalues.size(),[&](int i,int id)
     {
@@ -901,46 +899,13 @@ void rec_motion_correction(ImageModel* handle)
             check_prog(i*99/handle->voxel.bvalues.size(),100);
         image::basic_image<float,3> I1;
         I1 = image::make_image(handle->dwi_data[i],handle->voxel.dim);
-        image::mean(I1);
-        image::filter::gradient_magnitude(I1);
+        image::filter::gaussian(I1);
         image::normalize(I1,1);
-        image::affine_transform<float> upper,lower;
-        upper.translocation[0] = 2.0f;
-        upper.translocation[1] = 2.0f;
-        upper.translocation[2] = 2.0f;
-        lower.translocation[0] = -2.0f;
-        lower.translocation[1] = -2.0f;
-        lower.translocation[2] = -2.0f;
-        upper.rotation[0] = 3.1415926f*2.0f/180.0f;
-        upper.rotation[1] = 3.1415926f*2.0f/180.0f;
-        upper.rotation[2] = 3.1415926f*2.0f/180.0f;
-        lower.rotation[0] = -3.1415926f*2.0f/180.0f;
-        lower.rotation[1] = -3.1415926f*2.0f/180.0f;
-        lower.rotation[2] = -3.1415926f*2.0f/180.0f;
-        upper.scaling[0] = 1.02f;
-        upper.scaling[1] = 1.02f;
-        upper.scaling[2] = 1.02f;
-        lower.scaling[0] = 0.98f;
-        lower.scaling[1] = 0.98f;
-        lower.scaling[2] = 0.98f;
-        upper.affine[0] = 0.04f;
-        upper.affine[1] = 0.04f;
-        upper.affine[2] = 0.04f;
-        lower.affine[0] = -0.04f;
-        lower.affine[1] = -0.04f;
-        lower.affine[2] = -0.04f;
         image::affine_transform<double> arg;
-        image::reg::fun_adoptor<image::basic_image<float,3>,
-                                image::vector<3>,
-                                image::affine_transform<double>,
-                                image::affine_transform<double>,
-                                image::reg::mutual_information> fun(I0,handle->voxel.vs,I1,handle->voxel.vs,arg);
         bool terminated = false;
-        double optimal_value = fun(arg);
-        image::optimization::graient_descent(arg.begin(),arg.end(),
-                                             upper.begin(),lower.begin(),fun,optimal_value,terminated,0.001);
-        for(unsigned int i = 0;i < handle->voxel.bvalues.size();++i)
-            handle->rotate_dwi(i,image::transformation_matrix<double>(arg,handle->voxel.dim,handle->voxel.vs,handle->voxel.dim,handle->voxel.vs));
+        image::reg::linear_refine(I0,handle->voxel.vs,I1,handle->voxel.vs,
+                                  arg,image::reg::affine,image::reg::mutual_information(),terminated,false);
+        handle->rotate_dwi(i,image::transformation_matrix<double>(arg,handle->voxel.dim,handle->voxel.vs,handle->voxel.dim,handle->voxel.vs));
     });
     check_prog(1,1);
 

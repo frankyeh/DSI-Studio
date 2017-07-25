@@ -929,7 +929,7 @@ void MainWindow::on_ReconstructSRC_clicked()
             std::vector<unsigned int> shell;
             calculate_shell(handle->voxel.bvalues,shell);
             handle->voxel.half_sphere = is_dsi_half_sphere(shell);
-            handle->voxel.scheme_balance = is_multishell(shell) && handle->voxel.bvalues.size()-shell.back() < 100;
+            handle->voxel.scheme_balance = !is_dsi(shell) && handle->voxel.bvalues.size()-shell.back() < 100;
         }
 
         const char* msg = (const char*)reconstruction(handle.get(), 7 /*QSDR*/,

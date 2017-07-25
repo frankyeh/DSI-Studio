@@ -14,7 +14,7 @@ extern fa_template fa_template_imp;
 void rec_motion_correction(ImageModel* handle);
 void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
-bool is_multishell(const std::vector<unsigned int>& shell);
+bool is_dsi(const std::vector<unsigned int>& shell);
 
 /**
  perform reconstruction
@@ -164,7 +164,7 @@ int rec(void)
     calculate_shell(handle->voxel.bvalues,shell);
     handle->voxel.half_sphere = po.get("half_sphere",is_dsi_half_sphere(shell) ? 1:0);
     handle->voxel.scheme_balance = po.get("scheme_balance",
-                    (is_multishell(shell) && handle->voxel.bvalues.size()-shell.back() < 100) ? 1:0);
+                    (!is_dsi(shell) && handle->voxel.bvalues.size()-shell.back() < 100) ? 1:0);
 
 
     {
