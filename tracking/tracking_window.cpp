@@ -1729,7 +1729,7 @@ void tracking_window::on_track_style_currentIndexChanged(int index)
             set_data("tract_variant_size",1);
             set_data("tube_diameter",0.3);
             set_data("tract_light_option",0);
-            set_data("tract_light_dir",10);
+            set_data("tract_light_dir",2);
             set_data("tract_light_shading",4);
             set_data("tract_light_diffuse",10);
             set_data("tract_light_ambient",0);
