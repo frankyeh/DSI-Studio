@@ -878,7 +878,7 @@ void MainWindow::on_run_cmd_clicked()
 
 void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
-bool is_multishell(const std::vector<unsigned int>& shell);
+bool is_dsi(const std::vector<unsigned int>& shell);
 void MainWindow::on_ReconstructSRC_clicked()
 {
     QString dir = QFileDialog::getExistingDirectory(
