@@ -376,17 +376,6 @@ void GLWidget::initializeGL()
     tracts = glGenLists(1);
     tract_alpha = -1; // ensure that make_track is called
     odf_position = 255;//ensure ODFs is renderred
-
-    QFile source1(":/data/shader_fragment.txt"),source2(":/data/shader_vertex.txt");
-    if (source1.open(QIODevice::ReadOnly | QIODevice::Text) &&
-        source2.open(QIODevice::ReadOnly | QIODevice::Text))
-    {
-        QTextStream in1(&source1),in2(&source2);
-        shader = std::make_shared<QOpenGLShaderProgram>(this);
-        shader->addShaderFromSourceCode(QOpenGLShader::Vertex, in2.readAll().toStdString().c_str());
-        shader->addShaderFromSourceCode(QOpenGLShader::Fragment, in1.readAll().toStdString().c_str());
-        shader->link();
-    }
     check_error(__FUNCTION__);
 }
 void GLWidget::paintGL()
@@ -590,8 +579,50 @@ void GLWidget::renderLR()
 
     if (tracts && get_param("show_tract"))
     {
-        if(shader.get() && get_param("tract_shader"))
-            shader->bind();
+        if(get_param("tract_shader"))
+        {
+            if(!shader.get())
+            {
+                QFile source1(":/data/shader_fragment.txt"),source2(":/data/shader_vertex.txt");
+                if (source1.open(QIODevice::ReadOnly | QIODevice::Text) &&
+                    source2.open(QIODevice::ReadOnly | QIODevice::Text))
+                {
+                    QTextStream in1(&source1),in2(&source2);
+                    shader = std::make_shared<QOpenGLShaderProgram>(this);
+                    shader->addShaderFromSourceCode(QOpenGLShader::Vertex, in2.readAll().toStdString().c_str());
+                    shader->addShaderFromSourceCode(QOpenGLShader::Fragment, in1.readAll().toStdString().c_str());
+                    shader->link();
+                    shader->bind( );
+                    s_positionLoc = shader->attributeLocation( "position" );
+                    s_normalLoc = shader->attributeLocation( "normal" );
+                    s_texCoordLoc = shader->attributeLocation( "texCoord" );
+                    s_modelMatrixLoc = shader->uniformLocation( "modelMatrix" );
+                    s_viewMatrixLoc = shader->uniformLocation( "viewMatrix" );
+                    s_projectionMatrixLoc = shader->uniformLocation( "projectionMatrix" );
+                    s_lightPositionLoc = shader->uniformLocation( "lightPosition" );
+                    s_lightViewProjectionMatrixLoc = shader->uniformLocation( "lightViewProjectionMatrix" );
+                    s_modelViewNormalMatrixLoc = shader->uniformLocation( "modelViewNormalMatrix" );
+                    s_shadowTypeLoc = shader->uniformLocation( "shadowType" );
+                    shader->setUniformValue( shader->uniformLocation( "texture" ),GL_TEXTURE0 - GL_TEXTURE0 );
+                    shader->setUniformValue( shader->uniformLocation( "shadowTexture" ),GL_TEXTURE1 - GL_TEXTURE0 );
+                }
+            }
+            else
+                shader->bind();
+
+            /*
+            QMatrix4x4& viewMatrix = m_cube->m_view->viewMatrix( );
+            shader->setUniformValue( s_modelMatrixLoc, m_modelMatrix );
+            shader->setUniformValue( s_viewMatrixLoc, viewMatrix );
+            shader->setUniformValue( s_projectionMatrixLoc, m_cube->m_view->projectionMatrix( ) );
+            shader->setUniformValue( s_modelViewNormalMatrixLoc,( viewMatrix * m_modelMatrix ).normalMatrix( ) );
+            shader->setUniformValue( s_lightPositionLoc, m_cube->m_view->lightPosition( ) );
+            shader->setUniformValue( s_lightViewProjectionMatrixLoc,m_cube->m_view->lightViewProjectionMatrix( ) );
+            glActiveTexture( GL_TEXTURE1 );
+            glBindTexture( GL_TEXTURE_2D, m_cube->m_view->shadowTexture( ) );
+            glActiveTexture( GL_TEXTURE0 );
+            */
+        }
         glEnable(GL_COLOR_MATERIAL);
         if(get_param("tract_style") != 1)// 1 = tube
             glDisable(GL_LIGHTING);
