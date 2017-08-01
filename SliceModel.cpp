@@ -134,31 +134,35 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
                         std::cout << "Cannot find " << info_file.toStdString() << std::endl;
                         return false;
                     }
-                    image::geometry<3> geo;
                     std::ifstream in(info_file.toStdString().c_str());
-                    in >> geo[0];
-                    in >> geo[1];
-                    in >> geo[2];
+                    in >> geometry[0];
+                    in >> geometry[1];
+                    in >> geometry[2];
                     in >> voxel_size[0];
                     in >> voxel_size[1];
                     in >> voxel_size[2];
                     std::vector<float> T;
                     std::copy(std::istream_iterator<float>(in),
                               std::istream_iterator<float>(),std::back_inserter(T));
-                    if(T.size() != 12 || geo[2] != files.size())
+                    if(T.size() != 12)
                     {
-                        std::cout << "Invalid BMP info text" << std::endl;
+                        std::cout << "Invalid BMP info text: failed to read transformation matrix." << std::endl;
                         return false;
                     }
-
+                    if(geometry[2] != files.size())
+                    {
+                        std::cout << "Invalid BMP info text: file count does not match." << std::endl;
+                        return false;
+                    }
                     unsigned int in_plane_subsample = 1;
                     unsigned int slice_subsample = 1;
 
+                    // non isotropic condition
                     while(voxel_size[2]/voxel_size[0] > 1.5f)
                     {
                         ++in_plane_subsample;
-                        geo[0] = geo[0] >> 1;
-                        geo[1] = geo[1] >> 1;
+                        geometry[0] = geometry[0] >> 1;
+                        geometry[1] = geometry[1] >> 1;
                         voxel_size[0] *= 2.0;
                         voxel_size[1] *= 2.0;
                         T[0] *= 2.0;
@@ -168,6 +172,7 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
                         T[8] *= 2.0;
                         T[9] *= 2.0;
                     }
+                    image::geometry<3> geo(geometry);
 
                     bool can_allocate = true;
                     do
