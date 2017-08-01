@@ -291,15 +291,28 @@ void MainWindow::on_OpenDICOM_clicked()
             return;
         QString dir = QFileInfo(filenames[0]).absolutePath();
         filenames.clear();
-        for(unsigned int i = 1;1;++i)
+        for(unsigned int i = 1;i < 100;++i)
+        if(QDir(dir + "/" +QString::number(i)).exists())
         {
-            image::io::bruker_info method_file;
-            QString method_name = dir + "/" +QString::number(i)+"/method";
-            if(!method_file.load_from_file(method_name.toLocal8Bit().begin()))
-                break;
-            if(!method_file["PVM_DwEffBval"].length())
-                continue;
-            filenames.push_back(dir + "/" +QString::number(i)+"/pdata/1/2dseq");
+            bool is_dwi =false;
+            // has dif info in the method file
+            {
+                image::io::bruker_info method_file;
+                QString method_name = dir + "/" +QString::number(i)+"/method";
+                if(method_file.load_from_file(method_name.toLocal8Bit().begin()) &&
+                   method_file["PVM_DwEffBval"].length())
+                    is_dwi = true;
+            }
+            // has dif info in the imnd file
+            {
+                image::io::bruker_info imnd_file;
+                QString imnd_name = dir + "/" +QString::number(i)+"/imnd";
+                if(imnd_file.load_from_file(imnd_name.toLocal8Bit().begin()) &&
+                   imnd_file["IMND_diff_b_value"].length())
+                    is_dwi = true;
+            }
+            if(is_dwi)
+                filenames.push_back(dir + "/" +QString::number(i)+"/pdata/1/2dseq");
         }
         if(filenames.size() == 0)
         {
