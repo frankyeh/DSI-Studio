@@ -4,10 +4,236 @@
 #include "image/image.hpp"
 
 void get_report(const std::vector<float>& bvalues,image::vector<3> vs,std::string& report);
+
+struct distortion_map{
+    const float pi_2 = 3.14159265358979323846f/2.0f;
+    image::basic_image<int,3> i1,i2;
+    image::basic_image<float,3> w1,w2;
+    void operator=(const image::basic_image<float,3>& d)
+    {
+        int n = d.width();
+        i1.resize(d.geometry());
+        i2.resize(d.geometry());
+        w1.resize(d.geometry());
+        w2.resize(d.geometry());
+        int max_n = n-1.001f;
+        image::par_for(d.height()*d.depth(),[&](int pos)
+        {
+            pos *= n;
+            int* i1p = &i1[0]+pos;
+            int* i2p = &i2[0]+pos;
+            float* w1p = &w1[0]+pos;
+            float* w2p = &w2[0]+pos;
+            const float* dp = &*d.begin()+pos;
+            for(int i = 0;i < n;++i)
+            {
+                if(dp[i] == 0.0f)
+                {
+                    i1p[i] = i;
+                    i2p[i] = i;
+                    w1p[i] = 0.0f;
+                    w2p[i] = 0.0f;
+                    continue;
+                }
+                float p1 = std::max<float>(0.0f,std::min<float>((float)i+d[i],max_n));
+                float p2 = std::max<float>(0.0f,std::min<float>((float)i-d[i],max_n));
+                i1p[i] = p1;
+                i2p[i] = p2;
+                w1p[i] = p1-std::floor(p1);
+                w2p[i] = p2-std::floor(p2);
+            }
+        });
+    }
+    void calculate_displaced(image::basic_image<float,3>& j1,
+                             image::basic_image<float,3>& j2,
+                             const image::basic_image<float,3>& v)
+    {
+        int n = v.width();
+        j1.clear();
+        j2.clear();
+        j1.resize(v.geometry());
+        j2.resize(v.geometry());
+        image::par_for(v.height()*v.depth(),[&](int pos)
+        {
+            pos *= n;
+            const int* i1p = &i1[0]+pos;
+            const int* i2p = &i2[0]+pos;
+            const float* w1p = &w1[0]+pos;
+            const float* w2p = &w2[0]+pos;
+            const float* vp = &*v.begin()+pos;
+            float* j1p = &j1[0]+pos;
+            float* j2p = &j2[0]+pos;
+            for(int i = 0;i < n;++i)
+            {
+                float value = vp[i];
+                int i1 = i1p[i];
+                int i2 = i2p[i];
+                float vw1 = value*w1p[i];
+                float vw2 = value*w2p[i];
+                j1p[i1] += value-vw1;
+                j1p[i1+1] += vw1;
+                j2p[i2] += value-vw2;
+                j2p[i2+1] += vw2;
+            }
+        });
+
+
+
+    }
+
+    void calculate_original(const image::basic_image<float,3>& v1,
+                const image::basic_image<float,3>& v2,
+                image::basic_image<float,3>& v)
+    {
+        int n = v1.width();
+        int n2 = n + n;
+        int block2 = n*n;
+        v.clear();
+        v.resize(v1.geometry());
+        image::par_for(v1.height()*v1.depth(),[&](int pos)
+        {
+            pos *= n;
+            const int* i1p = &i1[0]+pos;
+            const int* i2p = &i2[0]+pos;
+            const float* w1p = &w1[0]+pos;
+            const float* w2p = &w2[0]+pos;
+            std::vector<float> M(block2*2); // a col by col + col matrix
+            float* p = &M[0];
+            for(int i = 0;i < n;++i,p += n2)
+            {
+                int i1v = i1p[i];
+                int i2v = i2p[i];
+                p[i1v] += 1.0f-w1p[i];
+                p[i1v+1] += w1p[i];
+                p[i2v+n] += 1.0f-w2p[i];
+                p[i2v+1+n] += w2p[i];
+            }
+            const float* v1p = &*v1.begin()+pos;
+            const float* v2p = &*v2.begin()+pos;
+            std::vector<float> y(n2);
+            std::copy(v1p,v1p+n,y.begin());
+            std::copy(v2p,v2p+n,y.begin()+n);
+            image::mat::pseudo_inverse_solve(&M[0],&y[0],&v[0]+pos,image::dyndim(n,n2));
+        });
+    }
+    void sample_gradient(const image::basic_image<float,3>& g1,
+                         const image::basic_image<float,3>& g2,
+                         image::basic_image<float,3>& new_g)
+    {
+        int n = g1.width();
+        new_g.clear();
+        new_g.resize(g1.geometry());
+        image::par_for(g1.height()*g1.depth(),[&](int pos)
+        {
+            pos *= n;
+            const int* i1p = &i1[0]+pos;
+            const int* i2p = &i2[0]+pos;
+            const float* w1p = &w1[0]+pos;
+            const float* w2p = &w2[0]+pos;
+            const float* g1p = &*g1.begin()+pos;
+            const float* g2p = &*g2.begin()+pos;
+            float* new_gp = &new_g[0]+pos;
+            for(int i = 0;i < n;++i)
+            {
+                int i1 = i1p[i];
+                int i2 = i2p[i];
+                float w1 = w1p[i];
+                float w2 = w2p[i];
+                new_gp[i] += g1p[i1]*(1.0f-w1)+g1p[i1+1]*w1;
+                new_gp[i] += g2p[i2]*(1.0f-w2)+g2p[i2+1]*w2;
+            }
+        });
+    }
+};
+
+
+
+template<typename vector_type>
+void print_v(const char* name,const vector_type& p)
+{
+    std::cout << name << "=[" << std::endl;
+    for(int i = 0;i < p.size();++i)
+        std::cout << p[i] << " ";
+    std::cout << "];" << std::endl;
+}
+
+template<typename image_type>
+void distortion_estimate(const image_type& v1,const image_type& v2,
+                         image_type& d)
+{
+    image::geometry<3> geo(v1.geometry());
+    if(geo.width() > 8)
+    {
+        image_type vv1,vv2;
+        image::downsample_with_padding(v1,vv1);
+        image::downsample_with_padding(v2,vv2);
+        distortion_estimate(vv1,vv2,d);
+        image::upsample_with_padding(d,d,geo);
+        d *= 2.0f;
+        image::filter::gaussian(d);
+    }
+    else
+        d.resize(geo);
+    int n = v1.width();
+    image::basic_image<float,3> old_d(geo),v(geo),new_g(geo),j1(geo),j2(geo);
+    float sum_dif = 0.0f;
+    float s = 0.5f;
+    distortion_map m;
+    for(int iter = 0;iter < 200;++iter)
+    {
+        m = d;
+        // estimate the original signal v using d
+        m.calculate_original(v1,v2,v);
+        // calculate the displaced image j1 j2 using v and d
+        m.calculate_displaced(j1,j2,v);
+        // calculate difference between current and estimated
+        image::minus(j1,v1);
+        image::minus(j2,v2);
+
+        float sum = 0.0f;
+        for(int i = 0;i < j1.size();++i)
+        {
+            sum += j1[i]*j1[i];
+            sum += j2[i]*j2[i];
+        }
+        std::cout << "total dif=" << sum << std::endl;
+        if(iter && sum > sum_dif)
+        {
+            std::cout << "cost increased.roll back." << std::endl;
+            if(s < 0.05f)
+                break;
+            s *= 0.5f;
+            d = old_d;
+        }
+        else
+        {
+            sum_dif = sum;
+            image::basic_image<float,3> g1(geo),g2(geo);
+            image::gradient(j1.begin(),j1.end(),g1.begin(),2,1);
+            image::gradient(j2.begin(),j2.end(),g2.begin(),2,1);
+            for(int i = 0;i < g1.size();++i)
+                g1[i] = -g1[i];
+            // sample gradient
+            m.sample_gradient(g1,g2,new_g);
+            old_d = d;
+        }
+        image::multiply_constant(new_g,s);
+        image::add(d,new_g);
+        image::lower_threshold(d,0.0f);
+        for(int i = 0,pos = 0;i < geo.depth()*geo.height();++i,pos+=n)
+        {
+            d[pos] = 0.0f;
+            d[pos+n-1] = 0.0f;
+        }
+    }
+    std::cout << "end" << std::endl;
+}
+
 struct ImageModel
 {
 private:
     std::vector<image::basic_image<unsigned short,3> > new_dwi;//used in rotated volume
+
 public:
     Voxel voxel;
     std::string file_name,error_msg;
@@ -85,10 +311,7 @@ public:
         if(type < 3)
             flip_b_table(type);
         else
-        {
             rotate_b_table(type-3);
-
-        }
         image::flip(voxel.dwi_sum,type);
         image::flip(mask,type);
         for(unsigned int i = 0;i < voxel.grad_dev.size();++i)
@@ -111,8 +334,6 @@ public:
         image::resample(I,tmp,affine,image::cubic);
         image::lower_threshold(tmp,0);
         std::copy(tmp.begin(),tmp.end(),I.begin());
-
-
         // rotate b-table
         image::matrix<3,3,float> iT = image::inverse(affine.get());
         image::vector<3> v;
@@ -194,6 +415,84 @@ public:
         calculate_dwi_sum();
         calculate_mask();
     }
+    void distortion_correction(const ImageModel& rhs)
+    {
+        image::basic_image<float,3> v1(voxel.dwi_sum),v2(rhs.voxel.dwi_sum),d;
+        v1 /= image::mean(v1);
+        v2 /= image::mean(v2);
+        image::filter::gaussian(v1);
+        image::filter::gaussian(v2);
+        bool swap_xy = false;
+        bool swap_ap = false;
+
+        {
+            image::vector<3,float> m1 = image::center_of_mass(v1); // should be d+
+            image::vector<3,float> m2 = image::center_of_mass(v2); // should be d-
+            m1 -= m2;
+            std::cout << m1 << std::endl;
+            if(std::abs(m1[1]) > std::abs(m1[0]))
+            {
+                image::swap_xy(v1);
+                image::swap_xy(v2);
+                std::swap(m1[1],m1[0]);
+                swap_xy = true;
+            }
+            if(m1[0] > 0)
+            {
+                v1.swap(v2);
+                swap_ap = true;
+            }
+        }
+
+
+        distortion_estimate(v1,v2,d);
+        check_prog(0,0);
+        if(prog_aborted())
+            return;
+        begin_prog("applying warp");
+        std::vector<image::basic_image<unsigned short,3> > dwi(dwi_data.size());
+        distortion_map m;
+        m = d;
+        for(int i = 0;check_prog(i,dwi_data.size());++i)
+        {
+            //dwi[i] = image::make_image((unsigned short*)dwi_data[i],voxel.dim);
+            if(prog_aborted())
+                return;
+            image::basic_image<float,3> dwi1 = image::make_image((unsigned short*)dwi_data[i],voxel.dim);
+            image::basic_image<float,3> dwi2 = image::make_image((unsigned short*)rhs.dwi_data[i],voxel.dim);
+            if(swap_xy)
+            {
+                image::swap_xy(dwi1);
+                image::swap_xy(dwi2);
+            }
+            if(swap_ap)
+                dwi1.swap(dwi2);
+            image::basic_image<float,3> v;
+            if(i == 1)
+            {
+                image::filter::gaussian(dwi1);
+                image::filter::gaussian(dwi2);
+                m.calculate_original(dwi1,dwi2,v);
+            }
+            else
+                v = dwi1;
+            if(swap_xy)
+                image::swap_xy(v);
+            image::lower_threshold(v,0);
+            dwi[i] = v;
+        }
+        if(prog_aborted())
+            return;
+        d *= 50.0f;
+        image::swap_xy(d);
+        dwi[0] = d;
+        new_dwi.swap(dwi);
+        for(int i = 0;i < new_dwi.size();++i)
+            dwi_data[i] = &(new_dwi[i][0]);
+        calculate_dwi_sum();
+        calculate_mask();
+    }
+
     bool save_to_nii(const char* nifti_file_name) const
     {
         gz_nifti header;

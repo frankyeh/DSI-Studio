@@ -492,45 +492,6 @@ void get_location_vector(const std::vector<float>& d,std::vector<float>& locatio
 }
 
 
-template<class pixel_type>
-double topup_compose(image::basic_image<pixel_type,3>& It,
-            image::basic_image<pixel_type,3>& Is,
-            const image::basic_image<pixel_type,3>& I,
-            const image::basic_image<float,3>& d)
-{
-    float max_x = I.width()-2;
-    It.clear();
-    Is.clear();
-    It.resize(I.geometry());
-    Is.resize(I.geometry());
-    I.for_each_mt([&](pixel_type v,const image::pixel_index<dimension>& index){
-        if(I.geometry().is_edge(index))
-            return;
-        int i = index.index();
-        if(d[i] == 0.0f)
-        {
-            It[i] += v;
-            Is[i] += v;
-            return;
-        }
-        float p1 = i;
-        float p2 = i;
-        p1 += d[i];
-        p2 -= d[i];
-        p1 = std::max<float>(0.0f,std::min<float>(p1,max_x));
-        p2 = std::max<float>(0.0f,std::min<float>(p2,max_x));
-        float w1 = p1-std::floor(p1);
-        float w2 = p2-std::floor(p2);
-        int i1 = p1;
-        int i2 = p2;
-        float vw1 = v*w1;
-        float vw2 = v*w2;
-        It[i1] += v-vw1;
-        It[i1+1] += vw1;
-        Is[i2] += v-vw2;
-        Is[i2+1] += vw2;
-    });
-}
 
 
 

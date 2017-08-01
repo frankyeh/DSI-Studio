@@ -1048,7 +1048,6 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
-
 void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
 {
     QMessageBox::information(this,"DSI Studio","Please assign another SRC file with phase encoding flipped",0);
@@ -1074,15 +1073,7 @@ void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
         return;
     }
 
-    image::basic_image<float,3> b01(handle->dwi_data[0],handle->voxel.dim),b02(src2.dwi_data[0],src2.voxel.dim),b0;
-    b01 /= image::mean(b01);
-    b02 /= image::mean(b02);
-    b0 = b01;
-    b0 += b02;
-    b0 *= 0.5f;
-
-
-
+    handle->distortion_correction(src2);
 }
 
 
