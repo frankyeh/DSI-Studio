@@ -37,6 +37,16 @@ void get_report_from_bruker(const image::io::bruker_info& header,std::string& re
         << " The diffusion time was " << header["PVM_DwGradSep"] << " ms. The diffusion encoding duration was " << header["PVM_DwGradDur"] << " ms.";
     report += out.str();
 }
+void get_report_from_bruker2(const image::io::bruker_info& header,std::string& report)
+{
+    std::ostringstream out;
+    out << " The diffusion images were acquired on a " << header["ORIGIN"]
+        << " scanner using a " << header["IMND_method"]
+        <<  " sequence. TE=" << header["IMND_EffEchoTime1"] << " ms, and TR=" << header["IMND_rep_time"] << " ms."
+        << " The diffusion time was " << header["IMND_big_delta"] << " ms. The diffusion encoding duration was "
+        << header["IMND_diff_grad_dur"] << " ms.";
+    report += out.str();
+}
 
 bool DwiHeader::open(const char* filename)
 {

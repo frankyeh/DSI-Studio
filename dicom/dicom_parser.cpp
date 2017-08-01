@@ -14,6 +14,7 @@
 
 void get_report_from_dicom(const image::io::dicom& header,std::string& report_);
 void get_report_from_bruker(const image::io::bruker_info& header,std::string& report_);
+void get_report_from_bruker2(const image::io::bruker_info& header,std::string& report_);
 
 QString get_src_name(QString file_name)
 {
@@ -261,28 +262,67 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
     if(!bruker_header.load_from_file(file_name))
         return false;
     float vs[3];
-    bruker_header.get_voxel_size(vs);
-    image::io::bruker_info method_file;
-    QString method_name = QFileInfo(QFileInfo(QFileInfo(file_name).
-            absolutePath()).absolutePath()).absolutePath();
-
-    method_name += "/method";
-    if(!method_file.load_from_file(method_name.toLocal8Bit().begin()))
-    {
-        QMessageBox::information(0,"error",QString("Cannot find method file at ") + method_name,0);
-        return false;
-    }
-
-    if(!method_file.has_field("PVM_DwEffBval"))
-    {
-        QMessageBox::information(0,"error",QString("Cannot find bvalue in method file at ") + method_name,0);
-        return false;
-    }
     std::vector<float> bvalues;
+    std::vector<image::vector<3> > bvecs;
+    std::string report;
+    bruker_header.get_voxel_size(vs);
+
+    QString system_path =QFileInfo(QFileInfo(QFileInfo(file_name).absolutePath()).absolutePath()).absolutePath();
+    if(QFileInfo(system_path+"/method").exists())
     {
-        std::istringstream bvalue(method_file["PVM_DwEffBval"]);
-        std::copy(std::istream_iterator<float>(bvalue),std::istream_iterator<float>(),std::back_inserter(bvalues));
+        image::io::bruker_info method_file;
+        QString method_name = system_path+"/method";
+        if(!method_file.load_from_file(method_name.toLocal8Bit().begin()))
+        {
+            QMessageBox::information(0,"error",QString("Cannot find method file at ") + method_name,0);
+            return false;
+        }
+
+        if(!method_file.has_field("PVM_DwEffBval"))
+        {
+            QMessageBox::information(0,"error",QString("Cannot find bvalue in method file at ") + method_name,0);
+            return false;
+        }
+        {
+            std::istringstream bvalue(method_file["PVM_DwEffBval"]);
+            std::copy(std::istream_iterator<float>(bvalue),std::istream_iterator<float>(),std::back_inserter(bvalues));
+        }
+        std::istringstream bvec(method_file["PVM_DwGradVec"]);
+        bvecs.resize(bvalues.size());
+        for (unsigned int index = 0;index < bvalues.size();++index)
+        {
+            bvec >> bvecs[index][0] >> bvecs[index][1] >> bvecs[index][2];
+            bvecs[index].normalize();
+        }
+        get_report_from_bruker(method_file,report);
     }
+    else
+    {
+        if(QFileInfo(system_path+"/imnd").exists())
+        {
+            bvalues.push_back(0);
+            bvecs.push_back(image::vector<3>());
+
+            image::io::bruker_info imnd_file;
+            QString imnd_name = QFileInfo(QFileInfo(QFileInfo(file_name).
+                    absolutePath()).absolutePath()).absolutePath()+"/imnd";
+            if(!imnd_file.load_from_file(imnd_name.toLocal8Bit().begin()))
+            {
+                QMessageBox::information(0,"error",QString("Cannot find method or imnd file at ") + imnd_name,0);
+                return false;
+            }
+            std::istringstream(imnd_file["IMND_diff_b_value"]) >> bvalues[0];
+            std::istringstream(imnd_file["IMND_diff_grad_x"]) >> bvecs[0][0];
+            std::istringstream(imnd_file["IMND_diff_grad_y"]) >> bvecs[0][1];
+            std::istringstream(imnd_file["IMND_diff_grad_z"]) >> bvecs[0][2];
+            std::istringstream(imnd_file["IMND_slice_thick"]) >> vs[2];
+            get_report_from_bruker2(imnd_file,report);
+        }
+        else
+            return false;
+    }
+
+
     image::geometry<3> dim(bruker_header.get_image().geometry());
     dim[2] /= bvalues.size();
 
@@ -291,12 +331,10 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
     image::lower_threshold(bruker_header.get_image(),0.0);
     image::normalize(bruker_header.get_image(),32767.0);
 
-    std::istringstream bvec(method_file["PVM_DwGradVec"]);
     for (unsigned int index = 0;index < bvalues.size();++index)
     {
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
-        if(index == 0)
-            get_report_from_bruker(method_file,new_file->report);
+        new_file->report = report;
         new_file->image.resize(dim);
         std::copy(bruker_header.get_image().begin()+index*new_file->image.size(),
                   bruker_header.get_image().begin()+(index+1)*new_file->image.size(),
@@ -308,15 +346,7 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
         std::copy(vs,vs+3,new_file->voxel_size);
         dwi_files.push_back(new_file);
         dwi_files.back()->bvalue = bvalues[index];
-        if(bruker_header.is_2d())
-        bvec >> dwi_files.back()->bvec[0]
-             >> dwi_files.back()->bvec[1]
-             >> dwi_files.back()->bvec[2];
-        else
-            bvec >> dwi_files.back()->bvec[1]
-                 >> dwi_files.back()->bvec[0]
-                 >> dwi_files.back()->bvec[2];
-        dwi_files[index]->bvec.normalize();
+        dwi_files.back()->bvec = bvecs[index];
     }
     return true;
 }
