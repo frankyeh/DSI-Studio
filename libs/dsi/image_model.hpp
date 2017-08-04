@@ -241,6 +241,50 @@ public:
     std::vector<const unsigned short*> dwi_data;
     image::basic_image<unsigned char,3> mask;
 public:
+    float quality_control_neighboring_dwi_corr(void)
+    {
+        // correction of neighboring DWI < 1750
+        std::vector<std::pair<int,int> > corr_pairs;
+        for(int i = 0;i < voxel.bvalues.size();++i)
+        {
+            if(voxel.bvalues[i] > 1750.0f || voxel.bvalues[i] == 0.0f)
+                continue;
+            float max_cos = 0.0;
+            int max_j = 0;
+            for(int j = 0;j < voxel.bvalues.size();++j)
+                if(std::abs(voxel.bvalues[j]-voxel.bvalues[i]) < 100.0f && i != j)
+                {
+                    float cos = std::abs(voxel.bvectors[i]*voxel.bvectors[j]);
+                    if(cos > max_cos)
+                    {
+                        max_cos = cos;
+                        max_j = j;
+                    }
+                }
+            if(max_j > i)
+                corr_pairs.push_back(std::make_pair(i,max_j));
+        }
+        float self_cor = 0.0f;
+        unsigned int count = 0;
+        image::par_for(corr_pairs.size(),[&](int index)
+        {
+            int i1 = corr_pairs[index].first;
+            int i2 = corr_pairs[index].second;
+            std::vector<float> I1,I2;
+            I1.reserve(voxel.dim.size());
+            I2.reserve(voxel.dim.size());
+            for(int i = 0;i < voxel.dim.size();++i)
+                if(mask[i])
+                {
+                    I1.push_back(dwi_data[i1][i]);
+                    I2.push_back(dwi_data[i2][i]);
+                }
+            self_cor += image::correlation(I1.begin(),I1.end(),I2.begin());
+            ++count;
+        });
+        self_cor/= (float)count;
+        return self_cor;
+    }
     bool is_human_data(void) const
     {
         return voxel.dim[0]*voxel.vs[0] > 100 && voxel.dim[1]*voxel.vs[1] > 120 && voxel.dim[2]*voxel.vs[2] > 40;
@@ -661,7 +705,6 @@ public:
         }
         else
             calculate_mask();
-
         return true;
     }
     void calculate_dwi_sum(void)

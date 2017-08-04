@@ -244,6 +244,7 @@ void MainWindow::loadSrc(QStringList filenames)
     }
     try
     {
+
         reconstruction_window* new_mdi = new reconstruction_window(filenames,this);
         new_mdi->setAttribute(Qt::WA_DeleteOnClose);
         new_mdi->show();
@@ -1000,4 +1001,18 @@ void MainWindow::on_nonlinear_reg_clicked()
     RegToolBox* rt = new RegToolBox(this);
     rt->setAttribute(Qt::WA_DeleteOnClose);
     rt->showNormal();
+}
+
+std::string quality_check_src_files(QString dir);
+void show_info_dialog(const std::string& title,const std::string& result);
+void MainWindow::on_SRC_qc_clicked()
+{
+    QString dir = QFileDialog::getExistingDirectory(
+                                this,
+                                "Open directory",
+                                ui->workDir->currentText());
+    if(dir.isEmpty())
+        return;
+    begin_prog("checking SRC files");
+    show_info_dialog("SRC report",quality_check_src_files(dir));
 }

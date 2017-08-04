@@ -15,7 +15,6 @@
 class fib_data;
 class RenderingTableWidget;
 class RegionTableWidget;
-
 namespace Ui {
     class tracking_window;
 }
@@ -84,7 +83,6 @@ public:
     QVariant operator[](QString name)const;
     void set_data(QString name, QVariant value);
     void on_tracking_index_currentIndexChanged(int index);
-    void show_info_dialog(const std::string& title,const std::string& result);
     QString get_save_file_name(QString title,QString file_name,QString file_type);
     void float3dwindow(int w,int h);
     void initialize_tracking_index(int index);

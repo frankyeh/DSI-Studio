@@ -182,7 +182,8 @@ SOURCES += main.cpp \
     connectometry/db_window.cpp \
     connectometry/group_connectometry.cpp \
     regtoolbox.cpp \
-    cmd/cnn.cpp
+    cmd/cnn.cpp \
+    cmd/qc.cpp
 
 OTHER_FILES += \
     options.txt \

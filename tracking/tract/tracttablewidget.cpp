@@ -634,6 +634,7 @@ void TractTableWidget::deep_learning_train(void)
     }
 
 }
+void show_info_dialog(const std::string& title,const std::string& result);
 void TractTableWidget::recog_tracks(void)
 {
     if(currentRow() >= tract_models.size() || tract_models[currentRow()]->get_tracts().size() == 0)
@@ -650,7 +651,7 @@ void TractTableWidget::recog_tracks(void)
     auto beg = sorted_list.begin();
     for(int i = 0;i < 5;++i,++beg)
         out << beg->second << "\t" << beg->first << std::endl;
-    cur_tracking_window.show_info_dialog("Tract Recognition Result",out.str());
+    show_info_dialog("Tract Recognition Result",out.str());
 
     /*
     std::string result;
@@ -861,7 +862,7 @@ void TractTableWidget::show_tracts_statistics(void)
             }
         get_track_statistics(active_tracks,track_name,result);
     }
-    cur_tracking_window.show_info_dialog("Tract Statistics",result);
+    show_info_dialog("Tract Statistics",result);
 
 }
 

@@ -32,6 +32,29 @@ extern std::vector<atlas> atlas_list;
 extern fa_template fa_template_imp;
 QByteArray default_geo,default_state;
 
+
+void show_info_dialog(const std::string& title,const std::string& result)
+{
+    QMessageBox msgBox;
+    msgBox.setText(title.c_str());
+    msgBox.setDetailedText(result.c_str());
+    msgBox.setStandardButtons(QMessageBox::Ok|QMessageBox::Save);
+    msgBox.setDefaultButton(QMessageBox::Ok);
+    QPushButton *copyButton = msgBox.addButton("Copy To Clipboard", QMessageBox::ActionRole);
+    if(msgBox.exec() == QMessageBox::Save)
+    {
+        QString filename;
+        filename = QFileDialog::getSaveFileName(0,"Save as","report.txt","Text files (*.txt);;All files|(*)");
+        if(filename.isEmpty())
+            return;
+        std::ofstream out(filename.toLocal8Bit().begin());
+        out << result.c_str();
+    }
+    if (msgBox.clickedButton() == copyButton)
+        QApplication::clipboard()->setText(result.c_str());
+}
+
+
 void tracking_window::closeEvent(QCloseEvent *event)
 {
     QMainWindow::closeEvent(event);
@@ -1427,29 +1450,6 @@ void tracking_window::on_actionTrack_Report_triggered()
 QString tracking_window::get_save_file_name(QString title,QString file_name,QString file_type)
 {
     return QFileDialog::getSaveFileName(this,title,file_name,file_type);
-}
-
-void tracking_window::show_info_dialog(const std::string& title,const std::string& result)
-{
-    QMessageBox msgBox;
-    msgBox.setText(title.c_str());
-    msgBox.setDetailedText(result.c_str());
-    msgBox.setStandardButtons(QMessageBox::Ok|QMessageBox::Save);
-    msgBox.setDefaultButton(QMessageBox::Ok);
-    QPushButton *copyButton = msgBox.addButton("Copy To Clipboard", QMessageBox::ActionRole);
-    if(msgBox.exec() == QMessageBox::Save)
-    {
-        QString filename;
-        filename = QFileDialog::getSaveFileName(this,
-                    "Save as",QFileInfo(windowTitle()).baseName()+"_info.txt",
-                    "Text files (*.txt);;All files|(*)");
-        if(filename.isEmpty())
-            return;
-        std::ofstream out(filename.toLocal8Bit().begin());
-        out << result.c_str();
-    }
-    if (msgBox.clickedButton() == copyButton)
-        QApplication::clipboard()->setText(result.c_str());
 }
 
 

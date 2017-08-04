@@ -56,6 +56,7 @@ private slots:
     void on_ReconstructSRC_clicked();
     void on_linear_reg_clicked();
     void on_nonlinear_reg_clicked();
+    void on_SRC_qc_clicked();
 };
 
 #endif // MAINWINDOW_H
