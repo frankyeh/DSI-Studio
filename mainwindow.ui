@@ -64,8 +64,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>350</width>
-         <height>556</height>
+         <width>231</width>
+         <height>380</height>
         </rect>
        </property>
        <attribute name="label">
@@ -141,8 +141,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>350</width>
-         <height>556</height>
+         <width>322</width>
+         <height>400</height>
         </rect>
        </property>
        <attribute name="label">
@@ -290,7 +290,7 @@
         <item>
          <widget class="QCommandLinkButton" name="SRC_qc">
           <property name="text">
-           <string>Quality Control SRC files</string>
+           <string>SRC files Quality Control</string>
           </property>
           <property name="description">
            <string>Select a root directory that stores subjects SRC file and run a quality check on them</string>
@@ -406,8 +406,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>350</width>
-         <height>556</height>
+         <width>309</width>
+         <height>544</height>
         </rect>
        </property>
        <attribute name="label">
