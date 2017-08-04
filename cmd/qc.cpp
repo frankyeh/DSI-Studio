@@ -12,7 +12,7 @@ std::string quality_check_src_files(QString dir)
 {
     std::ostringstream out;
     QStringList filenames = search_files(dir,"*.src.gz");
-    out << "FileName\tImage dimension\tResolution\tDWI count\tShell count\tMax b-value\tB-table matched\tNeighboring DWI correction" << std::endl;
+    out << "FileName\tImage dimension\tResolution\tDWI count\tShell count\tMax b-value\tB-table matched\tNeighboring DWI correlation" << std::endl;
     std::vector<unsigned int> shell;
     for(int i = 0;check_prog(i,filenames.size());++i)
     {
@@ -56,7 +56,7 @@ std::string quality_check_src_files(QString dir)
             out << (match? "Yes\t" : "No\t");
         }
 
-        // calculate neighboring DWI correction
+        // calculate neighboring DWI correlation
         out << handle.quality_control_neighboring_dwi_corr() << "\t";
 
 
