@@ -43,10 +43,13 @@ void save_connectivity_matrix(TractModel& tract_model,
     file_name_stat += ".";
     file_name_stat += connectivity_value;
     file_name_stat += use_end_only ? ".end":".pass";
-    std::string network_measures(file_name_stat);
+    std::string network_measures(file_name_stat),connectogram(file_name_stat);
     file_name_stat += ".connectivity.mat";
     std::cout << "export connectivity matrix to " << file_name_stat << std::endl;
     data.save_to_file(file_name_stat.c_str());
+    connectogram += ".connectogram.txt";
+    std::cout << "export connectogram to " << connectogram << std::endl;
+    data.save_to_connectogram(connectogram.c_str());
 
     network_measures += ".network_measures.txt";
     std::cout << "export network measures to " << network_measures << std::endl;
