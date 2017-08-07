@@ -224,7 +224,8 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
             if(!analyze_header.toLPS(data,false))
                 break;
             image::lower_threshold(data,0.0);
-            if(analyze_header.nif_header.datatype == 16 || analyze_header.nif_header.datatype == 64) // if floating point, scale and convert to interger
+            if(analyze_header.nif_header2.datatype == 16 ||
+               analyze_header.nif_header2.datatype == 64) // if floating point, scale and convert to interger
                 data *= 32767.0/max_value;
             new_file->image = data;
             new_file->file_name = file_name;

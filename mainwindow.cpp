@@ -388,7 +388,7 @@ void MainWindow::on_FiberTracking_clicked()
             return;
         }
         header.toLPS(I);
-        std::copy(header.nif_header.pixdim+1,header.nif_header.pixdim+4,vs);
+        header.get_voxel_size(vs);
     }
     if(QFileInfo(filename).fileName() == "2dseq")
     {
@@ -742,8 +742,9 @@ void MainWindow::on_batch_src_clicked()
                 out << manu.c_str() << " " << make.c_str() << " " << seq
                     << ".TE=" << header.get_float(0x0018,0x0081) << ".TR=" << header.get_float(0x0018,0x0080)  << ".";
                 report = out.str();
-                std::copy(report.begin(),report.begin() + std::min<int>(80,report.length()+1),nii_out.nif_header.descrip);
-
+                if(report.size() < 80)
+                    report.resize(80);
+                nii_out.set_descrip(report.c_str());
                 QString output_name = QFileInfo(get_src_name(dicom_file_list[0])).absolutePath() + "/" +
                                       QFileInfo(get_src_name(dicom_file_list[0])).baseName()+ "."+seq.c_str() + ".nii.gz";
                 nii_out.save_to_file(output_name.toLocal8Bit().begin());

@@ -188,8 +188,9 @@ void ROIRegion::SaveToFile(const char* FileName,const std::vector<float>& trans)
         std::ostringstream out;
         out << "color=" << color << ";roi=" << (int)regions_feature;
         std::string tmp = out.str();
-        std::copy(tmp.begin(),tmp.begin() + std::min<int>(102,tmp.length()),
-                  header.nif_header.descrip);
+        if(tmp.size() < 80)
+            tmp.resize(80);
+        header.set_descrip(tmp.c_str());
         if(!trans.empty())
         {
             if(resolution_ratio != 1.0)
@@ -268,7 +269,8 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
             return false;
         // use unsigned int to avoid the nan background problem
         image::basic_image<unsigned int, 3>from;
-        image::geometry<3> nii_geo(header.nif_header.dim+1);
+        image::geometry<3> nii_geo;
+        header.get_image_dimension(nii_geo);
         if(nii_geo != geo)// use transformation information
         {
             {

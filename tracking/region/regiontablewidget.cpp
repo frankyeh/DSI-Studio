@@ -566,7 +566,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 
         try{
             std::vector<std::string> info;
-            split(info,header.nif_header.descrip,";");
+            split(info,header.get_descrip(),";");
             for(unsigned int index = 0;index < info.size();++index)
             {
                 std::vector<std::string> name_value;
