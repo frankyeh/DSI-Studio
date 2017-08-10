@@ -739,7 +739,7 @@ void RegionTableWidget::save_region(void)
         return;
     QString filename = QFileDialog::getSaveFileName(
                            this,
-                           "Save region",item(currentRow(),0)->text() + ".nii.gz","NIFTI file(*nii.gz *.nii);;Text file(*.txt);;MAT file (*.mat);;All files(*)" );
+                           "Save region",item(currentRow(),0)->text() + output_format(),"NIFTI file(*nii.gz *.nii);;Text file(*.txt);;MAT file (*.mat);;All files(*)" );
     if (filename.isEmpty())
         return;
     if(QFileInfo(filename.toLower()).completeSuffix() != "mat" && QFileInfo(filename.toLower()).completeSuffix() != "txt")
@@ -749,6 +749,20 @@ void RegionTableWidget::save_region(void)
                                      cur_tracking_window.handle->is_qsdr ? cur_tracking_window.handle->trans_to_mni: no_trans);
     item(currentRow(),0)->setText(QFileInfo(filename).baseName());
 }
+QString RegionTableWidget::output_format(void)
+{
+    switch(cur_tracking_window["region_format"].toInt())
+    {
+    case 0:
+        return ".nii.gz";
+    case 1:
+        return ".mat";
+    case 2:
+        return ".txt";
+    }
+    return "";
+}
+
 void RegionTableWidget::save_all_regions_to_dir(void)
 {
     if (regions.empty())
@@ -764,7 +778,7 @@ void RegionTableWidget::save_all_regions_to_dir(void)
             std::string filename = dir.toLocal8Bit().begin();
             filename  += "/";
             filename  += item(index,0)->text().toLocal8Bit().begin();
-            filename  += ".nii.gz";
+            filename  += output_format().toStdString();
             regions[index]->SaveToFile(filename.c_str(),
                                          cur_tracking_window.handle->is_qsdr ? cur_tracking_window.handle->trans_to_mni: no_trans);
         }
@@ -774,12 +788,10 @@ void RegionTableWidget::save_all_regions(void)
     if (regions.empty())
         return;
     QString filename = QFileDialog::getSaveFileName(
-                           this,"Save region",item(currentRow(),0)->text() + ".nii.gz",
-                           "Region file(*nii.gz *.nii);;All file types (*)" );
+                           this,"Save region",item(currentRow(),0)->text() + output_format(),
+                           "Region file(*nii.gz *.nii *.mat *.txt);;All file types (*)" );
     if (filename.isEmpty())
         return;
-    filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
-
     QString base_name = QFileInfo(filename).completeBaseName();
     if(QFileInfo(base_name).suffix().toLower() == "nii")
         base_name = QFileInfo(base_name).completeBaseName();

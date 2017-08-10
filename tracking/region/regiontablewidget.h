@@ -63,6 +63,7 @@ public:
             return;
         regions[currentRow()]->add_points(points,erase,resolution);
     }
+    QString output_format(void);
 public slots:
     void draw_region(image::color_image& I);
     void draw_edge(QImage& image,QImage& scaledimage);
