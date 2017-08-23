@@ -258,13 +258,13 @@ void RegToolBox::linear_reg(image::reg::reg_type reg_type)
     image::par_for(2,[&](int i){
         if(i)
         {
-            image::reg::linear_mr(It,Itvs,I,Ivs,arg,reg_type,image::reg::mutual_information(),thread.terminated);
-            image::reg::linear_mr(It,Itvs,I,Ivs,arg,reg_type,image::reg::mutual_information(),thread.terminated);
+        image::reg::linear_mr(It,Itvs,I,Ivs,arg,reg_type,image::reg::mutual_information(),thread.terminated,0.1);
+        image::reg::linear_mr(It,Itvs,I,Ivs,arg,reg_type,image::reg::mutual_information(),thread.terminated,0.01);
         }
         else
         {
-            image::reg::linear_mr(I,Ivs,It,Itvs,arg2,reg_type,image::reg::mutual_information(),thread.terminated);
-            image::reg::linear_mr(I,Ivs,It,Itvs,arg2,reg_type,image::reg::mutual_information(),thread.terminated);
+        image::reg::linear_mr(I,Ivs,It,Itvs,arg2,reg_type,image::reg::mutual_information(),thread.terminated,0.1);
+        image::reg::linear_mr(I,Ivs,It,Itvs,arg2,reg_type,image::reg::mutual_information(),thread.terminated,0.01);
         }
     });
 

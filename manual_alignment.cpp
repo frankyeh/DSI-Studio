@@ -265,15 +265,15 @@ void manual_alignment::on_rerun_clicked()
     {
         if(cost == image::reg::mutual_info)
         {
-            image::reg::linear_mr(from,from_vs,to,to_vs,arg,reg,image::reg::mutual_information(),thread.terminated);
-            image::reg::linear_mr(from,from_vs,to,to_vs,arg,reg,image::reg::mutual_information(),thread.terminated);
+            image::reg::linear_mr(from,from_vs,to,to_vs,arg,reg,image::reg::mutual_information(),thread.terminated,0.1);
+            image::reg::linear_mr(from,from_vs,to,to_vs,arg,reg,image::reg::mutual_information(),thread.terminated,0.01);
         }
         else
         {
             image::reg::linear_mr(from,from_vs,to,to_vs,arg,reg,image::reg::mt_correlation<image::basic_image<float,3>,
-                           image::transformation_matrix<double> >(0),thread.terminated);
+                           image::transformation_matrix<double> >(0),thread.terminated,0.1);
             image::reg::linear_mr(from,from_vs,to,to_vs,arg,reg,image::reg::mt_correlation<image::basic_image<float,3>,
-                           image::transformation_matrix<double> >(0),thread.terminated);
+                           image::transformation_matrix<double> >(0),thread.terminated,0.01);
         }
 
     });

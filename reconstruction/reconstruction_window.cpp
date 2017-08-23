@@ -903,8 +903,8 @@ void rec_motion_correction(ImageModel* handle)
         image::normalize(I1,1);
         image::affine_transform<double> arg;
         bool terminated = false;
-        image::reg::linear_refine(I0,handle->voxel.vs,I1,handle->voxel.vs,
-                                  arg,image::reg::affine,image::reg::mutual_information(),terminated,false);
+        image::reg::linear_mr(I0,handle->voxel.vs,I1,handle->voxel.vs,
+                                  arg,image::reg::affine,image::reg::mutual_information(),terminated);
         handle->rotate_dwi(i,image::transformation_matrix<double>(arg,handle->voxel.dim,handle->voxel.vs,handle->voxel.dim,handle->voxel.vs));
     });
     check_prog(1,1);
@@ -968,8 +968,8 @@ bool add_other_image(ImageModel* handle,QString name,QString filename,bool full_
             image::normalize(to,1.0);
             bool terminated = false;
             image::affine_transform<float> arg;
-            image::reg::linear_mr(from,handle->voxel.vs,to,vs,arg,image::reg::rigid_body,image::reg::mutual_information(),terminated);
-            image::reg::linear_mr(from,handle->voxel.vs,to,vs,arg,image::reg::rigid_body,image::reg::mutual_information(),terminated);
+            image::reg::linear_mr(from,handle->voxel.vs,to,vs,arg,image::reg::rigid_body,image::reg::mutual_information(),terminated,0.1);
+            image::reg::linear_mr(from,handle->voxel.vs,to,vs,arg,image::reg::rigid_body,image::reg::mutual_information(),terminated,0.01);
             affine = image::transformation_matrix<float>(arg,handle->voxel.dim,handle->voxel.vs,to.geometry(),vs);
         }
         else
