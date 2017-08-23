@@ -18,7 +18,7 @@
 track_recognition track_network;
 fa_template fa_template_imp;
 std::string fa_template_file_name,fa_mask_file_name,
-        fib_template_file_name,
+        fib_template_file_name_1mm,fib_template_file_name_2mm,
         t1w_template_file_name,
         t1w_mask_template_file_name;
 extern std::vector<atlas> atlas_list;
@@ -56,10 +56,10 @@ QStringList search_files(QString dir,QString filter)
 void load_file_name(void)
 {
     QString filename;
-    filename = QCoreApplication::applicationDirPath() + "/HCP842_QA.nii.gz";
+    filename = QCoreApplication::applicationDirPath() + "/HCP1021_QA.nii.gz";
     if(QFileInfo(filename).exists())
         fa_template_file_name = filename.toStdString();
-    filename = QDir::currentPath() + "/HCP842_QA.nii.gz";
+    filename = QDir::currentPath() + "/HCP1021_QA.nii.gz";
     if(QFileInfo(filename).exists())
         fa_template_file_name = filename.toStdString();
 
@@ -71,12 +71,20 @@ void load_file_name(void)
         fa_mask_file_name = filename.toStdString();
 
 
-    filename = QCoreApplication::applicationDirPath() + "/HCP842_2mm.fib.gz";
+    filename = QCoreApplication::applicationDirPath() + "/HCP1021.2mm.fib.gz";
     if(QFileInfo(filename).exists())
-        fib_template_file_name = filename.toStdString();
-    filename = QDir::currentPath() + "/HCP842_2mm.fib.gz";
+        fib_template_file_name_2mm = filename.toStdString();
+    filename = QDir::currentPath() + "/HCP1021.2mm.fib.gz";
     if(QFileInfo(filename).exists())
-        fib_template_file_name = filename.toStdString();
+        fib_template_file_name_2mm = filename.toStdString();
+
+    filename = QCoreApplication::applicationDirPath() + "/HCP1021.1mm.fib.gz";
+    if(QFileInfo(filename).exists())
+        fib_template_file_name_1mm = filename.toStdString();
+    filename = QDir::currentPath() + "/HCP1021.1mm.fib.gz";
+    if(QFileInfo(filename).exists())
+        fib_template_file_name_1mm = filename.toStdString();
+
 
     filename = QCoreApplication::applicationDirPath() + "/mni_icbm152_t1_tal_nlin_asym_09a.nii.gz";
     if(QFileInfo(filename).exists())

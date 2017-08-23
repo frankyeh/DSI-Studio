@@ -8,14 +8,14 @@
 #include "tracking/tracking_window.h"
 #include "fib_data.hpp"
 
-extern std::string fib_template_file_name;
+extern std::string fib_template_file_name_1mm,fib_template_file_name_2mm;
 individual_connectometry::individual_connectometry(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::individual_connectometry)
 {
     ui->setupUi(this);
     ui->norm_method->hide();
-    ui->Template->setText(fib_template_file_name.c_str());
+    ui->Template->setText(fib_template_file_name_2mm.c_str());
     resize(width(),0);
     QSettings settings;
     switch(settings.value("individual_connectometry_norm").toInt())

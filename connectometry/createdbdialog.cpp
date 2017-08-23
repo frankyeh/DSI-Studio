@@ -9,7 +9,7 @@
 #include "prog_interface_static_link.h"
 #include "dsi_interface_static_link.h"
 
-extern std::string fib_template_file_name;
+extern std::string fib_template_file_name_1mm,fib_template_file_name_2mm;
 CreateDBDialog::CreateDBDialog(QWidget *parent,bool create_db_) :
     QDialog(parent),
     create_db(create_db_),
@@ -19,7 +19,7 @@ CreateDBDialog::CreateDBDialog(QWidget *parent,bool create_db_) :
     ui->setupUi(this);
     ui->group_list->setModel(new QStringListModel);
     ui->group_list->setSelectionModel(new QItemSelectionModel(ui->group_list->model()));
-    ui->skeleton->setText(fib_template_file_name.c_str());
+    ui->skeleton->setText(fib_template_file_name_2mm.c_str());
     if(!create_db)
     {
         ui->index_of_interest->hide();
@@ -92,22 +92,6 @@ void CreateDBDialog::on_group1open_clicked()
                                      "Fib files (*fib.gz);;All files (*)" );
     if (filenames.isEmpty())
         return;
-    if(ui->skeleton->text().isEmpty())
-    {
-        QDir cur_dir(QApplication::applicationDirPath());
-        QStringList file_list = cur_dir.entryList(QStringList("*.fib.gz"),QDir::Files);
-        if(!file_list.empty())
-        {
-        if(filenames[0].contains("1mm"))
-            for(unsigned int i = 0;i < file_list.size();++i)
-                if(file_list[i].contains("1mm"))
-                    ui->skeleton->setText(QApplication::applicationDirPath() + "/"+ file_list[0]);
-        if(filenames[0].contains("2mm"))
-            for(unsigned int i = 0;i < file_list.size();++i)
-                if(file_list[i].contains("2mm"))
-                    ui->skeleton->setText(QApplication::applicationDirPath() + "/"+ file_list[0]);
-        }
-    }
     if(group.empty())
     {
         fib_data fib;
@@ -121,6 +105,10 @@ void CreateDBDialog::on_group1open_clicked()
             QMessageBox::information(this,"Error","The FIB file was not reconstructed by QSDR.",0);
             return;
         }
+        if(fib.vs[0] < 1.5f)
+            ui->skeleton->setText(fib_template_file_name_1mm.c_str());
+        else
+            ui->skeleton->setText(fib_template_file_name_2mm.c_str());
         ui->index_of_interest->clear();
         if(fib.has_odfs())
             ui->index_of_interest->addItem("sdf");
