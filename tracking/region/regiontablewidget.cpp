@@ -1023,10 +1023,11 @@ void RegionTableWidget::do_action(QString action)
 {
     if (regions.empty())
         return;
-    for (unsigned int index = 0;index < regions.size();++index)
-    if (!regions[index]->empty() && item(index,0)->checkState() == Qt::Checked)
+    unsigned total_region_size = regions.size();
+    for (unsigned int k = 0;k < total_region_size;++k)
+    if (!regions[k]->empty() && item(k,0)->checkState() == Qt::Checked)
     {
-        ROIRegion& cur_region = *regions[index];
+        ROIRegion& cur_region = *regions[k];
         cur_region.perform(action.toStdString());
         if(action == "thresholding")
         {
@@ -1045,8 +1046,8 @@ void RegionTableWidget::do_action(QString action)
             if(!ok)
                 return;
 
-            for(unsigned int index = 0;index < mask.size();++index)
-                mask[index]  = I[index] > threshold ? 1:0;
+            for(unsigned int i = 0;i < mask.size();++i)
+                mask[i]  = I[i] > threshold ? 1:0;
             cur_region.LoadFromBuffer(mask);
         }
         if(action == "separate")
@@ -1058,19 +1059,17 @@ void RegionTableWidget::do_action(QString action)
             std::vector<std::vector<unsigned int> > r;
             image::morphology::connected_component_labeling(mask,labels,r);
 
-            for(unsigned int index = 0,total_count = 0;index < r.size() && total_count < 10;++index)
-                if(!r[index].empty())
+            for(unsigned int j = 0,total_count = 0;j < r.size() && total_count < 10;++j)
+                if(!r[j].empty())
                 {
                     std::fill(mask.begin(),mask.end(),0);
-                    for(unsigned int i = 0;i < r[index].size();++i)
-                        mask[r[index][i]] = 1;
-                    {
-                        ROIRegion region(cur_tracking_window.handle->dim,cur_tracking_window.current_slice->voxel_size);
-                        region.LoadFromBuffer(mask);
-                        add_region(name + "_"+QString::number(total_count+1),
-                                   roi_id,region.show_region.color.color);
-                        regions.back()->assign(region.get(),region.resolution_ratio);
-                    }
+                    for(unsigned int i = 0;i < r[j].size();++i)
+                        mask[r[j][i]] = 1;
+                    ROIRegion region(cur_tracking_window.handle->dim,cur_tracking_window.current_slice->voxel_size);
+                    region.LoadFromBuffer(mask);
+                    add_region(name + "_"+QString::number(total_count+1),
+                               roi_id,region.show_region.color.color);
+                    regions.back()->assign(region.get(),region.resolution_ratio);
                     ++total_count;
                 }
         }
