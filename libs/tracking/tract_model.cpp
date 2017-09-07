@@ -140,8 +140,14 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                     float x = from[0]/vs[0];
                     float y = from[1]/vs[1];
                     float z = from[2]/vs[2];
-                    to[0] = x;
-                    to[1] = y;
+                    if(trk.voxel_order[1] == 'R')
+                        to[0] = trk.dim[0]-x-1;
+                    else
+                        to[0] = x;
+                    if(trk.voxel_order[1] == 'A')
+                        to[1] = trk.dim[1]-y-1;
+                    else
+                        to[1] = y;
                     to[2] = z;
                 }
                 if(trk.n_properties == 1)
