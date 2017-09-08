@@ -2389,7 +2389,7 @@ void ConnectivityMatrix::network_property(std::string& report,double t)
         float ncpl_bin = std::accumulate(dis_bin.begin(),dis_bin.end(),0.0)/(n*n-inf_count_bin);
         float ncpl_wei = std::accumulate(dis_wei.begin(),dis_wei.end(),0.0)/(n*n-inf_count_wei);
         out << "network_characteristic_path_length(binary)\t" << ncpl_bin << std::endl;
-        out << "network_characteristic_path_length(weighted)\t" << ncpl_bin << std::endl;
+        out << "network_characteristic_path_length(weighted)\t" << ncpl_wei << std::endl;
         out << "small-worldness(binary)\t" << (ncpl_bin == 0.0 ? 0.0:cc_bin/ncpl_bin) << std::endl;
         out << "small-worldness(weighted)\t" << (ncpl_wei == 0.0 ? 0.0:cc_wei/ncpl_wei) << std::endl;
         image::basic_image<float,2> invD;
