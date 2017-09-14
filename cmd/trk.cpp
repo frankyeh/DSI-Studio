@@ -37,6 +37,8 @@ void save_connectivity_matrix(TractModel& tract_model,
         std::cout << data.error_msg << std::endl;
         return;
     }
+    if(connectivity_value == "trk")
+        return;
     std::string file_name_stat(source);
     file_name_stat += ".";
     file_name_stat += (QFileInfo(connectivity_roi.c_str()).exists()) ? QFileInfo(connectivity_roi.c_str()).baseName().toStdString():connectivity_roi;
