@@ -1,28 +1,0 @@
-————————————————————————————————————————————————————————————————————————
-The ATAG atlas is an atlas of the:	1) striatum (STR)	2) globus pallidus internal segment (GPi)	3) globus pallidus external segment (GPe)	4) red nucleus (RN)	5) substantia nigra (SN)	6) subthalamic nucleus (STh)————————————————————————————————————————————————————————————————————————The atlas contains probabilistic spatial information based on 30 young 
-subjects.
-Both hemispheres are included separately and the atlas have the following 
-versions:Linear vs Nonlinear:	The linear version is registered using only linear registration 
-	algorithms whereas the nonlinearly version was optimized using a 
-	nonlinear registration algorithm. Normalized vs non-normalized:	The normalized version has been scaled so that the probability 
-	of overlap ranges between 0.0 and 1.0.
-	The non-normalized version has a probability range between 0.0 and 
-	30.0. Due to trilinear interpolation the values in the probabilistic 
-	atlas are continues. 
-Finally a combined version of all the masks are provided which have been 
-tresholded to include the overlapping voxels for at least 10 subjects.
-
-————————————————————————————————————————————————————————————————————————See the following article for details regarding subjects, segmentation 
-methods and registration procedures:Keuken, M.C., Bazin, P.-L., Crown, L., Hootsmans, J., Laufer, A., 
-Muller-Axt, C., Sier, R., van der Putten, E.J., Schafer, A., Turner, 
-R., Forstmann, B.U. (accepted). Quantifying inter-individual anatomical 
-variability in the subcortex using 7T structural MRI. Neuroimage.
-————————————————————————————————————————————————————————————————————————The atlas is distributed under the Creative Commons Attribution 3.0 
-Unported license, which allows free use and modification of the atlas 
-but requires attribution to be maintained. Any work using this atlas 
-must cite the article above. The authors and distributors specifically disclaim any warranties, 
-including, but not limited to, the implied warranties of merchantability, 
-fitness for a particular purpose, and non-infringement.This atlas is provided on an "as is" basis, and the authors and 
-distributors have no obligation to provide maintenance, support, 
-updates, enhancements, or modifications.#########################################################################
-# Copyright (c) 2014 University of Amsterdam 				## and Max Planck Institute for Human Cognitive and Brain Sciences	##########################################################################
