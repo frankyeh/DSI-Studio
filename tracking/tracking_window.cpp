@@ -121,7 +121,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         ui->SliceModality->clear();
         for (unsigned int index = 0;index < fib.view_item.size(); ++index)
             ui->SliceModality->addItem(fib.view_item[index].name.c_str());
-        ui->SliceModality->setCurrentIndex(0);
+
     }
 
     if(handle->is_qsdr)
@@ -150,7 +150,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
 
     }
-
+    ui->SliceModality->setCurrentIndex(0);
     if(!handle->is_human_data || handle->is_qsdr)
         ui->actionManual_Registration->setEnabled(false);
 

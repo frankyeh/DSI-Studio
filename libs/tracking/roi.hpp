@@ -146,8 +146,15 @@ public:
                     const std::vector<image::vector<3,short> >& points,
                     float r,
                     unsigned char type,
-                    const char* roi_name)
+                    const char* roi_name,
+                    image::vector<3> voxel_size)
     {
+        image::vector<3,float> center;
+        for(int i = 0;i < points.size();++i)
+            center += points[i];
+        center /= points.size();
+        center /= r;
+
         switch(type)
         {
         case 0: //ROI
@@ -184,6 +191,17 @@ public:
             break;
         }
         report += roi_name;
+        if(voxel_size[0]*voxel_size[1]*voxel_size[2] != 0.0f)
+        {
+            std::ostringstream out;
+            out << std::setprecision(2) << " (" << center[0] << "," << center[1] << "," << center[2]
+                << ") with a volume size of " << (float)points.size()*voxel_size[0]*voxel_size[1]*voxel_size[2]/r/r/r << " mm cubic";
+            if(r != 1.0f)
+            {
+                out << " and a super resolution factor of " << r;
+            }
+            report += out.str();
+        }
         report += ".";
     }
 };
