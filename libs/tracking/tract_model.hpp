@@ -51,6 +51,7 @@ public:
             report = rhs.report;
             return *this;
         }
+        std::shared_ptr<fib_data> get_handle(void){return handle;}
         const tracking_data& get_fib(void) const{return *fib.get();}
         tracking_data& get_fib(void){return *fib.get();}
         void add(const TractModel& rhs);

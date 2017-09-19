@@ -2100,11 +2100,16 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
         for(unsigned int i = 0;i < region_passing_list.size();++i)
             for(unsigned int j = i+1;j < region_passing_list.size();++j)
             {
+                if(region_passing_list[i][j].empty())
+                    continue;
                 std::string file_name = region_name[i]+"_"+region_name[j]+".trk";
-                tract_model.select_tracts(region_passing_list[i][j]);
-                if(!tract_model.save_tracts_to_file(file_name.c_str()))
+                TractModel tm(tract_model.get_handle());
+                std::vector<std::vector<float> > new_tracts;
+                for (unsigned int k = 0;k < region_passing_list[i][j].size();++k)
+                    new_tracts.push_back(tract_model.get_tract(region_passing_list[i][j][k]));
+                tm.add_tracts(new_tracts);
+                if(!tm.save_tracts_to_file(file_name.c_str()))
                     return false;
-                tract_model.undo();
             }
         return true;
     }
