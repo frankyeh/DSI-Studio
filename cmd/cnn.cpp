@@ -44,7 +44,7 @@ int cnn(void)
     std::cout << "epoch=" << nn.epoch << std::endl;
 
     auto on_enumerate_epoch = [&](){
-        if(!nn_test.is_empty())
+        if(!nn_test.empty())
             std::cout << "testing error:" << nn.test_error(nn_test.data,nn_test.data_label) << "%" << std::endl;
         std::cout << "training error:" << nn.get_training_error() << "%" << std::endl;
         };
