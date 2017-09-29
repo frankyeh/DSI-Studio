@@ -917,8 +917,7 @@ void track_recognition::clear(void)
 
 void track_recognition::add_sample(fib_data* handle,unsigned char index,const std::vector<float>& tracks)
 {
-    int insert_place = cnn_data.data.empty() ? 0:dist(cnn_data.data.size());
-    cnn_data.data.insert(cnn_data.data.begin()+insert_place,std::vector<float>());
-    handle->get_profile(tracks,cnn_data.data[insert_place]);
-    cnn_data.data_label.insert(cnn_data.data_label.begin()+insert_place,index);
+    cnn_data.data.push_back(std::vector<float>());
+    handle->get_profile(tracks,cnn_data.data.back());
+    cnn_data.data_label.push_back(index);
 }
