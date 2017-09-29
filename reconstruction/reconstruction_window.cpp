@@ -48,6 +48,7 @@ void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>
 bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
 bool is_dsi(const std::vector<unsigned int>& shell);
 bool is_multishell(const std::vector<unsigned int>& shell);
+bool need_scheme_balance(const std::vector<unsigned int>& shell);
 
 reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *parent) :
     QMainWindow(parent),filenames(filenames_),ui(new Ui::reconstruction_window)
@@ -142,7 +143,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         std::vector<unsigned int> shell;
         calculate_shell(handle->voxel.bvalues,shell);
         ui->half_sphere->setChecked(is_dsi_half_sphere(shell));
-        ui->scheme_balance->setChecked(!is_dsi(shell) && handle->voxel.bvalues.size()-shell.back() < 100);
+        ui->scheme_balance->setChecked(need_scheme_balance(shell));
         if(is_dsi(shell))
         {
             ui->scheme_balance->setEnabled(false);
