@@ -519,9 +519,25 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
         return false;
 
     QString status;
-    status = QString("(%1,%2,%3) ").arg(std::round(pos[0]*10.0)/10.0)
-            .arg(std::round(pos[1]*10.0)/10.0)
-            .arg(std::round(pos[2]*10.0)/10.0);
+
+    if(!current_slice->is_diffusion_space)
+    {
+        image::vector<3,float> pos_dwi(pos);
+        pos_dwi.to(current_slice->transform);
+        status = QString("(%1,%2,%3) %4(%5,%6,%7)").arg(std::round(pos_dwi[0]*10.0)/10.0)
+                .arg(std::round(pos_dwi[1]*10.0)/10.0)
+                .arg(std::round(pos_dwi[2]*10.0)/10.0)
+                .arg(ui->SliceModality->currentText())
+                .arg(std::round(pos[0]*10.0)/10.0)
+                .arg(std::round(pos[1]*10.0)/10.0)
+                .arg(std::round(pos[2]*10.0)/10.0);
+    }
+    else
+    {
+        status = QString("(%1,%2,%3) ").arg(std::round(pos[0]*10.0)/10.0)
+                .arg(std::round(pos[1]*10.0)/10.0)
+                .arg(std::round(pos[2]*10.0)/10.0);
+    }
 
     if(handle->is_qsdr || handle->has_reg())
     {
