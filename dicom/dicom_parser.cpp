@@ -141,6 +141,43 @@ void load_bval(const char* file_name,std::vector<double>& bval)
               std::back_inserter(bval));
 }
 
+bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
+{
+    std::vector<QString> bval_name(4),bvec_name(4);
+    QString path = QFileInfo(file_name).absolutePath() + "/";
+    bval_name[0] = path + QFileInfo(file_name).baseName() + ".bvals";
+    bval_name[1] = path + QFileInfo(file_name).baseName() + ".bval";
+    bval_name[2] = path + QFileInfo(file_name).completeBaseName() + ".bvals";
+    bval_name[3] = path + QFileInfo(file_name).completeBaseName() + ".bval";
+    bvec_name[0] = path + QFileInfo(file_name).baseName() + ".bvecs";
+    bvec_name[1] = path + QFileInfo(file_name).baseName() + ".bvec";
+    bvec_name[2] = path + QFileInfo(file_name).completeBaseName() + ".bvecs";
+    bvec_name[3] = path + QFileInfo(file_name).completeBaseName() + ".bvec";
+
+    if(QFileInfo(file_name).completeBaseName() == "data.nii")
+    {
+        bval_name.push_back(path + "bvals");
+        bval_name.push_back(path + "bval");
+        bvec_name.push_back(path + "bvecs");
+        bvec_name.push_back(path + "bvec");
+    }
+
+    for(int i = 0;i < bval_name.size();++i)
+        if(QFileInfo(bval_name[i]).exists())
+        {
+            bval = bval_name[i];
+            break;
+        }
+    for(int i = 0;i < bvec_name.size();++i)
+        if(QFileInfo(bvec_name[i]).exists())
+        {
+            bvec = bvec_name[i];
+            break;
+        }
+
+    return QFileInfo(bval).exists() && QFileInfo(bvec).exists();
+}
+
 bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
     gz_nifti analyze_header;
@@ -148,40 +185,20 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         return false;
     std::cout << "loading 4d nifti" << std::endl;
 
-
     std::vector<double> bvals,bvecs;
     {
         QString bval_name,bvec_name;
-        bval_name = QFileInfo(file_name).absolutePath() + "/bvals";
-        if(!QFileInfo(bval_name).exists())
-            bval_name = QFileInfo(file_name).absolutePath() + "/bvals.txt";
-        if(!QFileInfo(bval_name).exists())
-            bval_name = QFileInfo(file_name).absolutePath() + "//" +
-                        QFileInfo(file_name).baseName() + ".bval";
-
-        bvec_name = QFileInfo(file_name).absolutePath() + "/bvecs";
-        if(!QFileInfo(bvec_name).exists())
-            bvec_name = QFileInfo(file_name).absolutePath() + "/bvecs.txt";
-        if(!QFileInfo(bvec_name).exists())
-            bvec_name = QFileInfo(file_name).absolutePath() + "//" +
-                        QFileInfo(file_name).baseName() + ".bvec";
-
-        if(QFileInfo(bval_name).exists() && QFileInfo(bvec_name).exists())
+        if(find_bval_bvec(file_name,bval_name,bvec_name))
         {
             load_bval(bval_name.toLocal8Bit().begin(),bvals);
             load_bvec(bvec_name.toLocal8Bit().begin(),bvecs);
-            if(analyze_header.dim(4) != bvals.size() ||
-               bvals.size()*3 != bvecs.size())
-            {
-                bvals.clear();
-                bvecs.clear();
-            }
-            else
-                std::cout << "bvals and bvecs loaded" << std::endl;
         }
-
+        if(analyze_header.dim(4) != bvals.size() || bvals.size()*3 != bvecs.size())
+        {
+            bvals.clear();
+            bvecs.clear();
+        }
     }
-
     image::basic_image<float,4> grad_dev;
     image::basic_image<unsigned char,3> mask;
     if(QFileInfo(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").exists())

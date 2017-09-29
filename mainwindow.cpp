@@ -625,6 +625,7 @@ void MainWindow::on_warpImage_clicked()
 }
 */
 bool load_all_files(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
+bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec);
 bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 QString get_src_name(QString file_name);
 
@@ -660,6 +661,11 @@ void MainWindow::on_batch_src_clicked()
                QFileInfo(dir_list[i] + "/bvecs").exists() &&
                load_4d_nii(QString(dir_list[i] + "/data.nii.gz").toLocal8Bit().begin(),dwi_files))
             {
+                if(!DwiHeader::has_b_table(dwi_files))
+                {
+                    std::ofstream(QString(dir_list[i] + "/data.nii.gz.b_table_mismatch.txt").toLocal8Bit().begin());
+                    continue;
+                }
                 DwiHeader::output_src(QString(dir_list[i] + "/data.src.gz").toLocal8Bit().begin(),dwi_files,0);
                 continue;
             }
@@ -667,10 +673,19 @@ void MainWindow::on_batch_src_clicked()
             QStringList nifti_file_list = cur_dir.entryList(QStringList("*.nii.gz") << "*.nii",QDir::Files|QDir::NoSymLinks);
             for (unsigned int index = 0;index < nifti_file_list.size();++index)
             {
-                if(QFileInfo(dir_list[i] + "/" + QFileInfo(nifti_file_list[index]).baseName()+".bval").exists() &&
-                   QFileInfo(dir_list[i] + "/" + QFileInfo(nifti_file_list[index]).baseName()+".bvec").exists() &&
-                    load_4d_nii(QString(dir_list[i] + "/" + nifti_file_list[index]).toLocal8Bit().begin(),dwi_files))
+                QString bval,bvec;
+                if(find_bval_bvec(QString(dir_list[i] + "/" + nifti_file_list[index]).toLocal8Bit().begin(),bval,bvec))
                 {
+                    if(!load_4d_nii(QString(dir_list[i] + "/" + nifti_file_list[index]).toLocal8Bit().begin(),dwi_files))
+                    {
+                        std::ofstream(QString(dir_list[i] + "/" + nifti_file_list[index] + ".invalid_format.txt").toLocal8Bit().begin());
+                        continue;
+                    }
+                    if(!DwiHeader::has_b_table(dwi_files))
+                    {
+                        std::ofstream(QString(dir_list[i] + "/" + nifti_file_list[index] + ".b_table_mismatch.txt").toLocal8Bit().begin());
+                        continue;
+                    }
                     DwiHeader::output_src(QString(dir_list[i] + "/" +
                         QFileInfo(nifti_file_list[index]).baseName() + ".src.gz").toLocal8Bit().begin(),dwi_files,0);
                     continue;
@@ -893,7 +908,7 @@ void MainWindow::on_run_cmd_clicked()
 
 void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
-bool is_dsi(const std::vector<unsigned int>& shell);
+bool need_scheme_balance(const std::vector<unsigned int>& shell);
 void MainWindow::on_ReconstructSRC_clicked()
 {
     QString dir = QFileDialog::getExistingDirectory(
@@ -944,7 +959,7 @@ void MainWindow::on_ReconstructSRC_clicked()
             std::vector<unsigned int> shell;
             calculate_shell(handle->voxel.bvalues,shell);
             handle->voxel.half_sphere = is_dsi_half_sphere(shell);
-            handle->voxel.scheme_balance = !is_dsi(shell) && handle->voxel.bvalues.size()-shell.back() < 100;
+            handle->voxel.scheme_balance = need_scheme_balance(shell);
         }
 
         const char* msg = (const char*)reconstruction(handle.get(), 7 /*QSDR*/,

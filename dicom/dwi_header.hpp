@@ -90,6 +90,7 @@ public:
 	}
 public:
     static bool output_src(const char* file_name, std::vector<std::shared_ptr<DwiHeader> >& dwi_files, int upsampling);
+    static bool has_b_table(std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 };
 
 #endif//DWI_HEADER_HPP

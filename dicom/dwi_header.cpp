@@ -410,6 +410,8 @@ void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>
     for(int i = 1;i < bvalues.size();++i)
         if(bvalues[i-1] != 0.0)
             dif_dis.push_back(bvalues[i] - bvalues[i-1]);
+    if(dif_dis.empty())
+        return;
     std::sort(dif_dis.begin(),dif_dis.end());
 
     float gap = *std::max_element(dif_dis.begin(),dif_dis.end())*0.1;
@@ -434,6 +436,16 @@ bool is_dsi_half_sphere(const std::vector<unsigned int>& shell)
 bool is_dsi(const std::vector<unsigned int>& shell)
 {
     return shell.size() > 4 && (shell[1] - shell[0] <= 6);
+}
+
+bool need_scheme_balance(const std::vector<unsigned int>& shell)
+{
+    if(is_dsi(shell))
+        return false;
+    for(int i = 0;i < shell.size()-1;++i)
+        if(shell[i]-shell[i] < 128)
+            return true;
+    return false;
 }
 
 bool is_multishell(const std::vector<unsigned int>& shell)
@@ -465,7 +477,8 @@ void get_report(const std::vector<float>& bvalues,image::vector<3> vs,std::strin
                 else
                     out << " ,";
             }
-            out << (int)std::round(bvalues[shell[index]]);
+            out << (int)std::round(bvalues[
+                index == shell.size()-1 ? (bvalues.size()+shell.back())/2 : (shell[index+1] + shell[index])/2]);
         }
         out << " s/mm2.";
 
@@ -493,11 +506,18 @@ void get_report(const std::vector<float>& bvalues,image::vector<3> vs,std::strin
 }
 
 
+bool DwiHeader::has_b_table(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
+{
+    for(int i = 0;i < dwi_files.size();++i)
+        if(dwi_files[i]->bvalue > 0.0f)
+            return true;
+    return false;
+}
 
 // upsampling 1: upsampling 2: downsampling
 bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,int upsampling)
 {
-    if(dwi_files.empty())
+    if(dwi_files.empty() || !has_b_table(dwi_files))
         return false;
     sort_dwi(dwi_files);
     correct_t2(dwi_files);
