@@ -307,6 +307,7 @@ int trk_post(std::shared_ptr<fib_data> handle,
             tract_model.save_transformed_tracts_to_file(file_name.c_str(),&*new_slice.invT.begin(),false);
         }
         else
+        if(file_name != "no_file")
         {
             std::cout << "output file:" << file_name << std::endl;
             if (!tract_model.save_tracts_to_file(file_name.c_str()))
