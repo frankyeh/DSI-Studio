@@ -83,6 +83,8 @@ bool DwiHeader::open(const char* filename)
         if (manu.size() > 2)
         {
             std::string name(manu.begin(),manu.begin()+2);
+            name[0] = ::toupper(name[0]);
+            name[1] = ::toupper(name[1]);
             if (name == std::string("SI"))
                 man_id = 1;
             if (name == std::string("GE"))
@@ -114,15 +116,22 @@ bool DwiHeader::open(const char* filename)
         bool has_b = false;
         if(header.get_value(0x0018,0x9087,bvalue))
         {
-            unsigned int gev_length = 0;
-            const double* gvec = (const double*)header.get_data(0x0018,0x9075,gev_length);// B-vector
-            if(gvec)
+            has_b = true;
+            if(bvalue)
             {
-                bvec[0] = float(gvec[0]);
-                bvec[1] = float(gvec[1]);
-                bvec[2] = float(gvec[2]);
+                unsigned int gev_length = 0;
+                const double* gvec = (const double*)header.get_data(0x0018,0x9089,gev_length);// B-vector
+                if(gvec)
+                {
+                    bvec[0] = float(gvec[0]);
+                    bvec[1] = float(gvec[1]);
+                    bvec[2] = float(gvec[2]);
+                    bvec.normalize();
+                }
+                else
+                    has_b = false;
             }
-            has_b = gvec != 0;
+
         }
         else
         {
