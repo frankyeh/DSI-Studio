@@ -96,6 +96,7 @@ bool DwiHeader::open(const char* filename)
     // get TE
     header.get_value(0x0018,0x0081,te);
 
+
     switch (man_id)
     {
     case 1://SIEMENS
@@ -105,46 +106,65 @@ bool DwiHeader::open(const char* filename)
         0019;XX0D;SIEMENS MR HEADER ;DiffusionDirectionality ;1;CS;1
         0019;XX0E;SIEMENS MR HEADER ;DiffusionGradientDirection ;1;FD;3
         0019;XX27;SIEMENS MR HEADER ;B_matrix ;1;FD;6
+
+        (0018,9075) DiffusionDirectionality
+        (0018,9087) DiffusionBValue
          */
     {
-        header.get_value(0x0019,0x100C,bvalue);
-        unsigned int gev_length = 0;
-        const double* gvec = (const double*)header.get_data(0x0019,0x100E,gev_length);// B-vector
-        if(gvec)
+        bool has_b = false;
+        if(header.get_value(0x0018,0x9087,bvalue))
         {
-            bvec[0] = float(gvec[0]);
-            bvec[1] = float(gvec[1]);
-            bvec[2] = float(gvec[2]);
+            unsigned int gev_length = 0;
+            const double* gvec = (const double*)header.get_data(0x0018,0x9075,gev_length);// B-vector
+            if(gvec)
+            {
+                bvec[0] = float(gvec[0]);
+                bvec[1] = float(gvec[1]);
+                bvec[2] = float(gvec[2]);
+            }
+            has_b = gvec != 0;
         }
         else
-        // from b-matrix
         {
-            gvec = (const double*)header.get_data(0x0019,0x1027,gev_length);// B-vector
-            if (gvec)
+            header.get_value(0x0019,0x100C,bvalue);
+            unsigned int gev_length = 0;
+            const double* gvec = (const double*)header.get_data(0x0019,0x100E,gev_length);// B-vector
+            if(gvec)
             {
-                if (gvec[0] != 0.0)
+                bvec[0] = float(gvec[0]);
+                bvec[1] = float(gvec[1]);
+                bvec[2] = float(gvec[2]);
+            }
+            else
+            // from b-matrix
+            {
+                gvec = (const double*)header.get_data(0x0019,0x1027,gev_length);// B-vector
+                if (gvec)
                 {
-                    bvec[0] = float(gvec[0]);
-                    bvec[1] = float(gvec[1]);
-                    bvec[2] = float(gvec[2]);
-                }
-                else
-                    if (gvec[3] != 0.0)
+                    if (gvec[0] != 0.0)
                     {
-                        bvec[0] = 0.0;
-                        bvec[1] = gvec[3];
-                        bvec[2] = gvec[4];
+                        bvec[0] = float(gvec[0]);
+                        bvec[1] = float(gvec[1]);
+                        bvec[2] = float(gvec[2]);
                     }
                     else
-                    {
-                        bvec[0] = 0;
-                        bvec[1] = 0;
-                        bvec[2] = gvec[5];
-                    }
+                        if (gvec[3] != 0.0)
+                        {
+                            bvec[0] = 0.0;
+                            bvec[1] = gvec[3];
+                            bvec[2] = gvec[4];
+                        }
+                        else
+                        {
+                            bvec[0] = 0;
+                            bvec[1] = 0;
+                            bvec[2] = gvec[5];
+                        }
+                }
             }
+            has_b = gvec != 0;
         }
-
-        if(!gvec)// get csa data
+        if(!has_b)// get csa data
         {
             const char* b_value = header.get_csa_data("B_value",0);
             const char* bx = header.get_csa_data("DiffusionGradientDirection",0);
