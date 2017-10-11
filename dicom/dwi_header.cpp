@@ -469,7 +469,7 @@ bool is_dsi(const std::vector<unsigned int>& shell)
 
 bool need_scheme_balance(const std::vector<unsigned int>& shell)
 {
-    if(is_dsi(shell))
+    if(is_dsi(shell) || shell.size() > 6)
         return false;
     for(int i = 0;i < shell.size()-1;++i)
         if(shell[i]-shell[i] < 128)
