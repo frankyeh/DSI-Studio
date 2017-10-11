@@ -393,7 +393,7 @@ bool group_connectometry::load_demographic_file(QString filename)
         }
         bool add_age_and_sex = false;
         std::vector<unsigned int> age(vbc->handle->db.num_subjects),sex(vbc->handle->db.num_subjects);
-        if((QString(vbc->handle->db.subject_names[0].c_str()).contains("_M0") || QString(vbc->handle->db.subject_names[0].c_str()).contains("_F0")) &&
+        if((QString(vbc->handle->db.subject_names[0].c_str()).contains("_M") || QString(vbc->handle->db.subject_names[0].c_str()).contains("_F")) &&
             QString(vbc->handle->db.subject_names[0].c_str()).contains("Y_") && gui &&
             QMessageBox::information(this,"Connectomtetry analysis","Pull age and sex (1 = male, 0 = female) information from connectometry db?",QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
             {
@@ -401,10 +401,10 @@ bool group_connectometry::load_demographic_file(QString filename)
                 for(unsigned int index = 0;index < vbc->handle->db.num_subjects;++index)
                 {
                     QString name = vbc->handle->db.subject_names[index].c_str();
-                    if(name.contains("_M0"))
+                    if(name.contains("_M"))
                         sex[index] = 1;
                     else
-                        if(name.contains("_F0"))
+                        if(name.contains("_F"))
                             sex[index] = 0;
                         else
                         {
