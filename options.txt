@@ -50,7 +50,7 @@ Slice/Blend Func2/slice_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:O
 Tract/Opacity/tract_alpha/float:0:1:0.1:2/1
 Tract/Transparent Style/tract_alpha_style/Sketch:Classic/0
 Tract/Style/tract_style/Line:Tube:End points/1
-Tract/Color/tract_color_style/Directional:Assigned:Local index:Averaged index:Averaged Directional/0
+Tract/Color/tract_color_style/Directional:Assigned:Local Index:Averaged Index:Averaged Directional:Max Index/0
 Tract/Visible Tracts/tract_visible_tract/int:5000:1000000:5000/25000
 Tract/Variant Color/tract_variant_color/Off:On/1
 Tract/Variant Size/tract_variant_size/Off:On/1

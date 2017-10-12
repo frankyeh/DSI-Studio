@@ -1025,7 +1025,7 @@ void GLWidget::makeTracts(void)
     // show tract by index value
     if (tract_color_style > 1)
     {
-        if(tract_color_style == 3)// mean value
+        if(tract_color_style == 3 || tract_color_style == 5)// mean value
         {
             for (unsigned int active_tract_index = 0;
                     active_tract_index < cur_tracking_window.tractWidget->rowCount();
@@ -1047,9 +1047,14 @@ void GLWidget::makeTracts(void)
 
                     std::vector<float> fa_values;
                     active_tract_model->get_tract_data(data_index,track_num_index,fa_values);
-                    float sum = std::accumulate(fa_values.begin(),fa_values.end(),0.0f);
-                    sum /= (float)fa_values.size();
-                    mean_fa.push_back(sum);
+                    if(tract_color_style == 3)
+                    {
+                        float sum = std::accumulate(fa_values.begin(),fa_values.end(),0.0f);
+                        sum /= (float)fa_values.size();
+                        mean_fa.push_back(sum);
+                    }
+                    if(tract_color_style == 5)
+                        mean_fa.push_back(*std::max_element(fa_values.begin(),fa_values.end()));
                 }
             }
         }
@@ -1120,6 +1125,7 @@ void GLWidget::makeTracts(void)
                     active_tract_model->get_tract_data(data_index,track_num_index,color);
                     break;
                 case 3:// mean
+                case 5:// max
                     paint_color_f = cur_tracking_window.color_bar->get_color(mean_fa[mean_fa_index++]);
                     break;
                 }
@@ -1151,6 +1157,7 @@ void GLWidget::makeTracts(void)
                     case 1://manual assigned
                     case 3://mean anisotropy
                     case 4://mean directional
+                    case 5://max anisotropy
                         cur_color = paint_color_f;
                         break;
                     case 2://local anisotropy
