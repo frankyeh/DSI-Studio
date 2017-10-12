@@ -70,7 +70,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
     QStringList connectivity_value_list = QString(po.get("connectivity_value","count").c_str()).split(",");
     if(po.has("output"))
         source = po.get("output");
-    if(source.empty() || source == "no_file")
+    if(source == "no_file")
         source = po.get("source");
     for(unsigned int i = 0;i < connectivity_list.size();++i)
     {
