@@ -1799,6 +1799,26 @@ void tracking_window::on_addSlices_clicked()
         this,"Open Images files",QFileInfo(windowTitle()).absolutePath(),"Image files (*.dcm *.hdr *.nii *nii.gz *.bmp 2dseq);;All files (*)" );
     if( filenames.isEmpty())
         return;
+    if(QFileInfo(filenames[0]).completeSuffix() == "dcm" && filenames.size() == 1)
+    {
+        QDir directory = QFileInfo(filenames[0]).absoluteDir();
+        QStringList file_list = directory.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
+        if(file_list.size() > filenames.size())
+        {
+            QString msg =
+              QString("There are %1 DICOM files in the directory. Select all?").arg(file_list.size());
+            int result = QMessageBox::information(this,"Input images",msg,
+                                     QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+            if(result == QMessageBox::Cancel)
+                return;
+            if(result == QMessageBox::Yes)
+            {
+                filenames = file_list;
+                for(int index = 0;index < filenames.size();++index)
+                    filenames[index] = directory.absolutePath() + "/" + filenames[index];
+            }
+        }
+    }
     addSlices(filenames,QFileInfo(filenames[0]).baseName(),renderWidget->getData("slice_smoothing").toBool(),false);
 }
 
