@@ -64,8 +64,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>231</width>
-         <height>380</height>
+         <width>350</width>
+         <height>556</height>
         </rect>
        </property>
        <attribute name="label">
@@ -141,8 +141,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>322</width>
-         <height>400</height>
+         <width>350</width>
+         <height>556</height>
         </rect>
        </property>
        <attribute name="label">
@@ -235,7 +235,7 @@
          <x>0</x>
          <y>0</y>
          <width>329</width>
-         <height>591</height>
+         <height>671</height>
         </rect>
        </property>
        <attribute name="label">
@@ -270,7 +270,7 @@
         <item>
          <widget class="QCommandLinkButton" name="RenameDICOMDir">
           <property name="text">
-           <string>Rename DICOM Files</string>
+           <string>Rename DICOM in Subfolders</string>
           </property>
           <property name="description">
            <string>Select a directory containinng DICOM files and rename them by their sequence</string>
@@ -304,6 +304,16 @@
           </property>
           <property name="description">
            <string>Select a directory that contains SRC files in the subdirectories and performan reconstruction.</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="parse_network_measures">
+          <property name="text">
+           <string>Parse Network Measure Text Files</string>
+          </property>
+          <property name="description">
+           <string>Select a list of network measure files and parse them into one data sheet</string>
           </property>
          </widget>
         </item>
@@ -406,8 +416,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>309</width>
-         <height>544</height>
+         <width>350</width>
+         <height>556</height>
         </rect>
        </property>
        <attribute name="label">

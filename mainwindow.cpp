@@ -1032,3 +1032,75 @@ void MainWindow::on_SRC_qc_clicked()
     begin_prog("checking SRC files");
     show_info_dialog("SRC report",quality_check_src_files(dir));
 }
+
+void MainWindow::on_parse_network_measures_clicked()
+{
+    QStringList filename = QFileDialog::getOpenFileNames(
+            this,"Open Network Measures",ui->workDir->currentText(),
+            "Text files (*.txt);;All files (*)" );
+    if(filename.isEmpty())
+        return;
+    std::ofstream out((filename[0]+".collected.txt").toStdString().c_str());
+    out << "Field\t";
+    for(int i = 0;i < filename.size();++i)
+        out << QFileInfo(filename[i]).baseName().toStdString() << "\t";
+    out << std::endl;
+
+    std::vector<std::string> line_output;
+    for(int i = 0;i < filename.size();++i)
+    {
+        std::ifstream in(filename[i].toStdString().c_str());
+        // global measures
+        int line_index = 0;
+        for(int j = 0;j < 19;++j,++line_index)
+        {
+            std::string t1,t2;
+            in >> t1 >> t2;
+            if(i == 0)
+            {
+                line_output.push_back(t1);
+                line_output.back() += "\t";
+            }
+            line_output[line_index] += t2;
+            line_output[line_index] += "\t";
+        }
+        std::vector<std::string> node_list;
+        {
+            std::string nodes;
+            while(nodes.empty())
+                in >> nodes; // skip the network measure header
+            std::getline(in,nodes);
+            std::istringstream nodestream(nodes);
+            std::copy(std::istream_iterator<std::string>(nodestream),
+                      std::istream_iterator<std::string>(),std::back_inserter(node_list));
+        }
+        // nodal measures
+        for(int j = 0;j < 14;++j)
+        {
+            std::string line;
+            std::getline(in,line);
+            std::istringstream in2(line);
+            std::string t1;
+            in2 >> t1;
+            for(int k = 0;k < node_list.size();++k,++line_index)
+            {
+                std::string t2;
+                in2 >> t2;
+                if(i==0)
+                {
+                    line_output.push_back(t1);
+                    line_output.back() += "_";
+                    line_output.back() += node_list[k];
+                    line_output.back() += "\t";
+                }
+                line_output[line_index] += t2;
+                line_output[line_index] += "\t";
+            }
+        }
+    }
+    for(int i = 0;i < line_output.size();++i)
+        out << line_output[i] << std::endl;
+
+    QMessageBox::information(this,"DSI Studio",QString("File saved to")+filename[0]+".collected.txt",0);
+
+}
