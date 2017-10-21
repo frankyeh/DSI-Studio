@@ -443,24 +443,26 @@ void db_window::on_subject_view_currentChanged(int index)
 
 void db_window::on_move_down_clicked()
 {
-    if(ui->subject_list->currentRow() <= 0)
-        return;
-    vbc->handle->db.move_down(ui->subject_list->currentRow());
-    QString t = ui->subject_list->item(ui->subject_list->currentRow(),0)->text();
-    ui->subject_list->item(ui->subject_list->currentRow(),0)->setText(ui->subject_list->item(ui->subject_list->currentRow()-1,0)->text());
-    ui->subject_list->item(ui->subject_list->currentRow()-1,0)->setText(t);
-    ui->subject_list->selectRow(ui->subject_list->currentRow()-1);
-}
 
-void db_window::on_move_up_clicked()
-{
     if(ui->subject_list->currentRow() >= vbc->handle->db.num_subjects-1)
         return;
-    vbc->handle->db.move_up(ui->subject_list->currentRow());
+    vbc->handle->db.move_down(ui->subject_list->currentRow());
     QString t = ui->subject_list->item(ui->subject_list->currentRow(),0)->text();
     ui->subject_list->item(ui->subject_list->currentRow(),0)->setText(ui->subject_list->item(ui->subject_list->currentRow()+1,0)->text());
     ui->subject_list->item(ui->subject_list->currentRow()+1,0)->setText(t);
     ui->subject_list->selectRow(ui->subject_list->currentRow()+1);
+}
+
+void db_window::on_move_up_clicked()
+{
+    if(ui->subject_list->currentRow() <= 0)
+        return;
+    vbc->handle->db.move_up(ui->subject_list->currentRow());
+    QString t = ui->subject_list->item(ui->subject_list->currentRow(),0)->text();
+    ui->subject_list->item(ui->subject_list->currentRow(),0)->setText(ui->subject_list->item(ui->subject_list->currentRow()-1,0)->text());
+    ui->subject_list->item(ui->subject_list->currentRow()-1,0)->setText(t);
+    ui->subject_list->selectRow(ui->subject_list->currentRow()-1);
+
 }
 
 void db_window::on_actionAdd_DB_triggered()

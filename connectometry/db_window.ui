@@ -67,7 +67,7 @@
         </property>
         <property name="icon">
          <iconset resource="../icons.qrc">
-          <normaloff>:/icons/icons/up.xpm</normaloff>:/icons/icons/up.xpm</iconset>
+          <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
         </property>
        </widget>
       </item>
@@ -78,7 +78,7 @@
         </property>
         <property name="icon">
          <iconset resource="../icons.qrc">
-          <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+          <normaloff>:/icons/icons/up.xpm</normaloff>:/icons/icons/up.xpm</iconset>
         </property>
        </widget>
       </item>
