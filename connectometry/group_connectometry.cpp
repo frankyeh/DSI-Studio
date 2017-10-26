@@ -396,6 +396,7 @@ bool group_connectometry::load_demographic_file(QString filename)
             return false;
         }
     }
+    // first line moved to title vector
     titles.insert(titles.end(),items.begin(),items.begin()+col_count);
     items.erase(items.begin(),items.begin()+col_count);
 

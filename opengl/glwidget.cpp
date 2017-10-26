@@ -1675,6 +1675,23 @@ void GLWidget::move_by(int x,int y)
     glPopMatrix();
     updateGL();
 }
+void handle_rotate(bool circular,bool only_y,float fx,float fy,float dx,float dy)
+{
+    if(circular)
+    {
+        if(fx < 0)
+            dy = -dy;
+        if(fy > 0)
+            dx = -dx;
+        glRotatef((dy+dx)/4.0f, 0.0f, 0.0f, 1.0f);
+    }
+    else
+    {
+        glRotatef(dy / 2.0f, 1.0f, 0.0f, 0.0f);
+        if(!only_y)
+            glRotatef(-dx / 2.0f, 0.0f, 1.0f, 0.0f);
+    }
+}
 
 void GLWidget::mouseMoveEvent(QMouseEvent *event)
 {
@@ -1761,39 +1778,21 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     // left button down
     if (event->buttons() & Qt::LeftButton)
     {
-        if(edit_right && view_mode == view_mode_type::two)
-        {
-            // book keeping the transformation matrix
-            glRotated(dy / 2.0, 1.0, 0.0, 0.0);
-            if(!(event->modifiers() & Qt::ShiftModifier))
-                glRotated(-dx / 2.0, 0.0, 1.0, 0.0);
-            glMultMatrixf(transformation_matrix2.begin());
-            glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix2.begin());
-            // book keeping the rotation matrix
-            glLoadIdentity();
-            glRotated(dy / 2.0, 1.0, 0.0, 0.0);
-            if(!(event->modifiers() & Qt::ShiftModifier))
-                glRotated(-dx / 2.0, 0.0, 1.0, 0.0);
-            glMultMatrixf(rotation_matrix2.begin());
-            glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix2.begin());
+        auto& tran = (edit_right && view_mode == view_mode_type::two) ? transformation_matrix2:transformation_matrix;
+        auto& rot = (edit_right && view_mode == view_mode_type::two) ? rotation_matrix2:rotation_matrix;
 
-        }
-        else
-        {
-            // book keeping the transformation matrix
-            glRotated(dy / 2.0, 1.0, 0.0, 0.0);
-            if(!(event->modifiers() & Qt::ShiftModifier))
-                glRotated(-dx / 2.0, 0.0, 1.0, 0.0);
-            glMultMatrixf(transformation_matrix.begin());
-            glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
-            // book keeping the rotation matrix
-            glLoadIdentity();
-            glRotated(dy / 2.0, 1.0, 0.0, 0.0);
-            if(!(event->modifiers() & Qt::ShiftModifier))
-                glRotated(-dx / 2.0, 0.0, 1.0, 0.0);
-            glMultMatrixf(rotation_matrix.begin());
-            glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix.begin());
-        }
+        float fx = (float)lastPos.x()/(float)width()-0.5f;
+        float fy = (float)lastPos.y()/(float)height()-0.5f;
+        bool circular_rotate = fx*fx+fy*fy > 0.25;
+        bool only_y = (event->modifiers() & Qt::ShiftModifier);
+        handle_rotate(circular_rotate,only_y,fx,fy,dx,dy);
+        glMultMatrixf(tran.begin());
+        glGetFloatv(GL_MODELVIEW_MATRIX,tran.begin());
+        // book keeping the rotation matrix
+        glLoadIdentity();
+        handle_rotate(circular_rotate,only_y,fx,fy,dx,dy);
+        glMultMatrixf(rot.begin());
+        glGetFloatv(GL_MODELVIEW_MATRIX,rot.begin());
     }
     else
     // right button or middle button down
