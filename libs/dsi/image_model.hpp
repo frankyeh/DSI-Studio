@@ -1,8 +1,7 @@
 #ifndef IMAGE_MODEL_HPP
 #define IMAGE_MODEL_HPP
-#include "gqi_process.hpp"
 #include "image/image.hpp"
-
+#include "basic_voxel.hpp"
 void get_report(const std::vector<float>& bvalues,image::vector<3> vs,std::string& report);
 
 struct distortion_map{

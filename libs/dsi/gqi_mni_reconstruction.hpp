@@ -1,7 +1,6 @@
 #ifndef MNI_RECONSTRUCTION_HPP
 #define MNI_RECONSTRUCTION_HPP
 #include <chrono>
-#include "gqi_process.hpp"
 #include "mapping/fa_template.hpp"
 #include "basic_voxel.hpp"
 #include "basic_process.hpp"

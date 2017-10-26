@@ -63,6 +63,7 @@ public:
     {
         if(b0_images.size() == 1 && voxel.half_sphere)
             data.space[b0_images.front()] *= 0.5;
+
         if(!voxel.grad_dev.empty()) // correction for gradient nonlinearity
         {
             /*
@@ -93,7 +94,99 @@ public:
             image::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
                                     image::dyndim(data.odf.size(),data.space.size()));
     }
+};
 
+class HQSpace2Odf  : public BaseProcess
+{
+public:// recorded for scheme balanced
+    std::vector<image::vector<3,double> > q_vectors_time;
+public:
+    std::vector<float> sinc_ql;
+    double base_function(double theta)
+    {
+        if(std::abs(theta) < 0.000001)
+            return 1.0/3.0;
+        return (2*std::cos(theta)+(theta-2.0/theta)*std::sin(theta))/theta/theta;
+    }
+public:
+    bool hgqi = false;
+    std::vector<float> hraw;
+    std::vector<int> offset;
+    std::vector<float> scaling;
+public:
+    virtual void init(Voxel& voxel)
+    {
+        if(voxel.bvalues.size() != 1)
+        {
+            hgqi = false;
+            return;
+        }
+        hgqi = true;
+        hraw.resize(voxel.dim.size());
+        int range = 2;
+        for(int dz = 0;dz <= range;++dz) // half sphere
+            for(int dy = -range;dy <= range;++dy)
+                for(int dx = -range;dx <= range;++dx)
+                {
+                    int r2 = dx*dx+dy*dy+dz*dz;
+                    voxel.bvalues.push_back(r2*500);
+                    image::vector<3> dir(dx,dy,dz);
+                    dir.normalize();
+                    voxel.bvectors.push_back(dir);
+                    offset.push_back(dx + dy*voxel.dim.width() + dz*voxel.dim.plane_size());
+                    scaling.push_back(std::exp(-r2));
+                }
+
+        unsigned int odf_size = voxel.ti.half_vertices_count;
+        float sigma = voxel.param[0]; //optimal 1.24
+        sinc_ql.resize(odf_size*voxel.bvalues.size());
+        // calculate reconstruction matrix
+        for (unsigned int j = 0,index = 0; j < odf_size; ++j)
+            for (unsigned int i = 0; i < voxel.bvalues.size(); ++i,++index)
+                sinc_ql[index] = voxel.bvectors[i]*
+                             image::vector<3,float>(voxel.ti.vertices[j])*
+                               std::sqrt(voxel.bvalues[i]*0.01506);
+
+        for (unsigned int index = 0; index < sinc_ql.size(); ++index)
+            sinc_ql[index] = voxel.r2_weighted ?
+                         base_function(sinc_ql[index]*sigma):
+                         boost::math::sinc_pi(sinc_ql[index]*sigma);
+
+    }
+    virtual void run(Voxel& voxel, VoxelData& data)
+    {
+        if(!hgqi)
+            return;
+        if(data.space[0] == 0)
+        {
+            hraw[data.voxel_index] = 0;
+            std::fill(data.odf.begin(),data.odf.end(),0.0f);
+            return;
+        }
+        hraw[data.voxel_index] = data.space[0];
+        auto I = image::make_image(voxel.image_model->dwi_data[0],voxel.dim);
+        data.space.resize(voxel.bvalues.size());
+        for(int i = 1;i < voxel.bvalues.size();++i)
+        {
+            int pos1 = data.voxel_index;
+            int pos2 = data.voxel_index;
+            pos1 += offset[i-1];
+            pos2 -= offset[i-1];
+            if(pos1 < 0 || pos1 >= voxel.dim.size())
+                pos1 = pos2;
+            if(pos2 < 0 || pos2 >= voxel.dim.size())
+                pos2 = pos1;
+            data.space[i] = std::fabs(data.space[0]-(I[pos1]+I[pos2])/2.0f)*scaling[i-1];
+        }
+
+        image::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
+                                    image::dyndim(data.odf.size(),data.space.size()));
+    }
+    virtual void end(Voxel&,gz_mat_write& mat_writer)
+    {
+        if(hgqi)
+            mat_writer.write("hraw",&hraw[0],1,hraw.size());
+    }
 };
 
 class SchemeConverter : public BaseProcess

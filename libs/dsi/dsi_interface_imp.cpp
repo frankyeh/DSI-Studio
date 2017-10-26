@@ -30,6 +30,16 @@ typedef boost::mpl::vector<
     Dwi2Tensor
 > dti_process;
 
+typedef boost::mpl::vector<
+    ReadDWIData,
+    HQSpace2Odf,
+    DetermineFiberDirections,
+    ScaleZ0ToMinODF,
+    SaveFA,
+    SaveDirIndex,
+    OutputODF
+> hgqi_process;
+
 
 template<class reco_type>
 struct odf_reco_type{
@@ -417,6 +427,13 @@ const char* reconstruction(ImageModel* image_model,
             if (image_model->voxel.output_rdi)
                 out << ".rdi";
             out << (image_model->voxel.r2_weighted ? ".gqi2.":".gqi.") << param_values[0] << ".fib.gz";
+            if(image_model->dwi_data.size() == 1)
+            {
+                if (!image_model->reconstruct<hgqi_process>())
+                    return "reconstruction canceled";
+                break;
+            }
+
             if (!image_model->reconstruct<gqi_process>())
                 return "reconstruction canceled";
             break;
