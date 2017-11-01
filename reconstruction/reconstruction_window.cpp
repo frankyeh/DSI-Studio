@@ -813,7 +813,10 @@ void reconstruction_window::on_actionRotate_triggered()
         return;
 
     begin_prog("rotating");
-    handle->rotate(ref.geometry(),manual->iT);
+    image::basic_image<float,3> ref2(ref);
+    float m = image::median(ref2.begin(),ref2.end());
+    image::multiply_constant_mt(ref,0.5f/m);
+    handle->rotate(ref,manual->iT);
     handle->calculate_mask();
     handle->voxel.vs = vs;
     handle->voxel.report += " The diffusion images were rotated and scaled to the space of ";

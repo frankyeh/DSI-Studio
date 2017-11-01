@@ -385,8 +385,9 @@ public:
         voxel.bvectors[dwi_index] = v;
     }
 
-    void rotate(image::geometry<3> new_geo,const image::transformation_matrix<double>& affine)
+    void rotate(const image::basic_image<float,3>& ref,const image::transformation_matrix<double>& affine)
     {
+        image::geometry<3> new_geo = ref.geometry();
         std::vector<image::basic_image<unsigned short,3> > dwi(dwi_data.size());
         image::par_for2(dwi_data.size(),[&](unsigned int index,unsigned int id)
         {
@@ -394,7 +395,7 @@ public:
                 check_prog(index,dwi_data.size());
             dwi[index].resize(new_geo);
             auto I = image::make_image((unsigned short*)dwi_data[index],voxel.dim);
-            image::resample(I,dwi[index],affine,image::cubic);
+            image::resample_with_ref(I,ref,dwi[index],affine);
             dwi_data[index] = &(dwi[index][0]);
         });
         check_prog(0,0);
