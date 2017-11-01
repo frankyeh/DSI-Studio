@@ -80,6 +80,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     odf_face_size = fib.dir.odf_faces.size();
 
     ui->setupUi(this);
+    ui->menuBar->setNativeMenuBar(true); // for MacOS shortcut
     {
         QSettings settings;
         ui->rendering_efficiency->setCurrentIndex(settings.value("rendering_quality",1).toInt());
@@ -945,6 +946,7 @@ bool tracking_window::can_map_to_mni(void)
     handle->run_normalization(true);
     while(check_prog(handle->prog,5) && handle->mni_position.empty())
         ;
+    check_prog(0,0);
     if(prog_aborted())
     {
         handle->thread.clear();
