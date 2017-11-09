@@ -18,7 +18,7 @@ public:// for HCP dataset
 public:
     image::vector<3, float> bvec;
     float bvalue;
-	float voxel_size[3];
+    float voxel_size[3];
 public:
     DwiHeader(void): bvalue(0.0), te(0.0) {}
     bool open(const char* filename);

@@ -66,48 +66,97 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
     image::io::dicom dicom_header;// multiple frame image
     if(!dicom_header.load_from_file(file_name))
         return false;
+    image::basic_image<float,3> buf_image;
+    dicom_header >> buf_image;
+    unsigned int slice_num = dicom_header.get_int(0x2001,0x1018);
+    std::vector<float> b_table;
+
     {
-        // Philips multiframe
-        unsigned int slice_num = dicom_header.get_int(0x2001,0x1018);
-        if(!slice_num)
-            slice_num = 1;
-        image::basic_image<unsigned short,3> buf_image;
-        dicom_header >> buf_image;
-        unsigned short num_gradient = buf_image.depth()/slice_num;
-        unsigned int plane_size = buf_image.width()*buf_image.height();
         std::vector<float> b,bx,by,bz;
         dicom_header.get_values(0x2001,0x1003,b);
         dicom_header.get_values(0x2005,0x10B0,bx);
         dicom_header.get_values(0x2005,0x10B1,by);
         dicom_header.get_values(0x2005,0x10B2,bz);
-        b.resize(num_gradient);
-        bx.resize(num_gradient);
-        by.resize(num_gradient);
-        bz.resize(num_gradient);
-
-        begin_prog("loading multi frame DICOM");
-        for(unsigned int index = 0;check_prog(index,num_gradient);++index)
+        if(!b.empty())
         {
-            std::shared_ptr<DwiHeader> new_file(new DwiHeader);
-            if(index == 0)
-                get_report_from_dicom(dicom_header,new_file->report);
-            new_file->image.resize(image::geometry<3>(buf_image.width(),buf_image.height(),slice_num));
-
-            for(unsigned int j = 0;j < slice_num;++j)
-            std::copy(buf_image.begin()+(j*num_gradient + index)*plane_size,
-                      buf_image.begin()+(j*num_gradient + index+1)*plane_size,
-                      new_file->image.begin()+j*plane_size);
-            new_file->file_name = file_name;
-            std::ostringstream out;
-            out << index;
-            new_file->file_name += out.str();
-            dicom_header.get_voxel_size(new_file->voxel_size);
-            image::vector<3, float> bvec(bx[index],by[index],bz[index]);
-            new_file->bvalue = b[index]*bvec.length();
-            new_file->bvec = bvec;
-            dwi_files.push_back(new_file);
+            if(!slice_num)
+                slice_num = 1;
+            b.resize(buf_image.depth()/slice_num);
+            bx.resize(buf_image.depth()/slice_num);
+            by.resize(buf_image.depth()/slice_num);
+            bz.resize(buf_image.depth()/slice_num);
+            for(int i = 0;i < b.size();++i)
+            {
+                image::vector<3, float> bvec(bx[i],by[i],bz[i]);
+                b_table.push_back(b[i]*bvec.length());
+                if(bvec.length() > 0)
+                    bvec.normalize();
+                b_table.push_back(bvec[0]);
+                b_table.push_back(bvec[1]);
+                b_table.push_back(bvec[2]);
+            }
         }
+    }
 
+    if(b_table.empty())
+    {
+        for(int i = 0;i < dicom_header.data.size();++i)
+            if(dicom_header.data[i].sq_data.size() == buf_image.depth())
+            {
+                std::string slice_pos;
+                for(int j = 0;j < buf_image.depth();++j)
+                {
+                    std::string pos;
+                    if(!image::io::dicom::get_values(dicom_header.data[i].sq_data[j],0x0020,0x0032,
+                                                    j ? pos : slice_pos))
+                        break;
+                    if(j && pos != slice_pos)
+                    {
+                        slice_num = buf_image.depth()/j;
+                        break;
+                    }
+                    float b_value = 0;
+                    image::io::dicom::get_value(dicom_header.data[i].sq_data[j],0x0018,0x9087,b_value);
+                    b_table.push_back(b_value);
+                    if(b_value == 0 || !image::io::dicom::get_values(dicom_header.data[i].sq_data[j],0x0018,0x9089,b_table))
+                    {
+                        b_table.push_back(0);
+                        b_table.push_back(0);
+                        b_table.push_back(0);
+                    }
+                }
+                if(slice_num == 0)
+                    continue;
+                break;
+            }
+    }
+
+    if(!slice_num)
+        slice_num = 1;
+    // Philips multiframe
+    unsigned int num_gradient = buf_image.depth()/slice_num;
+    unsigned int plane_size = buf_image.width()*buf_image.height();
+    b_table.resize(num_gradient*4);
+    begin_prog("loading multi frame DICOM");
+    for(unsigned int index = 0;check_prog(index,num_gradient);++index)
+    {
+        std::shared_ptr<DwiHeader> new_file(new DwiHeader);
+        if(index == 0)
+            get_report_from_dicom(dicom_header,new_file->report);
+        new_file->image.resize(image::geometry<3>(buf_image.width(),buf_image.height(),slice_num));
+
+        for(unsigned int j = 0;j < slice_num;++j)
+        std::copy(buf_image.begin()+(j*num_gradient + index)*plane_size,
+                  buf_image.begin()+(j*num_gradient + index+1)*plane_size,
+                  new_file->image.begin()+j*plane_size);
+        new_file->file_name = file_name;
+        std::ostringstream out;
+        out << index;
+        new_file->file_name += out.str();
+        dicom_header.get_voxel_size(new_file->voxel_size);
+        new_file->bvalue = b_table[index*4];
+        new_file->bvec = image::vector<3, float>(b_table[index*4+1],b_table[index*4+2],b_table[index*4+3]);
+        dwi_files.push_back(new_file);
     }
     return true;
 }
@@ -657,6 +706,25 @@ bool load_all_files(QStringList file_list,std::vector<std::shared_ptr<DwiHeader>
     }
     return !dwi_files.empty();
 }
+void dicom_parser::load_table(void)
+{
+    unsigned int last_index = ui->tableWidget->rowCount();
+    ui->tableWidget->setRowCount(dwi_files.size());
+    double max_b = 0;
+    for(unsigned int index = last_index;index < dwi_files.size();++index)
+    {
+        if(dwi_files[index]->get_bvalue() < 100)
+            dwi_files[index]->set_bvalue(0);
+        ui->tableWidget->setItem(index, 0, new QTableWidgetItem(QFileInfo(dwi_files[index]->file_name.data()).fileName()));
+        ui->tableWidget->setItem(index, 1, new QTableWidgetItem(QString::number(dwi_files[index]->get_bvalue())));
+        ui->tableWidget->setItem(index, 2, new QTableWidgetItem(QString::number(dwi_files[index]->get_bvec()[0])));
+        ui->tableWidget->setItem(index, 3, new QTableWidgetItem(QString::number(dwi_files[index]->get_bvec()[1])));
+        ui->tableWidget->setItem(index, 4, new QTableWidgetItem(QString::number(dwi_files[index]->get_bvec()[2])));
+        max_b = std::max(max_b,(double)dwi_files[index]->get_bvalue());
+    }
+    if(max_b == 0.0)
+        QMessageBox::information(this,"DSI Studio","Cannot find b-table from the header. You may need to load an external b-table",0);
+}
 
 void dicom_parser::load_files(QStringList file_list)
 {
@@ -671,26 +739,8 @@ void dicom_parser::load_files(QStringList file_list)
         close();
         return;
     }
-    unsigned int last_index = ui->tableWidget->rowCount();
-    unsigned int add_count = dwi_files.size()-last_index;
-    if(add_count)
-    {
-        ui->tableWidget->setRowCount(dwi_files.size());
-        double max_b = 0;
-        for(unsigned int index = last_index;index < dwi_files.size();++index)
-        {
-            if(dwi_files[index]->get_bvalue() < 100)
-                dwi_files[index]->set_bvalue(0);
-            ui->tableWidget->setItem(index, 0, new QTableWidgetItem(QFileInfo(dwi_files[index]->file_name.data()).fileName()));
-            ui->tableWidget->setItem(index, 1, new QTableWidgetItem(QString::number(dwi_files[index]->get_bvalue())));
-            ui->tableWidget->setItem(index, 2, new QTableWidgetItem(QString::number(dwi_files[index]->get_bvec()[0])));
-            ui->tableWidget->setItem(index, 3, new QTableWidgetItem(QString::number(dwi_files[index]->get_bvec()[1])));
-            ui->tableWidget->setItem(index, 4, new QTableWidgetItem(QString::number(dwi_files[index]->get_bvec()[2])));
-            max_b = std::max(max_b,(double)dwi_files[index]->get_bvalue());
-        }
-        if(max_b == 0.0)
-            QMessageBox::information(this,"DSI Studio","Cannot find b-table from the header. You may need to load an external b-table",0);
-    }
+    if(dwi_files.size() > ui->tableWidget->rowCount())
+        load_table();
 }
 
 void dicom_parser::on_buttonBox_accepted()
@@ -783,10 +833,40 @@ void dicom_parser::on_actionOpen_b_table_triggered()
     std::vector<double> b_table;
     while(std::getline(in,line))
     {
+        std::replace(line.begin(),line.end(),',',' ');
         std::istringstream read_line(line);
         std::copy(std::istream_iterator<double>(read_line),
                   std::istream_iterator<double>(),
                   std::back_inserter(b_table));
+    }
+    if(b_table.size() > 4 && ui->tableWidget->rowCount() == 1 &&
+       dwi_files[0]->image.depth()%(b_table.size()/4) == 0) // 4D as 3D condition
+    {
+        auto& I = dwi_files[0]->image;
+        unsigned int b_count = b_table.size()/4;
+        image::geometry<3> dim(I.width(),I.height(),I.depth()/b_count);
+        std::vector<std::shared_ptr<DwiHeader> > new_files;
+        unsigned int plane_size = I.plane_size();
+        for(int i = 0;i < b_count;++i)
+        {
+            std::shared_ptr<DwiHeader> new_file(new DwiHeader);
+            std::copy(dwi_files[0]->voxel_size,dwi_files[0]->voxel_size+3,new_file->voxel_size);
+            new_file->bvalue = b_table[i*4];
+            new_file->bvec[0] = b_table[i*4+1];
+            new_file->bvec[1] = b_table[i*4+2];
+            new_file->bvec[2] = b_table[i*4+3];
+            new_file->image.resize(dim);
+            for(int j = 0;j < dim.depth();++j)
+            {
+                unsigned int slice_pos = i+j*b_count;
+                std::copy(I.slice_at(slice_pos).begin(),I.slice_at(slice_pos).begin()+plane_size,
+                          new_file->image.slice_at(j).begin());
+            }
+            new_files.push_back(new_file);
+        }
+        dwi_files.swap(new_files);
+        ui->tableWidget->setRowCount(0);
+        load_table();
     }
     // handle per slice b_table
     if(b_table.size()/4 != ui->tableWidget->rowCount() && (b_table.size()/4)%ui->tableWidget->rowCount() == 0)

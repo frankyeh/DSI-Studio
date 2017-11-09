@@ -29,6 +29,7 @@ private:
     QString cur_path;
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     std::vector<float> slice_orientation;// for applying slice orientation
+    void load_table(void);
     void load_files(QStringList file_list);
 private slots:
     void on_upperDir_clicked();
