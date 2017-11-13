@@ -51,16 +51,24 @@ class Voxel
 private:
     std::vector<std::shared_ptr<BaseProcess> > process_list;
 public:
-    std::vector<const unsigned short*> dwi_data;
-    image::basic_image<unsigned char,3> mask;
     image::geometry<3> dim;
     image::vector<3> vs;
+public:
+    std::vector<const unsigned short*> dwi_data;
+    void sort_b_table(void);
+public:
+    image::basic_image<unsigned char,3> mask;
+    void calculate_dwi_sum(void);
+    void calculate_mask(void);
+public:
     std::vector<image::vector<3,float> > bvectors;
     std::vector<float> bvalues;
     image::basic_image<float,3> dwi_sum;
     std::string report;
     std::ostringstream recon_report;
     unsigned int thread_count = 1;
+
+
 public:// parameters;
     tessellated_icosahedron ti;
     const float* param;
@@ -73,7 +81,8 @@ public:// DTI
     bool output_diffusivity = false;
     bool output_tensor = false;
 public://used in GQI
-    bool r2_weighted = false;// used in GQI only
+    bool r2_weighted = false;// used in GQI only    
+public://used in GQI
     bool scheme_balance = false;
     bool csf_calibration = false;
 public:// odf sharpening

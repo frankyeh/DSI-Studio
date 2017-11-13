@@ -160,10 +160,8 @@ int rec(void)
         handle->voxel.csf_calibration = 0;
     }
 
-    std::vector<unsigned int> shell;
-    calculate_shell(handle->voxel.bvalues,shell);
-    handle->voxel.half_sphere = po.get("half_sphere",is_dsi_half_sphere(shell) ? 1:0);
-    handle->voxel.scheme_balance = po.get("scheme_balance",need_scheme_balance(shell) ? 1:0);
+    handle->voxel.half_sphere = po.get("half_sphere",handle->is_dsi_half_sphere() ? 1:0);
+    handle->voxel.scheme_balance = po.get("scheme_balance",handle->need_scheme_balance() ? 1:0);
 
 
     {

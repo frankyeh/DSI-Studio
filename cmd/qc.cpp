@@ -4,7 +4,6 @@
 #include "program_option.hpp"
 #include "libs/dsi/image_model.hpp"
 
-void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 QStringList search_files(QString dir,QString filter);
 
 
@@ -28,14 +27,15 @@ std::string quality_check_src_files(QString dir)
         // output image resolution
         out << handle.voxel.vs << "\t";
         // output DWI count
-        out << handle.voxel.bvalues.size() << "\t";
+        out << handle.src_bvalues.size() << "\t";
 
         std::vector<unsigned int> cur_shell;
-        calculate_shell(handle.voxel.bvalues,cur_shell);
+        handle.calculate_shell();
+        cur_shell = handle.shell;
         // output shell count
         out << cur_shell.size() << "\t";
         // output max_b
-        out << *std::max_element(handle.voxel.bvalues.begin(),handle.voxel.bvalues.end()) << "\t";
+        out << *std::max_element(handle.src_bvalues.begin(),handle.src_bvalues.end()) << "\t";
         // check shell structure
         if(i == 0)
         {

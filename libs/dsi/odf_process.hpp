@@ -6,7 +6,6 @@
 
 #include "mapping/fa_template.hpp"
 extern fa_template fa_template_imp;
-void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 
 class ReadDWIData : public BaseProcess{
 public:
@@ -20,6 +19,9 @@ public:
     virtual void end(Voxel&,gz_mat_write&) {}
 };
 
+
+void calculate_shell(const std::vector<float>& sorted_bvalues,
+                     std::vector<unsigned int>& shell);
 class BalanceScheme : public BaseProcess{
     std::vector<float> trans;
     unsigned int new_q_count;
@@ -35,9 +37,9 @@ public:
     {
         if(!voxel.scheme_balance)
             return;
-        unsigned int b_count = voxel.bvalues.size();
         std::vector<unsigned int> shell;
         calculate_shell(voxel.bvalues,shell);
+        unsigned int b_count = voxel.bvalues.size();
         unsigned int total_signals = 0;
 
         tessellated_icosahedron new_dir;

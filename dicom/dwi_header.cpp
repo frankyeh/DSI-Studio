@@ -4,7 +4,7 @@
 #include "dwi_header.hpp"
 #include "gzip_interface.hpp"
 #include "prog_interface_static_link.h"
-
+#include "image_model.hpp"
 void get_report_from_dicom(const image::io::dicom& header,std::string& report)
 {
     std::string manu,make,seq;
@@ -433,106 +433,6 @@ void correct_t2(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
     }
 }
 
-void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell)
-{
-    std::vector<float> dif_dis;
-    for(int i = 1;i < bvalues.size();++i)
-        if(bvalues[i-1] != 0.0)
-            dif_dis.push_back(bvalues[i] - bvalues[i-1]);
-    if(dif_dis.empty())
-        return;
-    std::sort(dif_dis.begin(),dif_dis.end());
-
-    float gap = *std::max_element(dif_dis.begin(),dif_dis.end())*0.1;
-    if(gap < 100)
-        gap = 100;
-
-    if(bvalues.front() != 0.0f)
-        shell.push_back(0);
-    else
-        shell.push_back(1);
-    for(unsigned int index = shell.back()+1;index < bvalues.size();++index)
-        if(std::abs(bvalues[index]-bvalues[shell.back()]) > gap)
-            shell.push_back(index);
-
-}
-
-bool is_dsi_half_sphere(const std::vector<unsigned int>& shell)
-{
-    return shell.size() > 4 && (shell[1] - shell[0] <= 3);
-}
-
-bool is_dsi(const std::vector<unsigned int>& shell)
-{
-    return shell.size() > 4 && (shell[1] - shell[0] <= 6);
-}
-
-bool need_scheme_balance(const std::vector<unsigned int>& shell)
-{
-    if(is_dsi(shell) || shell.size() > 6)
-        return false;
-    for(int i = 0;i < shell.size()-1;++i)
-        if(shell[i]-shell[i] < 128)
-            return true;
-    return false;
-}
-
-bool is_multishell(const std::vector<unsigned int>& shell)
-{
-    return (shell.size() > 1) && !is_dsi(shell);
-}
-
-void get_report(const std::vector<float>& bvalues,image::vector<3> vs,std::string& report)
-{
-    std::vector<unsigned int> shell;
-    calculate_shell(bvalues,shell);
-    std::ostringstream out;
-    if(is_dsi(shell))
-    {
-        out << " A diffusion spectrum imaging scheme was used, and a total of " << bvalues.size()-(bvalues.front() == 0 ? 1:0)
-            << " diffusion sampling were acquired."
-            << " The maximum b-value was " << (int)std::round(bvalues.back()) << " s/mm2.";
-    }
-    else
-    if(is_multishell(shell))
-    {
-        out << " A multishell diffusion scheme was used, and the b-values were ";
-        for(unsigned int index = 0;index < shell.size();++index)
-        {
-            if(index > 0)
-            {
-                if(index == shell.size()-1)
-                    out << " and ";
-                else
-                    out << " ,";
-            }
-            out << (int)std::round(bvalues[
-                index == shell.size()-1 ? (bvalues.size()+shell.back())/2 : (shell[index+1] + shell[index])/2]);
-        }
-        out << " s/mm2.";
-
-        out << " The number of diffusion sampling directions were ";
-        for(unsigned int index = 0;index < shell.size()-1;++index)
-            out << shell[index+1] - shell[index] << (shell.size() == 2 ? " ":", ");
-        out << "and " << bvalues.size()-shell.back() << ", respectively.";
-    }
-    else
-        if(shell.size() == 1)
-        {
-            int dir_num = int(bvalues.size()-(bvalues.front() == 0 ? 1:0));
-            if(dir_num < 100)
-                out << " A DTI diffusion scheme was used, and a total of ";
-            else
-                out << " A HARDI scheme was used, and a total of ";
-            out << dir_num
-                << " diffusion sampling directions were acquired."
-                << " The b-value was " << bvalues.back() << " s/mm2.";
-        }
-
-    out << " The in-plane resolution was " << vs[0] << " mm."
-        << " The slice thickness was " << vs[2] << " mm.";
-    report = out.str();
-}
 
 
 bool DwiHeader::has_b_table(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
@@ -643,11 +543,11 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
     std::string report1 = dwi_files.front()->report;
     std::string report2;
     {
-        std::vector<float> bvalues;
+        ImageModel image_model;
         for (unsigned int index = 0;index < dwi_files.size();++index)
-            bvalues.push_back(dwi_files[index]->get_bvalue());
-        image::vector<3> vs(dwi_files.front()->voxel_size);
-        get_report(bvalues,vs,report2);
+            image_model.src_bvalues.push_back(dwi_files[index]->get_bvalue());
+        image_model.voxel.vs = image::vector<3>(dwi_files.front()->voxel_size);
+        image_model.get_report(report2);
     }
     report1 += report2;
     write_mat.write("report",report1.c_str(),1,(unsigned int)report1.length());

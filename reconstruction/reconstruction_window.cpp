@@ -30,8 +30,8 @@ bool reconstruction_window::load_src(int index)
         check_prog(0,0);
         return false;
     }
-    float m = (float)*std::max_element(handle->voxel.dwi_data[0],handle->voxel.dwi_data[0]+handle->voxel.dim.size());
-    float otsu = image::segmentation::otsu_threshold(image::make_image(handle->voxel.dwi_data[0],handle->voxel.dim));
+    float m = (float)*std::max_element(handle->src_dwi_data[0],handle->src_dwi_data[0]+handle->voxel.dim.size());
+    float otsu = image::segmentation::otsu_threshold(image::make_image(handle->src_dwi_data[0],handle->voxel.dim));
     ui->max_value->setMaximum(m*1.5f);
     ui->max_value->setMinimum(0.0f);
     ui->max_value->setSingleStep(m*0.05f);
@@ -126,8 +126,8 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     ui->report->setText(handle->voxel.report.c_str());
 
-    max_source_value = *std::max_element(handle->voxel.dwi_data.back(),
-                                         handle->voxel.dwi_data.back()+handle->voxel.dim.size());
+    max_source_value = *std::max_element(handle->src_dwi_data.back(),
+                                         handle->src_dwi_data.back()+handle->voxel.dim.size());
 
 
 
@@ -140,14 +140,10 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
 
     {
-        std::vector<unsigned int> shell;
-        calculate_shell(handle->voxel.bvalues,shell);
-        ui->half_sphere->setChecked(is_dsi_half_sphere(shell));
-        ui->scheme_balance->setChecked(need_scheme_balance(shell));
-        if(is_dsi(shell))
-        {
+        ui->half_sphere->setChecked(handle->is_dsi_half_sphere());
+        ui->scheme_balance->setChecked(handle->need_scheme_balance());
+        if(handle->is_dsi())
             ui->scheme_balance->setEnabled(false);
-        }
         else
         // not dsi
         {
@@ -159,7 +155,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
             ui->DSI->setEnabled(false);
             ui->half_sphere->setEnabled(false);
         }
-        if(is_dsi(shell) || is_multishell(shell))
+        if(handle->is_dsi() || handle->is_multishell())
         {
             if(ui->QBI->isChecked())
             {
@@ -192,13 +188,13 @@ void reconstruction_window::update_dimension(void)
 void reconstruction_window::load_b_table(void)
 {
     ui->b_table->clear();
-    ui->b_table->setRowCount(handle->voxel.bvalues.size());
-    for(unsigned int index = 0;index < handle->voxel.bvalues.size();++index)
+    ui->b_table->setRowCount(handle->src_bvalues.size());
+    for(unsigned int index = 0;index < handle->src_bvalues.size();++index)
     {
-        ui->b_table->setItem(index,0, new QTableWidgetItem(QString::number(handle->voxel.bvalues[index])));
-        ui->b_table->setItem(index,1, new QTableWidgetItem(QString::number(handle->voxel.bvectors[index][0])));
-        ui->b_table->setItem(index,2, new QTableWidgetItem(QString::number(handle->voxel.bvectors[index][1])));
-        ui->b_table->setItem(index,3, new QTableWidgetItem(QString::number(handle->voxel.bvectors[index][2])));
+        ui->b_table->setItem(index,0, new QTableWidgetItem(QString::number(handle->src_bvalues[index])));
+        ui->b_table->setItem(index,1, new QTableWidgetItem(QString::number(handle->src_bvectors[index][0])));
+        ui->b_table->setItem(index,2, new QTableWidgetItem(QString::number(handle->src_bvectors[index][1])));
+        ui->b_table->setItem(index,3, new QTableWidgetItem(QString::number(handle->src_bvectors[index][2])));
     }
     ui->b_table->selectRow(0);
 }
@@ -207,8 +203,8 @@ void reconstruction_window::on_b_table_itemSelectionChanged()
     v2c.set_range(ui->min_value->value(),ui->max_value->value());
     image::basic_image<float,2> tmp(image::geometry<2>(handle->voxel.dim[0],handle->voxel.dim[1]));
     unsigned int b_index = ui->b_table->currentRow();
-    std::copy(handle->voxel.dwi_data[b_index] + ui->z_pos->value()*tmp.size(),
-              handle->voxel.dwi_data[b_index] + ui->z_pos->value()*tmp.size() + tmp.size(),tmp.begin());
+    std::copy(handle->src_dwi_data[b_index] + ui->z_pos->value()*tmp.size(),
+              handle->src_dwi_data[b_index] + ui->z_pos->value()*tmp.size() + tmp.size(),tmp.begin());
     buffer_source.resize(tmp.geometry());
     for(int i = 0;i < tmp.size();++i)
         buffer_source[i] = v2c[tmp[i]];
@@ -597,9 +593,9 @@ void reconstruction_window::on_remove_background_clicked()
         if(handle->voxel.mask[index] == 0)
             dwi[index] = 0;
 
-    for(int index = 0;index < handle->voxel.dwi_data.size();++index)
+    for(int index = 0;index < handle->src_dwi_data.size();++index)
     {
-        unsigned short* buf = (unsigned short*)handle->voxel.dwi_data[index];
+        unsigned short* buf = (unsigned short*)handle->src_dwi_data[index];
         for(int i = 0;i < handle->voxel.mask.size();++i)
             if(handle->voxel.mask[i] == 0)
                 buf[i] = 0;
@@ -817,7 +813,7 @@ void reconstruction_window::on_actionRotate_triggered()
     float m = image::median(ref2.begin(),ref2.end());
     image::multiply_constant_mt(ref,0.5f/m);
     handle->rotate(ref,manual->iT);
-    handle->calculate_mask();
+    handle->voxel.calculate_mask();
     handle->voxel.vs = vs;
     handle->voxel.report += " The diffusion images were rotated and scaled to the space of ";
     handle->voxel.report += filenames[0].toStdString();
@@ -832,13 +828,12 @@ void reconstruction_window::on_actionRotate_triggered()
 
 void reconstruction_window::on_delete_2_clicked()
 {
-    if(handle->voxel.dwi_data.size() == 1)
+    if(handle->src_dwi_data.size() == 1)
         return;
     unsigned int index = ui->b_table->currentRow();
     ui->b_table->removeRow(index);
-    handle->voxel.dwi_data.erase(handle->voxel.dwi_data.begin()+index);
-    handle->voxel.bvalues.erase(handle->voxel.bvalues.begin()+index);
-    handle->voxel.bvectors.erase(handle->voxel.bvectors.begin()+index);
+    handle->remove(index);
+
 }
 
 void reconstruction_window::on_actionTrim_image_triggered()
@@ -892,17 +887,17 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
 void rec_motion_correction(ImageModel* handle)
 {
     begin_prog("correcting");
-    image::basic_image<float,3> I0 = image::make_image(handle->voxel.dwi_data[0],handle->voxel.dim);
+    image::basic_image<float,3> I0 = image::make_image(handle->src_dwi_data[0],handle->voxel.dim);
     image::filter::gaussian(I0);
     image::normalize(I0,1);
-    image::par_for2(handle->voxel.bvalues.size(),[&](int i,int id)
+    image::par_for2(handle->src_bvalues.size(),[&](int i,int id)
     {
         if(i == 0 || prog_aborted())
             return;
         if(id == 0)
-            check_prog(i*99/handle->voxel.bvalues.size(),100);
+            check_prog(i*99/handle->src_bvalues.size(),100);
         image::basic_image<float,3> I1;
-        I1 = image::make_image(handle->voxel.dwi_data[i],handle->voxel.dim);
+        I1 = image::make_image(handle->src_dwi_data[i],handle->voxel.dim);
         image::filter::gaussian(I1);
         image::normalize(I1,1);
         image::affine_transform<double> arg;
@@ -920,8 +915,8 @@ void reconstruction_window::on_motion_correction_clicked()
     rec_motion_correction(handle.get());
     if(!prog_aborted())
     {
-        handle->calculate_dwi_sum();
-        handle->calculate_mask();
+        handle->voxel.calculate_dwi_sum();
+        handle->voxel.calculate_mask();
         update_image();
     }
 }
@@ -1011,7 +1006,7 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
         return;
     begin_prog("rotating");
     handle->rotate(dwi.geometry(),manual->iT);
-    handle->calculate_mask();
+    handle->voxel.calculate_mask();
     update_image();
     update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
@@ -1042,9 +1037,9 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
 
     begin_prog("rotating");
     handle->rotate(ref.geometry(),manual->iT);
-    handle->calculate_mask();
+    handle->voxel.calculate_mask();
     handle->voxel.vs = vs;
-    image::pointer_image<unsigned short,3> I = image::make_image((unsigned short*)handle->voxel.dwi_data[0],handle->voxel.dim);
+    image::pointer_image<unsigned short,3> I = image::make_image((unsigned short*)handle->src_dwi_data[0],handle->voxel.dim);
     ref *= (float)(*std::max_element(I.begin(),I.end()))/(*std::max_element(ref.begin(),ref.end()));
     std::copy(ref.begin(),ref.end(),I.begin());
     update_image();

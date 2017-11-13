@@ -184,7 +184,8 @@ SOURCES += main.cpp \
     regtoolbox.cpp \
     cmd/cnn.cpp \
     cmd/qc.cpp \
-    libs/dsi/basic_voxel.cpp
+    libs/dsi/basic_voxel.cpp \
+    libs/dsi/image_model.cpp
 
 OTHER_FILES += \
     options.txt \

@@ -956,10 +956,8 @@ void MainWindow::on_ReconstructSRC_clicked()
         handle->voxel.thread_count = std::thread::hardware_concurrency();
         //checking half shell
         {
-            std::vector<unsigned int> shell;
-            calculate_shell(handle->voxel.bvalues,shell);
-            handle->voxel.half_sphere = is_dsi_half_sphere(shell);
-            handle->voxel.scheme_balance = need_scheme_balance(shell);
+            handle->voxel.half_sphere = handle->is_dsi_half_sphere();
+            handle->voxel.scheme_balance = handle->need_scheme_balance();
         }
 
         const char* msg = (const char*)reconstruction(handle.get(), 7 /*QSDR*/,
