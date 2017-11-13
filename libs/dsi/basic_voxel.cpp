@@ -1,5 +1,5 @@
 #include "basic_voxel.hpp"
-
+#include "image_model.hpp"
 
 
 void Voxel::init(void)
@@ -18,40 +18,37 @@ void Voxel::init(void)
 }
 
 
-void Voxel::sort_b_table(void)
+void Voxel::load_from_src(ImageModel& image_model)
 {
-    std::vector<int> sorted_index(bvalues.size());
+    std::vector<int> sorted_index(image_model.src_bvalues.size());
     for(int i = 0;i < sorted_index.size();++i)
         sorted_index[i] = i;
 
     std::sort(sorted_index.begin(),sorted_index.end(),
-              [&](int left,int right)
+              [&image_model](int left,int right)
     {
-        return bvalues[left] < bvalues[right];
+        return image_model.src_bvalues[left] < image_model.src_bvalues[right];
     }
     );
 
-    std::vector<image::vector<3,float> > new_bvectors;
-    std::vector<float> new_bvalues;
-    std::vector<const unsigned short*> new_dwi_data;
 
+    bvalues.clear();
+    bvectors.clear();
+    dwi_data.clear();
     // include only the first b0
-    if(bvalues[sorted_index[0]] == 0.0f)
+    if(image_model.src_bvalues[sorted_index[0]] == 0.0f)
     {
-        new_bvalues.push_back(0);
-        new_bvectors.push_back(image::vector<3,float>(0,0,0));
-        new_dwi_data.push_back(dwi_data[sorted_index[0]]);
+        bvalues.push_back(0);
+        bvectors.push_back(image::vector<3,float>(0,0,0));
+        dwi_data.push_back(image_model.src_dwi_data[sorted_index[0]]);
     }
     for(int i = 0;i < sorted_index.size();++i)
-        if(bvalues[sorted_index[i]] != 0.0f)
+        if(image_model.src_bvalues[sorted_index[i]] != 0.0f)
         {
-            new_bvalues.push_back(bvalues[sorted_index[i]]);
-            new_bvectors.push_back(bvectors[sorted_index[i]]);
-            new_dwi_data.push_back(dwi_data[sorted_index[i]]);
+            bvalues.push_back(image_model.src_bvalues[sorted_index[i]]);
+            bvectors.push_back(image_model.src_bvectors[sorted_index[i]]);
+            dwi_data.push_back(image_model.src_dwi_data[sorted_index[i]]);
         }
-    bvalues.swap(new_bvalues);
-    bvectors.swap(new_bvectors);
-    dwi_data.swap(new_dwi_data);
 }
 
 void Voxel::calculate_dwi_sum(void)

@@ -46,6 +46,7 @@ struct VoxelData
     }
 };
 
+class ImageModel;
 class Voxel
 {
 private:
@@ -54,21 +55,18 @@ public:
     image::geometry<3> dim;
     image::vector<3> vs;
 public:
-    std::vector<const unsigned short*> dwi_data;
-    void sort_b_table(void);
-public:
     image::basic_image<unsigned char,3> mask;
     void calculate_dwi_sum(void);
     void calculate_mask(void);
 public:
+    std::vector<const unsigned short*> dwi_data;
     std::vector<image::vector<3,float> > bvectors;
     std::vector<float> bvalues;
     image::basic_image<float,3> dwi_sum;
     std::string report;
     std::ostringstream recon_report;
     unsigned int thread_count = 1;
-
-
+    void load_from_src(ImageModel& image_model);
 public:// parameters;
     tessellated_icosahedron ti;
     const float* param;

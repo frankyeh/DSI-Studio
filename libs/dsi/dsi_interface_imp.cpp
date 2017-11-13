@@ -296,6 +296,9 @@ const char* reconstruction(ImageModel* image_model,
             }
         }
 
+        // Copy SRC b-table to voxel b-table and sort it
+        image_model->voxel.load_from_src(*image_model);
+
         // correct for b-table orientation
         if(check_b_table)
         {
