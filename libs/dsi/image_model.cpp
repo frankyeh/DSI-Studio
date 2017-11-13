@@ -1,5 +1,30 @@
 #include "image_model.hpp"
 
+
+void ImageModel::calculate_dwi_sum(void)
+{
+    dwi_sum.clear();
+    dwi_sum.resize(voxel.dim);
+    image::par_for(dwi_sum.size(),[&](unsigned int pos)
+    {
+        for (unsigned int index = 0;index < src_dwi_data.size();++index)
+            dwi_sum[pos] += src_dwi_data[index][pos];
+    });
+
+    float max_value = *std::max_element(dwi_sum.begin(),dwi_sum.end());
+    float min_value = max_value;
+    for (unsigned int index = 0;index < dwi_sum.size();++index)
+        if (dwi_sum[index] < min_value && dwi_sum[index] > 0)
+            min_value = dwi_sum[index];
+
+
+    image::minus_constant(dwi_sum,min_value);
+    image::lower_threshold(dwi_sum,0.0f);
+    float t = image::segmentation::otsu_threshold(dwi_sum);
+    image::upper_threshold(dwi_sum,t*3.0f);
+    image::normalize(dwi_sum,1.0);
+}
+
 void ImageModel::remove(unsigned int index)
 {
     src_dwi_data.erase(src_dwi_data.begin()+index);
@@ -122,7 +147,7 @@ void ImageModel::flip(unsigned char type)
         flip_b_table(type);
     else
         rotate_b_table(type-3);
-    image::flip(voxel.dwi_sum,type);
+    image::flip(dwi_sum,type);
     image::flip(voxel.mask,type);
     for(unsigned int i = 0;i < voxel.grad_dev.size();++i)
     {
@@ -134,7 +159,7 @@ void ImageModel::flip(unsigned char type)
         auto I = image::make_image((unsigned short*)src_dwi_data[index],voxel.dim);
         image::flip(I,type);
     }
-    voxel.dim = voxel.dwi_sum.geometry();
+    voxel.dim = dwi_sum.geometry();
 }
 // used in eddy correction for each dwi
 void ImageModel::rotate_dwi(unsigned int dwi_index,const image::transformation_matrix<double>& affine)
@@ -205,8 +230,8 @@ void ImageModel::rotate(const image::basic_image<float,3>& ref,const image::tran
         new_gra_dev.swap(voxel.new_grad_dev);
     }
     voxel.dim = new_geo;
-    voxel.calculate_dwi_sum();
-    voxel.calculate_mask();
+    calculate_dwi_sum();
+    voxel.calculate_mask(dwi_sum);
 
 }
 void ImageModel::trim(void)
@@ -223,12 +248,12 @@ void ImageModel::trim(void)
     }
     image::crop(voxel.mask,range_min,range_max);
     voxel.dim = voxel.mask.geometry();
-    voxel.calculate_dwi_sum();
-    voxel.calculate_mask();
+    calculate_dwi_sum();
+    voxel.calculate_mask(dwi_sum);
 }
 void ImageModel::distortion_correction(const ImageModel& rhs)
 {
-    image::basic_image<float,3> v1(voxel.dwi_sum),v2(rhs.voxel.dwi_sum),d;
+    image::basic_image<float,3> v1(dwi_sum),v2(rhs.dwi_sum),d;
     v1 /= image::mean(v1);
     v2 /= image::mean(v2);
     image::filter::gaussian(v1);
@@ -300,8 +325,8 @@ void ImageModel::distortion_correction(const ImageModel& rhs)
     new_dwi.swap(dwi);
     for(int i = 0;i < new_dwi.size();++i)
         src_dwi_data[i] = &(new_dwi[i][0]);
-    voxel.calculate_dwi_sum();
-    voxel.calculate_mask();
+    calculate_dwi_sum();
+    voxel.calculate_mask(dwi_sum);
 }
 
 
@@ -517,7 +542,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     }
 
     // create mask;
-    voxel.calculate_dwi_sum();
+    calculate_dwi_sum();
 
     const unsigned char* mask_ptr = 0;
     if(mat_reader.read("mask",row,col,mask_ptr))
@@ -527,7 +552,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
             std::copy(mask_ptr,mask_ptr+row*col,voxel.mask.begin());
     }
     else
-        voxel.calculate_mask();
+        voxel.calculate_mask(dwi_sum);
     return true;
 }
 void ImageModel::save_to_file(gz_mat_write& mat_writer)

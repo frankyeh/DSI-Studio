@@ -135,7 +135,7 @@ public:
             if(export_intermediate)
             {
                 image::basic_image<float,3> b0J(fa_template_imp.I.geometry());
-                image::resample_mt(voxel.dwi_sum,b0J,affine,image::cubic);
+                image::resample_mt(voxel.qa_map,b0J,affine,image::cubic);
                 b0J.save_to_file<gz_nifti>("b0j.nii.gz");
             }
             goto end_normalization;

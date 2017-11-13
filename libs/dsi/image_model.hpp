@@ -240,6 +240,8 @@ public:
     std::vector<image::vector<3,float> > src_bvectors;
     std::vector<float> src_bvalues;
     std::vector<const unsigned short*> src_dwi_data;
+    image::basic_image<float,3> dwi_sum;
+    void calculate_dwi_sum(void);
     void remove(unsigned int index);
 public:
     std::vector<unsigned int> shell;

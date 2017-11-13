@@ -735,7 +735,7 @@ void reconstruction_window::update_image(void)
 {
     dwi.resize(handle->voxel.dim);
     for(unsigned int index = 0;index < dwi.size();++index)
-        dwi[index] = std::min<float>(254.0,handle->voxel.dwi_sum[index]*255.0);
+        dwi[index] = std::min<float>(254.0,handle->dwi_sum[index]*255.0);
     load_b_table();
 }
 
@@ -813,7 +813,6 @@ void reconstruction_window::on_actionRotate_triggered()
     float m = image::median(ref2.begin(),ref2.end());
     image::multiply_constant_mt(ref,0.5f/m);
     handle->rotate(ref,manual->iT);
-    handle->voxel.calculate_mask();
     handle->voxel.vs = vs;
     handle->voxel.report += " The diffusion images were rotated and scaled to the space of ";
     handle->voxel.report += filenames[0].toStdString();
@@ -915,8 +914,8 @@ void reconstruction_window::on_motion_correction_clicked()
     rec_motion_correction(handle.get());
     if(!prog_aborted())
     {
-        handle->voxel.calculate_dwi_sum();
-        handle->voxel.calculate_mask();
+        handle->calculate_dwi_sum();
+        handle->voxel.calculate_mask(handle->dwi_sum);
         update_image();
     }
 }
@@ -962,7 +961,7 @@ bool add_other_image(ImageModel* handle,QString name,QString filename,bool full_
         if(full_auto)
         {
             std::cout << "add " << filename.toStdString() << " as " << name.toStdString() << std::endl;
-            image::basic_image<float,3> from(handle->voxel.dwi_sum),to(ref);
+            image::basic_image<float,3> from(handle->dwi_sum),to(ref);
             image::normalize(from,1.0);
             image::normalize(to,1.0);
             bool terminated = false;
@@ -974,7 +973,7 @@ bool add_other_image(ImageModel* handle,QString name,QString filename,bool full_
         else
         {
             std::shared_ptr<manual_alignment> manual(new manual_alignment(0,
-                        handle->voxel.dwi_sum,handle->voxel.vs,ref,vs,image::reg::rigid_body,image::reg::cost_type::mutual_info));
+                        handle->dwi_sum,handle->voxel.vs,ref,vs,image::reg::rigid_body,image::reg::cost_type::mutual_info));
             manual->on_rerun_clicked();
             if(manual->exec() != QDialog::Accepted)
                 return false;
@@ -1006,7 +1005,6 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
         return;
     begin_prog("rotating");
     handle->rotate(dwi.geometry(),manual->iT);
-    handle->voxel.calculate_mask();
     update_image();
     update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
@@ -1037,7 +1035,6 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
 
     begin_prog("rotating");
     handle->rotate(ref.geometry(),manual->iT);
-    handle->voxel.calculate_mask();
     handle->voxel.vs = vs;
     image::pointer_image<unsigned short,3> I = image::make_image((unsigned short*)handle->src_dwi_data[0],handle->voxel.dim);
     ref *= (float)(*std::max_element(I.begin(),I.end()))/(*std::max_element(ref.begin(),ref.end()));

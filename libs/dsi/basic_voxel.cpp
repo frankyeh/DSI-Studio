@@ -51,30 +51,8 @@ void Voxel::load_from_src(ImageModel& image_model)
         }
 }
 
-void Voxel::calculate_dwi_sum(void)
-{
-    dwi_sum.clear();
-    dwi_sum.resize(dim);
-    image::par_for(dwi_sum.size(),[&](unsigned int pos)
-    {
-        for (unsigned int index = 0;index < dwi_data.size();++index)
-            dwi_sum[pos] += dwi_data[index][pos];
-    });
 
-    float max_value = *std::max_element(dwi_sum.begin(),dwi_sum.end());
-    float min_value = max_value;
-    for (unsigned int index = 0;index < dwi_sum.size();++index)
-        if (dwi_sum[index] < min_value && dwi_sum[index] > 0)
-            min_value = dwi_sum[index];
-
-
-    image::minus_constant(dwi_sum,min_value);
-    image::lower_threshold(dwi_sum,0.0f);
-    float t = image::segmentation::otsu_threshold(dwi_sum);
-    image::upper_threshold(dwi_sum,t*3.0f);
-    image::normalize(dwi_sum,1.0);
-}
-void Voxel::calculate_mask(void)
+void Voxel::calculate_mask(const image::basic_image<float,3>& dwi_sum)
 {
     image::threshold(dwi_sum,mask,0.2f,1,0);
     if(dwi_sum.depth() < 10)
