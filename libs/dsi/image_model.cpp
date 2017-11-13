@@ -34,7 +34,7 @@ void ImageModel::remove(unsigned int index)
 }
 float ImageModel::quality_control_neighboring_dwi_corr(void)
 {
-    // correction of neighboring DWI < 1750
+    // correlation of neighboring DWI < 1750
     std::vector<std::pair<int,int> > corr_pairs;
     for(int i = 0;i < src_bvalues.size();++i)
     {
@@ -43,7 +43,7 @@ float ImageModel::quality_control_neighboring_dwi_corr(void)
         float max_cos = 0.0;
         int max_j = 0;
         for(int j = 0;j < src_bvalues.size();++j)
-            if(std::abs(src_bvalues[j]-src_bvalues[i]) < 100.0f && i != j)
+            if(std::abs(src_bvalues[j]-src_bvalues[i]) < 200.0f && i != j)
             {
                 float cos = std::abs(src_bvectors[i]*src_bvectors[j]);
                 if(cos > max_cos)

@@ -10,6 +10,7 @@ std::auto_ptr<QProgressDialog> progressDialog;
 QTime t_total,t_last;
 bool lock_dialog = false;
 bool prog_aborted_ = false;
+bool silence = false;
 
 void begin_prog(const char* title,bool lock)
 {
@@ -25,7 +26,13 @@ void begin_prog(const char* title,bool lock)
     t_total.start();
     t_last.start();
     prog_aborted_ = false;
+    silence = false;
 }
+void unique_prog(bool unique)
+{
+    silence = unique;
+}
+
 bool is_running(void)
 {
     if(!progressDialog.get())
@@ -45,6 +52,8 @@ void set_title(const char* title)
 }
 bool check_prog(unsigned int now,unsigned int total)
 {
+    if(silence)
+        return now < total;
     if(now >= total && progressDialog.get() && !lock_dialog)
     {
         prog_aborted_ = progressDialog->wasCanceled();
