@@ -355,6 +355,7 @@ const char* reconstruction(ImageModel* image_model,
             {
                 out << "." << txt[best];
                 image_model->flip_b_table(order[best]);
+                image_model->voxel.load_from_src(*image_model);
             }
         }
 
