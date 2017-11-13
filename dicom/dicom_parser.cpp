@@ -764,7 +764,8 @@ void dicom_parser::on_buttonBox_accepted()
 
     DwiHeader::output_src(ui->SrcName->text().toLocal8Bit().begin(),
                           dwi_files,
-                          ui->upsampling->currentIndex());
+                          ui->upsampling->currentIndex(),
+                          ui->sort_btable->isChecked());
 
     dwi_files.clear();
     if(QFileInfo(ui->SrcName->text()).suffix() != "gz")

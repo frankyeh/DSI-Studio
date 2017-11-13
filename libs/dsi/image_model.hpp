@@ -237,8 +237,7 @@ public:
     Voxel voxel;
     std::string file_name,error_msg;
     gz_mat_read mat_reader;
-    std::vector<const unsigned short*> dwi_data;
-    image::basic_image<unsigned char,3> mask;
+
 public:
     float quality_control_neighboring_dwi_corr(void)
     {
@@ -273,10 +272,10 @@ public:
             I1.reserve(voxel.dim.size());
             I2.reserve(voxel.dim.size());
             for(int i = 0;i < voxel.dim.size();++i)
-                if(mask[i])
+                if(voxel.mask[i])
                 {
-                    I1.push_back(dwi_data[i1][i]);
-                    I2.push_back(dwi_data[i2][i]);
+                    I1.push_back(voxel.dwi_data[i1][i]);
+                    I2.push_back(voxel.dwi_data[i2][i]);
                 }
             self_cor += image::correlation(I1.begin(),I1.end(),I2.begin());
             ++count;
@@ -356,15 +355,15 @@ public:
         else
             rotate_b_table(type-3);
         image::flip(voxel.dwi_sum,type);
-        image::flip(mask,type);
+        image::flip(voxel.mask,type);
         for(unsigned int i = 0;i < voxel.grad_dev.size();++i)
         {
             auto I = image::make_image((float*)&*(voxel.grad_dev[i].begin()),voxel.dim);
             image::flip(I,type);
         }
-        for (unsigned int index = 0;check_prog(index,dwi_data.size());++index)
+        for (unsigned int index = 0;check_prog(index,voxel.dwi_data.size());++index)
         {
-            auto I = image::make_image((unsigned short*)dwi_data[index],voxel.dim);
+            auto I = image::make_image((unsigned short*)voxel.dwi_data[index],voxel.dim);
             image::flip(I,type);
         }
         voxel.dim = voxel.dwi_sum.geometry();
@@ -373,7 +372,7 @@ public:
     void rotate_dwi(unsigned int dwi_index,const image::transformation_matrix<double>& affine)
     {
         image::basic_image<float,3> tmp(voxel.dim);
-        auto I = image::make_image((unsigned short*)dwi_data[dwi_index],voxel.dim);
+        auto I = image::make_image((unsigned short*)voxel.dwi_data[dwi_index],voxel.dim);
         image::resample(I,tmp,affine,image::cubic);
         image::lower_threshold(tmp,0);
         std::copy(tmp.begin(),tmp.end(),I.begin());
@@ -388,15 +387,15 @@ public:
     void rotate(const image::basic_image<float,3>& ref,const image::transformation_matrix<double>& affine)
     {
         image::geometry<3> new_geo = ref.geometry();
-        std::vector<image::basic_image<unsigned short,3> > dwi(dwi_data.size());
-        image::par_for2(dwi_data.size(),[&](unsigned int index,unsigned int id)
+        std::vector<image::basic_image<unsigned short,3> > dwi(voxel.dwi_data.size());
+        image::par_for2(voxel.dwi_data.size(),[&](unsigned int index,unsigned int id)
         {
             if(!id)
-                check_prog(index,dwi_data.size());
+                check_prog(index,voxel.dwi_data.size());
             dwi[index].resize(new_geo);
-            auto I = image::make_image((unsigned short*)dwi_data[index],voxel.dim);
+            auto I = image::make_image((unsigned short*)voxel.dwi_data[index],voxel.dim);
             image::resample_with_ref(I,ref,dwi[index],affine);
-            dwi_data[index] = &(dwi[index][0]);
+            voxel.dwi_data[index] = &(dwi[index][0]);
         });
         check_prog(0,0);
         dwi.swap(new_dwi);
@@ -445,17 +444,17 @@ public:
     void trim(void)
     {
         image::geometry<3> range_min,range_max;
-        image::bounding_box(mask,range_min,range_max,0);
-        for (unsigned int index = 0;check_prog(index,dwi_data.size());++index)
+        image::bounding_box(voxel.mask,range_min,range_max,0);
+        for (unsigned int index = 0;check_prog(index,voxel.dwi_data.size());++index)
         {
-            auto I = image::make_image((unsigned short*)dwi_data[index],voxel.dim);
+            auto I = image::make_image((unsigned short*)voxel.dwi_data[index],voxel.dim);
             image::basic_image<unsigned short,3> I0 = I;
             image::crop(I0,range_min,range_max);
             std::fill(I.begin(),I.end(),0);
             std::copy(I0.begin(),I0.end(),I.begin());
         }
-        image::crop(mask,range_min,range_max);
-        voxel.dim = mask.geometry();
+        image::crop(voxel.mask,range_min,range_max);
+        voxel.dim = voxel.mask.geometry();
         calculate_dwi_sum();
         calculate_mask();
     }
@@ -494,16 +493,16 @@ public:
         if(prog_aborted())
             return;
         begin_prog("applying warp");
-        std::vector<image::basic_image<unsigned short,3> > dwi(dwi_data.size());
+        std::vector<image::basic_image<unsigned short,3> > dwi(voxel.dwi_data.size());
         distortion_map m;
         m = d;
-        for(int i = 0;check_prog(i,dwi_data.size());++i)
+        for(int i = 0;check_prog(i,voxel.dwi_data.size());++i)
         {
             //dwi[i] = image::make_image((unsigned short*)dwi_data[i],voxel.dim);
             if(prog_aborted())
                 return;
-            image::basic_image<float,3> dwi1 = image::make_image((unsigned short*)dwi_data[i],voxel.dim);
-            image::basic_image<float,3> dwi2 = image::make_image((unsigned short*)rhs.dwi_data[i],voxel.dim);
+            image::basic_image<float,3> dwi1 = image::make_image((unsigned short*)voxel.dwi_data[i],voxel.dim);
+            image::basic_image<float,3> dwi2 = image::make_image((unsigned short*)rhs.voxel.dwi_data[i],voxel.dim);
             if(swap_xy)
             {
                 image::swap_xy(dwi1);
@@ -532,7 +531,7 @@ public:
         dwi[0] = d;
         new_dwi.swap(dwi);
         for(int i = 0;i < new_dwi.size();++i)
-            dwi_data[i] = &(new_dwi[i][0]);
+            voxel.dwi_data[i] = &(new_dwi[i][0]);
         calculate_dwi_sum();
         calculate_mask();
     }
@@ -550,8 +549,8 @@ public:
         image::basic_image<unsigned short,4> buffer(nifti_dim);
         for(unsigned int index = 0;index < voxel.bvalues.size();++index)
         {
-            std::copy(dwi_data[index],
-                      dwi_data[index]+voxel.dim.size(),
+            std::copy(voxel.dwi_data[index],
+                      voxel.dwi_data[index]+voxel.dim.size(),
                       buffer.begin() + (size_t)index*voxel.dim.size());
         }
         image::flip_xy(buffer);
@@ -562,7 +561,7 @@ public:
     {
         gz_nifti header;
         header.set_voxel_size(voxel.vs);
-        image::basic_image<unsigned short,3> buffer(dwi_data[0],voxel.dim);
+        image::basic_image<unsigned short,3> buffer(voxel.dwi_data[0],voxel.dim);
         image::flip_xy(buffer);
         header << buffer;
         return header.save_to_file(nifti_file_name);
@@ -663,13 +662,13 @@ public:
         else
             get_report(voxel.bvalues,voxel.vs,voxel.report);
 
-        dwi_data.resize(voxel.bvalues.size());
+        voxel.dwi_data.resize(voxel.bvalues.size());
         for (unsigned int index = 0;index < voxel.bvalues.size();++index)
         {
             std::ostringstream out;
             out << "image" << index;
-            mat_reader.read(out.str().c_str(),row,col,dwi_data[index]);
-            if (!dwi_data[index])
+            mat_reader.read(out.str().c_str(),row,col,voxel.dwi_data[index]);
+            if (!voxel.dwi_data[index])
             {
                 error_msg = "Cannot find image matrix";
                 return false;
@@ -699,9 +698,9 @@ public:
         const unsigned char* mask_ptr = 0;
         if(mat_reader.read("mask",row,col,mask_ptr))
         {
-            mask.resize(voxel.dim);
+            voxel.mask.resize(voxel.dim);
             if(row*col == voxel.dim.size())
-                std::copy(mask_ptr,mask_ptr+row*col,mask.begin());
+                std::copy(mask_ptr,mask_ptr+row*col,voxel.mask.begin());
         }
         else
             calculate_mask();
@@ -713,8 +712,8 @@ public:
         voxel.dwi_sum.resize(voxel.dim);
         image::par_for(voxel.dwi_sum.size(),[&](unsigned int pos)
         {
-            for (unsigned int index = 0;index < dwi_data.size();++index)
-                voxel.dwi_sum[pos] += dwi_data[index][pos];
+            for (unsigned int index = 0;index < voxel.dwi_data.size();++index)
+                voxel.dwi_sum[pos] += voxel.dwi_data[index][pos];
         });
 
         float max_value = *std::max_element(voxel.dwi_sum.begin(),voxel.dwi_sum.end());
@@ -732,12 +731,13 @@ public:
     }
     void calculate_mask(void)
     {
-        image::threshold(voxel.dwi_sum,mask,0.2f,1,0);
+        image::threshold(voxel.dwi_sum,voxel.mask,0.2f,1,0);
         if(voxel.dwi_sum.depth() < 10)
         {
-            for(unsigned int i = 0;i < mask.depth();++i)
+            for(unsigned int i = 0;i < voxel.mask.depth();++i)
             {
-                image::pointer_image<unsigned char,2> I(&mask[0]+i*mask.plane_size(),image::geometry<2>(mask.width(),mask.height()));
+                image::pointer_image<unsigned char,2> I(&voxel.mask[0]+i*voxel.mask.plane_size(),
+                        image::geometry<2>(voxel.mask.width(),voxel.mask.height()));
                 image::morphology::defragment(I);
                 image::morphology::recursive_smoothing(I,10);
                 image::morphology::defragment(I);
@@ -745,9 +745,9 @@ public:
         }
         else
         {
-            image::morphology::recursive_smoothing(mask,10);
-            image::morphology::defragment(mask);
-            image::morphology::recursive_smoothing(mask,10);
+            image::morphology::recursive_smoothing(voxel.mask,10);
+            image::morphology::defragment(voxel.mask);
+            image::morphology::recursive_smoothing(voxel.mask,10);
         }
     }
     void save_to_file(gz_mat_write& mat_writer)
@@ -785,10 +785,9 @@ public:
     bool reconstruct(void)
     {
         begin_prog("reconstruction");
-        voxel.image_model = this;
         voxel.CreateProcesses<ProcessType>();
         voxel.init();
-        voxel.run(mask);
+        voxel.run();
         return !prog_aborted();
     }
 

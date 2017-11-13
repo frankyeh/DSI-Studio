@@ -277,8 +277,8 @@ public:
         }
 
         voxel.dim = des_geo;
-        voxel.image_model->mask.resize(des_geo);
-        std::fill(voxel.image_model->mask.begin(),voxel.image_model->mask.end(),0);
+        voxel.mask.resize(des_geo);
+        std::fill(voxel.mask.begin(),voxel.mask.end(),0);
         for(image::pixel_index<3> index(des_geo);index < des_geo.size();++index)
         {
             image::vector<3,float> mni_pos(index);
@@ -287,7 +287,7 @@ public:
             mni_pos.round();
             if(fa_template_imp.mask.geometry().is_valid(mni_pos) &&
                     fa_template_imp.mask.at(mni_pos[0],mni_pos[1],mni_pos[2]) > 0.0)
-                voxel.image_model->mask[index.index()] = 1;
+                voxel.mask[index.index()] = 1;
         }
 
         // other image
@@ -320,8 +320,8 @@ public:
                     b0_index = index;
 
         ptr_images.clear();
-        for (unsigned int index = 0; index < voxel.image_model->dwi_data.size(); ++index)
-            ptr_images.push_back(image::make_image(voxel.image_model->dwi_data[index],src_geo));
+        for (unsigned int index = 0; index < voxel.dwi_data.size(); ++index)
+            ptr_images.push_back(image::make_image(voxel.dwi_data[index],src_geo));
 
 
         std::fill(voxel.vs.begin(),voxel.vs.end(),voxel.param[1]);
@@ -456,7 +456,7 @@ public:
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
-        voxel.image_model->mask.resize(src_geo);
+        voxel.mask.resize(src_geo);
         voxel.dim = src_geo;
         if(voxel.output_jacobian)
             mat_writer.write("jdet",&*jdet.begin(),1,jdet.size());

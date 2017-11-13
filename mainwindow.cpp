@@ -666,7 +666,7 @@ void MainWindow::on_batch_src_clicked()
                     std::ofstream(QString(dir_list[i] + "/data.nii.gz.b_table_mismatch.txt").toLocal8Bit().begin());
                     continue;
                 }
-                DwiHeader::output_src(QString(dir_list[i] + "/data.src.gz").toLocal8Bit().begin(),dwi_files,0);
+                DwiHeader::output_src(QString(dir_list[i] + "/data.src.gz").toLocal8Bit().begin(),dwi_files,0,false);
                 continue;
             }
 
@@ -687,7 +687,7 @@ void MainWindow::on_batch_src_clicked()
                         continue;
                     }
                     DwiHeader::output_src(QString(dir_list[i] + "/" +
-                        QFileInfo(nifti_file_list[index]).baseName() + ".src.gz").toLocal8Bit().begin(),dwi_files,0);
+                        QFileInfo(nifti_file_list[index]).baseName() + ".src.gz").toLocal8Bit().begin(),dwi_files,0,false);
                     continue;
                 }
             }
@@ -772,7 +772,7 @@ void MainWindow::on_batch_src_clicked()
                         dwi_files[index]->set_bvalue(0);
                         dwi_files[index]->set_bvec(0,0,0);
                     }
-                DwiHeader::output_src(output.toLocal8Bit().begin(),dwi_files,0);
+                DwiHeader::output_src(output.toLocal8Bit().begin(),dwi_files,0,false);
             }
         }
     }

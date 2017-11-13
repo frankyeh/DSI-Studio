@@ -204,7 +204,7 @@ int rec(void)
             if(external_mask.geometry() != handle->voxel.dim)
                 std::cout << "In consistent the mask dimension...using default mask" << std::endl;
             else
-                handle->mask = external_mask;
+                handle->voxel.mask = external_mask;
         }
         else
             std::cout << "fail reading the mask...using default mask" << std::endl;

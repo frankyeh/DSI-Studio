@@ -544,13 +544,16 @@ bool DwiHeader::has_b_table(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 }
 
 // upsampling 1: upsampling 2: downsampling
-bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,int upsampling)
+bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
+                           int upsampling,bool sort_btable)
 {
     if(dwi_files.empty() || !has_b_table(dwi_files))
         return false;
-    sort_dwi(dwi_files);
-    correct_t2(dwi_files);
-
+    if(sort_btable)
+    {
+        sort_dwi(dwi_files);
+        correct_t2(dwi_files);
+    }
     gz_mat_write write_mat(di_file);
     if(!write_mat)
         return false;

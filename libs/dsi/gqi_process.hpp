@@ -164,7 +164,7 @@ public:
             return;
         }
         hraw[data.voxel_index] = data.space[0];
-        auto I = image::make_image(voxel.image_model->dwi_data[0],voxel.dim);
+        auto I = image::make_image(voxel.dwi_data[0],voxel.dim);
         data.space.resize(voxel.bvalues.size());
         for(int i = 1;i < voxel.bvalues.size();++i)
         {

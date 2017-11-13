@@ -136,6 +136,8 @@ int src(void)
         return 1;
     }
     std::cout << "Output src to " << output << std::endl;
-    DwiHeader::output_src(output.c_str(),dwi_files,0);
+    DwiHeader::output_src(output.c_str(),dwi_files,
+                          po.get<int>("up_sampling",0),
+                          po.get<int>("sort_b_table",0));
     return 0;
 }

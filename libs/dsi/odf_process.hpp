@@ -13,9 +13,9 @@ public:
     virtual void init(Voxel&) {}
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        data.space.resize(voxel.image_model->dwi_data.size());
+        data.space.resize(voxel.dwi_data.size());
         for (unsigned int index = 0; index < data.space.size(); ++index)
-            data.space[index] = voxel.image_model->dwi_data[index][data.voxel_index];
+            data.space[index] = voxel.dwi_data[index][data.voxel_index];
     }
     virtual void end(Voxel&,gz_mat_write&) {}
 };
@@ -166,9 +166,9 @@ public:
         if (voxel.need_odf)
         {
             unsigned int total_count = 0;
-            odf_index_map.resize(voxel.image_model->mask.size());
-            for (unsigned int index = 0;index < voxel.image_model->mask.size();++index)
-                if (voxel.image_model->mask[index])
+            odf_index_map.resize(voxel.mask.size());
+            for (unsigned int index = 0;index < voxel.mask.size();++index)
+                if (voxel.mask[index])
                 {
                     odf_index_map[index] = total_count;
                     ++total_count;
@@ -246,8 +246,8 @@ public:
     {
         //voxel.qa_scaling must be 1
         voxel.z0 = 0.0;
-        index_mapping1.resize(voxel.image_model->mask.size());
-        index_mapping2.resize(voxel.image_model->mask.size());
+        index_mapping1.resize(voxel.mask.size());
+        index_mapping2.resize(voxel.mask.size());
         int voxel_index = 0;
         for(unsigned int i = 0;i < voxel.template_odfs.size();++i)
         {
@@ -263,7 +263,7 @@ public:
                     }
                 if(!is_odf_zero)
                     for(;voxel_index < index_mapping1.size();++voxel_index)
-                        if(voxel.image_model->mask[voxel_index] != 0)
+                        if(voxel.mask[voxel_index] != 0)
                             break;
                 if(voxel_index >= index_mapping1.size())
                     break;

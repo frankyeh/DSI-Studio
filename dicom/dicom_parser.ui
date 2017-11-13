@@ -64,6 +64,13 @@
          <number>0</number>
         </property>
         <item>
+         <widget class="QCheckBox" name="sort_btable">
+          <property name="text">
+           <string>Sort b-table</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QComboBox" name="upsampling">
           <item>
            <property name="text">
@@ -144,7 +151,7 @@
      <x>0</x>
      <y>0</y>
      <width>717</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFiles">

@@ -427,7 +427,7 @@ const char* reconstruction(ImageModel* image_model,
             if (image_model->voxel.output_rdi)
                 out << ".rdi";
             out << (image_model->voxel.r2_weighted ? ".gqi2.":".gqi.") << param_values[0] << ".fib.gz";
-            if(image_model->dwi_data.size() == 1)
+            if(image_model->voxel.dwi_data.size() == 1)
             {
                 if (!image_model->reconstruct<hgqi_process>())
                     return "reconstruction canceled";
@@ -480,7 +480,7 @@ const char* reconstruction(ImageModel* image_model,
                 std::vector<image::pointer_image<float,3> > tmp;
                 tmp.swap(image_model->voxel.grad_dev);
                 // clear mask to create whole volume QA map
-                std::fill(image_model->mask.begin(),image_model->mask.end(),1.0);
+                std::fill(image_model->voxel.mask.begin(),image_model->voxel.mask.end(),1.0);
                 if (!image_model->reconstruct<gqi_estimate_response_function>())
                     return "reconstruction canceled";
                 tmp.swap(image_model->voxel.grad_dev);
@@ -545,7 +545,7 @@ bool output_odfs(const image::basic_image<unsigned char,3>& mni_mask,
     image_model.voxel.template_odfs.swap(odfs);
     image_model.voxel.param = mni;
     image_model.file_name = out_name;
-    image_model.mask = mni_mask;
+    image_model.voxel.mask = mni_mask;
     std::copy(vs,vs+3,image_model.voxel.vs.begin());
     if (prog_aborted() || !image_model.reconstruct<reprocess_odf>())
         return false;

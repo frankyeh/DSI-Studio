@@ -183,7 +183,8 @@ SOURCES += main.cpp \
     connectometry/group_connectometry.cpp \
     regtoolbox.cpp \
     cmd/cnn.cpp \
-    cmd/qc.cpp
+    cmd/qc.cpp \
+    libs/dsi/basic_voxel.cpp
 
 OTHER_FILES += \
     options.txt \
