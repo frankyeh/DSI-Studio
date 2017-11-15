@@ -89,9 +89,8 @@ void atl_save_mapping(const std::string& file_name,const image::geometry<3>& geo
                 image::io::nifti out;
                 out.set_voxel_size(vs);
                 if(!trans.empty())
-                    out.set_image_transformation(trans.begin());
-                else
-                    image::flip_xy(roi);
+                    out.set_LPS_transformation(trans.begin(),roi.geometry());
+                image::flip_xy(roi);
                 out << roi;
                 out.save_to_file(output.c_str());
                 std::cout << "save " << output << std::endl;

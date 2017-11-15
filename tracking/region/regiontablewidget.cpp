@@ -816,9 +816,10 @@ void RegionTableWidget::save_all_regions(void)
     gz_nifti header;
     header.set_voxel_size(cur_tracking_window.current_slice->voxel_size);
     if(cur_tracking_window.handle->is_qsdr)
-        header.set_image_transformation(cur_tracking_window.handle->trans_to_mni.begin());
-    else
-        image::flip_xy(mask);
+        header.set_LPS_transformation(
+                    cur_tracking_window.handle->trans_to_mni.begin(),
+                    mask.geometry());
+    image::flip_xy(mask);
     header << mask;
     header.save_to_file(filename.toLocal8Bit().begin());
 

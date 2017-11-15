@@ -370,7 +370,8 @@ void RegToolBox::on_action_Save_Warpped_Image_triggered()
     {
         gz_nifti nii;
         nii.set_voxel_size(Itvs);
-        nii.set_image_transformation(ItR);
+        nii.set_LPS_transformation(ItR,JJ.geometry());
+        image::flip_xy(JJ);
         nii << JJ;
         nii.save_to_file(filename.toStdString().c_str());
         return;
@@ -379,7 +380,8 @@ void RegToolBox::on_action_Save_Warpped_Image_triggered()
     {
         gz_nifti nii;
         nii.set_voxel_size(Itvs);
-        nii.set_image_transformation(ItR);
+        nii.set_LPS_transformation(ItR,J.geometry());
+        image::flip_xy(J);
         nii << J;
         nii.save_to_file(filename.toStdString().c_str());
 

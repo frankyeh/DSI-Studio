@@ -1221,8 +1221,8 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
     if(color)
     {
         QString filename = QFileDialog::getSaveFileName(
-                this,"Save Images files",item(currentRow(),0)->text(),
-                "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
+                this,"Save Images files",item(currentRow(),0)->text()+".nii.gz",
+                "Image files (*.png *.bmp *nii.gz *.jpg *.tif);;All files (*)");
         if(filename.isEmpty())
             return;
 
@@ -1234,10 +1234,21 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
             tract_models[index]->get_density_map(tdi,transformation,end_point);
         }
         image::basic_image<image::rgb_color,2> mosaic;
-        image::mosaic(tdi,mosaic,std::sqrt(tdi.depth()));
-        QImage qimage((unsigned char*)&*mosaic.begin(),
-                      mosaic.width(),mosaic.height(),QImage::Format_RGB32);
-        qimage.save(filename);
+        if(QFileInfo(filename).completeSuffix().contains("nii"))
+        {
+            gz_nifti nii;
+            image::flip_xy(tdi);
+            nii << tdi;
+            nii.set_voxel_size(vs);
+            nii.save_to_file(filename.toStdString().c_str());
+        }
+        else
+        {
+            image::mosaic(tdi,mosaic,std::sqrt(tdi.depth()));
+            QImage qimage((unsigned char*)&*mosaic.begin(),
+                          mosaic.width(),mosaic.height(),QImage::Format_RGB32);
+            qimage.save(filename);
+        }
     }
     else
     {
@@ -1270,10 +1281,9 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
                 image::matrix<4,4,float> new_trans(transformation),trans(cur_tracking_window.handle->trans_to_mni.begin());
                 new_trans.inv();
                 trans *= new_trans;
-                nii_header.set_image_transformation(trans.begin());
+                nii_header.set_LPS_transformation(trans.begin(),tdi.geometry());
             }
-            else
-                image::flip_xy(tdi);
+            image::flip_xy(tdi);
             nii_header << tdi;
             nii_header.save_to_file(filename.toLocal8Bit().begin());
         }

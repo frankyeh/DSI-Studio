@@ -199,13 +199,12 @@ void ROIRegion::SaveToFile(const char* FileName,const std::vector<float>& trans)
                 image::multiply_constant(&T[0],&T[0]+3,1.0/resolution_ratio);
                 image::multiply_constant(&T[4],&T[0]+3,1.0/resolution_ratio);
                 image::multiply_constant(&T[8],&T[0]+3,1.0/resolution_ratio);
-                header.set_image_transformation(T.begin());
+                header.set_LPS_transformation(T.begin(),mask.geometry());
             }
             else
-                header.set_image_transformation(trans.begin());
+                header.set_LPS_transformation(trans.begin(),mask.geometry());
         }
-        else
-            image::flip_xy(mask);
+        image::flip_xy(mask);
         header << mask;
         header.save_to_file(FileName);
     }

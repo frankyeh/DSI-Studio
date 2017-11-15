@@ -1424,9 +1424,7 @@ void TractModel::save_tdi(const char* file_name,bool sub_voxel,bool endpoint,con
     get_density_map(tdi,tr,endpoint);
     gz_nifti nii_header;
     nii_header.set_voxel_size(new_vs.begin());
-    if(trans.empty())
-        image::flip_xy(tdi);
-    else
+    if(!trans.empty())
     {
         if(sub_voxel)
         {
@@ -1434,11 +1432,12 @@ void TractModel::save_tdi(const char* file_name,bool sub_voxel,bool endpoint,con
             new_trans[0] /= 4.0;
             new_trans[4] /= 4.0;
             new_trans[8] /= 4.0;
-            nii_header.set_image_transformation(new_trans.begin());
+            nii_header.set_LPS_transformation(new_trans.begin(),tdi.geometry());
         }
         else
-            nii_header.set_image_transformation(trans.begin());
+            nii_header.set_LPS_transformation(trans.begin(),tdi.geometry());
     }
+    image::flip_xy(tdi);
     nii_header << tdi;
     nii_header.save_to_file(file_name);
 

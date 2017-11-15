@@ -114,12 +114,8 @@ int exp(void)
             }
             gz_nifti nifti_header;
             if(trans) //QSDR condition
-            {
-                nifti_header.set_image_transformation(trans);
-                std::cout << "Output transformation matrix" << std::endl;
-            }
-            else
-                image::flip_xy(fibers);
+                nifti_header.set_LPS_transformation(trans,fibers.geometry());
+            image::flip_xy(fibers);
             nifti_header << fibers;
             nifti_header.set_voxel_size(vs);
             nifti_header.save_to_file(file_name_stat.c_str());
@@ -142,12 +138,8 @@ int exp(void)
             gz_nifti nifti_header;
 
             if(trans) //QSDR condition
-            {
-                nifti_header.set_image_transformation(trans);
-                std::cout << "Output transformation matrix" << std::endl;
-            }
-            else
-                image::flip_xy(data);
+                nifti_header.set_LPS_transformation(trans,data.geometry());
+            image::flip_xy(data);
             nifti_header << data;
             nifti_header.set_voxel_size(vs);
             nifti_header.save_to_file(file_name_stat.c_str());

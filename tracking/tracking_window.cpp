@@ -726,8 +726,6 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     no_update = true;
     ui->actionSave_Anisotrpy_Map_as->setText(QString("Save ") +
                                              ui->SliceModality->currentText()+" volume as...");
-    ui->actionSave_Anisotrpy_Map_as->setEnabled(ui->SliceModality->currentText() != "color");
-
     image::vector<3,float> slice_position(current_slice->slice_pos);
     if(!current_slice->is_diffusion_space)
         slice_position.to(current_slice->transform);

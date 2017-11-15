@@ -568,62 +568,6 @@ void MainWindow::on_averagefib_clicked()
     new_mdi->show();
 }
 
-
-/*
-#include "mapping/mni_norm.hpp"
-void MainWindow::on_warpImage_clicked()
-{
-    QString filename = QFileDialog::getOpenFileName(
-                                this,
-                                "Open tr.mat file",
-                                ui->workDir->currentText(),
-                                "MAT files (*.mat)" );
-    if (filename.isEmpty())
-        return;
-    MNINorm mni;
-    if(!mni.load_transformation_matrix(filename.toLocal8Bit().begin()))
-    {
-        QMessageBox::information(this,"Error","Invalid tr.mat format",0);
-        return;
-    }
-
-    filename = QFileDialog::getOpenFileName(
-                                this,
-                                "Open image file",
-                                ui->workDir->currentText(),
-                                "Nifti files (*.nii)" );
-    if (filename.isEmpty())
-        return;
-
-    image::basic_image<float,3> I,out;
-    {
-        image::io::nifti read;
-        if(!read.load_from_file(filename.toLocal8Bit().begin()))
-        {
-            QMessageBox::information(this,"Error","Cannot open image file",0);
-            return;
-        }
-        read >> I;
-        if(read.nif_header.srow_x[0] < 0)
-            image::flip_y(I);
-        else
-            image::flip_xy(I);
-    }
-    mni.warp(I,out);
-    {
-        image::io::nifti write;
-        image::flip_xy(out);
-        write << out;
-        float voxel_size[3]={1,1,1};
-        write.set_voxel_size(voxel_size);
-        float ir[12] = {1.0,0.0,0.0,-78.0,
-                        0.0,1.0,0.0,-112.0,
-                        0.0,0.0,1.0,-50.0};
-        write.set_image_transformation(ir);
-        write.save_to_file((filename+".warp.nii").toLocal8Bit().begin());
-    }
-}
-*/
 bool load_all_files(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec);
 bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);

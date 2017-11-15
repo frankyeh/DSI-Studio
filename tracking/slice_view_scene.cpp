@@ -214,11 +214,7 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "save_mapping")
     {
-        if( cur_tracking_window.ui->SliceModality->currentText() == "color")
-        {
-            std::cout << "Cannot save color map as a mapping file" << std::endl;
-            return true;
-        }
+
         if(param.isEmpty())
             param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+
                     QString(cur_tracking_window.handle->view_item[cur_tracking_window.ui->SliceModality->currentIndex()].name.c_str())+".nii.gz";
@@ -228,6 +224,26 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
                     cur_tracking_window.ui->SliceModality->currentText().toLocal8Bit().begin());
         if(index >= cur_tracking_window.handle->view_item.size())
             return true;
+
+        if(cur_tracking_window.ui->SliceModality->currentText() == "color")
+        {
+            image::basic_image<image::rgb_color,3> buf(cur_tracking_window.handle->dim);
+            for(int z = 0;z < buf.depth();++z)
+            {
+                image::color_image I;
+                cur_tracking_window.handle->get_slice(index,2,z,I,cur_tracking_window.v2c);
+                std::copy(I.begin(),I.end(),buf.begin()+z*buf.plane_size());
+            }
+            gz_nifti file;
+            file.set_voxel_size(cur_tracking_window.current_slice->voxel_size.begin());
+            if(cur_tracking_window.handle->is_qsdr) //QSDR condition
+                file.set_LPS_transformation(cur_tracking_window.handle->trans_to_mni.begin(),buf.geometry());
+            image::flip_xy(buf);
+            file << buf;
+            file.save_to_file(param.toLocal8Bit().begin());
+            return true;
+        }
+
         if(QFileInfo(param).completeSuffix().toLower() == "mat")
         {
             image::io::mat_write file(param.toLocal8Bit().begin());
@@ -239,15 +255,9 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
             gz_nifti file;
             file.set_voxel_size(cur_tracking_window.current_slice->voxel_size.begin());
             if(cur_tracking_window.handle->is_qsdr) //QSDR condition
-            {
-                file.set_image_transformation(cur_tracking_window.handle->trans_to_mni.begin());
-                file << cur_tracking_window.handle->view_item[index].image_data;
-            }
-            else
-            {
-                image::flip_xy(buf);
-                file << buf;
-            }
+                file.set_LPS_transformation(cur_tracking_window.handle->trans_to_mni.begin(),buf.geometry());
+            image::flip_xy(buf);
+            file << buf;
             file.save_to_file(param.toLocal8Bit().begin());
         }
         return true;
@@ -412,8 +422,6 @@ void slice_view_scene::show_slice(void)
 
 void slice_view_scene::save_slice_as()
 {
-    if( cur_tracking_window.ui->SliceModality->currentText() == "color")
-        return;
     QString filename = QFileDialog::getSaveFileName(
                 0,
                 "Save as",
