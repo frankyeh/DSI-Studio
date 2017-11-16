@@ -771,6 +771,8 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     ui->max_value_gl->setSingleStep(step);
     ui->max_value_gl->setValue(range.second);
     v2c.set_range(range.first,range.second);
+    glWidget->updateGL();
+    scene.show_slice();
 }
 void tracking_window::on_change_contrast()
 {
