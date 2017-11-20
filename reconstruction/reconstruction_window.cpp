@@ -416,7 +416,7 @@ void reconstruction_window::on_save_mask_clicked()
             this,
             "Save region",
             absolute_path+"/mask.txt",
-            "Text files (*.txt);;Nifti file(*nii.gz);;All files (*)" );
+            "Text files (*.txt);;Nifti file(*nii.gz *.nii);;All files (*)" );
     if(filename.isEmpty())
         return;
     if(QFileInfo(filename.toLower()).completeSuffix() != "txt")

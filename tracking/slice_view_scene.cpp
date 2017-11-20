@@ -427,11 +427,9 @@ void slice_view_scene::save_slice_as()
                 "Save as",
                 QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+
                 QString(cur_tracking_window.handle->view_item[cur_tracking_window.ui->SliceModality->currentIndex()].name.c_str())+".nii.gz",
-                "NIFTI files (*nii.gz);;MAT files (*.mat);;All files (*)");
+                "NIFTI files (*nii.gz *.nii);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
-    if(QFileInfo(filename.toLower()).completeSuffix() != "mat")
-        filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
     command("save_mapping",filename,"");
 }
 

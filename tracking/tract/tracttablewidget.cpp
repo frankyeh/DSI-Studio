@@ -1222,7 +1222,7 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
     {
         QString filename = QFileDialog::getSaveFileName(
                 this,"Save Images files",item(currentRow(),0)->text()+".nii.gz",
-                "Image files (*.png *.bmp *nii.gz *.jpg *.tif);;All files (*)");
+                "Image files (*.png *.bmp *nii.gz *.nii *.jpg *.tif);;All files (*)");
         if(filename.isEmpty())
             return;
 
