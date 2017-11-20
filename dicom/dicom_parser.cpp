@@ -426,7 +426,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
         return false;
     dicom_header.get_image_dimension(geo);
     // philips or GE single slice images
-    if(geo[2] != 1)
+    if(geo[2] != 1 || dicom_header.is_mosaic)
         return false;
 
     image::io::dicom dicom_header2;

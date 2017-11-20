@@ -61,20 +61,24 @@ bool DwiHeader::open(const char* filename)
         analyze_header.get_voxel_size(voxel_size);
         return true;
     }
-    float orientation_matrix[9];
-    char dim_order[3] = {0,1,2};
-    char flip[3] = {0,0,0};
 
     header >> image;
     header.get_voxel_size(voxel_size);
     get_report_from_dicom(header,report);
 
-    header.get_image_orientation(orientation_matrix);
-    image::get_orientation(3,orientation_matrix,dim_order,flip);
-    image::reorient_vector(voxel_size,dim_order);
-    image::reorient_matrix(orientation_matrix,dim_order,flip);
-    image::reorder(image,dim_order,flip);
+    float orientation_matrix[9];
+    char dim_order[3] = {0,1,2};
+    char flip[3] = {0,0,0};
+    bool has_orientation_info = false;
 
+    if(header.get_image_orientation(orientation_matrix))
+    {
+        image::get_orientation(3,orientation_matrix,dim_order,flip);
+        image::reorient_vector(voxel_size,dim_order);
+        image::reorient_matrix(orientation_matrix,dim_order,flip);
+        image::reorder(image,dim_order,flip);
+        has_orientation_info = true;
+    }
 
     unsigned char man_id = 0;
     {
@@ -243,18 +247,21 @@ bool DwiHeader::open(const char* filename)
         break;
     }
 
+    if(has_orientation_info)
     {
-        image::reorient_vector(bvec.begin(),dim_order);
-        float x = bvec[dim_order[0]];
-        float y = bvec[dim_order[1]];
-        float z = bvec[dim_order[2]];
-        bvec[0] = x;
-        bvec[1] = y;
-        bvec[2] = z;
+        {
+            image::reorient_vector(bvec.begin(),dim_order);
+            float x = bvec[dim_order[0]];
+            float y = bvec[dim_order[1]];
+            float z = bvec[dim_order[2]];
+            bvec[0] = x;
+            bvec[1] = y;
+            bvec[2] = z;
+        }
+        image::vector<3,float> cbvec;
+        image::vector_rotation(bvec.begin(),cbvec.begin(),orientation_matrix,image::vdim<3>());
+        bvec = cbvec;
     }
-    image::vector<3,float> cbvec;
-    image::vector_rotation(bvec.begin(),cbvec.begin(),orientation_matrix,image::vdim<3>());
-    bvec = cbvec;
     bvec.normalize();
     if(bvalue == 0.0)
         bvec[0] = bvec[1] = bvec[2] = 0.0;
