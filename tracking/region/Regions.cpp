@@ -10,6 +10,8 @@
 // ---------------------------------------------------------------------------
 void ROIRegion::add_points(std::vector<image::vector<3,float> >& points,bool del,float point_resolution)
 {
+    if(resolution_ratio > 32.0f)
+        return;
     change_resolution(points,point_resolution);
     std::vector<image::vector<3,short> > new_points(points.size());
     for(int i = 0;i < points.size();++i)
@@ -22,6 +24,8 @@ void ROIRegion::add_points(std::vector<image::vector<3,float> >& points,bool del
 // ---------------------------------------------------------------------------
 void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool del,float point_resolution)
 {
+    if(resolution_ratio > 32.0f)
+        return;
     change_resolution(points,point_resolution);
     if(!region.empty())
         undo_backup.push_back(region);
@@ -158,6 +162,8 @@ void ROIRegion::SaveToFile(const char* FileName,const std::vector<float>& trans)
             out << resolution_ratio << " -1 -1" << std::endl;
     }
     else if (ext == std::string(".mat")) {
+        if(resolution_ratio > 32.0f)
+            return;
         image::basic_image<unsigned char, 3> mask(geo);
         if(resolution_ratio != 1.0)
             mask.resize(image::geometry<3>(geo[0]*resolution_ratio,geo[1]*resolution_ratio,geo[2]*resolution_ratio));
@@ -229,7 +235,7 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
         std::copy(std::istream_iterator<image::vector<3,short> >(in),
                   std::istream_iterator<image::vector<3,short> >(),
                   std::back_inserter(points));
-        if(points.back()[1] == -1.0f && points.back()[2] == -1.0f)
+        if(!points.empty() && points.back()[1] == -1.0f && points.back()[2] == -1.0f)
         {
             resolution_ratio = points.back()[0];
             points.pop_back();
