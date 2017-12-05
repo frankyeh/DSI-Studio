@@ -149,6 +149,12 @@ typedef boost::mpl::vector<
     SaveDirIndex
 > reprocess_odf;
 
+double base_function(double theta)
+{
+    if(std::abs(theta) < 0.000001)
+        return 1.0/3.0;
+    return (2*std::cos(theta)+(theta-2.0/theta)*std::sin(theta))/theta/theta;
+}
 
 std::pair<float,float> evaluate_fib(
         const image::geometry<3>& dim,
@@ -245,6 +251,8 @@ const char* reconstruction(ImageModel* image_model,
     static std::string output_name;
     try
     {
+        if(!image_model->is_human_data())
+            image_model->voxel.csf_calibration = false;
         image_model->voxel.recon_report.clear();
         image_model->voxel.recon_report.str("");
         image_model->voxel.param = param_values;
@@ -270,7 +278,7 @@ const char* reconstruction(ImageModel* image_model,
                 out << ".bal";
             if (image_model->voxel.half_sphere)
                 out << ".hs";
-            if (image_model->voxel.csf_calibration && method_id == 4)
+            if (image_model->voxel.csf_calibration &&(method_id == 4 || method_id == 7)) // GQI or QSDR
                 out << ".csfc";
             else
                 image_model->voxel.csf_calibration = false;

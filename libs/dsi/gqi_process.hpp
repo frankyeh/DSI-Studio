@@ -8,6 +8,7 @@
 #include "image_model.hpp"
 
 
+double base_function(double theta);
 class QSpace2Odf  : public BaseProcess
 {
 public:// recorded for scheme balanced
@@ -15,12 +16,7 @@ public:// recorded for scheme balanced
 public:
     std::vector<unsigned int> b0_images;
     std::vector<float> sinc_ql;
-    double base_function(double theta)
-    {
-        if(std::abs(theta) < 0.000001)
-            return 1.0/3.0;
-        return (2*std::cos(theta)+(theta-2.0/theta)*std::sin(theta))/theta/theta;
-    }
+
 public:
     virtual void init(Voxel& voxel)
     {
@@ -102,12 +98,6 @@ public:// recorded for scheme balanced
     std::vector<image::vector<3,double> > q_vectors_time;
 public:
     std::vector<float> sinc_ql;
-    double base_function(double theta)
-    {
-        if(std::abs(theta) < 0.000001)
-            return 1.0/3.0;
-        return (2*std::cos(theta)+(theta-2.0/theta)*std::sin(theta))/theta/theta;
-    }
 public:
     bool hgqi = false;
     std::vector<float> hraw;
@@ -379,14 +369,6 @@ public:
     static const int max_length = 50; // 50 microns
     std::vector<unsigned int> b0_images;
     std::vector<std::vector<float> > cdf,dis,cdfw,disw;
-
-
-    double base_function(double theta)
-    {
-        if(std::abs(theta) < 0.000001)
-            return 1.0/3.0;
-        return (2*std::cos(theta)+(theta-2.0/theta)*std::sin(theta))/theta/theta;
-    }
 public:
     virtual void init(Voxel& voxel)
     {

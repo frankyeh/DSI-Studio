@@ -1,5 +1,6 @@
 #ifndef ODF_TRANSFORMATION_PROCESS_HPP
 #define ODF_TRANSFORMATION_PROCESS_HPP
+#include <boost/math/special_functions/sinc.hpp>
 #include "basic_process.hpp"
 #include "basic_voxel.hpp"
 
@@ -321,12 +322,15 @@ public:
     }
 };
 
+double base_function(double theta);
 struct SaveFA : public BaseProcess
 {
 protected:
     std::vector<float> iso,gfa;
     std::vector<std::vector<float> > fa;
     std::vector<std::vector<float> > rdi;
+protected:
+    float z0;
 public:
     virtual void init(Voxel& voxel)
     {
@@ -347,6 +351,39 @@ public:
                 rdi.back().resize(voxel.dim.size());
             }
         }
+        if(voxel.csf_calibration)
+        {
+            std::vector<unsigned short> data(voxel.dwi_data[0],voxel.dwi_data[0]+voxel.dim.size());
+            std::sort(data.begin(),data.end());
+            // CSF selected at 125,000 mm^3
+            int size = 125000.0f/(voxel.vs[0]*voxel.vs[1]*voxel.vs[2]);
+            float water_b0 = *(data.end()-size);
+
+            float sigma = voxel.param[0]; //optimal 1.24
+            // numerically estimate free water ODF
+            unsigned int odf_size = voxel.ti.half_vertices_count;
+            std::vector<float> dwi(voxel.bvalues.size()),odf(odf_size);
+            for(int i = 0;i < dwi.size();++i)
+                dwi[i] = water_b0*std::exp(-voxel.bvalues[i]*0.003f); // free water diffusivity
+
+            std::vector<float> sinc_ql(odf_size*voxel.bvalues.size());
+            // calculate reconstruction matrix
+            for (unsigned int j = 0,index = 0; j < odf_size; ++j)
+                for (unsigned int i = 0; i < voxel.bvalues.size(); ++i,++index)
+                    sinc_ql[index] = voxel.bvectors[i]*
+                                 image::vector<3,float>(voxel.ti.vertices[j])*
+                                   std::sqrt(voxel.bvalues[i]*0.01506);
+
+            for (unsigned int index = 0; index < sinc_ql.size(); ++index)
+                sinc_ql[index] = voxel.r2_weighted ?
+                             base_function(sinc_ql[index]*sigma):
+                             boost::math::sinc_pi(sinc_ql[index]*sigma);
+
+            image::mat::vector_product(&*sinc_ql.begin(),&*dwi.begin(),&*odf.begin(),
+                                    image::dyndim(odf.size(),dwi.size()));
+            z0 = image::mean(odf.begin(),odf.end());
+        }
+
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
@@ -362,128 +399,18 @@ public:
     {
         set_title("output data");
         mat_writer.write("gfa",&*gfa.begin(),1,gfa.size());
-
         if(voxel.csf_calibration)
-        {
-            image::basic_image<float,3> VG = fa_template_imp.I;
-            image::basic_image<float,3> VF(&*fa[0].begin(),voxel.dim);
+            voxel.z0 = z0;
+        if(voxel.z0 + 1.0 == 1.0)
+            voxel.z0 = 1.0;
+        mat_writer.write("z0",&voxel.z0,1,1);
 
-            image::filter::gaussian(VF);
-            VF -= image::segmentation::otsu_threshold(VF);
-            image::lower_threshold(VF,0.0);
-
-            image::basic_image<float,3> VFF;
-
-            image::transformation_matrix<double> affine;
-            image::reg::bfnorm_mapping<double,3> mni(VG.geometry(),image::geometry<3>(7,9,7));
-
-            {
-                begin_prog("linear registration");
-
-                image::affine_transform<double> arg_min;
-
-                {
-                    bool terminated = false;
-                    image::reg::linear_mr(VF,voxel.vs,VG,fa_template_imp.vs,arg_min,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
-                                       image::transformation_matrix<double> >(0),terminated);
-                    affine = image::transformation_matrix<double>(arg_min,VF.geometry(),voxel.vs,VG.geometry(),fa_template_imp.vs);
-                }
-                begin_prog("warping image");
-                affine.inverse();
-                VFF.resize(VG.geometry());
-                image::resample(VF,VFF,affine,image::cubic);
-            }
-            match_signal(VG,VFF);
-            if(-image::reg::correlation()(VG,VFF,mni) < 0.4)
-                throw std::runtime_error("Cannot use CSF for calibration");
-
-            begin_prog("normalization");
-
-            terminated_class ter(17);
-            image::reg::bfnorm(mni,VG,VFF,ter,voxel.thread_count);
-            // choose CSF at the following voxel location
-
-            image::vector<3,int> pos1(84,76,68),pos2(72,76,68),pos3(74,58,60),pos4(82,58,60);
-            std::vector<image::vector<3,int> > list_pos;
-            {
-                for(int dz = -1;dz <= 1;++dz)
-                    for(int dy = -1;dy <= 1;++dy)
-                        for(int dx = -1;dx <= 1;++dx)
-                        {
-                            list_pos.push_back(image::vector<3,int>(pos1[0]+dx,pos1[1]+dy,pos1[2]+dz));
-                            list_pos.push_back(image::vector<3,int>(pos2[0]+dx,pos2[1]+dy,pos2[2]+dz));
-                            list_pos.push_back(image::vector<3,int>(pos3[0]+dx,pos3[1]+dy,pos3[2]+dz));
-                            list_pos.push_back(image::vector<3,int>(pos4[0]+dx,pos4[1]+dy,pos4[2]+dz));
-                        }
-
-            }
-
-            auto iso_I = image::make_image(&*iso.begin(),voxel.dim);
-            std::vector<float> values;
-            for(int i = 0;i < list_pos.size();++i)
-            {
-                image::vector<3,double> pos;
-                mni(list_pos[i],pos);
-                affine(pos);
-                values.push_back(0.0);
-                image::estimate(iso_I,pos,values.back());
-            }
-            voxel.z0 = image::median(values.begin(),values.end());
-            //record mapping
-            /*
-            {
-                std::vector<short> mni_x(voxel.dim.size()),mni_y(voxel.dim.size()),mni_z(voxel.dim.size());
-                std::vector<float> dis(voxel.dim.size());
-                std::fill(mni_x.begin(),mni_x.end(),-78);
-                std::fill(mni_y.begin(),mni_y.end(),-112);
-                std::fill(mni_z.begin(),mni_z.end(),-50);
-                std::fill(dis.begin(),dis.end(),10.0);
-                begin_prog("mapping");
-                for(image::pixel_index<3> index(VG.geometry());check_prog(index.index(),VG.size());++index)
-                {
-                    image::vector<3,float> to,to_round;
-                    to = index.begin();
-                    to += d[index.index()];
-                    affine(to);
-                    to_round = to;
-                    to_round.round();
-                    to -= to_round;
-                    if(!voxel.dim.is_valid(to_round))
-                        continue;
-                    double d = to.length();
-                    int pos = std::round((to_round[2]*voxel.dim.height()+to_round[1])*voxel.dim.width()+to_round[0]);
-                    if(dis[pos] > d && pos >= 0 && pos < voxel.dim.size())
-                    {
-                        dis[pos] = d;
-                        image::vector<3,float> m(index.begin());
-                        fa_template_imp.to_mni(m);
-                        mni_x[pos] = (short)std::round(m[0]);
-                        mni_y[pos] = (short)std::round(m[1]);
-                        mni_z[pos] = (short)std::round(m[2]);
-                    }
-
-                }
-                mat_writer.write("mni_x",&mni_x[0],1,mni_x.size());
-                mat_writer.write("mni_y",&mni_y[0],1,mni_y.size());
-                mat_writer.write("mni_z",&mni_z[0],1,mni_z.size());
-            }
-            */
-
-        }
-
-
-        if(!voxel.odf_deconvolusion && voxel.z0 + 1.0 != 1.0)
-        {
-            mat_writer.write("z0",&voxel.z0,1,1);
-            image::divide_constant(iso,voxel.z0);
-            for (unsigned int i = 0;i < voxel.max_fiber_number;++i)
-                image::divide_constant(fa[i],voxel.z0);
-        }
-
+        image::divide_constant(iso,voxel.z0);
         mat_writer.write("iso",&*iso.begin(),1,iso.size());
 
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
         {
+            image::divide_constant(fa[index],voxel.z0);
             std::ostringstream out;
             out << index;
             std::string num = out.str();

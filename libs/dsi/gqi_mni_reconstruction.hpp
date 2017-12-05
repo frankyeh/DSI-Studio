@@ -330,7 +330,6 @@ public:
         voxel.csf_pos2 = mni_to_voxel_index(-6,0,18);
         voxel.csf_pos3 = mni_to_voxel_index(4,18,10);
         voxel.csf_pos4 = mni_to_voxel_index(-4,18,10);
-        voxel.z0 = 0.0;
 
         // output mapping
         if(voxel.output_jacobian)
@@ -545,20 +544,13 @@ public:
         voxel.z0 = image::median(samples.begin(),samples.end());
         if(voxel.z0 == 0.0)
             voxel.z0 = 1.0;
-        mat_writer.write("z0",&voxel.z0,1,1);
     }
 
 };
 
+double base_function(double theta);
 class QSDR  : public BaseProcess
 {
-public:
-    double r2_base_function(double theta)
-    {
-        if(std::abs(theta) < 0.000001)
-            return 1.0/3.0;
-        return (2*std::cos(theta)+(theta-2.0/theta)*std::sin(theta))/theta/theta;
-    }
 protected:
     std::vector<image::vector<3,double> > q_vectors_time;
 public:
@@ -584,7 +576,7 @@ public:
             from.normalize();
             if(voxel.r2_weighted)
                 for (unsigned int i = 0; i < data.space.size(); ++i,++index)
-                    sinc_ql[index] = r2_base_function(q_vectors_time[i]*from);
+                    sinc_ql[index] = base_function(q_vectors_time[i]*from);
             else
                 for (unsigned int i = 0; i < data.space.size(); ++i,++index)
                     sinc_ql[index] = boost::math::sinc_pi(q_vectors_time[i]*from);
