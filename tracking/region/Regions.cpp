@@ -229,9 +229,9 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
         std::copy(std::istream_iterator<image::vector<3,short> >(in),
                   std::istream_iterator<image::vector<3,short> >(),
                   std::back_inserter(points));
-        if(points.back()[1] == -1 && points.back()[2] == -1)
+        if(points.back()[1] == -1.0f && points.back()[2] == -1.0f)
         {
-            resolution_ratio = std::min<float>(16.0f,points.back()[0]);
+            resolution_ratio = points.back()[0];
             points.pop_back();
         }
         region.swap(points);

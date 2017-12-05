@@ -907,6 +907,7 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
     if(cmd == "save_tracks")
     {
         TractModel::save_all(param.toStdString().c_str(),tract_models);
+        return true;
     }
     return false;
 }
