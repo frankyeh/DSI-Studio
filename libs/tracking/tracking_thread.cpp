@@ -104,14 +104,22 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
             {
                 if(point_count < 2)
                     continue;
-                image::vector<3> p0(result),p1(result+3),p2(end-6),p3(end-3);
-                p1 -= p0;
-                p0 -= p1;
-                p2 -= p3;
-                p3 -= p2;
-                if(method->trk.is_white_matter(p0,white_matter_t) ||
-                   method->trk.is_white_matter(p3,white_matter_t))
-                    continue;
+                if(result[2] > 0) // not the bottom slice
+                {
+                    image::vector<3> p0(result),p1(result+3);
+                    p1 -= p0;
+                    p0 -= p1;
+                    if(method->trk.is_white_matter(p0,white_matter_t))
+                        continue;
+                }
+                image::vector<3> p2(end-6),p3(end-3);
+                if(*(end-1) > 0) // not the bottom slice
+                {
+                    p2 -= p3;
+                    p3 -= p2;
+                    if(method->trk.is_white_matter(p3,white_matter_t))
+                        continue;
+                }
             }
             ++tract_count[thread_id];
             local_track_buffer.push_back(std::vector<float>(result,end));
