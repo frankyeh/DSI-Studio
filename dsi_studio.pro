@@ -189,5 +189,7 @@ SOURCES += main.cpp \
 
 OTHER_FILES += \
     options.txt \
+    FreeSurferColorLUT.txt \
     shader_fragment.txt \
     shader_vertex.txt
+

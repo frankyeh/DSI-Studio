@@ -439,7 +439,7 @@ void RegionTableWidget::copy_region(void)
     *regions.back() = *regions[cur_row];
     regions.back()->show_region.color.color = color;
 }
-void load_nii_label(const char* filename,std::map<short,std::string>& label_map)
+void load_nii_label(const char* filename,std::map<int,std::string>& label_map)
 {
     std::ifstream in(filename);
     if(in)
@@ -450,7 +450,7 @@ void load_nii_label(const char* filename,std::map<short,std::string>& label_map)
             if(line.empty() || line[0] == '#')
                 continue;
             std::istringstream read_line(line);
-            short num = 0;
+            int num = 0;
             read_line >> num >> txt;
             label_map[num] = txt;
         }
@@ -484,16 +484,38 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     bool multiple_roi = region_count > 2;
 
 
-    std::map<short,std::string> label_map;
+    std::map<int,std::string> label_map;
+    std::map<int,image::rgb_color> label_color;
+
     if(multiple_roi)
     {
-        QString base_name = QFileInfo(file_name).completeBaseName();
-        if(QFileInfo(base_name).suffix().toLower() == "nii")
-            base_name = QFileInfo(base_name).completeBaseName();
-        QString label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".txt";
-
-        if(QFileInfo(label_file).exists())
-            load_nii_label(label_file.toLocal8Bit().begin(),label_map);
+        QString base_name = QFileInfo(file_name).baseName();
+        if(base_name == "aparc+aseg") // FreeSurfer
+        {
+            QFile data(":/data/FreeSurferColorLUT.txt");
+            if (data.open(QIODevice::ReadOnly | QIODevice::Text))
+            {
+                QTextStream in(&data);
+                while (!in.atEnd())
+                {
+                    QString line = in.readLine();
+                    if(line.isEmpty() || line[0] == '#')
+                        continue;
+                    std::istringstream in(line.toStdString());
+                    int value,r,b,g;
+                    std::string name;
+                    in >> value >> name >> r >> g >> b;
+                    label_map[value] = name;
+                    label_color[value] = image::rgb_color(r,g,b);
+                }
+            }
+        }
+        else
+        {
+            QString label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".txt";
+            if(QFileInfo(label_file).exists())
+                load_nii_label(label_file.toLocal8Bit().begin(),label_map);
+        }
     }
 
     image::matrix<4,4,float> convert;
@@ -603,7 +625,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
                 region.LoadFromBuffer(mask);
             QString name = (label_map.find(value) == label_map.end() ?
                                 QString("roi_") + QString::number(value):QString(label_map[value].c_str()));
-            add_region(name,roi_id);
+            add_region(name,roi_id,label_color.empty() ? 0x00FFFFFF : label_color[value].color);
             regions.back()->assign(region.get(),region.resolution_ratio);
             item(currentRow(),0)->setCheckState(Qt::Unchecked);
             item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));

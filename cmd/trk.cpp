@@ -60,7 +60,7 @@ void save_connectivity_matrix(TractModel& tract_model,
     std::ofstream out(network_measures.c_str());
     out << report;
 }
-void load_nii_label(const char* filename,std::map<short,std::string>& label_map);
+void load_nii_label(const char* filename,std::map<int,std::string>& label_map);
 void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                              TractModel& tract_model)
 {
@@ -114,7 +114,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
             }
             std::cout << "total number of regions=" << region_count << std::endl;
 
-            std::map<short,std::string> label_map;
+            std::map<int,std::string> label_map;
             QString label_file = QFileInfo(roi_file_name.c_str()).absolutePath()+"/"+QFileInfo(roi_file_name.c_str()).completeBaseName()+".txt";
             std::cout << "searching for roi label file:" << label_file.toStdString() << std::endl;
             if(QFileInfo(label_file).exists())
