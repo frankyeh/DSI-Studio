@@ -257,12 +257,13 @@ const char* reconstruction(ImageModel* image_model,
         image_model->voxel.recon_report.str("");
         image_model->voxel.param = param_values;
         std::ostringstream out;
+        if(method_id != 4 && method_id != 7)
+            image_model->voxel.output_rdi = 0;
         if(method_id == 1) // DTI
         {
             image_model->voxel.need_odf = 0;
             image_model->voxel.output_jacobian = 0;
             image_model->voxel.output_mapping = 0;
-            image_model->voxel.output_rdi = 0;
             image_model->voxel.scheme_balance = 0;
             image_model->voxel.half_sphere = 0;
             image_model->voxel.odf_deconvolusion = 0;

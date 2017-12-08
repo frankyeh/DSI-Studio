@@ -298,7 +298,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     settings.setValue("output_mapping",ui->output_mapping->isChecked() ? 1 : 0);
     settings.setValue("output_diffusivity",ui->output_diffusivity->isChecked() ? 1 : 0);
     settings.setValue("output_tensor",ui->output_tensor->isChecked() ? 1 : 0);
-    settings.setValue("output_rdi",(ui->rdi->isChecked() && method_id == 4) ? 1 : 0); // only for GQI
+    settings.setValue("output_rdi",(ui->rdi->isChecked() && (method_id == 4 || method_id == 7)) ? 1 : 0); // only for GQI
     settings.setValue("check_btable",ui->check_btable->isChecked() ? 1 : 0);
 
     begin_prog("reconstruction",true);

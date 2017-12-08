@@ -145,7 +145,7 @@ int rec(void)
     handle->voxel.output_mapping = po.get("output_map",int(0));
     handle->voxel.output_diffusivity = po.get("output_dif",int(1));
     handle->voxel.output_tensor = po.get("output_tensor",int(0));
-    handle->voxel.output_rdi = po.get("output_rdi",int(1));
+    handle->voxel.output_rdi = po.get("output_rdi",int(1)) && (method_index == 4 || method_index == 7);
     handle->voxel.odf_deconvolusion = po.get("deconvolution",int(0));
     handle->voxel.odf_decomposition = po.get("decomposition",int(0));
     handle->voxel.max_fiber_number = po.get("num_fiber",int(5));
