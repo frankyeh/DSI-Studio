@@ -1,6 +1,8 @@
 // ---------------------------------------------------------------------------
 #include <string>
 #include <QFileInfo>
+#include <QInputDialog>
+#include <QMessageBox>
 #include <QDir>
 #include "SliceModel.h"
 #include "prog_interface_static_link.h"
@@ -174,33 +176,41 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
                     }
                     image::geometry<3> geo(geometry);
 
-                    bool can_allocate = true;
-                    do
+                    bool ok;
+                    int down_size = QInputDialog::getInt(0,
+                            "DSI Studio",
+                            "Downsampling count (0:no downsampling)",1,0,4,1&ok);
+                    if(!ok)
+                        return false;
+                    while(1)
                     {
-                        try{
-                            image::basic_image<float, 3> buf;
-                            can_allocate = true;
-                            buf.resize(geo);
-                            buf.swap(source_images);
-                        }
-                        catch(...)
+                        if(down_size)
+                            --down_size;
+                        else
                         {
-                            geo[0] = geo[0] >> 1;
-                            geo[1] = geo[1] >> 1;
-                            geo[2] = geo[2] >> 1;
-                            voxel_size *= 2.0;
-                            image::multiply_constant(T.begin(),T.begin()+3,2.0);
-                            image::multiply_constant(T.begin()+4,T.begin()+7,2.0);
-                            image::multiply_constant(T.begin()+8,T.begin()+11,2.0);
-                            ++in_plane_subsample;
-                            ++slice_subsample;
-                            can_allocate = false;
+                            try{
+                                image::basic_image<float, 3> buf;
+                                buf.resize(geo);
+                                buf.swap(source_images);
+                            }
+                            catch(...)
+                            {
+                                QMessageBox::information(0,"DSI Studio","Memory allocation failed. Please increase downsizing count",0);
+                                return false;
+                            }
+                            break;
                         }
+                        geo[0] = geo[0] >> 1;
+                        geo[1] = geo[1] >> 1;
+                        geo[2] = geo[2] >> 1;
+                        voxel_size *= 2.0;
+                        image::multiply_constant(T.begin(),T.begin()+3,2.0);
+                        image::multiply_constant(T.begin()+4,T.begin()+7,2.0);
+                        image::multiply_constant(T.begin()+8,T.begin()+11,2.0);
+                        ++in_plane_subsample;
+                        ++slice_subsample;
                     }
-                    while(!can_allocate);
-
                     begin_prog("loading images");
-
                     for(unsigned int i = 0;check_prog(i,geo[2]);++i)
                     {
                         image::basic_image<short,2> I;
