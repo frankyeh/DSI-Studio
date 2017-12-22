@@ -665,7 +665,8 @@ void fib_data::get_voxel_information(int x,int y,int z,std::vector<float>& buf) 
         return;
     for(unsigned int i = 0;i < view_item.size();++i)
         if(view_item[i].name != "color")
-            buf.push_back(view_item[i].image_data.empty() ? 0.0 : view_item[i].image_data[index]);
+            buf.push_back(view_item[i].image_data.empty() || view_item[i].image_data.geometry() != dim
+                          ? 0.0 : view_item[i].image_data[index]);
 }
 void fib_data::get_index_titles(std::vector<std::string>& titles)
 {

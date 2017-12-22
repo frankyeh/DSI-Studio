@@ -309,14 +309,23 @@ int trk_post(std::shared_ptr<fib_data> handle,
         else
         if(file_name != "no_file")
         {
-            std::cout << "output file:" << file_name << std::endl;
-            if (!tract_model.save_tracts_to_file(file_name.c_str()))
+            QString file_ext = QFileInfo(file_name.c_str()).completeSuffix().toLower();
+            if(file_ext != "txt" && file_ext != "trk" && file_ext != "trk.gz")
             {
-                std::cout << "Cannot save file. Please check write permission, directory, and disk space." << std::endl;
-                return -1;
+                std::cout << "Unsupported file extension:" << file_ext.toStdString() << std::endl;
+                std::cout << "No track file saved." << std::endl;
             }
-            if(QFileInfo(file_name.c_str()).exists())
-                std::cout << "File saved to " << file_name << std::endl;
+            else
+            {
+                std::cout << "output file:" << file_name << std::endl;
+                if (!tract_model.save_tracts_to_file(file_name.c_str()))
+                {
+                    std::cout << "Cannot save file. Please check write permission, directory, and disk space." << std::endl;
+                    return -1;
+                }
+                if(QFileInfo(file_name.c_str()).exists())
+                    std::cout << "File saved to " << file_name << std::endl;
+            }
         }
     }
     if(po.has("cluster"))
