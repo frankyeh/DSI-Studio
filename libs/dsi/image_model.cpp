@@ -187,7 +187,8 @@ void ImageModel::rotate(const image::basic_image<float,3>& ref,const image::tran
             check_prog(index,src_dwi_data.size());
         dwi[index].resize(new_geo);
         auto I = image::make_image((unsigned short*)src_dwi_data[index],voxel.dim);
-        image::resample_with_ref(I,ref,dwi[index],affine);
+        //image::resample_with_ref(I,ref,dwi[index],affine);
+        image::resample(I,dwi[index],affine,image::cubic);
         src_dwi_data[index] = &(dwi[index][0]);
     });
     check_prog(0,0);
