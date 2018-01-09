@@ -37,6 +37,11 @@ void save_connectivity_matrix(TractModel& tract_model,
         std::cout << "Connectivity calculation error:" << data.error_msg << std::endl;
         return;
     }
+    if(data.overlap_ratio > 0.5)
+    {
+        std::cout << "The ROIs have a large overlapping area (ratio="
+                  << data.overlap_ratio << "). The network measure calculated may not be reliable" << std::endl;
+    }
     if(connectivity_value == "trk")
         return;
     std::string file_name_stat(source);
@@ -146,6 +151,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                     }
                 }
         }
+
         for(unsigned int j = 0;j < connectivity_type_list.size();++j)
         for(unsigned int k = 0;k < connectivity_value_list.size();++k)
             save_connectivity_matrix(tract_model,data,source,roi_file_name,connectivity_value_list[k].toStdString(),

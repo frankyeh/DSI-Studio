@@ -1831,8 +1831,8 @@ void TractModel::get_tracts_data(unsigned int data_index,float& mean, float& sd)
     sd = std::sqrt(sum_data2/(double)total-sum_data*sum_data/(double)total/(double)total);
 
 }
-
-void create_region_map(const image::geometry<3>& geometry,
+// return region overlapped ratio
+float create_region_map(const image::geometry<3>& geometry,
                       const std::vector<std::vector<image::vector<3,short> > >& regions,
                       std::vector<std::vector<short> >& region_map)
 {
@@ -1845,18 +1845,26 @@ void create_region_map(const image::geometry<3>& geometry,
             image::vector<3,short> pos = regions[roi][index];
             if(geometry.is_valid(pos))
                 regions_set[image::pixel_index<3>(pos[0],pos[1],pos[2],geometry).index()].insert(roi);
+
         }
     }
-
+    unsigned int overlap_count = 0,total_count = 0;
     for(unsigned int index = 0;index < geometry.size();++index)
         if(!regions_set[index].empty())
+        {
             for(auto i : regions_set[index])
                 region_map[index].push_back(i);
+            ++total_count;
+            if(region_map[index].size() > 1)
+                ++overlap_count;
+        }
+    return (float)overlap_count/(float)total_count;
 }
 
 void TractModel::get_passing_list(const std::vector<std::vector<image::vector<3,short> > >& regions,
                                   std::vector<std::vector<short> >& passing_list1,
-                                  std::vector<std::vector<short> >& passing_list2) const
+                                  std::vector<std::vector<short> >& passing_list2,
+                                  float& overlap_ratio) const
 {
     passing_list1.clear();
     passing_list1.resize(tract_data.size());
@@ -1864,7 +1872,7 @@ void TractModel::get_passing_list(const std::vector<std::vector<image::vector<3,
     passing_list2.resize(tract_data.size());
     // create regions maps
     std::vector<std::vector<short> > region_map;
-    create_region_map(geometry,regions,region_map);
+    overlap_ratio = create_region_map(geometry,regions,region_map);
 
     for(unsigned int index = 0;index < tract_data.size();++index)
     {
@@ -1895,7 +1903,8 @@ void TractModel::get_passing_list(const std::vector<std::vector<image::vector<3,
 
 void TractModel::get_end_list(const std::vector<std::vector<image::vector<3,short> > >& regions,
                                   std::vector<std::vector<short> >& end_pair1,
-                                  std::vector<std::vector<short> >& end_pair2) const
+                                  std::vector<std::vector<short> >& end_pair2,
+                                    float& overlap_ratio) const
 {
     end_pair1.clear();
     end_pair1.resize(tract_data.size());
@@ -1903,7 +1912,7 @@ void TractModel::get_end_list(const std::vector<std::vector<image::vector<3,shor
     end_pair2.resize(tract_data.size());
     // create regions maps
     std::vector<std::vector<short> > region_map;
-    create_region_map(geometry,regions,region_map);
+    overlap_ratio = create_region_map(geometry,regions,region_map);
 
     for(unsigned int index = 0;index < tract_data.size();++index)
     {
@@ -2084,9 +2093,9 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
 
     std::vector<std::vector<short> > end_list1,end_list2;
     if(use_end_only)
-        tract_model.get_end_list(regions,end_list1,end_list2);
+        tract_model.get_end_list(regions,end_list1,end_list2,overlap_ratio);
     else
-        tract_model.get_passing_list(regions,end_list1,end_list2);
+        tract_model.get_passing_list(regions,end_list1,end_list2,overlap_ratio);
     if(matrix_value_type == "trk")
     {
         std::vector<std::vector<std::vector<unsigned int> > > region_passing_list;
@@ -2719,11 +2728,11 @@ void ConnectivityMatrix::network_property(std::string& report,double t)
     output_node_measures(out,"eccentricity(weighted)",eccentricity_wei);
 
 
-
+    if(overlap_ratio > 0.5)
+    {
+        out << " The brain parcellations have a large overlapping area (ratio="
+            << overlap_ratio << "). The network measure calculated may not be reliable.";
+    }
 
     report = out.str();
-
-
-
-
 }

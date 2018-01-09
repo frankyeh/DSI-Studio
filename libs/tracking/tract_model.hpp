@@ -135,10 +135,12 @@ public:
 
         void get_passing_list(const std::vector<std::vector<image::vector<3,short> > >& regions,
                                      std::vector<std::vector<short> >& passing_list1,
-                                     std::vector<std::vector<short> >& passing_list2) const;
+                                     std::vector<std::vector<short> >& passing_list2,
+                                     float& overlap_ratio) const;
         void get_end_list(const std::vector<std::vector<image::vector<3,short> > >& regions,
                                      std::vector<std::vector<short> >& end_list1,
-                                     std::vector<std::vector<short> >& end_list2) const;
+                                     std::vector<std::vector<short> >& end_list2,
+                                     float& overlap_ratio) const;
         void run_clustering(unsigned char method_id,unsigned int cluster_count,float param);
 
 };
@@ -155,6 +157,7 @@ public:
     std::vector<std::vector<image::vector<3,short> > > regions;
     std::vector<std::string> region_name;
     std::string error_msg;
+    float overlap_ratio;
     void set_atlas(atlas& data,const image::basic_image<image::vector<3,float>,3 >& mni_position);
 public:
     void save_to_image(image::color_image& cm);
