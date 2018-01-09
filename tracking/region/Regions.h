@@ -66,8 +66,29 @@ public: // rendering options
 
         ROIRegion(const image::geometry<3>& geo_, const image::vector<3>& vs_)
             : geo(geo_), vs(vs_),modified(false){}
-
-        const std::vector<image::vector<3,short> >& get(void) const {return region;}
+        image::vector<3,short> get_region_voxel(unsigned int index) const
+        {
+            image::vector<3,short> result = region[index];
+            if(resolution_ratio == 1.0)
+                return result;
+            result[0] = (float)result[0]/resolution_ratio;
+            result[1] = (float)result[1]/resolution_ratio;
+            result[2] = (float)result[2]/resolution_ratio;
+            return result;
+        }
+        void get_region_voxels(std::vector<image::vector<3,short> >& output) const
+        {
+            output = region;
+            if(resolution_ratio == 1.0)
+                return;
+            for(int i = 0;i < region.size();++i)
+            {
+                output[i][0] = (float)region[i][0]/resolution_ratio;
+                output[i][1] = (float)region[i][1]/resolution_ratio;
+                output[i][2] = (float)region[i][2]/resolution_ratio;
+            }
+        }
+        const std::vector<image::vector<3,short> >& get_region_voxels_raw(void) const {return region;}
         void assign(const std::vector<image::vector<3,short> >& region_,float r)
         {
             region = region_;
@@ -90,9 +111,6 @@ public: // rendering options
         }
 
         unsigned int size(void) const {return (unsigned int)region.size();}
-
-
-
         std::vector<image::vector<3,short> >::const_iterator
                 begin(void) const {return region.begin();}
 

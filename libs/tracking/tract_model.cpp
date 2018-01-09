@@ -1843,7 +1843,8 @@ void create_region_map(const image::geometry<3>& geometry,
         for(unsigned int index = 0;index < regions[roi].size();++index)
         {
             image::vector<3,short> pos = regions[roi][index];
-            regions_set[image::pixel_index<3>(pos[0],pos[1],pos[2],geometry).index()].insert(roi);
+            if(geometry.is_valid(pos))
+                regions_set[image::pixel_index<3>(pos[0],pos[1],pos[2],geometry).index()].insert(roi);
         }
     }
 

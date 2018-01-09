@@ -34,7 +34,7 @@ void save_connectivity_matrix(TractModel& tract_model,
     std::cout << "calculate matrix using " << connectivity_value << std::endl;
     if(!data.calculate(tract_model,connectivity_value,use_end_only,t))
     {
-        std::cout << data.error_msg << std::endl;
+        std::cout << "Connectivity calculation error:" << data.error_msg << std::endl;
         return;
     }
     if(connectivity_value == "trk")
@@ -60,7 +60,8 @@ void save_connectivity_matrix(TractModel& tract_model,
     std::ofstream out(network_measures.c_str());
     out << report;
 }
-void load_nii_label(const char* filename,std::map<int,std::string>& label_map);
+void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
+                          std::map<int,image::rgb_color>& label_color,bool mute_cmd);
 void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                              TractModel& tract_model)
 {
@@ -70,7 +71,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
     QStringList connectivity_value_list = QString(po.get("connectivity_value","count").c_str()).split(",");
     if(po.has("output"))
         source = po.get("output");
-    if(source == "no_file")
+    if(source == "no_file" || source.empty())
         source = po.get("source");
     for(unsigned int i = 0;i < connectivity_list.size();++i)
     {
@@ -79,9 +80,12 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
         gz_nifti header;
         image::basic_image<unsigned int, 3> from;
         std::cout << "loading " << roi_file_name << std::endl;
+        // if an ROI file is assigned, load it
         if (QFileInfo(roi_file_name.c_str()).exists() && header.load_from_file(roi_file_name))
             header.toLPS(from);
-        if(from.geometry() != handle->dim)
+        // if atlas or MNI space ROI is used
+        if(from.geometry() != handle->dim &&
+           (from.empty() || QFileInfo(roi_file_name.c_str()).baseName() != "aparc+aseg"))
         {
             std::cout << roi_file_name << " is used as an MNI space ROI." << std::endl;
             if(handle->get_mni_mapping().empty())
@@ -93,7 +97,10 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
             if(atl_load_atlas(roi_file_name))
                 data.set_atlas(atlas_list[0],handle->get_mni_mapping());
             else
+            {
+                std::cout << "File or atlas does not exist:" << roi_file_name << std::endl;
                 continue;
+            }
         }
         else
         {
@@ -114,14 +121,10 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
             }
             std::cout << "total number of regions=" << region_count << std::endl;
 
+            // get label file
             std::map<int,std::string> label_map;
-            QString label_file = QFileInfo(roi_file_name.c_str()).absolutePath()+"/"+QFileInfo(roi_file_name.c_str()).completeBaseName()+".txt";
-            std::cout << "searching for roi label file:" << label_file.toStdString() << std::endl;
-            if(QFileInfo(label_file).exists())
-            {
-                load_nii_label(label_file.toLocal8Bit().begin(),label_map);
-                std::cout << "label file loaded." <<std::endl;
-            }
+            std::map<int,image::rgb_color> label_color;
+            get_roi_label(roi_file_name.c_str(),label_map,label_color,false);
             for(unsigned int value = 1;value < value_map.size();++value)
                 if(value_map[value])
                 {
@@ -131,10 +134,8 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                             mask[i] = 1;
                     ROIRegion region(handle->dim,handle->vs);
                     region.LoadFromBuffer(mask);
-                    const std::vector<image::vector<3,short> >& cur_region = region.get();
-                    image::vector<3,float> pos = std::accumulate(cur_region.begin(),cur_region.end(),image::vector<3,float>(0,0,0));
-                    pos /= cur_region.size();
-                    data.regions.push_back(cur_region);
+                    data.regions.push_back(std::vector<image::vector<3,short> >());
+                    region.get_region_voxels(data.regions.back());
                     if(label_map.find(value) != label_map.end())
                         data.region_name.push_back(label_map[value]);
                     else
@@ -145,7 +146,6 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                     }
                 }
         }
-
         for(unsigned int j = 0;j < connectivity_type_list.size();++j)
         for(unsigned int k = 0;k < connectivity_value_list.size();++k)
             save_connectivity_matrix(tract_model,data,source,roi_file_name,connectivity_value_list[k].toStdString(),
@@ -269,7 +269,7 @@ bool load_region(std::shared_ptr<fib_data> handle,
         std::cout << str_list[i].toStdString() << " applied." << std::endl;
         roi.perform(str_list[i].toStdString());
     }
-    if(roi.get().empty())
+    if(roi.empty())
         std::cout << "Warning: " << file_name << " is an empty region file" << std::endl;
     return true;
 }
@@ -308,24 +308,14 @@ int trk_post(std::shared_ptr<fib_data> handle,
         }
         else
         if(file_name != "no_file")
-        {
-            QString file_ext = QFileInfo(file_name.c_str()).completeSuffix().toLower();
-            if(file_ext != "txt" && file_ext != "trk" && file_ext != "trk.gz")
+        {            
+            std::cout << "output file:" << file_name << std::endl;
+            if (!tract_model.save_tracts_to_file(file_name.c_str()))
             {
-                std::cout << "Unsupported file extension:" << file_ext.toStdString() << std::endl;
-                std::cout << "No track file saved." << std::endl;
+                std::cout << "Cannot save tracks as " << file_name << ". Please check write permission, directory, and disk space." << std::endl;
             }
-            else
-            {
-                std::cout << "output file:" << file_name << std::endl;
-                if (!tract_model.save_tracts_to_file(file_name.c_str()))
-                {
-                    std::cout << "Cannot save file. Please check write permission, directory, and disk space." << std::endl;
-                    return -1;
-                }
-                if(QFileInfo(file_name.c_str()).exists())
-                    std::cout << "File saved to " << file_name << std::endl;
-            }
+            if(QFileInfo(file_name.c_str()).exists())
+                std::cout << "File saved to " << file_name << std::endl;
         }
     }
     if(po.has("cluster"))
@@ -368,7 +358,7 @@ bool load_roi(std::shared_ptr<fib_data> handle,RoiMgr& roi_mgr)
         ROIRegion roi(handle->dim, handle->vs);
         if(!load_region(handle,roi,po.get(roi_names[index])))
             return false;
-        roi_mgr.setRegions(handle->dim,roi.get(),roi.resolution_ratio,type[index],po.get(roi_names[index]).c_str(),handle->vs);
+        roi_mgr.setRegions(handle->dim,roi.get_region_voxels_raw(),roi.resolution_ratio,type[index],po.get(roi_names[index]).c_str(),handle->vs);
         std::cout << roi_names[index] << "=" << po.get(roi_names[index]) << std::endl;
     }
     return true;

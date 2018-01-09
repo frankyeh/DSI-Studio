@@ -391,16 +391,14 @@ void RegionTableWidget::draw_mosaic_region(QImage& qimage,unsigned int mosaic_si
         unsigned int cur_color = regions[roi_index]->show_region.color;
         for (unsigned int index = 0;index < regions[roi_index]->size();++index)
         {
-            int X = regions[roi_index]->get()[index][0];
-            int Y = regions[roi_index]->get()[index][1];
-            int Z = regions[roi_index]->get()[index][2];
-            if(Z != ((Z / skip) * skip))
+            image::vector<3,short> p = regions[roi_index]->get_region_voxel(index);
+            if(p[2] != ((p[2] / skip) * skip))
                 continue;
-            X += shift_x[Z / skip];
-            Y += shift_y[Z / skip];
-            if(X < 0 || Y < 0 || X >= qimage.width() || Y >= qimage.height())
+            p[0] += shift_x[p[2] / skip];
+            p[1] += shift_y[p[2] / skip];
+            if(p[0] < 0 || p[1] < 0 || p[0] >= qimage.width() || p[1] >= qimage.height())
                 continue;
-            qimage.setPixel(X,Y,(unsigned int)qimage.pixel(X,Y) | cur_color);
+            qimage.setPixel(p[0],p[1],(unsigned int)qimage.pixel(p[0],p[1]) | cur_color);
         }
     }
 }
@@ -456,6 +454,45 @@ void load_nii_label(const char* filename,std::map<int,std::string>& label_map)
         }
     }
 }
+void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
+                          std::map<int,image::rgb_color>& label_color,bool mute_cmd = true)
+{
+    label_map.clear();
+    label_color.clear();
+    QString base_name = QFileInfo(file_name).baseName();
+    if(base_name == "aparc+aseg") // FreeSurfer
+    {
+        if(!mute_cmd)
+            std::cout << "Use freesurfer labels." << std::endl;
+        QFile data(":/data/FreeSurferColorLUT.txt");
+        if (data.open(QIODevice::ReadOnly | QIODevice::Text))
+        {
+            QTextStream in(&data);
+            while (!in.atEnd())
+            {
+                QString line = in.readLine();
+                if(line.isEmpty() || line[0] == '#')
+                    continue;
+                std::istringstream in(line.toStdString());
+                int value,r,b,g;
+                std::string name;
+                in >> value >> name >> r >> g >> b;
+                label_map[value] = name;
+                label_color[value] = image::rgb_color(r,g,b);
+            }
+            return;
+        }
+    }
+    QString label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".txt";
+    if(QFileInfo(label_file).exists())
+    {
+        load_nii_label(label_file.toLocal8Bit().begin(),label_map);
+        std::cout << "Load label file:" << label_file.toStdString() << std::endl;
+        return;
+    }
+    if(!mute_cmd)
+        std::cout << "No label file found. Use default ROI numbering." << std::endl;
+}
 
 bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 {
@@ -488,35 +525,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     std::map<int,image::rgb_color> label_color;
 
     if(multiple_roi)
-    {
-        QString base_name = QFileInfo(file_name).baseName();
-        if(base_name == "aparc+aseg") // FreeSurfer
-        {
-            QFile data(":/data/FreeSurferColorLUT.txt");
-            if (data.open(QIODevice::ReadOnly | QIODevice::Text))
-            {
-                QTextStream in(&data);
-                while (!in.atEnd())
-                {
-                    QString line = in.readLine();
-                    if(line.isEmpty() || line[0] == '#')
-                        continue;
-                    std::istringstream in(line.toStdString());
-                    int value,r,b,g;
-                    std::string name;
-                    in >> value >> name >> r >> g >> b;
-                    label_map[value] = name;
-                    label_color[value] = image::rgb_color(r,g,b);
-                }
-            }
-        }
-        else
-        {
-            QString label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".txt";
-            if(QFileInfo(label_file).exists())
-                load_nii_label(label_file.toLocal8Bit().begin(),label_map);
-        }
-    }
+        get_roi_label(file_name,label_map,label_color);
 
     image::matrix<4,4,float> convert;
     bool has_transform = false;
@@ -605,7 +614,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         region.show_region.color = max_value;
         add_region(QFileInfo(file_name).baseName(),type,color);
 
-        regions.back()->assign(region.get(),region.resolution_ratio);
+        regions.back()->assign(region.get_region_voxels_raw(),region.resolution_ratio);
         item(currentRow(),0)->setCheckState(Qt::Checked);
         item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
         return true;
@@ -626,7 +635,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
             QString name = (label_map.find(value) == label_map.end() ?
                                 QString("roi_") + QString::number(value):QString(label_map[value].c_str()));
             add_region(name,roi_id,label_color.empty() ? 0x00FFFFFF : label_color[value].color);
-            regions.back()->assign(region.get(),region.resolution_ratio);
+            regions.back()->assign(region.get_region_voxels_raw(),region.resolution_ratio);
             item(currentRow(),0)->setCheckState(Qt::Unchecked);
             item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
         }
@@ -657,7 +666,7 @@ void RegionTableWidget::load_region(void)
             return;
         }
         add_region(QFileInfo(filenames[index]).baseName(),roi_id,region.show_region.color.color);
-        regions.back()->assign(region.get(),region.resolution_ratio);
+        regions.back()->assign(region.get_region_voxels_raw(),region.resolution_ratio);
 
     }
     emit need_update();
@@ -820,20 +829,18 @@ void RegionTableWidget::save_all_regions(void)
     QString label_file = QFileInfo(filename).absolutePath()+"/"+base_name+".txt";
     std::ofstream out(label_file.toLocal8Bit().begin());
     image::geometry<3> geo = cur_tracking_window.handle->dim;
-    image::basic_image<unsigned int, 3>mask(geo);
+    image::basic_image<unsigned int, 3> mask(geo);
     for (unsigned int i = 0; i < regions.size(); ++i)
         if (item(i,0)->checkState() == Qt::Checked)
         {
-            for (unsigned int j = 0; j < regions[i]->get().size(); ++j)
+            for (unsigned int j = 0; j < regions[i]->size(); ++j)
             {
-                if (geo.is_valid(regions[i]->get()[j][0], regions[i]->get()[j][1],regions[i]->get()[j][2]))
-                    mask[image::pixel_index<3>(regions[i]->get()[j][0],
-                                           regions[i]->get()[j][1],
-                                           regions[i]->get()[j][2], geo).index()] = i+1;
+                image::vector<3,short> p = regions[i]->get_region_voxel(j);
+                if (geo.is_valid(p))
+                    mask[image::pixel_index<3>(p[0],p[1],p[2], geo).index()] = i+1;
 
             }
-            out << i+1
-                << " " << item(i,0)->text().toStdString() << std::endl;
+            out << i+1 << " " << item(i,0)->text().toStdString() << std::endl;
         }
     gz_nifti header;
     header.set_voxel_size(cur_tracking_window.current_slice->voxel_size);
@@ -868,10 +875,10 @@ void RegionTableWidget::save_region_info(void)
             out << "\t" << cur_tracking_window.handle->view_item[index].name;
 
     out << std::endl;
-    for(int index = 0;index < regions[currentRow()]->get().size();++index)
+    for(int index = 0;index < regions[currentRow()]->size();++index)
     {
         std::vector<float> data;
-        image::vector<3,short> point(regions[currentRow()]->get()[index]);
+        image::vector<3,short> point = regions[currentRow()]->get_region_voxel(index);
         cur_tracking_window.handle->get_voxel_info2(point[0],point[1],point[2],data);
         cur_tracking_window.handle->get_voxel_information(point[0],point[1],point[2],data);
         std::copy(point.begin(),point.end(),std::ostream_iterator<float>(out,"\t"));
@@ -1014,7 +1021,7 @@ void RegionTableWidget::setROIs(ThreadData* data)
         set_whole_brain(data);
     for (unsigned int index = 0;index < regions.size();++index)
         if (!regions[index]->empty() && item(index,0)->checkState() == Qt::Checked)
-            data->roi_mgr.setRegions(cur_tracking_window.handle->dim,regions[index]->get(),
+            data->roi_mgr.setRegions(cur_tracking_window.handle->dim,regions[index]->get_region_voxels_raw(),
                                      regions[index]->resolution_ratio,
                              regions[index]->regions_feature,item(index,0)->text().toLocal8Bit().begin(),
                                      cur_tracking_window.handle->vs);
@@ -1093,7 +1100,7 @@ void RegionTableWidget::do_action(QString action)
                     region.LoadFromBuffer(mask);
                     add_region(name + "_"+QString::number(total_count+1),
                                roi_id,region.show_region.color.color);
-                    regions.back()->assign(region.get(),region.resolution_ratio);
+                    regions.back()->assign(region.get_region_voxels_raw(),region.resolution_ratio);
                     ++total_count;
                 }
         }
