@@ -390,8 +390,7 @@ int trk(void)
 
     image::geometry<3> geometry = handle->dim;
     const float *fa0 = handle->dir.fa[0];
-    float otsu06 = 0.6f*image::segmentation::otsu_threshold(image::make_image(fa0,geometry));
-
+    float otsu06 = po.get("otsu_threshold",0.6f)*image::segmentation::otsu_threshold(image::make_image(fa0,geometry));
 
     ThreadData tracking_thread(po.get("random_seed",int(0)));
     tracking_thread.param.threshold = po.get("fa_threshold",otsu06);

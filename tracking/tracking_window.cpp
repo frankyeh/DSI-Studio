@@ -918,7 +918,9 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
     float max_value = *std::max_element(handle->dir.fa[0],handle->dir.fa[0]+handle->dim.size());
     renderWidget->setMinMax("fa_threshold",0.0,max_value*1.1,max_value/50.0);
     if(renderWidget->getData("fa_threshold").toFloat() != 0.0)
-        set_data("fa_threshold",0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim)));
+        set_data("fa_threshold",
+                 renderWidget->getData("otsu_threshold").toFloat()*
+                 image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim)));
     scene.show_slice();
 }
 
@@ -1307,7 +1309,9 @@ void tracking_window::on_actionImprove_Quality_triggered()
 {
     tracking_data fib;
     fib.read(*handle);
-    float threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim));
+    float threshold = renderWidget->getData("otsu_threshold").toFloat()*
+            image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim));
+
     if(!fib.dir.empty())
         return;
     for(float cos_angle = 0.99f;check_prog(1000-cos_angle*1000,1000-866);cos_angle -= 0.005f)
@@ -1574,11 +1578,12 @@ void tracking_window::on_show_position_toggled(bool checked)
 
 void tracking_window::on_actionAdjust_Mapping_triggered()
 {
-    if(!ui->SliceModality->currentIndex())
-        return;
     CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
-    if(!reg_slice)
+    if(!reg_slice || !ui->SliceModality->currentIndex())
+    {
+        QMessageBox::information(this,"Error","In the region window to the left, select the inserted slides to adjust mapping");
         return;
+    }
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
         slices[0]->get_source(),slices[0]->voxel_size,
         reg_slice->get_source(),reg_slice->voxel_size,

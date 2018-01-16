@@ -908,7 +908,8 @@ void RegionTableWidget::whole_brain_points(std::vector<image::vector<3,short> >&
     image::geometry<3> geo = cur_tracking_window.handle->dim;
     float threshold = cur_tracking_window["fa_threshold"].toFloat();
     if(threshold == 0)
-        threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(cur_tracking_window.handle->dir.fa[0],cur_tracking_window.handle->dim));
+        threshold = cur_tracking_window["otsu_threshold"].toFloat()
+                *image::segmentation::otsu_threshold(image::make_image(cur_tracking_window.handle->dir.fa[0],cur_tracking_window.handle->dim));
     for (image::pixel_index<3>index(geo); index < geo.size();++index)
     {
         image::vector<3,short> pos(index);
