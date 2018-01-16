@@ -231,7 +231,10 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
 {
     gz_nifti analyze_header;
     if(!analyze_header.load_from_file(file_name))
+    {
+        std::cout << analyze_header.error << std::endl;
         return false;
+    }
     std::cout << "loading 4d nifti" << std::endl;
 
     std::vector<double> bvals,bvecs;
