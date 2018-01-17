@@ -2167,17 +2167,20 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         float angle = (param2.isEmpty()) ? 1 : param2.toFloat();
         int ow = width(),oh = height();
         image::io::avi avi;
+        #ifndef __APPLE__
+            resize(1980,1080);
+        #endif
         for(float index = 0;check_prog(index,360);index += angle)
         {
             rotate_angle(angle,0,1.0,0.0);
             QBuffer buffer;
             QImageWriter writer(&buffer, "JPG");
-            resize(1980,1080);
             updateGL();
-            writer.write(grabFrameBuffer());
-            QByteArray data = buffer.data();
+            QImage I = grabFrameBuffer();
+            writer.write(I);
             if(index == 0.0)
-                avi.open(param.toLocal8Bit().begin(),1920,1080, "MJPG", 30/*fps*/);
+                avi.open(param.toLocal8Bit().begin(),I.width(),I.height(), "MJPG", 30/*fps*/);
+            QByteArray data = buffer.data();
             avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
         }
         avi.close();

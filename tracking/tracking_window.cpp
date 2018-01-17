@@ -394,12 +394,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         ui->zoom_3d->setValue(80.0/(float)std::max<int>(std::max<int>(handle->dim[0],handle->dim[1]),handle->dim[2]));
 
     qApp->installEventFilter(this);
-    #ifdef __APPLE__ // fix Mac shortcut problem
-    foreach (QAction *a, ui->menu_Edit->actions()) {
-        QObject::connect(new QShortcut(a->shortcut(), a->parentWidget()),
-                         SIGNAL(activated()), a, SLOT(trigger()));
-    }
-    #endif
 
     on_glAxiView_clicked();
     if((*this)["orientation_convention"].toInt() == 1)
