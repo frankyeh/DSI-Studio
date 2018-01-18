@@ -734,11 +734,13 @@
     <addaction name="separator"/>
     <addaction name="menuMove_Region"/>
     <addaction name="menuModify"/>
+    <addaction name="separator"/>
     <addaction name="actionWhole_brain_seeding"/>
+    <addaction name="actionNew_Super_Resolution_Region"/>
     <addaction name="separator"/>
     <addaction name="actionRegion_statistics"/>
     <addaction name="actionSave_Voxel_Data_As"/>
-    <addaction name="actionNew_Super_Resolution_Region"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuTracts">
     <property name="title">
@@ -2973,12 +2975,12 @@ Tracking</string>
   </action>
   <action name="actionUndo_Edit">
    <property name="text">
-    <string>Undo Edit</string>
+    <string>Undo</string>
    </property>
   </action>
   <action name="actionRedo_Edit">
    <property name="text">
-    <string>Redo Edit</string>
+    <string>Redo</string>
    </property>
   </action>
   <action name="actionStrip_skull_for_T1w_image">
