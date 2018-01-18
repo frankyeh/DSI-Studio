@@ -329,16 +329,17 @@ int trk_post(std::shared_ptr<fib_data> handle,
         std::string cmd = po.get("cluster");
         std::replace(cmd.begin(),cmd.end(),',',' ');
         std::istringstream in(cmd);
-        unsigned int size = 500;
-        float detail = handle->vs[0];
+        int method = 0,count = 0,detail = 0;
         std::string name;
-        in >> name;
-        in >> size >> detail;
-        std::cout << "Clustering with size of " << size << " and resolution of" << detail << " mm" << std::endl;
-        tract_model.run_clustering(0,size,detail);
+        in >> method >> count >> detail >> name;
+        std::cout << "Cluster method=" << method << std::endl;
+        std::cout << "Cluster count=" << count << std::endl;
+        std::cout << "Cluster resolution (if method is 0) = " << detail << " mm" << std::endl;
+        std::cout << "Run clustering." << std::endl;
+        tract_model.run_clustering(method,count,detail);
         std::ofstream out(name);
+        std::cout << "Cluster label saved to " << name << std::endl;
         std::copy(tract_model.get_cluster_info().begin(),tract_model.get_cluster_info().end(),std::ostream_iterator<int>(out," "));
-        std::cout << "Cluster file saved to " << name << std::endl;
     }
 
     if(po.has(("end_point")))
