@@ -24,8 +24,6 @@ manual_alignment::manual_alignment(QWidget *parent,
     image::normalize(to,1.0);
     image::reg::get_bound(from,arg,b_upper,b_lower,reg_type);
 
-
-
     ui->setupUi(this);
     ui->reg_type->setCurrentIndex(reg_type == image::reg::rigid_body? 0: 1);
     ui->cost_type->setCurrentIndex(cost_function == image::reg::mutual_info ? 1 : 0);

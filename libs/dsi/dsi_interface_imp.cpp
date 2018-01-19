@@ -520,6 +520,8 @@ const char* reconstruction(ImageModel* image_model,
                 return "reconstruction canceled";
             out << ".R" << (int)std::floor(image_model->voxel.R2*100.0) << ".fib.gz";
             break;
+        case 8:
+            break;
         }
         image_model->save_fib(out.str());
         output_name = image_model->file_name + out.str();

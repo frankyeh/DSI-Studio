@@ -474,7 +474,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     {
         //error_msg = "Cannot find voxel size matrix";
         //return false;
-        std::fill(voxel.vs.begin(),voxel.vs.end(),3.0);
+        std::fill(voxel.vs.begin(),voxel.vs.end(),2.0);
     }
     else
         std::copy(voxel_size,voxel_size+3,voxel.vs.begin());
