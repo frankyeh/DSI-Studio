@@ -36,7 +36,6 @@ protected:
 protected:
     typedef image::const_pointer_image<unsigned short,3> point_image_type;
     std::vector<point_image_type> ptr_images;
-    std::vector<image::vector<3,float> > q_vectors_time;
 
 public:
     virtual void init(Voxel& voxel)
@@ -539,7 +538,7 @@ public:
             }
         }
     }
-    void end(Voxel& voxel,gz_mat_write& mat_writer)
+    void end(Voxel& voxel,gz_mat_write&)
     {
         voxel.z0 = image::median(samples.begin(),samples.end());
         if(voxel.z0 == 0.0)
@@ -552,18 +551,11 @@ double base_function(double theta);
 class QSDR  : public BaseProcess
 {
 protected:
-    std::vector<image::vector<3,double> > q_vectors_time;
+    std::vector<image::vector<3,float> > q_vectors_time;
 public:
     virtual void init(Voxel& voxel)
     {
-        float sigma = voxel.param[0];
-        q_vectors_time.resize(voxel.bvalues.size());
-        for (unsigned int index = 0; index < voxel.bvalues.size(); ++index)
-        {
-            q_vectors_time[index] = voxel.bvectors[index];
-            q_vectors_time[index] *= std::sqrt(voxel.bvalues[index]*0.01506);// get q in (mm) -1
-            q_vectors_time[index] *= sigma;
-        }
+        voxel.calculate_q_vec_t(q_vectors_time);
     }
 
     virtual void run(Voxel& voxel, VoxelData& data)
@@ -571,7 +563,7 @@ public:
         std::vector<float> sinc_ql(data.odf.size()*data.space.size());
         for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
         {
-            image::vector<3,double> from(voxel.ti.vertices[j]);
+            image::vector<3,float> from(voxel.ti.vertices[j]);
             from.rotate(data.jacobian);
             from.normalize();
             if(voxel.r2_weighted)

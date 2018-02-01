@@ -556,6 +556,17 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         voxel.calculate_mask(dwi_sum);
     return true;
 }
+bool ImageModel::load_baseline(const char* dwi_file_name)
+{
+    std::shared_ptr<ImageModel> bl(new ImageModel);
+    if(!bl->load_from_file(dwi_file_name))
+        return false;
+    baseline = bl;
+    baseline->voxel.load_from_src(*baseline.get());
+    voxel.baseline = &(baseline->voxel);
+    return true;
+}
+
 void ImageModel::save_to_file(gz_mat_write& mat_writer)
 {
 

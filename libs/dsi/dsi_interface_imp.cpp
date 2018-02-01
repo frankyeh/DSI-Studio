@@ -440,6 +440,18 @@ const char* reconstruction(ImageModel* image_model,
             if (image_model->voxel.output_rdi)
                 out << ".rdi";
             out << (image_model->voxel.r2_weighted ? ".gqi2.":".gqi.") << param_values[0] << ".fib.gz";
+            if(image_model->voxel.baseline)
+            {
+                //image::affine_transform<double> arg;
+                //bool terminated;
+                /*
+                image::reg::linear_mr(voxel.dwi_sum,voxel.vs,bl->voxel.dwi_sum,bl->voxel.vs,arg,
+                                      image::reg::rigid_body,image::reg::mutual_information(),terminated,0.1);
+                image::reg::linear_mr(voxel.dwi_sum,voxel.vs,bl->voxel.dwi_sum,bl->voxel.vs,arg,
+                                      image::reg::rigid_body,image::reg::mutual_information(),terminated,0.01);
+                                      */
+            }
+
             if(image_model->src_dwi_data.size() == 1)
             {
                 if (!image_model->reconstruct<hgqi_process>())

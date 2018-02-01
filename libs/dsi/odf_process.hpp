@@ -359,26 +359,13 @@ public:
             int size = 125000.0f/(voxel.vs[0]*voxel.vs[1]*voxel.vs[2]);
             float water_b0 = *(data.end()-size);
 
-            float sigma = voxel.param[0]; //optimal 1.24
             // numerically estimate free water ODF
             unsigned int odf_size = voxel.ti.half_vertices_count;
             std::vector<float> dwi(voxel.bvalues.size()),odf(odf_size);
             for(int i = 0;i < dwi.size();++i)
                 dwi[i] = water_b0*std::exp(-voxel.bvalues[i]*0.003f); // free water diffusivity
-
-            std::vector<float> sinc_ql(odf_size*voxel.bvalues.size());
-            // calculate reconstruction matrix
-            for (unsigned int j = 0,index = 0; j < odf_size; ++j)
-                for (unsigned int i = 0; i < voxel.bvalues.size(); ++i,++index)
-                    sinc_ql[index] = voxel.bvectors[i]*
-                                 image::vector<3,float>(voxel.ti.vertices[j])*
-                                   std::sqrt(voxel.bvalues[i]*0.01506);
-
-            for (unsigned int index = 0; index < sinc_ql.size(); ++index)
-                sinc_ql[index] = voxel.r2_weighted ?
-                             base_function(sinc_ql[index]*sigma):
-                             boost::math::sinc_pi(sinc_ql[index]*sigma);
-
+            std::vector<float> sinc_ql;
+            voxel.calculate_sinc_ql(sinc_ql);
             image::mat::vector_product(&*sinc_ql.begin(),&*dwi.begin(),&*odf.begin(),
                                     image::dyndim(odf.size(),dwi.size()));
             z0 = image::mean(odf.begin(),odf.end());

@@ -79,7 +79,9 @@ public:// DTI
     bool output_diffusivity = false;
     bool output_tensor = false;
 public://used in GQI
-    bool r2_weighted = false;// used in GQI only    
+    bool r2_weighted = false;// used in GQI only
+    void calculate_sinc_ql(std::vector<float>& sinc_ql);
+    void calculate_q_vec_t(std::vector<image::vector<3,float> >& q_vector_time);
 public://used in GQI
     bool scheme_balance = false;
     bool csf_calibration = false;
@@ -108,9 +110,11 @@ public: // for T1W based DMDM
     float t1wt_tran[16];
     std::string t1w_file_name;
 
-public: // user in fib evaluation
+public: // for fib evaluation
     std::vector<float> fib_fa;
     std::vector<float> fib_dir;
+public: // for GQI baseline
+    Voxel* baseline = 0;
 public:
     float z0 = 0.0;
     // other information for second pass processing

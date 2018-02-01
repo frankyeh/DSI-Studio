@@ -12,7 +12,7 @@ double base_function(double theta);
 class QSpace2Odf  : public BaseProcess
 {
 public:// recorded for scheme balanced
-    std::vector<image::vector<3,double> > q_vectors_time;
+    std::vector<image::vector<3,float> > q_vectors_time;
 public:
     std::vector<unsigned int> b0_images;
     std::vector<float> sinc_ql;
@@ -26,34 +26,12 @@ public:
                 b0_images.push_back(index);
         if(b0_images.size() > 1)
             throw std::runtime_error("Correct B0 failed. Two b0 images found in src file");
-
-
-        unsigned int odf_size = voxel.ti.half_vertices_count;
-        float sigma = voxel.param[0]; //optimal 1.24
         if(!voxel.grad_dev.empty())
         {
-            q_vectors_time.resize(voxel.bvalues.size());
-            for (unsigned int index = 0; index < voxel.bvalues.size(); ++index)
-            {
-                q_vectors_time[index] = voxel.bvectors[index];
-                q_vectors_time[index] *= std::sqrt(voxel.bvalues[index]*0.01506);// get q in (mm) -1
-                q_vectors_time[index] *= sigma;
-            }
+            voxel.calculate_q_vec_t(q_vectors_time);
             return;
         }
-        sinc_ql.resize(odf_size*voxel.bvalues.size());
-        // calculate reconstruction matrix
-        for (unsigned int j = 0,index = 0; j < odf_size; ++j)
-            for (unsigned int i = 0; i < voxel.bvalues.size(); ++i,++index)
-                sinc_ql[index] = voxel.bvectors[i]*
-                             image::vector<3,float>(voxel.ti.vertices[j])*
-                               std::sqrt(voxel.bvalues[i]*0.01506);
-
-        for (unsigned int index = 0; index < sinc_ql.size(); ++index)
-            sinc_ql[index] = voxel.r2_weighted ?
-                         base_function(sinc_ql[index]*sigma):
-                         boost::math::sinc_pi(sinc_ql[index]*sigma);
-
+        voxel.calculate_sinc_ql(sinc_ql);
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
@@ -94,8 +72,6 @@ public:
 
 class HQSpace2Odf  : public BaseProcess
 {
-public:// recorded for scheme balanced
-    std::vector<image::vector<3,double> > q_vectors_time;
 public:
     std::vector<float> sinc_ql;
 public:
@@ -126,22 +102,7 @@ public:
                     offset.push_back(dx + dy*voxel.dim.width() + dz*voxel.dim.plane_size());
                     scaling.push_back(std::exp(-r2));
                 }
-
-        unsigned int odf_size = voxel.ti.half_vertices_count;
-        float sigma = voxel.param[0]; //optimal 1.24
-        sinc_ql.resize(odf_size*voxel.bvalues.size());
-        // calculate reconstruction matrix
-        for (unsigned int j = 0,index = 0; j < odf_size; ++j)
-            for (unsigned int i = 0; i < voxel.bvalues.size(); ++i,++index)
-                sinc_ql[index] = voxel.bvectors[i]*
-                             image::vector<3,float>(voxel.ti.vertices[j])*
-                               std::sqrt(voxel.bvalues[i]*0.01506);
-
-        for (unsigned int index = 0; index < sinc_ql.size(); ++index)
-            sinc_ql[index] = voxel.r2_weighted ?
-                         base_function(sinc_ql[index]*sigma):
-                         boost::math::sinc_pi(sinc_ql[index]*sigma);
-
+        voxel.calculate_sinc_ql(sinc_ql);
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {

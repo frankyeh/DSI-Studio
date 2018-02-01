@@ -1004,7 +1004,7 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
     if(manual->exec() != QDialog::Accepted)
         return;
     begin_prog("rotating");
-    handle->rotate(dwi.geometry(),manual->iT);
+    handle->rotate(dwi,manual->iT);
     update_image();
     update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
@@ -1034,7 +1034,7 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
         return;
 
     begin_prog("rotating");
-    handle->rotate(ref.geometry(),manual->iT);
+    handle->rotate(ref,manual->iT);
     handle->voxel.vs = vs;
     image::pointer_image<unsigned short,3> I = image::make_image((unsigned short*)handle->src_dwi_data[0],handle->voxel.dim);
     ref *= (float)(*std::max_element(I.begin(),I.end()))/(*std::max_element(ref.begin(),ref.end()));
