@@ -86,10 +86,10 @@ void load_file_name(void)
         fib_template_file_name_1mm = filename.toStdString();
 
 
-    filename = QCoreApplication::applicationDirPath() + "/mni_icbm152_t1_tal_nlin_asym_09a.nii.gz";
+    filename = QCoreApplication::applicationDirPath() + "/mni_icbm152_t1_tal_nlin_asym_09c.nii.gz";
     if(QFileInfo(filename).exists())
         t1w_template_file_name = filename.toStdString();
-    filename = QDir::currentPath() + "/mni_icbm152_t1_tal_nlin_asym_09a.nii.gz";
+    filename = QDir::currentPath() + "/mni_icbm152_t1_tal_nlin_asym_09c.nii.gz";
     if(QFileInfo(filename).exists())
         t1w_template_file_name = filename.toStdString();
 

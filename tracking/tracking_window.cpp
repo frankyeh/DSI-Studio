@@ -127,18 +127,18 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     if(handle->is_qsdr)
     {
         QStringList wm,t1;
-        wm << QCoreApplication::applicationDirPath() + "/mni_icbm152_wm_tal_nlin_asym_09a.nii.gz";
-        t1 << QCoreApplication::applicationDirPath() + "/mni_icbm152_t1_tal_nlin_asym_09a.nii.gz";
+        wm << QCoreApplication::applicationDirPath() + "/mni_icbm152_wm_tal_nlin_asym_09c.nii.gz";
+        t1 << QCoreApplication::applicationDirPath() + "/mni_icbm152_t1_tal_nlin_asym_09c.nii.gz";
         if(!QFileInfo(t1[0]).exists())
         {
             t1.clear();
-            t1 << QDir::currentPath() + "/mni_icbm152_t1_tal_nlin_asym_09a.nii.gz";
+            t1 << QDir::currentPath() + "/mni_icbm152_t1_tal_nlin_asym_09c.nii.gz";
         }
 
         if(!QFileInfo(wm[0]).exists())
         {
             wm.clear();
-            wm << QDir::currentPath() + "/mni_icbm152_wm_tal_nlin_asym_09a.nii.gz";
+            wm << QDir::currentPath() + "/mni_icbm152_wm_tal_nlin_asym_09c.nii.gz";
         }
 
 
@@ -973,6 +973,7 @@ void tracking_window::on_actionSave_Tracts_in_MNI_space_triggered()
     }
     if(handle->is_qsdr)
         tractWidget->saveTransformedTracts(&*(handle->trans_to_mni.begin()));
+    else
         tractWidget->saveTransformedTracts(0);
 }
 
