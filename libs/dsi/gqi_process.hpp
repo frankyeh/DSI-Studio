@@ -27,7 +27,7 @@ public:
     {
         if(voxel.b0_index == 0 && voxel.half_sphere)
             data.space[0] *= 0.5;
-
+        // add rotation from QSDR or gradient nonlinearity
         if(voxel.qsdr || !voxel.grad_dev.empty())
         {
             if(!voxel.qsdr)

@@ -329,7 +329,6 @@ const char* reconstruction(ImageModel* image_model,
                 return "reconstruction canceled";
             break;
         case 7:
-            image_model->voxel.qsdr = true;
             if(image_model->voxel.reg_method == 4) // DMDM
             {
                 {

@@ -550,7 +550,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QRadioButton" name="QDif">
+            <widget class="QRadioButton" name="QSDR">
              <property name="enabled">
               <bool>true</bool>
              </property>

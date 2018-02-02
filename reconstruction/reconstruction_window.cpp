@@ -85,7 +85,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         on_DTI_toggled(true);
         break;
     case 7:
-        ui->QDif->setChecked(true);
+        ui->QSDR->setChecked(true);
         on_QDif_toggled(true);
         break;
     case 8:
@@ -458,13 +458,13 @@ void reconstruction_window::on_doDTI_clicked()
             doReconstruction(3,index+1 == filenames.size());
         }
         else
-        if(ui->GQI->isChecked() || ui->QDif->isChecked())
+        if(ui->GQI->isChecked() || ui->QSDR->isChecked())
         {
             params[0] = ui->diffusion_sampling->value();
             if(params[0] == 0.0)
                 params[1] = ui->diffusion_time->value();
             settings.setValue("rec_gqi_sampling",ui->diffusion_sampling->value());
-            if(ui->QDif->isChecked())
+            if(ui->QSDR->isChecked())
             {
                 float res[4] = {0.5,1.0,2.0,3.0};
                 params[1] = res[ui->resolution->currentIndex()];
