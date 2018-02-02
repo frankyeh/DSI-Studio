@@ -32,6 +32,156 @@ void ImageModel::remove(unsigned int index)
     src_bvectors.erase(src_bvectors.begin()+index);
     shell.clear();
 }
+
+typedef boost::mpl::vector<
+    ReadDWIData,
+    Dwi2Tensor
+> check_btable_process;
+std::pair<float,float> evaluate_fib(
+        const image::geometry<3>& dim,
+        const std::vector<std::vector<float> >& fib_fa,
+        const std::vector<std::vector<float> >& fib_dir)
+{
+    unsigned char num_fib = fib_fa.size();
+    char dx[13] = {1,0,0,1,1,0, 1, 1, 0, 1,-1, 1, 1};
+    char dy[13] = {0,1,0,1,0,1,-1, 0, 1, 1, 1,-1, 1};
+    char dz[13] = {0,0,1,0,1,1, 0,-1,-1, 1, 1, 1,-1};
+    std::vector<image::vector<3> > dis(13);
+    for(unsigned int i = 0;i < 13;++i)
+    {
+        dis[i] = image::vector<3>(dx[i],dy[i],dz[i]);
+        dis[i].normalize();
+    }
+    float otsu = *std::max_element(fib_fa[0].begin(),fib_fa[0].end())*0.1;
+    std::vector<std::vector<unsigned char> > connected(fib_fa.size());
+    for(unsigned int index = 0;index < connected.size();++index)
+        connected[index].resize(dim.size());
+    float connection_count = 0;
+    for(image::pixel_index<3> index(dim);index < dim.size();++index)
+    {
+        if(fib_fa[0][index.index()] <= otsu)
+            continue;
+        unsigned int index3 = index.index()+index.index()+index.index();
+        for(unsigned char fib1 = 0;fib1 < num_fib;++fib1)
+        {
+            if(fib_fa[fib1][index.index()] <= otsu)
+                break;
+            for(unsigned int j = 0;j < 2;++j)
+            for(unsigned int i = 0;i < 13;++i)
+            {
+                image::vector<3,int> pos;
+                pos = j ? image::vector<3,int>(index[0] + dx[i],index[1] + dy[i],index[2] + dz[i])
+                          :image::vector<3,int>(index[0] - dx[i],index[1] - dy[i],index[2] - dz[i]);
+                if(!dim.is_valid(pos))
+                    continue;
+                image::pixel_index<3> other_index(pos[0],pos[1],pos[2],dim);
+                unsigned int other_index3 = other_index.index()+other_index.index()+other_index.index();
+                if(std::abs(image::vector<3>(&fib_dir[fib1][index3])*dis[i]) <= 0.8665)
+                    continue;
+                for(unsigned char fib2 = 0;fib2 < num_fib;++fib2)
+                    if(fib_fa[fib2][other_index.index()] > otsu &&
+                            std::abs(image::vector<3>(&fib_dir[fib2][other_index3])*dis[i]) > 0.8665)
+                    {
+                        connected[fib1][index.index()] = 1;
+                        connected[fib2][other_index.index()] = 1;
+                        connection_count += fib_fa[fib2][other_index.index()];
+                    }
+            }
+        }
+    }
+    float no_connection_count = 0;
+    for(image::pixel_index<3> index(dim);index < dim.size();++index)
+    {
+        for(unsigned int i = 0;i < num_fib;++i)
+            if(fib_fa[i][index.index()] > otsu && !connected[i][index.index()])
+            {
+                no_connection_count += fib_fa[i][index.index()];
+            }
+
+    }
+
+    return std::make_pair(connection_count,no_connection_count);
+}
+void flip_fib_dir(std::vector<float>& fib_dir,const unsigned char* order)
+{
+    for(unsigned int j = 0;j+2 < fib_dir.size();j += 3)
+    {
+        float x = fib_dir[j+order[0]];
+        float y = fib_dir[j+order[1]];
+        float z = fib_dir[j+order[2]];
+        fib_dir[j] = x;
+        fib_dir[j+1] = y;
+        fib_dir[j+2] = z;
+        if(order[3])
+            fib_dir[j] = -fib_dir[j];
+        if(order[4])
+            fib_dir[j+1] = -fib_dir[j+1];
+        if(order[5])
+            fib_dir[j+2] = -fib_dir[j+2];
+    }
+}
+std::string ImageModel::check_b_table(void)
+{
+    if(baseline.get())
+        baseline->check_b_table();
+    set_title("checking b-table");
+    bool output_dif = voxel.output_diffusivity;
+    bool output_tensor = voxel.output_tensor;
+    voxel.output_diffusivity = false;
+    voxel.output_tensor = false;
+    reconstruct<check_btable_process>();
+    voxel.output_diffusivity = output_dif;
+    voxel.output_tensor = output_tensor;
+    std::vector<std::vector<float> > fib_fa(1);
+    std::vector<std::vector<float> > fib_dir(1);
+    fib_fa[0].swap(voxel.fib_fa);
+    fib_dir[0].swap(voxel.fib_dir);
+
+    const unsigned char order[18][6] = {
+                            {0,1,2,1,0,0},
+                            {0,1,2,0,1,0},
+                            {0,1,2,0,0,1},
+                            {0,2,1,1,0,0},
+                            {0,2,1,0,1,0},
+                            {0,2,1,0,0,1},
+                            {1,0,2,1,0,0},
+                            {1,0,2,0,1,0},
+                            {1,0,2,0,0,1},
+                            {1,2,0,1,0,0},
+                            {1,2,0,0,1,0},
+                            {1,2,0,0,0,1},
+                            {2,1,0,1,0,0},
+                            {2,1,0,0,1,0},
+                            {2,1,0,0,0,1},
+                            {2,0,1,1,0,0},
+                            {2,0,1,0,1,0},
+                            {2,0,1,0,0,1}};
+    const char txt[18][6] = {".012fx",".012fy",".012fz",
+                             ".021fx",".021fy",".021fz",
+                             ".102fx",".102fy",".102fz",
+                             ".120fx",".120fy",".120fz",
+                             ".210fx",".210fy",".210fz",
+                             ".201fx",".201fy",".201fz"};
+
+    float result[18] = {0};
+    float cur_score = evaluate_fib(voxel.dim,fib_fa,fib_dir).first;
+    for(int i = 0;i < 18;++i)
+    {
+        std::vector<std::vector<float> > new_dir(fib_dir);
+        flip_fib_dir(new_dir[0],order[i]);
+        result[i] = evaluate_fib(voxel.dim,fib_fa,new_dir).first;
+    }
+    int best = std::max_element(result,result+18)-result;
+
+    if(result[best] > cur_score)
+    {
+        flip_b_table(order[best]);
+        voxel.load_from_src(*image_model);
+        return txt[best];
+    }
+    return std::string();
+}
+
 float ImageModel::quality_control_neighboring_dwi_corr(void)
 {
     // correlation of neighboring DWI < 1750
@@ -560,7 +710,10 @@ bool ImageModel::load_baseline(const char* dwi_file_name)
 {
     std::shared_ptr<ImageModel> bl(new ImageModel);
     if(!bl->load_from_file(dwi_file_name))
+    {
+        error_msg = bl->error_msg;
         return false;
+    }
     baseline = bl;
     baseline->voxel.load_from_src(*baseline.get());
     voxel.baseline = &(baseline->voxel);

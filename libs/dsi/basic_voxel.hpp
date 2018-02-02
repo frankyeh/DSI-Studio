@@ -42,7 +42,6 @@ struct VoxelData
         std::fill(fa.begin(),fa.end(),0.0);
         std::fill(dir_index.begin(),dir_index.end(),0);
         std::fill(dir.begin(),dir.end(),image::vector<3,float>());
-        min_odf = 0.0;
     }
 };
 
@@ -72,7 +71,6 @@ public:// parameters;
     const float* param;
     std::string file_name;
     bool need_odf = false;
-    bool half_sphere = false;
     unsigned int max_fiber_number = 5;
     std::vector<std::string> file_list;
 public:// DTI
@@ -80,6 +78,8 @@ public:// DTI
     bool output_tensor = false;
 public://used in GQI
     bool r2_weighted = false;// used in GQI only
+    bool half_sphere = false;
+    int b0_index = -1;
     void calculate_sinc_ql(std::vector<float>& sinc_ql);
     void calculate_q_vec_t(std::vector<image::vector<3,float> >& q_vector_time);
 public://used in GQI
@@ -98,6 +98,7 @@ public:// used in QSDR
     bool output_jacobian = false;
     bool output_mapping = false;
     bool output_rdi = false;
+    bool qsdr = false;
     image::vector<3,int> csf_pos1,csf_pos2,csf_pos3,csf_pos4;
     double R2;
 public: // for QSDR associated T1WT2W

@@ -9,60 +9,53 @@
 
 
 double base_function(double theta);
-class QSpace2Odf  : public BaseProcess
+class GQI_Recon  : public BaseProcess
 {
 public:// recorded for scheme balanced
     std::vector<image::vector<3,float> > q_vectors_time;
 public:
-    std::vector<unsigned int> b0_images;
     std::vector<float> sinc_ql;
-
 public:
     virtual void init(Voxel& voxel)
     {
-        b0_images.clear();
-        for(unsigned int index = 0;index < voxel.bvalues.size();++index)
-            if(voxel.bvalues[index] == 0)
-                b0_images.push_back(index);
-        if(b0_images.size() > 1)
-            throw std::runtime_error("Correct B0 failed. Two b0 images found in src file");
-        if(!voxel.grad_dev.empty())
-        {
+        if(!voxel.grad_dev.empty() || voxel.qsdr)
             voxel.calculate_q_vec_t(q_vectors_time);
-            return;
-        }
-        voxel.calculate_sinc_ql(sinc_ql);
+        else
+            voxel.calculate_sinc_ql(sinc_ql);
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        if(b0_images.size() == 1 && voxel.half_sphere)
-            data.space[b0_images.front()] *= 0.5;
+        if(voxel.b0_index == 0 && voxel.half_sphere)
+            data.space[0] *= 0.5;
 
-        if(!voxel.grad_dev.empty()) // correction for gradient nonlinearity
+        if(voxel.qsdr || !voxel.grad_dev.empty())
         {
-            /*
-            new_bvecs = (I+grad_dev) * bvecs;
-            */
-            float grad_dev[9];
-            for(unsigned int i = 0; i < 9; ++i)
-                grad_dev[i] = voxel.grad_dev[i][data.voxel_index];
-            image::mat::transpose(grad_dev,image::dim<3,3>());
-            std::vector<float> new_sinc_ql(data.odf.size()*data.space.size());
+            if(!voxel.qsdr)
+            {
+                // correction for gradient nonlinearity
+                // new_bvecs = (I+grad_dev) * bvecs;
+                for(unsigned int i = 0; i < 9; ++i)
+                    data.jacobian[i] = voxel.grad_dev[i][data.voxel_index];
+                image::mat::transpose(data.jacobian.begin(),image::dim<3,3>());
+            }
+            std::vector<float> sinc_ql(data.odf.size()*data.space.size());
             for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
             {
                 image::vector<3,float> from(voxel.ti.vertices[j]);
-                from.rotate(grad_dev);
+                from.rotate(data.jacobian);
                 from.normalize();
                 if(voxel.r2_weighted)
                     for (unsigned int i = 0; i < data.space.size(); ++i,++index)
-                        new_sinc_ql[index] = base_function(q_vectors_time[i]*from);
+                        sinc_ql[index] = base_function(q_vectors_time[i]*from);
                 else
                     for (unsigned int i = 0; i < data.space.size(); ++i,++index)
-                        new_sinc_ql[index] = boost::math::sinc_pi(q_vectors_time[i]*from);
+                        sinc_ql[index] = boost::math::sinc_pi(q_vectors_time[i]*from);
 
             }
-            image::mat::vector_product(&*new_sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
-                                    image::dyndim(data.odf.size(),data.space.size()));
+            image::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
+                                          image::dyndim(data.odf.size(),data.space.size()));
+            if(voxel.qsdr)
+                image::multiply_constant(data.odf,data.jdet);
         }
         else
             image::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
@@ -70,7 +63,7 @@ public:
     }
 };
 
-class HQSpace2Odf  : public BaseProcess
+class HGQI_Recon  : public BaseProcess
 {
 public:
     std::vector<float> sinc_ql;
@@ -142,7 +135,7 @@ public:
 
 class SchemeConverter : public BaseProcess
 {
-    QSpace2Odf from,to;
+    GQI_Recon from,to;
     std::vector<int> piv;
     std::vector<image::vector<3,float> > bvectors;
     std::vector<float> bvalues;
@@ -337,8 +330,6 @@ public:
         for(unsigned int index = 0;index < voxel.bvalues.size();++index)
             if(voxel.bvalues[index] == 0)
                 b0_images.push_back(index);
-        if(b0_images.size() > 1)
-            throw std::runtime_error("Correct B0 failed. Two b0 images found in src file");
 
         float diffusion_time = voxel.param[1];
         float diffusion_length = std::sqrt(6.0*3.0*diffusion_time); // sqrt(6Dt)
@@ -409,7 +400,7 @@ public:
     }
 };
 
-class RestrictedDiffusionImaging  : public BaseProcess
+class RDI_Recon  : public BaseProcess
 {
 private:
     std::vector<std::vector<float> > rdi;

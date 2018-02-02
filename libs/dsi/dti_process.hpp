@@ -62,7 +62,7 @@ public:
 
         b_count = voxel.bvalues.size()-1;
         std::vector<image::vector<3> > b_data(b_count);
-        //skip null
+        //skip b0
         std::copy(voxel.bvectors.begin()+1,voxel.bvectors.end(),b_data.begin());
         for(unsigned int index = 0; index < b_count; ++index)
             b_data[index] *= std::sqrt(voxel.bvalues[index+1]);

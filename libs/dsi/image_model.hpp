@@ -244,7 +244,7 @@ public:
     std::shared_ptr<ImageModel> baseline;
     void calculate_dwi_sum(void);
     void remove(unsigned int index);
-public:
+    std::string check_b_table(void);
 public:
     std::vector<unsigned int> shell;
     void calculate_shell(void);

@@ -14,7 +14,6 @@ class DWINormalization  : public BaseProcess
 protected:
     image::geometry<3> src_geo;
     image::geometry<3> des_geo;
-    int b0_index;
 protected:
     std::auto_ptr<image::reg::bfnorm_mapping<double,3> > mni;
 protected:
@@ -311,13 +310,6 @@ public:
             }
         }
 
-
-        b0_index = -1;
-        if(voxel.half_sphere)
-            for(unsigned int index = 0; index < voxel.bvalues.size(); ++index)
-                if(voxel.bvalues[index] == 0)
-                    b0_index = index;
-
         ptr_images.clear();
         for (unsigned int index = 0; index < voxel.dwi_data.size(); ++index)
             ptr_images.push_back(image::make_image(voxel.dwi_data[index],src_geo));
@@ -340,6 +332,7 @@ public:
             my.resize(voxel.dim.size());
             mz.resize(voxel.dim.size());
         }
+        voxel.qsdr = true;
     }
 
     image::vector<3,int> mni_to_voxel_index(int x,int y,int z) const
@@ -366,8 +359,7 @@ public:
         data.space.resize(ptr_images.size());
         for (unsigned int i = 0; i < ptr_images.size(); ++i)
             interpolation.estimate(ptr_images[i],data.space[i]);
-        if(voxel.half_sphere && b0_index != -1)
-            data.space[b0_index] *= 0.5;
+
         // output mapping position
         if(voxel.output_mapping)
         {
@@ -543,45 +535,6 @@ public:
         voxel.z0 = image::median(samples.begin(),samples.end());
         if(voxel.z0 == 0.0)
             voxel.z0 = 1.0;
-    }
-
-};
-
-double base_function(double theta);
-class QSDR  : public BaseProcess
-{
-protected:
-    std::vector<image::vector<3,float> > q_vectors_time;
-public:
-    virtual void init(Voxel& voxel)
-    {
-        voxel.calculate_q_vec_t(q_vectors_time);
-    }
-
-    virtual void run(Voxel& voxel, VoxelData& data)
-    {
-        std::vector<float> sinc_ql(data.odf.size()*data.space.size());
-        for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
-        {
-            image::vector<3,float> from(voxel.ti.vertices[j]);
-            from.rotate(data.jacobian);
-            from.normalize();
-            if(voxel.r2_weighted)
-                for (unsigned int i = 0; i < data.space.size(); ++i,++index)
-                    sinc_ql[index] = base_function(q_vectors_time[i]*from);
-            else
-                for (unsigned int i = 0; i < data.space.size(); ++i,++index)
-                    sinc_ql[index] = boost::math::sinc_pi(q_vectors_time[i]*from);
-
-        }
-        image::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
-                                      image::dyndim(data.odf.size(),data.space.size()));
-        image::multiply_constant(data.odf,data.jdet);
-
-    }
-    virtual void end(Voxel&,gz_mat_write&)
-    {
-
     }
 
 };

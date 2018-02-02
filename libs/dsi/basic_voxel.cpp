@@ -1,7 +1,12 @@
 #include <boost/math/special_functions/sinc.hpp>
 #include "basic_voxel.hpp"
 #include "image_model.hpp"
-
+double base_function(double theta)
+{
+    if(std::abs(theta) < 0.000001)
+        return 1.0/3.0;
+    return (2*std::cos(theta)+(theta-2.0/theta)*std::sin(theta))/theta/theta;
+}
 
 void Voxel::init(void)
 {
@@ -17,7 +22,7 @@ void Voxel::init(void)
     for (unsigned int index = 0; index < process_list.size(); ++index)
         process_list[index]->init(*this);
 }
-double base_function(double theta);
+
 void Voxel::calculate_sinc_ql(std::vector<float>& sinc_ql)
 {
     unsigned int odf_size = ti.half_vertices_count;
@@ -69,6 +74,7 @@ void Voxel::load_from_src(ImageModel& image_model)
         bvalues.push_back(0);
         bvectors.push_back(image::vector<3,float>(0,0,0));
         dwi_data.push_back(image_model.src_dwi_data[sorted_index[0]]);
+        b0_index = 0;
     }
     for(int i = 0;i < sorted_index.size();++i)
         if(image_model.src_bvalues[sorted_index[i]] != 0.0f)

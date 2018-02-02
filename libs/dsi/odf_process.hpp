@@ -323,7 +323,7 @@ public:
 };
 
 double base_function(double theta);
-struct SaveFA : public BaseProcess
+struct SaveMetrics : public BaseProcess
 {
 protected:
     std::vector<float> iso,gfa;

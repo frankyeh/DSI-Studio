@@ -419,7 +419,7 @@ bool fib_data::load_from_file(const char* file_name)
 {
     if (!mat_reader.load_from_file(file_name) || prog_aborted())
     {
-        error_msg = prog_aborted() ? "loading process aborted" : "cannot open file";
+        error_msg = prog_aborted() ? "Loading process aborted" : "Invalid file format";
         return false;
     }
     return load_from_mat();

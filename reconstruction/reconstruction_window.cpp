@@ -67,6 +67,11 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->b_table->setHorizontalHeaderLabels(QStringList() << "b value" << "bx" << "by" << "bz");
     ui->gqi_spectral->hide();
     ui->ODFSharpening->hide();
+    ui->DSI->hide();
+    ui->QBI->hide();
+    ui->DDI->hide();
+
+
     v2c.two_color(image::rgb_color(0,0,0),image::rgb_color(255,255,255));
     update_dimension();
 
@@ -75,20 +80,16 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     switch(settings.value("rec_method_id",4).toInt())
     {
-    case 0:
-        ui->DSI->setChecked(true);
-        on_DSI_toggled(true);
-        break;
     case 1:
         ui->DTI->setChecked(true);
         on_DTI_toggled(true);
         break;
-    case 3:
-        ui->QBI->setChecked(true);
-        on_QBI_toggled(true);
-        break;
     case 7:
         ui->QDif->setChecked(true);
+        on_QDif_toggled(true);
+        break;
+    case 8:
+        ui->DDI->setChecked(true);
         on_QDif_toggled(true);
         break;
     default:
@@ -485,6 +486,7 @@ void reconstruction_window::on_DTI_toggled(bool checked)
     ui->DSIOption_2->setVisible(!checked);
     ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(!checked);
+    ui->DDIOption->setVisible(!checked);
 
     ui->AdvancedOptions->setVisible(checked);
     ui->ODFOption->setVisible(!checked);
@@ -506,6 +508,7 @@ void reconstruction_window::on_DSI_toggled(bool checked)
     ui->DSIOption_2->setVisible(checked);
     ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(!checked);
+    ui->DDIOption->setVisible(!checked);
 
     ui->AdvancedOptions->setVisible(checked);
     ui->ODFOption->setVisible(checked);
@@ -527,6 +530,7 @@ void reconstruction_window::on_QBI_toggled(bool checked)
     ui->DSIOption_2->setVisible(!checked);
     ui->QBIOption_2->setVisible(checked);
     ui->GQIOption_2->setVisible(!checked);
+    ui->DDIOption->setVisible(!checked);
 
     ui->AdvancedOptions->setVisible(checked);
     ui->ODFOption->setVisible(checked);
@@ -543,10 +547,12 @@ void reconstruction_window::on_QBI_toggled(bool checked)
 void reconstruction_window::on_GQI_toggled(bool checked)
 {
     ui->ResolutionBox->setVisible(!checked);
-    //ui->ODFSharpening->setVisible(checked);
+
+
     ui->DSIOption_2->setVisible(!checked);
     ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(checked);
+    ui->DDIOption->setVisible(!checked);
 
     ui->AdvancedOptions->setVisible(checked);
     ui->ODFOption->setVisible(checked);
@@ -563,6 +569,13 @@ void reconstruction_window::on_GQI_toggled(bool checked)
     if(ui->csf_calibration->isEnabled())
         ui->csf_calibration->setVisible(true);
 }
+void reconstruction_window::on_DDI_toggled(bool checked)
+{
+    on_GQI_toggled(checked);
+    ui->rdi->setVisible(false);
+    ui->DDIOption->setVisible(checked);
+
+}
 
 void reconstruction_window::on_QDif_toggled(bool checked)
 {
@@ -571,6 +584,8 @@ void reconstruction_window::on_QDif_toggled(bool checked)
     ui->DSIOption_2->setVisible(!checked);
     ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(checked);
+    ui->DDIOption->setVisible(!checked);
+
 
     ui->AdvancedOptions->setVisible(checked);
     ui->ODFOption->setVisible(checked);
@@ -1073,3 +1088,30 @@ void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
 }
 
 
+
+void reconstruction_window::on_actionEnable_TEST_features_triggered()
+{
+    ui->DSI->setVisible(true);
+    ui->QBI->setVisible(true);
+    ui->DDI->setVisible(true);
+    ui->ODFSharpening->setVisible(true);
+
+}
+
+
+void reconstruction_window::on_open_ddi_baseline_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(
+            this,"Open SRC file",absolute_path,
+            "Images (*.src.gz);;All files (*)" );
+    if( filename.isEmpty())
+        return;
+    if(!handle->load_baseline(filename.toStdString().c_str()))
+    {
+        QMessageBox::information(this,"error",QString("Cannot open ") +
+            filename + " : " +handle->error_msg.c_str(),0);
+        check_prog(0,0);
+        return;
+    }
+    ui->ddi_file->setText(QFileInfo(filename).baseName());
+}
