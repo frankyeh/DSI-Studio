@@ -183,7 +183,7 @@ public:
         voxel.bvalues.swap(bvalues);
         voxel.bvectors.swap(bvectors);
 
-        if(!from.b0_images.empty())
+        if(voxel.b0_index == 0)
             b0.resize(voxel.dim.size());
 
         Rt.resize(dwi.size()*dwi.size());
@@ -206,10 +206,10 @@ public:
 
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        if(!from.b0_images.empty())
+        if(voxel.b0_index == 0)
         {
-            b0[data.voxel_index] = data.space[from.b0_images.front()];
-            data.space[from.b0_images.front()] = 0;
+            b0[data.voxel_index] = data.space[0];
+            data.space[0] = 0;
         }
         from.run(voxel,data);
         std::vector<float> hardi_data(dwi.size()),tmp(dwi.size());

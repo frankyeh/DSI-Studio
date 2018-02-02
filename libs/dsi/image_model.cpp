@@ -1,5 +1,6 @@
 #include "image_model.hpp"
-
+#include "odf_process.hpp"
+#include "dti_process.hpp"
 
 void ImageModel::calculate_dwi_sum(void)
 {
@@ -156,7 +157,7 @@ std::string ImageModel::check_b_table(void)
                             {2,0,1,1,0,0},
                             {2,0,1,0,1,0},
                             {2,0,1,0,0,1}};
-    const char txt[18][6] = {".012fx",".012fy",".012fz",
+    const char txt[18][7] = {".012fx",".012fy",".012fz",
                              ".021fx",".021fy",".021fz",
                              ".102fx",".102fy",".102fz",
                              ".120fx",".120fy",".120fz",
@@ -176,7 +177,7 @@ std::string ImageModel::check_b_table(void)
     if(result[best] > cur_score)
     {
         flip_b_table(order[best]);
-        voxel.load_from_src(*image_model);
+        voxel.load_from_src(*this);
         return txt[best];
     }
     return std::string();
