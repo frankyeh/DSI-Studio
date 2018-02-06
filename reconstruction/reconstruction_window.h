@@ -98,6 +98,7 @@ private slots:
     void on_actionEnable_TEST_features_triggered();
     void on_DDI_toggled(bool checked);
     void on_open_ddi_baseline_clicked();
+    void on_actionImage_upsample_to_T1W_TESTING_triggered();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

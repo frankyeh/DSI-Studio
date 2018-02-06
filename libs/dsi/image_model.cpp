@@ -328,7 +328,9 @@ void ImageModel::rotate_dwi(unsigned int dwi_index,const image::transformation_m
     src_bvectors[dwi_index] = v;
 }
 
-void ImageModel::rotate(const image::basic_image<float,3>& ref,const image::transformation_matrix<double>& affine)
+void ImageModel::rotate(const image::basic_image<float,3>& ref,
+                        const image::transformation_matrix<double>& affine,
+                        bool super_resolution)
 {
     image::geometry<3> new_geo = ref.geometry();
     std::vector<image::basic_image<unsigned short,3> > dwi(src_dwi_data.size());
@@ -338,8 +340,10 @@ void ImageModel::rotate(const image::basic_image<float,3>& ref,const image::tran
             check_prog(index,src_dwi_data.size());
         dwi[index].resize(new_geo);
         auto I = image::make_image((unsigned short*)src_dwi_data[index],voxel.dim);
-        //image::resample_with_ref(I,ref,dwi[index],affine);
-        image::resample(I,dwi[index],affine,image::cubic);
+        if(super_resolution)
+            image::resample_with_ref(I,ref,dwi[index],affine);
+        else
+            image::resample(I,dwi[index],affine,image::cubic);
         src_dwi_data[index] = &(dwi[index][0]);
     });
     check_prog(0,0);

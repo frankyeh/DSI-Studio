@@ -1722,6 +1722,7 @@
     <addaction name="separator"/>
     <addaction name="actionCorrect_AP_PA_scans"/>
     <addaction name="actionEnable_TEST_features"/>
+    <addaction name="actionImage_upsample_to_T1W_TESTING"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menu_Edit"/>
@@ -1829,6 +1830,11 @@
   <action name="actionEnable_TEST_features">
    <property name="text">
     <string>Enable TEST features</string>
+   </property>
+  </action>
+  <action name="actionImage_upsample_to_T1W_TESTING">
+   <property name="text">
+    <string>Image upsample to T1W (TESTING)...</string>
    </property>
   </action>
  </widget>

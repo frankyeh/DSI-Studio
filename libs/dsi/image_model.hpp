@@ -261,7 +261,9 @@ public:
     void rotate_b_table(unsigned char dim);
     void flip(unsigned char type);
     void rotate_dwi(unsigned int dwi_index,const image::transformation_matrix<double>& affine);
-    void rotate(const image::basic_image<float,3>& ref,const image::transformation_matrix<double>& affine);
+    void rotate(const image::basic_image<float,3>& ref,
+                const image::transformation_matrix<double>& affine,
+                bool super_resolution = false);
     void trim(void);
     void distortion_correction(const ImageModel& rhs);
 public:

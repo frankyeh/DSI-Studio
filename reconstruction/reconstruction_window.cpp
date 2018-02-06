@@ -830,7 +830,7 @@ void reconstruction_window::on_actionRotate_triggered()
     handle->rotate(ref,manual->iT);
     handle->voxel.vs = vs;
     handle->voxel.report += " The diffusion images were rotated and scaled to the space of ";
-    handle->voxel.report += filenames[0].toStdString();
+    handle->voxel.report += QFileInfo(filenames[0]).baseName().toStdString();
     handle->voxel.report += ". The b-table was also rotated accordingly.";
     ui->report->setText(handle->voxel.report.c_str());
     update_image();
@@ -1114,4 +1114,39 @@ void reconstruction_window::on_open_ddi_baseline_clicked()
         return;
     }
     ui->ddi_file->setText(QFileInfo(filename).baseName());
+}
+
+void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
+{
+    QStringList filenames = QFileDialog::getOpenFileNames(
+            this,"Open Images files",absolute_path,
+            "Images (*.nii *nii.gz *.dcm);;All files (*)" );
+    if( filenames.isEmpty())
+        return;
+
+    image::basic_image<float,3> ref;
+    image::vector<3> vs;
+    if(!load_image_from_files(filenames,ref,vs))
+        return;
+    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
+                                                                dwi,handle->voxel.vs,ref,vs,
+                                                                image::reg::rigid_body,
+                                                                image::reg::cost_type::mutual_info));
+    manual->on_rerun_clicked();
+    if(manual->exec() != QDialog::Accepted)
+        return;
+
+    begin_prog("rotating");
+    image::basic_image<float,3> ref2(ref);
+    float m = image::median(ref2.begin(),ref2.end());
+    image::multiply_constant_mt(ref,0.5f/m);
+    handle->rotate(ref,manual->iT,true);
+    handle->voxel.vs = vs;
+    handle->voxel.report += " The diffusion images were rotated and scaled to the space of ";
+    handle->voxel.report += QFileInfo(filenames[0]).baseName().toStdString();
+    handle->voxel.report += ". The b-table was also rotated accordingly.";
+    ui->report->setText(handle->voxel.report.c_str());
+    update_image();
+    update_dimension();
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }
