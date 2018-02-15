@@ -106,8 +106,11 @@ typedef boost::mpl::vector<
     ReadDWIData,
     BalanceScheme,
     GQI_Recon,
+    ReadDDIData,
+    BalanceScheme,
+    GQI_Recon,
+    CalculateDifference,
     DetermineFiberDirections,
-    ScaleZ0ToMinODF,
     SaveMetrics,
     SaveDirIndex,
     OutputODF
@@ -195,6 +198,8 @@ const char* reconstruction(ImageModel* image_model,
             {
                 image_model->voxel.odf_deconvolusion = 0;
                 image_model->voxel.odf_decomposition = 0;
+                image_model->voxel.csf_calibration = false;
+                out << "." << image_model->voxel.study_name << ".R" << (int)(image_model->voxel.study_r2*100.0f);
             }
             out << ".odf" << image_model->voxel.ti.fold;// odf_order
             out << ".f" << image_model->voxel.max_fiber_number;
@@ -389,14 +394,15 @@ const char* reconstruction(ImageModel* image_model,
             out << ".R" << (int)std::floor(image_model->voxel.R2*100.0) << ".fib.gz";
             break;
         case 8:
-
             image_model->voxel.recon_report <<
-            " The diffusion data were compared with baseline scan using diffusion difference imaging with a diffusion sampling length ratio of " << (float)param_values[0] << ".";
+            " The diffusion data were compared with baseline scan using diffusion difference imaging with a diffusion sampling length ratio of "
+            << (float)param_values[0] << " to study " << (image_model->voxel.ddi_type ? "increased":"decreased") << " connectivity.";
 
             if(image_model->voxel.r2_weighted)
                 image_model->voxel.recon_report << " The ODF calculation was weighted by the square of the diffuion displacement.";
-
-            out << (image_model->voxel.r2_weighted ? ".ddi2.":".ddi.") << param_values[0] << ".fib.gz";
+            out << (image_model->voxel.r2_weighted ? ".ddi2":".ddi")
+                << (image_model->voxel.ddi_type ? ".inc.":".dec.")
+                << param_values[0] << ".fib.gz";
             if (!image_model->reconstruct<ddi_process>())
                 return "reconstruction canceled";
             break;

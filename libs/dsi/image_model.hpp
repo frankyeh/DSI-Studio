@@ -241,7 +241,7 @@ public:
     std::vector<float> src_bvalues;
     std::vector<const unsigned short*> src_dwi_data;
     image::basic_image<float,3> dwi_sum;
-    std::shared_ptr<ImageModel> baseline;
+    std::shared_ptr<ImageModel> study_src;
     void calculate_dwi_sum(void);
     void remove(unsigned int index);
     std::string check_b_table(void);
@@ -271,7 +271,7 @@ public:
 
 public:
     bool load_from_file(const char* dwi_file_name);
-    bool load_baseline(const char* file_name);
+    bool load_study_src(const char* file_name);
     void save_fib(const std::string& ext);
     void save_to_file(gz_mat_write& mat_writer);
     bool save_to_nii(const char* nifti_file_name) const;

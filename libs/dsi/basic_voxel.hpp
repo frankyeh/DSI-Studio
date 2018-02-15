@@ -114,8 +114,11 @@ public: // for T1W based DMDM
 public: // for fib evaluation
     std::vector<float> fib_fa;
     std::vector<float> fib_dir;
-public: // for GQI baseline
-    Voxel* baseline = 0;
+public: // for DDI
+    Voxel* study_data = 0;
+    std::string study_name;
+    float study_r2 = 0.0f;
+    bool ddi_type = true; // true:increased or false:decreased
 public:
     float z0 = 0.0;
     // other information for second pass processing

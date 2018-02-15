@@ -95,6 +95,7 @@ public slots:
     void on_show_r_toggled(bool checked);
     void on_show_position_toggled(bool checked);
     void check_reg(void);
+    void on_change_contrast();
 private slots:
     void on_actionRestore_window_layout_triggered();
     void on_actionSave_Tracts_in_Current_Mapping_triggered();
@@ -167,7 +168,7 @@ private slots:
     void on_actionSingle_triggered();
     void on_actionDouble_triggered();
     void on_actionStereoscopic_triggered();
-    void on_change_contrast();
+
 };
 
 #endif // TRACKING_WINDOW_H

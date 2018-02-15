@@ -19,7 +19,51 @@ public:
     }
     virtual void end(Voxel&,gz_mat_write&) {}
 };
+class ReadDDIData : public BaseProcess{
+public:
+    virtual void init(Voxel& v)
+    {
+        v.bvalues = v.study_data->bvalues;
+        v.bvectors = v.study_data->bvectors;
+    }
+    virtual void run(Voxel& voxel, VoxelData& data)
+    {
+        data.rdi = data.odf;
+        data.space.resize(voxel.study_data->dwi_data.size());
+        for (unsigned int index = 0; index < data.space.size(); ++index)
+            data.space[index] = voxel.study_data->dwi_data[index][data.voxel_index];
+    }
+    virtual void end(Voxel&,gz_mat_write&) {}
+};
 
+class CalculateDifference : public BaseProcess{
+    std::vector<float> nqa;
+public:
+    virtual void init(Voxel& voxel)
+    {
+        nqa.resize(voxel.dim.size());
+    }
+    virtual void run(Voxel& voxel, VoxelData& data)
+    {
+        float qa = *std::max_element(data.rdi.begin(),data.rdi.end()) -
+                   (*std::min_element(data.rdi.begin(),data.rdi.end()));
+        if(qa > voxel.z0)
+            voxel.z0 = qa; // z0 is the maximum qa in the baseline
+        // data.rdi : baseline ODF
+        // data.odf : study ODF
+        if(!voxel.ddi_type) // study increased connectivity
+            std::swap(data.rdi,data.odf);
+        image::minus(data.odf.begin(),data.odf.end(),data.rdi.begin());
+        image::lower_threshold(data.odf,0);
+        nqa[data.voxel_index] = qa;
+    }
+    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
+    {
+        if(voxel.z0 != 0.0f)
+            image::divide_constant(nqa,voxel.z0);
+        mat_writer.write("base_nqa",&*nqa.begin(),1,nqa.size());
+    }
+};
 
 void calculate_shell(const std::vector<float>& sorted_bvalues,
                      std::vector<unsigned int>& shell);

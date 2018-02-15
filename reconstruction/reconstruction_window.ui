@@ -465,7 +465,7 @@
       <widget class="QWidget" name="page">
        <property name="geometry">
         <rect>
-         <x>-7</x>
+         <x>0</x>
          <y>0</y>
          <width>717</width>
          <height>597</height>
@@ -575,16 +575,37 @@
             <number>6</number>
            </property>
            <item>
+            <widget class="QLabel" name="label_17">
+             <property name="text">
+              <string>Directionality:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="ddi_dir">
+             <item>
+              <property name="text">
+               <string>Increased connectivity</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Decreased connectivity</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item>
             <widget class="QLabel" name="label_16">
              <property name="text">
-              <string>Baseline SRC file:</string>
+              <string>Study SRC file:</string>
              </property>
             </widget>
            </item>
            <item>
             <widget class="QLabel" name="ddi_file">
              <property name="text">
-              <string>Please assign baseline SRC file</string>
+              <string>Please assign study SRC file</string>
              </property>
             </widget>
            </item>
@@ -602,9 +623,9 @@
             </spacer>
            </item>
            <item>
-            <widget class="QPushButton" name="open_ddi_baseline">
+            <widget class="QPushButton" name="open_ddi_study_src">
              <property name="text">
-              <string>Open Baseline SRC...</string>
+              <string>Open Study SRC...</string>
              </property>
             </widget>
            </item>

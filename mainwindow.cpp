@@ -541,6 +541,7 @@ void MainWindow::on_RenameDICOMDir_clicked()
     if ( path.isEmpty() )
         return;
     QStringList dirs = GetSubDir(path);
+    begin_prog("Renaming DICOM");
     for(unsigned int index = 0;check_prog(index,dirs.size());++index)
     {
         QStringList files = QDir(dirs[index]).entryList(QStringList("*"),

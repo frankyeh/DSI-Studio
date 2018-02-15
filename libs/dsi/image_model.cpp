@@ -1,3 +1,4 @@
+#include <QFileInfo>
 #include "image_model.hpp"
 #include "odf_process.hpp"
 #include "dti_process.hpp"
@@ -123,8 +124,8 @@ void flip_fib_dir(std::vector<float>& fib_dir,const unsigned char* order)
 }
 std::string ImageModel::check_b_table(void)
 {
-    if(baseline.get())
-        baseline->check_b_table();
+    if(study_src.get())
+        study_src->check_b_table();
     set_title("checking b-table");
     bool output_dif = voxel.output_diffusivity;
     bool output_tensor = voxel.output_tensor;
@@ -711,7 +712,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         voxel.calculate_mask(dwi_sum);
     return true;
 }
-bool ImageModel::load_baseline(const char* dwi_file_name)
+bool ImageModel::load_study_src(const char* dwi_file_name)
 {
     std::shared_ptr<ImageModel> bl(new ImageModel);
     if(!bl->load_from_file(dwi_file_name))
@@ -719,9 +720,51 @@ bool ImageModel::load_baseline(const char* dwi_file_name)
         error_msg = bl->error_msg;
         return false;
     }
-    baseline = bl;
-    baseline->voxel.load_from_src(*baseline.get());
-    voxel.baseline = &(baseline->voxel);
+    image::thread thread;
+    image::transformation_matrix<double> arg;
+    bool terminated = false;
+    thread.run([&](){
+        image::reg::two_way_linear_mr(dwi_sum,voxel.vs,bl->dwi_sum,bl->voxel.vs,
+                       arg,image::reg::rigid_body,image::reg::correlation(),terminated);
+        terminated = true;
+    });
+
+    begin_prog("Normalization");
+    while(!terminated)
+    {
+        check_prog(0,1);
+        if(prog_aborted())
+        {
+            terminated = true;
+            return false;
+        }
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+    std::cout << arg << std::endl;
+    begin_prog("Rotating");
+    study_src = bl;
+    study_src->rotate(dwi_sum,arg);
+    study_src->voxel.vs = voxel.vs;
+    study_src->voxel.load_from_src(*study_src.get());
+    double a,b,r2;
+    image::linear_regression(study_src->src_dwi_data[0],
+                             study_src->src_dwi_data[0]+study_src->voxel.dim.size(),
+                             src_dwi_data[0],a,b,r2);
+    std::cout << "y=" << a << "x+" << b << " r2=" << r2 << std::endl;
+    begin_prog("Signal matching");
+    for(int i = 0;check_prog(i,study_src->new_dwi.size());++i)
+    {
+        std::vector<float> data(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end());
+        image::multiply_constant(data.begin(),data.end(),a);
+        image::add_constant(data.begin(),data.end(),b);
+        image::lower_threshold(data,0.0f);
+        std::copy(data.begin(),data.end(),study_src->new_dwi[i].begin());
+    }
+    // rotate to baseline
+    voxel.study_name = QFileInfo(dwi_file_name).baseName().toStdString();
+    voxel.study_data = &(study_src->voxel);
+    voxel.study_r2 = r2;
+    dwi_sum = study_src->dwi_sum;
     return true;
 }
 

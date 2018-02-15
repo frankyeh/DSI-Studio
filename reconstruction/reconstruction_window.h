@@ -48,12 +48,12 @@ private:
     void update_image(void);
     void doReconstruction(unsigned char method_id,bool prompt);
 private slots:
-    void on_QDif_toggled(bool checked);
+    void on_QSDR_toggled(bool checked);
     void on_GQI_toggled(bool checked);
     void on_QBI_toggled(bool checked);
     void on_DSI_toggled(bool checked);
     void on_DTI_toggled(bool checked);
-
+    void on_DDI_toggled(bool checked);
     void on_load_mask_clicked();
     void on_save_mask_clicked();
     void on_thresholding_clicked();
@@ -96,9 +96,8 @@ private slots:
     void on_actionCorrect_AP_PA_scans_triggered();
     void on_actionSave_b0_triggered();
     void on_actionEnable_TEST_features_triggered();
-    void on_DDI_toggled(bool checked);
-    void on_open_ddi_baseline_clicked();
     void on_actionImage_upsample_to_T1W_TESTING_triggered();
+    void on_open_ddi_study_src_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

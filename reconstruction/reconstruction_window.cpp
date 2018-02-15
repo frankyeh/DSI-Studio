@@ -66,10 +66,11 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->b_table->setColumnWidth(3,80);
     ui->b_table->setHorizontalHeaderLabels(QStringList() << "b value" << "bx" << "by" << "bz");
     ui->gqi_spectral->hide();
-    ui->ODFSharpening->hide();
     ui->DSI->hide();
     ui->QBI->hide();
     ui->DDI->hide();
+    ui->ODFSharpening->setVisible(false);
+    ui->ODFSharpening->setEnabled(false);
 
 
     v2c.two_color(image::rgb_color(0,0,0),image::rgb_color(255,255,255));
@@ -86,11 +87,12 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         break;
     case 7:
         ui->QSDR->setChecked(true);
-        on_QDif_toggled(true);
+        on_QSDR_toggled(true);
         break;
     case 8:
+        ui->DDI->setVisible(true);
         ui->DDI->setChecked(true);
-        on_QDif_toggled(true);
+        on_DDI_toggled(true);
         break;
     default:
         ui->GQI->setChecked(true);
@@ -321,8 +323,9 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.output_tensor = ui->output_tensor->isChecked() ? 1 : 0;
     handle->voxel.output_rdi = ui->rdi->isChecked() ? 1 : 0;
     handle->voxel.thread_count = ui->ThreadCount->value();
+    handle->voxel.ddi_type = ui->ddi_dir->currentIndex() == 0 ? true:false;
 
-    if(method_id == 7 || method_id == 4)
+    if(method_id == 7 || method_id == 4 || method_id == 8)
     {
         handle->voxel.half_sphere = ui->half_sphere->isChecked() ? 1:0;
         handle->voxel.scheme_balance = ui->scheme_balance->isChecked() ? 1:0;
@@ -458,6 +461,17 @@ void reconstruction_window::on_doDTI_clicked()
             doReconstruction(3,index+1 == filenames.size());
         }
         else
+        if(ui->DDI->isChecked())
+        {
+            if(!handle->study_src.get())
+            {
+                QMessageBox::information(this,"Error","Please assign study SRC file",0);
+                return;
+            }
+            params[0] = ui->diffusion_sampling->value();
+            settings.setValue("rec_gqi_sampling",ui->diffusion_sampling->value());
+            doReconstruction(8,index+1 == filenames.size());
+        }
         if(ui->GQI->isChecked() || ui->QSDR->isChecked())
         {
             params[0] = ui->diffusion_sampling->value();
@@ -574,10 +588,11 @@ void reconstruction_window::on_DDI_toggled(bool checked)
     on_GQI_toggled(checked);
     ui->rdi->setVisible(false);
     ui->DDIOption->setVisible(checked);
+    ui->csf_calibration->setVisible(!checked);
 
 }
 
-void reconstruction_window::on_QDif_toggled(bool checked)
+void reconstruction_window::on_QSDR_toggled(bool checked)
 {
     ui->ResolutionBox->setVisible(checked);
     //ui->ODFSharpening->setVisible(checked);
@@ -901,24 +916,20 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
 void rec_motion_correction(ImageModel* handle)
 {
     begin_prog("correcting");
-    image::basic_image<float,3> I0 = image::make_image(handle->src_dwi_data[0],handle->voxel.dim);
-    image::filter::gaussian(I0);
-    image::normalize(I0,1);
     image::par_for2(handle->src_bvalues.size(),[&](int i,int id)
     {
         if(i == 0 || prog_aborted())
             return;
         if(id == 0)
             check_prog(i*99/handle->src_bvalues.size(),100);
-        image::basic_image<float,3> I1;
-        I1 = image::make_image(handle->src_dwi_data[i],handle->voxel.dim);
-        image::filter::gaussian(I1);
-        image::normalize(I1,1);
-        image::affine_transform<double> arg;
+        image::transformation_matrix<double> arg;
         bool terminated = false;
-        image::reg::linear_mr(I0,handle->voxel.vs,I1,handle->voxel.vs,
-                                  arg,image::reg::affine,image::reg::mutual_information(),terminated);
-        handle->rotate_dwi(i,image::transformation_matrix<double>(arg,handle->voxel.dim,handle->voxel.vs,handle->voxel.dim,handle->voxel.vs));
+        image::reg::two_way_linear_mr(
+                                  image::make_image(handle->src_dwi_data[0],handle->voxel.dim),
+                                  handle->voxel.vs,
+                                  image::make_image(handle->src_dwi_data[i],handle->voxel.dim),handle->voxel.vs,
+                                  arg,image::reg::affine,image::reg::correlation(),terminated);
+        handle->rotate_dwi(i,arg);
     });
     check_prog(1,1);
 
@@ -1095,25 +1106,7 @@ void reconstruction_window::on_actionEnable_TEST_features_triggered()
     ui->QBI->setVisible(true);
     ui->DDI->setVisible(true);
     ui->ODFSharpening->setVisible(true);
-
-}
-
-
-void reconstruction_window::on_open_ddi_baseline_clicked()
-{
-    QString filename = QFileDialog::getOpenFileName(
-            this,"Open SRC file",absolute_path,
-            "Images (*.src.gz);;All files (*)" );
-    if( filename.isEmpty())
-        return;
-    if(!handle->load_baseline(filename.toStdString().c_str()))
-    {
-        QMessageBox::information(this,"error",QString("Cannot open ") +
-            filename + " : " +handle->error_msg.c_str(),0);
-        check_prog(0,0);
-        return;
-    }
-    ui->ddi_file->setText(QFileInfo(filename).baseName());
+    ui->ODFSharpening->setEnabled(true);
 }
 
 void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
@@ -1149,4 +1142,25 @@ void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
     update_image();
     update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
+}
+
+
+void reconstruction_window::on_open_ddi_study_src_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(
+            this,"Open Study SRC file",absolute_path,
+            "Images (*.src.gz);;All files (*)" );
+    if( filename.isEmpty())
+        return;
+    if(!handle->load_study_src(filename.toStdString().c_str()))
+    {
+        QMessageBox::information(this,"error",QString("Cannot open ") +
+            filename + " : " +handle->error_msg.c_str(),0);
+        check_prog(0,0);
+        return;
+    }
+    update_image();
+    update_dimension();
+    on_SlicePos_valueChanged(ui->SlicePos->value());
+    ui->ddi_file->setText(QFileInfo(filename).baseName());
 }
