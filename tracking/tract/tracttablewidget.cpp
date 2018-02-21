@@ -634,6 +634,15 @@ void TractTableWidget::deep_learning_train(void)
     }
 
 }
+
+void TractTableWidget::resample_tracks(void)
+{
+    for(unsigned int index = 0;index < tract_models.size();++index)
+        if(item(index,0)->checkState() == Qt::Checked)
+            tract_models[index]->resample_tracks(cur_tracking_window.handle->vs[0]*0.5);
+    emit need_update();
+}
+
 void show_info_dialog(const std::string& title,const std::string& result);
 void TractTableWidget::recog_tracks(void)
 {

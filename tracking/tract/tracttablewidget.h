@@ -96,7 +96,7 @@ public slots:
     void move_down(void);
     void show_tracts_statistics(void);
     void recog_tracks(void);
-
+    void resample_tracks(void);
 };
 
 #endif // TRACTTABLEWIDGET_H

@@ -122,6 +122,7 @@ public:
         void get_report(unsigned int profile_dir,float band_width,const std::string& index_name,
                         std::vector<float>& values,
                         std::vector<float>& data_profile);
+        void resample_tracks(float resolution);
 
 public:
         void get_tract_data(unsigned int fiber_index,

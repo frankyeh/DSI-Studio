@@ -15,6 +15,78 @@
 #include "tract_cluster.hpp"
 #include "../../tracking/region/Regions.h"
 
+void resample_tracks(std::vector<float>& track,float interval)
+{
+    if(track.size() < 6)
+        return;
+    float step_size = image::vector<3>(track[0]-track[3],track[1]-track[4],track[2]-track[5]).length();
+    if(std::fabs(step_size - interval)/interval < 0.1)
+        return;
+    std::vector<float> new_track;
+    float dis = interval;
+    image::vector<3> v1(&track[0]),v2,v3;
+    new_track.push_back(track[0]);
+    new_track.push_back(track[1]);
+    new_track.push_back(track[2]);
+    bool new_step = true;
+    float now_dis = step_size;
+    for(int i = 3;i < track.size();)
+    {
+        if(new_step)
+        {
+            v2 = image::vector<3>(&(track[i]));
+            v3[0] = v2[0]-v1[0];
+            v3[1] = v2[1]-v1[1];
+            v3[2] = v2[2]-v1[2];
+            v3 *= 1.0f/step_size;
+            new_step = false;
+        }
+        if(dis > now_dis)
+        {
+            dis -= now_dis;
+            v1 = v2;
+            i += 3;
+            now_dis = step_size;
+            new_step = true;
+            continue;
+        }
+        now_dis -= dis;
+        v1[0] += v3[0]*dis;
+        v1[1] += v3[1]*dis;
+        v1[2] += v3[2]*dis;
+        dis = interval;
+        new_track.push_back(v1[0]);
+        new_track.push_back(v1[1]);
+        new_track.push_back(v1[2]);
+    }
+    if(dis < interval*0.1f)
+    {
+        new_track.push_back(track[track.size()-3]);
+        new_track.push_back(track[track.size()-2]);
+        new_track.push_back(track[track.size()-1]);
+    }
+
+    std::vector<float> smoothed(new_track.size());
+    float w[5] = {1.0,2.0,4.0,2.0,1.0};
+    int shift[5] = {-6, -3, 0, 3, 6};
+    for(int index = 0;index < new_track.size();++index)
+    {
+        float sum_w = 0.0;
+        float sum = 0.0;
+        for(char i = 0;i < 5;++i)
+        {
+            int cur_index = index + shift[i];
+            if(cur_index < 0 || cur_index >= new_track.size())
+                continue;
+            sum += w[i]*new_track[cur_index];
+            sum_w += w[i];
+        }
+        if(sum_w != 0.0)
+            smoothed[index] = sum/sum_w;
+    }
+    smoothed.swap(track);
+}
+
 
 struct TrackVis
 {
@@ -1540,6 +1612,8 @@ void TractModel::get_quantitative_info(std::string& result)
 }
 
 extern track_recognition track_network;
+
+
 bool TractModel::recognize(std::map<float,std::string,std::greater<float> >& result)
 {
     if(!track_network.can_recognize())
@@ -1751,6 +1825,14 @@ void gradient(input_iterator from,input_iterator to,output_iterator out)
         ++next_from;
     }
 }
+void TractModel::resample_tracks(float resolution)
+{
+    image::par_for(tract_data.size(),[&](int i)
+    {
+        ::resample_tracks(tract_data[i],resolution);
+    });
+}
+
 void TractModel::get_tract_data(unsigned int fiber_index,unsigned int index_num,std::vector<float>& data) const
 {
     data.clear();

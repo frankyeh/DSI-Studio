@@ -116,7 +116,7 @@ bool view_image::open(QStringList file_names)
     else
     if(nifti.load_from_file(file_name.toLocal8Bit().begin()))
     {
-        nifti.toLPS(data);
+        nifti >> data;
         nifti.get_voxel_size(vs);
         info = QString("sizeof_hdr=%1\ndim_info=%2\n").
                 arg(nifti.nif_header2.sizeof_hdr).
