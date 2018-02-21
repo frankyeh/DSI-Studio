@@ -122,8 +122,10 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                 return false;
             in.read((char*)&trk,1000);
             unsigned int track_number = trk.n_count;
+            if(!track_number) // number is not stored
+                track_number = 100000000;
             begin_prog("loading");
-            for (unsigned int index = 0;check_prog(index,track_number);++index)
+            for (unsigned int index = 0;!(!in) && check_prog(index,track_number);++index)
             {
                 unsigned int n_point;
                 in.read((char*)&n_point,sizeof(int));
