@@ -490,19 +490,6 @@ void ImageModel::distortion_correction(const ImageModel& rhs)
 void calculate_shell(const std::vector<float>& sorted_bvalues,
                      std::vector<unsigned int>& shell)
 {
-    shell.clear();
-    std::vector<float> dif_dis;
-    for(int i = 1;i < sorted_bvalues.size();++i)
-        if(sorted_bvalues[i-1] != 0.0)
-            dif_dis.push_back(sorted_bvalues[i] - sorted_bvalues[i-1]);
-    if(dif_dis.empty())
-        return;
-    std::sort(dif_dis.begin(),dif_dis.end());
-
-    float gap = *std::max_element(dif_dis.begin(),dif_dis.end())*0.1;
-    if(gap < 100)
-        gap = 100;
-
     if(sorted_bvalues.front() != 0.0f)
         shell.push_back(0);
     else
@@ -515,7 +502,7 @@ void calculate_shell(const std::vector<float>& sorted_bvalues,
             }
     }
     for(unsigned int index = shell.back()+1;index < sorted_bvalues.size();++index)
-        if(std::abs(sorted_bvalues[index]-sorted_bvalues[shell.back()]) > gap)
+        if(std::abs(sorted_bvalues[index]-sorted_bvalues[index-1]) > 200)
             shell.push_back(index);
 }
 
@@ -754,11 +741,9 @@ bool ImageModel::load_study_src(const char* dwi_file_name)
     begin_prog("Signal matching");
     for(int i = 0;check_prog(i,study_src->new_dwi.size());++i)
     {
-        std::vector<float> data(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end());
-        image::multiply_constant(data.begin(),data.end(),a);
-        image::add_constant(data.begin(),data.end(),b);
-        image::lower_threshold(data,0.0f);
-        std::copy(data.begin(),data.end(),study_src->new_dwi[i].begin());
+        image::multiply_constant(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),a);
+        image::add_constant(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),b);
+        image::lower_threshold(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),0.0f);
     }
     // rotate to baseline
     voxel.study_name = QFileInfo(dwi_file_name).baseName().toStdString();
