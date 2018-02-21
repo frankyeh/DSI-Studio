@@ -158,6 +158,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     {
         std::vector<std::string> index_list;
         fib.get_index_list(index_list);
+        // save along track index
         for (int index = 0; index < index_list.size(); ++index)
             {
                 std::string& name = index_list[index];
@@ -168,6 +169,17 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 connect(Item, SIGNAL(triggered()),tractWidget, SLOT(save_tracts_data_as()));
                 ui->menuSave->addAction(Item);
             }
+        // export index mapping
+        for (unsigned int index = 0;index < fib.view_item.size(); ++index)
+        {
+            std::string name = fib.view_item[index].name;
+            QAction* Item = new QAction(this);
+            Item->setText(QString("Save %1...").arg(name.c_str()));
+            Item->setData(QString(name.c_str()));
+            Item->setVisible(true);
+            connect(Item, SIGNAL(triggered()),&scene, SLOT(save_slice_as()));
+            ui->menuE_xport->addAction(Item);
+        }
     }
 
     // opengl
@@ -218,8 +230,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
 
         connect(ui->actionSave_ROI_Screen,SIGNAL(triggered()),&scene,SLOT(catch_screen()));
-
-        connect(ui->actionSave_Anisotrpy_Map_as,SIGNAL(triggered()),&scene,SLOT(save_slice_as()));
 
     }
 
@@ -732,8 +742,6 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     if(index == -1 || !current_slice.get())
         return;
     no_update = true;
-    ui->actionSave_Anisotrpy_Map_as->setText(QString("Save ") +
-                                             ui->SliceModality->currentText()+" volume as...");
     image::vector<3,float> slice_position(current_slice->slice_pos);
     if(!current_slice->is_diffusion_space)
         slice_position.to(current_slice->transform);

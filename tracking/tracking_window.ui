@@ -896,9 +896,7 @@
     <addaction name="actionSave_3D_screen_in_3_views"/>
     <addaction name="actionSave_3D_screen_in_high_resolution"/>
     <addaction name="actionSave_Rotation_Images"/>
-    <addaction name="separator"/>
     <addaction name="actionSave_ROI_Screen"/>
-    <addaction name="actionSave_Anisotrpy_Map_as"/>
     <addaction name="separator"/>
     <addaction name="menuCopy_to_Clipboard"/>
    </widget>
@@ -964,10 +962,16 @@
     <addaction name="actionFloat_3D_window"/>
     <addaction name="menu3D_Views"/>
    </widget>
+   <widget class="QMenu" name="menuE_xport">
+    <property name="title">
+     <string>E&amp;xport</string>
+    </property>
+   </widget>
    <addaction name="menu_Edit"/>
    <addaction name="menuRegions"/>
    <addaction name="menuTracts"/>
    <addaction name="menu_Slices"/>
+   <addaction name="menuE_xport"/>
    <addaction name="menu_View"/>
    <addaction name="menuAnalysis"/>
    <addaction name="menuLayout"/>

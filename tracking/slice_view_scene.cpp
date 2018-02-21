@@ -217,15 +217,14 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
 
         if(param.isEmpty())
             param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+
-                    QString(cur_tracking_window.handle->view_item[cur_tracking_window.ui->SliceModality->currentIndex()].name.c_str())+".nii.gz";
+                    param2+".nii.gz";
 
 
-        int index = cur_tracking_window.handle->get_name_index(
-                    cur_tracking_window.ui->SliceModality->currentText().toLocal8Bit().begin());
+        int index = cur_tracking_window.handle->get_name_index(param2.toStdString());
         if(index >= cur_tracking_window.handle->view_item.size())
             return true;
 
-        if(cur_tracking_window.ui->SliceModality->currentText() == "color")
+        if(param2 == "color")
         {
             image::basic_image<image::rgb_color,3> buf(cur_tracking_window.handle->dim);
             for(int z = 0;z < buf.depth();++z)
@@ -422,15 +421,18 @@ void slice_view_scene::show_slice(void)
 
 void slice_view_scene::save_slice_as()
 {
+    QAction *action = qobject_cast<QAction *>(sender());
+    if(!action)
+        return;
     QString filename = QFileDialog::getSaveFileName(
                 0,
                 "Save as",
                 QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+
-                QString(cur_tracking_window.handle->view_item[cur_tracking_window.ui->SliceModality->currentIndex()].name.c_str())+".nii.gz",
+                action->data().toString()+".nii.gz",
                 "NIFTI files (*nii.gz *.nii);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
-    command("save_mapping",filename,"");
+    command("save_mapping",filename,action->data().toString());
 }
 
 void slice_view_scene::catch_screen()
