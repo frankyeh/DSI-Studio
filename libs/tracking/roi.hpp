@@ -73,7 +73,6 @@ public:
     }
 };
 
-
 class RoiMgr {
 public:
     std::string report;
@@ -83,7 +82,6 @@ public:
     std::vector<std::shared_ptr<Roi> > end;
     std::vector<std::shared_ptr<Roi> > exclusive;
     std::vector<std::shared_ptr<Roi> > terminate;
-
 public:
     void clear(void)
     {

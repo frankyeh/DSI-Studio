@@ -2,12 +2,13 @@
 #include <QFileInfo>
 #include "program_option.hpp"
 #include "image/image.hpp"
+#include "gzip_interface.hpp"
 
 int cnn(void)
 {
     std::string train_file_name = po.get("train");
     image::ml::network_data<float,unsigned char> nn_data,nn_test;
-    if(!nn_data.load_from_file(train_file_name.c_str()))
+    if(!nn_data.load_from_file<gz_istream>(train_file_name.c_str()))
     {
         std::cout << "Cannot load training data at " << train_file_name << std::endl;
         return 0;
@@ -15,7 +16,7 @@ int cnn(void)
     if(po.has("test"))
     {
         std::string test_file_name = po.get("test");
-        if(!nn_test.load_from_file(test_file_name.c_str()))
+        if(!nn_test.load_from_file<gz_istream>(test_file_name.c_str()))
         {
             std::cout << "Cannot load testing data at " << test_file_name << std::endl;
             return 0;
@@ -54,6 +55,6 @@ int cnn(void)
 
     std::string output = po.get("output");
     if(!output.empty())
-        nn.save_to_file(output.c_str());
+        nn.save_to_file<gz_ostream>(output.c_str());
     return 0;
 }

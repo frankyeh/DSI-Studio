@@ -825,16 +825,36 @@ const image::basic_image<image::vector<3,float>,3 >& fib_data::get_mni_mapping(v
     run_normalization(false);
     return mni_position;
 }
-
-void fib_data::get_profile(const std::vector<float>& tract_data,
+void smoothed_tracks(const std::vector<float>& track,std::vector<float>& smoothed);
+void resample_tracks(const std::vector<float>& track,std::vector<float>& new_track,float interval);
+bool fib_data::get_profile(const std::vector<float>& tract,
                  std::vector<float>& profile_)
 {
-    if(tract_data.size() < 6)
-        return;
-    image::geometry<3> dim(64,80,3);
+    if(tract.size() < 6)
+        return false;
+    std::vector<float> tract_data;
+
+    {
+        std::vector<float> smoothed_track_in_mni;
+        std::vector<float> tract_in_mni;
+        for(int j = 0;j < tract.size();j += 3)
+        {
+            image::vector<3> v(&(tract[j]));
+            subject2mni(v);
+            tract_in_mni.push_back(v[0]);
+            tract_in_mni.push_back(v[1]);
+            tract_in_mni.push_back(v[2]);
+        }
+        smoothed_tracks(tract_in_mni,smoothed_track_in_mni);
+        resample_tracks(smoothed_track_in_mni,tract_data,0.5);
+    }
+
+    image::geometry<3> dim(60,75,3);
     profile_.resize(dim.size());
     auto profile = image::make_image(&profile_[0],dim);
     std::fill(profile.begin(),profile.end(),0);
+    float length_2 = tract_data.size() >> 1;
+    bool has_point = false;
     for(int j = 0;j < tract_data.size();j += 3)
     {
         image::vector<3> v(&(tract_data[j]));
@@ -842,37 +862,19 @@ void fib_data::get_profile(const std::vector<float>& tract_data,
         // x = -60 ~ 60    total  120
         // y = -90 ~ 60    total  150
         // z = -50 ~ 70    total  120
-        int x = std::floor(v[0]+60);
-        int y = std::floor(v[1]+90);
-        int z = std::floor(v[2]+50);
-        x >>= 1; // 2 mm
-        y >>= 1; // 2 mm
-        z >>= 1; // 2 mm
-        //float length_2 = tract_data.size() >> 1;
-        //float w = std::fabs(j-length_2)/length_2-0.5f;
-        if(x > 0 && x < profile.width())
-        {
-            if(y > 0 && y < profile.height())
-                profile.at(x,y,0) += 1.0f;
-            if(z > 0 && z < profile.height())
-                profile.at(x,z,1) += 1.0f;
-        }
-        if(z > 0 && z < profile.width() && y > 0 && y < profile.height())
-            profile.at(z,y,2) += 1.0f;
+        int x = std::floor((v[0]+60)*0.5+0.5);
+        int y = std::floor((v[1]+90)*0.5+0.5);
+        int z = std::floor((v[2]+50)*0.5+0.5);
+        if(x < 0 || y < 0 || z < 0 ||
+           x >= 60 || y >= 75 || z >= 60)
+            continue;
+        float w = 1.0f-std::fabs(j-length_2)*0.8f/(float)length_2;
+        profile.at(x,y,0) = w;
+        profile.at(x,z,1) = w;
+        profile.at(z,y,2) = w;
+        has_point = true;
     }
-    auto s1 = profile.slice_at(0);
-    auto s2 = profile.slice_at(1);
-    auto s3 = profile.slice_at(2);
-    for(int i = 0;i < 6;++i)
-    {
-        image::filter::gaussian(s1);
-        image::filter::gaussian(s2);
-        image::filter::gaussian(s3);
-    }
-    float m = *std::max_element(profile.begin(),profile.end());
-    if(m != 0.0)
-        image::multiply_constant(profile,1.8/m);
-    image::minus_constant(profile,0.9);
+    return has_point;
 }
 
 bool track_recognition::can_recognize(void)
@@ -880,11 +882,11 @@ bool track_recognition::can_recognize(void)
     if(!track_list.empty())
         return true;
     std::string file_name(QCoreApplication::applicationDirPath().toLocal8Bit().begin());
-    file_name += "/network.bin";
+    file_name += "/network.net.gz";
     std::string track_label(QCoreApplication::applicationDirPath().toLocal8Bit().begin());
     track_label += "/network_label.txt";
     std::ifstream in(track_label.c_str());
-    if(in && cnn.load_from_file(file_name.c_str()))
+    if(in && cnn.load_from_file<gz_istream>(file_name.c_str()))
     {
         std::string line;
         while(std::getline(in,line))
@@ -900,9 +902,13 @@ bool track_recognition::can_recognize(void)
             std::replace(name.begin(),name.end(),'_',' ');
         }
         if(track_list.size() != cnn.get_output_size())
+        {
+            std::cout << "Invalid network_label file" << std::endl;
             return false;
+        }
         return true;
     }
+    std::cout << "Cannot open " << file_name << std::endl;
     return false;
 }
 
@@ -918,7 +924,10 @@ void track_recognition::clear(void)
 
 void track_recognition::add_sample(fib_data* handle,unsigned char index,const std::vector<float>& tracks)
 {
+    std::vector<float> profile;
+    if(!handle->get_profile(tracks,profile))
+        return;
     cnn_data.data.push_back(std::vector<float>());
-    handle->get_profile(tracks,cnn_data.data.back());
+    cnn_data.data.back().swap(profile);
     cnn_data.data_label.push_back(index);
 }

@@ -140,7 +140,7 @@ public:
     void get_atlas_roi(int atlas_index,int roi_index,std::vector<image::vector<3,short> >& points,float& r);
     const image::basic_image<image::vector<3,float>,3 >& get_mni_mapping(void);
     bool has_reg(void)const{return thread.has_started();}
-    void get_profile(const std::vector<float>& tract_data,
+    bool get_profile(const std::vector<float>& tract_data,
                      std::vector<float>& profile);
 
 public:

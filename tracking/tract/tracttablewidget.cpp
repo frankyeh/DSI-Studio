@@ -16,6 +16,7 @@
 #include "libs/gzip_interface.hpp"
 #include "atlas.hpp"
 #include "../color_bar_dialog.hpp"
+#include "gzip_interface.hpp"
 
 extern std::vector<atlas> atlas_list;
 
@@ -524,7 +525,8 @@ void TractTableWidget::save_profile(void)
     begin_prog("converting coordinates");
     for(unsigned int i = 0;check_prog(i,tract_models[currentRow()]->get_tracts().size());++i)
     {
-        cur_tracking_window.handle->get_profile(tract_models[currentRow()]->get_tracts()[i],profile);
+        if(!cur_tracking_window.handle->get_profile(tract_models[currentRow()]->get_tracts()[i],profile))
+            continue;
         out.write(QString("image%1").arg(i).toLocal8Bit().begin(),&profile[0],1,profile.size());
     }
     //out.write("dimension",&*profile.geometry().begin(),1,3);
@@ -567,10 +569,10 @@ void TractTableWidget::deep_learning_train(void)
     }
 
 
-    filename = QFileInfo(filename).absolutePath() + "/network_data.bin";
-    cnn.cnn_data.input = image::geometry<3>(64,80,3);
+    filename = QFileInfo(filename).absolutePath() + "/network_data.bin.gz";
+    cnn.cnn_data.input = image::geometry<3>(60,75,3);
     cnn.cnn_data.output = image::geometry<3>(1,1,rowCount());
-    cnn.cnn_data.save_to_file(filename.toStdString().c_str());
+    cnn.cnn_data.save_to_file<gz_ostream>(filename.toStdString().c_str());
 
 
     // save atlas as a nifti file
@@ -635,14 +637,6 @@ void TractTableWidget::deep_learning_train(void)
 
 }
 
-void TractTableWidget::resample_tracks(void)
-{
-    for(unsigned int index = 0;index < tract_models.size();++index)
-        if(item(index,0)->checkState() == Qt::Checked)
-            tract_models[index]->resample_tracks(cur_tracking_window.handle->vs[0]*0.5);
-    emit need_update();
-}
-
 void show_info_dialog(const std::string& title,const std::string& result);
 void TractTableWidget::recog_tracks(void)
 {
@@ -667,7 +661,7 @@ void TractTableWidget::recog_tracks(void)
     tract_models[currentRow()]->recognize_report(result);
     QMessageBox::information(this,"Result",result.c_str(),0);*/
 }
-
+void smoothed_tracks(const std::vector<float>& track,std::vector<float>& smoothed);
 void TractTableWidget::saveTransformedTracts(const float* transform)
 {
     if(currentRow() >= tract_models.size())
@@ -696,38 +690,12 @@ void TractTableWidget::saveTransformedTracts(const float* transform)
                 tract_data[i][j+1] = v[1];
                 tract_data[i][j+2] = v[2];
             }
-            std::vector<float> smooth_track(tract_data[i]);
-            for(unsigned int j = 0;j < tract_data[i].size();j += 3)
+            if(!cur_tracking_window.handle->is_qsdr)
             {
-                if(j > 2)
-                {
-                    smooth_track[j] += tract_data[i][j-3];
-                    smooth_track[j+1] += tract_data[i][j-2];
-                    smooth_track[j+2] += tract_data[i][j-1];
-                }
-                else
-                {
-                    smooth_track[j] += tract_data[i][j];
-                    smooth_track[j+1] += tract_data[i][j+1];
-                    smooth_track[j+2] += tract_data[i][j+2];
-                }
-
-                if(j+3 < smooth_track.size())
-                {
-                    smooth_track[j] += tract_data[i][j+3];
-                    smooth_track[j+1] += tract_data[i][j+4];
-                    smooth_track[j+2] += tract_data[i][j+5];
-                }
-                else
-                {
-                    smooth_track[j] += tract_data[i][j];
-                    smooth_track[j+1] += tract_data[i][j+1];
-                    smooth_track[j+2] += tract_data[i][j+2];
-                }
+                std::vector<float> smooth_track;
+                smoothed_tracks(tract_data[i],smooth_track);
+                tract_data[i].swap(smooth_track);
             }
-            image::multiply_constant(smooth_track,1.0/3.0);
-            tract_data[i].swap(smooth_track);
-
         }
         if(!prog_aborted())
         {

@@ -334,8 +334,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionRedo,SIGNAL(triggered()),tractWidget,SLOT(redo_tracts()));
         connect(ui->actionTrim,SIGNAL(triggered()),tractWidget,SLOT(trim_tracts()));
 
-        connect(ui->actionTracks_distanced_at_voxel_size,SIGNAL(triggered()),tractWidget,SLOT(resample_tracks()));
-
         connect(ui->actionSet_Color,SIGNAL(triggered()),tractWidget,SLOT(set_color()));
 
         connect(ui->actionK_means_Clustering,SIGNAL(triggered()),tractWidget,SLOT(clustering_kmeans()));

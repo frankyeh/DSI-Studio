@@ -15,14 +15,36 @@
 #include "tract_cluster.hpp"
 #include "../../tracking/region/Regions.h"
 
-void resample_tracks(std::vector<float>& track,float interval)
+void smoothed_tracks(const std::vector<float>& track,std::vector<float>& smoothed)
+{
+    smoothed.clear();
+    smoothed.resize(track.size());
+    float w[5] = {1.0,2.0,4.0,2.0,1.0};
+    int shift[5] = {-6, -3, 0, 3, 6};
+    for(int index = 0;index < track.size();++index)
+    {
+        float sum_w = 0.0;
+        float sum = 0.0;
+        for(char i = 0;i < 5;++i)
+        {
+            int cur_index = index + shift[i];
+            if(cur_index < 0 || cur_index >= track.size())
+                continue;
+            sum += w[i]*track[cur_index];
+            sum_w += w[i];
+        }
+        if(sum_w != 0.0)
+            smoothed[index] = sum/sum_w;
+    }
+}
+
+void resample_tracks(const std::vector<float>& track,std::vector<float>& new_track,float interval)
 {
     if(track.size() < 6)
         return;
     float step_size = image::vector<3>(track[0]-track[3],track[1]-track[4],track[2]-track[5]).length();
     if(std::fabs(step_size - interval)/interval < 0.1)
         return;
-    std::vector<float> new_track;
     float dis = interval;
     image::vector<3> v1(&track[0]),v2,v3;
     new_track.push_back(track[0]);
@@ -65,26 +87,6 @@ void resample_tracks(std::vector<float>& track,float interval)
         new_track.push_back(track[track.size()-2]);
         new_track.push_back(track[track.size()-1]);
     }
-
-    std::vector<float> smoothed(new_track.size());
-    float w[5] = {1.0,2.0,4.0,2.0,1.0};
-    int shift[5] = {-6, -3, 0, 3, 6};
-    for(int index = 0;index < new_track.size();++index)
-    {
-        float sum_w = 0.0;
-        float sum = 0.0;
-        for(char i = 0;i < 5;++i)
-        {
-            int cur_index = index + shift[i];
-            if(cur_index < 0 || cur_index >= new_track.size())
-                continue;
-            sum += w[i]*new_track[cur_index];
-            sum_w += w[i];
-        }
-        if(sum_w != 0.0)
-            smoothed[index] = sum/sum_w;
-    }
-    smoothed.swap(track);
 }
 
 
@@ -1622,7 +1624,8 @@ bool TractModel::recognize(std::map<float,std::string,std::greater<float> >& res
     image::par_for(tract_data.size(),[&](int i)
     {
         std::vector<float> input;
-        handle->get_profile(tract_data[i],input);
+        if(!handle->get_profile(tract_data[i],input))
+            return;
         track_network.cnn.predict(input);
         image::minus_constant(input,*std::min_element(input.begin(),input.end()));
         image::multiply_constant(input,1.0f/std::accumulate(input.begin(),input.end(),0.0f));
@@ -1684,9 +1687,10 @@ void TractModel::recognize_report(std::string& report)
     image::par_for(tract_data.size(),[&](int i)
     {
         std::vector<float> input;
-        handle->get_profile(tract_data[i],input);
+        if(!handle->get_profile(tract_data[i],input))
+            return;
         track_network.cnn.predict(input);
-        input[20] = -100;// suppress false tracks ID:20
+        input[80] = -100;// suppress false tracks ID:20
         ++recog_count[std::max_element(input.begin(),input.end())-input.begin()];
     });
     {
@@ -1824,13 +1828,6 @@ void gradient(input_iterator from,input_iterator to,output_iterator out)
         from = next_from;
         ++next_from;
     }
-}
-void TractModel::resample_tracks(float resolution)
-{
-    image::par_for(tract_data.size(),[&](int i)
-    {
-        ::resample_tracks(tract_data[i],resolution);
-    });
 }
 
 void TractModel::get_tract_data(unsigned int fiber_index,unsigned int index_num,std::vector<float>& data) const

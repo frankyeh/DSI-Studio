@@ -833,7 +833,6 @@
     <addaction name="actionEndpoints_to_seeding"/>
     <addaction name="actionTracts_to_seeds"/>
     <addaction name="actionFilter_by_ROI"/>
-    <addaction name="actionTracks_distanced_at_voxel_size"/>
     <addaction name="separator"/>
     <addaction name="menuTract_Color"/>
     <addaction name="menuClustering"/>
