@@ -28,7 +28,7 @@ LIBS += -lGLU \
 
 mac{
 
-INCLUDEPATH += /Users/frankyeh/include
+INCLUDEPATH += /Users/admin/include
 LIBS += -lz
 ICON = dsi_studio.icns
 }
