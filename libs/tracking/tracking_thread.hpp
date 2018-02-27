@@ -21,37 +21,31 @@ public:
 public:
     std::ostringstream report;
     TrackingParam param;
-    bool stop_by_tract;
-    bool center_seed;
-    bool check_ending;
-    unsigned int termination_count;
-    unsigned char interpolation_strategy;
-    unsigned char tracking_method;
-    unsigned char initial_direction;
-    unsigned int max_seed_count;
+    bool stop_by_tract = true;
+    bool center_seed = false;
+    bool check_ending = false;
+    bool select_track = false;
+    unsigned int termination_count = 1000;
+    unsigned char interpolation_strategy = 0;//trilinear_interpolation
+    unsigned char tracking_method = 0; // streamline
+    unsigned char initial_direction = 0; // primary
+    unsigned int max_seed_count = 0;
 public:
     ThreadData(bool random_seed):
         joinning(false),
-        seed(random_seed ? std::random_device()():0),
-        stop_by_tract(true),
-        center_seed(false),
-        check_ending(true),
-        termination_count(1000),
-        interpolation_strategy(0),//trilinear_interpolation
-        tracking_method(0),//streamline
-        initial_direction(0),// main direction
-        max_seed_count(0)
-    {}
+        seed(random_seed ? std::random_device()():0){}
     ~ThreadData(void)
     {
         end_thread();
     }
 public:
+    bool joinning = false;
+    bool pushing_data = false;
+
     std::vector<std::shared_ptr<std::future<void> > > threads;
     std::vector<unsigned int> seed_count;
     std::vector<unsigned int> tract_count;
     std::vector<unsigned char> running;
-    bool joinning,pushing_data;
     std::mutex  lock_feed_function,lock_seed_function;
     unsigned int get_total_seed_count(void)const
     {
