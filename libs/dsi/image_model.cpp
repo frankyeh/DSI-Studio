@@ -502,7 +502,7 @@ void calculate_shell(const std::vector<float>& sorted_bvalues,
             }
     }
     for(unsigned int index = shell.back()+1;index < sorted_bvalues.size();++index)
-        if(std::abs(sorted_bvalues[index]-sorted_bvalues[index-1]) > 200)
+        if(std::abs(sorted_bvalues[index]-sorted_bvalues[index-1]) > 100)
             shell.push_back(index);
 }
 
@@ -547,11 +547,13 @@ bool ImageModel::is_multishell(void)
 
 void ImageModel::get_report(std::string& report)
 {
+    std::vector<float> sorted_bvalues(src_bvalues);
+    std::sort(sorted_bvalues.begin(),sorted_bvalues.end());
     std::ostringstream out;
     if(is_dsi())
     {
         out << " A diffusion spectrum imaging scheme was used, and a total of " <<
-               src_bvalues.size()-(src_bvalues.front() == 0 ? 1:0)
+               sorted_bvalues.size()-(sorted_bvalues.front() == 0 ? 1:0)
             << " diffusion sampling were acquired."
             << " The maximum b-value was " << (int)std::round(src_bvalues.back()) << " s/mm2.";
     }
@@ -568,27 +570,27 @@ void ImageModel::get_report(std::string& report)
                 else
                     out << " ,";
             }
-            out << (int)std::round(src_bvalues[
-                index == shell.size()-1 ? (src_bvalues.size()+shell.back())/2 : (shell[index+1] + shell[index])/2]);
+            out << (int)std::round(sorted_bvalues[
+                index == shell.size()-1 ? (sorted_bvalues.size()+shell.back())/2 : (shell[index+1] + shell[index])/2]);
         }
         out << " s/mm2.";
 
         out << " The number of diffusion sampling directions were ";
         for(unsigned int index = 0;index < shell.size()-1;++index)
             out << shell[index+1] - shell[index] << (shell.size() == 2 ? " ":", ");
-        out << "and " << src_bvalues.size()-shell.back() << ", respectively.";
+        out << "and " << sorted_bvalues.size()-shell.back() << ", respectively.";
     }
     else
         if(shell.size() == 1)
         {
-            int dir_num = int(src_bvalues.size()-(src_bvalues.front() == 0 ? 1:0));
+            int dir_num = int(sorted_bvalues.size()-(sorted_bvalues.front() == 0 ? 1:0));
             if(dir_num < 100)
                 out << " A DTI diffusion scheme was used, and a total of ";
             else
                 out << " A HARDI scheme was used, and a total of ";
             out << dir_num
                 << " diffusion sampling directions were acquired."
-                << " The b-value was " << src_bvalues.back() << " s/mm2.";
+                << " The b-value was " << sorted_bvalues.back() << " s/mm2.";
         }
 
     out << " The in-plane resolution was " << voxel.vs[0] << " mm."
