@@ -34,7 +34,6 @@ typedef boost::mpl::vector<
     ReadDWIData,
     HGQI_Recon,
     DetermineFiberDirections,
-    ScaleZ0ToMinODF,
     SaveMetrics,
     SaveDirIndex,
     OutputODF
@@ -47,7 +46,6 @@ struct odf_reco_type{
         ODFDeconvolusion,
         ODFDecomposition,
         DetermineFiberDirections,
-        ScaleZ0ToMinODF,
         SaveMetrics,
         SaveDirIndex,
         OutputODF
@@ -384,7 +382,7 @@ const char* reconstruction(ImageModel* image_model,
 
 
             out << (image_model->voxel.r2_weighted ? ".qsdr2.":".qsdr.");
-            out << param_values[0] << "." << param_values[1] << "mm";
+            out << param_values[0];
             if(image_model->voxel.output_jacobian)
                 out << ".jac";
             if(image_model->voxel.output_mapping)

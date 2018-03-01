@@ -395,6 +395,7 @@ public:
                 rdi.back().resize(voxel.dim.size());
             }
         }
+
         if(voxel.csf_calibration)
         {
             std::vector<unsigned short> data(voxel.dwi_data[0],voxel.dwi_data[0]+voxel.dim.size());
@@ -414,7 +415,7 @@ public:
                                     image::dyndim(odf.size(),dwi.size()));
             z0 = image::mean(odf.begin(),odf.end());
         }
-
+        voxel.z0 = 0.0;
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
@@ -425,6 +426,8 @@ public:
         if(voxel.output_rdi)
             for (unsigned int index = 0;index < data.rdi.size();++index)
                 rdi[index][data.voxel_index] = data.rdi[index];
+        if(data.min_odf > voxel.z0)
+            voxel.z0 = data.min_odf;
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
@@ -645,22 +648,6 @@ public:
             data.dir_index[index] = iter->second;
             data.fa[index] = iter->first - data.min_odf;
         }
-    }
-};
-
-struct ScaleZ0ToMinODF : public BaseProcess
-{
-    float max_min_odf;
-public:
-    virtual void init(Voxel& voxel)
-    {
-        voxel.z0 = 0.0;
-    }
-
-    virtual void run(Voxel& voxel,VoxelData& data)
-    {
-        if(data.min_odf > voxel.z0)
-            voxel.z0 = data.min_odf;
     }
 };
 
