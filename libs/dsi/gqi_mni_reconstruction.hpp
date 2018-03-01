@@ -20,13 +20,13 @@ protected:
     image::basic_image<image::vector<3>,3> cdm_dis;
 protected:
     image::transformation_matrix<double> affine;
-    float voxel_size; // output resolution
+    float affine_volume_scale;
+    float resolution_ratio; // output resolution
 protected: // for warping other image modality
     std::vector<image::basic_image<float,3> > other_image,other_image_x,other_image_y,other_image_z;
 protected:
     double trans_to_mni[16];
 protected:
-    float voxel_volume_scale;
     std::vector<float> jdet;
     std::vector<float> mx,my,mz;
 protected:
@@ -41,41 +41,65 @@ public:
                 voxel.vs[2] == 0.0)
             throw std::runtime_error("No spatial information found in src file. Recreate src file or contact developer for assistance");
 
-        voxel_size = voxel.param[1];
+        image::basic_image<float,3> VG,VF;
+        image::vector<3> VGvs = fa_template_imp.vs;
+        image::vector<3> VGshift = fa_template_imp.shift;
+        VG = fa_template_imp.I;
+        VF = voxel.qa_map;
+        if(!voxel.external_template.empty())
+        {
+            std::cout << "loading external template:" << voxel.external_template << std::endl;
+            gz_nifti read;
+            if(read.load_from_file(voxel.external_template.c_str()))
+            {
+                read.toLPS(VG);
+                read.get_voxel_size(VGvs.begin());
+                float tran[16];
+                read.get_image_transformation(tran);
+                VGshift[0] = tran[3];
+                VGshift[1] = tran[7];
+                VGshift[2] = tran[11];
+            }
+            else
+                throw std::runtime_error("Invalid external template");
+        }
 
+        resolution_ratio = std::round((voxel.vs[0]+voxel.vs[1]+voxel.vs[2])/3.0f/VGvs[0]);
+        if(resolution_ratio < 1.0f)
+            resolution_ratio = 1.0f;
 
         // setup output bounding box
         {
-            des_geo[0] = std::ceil((fa_template_imp.I.width()-1)*fa_template_imp.vs[0]/voxel_size+1);
-            des_geo[1] = std::ceil((fa_template_imp.I.height()-1)*fa_template_imp.vs[1]/voxel_size+1);
-            des_geo[2] = std::ceil((fa_template_imp.I.depth()-1)*fa_template_imp.vs[2]/voxel_size+1);
+            des_geo[0] = std::ceil((VG.width()-1)/resolution_ratio+1);
+            des_geo[1] = std::ceil((VG.height()-1)/resolution_ratio+1);
+            des_geo[2] = std::ceil((VG.depth()-1)/resolution_ratio+1);
             // setup transformation matrix
-            std::cout << des_geo[0] << " " << des_geo[1] << " " << des_geo[2] << std::endl;
             std::fill(trans_to_mni,trans_to_mni+16,0.0);
             trans_to_mni[15] = 1.0;
-            trans_to_mni[0] = -voxel_size;
-            trans_to_mni[5] = -voxel_size;
-            trans_to_mni[10] = voxel_size;
-            trans_to_mni[3] = fa_template_imp.tran[3];
-            trans_to_mni[7] = fa_template_imp.tran[7];
-            trans_to_mni[11] = fa_template_imp.tran[11];
+            trans_to_mni[0] = -VGvs[0]*resolution_ratio;
+            trans_to_mni[5] = -VGvs[1]*resolution_ratio;
+            trans_to_mni[10] = VGvs[2]*resolution_ratio;
+            trans_to_mni[3] = VGshift[0];
+            trans_to_mni[7] = VGshift[1];
+            trans_to_mni[11] = VGshift[2];
         }
 
         bool export_intermediate = false;
         begin_prog("normalization");
         src_geo = voxel.dim;
-        voxel_volume_scale = (voxel.vs[0]*voxel.vs[1]*voxel.vs[2]);
+
+        affine_volume_scale = (voxel.vs[0]*voxel.vs[1]*voxel.vs[2]/VGvs[0]/VGvs[1]/VGvs[2]);
 
         if(voxel.reg_method == 4 && !voxel.t1w.empty()) //CDM
         {
             int prog = 0;
             // calculate the space shift between DWI and T1W
-            image::vector<3> from(fa_template_imp.shift),to;
-            from[0] -= (int)fa_template_imp.I.width()+voxel.t1wt_tran[3]-(int)voxel.t1wt.width();
-            from[1] -= (int)fa_template_imp.I.height()+voxel.t1wt_tran[7]-(int)voxel.t1wt.height();
+            image::vector<3> from(VGshift),to;
+            from[0] -= (int)VG.width()+voxel.t1wt_tran[3]-(int)voxel.t1wt.width();
+            from[1] -= (int)VG.height()+voxel.t1wt_tran[7]-(int)voxel.t1wt.height();
             from[2] -= voxel.t1wt_tran[11];
             to = from;
-            to += image::vector<3>(fa_template_imp.I.geometry());
+            to += image::vector<3>(VG.geometry());
 
             image::normalize(voxel.t1w,1.0);
             image::normalize(voxel.t1wt,1.0);
@@ -93,12 +117,14 @@ public:
                     image::flip_xy(voxel.qa_map);
                 }
                 image::reg::two_way_linear_mr(voxel.t1w,voxel.t1w_vs,voxel.qa_map,voxel.vs,
-                               reg1T,image::reg::rigid_body,image::reg::mutual_information(),thread1.terminated);
+                               reg1T,image::reg::rigid_body,image::reg::mutual_information(),
+                                thread1.terminated,voxel.thread_count);
             });
             thread2.run([&](){
                 prog = 1;
                 image::reg::two_way_linear_mr(voxel.t1wt,voxel.t1wt_vs,voxel.t1w,voxel.t1w_vs,
-                               reg2T,image::reg::affine,image::reg::mutual_information(),thread2.terminated);
+                               reg2T,image::reg::affine,image::reg::mutual_information(),
+                               thread2.terminated,voxel.thread_count);
                 image::basic_image<float,3> J(voxel.t1wt.geometry());
                 image::resample_mt(voxel.t1w,J,reg2T,image::cubic);
 
@@ -149,16 +175,13 @@ public:
 
             if(export_intermediate)
             {
-                image::basic_image<float,3> b0J(fa_template_imp.I.geometry());
+                image::basic_image<float,3> b0J(VG.geometry());
                 image::resample_mt(voxel.qa_map,b0J,affine,image::cubic);
                 b0J.save_to_file<gz_nifti>("b0j.nii.gz");
             }
             goto end_normalization;
         }
         {
-        image::basic_image<float,3> VG,VF;
-        VG = fa_template_imp.I;
-        VF = voxel.qa_map;
 
         image::filter::gaussian(VF);
         VF -= image::segmentation::otsu_threshold(VF);
@@ -183,8 +206,8 @@ public:
             else
             {
                 bool terminated = false;
-                image::reg::two_way_linear_mr(VG,fa_template_imp.vs,VF,voxel.vs,affine,image::reg::affine,image::reg::mt_correlation<image::basic_image<float,3>,
-                                              image::transformation_matrix<double> >(0),terminated);
+                image::reg::two_way_linear_mr(VG,VGvs,VF,voxel.vs,affine,
+                    image::reg::affine,image::reg::correlation(),terminated,voxel.thread_count);
             }
             VFF.resize(VG.geometry());
             image::resample(VF,VFF,affine,image::cubic);
@@ -206,27 +229,6 @@ public:
             terminated_class ter(64);
             int factor = voxel.reg_method + 1;
 
-            if(voxel_size < 0.99)
-            {
-                image::geometry<3> geo2(VG.width()/voxel_size,VG.height()/voxel_size,VG.depth()/voxel_size);
-                image::basic_image<float,3> VG2(geo2),VFF2(geo2);
-                image::transformation_matrix<float> m;
-                m.sr[0] = voxel_size;
-                m.sr[4] = voxel_size;
-                m.sr[8] = voxel_size;
-                image::resample(VG,VG2,m,image::cubic);
-                image::resample(VFF,VFF2,m,image::cubic);
-                mni.reset(new image::reg::bfnorm_mapping<double,3>(geo2,image::geometry<3>(factor*7,factor*9,factor*7)));
-                image::reg::bfnorm(*mni.get(),VG2,VFF2,ter,voxel.thread_count);
-                voxel.R2 = -image::reg::correlation()(VG2,VFF2,(*mni.get()));
-                if(export_intermediate)
-                {
-                    image::basic_image<float,3> VFFF2(VG2.geometry());
-                    image::resample(VFF2,VFFF2,*mni.get(),image::cubic);
-                    VFFF2.save_to_file<image::io::nifti>("Subject_QA_nonlinear_reg.nii.gz");
-                }
-            }
-            else
             {
                 if(factor <= 3)
                 {
@@ -243,7 +245,7 @@ public:
                 else
                 {
                     bool terminated = false;
-                    image::reg::cdm(VG,VFF,cdm_dis,terminated,2.0,0.5);
+                    image::reg::cdm(VG,VFF,cdm_dis,terminated,2.0*resolution_ratio,0.5);
                     image::basic_image<float,3> VFFF;
                     image::compose_displacement(VFF,cdm_dis,VFFF);
                     float r = image::correlation(VG.begin(),VG.end(),VFFF.begin());
@@ -255,7 +257,7 @@ public:
         }
         catch(...)
         {
-            throw std::runtime_error("Registration failed due to memory insufficiency.");
+            throw std::runtime_error("Registration failed due to memory insufficiency. Please try norm 7-9-7 or 14-18-14.");
         }
 
         }
@@ -269,10 +271,10 @@ public:
         for(image::pixel_index<3> index(des_geo);index < des_geo.size();++index)
         {
             image::vector<3,float> mni_pos(index);
-            mni_pos *= voxel_size;
+            mni_pos *= resolution_ratio;
             mni_pos.round();
-            if(fa_template_imp.mask.geometry().is_valid(mni_pos) &&
-                    fa_template_imp.mask.at(mni_pos[0],mni_pos[1],mni_pos[2]) > 0.0)
+            if(VG.geometry().is_valid(mni_pos) &&
+                    VG.at(mni_pos[0],mni_pos[1],mni_pos[2]) > 0.0)
                 voxel.mask[index.index()] = 1;
         }
 
@@ -303,13 +305,19 @@ public:
             ptr_images.push_back(image::make_image(voxel.dwi_data[index],src_geo));
 
 
-        std::fill(voxel.vs.begin(),voxel.vs.end(),voxel.param[1]);
+        std::fill(voxel.vs.begin(),voxel.vs.end(),VGvs[0]*resolution_ratio);
 
-        voxel.csf_pos1 = mni_to_voxel_index(6,0,18);
-        voxel.csf_pos2 = mni_to_voxel_index(-6,0,18);
-        voxel.csf_pos3 = mni_to_voxel_index(4,18,10);
-        voxel.csf_pos4 = mni_to_voxel_index(-4,18,10);
-
+        if(VG.geometry() == image::geometry<3>(157,189,136)) // if default template is used
+        {
+            voxel.csf_pos1 = mni_to_voxel_index(6,0,18);
+            voxel.csf_pos2 = mni_to_voxel_index(-6,0,18);
+            voxel.csf_pos3 = mni_to_voxel_index(4,18,10);
+            voxel.csf_pos4 = mni_to_voxel_index(-4,18,10);
+        }
+        else
+        {
+            voxel.csf_pos1 = voxel.csf_pos2 = voxel.csf_pos3 = voxel.csf_pos4 = image::vector<3,int>(0,0,0);
+        }
         // output mapping
         if(voxel.output_jacobian)
             jdet.resize(voxel.dim.size());
@@ -328,9 +336,9 @@ public:
         x = trans_to_mni[3]-x;
         y = trans_to_mni[7]-y;
         z -= trans_to_mni[11];
-        x /= voxel_size;
-        y /= voxel_size;
-        z /= voxel_size;
+        x /= resolution_ratio;
+        y /= resolution_ratio;
+        z /= resolution_ratio;
         return image::vector<3,int>(x,y,z);
     }
     template<class interpolation_type>
@@ -389,11 +397,9 @@ public:
     virtual void run(Voxel& voxel, VoxelData& data)
     {
         image::vector<3,double> pos(image::pixel_index<3>(data.voxel_index,voxel.dim)),Jpos;
-        pos[0] *= voxel_size;
-        pos[1] *= voxel_size;
-        pos[2] *= voxel_size;
-        if(voxel_size < 0.99)
-            pos /= voxel_size;
+        pos[0] *= resolution_ratio;
+        pos[1] *= resolution_ratio;
+        pos[2] *= resolution_ratio;
         pos.round();
         image::vector<3,int> ipos(pos[0],pos[1],pos[2]);
         std::copy(affine.get(),affine.get()+9,data.jacobian.begin());
@@ -401,13 +407,10 @@ public:
         if(cdm_dis.empty())
         {
             (*mni.get())(ipos,Jpos);
-            if(voxel_size < 0.99)
-                Jpos *= voxel_size;
             affine(Jpos);
             image::matrix<3,3,float> M;
             image::reg::bfnorm_get_jacobian(*mni.get(),ipos,M.begin());
             data.jacobian *= M;
-            data.jdet = std::abs(data.jacobian.det()*voxel_volume_scale);
         }
         else
         {
@@ -417,7 +420,6 @@ public:
             Jpos = pos;
             Jpos += cdm_dis[pos_index.index()];
             affine(Jpos);
-            data.jdet = std::abs(data.jacobian.det()*voxel_volume_scale);
             if(!cdm_dis.geometry().is_edge(pos_index))
             {
                 image::matrix<3,3,float> M;
@@ -425,7 +427,7 @@ public:
                 data.jacobian *= M;
             }
         }
-
+        data.jdet = std::abs(data.jacobian.det()*affine_volume_scale);
         interpolate_dwi(voxel,data,Jpos,image::cubic_interpolation<3>());
 
         if(voxel.output_jacobian)
@@ -478,7 +480,7 @@ public:
             image::basic_image<float,3> output_t1w(des_geo);
             output_t1w.for_each_mt([&](float& v,const image::pixel_index<3>& index){
                image::vector<3,float> p(index);
-               p *= voxel_size;
+               p *= resolution_ratio;
                if(voxel.t1w.geometry().is_valid(p))
                 v = voxel.t1w.at(p[0],p[1],p[2]);
             });
@@ -503,6 +505,7 @@ public:
     void run(Voxel& voxel, VoxelData& data)
     {
         // perform csf cross-subject normalization
+        if(voxel.csf_pos1 != image::vector<3,int>(0,0,0))
         {
             image::vector<3,int> cur_pos(image::pixel_index<3>(data.voxel_index,voxel.dim));
             if((cur_pos-voxel.csf_pos1).length() <= 1.0 || (cur_pos-voxel.csf_pos2).length() <= 1.0 ||
@@ -515,10 +518,16 @@ public:
                     samples.push_back(*std::min_element(data.odf.begin(),data.odf.end())/data.jdet);
             }
         }
+        else
+        // if other template is used
+        {
+            voxel.z0 = std::max<float>(voxel.z0,*std::min_element(data.odf.begin(),data.odf.end())/data.jdet);
+        }
     }
     void end(Voxel& voxel,gz_mat_write&)
     {
-        voxel.z0 = image::median(samples.begin(),samples.end());
+        if(!samples.empty())
+            voxel.z0 = image::median(samples.begin(),samples.end());
         if(voxel.z0 == 0.0)
             voxel.z0 = 1.0;
     }

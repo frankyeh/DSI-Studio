@@ -1,4 +1,5 @@
 #include <QString>
+#include <QFileInfo>
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -11,6 +12,7 @@
 #include "program_option.hpp"
 
 extern fa_template fa_template_imp;
+extern std::vector<std::string> fa_template_list;
 void rec_motion_correction(ImageModel* handle);
 void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
@@ -85,24 +87,8 @@ int rec(void)
         param[1] = 3000.0f;
         param[2] = 0.05f;
     }
-    if(method_index == 7)
-    {
-        param[0] = 1.2f;
-        param[1] = 2.0f;
-    }
-
-    if (po.has("template"))
-    {
-        std::cout << "loading external template:" << po.get("template") << std::endl;
-        fa_template_imp.template_file_name = po.get("template");
-    }
-    if(!fa_template_imp.load_from_file())
-    {
-        std::cout << fa_template_imp.error_msg << std::endl;
-        return -1;
-    }
-
-    param[3] = 0.0002f;
+    if(method_index == 7) // QSDR
+        param[0] = 1.25f;
 
     if(po.get("deconvolution",int(0)))
     {
@@ -153,6 +139,27 @@ int rec(void)
     handle->voxel.reg_method = po.get("reg_method",int(0));
     handle->voxel.csf_calibration = po.get("csf_calibration",int(0)) && method_index == 4;
     handle->voxel.thread_count = po.get("thread_count",int(std::thread::hardware_concurrency()));
+
+    if (po.has("template"))
+    {
+        std::cout << "external template = " << po.get("template") << std::endl;
+        std::string template_file_name = po.get("template");
+        for(int i = 0;i < fa_template_list.size();++i)
+            if(QFileInfo(fa_template_list[i].c_str()).baseName() ==
+                    QFileInfo(template_file_name.c_str()).baseName())
+                template_file_name = fa_template_list[i];
+        if(!QFileInfo(template_file_name.c_str()).exists())
+        {
+            std::cout << "template does not exist." << std::endl;
+            return 0;
+        }
+        handle->voxel.external_template = template_file_name;
+    }
+    if(!fa_template_imp.load_from_file())
+    {
+        std::cout << fa_template_imp.error_msg << std::endl;
+        return -1;
+    }
 
     if(handle->voxel.csf_calibration && !handle->is_human_data())
     {

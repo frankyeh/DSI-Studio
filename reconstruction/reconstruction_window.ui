@@ -60,8 +60,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>731</width>
-         <height>524</height>
+         <width>550</width>
+         <height>241</height>
         </rect>
        </property>
        <attribute name="label">
@@ -343,8 +343,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>731</width>
-         <height>524</height>
+         <width>526</width>
+         <height>209</height>
         </rect>
        </property>
        <attribute name="label">
@@ -977,39 +977,12 @@
              <item>
               <widget class="QLabel" name="label_8">
                <property name="text">
-                <string>Output Resolution</string>
+                <string>Template:</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QComboBox" name="resolution">
-               <property name="maximumSize">
-                <size>
-                 <width>75</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <item>
-                <property name="text">
-                 <string>0.5 mm</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1 mm</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>2 mm</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>3 mm</string>
-                </property>
-               </item>
-              </widget>
+              <widget class="QComboBox" name="template_box"/>
              </item>
              <item>
               <widget class="QPushButton" name="add_t1t2">

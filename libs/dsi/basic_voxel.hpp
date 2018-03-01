@@ -93,6 +93,7 @@ public:// gradient deviation
     std::vector<image::basic_image<float,3> > new_grad_dev;
     std::vector<image::pointer_image<float,3> > grad_dev;
 public:// used in QSDR
+    std::string external_template;
     unsigned char reg_method = 0;
     image::transformation_matrix<double> qsdr_trans;
     bool output_jacobian = false;

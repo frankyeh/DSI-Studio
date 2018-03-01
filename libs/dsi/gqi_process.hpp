@@ -30,7 +30,7 @@ public:
         // add rotation from QSDR or gradient nonlinearity
         if(voxel.qsdr || !voxel.grad_dev.empty())
         {
-            if(!voxel.qsdr)
+            if(!voxel.qsdr) // grad_dev already multiplied in interpolate_dwi routine
             {
                 // correction for gradient nonlinearity
                 // new_bvecs = (I+grad_dev) * bvecs;

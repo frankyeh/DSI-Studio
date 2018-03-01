@@ -17,10 +17,12 @@
 
 track_recognition track_network;
 fa_template fa_template_imp;
-std::string fa_template_file_name,fa_mask_file_name,
+std::string fa_template_file_name,
         fib_template_file_name_1mm,fib_template_file_name_2mm,
         t1w_template_file_name,
         t1w_mask_template_file_name;
+std::vector<std::string> fa_template_list;
+
 extern std::vector<atlas> atlas_list;
 void load_atlas(void);
 int rec(void);
@@ -56,20 +58,12 @@ QStringList search_files(QString dir,QString filter)
 void load_file_name(void)
 {
     QString filename;
-    filename = QCoreApplication::applicationDirPath() + "/HCP1021_QA.nii.gz";
+    filename = QCoreApplication::applicationDirPath() + "/template/HCP1021_QA.nii.gz";
     if(QFileInfo(filename).exists())
         fa_template_file_name = filename.toStdString();
-    filename = QDir::currentPath() + "/HCP1021_QA.nii.gz";
+    filename = QDir::currentPath() + "/template/HCP1021_QA.nii.gz";
     if(QFileInfo(filename).exists())
         fa_template_file_name = filename.toStdString();
-
-    filename = QCoreApplication::applicationDirPath() + "/brain_mask.nii.gz";
-    if(QFileInfo(filename).exists())
-        fa_mask_file_name = filename.toStdString();
-    filename = QDir::currentPath() + "/brain_mask.nii.gz";
-    if(QFileInfo(filename).exists())
-        fa_mask_file_name = filename.toStdString();
-
 
     filename = QCoreApplication::applicationDirPath() + "/HCP1021.2mm.fib.gz";
     if(QFileInfo(filename).exists())
@@ -93,6 +87,19 @@ void load_file_name(void)
     if(QFileInfo(filename).exists())
         t1w_template_file_name = filename.toStdString();
 
+
+    QDir dir = QCoreApplication::applicationDirPath()+ "/template";
+    if(!dir.exists())
+        dir = QDir::currentPath()+ "/template";
+    QStringList name_list = dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
+    for(int i = 0;i < name_list.size();++i)
+    {
+        std::string full_path = (dir.absolutePath() + "/" + name_list[i]).toStdString();
+        if(full_path == fa_template_file_name)
+            fa_template_list.insert(fa_template_list.begin(),full_path);
+        else
+            fa_template_list.push_back(full_path);
+    }
 }
 
 void init_application(void)

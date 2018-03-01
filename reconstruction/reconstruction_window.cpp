@@ -17,6 +17,7 @@
 #include "gzip_interface.hpp"
 #include "manual_alignment.h"
 
+extern std::vector<std::string> fa_template_list;
 void show_view(QGraphicsScene& scene,QImage I);
 bool reconstruction_window::load_src(int index)
 {
@@ -40,6 +41,18 @@ bool reconstruction_window::load_src(int index)
     ui->min_value->setMinimum(0.0f);
     ui->min_value->setSingleStep(m*0.05f);
     ui->min_value->setValue(0.0f);
+
+    // load all templates for QSDR
+    if(!fa_template_list.empty())
+    {
+        for(int index = 0;index < fa_template_list.size();++index)
+            ui->template_box->addItem(QFileInfo(fa_template_list[index].c_str()).baseName());
+        ui->template_box->setCurrentIndex(0);
+    }
+    else
+        ui->template_box->hide();
+
+
     update_image();
     return true;
 }
@@ -114,9 +127,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->odf_sharpening->setCurrentIndex(settings.value("rec_odf_sharpening",0).toInt());
     ui->decon_param->setValue(settings.value("rec_deconvolution_param",3.0).toDouble());
     ui->decom_m->setValue(settings.value("rec_decom_m",10).toInt());
-
-    ui->resolution->setCurrentIndex(settings.value("rec_resolution",2).toInt());
-
     ui->ODFDim->setCurrentIndex(settings.value("odf_order",3).toInt());
 
     ui->RecordODF->setChecked(settings.value("rec_record_odf",0).toInt());
@@ -285,6 +295,8 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
             handle->voxel.t1w_file_name = filename.toStdString();
         }
      }
+    if(method_id == 7 && !fa_template_list.empty() && ui->template_box->currentIndex() != 0)
+        handle->voxel.external_template = fa_template_list[ui->template_box->currentIndex()];
 
     settings.setValue("rec_method_id",method_id);
     settings.setValue("rec_thread_num",ui->ThreadCount->value());
@@ -324,6 +336,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.output_rdi = ui->rdi->isChecked() ? 1 : 0;
     handle->voxel.thread_count = ui->ThreadCount->value();
     handle->voxel.ddi_type = ui->ddi_dir->currentIndex() == 0 ? true:false;
+
 
     if(method_id == 7 || method_id == 4 || method_id == 8)
     {
@@ -479,12 +492,7 @@ void reconstruction_window::on_doDTI_clicked()
                 params[1] = ui->diffusion_time->value();
             settings.setValue("rec_gqi_sampling",ui->diffusion_sampling->value());
             if(ui->QSDR->isChecked())
-            {
-                float res[4] = {0.5,1.0,2.0,3.0};
-                params[1] = res[ui->resolution->currentIndex()];
-                settings.setValue("rec_resolution",ui->resolution->currentIndex());
                 doReconstruction(7,index+1 == filenames.size());
-            }
             else
                 doReconstruction(4,index+1 == filenames.size());
         }

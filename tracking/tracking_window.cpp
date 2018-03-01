@@ -142,10 +142,10 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         }
 
 
-        if(QFileInfo(t1[0]).exists())
+        if(QFileInfo(t1[0]).exists() && handle->is_human_data)
             addSlices(t1,"icbm_t1w",false,false);
 
-        if(QFileInfo(wm[0]).exists())
+        if(QFileInfo(wm[0]).exists() && handle->is_human_data)
             addSlices(wm,"icbm_wm",false,false);
 
 

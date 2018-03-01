@@ -437,7 +437,7 @@ void RegToolBox::on_actionRemove_Skull_triggered()
            image::vector<3> p(pos);
            p -= from;
            p.round();
-           if(fa_template_imp.mask.geometry().is_valid(p) && fa_template_imp.mask.at(p[0],p[1],p[2]))
+           if(fa_template_imp.I.geometry().is_valid(p) && fa_template_imp.I.at(p[0],p[1],p[2]) > 0)
                return;
            v = 0.0f;
         });

@@ -332,8 +332,10 @@ const char* reconstruction(ImageModel* image_model,
                 return "reconstruction canceled";
             break;
         case 7:
-            if(image_model->voxel.reg_method == 4) // DMDM
+            if(image_model->voxel.reg_method == 4) // CDM
             {
+                if(!image_model->voxel.external_template.empty())
+                    return "T1W-CDM does not support using an external template";
                 {
                     gz_nifti in;
                     if(!in.load_from_file(t1w_template_file_name.c_str()) || !in.toLPS(image_model->voxel.t1wt))
@@ -353,7 +355,7 @@ const char* reconstruction(ImageModel* image_model,
             image_model->voxel.recon_report
             << " The diffusion data were reconstructed in the MNI space using q-space diffeomorphic reconstruction (Yeh et al., Neuroimage, 58(1):91-9, 2011) to obtain the spin distribution function (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010). "
             << " A diffusion sampling length ratio of "
-            << (float)param_values[0] << " was used, and the output resolution was " << param_values[1] << " mm.";
+            << (float)param_values[0] << " was used";
             // run gqi to get the spin quantity
 
             if(image_model->voxel.output_rdi)

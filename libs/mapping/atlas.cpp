@@ -10,14 +10,10 @@ atlas* track_atlas = 0;
 void load_atlas(void)
 {
     QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
+    if(!dir.exists())
+        dir = QDir::currentPath()+ "/atlas";
     QStringList atlas_name_list = dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
     atlas_name_list << dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
-    if(atlas_name_list.empty())
-    {
-        dir = QDir::currentPath()+ "/atlas";
-        atlas_name_list = dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
-        atlas_name_list << dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
-    }
     if(atlas_name_list.empty())
         return;
     atlas_list.resize(atlas_name_list.size());

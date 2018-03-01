@@ -6,7 +6,6 @@ struct fa_template{
     std::string template_file_name,error_msg;
     image::vector<3> vs,shift;
     image::basic_image<float,3> I;
-    image::basic_image<unsigned char,3> mask;
     float tran[16];
     bool load_from_file(void);
     template<typename v_type>
