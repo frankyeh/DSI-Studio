@@ -876,12 +876,6 @@ void MainWindow::on_ReconstructSRC_clicked()
         }
 
         float params[5] = {1.25,0,0,0,0};
-        // determine the spatial resolution
-        if(handle->voxel.vs[0] < 2.0)
-            params[1] = 1; // 1 mm
-        else
-            params[1] = 2; // 2 mm
-
         handle->voxel.ti.init(8); // odf order of 8
         handle->voxel.odf_deconvolusion = 0;//ui->odf_sharpening->currentIndex() == 1 ? 1 : 0;
         handle->voxel.odf_decomposition = 0;//ui->odf_sharpening->currentIndex() == 2 ? 1 : 0;
