@@ -63,6 +63,14 @@ public:
             else
                 throw std::runtime_error("Invalid external template");
         }
+        // check if the template has similar size as the data
+        {
+            float size_ratio_x = (float)VG.width()*VGvs[0]/(float)VF.width()/voxel.vs[0];
+            float size_ratio_y = (float)VG.height()*VGvs[1]/(float)VF.height()/voxel.vs[1];
+            if(size_ratio_x < 0.4 || size_ratio_x > 2.5 ||
+               size_ratio_y < 0.4 || size_ratio_y > 2.5)
+                throw std::runtime_error("Template/Subject FOV mismatch: Please check if the template is valid.");
+        }
 
         resolution_ratio = std::round((voxel.vs[0]+voxel.vs[1]+voxel.vs[2])/3.0f/VGvs[0]);
         if(resolution_ratio < 1.0f)
