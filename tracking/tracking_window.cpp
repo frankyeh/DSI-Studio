@@ -561,7 +561,10 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     if(handle->is_qsdr || handle->has_reg())
     {
         image::vector<3,float> mni(pos);
-        handle->subject2mni(mni);
+        if(handle->has_reg())
+            handle->subject2mni(mni);
+        else
+            mni.to(handle->trans_to_mni);
         status += QString("MNI(%1,%2,%3) ")
                 .arg(std::round(mni[0]*10.0)/10.0)
                 .arg(std::round(mni[1]*10.0)/10.0)
