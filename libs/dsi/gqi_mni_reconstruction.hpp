@@ -24,9 +24,6 @@ protected:
 protected: // for warping other image modality
     std::vector<image::basic_image<float,3> > other_image,other_image_x,other_image_y,other_image_z;
 protected:
-    image::vector<3,int> bounding_box_lower;
-    image::vector<3,int> bounding_box_upper;
-    image::vector<3,int> des_offset;// = {6,7,11};	// the offset due to bounding box
     double trans_to_mni[16];
 protected:
     float voxel_volume_scale;
@@ -43,9 +40,29 @@ public:
                 voxel.vs[1] == 0.0 ||
                 voxel.vs[2] == 0.0)
             throw std::runtime_error("No spatial information found in src file. Recreate src file or contact developer for assistance");
+
+        voxel_size = voxel.param[1];
+
+
+        // setup output bounding box
+        {
+            des_geo[0] = std::ceil((fa_template_imp.I.width()-1)*fa_template_imp.vs[0]/voxel_size+1);
+            des_geo[1] = std::ceil((fa_template_imp.I.height()-1)*fa_template_imp.vs[1]/voxel_size+1);
+            des_geo[2] = std::ceil((fa_template_imp.I.depth()-1)*fa_template_imp.vs[2]/voxel_size+1);
+            // setup transformation matrix
+            std::cout << des_geo[0] << " " << des_geo[1] << " " << des_geo[2] << std::endl;
+            std::fill(trans_to_mni,trans_to_mni+16,0.0);
+            trans_to_mni[15] = 1.0;
+            trans_to_mni[0] = -voxel_size;
+            trans_to_mni[5] = -voxel_size;
+            trans_to_mni[10] = voxel_size;
+            trans_to_mni[3] = fa_template_imp.tran[3];
+            trans_to_mni[7] = fa_template_imp.tran[7];
+            trans_to_mni[11] = fa_template_imp.tran[11];
+        }
+
         bool export_intermediate = false;
         begin_prog("normalization");
-        voxel_size = voxel.param[1];
         src_geo = voxel.dim;
         voxel_volume_scale = (voxel.vs[0]*voxel.vs[1]*voxel.vs[2]);
 
@@ -244,35 +261,7 @@ public:
         }
         end_normalization:
 
-        // setup output bounding box
-        {
-            //setBoundingBox(-78,-112,-50,78,76,85,1.0);
-            bounding_box_lower[0] = std::floor(-78.0/voxel_size+0.5)*voxel_size;
-            bounding_box_lower[1] = std::floor(-112.0/voxel_size+0.5)*voxel_size;
-            bounding_box_lower[2] = std::floor(-50.0/voxel_size+0.5)*voxel_size;
-            bounding_box_upper[0] = std::floor(78.0/voxel_size+0.5)*voxel_size;
-            bounding_box_upper[1] = std::floor(76.0/voxel_size+0.5)*voxel_size;
-            bounding_box_upper[2] = std::floor(85.0/voxel_size+0.5)*voxel_size;
-            des_geo[0] = (bounding_box_upper[0]-bounding_box_lower[0])/voxel_size+1;//79
-            des_geo[1] = (bounding_box_upper[1]-bounding_box_lower[1])/voxel_size+1;//95
-            des_geo[2] = (bounding_box_upper[2]-bounding_box_lower[2])/voxel_size+1;//69
 
-            // DSI Studio use radiology convention, the MNI coordinate of the x and y are flipped
-            // fa_template is now LPS,but bounding box is RAS
-            des_offset[0] = fa_template_imp.shift[0]-bounding_box_upper[0];
-            des_offset[1] = fa_template_imp.shift[1]-bounding_box_upper[1];
-            des_offset[2] = bounding_box_lower[2]-fa_template_imp.shift[2];
-
-            // setup transformation matrix
-            std::fill(trans_to_mni,trans_to_mni+16,0.0);
-            trans_to_mni[15] = 1.0;
-            trans_to_mni[0] = -voxel_size;
-            trans_to_mni[5] = -voxel_size;
-            trans_to_mni[10] = voxel_size;
-            trans_to_mni[3] = bounding_box_upper[0];
-            trans_to_mni[7] = bounding_box_upper[1];
-            trans_to_mni[11] = bounding_box_lower[2];
-        }
 
         voxel.dim = des_geo;
         voxel.mask.resize(des_geo);
@@ -281,7 +270,6 @@ public:
         {
             image::vector<3,float> mni_pos(index);
             mni_pos *= voxel_size;
-            mni_pos += des_offset;
             mni_pos.round();
             if(fa_template_imp.mask.geometry().is_valid(mni_pos) &&
                     fa_template_imp.mask.at(mni_pos[0],mni_pos[1],mni_pos[2]) > 0.0)
@@ -336,10 +324,10 @@ public:
     }
 
     image::vector<3,int> mni_to_voxel_index(int x,int y,int z) const
-    {
-        x = bounding_box_upper[0]-x;
-        y = bounding_box_upper[1]-y;
-        z -= bounding_box_lower[2];
+    {               
+        x = trans_to_mni[3]-x;
+        y = trans_to_mni[7]-y;
+        z -= trans_to_mni[11];
         x /= voxel_size;
         y /= voxel_size;
         z /= voxel_size;
@@ -404,7 +392,6 @@ public:
         pos[0] *= voxel_size;
         pos[1] *= voxel_size;
         pos[2] *= voxel_size;
-        pos += des_offset;
         if(voxel_size < 0.99)
             pos /= voxel_size;
         pos.round();
@@ -491,7 +478,6 @@ public:
             image::basic_image<float,3> output_t1w(des_geo);
             output_t1w.for_each_mt([&](float& v,const image::pixel_index<3>& index){
                image::vector<3,float> p(index);
-               p += des_offset;
                p *= voxel_size;
                if(voxel.t1w.geometry().is_valid(p))
                 v = voxel.t1w.at(p[0],p[1],p[2]);

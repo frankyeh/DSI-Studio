@@ -24,7 +24,6 @@ public:
     bool stop_by_tract = true;
     bool center_seed = false;
     bool check_ending = false;
-    bool select_track = false;
     unsigned int termination_count = 1000;
     unsigned char interpolation_strategy = 0;//trilinear_interpolation
     unsigned char tracking_method = 0; // streamline
