@@ -38,7 +38,7 @@ public:
                     data.jacobian[i] = voxel.grad_dev[i][data.voxel_index];
                 image::mat::transpose(data.jacobian.begin(),image::dim<3,3>());
             }
-            std::vector<float> sinc_ql(data.odf.size()*data.space.size());
+            std::vector<float> sinc_ql_(data.odf.size()*data.space.size());
             for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
             {
                 image::vector<3,float> from(voxel.ti.vertices[j]);
@@ -46,16 +46,14 @@ public:
                 from.normalize();
                 if(voxel.r2_weighted)
                     for (unsigned int i = 0; i < data.space.size(); ++i,++index)
-                        sinc_ql[index] = base_function(q_vectors_time[i]*from);
+                        sinc_ql_[index] = base_function(q_vectors_time[i]*from);
                 else
                     for (unsigned int i = 0; i < data.space.size(); ++i,++index)
-                        sinc_ql[index] = boost::math::sinc_pi(q_vectors_time[i]*from);
+                        sinc_ql_[index] = boost::math::sinc_pi(q_vectors_time[i]*from);
 
             }
-            image::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
+            image::mat::vector_product(&*sinc_ql_.begin(),&*data.space.begin(),&*data.odf.begin(),
                                           image::dyndim(data.odf.size(),data.space.size()));
-            if(voxel.qsdr)
-                image::multiply_constant(data.odf,data.jdet);
         }
         else
             image::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),

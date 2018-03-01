@@ -435,11 +435,10 @@ public:
                 data.jacobian *= M;
             }
         }
-        data.jdet = std::abs(data.jacobian.det()*affine_volume_scale);
         interpolate_dwi(voxel,data,Jpos,image::cubic_interpolation<3>());
 
         if(voxel.output_jacobian)
-            jdet[data.voxel_index] = data.jdet;
+            jdet[data.voxel_index] = std::abs(data.jacobian.det()*affine_volume_scale);
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
@@ -523,13 +522,13 @@ public:
                 if(voxel.r2_weighted) // multishell GQI2 gives negative ODF, use b0 as the scaling reference
                     samples.push_back(data.space[0]);
                 else
-                    samples.push_back(*std::min_element(data.odf.begin(),data.odf.end())/data.jdet);
+                    samples.push_back(*std::min_element(data.odf.begin(),data.odf.end()));
             }
         }
         else
         // if other template is used
         {
-            voxel.z0 = std::max<float>(voxel.z0,*std::min_element(data.odf.begin(),data.odf.end())/data.jdet);
+            voxel.z0 = std::max<float>(voxel.z0,*std::min_element(data.odf.begin(),data.odf.end()));
         }
     }
     void end(Voxel& voxel,gz_mat_write&)
