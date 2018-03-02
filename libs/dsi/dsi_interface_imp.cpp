@@ -207,7 +207,7 @@ const char* reconstruction(ImageModel* image_model,
                 out << ".bal";
             if (image_model->voxel.half_sphere)
                 out << ".hs";
-            if (image_model->voxel.csf_calibration &&(method_id == 4 || method_id == 7)) // GQI or QSDR
+            if (image_model->voxel.csf_calibration && method_id == 4) // GQI
                 out << ".csfc";
             else
                 image_model->voxel.csf_calibration = false;
