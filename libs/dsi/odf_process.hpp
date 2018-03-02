@@ -439,8 +439,7 @@ public:
             voxel.z0 = 1.0;
         mat_writer.write("z0",&voxel.z0,1,1);
 
-        image::divide_constant(iso,voxel.z0);
-        mat_writer.write("iso",&*iso.begin(),1,iso.size());
+
 
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
         {
@@ -453,6 +452,10 @@ public:
             set_title(fa_str.c_str());
             mat_writer.write(fa_str.c_str(),&*fa[index].begin(),1,fa[index].size());
         }
+
+        image::divide_constant(iso,voxel.z0);
+        mat_writer.write("iso",&*iso.begin(),1,iso.size());
+
 
         // output normalized qa
         {

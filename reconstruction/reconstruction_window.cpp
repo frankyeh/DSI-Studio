@@ -178,11 +178,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
             ui->QBI->setEnabled(false);
         }
     }
-    if(!handle->is_human_data())
-    {
-        ui->csf_calibration->setEnabled(false);
-        ui->csf_calibration->setVisible(false);
-    }
+
 
 
 }
@@ -588,15 +584,14 @@ void reconstruction_window::on_GQI_toggled(bool checked)
     ui->rdi->setVisible(checked);
     if(checked)
         ui->rdi->setChecked(true);
-    if(ui->csf_calibration->isEnabled())
-        ui->csf_calibration->setVisible(true);
+    ui->csf_calibration->setVisible(handle->is_human_data());
 }
 void reconstruction_window::on_DDI_toggled(bool checked)
 {
     on_GQI_toggled(checked);
     ui->rdi->setVisible(false);
     ui->DDIOption->setVisible(checked);
-    ui->csf_calibration->setVisible(!checked);
+    ui->csf_calibration->setVisible(false);
 
 }
 
@@ -622,6 +617,7 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
     if(checked)
         ui->rdi->setChecked(true);
 
+    ui->csf_calibration->setVisible(false);
 }
 
 
