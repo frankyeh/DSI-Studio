@@ -197,7 +197,6 @@ const char* reconstruction(ImageModel* image_model,
                 image_model->voxel.odf_deconvolusion = 0;
                 image_model->voxel.odf_decomposition = 0;
                 image_model->voxel.csf_calibration = false;
-                out << "." << image_model->voxel.study_name << ".R" << (int)(image_model->voxel.study_r2*100.0f);
             }
             out << ".odf" << image_model->voxel.ti.fold;// odf_order
             out << ".f" << image_model->voxel.max_fiber_number;
@@ -393,14 +392,55 @@ const char* reconstruction(ImageModel* image_model,
                 return "reconstruction canceled";
             out << ".R" << (int)std::floor(image_model->voxel.R2*100.0) << ".fib.gz";
             break;
-        case 8:
+        case 8: // DDI
+            image_model->study_src->voxel.load_from_src(*(image_model->study_src.get()));
+            if(check_b_table)
+                image_model->study_src->check_b_table();
+
+            begin_prog("Registration between longitudinal scans");
+            {
+                image::transformation_matrix<double> arg;
+                bool terminated = false;
+                check_prog(0,1);
+                image::reg::two_way_linear_mr(image_model->dwi_sum,
+                                              image_model->voxel.vs,
+                                              image_model->study_src->dwi_sum,
+                                              image_model->study_src->voxel.vs,
+                                arg,image::reg::rigid_body,image::reg::correlation(),terminated);
+                image_model->study_src->rotate(image_model->dwi_sum,arg);
+                image_model->study_src->voxel.vs = image_model->voxel.vs;
+                check_prog(1,1);
+            }
+
+            begin_prog("Signal matching");
+            double r2;
+            {
+                double a,b;
+                image::linear_regression(image_model->study_src->src_dwi_data[0],
+                                     image_model->study_src->src_dwi_data[0]+
+                                     image_model->study_src->voxel.dim.size(),
+                                     image_model->src_dwi_data[0],a,b,r2);
+                std::cout << "y=" << a << "x+" << b << " r2=" << r2 << std::endl;
+                for(int i = 0;check_prog(i,image_model->study_src->new_dwi.size());++i)
+                {
+                    image::multiply_constant(image_model->study_src->new_dwi[i].begin(),image_model->study_src->new_dwi[i].end(),a);
+                    image::add_constant(image_model->study_src->new_dwi[i].begin(),image_model->study_src->new_dwi[i].end(),b);
+                    image::lower_threshold(image_model->study_src->new_dwi[i].begin(),image_model->study_src->new_dwi[i].end(),0.0f);
+                }
+            }
+            // rotate to baseline
+            image_model->study_src->voxel.load_from_src(*(image_model->study_src.get()));
+            image_model->voxel.study_data = &(image_model->study_src->voxel);
+
             image_model->voxel.recon_report <<
             " The diffusion data were compared with baseline scan using diffusion difference imaging with a diffusion sampling length ratio of "
             << (float)param_values[0] << " to study " << (image_model->voxel.ddi_type ? "increased":"decreased") << " connectivity.";
 
             if(image_model->voxel.r2_weighted)
                 image_model->voxel.recon_report << " The ODF calculation was weighted by the square of the diffuion displacement.";
-            out << (image_model->voxel.r2_weighted ? ".ddi2":".ddi")
+            out << "." << image_model->voxel.study_name
+                << ".R" << (int)(r2*100.0f)
+                << (image_model->voxel.r2_weighted ? ".ddi2":".ddi")
                 << (image_model->voxel.ddi_type ? ".inc.":".dec.")
                 << param_values[0] << ".fib.gz";
             if (!image_model->reconstruct<ddi_process>())

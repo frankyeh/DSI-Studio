@@ -89,7 +89,25 @@ int rec(void)
     }
     if(method_index == 7) // QSDR
         param[0] = 1.25f;
-
+    if(method_index == 8) // DDI
+    {
+        if (po.has("study_src"))
+        {
+            std::cout << "No study SRC assigned for DDI." << std::endl;
+            return 1;
+        }
+        std::string study_file_name = po.get("study_src");
+        std::cout << "loading study src..." << std::endl;
+        std::shared_ptr<ImageModel> study_src(new ImageModel);
+        if (!study_src->load_from_file(study_file_name.c_str()))
+        {
+            std::cout << "Load src file failed:" << study_src->error_msg << std::endl;
+            return 1;
+        }
+        handle->study_src = study_src;
+        handle->voxel.study_name = QFileInfo(study_file_name.c_str()).baseName().toStdString();
+        handle->voxel.ddi_type = po.get("ddi_type",int(1)); // 1:increased 0 :decreased
+    }
     if(po.get("deconvolution",int(0)))
     {
         param[2] = 7.0f;

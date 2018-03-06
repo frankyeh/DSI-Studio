@@ -1156,15 +1156,14 @@ void reconstruction_window::on_open_ddi_study_src_clicked()
             "Images (*.src.gz);;All files (*)" );
     if( filename.isEmpty())
         return;
-    if(!handle->load_study_src(filename.toStdString().c_str()))
+    std::shared_ptr<ImageModel> bl(new ImageModel);
+    if(!bl->load_from_file(filename.toStdString().c_str()))
     {
         QMessageBox::information(this,"error",QString("Cannot open ") +
-            filename + " : " +handle->error_msg.c_str(),0);
-        check_prog(0,0);
+            filename + " : " +bl->error_msg.c_str(),0);
         return;
     }
-    update_image();
-    update_dimension();
-    on_SlicePos_valueChanged(ui->SlicePos->value());
+    handle->study_src = bl;
+    handle->voxel.study_name = QFileInfo(filename).baseName().toStdString();
     ui->ddi_file->setText(QFileInfo(filename).baseName());
 }

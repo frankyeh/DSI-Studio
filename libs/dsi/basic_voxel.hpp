@@ -117,7 +117,6 @@ public: // for fib evaluation
 public: // for DDI
     Voxel* study_data = 0;
     std::string study_name;
-    float study_r2 = 0.0f;
     bool ddi_type = true; // true:increased or false:decreased
 public:
     float z0 = 0.0;

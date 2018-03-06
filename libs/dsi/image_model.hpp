@@ -228,7 +228,7 @@ void distortion_estimate(const image_type& v1,const image_type& v2,
 
 struct ImageModel
 {
-private:
+public:
     std::vector<image::basic_image<unsigned short,3> > new_dwi;//used in rotated volume
 
 public:
@@ -271,7 +271,6 @@ public:
 
 public:
     bool load_from_file(const char* dwi_file_name);
-    bool load_study_src(const char* file_name);
     void save_fib(const std::string& ext);
     void save_to_file(gz_mat_write& mat_writer);
     bool save_to_nii(const char* nifti_file_name) const;
