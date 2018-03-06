@@ -291,6 +291,13 @@ int trk_post(std::shared_ptr<fib_data> handle,
         tract_model.delete_repeated(distance);
         std::cout << "Repeat tracks with distance smaller than " << distance <<" voxel distance are deleted" << std::endl;
     }
+    if(po.has("trim"))
+    {
+        std::cout << "Trimming tracks..." << std::endl;
+        int trim = po.get("trim",int(1));
+        for(int i = 0;i < trim;++i)
+            tract_model.trim();
+    }
     if(!file_name.empty())
     {
         if(po.has("ref")) // save track in T1W/T2W space
