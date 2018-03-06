@@ -91,7 +91,7 @@ int rec(void)
         param[0] = 1.25f;
     if(method_index == 8) // DDI
     {
-        if (po.has("study_src"))
+        if (!po.has("study_src"))
         {
             std::cout << "No study SRC assigned for DDI." << std::endl;
             return 1;
