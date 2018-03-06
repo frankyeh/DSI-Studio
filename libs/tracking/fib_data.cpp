@@ -858,7 +858,6 @@ bool fib_data::get_profile(const std::vector<float>& tract,
     for(int j = 0;j < tract_data.size();j += 3)
     {
         image::vector<3> v(&(tract_data[j]));
-        subject2mni(v);
         // x = -60 ~ 60    total  120
         // y = -90 ~ 60    total  150
         // z = -50 ~ 70    total  120
