@@ -574,45 +574,70 @@ void group_connectometry::calculate_FDR(void)
         vbc->wait();// make sure that all threads done
         timer->stop();
     }
-    report.clear();
+    std::ostringstream html_report((vbc->trk_file_names[0]+".report.html").c_str());
+    html_report << "<!DOCTYPE html>" << std::endl;
+    html_report << "<html><head><title>Connectometry Report</title></head>" << std::endl;
+    html_report << "<body>" << std::endl;
     if(!vbc->handle->report.empty())
-        report = vbc->handle->report.c_str();
+    {
+        html_report << "<h2>MRI Acquisition</h2>" << std::endl;
+        html_report << "<p>" << vbc->handle->report << "</p>" << std::endl;
+    }
     if(!vbc->report.empty())
-        report += vbc->report.c_str();
-
+    {
+        html_report << "<h2>Connectometry analysis</h2>" << std::endl;
+        html_report << "<p>" << vbc->report.c_str() << "</p>" << std::endl;
+    }
     if(vbc->progress == 100)
     {
         if(ui->output_track_data->isChecked())
             vbc->save_tracks_files(); // this also give track recognition
     }
 
-    std::ostringstream out;
-    out << " The connectometry analysis identified "
+    std::ostringstream out_greater,out_lesser;
+    out_greater << " The connectometry analysis identified "
         << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no track": vbc->greater_tracks_result.c_str())
         << " with increased connectivity related to "
-        << ui->foi->currentText().toLocal8Bit().begin() << " (FDR="
-        << vbc->fdr_greater[vbc->length_threshold] << ") "
-        << "and "
+        << vbc->foi_str << " (FDR="
+        << vbc->fdr_greater[vbc->length_threshold] << ").";
+    out_lesser << " The connectometry analysis identified "
         << (vbc->fdr_lesser[vbc->length_threshold]>0.5 || !vbc->has_lesser_result ? "no track": vbc->lesser_tracks_result.c_str())
         << " with decreased connectivity related to "
-        << ui->foi->currentText().toLocal8Bit().begin() << " (FDR="
+        << vbc->foi_str << " (FDR="
         << vbc->fdr_lesser[vbc->length_threshold] << ").";
-    report += out.str().c_str();
 
 
-    report += " The analysis was conducted using DSI Studio (http://dsi-studio.labsolver.org).";
-    ui->textBrowser->setText(report);
+    html_report << "<h2>Results</h2>" << std::endl;
+    html_report << "<h3>Positive Correlation with " << vbc->foi_str << "</h3>" << std::endl;
+    if(vbc->progress == 100 && ui->output_track_image->isChecked())
+    {
+        html_report << "<img src = \""<< (vbc->trk_file_names[0]+".positive.jpg") << "\" width=\"800\"/>" << std::endl;
+        html_report << "<p><b>Fig.</b> Tracks positively correlated with "<< vbc->foi_str << "</p>";
+    }
+    html_report << "<p>" << out_greater.str().c_str() << "</p>" << std::endl;
 
-    if(vbc->progress == 100)
+    html_report << "<h3>Negatively Correlation with " << vbc->foi_str << "</h3>" << std::endl;
+    if(vbc->progress == 100 && ui->output_track_image->isChecked())
+    {
+        html_report << "<img src = \""<< (vbc->trk_file_names[0]+".negative.jpg") << "\" width=\"800\"/>" << std::endl;
+        html_report << "<p><b>Fig.</b> Tracks negatively correlated with "<< vbc->foi_str << "</p>";
+    }
+    html_report << "<p>" << out_lesser.str().c_str() << "</p>" << std::endl;
+
+
+
+
+    if(vbc->progress < 100)
+    {
+        ui->progressBar->setValue(vbc->progress);
+        html_report << "</body></html>" << std::endl;
+        ui->textBrowser->setHtml(html_report.str().c_str());
+        return;
+    }
+    // progress = 100
     {
 
 
-        // save report in text
-        if(ui->output_report->isChecked())
-        {
-            std::ofstream out((vbc->trk_file_names[0]+".report.txt").c_str());
-            out << report.toLocal8Bit().begin() << std::endl;
-        }
         if(ui->output_dist->isChecked())
         {
             ui->show_null_greater->setChecked(true);
@@ -655,17 +680,21 @@ void group_connectometry::calculate_FDR(void)
             *(new_data.get()) = *(vbc->handle);
             tracking_window* new_mdi = new tracking_window(0,new_data);
             new_mdi->setWindowTitle(vbc->trk_file_names[0].c_str());
-            new_mdi->show();
-            new_mdi->resize(1024,800);
-            new_mdi->command("set_zoom","0.9");
+            new_mdi->showMaximized();
+            new_mdi->update();
+            new_mdi->command("set_zoom","0.8");
+            new_mdi->command("set_param","show_surface","1");
             new_mdi->command("set_param","show_slice","0");
             new_mdi->command("set_param","show_region","0");
-            new_mdi->command("set_param","show_surface","1");
+            new_mdi->command("set_param","bkg_color","16777215");
             new_mdi->command("set_param","surface_alpha","0.1");
+            new_mdi->command("set_roi_view_index","icbm_wm");
             new_mdi->command("add_surface");
             new_mdi->tractWidget->addNewTracts("greater");
             new_mdi->tractWidget->tract_models[0]->add(*vbc->greater_tracks[0].get());
             new_mdi->command("update_track");
+            new_mdi->command("save_h3view_image",(vbc->trk_file_names[0]+".positive.jpg").c_str());
+            // do it twice to eliminate 3D artifact
             new_mdi->command("save_h3view_image",(vbc->trk_file_names[0]+".positive.jpg").c_str());
             new_mdi->command("delete_all_tract");
             new_mdi->tractWidget->addNewTracts("lesser");
@@ -688,12 +717,21 @@ void group_connectometry::calculate_FDR(void)
             else
                 std::cout << "no significant finding" << std::endl;
         }
+
+        html_report << "</body></html>" << std::endl;
+        ui->textBrowser->setHtml(html_report.str().c_str());
+
+        // save report in text
+        if(ui->output_report->isChecked())
+        {
+            std::ofstream out((vbc->trk_file_names[0]+".report.html").c_str());
+            out << html_report.str().c_str() << std::endl;
+        }
+
         ui->run->setText("Run");
         ui->progressBar->setValue(100);
         timer.reset(0);
     }
-    else
-        ui->progressBar->setValue(vbc->progress);
 }
 void group_connectometry::on_run_clicked()
 {
@@ -716,7 +754,7 @@ void group_connectometry::on_run_clicked()
     vbc->track_trimming = ui->track_trimming->value();
     vbc->individual_data.clear();
     vbc->tracking_threshold = ui->threshold->value();
-
+    vbc->foi_str = ui->foi->currentText().toStdString();
     vbc->model.reset(new stat_model);
     if(!setup_model(*vbc->model.get()))
     {
@@ -732,15 +770,13 @@ void group_connectometry::on_run_clicked()
         if(ui->normalize_qa->isChecked())
             out << ".nqa";
         char threshold_type[5][11] = {"percentage","t","beta","percentile","mean_dif"};
-        out << ".length" << ui->length_threshold->value();
-        out << "." << threshold_type[vbc->model->threshold_type];
-        out << "." << ui->threshold->value();
-
+        out << ".length" << vbc->length_threshold
+            << threshold_type[vbc->model->threshold_type] << vbc->tracking_threshold;
         parameter_str = out.str();
     }
 
     out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was used to study the effect of "
-        << ui->foi->currentText().toStdString()
+        << vbc->foi_str
         << ". A multiple regression model was used to consider ";
     for(unsigned int index = 0;index < ui->foi->count();++index)
     {
@@ -756,8 +792,8 @@ void group_connectometry::on_run_clicked()
         << " subjects. ";
 
     vbc->trk_file_names[0] += parameter_str;
-    vbc->trk_file_names[0] += ".mr.";
-    vbc->trk_file_names[0] += ui->foi->currentText().toLower().toLocal8Bit().begin();
+    vbc->trk_file_names[0] += ".";
+    vbc->trk_file_names[0] += vbc->foi_str;
 
 
     if(ui->normalize_qa->isChecked())
@@ -812,8 +848,8 @@ void group_connectometry::on_run_clicked()
         out << " All tracks generated from bootstrap resampling were included.";
 
     out << " A length threshold of " << ui->length_threshold->value() << " mm was used to select tracks.";
-    out << " The track/seeding ratio was " <<
-            ui->seed_ratio->value() << ".";
+    out << " The track density was " <<
+            ui->seed_ratio->value() << " per voxel.";
 
     out << " To estimate the false discovery rate, a total of "
         << ui->permutation_count->value()
@@ -837,12 +873,6 @@ void group_connectometry::on_show_result_clicked()
 
     std::shared_ptr<fib_data> new_data(new fib_data);
     *(new_data.get()) = *(vbc->handle);
-    if(!report.isEmpty())
-    {
-        std::ostringstream out;
-        out << report.toLocal8Bit().begin();
-        new_data->report += out.str();
-    }
     stat_model cur_model;
     if(!setup_model(cur_model))
     {
@@ -880,12 +910,17 @@ void group_connectometry::on_show_result_clicked()
 
     current_tracking_window->tractWidget->tract_models[0]->add(*(vbc->greater_tracks[0].get()));
     current_tracking_window->tractWidget->tract_models[1]->add(*(vbc->lesser_tracks[0].get()));
-    current_tracking_window->command("update_track");
+
+    current_tracking_window->command("set_zoom","0.8");
+    current_tracking_window->command("set_param","show_surface","1");
     current_tracking_window->command("set_param","show_slice","0");
     current_tracking_window->command("set_param","show_region","0");
-    current_tracking_window->command("set_param","show_surface","1");
+    current_tracking_window->command("set_param","bkg_color","16777215");
     current_tracking_window->command("set_param","surface_alpha","0.1");
+    current_tracking_window->command("set_roi_view_index","icbm_wm");
     current_tracking_window->command("add_surface");
+    current_tracking_window->command("update_track");
+
 
 }
 

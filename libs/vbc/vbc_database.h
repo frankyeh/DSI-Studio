@@ -76,6 +76,7 @@ public:// Multiple regression
     float tracking_threshold;
     float length_threshold;
     unsigned int track_trimming;
+    std::string foi_str;
     void run_permutation_multithread(unsigned int id,unsigned int thread_count,unsigned int permutation_count);
     void run_permutation(unsigned int thread_count,unsigned int permutation_count);
     void calculate_FDR(void);

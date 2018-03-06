@@ -30,6 +30,7 @@
 
 extern std::vector<atlas> atlas_list;
 extern fa_template fa_template_imp;
+extern std::string t1w_template_file_name,wm_template_file_name;
 QByteArray default_geo,default_state;
 
 
@@ -124,31 +125,13 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     }
 
-    if(handle->is_qsdr)
+    if(handle->is_qsdr && handle->is_human_data)
     {
-        QStringList wm,t1;
-        wm << QCoreApplication::applicationDirPath() + "/mni_icbm152_wm_tal_nlin_asym_09c.nii.gz";
-        t1 << QCoreApplication::applicationDirPath() + "/mni_icbm152_t1_tal_nlin_asym_09c.nii.gz";
-        if(!QFileInfo(t1[0]).exists())
-        {
-            t1.clear();
-            t1 << QDir::currentPath() + "/mni_icbm152_t1_tal_nlin_asym_09c.nii.gz";
-        }
+        if(QFileInfo(QString(t1w_template_file_name.c_str())).exists())
+            addSlices(QStringList() << QString(t1w_template_file_name.c_str()),"icbm_t1w",false,false);
 
-        if(!QFileInfo(wm[0]).exists())
-        {
-            wm.clear();
-            wm << QDir::currentPath() + "/mni_icbm152_wm_tal_nlin_asym_09c.nii.gz";
-        }
-
-
-        if(QFileInfo(t1[0]).exists() && handle->is_human_data)
-            addSlices(t1,"icbm_t1w",false,false);
-
-        if(QFileInfo(wm[0]).exists() && handle->is_human_data)
-            addSlices(wm,"icbm_wm",false,false);
-
-
+        if(QFileInfo(QString(wm_template_file_name.c_str())).exists())
+            addSlices(QStringList() << QString(wm_template_file_name.c_str()),"icbm_wm",false,false);
     }
     ui->SliceModality->setCurrentIndex(0);
     if(!handle->is_human_data || handle->is_qsdr)

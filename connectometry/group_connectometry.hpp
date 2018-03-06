@@ -54,7 +54,6 @@ public:
     std::auto_ptr<stat_model> model;
     std::vector<std::vector<float> > individual_data;
     std::auto_ptr<QTimer> timer;
-    QString report;
     bool setup_model(stat_model& model);
 
     explicit group_connectometry(QWidget *parent,std::shared_ptr<vbc_database> vbc_ptr,QString db_file_name_,bool gui_);

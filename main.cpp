@@ -15,11 +15,12 @@
 #include "program_option.hpp"
 #include "cmd/cnt.cpp" // Qt project cannot build cnt.cpp without adding this.
 
+
 track_recognition track_network;
 fa_template fa_template_imp;
 std::string fa_template_file_name,
         fib_template_file_name_1mm,fib_template_file_name_2mm,
-        t1w_template_file_name,
+        t1w_template_file_name,wm_template_file_name,
         t1w_mask_template_file_name;
 std::vector<std::string> fa_template_list;
 
@@ -86,6 +87,13 @@ void load_file_name(void)
     filename = QDir::currentPath() + "/mni_icbm152_t1_tal_nlin_asym_09c.nii.gz";
     if(QFileInfo(filename).exists())
         t1w_template_file_name = filename.toStdString();
+
+    filename = QCoreApplication::applicationDirPath() + "/mni_icbm152_wm_tal_nlin_asym_09c.nii.gz";
+    if(QFileInfo(filename).exists())
+        wm_template_file_name = filename.toStdString();
+    filename = QDir::currentPath() + "/mni_icbm152_wm_tal_nlin_asym_09c.nii.gz";
+    if(QFileInfo(filename).exists())
+        wm_template_file_name = filename.toStdString();
 
 
     QDir dir = QCoreApplication::applicationDirPath()+ "/template";
