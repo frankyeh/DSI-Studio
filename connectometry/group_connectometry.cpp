@@ -847,7 +847,7 @@ void group_connectometry::on_run_clicked()
     if(vbc->output_resampling)
         out << " All tracks generated from bootstrap resampling were included.";
 
-    out << " A length threshold of " << ui->length_threshold->value() << " mm was used to select tracks.";
+    out << " A length threshold of " << ui->length_threshold->value() << " voxel distance was used to select tracks.";
     out << " The track density was " <<
             ui->seed_ratio->value() << " per voxel.";
 
