@@ -529,7 +529,7 @@
             <item>
              <widget class="QLabel" name="label_4">
               <property name="text">
-               <string>Track/Seed ratio</string>
+               <string>Track Density (per voxel)</string>
               </property>
              </widget>
             </item>
