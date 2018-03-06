@@ -30,6 +30,7 @@ public:
     bool load_database(const char* database_name);
 public:// database information
     float fiber_threshold;
+    unsigned int voxels_in_threshold;
     bool normalize_qa;
     bool output_resampling;
 public:
@@ -60,7 +61,7 @@ public:
 public:
     std::vector<std::string> trk_file_names;
     bool has_greater_result,has_lesser_result;
-    float seeding_density;
+    float seed_ratio;
     std::mutex  lock_resampling,lock_greater_tracks,lock_lesser_tracks;
     std::vector<std::shared_ptr<TractModel> > greater_tracks;
     std::vector<std::shared_ptr<TractModel> > lesser_tracks;

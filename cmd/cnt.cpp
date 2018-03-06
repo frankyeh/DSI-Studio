@@ -54,10 +54,10 @@ int cnt(void)
 
     std::cout << "threshold=" << vbc->ui->threshold->value() << std::endl;
 
-    vbc->ui->seed_density->setValue(po.get("seeding_density",float(10)));
-    std::cout << "seeding_density=" << vbc->ui->seed_density->value() << std::endl;
+    vbc->ui->seed_ratio->setValue(po.get("seed_ratio",5.0f));
+    std::cout << "seed_ratio=" << vbc->ui->seed_ratio->value() << std::endl;
 
-    vbc->ui->permutation_count->setValue(po.get("permutation",int(5000)));
+    vbc->ui->permutation_count->setValue(po.get("permutation",int(2000)));
     std::cout << "permutation=" << vbc->ui->permutation_count->value() << std::endl;
 
     vbc->ui->multithread->setValue(po.get("thread_count",int(std::thread::hardware_concurrency())));

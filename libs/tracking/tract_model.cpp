@@ -1681,7 +1681,7 @@ void TractModel::recognize_report(std::string& report)
         report = "tracks";
 
     */
-    if(!track_network.can_recognize())
+    if(!handle->is_human_data || !track_network.can_recognize())
         return;
     std::vector<int> recog_count(track_network.cnn.get_output_size());
     image::par_for(tract_data.size(),[&](int i)

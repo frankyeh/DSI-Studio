@@ -176,7 +176,7 @@ void group_connectometry::show_fdr_report()
         ui->fdr_dist->graph()->setData(x, y);
         ui->fdr_dist->graph()->setName(QString(legend[i]));
     }
-    ui->fdr_dist->xAxis->setLabel("mm");
+    ui->fdr_dist->xAxis->setLabel("voxel distance");
     ui->fdr_dist->yAxis->setLabel("FDR");
     ui->fdr_dist->xAxis->setRange(2,ui->span_to->value());
     ui->fdr_dist->yAxis->setRange(0,1.0);
@@ -273,7 +273,7 @@ void group_connectometry::show_report()
         ui->null_dist->graph()->setName(QString(legend[i]));
     }
 
-    ui->null_dist->xAxis->setLabel("mm");
+    ui->null_dist->xAxis->setLabel("voxel distance");
     ui->null_dist->yAxis->setLabel("count");
     ui->null_dist->xAxis->setRange(0,ui->span_to->value());
     ui->null_dist->yAxis->setRange(0,std::max<float>(std::max<float>(max_y1,max_y2),std::max<float>(max_y3,max_y4))*1.1);
@@ -708,7 +708,7 @@ void group_connectometry::on_run_clicked()
     }
     ui->run->setText("Stop");
     ui->span_to->setValue(80);
-    vbc->seeding_density = ui->seed_density->value();
+    vbc->seed_ratio = ui->seed_ratio->value();
     vbc->trk_file_names = file_names;
     vbc->normalize_qa = ui->normalize_qa->isChecked();
     vbc->output_resampling = ui->output_resampling->isChecked();
@@ -733,8 +733,6 @@ void group_connectometry::on_run_clicked()
             out << ".nqa";
         char threshold_type[5][11] = {"percentage","t","beta","percentile","mean_dif"};
         out << ".length" << ui->length_threshold->value();
-        out << ".s" << ui->seed_density->value();
-        out << ".p" << ui->permutation_count->value();
         out << "." << threshold_type[vbc->model->threshold_type];
         out << "." << ui->threshold->value();
 
@@ -814,8 +812,8 @@ void group_connectometry::on_run_clicked()
         out << " All tracks generated from bootstrap resampling were included.";
 
     out << " A length threshold of " << ui->length_threshold->value() << " mm was used to select tracks.";
-    out << " The seeding density was " <<
-            ui->seed_density->value() << " seed(s) per mm3.";
+    out << " The track/seeding ratio was " <<
+            ui->seed_ratio->value() << ".";
 
     out << " To estimate the false discovery rate, a total of "
         << ui->permutation_count->value()

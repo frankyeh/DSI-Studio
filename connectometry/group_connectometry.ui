@@ -529,12 +529,12 @@
             <item>
              <widget class="QLabel" name="label_4">
               <property name="text">
-               <string>Seed density</string>
+               <string>Track/Seed ratio</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QDoubleSpinBox" name="seed_density">
+             <widget class="QDoubleSpinBox" name="seed_ratio">
               <property name="minimumSize">
                <size>
                 <width>50</width>
@@ -547,14 +547,20 @@
                 <height>16777215</height>
                </size>
               </property>
+              <property name="decimals">
+               <number>1</number>
+              </property>
               <property name="minimum">
-               <double>1.000000000000000</double>
+               <double>0.500000000000000</double>
               </property>
               <property name="maximum">
-               <double>50.000000000000000</double>
+               <double>20.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>1.000000000000000</double>
               </property>
               <property name="value">
-               <double>20.000000000000000</double>
+               <double>5.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -568,7 +574,7 @@
             <item>
              <widget class="QLabel" name="label_6">
               <property name="text">
-               <string>Length threshold (mm)</string>
+               <string>Length threshold (voxels)</string>
               </property>
              </widget>
             </item>
@@ -587,13 +593,13 @@
                </size>
               </property>
               <property name="minimum">
-               <number>20</number>
+               <number>1</number>
               </property>
               <property name="maximum">
                <number>100</number>
               </property>
               <property name="value">
-               <number>40</number>
+               <number>20</number>
               </property>
              </widget>
             </item>

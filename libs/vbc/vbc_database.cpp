@@ -33,6 +33,10 @@ bool vbc_database::load_database(const char* database_name)
         return false;
     }
     fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim));
+    voxels_in_threshold = 0;
+    for(int i = 0;i < handle->dim.size();++i)
+        if(handle->dir.fa[0][i] > fiber_threshold)
+            ++voxels_in_threshold;
     return handle->db.has_db();
 }
 
@@ -43,7 +47,7 @@ int vbc_database::run_track(const tracking_data& fib,std::vector<std::vector<flo
     for(image::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
         if(fib.fa[0][index.index()] > tracking_threshold)
             seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
-    unsigned int count = seed.size()*seed_ratio/1000.0;
+    unsigned int count = seed.size()*seed_ratio*10000.0f/(float)voxels_in_threshold;
     if(!count)
     {
         tracks.clear();
@@ -51,11 +55,11 @@ int vbc_database::run_track(const tracking_data& fib,std::vector<std::vector<flo
     }
     ThreadData tracking_thread(false);
     tracking_thread.param.threshold = tracking_threshold;
-    tracking_thread.param.cull_cos_angle = std::cos(60.0*3.14159265358979323846/180.0);
-    tracking_thread.param.step_size = 1.0; // fixed 1 mm
+    tracking_thread.param.cull_cos_angle = 1.0f;
+    tracking_thread.param.step_size = handle->vs[0];
     tracking_thread.param.smooth_fraction = 0;
     tracking_thread.param.min_length = 0;
-    tracking_thread.param.max_length = 400;
+    tracking_thread.param.max_length = 200;
     tracking_thread.tracking_method = 0;// streamline fiber tracking
     tracking_thread.initial_direction = 0;// main directions
     tracking_thread.interpolation_strategy = 0; // trilinear interpolation
@@ -104,7 +108,6 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
     connectometry_result data;
     tracking_data fib;
     fib.read(*handle);
-    float voxel_density = seeding_density*fib.vs[0]*fib.vs[1]*fib.vs[2];
     std::vector<std::vector<float> > tracks;
 
     if(model->type == 2) // individual
@@ -132,7 +135,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
                 }
                 calculate_spm(data,info,normalize_qa);
                 fib.fa = data.lesser_ptr;
-                run_track(fib,tracks,voxel_density);
+                run_track(fib,tracks,seed_ratio);
                 cal_hist(tracks,(null) ? subject_lesser_null : subject_lesser);
 
                 if(output_resampling && !null)
@@ -144,7 +147,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
 
 
                 fib.fa = data.greater_ptr;
-                run_track(fib,tracks,voxel_density);
+                run_track(fib,tracks,seed_ratio);
                 cal_hist(tracks,(null) ? subject_greater_null : subject_greater);
 
                 if(output_resampling && !null)
@@ -176,10 +179,10 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             if(!output_resampling)
             {
                 fib.fa = spm_maps[subject_id]->lesser_ptr;
-                run_track(fib,tracks,voxel_density*permutation_count,threads.size());
+                run_track(fib,tracks,seed_ratio*permutation_count,threads.size());
                 lesser_tracks[subject_id]->add_tracts(tracks,length_threshold);
                 fib.fa = spm_maps[subject_id]->greater_ptr;
-                run_track(fib,tracks,voxel_density*permutation_count,threads.size());
+                run_track(fib,tracks,seed_ratio*permutation_count,threads.size());
                 greater_tracks[subject_id]->add_tracts(tracks,length_threshold);
             }
         }
@@ -196,7 +199,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             calculate_spm(data,info,normalize_qa);
 
             fib.fa = data.lesser_ptr;
-            unsigned int s = run_track(fib,tracks,voxel_density);
+            unsigned int s = run_track(fib,tracks,seed_ratio);
             if(null)
                 seed_lesser_null[i] = s;
             else
@@ -214,7 +217,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             info.resample(*model.get(),null,true);
             calculate_spm(data,info,normalize_qa);
             fib.fa = data.greater_ptr;
-            s = run_track(fib,tracks,voxel_density);
+            s = run_track(fib,tracks,seed_ratio);
             if(null)
                 seed_greater_null[i] = s;
             else
@@ -247,10 +250,10 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             if(!output_resampling)
             {
                 fib.fa = spm_maps[0]->lesser_ptr;
-                run_track(fib,tracks,voxel_density*permutation_count,threads.size());
+                run_track(fib,tracks,seed_ratio*permutation_count,threads.size());
                 lesser_tracks[0]->add_tracts(tracks,length_threshold);
                 fib.fa = spm_maps[0]->greater_ptr;
-                run_track(fib,tracks,voxel_density*permutation_count,threads.size());
+                run_track(fib,tracks,seed_ratio*permutation_count,threads.size());
                 greater_tracks[0]->add_tracts(tracks,length_threshold);
             }
         }
@@ -292,12 +295,15 @@ void vbc_database::save_tracks_files(void)
                 ;
             if(tracks.get_visible_track_count())
                 *greater_tracks[index] = tracks;
-            greater_tracks[index]->delete_repeated(1.0);
+            greater_tracks[index]->delete_repeated(1.0f);
+            greater_tracks[index]->clear_deleted();
             std::ostringstream out1;
             out1 << trk_file_names[index] << ".greater.trk.gz";
             greater_tracks[index]->save_tracts_to_file(out1.str().c_str());
             greater_tracks_result = "";
             greater_tracks[index]->recognize_report(greater_tracks_result);
+            if(greater_tracks_result.empty())
+                greater_tracks_result = "tracks";
             has_greater_result = true;
         }
         else
@@ -337,12 +343,15 @@ void vbc_database::save_tracks_files(void)
                 ;
             if(tracks.get_visible_track_count())
                 *lesser_tracks[index] = tracks;
-            lesser_tracks[index]->delete_repeated(1.0);
+            lesser_tracks[index]->delete_repeated(1.0f);
+            lesser_tracks[index]->clear_deleted();
             std::ostringstream out1;
             out1 << trk_file_names[index] << ".lesser.trk.gz";
             lesser_tracks[index]->save_tracts_to_file(out1.str().c_str());
             lesser_tracks_result = "";
             lesser_tracks[index]->recognize_report(lesser_tracks_result);
+            if(lesser_tracks_result.empty())
+                lesser_tracks_result = "tracks";
             has_lesser_result = true;
         }
         else
