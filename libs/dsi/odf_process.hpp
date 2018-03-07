@@ -45,13 +45,15 @@ public:
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        float qa = *std::max_element(data.rdi.begin(),data.rdi.end()) -
-                   (*std::min_element(data.rdi.begin(),data.rdi.end()));
+        image::minus_constant(data.rdi,*std::min_element(data.rdi.begin(),data.rdi.end()));
+        image::minus_constant(data.odf,*std::min_element(data.odf.begin(),data.odf.end()));
+
+        float qa = *std::max_element(data.rdi.begin(),data.rdi.end());
         if(qa > voxel.z0)
             voxel.z0 = qa; // z0 is the maximum qa in the baseline
         // data.rdi : baseline ODF
         // data.odf : study ODF
-        if(!voxel.ddi_type) // study increased connectivity
+        if(!voxel.ddi_type) // study decreased connectivity
             std::swap(data.rdi,data.odf);
         image::minus(data.odf.begin(),data.odf.end(),data.rdi.begin());
         image::lower_threshold(data.odf,0);

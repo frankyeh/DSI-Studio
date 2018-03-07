@@ -175,6 +175,7 @@ std::string ImageModel::check_b_table(void)
 
     if(result[best] > cur_score)
     {
+        std::cout << "b-table corrected." << std::endl;
         flip_b_table(order[best]);
         voxel.load_from_src(*this);
         return txt[best];

@@ -397,6 +397,9 @@ const char* reconstruction(ImageModel* image_model,
             if(check_b_table)
                 image_model->study_src->check_b_table();
 
+
+
+
             begin_prog("Registration between longitudinal scans");
             {
                 image::transformation_matrix<double> arg;
@@ -408,28 +411,48 @@ const char* reconstruction(ImageModel* image_model,
                                               image_model->study_src->voxel.vs,
                                 arg,image::reg::rigid_body,image::reg::correlation(),terminated);
                 image_model->study_src->rotate(image_model->dwi_sum,arg);
+                image_model->study_src->voxel.load_from_src(*(image_model->study_src.get()));
                 image_model->study_src->voxel.vs = image_model->voxel.vs;
                 check_prog(1,1);
             }
-
-            begin_prog("Signal matching");
-            double r2;
+            // update mask to cover both regions
+            for(int i = 0;i < image_model->voxel.mask.size();++i)
+                if(image_model->study_src->src_dwi_data[0][i] == 0)
+                    image_model->voxel.mask[i] = 0;
+            // smooth DWI to avoid boosting noise in DDI
+            {
+                begin_prog("Smoothing");
+                check_prog(0,2);
+                image::par_for(image_model->src_dwi_data.size(),[&](int i)
+                {
+                    auto I = image::make_image((unsigned short*)image_model->src_dwi_data[i],image_model->voxel.dim);
+                    image::filter::gaussian(I);
+                },image_model->voxel.thread_count);
+                check_prog(1,2);
+                image::par_for(image_model->study_src->new_dwi.size(),[&](int i)
+                {
+                    auto I = image::make_image((unsigned short*)&image_model->study_src->new_dwi[i][0],image_model->study_src->voxel.dim);
+                    image::filter::gaussian(I);
+                },image_model->voxel.thread_count);
+                check_prog(2,2);
+            }
+            // Signal match on b0 to allow for quantitative MRI in DDI
+            double r2 = 0.0;
             {
                 double a,b;
                 image::linear_regression(image_model->study_src->src_dwi_data[0],
-                                     image_model->study_src->src_dwi_data[0]+
-                                     image_model->study_src->voxel.dim.size(),
-                                     image_model->src_dwi_data[0],a,b,r2);
+                                                     image_model->study_src->src_dwi_data[0]+
+                                                     image_model->study_src->voxel.dim.size(),
+                                                     image_model->src_dwi_data[0],a,b,r2);
                 std::cout << "y=" << a << "x+" << b << " r2=" << r2 << std::endl;
-                for(int i = 0;check_prog(i,image_model->study_src->new_dwi.size());++i)
+                image::par_for(image_model->study_src->new_dwi.size(),[&](int i)
                 {
                     image::multiply_constant(image_model->study_src->new_dwi[i].begin(),image_model->study_src->new_dwi[i].end(),a);
                     image::add_constant(image_model->study_src->new_dwi[i].begin(),image_model->study_src->new_dwi[i].end(),b);
                     image::lower_threshold(image_model->study_src->new_dwi[i].begin(),image_model->study_src->new_dwi[i].end(),0.0f);
-                }
+                },image_model->voxel.thread_count);
+
             }
-            // rotate to baseline
-            image_model->study_src->voxel.load_from_src(*(image_model->study_src.get()));
             image_model->voxel.study_data = &(image_model->study_src->voxel);
 
             image_model->voxel.recon_report <<
