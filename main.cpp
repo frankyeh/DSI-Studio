@@ -118,6 +118,7 @@ void init_application(void)
     font.setFamily(QString::fromUtf8("Arial"));
     QApplication::setFont(font);
     QApplication::setStyle(QStyleFactory::create("Fusion"));
+    load_file_name();
     if(!fa_template_imp.load_from_file())
     {
         QMessageBox::information(0,"Error",fa_template_imp.error_msg.c_str(),0);
@@ -148,10 +149,10 @@ int run_cmd(int ac, char *av[])
         if(!gui.get())
         {
             cmd.reset(new QCoreApplication(ac, av));
+            load_file_name();
             cmd->setOrganizationName("LabSolver");
             cmd->setApplicationName("DSI Studio");
         }
-        load_file_name();
         if (!po.has("action") || !po.has("source"))
         {
             std::cout << "invalid command, use --help for more detail" << std::endl;
@@ -159,29 +160,33 @@ int run_cmd(int ac, char *av[])
         }
         QDir::setCurrent(QFileInfo(po.get("source").c_str()).absolutePath());
         if(po.get("action") == std::string("rec"))
-            rec();
+            return rec();
         if(po.get("action") == std::string("trk"))
-            trk();
+            return trk();
         if(po.get("action") == std::string("src"))
-            src();
+            return src();
         if(po.get("action") == std::string("ana"))
-            ana();
+            return ana();
         if(po.get("action") == std::string("exp"))
-            exp();
+            return exp();
         if(po.get("action") == std::string("atl"))
-            atl();
+            return atl();
         if(po.get("action") == std::string("cnt"))
-            cnt();
-        if(po.get("action") == std::string("vis"))
-            vis();
+            return cnt();
         if(po.get("action") == std::string("ren"))
-            ren();
+            return ren();
         if(po.get("action") == std::string("cnn"))
-            cnn();
+            return cnn();
         if(po.get("action") == std::string("qc"))
-            qc();
-        if(gui.get() && po.get("stay_open") == std::string("1"))
-            gui->exec();
+            return qc();
+        if(po.get("action") == std::string("vis"))
+        {
+            vis();
+            if(po.get("stay_open") == std::string("1"))
+                gui->exec();
+            return 1;
+        }
+        std::cout << "Unknown action:" << po.get("action") << std::endl;
         return 1;
     }
     catch(const std::exception& e ) {
@@ -199,7 +204,6 @@ int main(int ac, char *av[])
     if(ac > 2)
         return run_cmd(ac,av);
     QApplication a(ac,av);
-    load_file_name();
     init_application();
     MainWindow w;
     w.show();
