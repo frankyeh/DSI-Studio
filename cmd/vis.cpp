@@ -17,7 +17,7 @@ int vis(void)
     tracking_window* new_mdi = new tracking_window(0,new_handle);
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
     new_mdi->setWindowTitle(po.get("source").c_str());
-    new_mdi->show();
+    new_mdi->showMaximized();
     if(!po.has("stay_open"))
         new_mdi->hide();
 
