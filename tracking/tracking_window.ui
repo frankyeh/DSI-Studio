@@ -836,6 +836,7 @@
     <addaction name="separator"/>
     <addaction name="menuTract_Color"/>
     <addaction name="menuClustering"/>
+    <addaction name="actionRecognize_Clustering"/>
     <addaction name="separator"/>
     <addaction name="actionRecognize_Current_Tract"/>
     <addaction name="actionTract_Analysis_Report"/>
@@ -3089,7 +3090,7 @@ Tracking</string>
   </action>
   <action name="actionRecognize_Current_Tract">
    <property name="text">
-    <string>Recognize Tract...</string>
+    <string>Recognize...</string>
    </property>
   </action>
   <action name="actionDelete_By_Length">
@@ -3194,6 +3195,11 @@ Tracking</string>
   <action name="actionTracks_distanced_at_voxel_size">
    <property name="text">
     <string>Tracks Regrid at Voxel Size</string>
+   </property>
+  </action>
+  <action name="actionRecognize_Clustering">
+   <property name="text">
+    <string>Recognize and Clustering</string>
    </property>
   </action>
  </widget>

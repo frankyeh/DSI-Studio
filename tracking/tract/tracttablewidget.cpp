@@ -209,7 +209,7 @@ void TractTableWidget::load_tracts(QStringList filenames)
         {
             std::vector<unsigned int> labels;
             labels.swap(tract_models.back()->get_cluster_info());
-            load_cluster_label(labels,label);
+            load_cluster_label(labels);
         }
     }
     emit need_update();
@@ -322,7 +322,7 @@ void TractTableWidget::assign_colors(void)
     cur_tracking_window.set_data("tract_color_style",1);//manual assigned
     emit need_update();
 }
-void TractTableWidget::load_cluster_label(const std::vector<unsigned int>& labels,QString Name)
+void TractTableWidget::load_cluster_label(const std::vector<unsigned int>& labels,QStringList Names)
 {
     std::vector<std::vector<float> > tracts;
     tract_models[currentRow()]->release_tracts(tracts);
@@ -340,7 +340,10 @@ void TractTableWidget::load_cluster_label(const std::vector<unsigned int>& label
                 add_tracts[i].swap(tracts[index]);
                 ++i;
             }
-        addNewTracts(Name+QString::number(cluster_index),false);
+        if(cluster_index < Names.size())
+            addNewTracts(Names[cluster_index],false);
+        else
+            addNewTracts(QString("cluster")+QString::number(cluster_index),false);
         tract_models.back()->add_tracts(add_tracts);
         item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     }
@@ -361,14 +364,26 @@ void TractTableWidget::open_cluster_label(void)
     std::copy(std::istream_iterator<unsigned int>(in),
               std::istream_iterator<unsigned int>(),labels.begin());
 
-    load_cluster_label(labels,"cluster");
+    load_cluster_label(labels);
     assign_colors();
 }
-
+extern track_recognition track_network;
 void TractTableWidget::clustering(int method_id)
 {
     if(tract_models.empty())
         return;
+    if(method_id == 3) // track recognition
+    {
+        tract_models[currentRow()]->run_clustering(method_id,0,0);
+        std::vector<unsigned int> c = tract_models[currentRow()]->get_cluster_info();
+        QStringList Names;
+        for(int i = 0;i < track_network.track_name.size();++i)
+            Names << track_network.track_name[i].c_str();
+        load_cluster_label(c,Names);
+        assign_colors();
+        return;
+    }
+
     bool ok = false;
     int n = QInputDialog::getInt(this,
             "DSI Studio",
@@ -382,7 +397,7 @@ void TractTableWidget::clustering(int method_id)
         return;
     tract_models[currentRow()]->run_clustering(method_id,n,detail);
     std::vector<unsigned int> c = tract_models[currentRow()]->get_cluster_info();
-    load_cluster_label(c,"cluster");
+    load_cluster_label(c);
     assign_colors();
 }
 

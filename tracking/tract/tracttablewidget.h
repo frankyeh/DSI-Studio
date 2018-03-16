@@ -50,11 +50,12 @@ signals:
 private:
     void delete_row(int row);
     void clustering(int method_id);
-    void load_cluster_label(const std::vector<unsigned int>& labels,QString Name);
+    void load_cluster_label(const std::vector<unsigned int>& labels,QStringList Names = QStringList());
 public slots:
     void clustering_EM(void){clustering(2);}
     void clustering_kmeans(void){clustering(1);}
     void clustering_hie(void){clustering(0);}
+    void auto_recognition(void){clustering(3);}
     void open_cluster_label(void);
     void set_color(void);
     void check_check_status(int,int);
