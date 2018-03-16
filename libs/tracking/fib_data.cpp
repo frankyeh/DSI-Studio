@@ -867,7 +867,7 @@ bool fib_data::get_profile(const std::vector<float>& tract,
         if(x < 0 || y < 0 || z < 0 ||
            x >= 60 || y >= 75 || z >= 60)
             continue;
-        float w = 1.0f-std::fabs(j-length_2)*0.8f/(float)length_2;
+        float w = std::fabs(j-length_2)*0.5f/(float)length_2+0.5;
         profile.at(x,y,0) = w;
         profile.at(x,z,1) = w;
         profile.at(z,y,2) = w;
