@@ -57,6 +57,17 @@ std::pair<float,float> FibSliceModel::get_value_range(void) const
     return std::make_pair(handle->view_item[view_id].min_value,handle->view_item[view_id].max_value);
 }
 // ---------------------------------------------------------------------------
+std::pair<float,float> FibSliceModel::get_contrast_range(void) const
+{
+    return std::make_pair(handle->view_item[view_id].contrast_min,handle->view_item[view_id].contrast_max);
+}
+// ---------------------------------------------------------------------------
+void FibSliceModel::set_contrast_range(float min_v,float max_v)
+{
+    handle->view_item[view_id].contrast_min = min_v;
+    handle->view_item[view_id].contrast_max = max_v;
+}
+// ---------------------------------------------------------------------------
 void FibSliceModel::get_slice(image::color_image& show_image,unsigned char cur_dim,const image::value_to_color<float>& v2c) const
 {
     handle->get_slice(view_id,cur_dim, slice_pos[cur_dim],show_image,v2c);
@@ -75,8 +86,8 @@ void CustomSliceModel::init(void)
     slice_pos[0] = geometry.width() >> 1;
     slice_pos[1] = geometry.height() >> 1;
     slice_pos[2] = geometry.depth() >> 1;
-    min_value = *std::min_element(source_images.begin(),source_images.end());
-    max_value = *std::max_element(source_images.begin(),source_images.end());
+    contrast_min = min_value = *std::min_element(source_images.begin(),source_images.end());
+    contrast_max = max_value = *std::max_element(source_images.begin(),source_images.end());
     scale = max_value-min_value;
     if(scale != 0.0)
         scale = 255.0/scale;
@@ -273,6 +284,7 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
             is_diffusion_space = true;
             has_transform = true;
         }
+        /*
         // same dimension different resolution, no registrationrequired
         float r = std::round((float)source_images.width()/(float)handle->dim[0]);
         if(r > 1.0 && r == std::round(source_images.height()/handle->dim[1]) &&
@@ -287,6 +299,7 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
             transform = image::inverse(invT);
             has_transform = true;
         }
+        */
 
     }
 
@@ -350,7 +363,18 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
 // ---------------------------------------------------------------------------
 std::pair<float,float> CustomSliceModel::get_value_range(void) const
 {
-    return image::min_max_value(source_images.begin(),source_images.end());
+    return std::make_pair(min_value,max_value);
+}
+// ---------------------------------------------------------------------------
+std::pair<float,float> CustomSliceModel::get_contrast_range(void) const
+{
+    return std::make_pair(contrast_min,contrast_max);
+}
+// ---------------------------------------------------------------------------
+void CustomSliceModel::set_contrast_range(float min_v,float max_v)
+{
+    contrast_min = min_v;
+    contrast_max = max_v;
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::argmin(image::reg::reg_type reg_type)

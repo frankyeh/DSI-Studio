@@ -763,6 +763,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     no_update = false;
 
     std::pair<float,float> range = current_slice->get_value_range();
+    std::pair<float,float> contrast_range = current_slice->get_contrast_range();
     float r = range.second-range.first;
     if(r == 0.0)
         r = 1;
@@ -770,17 +771,18 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     ui->min_value_gl->setMinimum(range.first-r);
     ui->min_value_gl->setMaximum(range.second+r);
     ui->min_value_gl->setSingleStep(step);
-    ui->min_value_gl->setValue(range.first);
+    ui->min_value_gl->setValue(contrast_range.first);
     ui->max_value_gl->setMinimum(range.first-r);
     ui->max_value_gl->setMaximum(range.second+r);
     ui->max_value_gl->setSingleStep(step);
-    ui->max_value_gl->setValue(range.second);
-    v2c.set_range(range.first,range.second);
+    ui->max_value_gl->setValue(contrast_range.second);
+    v2c.set_range(contrast_range.first,contrast_range.second);
     glWidget->updateGL();
     scene.show_slice();
 }
 void tracking_window::on_change_contrast()
 {
+    current_slice->set_contrast_range(ui->min_value_gl->value(),ui->max_value_gl->value());
     v2c.set_range(ui->min_value_gl->value(),ui->max_value_gl->value());
     v2c.two_color(ui->min_color_gl->color().rgb(),ui->max_color_gl->color().rgb());
     glWidget->slice_pos[0] = glWidget->slice_pos[1] = glWidget->slice_pos[2] = -1;

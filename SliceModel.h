@@ -14,6 +14,8 @@ public:
         SliceModel(void);
 public:
         virtual std::pair<float,float> get_value_range(void) const = 0;
+        virtual std::pair<float,float> get_contrast_range(void) const = 0;
+        virtual void set_contrast_range(float min_v,float max_v) = 0;
         virtual void get_slice(image::color_image& image,unsigned char,const image::value_to_color<float>& v2c) const = 0;
         virtual image::const_pointer_image<float, 3> get_source(void) const = 0;
 
@@ -112,6 +114,8 @@ public:
     FibSliceModel(std::shared_ptr<fib_data> new_handle,int view_id_);
 public:
     std::pair<float,float> get_value_range(void) const;
+    std::pair<float,float> get_contrast_range(void) const;
+    void set_contrast_range(float min_v,float max_v);
     void get_slice(image::color_image& image,unsigned char cur_dim,const image::value_to_color<float>& v2c) const;
     image::const_pointer_image<float, 3> get_source(void) const;
 
@@ -142,7 +146,7 @@ public:
 
 public:
     image::basic_image<float, 3> source_images;
-    float min_value,max_value,scale;
+    float contrast_max,contrast_min,min_value,max_value,scale;
     template<class loader>
     void load(const loader& io)
     {
@@ -161,6 +165,8 @@ public:
     bool initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,const std::vector<std::string>& files,bool correct_intensity);
 public:
     std::pair<float,float> get_value_range(void) const;
+    std::pair<float,float> get_contrast_range(void) const;
+    void set_contrast_range(float min_v,float max_v);
     void get_slice(image::color_image& image,unsigned char cur_dim,const image::value_to_color<float>& v2c) const;
     bool stripskull(float qa_threshold);
     image::const_pointer_image<float, 3> get_source(void) const  {return source_images;}

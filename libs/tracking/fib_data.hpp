@@ -96,6 +96,8 @@ struct item
     image::const_pointer_image<float,3> image_data;
     float max_value;
     float min_value;
+    float contrast_max;
+    float contrast_min;
     // used in QSDR
     image::basic_image<unsigned int,3> color_map_buf;
     image::const_pointer_image<float,3> mx,my,mz;
@@ -103,8 +105,8 @@ struct item
     template<class input_iterator>
     void set_scale(input_iterator from,input_iterator to)
     {
-        max_value = *std::max_element(from,to);
-        min_value = *std::min_element(from,to);
+        contrast_max = max_value = *std::max_element(from,to);
+        contrast_min = min_value = *std::min_element(from,to);
         if(max_value == min_value)
         {
             min_value = 0;
