@@ -98,6 +98,8 @@ struct item
     float min_value;
     float contrast_max;
     float contrast_min;
+    unsigned int max_color = 0x00FFFFFF;
+    unsigned int min_color = 0;
     // used in QSDR
     image::basic_image<unsigned int,3> color_map_buf;
     image::const_pointer_image<float,3> mx,my,mz;
@@ -112,6 +114,7 @@ struct item
             min_value = 0;
             max_value = 1;
         }
+
     }
 };
 

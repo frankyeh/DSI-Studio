@@ -100,19 +100,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         color_bar.reset(new color_bar_dialog(this));
     }
 
-
-
-    // setup sliders
-    {
-
-
-        ui->min_color_gl->setColor(QColor(0,0,0));
-        ui->max_color_gl->setColor(QColor(255,255,255));
-        v2c.two_color(ui->min_color_gl->color().rgb(),ui->max_color_gl->color().rgb());
-
-
-    }
-
     {
         for (unsigned int index = 0;index < fib.view_item.size(); ++index)
             slices.push_back(std::make_shared<FibSliceModel>(handle,index));
@@ -760,10 +747,11 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     ui->glAxiBox->setValue(slice_position[2]);
     ui->SlicePos->setRange(0,current_slice->geometry[cur_dim]-1);
     ui->SlicePos->setValue(slice_position[cur_dim]);
-    no_update = false;
+
 
     std::pair<float,float> range = current_slice->get_value_range();
     std::pair<float,float> contrast_range = current_slice->get_contrast_range();
+    std::pair<unsigned int,unsigned int> contrast_color = current_slice->get_contrast_color();
     float r = range.second-range.first;
     if(r == 0.0)
         r = 1;
@@ -771,18 +759,30 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     ui->min_value_gl->setMinimum(range.first-r);
     ui->min_value_gl->setMaximum(range.second+r);
     ui->min_value_gl->setSingleStep(step);
-    ui->min_value_gl->setValue(contrast_range.first);
+    ui->min_color_gl->setColor(contrast_color.first);
+
     ui->max_value_gl->setMinimum(range.first-r);
     ui->max_value_gl->setMaximum(range.second+r);
     ui->max_value_gl->setSingleStep(step);
+    ui->max_color_gl->setColor(contrast_color.second);
+
+    ui->min_value_gl->setValue(contrast_range.first);
     ui->max_value_gl->setValue(contrast_range.second);
-    v2c.set_range(contrast_range.first,contrast_range.second);
+
+
+    v2c.set_range(ui->min_value_gl->value(),ui->max_value_gl->value());
+    v2c.two_color(ui->min_color_gl->color().rgb(),ui->max_color_gl->color().rgb());
     glWidget->updateGL();
     scene.show_slice();
+    no_update = false;
+
 }
 void tracking_window::on_change_contrast()
 {
+    if(no_update)
+        return;
     current_slice->set_contrast_range(ui->min_value_gl->value(),ui->max_value_gl->value());
+    current_slice->set_contrast_color(ui->min_color_gl->color().rgb(),ui->max_color_gl->color().rgb());
     v2c.set_range(ui->min_value_gl->value(),ui->max_value_gl->value());
     v2c.two_color(ui->min_color_gl->color().rgb(),ui->max_color_gl->color().rgb());
     glWidget->slice_pos[0] = glWidget->slice_pos[1] = glWidget->slice_pos[2] = -1;

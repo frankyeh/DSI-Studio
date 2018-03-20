@@ -62,10 +62,21 @@ std::pair<float,float> FibSliceModel::get_contrast_range(void) const
     return std::make_pair(handle->view_item[view_id].contrast_min,handle->view_item[view_id].contrast_max);
 }
 // ---------------------------------------------------------------------------
+std::pair<unsigned int,unsigned int> FibSliceModel::get_contrast_color(void) const
+{
+    return std::make_pair(handle->view_item[view_id].min_color,handle->view_item[view_id].max_color);
+}
+// ---------------------------------------------------------------------------
 void FibSliceModel::set_contrast_range(float min_v,float max_v)
 {
     handle->view_item[view_id].contrast_min = min_v;
     handle->view_item[view_id].contrast_max = max_v;
+}
+// ---------------------------------------------------------------------------
+void FibSliceModel::set_contrast_color(unsigned int min_c,unsigned int max_c)
+{
+    handle->view_item[view_id].min_color = min_c;
+    handle->view_item[view_id].max_color = max_c;
 }
 // ---------------------------------------------------------------------------
 void FibSliceModel::get_slice(image::color_image& show_image,unsigned char cur_dim,const image::value_to_color<float>& v2c) const
@@ -371,10 +382,21 @@ std::pair<float,float> CustomSliceModel::get_contrast_range(void) const
     return std::make_pair(contrast_min,contrast_max);
 }
 // ---------------------------------------------------------------------------
+std::pair<unsigned int,unsigned int> CustomSliceModel::get_contrast_color(void) const
+{
+    return std::make_pair(min_color,max_color);
+}
+// ---------------------------------------------------------------------------
 void CustomSliceModel::set_contrast_range(float min_v,float max_v)
 {
     contrast_min = min_v;
     contrast_max = max_v;
+}
+// ---------------------------------------------------------------------------
+void CustomSliceModel::set_contrast_color(unsigned int min_c,unsigned int max_c)
+{
+    min_color = min_c;
+    max_color = max_c;
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::argmin(image::reg::reg_type reg_type)

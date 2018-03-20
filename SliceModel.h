@@ -15,7 +15,9 @@ public:
 public:
         virtual std::pair<float,float> get_value_range(void) const = 0;
         virtual std::pair<float,float> get_contrast_range(void) const = 0;
+        virtual std::pair<unsigned int,unsigned int> get_contrast_color(void) const = 0;
         virtual void set_contrast_range(float min_v,float max_v) = 0;
+        virtual void set_contrast_color(unsigned int min_c,unsigned int max_c) = 0;
         virtual void get_slice(image::color_image& image,unsigned char,const image::value_to_color<float>& v2c) const = 0;
         virtual image::const_pointer_image<float, 3> get_source(void) const = 0;
 
@@ -115,7 +117,11 @@ public:
 public:
     std::pair<float,float> get_value_range(void) const;
     std::pair<float,float> get_contrast_range(void) const;
+    std::pair<unsigned int,unsigned int> get_contrast_color(void) const;
     void set_contrast_range(float min_v,float max_v);
+    void set_contrast_color(unsigned int min_c,unsigned int max_c);
+
+
     void get_slice(image::color_image& image,unsigned char cur_dim,const image::value_to_color<float>& v2c) const;
     image::const_pointer_image<float, 3> get_source(void) const;
 
@@ -146,7 +152,12 @@ public:
 
 public:
     image::basic_image<float, 3> source_images;
-    float contrast_max,contrast_min,min_value,max_value,scale;
+    float min_value,max_value,scale;
+public:
+    float contrast_max,contrast_min;
+    unsigned int max_color = 0x00FFFFFF;
+    unsigned int min_color = 0;
+public:
     template<class loader>
     void load(const loader& io)
     {
@@ -166,7 +177,10 @@ public:
 public:
     std::pair<float,float> get_value_range(void) const;
     std::pair<float,float> get_contrast_range(void) const;
+    std::pair<unsigned int,unsigned int> get_contrast_color(void) const;
     void set_contrast_range(float min_v,float max_v);
+    void set_contrast_color(unsigned int min_c,unsigned int max_c);
+
     void get_slice(image::color_image& image,unsigned char cur_dim,const image::value_to_color<float>& v2c) const;
     bool stripskull(float qa_threshold);
     image::const_pointer_image<float, 3> get_source(void) const  {return source_images;}
