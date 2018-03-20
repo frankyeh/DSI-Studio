@@ -238,6 +238,9 @@ public:
 public:
     // untouched b-table and DWI from SRC file (the ones in Voxel class will be sorted
     std::vector<image::vector<3,float> > src_bvectors;
+    bool has_image_rotation = false;
+    image::matrix<3,3,float> src_bvectors_rotate;
+public:
     std::vector<float> src_bvalues;
     std::vector<const unsigned short*> src_dwi_data;
     image::basic_image<float,3> dwi_sum;
@@ -258,9 +261,9 @@ public:
     bool is_human_data(void) const;
     void flip_b_table(const unsigned char* order);
     void flip_b_table(unsigned char dim);
-    void rotate_b_table(unsigned char dim);
-    void flip(unsigned char type);
-    void rotate_dwi(unsigned int dwi_index,const image::transformation_matrix<double>& affine);
+    void swap_b_table(unsigned char dim);
+    void flip_dwi(unsigned char type);
+    void rotate_one_dwi(unsigned int dwi_index,const image::transformation_matrix<double>& affine);
     void rotate(const image::basic_image<float,3>& ref,
                 const image::transformation_matrix<double>& affine,
                 bool super_resolution = false);

@@ -38,7 +38,7 @@ int rec(void)
         for(unsigned int index = 0;index < flip_seq.length();++index)
             if(flip_seq[index] >= '0' && flip_seq[index] <= '5')
             {
-                handle->flip(flip_seq[index]-'0');
+                handle->flip_dwi(flip_seq[index]-'0');
                 std::cout << "Flip image volume:" << (int)flip_seq[index]-'0' << std::endl;
             }
     }

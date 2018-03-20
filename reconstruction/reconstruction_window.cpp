@@ -775,21 +775,21 @@ void reconstruction_window::update_image(void)
 
 void reconstruction_window::on_actionFlip_x_triggered()
 {
-    handle->flip(0);
+    handle->flip_dwi(0);
     update_image();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 void reconstruction_window::on_actionFlip_y_triggered()
 {
-    handle->flip(1);
+    handle->flip_dwi(1);
     update_image();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 void reconstruction_window::on_actionFlip_z_triggered()
 {
-    handle->flip(2);
+    handle->flip_dwi(2);
     update_image();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
@@ -797,7 +797,7 @@ void reconstruction_window::on_actionFlip_z_triggered()
 void reconstruction_window::on_actionFlip_xy_triggered()
 {
     begin_prog("rotating");
-    handle->flip(3);
+    handle->flip_dwi(3);
     update_image();
     update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
@@ -805,7 +805,7 @@ void reconstruction_window::on_actionFlip_xy_triggered()
 void reconstruction_window::on_actionFlip_yz_triggered()
 {
     begin_prog("rotating");
-    handle->flip(4);
+    handle->flip_dwi(4);
     update_image();
     update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
@@ -813,7 +813,7 @@ void reconstruction_window::on_actionFlip_yz_triggered()
 void reconstruction_window::on_actionFlip_xz_triggered()
 {
     begin_prog("rotating");
-    handle->flip(5);
+    handle->flip_dwi(5);
     update_image();
     update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
@@ -933,7 +933,7 @@ void rec_motion_correction(ImageModel* handle)
                                   handle->voxel.vs,
                                   image::make_image(handle->src_dwi_data[i],handle->voxel.dim),handle->voxel.vs,
                                   arg,image::reg::affine,image::reg::correlation(),terminated);
-        handle->rotate_dwi(i,arg);
+        handle->rotate_one_dwi(i,arg);
     });
     check_prog(1,1);
 

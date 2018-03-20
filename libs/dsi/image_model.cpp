@@ -271,7 +271,7 @@ void ImageModel::flip_b_table(unsigned char dim)
     }
 }
 // 0:xy 1:yz 2: xz
-void ImageModel::rotate_b_table(unsigned char dim)
+void ImageModel::swap_b_table(unsigned char dim)
 {
     std::swap(voxel.vs[dim],voxel.vs[(dim+1)%3]);
     for (unsigned int index = 0;index < src_bvectors.size();++index)
@@ -292,12 +292,12 @@ void ImageModel::rotate_b_table(unsigned char dim)
 
 // 0: x  1: y  2: z
 // 3: xy 4: yz 5: xz
-void ImageModel::flip(unsigned char type)
+void ImageModel::flip_dwi(unsigned char type)
 {
     if(type < 3)
         flip_b_table(type);
     else
-        rotate_b_table(type-3);
+        swap_b_table(type-3);
     image::flip(dwi_sum,type);
     image::flip(voxel.mask,type);
     for(unsigned int i = 0;i < voxel.grad_dev.size();++i)
@@ -313,7 +313,7 @@ void ImageModel::flip(unsigned char type)
     voxel.dim = dwi_sum.geometry();
 }
 // used in eddy correction for each dwi
-void ImageModel::rotate_dwi(unsigned int dwi_index,const image::transformation_matrix<double>& affine)
+void ImageModel::rotate_one_dwi(unsigned int dwi_index,const image::transformation_matrix<double>& affine)
 {
     image::basic_image<float,3> tmp(voxel.dim);
     auto I = image::make_image((unsigned short*)src_dwi_data[dwi_index],voxel.dim);
@@ -350,20 +350,21 @@ void ImageModel::rotate(const image::basic_image<float,3>& ref,
     dwi.swap(new_dwi);
 
     // rotate b-table
-    image::matrix<3,3,float> iT = image::inverse(affine.get());
-    for (unsigned int index = 0;index < src_bvalues.size();++index)
+    if(has_image_rotation)
     {
-        image::vector<3> tmp;
-        image::vector_rotation(src_bvectors[index].begin(),tmp.begin(),iT,image::vdim<3>());
-        tmp.normalize();
-        src_bvectors[index] = tmp;
+        image::matrix<3,3,float> T = image::inverse(affine.get());
+        src_bvectors_rotate *= T;
     }
+    else
+        src_bvectors_rotate = image::inverse(affine.get());
+    has_image_rotation = true;
+
 
     if(!voxel.grad_dev.empty())
     {
         // <R*Gra_dev*b_table,ODF>
         // = <(R*Gra_dev*inv(R))*R*b_table,ODF>
-        float det = std::abs(iT.det());
+        float det = std::abs(src_bvectors_rotate.det());
         begin_prog("rotating grad_dev");
         for(unsigned int index = 0;check_prog(index,voxel.dim.size());++index)
         {
@@ -371,7 +372,7 @@ void ImageModel::rotate(const image::basic_image<float,3>& ref,
             for(unsigned int i = 0; i < 9; ++i)
                 grad_dev[i] = voxel.grad_dev[i][index];
             G_invR = grad_dev*affine.get();
-            grad_dev = iT*G_invR;
+            grad_dev = src_bvectors_rotate*G_invR;
             for(unsigned int i = 0; i < 9; ++i)
                 voxel.grad_dev[i][index] = grad_dev[i]/det;
         }
@@ -548,11 +549,14 @@ void ImageModel::get_report(std::string& report)
 {
     std::vector<float> sorted_bvalues(src_bvalues);
     std::sort(sorted_bvalues.begin(),sorted_bvalues.end());
+    unsigned int num_dir = 0;
+    for(int i = 0;i < src_bvalues.size();++i)
+        if(src_bvalues[i] > 50)
+            ++num_dir;
     std::ostringstream out;
     if(is_dsi())
     {
-        out << " A diffusion spectrum imaging scheme was used, and a total of " <<
-               sorted_bvalues.size()-(sorted_bvalues.front() == 0 ? 1:0)
+        out << " A diffusion spectrum imaging scheme was used, and a total of " << num_dir
             << " diffusion sampling were acquired."
             << " The maximum b-value was " << (int)std::round(src_bvalues.back()) << " s/mm2.";
     }
@@ -582,12 +586,11 @@ void ImageModel::get_report(std::string& report)
     else
         if(shell.size() == 1)
         {
-            int dir_num = int(sorted_bvalues.size()-(sorted_bvalues.front() == 0 ? 1:0));
-            if(dir_num < 100)
+            if(num_dir < 100)
                 out << " A DTI diffusion scheme was used, and a total of ";
             else
                 out << " A HARDI scheme was used, and a total of ";
-            out << dir_num
+            out << num_dir
                 << " diffusion sampling directions were acquired."
                 << " The b-value was " << sorted_bvalues.back() << " s/mm2.";
         }
