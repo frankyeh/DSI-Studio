@@ -400,6 +400,16 @@ int trk(void)
     const float *fa0 = handle->dir.fa[0];
     float otsu06 = po.get("otsu_threshold",0.6f)*image::segmentation::otsu_threshold(image::make_image(fa0,geometry));
 
+    if(pos.has("otsu_threshold"))
+    {
+        if(pos.has("fa_threshold"))
+            std::cout << "Default Otsu is not used because fa_threshold is assigned" << std::endl;
+        else
+        {
+            std::cout << "A ratio of Otsu threshold of " << po.get("otsu_threshold") << " is used" << std::endl;
+        }
+    }
+
     ThreadData tracking_thread(po.get("random_seed",int(0)));
     tracking_thread.param.threshold = po.get("fa_threshold",otsu06);
     tracking_thread.param.cull_cos_angle = std::cos(po.get("turning_angle",0.0)*3.14159265358979323846/180.0);
