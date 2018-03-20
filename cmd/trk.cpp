@@ -400,9 +400,9 @@ int trk(void)
     const float *fa0 = handle->dir.fa[0];
     float otsu06 = po.get("otsu_threshold",0.6f)*image::segmentation::otsu_threshold(image::make_image(fa0,geometry));
 
-    if(pos.has("otsu_threshold"))
+    if(po.has("otsu_threshold"))
     {
-        if(pos.has("fa_threshold"))
+        if(po.has("fa_threshold"))
             std::cout << "Default Otsu is not used because fa_threshold is assigned" << std::endl;
         else
         {

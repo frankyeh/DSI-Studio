@@ -772,6 +772,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
 
     v2c.set_range(ui->min_value_gl->value(),ui->max_value_gl->value());
     v2c.two_color(ui->min_color_gl->color().rgb(),ui->max_color_gl->color().rgb());
+    glWidget->slice_pos[0] = glWidget->slice_pos[1] = glWidget->slice_pos[2] = -1;
     glWidget->updateGL();
     scene.show_slice();
     no_update = false;
