@@ -18,7 +18,10 @@ public:
         virtual std::pair<unsigned int,unsigned int> get_contrast_color(void) const = 0;
         virtual void set_contrast_range(float min_v,float max_v) = 0;
         virtual void set_contrast_color(unsigned int min_c,unsigned int max_c) = 0;
-        virtual void get_slice(image::color_image& image,unsigned char,const image::value_to_color<float>& v2c) const = 0;
+        virtual void get_slice(image::color_image& image,
+                               unsigned char,const image::value_to_color<float>& v2c,
+                               const SliceModel* overlay,
+                               const image::value_to_color<float>& overlay_v2c) const = 0;
         virtual image::const_pointer_image<float, 3> get_source(void) const = 0;
 
 public:
@@ -40,6 +43,16 @@ public:
             else
                 image::slice2space(cur_dim, x, y, slice_pos[cur_dim], px, py, pz);
         }
+        void toOtherSlice(const SliceModel* other_slice,
+                          unsigned char cur_dim,float x,float y,
+                          image::vector<3,float>& v) const
+        {
+            image::slice2space(cur_dim, x, y, slice_pos[cur_dim], v[0],v[1],v[2]);
+            if(!is_diffusion_space)
+                v.to(transform);
+            if(!other_slice->is_diffusion_space)
+                v.to(other_slice->invT);
+        }
         template<typename value_type>
         bool to3DSpace(unsigned char cur_dim,value_type x, value_type y,
                        value_type& px, value_type& py, value_type& pz) const
@@ -52,9 +65,12 @@ public:
         // for directx
         image::vector<3,int> slice_pos;
         bool slice_visible[3];
-        void get_texture(unsigned char dim,image::color_image& cur_rendering_image,const image::value_to_color<float>& v2c)
+        void get_texture(unsigned char dim,image::color_image& cur_rendering_image,
+                         const image::value_to_color<float>& v2c,
+                         const SliceModel* overlay,
+                         const image::value_to_color<float>& overlay_v2c)
         {
-            get_slice(cur_rendering_image,dim,v2c);
+            get_slice(cur_rendering_image,dim,v2c,overlay,overlay_v2c);
             for(unsigned int index = 0;index < cur_rendering_image.size();++index)
             {
                 unsigned char value =
@@ -104,7 +120,13 @@ public:
         void get_mosaic(image::color_image& image,
                         unsigned int mosaic_size,
                         const image::value_to_color<float>& v2c,
-                        unsigned int skip);
+                        unsigned int skip,
+                        const SliceModel* overlay,
+                        const image::value_to_color<float>& overlay_v2c);
+        void apply_overlay(image::color_image& show_image,
+                           unsigned char dim,
+                           const SliceModel* other_slice,
+                           const image::value_to_color<float>& overlay_v2c) const;
 };
 
 class fib_data;
@@ -122,7 +144,10 @@ public:
     void set_contrast_color(unsigned int min_c,unsigned int max_c);
 
 
-    void get_slice(image::color_image& image,unsigned char cur_dim,const image::value_to_color<float>& v2c) const;
+    void get_slice(image::color_image& image,unsigned char cur_dim,
+                   const image::value_to_color<float>& v2c,
+                   const SliceModel* overlay,
+                   const image::value_to_color<float>& overlay_v2c) const;
     image::const_pointer_image<float, 3> get_source(void) const;
 
 };
@@ -181,7 +206,10 @@ public:
     void set_contrast_range(float min_v,float max_v);
     void set_contrast_color(unsigned int min_c,unsigned int max_c);
 
-    void get_slice(image::color_image& image,unsigned char cur_dim,const image::value_to_color<float>& v2c) const;
+    void get_slice(image::color_image& image,unsigned char cur_dim,
+                   const image::value_to_color<float>& v2c,
+                   const SliceModel* overlay,
+                   const image::value_to_color<float>& overlay_v2c) const;
     bool stripskull(float qa_threshold);
     image::const_pointer_image<float, 3> get_source(void) const  {return source_images;}
 };

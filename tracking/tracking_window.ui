@@ -918,6 +918,7 @@
      <addaction name="actionPosterior"/>
     </widget>
     <addaction name="actionInsert_T1_T2"/>
+    <addaction name="actionInsert_MNI_images"/>
     <addaction name="menuAdd_Isosurface"/>
     <addaction name="actionStrip_skull_for_T1w_image"/>
     <addaction name="separator"/>
@@ -2010,6 +2011,13 @@ Tracking</string>
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="is_overlay">
+         <property name="text">
+          <string>Overlay</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <spacer name="horizontalSpacer_4">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -2521,7 +2529,7 @@ Tracking</string>
   <action name="actionInsert_T1_T2">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/slice.xpm</normaloff>:/icons/icons/slice.xpm</iconset>
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
     <string>Insert T1w/T2w images...</string>
@@ -3200,6 +3208,15 @@ Tracking</string>
   <action name="actionRecognize_Clustering">
    <property name="text">
     <string>Recognize and Clustering</string>
+   </property>
+  </action>
+  <action name="actionInsert_MNI_images">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Insert MNI images...</string>
    </property>
   </action>
  </widget>

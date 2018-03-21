@@ -23,7 +23,9 @@ SliceModel::SliceModel(void)
 void SliceModel::get_mosaic(image::color_image& show_image,
                                unsigned int mosaic_size,
                                const image::value_to_color<float>& v2c,
-                               unsigned int skip)
+                               unsigned int skip,
+                               const SliceModel* overlay,
+                               const image::value_to_color<float>& overlay_v2c)
 {
     unsigned slice_num = geometry[2] / skip;
     show_image.clear();
@@ -34,12 +36,30 @@ void SliceModel::get_mosaic(image::color_image& show_image,
     {
         slice_pos[2] = z*skip;
         image::color_image slice_image;
-        get_slice(slice_image,2,v2c);
+        get_slice(slice_image,2,v2c,overlay,overlay_v2c);
         image::vector<2,int> pos(geometry[0]*(z%mosaic_size),
                                  geometry[1]*(z/mosaic_size));
         image::draw(slice_image,show_image,pos);
     }
     slice_pos[2] = old_z;
+}
+void SliceModel::apply_overlay(image::color_image& show_image,
+                    unsigned char cur_dim,
+                    const SliceModel* other_slice,
+                    const image::value_to_color<float>& overlay_v2c) const
+{
+    std::pair<float,float> range = other_slice->get_contrast_range();
+    for(int y = 0,pos = 0;y < show_image.height();++y)
+        for(int x = 0;x < show_image.width();++x,++pos)
+        {
+            image::vector<3,float> v;
+            toOtherSlice(other_slice,cur_dim,x,y,v);
+            float value = 0;
+            if(!image::estimate(other_slice->get_source(),v,value))
+                continue;
+            if(value > range.first)
+                show_image[pos] = overlay_v2c[value];
+        }
 }
 
 FibSliceModel::FibSliceModel(std::shared_ptr<fib_data> handle_,int view_id_):handle(handle_),view_id(view_id_)
@@ -79,9 +99,14 @@ void FibSliceModel::set_contrast_color(unsigned int min_c,unsigned int max_c)
     handle->view_item[view_id].max_color = max_c;
 }
 // ---------------------------------------------------------------------------
-void FibSliceModel::get_slice(image::color_image& show_image,unsigned char cur_dim,const image::value_to_color<float>& v2c) const
+void FibSliceModel::get_slice(image::color_image& show_image,unsigned char cur_dim,
+                              const image::value_to_color<float>& v2c,
+                              const SliceModel* overlay,
+                              const image::value_to_color<float>& overlay_v2c) const
 {
     handle->get_slice(view_id,cur_dim, slice_pos[cur_dim],show_image,v2c);
+    if(overlay && this != overlay)
+        apply_overlay(show_image,cur_dim,overlay,overlay_v2c);
 }
 // ---------------------------------------------------------------------------
 image::const_pointer_image<float, 3> FibSliceModel::get_source(void) const
@@ -458,11 +483,17 @@ void CustomSliceModel::terminate(void)
     ended = true;
 }
 // ---------------------------------------------------------------------------
-void CustomSliceModel::get_slice(image::color_image& show_image,unsigned char cur_dim,const image::value_to_color<float>& v2c) const
+void CustomSliceModel::get_slice(image::color_image& show_image,
+                                 unsigned char cur_dim,
+                                 const image::value_to_color<float>& v2c,
+                                 const SliceModel* overlay,
+                                 const image::value_to_color<float>& overlay_v2c) const
 {
     image::basic_image<float,2> buf;
     image::reslicing(source_images, buf, cur_dim, slice_pos[cur_dim]);
     v2c.convert(buf,show_image);
+    if(overlay && this != overlay)
+        apply_overlay(show_image,cur_dim,overlay,overlay_v2c);
 }
 // ---------------------------------------------------------------------------
 bool CustomSliceModel::stripskull(float qa_threshold)

@@ -717,7 +717,8 @@ void GLWidget::renderLR()
                 if(slice_texture[dim])
                     deleteTexture(slice_texture[dim]);
                 image::color_image texture;
-                current_slice->get_texture(dim,texture,cur_tracking_window.v2c);
+                current_slice->get_texture(dim,texture,cur_tracking_window.v2c,
+                                           cur_tracking_window.overlay_slice.get(),cur_tracking_window.overlay_v2c);
                 slice_texture[dim] =
                     bindTexture(QImage((unsigned char*)&*texture.begin(),
                 texture.width(),texture.height(),QImage::Format_RGB32));

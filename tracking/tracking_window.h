@@ -62,6 +62,9 @@ public:
     unsigned char cur_dim;
     image::value_to_color<float> v2c;
 public:
+    std::shared_ptr<SliceModel> overlay_slice;
+    image::value_to_color<float> overlay_v2c;
+public:
     connectometry_result cnt_result;
 public:
     std::auto_ptr<QTimer> timer,timer2;
@@ -169,6 +172,8 @@ private slots:
     void on_actionDouble_triggered();
     void on_actionStereoscopic_triggered();
 
+    void on_is_overlay_clicked();
+    void on_actionInsert_MNI_images_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

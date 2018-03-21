@@ -186,7 +186,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
         connect(ui->actionInsert_T1_T2,SIGNAL(triggered()),this,SLOT(on_addSlices_clicked()));
 
-
     }
     // scene view
     {
@@ -723,12 +722,12 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
         slice_position.to(current_slice->transform);
 
     current_slice = slices[index];
+    ui->is_overlay->setChecked(current_slice == overlay_slice);
 
     if(!current_slice->is_diffusion_space)
         slice_position.to(current_slice->invT);
     slice_position.round();
     current_slice->slice_pos = slice_position;
-
 
 
 
@@ -786,6 +785,8 @@ void tracking_window::on_change_contrast()
     current_slice->set_contrast_color(ui->min_color_gl->color().rgb(),ui->max_color_gl->color().rgb());
     v2c.set_range(ui->min_value_gl->value(),ui->max_value_gl->value());
     v2c.two_color(ui->min_color_gl->color().rgb(),ui->max_color_gl->color().rgb());
+    if(current_slice == overlay_slice)
+        overlay_v2c = v2c;
     glWidget->slice_pos[0] = glWidget->slice_pos[1] = glWidget->slice_pos[2] = -1;
     glWidget->updateGL();
     scene.show_slice();
@@ -1654,6 +1655,53 @@ void tracking_window::on_actionLoad_mapping_triggered()
     glWidget->updateGL();
 }
 
+void tracking_window::on_actionInsert_MNI_images_triggered()
+{
+    if(!can_map_to_mni())
+        return;
+    QString filename = QFileDialog::getOpenFileName(
+        this,"Open MNI Image",QFileInfo(windowTitle()).absolutePath(),"Image files (*.hdr *.nii *nii.gz);;All files (*)" );
+    if( filename.isEmpty())
+        return;
+    gz_nifti reader;
+    if(!reader.load_from_file(filename.toStdString()))
+    {
+        QMessageBox::information(this,"Error","Cannot open the nifti file",0);
+        return;
+    }
+    const image::basic_image<image::vector<3,float>,3 >& mapping = handle->get_mni_mapping();
+    image::basic_image<float,3> I,J(mapping.geometry());
+    image::matrix<4,4,float> T;
+    reader.toLPS(I);
+    reader.get_image_transformation(T.begin());
+    T[15] = 1.0;
+    T.inv();
+    J.for_each_mt([&](float& v,const image::pixel_index<3>& pos)
+    {
+        image::vector<3> mni(mapping[pos.index()]);
+        mni.to(T);
+        image::estimate(I,mni,v);
+    });
+    std::shared_ptr<SliceModel> new_slice(new CustomSliceModel);
+    CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(new_slice.get());
+    reg_slice_ptr->source_images.swap(J);
+    reg_slice_ptr->voxel_size = handle->vs;
+    reg_slice_ptr->init();
+    reg_slice_ptr->transform.identity();
+    reg_slice_ptr->invT.identity();
+    reg_slice_ptr->is_diffusion_space = true;
+
+    QString name = QFileInfo(filename).baseName();
+    slices.push_back(new_slice);
+    ui->SliceModality->addItem(name);
+    handle->view_item.push_back(handle->view_item[0]);
+    handle->view_item.back().name = name.toStdString();
+    handle->view_item.back().image_data = image::make_image(&*reg_slice_ptr->source_images.begin(),
+                                                            reg_slice_ptr->source_images.geometry());
+    handle->view_item.back().set_scale(reg_slice_ptr->source_images.begin(),reg_slice_ptr->source_images.end());
+    ui->SliceModality->setCurrentIndex(handle->view_item.size()-1);
+
+}
 bool tracking_window::addSlices(QStringList filenames,QString name,bool correct_intensity,bool cmd)
 {
     std::vector<std::string> files(filenames.size());
@@ -1723,6 +1771,8 @@ void tracking_window::on_actionLoad_Color_Map_triggered()
           return;
     }
     v2c.set_color_map(new_color_map);
+    if(current_slice == overlay_slice)
+        overlay_v2c = v2c;
     glWidget->slice_pos[0] = glWidget->slice_pos[1] = glWidget->slice_pos[2] = -1;
     glWidget->updateGL();
     scene.show_slice();
@@ -1856,4 +1906,17 @@ void tracking_window::on_actionStereoscopic_triggered()
     glWidget->view_mode = GLWidget::view_mode_type::stereo;
     glWidget->updateGL();
 }
+
+
+void tracking_window::on_is_overlay_clicked()
+{
+    if(ui->is_overlay->isChecked())
+    {
+        overlay_slice = current_slice;
+        overlay_v2c = v2c;
+    }
+    else
+        overlay_slice.reset();
+}
+
 
