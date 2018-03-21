@@ -18,6 +18,7 @@ void show_view(QGraphicsScene& scene,QImage I)
     scene.setItemIndexMethod(QGraphicsScene::NoIndex);
     scene.addRect(0, 0, I.width(),I.height(),QPen(),I);
 }
+
 void slice_view_scene::show_ruler(QPainter& paint)
 {
     if(sel_mode != 6 || sel_point.size() < 2)
@@ -498,6 +499,25 @@ void slice_view_scene::mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseE
     }
 }
 
+void slice_view_scene::adjust_xy_to_layout(float& X,float& Y)
+{
+    image::geometry<3> geo(cur_tracking_window.current_slice->geometry);
+    float display_ratio = cur_tracking_window.get_scene_zoom();
+    if(cur_tracking_window["roi_layout"].toInt() == 1)
+    {
+        if(cur_tracking_window["orientation_convention"].toInt())
+        {
+            if(cur_tracking_window.cur_dim == 0)
+                X -= geo[0]*display_ratio;
+        }
+        else
+            if(cur_tracking_window.cur_dim >= 1)
+                X -= geo[1]*display_ratio;
+        if(cur_tracking_window.cur_dim == 2)
+            Y -= geo[2]*display_ratio;
+    }
+}
+
 void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {
     if(cur_tracking_window["roi_layout"].toInt() > 1)// mosaic
@@ -531,20 +551,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     image::geometry<3> geo(cur_tracking_window.current_slice->geometry);
     if(!to_3d_space(X,Y,pos))
         return;
-    if(cur_tracking_window["roi_layout"].toInt() == 1)
-    {
-        if(cur_tracking_window["orientation_convention"].toInt())
-        {
-            if(cur_tracking_window.cur_dim == 0)
-                X -= geo[0]*display_ratio;
-        }
-        else
-            if(cur_tracking_window.cur_dim >= 1)
-                X -= geo[1]*display_ratio;
-        if(cur_tracking_window.cur_dim == 2)
-            Y -= geo[2]*display_ratio;
-    }
-
+    adjust_xy_to_layout(X,Y);
     if(sel_mode == 5)// move object
     {
         bool find_region = false;
@@ -592,6 +599,23 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     }
     mouse_down = true;
 }
+void slice_view_scene::new_annotated_image(void)
+{
+    image::geometry<3> geo(cur_tracking_window.current_slice->geometry);
+    float display_ratio = cur_tracking_window.get_scene_zoom();
+    if(cur_tracking_window["roi_layout"].toInt() == 0)
+        annotated_image = view_image;
+    else
+    {
+        annotated_image = view_image.copy(
+                        cur_tracking_window["orientation_convention"].toInt() ?
+                            (cur_tracking_window.cur_dim != 0 ? 0:geo[0]*display_ratio):
+                            (cur_tracking_window.cur_dim == 0 ? 0:geo[1]*display_ratio),
+                        cur_tracking_window.cur_dim != 2 ? 0:geo[2]*display_ratio,
+                        cur_tracking_window.cur_dim == 0 ? geo[1]*display_ratio:geo[0]*display_ratio,
+                        cur_tracking_window.cur_dim != 2 ? geo[2]*display_ratio:geo[1]*display_ratio);
+    }
+}
 
 void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {
@@ -616,19 +640,7 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     if (!mouse_down || sel_mode == 4)
         return;
     to_3d_space(cX,cY,pos);
-    if(cur_tracking_window["roi_layout"].toInt() == 1)
-    {
-        if(cur_tracking_window["orientation_convention"].toInt())
-        {
-            if(cur_tracking_window.cur_dim == 0)
-                X -= geo[0]*display_ratio;
-        }
-        else
-            if(cur_tracking_window.cur_dim >= 1)
-                X -= geo[1]*display_ratio;
-        if(cur_tracking_window.cur_dim == 2)
-            Y -= geo[2]*display_ratio;
-    }
+    adjust_xy_to_layout(X,Y);
 
     if(sel_mode == 5 && !cur_tracking_window.regionWidget->regions.empty()) // move object
     {
@@ -655,18 +667,7 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         return;
     }
 
-    if(cur_tracking_window["roi_layout"].toInt() == 0)
-        annotated_image = view_image;
-    else
-    {
-        annotated_image = view_image.copy(
-                        cur_tracking_window["orientation_convention"].toInt() ?
-                            (cur_tracking_window.cur_dim != 0 ? 0:geo[0]*display_ratio):
-                            (cur_tracking_window.cur_dim == 0 ? 0:geo[1]*display_ratio),
-                        cur_tracking_window.cur_dim != 2 ? 0:geo[2]*display_ratio,
-                        cur_tracking_window.cur_dim == 0 ? geo[1]*display_ratio:geo[0]*display_ratio,
-                        cur_tracking_window.cur_dim != 2 ? geo[2]*display_ratio:geo[1]*display_ratio);
-    }
+    new_annotated_image();
     if(sel_coord.empty() || sel_point.empty())
         return;
 
@@ -793,7 +794,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
             break;
         }
         {
-            QImage bitmap(slice_image.width()*display_ratio,slice_image.height()*display_ratio,QImage::Format_Mono);
+            QImage bitmap(annotated_image.width(),annotated_image.height(),QImage::Format_Mono);
             QPainter paint(&bitmap);
             paint.setBrush(Qt::black);
             paint.drawRect(0,0,bitmap.width(),bitmap.height());
@@ -856,18 +857,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     break;
     case 4:
     {
-        if(cur_tracking_window["roi_layout"].toInt() == 0)
-            annotated_image = view_image;
-        else
-        {
-            annotated_image = view_image.copy(
-                        cur_tracking_window["orientation_convention"].toInt() ?
-                            (cur_tracking_window.cur_dim != 0 ? 0:geo[0]*display_ratio):
-                            (cur_tracking_window.cur_dim == 0 ? 0:geo[1]*display_ratio),
-                            cur_tracking_window.cur_dim != 2 ? 0:geo[2]*display_ratio,
-                            cur_tracking_window.cur_dim == 0 ? geo[1]*display_ratio:geo[0]*display_ratio,
-                            cur_tracking_window.cur_dim != 2 ? geo[2]*display_ratio:geo[1]*display_ratio);
-        }
+        new_annotated_image();
         QPainter paint(&annotated_image);
         paint.setPen(cur_tracking_window.regionWidget->currentRowColor());
         paint.setBrush(Qt::NoBrush);

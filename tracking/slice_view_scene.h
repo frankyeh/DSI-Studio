@@ -27,6 +27,7 @@ private:
     image::color_image slice_image,mosaic_image;
 public:
     unsigned int mosaic_size;
+    void adjust_xy_to_layout(float& X,float& Y);
     bool to_3d_space_single_slice(float x,float y,image::vector<3,float>& pos);
     bool to_3d_space(float x,float y,image::vector<3,float>& pos);
 public:    // record the mouse press points
@@ -38,6 +39,7 @@ public:    // record the mouse press points
     int cX, cY;
 
     QImage view_image,annotated_image;
+    void new_annotated_image(void);
     void show_ruler(QPainter& painter);
     void show_pos(QPainter& painter);
     void show_fiber(QPainter& painter);
