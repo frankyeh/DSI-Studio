@@ -2524,10 +2524,9 @@ void ConnectivityMatrix::network_property(std::string& report,double t)
         image::basic_image<float,2> t(root.geometry());
         image::mat::product(root.begin(),root.begin(),t.begin(),image::dyndim(n,n),image::dyndim(n,n));
         image::mat::product(t.begin(),root.begin(),cyc3.begin(),image::dyndim(n,n),image::dyndim(n,n));
-        // K = degree
         // wcc = diag(cyc3)/(K.*(K-1));
         for(unsigned int i = 0;i < strength.size();++i)
-        if(degree[i])
+        if(degree[i] >= 2)
         {
             float d = degree[i];
             wcluster_co[i] = cyc3[i*(n+1)]/(d*d-d);
