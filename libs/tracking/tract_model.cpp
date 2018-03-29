@@ -2517,13 +2517,17 @@ void ConnectivityMatrix::network_property(std::string& report,double t)
     std::vector<float> wcluster_co(n);
     {
         image::basic_image<float,2> root(norm_matrix);
+        // root = W.^ 1/3
         for(unsigned int j = 0;j < root.size();++j)
             root[j] = std::pow(root[j],(float)(1.0/3.0));
+        // cyc3 = (W.^1/3)^3
         image::basic_image<float,2> t(root.geometry());
         image::mat::product(root.begin(),root.begin(),t.begin(),image::dyndim(n,n),image::dyndim(n,n));
         image::mat::product(t.begin(),root.begin(),cyc3.begin(),image::dyndim(n,n),image::dyndim(n,n));
+        // K = degree
+        // wcc = diag(cyc3)/(K.*(K-1));
         for(unsigned int i = 0;i < strength.size();++i)
-        if(degree[i] >= 2)
+        if(degree[i])
         {
             float d = degree[i];
             wcluster_co[i] = cyc3[i*(n+1)]/(d*d-d);
