@@ -2490,12 +2490,9 @@ void ConnectivityMatrix::network_property(std::string& report)
     for(unsigned int i = 0;i < n;++i)
         degree[i] = std::accumulate(binary_matrix.begin()+i*n,binary_matrix.begin()+(i+1)*n,0.0);
     // calculate strength
-    std::vector<float> nstrength(n),strength(n);
+    std::vector<float> strength(n);
     for(unsigned int i = 0;i < n;++i)
-    {
-        strength[i] = std::accumulate(matrix_value.begin()+i*n,matrix_value.begin()+(i+1)*n,0.0);
-        nstrength[i] = std::accumulate(norm_matrix.begin()+i*n,norm_matrix.begin()+(i+1)*n,0.0);
-    }
+        strength[i] = std::accumulate(norm_matrix.begin()+i*n,norm_matrix.begin()+(i+1)*n,0.0);
     // calculate clustering coefficient
     std::vector<float> cluster_co(n);
     for(unsigned int i = 0,posi = 0;i < n;++i,posi += n)
@@ -2524,7 +2521,7 @@ void ConnectivityMatrix::network_property(std::string& report)
         image::mat::product(root.begin(),root.begin(),t.begin(),image::dyndim(n,n),image::dyndim(n,n));
         image::mat::product(t.begin(),root.begin(),cyc3.begin(),image::dyndim(n,n),image::dyndim(n,n));
         // wcc = diag(cyc3)/(K.*(K-1));
-        for(unsigned int i = 0;i < strength.size();++i)
+        for(unsigned int i = 0;i < n;++i)
         if(degree[i] >= 2)
         {
             float d = degree[i];
