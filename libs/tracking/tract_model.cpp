@@ -2509,7 +2509,7 @@ void ConnectivityMatrix::network_property(std::string& report)
     out << "clustering_coeff_average(binary)\t" << cc_bin << std::endl;
 
     // calculate weighted clustering coefficient
-    image::basic_image<float,2> cyc3(matrix_value.geometry());
+    image::basic_image<float,2> cyc3(norm_matrix.geometry());
     std::vector<float> wcluster_co(n);
     {
         image::basic_image<float,2> root(norm_matrix);
@@ -2551,7 +2551,7 @@ void ConnectivityMatrix::network_property(std::string& report)
     {
         image::basic_image<float,2> dis_bin,dis_wei;
         distance_bin(binary_matrix,dis_bin);
-        distance_wei(matrix_value,dis_wei);
+        distance_wei(norm_matrix,dis_wei);
         unsigned int inf_count_bin = std::count(dis_bin.begin(),dis_bin.end(),std::numeric_limits<float>::max());
         unsigned int inf_count_wei = std::count(dis_wei.begin(),dis_wei.end(),std::numeric_limits<float>::max());
         std::replace(dis_bin.begin(),dis_bin.end(),std::numeric_limits<float>::max(),(float)0);
@@ -2632,13 +2632,13 @@ void ConnectivityMatrix::network_property(std::string& report)
                     if(binary_matrix[ipos+j] && binary_matrix[ipos+k])
                     {
                         if(pos < newA.size())
-                            newA[pos] = matrix_value[index];
+                            newA[pos] = norm_matrix[index];
                         ++pos;
                     }
             std::vector<float> sw;
             for(unsigned int j = 0;j < n;++j)
                 if(binary_matrix[ipos+j])
-                    sw.push_back(std::pow(matrix_value[ipos+j],(float)(1.0/3.0)));
+                    sw.push_back(std::pow(norm_matrix[ipos+j],(float)(1.0/3.0)));
             image::basic_image<float,2> invD;
             distance_wei(newA,invD);
             inv_dis(invD,invD);
@@ -2755,7 +2755,7 @@ void ConnectivityMatrix::network_property(std::string& report)
             int q = n-1;
             std::fill(S.begin(),S.end(),1);
             image::basic_image<unsigned char,2> P(binary_matrix.geometry());
-            image::basic_image<float,2> G1(matrix_value);
+            image::basic_image<float,2> G1(norm_matrix);
             std::vector<unsigned int> V;
             V.push_back(i);
             while(1)
@@ -2828,7 +2828,7 @@ void ConnectivityMatrix::network_property(std::string& report)
         std::vector<float> V(binary_matrix.size()),d(n);
         image::mat::eigen_decomposition_sym(bin.begin(),V.begin(),d.begin(),image::dyndim(n,n));
         std::copy(V.begin(),V.begin()+n,eigenvector_centrality_bin.begin());
-        image::mat::eigen_decomposition_sym(matrix_value.begin(),V.begin(),d.begin(),image::dyndim(n,n));
+        image::mat::eigen_decomposition_sym(norm_matrix.begin(),V.begin(),d.begin(),image::dyndim(n,n));
         std::copy(V.begin(),V.begin()+n,eigenvector_centrality_wei.begin());
     }
 
@@ -2844,7 +2844,7 @@ void ConnectivityMatrix::network_property(std::string& report)
             for(unsigned int j = 0;j < n;++j,++index)
             {
                 B_bin[index] = -d*((float)binary_matrix[index])*1.0/deg_bin[j];
-                B_wei[index] = -d*matrix_value[index]*1.0/deg_wei[j];
+                B_wei[index] = -d*norm_matrix[index]*1.0/deg_wei[j];
                 if(i == j)
                 {
                     B_bin[index] += 1.0;
