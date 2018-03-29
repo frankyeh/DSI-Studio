@@ -2289,11 +2289,18 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
         ++count[i][j];
     });
 
+    // determine the threshold for counting the connectivity
+    unsigned int threshold_count = 0;
+    for(unsigned int i = 0,index = 0;i < count.size();++i)
+        for(unsigned int j = 0;j < count[i].size();++j,++index)
+            threshold_count = std::max<unsigned int>(threshold_count,count[i][j]);
+    threshold_count *= threshold;
+
     if(matrix_value_type == "count")
     {
         for(unsigned int i = 0,index = 0;i < count.size();++i)
             for(unsigned int j = 0;j < count[i].size();++j,++index)
-                matrix_value[index] = count[i][j];
+                matrix_value[index] = (count[i][j] > threshold_count ? count[i][j] : 0);
         return true;
     }
     if(matrix_value_type == "ncount")
@@ -2314,20 +2321,13 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
                                      length_matrix[i][j].begin()+(length_matrix[i][j].size() >> 1),
                                      length_matrix[i][j].end());
                     float length = (float)length_matrix[i][j][length_matrix[i][j].size() >> 1];
-                    matrix_value[index] = (length == 0? 0:count[i][j]/length);
+                    matrix_value[index] = ((length == 0 || count[i][j] < threshold_count )? 0:count[i][j]/length);
                 }
             else
                     matrix_value[index] = 0;
 
         return true;
     }
-
-    // determine the threshold for counting the connectivity
-    unsigned int threshold_count = 0;
-    for(unsigned int i = 0,index = 0;i < count.size();++i)
-        for(unsigned int j = 0;j < count[i].size();++j,++index)
-            threshold_count = std::max<unsigned int>(threshold_count,count[i][j]);
-    threshold_count *= threshold;
 
     if(matrix_value_type == "mean_length")
     {
@@ -2468,7 +2468,7 @@ void output_node_measures(std::ostream& out,const char* name,const vec_type& dat
     out << std::endl;
 }
 
-void ConnectivityMatrix::network_property(std::string& report,double t)
+void ConnectivityMatrix::network_property(std::string& report)
 {
     std::ostringstream out;
     size_t n = matrix_value.width();
@@ -2476,10 +2476,9 @@ void ConnectivityMatrix::network_property(std::string& report,double t)
     image::basic_image<float,2> norm_matrix(matrix_value.geometry());
 
     float max_value = *std::max_element(matrix_value.begin(),matrix_value.end());
-    float threshold = std::accumulate(matrix_value.begin(),matrix_value.end(),0.0)*t;
     for(unsigned int i = 0;i < binary_matrix.size();++i)
     {
-        binary_matrix[i] = matrix_value[i] > threshold ? 1 : 0;
+        binary_matrix[i] = matrix_value[i] > 0 ? 1 : 0;
         norm_matrix[i] = matrix_value[i]/max_value;
     }
     // density

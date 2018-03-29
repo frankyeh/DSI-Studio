@@ -140,7 +140,7 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
     ui->report->setText(out);
 
     std::string report;
-    data.network_property(report,ui->apply_threshold->isChecked() ? ui->network_threshold->value() : 0.0);
+    data.network_property(report);
     ui->network_measures->setText(report.c_str());
 }
 
@@ -184,7 +184,7 @@ void connectivity_matrix_dialog::on_save_network_property_clicked()
     if(filename.isEmpty())
         return;
     std::string report;
-    data.network_property(report,ui->apply_threshold->isChecked() ? ui->network_threshold->value() : 0.0);
+    data.network_property(report);
     std::ofstream out(filename.toStdString().c_str());
     out << report;
 }
