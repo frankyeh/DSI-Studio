@@ -389,14 +389,14 @@ void connectometry_db::save_subject_vector(const char* output_name,
     }
     check_prog(0,0);
 }
-void connectometry_db::save_subject_data(const char* output_name)
+bool connectometry_db::save_subject_data(const char* output_name)
 {
     // store results
     gz_mat_write matfile(output_name);
     if(!matfile)
     {
         handle->error_msg = "Cannot output file";
-        return;
+        return false;
     }
     for(unsigned int index = 0;index < handle->mat_reader.size();++index)
         if(handle->mat_reader[index].get_name() != "report" &&
@@ -427,6 +427,7 @@ void connectometry_db::save_subject_data(const char* output_name)
         matfile.write("report",&*report.c_str(),1,(unsigned int)report.length());
     }
     modified = false;
+    return true;
 }
 
 void connectometry_db::get_subject_slice(unsigned int subject_index,unsigned char dim,unsigned int pos,

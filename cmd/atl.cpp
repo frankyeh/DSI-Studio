@@ -8,8 +8,10 @@
 #include "mapping/atlas.hpp"
 #include "program_option.hpp"
 #include "fib_data.hpp"
+#include "vbc/vbc_database.h"
 
 extern std::vector<atlas> atlas_list;
+extern std::string fib_template_file_name_1mm,fib_template_file_name_2mm;
 std::string get_fa_template_path(void);
 const char* odf_average(const char* out_name,std::vector<std::string>& file_names);
 bool atl_load_atlas(std::string atlas_name)
@@ -107,54 +109,131 @@ void atl_save_mapping(const std::string& file_name,const image::geometry<3>& geo
 }
 std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
 
+void get_files_in_folder(std::string dir,std::string file,std::vector<std::string>& files)
+{
+    QDir directory(QString(dir.c_str()));
+    QStringList file_list = directory.entryList(QStringList(file.c_str()),QDir::Files);
+    if(file_list.empty())
+        return;
+    std::vector<std::string> name_list;
+    for (unsigned int index = 0;index < file_list.size();++index)
+    {
+        std::string file_name = dir;
+        file_name += "/";
+        file_name += file_list[index].toStdString();
+        if(!file_list[index].contains("rec"))
+        {
+            std::cout << file_list[index].toStdString() << " seems not containing QSDR ODF information. Skipping..." << std::endl;
+            continue;
+        }
+        name_list.push_back(file_name);
+    }
+    name_list.swap(files);
+}
+
 int atl(void)
 {
     // construct an atlas
-    if(po.get("order",int(0)) == -1)
+    std::string cmd = po.get("cmd");
+    if(cmd=="template")
     {
         std::string dir = po.get("source");
-        std::cout << "Constructing an atlas" << std::endl;
+        std::cout << "Constructing a group average template" << std::endl;
         std::cout << "Loading fib file in " << dir << std::endl;
-        QDir directory(QString(dir.c_str()));
-        QStringList file_list = directory.entryList(QStringList("*.fib.gz"),QDir::Files);
-        if(file_list.empty())
+        std::vector<std::string> name_list;
+        get_files_in_folder(dir,"*.fib.gz",name_list);
+        if(name_list.empty())
         {
-            std::cout << "Cannot find fib file to construct an atlas" << std::endl;
+            std::cout << "No FIB file found in the directory." << std::endl;
             return 0;
         }
-        std::vector<std::string> name_list;
-        for (unsigned int index = 0;index < file_list.size();++index)
-        {
-            std::string file_name = dir;
-            file_name += "/";
-            file_name += file_list[index].toStdString();
-            if(!file_list[index].contains("rec"))
-            {
-                std::cout << file_list[index].toStdString() << " seems not containing QSDR ODF information. Skipping..." << std::endl;
-                continue;
-            }
-            name_list.push_back(file_name);
-        }
         dir += "/";
-        dir += "atlas";
+        dir += "template";
         const char* msg = odf_average(dir.c_str(),name_list);
         if(msg)
             std::cout << msg << std::endl;
         return 0;
     }
-
-
-    std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
-    if(!handle.get())
+    if(cmd=="db")
     {
-        std::cout << handle->error_msg << std::endl;
+        std::cout << "Constructing a connectometry db" << std::endl;
+        // Find all the FIB files
+        std::string dir = po.get("source");
+        std::cout << "Loading fib file in " << dir << std::endl;
+        std::vector<std::string> name_list;
+        get_files_in_folder(dir,"*.fib.gz",name_list);
+        if(name_list.empty())
+        {
+            std::cout << "No FIB file found in the directory." << std::endl;
+            return 0;
+        }
+        // Determine the template
+        std::string tm;
+        if(po.has("template"))
+            tm = po.get("template");
+        {
+            fib_data fib;
+            if(!fib.load_from_file(name_list[0].c_str()))
+            {
+                std::cout << "Invalid FIB file format:" << name_list[0] << std::endl;
+                return 0;
+            }
+            if(fib.vs[0] < 1.5f)
+                tm = fib_template_file_name_1mm.c_str();
+            else
+                tm = fib_template_file_name_2mm.c_str();
+
+        }
+        // Initialize the DB
+        std::cout << "Loading template" << tm << std::endl;
+        std::auto_ptr<vbc_database> data(new vbc_database);
+        if(!data->create_database(tm.c_str()))
+        {
+            std::cout << "Error in initializing the database:" << data->error_msg << std::endl;
+            return 0;
+        }
+        // Extracting metrics
+        std::string index_name = po.get("index_name","sdf");
+        std::cout << "Extracting index:" << index_name << std::endl;
+        data->handle->db.index_name = index_name;
+        for (unsigned int index = 0;index < name_list.size();++index)
+        {
+            std::cout << "Reading " << name_list[index] << std::endl;
+            if(!data->handle->db.add_subject_file(name_list[index],
+                QFileInfo(name_list[index].c_str()).baseName().toStdString()))
+            {
+                std::cout << "Error loading subject fib files:" << data->handle->error_msg << std::endl;
+                return 0;
+            }
+        }
+        // Output
+        std::string output = dir;
+        output += "/";
+        output += "connectometry.db.fib.gz";
+        if(!data->handle->db.save_subject_data(output.c_str()))
+        {
+            std::cout << "Error saving the db file:" << data->handle->error_msg << std::endl;
+            return 0;
+        }
+        std::cout << "Connectometry db created:" << output << std::endl;
         return 0;
     }
-    if(!atl_load_atlas(po.get("atlas")))
-        return 0;
+    if(cmd=="roi")
+    {
+        std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
+        if(!handle.get())
+        {
+            std::cout << handle->error_msg << std::endl;
+            return 0;
+        }
+        if(!atl_load_atlas(po.get("atlas")))
+            return 0;
 
-    atl_save_mapping(po.get("source"),handle->dim,
-                     handle->get_mni_mapping(),handle->trans_to_mni,handle->vs,
-                     po.get("output","multiple") == "multiple");
+        atl_save_mapping(po.get("source"),handle->dim,
+                         handle->get_mni_mapping(),handle->trans_to_mni,handle->vs,
+                         po.get("output","multiple") == "multiple");
+        return 0;
+    }
+    std::cout << "Unknown command:" << cmd << std::endl;
     return 0;
 }

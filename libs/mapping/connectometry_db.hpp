@@ -48,7 +48,7 @@ public:
                              const image::basic_image<int,3>& cerebrum_mask,
                              float fiber_threshold,
                              bool normalize_fp) const;
-    void save_subject_data(const char* output_name);
+    bool save_subject_data(const char* output_name);
     void get_subject_slice(unsigned int subject_index,unsigned char dim,unsigned int pos,
                             image::basic_image<float,2>& slice) const;
     void get_subject_fa(unsigned int subject_index,std::vector<std::vector<float> >& fa_data) const;
