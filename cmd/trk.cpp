@@ -363,9 +363,9 @@ int trk_post(std::shared_ptr<fib_data> handle,
 
 bool load_roi(std::shared_ptr<fib_data> handle,RoiMgr& roi_mgr)
 {
-    const int total_count = 14;
-    char roi_names[total_count][5] = {"roi","roi2","roi3","roi4","roi5","roa","roa2","roa3","roa4","roa5","end","end2","seed","ter"};
-    unsigned char type[total_count] = {0,0,0,0,0,1,1,1,1,1,2,2,3,4};
+    const int total_count = 18;
+    char roi_names[total_count][5] = {"roi","roi2","roi3","roi4","roi5","roa","roa2","roa3","roa4","roa5","end","end2","seed","ter","ter2","ter3","ter4","ter5"};
+    unsigned char type[total_count] = {0,0,0,0,0,1,1,1,1,1,2,2,3,4,4,4,4,4};
     for(int index = 0;index < total_count;++index)
     if (po.has(roi_names[index]))
     {
