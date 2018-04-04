@@ -234,6 +234,40 @@ int atl(void)
                          po.get("output","multiple") == "multiple");
         return 0;
     }
+    if(cmd=="trk")
+    {
+        std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
+        if(!handle.get())
+        {
+            std::cout << handle->error_msg << std::endl;
+            return 0;
+        }
+        if(!handle->is_qsdr)
+        {
+            std::cout << "Only QSDR reconstructed FIB file is supported." << std::endl;
+            return 0;
+        }
+        if(handle->native_position.empty())
+        {
+            std::cout << "No mapping information found. Please reconstruct QSDR with mapping checked in advanced option." << std::endl;
+            return 0;
+        }
+        TractModel tract_model(handle);
+        std::string file_name = po.get("tract");
+        {
+            std::cout << "loading " << file_name << "..." <<std::endl;
+            if (!tract_model.load_from_file(file_name.c_str()))
+            {
+                std::cout << "Cannot open file " << file_name << std::endl;
+                return 0;
+            }
+            std::cout << file_name << " loaded" << std::endl;
+        }
+        file_name += "native.trk.gz";
+        tract_model.save_tracts_in_native_space(file_name.c_str(),handle->native_position);
+        std::cout << "Native tracks saved to " << file_name << " loaded" << std::endl;
+        return 0;
+    }
     std::cout << "Unknown command:" << cmd << std::endl;
     return 0;
 }
