@@ -391,6 +391,24 @@ bool TractModel::save_data_to_file(const char* file_name,const std::string& inde
     return false;
 }
 //---------------------------------------------------------------------------
+bool TractModel::save_tracts_in_native_space(const char* file_name,image::basic_image<image::vector<3,float>,3 > native_position)
+{
+    std::vector<std::vector<float> > keep_tract_data(tract_data);
+    image::par_for(tract_data.size(),[&](int i)
+    {
+        for(int j = 0;j < tract_data[i].size();j += 3)
+        {
+            image::vector<3> pos(&tract_data[i][0]+j),new_pos;
+            image::estimate(native_position,pos,new_pos);
+            tract_data[i][j] = new_pos[0];
+            tract_data[i][j+1] = new_pos[1];
+            tract_data[i][j+2] = new_pos[2];
+        }
+    });
+    save_tracts_to_file(file_name);
+    keep_tract_data.swap(tract_data);
+}
+//---------------------------------------------------------------------------
 bool TractModel::save_tracts_to_file(const char* file_name_)
 {
     std::string file_name(file_name_);

@@ -415,6 +415,32 @@ void TractTableWidget::save_tracts_as(void)
     tract_models[currentRow()]->save_tracts_to_file(&*sfilename.begin());
 }
 
+void TractTableWidget::save_tracts_in_native(void)
+{
+    if(currentRow() >= tract_models.size())
+        return;
+    if(!cur_tracking_window.handle->is_qsdr)
+    {
+        QMessageBox::information(this,"This function only works with QSDR reconstructed FIB files.",0);
+        return;
+    }
+    if(cur_tracking_window.handle->native_position.empty())
+    {
+        QMessageBox::information(this,"No mapping information included. Please reconstruct QSDR with mapping checked in advanced option.",0);
+        return;
+    }
+
+    QString filename;
+    filename = QFileDialog::getSaveFileName(
+                this,"Save tracts as",item(currentRow(),0)->text().replace(':','_') + output_format(),
+                 "Tract files (*.trk *trk.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    std::string sfilename = filename.toLocal8Bit().begin();
+    tract_models[currentRow()]->save_tracts_in_native_space(&*sfilename.begin(),
+            cur_tracking_window.handle->native_position);
+}
+
 void TractTableWidget::save_vrml_as(void)
 {
     if(currentRow() >= tract_models.size())

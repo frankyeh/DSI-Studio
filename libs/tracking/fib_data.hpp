@@ -138,6 +138,7 @@ public:
     int prog;
     std::vector<float> trans_to_mni;
     image::basic_image<image::vector<3,float>,3 > mni_position;
+    image::basic_image<image::vector<3,float>,3 > native_position;
 public:
     void run_normalization(bool background);
     void subject2mni(image::vector<3>& pos);

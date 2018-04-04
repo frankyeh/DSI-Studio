@@ -801,6 +801,7 @@
      <addaction name="separator"/>
      <addaction name="actionSave_Tracts_in_Current_Mapping"/>
      <addaction name="actionSave_Tracts_in_MNI_space"/>
+     <addaction name="actionSave_Tracts_In_Native_Space"/>
      <addaction name="separator"/>
      <addaction name="actionSave_End_Points_As"/>
      <addaction name="actionSave_Endpoints_in_Current_Mapping"/>
@@ -3217,6 +3218,11 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Insert MNI images...</string>
+   </property>
+  </action>
+  <action name="actionSave_Tracts_In_Native_Space">
+   <property name="text">
+    <string>Save Tracts In Native Space...</string>
    </property>
   </action>
  </widget>

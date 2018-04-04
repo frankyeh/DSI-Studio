@@ -57,6 +57,7 @@ public:
         void add(const TractModel& rhs);
         bool load_from_file(const char* file_name,bool append = false);
 
+        bool save_tracts_in_native_space(const char* file_name,image::basic_image<image::vector<3,float>,3 > native_position);
         bool save_tracts_to_file(const char* file_name);
         void save_vrml(const char* file_name,
                        unsigned char tract_style,

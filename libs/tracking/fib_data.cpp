@@ -524,9 +524,10 @@ bool fib_data::load_from_mat(void)
         const float* mx = 0;
         const float* my = 0;
         const float* mz = 0;
-        if(mat_reader.read("mni_x",row,col,mx) &&
+        if(!is_qsdr &&
+           mat_reader.read("mni_x",row,col,mx) &&
            mat_reader.read("mni_y",row,col,my) &&
-           mat_reader.read("mni_z",row,col,mz) && !is_qsdr)
+           mat_reader.read("mni_z",row,col,mz))
         {
             mni_position.resize(dim);
             for(int i = 0;i < dim.size();++i)
@@ -534,6 +535,19 @@ bool fib_data::load_from_mat(void)
                 mni_position[i][0] = mx[i];
                 mni_position[i][1] = my[i];
                 mni_position[i][2] = mz[i];
+            }
+        }
+        if(is_qsdr &&
+           mat_reader.read("native_x",row,col,mx) &&
+           mat_reader.read("native_y",row,col,my) &&
+           mat_reader.read("native_z",row,col,mz))
+        {
+            native_position.resize(dim);
+            for(int i = 0;i < dim.size();++i)
+            {
+                native_position[i][0] = mx[i];
+                native_position[i][1] = my[i];
+                native_position[i][2] = mz[i];
             }
         }
     }
