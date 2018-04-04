@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1265</width>
-    <height>718</height>
+    <width>1197</width>
+    <height>833</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -417,14 +417,76 @@
           </layout>
          </item>
          <item>
-          <widget class="QLabel" name="label_3">
-           <property name="text">
-            <string>Please repeat the analysis with different T-score thresholds (e.g. t=1,2, 3) and report each of the results.</string>
+          <layout class="QHBoxLayout" name="horizontalLayout_5">
+           <property name="topMargin">
+            <number>0</number>
            </property>
-           <property name="wordWrap">
-            <bool>true</bool>
-           </property>
-          </widget>
+           <item>
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>Select tracks by</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="rb_length">
+             <property name="text">
+              <string>Voxel length&gt;</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="length_threshold">
+             <property name="minimumSize">
+              <size>
+               <width>50</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>50</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>100</number>
+             </property>
+             <property name="value">
+              <number>20</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="rb_fdr">
+             <property name="text">
+              <string>FDR&lt;</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="fdr_threshold">
+             <property name="decimals">
+              <number>4</number>
+             </property>
+             <property name="minimum">
+              <double>0.050000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>0.100000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.005000000000000</double>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
        </widget>
@@ -572,38 +634,6 @@
              <number>0</number>
             </property>
             <item>
-             <widget class="QLabel" name="label_6">
-              <property name="text">
-               <string>Length threshold (voxels)</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QSpinBox" name="length_threshold">
-              <property name="minimumSize">
-               <size>
-                <width>50</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>50</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="minimum">
-               <number>1</number>
-              </property>
-              <property name="maximum">
-               <number>100</number>
-              </property>
-              <property name="value">
-               <number>20</number>
-              </property>
-             </widget>
-            </item>
-            <item>
              <widget class="QLabel" name="label_7">
               <property name="text">
                <string>Track Trimming (rounds)</string>
@@ -629,30 +659,6 @@
               </property>
               <property name="value">
                <number>1</number>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_6">
-            <property name="bottomMargin">
-             <number>0</number>
-            </property>
-            <item>
-             <widget class="QCheckBox" name="normalize_qa">
-              <property name="text">
-               <string>normalize SDF</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="output_resampling">
-              <property name="text">
-               <string>Output resampling</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
               </property>
              </widget>
             </item>
@@ -685,6 +691,30 @@
               </property>
               <property name="value">
                <number>4</number>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_6">
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QCheckBox" name="normalize_qa">
+              <property name="text">
+               <string>normalize SDF</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="output_resampling">
+              <property name="text">
+               <string>Output resampling</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
               </property>
              </widget>
             </item>

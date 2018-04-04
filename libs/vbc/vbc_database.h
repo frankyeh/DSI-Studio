@@ -74,7 +74,7 @@ public:// Individual analysis
 public:// Multiple regression
     std::auto_ptr<stat_model> model;
     float tracking_threshold;
-    float length_threshold;
+    float length_threshold,fdr_threshold;
     unsigned int track_trimming;
     std::string foi_str;
     void run_permutation_multithread(unsigned int id,unsigned int thread_count,unsigned int permutation_count);

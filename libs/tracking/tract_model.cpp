@@ -405,8 +405,9 @@ bool TractModel::save_tracts_in_native_space(const char* file_name,image::basic_
             tract_data[i][j+2] = new_pos[2];
         }
     });
-    save_tracts_to_file(file_name);
+    bool result = save_tracts_to_file(file_name);
     keep_tract_data.swap(tract_data);
+    return result;
 }
 //---------------------------------------------------------------------------
 bool TractModel::save_tracts_to_file(const char* file_name_)
@@ -1350,7 +1351,7 @@ bool TractModel::trim(void)
     int wh = width*height;
     std::fill(label.begin(),label.end(),no_fiber_label);
     int shift[8] = {0,1,width,wh,1+width,1+wh,width+wh,1+width+wh};
-    for (unsigned int index = 0;index < total_track_number;++index)
+    image::par_for(total_track_number,[&](int index)
     {
         const float* ptr = &*tract_data[index].begin();
         const float* end = ptr + tract_data[index].size();
@@ -1379,7 +1380,7 @@ bool TractModel::trim(void)
                     label[pixel_index] = have_multiple_fiber_label;
             }
         }
-    }
+    });
 
     std::set<unsigned int> tracts_to_delete;
     for (unsigned int index = 0;index < label.size();++index)

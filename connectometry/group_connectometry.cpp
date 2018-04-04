@@ -595,16 +595,30 @@ void group_connectometry::calculate_FDR(void)
     }
 
     std::ostringstream out_greater,out_lesser;
-    out_greater << " The connectometry analysis identified "
+    if(vbc->fdr_threshold == 0.0)
+    {
+        out_greater << " The connectometry analysis identified "
         << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no track": vbc->greater_tracks_result.c_str())
         << " with increased connectivity related to "
         << vbc->foi_str << " (FDR="
         << vbc->fdr_greater[vbc->length_threshold] << ").";
-    out_lesser << " The connectometry analysis identified "
+
+        out_lesser << " The connectometry analysis identified "
         << (vbc->fdr_lesser[vbc->length_threshold]>0.5 || !vbc->has_lesser_result ? "no track": vbc->lesser_tracks_result.c_str())
         << " with decreased connectivity related to "
         << vbc->foi_str << " (FDR="
         << vbc->fdr_lesser[vbc->length_threshold] << ").";
+    }
+    else
+    {
+        out_greater << " The connectometry analysis identified "
+        << (!vbc->has_greater_result ? "no track": vbc->greater_tracks_result.c_str())
+        << " with increased connectivity related to " << vbc->foi_str << ".";
+
+        out_lesser << " The connectometry analysis identified "
+        << (!vbc->has_lesser_result ? "no track": vbc->lesser_tracks_result.c_str())
+        << " with decreased connectivity related to " << vbc->foi_str << ".";
+    }
 
 
     html_report << "<h2>Results</h2>" << std::endl;
@@ -750,7 +764,16 @@ void group_connectometry::on_run_clicked()
     vbc->trk_file_names = file_names;
     vbc->normalize_qa = ui->normalize_qa->isChecked();
     vbc->output_resampling = ui->output_resampling->isChecked();
-    vbc->length_threshold = ui->length_threshold->value();
+    if(ui->rb_fdr->isChecked())
+    {
+        vbc->fdr_threshold = ui->fdr_threshold->value();
+        vbc->length_threshold = 10;
+    }
+    else
+    {
+        vbc->fdr_threshold = 0;
+        vbc->length_threshold = ui->length_threshold->value();
+    }
     vbc->track_trimming = ui->track_trimming->value();
     vbc->individual_data.clear();
     vbc->tracking_threshold = ui->threshold->value();
@@ -770,8 +793,11 @@ void group_connectometry::on_run_clicked()
         if(ui->normalize_qa->isChecked())
             out << ".nqa";
         char threshold_type[5][11] = {"percentage","t","beta","percentile","mean_dif"};
-        out << ".length" << vbc->length_threshold
-            << threshold_type[vbc->model->threshold_type] << vbc->tracking_threshold;
+        if(vbc->fdr_threshold == 0)
+            out << ".length" << vbc->length_threshold;
+        else
+            out << ".fdr" << vbc->fdr_threshold;
+        out << "." << threshold_type[vbc->model->threshold_type] << vbc->tracking_threshold;
         parameter_str = out.str();
     }
 
@@ -847,7 +873,10 @@ void group_connectometry::on_run_clicked()
     if(vbc->output_resampling)
         out << " All tracks generated from bootstrap resampling were included.";
 
-    out << " A length threshold of " << ui->length_threshold->value() << " voxel distance was used to select tracks.";
+    if(vbc->fdr_threshold == 0.0f)
+        out << " A length threshold of " << ui->length_threshold->value() << " voxel distance was used to select tracks.";
+    else
+        out << " An FDR threshold of " << ui->fdr_threshold->value() << " was used to select tracks.";
     out << " The track density was " <<
             ui->seed_ratio->value() << " per voxel.";
 

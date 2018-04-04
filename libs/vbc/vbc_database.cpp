@@ -277,6 +277,21 @@ void vbc_database::wait(void)
         threads[i]->wait();
 }
 
+
+void trim_and_remove_repeated(std::shared_ptr<fib_data> handle,
+                              std::shared_ptr<TractModel> original_track)
+{
+    TractModel tracks(handle);
+    tracks = *original_track;
+    tracks.delete_repeated(1.0f);
+    while(tracks.get_visible_track_count() && tracks.trim())
+        ;
+    if(tracks.get_visible_track_count())
+        *original_track = tracks;
+    else
+        original_track->clear_deleted();
+}
+
 void vbc_database::save_tracks_files(void)
 {
     for(int i = 0;i < threads.size();++i)
@@ -289,14 +304,18 @@ void vbc_database::save_tracks_files(void)
     {
         if(greater_tracks[index]->get_visible_track_count())
         {
-            TractModel tracks(handle);
-            tracks = *greater_tracks[index];
-            while(output_resampling && tracks.get_visible_track_count() && tracks.trim())
-                ;
-            if(tracks.get_visible_track_count())
-                *greater_tracks[index] = tracks;
-            greater_tracks[index]->delete_repeated(1.0f);
-            greater_tracks[index]->clear_deleted();
+            if(fdr_threshold != 0.0)
+            {
+                fdr_greater.back() = 0.0f;
+                for(int length = 10;length < fdr_greater.size();++length)
+                    if(fdr_greater[length] < fdr_threshold)
+                    {
+                        greater_tracks[index]->delete_by_length(length);
+                        break;
+                    }
+            }
+            if(output_resampling)
+                trim_and_remove_repeated(handle,greater_tracks[index]);
             std::ostringstream out1;
             out1 << trk_file_names[index] << ".greater.trk.gz";
             greater_tracks[index]->save_tracts_to_file(out1.str().c_str());
@@ -337,14 +356,19 @@ void vbc_database::save_tracks_files(void)
 
         if(lesser_tracks[index]->get_visible_track_count())
         {
-            TractModel tracks(handle);
-            tracks = *lesser_tracks[index];
-            while(output_resampling && tracks.get_visible_track_count() && tracks.trim())
-                ;
-            if(tracks.get_visible_track_count())
-                *lesser_tracks[index] = tracks;
-            lesser_tracks[index]->delete_repeated(1.0f);
-            lesser_tracks[index]->clear_deleted();
+            if(fdr_threshold != 0.0)
+            {
+                fdr_lesser.back() = 0.0f;
+                for(int length = 10;length < fdr_lesser.size();++length)
+                    if(fdr_lesser[length] < fdr_threshold)
+                    {
+                        lesser_tracks[index]->delete_by_length(length);
+                        break;
+                    }
+            }
+            if(output_resampling)
+                trim_and_remove_repeated(handle,lesser_tracks[index]);
+
             std::ostringstream out1;
             out1 << trk_file_names[index] << ".lesser.trk.gz";
             lesser_tracks[index]->save_tracts_to_file(out1.str().c_str());
