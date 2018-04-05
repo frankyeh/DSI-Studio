@@ -10,7 +10,7 @@ ROI/Position Line/roi_position/Off:On/1
 ROI/Slice Layout/roi_layout/Single Slice:3 Slices:Mosaic:Mosaic 2:Mosaic 3/0
 ROI/Output Format/region_format/nii.gz:mat:txt/0
 Tracking/Termination Index/tracking_index/fa:adc/0
-Tracking/Threshold (0=random)/fa_threshold/float:0:2:0.01:5/0
+Tracking/Threshold (0=random)/fa_threshold/float:0:2:0.01:5/0.1
 Tracking/Angular Threshold (0=random)/turning_angle/int:0:90:5/0
 Tracking/Step Size(mm)(0=random)/step_size/float:0.00:10:0.1:2/0
 Tracking/Smoothing (1=random)/smoothing/float:-1.5:1:0.1:2/1

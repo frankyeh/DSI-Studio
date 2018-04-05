@@ -21,6 +21,7 @@ public:
 public:
     std::ostringstream report;
     TrackingParam param;
+    float fa_threshold1,fa_threshold2;// use only if fa_threshold=0
 
 public:
     ThreadData(void):joinning(false),seed(0){}
@@ -68,7 +69,7 @@ public:
     TrackingMethod* new_method(const tracking_data& trk);
     void run(const tracking_data& trk,
              unsigned int thread_count,
-             bool wait = false);
+             bool wait);
 
 
 

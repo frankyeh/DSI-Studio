@@ -26,14 +26,17 @@ void ThreadData::end_thread(void)
     }
 }
 
-void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count,unsigned int thread_id,unsigned int max_count)
+void ThreadData::run_thread(TrackingMethod* method_ptr,
+                            unsigned int thread_count,
+                            unsigned int thread_id,
+                            unsigned int max_count)
 {
     std::auto_ptr<TrackingMethod> method(method_ptr);
     std::uniform_real_distribution<float> rand_gen(0,1),
             angle_gen(float(15.0*M_PI/180.0),float(90.0*M_PI/180.0)),
             smoothing_gen(0.0f,0.95f),
             step_gen(method->trk.vs[0]*0.1f,method->trk.vs[0]),
-            threshold_gen(0.5f*param.otsu_threshold,0.7f*param.otsu_threshold);
+            threshold_gen(fa_threshold1, fa_threshold2);
     unsigned int iteration = thread_id; // for center seed
 
     float white_matter_t = param.threshold*1.2f;
@@ -178,12 +181,17 @@ TrackingMethod* ThreadData::new_method(const tracking_data& trk)
 }
 
 void ThreadData::run(const tracking_data& trk,
-         unsigned int thread_count,
-         bool wait)
+                     unsigned int thread_count,
+                     bool wait)
 {
     if(!param.termination_count)
         return;
-    param.otsu_threshold = image::segmentation::otsu_threshold(image::make_image(trk.fa[0],trk.dim));
+    if(param.threshold == 0.0f)
+    {
+        float otsu = image::segmentation::otsu_threshold(image::make_image(trk.fa[0],trk.dim));
+        fa_threshold1 = (param.default_otsu-0.1f)*otsu;
+        fa_threshold2 = (param.default_otsu+0.1f)*otsu;
+    }
 
     report.clear();
     report.str("");

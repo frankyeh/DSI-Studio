@@ -560,9 +560,9 @@ void tracking_window::set_tracking_param(ThreadData& tracking_thread)
 {
     tracking_thread.param.threshold = renderWidget->getData("fa_threshold").toFloat();
     tracking_thread.param.cull_cos_angle = std::cos(renderWidget->getData("turning_angle").toDouble() * 3.14159265358979323846 / 180.0);
-    tracking_thread.param.step_size = renderWidget->getData("step_size").toDouble();
-    tracking_thread.param.smooth_fraction = renderWidget->getData("smoothing").toDouble();
-    tracking_thread.param.min_length = renderWidget->getData("min_length").toDouble();
+    tracking_thread.param.step_size = renderWidget->getData("step_size").toFloat();
+    tracking_thread.param.smooth_fraction = renderWidget->getData("smoothing").toFloat();
+    tracking_thread.param.min_length = renderWidget->getData("min_length").toFloat();
     tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,renderWidget->getData("max_length").toDouble());
 
     tracking_thread.param.tracking_method = renderWidget->getData("tracking_method").toInt();
@@ -573,6 +573,7 @@ void tracking_window::set_tracking_param(ThreadData& tracking_thread)
     tracking_thread.param.random_seed = renderWidget->getData("random_seed").toInt();
     tracking_thread.param.check_ending = renderWidget->getData("check_ending").toInt();
     tracking_thread.param.termination_count = renderWidget->getData("track_count").toInt();
+    tracking_thread.param.default_otsu = renderWidget->getData("otsu_threshold").toFloat();
 }
 float tracking_window::get_scene_zoom(void)
 {
@@ -1322,8 +1323,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
     tracking_data fib;
     fib.read(*handle);
     float threshold = renderWidget->getData("otsu_threshold").toFloat()*
-            image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim));
-
+                image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim));
     if(!fib.dir.empty())
         return;
     for(float cos_angle = 0.99f;check_prog(1000-cos_angle*1000,1000-866);cos_angle -= 0.005f)

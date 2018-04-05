@@ -33,6 +33,7 @@ typedef boost::mpl::vector<
 struct TrackingParam
 {
     float threshold;
+    float default_otsu = 0.6f;
     float cull_cos_angle;
     float step_size;
     float smooth_fraction;
@@ -47,8 +48,6 @@ struct TrackingParam
     unsigned char tracking_method = 0;
     unsigned char initial_direction = 0;
     unsigned char random_seed = 0;
-    // not parameter
-    float otsu_threshold = 0;
 
     static char char2index(unsigned char c)
     {
@@ -121,15 +120,10 @@ struct TrackingParam
         else
             report << " The step size was randomly selected from 0.1 voxel to 3 voxels.";
 
-        if(int(threshold*1000) == int(600*otsu_threshold))
-            report << " The default anisotropy threshold was used.";
+        if(threshold == 0.0)
+            report << " The anisotropy threshold was randomly selected.";
         else
-        {
-            if(threshold == 0.0)
-                report << " The anisotropy threshold was randomly selected.";
-            else
-                report << " The anisotropy threshold was " << threshold << ".";
-        }
+            report << " The anisotropy threshold was " << threshold << ".";
 
         if(smooth_fraction != 0.0)
         {

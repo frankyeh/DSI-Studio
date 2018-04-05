@@ -398,20 +398,12 @@ int trk(void)
 
     image::geometry<3> geometry = handle->dim;
     const float *fa0 = handle->dir.fa[0];
-    float otsu06 = po.get("otsu_threshold",0.6f)*image::segmentation::otsu_threshold(image::make_image(fa0,geometry));
+    float otsu = image::segmentation::otsu_threshold(image::make_image(fa0,geometry));
 
-    if(po.has("otsu_threshold"))
-    {
-        if(po.has("fa_threshold"))
-            std::cout << "Default Otsu is not used because fa_threshold is assigned" << std::endl;
-        else
-        {
-            std::cout << "A ratio of Otsu threshold of " << po.get("otsu_threshold") << " is used" << std::endl;
-        }
-    }
 
     ThreadData tracking_thread;
-    tracking_thread.param.threshold = po.get("fa_threshold",otsu06);
+    tracking_thread.param.default_otsu = po.get("otsu_threshold",0.6f);
+    tracking_thread.param.threshold = po.get("fa_threshold",tracking_thread.param.default_otsu*otsu);
     tracking_thread.param.cull_cos_angle = std::cos(po.get("turning_angle",0.0)*3.14159265358979323846/180.0);
     tracking_thread.param.step_size = po.get("step_size",0.0f);
     tracking_thread.param.smooth_fraction = po.get("smoothing",1.0f);
@@ -424,6 +416,13 @@ int trk(void)
     tracking_thread.param.center_seed = po.get("seed_plan",int(0));
     tracking_thread.param.random_seed = po.get("random_seed",int(0));
     tracking_thread.param.check_ending = po.get("check_ending",int(0));
+    if(po.has("otsu_threshold"))
+    {
+        if(po.has("fa_threshold"))
+            std::cout << "Default Otsu is not used because fa_threshold is assigned" << std::endl;
+        else
+            std::cout << "A ratio of Otsu threshold of " << po.get("otsu_threshold") << " is used" << std::endl;
+    }
 
     if (po.has("fiber_count"))
     {
@@ -439,8 +438,7 @@ int trk(void)
             tracking_thread.param.termination_count = po.get("seed_count",int(tracking_thread.param.termination_count));
         tracking_thread.param.stop_by_tract = 0;
     }
-    std::cout << (tracking_thread.param.stop_by_tract ? "fiber_count=" : "seed_count=") <<
-            tracking_thread.param.termination_count << std::endl;
+
 
     if(!load_roi(handle,tracking_thread.roi_mgr))
         return -1;
@@ -473,6 +471,7 @@ int trk(void)
     }
     {
         std::cout << "fa_threshold=" << tracking_thread.param.threshold << std::endl;
+        std::cout << "turning_angle=" << std::acos(tracking_thread.param.cull_cos_angle)*180/3.14159265358979323846 << std::endl;
         std::cout << "step_size=" << tracking_thread.param.step_size << std::endl;
         std::cout << "smoothing=" << tracking_thread.param.smooth_fraction << std::endl;
         std::cout << "min_length=" << tracking_thread.param.min_length << std::endl;
@@ -481,6 +480,9 @@ int trk(void)
         std::cout << "initial direction=" << (int)tracking_thread.param.initial_direction << std::endl;
         std::cout << "interpolation=" << (int)tracking_thread.param.interpolation_strategy << std::endl;
         std::cout << "voxelwise=" << (int)tracking_thread.param.center_seed << std::endl;
+        std::cout << "default_otsu=" << tracking_thread.param.default_otsu << std::endl;
+        std::cout << (tracking_thread.param.stop_by_tract ? "fiber_count=" : "seed_count=") <<
+                tracking_thread.param.termination_count << std::endl;
         std::cout << "thread_count=" << po.get("thread_count",int(std::thread::hardware_concurrency())) << std::endl;
     }
 
@@ -488,7 +490,7 @@ int trk(void)
     {
         float seed_threshold = tracking_thread.param.threshold;
         if(seed_threshold == 0)
-            seed_threshold = otsu06;
+            seed_threshold = otsu*tracking_thread.param.default_otsu;
         std::vector<image::vector<3,short> > seed;
         std::cout << "no seeding area assigned. use whole brain seeding" << std::endl;
         for(image::pixel_index<3> index(geometry);index < geometry.size();++index)
