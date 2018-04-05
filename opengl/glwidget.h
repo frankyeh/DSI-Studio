@@ -20,12 +20,8 @@ Q_OBJECT
               QWidget *parent = 0);
      ~GLWidget();
 public:
-     std::shared_ptr<QOpenGLShaderProgram> shader;
-     int s_positionLoc, s_normalLoc,
-        s_texCoordLoc, s_modelMatrixLoc,
-        s_viewMatrixLoc, s_projectionMatrixLoc,
-        s_lightViewProjectionMatrixLoc,
-        s_lightPositionLoc, s_modelViewNormalMatrixLoc, s_shadowTypeLoc;
+     std::shared_ptr<QOpenGLShaderProgram> shader,shader2;
+     int s_mvp,s_mvp2,s_depthMap;
  public:// editing
      enum {none = 0,selecting = 1, moving = 2, dragging = 3} editing_option;
      image::vector<3,float> pos,dir1,dir2;

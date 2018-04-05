@@ -193,3 +193,7 @@ OTHER_FILES += \
     shader_fragment.txt \
     shader_vertex.txt
 
+DISTFILES += \
+    shader_fragment2.txt \
+    shader_vertex2.txt
+

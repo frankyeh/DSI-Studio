@@ -579,50 +579,7 @@ void GLWidget::renderLR()
 
     if (tracts && get_param("show_tract"))
     {
-        if(get_param("tract_shader"))
-        {
-            if(!shader.get())
-            {
-                QFile source1(":/data/shader_fragment.txt"),source2(":/data/shader_vertex.txt");
-                if (source1.open(QIODevice::ReadOnly | QIODevice::Text) &&
-                    source2.open(QIODevice::ReadOnly | QIODevice::Text))
-                {
-                    QTextStream in1(&source1),in2(&source2);
-                    shader = std::make_shared<QOpenGLShaderProgram>(this);
-                    shader->addShaderFromSourceCode(QOpenGLShader::Vertex, in2.readAll().toStdString().c_str());
-                    shader->addShaderFromSourceCode(QOpenGLShader::Fragment, in1.readAll().toStdString().c_str());
-                    shader->link();
-                    shader->bind( );
-                    s_positionLoc = shader->attributeLocation( "position" );
-                    s_normalLoc = shader->attributeLocation( "normal" );
-                    s_texCoordLoc = shader->attributeLocation( "texCoord" );
-                    s_modelMatrixLoc = shader->uniformLocation( "modelMatrix" );
-                    s_viewMatrixLoc = shader->uniformLocation( "viewMatrix" );
-                    s_projectionMatrixLoc = shader->uniformLocation( "projectionMatrix" );
-                    s_lightPositionLoc = shader->uniformLocation( "lightPosition" );
-                    s_lightViewProjectionMatrixLoc = shader->uniformLocation( "lightViewProjectionMatrix" );
-                    s_modelViewNormalMatrixLoc = shader->uniformLocation( "modelViewNormalMatrix" );
-                    s_shadowTypeLoc = shader->uniformLocation( "shadowType" );
-                    shader->setUniformValue( shader->uniformLocation( "texture" ),GL_TEXTURE0 - GL_TEXTURE0 );
-                    shader->setUniformValue( shader->uniformLocation( "shadowTexture" ),GL_TEXTURE1 - GL_TEXTURE0 );
-                }
-            }
-            else
-                shader->bind();
 
-            /*
-            QMatrix4x4& viewMatrix = m_cube->m_view->viewMatrix( );
-            shader->setUniformValue( s_modelMatrixLoc, m_modelMatrix );
-            shader->setUniformValue( s_viewMatrixLoc, viewMatrix );
-            shader->setUniformValue( s_projectionMatrixLoc, m_cube->m_view->projectionMatrix( ) );
-            shader->setUniformValue( s_modelViewNormalMatrixLoc,( viewMatrix * m_modelMatrix ).normalMatrix( ) );
-            shader->setUniformValue( s_lightPositionLoc, m_cube->m_view->lightPosition( ) );
-            shader->setUniformValue( s_lightViewProjectionMatrixLoc,m_cube->m_view->lightViewProjectionMatrix( ) );
-            glActiveTexture( GL_TEXTURE1 );
-            glBindTexture( GL_TEXTURE_2D, m_cube->m_view->shadowTexture( ) );
-            glActiveTexture( GL_TEXTURE0 );
-            */
-        }
         glEnable(GL_COLOR_MATERIAL);
         if(get_param("tract_style") != 1)// 1 = tube
             glDisable(GL_LIGHTING);
@@ -674,6 +631,101 @@ void GLWidget::renderLR()
             glDisable(GL_BLEND);
             glDepthMask(true);
         }
+
+
+        if(get_param("tract_shader"))
+        {
+            if(!shader.get())
+            {
+                QFile source1(":/data/shader_fragment.txt"),source2(":/data/shader_vertex.txt"),
+                      source3(":/data/shader_fragment2.txt"),source4(":/data/shader_vertex2.txt");
+                if (source1.open(QIODevice::ReadOnly | QIODevice::Text) &&
+                    source2.open(QIODevice::ReadOnly | QIODevice::Text) &&
+                    source3.open(QIODevice::ReadOnly | QIODevice::Text) &&
+                    source4.open(QIODevice::ReadOnly | QIODevice::Text))
+                {
+                    QTextStream in1(&source1),in2(&source2),in3(&source3),in4(&source4);
+                    shader = std::make_shared<QOpenGLShaderProgram>(this);
+                    shader2 = std::make_shared<QOpenGLShaderProgram>(this);
+                    if(!shader->addShaderFromSourceCode(QOpenGLShader::Fragment, in1.readAll().toStdString().c_str()))
+                        std::cout << "Add shader fragment failed:" << shader->log().toStdString() << std::endl;
+                    if(!shader->addShaderFromSourceCode(QOpenGLShader::Vertex, in2.readAll().toStdString().c_str()))
+                        std::cout << "Add shader vertex failed:" << shader->log().toStdString() << std::endl;
+                    if(!shader2->addShaderFromSourceCode(QOpenGLShader::Fragment, in3.readAll().toStdString().c_str()))
+                        std::cout << "Add shader2 fragment failed:" << shader->log().toStdString() << std::endl;
+                    if(!shader2->addShaderFromSourceCode(QOpenGLShader::Vertex, in4.readAll().toStdString().c_str()))
+                        std::cout << "Add shader2 vertex failed:" << shader->log().toStdString() << std::endl;
+                    if(!shader->link())
+                        std::cout << "Shader failed to link:" << shader->log().toStdString() << std::endl;
+                    if(!shader2->link())
+                        std::cout << "Shader failed to link:" << shader->log().toStdString() << std::endl;
+
+                    s_mvp = shader->uniformLocation( "mvp" );
+                    s_mvp2 = shader2->uniformLocation( "mvp2" );
+                    s_depthMap = shader2->uniformLocation( "depthMap" );
+
+                }
+                else
+                    std::cout << "Failed to load shader." << std::endl;
+            }
+        }
+        if(shader.get() && get_param("tract_shader"))
+        {
+            if(!shader->bind())
+                std::cout << "Shader failed to bind:" << shader->log().toStdString() << std::endl;
+
+            QMatrix4x4 model,projection,mvp;
+            glGetFloatv(GL_MODELVIEW_MATRIX, model.data());
+            glGetFloatv(GL_PROJECTION_MATRIX, projection.data());
+            mvp = projection*model;
+
+            shader->setUniformValue( s_mvp,mvp);
+            //shader2->setUniformValue( s_mvp2, mvp);
+            /*
+            QOpenGLFunctions *glFuncs = QOpenGLContext::currentContext()->functions();
+
+            GLuint FramebufferName = 0;
+            glFuncs->glGenFramebuffers(1, &FramebufferName);
+            glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+
+            // create a framebuffer object for rendering the depth map:
+            unsigned int depthMapFBO;
+            glFuncs->glGenFramebuffers(1, &depthMapFBO);
+            // create a 2D texture that we'll use as the framebuffer's depth buffer:
+            const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+
+            unsigned int depthMap;
+            glGenTextures(1, &depthMap);
+            glBindTexture(GL_TEXTURE_2D, depthMap);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+                         SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+            // attach it as the framebuffer's depth buffer:
+            glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+            glFuncs->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+            glDrawBuffer(GL_NONE);
+            glReadBuffer(GL_NONE);
+            glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            // 1. first render to depth map
+            glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+            glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+            glClear(GL_DEPTH_BUFFER_BIT);
+            //glCallList(tracts);
+            //shader->release();
+            // back to original viewport and frame
+            glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glViewport(0, 0, cur_width, cur_height);
+            glBindTexture(GL_TEXTURE_2D, depthMap);
+            //shader2->setUniformValue( s_depthMap, depthMap);
+            //if(!shader2->bind())
+            //    std::cout << "Shader failed to bind:" << shader->log().toStdString() << std::endl;
+            */
+        }
+        check_error("show_tract0");
         glCallList(tracts);
         glPopMatrix();
         glDisable(GL_COLOR_MATERIAL);

@@ -41,5 +41,7 @@
         <file>shader_vertex.txt</file>
         <file>icons/ajax-loader.gif</file>
         <file>FreeSurferColorLUT.txt</file>
+        <file>shader_fragment2.txt</file>
+        <file>shader_vertex2.txt</file>
     </qresource>
 </RCC>
