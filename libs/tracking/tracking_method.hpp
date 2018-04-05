@@ -38,16 +38,112 @@ struct TrackingParam
     float smooth_fraction;
     float min_length;
     float max_length;
+    unsigned int termination_count = 10000;
+    unsigned int max_seed_count = 0;
     unsigned char stop_by_tract = 1;
     unsigned char center_seed = 0;
     unsigned char check_ending = 0;
-    unsigned int termination_count = 10000;
     unsigned char interpolation_strategy = 0;
     unsigned char tracking_method = 0;
     unsigned char initial_direction = 0;
-    unsigned int max_seed_count = 0;
+    unsigned char random_seed = 0;
     // not parameter
     float otsu_threshold = 0;
+
+    static char char2index(unsigned char c)
+    {
+        if(c < 10)
+            return c+'0';
+        return c+'A'-10;
+    }
+    static unsigned char index2char(char h,char l)
+    {
+        if(h >= '0' && h <= '9')
+            h -= '0';
+        else
+            h -= 'A'-10;
+        if(l >= '0' && l <= '9')
+            l -= '0';
+        else
+            l -= 'A'-10;
+        return (unsigned char)l | ((unsigned char)h << 4);
+    }
+
+    std::string get_code(void) const
+    {
+        const unsigned char* p = (const unsigned char*)this;
+        std::string code;
+        for(int i = 0;i < sizeof(*this);++i)
+        {
+            code.push_back(char2index(p[i] >> 4));
+            code.push_back(char2index(p[i] & 15));
+        }
+        char rep[8] = {'0','a','b','c','d','e','f','g'};
+        for(int i = 0;i < 7;++i)
+        {
+            for(int j = 1;j < code.size();++j)
+                if(code[j-1] == code[j] && code[j] == rep[i])
+                {
+                    code[j-1] = rep[i+1];
+                    code.erase(code.begin()+j);
+                    --j;
+                }
+        }
+        return code;
+    }
+    void set_code(std::string code)
+    {
+        char rep[8] = {'0','a','b','c','d','e','f','g'};
+        for(int i = 7;i > 0;--i)
+        {
+            for(int j = 0;j < code.size();++j)
+                if(code[j] == rep[i])
+                {
+                    code[j] = rep[i-1];
+                    code.insert(code.begin()+j,rep[i-1]);
+                }
+        }
+        unsigned char* p = (unsigned char*)this;
+        for(int i = 0;i < code.size();i += 2,++p)
+            *p = index2char(code[i],code[i+1]);
+    }
+
+    std::string get_report(void)
+    {
+        std::ostringstream report;
+        if(cull_cos_angle != 1.0)
+            report << " The angular threshold was " << (int)std::round(std::acos(cull_cos_angle)*180.0/3.14159265358979323846) << " degrees.";
+        else
+            report << " The angular threshold was randomly selected from 15 degrees to 90 degrees.";
+
+        if(step_size != 0.0)
+            report << " The step size was " << step_size << " mm.";
+        else
+            report << " The step size was randomly selected from 0.1 voxel to 3 voxels.";
+
+        if(int(threshold*1000) == int(600*otsu_threshold))
+            report << " The default anisotropy threshold was used.";
+        else
+        {
+            if(threshold == 0.0)
+                report << " The anisotropy threshold was randomly selected.";
+            else
+                report << " The anisotropy threshold was " << threshold << ".";
+        }
+
+        if(smooth_fraction != 0.0)
+        {
+            if(smooth_fraction != 1.0)
+                report << " The fiber trajectories were smoothed by averaging the propagation direction with "
+                       << (int)std::round(smooth_fraction * 100.0) << "% of the previous direction.";
+            else
+                report << " The fiber trajectories were smoothed by averaging the propagation direction with a percentage of the previous direction. The percentage was randomly selected from 0% to 95%.";
+        }
+        report << " Tracks with length shorter than " << min_length << " or longer than " << max_length  << " mm were discarded.";
+        report << " A total of " << termination_count << (stop_by_tract ? " tracts were calculated.":" seeds were placed.");
+        report << " parameter_id=" << get_code() << " ";
+        return report.str();
+    }
 
 };
 

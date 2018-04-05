@@ -110,7 +110,7 @@ void TractTableWidget::start_tracking(void)
 
     ++tract_serial;
     addNewTracts(cur_tracking_window.regionWidget->getROIname());
-    thread_data.back() = new ThreadData(cur_tracking_window["random_seed"].toInt());
+    thread_data.back() = new ThreadData();
     cur_tracking_window.set_tracking_param(*thread_data.back());
     cur_tracking_window.regionWidget->setROIs(thread_data.back());
     thread_data.back()->run(tract_models.back()->get_fib(),
@@ -122,7 +122,7 @@ void TractTableWidget::start_tracking(void)
 
 void TractTableWidget::filter_by_roi(void)
 {
-    ThreadData track_thread(cur_tracking_window["random_seed"].toInt());
+    ThreadData track_thread;
     cur_tracking_window.set_tracking_param(track_thread);
     cur_tracking_window.regionWidget->setROIs(&track_thread);
     for(int index = 0;index < tract_models.size();++index)

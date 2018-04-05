@@ -23,9 +23,7 @@ public:
     TrackingParam param;
 
 public:
-    ThreadData(bool random_seed):
-        joinning(false),
-        seed(random_seed ? std::random_device()():0){}
+    ThreadData(void):joinning(false),seed(0){}
     ~ThreadData(void)
     {
         end_thread();

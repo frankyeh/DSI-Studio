@@ -183,52 +183,22 @@ void ThreadData::run(const tracking_data& trk,
 {
     if(!param.termination_count)
         return;
+    param.otsu_threshold = image::segmentation::otsu_threshold(image::make_image(trk.fa[0],trk.dim));
+
     report.clear();
     report.str("");
     report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was used."
            << roi_mgr.report;
-    if(param.cull_cos_angle != 1.0)
-        report << " The angular threshold was " << (int)std::round(std::acos(param.cull_cos_angle)*180.0/3.14159265358979323846) << " degrees.";
-    else
-        report << " The angular threshold was randomly selected from 15 degrees to 90 degrees.";
-
-    if(param.step_size != 0.0)
-        report << " The step size was " << param.step_size << " mm.";
-    else
-        report << " The step size was randomly selected from 0.1 voxel to 3 voxels.";
-
-    param.otsu_threshold = image::segmentation::otsu_threshold(image::make_image(trk.fa[0],trk.dim));
-    if(int(param.threshold*1000) == int(600*param.otsu_threshold))
-        report << " The default anisotropy threshold was used.";
-    else
-    {
-        if(param.threshold == 0.0)
-            report << " The anisotropy threshold was randomly selected.";
-        else
-            report << " The anisotropy threshold was " << param.threshold << ".";
-    }
-
-    if(param.smooth_fraction != 0.0)
-    {
-        if(param.smooth_fraction != 1.0)
-            report << " The fiber trajectories were smoothed by averaging the propagation direction with "
-                   << (int)std::round(param.smooth_fraction * 100.0) << "% of the previous direction.";
-        else
-            report << " The fiber trajectories were smoothed by averaging the propagation direction with \
-a percentage of the previous direction. The percentage was randomly selected from 0% to 95%.";
-    }
-    report << " Tracks with length shorter than " << param.min_length << " or longer than " << param.max_length  << " mm were discarded.";
-    report << " A total of " << param.termination_count << (param.stop_by_tract ? " tracts were calculated.":" seeds were placed.");
-
+    report << param.get_report();
     // to ensure consistency, seed initialization with all orientation only fits with single thread
     if(param.initial_direction == 2)
         thread_count = 1;
-
     if(param.center_seed)
     {
         std::srand(0);
         std::random_shuffle(roi_mgr.seeds.begin(),roi_mgr.seeds.end());
     }
+    seed = std::mt19937(param.random_seed ? std::random_device()():0);
     seed_count.clear();
     tract_count.clear();
     seed_count.resize(thread_count);

@@ -810,6 +810,15 @@
      <addaction name="actionSave_VMRL"/>
      <addaction name="actionSave_Profile"/>
     </widget>
+    <widget class="QMenu" name="menuDelete_Tracts">
+     <property name="title">
+      <string>Delete Tracts</string>
+     </property>
+     <addaction name="actionDeleteTract"/>
+     <addaction name="actionDeleteTractAll"/>
+     <addaction name="actionDelete_By_Length"/>
+     <addaction name="actionRemove_Repeated_Tracks"/>
+    </widget>
     <addaction name="actionOpenTract"/>
     <addaction name="actionOpen_Tracts_Label"/>
     <addaction name="separator"/>
@@ -825,10 +834,7 @@
     <addaction name="actionMerge_Tracts_by_Name"/>
     <addaction name="actionCopyTrack"/>
     <addaction name="separator"/>
-    <addaction name="actionDeleteTract"/>
-    <addaction name="actionDeleteTractAll"/>
-    <addaction name="actionDelete_By_Length"/>
-    <addaction name="actionRemove_Repeated_Tracks"/>
+    <addaction name="menuDelete_Tracts"/>
     <addaction name="actionSeparate_Deleted"/>
     <addaction name="separator"/>
     <addaction name="actionEndpoints_to_seeding"/>
@@ -837,9 +843,9 @@
     <addaction name="separator"/>
     <addaction name="menuTract_Color"/>
     <addaction name="menuClustering"/>
-    <addaction name="actionRecognize_Clustering"/>
     <addaction name="separator"/>
     <addaction name="actionRecognize_Current_Tract"/>
+    <addaction name="actionRecognize_Clustering"/>
     <addaction name="actionTract_Analysis_Report"/>
     <addaction name="actionConnectivity_matrix"/>
     <addaction name="actionStatistics"/>

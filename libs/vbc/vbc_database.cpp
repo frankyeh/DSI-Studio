@@ -53,7 +53,7 @@ int vbc_database::run_track(const tracking_data& fib,std::vector<std::vector<flo
         tracks.clear();
         return 0;
     }
-    ThreadData tracking_thread(false);
+    ThreadData tracking_thread;
     tracking_thread.param.threshold = tracking_threshold;
     tracking_thread.param.cull_cos_angle = 1.0f;
     tracking_thread.param.step_size = handle->vs[0];
@@ -65,6 +65,7 @@ int vbc_database::run_track(const tracking_data& fib,std::vector<std::vector<flo
     tracking_thread.param.interpolation_strategy = 0; // trilinear interpolation
     tracking_thread.param.stop_by_tract = 0;// stop by seed
     tracking_thread.param.center_seed = 0;// subvoxel seeding
+    tracking_thread.param.random_seed = 0;
     tracking_thread.param.termination_count = count;
     // if no seed assigned, assign whole brain
     if(roi_list.empty() || std::find(roi_type.begin(),roi_type.end(),3) == roi_type.end())

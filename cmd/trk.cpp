@@ -410,7 +410,7 @@ int trk(void)
         }
     }
 
-    ThreadData tracking_thread(po.get("random_seed",int(0)));
+    ThreadData tracking_thread;
     tracking_thread.param.threshold = po.get("fa_threshold",otsu06);
     tracking_thread.param.cull_cos_angle = std::cos(po.get("turning_angle",0.0)*3.14159265358979323846/180.0);
     tracking_thread.param.step_size = po.get("step_size",0.0f);
@@ -422,8 +422,8 @@ int trk(void)
     tracking_thread.param.initial_direction  = po.get("initial_dir",int(0));
     tracking_thread.param.interpolation_strategy = po.get("interpolation",int(0));
     tracking_thread.param.center_seed = po.get("seed_plan",int(0));
+    tracking_thread.param.random_seed = po.get("random_seed",int(0));
     tracking_thread.param.check_ending = po.get("check_ending",int(0));
-
 
     if (po.has("fiber_count"))
     {
@@ -461,6 +461,29 @@ int trk(void)
     }
     TractModel tract_model(handle);
 
+    if(po.get("thread_count",int(std::thread::hardware_concurrency())) < 1)
+    {
+        std::cout << "Invalid thread_count number" << std::endl;
+        return -1;
+    }
+    if(po.has("parameter_id"))
+    {
+        tracking_thread.param.set_code(po.get("parameter_id"));
+        std::cout << "parameter_code=" << tracking_thread.param.get_code() << std::endl;
+    }
+    {
+        std::cout << "fa_threshold=" << tracking_thread.param.threshold << std::endl;
+        std::cout << "step_size=" << tracking_thread.param.step_size << std::endl;
+        std::cout << "smoothing=" << tracking_thread.param.smooth_fraction << std::endl;
+        std::cout << "min_length=" << tracking_thread.param.min_length << std::endl;
+        std::cout << "max_length=" << tracking_thread.param.max_length << std::endl;
+        std::cout << "tracking_method=" << (int)tracking_thread.param.tracking_method << std::endl;
+        std::cout << "initial direction=" << (int)tracking_thread.param.initial_direction << std::endl;
+        std::cout << "interpolation=" << (int)tracking_thread.param.interpolation_strategy << std::endl;
+        std::cout << "voxelwise=" << (int)tracking_thread.param.center_seed << std::endl;
+        std::cout << "thread_count=" << po.get("thread_count",int(std::thread::hardware_concurrency())) << std::endl;
+    }
+
     if (!po.has("seed"))
     {
         float seed_threshold = tracking_thread.param.threshold;
@@ -472,25 +495,6 @@ int trk(void)
             if(fa0[index.index()] > seed_threshold)
                 seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
         tracking_thread.roi_mgr.setRegions(geometry,seed,1.0,3,"whole brain",image::vector<3>());
-    }
-
-    if(po.get("thread_count",int(std::thread::hardware_concurrency())) < 1)
-    {
-        std::cout << "Invalid thread_count number" << std::endl;
-        return -1;
-    }
-    {
-        std::cout << "turning_angle=" << (int)std::round(po.get("turning_angle",float(0))) << std::endl;
-        std::cout << "fa_threshold=" << tracking_thread.param.threshold << std::endl;
-        std::cout << "step_size=" << tracking_thread.param.step_size << std::endl;
-        std::cout << "smoothing=" << tracking_thread.param.smooth_fraction << std::endl;
-        std::cout << "min_length=" << tracking_thread.param.min_length << std::endl;
-        std::cout << "max_length=" << tracking_thread.param.max_length << std::endl;
-        std::cout << "tracking_method=" << (int)tracking_thread.param.tracking_method << std::endl;
-        std::cout << "initial direction=" << (int)tracking_thread.param.initial_direction << std::endl;
-        std::cout << "interpolation=" << (int)tracking_thread.param.interpolation_strategy << std::endl;
-        std::cout << "voxelwise=" << (int)tracking_thread.param.center_seed << std::endl;
-        std::cout << "thread_count=" << po.get("thread_count",int(std::thread::hardware_concurrency())) << std::endl;
     }
 
     if(!cnt_file_name.empty())
