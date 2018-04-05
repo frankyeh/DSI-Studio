@@ -290,9 +290,9 @@ void RegionTableWidget::draw_region(image::color_image& I)
             geo[1] *= r;
             geo[2] *= r;
             std::vector<std::vector<std::vector<unsigned int> > > buf(geo[0]);
-            for(unsigned int index = 0;index < regions[roi_index]->size();++index)
+            for(unsigned int index = 0;index < checked_regions[roi_index]->size();++index)
             {
-                const auto& p = regions[roi_index]->region[index];
+                const auto& p = checked_regions[roi_index]->region[index];
                 if(!geo.is_valid(p))
                     return;
                 auto& x_pos = buf[p[0]];
@@ -302,7 +302,19 @@ void RegionTableWidget::draw_region(image::color_image& I)
                 if(y_pos.empty())
                     y_pos.resize(geo[2]);
                 y_pos[p[2]] = cur_color;
+
+                image::vector<3> v(p),v2;
+                v /= r;
+                v.to(current_slice->invT);
+                image::space2slice(cur_tracking_window.cur_dim,v[0],v[1],v[2],v2[0],v2[1],v2[2]);
+                v2.round();
+                if(v2[2] == slice_pos && I.geometry().is_valid(v2))
+                {
+                    int pos = v2[0]+v2[1]*I.width();
+                    I[pos] = (unsigned int)I[pos] | cur_color;
+                }
             }
+
             for(int y = 0,index = 0;y < I.height();++y)
                 for(int x = 0;x < I.width();++x,++index)
                 {
@@ -323,6 +335,7 @@ void RegionTableWidget::draw_region(image::color_image& I)
                         continue;
                     I[index] = (unsigned int)I[index] | buf[dx][dy][dz];
                 }
+
         });
     }
 }
