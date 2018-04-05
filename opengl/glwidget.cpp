@@ -579,7 +579,6 @@ void GLWidget::renderLR()
 
     if (tracts && get_param("show_tract"))
     {
-
         glEnable(GL_COLOR_MATERIAL);
         if(get_param("tract_style") != 1)// 1 = tube
             glDisable(GL_LIGHTING);
@@ -725,7 +724,6 @@ void GLWidget::renderLR()
             //    std::cout << "Shader failed to bind:" << shader->log().toStdString() << std::endl;
             */
         }
-        check_error("show_tract0");
         glCallList(tracts);
         glPopMatrix();
         glDisable(GL_COLOR_MATERIAL);

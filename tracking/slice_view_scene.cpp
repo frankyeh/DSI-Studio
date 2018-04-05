@@ -546,9 +546,6 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     image::vector<3,float> pos;
     float Y = mouseEvent->scenePos().y();
     float X = mouseEvent->scenePos().x();
-    float display_ratio = cur_tracking_window.get_scene_zoom();
-
-    image::geometry<3> geo(cur_tracking_window.current_slice->geometry);
     if(!to_3d_space(X,Y,pos))
         return;
     adjust_xy_to_layout(X,Y);
