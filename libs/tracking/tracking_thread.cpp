@@ -35,15 +35,16 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
             step_gen(method->trk.vs[0]*0.1f,method->trk.vs[0]),
             threshold_gen(0.5f*param.otsu_threshold,0.7f*param.otsu_threshold);
     unsigned int iteration = thread_id; // for center seed
-    float white_matter_t = method_ptr->param.threshold*1.2f;
+
+    float white_matter_t = param.threshold*1.2f;
     if(!roi_mgr.seeds.empty())
     try{
         std::vector<std::vector<float> > local_track_buffer;
         while(!joinning &&
-              (!stop_by_tract || tract_count[thread_id] < max_count) &&
-              (stop_by_tract || seed_count[thread_id] < max_count) &&
-              (max_seed_count == 0 || seed_count[thread_id] < max_seed_count) &&
-              (!center_seed || iteration < roi_mgr.seeds.size()))
+              (!param.stop_by_tract || tract_count[thread_id] < max_count) &&
+              (param.stop_by_tract || seed_count[thread_id] < max_count) &&
+              (param.max_seed_count == 0 || seed_count[thread_id] < param.max_seed_count) &&
+              (!param.center_seed || iteration < roi_mgr.seeds.size()))
         {
             if(!pushing_data && (iteration & 0x00000FFF) == 0x00000FFF && !local_track_buffer.empty())
                 push_tracts(local_track_buffer);
@@ -66,9 +67,9 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
                 method->current_min_steps3 = std::round(3.0f*param.min_length/step_size_in_mm);
             }
             ++seed_count[thread_id];
-            if(center_seed)
+            if(param.center_seed)
             {
-                if(!method->init(initial_direction,
+                if(!method->init(param.initial_direction,
                     image::vector<3,float>(roi_mgr.seeds[iteration].x()/roi_mgr.seeds_r[iteration],
                                            roi_mgr.seeds[iteration].y()/roi_mgr.seeds_r[iteration],
                                            roi_mgr.seeds[iteration].z()/roi_mgr.seeds_r[iteration]),
@@ -77,7 +78,7 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
                     iteration+=thread_count;
                     continue;
                 }
-                if(initial_direction == 0)// primary direction
+                if(param.initial_direction == 0)// primary direction
                     iteration+=thread_count;
             }
             else
@@ -92,15 +93,15 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,unsigned int thread_count
                 pos[2] = (float)roi_mgr.seeds[i].z() + rand_gen(seed)-0.5f;
                 if(roi_mgr.seeds_r[i] != 1.0f)
                     pos /= roi_mgr.seeds_r[i];
-                if(!method->init(initial_direction,pos,seed))
+                if(!method->init(param.initial_direction,pos,seed))
                     continue;
             }
             unsigned int point_count;
-            const float *result = method->tracking(tracking_method,point_count);
+            const float *result = method->tracking(param.tracking_method,point_count);
             if(!result)
                 continue;
             const float* end = result+point_count+point_count+point_count;
-            if(check_ending)
+            if(param.check_ending)
             {
                 if(point_count < 2)
                     continue;
@@ -148,7 +149,7 @@ TrackingMethod* ThreadData::new_method(const tracking_data& trk)
 {
 
     std::auto_ptr<basic_interpolation> interpo_method;
-    switch (interpolation_strategy)
+    switch (param.interpolation_strategy)
     {
     case 0:
         interpo_method.reset(new trilinear_interpolation);
@@ -161,26 +162,27 @@ TrackingMethod* ThreadData::new_method(const tracking_data& trk)
         break;
 
     }
-    TrackingMethod* method = new TrackingMethod(trk,interpo_method.release(),roi_mgr,param);
-    method->current_fa_threshold = method->param.threshold;
-    method->current_tracking_angle = method->param.cull_cos_angle;
-    method->current_tracking_smoothing = method->param.smooth_fraction;
-    method->current_step_size_in_voxel[0] = method->param.step_size/method->trk.vs[0];
-    method->current_step_size_in_voxel[1] = method->param.step_size/method->trk.vs[1];
-    method->current_step_size_in_voxel[2] = method->param.step_size/method->trk.vs[2];
-    if(method->param.step_size != 0.0)
+    TrackingMethod* method = new TrackingMethod(trk,interpo_method.release(),roi_mgr);
+    method->current_fa_threshold = param.threshold;
+    method->current_tracking_angle = param.cull_cos_angle;
+    method->current_tracking_smoothing = param.smooth_fraction;
+    method->current_step_size_in_voxel[0] = param.step_size/method->trk.vs[0];
+    method->current_step_size_in_voxel[1] = param.step_size/method->trk.vs[1];
+    method->current_step_size_in_voxel[2] = param.step_size/method->trk.vs[2];
+    if(param.step_size != 0.0)
     {
-        method->current_max_steps3 = std::round(3.0*method->param.max_length/method->param.step_size);
-        method->current_min_steps3 = std::round(3.0*method->param.min_length/method->param.step_size);
+        method->current_max_steps3 = std::round(3.0*param.max_length/param.step_size);
+        method->current_min_steps3 = std::round(3.0*param.min_length/param.step_size);
     }
     return method;
 }
 
 void ThreadData::run(const tracking_data& trk,
          unsigned int thread_count,
-         unsigned int termination_count,
          bool wait)
 {
+    if(!param.termination_count)
+        return;
     report.clear();
     report.str("");
     report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was used."
@@ -216,14 +218,13 @@ void ThreadData::run(const tracking_data& trk,
 a percentage of the previous direction. The percentage was randomly selected from 0% to 95%.";
     }
     report << " Tracks with length shorter than " << param.min_length << " or longer than " << param.max_length  << " mm were discarded.";
+    report << " A total of " << param.termination_count << (param.stop_by_tract ? " tracts were calculated.":" seeds were placed.");
 
-    if(!termination_count)
-        return;
     // to ensure consistency, seed initialization with all orientation only fits with single thread
-    if(initial_direction == 2)
+    if(param.initial_direction == 2)
         thread_count = 1;
 
-    if(center_seed)
+    if(param.center_seed)
     {
         std::srand(0);
         std::random_shuffle(roi_mgr.seeds.begin(),roi_mgr.seeds.end());
@@ -236,27 +237,25 @@ a percentage of the previous direction. The percentage was randomly selected fro
     pushing_data = false;
     std::fill(running.begin(),running.end(),1);
 
+    unsigned int count = param.termination_count;
     end_thread();
-    if(thread_count > termination_count)
-        thread_count = termination_count;
+    if(thread_count > count)
+        thread_count = count;
     if(thread_count < 1)
         thread_count = 1;
-    unsigned int run_count = std::max<int>(1,termination_count/thread_count);
+    unsigned int run_count = std::max<int>(1,count/thread_count);
     unsigned int total_run_count = 0;
     for (unsigned int index = 0;index < thread_count-1;++index,total_run_count += run_count)
         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
-                [this,&trk,thread_count,index,run_count](){run_thread(new_method(trk),thread_count,index,run_count);})));
-
+                [&,thread_count,index,run_count](){run_thread(new_method(trk),thread_count,index,run_count);})));
 
     if(wait)
     {
-        run_thread(new_method(trk),thread_count,thread_count-1,termination_count-total_run_count);
+        run_thread(new_method(trk),thread_count,thread_count-1,count-total_run_count);
         for(int i = 0;i < threads.size();++i)
             threads[i]->wait();
     }
     else
         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
-                [this,&trk,thread_count,termination_count,total_run_count](){run_thread(new_method(trk),thread_count,thread_count-1,termination_count-total_run_count);})));
-
-    report << " A total of " << termination_count << (stop_by_tract ? " tracts were calculated.":" seeds were placed.");
+                [&,thread_count,count,total_run_count](){run_thread(new_method(trk),thread_count,thread_count-1,count-total_run_count);})));
 }

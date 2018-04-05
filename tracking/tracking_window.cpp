@@ -566,12 +566,13 @@ void tracking_window::set_tracking_param(ThreadData& tracking_thread)
     tracking_thread.param.min_length = renderWidget->getData("min_length").toDouble();
     tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,renderWidget->getData("max_length").toDouble());
 
-    tracking_thread.tracking_method = renderWidget->getData("tracking_method").toInt();
-    tracking_thread.initial_direction = renderWidget->getData("initial_direction").toInt();
-    tracking_thread.interpolation_strategy = renderWidget->getData("interpolation").toInt();
-    tracking_thread.stop_by_tract = renderWidget->getData("tracking_plan").toInt();
-    tracking_thread.center_seed = renderWidget->getData("seed_plan").toInt();
-    tracking_thread.check_ending = renderWidget->getData("check_ending").toInt();
+    tracking_thread.param.tracking_method = renderWidget->getData("tracking_method").toInt();
+    tracking_thread.param.initial_direction = renderWidget->getData("initial_direction").toInt();
+    tracking_thread.param.interpolation_strategy = renderWidget->getData("interpolation").toInt();
+    tracking_thread.param.stop_by_tract = renderWidget->getData("tracking_plan").toInt();
+    tracking_thread.param.center_seed = renderWidget->getData("seed_plan").toInt();
+    tracking_thread.param.check_ending = renderWidget->getData("check_ending").toInt();
+    tracking_thread.param.termination_count = renderWidget->getData("track_count").toInt();
 }
 float tracking_window::get_scene_zoom(void)
 {

@@ -21,14 +21,7 @@ public:
 public:
     std::ostringstream report;
     TrackingParam param;
-    bool stop_by_tract = true;
-    bool center_seed = false;
-    bool check_ending = false;
-    unsigned int termination_count = 1000;
-    unsigned char interpolation_strategy = 0;//trilinear_interpolation
-    unsigned char tracking_method = 0; // streamline
-    unsigned char initial_direction = 0; // primary
-    unsigned int max_seed_count = 0;
+
 public:
     ThreadData(bool random_seed):
         joinning(false),
@@ -71,12 +64,12 @@ public:
     void end_thread(void);
 
 public:
-    void run_thread(TrackingMethod* method_ptr,unsigned int thread_count,unsigned int thread_id,unsigned int max_count);
+    void run_thread(TrackingMethod* method_ptr,unsigned int thread_count,
+                    unsigned int thread_id,unsigned int max_count);
     bool fetchTracks(TractModel* handle);
     TrackingMethod* new_method(const tracking_data& trk);
     void run(const tracking_data& trk,
              unsigned int thread_count,
-             unsigned int termination_count,
              bool wait = false);
 
 

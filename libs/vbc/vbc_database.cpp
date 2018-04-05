@@ -60,11 +60,12 @@ int vbc_database::run_track(const tracking_data& fib,std::vector<std::vector<flo
     tracking_thread.param.smooth_fraction = 0;
     tracking_thread.param.min_length = 0;
     tracking_thread.param.max_length = 200;
-    tracking_thread.tracking_method = 0;// streamline fiber tracking
-    tracking_thread.initial_direction = 0;// main directions
-    tracking_thread.interpolation_strategy = 0; // trilinear interpolation
-    tracking_thread.stop_by_tract = 0;// stop by seed
-    tracking_thread.center_seed = 0;// subvoxel seeding
+    tracking_thread.param.tracking_method = 0;// streamline fiber tracking
+    tracking_thread.param.initial_direction = 0;// main directions
+    tracking_thread.param.interpolation_strategy = 0; // trilinear interpolation
+    tracking_thread.param.stop_by_tract = 0;// stop by seed
+    tracking_thread.param.center_seed = 0;// subvoxel seeding
+    tracking_thread.param.termination_count = count;
     // if no seed assigned, assign whole brain
     if(roi_list.empty() || std::find(roi_type.begin(),roi_type.end(),3) == roi_type.end())
         tracking_thread.roi_mgr.setRegions(fib.dim,seed,1.0,3,"whole brain",image::vector<3>());
@@ -74,7 +75,7 @@ int vbc_database::run_track(const tracking_data& fib,std::vector<std::vector<flo
             tracking_thread.roi_mgr.setRegions(fib.dim,roi_list[index],roi_r_list[index],roi_type[index],
                                                "user assigned region",fib.vs);
     }
-    tracking_thread.run(fib,thread_count,count,true);
+    tracking_thread.run(fib,thread_count,true);
     tracking_thread.track_buffer.swap(tracks);
 
     if(track_trimming)

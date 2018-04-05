@@ -418,32 +418,29 @@ int trk(void)
     tracking_thread.param.min_length = po.get("min_length",0.0f);
     tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,po.get("max_length",400.0f));
 
-    tracking_thread.tracking_method = po.get("method",int(0));
-    tracking_thread.initial_direction  = po.get("initial_dir",int(0));
-    tracking_thread.interpolation_strategy = po.get("interpolation",int(0));
-    tracking_thread.center_seed = po.get("seed_plan",int(0));
-    tracking_thread.check_ending = po.get("check_ending",int(0));
+    tracking_thread.param.tracking_method = po.get("method",int(0));
+    tracking_thread.param.initial_direction  = po.get("initial_dir",int(0));
+    tracking_thread.param.interpolation_strategy = po.get("interpolation",int(0));
+    tracking_thread.param.center_seed = po.get("seed_plan",int(0));
+    tracking_thread.param.check_ending = po.get("check_ending",int(0));
 
 
-    unsigned int termination_count = 10000;
     if (po.has("fiber_count"))
     {
-        termination_count = po.get("fiber_count",int(termination_count));
-        tracking_thread.stop_by_tract = true;
+        tracking_thread.param.termination_count = po.get("fiber_count",int(tracking_thread.param.termination_count));
+        tracking_thread.param.stop_by_tract = 1;
 
         if (po.has("seed_count"))
-            tracking_thread.max_seed_count = po.get("seed_count",int(termination_count));
+            tracking_thread.param.max_seed_count = po.get("seed_count",int(tracking_thread.param.termination_count));
     }
     else
     {
         if (po.has("seed_count"))
-            termination_count = po.get("seed_count",int(termination_count));
-        else
-            termination_count = 1000000;
-        tracking_thread.stop_by_tract = false;
+            tracking_thread.param.termination_count = po.get("seed_count",int(tracking_thread.param.termination_count));
+        tracking_thread.param.stop_by_tract = 0;
     }
-    std::cout << (tracking_thread.stop_by_tract ? "fiber_count=" : "seed_count=") <<
-            termination_count << std::endl;
+    std::cout << (tracking_thread.param.stop_by_tract ? "fiber_count=" : "seed_count=") <<
+            tracking_thread.param.termination_count << std::endl;
 
     if(!load_roi(handle,tracking_thread.roi_mgr))
         return -1;
@@ -489,10 +486,10 @@ int trk(void)
         std::cout << "smoothing=" << tracking_thread.param.smooth_fraction << std::endl;
         std::cout << "min_length=" << tracking_thread.param.min_length << std::endl;
         std::cout << "max_length=" << tracking_thread.param.max_length << std::endl;
-        std::cout << "tracking_method=" << (int)tracking_thread.tracking_method << std::endl;
-        std::cout << "initial direction=" << (int)tracking_thread.initial_direction << std::endl;
-        std::cout << "interpolation=" << (int)tracking_thread.interpolation_strategy << std::endl;
-        std::cout << "voxelwise=" << (int)tracking_thread.center_seed << std::endl;
+        std::cout << "tracking_method=" << (int)tracking_thread.param.tracking_method << std::endl;
+        std::cout << "initial direction=" << (int)tracking_thread.param.initial_direction << std::endl;
+        std::cout << "interpolation=" << (int)tracking_thread.param.interpolation_strategy << std::endl;
+        std::cout << "voxelwise=" << (int)tracking_thread.param.center_seed << std::endl;
         std::cout << "thread_count=" << po.get("thread_count",int(std::thread::hardware_concurrency())) << std::endl;
     }
 
@@ -537,7 +534,7 @@ int trk(void)
                 std::cout << "mapping track with " << ((t > 0) ? "increased":"decreased") << " connectivity at " << std::fabs(t) << std::endl;
                 std::cout << "start tracking." << std::endl;
                 tracking_thread.param.threshold = std::fabs(t);
-                tracking_thread.run(tract_model.get_fib(),po.get("thread_count",int(std::thread::hardware_concurrency())),termination_count,true);
+                tracking_thread.run(tract_model.get_fib(),po.get("thread_count",int(std::thread::hardware_concurrency())),true);
                 tracking_thread.fetchTracks(&tract_model);
                 std::ostringstream out;
                 out << cnt_file_name[i].toStdString() << "." << cnt_type.toStdString()
@@ -558,7 +555,7 @@ int trk(void)
 
     std::cout << "start tracking." << std::endl;
 
-    tracking_thread.run(tract_model.get_fib(),po.get("thread_count",int(std::thread::hardware_concurrency())),termination_count,true);
+    tracking_thread.run(tract_model.get_fib(),po.get("thread_count",int(std::thread::hardware_concurrency())),true);
     tract_model.report += tracking_thread.report.str();
     std::cout << tract_model.report << std::endl;
 

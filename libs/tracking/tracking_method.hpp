@@ -32,12 +32,22 @@ typedef boost::mpl::vector<
 
 struct TrackingParam
 {
-    float threshold,otsu_threshold;
+    float threshold;
     float cull_cos_angle;
     float step_size;
     float smooth_fraction;
     float min_length;
     float max_length;
+    unsigned char stop_by_tract = 1;
+    unsigned char center_seed = 0;
+    unsigned char check_ending = 0;
+    unsigned int termination_count = 10000;
+    unsigned char interpolation_strategy = 0;
+    unsigned char tracking_method = 0;
+    unsigned char initial_direction = 0;
+    unsigned int max_seed_count = 0;
+    // not parameter
+    float otsu_threshold = 0;
 
 };
 
@@ -53,7 +63,6 @@ public:// Parameters
     bool forward;
 public:
     const tracking_data& trk;
-    const TrackingParam& param;
     float current_fa_threshold;
     float current_tracking_angle;
     float current_tracking_smoothing;
@@ -92,8 +101,8 @@ public:
     }
 public:
     TrackingMethod(const tracking_data& trk_,basic_interpolation* interpolation_,
-                   const RoiMgr& roi_mgr_,const TrackingParam& param_):
-        trk(trk_),interpolation(interpolation_),roi_mgr(roi_mgr_),param(param_),init_fib_index(0)
+                   const RoiMgr& roi_mgr_):
+        trk(trk_),interpolation(interpolation_),roi_mgr(roi_mgr_),init_fib_index(0)
 	{
 
 
