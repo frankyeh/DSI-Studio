@@ -495,7 +495,7 @@ bool group_connectometry::load_demographic_file(QString filename)
         for(int i = 0;i < ui->variable_list->count();++i)
         {
             ui->variable_list->item(i)->setFlags(ui->variable_list->item(i)->flags() | Qt::ItemIsUserCheckable); // set checkable flag
-            ui->variable_list->item(i)->setCheckState(Qt::Checked);
+            ui->variable_list->item(i)->setCheckState(i == 0 ? Qt::Checked : Qt::Unchecked);
         }
 
         ui->foi->clear();
@@ -572,7 +572,8 @@ void group_connectometry::calculate_FDR(void)
     if(vbc->progress == 100)
     {
         vbc->wait();// make sure that all threads done
-        timer->stop();
+        if(timer.get())
+            timer->stop();
     }
     std::ostringstream html_report((vbc->trk_file_names[0]+".report.html").c_str());
     html_report << "<!DOCTYPE html>" << std::endl;
@@ -781,7 +782,10 @@ void group_connectometry::on_run_clicked()
     vbc->model.reset(new stat_model);
     if(!setup_model(*vbc->model.get()))
     {
-        QMessageBox::information(this,"Error","Cannot run the statistics. Subject number not enough?",0);
+        if(gui)
+            QMessageBox::information(this,"Error","Cannot run the statistics. Subject number not enough?",0);
+        else
+            std::cout << "setup model failed" << std::endl;
         return;
     }
 
@@ -886,10 +890,13 @@ void group_connectometry::on_run_clicked()
 
     vbc->report = out.str().c_str();
     vbc->run_permutation(ui->multithread->value(),ui->permutation_count->value());
-    timer.reset(new QTimer(this));
-    timer->setInterval(1000);
-    connect(timer.get(), SIGNAL(timeout()), this, SLOT(calculate_FDR()));
-    timer->start();
+    if(gui)
+    {
+        timer.reset(new QTimer(this));
+        timer->setInterval(1000);
+        connect(timer.get(), SIGNAL(timeout()), this, SLOT(calculate_FDR()));
+        timer->start();
+    }
 }
 
 void group_connectometry::on_show_result_clicked()

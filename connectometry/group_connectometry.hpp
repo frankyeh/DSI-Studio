@@ -42,7 +42,7 @@ private:
     void show_dis_table(void);
     void add_new_roi(QString name,QString source,const std::vector<image::vector<3,short> >& new_roi,float r);
 public:
-    bool gui;
+    bool gui = true;
     QString work_dir;
     std::vector<std::string> file_names;
 public:
@@ -81,13 +81,13 @@ public slots:
 
 public slots:
     void calculate_FDR(void);
+    void on_variable_list_clicked(const QModelIndex &index);
 public:
     Ui::group_connectometry *ui;
 private slots:
     void on_load_roi_from_atlas_clicked();
     void on_clear_all_roi_clicked();
     void on_load_roi_from_file_clicked();
-    void on_variable_list_clicked(const QModelIndex &index);
 };
 
 #endif // VBC_DIALOG_HPP
