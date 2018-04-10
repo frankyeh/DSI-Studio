@@ -11,7 +11,6 @@ CONFIG += c++11
 #CONFIG += console
 TARGET = dsi_studio
 TEMPLATE = app
-LIBS += -lOpenCL
 #LIBS += -lcudart -lcudadevrt -lcuda -lnvrtc -lcublas
 
 win32* {
