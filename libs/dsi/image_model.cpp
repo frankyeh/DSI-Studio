@@ -408,8 +408,102 @@ void ImageModel::trim(void)
     calculate_dwi_sum();
     voxel.calculate_mask(dwi_sum);
 }
+
+void inv_fun(const std::vector<float>& inv_cdf,std::vector<float>& cdf,float details)
+{
+    for(int i = 0;i < cdf.size();++i)
+    {
+        float sum_w = 0.0f,sum = 0.0f;
+        int min_j = 0;
+        for(int j = 0;j < inv_cdf.size();++j)
+        {
+            float d = ((float)i-inv_cdf[j]);
+            if(d > 0)
+                min_j = j;
+            d *= details;
+            float w = std::exp(-d*d);
+            sum_w += w;
+            sum += w*(float)j;
+        }
+        if(sum_w != 0.0)
+            cdf[i] = sum/sum_w;
+        else
+            cdf[i] = min_j;
+    }
+}
+
 void ImageModel::distortion_correction(const ImageModel& rhs)
 {
+    image::geometry<3> geo(dwi_sum.geometry());
+    image::basic_image<float,3> v1(dwi_sum),v2(rhs.dwi_sum);
+
+    image::par_for(geo.depth(),[&](int z)
+    {
+    for(int x = 0;x < geo.width();++x)
+    {
+        //int x = 42;
+        //int z = 28;
+        std::vector<float> cdf_y1(geo.height()),cdf_y2(geo.height());
+        for(int y = 0,pos = x + z*geo.plane_size();y < geo.height();++y,pos += geo.width())
+        {
+            cdf_y1[y] = v1[pos] + (y ? cdf_y1[y-1]:0);
+            cdf_y2[y] = v2[pos] + (y ? cdf_y2[y-1]:0);
+        }
+        float sum = (cdf_y1.back()+cdf_y2.back())*0.5;
+        if(cdf_y1.back() == 0.0f || cdf_y2.back() == 0.0f)
+            continue;
+
+        int value_reso = 512;
+        image::multiply_constant(cdf_y1,(float)value_reso/cdf_y1.back());
+        image::multiply_constant(cdf_y2,(float)value_reso/cdf_y2.back());
+
+        /*
+        std::cout << "A=[";
+        for(int y = 0;y < geo.height();++y)
+            std::cout << cdf_y1[y] << " ";
+        std::cout << "]" << std::endl;
+        std::cout << "B=[";
+        for(int y = 0;y < geo.height();++y)
+            std::cout << cdf_y2[y] << " ";
+        std::cout << "]" << std::endl;
+        */
+
+        std::vector<float> icdf_y1(value_reso+1),icdf_y2(value_reso+1);
+        inv_fun(cdf_y1,icdf_y1,1.0f);
+        inv_fun(cdf_y2,icdf_y2,1.0f);
+
+        /*
+        std::cout << "C=[";
+        for(int y = 0;y < icdf_y1.size();++y)
+            std::cout << icdf_y1[y] << " ";
+        std::cout << "]" << std::endl;
+        std::cout << "D=[";
+        for(int y = 0;y < icdf_y2.size();++y)
+            std::cout << icdf_y2[y] << " ";
+        std::cout << "]" << std::endl;
+        */
+
+
+        for(int y = 0;y < icdf_y1.size();++y)
+            icdf_y1[y] = (icdf_y1[y]+icdf_y2[y])*0.5;
+        inv_fun(icdf_y1,cdf_y1,1.0f);
+
+        /*
+        std::cout << "E=[";
+        for(int y = 0;y < geo.height();++y)
+            std::cout << cdf_y1[y] << " ";
+        std::cout << "]" << std::endl;
+        */
+        image::multiply_constant(cdf_y1,(float)sum/cdf_y1.back());
+
+
+        for(int y = 0,pos = x + z*geo.plane_size();y < geo.height();++y,pos += geo.width())
+            dwi_sum[pos] = cdf_y1[y] - (y? cdf_y1[y-1]:0);
+    }
+    }
+    );
+
+    /*
     image::basic_image<float,3> v1(dwi_sum),v2(rhs.dwi_sum),d;
     v1 /= image::mean(v1);
     v2 /= image::mean(v2);
@@ -484,6 +578,7 @@ void ImageModel::distortion_correction(const ImageModel& rhs)
         src_dwi_data[i] = &(new_dwi[i][0]);
     calculate_dwi_sum();
     voxel.calculate_mask(dwi_sum);
+    */
 }
 
 
