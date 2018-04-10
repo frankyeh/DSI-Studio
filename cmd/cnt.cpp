@@ -46,9 +46,10 @@ int cnt(void)
     {
         std::string var_text = po.get("variable_list");
         std::replace(var_text.begin(),var_text.end(),',',' ');
+        std::istringstream var_in(var_text);
         std::vector<int> variable_list(
-                    (std::istream_iterator<int>(std::istringstream(var_text))),
-                    std::istream_iterator<int>());
+                    (std::istream_iterator<int>(var_in)),
+                    (std::istream_iterator<int>()));
 
         for(int i = 0;i < vbc->ui->variable_list->count();++i)
             vbc->ui->variable_list->item(i)->setCheckState(Qt::Unchecked);
