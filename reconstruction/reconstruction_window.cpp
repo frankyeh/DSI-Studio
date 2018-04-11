@@ -768,8 +768,11 @@ void reconstruction_window::on_actionSave_bvecs_triggered()
 void reconstruction_window::update_image(void)
 {
     dwi.resize(handle->voxel.dim);
+    float min = image::minimum(handle->dwi_sum);
+    float range = image::maximum(handle->dwi_sum)-min;
+    float r = range > 0.0 ? 255.9f/range:1.0f;
     for(unsigned int index = 0;index < dwi.size();++index)
-        dwi[index] = std::min<float>(254.0,handle->dwi_sum[index]*255.0);
+        dwi[index] = (handle->dwi_sum[index]-min)*r;
     load_b_table();
 }
 

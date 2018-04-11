@@ -1713,11 +1713,10 @@
     <addaction name="actionTrim_image"/>
     <addaction name="actionManual_Rotation"/>
     <addaction name="actionReplace_b0_by_T2W_image"/>
-    <addaction name="separator"/>
     <addaction name="actionCorrect_AP_PA_scans"/>
-    <addaction name="actionImage_upsample_to_T1W_TESTING"/>
     <addaction name="separator"/>
     <addaction name="actionEnable_TEST_features"/>
+    <addaction name="actionImage_upsample_to_T1W_TESTING"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menu_Edit"/>
@@ -1810,7 +1809,7 @@
   </action>
   <action name="actionCorrect_AP_PA_scans">
    <property name="text">
-    <string>Correct AP-PA scans (TESTING)...</string>
+    <string>Correct AP-PA scans...</string>
    </property>
   </action>
   <action name="actionSave_b0">

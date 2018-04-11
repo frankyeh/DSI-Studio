@@ -409,176 +409,201 @@ void ImageModel::trim(void)
     voxel.calculate_mask(dwi_sum);
 }
 
-void inv_fun(const std::vector<float>& inv_cdf,std::vector<float>& cdf,float details)
+float interpo_pos(float v1,float v2,float u1,float u2)
 {
-    for(int i = 0;i < cdf.size();++i)
-    {
-        float sum_w = 0.0f,sum = 0.0f;
-        int min_j = 0;
-        for(int j = 0;j < inv_cdf.size();++j)
-        {
-            float d = ((float)i-inv_cdf[j]);
-            if(d > 0)
-                min_j = j;
-            d *= details;
-            float w = std::exp(-d*d);
-            sum_w += w;
-            sum += w*(float)j;
-        }
-        if(sum_w != 0.0)
-            cdf[i] = sum/sum_w;
-        else
-            cdf[i] = min_j;
-    }
+    float w = (u2-u1-v2+v1);
+    return std::max<float>(0.0,std::min<float>(1.0,w == 0.0f? 0:(v1-u1)/w));
 }
 
-void ImageModel::distortion_correction(const ImageModel& rhs)
+template<typename image_type>
+void get_distortion_map(const image_type& v1,
+                        const image_type& v2,
+                        image::basic_image<float,3>& dis_map)
 {
-    image::geometry<3> geo(dwi_sum.geometry());
-    image::basic_image<float,3> v1(dwi_sum),v2(rhs.dwi_sum);
+    int h = v1.height(),w = v1.width(),hw = v1.plane_size();
+    dis_map.resize(v1.geometry());
+    image::par_for(v1.depth(),[&](int z)
+    {
+    for(int x = 0;x < w;++x)
+    {
+        //int x = 46; for 2017_11_09 DSI-STS1
+        //int z = 32;
+        std::vector<float> cdf_y1(h),cdf_y2(h);//,cdf(h);
+        for(int y = 0,pos = x + z*hw;y < h;++y,pos += w)
+        {
+            cdf_y1[y] =  (y ? v1[pos]+cdf_y1[y-1]:0);
+            cdf_y2[y] =  (y ? v2[pos]+cdf_y2[y-1]:0);
+        }
+        //if(cdf_y1.back() == 0.0 || cdf_y2.back() == 0.0)
+        //    continue;
+        image::multiply_constant(cdf_y2,cdf_y1.back()/cdf_y2.back());
 
-    image::par_for(geo.depth(),[&](int z)
+        for(int y = 0,pos = x + z*hw;y < h;++y,pos += w)
+        {
+            if(cdf_y1[y] == cdf_y2[y])
+            {
+                //cdf[y] = cdf_y1[y];
+                continue;
+            }
+            int d = 1,y1,y2;
+            float v1,v2,u1,u2;
+            v2 = cdf_y1[y];
+            u2 = cdf_y2[y];
+            bool positive_d = true;
+            if(cdf_y1[y] > cdf_y2[y])
+            {
+                for(;d < h;++d)
+                {
+                    y1 = y-d;
+                    y2 = y+d;
+                    v1 = v2;
+                    u1 = u2;
+                    v2 = (y1 >=0 ? cdf_y1[y1]:0);
+                    u2 = (y2 < cdf_y2.size() ? cdf_y2[y2]:cdf_y2.back());
+                    if(v2 <= u2)
+                        break;
+                }
+            }
+            else
+            {
+                for(;d < h;++d)
+                {
+                    y2 = y-d;
+                    y1 = y+d;
+                    v1 = v2;
+                    u1 = u2;
+                    v2 = (y1 < cdf_y1.size() ? cdf_y1[y1]:cdf_y1.back());
+                    u2 = (y2 >= 0 ? cdf_y2[y2]:0);
+                    if(v2 >= u2)
+                        break;
+                }
+                positive_d = false;
+            }
+            //cdf[y] = v1+(v2-v1)*interpo_pos(v1,v2,u1,u2);
+            dis_map[pos] = interpo_pos(v1,v2,u1,u2)+d-1;
+            if(!positive_d)
+                dis_map[pos] = -dis_map[pos];
+        }
+
+        /*
+        std::cout << "A=[";
+        for(int y = 0;y < h;++y)
+            std::cout << cdf_y1[y] << " ";
+        std::cout << "];" << std::endl;
+        std::cout << "B=[";
+        for(int y = 0;y < h;++y)
+            std::cout << cdf_y2[y] << " ";
+        std::cout << "];" << std::endl;
+        std::cout << "C=[";
+        for(int y = 0;y < h;++y)
+            std::cout << cdf[y] << " ";
+        std::cout << "];" << std::endl;
+        std::cout << "D=[";
+        for(int y = 0,pos = x + z*hw;y < h;++y,pos += h)
+            std::cout << dis_map[pos] << " ";
+        std::cout << "];" << std::endl;
+        */
+        //for(int y = 0,pos = x + z*geo.plane_size();y < h;++y,pos += geo.width())
+        //    v1[pos] = std::max<float>(0.0f,cdf[y] - (y? cdf[y-1]:0));
+    }
+    }
+    );
+}
+
+template<typename image_type,typename out_type>
+void apply_distortion_map(const image_type& v1,
+                          const image_type& v2,
+                          const image::basic_image<float,3>& dis_map,
+                          out_type& dwi)
+{
+    int h = v1.height(),w = v1.width(),hw = v1.plane_size();
+    dwi.resize(v1.geometry());
+    image::par_for(v1.depth(),[&](int z)
     {
-    for(int x = 0;x < geo.width();++x)
+    for(int x = 0;x < w;++x)
     {
-        //int x = 42;
-        //int z = 28;
-        std::vector<float> cdf_y1(geo.height()),cdf_y2(geo.height());
-        for(int y = 0,pos = x + z*geo.plane_size();y < geo.height();++y,pos += geo.width())
+        std::vector<float> cdf_y1(h),cdf_y2(h),cdf(h);
+        for(int y = 0,pos = x + z*hw;y < h;++y,pos += w)
         {
             cdf_y1[y] = v1[pos] + (y ? cdf_y1[y-1]:0);
             cdf_y2[y] = v2[pos] + (y ? cdf_y2[y-1]:0);
         }
-        float sum = (cdf_y1.back()+cdf_y2.back())*0.5;
-        if(cdf_y1.back() == 0.0f || cdf_y2.back() == 0.0f)
-            continue;
 
-        int value_reso = 512;
-        image::multiply_constant(cdf_y1,(float)value_reso/cdf_y1.back());
-        image::multiply_constant(cdf_y2,(float)value_reso/cdf_y2.back());
-
-        /*
-        std::cout << "A=[";
-        for(int y = 0;y < geo.height();++y)
-            std::cout << cdf_y1[y] << " ";
-        std::cout << "]" << std::endl;
-        std::cout << "B=[";
-        for(int y = 0;y < geo.height();++y)
-            std::cout << cdf_y2[y] << " ";
-        std::cout << "]" << std::endl;
-        */
-
-        std::vector<float> icdf_y1(value_reso+1),icdf_y2(value_reso+1);
-        inv_fun(cdf_y1,icdf_y1,1.0f);
-        inv_fun(cdf_y2,icdf_y2,1.0f);
-
-        /*
-        std::cout << "C=[";
-        for(int y = 0;y < icdf_y1.size();++y)
-            std::cout << icdf_y1[y] << " ";
-        std::cout << "]" << std::endl;
-        std::cout << "D=[";
-        for(int y = 0;y < icdf_y2.size();++y)
-            std::cout << icdf_y2[y] << " ";
-        std::cout << "]" << std::endl;
-        */
-
-
-        for(int y = 0;y < icdf_y1.size();++y)
-            icdf_y1[y] = (icdf_y1[y]+icdf_y2[y])*0.5;
-        inv_fun(icdf_y1,cdf_y1,1.0f);
-
-        /*
-        std::cout << "E=[";
-        for(int y = 0;y < geo.height();++y)
-            std::cout << cdf_y1[y] << " ";
-        std::cout << "]" << std::endl;
-        */
-        image::multiply_constant(cdf_y1,(float)sum/cdf_y1.back());
-
-
-        for(int y = 0,pos = x + z*geo.plane_size();y < geo.height();++y,pos += geo.width())
-            dwi_sum[pos] = cdf_y1[y] - (y? cdf_y1[y-1]:0);
+        auto I1 = image::make_image(&cdf_y1[0],image::geometry<1>(cdf_y1.size()));
+        auto I2 = image::make_image(&cdf_y2[0],image::geometry<1>(cdf_y2.size()));
+        for(int y = 0,pos = x + z*hw;y < h;++y,pos += w)
+        {
+            float d = dis_map[pos];
+            float y1 = y-d;
+            float y2 = y+d;
+            cdf[y] = image::estimate(I1,y1)+image::estimate(I2,y2);
+            cdf[y] *= 0.5;
+        }
+        for(int y = 1,pos = x + z*hw+w;y < h;++y,pos += w)
+            dwi[pos] = std::max<float>(0.0f,cdf[y] - (y? cdf[y-1]:0));
     }
     }
     );
+}
 
-    /*
-    image::basic_image<float,3> v1(dwi_sum),v2(rhs.dwi_sum),d;
-    v1 /= image::mean(v1);
-    v2 /= image::mean(v2);
-    image::filter::gaussian(v1);
-    image::filter::gaussian(v2);
+
+
+
+void ImageModel::distortion_correction(const ImageModel& rhs)
+{
+    image::basic_image<float,3> v1,v2;
+    v1 = dwi_sum;
+    v2 = rhs.dwi_sum;
+
+
     bool swap_xy = false;
-    bool swap_ap = false;
-
     {
-        image::vector<3,float> m1 = image::center_of_mass(v1); // should be d+
-        image::vector<3,float> m2 = image::center_of_mass(v2); // should be d-
-        m1 -= m2;
-        std::cout << m1 << std::endl;
-        if(std::abs(m1[1]) > std::abs(m1[0]))
+        image::basic_image<float,2> px1,px2,py1,py2;
+        image::project_x(v1,px1);
+        image::project_x(v2,px2);
+        image::project_y(v1,py1);
+        image::project_y(v2,py2);
+        float cx = image::correlation(px1.begin(),px1.end(),px2.begin());
+        float cy = image::correlation(py1.begin(),py1.end(),py2.begin());
+
+        if(cx > cy)
         {
             image::swap_xy(v1);
             image::swap_xy(v2);
-            std::swap(m1[1],m1[0]);
             swap_xy = true;
         }
-        if(m1[0] > 0)
-        {
-            v1.swap(v2);
-            swap_ap = true;
-        }
     }
+    image::basic_image<float,3> dis_map;
+    image::filter::gaussian(v1);
+    image::filter::gaussian(v2);
+    get_distortion_map(v1,v2,dis_map);
+    //dwi_sum = dis_map;
+    //return;
 
 
-    distortion_estimate(v1,v2,d);
-    check_prog(0,0);
-    if(prog_aborted())
-        return;
-    begin_prog("applying warp");
     std::vector<image::basic_image<unsigned short,3> > dwi(src_dwi_data.size());
-    distortion_map m;
-    m = d;
-    for(int i = 0;check_prog(i,src_dwi_data.size());++i)
+    for(int i = 0;i < src_dwi_data.size();++i)
     {
-        //dwi[i] = image::make_image((unsigned short*)dwi_data[i],voxel.dim);
-        if(prog_aborted())
-            return;
-        image::basic_image<float,3> dwi1 = image::make_image((unsigned short*)src_dwi_data[i],voxel.dim);
-        image::basic_image<float,3> dwi2 = image::make_image((unsigned short*)rhs.src_dwi_data[i],voxel.dim);
+        v1 = image::make_image(src_dwi_data[i],voxel.dim);
+        v2 = image::make_image(rhs.src_dwi_data[i],rhs.voxel.dim);
         if(swap_xy)
         {
-            image::swap_xy(dwi1);
-            image::swap_xy(dwi2);
+            image::swap_xy(v1);
+            image::swap_xy(v2);
         }
-        if(swap_ap)
-            dwi1.swap(dwi2);
-        image::basic_image<float,3> v;
-        if(i == 1)
-        {
-            image::filter::gaussian(dwi1);
-            image::filter::gaussian(dwi2);
-            m.calculate_original(dwi1,dwi2,v);
-        }
-        else
-            v = dwi1;
+        apply_distortion_map(v1,v2,dis_map,dwi[i]);
         if(swap_xy)
-            image::swap_xy(v);
-        image::lower_threshold(v,0);
-        dwi[i] = v;
+            image::swap_xy(dwi[i]);
     }
-    if(prog_aborted())
-        return;
-    d *= 50.0f;
-    image::swap_xy(d);
-    dwi[0] = d;
+
+
     new_dwi.swap(dwi);
     for(int i = 0;i < new_dwi.size();++i)
         src_dwi_data[i] = &(new_dwi[i][0]);
+
     calculate_dwi_sum();
     voxel.calculate_mask(dwi_sum);
-    */
+
 }
 
 
