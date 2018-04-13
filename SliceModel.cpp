@@ -283,8 +283,6 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
                         }
                         std::copy(I.begin(),I.end(),source_images.begin() + i*source_images.plane_size());
                     }
-                    if(prog_aborted())
-                        return false;
                     image::io::nifti nii;
                     nii.set_dim(geo);
                     nii.set_voxel_size(voxel_size.begin());

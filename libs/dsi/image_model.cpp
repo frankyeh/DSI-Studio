@@ -185,26 +185,26 @@ std::string ImageModel::check_b_table(void)
 
 float ImageModel::quality_control_neighboring_dwi_corr(void)
 {
-    // correlation of neighboring DWI < 1750
     std::vector<std::pair<int,int> > corr_pairs;
     for(int i = 0;i < src_bvalues.size();++i)
     {
-        if(src_bvalues[i] > 1750.0f || src_bvalues[i] == 0.0f)
+        if(src_bvalues[i] == 0.0f)
             continue;
-        float max_cos = 0.0;
-        int max_j = 0;
-        for(int j = 0;j < src_bvalues.size();++j)
-            if(std::abs(src_bvalues[j]-src_bvalues[i]) < 200.0f && i != j)
+        float min_dis = std::numeric_limits<float>::max();
+        int min_j = 0;
+        for(int j = i+1;j < src_bvalues.size();++j)
+        {
+            image::vector<3> v1(src_bvectors[i]),v2(src_bvectors[j]);
+            v1 *= std::sqrt(src_bvalues[i]);
+            v2 *= std::sqrt(src_bvalues[j]);
+            float dis = std::min<float>((v1-v2).length(),(v1+v2).length());
+            if(dis < min_dis)
             {
-                float cos = std::abs(src_bvectors[i]*src_bvectors[j]);
-                if(cos > max_cos)
-                {
-                    max_cos = cos;
-                    max_j = j;
-                }
+                min_dis = dis;
+                min_j = j;
             }
-        if(max_j > i)
-            corr_pairs.push_back(std::make_pair(i,max_j));
+        }
+        corr_pairs.push_back(std::make_pair(i,min_j));
     }
     float self_cor = 0.0f;
     unsigned int count = 0;
