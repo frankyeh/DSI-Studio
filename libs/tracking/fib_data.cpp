@@ -1,4 +1,5 @@
 #include <QCoreApplication>
+#include <QFileInfo>
 #include "fib_data.hpp"
 #include "fa_template.hpp"
 #include "atlas.hpp"
@@ -417,6 +418,42 @@ bool tracking_data::is_white_matter(const image::vector<3,float>& pos,float t) c
 
 bool fib_data::load_from_file(const char* file_name)
 {
+    image::basic_image<float,3> I;
+    float vs[3];
+    if(QFileInfo(file_name).completeSuffix() == "nii" ||
+       QFileInfo(file_name).completeSuffix() == "nii.gz")
+    {
+        gz_nifti header;
+        if(!header.load_from_file(file_name))
+        {
+            error_msg = "Invalid NIFTI format";
+            return false;
+        }
+        header.toLPS(I);
+        header.get_voxel_size(vs);
+    }
+    else
+    if(QFileInfo(file_name).fileName() == "2dseq")
+    {
+        image::io::bruker_2dseq bruker_header;
+        if(!bruker_header.load_from_file(file_name))
+        {
+            error_msg = "Invalid 2dseq format";
+            return false;
+        }
+        bruker_header.get_image().swap(I);
+        bruker_header.get_voxel_size(vs);
+    }
+    if(!I.empty())
+    {
+        mat_reader.add("dimension",I.geometry().begin(),3,1);
+        mat_reader.add("voxel_size",vs,3,1);
+        mat_reader.add("image",&*I.begin(),I.size(),1);
+        load_from_mat();
+        dir.index_name[0] = "image";
+        view_item[0].name = "image";
+        return true;
+    }
     if (!mat_reader.load_from_file(file_name) || prog_aborted())
     {
         error_msg = prog_aborted() ? "Loading process aborted" : "Invalid file format";

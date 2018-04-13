@@ -376,49 +376,7 @@ void MainWindow::on_FiberTracking_clicked()
                            "Fib files (*fib.gz *.fib *nii.gz *.nii 2dseq);;All files (*)");
     if (filename.isEmpty())
         return;
-    image::basic_image<float,3> I;
-    float vs[3];
-    if(QFileInfo(filename).completeSuffix() == "nii" ||
-            QFileInfo(filename).completeSuffix() == "nii.gz")
-    {
-        gz_nifti header;
-        if(!header.load_from_file(filename.toLocal8Bit().begin()))
-        {
-            QMessageBox::information(this,"Error","Invalid NIFTI format",0);
-            return;
-        }
-        header.toLPS(I);
-        header.get_voxel_size(vs);
-    }
-    if(QFileInfo(filename).fileName() == "2dseq")
-    {
-        image::io::bruker_2dseq bruker_header;
-        if(!bruker_header.load_from_file(filename.toLocal8Bit().begin()))
-        {
-            QMessageBox::information(this,"DSI Studio","Invalid 2dseq format",0);
-            return;
-        }
-        bruker_header.get_image().swap(I);
-        bruker_header.get_voxel_size(vs);
-    }
-    if(!I.empty())
-    {
-        std::shared_ptr<fib_data> new_handle(new fib_data);
-        new_handle->mat_reader.add("dimension",I.geometry().begin(),3,1);
-        new_handle->mat_reader.add("voxel_size",vs,3,1);
-        new_handle->mat_reader.add("image",&*I.begin(),I.size(),1);
-        new_handle->load_from_mat();
-        new_handle->dir.index_name[0] = "image";
-        new_handle->view_item[0].name = "image";
-        tracking_window* new_mdi = new tracking_window(this,new_handle);
-        new_mdi->setAttribute(Qt::WA_DeleteOnClose);
-        new_mdi->setWindowTitle(filename);
-        new_mdi->showNormal();
-        new_mdi->set_data("roi_fiber",0);
-        new_mdi->scene.show_slice();
-    }
-    else
-        loadFib(filename);
+    loadFib(filename);
 }
 
 void check_name(std::string& name)
