@@ -328,35 +328,42 @@ int trk_post(std::shared_ptr<fib_data> handle,
     }
     if(!file_name.empty())
     {
-        if(po.has("ref")) // save track in T1W/T2W space
+        std::string file_list = file_name;
+        std::replace(file_list.begin(),file_list.end(),',',' ');
+        std::istringstream in(file_list);
+        std::string f;
+        while(in >> f)
         {
-            std::vector<std::string> files;
-            files.push_back(po.get("ref"));
-            CustomSliceModel new_slice;
-            std::cout << "Loading reference image:" << po.get("ref") << std::endl;
-            if(!new_slice.initialize(handle,handle->is_qsdr,files,false))
+            if(po.has("ref")) // save track in T1W/T2W space
             {
-                std::cout << "Error reading ref image file:" << po.get("ref") << std::endl;
-                return 0;
+                std::vector<std::string> files;
+                files.push_back(po.get("ref"));
+                CustomSliceModel new_slice;
+                std::cout << "Loading reference image:" << po.get("ref") << std::endl;
+                if(!new_slice.initialize(handle,handle->is_qsdr,files,false))
+                {
+                    std::cout << "Error reading ref image file:" << po.get("ref") << std::endl;
+                    return 0;
+                }
+                new_slice.thread->wait();
+                new_slice.update();
+                std::cout << "Applying linear registration." << std::endl;
+                std::cout << new_slice.transform[0] << " " << new_slice.transform[1] << " " << new_slice.transform[2] << " " << new_slice.transform[3] << std::endl;
+                std::cout << new_slice.transform[4] << " " << new_slice.transform[5] << " " << new_slice.transform[6] << " " << new_slice.transform[7] << std::endl;
+                std::cout << new_slice.transform[8] << " " << new_slice.transform[9] << " " << new_slice.transform[10] << " " << new_slice.transform[11] << std::endl;
+                tract_model.save_transformed_tracts_to_file(f.c_str(),&*new_slice.invT.begin(),false);
             }
-            new_slice.thread->wait();
-            new_slice.update();
-            std::cout << "Applying linear registration." << std::endl;
-            std::cout << new_slice.transform[0] << " " << new_slice.transform[1] << " " << new_slice.transform[2] << " " << new_slice.transform[3] << std::endl;
-            std::cout << new_slice.transform[4] << " " << new_slice.transform[5] << " " << new_slice.transform[6] << " " << new_slice.transform[7] << std::endl;
-            std::cout << new_slice.transform[8] << " " << new_slice.transform[9] << " " << new_slice.transform[10] << " " << new_slice.transform[11] << std::endl;
-            tract_model.save_transformed_tracts_to_file(file_name.c_str(),&*new_slice.invT.begin(),false);
-        }
-        else
-        if(file_name != "no_file")
-        {            
-            std::cout << "output file:" << file_name << std::endl;
-            if (!tract_model.save_tracts_to_file(file_name.c_str()))
+            else
+            if(f != "no_file")
             {
-                std::cout << "Cannot save tracks as " << file_name << ". Please check write permission, directory, and disk space." << std::endl;
+                std::cout << "output file:" << f << std::endl;
+                if (!tract_model.save_tracts_to_file(f.c_str()))
+                {
+                    std::cout << "Cannot save tracks as " << f << ". Please check write permission, directory, and disk space." << std::endl;
+                }
+                if(QFileInfo(f.c_str()).exists())
+                    std::cout << "File saved to " << f << std::endl;
             }
-            if(QFileInfo(file_name.c_str()).exists())
-                std::cout << "File saved to " << file_name << std::endl;
         }
     }
     if(po.has("cluster"))
