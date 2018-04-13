@@ -6,8 +6,8 @@
 
 #include "image/image.hpp"
 #include "RegionModel.h"
+#include "fib_data.hpp"
 // ---------------------------------------------------------------------------
-class fib_data;
 struct SliceModel;
 // region_feature
 const unsigned int roi_id = 0;

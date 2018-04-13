@@ -4,7 +4,6 @@
 #include <iterator>
 #include "Regions.h"
 #include "SliceModel.h"
-#include "fib_data.hpp"
 #include "libs/gzip_interface.hpp"
 
 image::geometry<3> ROIRegion::get_buffer_dim(void) const
