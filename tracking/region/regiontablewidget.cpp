@@ -161,7 +161,7 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
         c.from_hsl(((color_gen++)*1.1-std::floor((color_gen++)*1.1/6)*6)*3.14159265358979323846/3.0,0.85,0.7);
         color = c.color;
     }
-    regions.push_back(std::make_shared<ROIRegion>(cur_tracking_window.handle->dim,cur_tracking_window.current_slice->voxel_size));
+    regions.push_back(std::make_shared<ROIRegion>(cur_tracking_window.handle));
     regions.back()->show_region.color = color;
     regions.back()->regions_feature = feature;
     cur_tracking_window.scene.no_show = true;
@@ -598,7 +598,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 
     if(!multiple_roi)
     {
-        ROIRegion region(cur_tracking_window.handle->dim,cur_tracking_window.current_slice->voxel_size);
+        ROIRegion region(cur_tracking_window.handle);
 
         if(has_transform)
             region.LoadFromBuffer(from,convert);
@@ -640,7 +640,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
             for(unsigned int i = 0;i < mask.size();++i)
                 if(from[i] == value)
                     mask[i] = 1;
-            ROIRegion region(cur_tracking_window.handle->dim,cur_tracking_window.current_slice->voxel_size);
+            ROIRegion region(cur_tracking_window.handle);
             if(has_transform)
                 region.LoadFromBuffer(mask,convert);
             else
@@ -671,9 +671,8 @@ void RegionTableWidget::load_region(void)
                 load_multiple_roi_nii(filenames[index]))
             continue;
 
-        ROIRegion region(cur_tracking_window.handle->dim,cur_tracking_window.current_slice->voxel_size);
-        if(!region.LoadFromFile(filenames[index].toLocal8Bit().begin(),
-                cur_tracking_window.handle->is_qsdr ? cur_tracking_window.handle->trans_to_mni:std::vector<float>()))
+        ROIRegion region(cur_tracking_window.handle);
+        if(!region.LoadFromFile(filenames[index].toLocal8Bit().begin()))
         {
             QMessageBox::information(this,"error","Unknown file format",0);
             return;
@@ -788,9 +787,7 @@ void RegionTableWidget::save_region(void)
         return;
     if(QFileInfo(filename.toLower()).completeSuffix() != "mat" && QFileInfo(filename.toLower()).completeSuffix() != "txt")
         filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
-    std::vector<float> no_trans;
-    regions[currentRow()]->SaveToFile(filename.toLocal8Bit().begin(),
-                                     cur_tracking_window.handle->is_qsdr ? cur_tracking_window.handle->trans_to_mni: no_trans);
+    regions[currentRow()]->SaveToFile(filename.toLocal8Bit().begin());
     item(currentRow(),0)->setText(QFileInfo(filename).baseName());
 }
 QString RegionTableWidget::output_format(void)
@@ -818,13 +815,11 @@ void RegionTableWidget::save_all_regions_to_dir(void)
     for(unsigned int index = 0;check_prog(index,rowCount());++index)
         if (item(index,0)->checkState() == Qt::Checked) // either roi roa end or seed
         {
-            std::vector<float> no_trans;
             std::string filename = dir.toLocal8Bit().begin();
             filename  += "/";
             filename  += item(index,0)->text().toLocal8Bit().begin();
             filename  += output_format().toStdString();
-            regions[index]->SaveToFile(filename.c_str(),
-                                         cur_tracking_window.handle->is_qsdr ? cur_tracking_window.handle->trans_to_mni: no_trans);
+            regions[index]->SaveToFile(filename.c_str());
         }
 }
 void RegionTableWidget::save_all_regions(void)
@@ -1110,7 +1105,7 @@ void RegionTableWidget::do_action(QString action)
                     std::fill(mask.begin(),mask.end(),0);
                     for(unsigned int i = 0;i < r[j].size();++i)
                         mask[r[j][i]] = 1;
-                    ROIRegion region(cur_tracking_window.handle->dim,cur_tracking_window.current_slice->voxel_size);
+                    ROIRegion region(cur_tracking_window.handle);
                     region.LoadFromBuffer(mask);
                     add_region(name + "_"+QString::number(total_count+1),
                                roi_id,region.show_region.color.color);

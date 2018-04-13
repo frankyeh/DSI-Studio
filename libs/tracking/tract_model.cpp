@@ -484,10 +484,9 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     {
         std::vector<image::vector<3,float> >points;
         get_tract_points(points);
-        ROIRegion region(geometry,vs);
+        ROIRegion region(handle);
         region.add_points(points,false);
-        std::vector<float> no_trans;
-        region.SaveToFile(file_name_,handle->is_qsdr ? handle->trans_to_mni: no_trans);
+        region.SaveToFile(file_name_);
         return true;
     }
     return false;

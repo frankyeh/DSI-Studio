@@ -18,9 +18,8 @@ const unsigned int terminate_id = 4;
 
 class ROIRegion {
 public:
+        std::shared_ptr<fib_data> handle;
         std::vector<image::vector<3,short> > region;
-        image::geometry<3> geo;
-        image::vector<3> vs;
         bool modified;
         std::vector<std::vector<image::vector<3,short> > > undo_backup;
         std::vector<std::vector<image::vector<3,short> > > redo_backup;
@@ -32,16 +31,16 @@ public: // rendering options
         unsigned char regions_feature;
 
         ROIRegion(const ROIRegion& rhs,float resolution_ratio_ = 1.0) :
-            region(rhs.region), geo(rhs.geo),vs(rhs.vs),super_resolution(resolution_ratio_ != 1.0),
+            handle(rhs.handle),
+            region(rhs.region),super_resolution(resolution_ratio_ != 1.0),
             resolution_ratio(resolution_ratio_),
             regions_feature(rhs.regions_feature), modified(true)
         {
             show_region = rhs.show_region;
         }
         const ROIRegion& operator = (const ROIRegion & rhs) {
+            handle = rhs.handle;
             region = rhs.region;
-            geo = rhs.geo;
-            vs = rhs.vs;
             undo_backup = rhs.undo_backup;
             redo_backup = rhs.redo_backup;
             regions_feature = rhs.regions_feature;
@@ -52,9 +51,8 @@ public: // rendering options
             return *this;
         }
         void swap(ROIRegion & rhs) {
+            handle.swap(rhs.handle);
             region.swap(rhs.region);
-            geo.swap(rhs.geo);
-            std::swap(vs,rhs.vs);
             undo_backup.swap(rhs.undo_backup);
             redo_backup.swap(rhs.redo_backup);
             std::swap(regions_feature,rhs.regions_feature);
@@ -64,8 +62,9 @@ public: // rendering options
             std::swap(resolution_ratio,rhs.resolution_ratio);
         }
 
-        ROIRegion(const image::geometry<3>& geo_, const image::vector<3>& vs_)
-            : geo(geo_), vs(vs_),modified(false){}
+        ROIRegion(std::shared_ptr<fib_data> handle_)
+            : handle(handle_),modified(false){}
+        image::geometry<3> get_buffer_dim(void) const;
         image::vector<3,short> get_region_voxel(unsigned int index) const
         {
             image::vector<3,short> result = region[index];
@@ -181,8 +180,8 @@ public:
             modified = true;
 
         }
-        void SaveToFile(const char* FileName,const std::vector<float>& trans);
-        bool LoadFromFile(const char* FileName,const std::vector<float>& trans);
+        void SaveToFile(const char* FileName);
+        bool LoadFromFile(const char* FileName);
         void Flip(unsigned int dimension);
         void shift(image::vector<3,float> dx);
 
@@ -192,7 +191,7 @@ public:
             std::vector<image::vector<3,float> > points;
             float det = std::fabs(trans.det());
             if(det < 8) // from a low resolution image
-            for (image::pixel_index<3> index(geo);index < geo.size();++index)
+            for (image::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
             {
                 image::vector<3> p(index.begin());
                 p.to(trans);
@@ -210,7 +209,7 @@ public:
                 {
                     image::vector<3> p(index.begin());
                     p.to(inv);
-                    if (geo.is_valid(p))
+                    if (handle->dim.is_valid(p))
                         points.push_back(image::vector<3,float>(p[0],p[1],p[2]));
                 }
             }
@@ -231,8 +230,8 @@ public:
             for (image::pixel_index<3>index(mask.geometry());index < mask.size();++index)
                 if (mask[index.index()] != 0)
                     points.push_back(image::vector<3,short>(index.x(), index.y(),index.z()));
-            if(mask.width() != geo[0])
-                resolution_ratio = (float)mask.width()/(float)geo[0];
+            if(mask.width() != handle->dim[0])
+                resolution_ratio = (float)mask.width()/(float)handle->dim[0];
             region.swap(points);
         }
         void SaveToBuffer(image::basic_image<unsigned char, 3>& mask,unsigned char value=255);

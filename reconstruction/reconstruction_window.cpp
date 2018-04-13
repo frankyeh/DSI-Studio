@@ -415,9 +415,8 @@ void reconstruction_window::on_load_mask_clicked()
             "Mask files (*.txt *.nii *nii.gz *.hdr);;All files (*)" );
     if(filename.isEmpty())
         return;
-    ROIRegion region(dwi.geometry(),handle->voxel.vs);
-    std::vector<float> trans;
-    region.LoadFromFile(filename.toLocal8Bit().begin(),trans);
+    ROIRegion region(std::make_shared<fib_data>(dwi.geometry(),handle->voxel.vs));
+    region.LoadFromFile(filename.toLocal8Bit().begin());
     region.SaveToBuffer(handle->voxel.mask);
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
@@ -434,10 +433,9 @@ void reconstruction_window::on_save_mask_clicked()
         return;
     if(QFileInfo(filename.toLower()).completeSuffix() != "txt")
         filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
-    ROIRegion region(dwi.geometry(),handle->voxel.vs);
+    ROIRegion region(std::make_shared<fib_data>(dwi.geometry(),handle->voxel.vs));
     region.LoadFromBuffer(handle->voxel.mask);
-    std::vector<float> trans;
-    region.SaveToFile(filename.toLocal8Bit().begin(),trans);
+    region.SaveToFile(filename.toLocal8Bit().begin());
 }
 
 void reconstruction_window::on_doDTI_clicked()

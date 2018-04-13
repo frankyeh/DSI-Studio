@@ -7,7 +7,13 @@
 #include "fib_data.hpp"
 #include "libs/gzip_interface.hpp"
 
-// ---------------------------------------------------------------------------
+image::geometry<3> ROIRegion::get_buffer_dim(void) const
+{
+    return image::geometry<3>(handle->dim[0]*resolution_ratio,
+                                      handle->dim[1]*resolution_ratio,
+                                      handle->dim[2]*resolution_ratio);
+}
+
 void ROIRegion::add_points(std::vector<image::vector<3,float> >& points,bool del,float point_resolution)
 {
     if(resolution_ratio > 32.0f)
@@ -32,7 +38,7 @@ void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool de
     if(resolution_ratio == 1.0)
     {
         for(unsigned int index = 0; index < points.size();)
-            if (!geo.is_valid(points[index][0], points[index][1], points[index][2]))
+            if (!handle->dim.is_valid(points[index][0], points[index][1], points[index][2]))
             {
                 points[index] = points.back();
                 points.pop_back();
@@ -42,7 +48,7 @@ void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool de
     }
     else
     {
-        image::geometry<3> new_geo(geo[0]*resolution_ratio,geo[1]*resolution_ratio,geo[2]*resolution_ratio);
+        image::geometry<3> new_geo = get_buffer_dim();
         for(unsigned int index = 0; index < points.size();)
         if (!new_geo.is_valid(points[index][0], points[index][1], points[index][2]))
         {
@@ -149,7 +155,11 @@ void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool de
 }
 
 // ---------------------------------------------------------------------------
-void ROIRegion::SaveToFile(const char* FileName,const std::vector<float>& trans) {
+void ROIRegion::SaveToFile(const char* FileName)
+{
+    std::vector<float> trans;
+    if(handle->is_qsdr)
+        trans = handle->trans_to_mni;
     std::string file_name(FileName);
     std::string ext;
     if(file_name.length() > 4)
@@ -164,14 +174,14 @@ void ROIRegion::SaveToFile(const char* FileName,const std::vector<float>& trans)
     else if (ext == std::string(".mat")) {
         if(resolution_ratio > 32.0f)
             return;
-        image::basic_image<unsigned char, 3> mask(geo);
+        image::basic_image<unsigned char, 3> mask(handle->dim);
         if(resolution_ratio != 1.0)
-            mask.resize(image::geometry<3>(geo[0]*resolution_ratio,geo[1]*resolution_ratio,geo[2]*resolution_ratio));
+            mask.resize(get_buffer_dim());
         for (unsigned int index = 0; index < region.size(); ++index) {
-            if (geo.is_valid(region[index][0], region[index][1],
+            if (handle->dim.is_valid(region[index][0], region[index][1],
                              region[index][2]))
                 mask[image::pixel_index<3>(region[index][0], region[index][1],
-                                           region[index][2], geo).index()] = 255;
+                                           region[index][2], handle->dim).index()] = 255;
         }
         image::io::mat_write header(FileName);
         header << mask;
@@ -183,10 +193,10 @@ void ROIRegion::SaveToFile(const char* FileName,const std::vector<float>& trans)
         SaveToBuffer(mask,1);
         gz_nifti header;
         if(resolution_ratio == 1.0)
-            header.set_voxel_size(vs.begin());
+            header.set_voxel_size(handle->vs.begin());
         else
         {
-            image::vector<3,float> rvs = vs;
+            image::vector<3,float> rvs = handle->vs;
             rvs /= resolution_ratio;
             header.set_voxel_size(rvs.begin());
         }
@@ -218,8 +228,11 @@ void ROIRegion::SaveToFile(const char* FileName,const std::vector<float>& trans)
 
 // ---------------------------------------------------------------------------
 
-bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& trans) {
+bool ROIRegion::LoadFromFile(const char* FileName) {
 
+    std::vector<float> trans;
+    if(handle->is_qsdr)
+        trans = handle->trans_to_mni;
     std::string file_name(FileName);
     std::string ext;
     if(file_name.length() > 4)
@@ -250,11 +263,11 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
             return false;
         image::basic_image<short, 3>from;
         header >> from;
-        if(from.geometry() != geo)
+        if(from.geometry() != handle->dim)
         {
-            float r1 = (float)from.geometry()[0]/(float)geo[0];
-            float r2 = (float)from.geometry()[1]/(float)geo[1];
-            float r3 = (float)from.geometry()[2]/(float)geo[2];
+            float r1 = (float)from.geometry()[0]/(float)handle->dim[0];
+            float r2 = (float)from.geometry()[1]/(float)handle->dim[1];
+            float r3 = (float)from.geometry()[2]/(float)handle->dim[2];
             if(r1 != r2 || r1 != r3)
                 return false;
             resolution_ratio = r1;
@@ -276,12 +289,12 @@ bool ROIRegion::LoadFromFile(const char* FileName,const std::vector<float>& tran
         image::basic_image<unsigned int, 3>from;
         image::geometry<3> nii_geo;
         header.get_image_dimension(nii_geo);
-        if(nii_geo != geo)// use transformation information
+        if(nii_geo != handle->dim)// use transformation information
         {
             {
-                float r1 = (float)nii_geo[0]/(float)geo[0];
-                float r2 = (float)nii_geo[1]/(float)geo[1];
-                float r3 = (float)nii_geo[2]/(float)geo[2];
+                float r1 = (float)nii_geo[0]/(float)handle->dim[0];
+                float r2 = (float)nii_geo[1]/(float)handle->dim[1];
+                float r3 = (float)nii_geo[2]/(float)handle->dim[2];
                 if(r1 == r2 || r1 == r3)
                 {
                     resolution_ratio = r1;
@@ -326,11 +339,9 @@ void ROIRegion::makeMeshes(unsigned char smooth)
 void ROIRegion::SaveToBuffer(image::basic_image<unsigned char, 3>& mask,
                              unsigned char value) {
     if(resolution_ratio != 1.0)
-        mask.resize(image::geometry<3>(geo[0]*resolution_ratio,
-                    geo[1]*resolution_ratio,
-                    geo[2]*resolution_ratio));
+        mask.resize(get_buffer_dim());
     else
-        mask.resize(geo);
+        mask.resize(handle->dim);
     std::fill(mask.begin(), mask.end(), 0);
     image::par_for (region.size(),[&](unsigned int index)
     {
@@ -398,7 +409,7 @@ void ROIRegion::Flip(unsigned int dimension) {
     if(!region.empty())
         undo_backup.push_back(region);
     for (unsigned int index = 0; index < region.size(); ++index)
-        region[index][dimension] = (float)geo[dimension]*resolution_ratio -
+        region[index][dimension] = (float)handle->dim[dimension]*resolution_ratio -
                                    region[index][dimension] - 1;
 }
 
@@ -441,7 +452,7 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
     data.push_back(region.size());
 
     titles.push_back("volume (mm^3)");
-    data.push_back(region.size()*vs[0]*vs[1]*vs[2]/resolution_ratio); //volume (mm^3)
+    data.push_back(region.size()*handle->vs[0]*handle->vs[1]*handle->vs[2]/resolution_ratio); //volume (mm^3)
     if(region.empty())
         return;
     image::vector<3,float> cm;
@@ -476,12 +487,12 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
     std::vector<unsigned int> pos_index;
     if(resolution_ratio == 1.0)
         for (unsigned int index = 0; index < region.size(); ++index)
-            pos_index.push_back(image::pixel_index<3>(region[index][0],region[index][1],region[index][2],geo).index());
+            pos_index.push_back(image::pixel_index<3>(region[index][0],region[index][1],region[index][2],handle->dim).index());
     else
         for (unsigned int index = 0; index < region.size(); ++index)
             pos_index.push_back(image::pixel_index<3>(region[index][0]/resolution_ratio,
                                 region[index][1]/resolution_ratio,
-                                region[index][2]/resolution_ratio,geo).index());
+                                region[index][2]/resolution_ratio,handle->dim).index());
 
 
     for(int data_index = 0;data_index < handle->view_item.size(); ++data_index)

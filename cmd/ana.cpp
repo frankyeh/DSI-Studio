@@ -189,7 +189,7 @@ int ana(void)
             std::vector<std::string> region_list;
             for(unsigned int j = 0;j < atlas_list[i].get_list().size();++j)
             {
-                std::shared_ptr<ROIRegion> region(std::make_shared<ROIRegion>(handle->dim,handle->vs));
+                std::shared_ptr<ROIRegion> region(std::make_shared<ROIRegion>(handle));
                 std::string region_name = atlas_list[i].name;
                 region_name += ":";
                 region_name += atlas_list[i].get_list()[j];
@@ -222,7 +222,7 @@ int ana(void)
             std::cout << "No tract file or ROI file assigned." << std::endl;
             return 0;
         }
-        ROIRegion region(handle->dim,handle->vs);
+        ROIRegion region(handle);
         if(!load_region(handle,region,po.get("roi")))
         {
             std::cout << "Fail to load the ROI file." << std::endl;

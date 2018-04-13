@@ -81,81 +81,109 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
     for(unsigned int i = 0;i < connectivity_list.size();++i)
     {
         std::string roi_file_name = connectivity_list[i].toStdString();
-        ConnectivityMatrix data;
-        gz_nifti header;
-        image::basic_image<unsigned int, 3> from;
         std::cout << "loading " << roi_file_name << std::endl;
-        // if an ROI file is assigned, load it
-        if (QFileInfo(roi_file_name.c_str()).exists() && header.load_from_file(roi_file_name))
-            header.toLPS(from);
-        // if atlas or MNI space ROI is used
-        if(from.geometry() != handle->dim &&
-           (from.empty() || QFileInfo(roi_file_name.c_str()).baseName() != "aparc+aseg"))
+        ConnectivityMatrix data;
+
+        if(QFileInfo(roi_file_name.c_str()).suffix() == "txt") // a roi list
         {
-            std::cout << roi_file_name << " is used as an MNI space ROI." << std::endl;
-            if(handle->get_mni_mapping().empty())
+            std::string dir = QFileInfo(roi_file_name.c_str()).absolutePath().toStdString();
+            dir += "/";
+            std::ifstream in(roi_file_name.c_str());
+            std::string line;
+            while(std::getline(in,line))
             {
-                std::cout << "Cannot output connectivity: no mni mapping" << std::endl;
-                continue;
+                ROIRegion region(handle);
+                std::string fn;
+                if(QFileInfo(line.c_str()).exists())
+                    fn = line;
+                else
+                    fn = dir + line;
+                if(!region.LoadFromFile(fn.c_str()))
+                {
+                    std::cout << "Failed to open file as a region:" << fn << std::endl;
+                    return;
+                }
+                data.regions.push_back(std::vector<image::vector<3,short> >());
+                region.get_region_voxels(data.regions.back());
+                data.region_name.push_back(QFileInfo(line.c_str()).baseName().toStdString());
             }
-            atlas_list.clear(); // some atlas may be loaded in ROI
-            if(atl_load_atlas(roi_file_name))
-                data.set_atlas(atlas_list[0],handle->get_mni_mapping());
-            else
-            {
-                std::cout << "File or atlas does not exist:" << roi_file_name << std::endl;
-                continue;
-            }
+            std::cout << "A total of " << data.regions.size() << " regions are loaded." << std::endl;
         }
         else
         {
-            std::cout << roi_file_name << " is used as a native space ROI." << std::endl;
-            std::vector<unsigned char> value_map(std::numeric_limits<unsigned short>::max());
-            unsigned int max_value = 0;
-            for (image::pixel_index<3>index(from.geometry()); index < from.size();++index)
+            gz_nifti header;
+            image::basic_image<unsigned int, 3> from;
+            // if an ROI file is assigned, load it
+            if (header.load_from_file(roi_file_name))
+                header.toLPS(from);
+            // if atlas or MNI space ROI is used
+            if(from.geometry() != handle->dim &&
+               (from.empty() || QFileInfo(roi_file_name.c_str()).baseName() != "aparc+aseg"))
             {
-                value_map[(unsigned short)from[index.index()]] = 1;
-                max_value = std::max<unsigned short>(from[index.index()],max_value);
-            }
-            value_map.resize(max_value+1);
-            unsigned short region_count = std::accumulate(value_map.begin(),value_map.end(),(unsigned short)0);
-            if(region_count < 2)
-            {
-                std::cout << "The ROI file should contain at least two regions to calculate the connectivity matrix." << std::endl;
-                continue;
-            }
-            std::cout << "total number of regions=" << region_count << std::endl;
-
-            // get label file
-            std::map<int,std::string> label_map;
-            std::map<int,image::rgb_color> label_color;
-            get_roi_label(roi_file_name.c_str(),label_map,label_color,false);
-            for(unsigned int value = 1;value < value_map.size();++value)
-                if(value_map[value])
+                std::cout << roi_file_name << " is used as an MNI space ROI." << std::endl;
+                if(handle->get_mni_mapping().empty())
                 {
-                    image::basic_image<unsigned char,3> mask(from.geometry());
-                    for(unsigned int i = 0;i < mask.size();++i)
-                        if(from[i] == value)
-                            mask[i] = 1;
-                    ROIRegion region(handle->dim,handle->vs);
-                    region.LoadFromBuffer(mask);
-                    data.regions.push_back(std::vector<image::vector<3,short> >());
-                    region.get_region_voxels(data.regions.back());
-                    if(label_map.find(value) != label_map.end())
-                        data.region_name.push_back(label_map[value]);
-                    else
-                    {
-                        std::ostringstream out;
-                        out << "region" << value;
-                        data.region_name.push_back(out.str());
-                    }
+                    std::cout << "Cannot output connectivity: no mni mapping" << std::endl;
+                    continue;
                 }
-        }
+                atlas_list.clear(); // some atlas may be loaded in ROI
+                if(atl_load_atlas(roi_file_name))
+                    data.set_atlas(atlas_list[0],handle->get_mni_mapping());
+                else
+                {
+                    std::cout << "File or atlas does not exist:" << roi_file_name << std::endl;
+                    continue;
+                }
+            }
+            else
+            {
+                std::cout << roi_file_name << " is used as a native space ROI." << std::endl;
+                std::vector<unsigned char> value_map(std::numeric_limits<unsigned short>::max());
+                unsigned int max_value = 0;
+                for (image::pixel_index<3>index(from.geometry()); index < from.size();++index)
+                {
+                    value_map[(unsigned short)from[index.index()]] = 1;
+                    max_value = std::max<unsigned short>(from[index.index()],max_value);
+                }
+                value_map.resize(max_value+1);
+                unsigned short region_count = std::accumulate(value_map.begin(),value_map.end(),(unsigned short)0);
+                if(region_count < 2)
+                {
+                    std::cout << "The ROI file should contain at least two regions to calculate the connectivity matrix." << std::endl;
+                    continue;
+                }
+                std::cout << "total number of regions=" << region_count << std::endl;
 
+                // get label file
+                std::map<int,std::string> label_map;
+                std::map<int,image::rgb_color> label_color;
+                get_roi_label(roi_file_name.c_str(),label_map,label_color,false);
+                for(unsigned int value = 1;value < value_map.size();++value)
+                    if(value_map[value])
+                    {
+                        image::basic_image<unsigned char,3> mask(from.geometry());
+                        for(unsigned int i = 0;i < mask.size();++i)
+                            if(from[i] == value)
+                                mask[i] = 1;
+                        ROIRegion region(handle);
+                        region.LoadFromBuffer(mask);
+                        data.regions.push_back(std::vector<image::vector<3,short> >());
+                        region.get_region_voxels(data.regions.back());
+                        if(label_map.find(value) != label_map.end())
+                            data.region_name.push_back(label_map[value]);
+                        else
+                        {
+                            std::ostringstream out;
+                            out << "region" << value;
+                            data.region_name.push_back(out.str());
+                        }
+                    }
+            }
+        }
         for(unsigned int j = 0;j < connectivity_type_list.size();++j)
         for(unsigned int k = 0;k < connectivity_value_list.size();++k)
             save_connectivity_matrix(tract_model,data,source,roi_file_name,connectivity_value_list[k].toStdString(),
-                                     std::stod(po.get("connectivity_threshold","0.001")),
+                                     po.get("connectivity_threshold",0.001),
                                      connectivity_type_list[j].toLower() == QString("end"));
     }
 }
@@ -245,7 +273,7 @@ bool load_region(std::shared_ptr<fib_data> handle,
             std::cout << file_name << " does not exist. terminating..." << std::endl;
             return false;
         }
-        if(!roi.LoadFromFile(file_name.c_str(),handle->trans_to_mni))
+        if(!roi.LoadFromFile(file_name.c_str()))
         {
             gz_nifti header;
             if (!header.load_from_file(file_name.c_str()))
@@ -369,7 +397,7 @@ bool load_roi(std::shared_ptr<fib_data> handle,RoiMgr& roi_mgr)
     for(int index = 0;index < total_count;++index)
     if (po.has(roi_names[index]))
     {
-        ROIRegion roi(handle->dim, handle->vs);
+        ROIRegion roi(handle);
         if(!load_region(handle,roi,po.get(roi_names[index])))
             return false;
         roi_mgr.setRegions(handle->dim,roi.get_region_voxels_raw(),roi.resolution_ratio,type[index],po.get(roi_names[index]).c_str(),handle->vs);

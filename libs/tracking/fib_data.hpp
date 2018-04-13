@@ -127,8 +127,9 @@ public:
 public:
     image::geometry<3> dim;
     image::vector<3> vs;
-    bool is_human_data;
-    bool is_qsdr;
+    bool is_human_data = true;
+    bool is_qsdr = false;
+public:
     fiber_directions dir;
     odf_data odf;
     connectometry_db db;
@@ -150,10 +151,11 @@ public:
                      std::vector<float>& profile);
 
 public:
-    fib_data(void):is_qsdr(false)
+    fib_data(void)
     {
         vs[0] = vs[1] = vs[2] = 1.0;
     }
+    fib_data(image::geometry<3> dim_,image::vector<3> vs_):dim(dim_),vs(vs_){}
 public:
     bool load_from_file(const char* file_name);
     bool load_from_mat(void);
