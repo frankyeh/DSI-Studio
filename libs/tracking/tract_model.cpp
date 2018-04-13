@@ -2321,7 +2321,7 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
                 matrix_value[index] = (count[i][j] > threshold_count ? count[i][j] : 0);
         return true;
     }
-    if(matrix_value_type == "ncount")
+    if(matrix_value_type == "ncount" || matrix_value_type == "ncount2")
     {
         std::vector<std::vector<std::vector<unsigned int> > > length_matrix;
         init_matrix(length_matrix,regions.size());
@@ -2333,19 +2333,24 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
 
         for(unsigned int i = 0,index = 0;i < count.size();++i)
             for(unsigned int j = 0;j < count[i].size();++j,++index)
-                if(!length_matrix[i][j].empty())
+                if(!length_matrix[i][j].empty() && count[i][j] >= threshold_count)
                 {
-                    std::nth_element(length_matrix[i][j].begin(),
-                                     length_matrix[i][j].begin()+(length_matrix[i][j].size() >> 1),
-                                     length_matrix[i][j].end());
-                    float length = (float)length_matrix[i][j][length_matrix[i][j].size() >> 1];
-                    matrix_value[index] = ((length == 0 || count[i][j] < threshold_count )? 0:count[i][j]/length);
+                    float length = 0.0;
+                    if(matrix_value_type == "ncount")
+                        length = 1.0f/image::median(length_matrix[i][j].begin(),length_matrix[i][j].end());
+                    else
+                    {
+                        for(int k = 0;k < length_matrix[i][j].size();++k)
+                            length += 1.0/length_matrix[i][j][k];
+                    }
+                    matrix_value[index] = count[i][j]*length;
                 }
-            else
+                else
                     matrix_value[index] = 0;
 
         return true;
     }
+
 
     if(matrix_value_type == "mean_length")
     {
