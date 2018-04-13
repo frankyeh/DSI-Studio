@@ -154,7 +154,7 @@ public:
 
 class CustomSliceModel : public SliceModel{
 public:
-    std::string name,error_msg;
+    std::string name,error_msg = "unknown error";
 public:
     std::auto_ptr<std::future<void> > thread;
 

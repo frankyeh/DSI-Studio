@@ -229,7 +229,10 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
                             "DSI Studio",
                             "Downsampling count (0:no downsampling)",1,0,4,1&ok);
                     if(!ok)
+                    {
+                        error_msg = "Slice loading canceled";
                         return false;
+                    }
                     while(1)
                     {
                         if(down_size)
@@ -243,7 +246,7 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
                             }
                             catch(...)
                             {
-                                error_msg = "Memory allocation failed. Please increase downsizing count";
+                                error_msg = "Memory allocation failed. Please increase downsampling count";
                                 return false;
                             }
                             break;
