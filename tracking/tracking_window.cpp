@@ -1716,7 +1716,9 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool correct_
     if(!reg_slice_ptr->initialize(handle,handle->is_qsdr,files,correct_intensity))
     {
         if(!cmd)
-            QMessageBox::information(this,"DSI Studio","Error reading image files",0);
+            QMessageBox::information(this,"DSI Studio",reg_slice_ptr->error_msg.c_str(),0);
+        else
+            std::cout << reg_slice_ptr->error_msg << std::endl;
         return false;
     }
     slices.push_back(new_slice);

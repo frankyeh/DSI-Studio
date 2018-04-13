@@ -154,7 +154,7 @@ public:
 
 class CustomSliceModel : public SliceModel{
 public:
-    std::string name;
+    std::string name,error_msg;
 public:
     std::auto_ptr<std::future<void> > thread;
 

@@ -180,7 +180,8 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
                     QString info_file = QString(files[0].c_str()) + ".info.txt";
                     if(!QFileInfo(info_file).exists())
                     {
-                        std::cout << "Cannot find " << info_file.toStdString() << std::endl;
+                        error_msg = "Cannot find ";
+                        error_msg += info_file.toStdString();
                         return false;
                     }
                     std::ifstream in(info_file.toStdString().c_str());
@@ -195,12 +196,12 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
                               std::istream_iterator<float>(),std::back_inserter(T));
                     if(T.size() != 12)
                     {
-                        std::cout << "Invalid BMP info text: failed to read transformation matrix." << std::endl;
+                        error_msg = "Invalid BMP info text: failed to read transformation matrix.";
                         return false;
                     }
                     if(geometry[2] != files.size())
                     {
-                        std::cout << "Invalid BMP info text: file count does not match." << std::endl;
+                        error_msg = "Invalid BMP info text: file count does not match.";
                         return false;
                     }
                     unsigned int in_plane_subsample = 1;
@@ -242,7 +243,7 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
                             }
                             catch(...)
                             {
-                                QMessageBox::information(0,"DSI Studio","Memory allocation failed. Please increase downsizing count",0);
+                                error_msg = "Memory allocation failed. Please increase downsizing count";
                                 return false;
                             }
                             break;
@@ -267,7 +268,8 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
                             break;
                         if(!bmp.load_from_file(files[file_index].c_str()))
                         {
-                            std::cout << "Invalid BMP format: " << files[file_index] << std::endl;
+                            error_msg = "Invalid BMP format: ";
+                            error_msg += files[file_index];
                             return false;
                         }
                         bmp >> I;
@@ -275,7 +277,8 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
                             image::downsampling(I);
                         if(I.size() != source_images.plane_size())
                         {
-                            std::cout << "Invalid BMP image size: " << files[file_index] << std::endl;
+                            error_msg = "Invalid BMP image size: ";
+                            error_msg += files[file_index];
                             return false;
                         }
                         std::copy(I.begin(),I.end(),source_images.begin() + i*source_images.plane_size());
@@ -303,14 +306,16 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
                 }
             else
                 {
-                image::io::volume volume;
-                if(volume.load_from_files(files,files.size()))
-                    load(volume);
-                else
-                    return false;
-            }
+                    image::io::volume volume;
+                    if(volume.load_from_files(files,files.size()))
+                        load(volume);
+                    else
+                    {
+                        error_msg = "Failed to load image volume.";
+                        return false;
+                    }
 
-
+                }
         }
         // same dimension, no registration required.
         if(source_images.geometry() == handle->dim)
