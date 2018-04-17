@@ -428,7 +428,7 @@ void db_window::on_actionSave_DB_as_triggered()
                            this,
                            "Save Database",
                            windowTitle()+".modified.db.fib.gz",
-                           "Database files (*db?fib.gz *.fib.gz);;All files (*)");
+                           "Database files (*db?fib.gz *fib.gz);;All files (*)");
     if (filename.isEmpty())
         return;
     begin_prog("saving");
@@ -472,7 +472,7 @@ void db_window::on_actionAdd_DB_triggered()
                            this,
                            "Open Database files",
                            windowTitle(),
-                           "Database files (*db?fib.gz *.fib.gz);;All files (*)");
+                           "Database files (*db?fib.gz *fib.gz);;All files (*)");
     if (filenames.isEmpty())
         return;
     for(int i =0;i < filenames.count();++i)

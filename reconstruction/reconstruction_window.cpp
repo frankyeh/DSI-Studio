@@ -1080,7 +1080,7 @@ void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
     QMessageBox::information(this,"DSI Studio","Please assign another SRC file with phase encoding flipped",0);
     QString filename = QFileDialog::getOpenFileName(
             this,"Open SRC file",absolute_path,
-            "Images (*.src.gz);;All files (*)" );
+            "Images (*src.gz);;All files (*)" );
     if( filename.isEmpty())
         return;
 
@@ -1102,6 +1102,7 @@ void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
 
     handle->distortion_correction(src2);
     update_image();
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 
@@ -1155,7 +1156,7 @@ void reconstruction_window::on_open_ddi_study_src_clicked()
 {
     QString filename = QFileDialog::getOpenFileName(
             this,"Open Study SRC file",absolute_path,
-            "Images (*.src.gz);;All files (*)" );
+            "Images (*src.gz);;All files (*)" );
     if( filename.isEmpty())
         return;
     std::shared_ptr<ImageModel> bl(new ImageModel);

@@ -691,7 +691,7 @@ void MainWindow::on_batch_reconstruction_clicked()
     if(dir.isEmpty())
         return;
 
-    loadSrc(search_files(dir,"*.src.gz"));
+    loadSrc(search_files(dir,"*src.gz"));
 }
 
 void MainWindow::on_view_image_clicked()
@@ -821,7 +821,7 @@ void MainWindow::on_ReconstructSRC_clicked()
     if(dir.isEmpty())
         return;
 
-    QStringList list = search_files(dir,"*.src.gz");
+    QStringList list = search_files(dir,"*src.gz");
 
     for(int i = 0;i < list.size();++i)
     {

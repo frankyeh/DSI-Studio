@@ -10,7 +10,7 @@ QStringList search_files(QString dir,QString filter);
 std::string quality_check_src_files(QString dir)
 {
     std::ostringstream out;
-    QStringList filenames = search_files(dir,"*.src.gz");
+    QStringList filenames = search_files(dir,"*src.gz");
     out << "FileName\tImage dimension\tResolution\tDWI count\tMax b-value\tB-table matched\tNeighboring DWI correlation" << std::endl;
     int dwi_count = 0;
     float max_b = 0;

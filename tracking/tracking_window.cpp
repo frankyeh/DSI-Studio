@@ -1728,7 +1728,6 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool correct_
     handle->view_item.back().image_data = image::make_image(&*reg_slice_ptr->source_images.begin(),
                                                             reg_slice_ptr->source_images.geometry());
     handle->view_item.back().set_scale(reg_slice_ptr->source_images.begin(),reg_slice_ptr->source_images.end());
-
     if(!cmd && !timer2.get())
     {
         timer2.reset(new QTimer());
