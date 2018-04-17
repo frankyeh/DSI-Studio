@@ -93,7 +93,7 @@ bool DwiHeader::open(const char* filename)
                 man_id = 1;
             if (name == std::string("GE"))
                 man_id = 2;
-            if (name == std::string("Ph"))
+            if (name == std::string("PH"))
                 man_id = 3;
             if (name == std::string("TO"))
                 man_id = 4;
