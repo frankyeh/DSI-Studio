@@ -163,7 +163,6 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
                 {
                     bruker.get_voxel_size(voxel_size.begin());
                     bruker.get_image().swap(source_images);
-                    init();
                     QDir d = QFileInfo(files[0].c_str()).dir();
                     if(d.cdUp() && d.cdUp())
                     {
@@ -227,7 +226,7 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
                     bool ok;
                     int down_size = QInputDialog::getInt(0,
                             "DSI Studio",
-                            "Downsampling count (0:no downsampling)",1,0,4,1&ok);
+                            "Downsampling count (0:no downsampling)",1,0,4,1,&ok);
                     if(!ok)
                     {
                         error_msg = "Slice loading canceled";
@@ -377,8 +376,7 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
             image::lower_threshold(source_images,0);
         }
     }
-
-    geometry = source_images.geometry();
+    init();
     if(!has_transform)
     {
         if(handle->dim.depth() < 10) // 2d assume FOV is the same
