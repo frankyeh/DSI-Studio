@@ -1864,7 +1864,7 @@ void tracking_window::on_SlicePos_sliderMoved(int position)
 void tracking_window::on_addSlices_clicked()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
-        this,"Open Images files",QFileInfo(windowTitle()).absolutePath(),"Image files (*.dcm *.hdr *.nii *nii.gz *.bmp 2dseq);;All files (*)" );
+        this,"Open Images files",QFileInfo(windowTitle()).absolutePath(),"Image files (*.dcm *.hdr *.nii *nii.gz *.jpg *.bmp 2dseq);;All files (*)" );
     if( filenames.isEmpty())
         return;
     if(QFileInfo(filenames[0]).completeSuffix() == "dcm" && filenames.size() == 1)

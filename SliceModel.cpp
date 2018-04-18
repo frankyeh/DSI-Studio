@@ -1,6 +1,7 @@
 // ---------------------------------------------------------------------------
 #include <string>
 #include <QFileInfo>
+#include <QImage>
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QDir>
@@ -174,7 +175,8 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
                 }
             }
             else
-                if(QFileInfo(files[0].c_str()).completeSuffix() == "bmp")
+                if(QFileInfo(files[0].c_str()).completeSuffix() == "bmp" ||
+                        QFileInfo(files[0].c_str()).completeSuffix() == "jpg")
                 {
                     QString info_file = QString(files[0].c_str()) + ".info.txt";
                     if(!QFileInfo(info_file).exists())
@@ -264,17 +266,23 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
                     for(unsigned int i = 0;check_prog(i,geo[2]);++i)
                     {
                         image::basic_image<short,2> I;
-                        image::io::bitmap bmp;
+                        QImage in;
                         unsigned int file_index = (slice_subsample == 1 ? i : (i << (slice_subsample-1)));
                         if(file_index >= files.size())
                             break;
-                        if(!bmp.load_from_file(files[file_index].c_str()))
+                        QString filename(files[file_index].c_str());
+                        if(!in.load(filename))
                         {
                             error_msg = "Invalid BMP format: ";
                             error_msg += files[file_index];
                             return false;
                         }
-                        bmp >> I;
+                        QImage buf = in.convertToFormat(QImage::Format_RGB32);
+                        I.resize(image::geometry<2>(in.width(),in.height()));
+                        const uchar* ptr = buf.bits();
+                        for(int j = 0;j < I.size();++j,ptr += 4)
+                            I[j] = *ptr;
+
                         for(int j = 1;j < in_plane_subsample;++j)
                             image::downsampling(I);
                         if(I.size() != source_images.plane_size())
