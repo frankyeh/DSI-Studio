@@ -3,6 +3,7 @@
 #include "libs/gzip_interface.hpp"
 #include "prog_interface_static_link.h"
 #include <QPlainTextEdit>
+#include <QFileInfo>
 #include <QMessageBox>
 
 void show_view(QGraphicsScene& scene,QImage I);
@@ -95,7 +96,7 @@ bool view_image::open(QStringList file_names)
     float vs[3] = {1.0,1.0,1.0};
     QString info;
     QString file_name = file_names[0];
-    setWindowTitle(file_name);
+    setWindowTitle(QFileInfo(file_name).fileName());
     begin_prog("loading...");
     check_prog(0,1);
     if(file_names.size() > 1 && file_name.contains("bmp"))

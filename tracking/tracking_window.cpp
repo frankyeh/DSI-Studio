@@ -521,6 +521,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
                 .arg(std::round(pos[0]*10.0)/10.0)
                 .arg(std::round(pos[1]*10.0)/10.0)
                 .arg(std::round(pos[2]*10.0)/10.0);
+        pos = pos_dwi;
     }
     else
     {
