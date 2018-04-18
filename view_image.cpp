@@ -95,6 +95,7 @@ bool view_image::open(QStringList file_names)
     float vs[3] = {1.0,1.0,1.0};
     QString info;
     QString file_name = file_names[0];
+    setWindowTitle(file_name);
     begin_prog("loading...");
     check_prog(0,1);
     if(file_names.size() > 1 && file_name.contains("bmp"))
