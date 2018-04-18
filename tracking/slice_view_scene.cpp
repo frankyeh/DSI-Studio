@@ -257,7 +257,9 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
             image::basic_image<float,3> buf(cur_tracking_window.handle->view_item[index].image_data);
             gz_nifti file;
             file.set_voxel_size(cur_tracking_window.current_slice->voxel_size.begin());
-            if(cur_tracking_window.handle->is_qsdr) //QSDR condition
+            if(cur_tracking_window.handle->is_qsdr &&
+               cur_tracking_window.handle->view_item[index].image_data.geometry() ==
+                    cur_tracking_window.handle->dim) //QSDR condition
                 file.set_LPS_transformation(cur_tracking_window.handle->trans_to_mni.begin(),buf.geometry());
             image::flip_xy(buf);
             file << buf;
@@ -554,7 +556,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         bool find_region = false;
         image::vector<3,float> p(pos);
         if(!cur_tracking_window.current_slice->is_diffusion_space)
-            p.to(cur_tracking_window.current_slice->transform);
+            p.to(cur_tracking_window.current_slice->T);
         for(unsigned int index = 0;index <
             cur_tracking_window.regionWidget->regions.size();++index)
             if(cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked &&
@@ -646,8 +648,8 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
             image::vector<3,float> p1(pos),p2(sel_coord.back());
             if(!cur_tracking_window.current_slice->is_diffusion_space)
             {
-                p1.to(cur_tracking_window.current_slice->transform);
-                p2.to(cur_tracking_window.current_slice->transform);
+                p1.to(cur_tracking_window.current_slice->T);
+                p2.to(cur_tracking_window.current_slice->T);
             }
             p1 -= p2;
             p1.round();
@@ -895,7 +897,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         resolution = std::min<float>(16.0f,display_ratio*std::floor(cur_tracking_window.handle->vs[0]/cur_tracking_window.current_slice->voxel_size[0]));
         image::par_for(points.size(),[&](int index)
         {
-            points[index].to(cur_tracking_window.current_slice->transform);
+            points[index].to(cur_tracking_window.current_slice->T);
             points[index] *= resolution;
         });
     }

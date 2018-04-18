@@ -102,7 +102,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     {
         for (unsigned int index = 0;index < fib.view_item.size(); ++index)
-            slices.push_back(std::make_shared<FibSliceModel>(handle,index));
+            slices.push_back(std::make_shared<SliceModel>(handle,index));
         current_slice = slices[0];
     }
     {
@@ -513,7 +513,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     if(!current_slice->is_diffusion_space)
     {
         image::vector<3,float> pos_dwi(pos);
-        pos_dwi.to(current_slice->transform);
+        pos_dwi.to(current_slice->T);
         status = QString("(%1,%2,%3) %4(%5,%6,%7)").arg(std::round(pos_dwi[0]*10.0)/10.0)
                 .arg(std::round(pos_dwi[1]*10.0)/10.0)
                 .arg(std::round(pos_dwi[2]*10.0)/10.0)
@@ -722,7 +722,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     no_update = true;
     image::vector<3,float> slice_position(current_slice->slice_pos);
     if(!current_slice->is_diffusion_space)
-        slice_position.to(current_slice->transform);
+        slice_position.to(current_slice->T);
 
     current_slice = slices[index];
     ui->is_overlay->setChecked(current_slice == overlay_slice);
@@ -1628,7 +1628,7 @@ void tracking_window::on_actionSave_mapping_triggered()
     for(int row = 0,index = 0;row < 4;++row)
     {
         for(int col = 0;col < 4;++col,++index)
-            out << reg_slice->transform[index] << " ";
+            out << reg_slice->T[index] << " ";
         out << std::endl;
     }
 }
@@ -1651,7 +1651,7 @@ void tracking_window::on_actionLoad_mapping_triggered()
               std::istream_iterator<float>(),std::back_inserter(data));
     data.resize(16);
     data[15] = 1.0;
-    reg_slice->transform = data;
+    reg_slice->T = data;
     reg_slice->invT = data;
     reg_slice->invT.inv();
     glWidget->updateGL();
@@ -1684,23 +1684,16 @@ void tracking_window::on_actionInsert_MNI_images_triggered()
         mni.to(T);
         image::estimate(I,mni,v);
     });
-    std::shared_ptr<SliceModel> new_slice(new CustomSliceModel);
+    QString name = QFileInfo(filename).baseName();
+    std::shared_ptr<SliceModel> new_slice(new CustomSliceModel(handle));
     CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(new_slice.get());
     reg_slice_ptr->source_images.swap(J);
-    reg_slice_ptr->voxel_size = handle->vs;
-    reg_slice_ptr->init();
-    reg_slice_ptr->transform.identity();
+    reg_slice_ptr->T.identity();
     reg_slice_ptr->invT.identity();
     reg_slice_ptr->is_diffusion_space = true;
-
-    QString name = QFileInfo(filename).baseName();
+    handle->view_item.back().name = name.toStdString();
     slices.push_back(new_slice);
     ui->SliceModality->addItem(name);
-    handle->view_item.push_back(handle->view_item[0]);
-    handle->view_item.back().name = name.toStdString();
-    handle->view_item.back().image_data = image::make_image(&*reg_slice_ptr->source_images.begin(),
-                                                            reg_slice_ptr->source_images.geometry());
-    handle->view_item.back().set_scale(reg_slice_ptr->source_images.begin(),reg_slice_ptr->source_images.end());
     ui->SliceModality->setCurrentIndex(handle->view_item.size()-1);
 
 }
@@ -1709,11 +1702,11 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool correct_
     std::vector<std::string> files(filenames.size());
     for (unsigned int index = 0; index < filenames.size(); ++index)
             files[index] = filenames[index].toLocal8Bit().begin();
-    std::shared_ptr<SliceModel> new_slice(new CustomSliceModel);
+    std::shared_ptr<SliceModel> new_slice(new CustomSliceModel(handle));
     CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(new_slice.get());
     if(!reg_slice_ptr)
         return false;
-    if(!reg_slice_ptr->initialize(handle,handle->is_qsdr,files,correct_intensity))
+    if(!reg_slice_ptr->initialize(files,correct_intensity))
     {
         if(!cmd)
             QMessageBox::information(this,"DSI Studio",reg_slice_ptr->error_msg.c_str(),0);
@@ -1723,11 +1716,7 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool correct_
     }
     slices.push_back(new_slice);
     ui->SliceModality->addItem(name);
-    handle->view_item.push_back(handle->view_item[0]);
-    handle->view_item.back().name = name.toLocal8Bit().begin();
-    handle->view_item.back().image_data = image::make_image(&*reg_slice_ptr->source_images.begin(),
-                                                            reg_slice_ptr->source_images.geometry());
-    handle->view_item.back().set_scale(reg_slice_ptr->source_images.begin(),reg_slice_ptr->source_images.end());
+
     if(!cmd && !timer2.get())
     {
         timer2.reset(new QTimer());

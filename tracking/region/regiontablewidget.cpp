@@ -322,7 +322,7 @@ void RegionTableWidget::draw_region(image::color_image& I)
                     image::vector<3,float> v;
                     image::slice2space(cur_tracking_window.cur_dim, x, y,
                                        slice_pos, v[0],v[1],v[2]);
-                    v.to(current_slice->transform);
+                    v.to(current_slice->T);
                     v *= r;
                     v.round();
                     int dx = v[0];

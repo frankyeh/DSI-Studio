@@ -425,13 +425,17 @@ void ROIRegion::shift(image::vector<3,float> dx) {
 }
 // ---------------------------------------------------------------------------
 template<class Image,class Points>
-void calculate_region_stat(const Image& I, const Points& p,float& mean,float& sd)
+void calculate_region_stat(const Image& I, const Points& p,float& mean,float& sd,const float* T = 0)
 {
     float sum = 0.0,sum2 = 0.0;
     unsigned int count = 0;
     for(unsigned int index = 0; index < p.size(); ++index)
     {
-        float value = I[p[index]];
+        float value = 0.0;
+        image::vector<3> pos(p[index]);
+        if(T)
+            pos.to(T);
+        value = image::estimate(I,pos);
         if(value == 0.0)
             continue;
         sum += value;
@@ -483,15 +487,11 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
     std::copy(min.begin(),min.end(),std::back_inserter(data)); // bounding box
 
     handle->get_index_titles(titles); // other index
-    std::vector<unsigned int> pos_index;
-    if(resolution_ratio == 1.0)
-        for (unsigned int index = 0; index < region.size(); ++index)
-            pos_index.push_back(image::pixel_index<3>(region[index][0],region[index][1],region[index][2],handle->dim).index());
-    else
-        for (unsigned int index = 0; index < region.size(); ++index)
-            pos_index.push_back(image::pixel_index<3>(region[index][0]/resolution_ratio,
-                                region[index][1]/resolution_ratio,
-                                region[index][2]/resolution_ratio,handle->dim).index());
+    std::vector<image::vector<3> > points;
+    for (unsigned int index = 0; index < region.size(); ++index)
+        points.push_back(image::vector<3>(region[index][0]/resolution_ratio,
+                                          region[index][1]/resolution_ratio,
+                                          region[index][2]/resolution_ratio));
 
 
     for(int data_index = 0;data_index < handle->view_item.size(); ++data_index)
@@ -500,7 +500,10 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
             continue;
         float mean,sd;
         image::const_pointer_image<float, 3> I(handle->view_item[data_index].image_data);
-        calculate_region_stat(I,pos_index,mean,sd);
+        if(handle->view_item[data_index].image_data.geometry() != handle->dim)
+            calculate_region_stat(I,points,mean,sd,&handle->view_item[data_index].iT[0]);
+        else
+            calculate_region_stat(I,points,mean,sd);
         data.push_back(mean);
         data.push_back(sd);
     }
@@ -513,7 +516,7 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
             handle->db.get_subject_fa(subject_index,fa_data);
             float mean,sd;
             image::const_pointer_image<float, 3> I(&fa_data[0][0],handle->dim);
-            calculate_region_stat(I,pos_index,mean,sd);
+            calculate_region_stat(I,points,mean,sd);
             data.push_back(mean);
             data.push_back(sd);
 

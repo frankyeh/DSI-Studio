@@ -1951,6 +1951,16 @@ void TractModel::get_tract_data(unsigned int fiber_index,unsigned int index_num,
     else
     // voxel-based index
     {
+        if(handle->view_item[index_num].image_data.geometry() != handle->dim)
+        {
+            for (unsigned int data_index = 0,index = 0;index < tract_data[fiber_index].size();index += 3,++data_index)
+            {
+                image::vector<3> pos(&(tract_data[fiber_index][index]));
+                pos.to(handle->view_item[index_num].iT);
+                image::estimate(handle->view_item[index_num].image_data,pos,data[data_index],image::linear);
+            }
+        }
+        else
         for (unsigned int data_index = 0,index = 0;index < tract_data[fiber_index].size();index += 3,++data_index)
             image::estimate(handle->view_item[index_num].image_data,&(tract_data[fiber_index][index]),data[data_index],image::linear);
     }

@@ -633,13 +633,7 @@ void fib_data::get_index_list(std::vector<std::string>& index_list) const
         if(view_item[index].name != "color")
             index_list.push_back(view_item[index].name);
 }
-image::const_pointer_image<float,3> fib_data::get_view_volume(const std::string& view_name) const
-{
-    unsigned int view_index = get_name_index(view_name);
-    if(view_index == view_item.size() || view_item[view_index].name == "color")
-        return image::const_pointer_image<float,3>();
-    return view_item[view_index].image_data;
-}
+
 std::pair<float,float> fib_data::get_value_range(const std::string& view_name) const
 {
     unsigned int view_index = get_name_index(view_name);
@@ -715,9 +709,18 @@ void fib_data::get_voxel_information(int x,int y,int z,std::vector<float>& buf) 
     if (index >= dim.size())
         return;
     for(unsigned int i = 0;i < view_item.size();++i)
-        if(view_item[i].name != "color")
-            buf.push_back(view_item[i].image_data.empty() || view_item[i].image_data.geometry() != dim
-                          ? 0.0 : view_item[i].image_data[index]);
+    {
+        if(view_item[i].name == "color")
+            continue;
+        if(view_item[i].image_data.geometry() != dim)
+        {
+            image::vector<3> pos(x,y,z);
+            pos.to(view_item[i].iT);
+            buf.push_back(image::estimate(view_item[i].image_data,pos));
+        }
+        else
+            buf.push_back(view_item[i].image_data.empty() ? 0.0 : view_item[i].image_data[index]);
+    }
 }
 void fib_data::get_index_titles(std::vector<std::string>& titles)
 {

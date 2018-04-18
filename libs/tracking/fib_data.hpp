@@ -94,6 +94,7 @@ struct item
 {
     std::string name;
     image::const_pointer_image<float,3> image_data;
+    image::matrix<4,4,float> T,iT;// T: image->diffusion iT: diffusion->image
     float max_value;
     float min_value;
     float contrast_max;
@@ -104,6 +105,8 @@ struct item
     image::basic_image<unsigned int,3> color_map_buf;
     image::const_pointer_image<float,3> mx,my,mz;
     image::geometry<3> native_geo;
+
+
     template<class input_iterator>
     void set_scale(input_iterator from,input_iterator to)
     {
@@ -165,7 +168,6 @@ public:
 public:
     size_t get_name_index(const std::string& index_name) const;
     void get_index_list(std::vector<std::string>& index_list) const;
-    image::const_pointer_image<float,3> get_view_volume(const std::string& view_name) const;
     std::pair<float,float> get_value_range(const std::string& view_name) const;
     void get_slice(unsigned int view_index,
                    unsigned char d_index,unsigned int pos,

@@ -8,7 +8,7 @@
 #include "RegionModel.h"
 #include "fib_data.hpp"
 // ---------------------------------------------------------------------------
-struct SliceModel;
+class SliceModel;
 // region_feature
 const unsigned int roi_id = 0;
 const unsigned int roa_id = 1;

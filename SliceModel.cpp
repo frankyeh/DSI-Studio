@@ -10,15 +10,18 @@
 #include "fib_data.hpp"
 #include "fa_template.hpp"
 
-// ---------------------------------------------------------------------------
-SliceModel::SliceModel(void)
+SliceModel::SliceModel(std::shared_ptr<fib_data> handle_,int view_id_):handle(handle_),view_id(view_id_)
 {
     slice_visible[0] = false;
     slice_visible[1] = false;
     slice_visible[2] = false;
-    std::fill(transform.begin(),transform.end(),0.0);
-    transform[0] = transform[5] = transform[10] = transform[15] = 1.0;
-    invT = transform;
+    T.identity();
+    invT = T;
+    geometry = handle_->dim;
+    voxel_size = handle_->vs;
+    slice_pos[0] = geometry.width() >> 1;
+    slice_pos[1] = geometry.height() >> 1;
+    slice_pos[2] = geometry.depth() >> 1;
 }
 // ---------------------------------------------------------------------------
 void SliceModel::get_mosaic(image::color_image& show_image,
@@ -63,44 +66,36 @@ void SliceModel::apply_overlay(image::color_image& show_image,
         }
 }
 
-FibSliceModel::FibSliceModel(std::shared_ptr<fib_data> handle_,int view_id_):handle(handle_),view_id(view_id_)
-{
-    // already setup the geometry and source image
-    geometry = handle_->dim;
-    voxel_size = handle_->vs;
-    slice_pos[0] = geometry.width() >> 1;
-    slice_pos[1] = geometry.height() >> 1;
-    slice_pos[2] = geometry.depth() >> 1;
-}
+
 // ---------------------------------------------------------------------------
-std::pair<float,float> FibSliceModel::get_value_range(void) const
+std::pair<float,float> SliceModel::get_value_range(void) const
 {
     return std::make_pair(handle->view_item[view_id].min_value,handle->view_item[view_id].max_value);
 }
 // ---------------------------------------------------------------------------
-std::pair<float,float> FibSliceModel::get_contrast_range(void) const
+std::pair<float,float> SliceModel::get_contrast_range(void) const
 {
     return std::make_pair(handle->view_item[view_id].contrast_min,handle->view_item[view_id].contrast_max);
 }
 // ---------------------------------------------------------------------------
-std::pair<unsigned int,unsigned int> FibSliceModel::get_contrast_color(void) const
+std::pair<unsigned int,unsigned int> SliceModel::get_contrast_color(void) const
 {
     return std::make_pair(handle->view_item[view_id].min_color,handle->view_item[view_id].max_color);
 }
 // ---------------------------------------------------------------------------
-void FibSliceModel::set_contrast_range(float min_v,float max_v)
+void SliceModel::set_contrast_range(float min_v,float max_v)
 {
     handle->view_item[view_id].contrast_min = min_v;
     handle->view_item[view_id].contrast_max = max_v;
 }
 // ---------------------------------------------------------------------------
-void FibSliceModel::set_contrast_color(unsigned int min_c,unsigned int max_c)
+void SliceModel::set_contrast_color(unsigned int min_c,unsigned int max_c)
 {
     handle->view_item[view_id].min_color = min_c;
     handle->view_item[view_id].max_color = max_c;
 }
 // ---------------------------------------------------------------------------
-void FibSliceModel::get_slice(image::color_image& show_image,unsigned char cur_dim,
+void SliceModel::get_slice(image::color_image& show_image,unsigned char cur_dim,
                               const image::value_to_color<float>& v2c,
                               const SliceModel* overlay,
                               const image::value_to_color<float>& overlay_v2c) const
@@ -110,27 +105,19 @@ void FibSliceModel::get_slice(image::color_image& show_image,unsigned char cur_d
         apply_overlay(show_image,cur_dim,overlay,overlay_v2c);
 }
 // ---------------------------------------------------------------------------
-image::const_pointer_image<float, 3> FibSliceModel::get_source(void) const
+image::const_pointer_image<float, 3> SliceModel::get_source(void) const
 {
     return handle->view_item[view_id].image_data;
 }
 
-
 // ---------------------------------------------------------------------------
-void CustomSliceModel::init(void)
+CustomSliceModel::CustomSliceModel(std::shared_ptr<fib_data> new_handle):
+    SliceModel(new_handle,new_handle->view_item.size())
 {
-    geometry = source_images.geometry();
-    slice_pos[0] = geometry.width() >> 1;
-    slice_pos[1] = geometry.height() >> 1;
-    slice_pos[2] = geometry.depth() >> 1;
-    contrast_min = min_value = *std::min_element(source_images.begin(),source_images.end());
-    contrast_max = max_value = *std::max_element(source_images.begin(),source_images.end());
-    scale = max_value-min_value;
-    if(scale != 0.0)
-        scale = 255.0/scale;
+    new_handle->view_item.push_back(item());
 }
-bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
-                                  const std::vector<std::string>& files,
+
+bool CustomSliceModel::initialize(const std::vector<std::string>& files,
                                   bool correct_intensity)
 {
     terminated = true;
@@ -141,215 +128,198 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
     // QSDR loaded, use MNI transformation instead
     bool has_transform = false;
     name = QFileInfo(files[0].c_str()).completeBaseName().toStdString();
-    if(is_qsdr && files.size() == 1 && nifti.load_from_file(files[0]))
+    if(files.size() == 1)
     {
-        loadLPS(nifti);
-        invT.identity();
-        nifti.get_image_transformation(invT.begin());
-        invT.inv();
-        invT *= handle->trans_to_mni;
-        transform = image::inverse(invT);
-        has_transform = true;
+        if(nifti.load_from_file(files[0]))
+        {
+            nifti.get_voxel_size(voxel_size.begin());
+            nifti.toLPS(source_images);
+            if(handle->is_qsdr)
+            {
+                invT.identity();
+                nifti.get_image_transformation(invT.begin());
+                invT.inv();
+                invT *= handle->trans_to_mni;
+                T = image::inverse(invT);
+                has_transform = true;
+            }
+        }
+        else
+        {
+            image::io::bruker_2dseq bruker;
+            if(bruker.load_from_file(files[0].c_str()))
+            {
+                bruker.get_voxel_size(voxel_size.begin());
+                bruker.get_image().swap(source_images);
+                QDir d = QFileInfo(files[0].c_str()).dir();
+                if(d.cdUp() && d.cdUp())
+                {
+                    QString method_file_name = d.absolutePath()+ "/method";
+                    image::io::bruker_info method;
+                    if(method.load_from_file(method_file_name.toStdString().c_str()))
+                        name = method["Method"];
+                }
+            }
+        }
     }
     else
     {
-        if(files.size() == 1 && nifti.load_from_file(files[0]))
-            loadLPS(nifti);
+        if(QFileInfo(files[0].c_str()).completeSuffix() == "bmp" ||
+                QFileInfo(files[0].c_str()).completeSuffix() == "jpg")
+
+        {
+            QString info_file = QString(files[0].c_str()) + ".info.txt";
+            if(!QFileInfo(info_file).exists())
+            {
+                error_msg = "Cannot find ";
+                error_msg += info_file.toStdString();
+                return false;
+            }
+            std::ifstream in(info_file.toStdString().c_str());
+            in >> geometry[0];
+            in >> geometry[1];
+            in >> geometry[2];
+            in >> voxel_size[0];
+            in >> voxel_size[1];
+            in >> voxel_size[2];
+            std::copy(std::istream_iterator<float>(in),
+                      std::istream_iterator<float>(),T.begin());
+            if(geometry[2] != files.size())
+            {
+                error_msg = "Invalid BMP info text: file count does not match.";
+                return false;
+            }
+            unsigned int in_plane_subsample = 1;
+            unsigned int slice_subsample = 1;
+
+            // non isotropic condition
+            while(voxel_size[2]/voxel_size[0] > 1.5f)
+            {
+                ++in_plane_subsample;
+                geometry[0] = geometry[0] >> 1;
+                geometry[1] = geometry[1] >> 1;
+                voxel_size[0] *= 2.0;
+                voxel_size[1] *= 2.0;
+                T[0] *= 2.0;
+                T[1] *= 2.0;
+                T[4] *= 2.0;
+                T[5] *= 2.0;
+                T[8] *= 2.0;
+                T[9] *= 2.0;
+            }
+            image::geometry<3> geo(geometry);
+
+            bool ok;
+            int down_size = QInputDialog::getInt(0,
+                    "DSI Studio",
+                    "Downsampling count (0:no downsampling)",1,0,4,1,&ok);
+            if(!ok)
+            {
+                error_msg = "Slice loading canceled";
+                return false;
+            }
+            while(1)
+            {
+                if(down_size)
+                    --down_size;
+                else
+                {
+                    try{
+                        image::basic_image<float, 3> buf;
+                        buf.resize(geo);
+                        buf.swap(source_images);
+                    }
+                    catch(...)
+                    {
+                        error_msg = "Memory allocation failed. Please increase downsampling count";
+                        return false;
+                    }
+                    break;
+                }
+                geo[0] = geo[0] >> 1;
+                geo[1] = geo[1] >> 1;
+                geo[2] = geo[2] >> 1;
+                voxel_size *= 2.0;
+                image::multiply_constant(T.begin(),T.begin()+3,2.0);
+                image::multiply_constant(T.begin()+4,T.begin()+7,2.0);
+                image::multiply_constant(T.begin()+8,T.begin()+11,2.0);
+                ++in_plane_subsample;
+                ++slice_subsample;
+            }
+            begin_prog("loading images");
+            for(unsigned int i = 0;check_prog(i,geo[2]);++i)
+            {
+                image::basic_image<short,2> I;
+                QImage in;
+                unsigned int file_index = (slice_subsample == 1 ? i : (i << (slice_subsample-1)));
+                if(file_index >= files.size())
+                    break;
+                QString filename(files[file_index].c_str());
+                if(!in.load(filename))
+                {
+                    error_msg = "Invalid BMP format: ";
+                    error_msg += files[file_index];
+                    return false;
+                }
+                QImage buf = in.convertToFormat(QImage::Format_RGB32).mirrored();
+                I.resize(image::geometry<2>(in.width(),in.height()));
+                const uchar* ptr = buf.bits();
+                for(int j = 0;j < I.size();++j,ptr += 4)
+                    I[j] = *ptr;
+
+                for(int j = 1;j < in_plane_subsample;++j)
+                    image::downsampling(I);
+                if(I.size() != source_images.plane_size())
+                {
+                    error_msg = "Invalid BMP image size: ";
+                    error_msg += files[file_index];
+                    return false;
+                }
+                std::copy(I.begin(),I.end(),source_images.begin() + i*source_images.plane_size());
+            }
+            image::io::nifti nii;
+            nii.set_dim(geo);
+            nii.set_voxel_size(voxel_size.begin());
+            nii.set_image_transformation(T.begin());
+            nii << source_images;
+            nii.toLPS(source_images);
+            nii.get_voxel_size(voxel_size.begin());
+            T.identity();
+            nii.get_image_transformation(T.begin());
+            // LPS matrix switched to RAS
+
+            T[0] = -T[0];
+            T[1] = -T[1];
+            T[4] = -T[4];
+            T[5] = -T[5];
+            T[8] = -T[8];
+            T[9] = -T[9];
+            invT = image::inverse(T);
+            has_transform = true;
+        }
         else
         {
-            if(files.size() == 1)
+            image::io::volume volume;
+            if(volume.load_from_files(files,files.size()))
             {
-                image::io::bruker_2dseq bruker;
-                if(bruker.load_from_file(files[0].c_str()))
-                {
-                    bruker.get_voxel_size(voxel_size.begin());
-                    bruker.get_image().swap(source_images);
-                    QDir d = QFileInfo(files[0].c_str()).dir();
-                    if(d.cdUp() && d.cdUp())
-                    {
-                        QString method_file_name = d.absolutePath()+ "/method";
-                        image::io::bruker_info method;
-                        if(method.load_from_file(method_file_name.toStdString().c_str()))
-                            name = method["Method"];
-                    }
-                }
+                volume.get_voxel_size(voxel_size.begin());
+                volume >> source_images;
             }
-            else
-                if(QFileInfo(files[0].c_str()).completeSuffix() == "bmp" ||
-                        QFileInfo(files[0].c_str()).completeSuffix() == "jpg")
-                {
-                    QString info_file = QString(files[0].c_str()) + ".info.txt";
-                    if(!QFileInfo(info_file).exists())
-                    {
-                        error_msg = "Cannot find ";
-                        error_msg += info_file.toStdString();
-                        return false;
-                    }
-                    std::ifstream in(info_file.toStdString().c_str());
-                    in >> geometry[0];
-                    in >> geometry[1];
-                    in >> geometry[2];
-                    in >> voxel_size[0];
-                    in >> voxel_size[1];
-                    in >> voxel_size[2];
-                    std::vector<float> T;
-                    std::copy(std::istream_iterator<float>(in),
-                              std::istream_iterator<float>(),std::back_inserter(T));
-                    if(T.size() != 12)
-                    {
-                        error_msg = "Invalid BMP info text: failed to read transformation matrix.";
-                        return false;
-                    }
-                    if(geometry[2] != files.size())
-                    {
-                        error_msg = "Invalid BMP info text: file count does not match.";
-                        return false;
-                    }
-                    unsigned int in_plane_subsample = 1;
-                    unsigned int slice_subsample = 1;
-
-                    // non isotropic condition
-                    while(voxel_size[2]/voxel_size[0] > 1.5f)
-                    {
-                        ++in_plane_subsample;
-                        geometry[0] = geometry[0] >> 1;
-                        geometry[1] = geometry[1] >> 1;
-                        voxel_size[0] *= 2.0;
-                        voxel_size[1] *= 2.0;
-                        T[0] *= 2.0;
-                        T[1] *= 2.0;
-                        T[4] *= 2.0;
-                        T[5] *= 2.0;
-                        T[8] *= 2.0;
-                        T[9] *= 2.0;
-                    }
-                    image::geometry<3> geo(geometry);
-
-                    bool ok;
-                    int down_size = QInputDialog::getInt(0,
-                            "DSI Studio",
-                            "Downsampling count (0:no downsampling)",1,0,4,1,&ok);
-                    if(!ok)
-                    {
-                        error_msg = "Slice loading canceled";
-                        return false;
-                    }
-                    while(1)
-                    {
-                        if(down_size)
-                            --down_size;
-                        else
-                        {
-                            try{
-                                image::basic_image<float, 3> buf;
-                                buf.resize(geo);
-                                buf.swap(source_images);
-                            }
-                            catch(...)
-                            {
-                                error_msg = "Memory allocation failed. Please increase downsampling count";
-                                return false;
-                            }
-                            break;
-                        }
-                        geo[0] = geo[0] >> 1;
-                        geo[1] = geo[1] >> 1;
-                        geo[2] = geo[2] >> 1;
-                        voxel_size *= 2.0;
-                        image::multiply_constant(T.begin(),T.begin()+3,2.0);
-                        image::multiply_constant(T.begin()+4,T.begin()+7,2.0);
-                        image::multiply_constant(T.begin()+8,T.begin()+11,2.0);
-                        ++in_plane_subsample;
-                        ++slice_subsample;
-                    }
-                    begin_prog("loading images");
-                    for(unsigned int i = 0;check_prog(i,geo[2]);++i)
-                    {
-                        image::basic_image<short,2> I;
-                        QImage in;
-                        unsigned int file_index = (slice_subsample == 1 ? i : (i << (slice_subsample-1)));
-                        if(file_index >= files.size())
-                            break;
-                        QString filename(files[file_index].c_str());
-                        if(!in.load(filename))
-                        {
-                            error_msg = "Invalid BMP format: ";
-                            error_msg += files[file_index];
-                            return false;
-                        }
-                        QImage buf = in.convertToFormat(QImage::Format_RGB32);
-                        I.resize(image::geometry<2>(in.width(),in.height()));
-                        const uchar* ptr = buf.bits();
-                        for(int j = 0;j < I.size();++j,ptr += 4)
-                            I[j] = *ptr;
-
-                        for(int j = 1;j < in_plane_subsample;++j)
-                            image::downsampling(I);
-                        if(I.size() != source_images.plane_size())
-                        {
-                            error_msg = "Invalid BMP image size: ";
-                            error_msg += files[file_index];
-                            return false;
-                        }
-                        std::copy(I.begin(),I.end(),source_images.begin() + i*source_images.plane_size());
-                    }
-                    image::io::nifti nii;
-                    nii.set_dim(geo);
-                    nii.set_voxel_size(voxel_size.begin());
-                    nii.set_image_transformation(T.begin());
-                    nii << source_images;
-                    nii.toLPS(source_images);
-                    nii.get_voxel_size(voxel_size.begin());
-                    transform.identity();
-                    nii.get_image_transformation(transform.begin());
-                    // LPS matrix switched to RAS
-                    transform[0] = -transform[0];
-                    transform[1] = -transform[1];
-                    transform[4] = -transform[4];
-                    transform[5] = -transform[5];
-                    transform[8] = -transform[8];
-                    transform[9] = -transform[9];
-                    invT = image::inverse(transform);
-                    has_transform = true;
-                }
-            else
-                {
-                    image::io::volume volume;
-                    if(volume.load_from_files(files,files.size()))
-                        load(volume);
-                    else
-                    {
-                        error_msg = "Failed to load image volume.";
-                        return false;
-                    }
-
-                }
         }
-        // same dimension, no registration required.
-        if(source_images.geometry() == handle->dim)
-        {
-            transform.identity();
-            invT.identity();
-            is_diffusion_space = true;
-            has_transform = true;
-        }
-        /*
-        // same dimension different resolution, no registrationrequired
-        float r = std::round((float)source_images.width()/(float)handle->dim[0]);
-        if(r > 1.0 && r == std::round(source_images.height()/handle->dim[1]) &&
-                r == std::round(source_images.depth()/handle->dim[2]))
-        {
-            transform.identity();
-            invT.identity();
-            invT[0] = r;
-            invT[5] = r;
-            invT[10] = r;
-            invT[15] = 1.0;
-            transform = image::inverse(invT);
-            has_transform = true;
-        }
-        */
+    }
 
+    if(source_images.empty())
+    {
+        error_msg = "Failed to load image volume.";
+        return false;
+    }
+    // same dimension, no registration required.
+    if(source_images.geometry() == handle->dim)
+    {
+        T.identity();
+        invT.identity();
+        is_diffusion_space = true;
+        has_transform = true;
     }
 
     // quality control for t1w
@@ -384,18 +354,18 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
             image::lower_threshold(source_images,0);
         }
     }
-    init();
+
     if(!has_transform)
     {
         if(handle->dim.depth() < 10) // 2d assume FOV is the same
         {
-            transform.identity();
+            T.identity();
             invT.identity();
             invT[0] = (float)source_images.width()/(float)handle->dim.width();
             invT[5] = (float)source_images.height()/(float)handle->dim.height();
             invT[10] = (float)source_images.depth()/(float)handle->dim.depth();
             invT[15] = 1.0;
-            transform = image::inverse(invT);
+            T = image::inverse(invT);
         }
         else
         {
@@ -409,86 +379,37 @@ bool CustomSliceModel::initialize(std::shared_ptr<fib_data> handle,bool is_qsdr,
                              std::async(std::launch::async,[this](){argmin(image::reg::rigid_body);})));
         }
     }
+    geometry = source_images.geometry();
+    handle->view_item.back().image_data = image::make_image(&*source_images.begin(),source_images.geometry());
+    handle->view_item.back().set_scale(source_images.begin(),source_images.end());
+    handle->view_item.back().name = name;
+    slice_pos[0] = geometry.width() >> 1;
+    slice_pos[1] = geometry.height() >> 1;
+    slice_pos[2] = geometry.depth() >> 1;
+    handle->view_item.back().T = T;
+    handle->view_item.back().iT = invT;
     return true;
 }
 
-// ---------------------------------------------------------------------------
-std::pair<float,float> CustomSliceModel::get_value_range(void) const
-{
-    return std::make_pair(min_value,max_value);
-}
-// ---------------------------------------------------------------------------
-std::pair<float,float> CustomSliceModel::get_contrast_range(void) const
-{
-    return std::make_pair(contrast_min,contrast_max);
-}
-// ---------------------------------------------------------------------------
-std::pair<unsigned int,unsigned int> CustomSliceModel::get_contrast_color(void) const
-{
-    return std::make_pair(min_color,max_color);
-}
-// ---------------------------------------------------------------------------
-void CustomSliceModel::set_contrast_range(float min_v,float max_v)
-{
-    contrast_min = min_v;
-    contrast_max = max_v;
-}
-// ---------------------------------------------------------------------------
-void CustomSliceModel::set_contrast_color(unsigned int min_c,unsigned int max_c)
-{
-    min_color = min_c;
-    max_color = max_c;
-}
 // ---------------------------------------------------------------------------
 void CustomSliceModel::argmin(image::reg::reg_type reg_type)
 {
     terminated = false;
     ended = false;
-    size_ratio = 1.0f;
-
-    /*
-    if(from_vs[0]/voxel_size[0] > 2.0f)
-    {
-        source_buf_vs = voxel_size;
-        source_buf.clear();
-        while(from_vs[0]/source_buf_vs[0] > 2.0f)
-        {
-            source_buf_vs *= 2.0;
-            size_ratio *= 2.0;
-            if(source_buf.empty())
-                image::downsampling(source_images,source_buf);
-            else
-                image::downsampling(source_buf);
-        }
-        image::const_pointer_image<float,3> to = source_buf;
-        image::reg::linear_mr(from,from_vs,to,source_buf_vs,arg_min,reg_type,image::reg::mutual_information_mt(),terminated);
-    }
-    else*/
-    {
-        image::const_pointer_image<float,3> to = source_images;
-        image::reg::linear_mr(from,from_vs,to,voxel_size,arg_min,reg_type,image::reg::mutual_information(),terminated,0.1);
-        image::reg::linear_mr(from,from_vs,to,voxel_size,arg_min,reg_type,image::reg::mutual_information(),terminated,0.01);
-    }
+    image::const_pointer_image<float,3> to = source_images;
+    image::reg::linear_mr(from,from_vs,to,voxel_size,arg_min,reg_type,image::reg::mutual_information(),terminated,0.1);
+    image::reg::linear_mr(from,from_vs,to,voxel_size,arg_min,reg_type,image::reg::mutual_information(),terminated,0.01);
     ended = true;
 
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::update(void)
 {
-    if(size_ratio != 1.0)
-    {
-        image::transformation_matrix<double> T(arg_min,from.geometry(),from_vs,source_buf.geometry(),source_buf_vs);
-        invT.identity();
-        T.save_to_transform(invT.begin());
-        image::multiply_constant(invT,size_ratio);
-    }
-    else
-    {
-        image::transformation_matrix<double> T(arg_min,from.geometry(),from_vs,source_images.geometry(),voxel_size);
-        invT.identity();
-        T.save_to_transform(invT.begin());
-    }
-    transform = image::inverse(invT);
+    image::transformation_matrix<double> M(arg_min,from.geometry(),from_vs,source_images.geometry(),voxel_size);
+    invT.identity();
+    M.save_to_transform(invT.begin());
+    handle->view_item[view_id].T = T = image::inverse(invT);
+    handle->view_item[view_id].iT = invT;
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::terminate(void)
@@ -499,26 +420,13 @@ void CustomSliceModel::terminate(void)
     ended = true;
 }
 // ---------------------------------------------------------------------------
-void CustomSliceModel::get_slice(image::color_image& show_image,
-                                 unsigned char cur_dim,
-                                 const image::value_to_color<float>& v2c,
-                                 const SliceModel* overlay,
-                                 const image::value_to_color<float>& overlay_v2c) const
-{
-    image::basic_image<float,2> buf;
-    image::reslicing(source_images, buf, cur_dim, slice_pos[cur_dim]);
-    v2c.convert(buf,show_image);
-    if(overlay && this != overlay)
-        apply_overlay(show_image,cur_dim,overlay,overlay_v2c);
-}
-// ---------------------------------------------------------------------------
 bool CustomSliceModel::stripskull(float qa_threshold)
 {
     if(!ended)
         return false;
     update();
     image::basic_image<float,3> filter(source_images.geometry());
-    image::resample(from,filter,transform,image::linear);
+    image::resample(from,filter,T,image::linear);
     image::upper_threshold(filter,qa_threshold);
     image::filter::gaussian(filter);
     image::filter::gaussian(filter);

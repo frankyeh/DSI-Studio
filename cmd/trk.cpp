@@ -251,10 +251,10 @@ bool load_region(std::shared_ptr<fib_data> handle,
 
         if(po.has("t1t2"))
         {
-            std::shared_ptr<CustomSliceModel> other_slice(std::make_shared<CustomSliceModel>());
+            std::shared_ptr<CustomSliceModel> other_slice(std::make_shared<CustomSliceModel>(handle));
             std::vector<std::string> files;
             files.push_back(po.get("t1t2"));
-            if(!other_slice->initialize(handle,handle->is_qsdr,files,true))
+            if(!other_slice->initialize(files,true))
             {
                 std::cout << "Fail to insert T1T2" << std::endl;
                 return false;
@@ -338,9 +338,9 @@ int trk_post(std::shared_ptr<fib_data> handle,
             {
                 std::vector<std::string> files;
                 files.push_back(po.get("ref"));
-                CustomSliceModel new_slice;
+                CustomSliceModel new_slice(handle);
                 std::cout << "Loading reference image:" << po.get("ref") << std::endl;
-                if(!new_slice.initialize(handle,handle->is_qsdr,files,false))
+                if(!new_slice.initialize(files,false))
                 {
                     std::cout << "Error reading ref image file:" << po.get("ref") << std::endl;
                     return 0;
@@ -348,9 +348,9 @@ int trk_post(std::shared_ptr<fib_data> handle,
                 new_slice.thread->wait();
                 new_slice.update();
                 std::cout << "Applying linear registration." << std::endl;
-                std::cout << new_slice.transform[0] << " " << new_slice.transform[1] << " " << new_slice.transform[2] << " " << new_slice.transform[3] << std::endl;
-                std::cout << new_slice.transform[4] << " " << new_slice.transform[5] << " " << new_slice.transform[6] << " " << new_slice.transform[7] << std::endl;
-                std::cout << new_slice.transform[8] << " " << new_slice.transform[9] << " " << new_slice.transform[10] << " " << new_slice.transform[11] << std::endl;
+                std::cout << new_slice.T[0] << " " << new_slice.T[1] << " " << new_slice.T[2] << " " << new_slice.T[3] << std::endl;
+                std::cout << new_slice.T[4] << " " << new_slice.T[5] << " " << new_slice.T[6] << " " << new_slice.T[7] << std::endl;
+                std::cout << new_slice.T[8] << " " << new_slice.T[9] << " " << new_slice.T[10] << " " << new_slice.T[11] << std::endl;
                 tract_model.save_transformed_tracts_to_file(f.c_str(),&*new_slice.invT.begin(),false);
             }
             else

@@ -2157,7 +2157,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         if(!cur_tracking_window.current_slice->is_diffusion_space)
         for(unsigned int index = 0;index < surface->get()->point_list.size();++index)
         {
-            surface->get()->point_list[index].to(cur_tracking_window.current_slice->transform);
+            surface->get()->point_list[index].to(cur_tracking_window.current_slice->T);
             surface->get()->point_list[index] += 0.5;
         }
         paintGL();
