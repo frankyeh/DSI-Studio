@@ -161,10 +161,10 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->glCorCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(updateGL()));
         connect(ui->glAxiCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(updateGL()));
 
-        connect(ui->min_value_gl,SIGNAL(valueChanged(double)),this,SLOT(on_change_contrast()));
-        connect(ui->max_value_gl,SIGNAL(valueChanged(double)),this,SLOT(on_change_contrast()));
-        connect(ui->max_color_gl,SIGNAL(clicked()),this,SLOT(on_change_contrast()));
-        connect(ui->min_color_gl,SIGNAL(clicked()),this,SLOT(on_change_contrast()));
+        connect(ui->min_value_gl,SIGNAL(valueChanged(double)),this,SLOT(change_contrast()));
+        connect(ui->max_value_gl,SIGNAL(valueChanged(double)),this,SLOT(change_contrast()));
+        connect(ui->max_color_gl,SIGNAL(clicked()),this,SLOT(change_contrast()));
+        connect(ui->min_color_gl,SIGNAL(clicked()),this,SLOT(change_contrast()));
 
         connect(ui->actionSave_Screen,SIGNAL(triggered()),glWidget,SLOT(catchScreen()));
         connect(ui->actionSave_3D_screen_in_high_resolution,SIGNAL(triggered()),glWidget,SLOT(catchScreen2()));
@@ -781,7 +781,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     no_update = false;
 
 }
-void tracking_window::on_change_contrast()
+void tracking_window::change_contrast()
 {
     if(no_update)
         return;
