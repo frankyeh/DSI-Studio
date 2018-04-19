@@ -369,11 +369,13 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
         }
         else
         {
+            from = image::make_image(handle->dir.fa[0],handle->dim);
+            size_t iso = handle->get_name_index("iso");// for DDI
+            if(handle->view_item.size() != iso)
+                from = handle->view_item[iso].image_data;
             size_t base_nqa = handle->get_name_index("base_nqa");// for DDI
             if(handle->view_item.size() != base_nqa)
                 from = handle->view_item[base_nqa].image_data;
-            else
-                from = image::make_image(handle->dir.fa[0],handle->dim);
             from_vs = handle->vs;
             thread.reset(new std::future<void>(
                              std::async(std::launch::async,[this](){argmin(image::reg::rigid_body);})));
