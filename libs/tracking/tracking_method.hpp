@@ -45,9 +45,14 @@ struct TrackingParam
     unsigned char center_seed = 0;
     unsigned char check_ending = 0;
     unsigned char interpolation_strategy = 0;
+
     unsigned char tracking_method = 0;
     unsigned char initial_direction = 0;
     unsigned char random_seed = 0;
+    unsigned char reserved0 = 0;
+
+    unsigned int reserved1 = 0;
+    unsigned int reserved2 = 0;
 
     static char char2index(unsigned char c)
     {
