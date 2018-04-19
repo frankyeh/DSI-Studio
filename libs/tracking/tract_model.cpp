@@ -2208,6 +2208,8 @@ void ConnectivityMatrix::save_to_connectogram(const char* file_name)
     }
     out << std::endl;
     out << "data\tdata\t";
+    for(int i = 0;i < region_name.size();++i)
+        std::replace(region_name[i].begin(),region_name[i].end(),' ','_');
     for(int i = 0;i < w;++i)
         out << region_name[i] << "\t";
     out << std::endl;
