@@ -1,6 +1,6 @@
 #include <set>
 #include "tract_cluster.hpp"
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 
 struct compare_cluster
 {
@@ -22,7 +22,7 @@ void BasicCluster::sort_cluster(void)
 
 TractCluster::TractCluster(const float* param):error_distance(param[3])
 {
-    image::vector<3,float> fdim(param);
+    tipl::vector<3,float> fdim(param);
     fdim /= error_distance;
     fdim += 1.0;
     fdim.floor();
@@ -125,7 +125,7 @@ void TractCluster::add_tracts(const std::vector<std::vector<float> >& tracks)
         tract_length[tract_index] = tracks[tract_index].size();
 
     // build passing points and ranged points
-    image::par_for(tracks.size(),[&](unsigned int tract_index)
+    tipl::par_for(tracks.size(),[&](unsigned int tract_index)
     {
         if(tracks[tract_index].empty())
             return;
@@ -137,15 +137,15 @@ void TractCluster::add_tracts(const std::vector<std::vector<float> >& tracks)
 
         for (;points_end != points;points += 3)
         {
-            image::vector<3,float> cur_point(points);
+            tipl::vector<3,float> cur_point(points);
             cur_point /= error_distance;
             cur_point.round();
             if(!dim.is_valid(cur_point))
                 continue;
-            image::pixel_index<3> center(cur_point[0],cur_point[1],cur_point[2],dim);
+            tipl::pixel_index<3> center(cur_point[0],cur_point[1],cur_point[2],dim);
             passed_points.push_back(center.index() & 0xFFFF);
-            std::vector<image::pixel_index<3> > iterations;
-            image::get_neighbors(center,dim,iterations);
+            std::vector<tipl::pixel_index<3> > iterations;
+            tipl::get_neighbors(center,dim,iterations);
             for(unsigned int index = 0;index < iterations.size();++index)
                 if (dim.is_valid(iterations[index]))
                     ranged_points.push_back(iterations[index].index() & 0xFFFF);
@@ -167,7 +167,7 @@ void TractCluster::add_tracts(const std::vector<std::vector<float> >& tracks)
         voxel_connection[tract_passed_voxels[tract_index].back()].push_back(tract_index);
     }
 
-    image::par_for(tracks.size(),[&](unsigned int tract_index)
+    tipl::par_for(tracks.size(),[&](unsigned int tract_index)
     {
         if(tracks[tract_index].empty())
             return;

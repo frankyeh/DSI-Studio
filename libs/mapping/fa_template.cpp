@@ -1,4 +1,4 @@
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "fa_template.hpp"
 #include "libs/gzip_interface.hpp"
 

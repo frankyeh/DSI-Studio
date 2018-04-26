@@ -1,22 +1,22 @@
 #ifndef ATLAS_HPP
 #define ATLAS_HPP
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include <vector>
 #include <string>
 class atlas{
 private:
-    image::basic_image<int,3> I;
+    tipl::image<int,3> I;
     std::vector<int> label_num;
     std::vector<std::string> labels;
-    image::matrix<4,4,float> transform;
+    tipl::matrix<4,4,float> transform;
     void load_from_file(void);
     void load_label(void);
-    int get_index(image::vector<3,float> atlas_space);
+    int get_index(tipl::vector<3,float> atlas_space);
 private:// for talairach only
     std::vector<std::vector<unsigned int> > index2label;
     std::vector<std::vector<unsigned int> > label2index;
 private:// for track atlas only
-    image::basic_image<char,4> track;
+    tipl::image<char,4> track;
     std::vector<unsigned int> track_base_pos;
     bool is_track;
 public:
@@ -42,9 +42,9 @@ public:
         }
         return label_num;
     }
-    //std::string get_label_name_at(const image::vector<3,float>& mni_space);
-    bool is_labeled_as(const image::vector<3,float>& mni_space,unsigned int label);
-    int get_track_label(const std::vector<image::vector<3> >& points);
+    //std::string get_label_name_at(const tipl::vector<3,float>& mni_space);
+    bool is_labeled_as(const tipl::vector<3,float>& mni_space,unsigned int label);
+    int get_track_label(const std::vector<tipl::vector<3> >& points);
 };
 
 #endif // ATLAS_HPP

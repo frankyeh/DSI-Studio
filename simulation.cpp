@@ -7,8 +7,8 @@
 #include "racian_noise.hpp"
 #include "layout.hpp"
 
-image::normal_dist<float> RacianNoise::gen_normal;
-image::uniform_dist<float> RacianNoise::gen_uniform;
+tipl::normal_dist<float> RacianNoise::gen_normal;
+tipl::uniform_dist<float> RacianNoise::gen_uniform;
 
 std::string error_msg;
 

@@ -2,7 +2,7 @@
 #define DWI_HEADER_HPP
 #include <vector>
 #include <string>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 
 
 class DwiHeader
@@ -10,13 +10,13 @@ class DwiHeader
 	typedef std::vector<short>::iterator image_iterator;
 public:
     std::string file_name, report;
-    image::basic_image<unsigned short, 3> image;
+    tipl::image<unsigned short, 3> image;
 	float te;
 public:// for HCP dataset
-    image::basic_image<float, 4> grad_dev;
-    image::basic_image<unsigned char, 3> mask;
+    tipl::image<float, 4> grad_dev;
+    tipl::image<unsigned char, 3> mask;
 public:
-    image::vector<3, float> bvec;
+    tipl::vector<3, float> bvec;
     float bvalue;
     float voxel_size[3];
 public:

@@ -1,6 +1,6 @@
 #ifndef TESSELLATED_ICOSAHEDRON_HPP
 #define TESSELLATED_ICOSAHEDRON_HPP
-#include <image/image.hpp>
+#include <tipl/tipl.hpp>
 #include <cmath>
 #include <vector>
 #include <functional>
@@ -19,30 +19,30 @@ public:
     unsigned int fold;
     unsigned int vertices_count;
     unsigned int half_vertices_count;
-    std::vector<image::vector<3,float> > vertices;
-    std::vector<image::vector<3,short> > faces;
+    std::vector<tipl::vector<3,float> > vertices;
+    std::vector<tipl::vector<3,short> > faces;
     std::vector<std::vector<float> > icosa_cos;
 private:
     float face_dis,angle_res;
     unsigned short cur_vertex;
-    void add_vertex(const image::vector<3,float>& vertex)
+    void add_vertex(const tipl::vector<3,float>& vertex)
     {
         vertices[cur_vertex] = vertex;
         vertices[cur_vertex + half_vertices_count] = -vertex;
 		++cur_vertex;
     }
-        void get_mid_vertex(const image::vector<3,float>& v1,
-                                            const image::vector<3,float>& v2,
-                                                image::vector<3,float>& v3) const
+        void get_mid_vertex(const tipl::vector<3,float>& v1,
+                                            const tipl::vector<3,float>& v2,
+                                                tipl::vector<3,float>& v3) const
 	{
 		v3 = v1;
 		v3 += v2;
 		v3.normalize();
 	}
-        void get_mid_vertex(const image::vector<3,float>& v1,
-                                            const image::vector<3,float>& v2,
-                                                const image::vector<3,float>& v3,
-                                                image::vector<3,float>& v4) const
+        void get_mid_vertex(const tipl::vector<3,float>& v1,
+                                            const tipl::vector<3,float>& v2,
+                                                const tipl::vector<3,float>& v3,
+                                                tipl::vector<3,float>& v4) const
 	{
 		v4 = v1;
 		v4 += v2;
@@ -54,7 +54,7 @@ public:
                                    std::vector<unsigned short>& edge)
     {
         edge.push_back(from_vertex);
-        image::vector<3,float> uv = vertices[to_vertex];
+        tipl::vector<3,float> uv = vertices[to_vertex];
         uv -= vertices[from_vertex];
         double angle = std::acos(1.0-uv.length2()*0.5);
         uv.normalize();
@@ -64,7 +64,7 @@ public:
             float phi = angle*index;
             phi /= (float)fold;
             float y = face_d/std::cos(phi-angle*0.5);
-            image::vector<3,float> vec = uv;
+            tipl::vector<3,float> vec = uv;
             vec *= std::sqrt(1.0 + y*(y-2.0*std::cos(phi)));
             vec += vertices[from_vertex];
             vec.normalize();
@@ -80,7 +80,7 @@ public:
 		edge.push_back(from_vertex);
         if (fold == 2)
         {
-                        image::vector<3,float> uv;
+                        tipl::vector<3,float> uv;
 			get_mid_vertex(vertices[to_vertex],vertices[from_vertex],uv);
 			edge.push_back(cur_vertex);
             add_vertex(uv);
@@ -88,9 +88,9 @@ public:
 		else
         if(fold == 4)
 		{
-                        image::vector<3,float> mid;
+                        tipl::vector<3,float> mid;
 			get_mid_vertex(vertices[to_vertex],vertices[from_vertex],mid);
-                        image::vector<3,float> u = mid;
+                        tipl::vector<3,float> u = mid;
 			get_mid_vertex(mid,vertices[from_vertex],u);
 			edge.push_back(cur_vertex);
             add_vertex(u);
@@ -102,7 +102,7 @@ public:
 		}
         else
         {
-            image::vector<3,float> uv = vertices[to_vertex];
+            tipl::vector<3,float> uv = vertices[to_vertex];
             uv -= vertices[from_vertex];
             uv.normalize();
             for (unsigned int index = 1;index < fold;++index)
@@ -111,7 +111,7 @@ public:
                 phi /= (float)fold;
                 float y = face_dis/std::cos(phi-angle_res*0.5);
 
-                                image::vector<3,float> vec = uv;
+                                tipl::vector<3,float> vec = uv;
                 vec *= std::sqrt(1.0 + y*(y-2.0*std::cos(phi)));
                 vec += vertices[from_vertex];
                 vec.normalize();
@@ -128,8 +128,8 @@ public:
 	}
     void add_face(short v1,short v2,short v3)
     {
-                faces.push_back(image::vector<3,short>(v1,v2,v3));
-                faces.push_back(image::vector<3,short>(opposite(v1),opposite(v3),opposite(v2)));
+                faces.push_back(tipl::vector<3,short>(v1,v2,v3));
+                faces.push_back(tipl::vector<3,short>(opposite(v1),opposite(v3),opposite(v2)));
     }
     template<class input_type1,class input_type2>
         void add_faces_in_line(input_type1 up,input_type2 down,unsigned int up_count)
@@ -188,14 +188,14 @@ public:
         add_faces_in_triangle(edge0,edge1,edge2,fold);
         if(fold == 3)
 		{
-                        image::vector<3,float> mid;
+                        tipl::vector<3,float> mid;
 			get_mid_vertex(vertices[edge0[0]],vertices[edge1[0]],vertices[edge2[0]],mid);
 			add_vertex(mid);
 			return;
 		}
         if(fold == 4)
 		{
-                        image::vector<3,float> u;
+                        tipl::vector<3,float> u;
 			get_mid_vertex(vertices[edge0[2]],vertices[edge2[2]],u);
 			add_vertex(u);
 			get_mid_vertex(vertices[edge0[2]],vertices[edge1[2]],u);
@@ -206,7 +206,7 @@ public:
 		}
         if(fold == 5)
 		{
-                        image::vector<3,float> u1,u2,u3,u4,u5,u6;
+                        tipl::vector<3,float> u1,u2,u3,u4,u5,u6;
 			get_mid_vertex(vertices[edge0[0]],vertices[edge0[3]],vertices[edge2[2]],u1);
 			get_mid_vertex(vertices[edge1[0]],vertices[edge1[3]],vertices[edge0[2]],u3);
 			get_mid_vertex(vertices[edge2[0]],vertices[edge2[3]],vertices[edge1[2]],u6);
@@ -223,7 +223,7 @@ public:
 		}
         if(fold == 6)
 		{
-                        image::vector<3,float> u1,u2,u3,u4,u5,u6,u7,u8,u9,u10;// (6-1)*(6-2)/2
+                        tipl::vector<3,float> u1,u2,u3,u4,u5,u6,u7,u8,u9,u10;// (6-1)*(6-2)/2
 			get_mid_vertex(vertices[edge0[0]],vertices[edge1[0]],vertices[edge2[0]],u6);
 
 			get_mid_vertex(vertices[edge0[0]],vertices[edge0[3]],vertices[edge2[3]],u1);
@@ -253,7 +253,7 @@ public:
 		}
         if(fold == 8)
 		{
-            image::vector<3,float> u[22]; // (8-1)*(8-2)/2=21, add one for index started from1
+            tipl::vector<3,float> u[22]; // (8-1)*(8-2)/2=21, add one for index started from1
 			get_mid_vertex(vertices[edge0[4]],vertices[edge2[4]],u[8]);
 			get_mid_vertex(vertices[edge1[4]],vertices[edge2[4]],u[17]);
 			get_mid_vertex(vertices[edge0[4]],vertices[edge1[4]],u[10]);
@@ -290,13 +290,13 @@ public:
     void build_icosahedron()
     {
         // the top vertex
-        add_vertex(image::vector<3,float>(0,0,1.0));
+        add_vertex(tipl::vector<3,float>(0,0,1.0));
         //central vertices around the upper staggered circles
         float sqrt5 = std::sqrt(5.0);
         float height = 1.0/sqrt5;
         float radius = 2.0/sqrt5;
         for (unsigned int index = 0;index < 5;++index)
-            add_vertex(image::vector<3,float>(
+            add_vertex(tipl::vector<3,float>(
                                    std::cos(((float)index)*M_PI*0.4)*radius,
                                    std::sin(((float)index)*M_PI*0.4)*radius,height));
 
@@ -328,8 +328,8 @@ public:
         for(unsigned int index = 0;index < redges.size();++index)
         {
             redges[index] = edges[index];
-            image::add_constant(redges[index],half_vertices_count);
-            image::mod_constant(redges[index],vertices_count);
+            tipl::add_constant(redges[index],half_vertices_count);
+            tipl::mod_constant(redges[index],vertices_count);
 
         }
 		// hat faces
@@ -376,8 +376,8 @@ public:
 	}
 	void sort_vertices(void)
 	{
-                std::vector<image::vector<3,float> > sorted_vertices(vertices.begin(),vertices.end());
-                std::sort(sorted_vertices.begin(),sorted_vertices.end(),std::greater<image::vector<3,float> >());
+                std::vector<tipl::vector<3,float> > sorted_vertices(vertices.begin(),vertices.end());
+                std::sort(sorted_vertices.begin(),sorted_vertices.end(),std::greater<tipl::vector<3,float> >());
                 for(unsigned int index = 0;index < half_vertices_count;++index)
             sorted_vertices[index+half_vertices_count] = -sorted_vertices[index];
         std::vector<unsigned short> index_map(vertices_count);
@@ -523,7 +523,7 @@ public:
             std::copy(faces[i].begin(),faces[i].end(),short_data.begin()+index);
     }
 
-    unsigned short discretize(const image::vector<3,float>& v)
+    unsigned short discretize(const tipl::vector<3,float>& v)
     {
         short dir_index = 0;
         float max_value = 0.0;

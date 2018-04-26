@@ -38,7 +38,7 @@ bool odf_data::read(gz_mat_read& mat_reader)
         return false;
 
     // dimension
-    image::geometry<3> dim;
+    tipl::geometry<3> dim;
     {
         const unsigned short* dim_buf = 0;
         if (!mat_reader.read("dimension",row,col,dim_buf))
@@ -299,7 +299,7 @@ const float* fiber_directions::get_dir(unsigned int index,unsigned int order) co
 
 
 bool tracking_data::get_nearest_dir_fib(unsigned int space_index,
-                     const image::vector<3,float>& ref_dir, // reference direction, should be unit vector
+                     const tipl::vector<3,float>& ref_dir, // reference direction, should be unit vector
                      unsigned char& fib_order_,
                      unsigned char& reverse_,
                      float threshold,
@@ -347,8 +347,8 @@ void tracking_data::read(const fib_data& fib)
     other_index = fib.dir.index_data;
 }
 bool tracking_data::get_dir(unsigned int space_index,
-                     const image::vector<3,float>& dir, // reference direction, should be unit vector
-                     image::vector<3,float>& main_dir,
+                     const tipl::vector<3,float>& dir, // reference direction, should be unit vector
+                     tipl::vector<3,float>& main_dir,
                             float threshold,
                             float cull_cos_angle) const
 {
@@ -373,7 +373,7 @@ const float* tracking_data::get_dir(unsigned int space_index,unsigned char fib_o
     return &*(odf_table[findex[fib_order][space_index]].begin());
 }
 
-float tracking_data::cos_angle(const image::vector<3>& cur_dir,unsigned int space_index,unsigned char fib_order) const
+float tracking_data::cos_angle(const tipl::vector<3>& cur_dir,unsigned int space_index,unsigned char fib_order) const
 {
     if(!dir.empty())
     {
@@ -384,7 +384,7 @@ float tracking_data::cos_angle(const image::vector<3>& cur_dir,unsigned int spac
 }
 
 float tracking_data::get_track_specific_index(unsigned int space_index,unsigned int index_num,
-                         const image::vector<3,float>& dir) const
+                         const tipl::vector<3,float>& dir) const
 {
     if(space_index >= dim.size() || fa[0][space_index] == 0.0)
         return 0.0;
@@ -410,15 +410,15 @@ float tracking_data::get_track_specific_index(unsigned int space_index,unsigned 
     return other_index[index_num][fib_order][space_index];
 }
 
-bool tracking_data::is_white_matter(const image::vector<3,float>& pos,float t) const
+bool tracking_data::is_white_matter(const tipl::vector<3,float>& pos,float t) const
 {
-    return image::estimate(image::make_image(fa[0],dim),pos) > t && pos[2] > 0.5;
+    return tipl::estimate(tipl::make_image(fa[0],dim),pos) > t && pos[2] > 0.5;
 }
 
 
 bool fib_data::load_from_file(const char* file_name)
 {
-    image::basic_image<float,3> I;
+    tipl::image<float,3> I;
     float vs[3];
     if(QFileInfo(file_name).completeSuffix() == "nii" ||
        QFileInfo(file_name).completeSuffix() == "nii.gz")
@@ -435,7 +435,7 @@ bool fib_data::load_from_file(const char* file_name)
     else
     if(QFileInfo(file_name).fileName() == "2dseq")
     {
-        image::io::bruker_2dseq bruker_header;
+        tipl::io::bruker_2dseq bruker_header;
         if(!bruker_header.load_from_file(file_name))
         {
             error_msg = "Invalid 2dseq format";
@@ -492,13 +492,13 @@ bool fib_data::load_from_mat(void)
 
     view_item.push_back(item());
     view_item.back().name =  dir.fa.size() == 1 ? "fa":"qa";
-    view_item.back().image_data = image::make_image(dir.fa[0],dim);
+    view_item.back().image_data = tipl::make_image(dir.fa[0],dim);
     view_item.back().set_scale(dir.fa[0],dir.fa[0]+dim.size());
     for(unsigned int index = 1;index < dir.index_name.size();++index)
     {
         view_item.push_back(item());
         view_item.back().name =  dir.index_name[index];
-        view_item.back().image_data = image::make_image(dir.index_data[index][0],dim);
+        view_item.back().image_data = tipl::make_image(dir.index_data[index][0],dim);
         view_item.back().set_scale(dir.index_data[index][0],dir.index_data[index][0]+dim.size());
     }
     view_item.push_back(item());
@@ -548,7 +548,7 @@ bool fib_data::load_from_mat(void)
             continue;
         view_item.push_back(item());
         view_item.back().name = matrix_name;
-        view_item.back().image_data = image::make_image(buf,dim);
+        view_item.back().image_data = tipl::make_image(buf,dim);
         view_item.back().set_scale(buf,buf+dim.size());
     }
     if (!dim[2])
@@ -607,10 +607,10 @@ bool fib_data::load_from_mat(void)
                mat_reader.read((name+"_z").c_str(),row,col,mz) &&
                  mat_reader.read((name+"_d").c_str(),row,col,native_geo))
             {
-                view_item[i].mx = image::make_image(mx,dim);
-                view_item[i].my = image::make_image(my,dim);
-                view_item[i].mz = image::make_image(mz,dim);
-                view_item[i].native_geo = image::geometry<3>(native_geo[0],native_geo[1],native_geo[2]);
+                view_item[i].mx = tipl::make_image(mx,dim);
+                view_item[i].my = tipl::make_image(my,dim);
+                view_item[i].mz = tipl::make_image(mz,dim);
+                view_item[i].native_geo = tipl::geometry<3>(native_geo[0],native_geo[1],native_geo[2]);
             }
         }
     }
@@ -646,13 +646,13 @@ std::pair<float,float> fib_data::get_value_range(const std::string& view_name) c
 
 void fib_data::get_slice(unsigned int view_index,
                unsigned char d_index,unsigned int pos,
-               image::color_image& show_image,const image::value_to_color<float>& v2c)
+               tipl::color_image& show_image,const tipl::value_to_color<float>& v2c)
 {
     if(view_item[view_index].name == "color")
     {
         {
-            image::basic_image<float,2> buf;
-            image::reslicing(view_item[0].image_data, buf, d_index, pos);
+            tipl::image<float,2> buf;
+            tipl::reslicing(view_item[0].image_data, buf, d_index, pos);
             v2c.convert(buf,show_image);
         }
 
@@ -662,8 +662,8 @@ void fib_data::get_slice(unsigned int view_index,
             for (unsigned int index = 0;index < dim.size();++index)
                 view_item[view_index].color_map_buf[index] = index;
         }
-        image::basic_image<unsigned int,2> buf;
-        image::reslicing(view_item[view_index].color_map_buf, buf, d_index, pos);
+        tipl::image<unsigned int,2> buf;
+        tipl::reslicing(view_item[view_index].color_map_buf, buf, d_index, pos);
         for (unsigned int index = 0;index < buf.size();++index)
         {
             const float* d = dir.get_dir(buf[index],0);
@@ -674,8 +674,8 @@ void fib_data::get_slice(unsigned int view_index,
     }
     else
     {
-        image::basic_image<float,2> buf;
-        image::reslicing(view_item[view_index].image_data, buf, d_index, pos);
+        tipl::image<float,2> buf;
+        tipl::reslicing(view_item[view_index].image_data, buf, d_index, pos);
         v2c.convert(buf,show_image);
     }
 
@@ -714,9 +714,9 @@ void fib_data::get_voxel_information(int x,int y,int z,std::vector<float>& buf) 
             continue;
         if(view_item[i].image_data.geometry() != dim)
         {
-            image::vector<3> pos(x,y,z);
+            tipl::vector<3> pos(x,y,z);
             pos.to(view_item[i].iT);
-            buf.push_back(image::estimate(view_item[i].image_data,pos));
+            buf.push_back(tipl::estimate(view_item[i].image_data,pos));
         }
         else
             buf.push_back(view_item[i].image_data.empty() ? 0.0 : view_item[i].image_data[index]);
@@ -745,53 +745,53 @@ void fib_data::run_normalization(bool background)
             prog = 5;
             return;
         }
-        image::affine_transform<float> arg,arg2;
-        image::transformation_matrix<float> T,T2;
-        image::basic_image<float,3> S(dir.fa[0],dim);
-        image::filter::gaussian(S);
-        S -= image::segmentation::otsu_threshold(S);
-        image::lower_threshold(S,0.0);
-        image::normalize(S,1.0);
+        tipl::affine_transform<float> arg,arg2;
+        tipl::transformation_matrix<float> T,T2;
+        tipl::image<float,3> S(dir.fa[0],dim);
+        tipl::filter::gaussian(S);
+        S -= tipl::segmentation::otsu_threshold(S);
+        tipl::lower_threshold(S,0.0);
+        tipl::normalize(S,1.0);
         prog = 1;
-        image::par_for(2,[&](int i){
+        tipl::par_for(2,[&](int i){
             if(i)
             {
-                image::reg::linear_mr(fa_template_imp.I,fa_template_imp.vs,S,vs,arg,image::reg::affine,
-                    image::reg::mutual_information(),thread.terminated);
+                tipl::reg::linear_mr(fa_template_imp.I,fa_template_imp.vs,S,vs,arg,tipl::reg::affine,
+                    tipl::reg::mutual_information(),thread.terminated);
             }
             else
             {
-                image::reg::linear_mr(S,vs,fa_template_imp.I,fa_template_imp.vs,arg2,image::reg::affine,
-                    image::reg::mutual_information(),thread.terminated);
+                tipl::reg::linear_mr(S,vs,fa_template_imp.I,fa_template_imp.vs,arg2,tipl::reg::affine,
+                    tipl::reg::mutual_information(),thread.terminated);
             }
         });
-        T = image::transformation_matrix<float>(arg,fa_template_imp.I.geometry(),fa_template_imp.vs,S.geometry(),vs);
-        T2 = image::transformation_matrix<float>(arg2,S.geometry(),vs,fa_template_imp.I.geometry(),fa_template_imp.vs);
+        T = tipl::transformation_matrix<float>(arg,fa_template_imp.I.geometry(),fa_template_imp.vs,S.geometry(),vs);
+        T2 = tipl::transformation_matrix<float>(arg2,S.geometry(),vs,fa_template_imp.I.geometry(),fa_template_imp.vs);
         T2.inverse();
-        if(image::reg::mutual_information()(fa_template_imp.I,S,T2) < image::reg::mutual_information()(fa_template_imp.I,S,T))
+        if(tipl::reg::mutual_information()(fa_template_imp.I,S,T2) < tipl::reg::mutual_information()(fa_template_imp.I,S,T))
             T = T2;
         prog = 2;
         if(thread.terminated)
             return;
-        image::reg::bfnorm_mapping<float,3> bf(fa_template_imp.I.geometry(),image::geometry<3>(7,9,7));
-        image::basic_image<float,3> new_S(fa_template_imp.I.geometry());
-        image::resample_mt(S,new_S,T,image::linear);
+        tipl::reg::bfnorm_mapping<float,3> bf(fa_template_imp.I.geometry(),tipl::geometry<3>(7,9,7));
+        tipl::image<float,3> new_S(fa_template_imp.I.geometry());
+        tipl::resample_mt(S,new_S,T,tipl::linear);
         prog = 3;
-        image::reg::bfnorm(bf,new_S,fa_template_imp.I,thread.terminated,std::thread::hardware_concurrency());
+        tipl::reg::bfnorm(bf,new_S,fa_template_imp.I,thread.terminated,std::thread::hardware_concurrency());
         if(thread.terminated)
             return;
         prog = 4;
-        image::basic_image<image::vector<3,float>,3 > mni(S.geometry());
+        tipl::image<tipl::vector<3,float>,3 > mni(S.geometry());
         T.inverse();
         if(thread.terminated)
             return;
-        mni.for_each_mt([&](image::vector<3,float>& v,const image::pixel_index<3>& pos)
+        mni.for_each_mt([&](tipl::vector<3,float>& v,const tipl::pixel_index<3>& pos)
         {
-            image::vector<3> p(pos);
+            tipl::vector<3> p(pos);
             T(p);
             v = p;
             p.round();
-            bf.get_displacement(image::vector<3,int>(p[0],p[1],p[2]),p);
+            bf.get_displacement(tipl::vector<3,int>(p[0],p[1],p[2]),p);
             v += p;
             fa_template_imp.to_mni(v);
         });
@@ -812,7 +812,7 @@ void fib_data::run_normalization(bool background)
     }
 }
 
-void fib_data::subject2mni(image::vector<3>& pos)
+void fib_data::subject2mni(tipl::vector<3>& pos)
 {
     if(!is_human_data)
         return;
@@ -821,11 +821,11 @@ void fib_data::subject2mni(image::vector<3>& pos)
         pos.to(trans_to_mni);
         return;
     }
-    image::vector<3> p;
-    image::estimate(mni_position,pos,p);
+    tipl::vector<3> p;
+    tipl::estimate(mni_position,pos,p);
     pos = p;
 }
-void fib_data::subject2mni(image::pixel_index<3>& index,image::vector<3>& pos)
+void fib_data::subject2mni(tipl::pixel_index<3>& index,tipl::vector<3>& pos)
 {
     if(!is_human_data)
         return;
@@ -840,21 +840,21 @@ void fib_data::subject2mni(image::pixel_index<3>& index,image::vector<3>& pos)
     return;
 }
 
-void fib_data::get_atlas_roi(int atlas_index,int roi_index,std::vector<image::vector<3,short> >& points,float& r)
+void fib_data::get_atlas_roi(int atlas_index,int roi_index,std::vector<tipl::vector<3,short> >& points,float& r)
 {
     if(get_mni_mapping().empty())
         return;
     // this will load the files from storage to prevent GUI multishread crash
-    atlas_list[atlas_index].is_labeled_as(image::vector<3>(0,0,0), roi_index);
+    atlas_list[atlas_index].is_labeled_as(tipl::vector<3>(0,0,0), roi_index);
     unsigned int thread_count = std::thread::hardware_concurrency();
-    std::vector<std::vector<image::vector<3,short> > > buf(thread_count);
+    std::vector<std::vector<tipl::vector<3,short> > > buf(thread_count);
     r = 1.0;
-    mni_position.for_each_mt2([&](const image::vector<3>& mni,const image::pixel_index<3>& index,int id)
+    mni_position.for_each_mt2([&](const tipl::vector<3>& mni,const tipl::pixel_index<3>& index,int id)
     {
-        image::vector<3> rmni(mni);
+        tipl::vector<3> rmni(mni);
         rmni.round();
         if (atlas_list[atlas_index].is_labeled_as(rmni, roi_index))
-            buf[id].push_back(image::vector<3,short>(index.begin()));
+            buf[id].push_back(tipl::vector<3,short>(index.begin()));
     });
     points.clear();
     for(int i = 0;i < buf.size();++i)
@@ -862,14 +862,14 @@ void fib_data::get_atlas_roi(int atlas_index,int roi_index,std::vector<image::ve
 
 
 }
-const image::basic_image<image::vector<3,float>,3 >& fib_data::get_mni_mapping(void)
+const tipl::image<tipl::vector<3,float>,3 >& fib_data::get_mni_mapping(void)
 {
     if(!mni_position.empty())
         return mni_position;
     if(is_qsdr)
     {
         mni_position.resize(dim);
-        mni_position.for_each_mt([&](image::vector<3>& mni,const image::pixel_index<3>& index)
+        mni_position.for_each_mt([&](tipl::vector<3>& mni,const tipl::pixel_index<3>& index)
         {
             mni = index.begin();
             mni.to(trans_to_mni);
@@ -893,7 +893,7 @@ bool fib_data::get_profile(const std::vector<float>& tract,
         std::vector<float> tract_in_mni;
         for(int j = 0;j < tract.size();j += 3)
         {
-            image::vector<3> v(&(tract[j]));
+            tipl::vector<3> v(&(tract[j]));
             subject2mni(v);
             tract_in_mni.push_back(v[0]);
             tract_in_mni.push_back(v[1]);
@@ -903,15 +903,15 @@ bool fib_data::get_profile(const std::vector<float>& tract,
         resample_tracks(smoothed_track_in_mni,tract_data,0.5);
     }
 
-    image::geometry<3> dim(60,75,3);
+    tipl::geometry<3> dim(60,75,3);
     profile_.resize(dim.size());
-    auto profile = image::make_image(&profile_[0],dim);
+    auto profile = tipl::make_image(&profile_[0],dim);
     std::fill(profile.begin(),profile.end(),0);
     float length_2 = tract_data.size() >> 1;
     bool has_point = false;
     for(int j = 0;j < tract_data.size();j += 3)
     {
-        image::vector<3> v(&(tract_data[j]));
+        tipl::vector<3> v(&(tract_data[j]));
         // x = -60 ~ 60    total  120
         // y = -90 ~ 60    total  150
         // z = -50 ~ 70    total  120

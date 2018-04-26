@@ -2,7 +2,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "tracking/region/Regions.h"
 #include "libs/tracking/tract_model.hpp"
 #include "libs/dsi/image_model.hpp"
@@ -66,7 +66,7 @@ int exp(void)
     if(mat_reader.read("trans",row,col,trans))
         std::cout << "Transformation matrix found." << std::endl;
 
-    image::geometry<3> geo(dim_buf[0],dim_buf[1],dim_buf[2]);
+    tipl::geometry<3> geo(dim_buf[0],dim_buf[1],dim_buf[2]);
     std::string export_option = po.get("export");
     std::replace(export_option.begin(),export_option.end(),',',' ');
     std::istringstream in(export_option);
@@ -88,10 +88,10 @@ int exp(void)
                 continue;
             }
 
-            image::basic_image<float,4> fibers;
+            tipl::image<float,4> fibers;
             if(cmd[3] == 's') // all directions
             {
-                fibers.resize(image::geometry<4>(geo[0],geo[1],geo[2],dir.num_fiber*3));
+                fibers.resize(tipl::geometry<4>(geo[0],geo[1],geo[2],dir.num_fiber*3));
                 for(unsigned int i = 0,ptr = 0;i < dir.num_fiber;++i)
                 for(unsigned int j = 0;j < 3;++j)
                 for(unsigned int index = 0;index < geo.size();++index,++ptr)
@@ -106,7 +106,7 @@ int exp(void)
                     std::cout << "Invalid fiber index. The maximum fiber per voxel is " << (int) dir.num_fiber << std::endl;
                     continue;
                 }
-                fibers.resize(image::geometry<4>(geo[0],geo[1],geo[2],3));
+                fibers.resize(tipl::geometry<4>(geo[0],geo[1],geo[2],3));
                 for(unsigned int j = 0,ptr = 0;j < 3;++j)
                 for(unsigned int index = 0;index < geo.size();++index,++ptr)
                     if(dir.get_fa(index,dir_index))
@@ -115,7 +115,7 @@ int exp(void)
             gz_nifti nifti_header;
             if(trans) //QSDR condition
                 nifti_header.set_LPS_transformation(trans,fibers.geometry());
-            image::flip_xy(fibers);
+            tipl::flip_xy(fibers);
             nifti_header << fibers;
             nifti_header.set_voxel_size(vs);
             nifti_header.save_to_file(file_name_stat.c_str());
@@ -133,13 +133,13 @@ int exp(void)
                 std::cout << "expected dimension: " << geo[0] << " by " << geo[1] << " by " << geo[2] << std::endl;
                 continue;
             }
-            image::basic_image<float,3> data(geo);
+            tipl::image<float,3> data(geo);
             std::copy(volume,volume+geo.size(),data.begin());
             gz_nifti nifti_header;
 
             if(trans) //QSDR condition
                 nifti_header.set_LPS_transformation(trans,data.geometry());
-            image::flip_xy(data);
+            tipl::flip_xy(data);
             nifti_header << data;
             nifti_header.set_voxel_size(vs);
             nifti_header.save_to_file(file_name_stat.c_str());

@@ -1,12 +1,12 @@
 #ifndef IMAGE_MODEL_HPP
 #define IMAGE_MODEL_HPP
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "basic_voxel.hpp"
 struct distortion_map{
     const float pi_2 = 3.14159265358979323846f/2.0f;
-    image::basic_image<int,3> i1,i2;
-    image::basic_image<float,3> w1,w2;
-    void operator=(const image::basic_image<float,3>& d)
+    tipl::image<int,3> i1,i2;
+    tipl::image<float,3> w1,w2;
+    void operator=(const tipl::image<float,3>& d)
     {
         int n = d.width();
         i1.resize(d.geometry());
@@ -14,7 +14,7 @@ struct distortion_map{
         w1.resize(d.geometry());
         w2.resize(d.geometry());
         int max_n = n-1.001f;
-        image::par_for(d.height()*d.depth(),[&](int pos)
+        tipl::par_for(d.height()*d.depth(),[&](int pos)
         {
             pos *= n;
             int* i1p = &i1[0]+pos;
@@ -41,16 +41,16 @@ struct distortion_map{
             }
         });
     }
-    void calculate_displaced(image::basic_image<float,3>& j1,
-                             image::basic_image<float,3>& j2,
-                             const image::basic_image<float,3>& v)
+    void calculate_displaced(tipl::image<float,3>& j1,
+                             tipl::image<float,3>& j2,
+                             const tipl::image<float,3>& v)
     {
         int n = v.width();
         j1.clear();
         j2.clear();
         j1.resize(v.geometry());
         j2.resize(v.geometry());
-        image::par_for(v.height()*v.depth(),[&](int pos)
+        tipl::par_for(v.height()*v.depth(),[&](int pos)
         {
             pos *= n;
             const int* i1p = &i1[0]+pos;
@@ -78,16 +78,16 @@ struct distortion_map{
 
     }
 
-    void calculate_original(const image::basic_image<float,3>& v1,
-                const image::basic_image<float,3>& v2,
-                image::basic_image<float,3>& v)
+    void calculate_original(const tipl::image<float,3>& v1,
+                const tipl::image<float,3>& v2,
+                tipl::image<float,3>& v)
     {
         int n = v1.width();
         int n2 = n + n;
         int block2 = n*n;
         v.clear();
         v.resize(v1.geometry());
-        image::par_for(v1.height()*v1.depth(),[&](int pos)
+        tipl::par_for(v1.height()*v1.depth(),[&](int pos)
         {
             pos *= n;
             const int* i1p = &i1[0]+pos;
@@ -110,17 +110,17 @@ struct distortion_map{
             std::vector<float> y(n2);
             std::copy(v1p,v1p+n,y.begin());
             std::copy(v2p,v2p+n,y.begin()+n);
-            image::mat::pseudo_inverse_solve(&M[0],&y[0],&v[0]+pos,image::dyndim(n,n2));
+            tipl::mat::pseudo_inverse_solve(&M[0],&y[0],&v[0]+pos,tipl::dyndim(n,n2));
         });
     }
-    void sample_gradient(const image::basic_image<float,3>& g1,
-                         const image::basic_image<float,3>& g2,
-                         image::basic_image<float,3>& new_g)
+    void sample_gradient(const tipl::image<float,3>& g1,
+                         const tipl::image<float,3>& g2,
+                         tipl::image<float,3>& new_g)
     {
         int n = g1.width();
         new_g.clear();
         new_g.resize(g1.geometry());
-        image::par_for(g1.height()*g1.depth(),[&](int pos)
+        tipl::par_for(g1.height()*g1.depth(),[&](int pos)
         {
             pos *= n;
             const int* i1p = &i1[0]+pos;
@@ -158,21 +158,21 @@ template<typename image_type>
 void distortion_estimate(const image_type& v1,const image_type& v2,
                          image_type& d)
 {
-    image::geometry<3> geo(v1.geometry());
+    tipl::geometry<3> geo(v1.geometry());
     if(geo.width() > 8)
     {
         image_type vv1,vv2;
-        image::downsample_with_padding(v1,vv1);
-        image::downsample_with_padding(v2,vv2);
+        tipl::downsample_with_padding(v1,vv1);
+        tipl::downsample_with_padding(v2,vv2);
         distortion_estimate(vv1,vv2,d);
-        image::upsample_with_padding(d,d,geo);
+        tipl::upsample_with_padding(d,d,geo);
         d *= 2.0f;
-        image::filter::gaussian(d);
+        tipl::filter::gaussian(d);
     }
     else
         d.resize(geo);
     int n = v1.width();
-    image::basic_image<float,3> old_d(geo),v(geo),new_g(geo),j1(geo),j2(geo);
+    tipl::image<float,3> old_d(geo),v(geo),new_g(geo),j1(geo),j2(geo);
     float sum_dif = 0.0f;
     float s = 0.5f;
     distortion_map m;
@@ -184,8 +184,8 @@ void distortion_estimate(const image_type& v1,const image_type& v2,
         // calculate the displaced image j1 j2 using v and d
         m.calculate_displaced(j1,j2,v);
         // calculate difference between current and estimated
-        image::minus(j1,v1);
-        image::minus(j2,v2);
+        tipl::minus(j1,v1);
+        tipl::minus(j2,v2);
 
         float sum = 0.0f;
         for(int i = 0;i < j1.size();++i)
@@ -205,18 +205,18 @@ void distortion_estimate(const image_type& v1,const image_type& v2,
         else
         {
             sum_dif = sum;
-            image::basic_image<float,3> g1(geo),g2(geo);
-            image::gradient(j1.begin(),j1.end(),g1.begin(),2,1);
-            image::gradient(j2.begin(),j2.end(),g2.begin(),2,1);
+            tipl::image<float,3> g1(geo),g2(geo);
+            tipl::gradient(j1.begin(),j1.end(),g1.begin(),2,1);
+            tipl::gradient(j2.begin(),j2.end(),g2.begin(),2,1);
             for(int i = 0;i < g1.size();++i)
                 g1[i] = -g1[i];
             // sample gradient
             m.sample_gradient(g1,g2,new_g);
             old_d = d;
         }
-        image::multiply_constant(new_g,s);
-        image::add(d,new_g);
-        image::lower_threshold(d,0.0f);
+        tipl::multiply_constant(new_g,s);
+        tipl::add(d,new_g);
+        tipl::lower_threshold(d,0.0f);
         for(int i = 0,pos = 0;i < geo.depth()*geo.height();++i,pos+=n)
         {
             d[pos] = 0.0f;
@@ -229,7 +229,7 @@ void distortion_estimate(const image_type& v1,const image_type& v2,
 struct ImageModel
 {
 public:
-    std::vector<image::basic_image<unsigned short,3> > new_dwi;//used in rotated volume
+    std::vector<tipl::image<unsigned short,3> > new_dwi;//used in rotated volume
 
 public:
     Voxel voxel;
@@ -237,13 +237,13 @@ public:
     gz_mat_read mat_reader;
 public:
     // untouched b-table and DWI from SRC file (the ones in Voxel class will be sorted
-    std::vector<image::vector<3,float> > src_bvectors;
+    std::vector<tipl::vector<3,float> > src_bvectors;
     bool has_image_rotation = false;
-    image::matrix<3,3,float> src_bvectors_rotate;
+    tipl::matrix<3,3,float> src_bvectors_rotate;
 public:
     std::vector<float> src_bvalues;
     std::vector<const unsigned short*> src_dwi_data;
-    image::basic_image<float,3> dwi_sum;
+    tipl::image<float,3> dwi_sum;
     std::shared_ptr<ImageModel> study_src;
     void calculate_dwi_sum(void);
     void remove(unsigned int index);
@@ -263,9 +263,9 @@ public:
     void flip_b_table(unsigned char dim);
     void swap_b_table(unsigned char dim);
     void flip_dwi(unsigned char type);
-    void rotate_one_dwi(unsigned int dwi_index,const image::transformation_matrix<double>& affine);
-    void rotate(const image::basic_image<float,3>& ref,
-                const image::transformation_matrix<double>& affine,
+    void rotate_one_dwi(unsigned int dwi_index,const tipl::transformation_matrix<double>& affine);
+    void rotate(const tipl::image<float,3>& ref,
+                const tipl::transformation_matrix<double>& affine,
                 bool super_resolution = false);
     void trim(void);
     void distortion_correction(const ImageModel& rhs);

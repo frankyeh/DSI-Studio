@@ -5,7 +5,7 @@
 #else
 #include "zlib.h"
 #endif
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "prog_interface_static_link.h"
 extern bool prog_aborted_;
 class gz_istream{
@@ -188,8 +188,8 @@ public:
 };
 
 
-typedef image::io::nifti_base<gz_istream,gz_ostream> gz_nifti;
-typedef image::io::mat_write_base<gz_ostream> gz_mat_write;
-typedef image::io::mat_read_base<gz_istream> gz_mat_read;
+typedef tipl::io::nifti_base<gz_istream,gz_ostream> gz_nifti;
+typedef tipl::io::mat_write_base<gz_ostream> gz_mat_write;
+typedef tipl::io::mat_read_base<gz_istream> gz_mat_read;
 
 #endif // GZIP_INTERFACE_HPP

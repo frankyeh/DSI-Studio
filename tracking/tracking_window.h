@@ -6,7 +6,7 @@
 #include <QGraphicsScene>
 #include <QDockWidget>
 #include <QTextBrowser>
-#include <image/image.hpp>
+#include <tipl/tipl.hpp>
 #include <vector>
 #include "SliceModel.h"
 #include "slice_view_scene.h"
@@ -60,10 +60,10 @@ public:
     float get_scene_zoom(void);
 public:
     unsigned char cur_dim;
-    image::value_to_color<float> v2c;
+    tipl::value_to_color<float> v2c;
 public:
     std::shared_ptr<SliceModel> overlay_slice;
-    image::value_to_color<float> overlay_v2c;
+    tipl::value_to_color<float> overlay_v2c;
 public:
     connectometry_result cnt_result;
 public:

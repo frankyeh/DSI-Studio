@@ -487,7 +487,7 @@ void tracking_window::initialize_tracking_index(int p)
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 {
     bool has_info = false;
-    image::vector<3,float> pos;
+    tipl::vector<3,float> pos;
     if (event->type() == QEvent::MouseMove)
     {
         if (obj == glWidget)
@@ -512,7 +512,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 
     if(!current_slice->is_diffusion_space)
     {
-        image::vector<3,float> pos_dwi(pos);
+        tipl::vector<3,float> pos_dwi(pos);
         pos_dwi.to(current_slice->T);
         status = QString("(%1,%2,%3) %4(%5,%6,%7)").arg(std::round(pos_dwi[0]*10.0)/10.0)
                 .arg(std::round(pos_dwi[1]*10.0)/10.0)
@@ -532,7 +532,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 
     if(handle->is_qsdr || handle->has_reg())
     {
-        image::vector<3,float> mni(pos);
+        tipl::vector<3,float> mni(pos);
         if(handle->has_reg())
             handle->subject2mni(mni);
         else
@@ -721,7 +721,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     if(index == -1 || !current_slice.get())
         return;
     no_update = true;
-    image::vector<3,float> slice_position(current_slice->slice_pos);
+    tipl::vector<3,float> slice_position(current_slice->slice_pos);
     if(!current_slice->is_diffusion_space)
         slice_position.to(current_slice->T);
 
@@ -798,7 +798,7 @@ void tracking_window::change_contrast()
 
 void tracking_window::on_actionEndpoints_to_seeding_triggered()
 {
-    std::vector<image::vector<3,float> >points;
+    std::vector<tipl::vector<3,float> >points;
 
     if(tractWidget->tract_models.empty())
         return;
@@ -813,7 +813,7 @@ void tracking_window::on_actionEndpoints_to_seeding_triggered()
 
 void tracking_window::on_actionTracts_to_seeds_triggered()
 {
-    std::vector<image::vector<3,float> >points;
+    std::vector<tipl::vector<3,float> >points;
     if(tractWidget->tract_models.empty())
         return;
     tractWidget->tract_models[tractWidget->currentRow()]->get_tract_points(points);
@@ -846,7 +846,7 @@ bool ask_TDI_options(int& rec,int& rec2)
 }
 void tracking_window::on_actionTDI_Diffusion_Space_triggered()
 {
-    image::matrix<4,4,float> tr;
+    tipl::matrix<4,4,float> tr;
     tr.identity();
     int rec,rec2;
     if(!ask_TDI_options(rec,rec2))
@@ -866,20 +866,20 @@ void tracking_window::on_actionTDI_Subvoxel_Diffusion_Space_triggered()
             "Input super-resolution ratio (e.g. 2, 3, or 4):",2,2,8,1,&ok);
     if(!ok)
         return;
-    image::matrix<4,4,float> tr;
+    tipl::matrix<4,4,float> tr;
     tr.identity();
     tr[0] = tr[5] = tr[10] = ratio;
-    image::geometry<3> new_geo(handle->dim[0]*ratio,handle->dim[1]*ratio,handle->dim[2]*ratio);
-    image::vector<3,float> new_vs(handle->vs);
+    tipl::geometry<3> new_geo(handle->dim[0]*ratio,handle->dim[1]*ratio,handle->dim[2]*ratio);
+    tipl::vector<3,float> new_vs(handle->vs);
     new_vs /= (float)ratio;
     tractWidget->export_tract_density(new_geo,new_vs,tr,rec == QMessageBox::Yes,rec2 != QMessageBox::Yes);
 }
 
 void tracking_window::on_actionTDI_Import_Slice_Space_triggered()
 {
-    image::matrix<4,4,float> tr = current_slice->invT;
-    image::geometry<3> geo = current_slice->geometry;
-    image::vector<3,float> vs = current_slice->voxel_size;
+    tipl::matrix<4,4,float> tr = current_slice->invT;
+    tipl::geometry<3> geo = current_slice->geometry;
+    tipl::vector<3,float> vs = current_slice->voxel_size;
     int rec,rec2;
     if(!ask_TDI_options(rec,rec2))
         return;
@@ -933,7 +933,7 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
     if(renderWidget->getData("fa_threshold").toFloat() != 0.0)
         set_data("fa_threshold",
                  renderWidget->getData("otsu_threshold").toFloat()*
-                 image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim)));
+                 tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim)));
     scene.show_slice();
 }
 
@@ -1071,14 +1071,14 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
 
 void tracking_window::on_actionManual_Registration_triggered()
 {
-    image::basic_image<float,3> from = current_slice->get_source();
-    image::filter::gaussian(from);
-    from -= image::segmentation::otsu_threshold(from);
-    image::lower_threshold(from,0.0);
+    tipl::image<float,3> from = current_slice->get_source();
+    tipl::filter::gaussian(from);
+    from -= tipl::segmentation::otsu_threshold(from);
+    tipl::lower_threshold(from,0.0);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
                                    from,handle->vs,
                                    fa_template_imp.I,fa_template_imp.vs,
-                                   image::reg::affine,image::reg::cost_type::corr));
+                                   tipl::reg::affine,tipl::reg::cost_type::corr));
 
     manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)
@@ -1290,7 +1290,7 @@ void tracking_window::on_zoom_out_clicked()
 }
 
 std::pair<float,float> evaluate_fib(
-        const image::geometry<3>& dim,
+        const tipl::geometry<3>& dim,
         const std::vector<std::vector<float> >& fib_fa,
         const std::vector<std::vector<float> >& fib_dir);
 void tracking_window::on_actionQuality_Assessment_triggered()
@@ -1324,7 +1324,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
     tracking_data fib;
     fib.read(*handle);
     float threshold = renderWidget->getData("otsu_threshold").toFloat()*
-                image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim));
+                tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
     if(!fib.dir.empty())
         return;
     for(float cos_angle = 0.99f;check_prog(1000-cos_angle*1000,1000-866);cos_angle -= 0.005f)
@@ -1340,22 +1340,22 @@ void tracking_window::on_actionImprove_Quality_triggered()
             std::copy(handle->dir.findex[i],handle->dir.findex[i]+size,new_index[i].begin());
         }
 
-        for(image::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
+        for(tipl::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
         {
             if(handle->dir.fa[0][index.index()] < threshold)
                 continue;
-            std::vector<image::pixel_index<3> > neighbors;
-            image::get_neighbors(index,handle->dim,neighbors);
+            std::vector<tipl::pixel_index<3> > neighbors;
+            tipl::get_neighbors(index,handle->dim,neighbors);
 
-            std::vector<image::vector<3> > dis(neighbors.size());
-            std::vector<image::vector<3> > fib_dir(neighbors.size());
+            std::vector<tipl::vector<3> > dis(neighbors.size());
+            std::vector<tipl::vector<3> > fib_dir(neighbors.size());
             std::vector<float> fib_fa(neighbors.size());
 
 
             for(unsigned char i = 0;i < neighbors.size();++i)
             {
                 dis[i] = neighbors[i];
-                dis[i] -= image::vector<3>(index);
+                dis[i] -= tipl::vector<3>(index);
                 dis[i].normalize();
                 unsigned char fib_order,reverse;
                 if(fib.get_nearest_dir_fib(neighbors[i].index(),dis[i],fib_order,reverse,threshold,cos_angle))
@@ -1377,7 +1377,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
                     float angle = fib_dir[i]*fib_dir[j];
                     if(angle > -cos_angle) // select opposite side
                         continue;
-                    image::vector<3> predict_dir(fib_dir[i]);
+                    tipl::vector<3> predict_dir(fib_dir[i]);
                     if(angle > 0)
                         predict_dir += fib_dir[j];
                     else
@@ -1388,9 +1388,9 @@ void tracking_window::on_actionImprove_Quality_triggered()
                     if(fib.get_nearest_dir_fib(index.index(),predict_dir,fib_order,reverse,threshold,cos_angle))
                     {
                         if(reverse)
-                            predict_dir -= image::vector<3>(handle->dir.get_dir(index.index(),fib_order));
+                            predict_dir -= tipl::vector<3>(handle->dir.get_dir(index.index(),fib_order));
                         else
-                            predict_dir += image::vector<3>(handle->dir.get_dir(index.index(),fib_order));
+                            predict_dir += tipl::vector<3>(handle->dir.get_dir(index.index(),fib_order));
                         predict_dir.normalize();
                         has_match = true;
                     }
@@ -1600,7 +1600,7 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
         slices[0]->get_source(),slices[0]->voxel_size,
         reg_slice->get_source(),reg_slice->voxel_size,
-            image::reg::rigid_body,image::reg::cost_type::mutual_info));
+            tipl::reg::rigid_body,tipl::reg::cost_type::mutual_info));
     manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)
         return;
@@ -1672,18 +1672,18 @@ void tracking_window::on_actionInsert_MNI_images_triggered()
         QMessageBox::information(this,"Error","Cannot open the nifti file",0);
         return;
     }
-    const image::basic_image<image::vector<3,float>,3 >& mapping = handle->get_mni_mapping();
-    image::basic_image<float,3> I,J(mapping.geometry());
-    image::matrix<4,4,float> T;
+    const tipl::image<tipl::vector<3,float>,3 >& mapping = handle->get_mni_mapping();
+    tipl::image<float,3> I,J(mapping.geometry());
+    tipl::matrix<4,4,float> T;
     reader.toLPS(I);
     reader.get_image_transformation(T.begin());
     T[15] = 1.0;
     T.inv();
-    J.for_each_mt([&](float& v,const image::pixel_index<3>& pos)
+    J.for_each_mt([&](float& v,const tipl::pixel_index<3>& pos)
     {
-        image::vector<3> mni(mapping[pos.index()]);
+        tipl::vector<3> mni(mapping[pos.index()]);
         mni.to(T);
-        image::estimate(I,mni,v);
+        tipl::estimate(I,mni,v);
     });
     QString name = QFileInfo(filename).baseName();
     std::shared_ptr<SliceModel> new_slice(new CustomSliceModel(handle));
@@ -1757,7 +1757,7 @@ void tracking_window::on_actionLoad_Color_Map_triggered()
                 "Text files (*.txt);;All files|(*)");
     if(filename.isEmpty())
         return;
-    image::color_map_rgb new_color_map;
+    tipl::color_map_rgb new_color_map;
     if(!new_color_map.load_from_file(filename.toStdString().c_str()))
     {
           QMessageBox::information(this,"Error","Invalid color map format");

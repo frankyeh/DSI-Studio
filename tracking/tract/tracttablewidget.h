@@ -4,7 +4,7 @@
 #include <QItemDelegate>
 #include <QTableWidget>
 #include <QTimer>
-#include <image/image.hpp>
+#include <tipl/tipl.hpp>
 #include "fib_data.hpp"
 class tracking_window;
 class TractModel;
@@ -34,9 +34,9 @@ public:
     void addNewTracts(QString tract_name,bool checked = true);
     void addConnectometryResults(std::vector<std::vector<std::vector<float> > >& greater,
                                  std::vector<std::vector<std::vector<float> > >& lesser);
-    void export_tract_density(image::geometry<3>& dim,
-                              image::vector<3,float> vs,
-                              image::matrix<4,4,float>& transformation,bool color,bool endpoint);
+    void export_tract_density(tipl::geometry<3>& dim,
+                              tipl::vector<3,float> vs,
+                              tipl::matrix<4,4,float>& transformation,bool color,bool endpoint);
 
     void saveTransformedTracts(const float* transform);
     void saveTransformedEndpoints(const float* transform);

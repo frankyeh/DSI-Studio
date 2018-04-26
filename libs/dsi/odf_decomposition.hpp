@@ -4,7 +4,7 @@
 #include <math.h>
 #include <cmath>
 #include <map>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "basic_process.hpp"
 #include "basic_voxel.hpp"
 
@@ -50,10 +50,10 @@ protected:
     template<class iterator_type>
     void normalize_vector(iterator_type from,iterator_type to)
     {
-        image::minus_constant(from,to,std::accumulate(from,to,0.0)/((float)(to-from)));
-        float length = image::vec::norm2(from,to);
+        tipl::minus_constant(from,to,std::accumulate(from,to,0.0)/((float)(to-from)));
+        float length = tipl::vec::norm2(from,to);
         if(length+1.0 != 1.0)
-            image::divide_constant(from,to,length);
+            tipl::divide_constant(from,to,length);
     }
 
     void estimate_Rt(Voxel& voxel)
@@ -76,7 +76,7 @@ protected:
         for (unsigned int i = 0; i < half_odf_size; ++i)
         {
             normalize_vector(Rt.begin()+i*half_odf_size,Rt.begin()+(i+1)*half_odf_size);
-            image::divide_constant(oRt.begin()+i*half_odf_size,oRt.begin()+(i+1)*half_odf_size,
+            tipl::divide_constant(oRt.begin()+i*half_odf_size,oRt.begin()+(i+1)*half_odf_size,
                           *std::max_element(oRt.begin()+i*half_odf_size,oRt.begin()+(i+1)*half_odf_size));
 
         }
@@ -116,8 +116,8 @@ protected:
         {
             // calculate the correlation with each SFO
 
-            image::mat::vector_product(&*x.begin(),&*residual.begin(),&*tmp.begin(),
-                                            image::dyndim(y_dim,y_dim));
+            tipl::mat::vector_product(&*x.begin(),&*residual.begin(),&*tmp.begin(),
+                                            tipl::dyndim(y_dim,y_dim));
             // get the most correlated orientation
             int dir = std::max_element(tmp.begin(),tmp.end())-tmp.begin();
             float corr = tmp[dir];
@@ -148,12 +148,12 @@ protected:
                     }
                 }
                 w[dir] += min_step_value;
-                image::vec::axpy(residual.begin(),residual.end(),-min_step_value,xi);
+                tipl::vec::axpy(residual.begin(),residual.end(),-min_step_value,xi);
             }
             else
             {
                 w[dir] += corr*step_size;
-                image::vec::axpy(residual.begin(),residual.end(),-corr*step_size,xi);
+                tipl::vec::axpy(residual.begin(),residual.end(),-corr*step_size,xi);
             }
         }
     }
@@ -191,7 +191,7 @@ public:
             is_neighbor[i3][i2] = 1;
         }
         // scale the free water diffusion to 1
-        image::divide_constant(voxel.free_water_diffusion,voxel.reponse_function_scaling);
+        tipl::divide_constant(voxel.free_water_diffusion,voxel.reponse_function_scaling);
         estimate_Rt(voxel);
 
     }
@@ -218,7 +218,7 @@ public:
             if(dir_list.empty())
             {
                 results.resize(1);
-                results[0] = image::mean(old_odf.begin(),old_odf.end());
+                results[0] = tipl::mean(old_odf.begin(),old_odf.end());
                 has_isotropic = 1;
                 break;
             }
@@ -237,7 +237,7 @@ public:
             }
             results.resize(dir_list.size()+has_isotropic);
 
-            image::mat::pseudo_inverse_solve(&*RRt.begin(),&*old_odf.begin(),&*results.begin(),image::dyndim(results.size(),half_odf_size));
+            tipl::mat::pseudo_inverse_solve(&*RRt.begin(),&*old_odf.begin(),&*results.begin(),tipl::dyndim(results.size(),half_odf_size));
 
             //  drop negative
             int min_index = std::min_element(results.begin()+has_isotropic,results.end())-results.begin();
@@ -291,7 +291,7 @@ public:
         if (!voxel.odf_decomposition)
             return;
         if(max_iso + 1.0 != 1.0)
-            image::divide_constant(fiber_ratio,max_iso);
+            tipl::divide_constant(fiber_ratio,max_iso);
         mat_writer.write("fiber_ratio",&*fiber_ratio.begin(),1,fiber_ratio.size());
 
     }

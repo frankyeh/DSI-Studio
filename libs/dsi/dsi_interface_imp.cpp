@@ -362,7 +362,7 @@ const char* reconstruction(ImageModel* image_model,
                     " The restricted diffusion was quantified using restricted diffusion imaging (Yeh et al., MRM, 77:603–612 (2017)).";
 
             {
-                std::vector<image::pointer_image<float,3> > tmp;
+                std::vector<tipl::pointer_image<float,3> > tmp;
                 tmp.swap(image_model->voxel.grad_dev);
                 // clear mask to create whole volume QA map
                 std::fill(image_model->voxel.mask.begin(),image_model->voxel.mask.end(),1.0);
@@ -402,14 +402,14 @@ const char* reconstruction(ImageModel* image_model,
 
             begin_prog("Registration between longitudinal scans");
             {
-                image::transformation_matrix<double> arg;
+                tipl::transformation_matrix<double> arg;
                 bool terminated = false;
                 check_prog(0,1);
-                image::reg::two_way_linear_mr(image_model->dwi_sum,
+                tipl::reg::two_way_linear_mr(image_model->dwi_sum,
                                               image_model->voxel.vs,
                                               image_model->study_src->dwi_sum,
                                               image_model->study_src->voxel.vs,
-                                arg,image::reg::rigid_body,image::reg::correlation(),terminated);
+                                arg,tipl::reg::rigid_body,tipl::reg::correlation(),terminated);
                 image_model->study_src->rotate(image_model->dwi_sum,arg);
                 image_model->study_src->voxel.load_from_src(*(image_model->study_src.get()));
                 image_model->study_src->voxel.vs = image_model->voxel.vs;
@@ -423,16 +423,16 @@ const char* reconstruction(ImageModel* image_model,
             {
                 begin_prog("Smoothing");
                 check_prog(0,2);
-                image::par_for(image_model->src_dwi_data.size(),[&](int i)
+                tipl::par_for(image_model->src_dwi_data.size(),[&](int i)
                 {
-                    auto I = image::make_image((unsigned short*)image_model->src_dwi_data[i],image_model->voxel.dim);
-                    image::filter::gaussian(I);
+                    auto I = tipl::make_image((unsigned short*)image_model->src_dwi_data[i],image_model->voxel.dim);
+                    tipl::filter::gaussian(I);
                 },image_model->voxel.thread_count);
                 check_prog(1,2);
-                image::par_for(image_model->study_src->new_dwi.size(),[&](int i)
+                tipl::par_for(image_model->study_src->new_dwi.size(),[&](int i)
                 {
-                    auto I = image::make_image((unsigned short*)&image_model->study_src->new_dwi[i][0],image_model->study_src->voxel.dim);
-                    image::filter::gaussian(I);
+                    auto I = tipl::make_image((unsigned short*)&image_model->study_src->new_dwi[i][0],image_model->study_src->voxel.dim);
+                    tipl::filter::gaussian(I);
                 },image_model->voxel.thread_count);
                 check_prog(2,2);
             }
@@ -440,16 +440,16 @@ const char* reconstruction(ImageModel* image_model,
             double r2 = 0.0;
             {
                 double a,b;
-                image::linear_regression(image_model->study_src->src_dwi_data[0],
+                tipl::linear_regression(image_model->study_src->src_dwi_data[0],
                                                      image_model->study_src->src_dwi_data[0]+
                                                      image_model->study_src->voxel.dim.size(),
                                                      image_model->src_dwi_data[0],a,b,r2);
                 std::cout << "y=" << a << "x+" << b << " r2=" << r2 << std::endl;
-                image::par_for(image_model->study_src->new_dwi.size(),[&](int i)
+                tipl::par_for(image_model->study_src->new_dwi.size(),[&](int i)
                 {
-                    image::multiply_constant(image_model->study_src->new_dwi[i].begin(),image_model->study_src->new_dwi[i].end(),a);
-                    image::add_constant(image_model->study_src->new_dwi[i].begin(),image_model->study_src->new_dwi[i].end(),b);
-                    image::lower_threshold(image_model->study_src->new_dwi[i].begin(),image_model->study_src->new_dwi[i].end(),0.0f);
+                    tipl::multiply_constant(image_model->study_src->new_dwi[i].begin(),image_model->study_src->new_dwi[i].end(),a);
+                    tipl::add_constant(image_model->study_src->new_dwi[i].begin(),image_model->study_src->new_dwi[i].end(),b);
+                    tipl::lower_threshold(image_model->study_src->new_dwi[i].begin(),image_model->study_src->new_dwi[i].end(),0.0f);
                 },image_model->voxel.thread_count);
 
             }
@@ -486,7 +486,7 @@ const char* reconstruction(ImageModel* image_model,
 }
 
 
-bool output_odfs(const image::basic_image<unsigned char,3>& mni_mask,
+bool output_odfs(const tipl::image<unsigned char,3>& mni_mask,
                  const char* out_name,
                  const char* ext,
                  std::vector<std::vector<float> >& odfs,
@@ -522,7 +522,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     static std::string error_msg,report;
     tessellated_icosahedron ti;
     float vs[3];
-    image::basic_image<unsigned char,3> mask;
+    tipl::image<unsigned char,3> mask;
     std::vector<std::vector<float> > odfs;
     unsigned int half_vertex_count = 0;
     unsigned int row,col;
@@ -574,7 +574,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                 check_prog(0,0);
                 return error_msg.c_str();
             }
-            mask.resize(image::geometry<3>(dimension));
+            mask.resize(tipl::geometry<3>(dimension));
             for(unsigned int index = 0;index < mask.size();++index)
                 if(fa0[index] != 0.0)
                     mask[index] = 1;
@@ -684,7 +684,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             }
         }
         for(unsigned int i = 0;i < odf_bufs.size();++i)
-            image::add(odfs[i].begin(),odfs[i].end(),odf_bufs[i]);
+            tipl::add(odfs[i].begin(),odfs[i].end(),odf_bufs[i]);
     }
     if (prog_aborted())
         return 0;

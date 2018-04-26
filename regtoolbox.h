@@ -5,7 +5,7 @@
 #include <QTimer>
 #include <QGraphicsScene>
 #include <QProgressBar>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 namespace Ui {
 class RegToolBox;
 }
@@ -16,26 +16,26 @@ class RegToolBox : public QMainWindow
     Q_OBJECT
 
 public:
-    image::basic_image<float,3> It,I,J,JJ;
-    image::basic_image<image::vector<3>,3> dis;
-    image::vector<3> Itvs,Ivs;
+    tipl::image<float,3> It,I,J,JJ;
+    tipl::image<tipl::vector<3>,3> dis;
+    tipl::vector<3> Itvs,Ivs;
     float ItR[12];
 public:
-    image::basic_image<float,3> J_view,J_view2;
-    image::basic_image<image::vector<3>,3> dis_view;
+    tipl::image<float,3> J_view,J_view2;
+    tipl::image<tipl::vector<3>,3> dis_view;
 public:
-    image::affine_transform<double> arg;
-    image::thread thread;
+    tipl::affine_transform<double> arg;
+    tipl::thread thread;
     std::shared_ptr<QTimer> timer;
     std::string status;
 public:
-    std::shared_ptr<image::reg::bfnorm_mapping<float,3> > bnorm_data;
+    std::shared_ptr<tipl::reg::bfnorm_mapping<float,3> > bnorm_data;
 
     int reg_type;
     bool reg_done;
 private:
     void clear(void);
-    void linear_reg(image::reg::reg_type reg_type);
+    void linear_reg(tipl::reg::reg_type reg_type);
     void nonlinear_reg(int method);
 
 public:
@@ -73,7 +73,7 @@ private:
     Ui::RegToolBox *ui;
     QGraphicsScene It_scene,I_scene;
 private:
-    image::color_image cIt,cI,cJ;
+    tipl::color_image cIt,cI,cJ;
 
 };
 

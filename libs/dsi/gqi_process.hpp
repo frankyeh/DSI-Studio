@@ -12,7 +12,7 @@ double base_function(double theta);
 class GQI_Recon  : public BaseProcess
 {
 public:// recorded for scheme balanced
-    std::vector<image::vector<3,float> > q_vectors_time;
+    std::vector<tipl::vector<3,float> > q_vectors_time;
 public:
     std::vector<float> sinc_ql;
 public:
@@ -36,12 +36,12 @@ public:
                 // new_bvecs = (I+grad_dev) * bvecs;
                 for(unsigned int i = 0; i < 9; ++i)
                     data.jacobian[i] = voxel.grad_dev[i][data.voxel_index];
-                image::mat::transpose(data.jacobian.begin(),image::dim<3,3>());
+                tipl::mat::transpose(data.jacobian.begin(),tipl::dim<3,3>());
             }
             std::vector<float> sinc_ql_(data.odf.size()*data.space.size());
             for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
             {
-                image::vector<3,float> from(voxel.ti.vertices[j]);
+                tipl::vector<3,float> from(voxel.ti.vertices[j]);
                 from.rotate(data.jacobian);
                 from.normalize();
                 if(voxel.r2_weighted)
@@ -52,12 +52,12 @@ public:
                         sinc_ql_[index] = boost::math::sinc_pi(q_vectors_time[i]*from);
 
             }
-            image::mat::vector_product(&*sinc_ql_.begin(),&*data.space.begin(),&*data.odf.begin(),
-                                          image::dyndim(data.odf.size(),data.space.size()));
+            tipl::mat::vector_product(&*sinc_ql_.begin(),&*data.space.begin(),&*data.odf.begin(),
+                                          tipl::dyndim(data.odf.size(),data.space.size()));
         }
         else
-            image::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
-                                    image::dyndim(data.odf.size(),data.space.size()));
+            tipl::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
+                                    tipl::dyndim(data.odf.size(),data.space.size()));
     }
 };
 
@@ -87,7 +87,7 @@ public:
                 {
                     int r2 = dx*dx+dy*dy+dz*dz;
                     voxel.bvalues.push_back(r2*500);
-                    image::vector<3> dir(dx,dy,dz);
+                    tipl::vector<3> dir(dx,dy,dz);
                     dir.normalize();
                     voxel.bvectors.push_back(dir);
                     offset.push_back(dx + dy*voxel.dim.width() + dz*voxel.dim.plane_size());
@@ -106,7 +106,7 @@ public:
             return;
         }
         hraw[data.voxel_index] = data.space[0];
-        auto I = image::make_image(voxel.dwi_data[0],voxel.dim);
+        auto I = tipl::make_image(voxel.dwi_data[0],voxel.dim);
         data.space.resize(voxel.bvalues.size());
         for(int i = 1;i < voxel.bvalues.size();++i)
         {
@@ -121,8 +121,8 @@ public:
             data.space[i] = std::fabs(data.space[0]-(I[pos1]+I[pos2])/2.0f)*scaling[i-1];
         }
 
-        image::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
-                                    image::dyndim(data.odf.size(),data.space.size()));
+        tipl::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
+                                    tipl::dyndim(data.odf.size(),data.space.size()));
     }
     virtual void end(Voxel&,gz_mat_write& mat_writer)
     {
@@ -135,7 +135,7 @@ class SchemeConverter : public BaseProcess
 {
     GQI_Recon from,to;
     std::vector<int> piv;
-    std::vector<image::vector<3,float> > bvectors;
+    std::vector<tipl::vector<3,float> > bvectors;
     std::vector<float> bvalues;
     std::vector<std::vector<unsigned short> > dwi;
     std::vector<unsigned short> b0;
@@ -156,7 +156,7 @@ public:
                 if(values[i*4] == 0.0)
                     continue;
                 bvalues.push_back(voxel.param[1]);
-                bvectors.push_back(image::vector<3,float>(values[i*4+1],values[i*4+2],values[i*4+3]));
+                bvectors.push_back(tipl::vector<3,float>(values[i*4+1],values[i*4+2],values[i*4+3]));
             }
         }
         else
@@ -185,15 +185,15 @@ public:
             b0.resize(voxel.dim.size());
 
         Rt.resize(dwi.size()*dwi.size());
-        image::mat::transpose(&*to.sinc_ql.begin(),&*Rt.begin(),image::dyndim(dwi.size(),dwi.size()));
+        tipl::mat::transpose(&*to.sinc_ql.begin(),&*Rt.begin(),tipl::dyndim(dwi.size(),dwi.size()));
         A.resize(dwi.size()*dwi.size());
         piv.resize(dwi.size());
-        image::mat::product_transpose(&*Rt.begin(),&*Rt.begin(),&*A.begin(),
-                                       image::dyndim(dwi.size(),dwi.size()),image::dyndim(dwi.size(),dwi.size()));
+        tipl::mat::product_transpose(&*Rt.begin(),&*Rt.begin(),&*A.begin(),
+                                       tipl::dyndim(dwi.size(),dwi.size()),tipl::dyndim(dwi.size(),dwi.size()));
         float max_value = *std::max_element(A.begin(),A.end());
         for (unsigned int i = 0,index = 0; i < dwi.size(); ++i,index += dwi.size() + 1)
             A[index] += max_value*voxel.param[2];
-        image::mat::lu_decomposition(A.begin(),piv.begin(),image::dyndim(dwi.size(),dwi.size()));
+        tipl::mat::lu_decomposition(A.begin(),piv.begin(),tipl::dyndim(dwi.size(),dwi.size()));
 
         total_negative_value = 0;
         total_value = 0;
@@ -211,8 +211,8 @@ public:
         }
         from.run(voxel,data);
         std::vector<float> hardi_data(dwi.size()),tmp(dwi.size());
-        image::mat::vector_product(&*Rt.begin(),&*data.odf.begin(),&*tmp.begin(),image::dyndim(dwi.size(),dwi.size()));
-        image::mat::lu_solve(&*A.begin(),&*piv.begin(),&*tmp.begin(),&*hardi_data.begin(),image::dyndim(dwi.size(),dwi.size()));
+        tipl::mat::vector_product(&*Rt.begin(),&*data.odf.begin(),&*tmp.begin(),tipl::dyndim(dwi.size(),dwi.size()));
+        tipl::mat::lu_solve(&*A.begin(),&*piv.begin(),&*tmp.begin(),&*hardi_data.begin(),tipl::dyndim(dwi.size(),dwi.size()));
         for(unsigned int index = 0;index < dwi.size();++index)
         {
             if(hardi_data[index] < 0.0)
@@ -366,9 +366,9 @@ public:
         for(unsigned int index = 0;index < max_length;++index)
         {
             dis[index][data.voxel_index] =
-                    image::vec::dot(data.space.begin(),data.space.end(),disw[index].begin());
+                    tipl::vec::dot(data.space.begin(),data.space.end(),disw[index].begin());
             cdf[index][data.voxel_index] =
-                    image::vec::dot(data.space.begin(),data.space.end(),cdfw[index].begin());
+                    tipl::vec::dot(data.space.begin(),data.space.end(),cdfw[index].begin());
             // make sure that cdf is increamental
             if(index && cdf[index][data.voxel_index] < cdf[index-1][data.voxel_index])
                 cdf[index][data.voxel_index] = cdf[index-1][data.voxel_index];
@@ -428,7 +428,7 @@ public:
         for(unsigned int index = 0;index < rdi.size();++index)
         {
             // force incremental
-            rdi_values[index] = std::max<float>(last_value,image::vec::dot(rdi[index].begin(),rdi[index].end(),data.space.begin()));
+            rdi_values[index] = std::max<float>(last_value,tipl::vec::dot(rdi[index].begin(),rdi[index].end(),data.space.begin()));
             last_value = rdi_values[index];
         }
         data.rdi.swap(rdi_values);

@@ -4,7 +4,7 @@
 #include <QGraphicsScene>
 #include <QItemDelegate>
 #include <QTimer>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "vbc/vbc_database.h"
 #include "atlas.hpp"
 namespace Ui {
@@ -40,13 +40,13 @@ class group_connectometry : public QDialog
 private:
     std::auto_ptr<connectometry_result> result_fib;
     void show_dis_table(void);
-    void add_new_roi(QString name,QString source,const std::vector<image::vector<3,short> >& new_roi,float r);
+    void add_new_roi(QString name,QString source,const std::vector<tipl::vector<3,short> >& new_roi,float r);
 public:
     bool gui = true;
     QString work_dir;
     std::vector<std::string> file_names;
 public:
-    std::vector<std::vector<image::vector<3,short> > > roi_list;
+    std::vector<std::vector<tipl::vector<3,short> > > roi_list;
     std::vector<float> roi_r_list;
 
 public:

@@ -4,7 +4,7 @@
 #include "ui_reconstruction_window.h"
 #include "dsi_interface_static_link.h"
 #include "mapping/fa_template.hpp"
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "mainwindow.h"
 #include <QImage>
 #include <QMessageBox>
@@ -32,7 +32,7 @@ bool reconstruction_window::load_src(int index)
         return false;
     }
     float m = (float)*std::max_element(handle->src_dwi_data[0],handle->src_dwi_data[0]+handle->voxel.dim.size());
-    float otsu = image::segmentation::otsu_threshold(image::make_image(handle->src_dwi_data[0],handle->voxel.dim));
+    float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim));
     ui->max_value->setMaximum(m*1.5f);
     ui->max_value->setMinimum(0.0f);
     ui->max_value->setSingleStep(m*0.05f);
@@ -86,7 +86,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->ODFSharpening->setEnabled(false);
 
 
-    v2c.two_color(image::rgb_color(0,0,0),image::rgb_color(255,255,255));
+    v2c.two_color(tipl::rgb(0,0,0),tipl::rgb(255,255,255));
     update_dimension();
 
     absolute_path = QFileInfo(filenames[0]).absolutePath();
@@ -210,7 +210,7 @@ void reconstruction_window::load_b_table(void)
 void reconstruction_window::on_b_table_itemSelectionChanged()
 {
     v2c.set_range(ui->min_value->value(),ui->max_value->value());
-    image::basic_image<float,2> tmp(image::geometry<2>(handle->voxel.dim[0],handle->voxel.dim[1]));
+    tipl::image<float,2> tmp(tipl::geometry<2>(handle->voxel.dim[0],handle->voxel.dim[1]));
     unsigned int b_index = ui->b_table->currentRow();
     std::copy(handle->src_dwi_data[b_index] + ui->z_pos->value()*tmp.size(),
               handle->src_dwi_data[b_index] + ui->z_pos->value()*tmp.size() + tmp.size(),tmp.begin());
@@ -365,30 +365,30 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
 
 void reconstruction_window::on_erosion_clicked()
 {
-    image::morphology::erosion(handle->voxel.mask);
+    tipl::morphology::erosion(handle->voxel.mask);
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 void reconstruction_window::on_dilation_clicked()
 {
-    image::morphology::dilation(handle->voxel.mask);
+    tipl::morphology::dilation(handle->voxel.mask);
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 void reconstruction_window::on_defragment_clicked()
 {
-    image::morphology::defragment(handle->voxel.mask);
+    tipl::morphology::defragment(handle->voxel.mask);
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 void reconstruction_window::on_smoothing_clicked()
 {
-    image::morphology::smoothing(handle->voxel.mask);
+    tipl::morphology::smoothing(handle->voxel.mask);
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 void reconstruction_window::on_negate_clicked()
 {
-    image::morphology::negate(handle->voxel.mask);
+    tipl::morphology::negate(handle->voxel.mask);
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
@@ -397,12 +397,12 @@ void reconstruction_window::on_thresholding_clicked()
 {
     bool ok;
     int threshold = QInputDialog::getInt(this,"DSI Studio","Please assign the threshold",
-                                         (int)image::segmentation::otsu_threshold(dwi),
+                                         (int)tipl::segmentation::otsu_threshold(dwi),
                                          (int)*std::min_element(dwi.begin(),dwi.end()),
                                          (int)*std::max_element(dwi.begin(),dwi.end())+1,1,&ok);
     if (!ok)
         return;
-    image::threshold(dwi,handle->voxel.mask,threshold);
+    tipl::threshold(dwi,handle->voxel.mask,threshold);
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
@@ -654,7 +654,7 @@ void reconstruction_window::on_manual_reg_clicked()
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
             dwi,handle->voxel.vs,
             fa_template_imp.I,fa_template_imp.vs,
-            image::reg::affine,image::reg::cost_type::corr));
+            tipl::reg::affine,tipl::reg::cost_type::corr));
     if(manual->exec() == QDialog::Accepted)
         handle->voxel.qsdr_trans = manual->T;
 }
@@ -766,8 +766,8 @@ void reconstruction_window::on_actionSave_bvecs_triggered()
 void reconstruction_window::update_image(void)
 {
     dwi.resize(handle->voxel.dim);
-    float min = image::minimum(handle->dwi_sum);
-    float range = image::maximum(handle->dwi_sum)-min;
+    float min = tipl::minimum(handle->dwi_sum);
+    float range = tipl::maximum(handle->dwi_sum)-min;
     float r = range > 0.0 ? 255.9f/range:1.0f;
     for(unsigned int index = 0;index < dwi.size();++index)
         dwi[index] = (handle->dwi_sum[index]-min)*r;
@@ -822,7 +822,7 @@ void reconstruction_window::on_actionFlip_xz_triggered()
 
 
 
-bool load_image_from_files(QStringList filenames,image::basic_image<float,3>& ref,image::vector<3>& vs);
+bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl::vector<3>& vs);
 void reconstruction_window::on_actionRotate_triggered()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
@@ -831,22 +831,22 @@ void reconstruction_window::on_actionRotate_triggered()
     if( filenames.isEmpty())
         return;
 
-    image::basic_image<float,3> ref;
-    image::vector<3> vs;
+    tipl::image<float,3> ref;
+    tipl::vector<3> vs;
     if(!load_image_from_files(filenames,ref,vs))
         return;
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
                                                                 dwi,handle->voxel.vs,ref,vs,
-                                                                image::reg::rigid_body,
-                                                                image::reg::cost_type::mutual_info));
+                                                                tipl::reg::rigid_body,
+                                                                tipl::reg::cost_type::mutual_info));
     manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)
         return;
 
     begin_prog("rotating");
-    image::basic_image<float,3> ref2(ref);
-    float m = image::median(ref2.begin(),ref2.end());
-    image::multiply_constant_mt(ref,0.5f/m);
+    tipl::image<float,3> ref2(ref);
+    float m = tipl::median(ref2.begin(),ref2.end());
+    tipl::multiply_constant_mt(ref,0.5f/m);
     handle->rotate(ref,manual->iT);
     handle->voxel.vs = vs;
     handle->voxel.report += " The diffusion images were rotated and scaled to the space of ";
@@ -891,24 +891,24 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
 {
     if (!dwi.size())
         return;
-    buffer.resize(image::geometry<2>(dwi.width(),dwi.height()));
+    buffer.resize(tipl::geometry<2>(dwi.width(),dwi.height()));
     unsigned int offset = position*buffer.size();
     std::copy(dwi.begin() + offset,dwi.begin()+ offset + buffer.size(),buffer.begin());
 
     unsigned char* slice_image_ptr = &*dwi.begin() + buffer.size()* position;
     unsigned char* slice_mask = &*handle->voxel.mask.begin() + buffer.size()* position;
 
-    image::color_image buffer2(image::geometry<2>(dwi.width()*2,dwi.height()));
-    image::draw(buffer,buffer2,image::vector<2,int>());
+    tipl::color_image buffer2(tipl::geometry<2>(dwi.width()*2,dwi.height()));
+    tipl::draw(buffer,buffer2,tipl::vector<2,int>());
     for (unsigned int index = 0; index < buffer.size(); ++index)
     {
         unsigned char value = slice_image_ptr[index];
         if (slice_mask[index])
-            buffer[index] = image::rgb_color(255, value, value);
+            buffer[index] = tipl::rgb(255, value, value);
         else
-            buffer[index] = image::rgb_color(value, value, value);
+            buffer[index] = tipl::rgb(value, value, value);
     }
-    image::draw(buffer,buffer2,image::vector<2,int>(dwi.width(),0));
+    tipl::draw(buffer,buffer2,tipl::vector<2,int>(dwi.width(),0));
     buffer2.swap(buffer);
     double ratio = std::max(1.0,
         std::min(((double)ui->graphicsView->width()-5)/(double)buffer.width(),
@@ -921,19 +921,19 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
 void rec_motion_correction(ImageModel* handle)
 {
     begin_prog("correcting");
-    image::par_for2(handle->src_bvalues.size(),[&](int i,int id)
+    tipl::par_for2(handle->src_bvalues.size(),[&](int i,int id)
     {
         if(i == 0 || prog_aborted())
             return;
         if(id == 0)
             check_prog(i*99/handle->src_bvalues.size(),100);
-        image::transformation_matrix<double> arg;
+        tipl::transformation_matrix<double> arg;
         bool terminated = false;
-        image::reg::two_way_linear_mr(
-                                  image::make_image(handle->src_dwi_data[0],handle->voxel.dim),
+        tipl::reg::two_way_linear_mr(
+                                  tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim),
                                   handle->voxel.vs,
-                                  image::make_image(handle->src_dwi_data[i],handle->voxel.dim),handle->voxel.vs,
-                                  arg,image::reg::affine,image::reg::correlation(),terminated);
+                                  tipl::make_image(handle->src_dwi_data[i],handle->voxel.dim),handle->voxel.vs,
+                                  arg,tipl::reg::affine,tipl::reg::correlation(),terminated);
         handle->rotate_one_dwi(i,arg);
     });
     check_prog(1,1);
@@ -967,8 +967,8 @@ void reconstruction_window::on_half_sphere_toggled(bool checked)
 
 bool add_other_image(ImageModel* handle,QString name,QString filename,bool full_auto)
 {
-    image::basic_image<float,3> ref;
-    image::vector<3> vs;
+    tipl::image<float,3> ref;
+    tipl::vector<3> vs;
     gz_nifti in;
     if(!in.load_from_file(filename.toLocal8Bit().begin()) || !in.toLPS(ref))
     {
@@ -978,7 +978,7 @@ bool add_other_image(ImageModel* handle,QString name,QString filename,bool full_
             QMessageBox::information(0,"Error","Not a valid nifti file",0);
         return false;
     }
-    image::transformation_matrix<double> affine;
+    tipl::transformation_matrix<double> affine;
     bool has_registered = false;
     for(unsigned int index = 0;index < handle->voxel.other_image.size();++index)
         if(ref.geometry() == handle->voxel.other_image[index].geometry())
@@ -992,19 +992,19 @@ bool add_other_image(ImageModel* handle,QString name,QString filename,bool full_
         if(full_auto)
         {
             std::cout << "add " << filename.toStdString() << " as " << name.toStdString() << std::endl;
-            image::basic_image<float,3> from(handle->dwi_sum),to(ref);
-            image::normalize(from,1.0);
-            image::normalize(to,1.0);
+            tipl::image<float,3> from(handle->dwi_sum),to(ref);
+            tipl::normalize(from,1.0);
+            tipl::normalize(to,1.0);
             bool terminated = false;
-            image::affine_transform<float> arg;
-            image::reg::linear_mr(from,handle->voxel.vs,to,vs,arg,image::reg::rigid_body,image::reg::mutual_information(),terminated,0.1);
-            image::reg::linear_mr(from,handle->voxel.vs,to,vs,arg,image::reg::rigid_body,image::reg::mutual_information(),terminated,0.01);
-            affine = image::transformation_matrix<float>(arg,handle->voxel.dim,handle->voxel.vs,to.geometry(),vs);
+            tipl::affine_transform<float> arg;
+            tipl::reg::linear_mr(from,handle->voxel.vs,to,vs,arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated,0.1);
+            tipl::reg::linear_mr(from,handle->voxel.vs,to,vs,arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated,0.01);
+            affine = tipl::transformation_matrix<float>(arg,handle->voxel.dim,handle->voxel.vs,to.geometry(),vs);
         }
         else
         {
             std::shared_ptr<manual_alignment> manual(new manual_alignment(0,
-                        handle->dwi_sum,handle->voxel.vs,ref,vs,image::reg::rigid_body,image::reg::cost_type::mutual_info));
+                        handle->dwi_sum,handle->voxel.vs,ref,vs,tipl::reg::rigid_body,tipl::reg::cost_type::mutual_info));
             manual->on_rerun_clicked();
             if(manual->exec() != QDialog::Accepted)
                 return false;
@@ -1031,7 +1031,7 @@ void reconstruction_window::on_add_t1t2_clicked()
 void reconstruction_window::on_actionManual_Rotation_triggered()
 {
     std::shared_ptr<manual_alignment> manual(
-                new manual_alignment(this,dwi,handle->voxel.vs,dwi,handle->voxel.vs,image::reg::rigid_body,image::reg::cost_type::mutual_info));
+                new manual_alignment(this,dwi,handle->voxel.vs,dwi,handle->voxel.vs,tipl::reg::rigid_body,tipl::reg::cost_type::mutual_info));
     if(manual->exec() != QDialog::Accepted)
         return;
     begin_prog("rotating");
@@ -1050,8 +1050,8 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
             "Images (*.nii *nii.gz);;All files (*)" );
     if( filename.isEmpty())
         return;
-    image::basic_image<float,3> ref;
-    image::vector<3> vs;
+    tipl::image<float,3> ref;
+    tipl::vector<3> vs;
     gz_nifti in;
     if(!in.load_from_file(filename.toLocal8Bit().begin()) || !in.toLPS(ref))
     {
@@ -1059,7 +1059,7 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
         return;
     }
     in.get_voxel_size(vs.begin());
-    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,dwi,handle->voxel.vs,ref,vs,image::reg::rigid_body,image::reg::cost_type::corr));
+    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,dwi,handle->voxel.vs,ref,vs,tipl::reg::rigid_body,tipl::reg::cost_type::corr));
     manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)
         return;
@@ -1067,7 +1067,7 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
     begin_prog("rotating");
     handle->rotate(ref,manual->iT);
     handle->voxel.vs = vs;
-    image::pointer_image<unsigned short,3> I = image::make_image((unsigned short*)handle->src_dwi_data[0],handle->voxel.dim);
+    tipl::pointer_image<unsigned short,3> I = tipl::make_image((unsigned short*)handle->src_dwi_data[0],handle->voxel.dim);
     ref *= (float)(*std::max_element(I.begin(),I.end()))/(*std::max_element(ref.begin(),ref.end()));
     std::copy(ref.begin(),ref.end(),I.begin());
     update_image();
@@ -1124,22 +1124,22 @@ void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
     if( filenames.isEmpty())
         return;
 
-    image::basic_image<float,3> ref;
-    image::vector<3> vs;
+    tipl::image<float,3> ref;
+    tipl::vector<3> vs;
     if(!load_image_from_files(filenames,ref,vs))
         return;
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
                                                                 dwi,handle->voxel.vs,ref,vs,
-                                                                image::reg::rigid_body,
-                                                                image::reg::cost_type::mutual_info));
+                                                                tipl::reg::rigid_body,
+                                                                tipl::reg::cost_type::mutual_info));
     manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)
         return;
 
     begin_prog("rotating");
-    image::basic_image<float,3> ref2(ref);
-    float m = image::median(ref2.begin(),ref2.end());
-    image::multiply_constant_mt(ref,0.5f/m);
+    tipl::image<float,3> ref2(ref);
+    float m = tipl::median(ref2.begin(),ref2.end());
+    tipl::multiply_constant_mt(ref,0.5f/m);
     handle->rotate(ref,manual->iT,true);
     handle->voxel.vs = vs;
     handle->voxel.report += " The diffusion images were rotated and scaled to the space of ";

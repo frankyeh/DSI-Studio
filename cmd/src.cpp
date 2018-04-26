@@ -2,7 +2,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "dicom/dwi_header.hpp"
 #include "program_option.hpp"
 

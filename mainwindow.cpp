@@ -1,6 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include <QFileDialog>
 #include <QDateTime>
 #include <QUrl>
@@ -287,7 +287,7 @@ void MainWindow::on_OpenDICOM_clicked()
     add_work_dir(QFileInfo(filenames[0]).absolutePath());
     if(QFileInfo(filenames[0]).completeBaseName() == "subject")
     {
-        image::io::bruker_info subject_file;
+        tipl::io::bruker_info subject_file;
         if(!subject_file.load_from_file(filenames[0].toLocal8Bit().begin()))
             return;
         QString dir = QFileInfo(filenames[0]).absolutePath();
@@ -298,7 +298,7 @@ void MainWindow::on_OpenDICOM_clicked()
             bool is_dwi =false;
             // has dif info in the method file
             {
-                image::io::bruker_info method_file;
+                tipl::io::bruker_info method_file;
                 QString method_name = dir + "/" +QString::number(i)+"/method";
                 if(method_file.load_from_file(method_name.toLocal8Bit().begin()) &&
                    method_file["PVM_DwEffBval"].length())
@@ -306,7 +306,7 @@ void MainWindow::on_OpenDICOM_clicked()
             }
             // has dif info in the imnd file
             {
-                image::io::bruker_info imnd_file;
+                tipl::io::bruker_info imnd_file;
                 QString imnd_name = dir + "/" +QString::number(i)+"/imnd";
                 if(imnd_file.load_from_file(imnd_name.toLocal8Bit().begin()) &&
                    imnd_file["IMND_diff_b_value"].length())
@@ -393,7 +393,7 @@ bool RenameDICOMToDir(QString FileName, QString ToDir)
 {
     std::string person, sequence, imagename;
     {
-        image::io::dicom header;
+        tipl::io::dicom header;
         if (!header.load_from_file(FileName.toLocal8Bit().begin()))
             return false;
 
@@ -632,20 +632,20 @@ void MainWindow::on_batch_src_clicked()
             if(dwi_files.size() == 1) //MPRAGE or T2W
             {
                 std::sort(dicom_file_list.begin(),dicom_file_list.end(),compare_qstring());
-                image::io::volume v;
-                image::io::dicom header;
+                tipl::io::volume v;
+                tipl::io::dicom header;
                 std::vector<std::string> file_list;
                 for(unsigned int index = 0;index < dicom_file_list.size();++index)
                     file_list.push_back(dicom_file_list[index].toLocal8Bit().begin());
                 if(!v.load_from_files(file_list,file_list.size()) ||
                    !header.load_from_file(dicom_file_list[0].toLocal8Bit().begin()))
                     continue;
-                image::basic_image<float,3> I;
-                image::vector<3> vs;
+                tipl::image<float,3> I;
+                tipl::vector<3> vs;
                 v >> I;
                 v.get_voxel_size(vs.begin());
                 gz_nifti nii_out;
-                image::flip_xy(I);
+                tipl::flip_xy(I);
                 nii_out << I;
                 nii_out.set_voxel_size(vs);
 
@@ -876,7 +876,7 @@ void MainWindow::on_set_dir_clicked()
     QDir::setCurrent(dir);
 }
 
-bool load_image_from_files(QStringList filenames,image::basic_image<float,3>& ref,image::vector<3>& vs);
+bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl::vector<3>& vs);
 
 void MainWindow::on_linear_reg_clicked()
 {
@@ -894,14 +894,14 @@ void MainWindow::on_linear_reg_clicked()
         return;
 
 
-    image::basic_image<float,3> ref1,ref2;
-    image::vector<3> vs1,vs2;
+    tipl::image<float,3> ref1,ref2;
+    tipl::vector<3> vs1,vs2;
 
     if(!load_image_from_files(filename1,ref1,vs1) ||
        !load_image_from_files(filename2,ref2,vs2))
         return;
 
-    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,ref1,vs1,ref2,vs2,image::reg::affine,image::reg::mutual_info));
+    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,ref1,vs1,ref2,vs2,tipl::reg::affine,tipl::reg::mutual_info));
     manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)
         return;

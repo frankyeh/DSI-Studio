@@ -1,7 +1,7 @@
 #ifndef TRACT_CLUSTER_HPP
 #define TRACT_CLUSTER_HPP
 #include <vector>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include <map>
 
 struct Cluster
@@ -86,7 +86,7 @@ public:
 
 class TractCluster : public BasicCluster
 {
-    image::geometry<3> dim;
+    tipl::geometry<3> dim;
     unsigned int w,wh;
     float error_distance;
     std::mutex  lock_merge;

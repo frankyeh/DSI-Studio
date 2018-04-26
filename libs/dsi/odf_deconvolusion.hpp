@@ -106,14 +106,14 @@ protected:
 	void deconvolution(std::vector<float>& odf)
 	{
 		std::vector<float> tmp(half_odf_size);
-        image::mat::vector_product(&*Rt.begin(),&*odf.begin(),&*tmp.begin(),image::dyndim(half_odf_size,half_odf_size));
-        image::mat::lu_solve(&*A.begin(),&*pv.begin(),&*tmp.begin(),&*odf.begin(),image::dyndim(half_odf_size,half_odf_size));
+        tipl::mat::vector_product(&*Rt.begin(),&*odf.begin(),&*tmp.begin(),tipl::dyndim(half_odf_size,half_odf_size));
+        tipl::mat::lu_solve(&*A.begin(),&*pv.begin(),&*tmp.begin(),&*odf.begin(),tipl::dyndim(half_odf_size,half_odf_size));
 	}
 	void remove_isotropic(std::vector<float>& odf)
 	{
 		float min_value = *std::min_element(odf.begin(),odf.end());
         if (min_value > 0)
-            image::minus_constant(odf,min_value);
+            tipl::minus_constant(odf,min_value);
         else
             for (unsigned int index = 0; index < half_odf_size; ++index)
                 if (odf[index] < 0.0)
@@ -141,7 +141,7 @@ protected:
 
         deconvolution(free_water_odf);
         remove_isotropic(free_water_odf);
-                specificity_error_percentage = image::mean(free_water_odf.begin(),free_water_odf.end())/
+                specificity_error_percentage = tipl::mean(free_water_odf.begin(),free_water_odf.end())/
                             (*std::max_element(single_fiber_odf.begin(),single_fiber_odf.end()));
 
 		
@@ -154,11 +154,11 @@ public:
         if (!voxel.odf_deconvolusion)
             return;
         voxel.recon_report << "Diffusion ODF deconvolution (Yeh et al., Neuroimage, 2011) was conducted using a regularization parameter of " << voxel.param[2];
-        image::divide_constant(voxel.response_function,
+        tipl::divide_constant(voxel.response_function,
                       (std::accumulate(voxel.response_function.begin(),voxel.response_function.end(),0.0)
                                             /((double)voxel.response_function.size())));
         // scale the free water diffusion to 1
-        image::divide_constant(voxel.free_water_diffusion,voxel.reponse_function_scaling);
+        tipl::divide_constant(voxel.free_water_diffusion,voxel.reponse_function_scaling);
         
 
         half_odf_size = voxel.ti.half_vertices_count;
@@ -166,13 +166,13 @@ public:
 
         A.resize(half_odf_size*half_odf_size);
         pv.resize(half_odf_size);
-        image::mat::product_transpose(Rt.begin(),Rt.begin(),A.begin(),
-                                       image::dyndim(half_odf_size,half_odf_size),image::dyndim(half_odf_size,half_odf_size));
+        tipl::mat::product_transpose(Rt.begin(),Rt.begin(),A.begin(),
+                                       tipl::dyndim(half_odf_size,half_odf_size),tipl::dyndim(half_odf_size,half_odf_size));
 
         AA = A;
         for (unsigned int i = 0,index = 0; i < half_odf_size; ++i,index += half_odf_size + 1)
             A[index] += voxel.param[2];
-        image::mat::lu_decomposition(A.begin(),pv.begin(),image::dyndim(half_odf_size,half_odf_size));
+        tipl::mat::lu_decomposition(A.begin(),pv.begin(),tipl::dyndim(half_odf_size,half_odf_size));
 
         get_error_percentage(voxel);
 		
@@ -183,7 +183,7 @@ public:
         // scale the dODF using the reference to free water diffusion
         if (!voxel.odf_deconvolusion)
             return;
-        image::divide_constant(data.odf,voxel.reponse_function_scaling);
+        tipl::divide_constant(data.odf,voxel.reponse_function_scaling);
 		deconvolution(data.odf);
         remove_isotropic(data.odf);
     }

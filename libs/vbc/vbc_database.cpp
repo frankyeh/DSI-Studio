@@ -19,7 +19,7 @@ bool vbc_database::create_database(const char* template_name)
         error_msg = handle->error_msg;
         return false;
     }
-    fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim));
+    fiber_threshold = 0.6*tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
     handle->db.calculate_si2vi();
     return true;
 }
@@ -32,7 +32,7 @@ bool vbc_database::load_database(const char* database_name)
         error_msg += handle->error_msg;
         return false;
     }
-    fiber_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim));
+    fiber_threshold = 0.6*tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
     voxels_in_threshold = 0;
     for(int i = 0;i < handle->dim.size();++i)
         if(handle->dir.fa[0][i] > fiber_threshold)
@@ -43,10 +43,10 @@ bool vbc_database::load_database(const char* database_name)
 
 int vbc_database::run_track(const tracking_data& fib,std::vector<std::vector<float> >& tracks,float seed_ratio, unsigned int thread_count)
 {
-    std::vector<image::vector<3,short> > seed;
-    for(image::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
+    std::vector<tipl::vector<3,short> > seed;
+    for(tipl::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
         if(fib.fa[0][index.index()] > tracking_threshold)
-            seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
+            seed.push_back(tipl::vector<3,short>(index.x(),index.y(),index.z()));
     unsigned int count = seed.size()*seed_ratio*10000.0f/(float)voxels_in_threshold;
     if(!count)
     {
@@ -69,7 +69,7 @@ int vbc_database::run_track(const tracking_data& fib,std::vector<std::vector<flo
     tracking_thread.param.termination_count = count;
     // if no seed assigned, assign whole brain
     if(roi_list.empty() || std::find(roi_type.begin(),roi_type.end(),3) == roi_type.end())
-        tracking_thread.roi_mgr.setRegions(fib.dim,seed,1.0,3,"whole brain",image::vector<3>());
+        tracking_thread.roi_mgr.setRegions(fib.dim,seed,1.0,3,"whole brain",tipl::vector<3>());
     if(!roi_list.empty())
     {
         for(unsigned int index = 0;index < roi_list.size();++index)

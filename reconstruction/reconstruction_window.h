@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include <QGraphicsScene>
 #include <QSettings>
-#include <image/image.hpp>
+#include <tipl/tipl.hpp>
 
 
 namespace Ui {
@@ -28,21 +28,21 @@ protected:
     void closeEvent(QCloseEvent *event);
 private:
     QGraphicsScene source;
-    image::color_image buffer_source;
+    tipl::color_image buffer_source;
     QImage source_image;
     float max_source_value,source_ratio;
 
     void load_b_table(void);
 private:
     QGraphicsScene scene;
-    image::color_image buffer;
+    tipl::color_image buffer;
     QImage slice_image;
-    image::value_to_color<float> v2c;
+    tipl::value_to_color<float> v2c;
 private:
     Ui::reconstruction_window *ui;
     std::auto_ptr<ImageModel> handle;
     float params[5];
-    image::basic_image<unsigned char, 3>dwi;
+    tipl::image<unsigned char, 3>dwi;
     bool load_src(int index);
     void update_dimension(void);
     void update_image(void);

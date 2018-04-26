@@ -4,7 +4,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "tracking/region/Regions.h"
 #include "libs/tracking/tract_model.hpp"
 #include "libs/tracking/tracking_thread.hpp"
@@ -126,19 +126,19 @@ void export_track_info(const std::string& file_name,
         {
             file_name_stat += ".bmp";
             std::cout << "export subvoxel TDI to " << file_name_stat << std::endl;
-            image::basic_image<image::rgb_color,3> tdi;
-            image::matrix<4,4,float> tr;
+            tipl::image<tipl::rgb,3> tdi;
+            tipl::matrix<4,4,float> tr;
             tr.identity();
             if(cmd == "tdi_color")
                 tdi.resize(handle->dim);
             else
             {
-                tdi.resize(image::geometry<3>(handle->dim[0]*4,handle->dim[1]*4,handle->dim[2]*4));
+                tdi.resize(tipl::geometry<3>(handle->dim[0]*4,handle->dim[1]*4,handle->dim[2]*4));
                 tr[0] = tr[5] = tr[10] = 4.0f;
             }
             tract_model.get_density_map(tdi,tr,false);
-            image::basic_image<image::rgb_color,2> mosaic;
-            image::mosaic(tdi,mosaic,std::sqrt(tdi.depth()));
+            tipl::image<tipl::rgb,2> mosaic;
+            tipl::mosaic(tdi,mosaic,std::sqrt(tdi.depth()));
             QImage qimage((unsigned char*)&*mosaic.begin(),
                           mosaic.width(),mosaic.height(),QImage::Format_RGB32);
             qimage.save(file_name_stat.c_str());

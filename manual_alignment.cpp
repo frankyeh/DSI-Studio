@@ -9,24 +9,24 @@
 void show_view(QGraphicsScene& scene,QImage I);
 
 manual_alignment::manual_alignment(QWidget *parent,
-                                   image::basic_image<float,3> from_,
-                                   const image::vector<3>& from_vs_,
-                                   image::basic_image<float,3> to_,
-                                   const image::vector<3>& to_vs_,
-                                   image::reg::reg_type reg_type,
-                                   image::reg::cost_type cost_function) :
+                                   tipl::image<float,3> from_,
+                                   const tipl::vector<3>& from_vs_,
+                                   tipl::image<float,3> to_,
+                                   const tipl::vector<3>& to_vs_,
+                                   tipl::reg::reg_type reg_type,
+                                   tipl::reg::cost_type cost_function) :
     QDialog(parent),ui(new Ui::manual_alignment),from_vs(from_vs_),to_vs(to_vs_),timer(0)
 {
     from_original = from_;
     from.swap(from_);
     to.swap(to_);
-    image::normalize(from,1.0);
-    image::normalize(to,1.0);
-    image::reg::get_bound(from,arg,b_upper,b_lower,reg_type);
+    tipl::normalize(from,1.0);
+    tipl::normalize(to,1.0);
+    tipl::reg::get_bound(from,arg,b_upper,b_lower,reg_type);
 
     ui->setupUi(this);
-    ui->reg_type->setCurrentIndex(reg_type == image::reg::rigid_body? 0: 1);
-    ui->cost_type->setCurrentIndex(cost_function == image::reg::mutual_info ? 1 : 0);
+    ui->reg_type->setCurrentIndex(reg_type == tipl::reg::rigid_body? 0: 1);
+    ui->cost_type->setCurrentIndex(cost_function == tipl::reg::mutual_info ? 1 : 0);
 
 
     ui->sag_view->setScene(&scene[0]);
@@ -153,12 +153,12 @@ void manual_alignment::load_param(void)
 
 void manual_alignment::update_image(void)
 {
-    T = image::transformation_matrix<double>(arg,from.geometry(),from_vs,to.geometry(),to_vs);
+    T = tipl::transformation_matrix<double>(arg,from.geometry(),from_vs,to.geometry(),to_vs);
     iT = T;
     iT.inverse();
     warped_from.clear();
     warped_from.resize(to.geometry());
-    image::resample(from,warped_from,iT,image::linear);
+    tipl::resample(from,warped_from,iT,tipl::linear);
 }
 void manual_alignment::param_changed()
 {
@@ -201,14 +201,14 @@ void manual_alignment::slice_pos_moved()
     w2 *= 255.0;
     for(unsigned char dim = 0;dim < 3;++dim)
     {
-        image::basic_image<float,2> slice,slice2;
-        image::reslicing(warped_from,slice,dim,slice_pos[dim]);
-        image::reslicing(to,slice2,dim,slice_pos[dim]);
+        tipl::image<float,2> slice,slice2;
+        tipl::reslicing(warped_from,slice,dim,slice_pos[dim]);
+        tipl::reslicing(to,slice2,dim,slice_pos[dim]);
         buffer[dim].resize(slice.geometry());
         for (unsigned int index = 0; index < slice.size(); ++index)
         {
             float value = slice[index]*w2+slice2[index]*w1;
-            buffer[dim][index] = image::rgb_color(value,value,value);
+            buffer[dim][index] = tipl::rgb(value,value,value);
         }
         slice_image[dim] = QImage((unsigned char*)&*buffer[dim].begin(),buffer[dim].width(),buffer[dim].height(),QImage::Format_RGB32).
                         scaled(buffer[dim].width()*ratio,buffer[dim].height()*ratio);
@@ -258,21 +258,21 @@ void manual_alignment::on_buttonBox_rejected()
 
 void manual_alignment::on_rerun_clicked()
 {
-    auto cost = ui->cost_type->currentIndex() == 0 ? image::reg::corr : image::reg::mutual_info;
-    auto reg = ui->reg_type->currentIndex() == 0 ? image::reg::rigid_body : image::reg::affine;
+    auto cost = ui->cost_type->currentIndex() == 0 ? tipl::reg::corr : tipl::reg::mutual_info;
+    auto reg = ui->reg_type->currentIndex() == 0 ? tipl::reg::rigid_body : tipl::reg::affine;
     thread.run([this,cost,reg]()
     {
-        if(cost == image::reg::mutual_info)
+        if(cost == tipl::reg::mutual_info)
         {
-            image::reg::linear_mr(from,from_vs,to,to_vs,arg,reg,image::reg::mutual_information(),thread.terminated,0.1);
-            image::reg::linear_mr(from,from_vs,to,to_vs,arg,reg,image::reg::mutual_information(),thread.terminated,0.01);
+            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg,tipl::reg::mutual_information(),thread.terminated,0.1);
+            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg,tipl::reg::mutual_information(),thread.terminated,0.01);
         }
         else
         {
-            image::reg::linear_mr(from,from_vs,to,to_vs,arg,reg,image::reg::mt_correlation<image::basic_image<float,3>,
-                           image::transformation_matrix<double> >(0),thread.terminated,0.1);
-            image::reg::linear_mr(from,from_vs,to,to_vs,arg,reg,image::reg::mt_correlation<image::basic_image<float,3>,
-                           image::transformation_matrix<double> >(0),thread.terminated,0.01);
+            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg,tipl::reg::mt_correlation<tipl::image<float,3>,
+                           tipl::transformation_matrix<double> >(0),thread.terminated,0.1);
+            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg,tipl::reg::mt_correlation<tipl::image<float,3>,
+                           tipl::transformation_matrix<double> >(0),thread.terminated,0.01);
         }
 
     });
@@ -293,19 +293,19 @@ void manual_alignment::on_save_warpped_clicked()
     if(filename.isEmpty())
         return;
 
-    image::basic_image<float,3> I(to.geometry());
-    image::resample(from_original,I,iT,image::cubic);
+    tipl::image<float,3> I(to.geometry());
+    tipl::resample(from_original,I,iT,tipl::cubic);
     gz_nifti nii;
     nii.set_voxel_size(to_vs.begin());
-    image::flip_xy(I);
+    tipl::flip_xy(I);
     nii << I;
     nii.save_to_file(filename.toStdString().c_str());
 }
 
 void manual_alignment::on_reg_type_currentIndexChanged(int index)
 {
-    image::reg::get_bound(from,arg,b_upper,b_lower,
-                          ui->reg_type->currentIndex() == 0 ? image::reg::rigid_body : image::reg::affine);
+    tipl::reg::get_bound(from,arg,b_upper,b_lower,
+                          ui->reg_type->currentIndex() == 0 ? tipl::reg::rigid_body : tipl::reg::affine);
     if(index == 0) // rigid body
     {
         ui->scaling_group->hide();

@@ -4,7 +4,7 @@
 #include <cmath>
 #include <boost/math/special_functions/spherical_harmonic.hpp>
 #include <boost/math/special_functions/legendre.hpp>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #define _USE_MATH_DEFINES
 
 
@@ -73,28 +73,28 @@ public:
             for (unsigned int i = 0,index = 0; i < R; ++i,index += R+1)
                 P[index] = boost::math::legendre_p(j_map[i].second,0.0)*2.0*M_PI;
 
-            image::mat::product(U.begin(),P.begin(),UP.begin(),image::dyndim(half_odf_size,R),image::dyndim(R,R));
+            tipl::mat::product(U.begin(),P.begin(),UP.begin(),tipl::dyndim(half_odf_size,R),tipl::dyndim(R,R));
         }
 
         std::vector<float> iB(Bt.size());
         {
             std::vector<float> BtB(R*R); // BtB = Bt * trans(Bt);
-            image::mat::square(Bt.begin(),BtB.begin(),image::dyndim(R,voxel.bvectors.size()));
+            tipl::mat::square(Bt.begin(),BtB.begin(),tipl::dyndim(R,voxel.bvectors.size()));
             for (unsigned int i = 0,index = 0; i < R; ++i,index += R+1)
             {
                 float l = j_map[i].second;
                 BtB[index] += l*l*(l+1.0)*(l+1.0)*lambda;
             }
             std::vector<unsigned int> pivot(R);
-            image::mat::lu_decomposition(BtB.begin(),pivot.begin(),image::dyndim(R,R));
+            tipl::mat::lu_decomposition(BtB.begin(),pivot.begin(),tipl::dyndim(R,R));
 
             //iB = inv(BtB)*Bt;
-            image::mat::lu_solve(BtB.begin(),pivot.begin(),Bt.begin(),iB.begin(),image::dyndim(R,R),image::dyndim(R,voxel.bvectors.size()));
+            tipl::mat::lu_solve(BtB.begin(),pivot.begin(),Bt.begin(),iB.begin(),tipl::dyndim(R,R),tipl::dyndim(R,voxel.bvectors.size()));
         }
 
 
         UPiB.resize(half_odf_size*voxel.bvectors.size());
-        image::mat::product(UP.begin(),iB.begin(),UPiB.begin(),image::dyndim(half_odf_size,R),image::dyndim(R,voxel.bvectors.size()));
+        tipl::mat::product(UP.begin(),iB.begin(),UPiB.begin(),tipl::dyndim(half_odf_size,R),tipl::dyndim(R,voxel.bvectors.size()));
 
 
 
@@ -108,7 +108,7 @@ public:
                 for(unsigned int index = 0;index < b0_index.size();++index)
 			data.space[b0_index[index]] = 0;
         
-                image::mat::vector_product(&*UPiB.begin(),&*data.space.begin(),&*data.odf.begin(),image::dyndim(half_odf_size,data.space.size()));
+                tipl::mat::vector_product(&*UPiB.begin(),&*data.space.begin(),&*data.odf.begin(),tipl::dyndim(half_odf_size,data.space.size()));
         for (unsigned int index = 0; index < data.odf.size(); ++index)
             if (data.odf[index] < 0.0)
                 data.odf[index] = 0.0;

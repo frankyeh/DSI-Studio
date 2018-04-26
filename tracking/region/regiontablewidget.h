@@ -5,7 +5,7 @@
 #include <QComboBox>
 #include <vector>
 #include "Regions.h"
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 
 struct ThreadData;
 class tracking_window;
@@ -38,7 +38,7 @@ protected:
 private:
     tracking_window& cur_tracking_window;
     void do_action(QString action);
-    void whole_brain_points(std::vector<image::vector<3,short> >& points);
+    void whole_brain_points(std::vector<tipl::vector<3,short> >& points);
     bool load_multiple_roi_nii(QString file_name);
 signals:
     void need_update(void);
@@ -57,7 +57,7 @@ public:
     void setROIs(ThreadData* data);
     QString getROIname(void);
     template<typename value_type>
-    void add_points(std::vector<image::vector<3,value_type> >& points,bool erase,float resolution = 1.0)
+    void add_points(std::vector<tipl::vector<3,value_type> >& points,bool erase,float resolution = 1.0)
     {
         if (currentRow() < 0 || currentRow() >= regions.size())
             return;
@@ -65,7 +65,7 @@ public:
     }
     QString output_format(void);
 public slots:
-    void draw_region(image::color_image& I);
+    void draw_region(tipl::color_image& I);
     void draw_edge(QImage& image,QImage& scaledimage);
     void draw_mosaic_region(QImage& image,unsigned int mosaic_size,unsigned int skip);
     void updateRegions(QTableWidgetItem* item);

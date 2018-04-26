@@ -45,8 +45,8 @@ public:
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        image::minus_constant(data.rdi,*std::min_element(data.rdi.begin(),data.rdi.end()));
-        image::minus_constant(data.odf,*std::min_element(data.odf.begin(),data.odf.end()));
+        tipl::minus_constant(data.rdi,*std::min_element(data.rdi.begin(),data.rdi.end()));
+        tipl::minus_constant(data.odf,*std::min_element(data.odf.begin(),data.odf.end()));
 
         float qa = *std::max_element(data.rdi.begin(),data.rdi.end());
         if(qa > voxel.z0)
@@ -55,14 +55,14 @@ public:
         // data.odf : study ODF
         if(!voxel.ddi_type) // study decreased connectivity
             std::swap(data.rdi,data.odf);
-        image::minus(data.odf.begin(),data.odf.end(),data.rdi.begin());
-        image::lower_threshold(data.odf,0);
+        tipl::minus(data.odf.begin(),data.odf.end(),data.rdi.begin());
+        tipl::lower_threshold(data.odf,0);
         nqa[data.voxel_index] = qa;
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
         if(voxel.z0 != 0.0f)
-            image::divide_constant(nqa,voxel.z0);
+            tipl::divide_constant(nqa,voxel.z0);
         mat_writer.write("base_nqa",&*nqa.begin(),1,nqa.size());
     }
 };
@@ -75,7 +75,7 @@ class BalanceScheme : public BaseProcess{
     unsigned int old_q_count;
 private:
     Voxel* stored_voxel;
-    std::vector<image::vector<3,float> > old_bvectors;
+    std::vector<tipl::vector<3,float> > old_bvectors;
     std::vector<float> old_bvalues;
 public:
     BalanceScheme(void):stored_voxel(0){}
@@ -92,7 +92,7 @@ public:
         tessellated_icosahedron new_dir;
         new_dir.init(6);
 
-        std::vector<image::vector<3,float> > new_bvectors;
+        std::vector<tipl::vector<3,float> > new_bvectors;
         std::vector<float> new_bvalues;
 
         // if b0
@@ -131,7 +131,7 @@ public:
             averaged_angle /= num;
 
             //calculate averaged b_value
-            double avg_b = image::mean(voxel.bvalues.begin()+from,voxel.bvalues.begin()+to);
+            double avg_b = tipl::mean(voxel.bvalues.begin()+from,voxel.bvalues.begin()+to);
             unsigned int trans_old_size = trans.size();
             trans.resize(trans.size() + new_dir.half_vertices_count*b_count);
             for(unsigned int i = 0; i < new_dir.half_vertices_count;++i)
@@ -146,7 +146,7 @@ public:
                     effective_b += t[j]*voxel.bvalues[j];
                 }
                 double sum_t = std::accumulate(t.begin(),t.end(),0.0);
-                image::multiply_constant(t,avg_b/1000.0/sum_t);
+                tipl::multiply_constant(t,avg_b/1000.0/sum_t);
                 std::copy(t.begin(),t.end(),trans.begin() + trans_old_size + i * b_count);
                 new_bvalues.push_back(effective_b/sum_t);
                 new_bvectors.push_back(new_dir.vertices[i]);
@@ -176,7 +176,7 @@ public:
         }
         std::vector<float> new_data(new_q_count);
         data.space.swap(new_data);
-        image::mat::vector_product(trans.begin(),new_data.begin(),data.space.begin(),image::dyndim(new_q_count,old_q_count));
+        tipl::mat::vector_product(trans.begin(),new_data.begin(),data.space.begin(),tipl::dyndim(new_q_count,old_q_count));
     }
 };
 
@@ -272,7 +272,7 @@ public:
             for (unsigned int index = 0;index < odf_data.size();++index)
             {
                 if (!voxel.odf_deconvolusion)
-                    image::divide_constant(odf_data[index],voxel.z0);
+                    tipl::divide_constant(odf_data[index],voxel.z0);
                 std::ostringstream out;
                 out << "odf" << index;
                 mat_writer.write(out.str().c_str(),&*odf_data[index].begin(),
@@ -413,9 +413,9 @@ public:
                 dwi[i] = water_b0*std::exp(-voxel.bvalues[i]*0.003f); // free water diffusivity
             std::vector<float> sinc_ql;
             voxel.calculate_sinc_ql(sinc_ql);
-            image::mat::vector_product(&*sinc_ql.begin(),&*dwi.begin(),&*odf.begin(),
-                                    image::dyndim(odf.size(),dwi.size()));
-            z0 = image::mean(odf.begin(),odf.end());
+            tipl::mat::vector_product(&*sinc_ql.begin(),&*dwi.begin(),&*odf.begin(),
+                                    tipl::dyndim(odf.size(),dwi.size()));
+            z0 = tipl::mean(odf.begin(),odf.end());
         }
         voxel.z0 = 0.0;
     }
@@ -445,7 +445,7 @@ public:
 
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
         {
-            image::divide_constant(fa[index],voxel.z0);
+            tipl::divide_constant(fa[index],voxel.z0);
             std::ostringstream out;
             out << index;
             std::string num = out.str();
@@ -455,7 +455,7 @@ public:
             mat_writer.write(fa_str.c_str(),&*fa[index].begin(),1,fa[index].size());
         }
 
-        image::divide_constant(iso,voxel.z0);
+        tipl::divide_constant(iso,voxel.z0);
         mat_writer.write("iso",&*iso.begin(),1,iso.size());
 
 
@@ -468,7 +468,7 @@ public:
             if(max_qa != 0.0)
             for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             {
-                image::divide_constant(fa[index],max_qa);
+                tipl::divide_constant(fa[index],max_qa);
                 std::ostringstream out;
                 out << index;
                 std::string num = out.str();
@@ -482,7 +482,7 @@ public:
         if(voxel.output_rdi)
         {
             for(unsigned int i = 0;i < rdi.size();++i)
-                image::divide_constant(rdi[i],voxel.z0);
+                tipl::divide_constant(rdi[i],voxel.z0);
             float L = 0.2f;
             for(unsigned int i = 0;i < rdi.size();++i,L += 0.2f)
             {

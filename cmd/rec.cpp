@@ -3,7 +3,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "libs/dsi/image_model.hpp"
 #include "dsi_interface_static_link.h"
 #include "mapping/fa_template.hpp"
@@ -54,7 +54,7 @@ int rec(void)
             std::cout << "Invalid transfformation matrix." <<std::endl;
             return 1;
         }
-        image::transformation_matrix<double> affine;
+        tipl::transformation_matrix<double> affine;
         affine.load_from_transform(T.begin());
         std::cout << "rotating images" << std::endl;
         handle->rotate(handle->voxel.dim,affine);
@@ -222,7 +222,7 @@ int rec(void)
         gz_nifti header;
         if(header.load_from_file(mask_file.c_str()))
         {
-            image::basic_image<unsigned char,3> external_mask;
+            tipl::image<unsigned char,3> external_mask;
             header.toLPS(external_mask);
             if(external_mask.geometry() != handle->voxel.dim)
                 std::cout << "In consistent the mask dimension...using default mask" << std::endl;

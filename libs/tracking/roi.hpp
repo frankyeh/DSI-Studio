@@ -1,24 +1,24 @@
 #ifndef ROI_HPP
 #include <functional>
 #include <set>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 
 class Roi {
 private:
     float ratio;
-    image::geometry<3> dim;
+    tipl::geometry<3> dim;
     std::vector<std::vector<std::vector<unsigned char> > > roi_filter;
     bool in_range(int x,int y,int z) const
     {
         return dim.is_valid(x,y,z);
     }
 public:
-    Roi(const image::geometry<3>& geo,float r):ratio(r)
+    Roi(const tipl::geometry<3>& geo,float r):ratio(r)
     {
         if(r == 1.0)
             dim = geo;
         else
-            dim = image::geometry<3>(geo[0]*r,geo[1]*r,geo[2]*r);
+            dim = tipl::geometry<3>(geo[0]*r,geo[1]*r,geo[2]*r);
         roi_filter.resize(dim[0]);
     }
     void clear(void)
@@ -26,7 +26,7 @@ public:
         roi_filter.clear();
         roi_filter.resize(dim[0]);
     }
-    void addPoint(const image::vector<3,short>& new_point)
+    void addPoint(const tipl::vector<3,short>& new_point)
     {
         if(in_range(new_point.x(),new_point.y(),new_point.z()))
         {
@@ -60,7 +60,7 @@ public:
             return false;
         return roi_filter[x][y][z] != 0;
     }
-    bool havePoint(const image::vector<3,float>& point) const
+    bool havePoint(const tipl::vector<3,float>& point) const
     {
         return havePoint(point[0],point[1],point[2]);
     }
@@ -76,7 +76,7 @@ public:
 class RoiMgr {
 public:
     std::string report;
-    std::vector<image::vector<3,short> > seeds;
+    std::vector<tipl::vector<3,short> > seeds;
     std::vector<float> seeds_r;
     std::vector<std::shared_ptr<Roi> > inclusive;
     std::vector<std::shared_ptr<Roi> > end;
@@ -92,14 +92,14 @@ public:
         report.clear();
     }
 
-    bool is_excluded_point(const image::vector<3,float>& point) const
+    bool is_excluded_point(const tipl::vector<3,float>& point) const
     {
         for(unsigned int index = 0; index < exclusive.size(); ++index)
             if(exclusive[index]->havePoint(point[0],point[1],point[2]))
                 return true;
         return false;
     }
-    bool is_terminate_point(const image::vector<3,float>& point) const
+    bool is_terminate_point(const tipl::vector<3,float>& point) const
     {
         for(unsigned int index = 0; index < terminate.size(); ++index)
             if(terminate[index]->havePoint(point[0],point[1],point[2]))
@@ -108,8 +108,8 @@ public:
     }
 
 
-    bool fulfill_end_point(const image::vector<3,float>& point1,
-                           const image::vector<3,float>& point2) const
+    bool fulfill_end_point(const tipl::vector<3,float>& point1,
+                           const tipl::vector<3,float>& point2) const
     {
         if(end.empty())
             return true;
@@ -140,14 +140,14 @@ public:
                 return false;
         return true;
     }
-    void setRegions(image::geometry<3> geo,
-                    const std::vector<image::vector<3,short> >& points,
+    void setRegions(tipl::geometry<3> geo,
+                    const std::vector<tipl::vector<3,short> >& points,
                     float r,
                     unsigned char type,
                     const char* roi_name,
-                    image::vector<3> voxel_size)
+                    tipl::vector<3> voxel_size)
     {
-        image::vector<3,float> center;
+        tipl::vector<3,float> center;
         for(int i = 0;i < points.size();++i)
             center += points[i];
         center /= points.size();

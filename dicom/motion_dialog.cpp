@@ -5,23 +5,23 @@
 #include "dicom_parser.h"
 #include "libs/prog_interface_static_link.h"
 
-void linear_reg(const image::basic_image<short,3>& from,
-                const image::vector<3>& from_vs,
-                const image::basic_image<short,3>& to,
-                const image::vector<3>& to_vs,
-                image::affine_transform<double>& arg,
+void linear_reg(const tipl::image<short,3>& from,
+                const tipl::vector<3>& from_vs,
+                const tipl::image<short,3>& to,
+                const tipl::vector<3>& to_vs,
+                tipl::affine_transform<double>& arg,
                 bool& terminated,
                 unsigned int& finished)
 {
-    image::reg::linear_mr(from,from_vs,to,to_vs,arg,image::reg::rigid_body,
-                       image::reg::square_error(),terminated);
+    tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,tipl::reg::rigid_body,
+                       tipl::reg::square_error(),terminated);
     ++finished;
 }
 
 void motion_detection(std::vector<std::shared_ptr<std::future<void> > >& threads,
                       std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                       std::vector<unsigned int>& b0_index,
-                      std::vector<image::affine_transform<double> >& arg,
+                      std::vector<tipl::affine_transform<double> >& arg,
                       bool& terminated,
                       unsigned int& finished)
 {
@@ -36,7 +36,7 @@ void motion_detection(std::vector<std::shared_ptr<std::future<void> > >& threads
 
     for(unsigned int index = 1;index < b0_index.size();++index)
         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,[&,index](){
-                image::vector<3> vs(1,1,1);
+                tipl::vector<3> vs(1,1,1);
                 linear_reg(dwi_files[b0_index[0]]->image,
                         vs,dwi_files[b0_index[index]]->image,
                         vs,arg[index],terminated,finished);})));
@@ -44,9 +44,9 @@ void motion_detection(std::vector<std::shared_ptr<std::future<void> > >& threads
 
 void motion_correction(std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                        const std::vector<unsigned int>& b0_index,
-                       const std::vector<image::affine_transform<double> >& arg)
+                       const std::vector<tipl::affine_transform<double> >& arg)
 {
-    image::geometry<3> geo(dwi_files[0]->image.geometry());
+    tipl::geometry<3> geo(dwi_files[0]->image.geometry());
     unsigned int b1 = 0,b2 = 1;
     for(unsigned int i = 0;i < dwi_files.size();++i)
     {
@@ -70,23 +70,23 @@ void motion_correction(std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
             w1 /= dis;
             w2 /= dis;
         }
-        image::affine_transform<double> interpolated_arg;
+        tipl::affine_transform<double> interpolated_arg;
         for(unsigned int j = 0;j < 6;++j)
             interpolated_arg.translocation[j] =
                     arg[b1].translocation[j]*w1 +
                     arg[b2].translocation[j]*w2;
-        image::vector<3> vs(1,1,1);
-        image::transformation_matrix<double> T =
-                image::transformation_matrix<double>(interpolated_arg,geo,vs,geo,vs);
+        tipl::vector<3> vs(1,1,1);
+        tipl::transformation_matrix<double> T =
+                tipl::transformation_matrix<double>(interpolated_arg,geo,vs,geo,vs);
 
-        image::basic_image<unsigned short,3> new_image(geo);
-        image::resample(dwi_files[i]->image,new_image,T,image::linear);
+        tipl::image<unsigned short,3> new_image(geo);
+        tipl::resample(dwi_files[i]->image,new_image,T,tipl::linear);
         dwi_files[i]->image.swap(new_image);
 
         // rotate b-table
-        image::matrix<3,3,float> iT = image::inverse(T.get());
-        image::vector<3> tmp;
-        image::vector_rotation(dwi_files[i]->bvec.begin(),tmp.begin(),iT,image::vdim<3>());
+        tipl::matrix<3,3,float> iT = tipl::inverse(T.get());
+        tipl::vector<3> tmp;
+        tipl::vector_rotation(dwi_files[i]->bvec.begin(),tmp.begin(),iT,tipl::vdim<3>());
         tmp.normalize();
         dwi_files[i]->bvec = tmp;
     }
@@ -201,16 +201,16 @@ void motion_dialog::show_progress(void)
         std::vector<double> m(arg.size()),r(arg.size());
         for(unsigned int i = 0;i < arg.size();++i)
         {
-            image::vector<3> t(arg[i].translocation);
+            tipl::vector<3> t(arg[i].translocation);
             t[0] *= dwi_files.front()->voxel_size[0];
             t[1] *= dwi_files.front()->voxel_size[1];
             t[2] *= dwi_files.front()->voxel_size[2];
             m[i] = t.length();
-            r[i] = image::vector<3>(arg[i].rotation).length()*180.0/3.14159265358979323846;
+            r[i] = tipl::vector<3>(arg[i].rotation).length()*180.0/3.14159265358979323846;
         }
         ui->label->setText(QString("averaged translocation:%1 mm rotation:%2 degrees").
-                           arg(image::mean(m.begin(),m.end())).
-                           arg(image::mean(r.begin(),r.end())));
+                           arg(tipl::mean(m.begin(),m.end())).
+                           arg(tipl::mean(r.begin(),r.end())));
     }
 
     if(finished == arg.size()-1)

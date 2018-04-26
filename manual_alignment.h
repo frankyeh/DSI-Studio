@@ -4,7 +4,7 @@
 #include <QDialog>
 #include <QTimer>
 #include <QGraphicsScene>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "fib_data.hpp"
 namespace Ui {
 class manual_alignment;
@@ -15,29 +15,29 @@ class manual_alignment : public QDialog
 {
     Q_OBJECT
 public:
-    image::basic_image<float,3> from_original;
-    image::basic_image<float,3> from,to,warped_from;
-    image::affine_transform<double> arg,b_upper,b_lower;
-    image::vector<3> from_vs,to_vs;
+    tipl::image<float,3> from_original;
+    tipl::image<float,3> from,to,warped_from;
+    tipl::affine_transform<double> arg,b_upper,b_lower;
+    tipl::vector<3> from_vs,to_vs;
     QGraphicsScene scene[3];
-    image::color_image buffer[3];
+    tipl::color_image buffer[3];
     QImage slice_image[3];
 private:
-    image::thread thread;
+    tipl::thread thread;
 private:
 
     void load_param(void);
 public:
-    image::transformation_matrix<double> T,iT;
+    tipl::transformation_matrix<double> T,iT;
 public:
     QTimer* timer;
     explicit manual_alignment(QWidget *parent,
-                              image::basic_image<float,3> from_,
-                              const image::vector<3>& from_vs,
-                              image::basic_image<float,3> to_,
-                              const image::vector<3>& to_vs,
-                              image::reg::reg_type reg_type,
-                              image::reg::cost_type cost_function);
+                              tipl::image<float,3> from_,
+                              const tipl::vector<3>& from_vs,
+                              tipl::image<float,3> to_,
+                              const tipl::vector<3>& to_vs,
+                              tipl::reg::reg_type reg_type,
+                              tipl::reg::cost_type cost_function);
     ~manual_alignment();
     void connect_arg_update();
     void disconnect_arg_update();

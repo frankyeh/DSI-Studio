@@ -4,7 +4,7 @@
 #include <QSettings>
 #include <QFileDialog>
 #include <QInputDialog>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "filebrowser.h"
 #include "ui_filebrowser.h"
 #include "dicom/dicom_parser.h"
@@ -97,7 +97,7 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int , int p
         std::sort(seq_list.begin(),seq_list.end());
         for(int index = 0;index < seq_list.size();++index)
         {
-            image::io::bruker_info method,acq,reco_file,d3proc_file;
+            tipl::io::bruker_info method,acq,reco_file,d3proc_file;
             bool method_file = true;
             QString method_dir = directory.absolutePath() + "/" + QString::number(seq_list[index]);
             QString method_file_name =  method_dir+ "/method";
@@ -183,7 +183,7 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int , int p
                 std::vector<std::string> dcm_file_list_full;
                 for(unsigned int j = 0;j < dcm_file_list.size();++j)
                     dcm_file_list_full.push_back((sub_dir.absolutePath() + "/" + dcm_file_list[j]).toLocal8Bit().begin());
-                image::io::volume dcm;
+                tipl::io::volume dcm;
                 if(!dcm.load_from_files(dcm_file_list_full,dcm_file_list_full.size()))
                     continue;
                 int row = ui->tableWidget->rowCount();
@@ -284,7 +284,7 @@ void FileBrowser::populateDirs(void)
 
 
         QString subject_file_name = ui->WorkDir->text()+"/" + script_list[index] + "/subject";
-        image::io::bruker_info subject_file;
+        tipl::io::bruker_info subject_file;
         if(subject_file.load_from_file(subject_file_name.toLocal8Bit().begin()))
         {
             std::istringstream in(subject_file["SUBJECT_date"]);
@@ -343,9 +343,9 @@ void FileBrowser::show_image(void)
         cur_z = 0;
 
     {
-        image::basic_image<float,2> data_buffer;
-        image::reslicing(data,data_buffer,2,cur_z);
-        image::normalize(data_buffer,slice_image,255);
+        tipl::image<float,2> data_buffer;
+        tipl::reslicing(data,data_buffer,2,cur_z);
+        tipl::normalize(data_buffer,slice_image,255);
     }
     view_image = QImage((unsigned char*)&*slice_image.begin(),slice_image.width(),slice_image.height(),QImage::Format_RGB32);
     show_view(scene,view_image);
@@ -356,7 +356,7 @@ void FileBrowser::preview_image(QString file_name)
     preview_data.clear();
     if(QFileInfo(file_name).fileName() == "2dseq")
     {
-        image::io::bruker_2dseq header;
+        tipl::io::bruker_2dseq header;
         if(header.load_from_file(file_name.toLocal8Bit().begin()))
         {
             header.get_image().swap(preview_data);
@@ -371,7 +371,7 @@ void FileBrowser::preview_image(QString file_name)
         std::vector<std::string> dcm_file_list_full;
         for(unsigned int j = 0;j < dcm_file_list.size();++j)
             dcm_file_list_full.push_back((dir.absolutePath() + "/" + dcm_file_list[j]).toLocal8Bit().begin());
-        image::io::volume dcm;
+        tipl::io::volume dcm;
         if(dcm.load_from_files(dcm_file_list_full,dcm_file_list_full.size()))
             dcm >> preview_data;
         preview_loaded = true;
@@ -386,7 +386,7 @@ void FileBrowser::preview_image(QString file_name)
             const short* dim = 0;
             if(mat.read("dimension",r,c,dim))
             {
-                preview_data.resize(image::geometry<3>(dim));
+                preview_data.resize(tipl::geometry<3>(dim));
                 const float* ptr = 0;
                 if(!mat.read("fa0",r,c,ptr))
                     mat.read("image0",r,c,ptr);

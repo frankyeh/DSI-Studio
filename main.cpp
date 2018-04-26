@@ -7,7 +7,7 @@
 #include <QStyleFactory>
 #include <QDir>
 #include "mainwindow.h"
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "mapping/fa_template.hpp"
 #include "mapping/atlas.hpp"
 #include <iostream>

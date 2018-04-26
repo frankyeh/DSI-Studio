@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include <QGraphicsScene>
 #include <memory>
-#include <image/image.hpp>
+#include <tipl/tipl.hpp>
 #include <QTableWidget>
 
 
@@ -17,8 +17,8 @@ class FileBrowser : public QMainWindow
     QGraphicsScene scene;
 public:
     unsigned int cur_z;
-    image::basic_image<float,3> data;
-    image::color_image slice_image;
+    tipl::image<float,3> data;
+    tipl::color_image slice_image;
     QImage view_image;
 public:
     explicit FileBrowser(QWidget *parent);
@@ -35,7 +35,7 @@ private:
     QString preview_file_name;
     float preview_voxel_size[3];
     bool preview_loaded;
-    image::basic_image<float,3> preview_data;
+    tipl::image<float,3> preview_data;
     std::auto_ptr<std::future<void>> preview_thread;
     void preview_image(QString file_name);
 private slots:

@@ -26,7 +26,7 @@ std::string quality_check_src_files(QString dir)
         }
         unique_prog(false);
         // output image dimension
-        out << image::vector<3,int>(handle.voxel.dim.begin()) << "\t";
+        out << tipl::vector<3,int>(handle.voxel.dim.begin()) << "\t";
         // output image resolution
         out << handle.voxel.vs << "\t";
         // output DWI count

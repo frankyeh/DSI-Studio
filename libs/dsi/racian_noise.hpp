@@ -3,7 +3,7 @@
 #include <map>
 #include <cmath>
 #include <ctime>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 
 double modified_bessel_order0(double x)
 {
@@ -39,8 +39,8 @@ private:
     float max_prob;
     float max_int;
 private:
-    static image::normal_dist<float> gen_normal;
-    static image::uniform_dist<float> gen_uniform;
+    static tipl::normal_dist<float> gen_normal;
+    static tipl::uniform_dist<float> gen_uniform;
 private:
     struct RicianDistribution
     {

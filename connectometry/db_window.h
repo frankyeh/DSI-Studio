@@ -14,14 +14,14 @@ class db_window : public QMainWindow
     std::shared_ptr<vbc_database> vbc;
 private:
     QGraphicsScene fp_dif_scene, fp_scene;
-    image::color_image fp_dif_map;
+    tipl::color_image fp_dif_map;
     QImage fp_dif_image,fp_image;
-    image::color_image fp_image_buf;
-    image::color_map_rgb color_map;
-    image::color_bar color_bar;
+    tipl::color_image fp_image_buf;
+    tipl::color_map_rgb color_map;
+    tipl::color_bar color_bar;
     std::vector<float> fp_matrix;
     float fp_max_value;
-    image::basic_image<char,3> fp_mask;
+    tipl::image<char,3> fp_mask;
 private:
     QGraphicsScene vbc_scene;
     QImage vbc_slice_image;

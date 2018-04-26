@@ -103,7 +103,7 @@ bool db_window::eventFilter(QObject *obj, QEvent *event)
         return false;
     QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
     QPointF point = ui->vbc_view->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
-    image::vector<3,float> pos;
+    tipl::vector<3,float> pos;
     pos[0] =  ((float)point.x()) / ui->zoom->value() - 0.5;
     pos[1] =  ((float)point.y()) / ui->zoom->value() - 0.5;
     pos[2] = ui->slice_pos->value();
@@ -141,12 +141,12 @@ void db_window::on_subject_list_itemSelectionChanged()
     if(ui->view_z->isChecked())
         ui->z_pos->setValue(ui->slice_pos->value());
 
-    image::basic_image<float,2> slice;
+    tipl::image<float,2> slice;
     vbc->handle->db.get_subject_slice(ui->subject_list->currentRow(),
                                    ui->view_x->isChecked() ? 0:(ui->view_y->isChecked() ? 1:2),
                                    ui->slice_pos->value(),slice);
-    image::normalize(slice);
-    image::color_image color_slice(slice.geometry());
+    tipl::normalize(slice);
+    tipl::color_image color_slice(slice.geometry());
     std::copy(slice.begin(),slice.end(),color_slice.begin());
     if(ui->show_mask->isChecked())
     {
@@ -165,19 +165,19 @@ void db_window::on_subject_list_itemSelectionChanged()
     //if(ui->subject_view->currentIndex() == 1)
     {
         std::vector<float> fp;
-        float threshold = ui->fp_coverage->value()*image::segmentation::otsu_threshold(image::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
+        float threshold = ui->fp_coverage->value()*tipl::segmentation::otsu_threshold(tipl::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
         vbc->handle->db.get_subject_vector(ui->subject_list->currentRow(),fp,fp_mask,threshold,ui->normalize_fp->isChecked());
         fp_image_buf.clear();
-        fp_image_buf.resize(image::geometry<2>(ui->fp_zoom->value()*25,ui->fp_zoom->value()*100));// rotated
+        fp_image_buf.resize(tipl::geometry<2>(ui->fp_zoom->value()*25,ui->fp_zoom->value()*100));// rotated
 
-        image::minus_constant(fp.begin(),fp.end(),*std::min_element(fp.begin(),fp.end()));
+        tipl::minus_constant(fp.begin(),fp.end(),*std::min_element(fp.begin(),fp.end()));
         float max_fp = *std::max_element(fp.begin(),fp.end());
         if(max_fp == 0)
             return;
-        image::multiply_constant(fp,(float)fp_image_buf.width()/max_fp);
+        tipl::multiply_constant(fp,(float)fp_image_buf.width()/max_fp);
         std::vector<int> ifp(fp.size());
         std::copy(fp.begin(),fp.end(),ifp.begin());
-        image::upper_lower_threshold(ifp,0,(int)fp_image_buf.width()-1);
+        tipl::upper_lower_threshold(ifp,0,(int)fp_image_buf.width()-1);
         unsigned int* base = (unsigned int*)&fp_image_buf[0];
         for(unsigned int i = 0;i < fp_image_buf.height();++i,base += fp_image_buf.width())
         {
@@ -190,16 +190,16 @@ void db_window::on_subject_list_itemSelectionChanged()
                 unsigned int to = ifp[from_index];
                 if(from > to)
                     std::swap(from,to);
-                image::add_constant(base+from,base+to,1);
+                tipl::add_constant(base+from,base+to,1);
             }
         }
         base = (unsigned int*)&fp_image_buf[0];
         unsigned int max_value = *std::max_element(base,base+fp_image_buf.size());
         if(max_value)
         for(unsigned int index = 0;index < fp_image_buf.size();++index)
-            fp_image_buf[index] = image::rgb_color((unsigned char)(255-std::min<int>(255,(fp_image_buf[index].color*512/max_value))));
-        image::swap_xy(fp_image_buf);
-        image::flip_y(fp_image_buf);
+            fp_image_buf[index] = tipl::rgb((unsigned char)(255-std::min<int>(255,(fp_image_buf[index].color*512/max_value))));
+        tipl::swap_xy(fp_image_buf);
+        tipl::flip_y(fp_image_buf);
         QImage fp_image_tmp((unsigned char*)&*fp_image_buf.begin(),fp_image_buf.width(),fp_image_buf.height(),QImage::Format_RGB32);
         fp_image = fp_image_tmp;
         show_view(fp_scene,fp_image);
@@ -207,7 +207,7 @@ void db_window::on_subject_list_itemSelectionChanged()
 
     if(!fp_dif_map.empty() && fp_dif_map.width() == vbc->handle->db.num_subjects)
     {
-        fp_dif_map.resize(image::geometry<2>(vbc->handle->db.num_subjects,vbc->handle->db.num_subjects));
+        fp_dif_map.resize(tipl::geometry<2>(vbc->handle->db.num_subjects,vbc->handle->db.num_subjects));
         for(unsigned int index = 0;index < fp_matrix.size();++index)
             fp_dif_map[index] = color_map[fp_matrix[index]*256.0/fp_max_value];
 
@@ -264,8 +264,8 @@ void db_window::on_actionSave_fingerprints_triggered()
     if(filename.isEmpty())
         return;
 
-    float threshold = ui->fp_coverage->value()*image::segmentation::otsu_threshold(
-                image::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
+    float threshold = ui->fp_coverage->value()*tipl::segmentation::otsu_threshold(
+                tipl::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
     vbc->handle->db.save_subject_vector(filename.toLocal8Bit().begin(),fp_mask,threshold,ui->normalize_fp->isChecked());
 
 }
@@ -283,7 +283,7 @@ void db_window::on_actionSave_pair_wise_difference_as_triggered()
         on_calculate_dif_clicked();
     if(QFileInfo(filename).suffix().toLower() == "mat")
     {
-        image::io::mat_write out(filename.toStdString().c_str());
+        tipl::io::mat_write out(filename.toStdString().c_str());
         if(!out)
             return;
         out.write("dif",(const float*)&*fp_matrix.begin(),vbc->handle->db.num_subjects,vbc->handle->db.num_subjects);
@@ -318,7 +318,7 @@ void db_window::on_actionLoad_mask_triggered()
                                 "Report file (*.txt *.nii *nii.gz);;All files (*)");
     if(file.isEmpty())
         return;
-    image::basic_image<float,3> I;
+    tipl::image<float,3> I;
     gz_nifti nii;
     if(!nii.load_from_file(file.toLocal8Bit().begin()))
     {
@@ -348,16 +348,16 @@ void db_window::on_actionSave_mask_triggered()
                                 "Report file (*.txt *.nii *nii.gz);;All files (*)");
     if(FileName.isEmpty())
         return;
-    float fiber_threshold = ui->fp_coverage->value()*image::segmentation::otsu_threshold(
-                image::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
-    image::basic_image<float,3> mask(fp_mask);
+    float fiber_threshold = ui->fp_coverage->value()*tipl::segmentation::otsu_threshold(
+                tipl::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
+    tipl::image<float,3> mask(fp_mask);
     for(unsigned int index = 0;index < mask.size();++index)
         if(vbc->handle->dir.fa[0][index] < fiber_threshold)
             mask[index] = 0;
     gz_nifti file;
     file.set_voxel_size(vbc->handle->vs);
     file.set_LPS_transformation(vbc->handle->trans_to_mni.begin(),mask.geometry());
-    image::flip_xy(mask);
+    tipl::flip_xy(mask);
     file << mask;
     file.save_to_file(FileName.toLocal8Bit().begin());
 }
@@ -373,11 +373,11 @@ void db_window::update_db(void)
 
 void db_window::on_calculate_dif_clicked()
 {
-    float threshold = ui->fp_coverage->value()*image::segmentation::otsu_threshold(
-                    image::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
+    float threshold = ui->fp_coverage->value()*tipl::segmentation::otsu_threshold(
+                    tipl::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
     vbc->handle->db.get_dif_matrix(fp_matrix,fp_mask,threshold,ui->normalize_fp->isChecked());
     fp_max_value = *std::max_element(fp_matrix.begin(),fp_matrix.end());
-    fp_dif_map.resize(image::geometry<2>(vbc->handle->db.num_subjects,vbc->handle->db.num_subjects));
+    fp_dif_map.resize(tipl::geometry<2>(vbc->handle->db.num_subjects,vbc->handle->db.num_subjects));
     for(unsigned int index = 0;index < fp_matrix.size();++index)
         fp_dif_map[index] = color_map[fp_matrix[index]*255.0/fp_max_value];
     on_fp_zoom_valueChanged(ui->fp_zoom->value());
@@ -413,8 +413,8 @@ void db_window::on_delete_subject_clicked()
 
 void db_window::on_actionCalculate_change_triggered()
 {
-    float threshold = ui->fp_coverage->value()*image::segmentation::otsu_threshold(
-    image::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
+    float threshold = ui->fp_coverage->value()*tipl::segmentation::otsu_threshold(
+    tipl::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
     vbc->handle->db.auto_match(fp_mask,threshold,ui->normalize_fp->isChecked());
 
     std::unique_ptr<match_db> mdb(new match_db(this,vbc));

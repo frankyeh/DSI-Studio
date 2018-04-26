@@ -89,7 +89,7 @@ void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vect
             continue;
         int color = std::min<int>((index+1)*50,255);
         addNewTracts(QString("Lesser_") + QString::number((index+1)*10),false);
-        tract_models.back()->add_tracts(lesser[index],image::rgb_color(255,255-color,255-color));
+        tract_models.back()->add_tracts(lesser[index],tipl::rgb(255,255-color,255-color));
         item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     }
     for(unsigned int index = 0;index < greater.size();++index)
@@ -98,7 +98,7 @@ void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vect
             continue;
         int color = std::min<int>((index+1)*50,255);
         addNewTracts(QString("Greater_") + QString::number((index+1)*10),false);
-        tract_models.back()->add_tracts(greater[index],image::rgb_color(255-color,255-color,255));
+        tract_models.back()->add_tracts(greater[index],tipl::rgb(255-color,255-color,255));
         item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     }
     cur_tracking_window.set_data("tract_color_style",1);//manual assigned
@@ -201,7 +201,7 @@ void TractTableWidget::load_tracts(QStringList filenames)
         if(tract_models.back()->get_cluster_info().empty()) // not multiple cluster file
         {
             item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
-            image::rgb_color c;
+            tipl::rgb c;
             c.from_hsl(((color_gen++)*1.1-std::floor((color_gen++)*1.1/6)*6)*3.14159265358979323846/3.0,0.85,0.7);
             tract_models.back()->set_color(c.color);
         }
@@ -315,7 +315,7 @@ void TractTableWidget::assign_colors(void)
 {
     for(unsigned int index = 0;index < tract_models.size();++index)
     {
-        image::rgb_color c;
+        tipl::rgb c;
         c.from_hsl(((color_gen++)*1.1-std::floor((color_gen++)*1.1/6)*6)*3.14159265358979323846/3.0,0.85,0.7);
         tract_models[index]->set_color(c.color);
     }
@@ -519,7 +519,7 @@ void TractTableWidget::save_end_point_in_mni(void)
                 "Tract files (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::vector<image::vector<3,float> > points;
+    std::vector<tipl::vector<3,float> > points;
     std::vector<float> buffer;
     tract_models[currentRow()]->get_end_points(points);
     for(unsigned int index = 0;index < points.size();++index)
@@ -539,7 +539,7 @@ void TractTableWidget::save_end_point_in_mni(void)
     }
     if (QFileInfo(filename).suffix().toLower() == "mat")
     {
-        image::io::mat_write out(filename.toLocal8Bit().begin());
+        tipl::io::mat_write out(filename.toLocal8Bit().begin());
         if(!out)
             return;
         out.write("end_points",(const float*)&*buffer.begin(),3,buffer.size()/3);
@@ -611,15 +611,15 @@ void TractTableWidget::deep_learning_train(void)
 
 
     filename = QFileInfo(filename).absolutePath() + "/network_data.bin.gz";
-    cnn.cnn_data.input = image::geometry<3>(60,75,3);
-    cnn.cnn_data.output = image::geometry<3>(1,1,rowCount());
+    cnn.cnn_data.input = tipl::geometry<3>(60,75,3);
+    cnn.cnn_data.output = tipl::geometry<3>(1,1,rowCount());
     cnn.cnn_data.save_to_file<gz_ostream>(filename.toStdString().c_str());
 
 
     // save atlas as a nifti file
     if(cur_tracking_window.handle->is_qsdr) //QSDR condition
     {
-        image::basic_image<int,4> atlas(image::geometry<4>(
+        tipl::image<int,4> atlas(tipl::geometry<4>(
                 cur_tracking_window.handle->dim[0],
                 cur_tracking_window.handle->dim[1],
                 cur_tracking_window.handle->dim[2],
@@ -627,20 +627,20 @@ void TractTableWidget::deep_learning_train(void)
 
         for(unsigned int index = 0;check_prog(index,rowCount());++index)
         {
-            image::basic_image<unsigned char,3> track_map(cur_tracking_window.handle->dim);
+            tipl::image<unsigned char,3> track_map(cur_tracking_window.handle->dim);
             for(unsigned int i = 0;i < tract_models[index]->get_tracts().size();++i)
             {
                 const std::vector<float>& tracks = tract_models[index]->get_tracts()[i];
                 for(int j = 0;j < tracks.size();j += 3)
                 {
-                    image::pixel_index<3> p(std::round(tracks[j]),std::round(tracks[j+1]),std::round(tracks[j+2]),track_map.geometry());
+                    tipl::pixel_index<3> p(std::round(tracks[j]),std::round(tracks[j+1]),std::round(tracks[j+2]),track_map.geometry());
                     if(track_map.geometry().is_valid(p))
                         track_map[p.index()] = 1;
                     if(j)
                     {
                         for(float r = 0.2f;r < 1.0f;r += 0.2f)
                         {
-                            image::pixel_index<3> p2(std::round(tracks[j]*r+tracks[j-3]*(1-r)),
+                            tipl::pixel_index<3> p2(std::round(tracks[j]*r+tracks[j-3]*(1-r)),
                                                      std::round(tracks[j+1]*r+tracks[j-2]*(1-r)),
                                                      std::round(tracks[j+2]*r+tracks[j-1]*(1-r)),track_map.geometry());
                             if(track_map.geometry().is_valid(p2))
@@ -649,10 +649,10 @@ void TractTableWidget::deep_learning_train(void)
                     }
                 }
             }
-            while(image::morphology::smoothing_fill(track_map))
-                image::morphology::defragment(track_map);
-            image::morphology::smoothing(track_map);
-            image::morphology::defragment(track_map);
+            while(tipl::morphology::smoothing_fill(track_map))
+                tipl::morphology::defragment(track_map);
+            tipl::morphology::smoothing(track_map);
+            tipl::morphology::defragment(track_map);
 
 
             QString track_file_name = QFileInfo(filename).absolutePath() + "/" + item(index,0)->text() + ".nii.gz";
@@ -725,7 +725,7 @@ void TractTableWidget::saveTransformedTracts(const float* transform)
         {
             for(unsigned int j = 0;j < tract_data[i].size();j += 3)
             {
-                image::vector<3> v(&(tract_data[i][j]));
+                tipl::vector<3> v(&(tract_data[i][j]));
                 cur_tracking_window.handle->subject2mni(v);
                 tract_data[i][j] = v[0];
                 tract_data[i][j+1] = v[1];
@@ -836,7 +836,7 @@ void get_track_statistics(const std::vector<TractModel*>& tract_models,
                           std::string& result)
 {
     std::vector<std::vector<std::string> > track_results(tract_models.size());
-    image::par_for(tract_models.size(),[&](unsigned int index)
+    tipl::par_for(tract_models.size(),[&](unsigned int index)
     {
         std::string tmp,line;
         tract_models[index]->get_quantitative_info(tmp);
@@ -1237,9 +1237,9 @@ void TractTableWidget::trim_tracts(void)
     emit need_update();
 }
 
-void TractTableWidget::export_tract_density(image::geometry<3>& dim,
-                          image::vector<3,float> vs,
-                          image::matrix<4,4,float>& transformation,bool color,bool end_point)
+void TractTableWidget::export_tract_density(tipl::geometry<3>& dim,
+                          tipl::vector<3,float> vs,
+                          tipl::matrix<4,4,float>& transformation,bool color,bool end_point)
 {
     if(color)
     {
@@ -1249,25 +1249,25 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
         if(filename.isEmpty())
             return;
 
-        image::basic_image<image::rgb_color,3> tdi(dim);
+        tipl::image<tipl::rgb,3> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
         {
             if(item(index,0)->checkState() != Qt::Checked)
                 continue;
             tract_models[index]->get_density_map(tdi,transformation,end_point);
         }
-        image::basic_image<image::rgb_color,2> mosaic;
+        tipl::image<tipl::rgb,2> mosaic;
         if(QFileInfo(filename).completeSuffix().contains("nii"))
         {
             gz_nifti nii;
-            image::flip_xy(tdi);
+            tipl::flip_xy(tdi);
             nii << tdi;
             nii.set_voxel_size(vs);
             nii.save_to_file(filename.toStdString().c_str());
         }
         else
         {
-            image::mosaic(tdi,mosaic,std::sqrt(tdi.depth()));
+            tipl::mosaic(tdi,mosaic,std::sqrt(tdi.depth()));
             QImage qimage((unsigned char*)&*mosaic.begin(),
                           mosaic.width(),mosaic.height(),QImage::Format_RGB32);
             qimage.save(filename);
@@ -1283,7 +1283,7 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
         if(QFileInfo(filename.toLower()).completeSuffix() != "mat")
             filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
 
-        image::basic_image<unsigned int,3> tdi(dim);
+        tipl::image<unsigned int,3> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
         {
             if(item(index,0)->checkState() != Qt::Checked)
@@ -1292,7 +1292,7 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
         }
         if(QFileInfo(filename).completeSuffix().toLower() == "mat")
         {
-            image::io::mat_write mat_header(filename.toLocal8Bit().begin());
+            tipl::io::mat_write mat_header(filename.toLocal8Bit().begin());
             mat_header << tdi;
         }
         else
@@ -1301,12 +1301,12 @@ void TractTableWidget::export_tract_density(image::geometry<3>& dim,
             nii_header.set_voxel_size(vs.begin());
             if(cur_tracking_window.handle->is_qsdr)
             {
-                image::matrix<4,4,float> new_trans(transformation),trans(cur_tracking_window.handle->trans_to_mni.begin());
+                tipl::matrix<4,4,float> new_trans(transformation),trans(cur_tracking_window.handle->trans_to_mni.begin());
                 new_trans.inv();
                 trans *= new_trans;
                 nii_header.set_LPS_transformation(trans.begin(),tdi.geometry());
             }
-            image::flip_xy(tdi);
+            tipl::flip_xy(tdi);
             nii_header << tdi;
             nii_header.save_to_file(filename.toLocal8Bit().begin());
         }

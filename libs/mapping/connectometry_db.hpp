@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 #include "gzip_interface.hpp"
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 class fib_data;
 class connectometry_db
 {
@@ -20,12 +20,12 @@ public:// subject specific data
 public:
     std::list<std::vector<float> > subject_qa_buf;// merged from other db
     unsigned int subject_qa_length;
-    image::basic_image<unsigned int,3> vi2si;
+    tipl::image<unsigned int,3> vi2si;
     std::vector<unsigned int> si2vi;
     std::string index_name;
 public://longitudinal studies
     std::vector<std::pair<int,int> > match;
-    void auto_match(const image::basic_image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp);
+    void auto_match(const tipl::image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp);
     void calculate_change(unsigned char dif_type,bool norm);
 public:
     connectometry_db():num_subjects(0),modified(false){;}
@@ -40,17 +40,17 @@ public:
                             const std::string& subject_name);
     void get_subject_vector(unsigned int from,unsigned int to,
                             std::vector<std::vector<float> >& subject_vector,
-                            const image::basic_image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp) const;
+                            const tipl::image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp) const;
     void get_subject_vector(unsigned int subject_index,std::vector<float>& subject_vector,
-                            const image::basic_image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp) const;
-    void get_dif_matrix(std::vector<float>& matrix,const image::basic_image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp);
+                            const tipl::image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp) const;
+    void get_dif_matrix(std::vector<float>& matrix,const tipl::image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp);
     void save_subject_vector(const char* output_name,
-                             const image::basic_image<int,3>& cerebrum_mask,
+                             const tipl::image<int,3>& cerebrum_mask,
                              float fiber_threshold,
                              bool normalize_fp) const;
     bool save_subject_data(const char* output_name);
     void get_subject_slice(unsigned int subject_index,unsigned char dim,unsigned int pos,
-                            image::basic_image<float,2>& slice) const;
+                            tipl::image<float,2>& slice) const;
     void get_subject_fa(unsigned int subject_index,std::vector<std::vector<float> >& fa_data) const;
     void get_data_at(unsigned int index,unsigned int fib_index,std::vector<double>& data,bool normalize_qa) const;
     bool get_odf_profile(const char* file_name,std::vector<float>& cur_subject_data);
@@ -67,7 +67,7 @@ public:
 
 class stat_model{
 public:
-    image::uniform_dist<int> rand_gen;
+    tipl::uniform_dist<int> rand_gen;
     std::mutex  lock_random;
 public:
     std::vector<unsigned int> subject_index;
@@ -81,7 +81,7 @@ public: // multiple regression
     unsigned int feature_count;
     unsigned int study_feature;
     enum {percentage = 0,t = 1,beta = 2,percentile = 3,mean_dif = 4} threshold_type;
-    image::multiple_regression<double> mr;
+    tipl::multiple_regression<double> mr;
     void select_variables(const std::vector<char>& sel);
 public: // individual
     const float* individual_data;

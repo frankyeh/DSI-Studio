@@ -138,7 +138,7 @@ void GLWidget::set_view(unsigned char view_option)
         transformation_matrix[10] = cur_tracking_window.handle->vs[2] / cur_tracking_window.handle->vs[0];
     }
 
-    image::vector<3,float> center_point(cur_tracking_window.handle->dim[0]/2.0-0.5,
+    tipl::vector<3,float> center_point(cur_tracking_window.handle->dim[0]/2.0-0.5,
                                         cur_tracking_window.handle->dim[1]/2.0-0.5,
                                         cur_tracking_window.handle->dim[2]/2.0-0.5);
     transformation_matrix[0] *= scale;
@@ -147,7 +147,7 @@ void GLWidget::set_view(unsigned char view_option)
     transformation_matrix[12] = -transformation_matrix[0]*center_point[0];
     transformation_matrix[13] = -transformation_matrix[5]*center_point[1];
     transformation_matrix[14] = -transformation_matrix[10]*center_point[2];
-    image::matrix<4,4,float> m;
+    tipl::matrix<4,4,float> m;
     if(view_option != 2)
     {
         m.zero();
@@ -250,24 +250,24 @@ void setupMaterial(float emission,float specular,int shininess)
     check_error(__FUNCTION__);
 }
 
-unsigned char getCurView(const image::matrix<4,4,float>& m)
+unsigned char getCurView(const tipl::matrix<4,4,float>& m)
 {
     unsigned char cur_view = 0;
     {
         const float view_dirs[6][3] = {{1,0,0},{0,1,0},{0,0,1},{-1,0,0},{0,-1,0},{0,0,-1}};
-        image::matrix<4,4,float> mat = image::inverse(m);
-        image::vector<3,float> dir(mat.begin()+8);
+        tipl::matrix<4,4,float> mat = tipl::inverse(m);
+        tipl::vector<3,float> dir(mat.begin()+8);
         float max_cos = 0;
         for (unsigned int index = 0;index < 6;++index)
-        if (dir*image::vector<3,float>(view_dirs[index]) < max_cos)
+        if (dir*tipl::vector<3,float>(view_dirs[index]) < max_cos)
         {
-            max_cos = dir*image::vector<3,float>(view_dirs[index]);
+            max_cos = dir*tipl::vector<3,float>(view_dirs[index]);
             cur_view = index;
         }
     }
     return cur_view;
 }
-void handleAlpha(image::rgb_color color,
+void handleAlpha(tipl::rgb color,
                  float alpha,int blend1,int blend2)
 {
     if(alpha != 1.0)
@@ -305,7 +305,7 @@ void my_gluLookAt(GLdouble eyex, GLdouble eyey, GLdouble eyez, GLdouble centerx,
           GLdouble centery, GLdouble centerz, GLdouble upx, GLdouble upy,
           GLdouble upz)
 {
-    image::vector<3,float> forward, side, up;
+    tipl::vector<3,float> forward, side, up;
     GLfloat m[4][4];
 
     forward[0] = centerx - eyex;
@@ -459,7 +459,7 @@ void GLWidget::paintGL()
         case view_mode_type::stereo:
             glViewport(0,0, cur_width/2, cur_height);
             renderLR();
-            image::matrix<4,4,float> T(transformation_matrix);
+            tipl::matrix<4,4,float> T(transformation_matrix);
             // add a rotation to the transofrmation matrix
             glPushMatrix();
             glLoadIdentity();
@@ -513,16 +513,16 @@ void GLWidget::renderLR()
 
         case 0:
             {
-                image::geometry<2> geo2(slice->geometry[odf_dim==0?1:0],
+                tipl::geometry<2> geo2(slice->geometry[odf_dim==0?1:0],
                                        slice->geometry[odf_dim==2?1:2]);
-                for(image::pixel_index<2> index(geo2);index < geo2.size();++index)
+                for(tipl::pixel_index<2> index(geo2);index < geo2.size();++index)
                 {
                     if((index[0] & mask) | (index[1] & mask))
                         continue;
                     int x,y,z;
                     if (!slice->to3DSpace(cur_tracking_window.cur_dim,index[0],index[1],x,y,z))
                         continue;
-                    image::pixel_index<3> pos(x,y,z,geo);
+                    tipl::pixel_index<3> pos(x,y,z,geo);
                     if (handle->dir.get_fa(pos.index(),0) <= fa_threshold)
                         continue;
                     add_odf(pos);
@@ -530,11 +530,11 @@ void GLWidget::renderLR()
             }
             break;
         case 1: // intersection
-            add_odf(image::pixel_index<3>(slice->slice_pos[0],slice->slice_pos[1],slice->slice_pos[2],
+            add_odf(tipl::pixel_index<3>(slice->slice_pos[0],slice->slice_pos[1],slice->slice_pos[2],
                                           geo));
             break;
         case 2: //all
-            for(image::pixel_index<3> index(geo);index < geo.size();++index)
+            for(tipl::pixel_index<3> index(geo);index < geo.size();++index)
             {
                 if(((index[0] & mask) | (index[1] & mask) | (index[2] & mask)) ||
                    handle->dir.get_fa(index.index(),0) <= fa_threshold)
@@ -741,14 +741,14 @@ void GLWidget::renderLR()
         glEnable(GL_COLOR_MATERIAL);
         glDisable(GL_LIGHTING);
         float alpha = get_param_float("slice_alpha");
-        handleAlpha(image::rgb_color(0,0,0,255),
+        handleAlpha(tipl::rgb(0,0,0,255),
                         alpha,get_param("slice_bend1"),get_param("slice_bend2"));
         glDepthMask((alpha == 1.0));
 
         glPushMatrix();
         glMultMatrixf(transformation_matrix.begin());
 
-        std::vector<image::vector<3,float> > points(4);
+        std::vector<tipl::vector<3,float> > points(4);
 
 
 
@@ -766,7 +766,7 @@ void GLWidget::renderLR()
             {
                 if(slice_texture[dim])
                     deleteTexture(slice_texture[dim]);
-                image::color_image texture;
+                tipl::color_image texture;
                 current_slice->get_texture(dim,texture,cur_tracking_window.v2c,
                                            cur_tracking_window.overlay_slice.get(),cur_tracking_window.overlay_v2c);
                 slice_texture[dim] =
@@ -829,7 +829,7 @@ void GLWidget::renderLR()
                 region_need_update.push_back(index);
 
         int smoothed = get_param("region_mesh_smoothed");
-        image::par_for(region_need_update.size(),[&](unsigned int index){
+        tipl::par_for(region_need_update.size(),[&](unsigned int index){
             cur_tracking_window.regionWidget->regions[region_need_update[index]]->makeMeshes(smoothed);
         });
 
@@ -913,7 +913,7 @@ void GLWidget::renderLR()
                     if(p[0] == 0.0 && p[1] == 0.0 && p[2] == 0.0)
                     {
                         const auto& p2 = cur_tracking_window.regionWidget->regions[i]->show_region.center;
-                        image::vector<3> p3(p2);
+                        tipl::vector<3> p3(p2);
                         p3 /= cur_tracking_window.regionWidget->regions[i]->resolution_ratio;
                         renderText(p3[0],p3[1],p3[2],cur_tracking_window.regionWidget->item(i,0)->text(),font);
                     }
@@ -982,7 +982,7 @@ void GLWidget::renderLR()
 }
 
 
-void GLWidget::add_odf(image::pixel_index<3> pos)
+void GLWidget::add_odf(tipl::pixel_index<3> pos)
 {
     std::shared_ptr<fib_data> handle = cur_tracking_window.handle;
     const float* odf_buffer =
@@ -992,8 +992,8 @@ void GLWidget::add_odf(image::pixel_index<3> pos)
     unsigned int odf_dim = cur_tracking_window.odf_size;
     unsigned int half_odf = odf_dim >> 1;
     odf_points.resize(odf_points.size()+odf_dim);
-    std::vector<image::vector<3,float> >::iterator iter = odf_points.end()-odf_dim;
-    std::vector<image::vector<3,float> >::iterator end = odf_points.end();
+    std::vector<tipl::vector<3,float> >::iterator iter = odf_points.end()-odf_dim;
+    std::vector<tipl::vector<3,float> >::iterator end = odf_points.end();
     std::fill(iter,end,pos);
 
     float odf_min = *std::min_element(odf_buffer,odf_buffer+half_odf);
@@ -1013,7 +1013,7 @@ void GLWidget::add_odf(image::pixel_index<3> pos)
     {
         new_odf_buffer.resize(half_odf);
         std::copy(odf_buffer,odf_buffer+half_odf,new_odf_buffer.begin());
-        std::vector<image::vector<3,unsigned short> >& odf_faces =
+        std::vector<tipl::vector<3,unsigned short> >& odf_faces =
                 handle->dir.odf_faces;
         for(int index = 0;index < odf_faces.size();++index)
         {
@@ -1042,13 +1042,13 @@ void GLWidget::add_odf(image::pixel_index<3> pos)
 
     for(unsigned int index = 0;index < half_odf;++index,++iter)
     {
-        image::vector<3,float> displacement(handle->dir.odf_table[index]);
+        tipl::vector<3,float> displacement(handle->dir.odf_table[index]);
         displacement *= (odf_buffer[index]-odf_min)*scaling;
         *(iter) += displacement;
         *(iter+half_odf) -= displacement;
     }
 }
-void myglColor(const image::vector<3,float>& color,float alpha)
+void myglColor(const tipl::vector<3,float>& color,float alpha)
 {
     if(alpha == 1.0)
         glColor3fv(color.begin());
@@ -1111,10 +1111,10 @@ void GLWidget::makeTracts(void)
         }
     }
 
-    std::vector<image::vector<3,float> > points(8),previous_points(8),
+    std::vector<tipl::vector<3,float> > points(8),previous_points(8),
                                       normals(8),previous_normals(8);
-    image::rgb_color paint_color;
-    image::vector<3,float> paint_color_f;
+    tipl::rgb paint_color;
+    tipl::vector<3,float> paint_color_f;
     std::vector<float> color;
 
     unsigned int visible_tracts = get_param("tract_visible_tract");
@@ -1136,7 +1136,7 @@ void GLWidget::makeTracts(void)
         if(total_tracts != 0)
             skip_rate = (float)visible_tracts/(float)total_tracts;
     }
-    image::uniform_dist<float> uniform_gen(0.0f,1.0f),random_size(-0.5f,0.5f),random_color(-0.05f,0.05f);
+    tipl::uniform_dist<float> uniform_gen(0.0f,1.0f),random_size(-0.5f,0.5f),random_color(-0.05f,0.05f);
     {
         for (unsigned int active_tract_index = 0;
                 active_tract_index < cur_tracking_window.tractWidget->rowCount();
@@ -1169,7 +1169,7 @@ void GLWidget::makeTracts(void)
                 {
                 case 1:
                     paint_color = active_tract_model->get_tract_color(data_index);
-                    paint_color_f = image::vector<3,float>(paint_color.r,paint_color.g,paint_color.b);
+                    paint_color_f = tipl::vector<3,float>(paint_color.r,paint_color.g,paint_color.b);
                     paint_color_f /= 255.0;
                     break;
                 case 2:// local
@@ -1180,7 +1180,7 @@ void GLWidget::makeTracts(void)
                     paint_color_f = cur_tracking_window.color_bar->get_color(mean_fa[mean_fa_index++]);
                     break;
                 }
-                image::vector<3,float> last_pos(data_iter),pos,
+                tipl::vector<3,float> last_pos(data_iter),pos,
                     vec_a(1,0,0),vec_b(0,1,0),
                     vec_n,prev_vec_n,vec_ab,vec_ba,cur_color,previous_color;
 
@@ -1229,7 +1229,7 @@ void GLWidget::makeTracts(void)
                     {
                     if (index != 0 && index+1 != vertex_count)
                     {
-                        image::vector<3,float> displacement(data_iter+3);
+                        tipl::vector<3,float> displacement(data_iter+3);
                         displacement -= last_pos;
                         displacement -= prev_vec_n*(prev_vec_n*displacement);
                         if (displacement.length() < tube_detail)
@@ -1298,11 +1298,11 @@ void GLWidget::makeTracts(void)
                         {
                             myglColor(cur_color,alpha);
                             glNormal3f(-vec_n[0],-vec_n[1],-vec_n[2]);
-                            image::vector<3,float> shift(vec_n);
+                            tipl::vector<3,float> shift(vec_n);
                             shift *= -(int)end_point_shift;
                             for (unsigned int k = 0;k < 8;++k)
                             {
-                                image::vector<3,float> cur_point = points[end_sequence[k]];
+                                tipl::vector<3,float> cur_point = points[end_sequence[k]];
                                 cur_point += shift;
                                 glVertex3fv(cur_point.begin());
                             }
@@ -1346,11 +1346,11 @@ void GLWidget::makeTracts(void)
                                 glBegin((tract_style) ? GL_TRIANGLE_STRIP : GL_LINE_STRIP);
                                 myglColor(cur_color,alpha);
                                 glNormal3fv(vec_n.begin());
-                                image::vector<3,float> shift(vec_n);
+                                tipl::vector<3,float> shift(vec_n);
                                 shift *= (int)end_point_shift;
                                 for (int k = 7;k >= 0;--k)
                                 {
-                                    image::vector<3,float> cur_point = points[end_sequence[k]];
+                                    tipl::vector<3,float> cur_point = points[end_sequence[k]];
                                     cur_point += shift;
                                     glVertex3fv(cur_point.begin());
                                 }
@@ -1425,14 +1425,14 @@ void GLWidget::wheelEvent ( QWheelEvent * event )
 
 }
 
-void GLWidget::slice_location(unsigned char dim,std::vector<image::vector<3,float> >& points)
+void GLWidget::slice_location(unsigned char dim,std::vector<tipl::vector<3,float> >& points)
 {
     cur_tracking_window.current_slice->get_slice_positions(dim,points);
 }
 
-void GLWidget::get_view_dir(QPoint p,image::vector<3,float>& dir)
+void GLWidget::get_view_dir(QPoint p,tipl::vector<3,float>& dir)
 {
-    image::matrix<4,4,float> m;
+    tipl::matrix<4,4,float> m;
     float v[3];
     glGetFloatv(GL_PROJECTION_MATRIX,m.begin());
     // Compute the vector of the pick ray in screen space
@@ -1447,17 +1447,17 @@ void GLWidget::get_view_dir(QPoint p,image::vector<3,float>& dir)
 }
 
 float GLWidget::get_slice_projection_point(unsigned char dim,
-                                const image::vector<3,float>& pos,
-                                const image::vector<3,float>& dir,
+                                const tipl::vector<3,float>& pos,
+                                const tipl::vector<3,float>& dir,
                                 float& dx,float& dy)
 {
-    std::vector<image::vector<3,float> > slice_points(4);
+    std::vector<tipl::vector<3,float> > slice_points(4);
     slice_location(dim,slice_points);
-    image::vector<3,float> pos_offset(pos),v1(slice_points[1]),v2(slice_points[2]),v3(dir);
+    tipl::vector<3,float> pos_offset(pos),v1(slice_points[1]),v2(slice_points[2]),v3(dir);
     pos_offset -= slice_points[0];
     v1 -= slice_points[0];
     v2 -= slice_points[0];
-    image::matrix<3,3,float> m;
+    tipl::matrix<3,3,float> m;
     m[0] = v1[0];
     m[1] = v2[0];
     m[2] = -v3[0];
@@ -1476,9 +1476,9 @@ float GLWidget::get_slice_projection_point(unsigned char dim,
     return pos_offset[2];
 }
 
-image::vector<3,float> get_norm(const std::vector<image::vector<3,float> >& slice_points)
+tipl::vector<3,float> get_norm(const std::vector<tipl::vector<3,float> >& slice_points)
 {
-    image::vector<3,float> v1(slice_points[1]),v2(slice_points[2]),norm;
+    tipl::vector<3,float> v1(slice_points[1]),v2(slice_points[2]),norm;
     v1 -= slice_points[0];
     v2 -= slice_points[0];
     norm = v1.cross_product(v2);
@@ -1493,10 +1493,10 @@ void GLWidget::select_object(void)
     // select object
     for(object_distance = 0;object_distance < 5000 && !object_selected;object_distance += 1.0)
     {
-    image::vector<3,float> cur_pos(dir1);
+    tipl::vector<3,float> cur_pos(dir1);
     cur_pos *= object_distance;
     cur_pos += pos;
-    image::vector<3,short> voxel(cur_pos);
+    tipl::vector<3,short> voxel(cur_pos);
     if(!cur_tracking_window.handle->dim.is_valid(voxel))
         continue;
     for(int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
@@ -1541,8 +1541,8 @@ void GLWidget::get_pos(void)
 {
     //glMultMatrixf(transformation_matrix);
     glGetFloatv(GL_MODELVIEW_MATRIX,mat.begin());
-    image::matrix<4,4,float> view = (edit_right) ? transformation_matrix2*mat : transformation_matrix*mat;
-    mat = image::inverse(view);
+    tipl::matrix<4,4,float> view = (edit_right) ? transformation_matrix2*mat : transformation_matrix*mat;
+    mat = tipl::inverse(view);
     pos[0] = mat[12];
     pos[1] = mat[13];
     pos[2] = mat[14];
@@ -1582,14 +1582,14 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
         emit region_edited();
     }
 }
-bool GLWidget::get_mouse_pos(QMouseEvent *event,image::vector<3,float>& position)
+bool GLWidget::get_mouse_pos(QMouseEvent *event,tipl::vector<3,float>& position)
 {
     QPoint cur_pos = event->pos();
     if(edit_right)
         cur_pos.setX(cur_pos.x() - cur_width / 2);
 
     get_pos();
-    image::vector<3,float> cur_dir;
+    tipl::vector<3,float> cur_dir;
     get_view_dir(cur_pos,cur_dir);
 
     bool show_slice[3];
@@ -1612,7 +1612,7 @@ bool GLWidget::get_mouse_pos(QMouseEvent *event,image::vector<3,float>& position
         unsigned int min_index = std::min_element(d.begin(),d.end())-d.begin();
         if(d[min_index] != 0.0 && d[min_index] != std::numeric_limits<float>::max())
         {
-            std::vector<image::vector<3,float> > points(4);
+            std::vector<tipl::vector<3,float> > points(4);
             slice_location(min_index,points);
             position = points[0] + (points[1]-points[0])*x[min_index] + (points[2]-points[0])*y[min_index];
             return true;
@@ -1642,7 +1642,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
     {
         dirs.clear();
         last_select_point = lastPos;
-        dirs.push_back(image::vector<3,float>());
+        dirs.push_back(tipl::vector<3,float>());
         get_view_dir(last_select_point,dirs.back());
     }
     if(editing_option == moving)
@@ -1676,7 +1676,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
 
         for(unsigned char dim = 0;dim < 3;++dim)
         {
-            std::vector<image::vector<3,float> > points(4);
+            std::vector<tipl::vector<3,float> > points(4);
             slice_location(dim,points);
             angle[dim] = std::fabs(dir1*get_norm(points)) + (show_slice[dim] ? 1:0);
         }
@@ -1687,7 +1687,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
             setCursor(Qt::ArrowCursor);
             return;
         }
-        accumulated_dis = image::zero<float>();
+        accumulated_dis = tipl::zero<float>();
     }
 }
 void GLWidget::mouseReleaseEvent(QMouseEvent *event)
@@ -1701,7 +1701,7 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
         return;
 
     last_select_point = convert_pos(event);
-    dirs.push_back(image::vector<3,float>());
+    dirs.push_back(tipl::vector<3,float>());
     get_view_dir(last_select_point,dirs.back());
 
     angular_selection = event->button() == Qt::RightButton;
@@ -1758,7 +1758,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
             if(dis.manhattanLength() < 20)
                 return;
             last_select_point = cur_pos;
-            dirs.push_back(image::vector<3,float>());
+            dirs.push_back(tipl::vector<3,float>());
             get_view_dir(last_select_point,dirs.back());
         }
         return;
@@ -1767,13 +1767,13 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     if(editing_option == moving)
     {
 
-        std::vector<image::vector<3,float> > points(4);
+        std::vector<tipl::vector<3,float> > points(4);
         slice_location(moving_at_slice_index,points);
         get_view_dir(cur_pos,dir2);
         float dx,dy;
         if(get_slice_projection_point(moving_at_slice_index,pos,dir2,dx,dy) == 0.0)
             return;
-        image::vector<3,float> v1(points[1]),v2(points[2]),dis;
+        tipl::vector<3,float> v1(points[1]),v2(points[2]),dis;
         v1 -= points[0];
         v2 -= points[0];
         dis = v1*(dx-slice_dx)+v2*(dy-slice_dy);
@@ -1791,7 +1791,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     if(editing_option == dragging)
     {
 
-        std::vector<image::vector<3,float> > points(4);
+        std::vector<tipl::vector<3,float> > points(4);
         slice_location(moving_at_slice_index,points);
         get_view_dir(cur_pos,dir2);
         float move_dis = (dir2-dir1)*get_norm(points);
@@ -1908,7 +1908,7 @@ void GLWidget::loadCamera(void)
 }
 void GLWidget::addSurface(void)
 {
-    float threshold = image::segmentation::otsu_threshold(cur_tracking_window.current_slice->get_source());
+    float threshold = tipl::segmentation::otsu_threshold(cur_tracking_window.current_slice->get_source());
     bool ok;
     threshold = QInputDialog::getDouble(this,
         "DSI Studio","Threshold:", threshold,
@@ -2093,10 +2093,10 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "add_surface")
     {
-        float threshold = (param2.isEmpty()) ? image::segmentation::otsu_threshold(cur_tracking_window.current_slice->get_source()):param2.toFloat();
+        float threshold = (param2.isEmpty()) ? tipl::segmentation::otsu_threshold(cur_tracking_window.current_slice->get_source()):param2.toFloat();
         {
             surface.reset(new RegionModel);
-            image::basic_image<float, 3> crop_image(cur_tracking_window.current_slice->get_source());
+            tipl::image<float, 3> crop_image(cur_tracking_window.current_slice->get_source());
             if(!param.isEmpty())
             switch(param.toInt())
             {
@@ -2140,11 +2140,11 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             switch(get_param("surface_mesh_smoothed"))
             {
             case 1:
-                image::filter::gaussian(crop_image);
+                tipl::filter::gaussian(crop_image);
                 break;
             case 2:
-                image::filter::gaussian(crop_image);
-                image::filter::gaussian(crop_image);
+                tipl::filter::gaussian(crop_image);
+                tipl::filter::gaussian(crop_image);
                 break;
             }
             if(!surface->load(crop_image,threshold))
@@ -2217,7 +2217,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         begin_prog("save video");
         float angle = (param2.isEmpty()) ? 1 : param2.toFloat();
         int ow = width(),oh = height();
-        image::io::avi avi;
+        tipl::io::avi avi;
         #ifndef __APPLE__
             resize(1980,1080);
         #endif

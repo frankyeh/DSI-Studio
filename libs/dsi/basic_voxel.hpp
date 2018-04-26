@@ -3,7 +3,7 @@
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <boost/mpl/inherit_linearly.hpp>
-#include <image/image.hpp>
+#include <tipl/tipl.hpp>
 #include <string>
 #include "tessellated_icosahedron.hpp"
 #include "gzip_interface.hpp"
@@ -31,16 +31,16 @@ struct VoxelData
     std::vector<float> odf;
     std::vector<float> fa;
     std::vector<float> rdi;
-    std::vector<image::vector<3,float> > dir;
+    std::vector<tipl::vector<3,float> > dir;
     std::vector<short> dir_index;
     float min_odf;
-    image::matrix<3,3,float> jacobian;
+    tipl::matrix<3,3,float> jacobian;
 
     void init(void)
     {
         std::fill(fa.begin(),fa.end(),0.0);
         std::fill(dir_index.begin(),dir_index.end(),0);
-        std::fill(dir.begin(),dir.end(),image::vector<3,float>());
+        std::fill(dir.begin(),dir.end(),tipl::vector<3,float>());
     }
 };
 
@@ -50,15 +50,15 @@ class Voxel
 private:
     std::vector<std::shared_ptr<BaseProcess> > process_list;
 public:
-    image::geometry<3> dim;
-    image::vector<3> vs;
+    tipl::geometry<3> dim;
+    tipl::vector<3> vs;
 public:
 
-    image::basic_image<unsigned char,3> mask;
-    void calculate_mask(const image::basic_image<float,3>& dwi_sum);
+    tipl::image<unsigned char,3> mask;
+    void calculate_mask(const tipl::image<float,3>& dwi_sum);
 public:
     std::vector<const unsigned short*> dwi_data;
-    std::vector<image::vector<3,float> > bvectors;
+    std::vector<tipl::vector<3,float> > bvectors;
     std::vector<float> bvalues;
 
     std::string report;
@@ -80,34 +80,34 @@ public://used in GQI
     bool half_sphere = false;
     int b0_index = -1;
     void calculate_sinc_ql(std::vector<float>& sinc_ql);
-    void calculate_q_vec_t(std::vector<image::vector<3,float> >& q_vector_time);
+    void calculate_q_vec_t(std::vector<tipl::vector<3,float> >& q_vector_time);
 public://used in GQI
     bool scheme_balance = false;
     bool csf_calibration = false;
 public:// odf sharpening
     bool odf_deconvolusion = false;
     bool odf_decomposition = false;
-    image::vector<3,short> odf_xyz;
+    tipl::vector<3,short> odf_xyz;
 public:// gradient deviation
-    std::vector<image::basic_image<float,3> > new_grad_dev;
-    std::vector<image::pointer_image<float,3> > grad_dev;
+    std::vector<tipl::image<float,3> > new_grad_dev;
+    std::vector<tipl::pointer_image<float,3> > grad_dev;
 public:// used in QSDR
     std::string external_template;
     unsigned char reg_method = 0;
-    image::transformation_matrix<double> qsdr_trans;
+    tipl::transformation_matrix<double> qsdr_trans;
     bool output_jacobian = false;
     bool output_mapping = false;
     bool output_rdi = false;
     bool qsdr = false;
-    image::vector<3,int> csf_pos1,csf_pos2,csf_pos3,csf_pos4;
+    tipl::vector<3,int> csf_pos1,csf_pos2,csf_pos3,csf_pos4;
     double R2;
 public: // for QSDR associated T1WT2W
-    std::vector<image::basic_image<float,3> > other_image;
+    std::vector<tipl::image<float,3> > other_image;
     std::vector<std::string> other_image_name;
-    std::vector<image::transformation_matrix<double> > other_image_affine;
+    std::vector<tipl::transformation_matrix<double> > other_image_affine;
 public: // for T1W based DMDM
-    image::basic_image<float,3> t1w,t1wt;
-    image::vector<3> t1w_vs,t1wt_vs;
+    tipl::image<float,3> t1w,t1wt;
+    tipl::vector<3> t1w_vs,t1wt_vs;
     float t1wt_tran[16];
     std::string t1w_file_name;
 
@@ -122,7 +122,7 @@ public:
     float z0 = 0.0;
     // other information for second pass processing
     std::vector<float> response_function,free_water_diffusion;
-    image::basic_image<float,3> qa_map;
+    tipl::image<float,3> qa_map;
     float reponse_function_scaling;
 public:// for template creation
     std::vector<std::vector<float> > template_odfs;

@@ -2,7 +2,7 @@
 #include <QFileInfo>
 #include <QApplication>
 #include <QDir>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "mapping/fa_template.hpp"
 #include "libs/gzip_interface.hpp"
 #include "mapping/atlas.hpp"
@@ -64,10 +64,10 @@ bool atl_load_atlas(std::string atlas_name)
     return true;
 }
 
-void atl_save_mapping(const std::string& file_name,const image::geometry<3>& geo,
-                      const image::basic_image<image::vector<3>,3>& mapping,
+void atl_save_mapping(const std::string& file_name,const tipl::geometry<3>& geo,
+                      const tipl::image<tipl::vector<3>,3>& mapping,
                       const std::vector<float>& trans,
-                      const image::vector<3>& vs,
+                      const tipl::vector<3>& vs,
                       bool multiple)
 {
     for(unsigned int i = 0;i < atlas_list.size();++i)
@@ -82,17 +82,17 @@ void atl_save_mapping(const std::string& file_name,const image::geometry<3>& geo
             output += atlas_list[i].get_list()[j];
             output += ".nii.gz";
 
-            image::basic_image<unsigned char,3> roi(geo);
+            tipl::image<unsigned char,3> roi(geo);
             for(unsigned int k = 0;k < mapping.size();++k)
                 if (atlas_list[i].is_labeled_as(mapping[k], j))
                     roi[k] = 1;
             if(multiple)
             {
-                image::io::nifti out;
+                tipl::io::nifti out;
                 out.set_voxel_size(vs);
                 if(!trans.empty())
                     out.set_LPS_transformation(trans.begin(),roi.geometry());
-                image::flip_xy(roi);
+                tipl::flip_xy(roi);
                 out << roi;
                 out.save_to_file(output.c_str());
                 std::cout << "save " << output << std::endl;

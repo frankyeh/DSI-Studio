@@ -31,7 +31,7 @@ void Voxel::calculate_sinc_ql(std::vector<float>& sinc_ql)
     for (unsigned int j = 0,index = 0; j < odf_size; ++j)
         for (unsigned int i = 0; i < bvalues.size(); ++i,++index)
             sinc_ql[index] = bvectors[i]*
-                         image::vector<3,float>(ti.vertices[j])*
+                         tipl::vector<3,float>(ti.vertices[j])*
                            std::sqrt(bvalues[i]*0.01506);
 
     for (unsigned int index = 0; index < sinc_ql.size(); ++index)
@@ -39,7 +39,7 @@ void Voxel::calculate_sinc_ql(std::vector<float>& sinc_ql)
                      base_function(sinc_ql[index]*sigma):
                      boost::math::sinc_pi(sinc_ql[index]*sigma);
 }
-void Voxel::calculate_q_vec_t(std::vector<image::vector<3,float> >& q_vectors_time)
+void Voxel::calculate_q_vec_t(std::vector<tipl::vector<3,float> >& q_vectors_time)
 {
     float sigma = param[0];
     q_vectors_time.resize(bvalues.size());
@@ -72,7 +72,7 @@ void Voxel::load_from_src(ImageModel& image_model)
     if(image_model.src_bvalues[sorted_index[0]] == 0.0f)
     {
         bvalues.push_back(0);
-        bvectors.push_back(image::vector<3,float>(0,0,0));
+        bvectors.push_back(tipl::vector<3,float>(0,0,0));
         dwi_data.push_back(image_model.src_dwi_data[sorted_index[0]]);
         b0_index = 0;
     }
@@ -86,33 +86,33 @@ void Voxel::load_from_src(ImageModel& image_model)
     if(image_model.has_image_rotation)
         for (unsigned int index = 0;index < bvectors.size();++index)
             {
-                image::vector<3> tmp;
-                image::vector_rotation(bvectors[index].begin(),tmp.begin(),image_model.src_bvectors_rotate,image::vdim<3>());
+                tipl::vector<3> tmp;
+                tipl::vector_rotation(bvectors[index].begin(),tmp.begin(),image_model.src_bvectors_rotate,tipl::vdim<3>());
                 tmp.normalize();
                 bvectors[index] = tmp;
             }
 }
 
 
-void Voxel::calculate_mask(const image::basic_image<float,3>& dwi_sum)
+void Voxel::calculate_mask(const tipl::image<float,3>& dwi_sum)
 {
-    image::threshold(dwi_sum,mask,0.2f,1,0);
+    tipl::threshold(dwi_sum,mask,0.2f,1,0);
     if(dwi_sum.depth() < 10)
     {
         for(unsigned int i = 0;i < mask.depth();++i)
         {
-            image::pointer_image<unsigned char,2> I(&mask[0]+i*mask.plane_size(),
-                    image::geometry<2>(mask.width(),mask.height()));
-            image::morphology::defragment(I);
-            image::morphology::recursive_smoothing(I,10);
-            image::morphology::defragment(I);
+            tipl::pointer_image<unsigned char,2> I(&mask[0]+i*mask.plane_size(),
+                    tipl::geometry<2>(mask.width(),mask.height()));
+            tipl::morphology::defragment(I);
+            tipl::morphology::recursive_smoothing(I,10);
+            tipl::morphology::defragment(I);
         }
     }
     else
     {
-        image::morphology::recursive_smoothing(mask,10);
-        image::morphology::defragment(mask);
-        image::morphology::recursive_smoothing(mask,10);
+        tipl::morphology::recursive_smoothing(mask,10);
+        tipl::morphology::defragment(mask);
+        tipl::morphology::recursive_smoothing(mask,10);
     }
 }
 
@@ -129,7 +129,7 @@ void Voxel::run(void)
             ++total_voxel;
 
     unsigned int total = 0;
-    image::par_for2(mask.size(),
+    tipl::par_for2(mask.size(),
                     [&](int voxel_index,int thread_index)
     {
         ++total;

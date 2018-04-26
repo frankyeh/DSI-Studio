@@ -22,8 +22,8 @@ private:
     }
 private:
     tessellated_icosahedron ti;
-    image::geometry<3> dim;
-    std::vector<image::vector<3,float> > bvectors;
+    tipl::geometry<3> dim;
+    std::vector<tipl::vector<3,float> > bvectors;
     std::vector<float> bvalues;
 private:
 
@@ -56,7 +56,7 @@ public:
 
         for (unsigned int index = 0; index + 3 < data.size(); index += 4)
         {
-            image::vector<3,float> v(data[index+1],data[index+2],data[index+3]);
+            tipl::vector<3,float> v(data[index+1],data[index+2],data[index+3]);
             v.normalize();
             bvalues.push_back(data[index]);
             bvectors.push_back(v);
@@ -91,7 +91,7 @@ public:
         findex[1].resize(total_size);
 
 
-        unsigned int main_fiber_index = ti.discretize(image::vector<3>(1.0,0.0,0.0));
+        unsigned int main_fiber_index = ti.discretize(tipl::vector<3>(1.0,0.0,0.0));
 
         std::fill(models.begin(),models.end(),(MixGaussianModel*)0);
         begin_prog("creating layout");
@@ -128,7 +128,7 @@ public:
                                     fa[1][index] = fiber_fraction*(1.0-xf);
                                     gfa[index] = fa_value;
                                     findex[0][index] = main_fiber_index;
-                                    findex[1][index] = ti.discretize(image::vector<3>(std::cos(angle),std::sin(angle),0.0));
+                                    findex[1][index] = ti.discretize(tipl::vector<3>(std::cos(angle),std::sin(angle),0.0));
                                 }
                             }
                         }
@@ -162,7 +162,7 @@ public:
                                 fa[1][index] = fiber_fraction/2.0;
                                 gfa[index] = fa_value;
                                 findex[0][index] = main_fiber_index;
-                                findex[1][index] = ti.discretize(image::vector<3>(std::cos(inner_angle),std::sin(inner_angle),0.0));
+                                findex[1][index] = ti.discretize(tipl::vector<3>(std::cos(inner_angle),std::sin(inner_angle),0.0));
                             }
                         }
                     }

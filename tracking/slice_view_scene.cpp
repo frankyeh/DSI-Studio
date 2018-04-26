@@ -1,4 +1,4 @@
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "slice_view_scene.h"
 #include <QGraphicsSceneMouseEvent>
 #include <QPainter>
@@ -36,8 +36,8 @@ void slice_view_scene::show_ruler(QPainter& paint)
         float X = sel_point[index][0];
         float Y = sel_point[index][1];
         paint.drawLine(X, Y, tX, tY);
-        image::vector<2,float> from(X,Y);
-        image::vector<2,float> to(tX,tY);
+        tipl::vector<2,float> from(X,Y);
+        tipl::vector<2,float> to(tX,tY);
         from -= to;
         float pixel_length = from.length();
         from /= cur_tracking_window.get_scene_zoom();
@@ -50,14 +50,14 @@ void slice_view_scene::show_ruler(QPainter& paint)
         if(tic_dis*pixel_length/length < 10)
             tic_dis *= 5.0;
 
-        image::vector<2,float> tic_dir(Y-tY,tX-X);
+        tipl::vector<2,float> tic_dir(Y-tY,tX-X);
         tic_dir.normalize();
         tic_dir *= 5.0;
         for(double L = 0.0;1;L+=tic_dis)
         {
             if(L+tic_dis > length)
                 L = length;
-            image::vector<2,float> npos(tX,tY);
+            tipl::vector<2,float> npos(tX,tY);
             npos[0] += ((float)X-npos[0])*L/length;
             npos[1] += ((float)Y-npos[1])*L/length;
             paint.drawLine(npos[0],npos[1],npos[0]+tic_dir[0],npos[1]+tic_dir[1]);
@@ -113,7 +113,7 @@ void slice_view_scene::show_fiber(QPainter& painter)
                 cur_tracking_window.current_slice->toDiffusionSpace(cur_tracking_window.cur_dim,x, y, X, Y, Z);
                 if(!cur_tracking_window.handle->dim.is_valid(X,Y,Z))
                     continue;
-                image::pixel_index<3> pos(X,Y,Z,fib.dim);
+                tipl::pixel_index<3> pos(X,Y,Z,fib.dim);
                 if (pos.index() >= fib.dim.size() || fib.dir.get_fa(pos.index(),0) == 0.0)
                     continue;
                 for (char fiber = max_fiber; fiber >= 0; --fiber)
@@ -158,7 +158,7 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
                                                  cur_tracking_window.overlay_slice.get(),cur_tracking_window.overlay_v2c);
 
     // draw region colors on the image
-    image::color_image slice_image_with_region(slice_image);
+    tipl::color_image slice_image_with_region(slice_image);
     cur_tracking_window.regionWidget->draw_region(slice_image_with_region);
     QImage qimage((unsigned char*)&*slice_image_with_region.begin(),slice_image_with_region.width(),slice_image_with_region.height(),QImage::Format_RGB32);
     // make sure that qimage get a hard copy
@@ -230,10 +230,10 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
 
         if(param2 == "color")
         {
-            image::basic_image<image::rgb_color,3> buf(cur_tracking_window.handle->dim);
+            tipl::image<tipl::rgb,3> buf(cur_tracking_window.handle->dim);
             for(int z = 0;z < buf.depth();++z)
             {
-                image::color_image I;
+                tipl::color_image I;
                 cur_tracking_window.handle->get_slice(index,2,z,I,cur_tracking_window.v2c);
                 std::copy(I.begin(),I.end(),buf.begin()+z*buf.plane_size());
             }
@@ -241,7 +241,7 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
             file.set_voxel_size(cur_tracking_window.current_slice->voxel_size.begin());
             if(cur_tracking_window.handle->is_qsdr) //QSDR condition
                 file.set_LPS_transformation(cur_tracking_window.handle->trans_to_mni.begin(),buf.geometry());
-            image::flip_xy(buf);
+            tipl::flip_xy(buf);
             file << buf;
             file.save_to_file(param.toLocal8Bit().begin());
             return true;
@@ -249,19 +249,19 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
 
         if(QFileInfo(param).completeSuffix().toLower() == "mat")
         {
-            image::io::mat_write file(param.toLocal8Bit().begin());
+            tipl::io::mat_write file(param.toLocal8Bit().begin());
             file << cur_tracking_window.handle->view_item[index].image_data;
         }
         else
         {
-            image::basic_image<float,3> buf(cur_tracking_window.handle->view_item[index].image_data);
+            tipl::image<float,3> buf(cur_tracking_window.handle->view_item[index].image_data);
             gz_nifti file;
             file.set_voxel_size(cur_tracking_window.current_slice->voxel_size.begin());
             if(cur_tracking_window.handle->is_qsdr &&
                cur_tracking_window.handle->view_item[index].image_data.geometry() ==
                     cur_tracking_window.handle->dim) //QSDR condition
                 file.set_LPS_transformation(cur_tracking_window.handle->trans_to_mni.begin(),buf.geometry());
-            image::flip_xy(buf);
+            tipl::flip_xy(buf);
             file << buf;
             file.save_to_file(param.toLocal8Bit().begin());
         }
@@ -270,9 +270,9 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
     return false;
 }
 
-bool slice_view_scene::to_3d_space_single_slice(float x,float y,image::vector<3,float>& pos)
+bool slice_view_scene::to_3d_space_single_slice(float x,float y,tipl::vector<3,float>& pos)
 {
-    image::geometry<3> geo(cur_tracking_window.current_slice->geometry);
+    tipl::geometry<3> geo(cur_tracking_window.current_slice->geometry);
     if(cur_tracking_window["orientation_convention"].toInt())
         x = (cur_tracking_window.cur_dim ? geo[0]:geo[1])-x;
     if(cur_tracking_window.cur_dim != 2)
@@ -280,9 +280,9 @@ bool slice_view_scene::to_3d_space_single_slice(float x,float y,image::vector<3,
     return cur_tracking_window.current_slice->to3DSpace(cur_tracking_window.cur_dim,x - 0.5f,y - 0.5f,pos[0], pos[1], pos[2]);
 }
 
-bool slice_view_scene::to_3d_space(float x,float y,image::vector<3,float>& pos)
+bool slice_view_scene::to_3d_space(float x,float y,tipl::vector<3,float>& pos)
 {
-    image::geometry<3> geo(cur_tracking_window.current_slice->geometry);
+    tipl::geometry<3> geo(cur_tracking_window.current_slice->geometry);
     float display_ratio = cur_tracking_window.get_scene_zoom();
     x /= display_ratio;
     y /= display_ratio;
@@ -491,7 +491,7 @@ void slice_view_scene::mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseE
             return;
         float Y = mouseEvent->scenePos().y();
         float X = mouseEvent->scenePos().x();
-        image::vector<3,float> pos;
+        tipl::vector<3,float> pos;
         if(!to_3d_space(X,Y,pos))
             return;
         pos.round();
@@ -503,7 +503,7 @@ void slice_view_scene::mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseE
 
 void slice_view_scene::adjust_xy_to_layout(float& X,float& Y)
 {
-    image::geometry<3> geo(cur_tracking_window.current_slice->geometry);
+    tipl::geometry<3> geo(cur_tracking_window.current_slice->geometry);
     float display_ratio = cur_tracking_window.get_scene_zoom();
     if(cur_tracking_window["roi_layout"].toInt() == 1)
     {
@@ -545,7 +545,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         sel_coord.clear();
     }
 
-    image::vector<3,float> pos;
+    tipl::vector<3,float> pos;
     float Y = mouseEvent->scenePos().y();
     float X = mouseEvent->scenePos().x();
     if(!to_3d_space(X,Y,pos))
@@ -554,7 +554,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     if(sel_mode == 5)// move object
     {
         bool find_region = false;
-        image::vector<3,float> p(pos);
+        tipl::vector<3,float> p(pos);
         if(!cur_tracking_window.current_slice->is_diffusion_space)
             p.to(cur_tracking_window.current_slice->T);
         for(unsigned int index = 0;index <
@@ -564,7 +564,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
             {
                 find_region = true;
                 cur_tracking_window.regionWidget->selectRow(index);
-                std::vector<image::vector<3,short> > dummy;
+                std::vector<tipl::vector<3,short> > dummy;
                 cur_tracking_window.regionWidget->add_points(dummy,true); // create a undo point
                 break;
             }
@@ -579,7 +579,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
             sel_point.clear();
             sel_coord.clear();
         }
-        sel_point.push_back(image::vector<2,short>(X, Y));
+        sel_point.push_back(tipl::vector<2,short>(X, Y));
         sel_coord.push_back(pos);
     }
 
@@ -591,7 +591,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     case 4:
     case 6:
         sel_coord.push_back(pos);
-        sel_point.push_back(image::vector<2,short>(X, Y));
+        sel_point.push_back(tipl::vector<2,short>(X, Y));
         break;
     default:
         break;
@@ -600,7 +600,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 }
 void slice_view_scene::new_annotated_image(void)
 {
-    image::geometry<3> geo(cur_tracking_window.current_slice->geometry);
+    tipl::geometry<3> geo(cur_tracking_window.current_slice->geometry);
     float display_ratio = cur_tracking_window.get_scene_zoom();
     if(cur_tracking_window["roi_layout"].toInt() == 0)
         annotated_image = view_image;
@@ -627,7 +627,7 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     {
         return;
     }
-    image::geometry<3> geo(cur_tracking_window.current_slice->geometry);
+    tipl::geometry<3> geo(cur_tracking_window.current_slice->geometry);
     float Y = mouseEvent->scenePos().y();
     float X = mouseEvent->scenePos().x();
     float display_ratio = cur_tracking_window.get_scene_zoom();
@@ -635,7 +635,7 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 
     cX = X;
     cY = Y;
-    image::vector<3,float> pos;
+    tipl::vector<3,float> pos;
     if (!mouse_down || sel_mode == 4)
         return;
     to_3d_space(cX,cY,pos);
@@ -645,7 +645,7 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     {
         if(!sel_coord.empty() && pos != sel_coord.back())
         {
-            image::vector<3,float> p1(pos),p2(sel_coord.back());
+            tipl::vector<3,float> p1(pos),p2(sel_coord.back());
             if(!cur_tracking_window.current_slice->is_diffusion_space)
             {
                 p1.to(cur_tracking_window.current_slice->T);
@@ -657,7 +657,7 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
             {
                 cur_tracking_window.regionWidget->regions[cur_tracking_window.regionWidget->currentRow()]->shift(p1);
                 p1.to(cur_tracking_window.current_slice->invT);
-                image::vector<3> zero;
+                tipl::vector<3> zero;
                 zero.to(cur_tracking_window.current_slice->invT);
                 sel_coord.back() += p1-zero;
                 emit need_update();
@@ -673,7 +673,7 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     if(sel_mode == 6) // ruler
     {
         sel_coord.back() = pos;
-        sel_point.back() = image::vector<2,short>(X, Y);
+        sel_point.back() = tipl::vector<2,short>(X, Y);
         QPainter paint(&annotated_image);
         show_ruler(paint);
     }
@@ -688,11 +688,11 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     case 0: // draw rectangle
         paint.drawRect(X, Y, sel_point.front()[0]-X,sel_point.front()[1]-Y);
         sel_coord.back() = pos;
-        sel_point.back() = image::vector<2,short>(X, Y);
+        sel_point.back() = tipl::vector<2,short>(X, Y);
         break;
     case 1: //free hand
         sel_coord.push_back(pos);
-        sel_point.push_back(image::vector<2,short>(X, Y));
+        sel_point.push_back(tipl::vector<2,short>(X, Y));
 
         for (unsigned int index = 1; index < sel_point.size(); ++index)
             paint.drawLine(sel_point[index-1][0], sel_point[index-1][1],sel_point[index][0], sel_point[index][1]);
@@ -704,7 +704,7 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         int dis = std::sqrt((double)(dx * dx + dy * dy));
         paint.drawEllipse(QPoint(sel_point.front()[0],sel_point.front()[1]),dis,dis);
         sel_coord.back() = pos;
-        sel_point.back() = image::vector<2,short>(X, Y);
+        sel_point.back() = tipl::vector<2,short>(X, Y);
     }
     break;
     case 3:
@@ -715,7 +715,7 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         paint.drawRect(sel_point.front()[0] - dis,
                         sel_point.front()[1] - dis, dis*2, dis*2);
         sel_coord.back() = pos;
-        sel_point.back() = image::vector<2,short>(X, Y);
+        sel_point.back() = tipl::vector<2,short>(X, Y);
     }
     break;
     default:
@@ -754,18 +754,18 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         return;
     }
 
-    image::geometry<3> geo(cur_tracking_window.current_slice->geometry);
+    tipl::geometry<3> geo(cur_tracking_window.current_slice->geometry);
     float display_ratio = cur_tracking_window.get_scene_zoom();
 
 
-    std::vector<image::vector<3,float> >points;
+    std::vector<tipl::vector<3,float> >points;
     switch (sel_mode)
     {
     case 0: // rectangle
     {
         if (sel_coord.size() < 2)
             return;
-        image::vector<3,float> min_cood, max_cood;
+        tipl::vector<3,float> min_cood, max_cood;
         for (unsigned int i = 0; i < 3; ++i)
             if (sel_coord[0][i] > sel_coord[1][i])
             {
@@ -782,7 +782,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
             for (float y = min_cood[1]; y <= max_cood[1]; y += dis)
                 for (float x = min_cood[0]; x <= max_cood[0]; x += dis)
                     if (cur_tracking_window.current_slice->geometry.is_valid(x, y, z))
-                        points.push_back(image::vector<3,float>(x, y, z));
+                        points.push_back(tipl::vector<3,float>(x, y, z));
     }
     break;
     case 1: //free hand
@@ -802,10 +802,10 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
             for(unsigned int index = 0;index < sel_point.size();++index)
                 qpoints[index] = QPoint(sel_point[index][0],sel_point[index][1]);
             paint.drawPolygon(&*qpoints.begin(),qpoints.size() - 1);
-            image::geometry<2> geo2(bitmap.width(),bitmap.height());
-            for (image::pixel_index<2>index(geo2); index < geo2.size();++index)
+            tipl::geometry<2> geo2(bitmap.width(),bitmap.height());
+            for (tipl::pixel_index<2>index(geo2); index < geo2.size();++index)
             {
-                image::vector<3,float> pos;
+                tipl::vector<3,float> pos;
                 if (QColor(bitmap.pixel(index.x(),index.y())).red() < 64
                     || !to_3d_space_single_slice((float)index.x()/display_ratio,(float)index.y()/display_ratio,pos))
                     continue;
@@ -832,7 +832,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
                     if (cur_tracking_window.current_slice->geometry.is_valid(sel_coord[0][0] + x,
                                                  sel_coord[0][1] + y, sel_coord[0][2] + z) && x*x +
                             y*y + z*z <= distance2)
-                        points.push_back(image::vector<3,float>(sel_coord[0][0] + x,
+                        points.push_back(tipl::vector<3,float>(sel_coord[0][0] + x,
                                             sel_coord[0][1] + y, sel_coord[0][2] + z));
     }
     break;
@@ -849,7 +849,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         for (float z = -dis; z <= dis; z += interval)
             for (float y = -dis; y <= dis; y += interval)
                 for (float x = -dis; x <= dis; x += interval)
-                    points.push_back(image::vector<3,float>(sel_coord[0][0] + x,
+                    points.push_back(tipl::vector<3,float>(sel_coord[0][0] + x,
                                                         sel_coord[0][1] + y, sel_coord[0][2] + z));
 
     }
@@ -895,7 +895,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     {
         // resolution difference between DWI and current slices;
         resolution = std::min<float>(16.0f,display_ratio*std::floor(cur_tracking_window.handle->vs[0]/cur_tracking_window.current_slice->voxel_size[0]));
-        image::par_for(points.size(),[&](int index)
+        tipl::par_for(points.size(),[&](int index)
         {
             points[index].to(cur_tracking_window.current_slice->T);
             points[index] *= resolution;
@@ -903,7 +903,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     }
     else
     {
-        image::par_for(points.size(),[&](int index)
+        tipl::par_for(points.size(),[&](int index)
         {
             points[index] *= resolution;
         });

@@ -7,7 +7,7 @@
 #include <QMessageBox>
 
 void show_view(QGraphicsScene& scene,QImage I);
-bool load_image_from_files(QStringList filenames,image::basic_image<float,3>& ref,image::vector<3>& vs)
+bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl::vector<3>& vs)
 {
     if(filenames.size() == 1 && filenames[0].toLower().contains("nii"))
     {
@@ -23,7 +23,7 @@ bool load_image_from_files(QStringList filenames,image::basic_image<float,3>& re
     else
         if(filenames.size() == 1 && filenames[0].contains("2dseq"))
         {
-            image::io::bruker_2dseq seq;
+            tipl::io::bruker_2dseq seq;
             if(!seq.load_from_file(filenames[0].toLocal8Bit().begin()))
             {
                 QMessageBox::information(0,"Error","Not a valid 2dseq file",0);
@@ -35,7 +35,7 @@ bool load_image_from_files(QStringList filenames,image::basic_image<float,3>& re
         }
     else
     {
-        image::io::volume v;
+        tipl::io::volume v;
         std::vector<std::string> file_list;
         for(int i = 0;i < filenames.size();++i)
             file_list.push_back(filenames[i].toStdString());
@@ -76,7 +76,7 @@ bool view_image::eventFilter(QObject *obj, QEvent *event)
         return false;
     QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
     QPointF point = ui->view->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
-    image::vector<3,float> pos;
+    tipl::vector<3,float> pos;
     pos[0] =  ((float)point.x()) / source_ratio - 0.5;
     pos[1] =  ((float)point.y()) / source_ratio - 0.5;
     pos[2] = ui->slice_pos->value();
@@ -89,8 +89,8 @@ bool view_image::eventFilter(QObject *obj, QEvent *event)
 bool view_image::open(QStringList file_names)
 {
     gz_nifti nifti;
-    image::io::dicom dicom;
-    image::io::bruker_2dseq seq;
+    tipl::io::dicom dicom;
+    tipl::io::bruker_2dseq seq;
     gz_mat_read mat;
     data.clear();
     float vs[3] = {1.0,1.0,1.0};
@@ -103,13 +103,13 @@ bool view_image::open(QStringList file_names)
     {
         for(unsigned int i = 0;check_prog(i,file_names.size());++i)
         {
-            image::color_image I;
-            image::io::bitmap bmp;
+            tipl::color_image I;
+            tipl::io::bitmap bmp;
             if(!bmp.load_from_file(file_names[i].toStdString().c_str()))
                 return false;
             bmp >> I;
             if(i == 0)
-                data.resize(image::geometry<3>(I.width(),I.height(),file_names.size()));
+                data.resize(tipl::geometry<3>(I.width(),I.height(),file_names.size()));
             unsigned int pos = i*I.size();
             for(unsigned int j = 0;j < I.size();++j)
                 data[pos+j] = ((float)I[j].r+(float)I[j].r+(float)I[j].r)/3.0;
@@ -238,24 +238,24 @@ void view_image::update_image(void)
 {
     if(data.empty())
         return;
-    image::basic_image<float,2> tmp(image::geometry<2>(data.width(),data.height()));
+    tipl::image<float,2> tmp(tipl::geometry<2>(data.width(),data.height()));
     unsigned int offset = ui->slice_pos->value()*tmp.size();
 
     std::copy(data.begin() + offset,
               data.begin() + offset + tmp.size(),tmp.begin());
     max_source_value = std::max<float>(max_source_value,*std::max_element(tmp.begin(),tmp.end()));
     if(max_source_value + 1.0 != 1.0)
-        image::divide_constant(tmp.begin(),tmp.end(),max_source_value/255.0);
+        tipl::divide_constant(tmp.begin(),tmp.end(),max_source_value/255.0);
 
-    float mean_value = image::mean(tmp.begin(),tmp.end());
-    image::minus_constant(tmp.begin(),tmp.end(),mean_value);
-    image::multiply_constant(tmp.begin(),tmp.end(),ui->contrast->value());
-    image::add_constant(tmp.begin(),tmp.end(),mean_value+ui->brightness->value()*25.5);
+    float mean_value = tipl::mean(tmp.begin(),tmp.end());
+    tipl::minus_constant(tmp.begin(),tmp.end(),mean_value);
+    tipl::multiply_constant(tmp.begin(),tmp.end(),ui->contrast->value());
+    tipl::add_constant(tmp.begin(),tmp.end(),mean_value+ui->brightness->value()*25.5);
 
-    image::upper_lower_threshold(tmp.begin(),tmp.end(),tmp.begin(),0.0f,255.0f);
+    tipl::upper_lower_threshold(tmp.begin(),tmp.end(),tmp.begin(),0.0f,255.0f);
 
 
-    buffer.resize(image::geometry<2>(data.width(),data.height()));
+    buffer.resize(tipl::geometry<2>(data.width(),data.height()));
     std::copy(tmp.begin(),tmp.end(),buffer.begin());
 
     source_image = QImage((unsigned char*)&*buffer.begin(),data.width(),data.height(),QImage::Format_RGB32).

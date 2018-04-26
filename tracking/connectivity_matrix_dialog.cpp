@@ -103,7 +103,7 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
             for(unsigned int index = 0;index < cur_tracking_window->regionWidget->regions.size();++index)
             if(cur_tracking_window->regionWidget->item(index,0)->checkState() == Qt::Checked)
             {
-                data.regions.push_back(std::vector<image::vector<3,short> >());
+                data.regions.push_back(std::vector<tipl::vector<3,short> >());
                 cur_tracking_window->regionWidget->regions[index]->get_region_voxels(data.regions.back());
                 data.region_name.push_back(std::string(cur_tracking_window->regionWidget->item(index,0)->text().toLocal8Bit().begin()));
             }

@@ -2,7 +2,7 @@
 #define TRACT_MODEL_HPP
 #include <vector>
 #include <iosfwd>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "fib_data.hpp"
 
 class RoiMgr;
@@ -11,8 +11,8 @@ public:
         std::string report;
 private:
         std::shared_ptr<fib_data> handle;
-        image::geometry<3> geometry;
-        image::vector<3> vs;
+        tipl::geometry<3> geometry;
+        tipl::vector<3> vs;
         std::auto_ptr<tracking_data> fib;
 private:
         std::vector<std::vector<float> > tract_data;
@@ -31,8 +31,8 @@ public:
         const std::vector<unsigned int>& get_cluster_info(void) const{return tract_cluster;}
         std::vector<unsigned int>& get_cluster_info(void) {return tract_cluster;}
         void select(float select_angle,
-                    const std::vector<image::vector<3,float> >& dirs,
-                    const image::vector<3,float>& from_pos,std::vector<unsigned int>& selected);
+                    const std::vector<tipl::vector<3,float> >& dirs,
+                    const tipl::vector<3,float>& from_pos,std::vector<unsigned int>& selected);
         // selection
         void delete_tracts(const std::vector<unsigned int>& tracts_to_delete);
         void select_tracts(const std::vector<unsigned int>& tracts_to_select);
@@ -57,7 +57,7 @@ public:
         void add(const TractModel& rhs);
         bool load_from_file(const char* file_name,bool append = false);
 
-        bool save_tracts_in_native_space(const char* file_name,image::basic_image<image::vector<3,float>,3 > native_position);
+        bool save_tracts_in_native_space(const char* file_name,tipl::image<tipl::vector<3,float>,3 > native_position);
         bool save_tracts_to_file(const char* file_name);
         void save_vrml(const char* file_name,
                        unsigned char tract_style,
@@ -75,18 +75,18 @@ public:
 
         void release_tracts(std::vector<std::vector<float> >& released_tracks);
         void add_tracts(std::vector<std::vector<float> >& new_tracks);
-        void add_tracts(std::vector<std::vector<float> >& new_tracks,image::rgb_color color);
+        void add_tracts(std::vector<std::vector<float> >& new_tracks,tipl::rgb color);
         void add_tracts(std::vector<std::vector<float> >& new_tracks,unsigned int length_threshold);
         void filter_by_roi(RoiMgr& roi_mgr);
         void cull(float select_angle,
-                  const std::vector<image::vector<3,float> > & dirs,
-                  const image::vector<3,float>& from_pos,
+                  const std::vector<tipl::vector<3,float> > & dirs,
+                  const tipl::vector<3,float>& from_pos,
                   bool delete_track);
-        void cut(float select_angle,const std::vector<image::vector<3,float> > & dirs,
-                  const image::vector<3,float>& from_pos);
+        void cut(float select_angle,const std::vector<tipl::vector<3,float> > & dirs,
+                  const tipl::vector<3,float>& from_pos);
         void cut_by_slice(unsigned int dim, unsigned int pos,bool greater);
-        void paint(float select_angle,const std::vector<image::vector<3,float> > & dirs,
-                  const image::vector<3,float>& from_pos,
+        void paint(float select_angle,const std::vector<tipl::vector<3,float> > & dirs,
+                  const tipl::vector<3,float>& from_pos,
                   unsigned int color);
         void set_color(unsigned int color){std::fill(tract_color.begin(),tract_color.end(),color);}
         void set_tract_color(unsigned int index,unsigned int color){tract_color[index] = color;}
@@ -98,8 +98,8 @@ public:
         bool trim(void);
 
 
-        void get_end_points(std::vector<image::vector<3,float> >& points);
-        void get_tract_points(std::vector<image::vector<3,float> >& points);
+        void get_end_points(std::vector<tipl::vector<3,float> >& points);
+        void get_tract_points(std::vector<tipl::vector<3,float> >& points);
 
         size_t get_deleted_track_count(void) const{return deleted_tract_data.size();}
         size_t get_visible_track_count(void) const{return tract_data.size();}
@@ -110,10 +110,10 @@ public:
         std::vector<std::vector<float> >& get_tracts(void) {return tract_data;}
         unsigned int get_tract_color(unsigned int index) const{return tract_color[index];}
         size_t get_tract_length(unsigned int index) const{return tract_data[index].size();}
-        void get_density_map(image::basic_image<unsigned int,3>& mapping,
-             const image::matrix<4,4,float>& transformation,bool endpoint);
-        void get_density_map(image::basic_image<image::rgb_color,3>& mapping,
-             const image::matrix<4,4,float>& transformation,bool endpoint);
+        void get_density_map(tipl::image<unsigned int,3>& mapping,
+             const tipl::matrix<4,4,float>& transformation,bool endpoint);
+        void get_density_map(tipl::image<tipl::rgb,3>& mapping,
+             const tipl::matrix<4,4,float>& transformation,bool endpoint);
         void save_tdi(const char* file_name,bool sub_voxel,bool endpoint,const std::vector<float>& tran);
 
         void get_quantitative_data(std::vector<float>& data);
@@ -134,11 +134,11 @@ public:
         void get_tracts_data(unsigned int index_num,float& mean, float& sd) const;
 public:
 
-        void get_passing_list(const std::vector<std::vector<image::vector<3,short> > >& regions,
+        void get_passing_list(const std::vector<std::vector<tipl::vector<3,short> > >& regions,
                                      std::vector<std::vector<short> >& passing_list1,
                                      std::vector<std::vector<short> >& passing_list2,
                                      float& overlap_ratio) const;
-        void get_end_list(const std::vector<std::vector<image::vector<3,short> > >& regions,
+        void get_end_list(const std::vector<std::vector<tipl::vector<3,short> > >& regions,
                                      std::vector<std::vector<short> >& end_list1,
                                      std::vector<std::vector<short> >& end_list2,
                                      float& overlap_ratio) const;
@@ -153,15 +153,15 @@ class atlas;
 class ConnectivityMatrix{
 public:
 
-    image::basic_image<float,2> matrix_value;
+    tipl::image<float,2> matrix_value;
 public:
-    std::vector<std::vector<image::vector<3,short> > > regions;
+    std::vector<std::vector<tipl::vector<3,short> > > regions;
     std::vector<std::string> region_name;
     std::string error_msg;
     float overlap_ratio;
-    void set_atlas(atlas& data,const image::basic_image<image::vector<3,float>,3 >& mni_position);
+    void set_atlas(atlas& data,const tipl::image<tipl::vector<3,float>,3 >& mni_position);
 public:
-    void save_to_image(image::color_image& cm);
+    void save_to_image(tipl::color_image& cm);
     void save_to_file(const char* file_name);
     void save_to_connectogram(const char* file_name);
     void save_to_text(std::string& text);

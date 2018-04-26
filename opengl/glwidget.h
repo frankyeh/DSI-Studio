@@ -24,8 +24,8 @@ public:
      int s_mvp,s_mvp2,s_depthMap;
  public:// editing
      enum {none = 0,selecting = 1, moving = 2, dragging = 3} editing_option;
-     image::vector<3,float> pos,dir1,dir2;
-     std::vector<image::vector<3,float> > dirs;
+     tipl::vector<3,float> pos,dir1,dir2;
+     std::vector<tipl::vector<3,float> > dirs;
      bool angular_selection;
      void get_pos(void);
      void set_view(unsigned char view_option);
@@ -33,15 +33,15 @@ public:
      void move_by(int x,int y);
  private:
      bool object_selected,slice_selected;
-     image::vector<3,float> accumulated_dis;
+     tipl::vector<3,float> accumulated_dis;
      float slice_distance;
      unsigned char moving_at_slice_index;
      float slice_dx,slice_dy;
-     void slice_location(unsigned char dim,std::vector<image::vector<3,float> >& points);
+     void slice_location(unsigned char dim,std::vector<tipl::vector<3,float> >& points);
      float get_slice_projection_point(unsigned char dim,
-                                      const image::vector<3,float>& pos,const image::vector<3,float>& dir,
+                                      const tipl::vector<3,float>& pos,const tipl::vector<3,float>& dir,
                                       float& dx,float& dy);
-     void get_view_dir(QPoint p,image::vector<3,float>& dir);
+     void get_view_dir(QPoint p,tipl::vector<3,float>& dir);
      void select_slice(void);
  private:
      int selected_index;
@@ -50,18 +50,18 @@ public:
  public:// other slices
      QTime time;
      int last_time;
-     bool get_mouse_pos(QMouseEvent *mouseEvent,image::vector<3,float>& position);
+     bool get_mouse_pos(QMouseEvent *mouseEvent,tipl::vector<3,float>& position);
      void paintGL();
 
  public://surface
      std::auto_ptr<RegionModel> surface;
 
  private://odf
-     std::vector<image::vector<3,float> >odf_points;
+     std::vector<tipl::vector<3,float> >odf_points;
      std::vector<float>odf_colors;
      int odf_dim;
      int odf_slide_pos;
-     void add_odf(image::pixel_index<3> pos);
+     void add_odf(tipl::pixel_index<3> pos);
  private:
      void rotate_angle(float angle,float x,float y,float z);
  public slots:
@@ -119,7 +119,7 @@ protected:
      GLuint tracts,slice_texture[3];
      int slice_pos[3];
      QPoint lastPos,last_select_point;
-     image::matrix<4,4,float> mat,transformation_matrix,transformation_matrix2,rotation_matrix,rotation_matrix2;
+     tipl::matrix<4,4,float> mat,transformation_matrix,transformation_matrix2,rotation_matrix,rotation_matrix2;
      enum class view_mode_type { single, two, stereo} view_mode;
 
      bool set_view_flip;

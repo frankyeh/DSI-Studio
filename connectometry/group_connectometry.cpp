@@ -925,13 +925,13 @@ void group_connectometry::on_show_result_clicked()
         new_data->view_item.push_back(item());
         new_data->view_item.back().name = threshold_type[cur_model.threshold_type];
         new_data->view_item.back().name += "-";
-        new_data->view_item.back().image_data = image::make_image(result_fib->lesser_ptr[0],new_data->dim);
+        new_data->view_item.back().image_data = tipl::make_image(result_fib->lesser_ptr[0],new_data->dim);
         new_data->view_item.back().set_scale(result_fib->lesser_ptr[0],
                                              result_fib->lesser_ptr[0]+new_data->dim.size());
         new_data->view_item.push_back(item());
         new_data->view_item.back().name = threshold_type[cur_model.threshold_type];
         new_data->view_item.back().name += "+";
-        new_data->view_item.back().image_data = image::make_image(result_fib->greater_ptr[0],new_data->dim);
+        new_data->view_item.back().image_data = tipl::make_image(result_fib->greater_ptr[0],new_data->dim);
         new_data->view_item.back().set_scale(result_fib->greater_ptr[0],
                                              result_fib->greater_ptr[0]+new_data->dim.size());
 
@@ -982,7 +982,7 @@ void group_connectometry::on_missing_data_checked_toggled(bool checked)
 }
 
 void group_connectometry::add_new_roi(QString name,QString source,
-                                      const std::vector<image::vector<3,short> >& new_roi,
+                                      const std::vector<tipl::vector<3,short> >& new_roi,
                                       float r)
 {
     ui->roi_table->setRowCount(ui->roi_table->rowCount()+1);
@@ -1001,7 +1001,7 @@ void group_connectometry::on_load_roi_from_atlas_clicked()
     {
         for(unsigned int i = 0;i < atlas_dialog->roi_list.size();++i)
         {
-            std::vector<image::vector<3,short> > new_roi;
+            std::vector<tipl::vector<3,short> > new_roi;
             float r;
             vbc->handle->get_atlas_roi(atlas_dialog->atlas_index,atlas_dialog->roi_list[i],new_roi,r);
             if(!new_roi.empty())
@@ -1026,8 +1026,8 @@ void group_connectometry::on_load_roi_from_file_clicked()
                                 "Report file (*.txt *.nii *nii.gz);;All files (*)");
     if(file.isEmpty())
         return;
-    image::basic_image<short,3> I;
-    image::matrix<4,4,float> transform;
+    tipl::image<short,3> I;
+    tipl::matrix<4,4,float> transform;
     gz_nifti nii;
     if(!nii.load_from_file(file.toLocal8Bit().begin()))
     {
@@ -1038,16 +1038,16 @@ void group_connectometry::on_load_roi_from_file_clicked()
     transform.identity();
     nii.get_image_transformation(transform.begin());
     transform.inv();
-    std::vector<image::vector<3,short> > new_roi;
-    for (image::pixel_index<3> index(vbc->handle->dim);index < vbc->handle->dim.size();++index)
+    std::vector<tipl::vector<3,short> > new_roi;
+    for (tipl::pixel_index<3> index(vbc->handle->dim);index < vbc->handle->dim.size();++index)
     {
-        image::vector<3> pos;
+        tipl::vector<3> pos;
         vbc->handle->subject2mni(index,pos);
         pos.to(transform);
         pos.round();
         if(!I.geometry().is_valid(pos) || I.at(pos[0],pos[1],pos[2]) == 0)
             continue;
-        new_roi.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
+        new_roi.push_back(tipl::vector<3,short>((const unsigned int*)index.begin()));
     }
     if(new_roi.empty())
     {

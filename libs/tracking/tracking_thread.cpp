@@ -73,7 +73,7 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,
             if(param.center_seed)
             {
                 if(!method->init(param.initial_direction,
-                    image::vector<3,float>(roi_mgr.seeds[iteration].x()/roi_mgr.seeds_r[iteration],
+                    tipl::vector<3,float>(roi_mgr.seeds[iteration].x()/roi_mgr.seeds_r[iteration],
                                            roi_mgr.seeds[iteration].y()/roi_mgr.seeds_r[iteration],
                                            roi_mgr.seeds[iteration].z()/roi_mgr.seeds_r[iteration]),
                                  seed))
@@ -90,7 +90,7 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,
                 std::lock_guard<std::mutex> lock(lock_seed_function);
                 iteration+=thread_count;
                 unsigned int i = rand_gen(seed)*((float)roi_mgr.seeds.size()-1.0f);
-                image::vector<3,float> pos;
+                tipl::vector<3,float> pos;
                 pos[0] = (float)roi_mgr.seeds[i].x() + rand_gen(seed)-0.5f;
                 pos[1] = (float)roi_mgr.seeds[i].y() + rand_gen(seed)-0.5f;
                 pos[2] = (float)roi_mgr.seeds[i].z() + rand_gen(seed)-0.5f;
@@ -110,13 +110,13 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,
                     continue;
                 if(result[2] > 0) // not the bottom slice
                 {
-                    image::vector<3> p0(result),p1(result+3);
+                    tipl::vector<3> p0(result),p1(result+3);
                     p1 -= p0;
                     p0 -= p1;
                     if(method->trk.is_white_matter(p0,white_matter_t))
                         continue;
                 }
-                image::vector<3> p2(end-6),p3(end-3);
+                tipl::vector<3> p2(end-6),p3(end-3);
                 if(*(end-1) > 0) // not the bottom slice
                 {
                     p2 -= p3;
@@ -188,7 +188,7 @@ void ThreadData::run(const tracking_data& trk,
         return;
     if(param.threshold == 0.0f)
     {
-        float otsu = image::segmentation::otsu_threshold(image::make_image(trk.fa[0],trk.dim));
+        float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(trk.fa[0],trk.dim));
         fa_threshold1 = (param.default_otsu-0.1f)*otsu;
         fa_threshold2 = (param.default_otsu+0.1f)*otsu;
     }

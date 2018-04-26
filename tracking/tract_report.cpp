@@ -93,7 +93,7 @@ void tract_report::on_refresh_report_clicked()
 
         ui->report_widget->addGraph();
         QPen pen;
-        image::rgb_color color = cur_tracking_window->tractWidget->tract_models[index]->get_tract_color(0);
+        tipl::rgb color = cur_tracking_window->tractWidget->tract_models[index]->get_tract_color(0);
         pen.setColor(QColor(color.r,color.g,color.b,200));
         pen.setWidth(ui->linewidth->value());
         ui->report_widget->graph()->setLineStyle(QCPGraph::lsLine);

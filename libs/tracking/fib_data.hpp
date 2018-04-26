@@ -4,7 +4,7 @@
 #include <sstream>
 #include <string>
 #include "prog_interface_static_link.h"
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "gzip_interface.hpp"
 #include "connectometry_db.hpp"
 
@@ -13,11 +13,11 @@ private:
     const float* odfs;
     unsigned int odfs_size;
 private:
-    image::basic_image<unsigned int,3> voxel_index_map;
+    tipl::image<unsigned int,3> voxel_index_map;
     std::vector<const float*> odf_blocks;
     std::vector<unsigned int> odf_block_size;
-    image::basic_image<unsigned int,3> odf_block_map1;
-    image::basic_image<unsigned int,3> odf_block_map2;
+    tipl::image<unsigned int,3> odf_block_map1;
+    tipl::image<unsigned int,3> odf_block_map2;
     unsigned int half_odf_size;
 public:
     odf_data(void):odfs(0){}
@@ -40,8 +40,8 @@ public:
     std::vector<std::vector<const float*> > index_data;
 public:
     std::vector<const float*> fa;
-    std::vector<image::vector<3,float> > odf_table;
-    std::vector<image::vector<3,unsigned short> > odf_faces;
+    std::vector<tipl::vector<3,float> > odf_table;
+    std::vector<tipl::vector<3,unsigned short> > odf_faces;
     unsigned int num_fiber;
     unsigned int half_odf_size;
     std::string error_msg;
@@ -59,32 +59,32 @@ public:
 class fib_data;
 class tracking_data{
 public:
-    image::geometry<3> dim;
-    image::vector<3> vs;
+    tipl::geometry<3> dim;
+    tipl::vector<3> vs;
     unsigned char fib_num;
     std::vector<const float*> dir;
     std::vector<const float*> fa;
     std::vector<const short*> findex;
     std::vector<std::vector<const float*> > other_index;
-    std::vector<image::vector<3,float> > odf_table;
+    std::vector<tipl::vector<3,float> > odf_table;
 public:
     bool get_nearest_dir_fib(unsigned int space_index,
-                         const image::vector<3,float>& ref_dir, // reference direction, should be unit vector
+                         const tipl::vector<3,float>& ref_dir, // reference direction, should be unit vector
                          unsigned char& fib_order_,
                          unsigned char& reverse_,
                              float threshold,
                              float cull_cos_angle) const;
     void read(const fib_data& fib);
     bool get_dir(unsigned int space_index,
-                         const image::vector<3,float>& dir, // reference direction, should be unit vector
-                         image::vector<3,float>& main_dir,
+                         const tipl::vector<3,float>& dir, // reference direction, should be unit vector
+                         tipl::vector<3,float>& main_dir,
                  float threshold,
                  float cull_cos_angle) const;
     const float* get_dir(unsigned int space_index,unsigned char fib_order) const;
-    float cos_angle(const image::vector<3>& cur_dir,unsigned int space_index,unsigned char fib_order) const;
+    float cos_angle(const tipl::vector<3>& cur_dir,unsigned int space_index,unsigned char fib_order) const;
     float get_track_specific_index(unsigned int space_index,unsigned int index_num,
-                             const image::vector<3,float>& dir) const;
-    bool is_white_matter(const image::vector<3,float>& pos,float t) const;
+                             const tipl::vector<3,float>& dir) const;
+    bool is_white_matter(const tipl::vector<3,float>& pos,float t) const;
 
 };
 
@@ -93,8 +93,8 @@ public:
 struct item
 {
     std::string name;
-    image::const_pointer_image<float,3> image_data;
-    image::matrix<4,4,float> T,iT;// T: image->diffusion iT: diffusion->image
+    tipl::const_pointer_image<float,3> image_data;
+    tipl::matrix<4,4,float> T,iT;// T: image->diffusion iT: diffusion->image
     float max_value;
     float min_value;
     float contrast_max;
@@ -102,9 +102,9 @@ struct item
     unsigned int max_color = 0x00FFFFFF;
     unsigned int min_color = 0;
     // used in QSDR
-    image::basic_image<unsigned int,3> color_map_buf;
-    image::const_pointer_image<float,3> mx,my,mz;
-    image::geometry<3> native_geo;
+    tipl::image<unsigned int,3> color_map_buf;
+    tipl::const_pointer_image<float,3> mx,my,mz;
+    tipl::geometry<3> native_geo;
 
 
     template<class input_iterator>
@@ -128,8 +128,8 @@ public:
     std::string report;
     gz_mat_read mat_reader;
 public:
-    image::geometry<3> dim;
-    image::vector<3> vs;
+    tipl::geometry<3> dim;
+    tipl::vector<3> vs;
     bool is_human_data = true;
     bool is_qsdr = false;
 public:
@@ -138,17 +138,17 @@ public:
     connectometry_db db;
     std::vector<item> view_item;
 public:
-    image::thread thread;
+    tipl::thread thread;
     int prog;
     std::vector<float> trans_to_mni;
-    image::basic_image<image::vector<3,float>,3 > mni_position;
-    image::basic_image<image::vector<3,float>,3 > native_position;
+    tipl::image<tipl::vector<3,float>,3 > mni_position;
+    tipl::image<tipl::vector<3,float>,3 > native_position;
 public:
     void run_normalization(bool background);
-    void subject2mni(image::vector<3>& pos);
-    void subject2mni(image::pixel_index<3>& index,image::vector<3>& pos);
-    void get_atlas_roi(int atlas_index,int roi_index,std::vector<image::vector<3,short> >& points,float& r);
-    const image::basic_image<image::vector<3,float>,3 >& get_mni_mapping(void);
+    void subject2mni(tipl::vector<3>& pos);
+    void subject2mni(tipl::pixel_index<3>& index,tipl::vector<3>& pos);
+    void get_atlas_roi(int atlas_index,int roi_index,std::vector<tipl::vector<3,short> >& points,float& r);
+    const tipl::image<tipl::vector<3,float>,3 >& get_mni_mapping(void);
     bool has_reg(void)const{return thread.has_started();}
     bool get_profile(const std::vector<float>& tract_data,
                      std::vector<float>& profile);
@@ -158,7 +158,7 @@ public:
     {
         vs[0] = vs[1] = vs[2] = 1.0;
     }
-    fib_data(image::geometry<3> dim_,image::vector<3> vs_):dim(dim_),vs(vs_){}
+    fib_data(tipl::geometry<3> dim_,tipl::vector<3> vs_):dim(dim_),vs(vs_){}
 public:
     bool load_from_file(const char* file_name);
     bool load_from_mat(void);
@@ -171,7 +171,7 @@ public:
     std::pair<float,float> get_value_range(const std::string& view_name) const;
     void get_slice(unsigned int view_index,
                    unsigned char d_index,unsigned int pos,
-                   image::color_image& show_image,const image::value_to_color<float>& v2c);
+                   tipl::color_image& show_image,const tipl::value_to_color<float>& v2c);
     void get_voxel_info2(unsigned int x,unsigned int y,unsigned int z,std::vector<float>& buf) const;
     void get_voxel_information(int x,int y,int z,std::vector<float>& buf) const;
     void get_index_titles(std::vector<std::string>& titles);
@@ -180,12 +180,12 @@ public:
 
 
 class track_recognition{
-    image::uniform_dist<int> dist;
+    tipl::uniform_dist<int> dist;
 public:
-    image::thread thread;
+    tipl::thread thread;
 public:
-    image::ml::network cnn;
-    image::ml::network_data<float,unsigned char> cnn_data;
+    tipl::ml::network cnn;
+    tipl::ml::network_data<float,unsigned char> cnn_data;
 
     std::vector<std::string> cnn_name;
     std::string err_msg,msg;

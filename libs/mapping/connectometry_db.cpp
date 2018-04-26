@@ -21,8 +21,8 @@ void connectometry_db::read_db(fib_data* handle_)
         subject_qa_sd.push_back(0);
     }
 
-    image::par_for(subject_qa.size(),[&](int i){
-        subject_qa_sd[i] = image::standard_deviation(subject_qa[i],subject_qa[i]+subject_qa_length);
+    tipl::par_for(subject_qa.size(),[&](int i){
+        subject_qa_sd[i] = tipl::standard_deviation(subject_qa[i],subject_qa[i]+subject_qa_length);
         if(subject_qa_sd[i] == 0.0)
             subject_qa_sd[i] = 1.0;
         else
@@ -231,7 +231,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
     subject_qa_buf.push_back(std::move(new_subject_qa));
     subject_qa.push_back(&(subject_qa_buf.back()[0]));
     subject_names.push_back(subject_name);
-    subject_qa_sd.push_back(image::standard_deviation(subject_qa.back(),
+    subject_qa_sd.push_back(tipl::standard_deviation(subject_qa.back(),
                                                       subject_qa.back()+subject_qa_length));
     if(subject_qa_sd.back() == 0.0)
         subject_qa_sd.back() = 1.0;
@@ -244,12 +244,12 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
 
 void connectometry_db::get_subject_vector(unsigned int from,unsigned int to,
                                           std::vector<std::vector<float> >& subject_vector,
-                        const image::basic_image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp) const
+                        const tipl::image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp) const
 {
     unsigned int total_count = to-from;
     subject_vector.clear();
     subject_vector.resize(total_count);
-    image::par_for(total_count,[&](unsigned int index)
+    tipl::par_for(total_count,[&](unsigned int index)
     {
         unsigned int subject_index = index + from;
         for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
@@ -263,16 +263,16 @@ void connectometry_db::get_subject_vector(unsigned int from,unsigned int to,
         }
     });
     if(normalize_fp)
-    image::par_for(num_subjects,[&](unsigned int index)
+    tipl::par_for(num_subjects,[&](unsigned int index)
     {
-        float sd = image::standard_deviation(subject_vector[index].begin(),subject_vector[index].end(),image::mean(subject_vector[index].begin(),subject_vector[index].end()));
+        float sd = tipl::standard_deviation(subject_vector[index].begin(),subject_vector[index].end(),tipl::mean(subject_vector[index].begin(),subject_vector[index].end()));
         if(sd > 0.0)
-            image::multiply_constant(subject_vector[index].begin(),subject_vector[index].end(),1.0/sd);
+            tipl::multiply_constant(subject_vector[index].begin(),subject_vector[index].end(),1.0/sd);
     });
 }
 
 void connectometry_db::get_subject_vector(unsigned int subject_index,std::vector<float>& subject_vector,
-                        const image::basic_image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp) const
+                        const tipl::image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp) const
 {
     subject_vector.clear();
     for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
@@ -286,24 +286,24 @@ void connectometry_db::get_subject_vector(unsigned int subject_index,std::vector
     }
     if(normalize_fp)
     {
-        float sd = image::standard_deviation(subject_vector.begin(),subject_vector.end(),image::mean(subject_vector.begin(),subject_vector.end()));
+        float sd = tipl::standard_deviation(subject_vector.begin(),subject_vector.end(),tipl::mean(subject_vector.begin(),subject_vector.end()));
         if(sd > 0.0)
-            image::multiply_constant(subject_vector.begin(),subject_vector.end(),1.0/sd);
+            tipl::multiply_constant(subject_vector.begin(),subject_vector.end(),1.0/sd);
     }
 }
-void connectometry_db::get_dif_matrix(std::vector<float>& matrix,const image::basic_image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp)
+void connectometry_db::get_dif_matrix(std::vector<float>& matrix,const tipl::image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp)
 {
     matrix.clear();
     matrix.resize(num_subjects*num_subjects);
     std::vector<std::vector<float> > subject_vector;
     get_subject_vector(0,num_subjects,subject_vector,cerebrum_mask,fiber_threshold,normalize_fp);
     begin_prog("calculating");
-    image::par_for2(num_subjects,[&](int i,int id){
+    tipl::par_for2(num_subjects,[&](int i,int id){
         if(id == 0)
             check_prog(i,num_subjects);
         for(unsigned int j = i+1; j < num_subjects;++j)
         {
-            double result = image::root_mean_suqare_error(
+            double result = tipl::root_mean_suqare_error(
                         subject_vector[i].begin(),subject_vector[i].end(),
                         subject_vector[j].begin());
             matrix[i*num_subjects+j] = result;
@@ -314,7 +314,7 @@ void connectometry_db::get_dif_matrix(std::vector<float>& matrix,const image::ba
 }
 
 void connectometry_db::save_subject_vector(const char* output_name,
-                         const image::basic_image<int,3>& cerebrum_mask,
+                         const tipl::image<int,3>& cerebrum_mask,
                          float fiber_threshold,
                          bool normalize_fp) const
 {
@@ -369,8 +369,8 @@ void connectometry_db::save_subject_vector(const char* output_name,
                 for(unsigned int j = 0,fib_offset = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;++j,fib_offset+=si2vi.size())
                 {
                     voxel_location.push_back(cur_index);
-                    image::pixel_index<3> p(cur_index,handle->dim);
-                    image::vector<3> p2;
+                    tipl::pixel_index<3> p(cur_index,handle->dim);
+                    tipl::vector<3> p2;
                     handle->subject2mni(p,p2);
                     mni_location.push_back(p2[0]);
                     mni_location.push_back(p2[1]);
@@ -431,10 +431,10 @@ bool connectometry_db::save_subject_data(const char* output_name)
 }
 
 void connectometry_db::get_subject_slice(unsigned int subject_index,unsigned char dim,unsigned int pos,
-                        image::basic_image<float,2>& slice) const
+                        tipl::image<float,2>& slice) const
 {
-    image::basic_image<unsigned int,2> tmp;
-    image::reslicing(vi2si, tmp, dim, pos);
+    tipl::image<unsigned int,2> tmp;
+    tipl::reslicing(vi2si, tmp, dim, pos);
     slice.clear();
     slice.resize(tmp.geometry());
     for(unsigned int index = 0;index < slice.size();++index)
@@ -599,7 +599,7 @@ void connectometry_db::move_down(int id)
     std::swap(subject_qa_sd[id],subject_qa_sd[id+1]);
 }
 
-void connectometry_db::auto_match(const image::basic_image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp)
+void connectometry_db::auto_match(const tipl::image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp)
 {
     std::vector<float> dif;
     get_dif_matrix(dif,cerebrum_mask,fiber_threshold,normalize_fp);
@@ -820,7 +820,7 @@ bool connectometry_result::individual_vs_db(std::shared_ptr<fib_data> handle,con
     info.individual_data = &(data[0]);
     //info.individual_data_sd = normalize_qa ? individual_data_sd[subject_id]:1.0;
     info.individual_data_sd = 1.0;
-    float fa_threshold = 0.6*image::segmentation::otsu_threshold(image::make_image(handle->dir.fa[0],handle->dim));
+    float fa_threshold = 0.6*tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
     calculate_spm(handle,*this,info,fa_threshold,normalized_qa,terminated);
     add_mapping_for_tracking(handle,">%","<%");
     return true;
@@ -868,7 +868,7 @@ bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::v
     if(normalization == 2) // linear regression
     {
         out << " Normalization was conducted by a linear regression between the comparison scans.";
-        std::pair<double,double> r = image::linear_regression(fa2[0],fa2[0] + handle->dim.size(),fa1[0]);
+        std::pair<double,double> r = tipl::linear_regression(fa2[0],fa2[0] + handle->dim.size(),fa1[0]);
         for(unsigned char fib = 0;fib < handle->dir.num_fiber;++fib)
         {
             for(unsigned int index = 0;index < handle->dim.size();++index)
@@ -886,8 +886,8 @@ bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::v
     if(normalization == 3) // variance to one
     {
         out << " Normalization was conducted by scaling the variance to one.";
-        float sd1 = image::standard_deviation(fa1[0],fa1[0] + handle->dim.size());
-        float sd2 = image::standard_deviation(fa2[0],fa2[0] + handle->dim.size());
+        float sd1 = tipl::standard_deviation(fa1[0],fa1[0] + handle->dim.size());
+        float sd2 = tipl::standard_deviation(fa2[0],fa2[0] + handle->dim.size());
         for(unsigned char fib = 0;fib < handle->dir.num_fiber;++fib)
         {
             for(unsigned int index = 0;index < handle->dim.size();++index)
@@ -1159,7 +1159,7 @@ double stat_model::operator()(const std::vector<double>& original_population,uns
                     g0[i0] = population[index];
                     ++i0;
                 }
-            return image::t_statistics(g0.begin(),g0.end(),g1.begin(),g1.end());
+            return tipl::t_statistics(g0.begin(),g0.end(),g1.begin(),g1.end());
         }
         else
         {
@@ -1192,7 +1192,7 @@ double stat_model::operator()(const std::vector<double>& original_population,uns
         {
             std::vector<double> b(feature_count);
             mr.regress(&*population.begin(),&*b.begin());
-            double mean = image::mean(population.begin(),population.end());
+            double mean = tipl::mean(population.begin(),population.end());
             return mean == 0 ? 0:b[study_feature]*X_range[study_feature]/mean;
         }
         else
@@ -1216,11 +1216,11 @@ double stat_model::operator()(const std::vector<double>& original_population,uns
         if(value == 0.0)
             return 0.0;
         if(threshold_type == mean_dif)
-            return value-image::mean(population.begin(),population.end());
+            return value-tipl::mean(population.begin(),population.end());
         else
             if(threshold_type == percentage)
             {
-                float mean = image::mean(population.begin(),population.end());
+                float mean = tipl::mean(population.begin(),population.end());
                 if(mean == 0.0)
                     return 0.0;
                 return value/mean-1.0;

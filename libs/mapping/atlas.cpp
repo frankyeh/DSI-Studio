@@ -103,7 +103,7 @@ void atlas::load_from_file(void)
     if(is_track)
     {
         nii >> track;
-        I.resize(image::geometry<3>(track.width(),track.height(),track.depth()));
+        I.resize(tipl::geometry<3>(track.width(),track.height(),track.depth()));
         for(unsigned int i = 0;i < track.size();i += I.size())
             track_base_pos.push_back(i);
     }
@@ -179,7 +179,7 @@ void mni_to_tal(float& x,float &y, float &z)
 
 
 /*
-std::string atlas::get_label_name_at(const image::vector<3,float>& mni_space)
+std::string atlas::get_label_name_at(const tipl::vector<3,float>& mni_space)
 {
     if(I.empty())
         load_from_file();
@@ -202,7 +202,7 @@ std::string atlas::get_label_name_at(const image::vector<3,float>& mni_space)
     return result;
 }
 */
-int atlas::get_index(image::vector<3,float> atlas_space)
+int atlas::get_index(tipl::vector<3,float> atlas_space)
 {
     atlas_space.to(transform);
     atlas_space.round();
@@ -211,7 +211,7 @@ int atlas::get_index(image::vector<3,float> atlas_space)
     return ((int)atlas_space[2]*I.height()+(int)atlas_space[1])*I.width()+(int)atlas_space[0];
 }
 
-bool atlas::is_labeled_as(const image::vector<3,float>& mni_space,unsigned int label_name_index)
+bool atlas::is_labeled_as(const tipl::vector<3,float>& mni_space,unsigned int label_name_index)
 {
     if(I.empty())
         load_from_file();
@@ -239,7 +239,7 @@ bool atlas::is_labeled_as(const image::vector<3,float>& mni_space,unsigned int l
         return false;
     return std::find(index2label[l].begin(),index2label[l].end(),label_name_index) != index2label[l].end();
 }
-int atlas::get_track_label(const std::vector<image::vector<3> >& points)
+int atlas::get_track_label(const std::vector<tipl::vector<3> >& points)
 {
     if(I.empty())
         load_from_file();

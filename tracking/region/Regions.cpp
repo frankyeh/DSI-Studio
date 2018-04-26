@@ -6,19 +6,19 @@
 #include "SliceModel.h"
 #include "libs/gzip_interface.hpp"
 
-image::geometry<3> ROIRegion::get_buffer_dim(void) const
+tipl::geometry<3> ROIRegion::get_buffer_dim(void) const
 {
-    return image::geometry<3>(handle->dim[0]*resolution_ratio,
+    return tipl::geometry<3>(handle->dim[0]*resolution_ratio,
                                       handle->dim[1]*resolution_ratio,
                                       handle->dim[2]*resolution_ratio);
 }
 
-void ROIRegion::add_points(std::vector<image::vector<3,float> >& points,bool del,float point_resolution)
+void ROIRegion::add_points(std::vector<tipl::vector<3,float> >& points,bool del,float point_resolution)
 {
     if(resolution_ratio > 32.0f)
         return;
     change_resolution(points,point_resolution);
-    std::vector<image::vector<3,short> > new_points(points.size());
+    std::vector<tipl::vector<3,short> > new_points(points.size());
     for(int i = 0;i < points.size();++i)
     {
         points[i].round();
@@ -27,7 +27,7 @@ void ROIRegion::add_points(std::vector<image::vector<3,float> >& points,bool del
     add_points(new_points,del,resolution_ratio);
 }
 // ---------------------------------------------------------------------------
-void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool del,float point_resolution)
+void ROIRegion::add_points(std::vector<tipl::vector<3,short> >& points, bool del,float point_resolution)
 {
     if(resolution_ratio > 32.0f)
         return;
@@ -47,7 +47,7 @@ void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool de
     }
     else
     {
-        image::geometry<3> new_geo = get_buffer_dim();
+        tipl::geometry<3> new_geo = get_buffer_dim();
         for(unsigned int index = 0; index < points.size();)
         if (!new_geo.is_valid(points[index][0], points[index][1], points[index][2]))
         {
@@ -68,12 +68,12 @@ void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool de
             region.insert(region.end(),points.begin(),points.end());
             points.clear();
         }
-        image::vector<3,short> min_value,max_value,geo_size;
-        image::bounding_box_mt(region,max_value,min_value);
+        tipl::vector<3,short> min_value,max_value,geo_size;
+        tipl::bounding_box_mt(region,max_value,min_value);
 
         geo_size = max_value-min_value;
-        image::geometry<3> mask_geo(geo_size[0]+1,geo_size[1]+1,geo_size[2]+1);
-        image::basic_image<unsigned char,3> mask;
+        tipl::geometry<3> mask_geo(geo_size[0]+1,geo_size[1]+1,geo_size[2]+1);
+        tipl::image<unsigned char,3> mask;
 
         try
         {
@@ -86,7 +86,7 @@ void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool de
             goto alternative;
         }
 
-        image::par_for (region.size(),[&](unsigned int index)
+        tipl::par_for (region.size(),[&](unsigned int index)
         {
             auto p = region[index];
             p -= min_value;
@@ -95,7 +95,7 @@ void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool de
         });
 
         if(points.size())
-        image::par_for (points.size(),[&](unsigned int index)
+        tipl::par_for (points.size(),[&](unsigned int index)
         {
             auto p = points[index];
             p -= min_value;
@@ -105,9 +105,9 @@ void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool de
 
         points.clear();
         region.clear();
-        for(image::pixel_index<3> index(mask.geometry());index.is_valid(mask.geometry());++index)
+        for(tipl::pixel_index<3> index(mask.geometry());index.is_valid(mask.geometry());++index)
             if(mask[index.index()])
-                region.push_back(image::vector<3,short>(index[0]+min_value[0],
+                region.push_back(tipl::vector<3,short>(index[0]+min_value[0],
                                                     index[1]+min_value[1],
                                                     index[2]+min_value[2]));
     }
@@ -121,8 +121,8 @@ void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool de
                 region.swap(points);
             else
             {
-                std::vector<image::vector<3,short> > union_points(region.size()+points.size());
-                std::vector<image::vector<3,short> >::iterator it =
+                std::vector<tipl::vector<3,short> > union_points(region.size()+points.size());
+                std::vector<tipl::vector<3,short> >::iterator it =
                     std::set_union(region.begin(),region.end(),
                                    points.begin(),points.end(),
                                    union_points.begin());
@@ -133,14 +133,14 @@ void ROIRegion::add_points(std::vector<image::vector<3,short> >& points, bool de
         else
         {
             // find interset first
-            std::vector<image::vector<3,short> > intersect_points(std::max(region.size(),points.size()));
-            std::vector<image::vector<3,short> >::iterator it =
+            std::vector<tipl::vector<3,short> > intersect_points(std::max(region.size(),points.size()));
+            std::vector<tipl::vector<3,short> >::iterator it =
                 std::set_intersection(region.begin(),region.end(),
                                       points.begin(),points.end(),
                                       intersect_points.begin());
             intersect_points.resize(it-intersect_points.begin());
 
-            std::vector<image::vector<3,short> > remain_points(region.size());
+            std::vector<tipl::vector<3,short> > remain_points(region.size());
             it = std::set_difference(region.begin(),region.end(),
                                      intersect_points.begin(),intersect_points.end(),
                                      remain_points.begin());
@@ -166,36 +166,36 @@ void ROIRegion::SaveToFile(const char* FileName)
 
     if (ext == std::string(".txt")) {
         std::ofstream out(FileName);
-        std::copy(region.begin(), region.end(),std::ostream_iterator<image::vector<3,short> >(out, "\n"));
+        std::copy(region.begin(), region.end(),std::ostream_iterator<tipl::vector<3,short> >(out, "\n"));
         if(resolution_ratio != 1.0)
             out << resolution_ratio << " -1 -1" << std::endl;
     }
     else if (ext == std::string(".mat")) {
         if(resolution_ratio > 32.0f)
             return;
-        image::basic_image<unsigned char, 3> mask(handle->dim);
+        tipl::image<unsigned char, 3> mask(handle->dim);
         if(resolution_ratio != 1.0)
             mask.resize(get_buffer_dim());
         for (unsigned int index = 0; index < region.size(); ++index) {
             if (handle->dim.is_valid(region[index][0], region[index][1],
                              region[index][2]))
-                mask[image::pixel_index<3>(region[index][0], region[index][1],
+                mask[tipl::pixel_index<3>(region[index][0], region[index][1],
                                            region[index][2], handle->dim).index()] = 255;
         }
-        image::io::mat_write header(FileName);
+        tipl::io::mat_write header(FileName);
         header << mask;
     }
     else if (ext == std::string(".nii") || ext == std::string("i.gz"))
     {
         unsigned int color = show_region.color.color & 0x00FFFFFF;
-        image::basic_image<unsigned char, 3>mask;
+        tipl::image<unsigned char, 3>mask;
         SaveToBuffer(mask,1);
         gz_nifti header;
         if(resolution_ratio == 1.0)
             header.set_voxel_size(handle->vs.begin());
         else
         {
-            image::vector<3,float> rvs = handle->vs;
+            tipl::vector<3,float> rvs = handle->vs;
             rvs /= resolution_ratio;
             header.set_voxel_size(rvs.begin());
         }
@@ -211,15 +211,15 @@ void ROIRegion::SaveToFile(const char* FileName)
             if(resolution_ratio != 1.0)
             {
                 std::vector<float> T(trans);
-                image::multiply_constant(&T[0],&T[0]+3,1.0/resolution_ratio);
-                image::multiply_constant(&T[4],&T[0]+3,1.0/resolution_ratio);
-                image::multiply_constant(&T[8],&T[0]+3,1.0/resolution_ratio);
+                tipl::multiply_constant(&T[0],&T[0]+3,1.0/resolution_ratio);
+                tipl::multiply_constant(&T[4],&T[0]+3,1.0/resolution_ratio);
+                tipl::multiply_constant(&T[8],&T[0]+3,1.0/resolution_ratio);
                 header.set_LPS_transformation(T.begin(),mask.geometry());
             }
             else
                 header.set_LPS_transformation(trans.begin(),mask.geometry());
         }
-        image::flip_xy(mask);
+        tipl::flip_xy(mask);
         header << mask;
         header.save_to_file(FileName);
     }
@@ -243,9 +243,9 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
     if (ext == std::string(".txt"))
     {
         std::ifstream in(FileName,std::ios::binary);
-        std::vector<image::vector<3,short> > points;
-        std::copy(std::istream_iterator<image::vector<3,short> >(in),
-                  std::istream_iterator<image::vector<3,short> >(),
+        std::vector<tipl::vector<3,short> > points;
+        std::copy(std::istream_iterator<tipl::vector<3,short> >(in),
+                  std::istream_iterator<tipl::vector<3,short> >(),
                   std::back_inserter(points));
         if(!points.empty() && points.back()[1] == -1.0f && points.back()[2] == -1.0f)
         {
@@ -257,10 +257,10 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
     }
 
     if (ext == std::string(".mat")) {
-        image::io::mat_read header;
+        tipl::io::mat_read header;
         if(!header.load_from_file(FileName))
             return false;
-        image::basic_image<short, 3>from;
+        tipl::image<short, 3>from;
         header >> from;
         if(from.geometry() != handle->dim)
         {
@@ -271,10 +271,10 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
                 return false;
             resolution_ratio = r1;
         }
-        std::vector<image::vector<3,short> > points;
-        for (image::pixel_index<3> index(from.geometry());index < from.size();++index)
+        std::vector<tipl::vector<3,short> > points;
+        for (tipl::pixel_index<3> index(from.geometry());index < from.size();++index)
             if (from[index.index()])
-                points.push_back(image::vector<3,short>((const unsigned int*)index.begin()));
+                points.push_back(tipl::vector<3,short>((const unsigned int*)index.begin()));
         add_points(points,false,resolution_ratio);
         return true;
     }
@@ -285,8 +285,8 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
         if (!header.load_from_file(FileName))
             return false;
         // use unsigned int to avoid the nan background problem
-        image::basic_image<unsigned int, 3>from;
-        image::geometry<3> nii_geo;
+        tipl::image<unsigned int, 3>from;
+        tipl::geometry<3> nii_geo;
         header.get_image_dimension(nii_geo);
         if(nii_geo != handle->dim)// use transformation information
         {
@@ -306,7 +306,7 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
             if(trans.empty())
                 return false;
             header >> from;
-            image::matrix<4,4,float> t;
+            tipl::matrix<4,4,float> t;
             t.identity();
             header.get_image_transformation(t.begin());
             t.inv();
@@ -315,9 +315,9 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
             return true;
         }
         {
-            image::basic_image<float, 3> tmp;
+            tipl::image<float, 3> tmp;
             header.toLPS(tmp);
-            image::add_constant(tmp,0.5);
+            tipl::add_constant(tmp,0.5);
             from = tmp;
         }
         LoadFromBuffer(from);
@@ -335,14 +335,14 @@ void ROIRegion::makeMeshes(unsigned char smooth)
     show_region.load(region,resolution_ratio,smooth);
 }
 // ---------------------------------------------------------------------------
-void ROIRegion::SaveToBuffer(image::basic_image<unsigned char, 3>& mask,
+void ROIRegion::SaveToBuffer(tipl::image<unsigned char, 3>& mask,
                              unsigned char value) {
     if(resolution_ratio != 1.0)
         mask.resize(get_buffer_dim());
     else
         mask.resize(handle->dim);
     std::fill(mask.begin(), mask.end(), 0);
-    image::par_for (region.size(),[&](unsigned int index)
+    tipl::par_for (region.size(),[&](unsigned int index)
     {
         if (mask.geometry().is_valid(region[index]))
             mask.at(region[index][0], region[index][1],region[index][2]) = value;
@@ -351,35 +351,35 @@ void ROIRegion::SaveToBuffer(image::basic_image<unsigned char, 3>& mask,
 // ---------------------------------------------------------------------------
 void ROIRegion::perform(const std::string& action)
 {
-    image::basic_image<unsigned char, 3>mask;
+    tipl::image<unsigned char, 3>mask;
     if(action == "smoothing")
     {
         SaveToBuffer(mask, 1);
-        image::morphology::smoothing(mask);
+        tipl::morphology::smoothing(mask);
         LoadFromBuffer(mask);
     }
     if(action == "erosion")
     {
         SaveToBuffer(mask, 1);
-        image::morphology::erosion(mask);
+        tipl::morphology::erosion(mask);
         LoadFromBuffer(mask);
     }
     if(action == "dilation")
     {
         SaveToBuffer(mask, 1);
-        image::morphology::dilation(mask);
+        tipl::morphology::dilation(mask);
         LoadFromBuffer(mask);
     }
     if(action == "defragment")
     {
         SaveToBuffer(mask, 1);
-        image::morphology::defragment(mask);
+        tipl::morphology::defragment(mask);
         LoadFromBuffer(mask);
     }
     if(action == "negate")
     {
         SaveToBuffer(mask, 1);
-        image::morphology::negate(mask);
+        tipl::morphology::negate(mask);
         LoadFromBuffer(mask);
     }
     if(action == "flipx")
@@ -389,17 +389,17 @@ void ROIRegion::perform(const std::string& action)
     if(action == "flipz")
         Flip(2);
     if(action == "shiftx")
-        shift(image::vector<3,float>(1.0, 0, 0));
+        shift(tipl::vector<3,float>(1.0, 0, 0));
     if(action == "shiftnx")
-        shift(image::vector<3,float>(-1.0, 0, 0));
+        shift(tipl::vector<3,float>(-1.0, 0, 0));
     if(action == "shifty")
-        shift(image::vector<3,float>(0, 1.0, 0));
+        shift(tipl::vector<3,float>(0, 1.0, 0));
     if(action == "shiftny")
-        shift(image::vector<3,float>(0, -1.0, 0));
+        shift(tipl::vector<3,float>(0, -1.0, 0));
     if(action == "shiftz")
-        shift(image::vector<3,float>(0, 0, 1.0));
+        shift(tipl::vector<3,float>(0, 0, 1.0));
     if(action == "shiftnz")
-        shift(image::vector<3,float>(0, 0, -1.0));
+        shift(tipl::vector<3,float>(0, 0, -1.0));
 }
 
 // ---------------------------------------------------------------------------
@@ -413,12 +413,12 @@ void ROIRegion::Flip(unsigned int dimension) {
 }
 
 // ---------------------------------------------------------------------------
-void ROIRegion::shift(image::vector<3,float> dx) {
+void ROIRegion::shift(tipl::vector<3,float> dx) {
     show_region.move_object(dx);
     if(resolution_ratio != 1.0)
         dx *= resolution_ratio;
     dx.round();
-    image::par_for(region.size(),[&](unsigned int index)
+    tipl::par_for(region.size(),[&](unsigned int index)
     {
         region[index] += dx;
     });
@@ -432,10 +432,10 @@ void calculate_region_stat(const Image& I, const Points& p,float& mean,float& sd
     for(unsigned int index = 0; index < p.size(); ++index)
     {
         float value = 0.0;
-        image::vector<3> pos(p[index]);
+        tipl::vector<3> pos(p[index]);
         if(T)
             pos.to(T);
-        value = image::estimate(I,pos);
+        value = tipl::estimate(I,pos);
         if(value == 0.0)
             continue;
         sum += value;
@@ -458,8 +458,8 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
     data.push_back(region.size()*handle->vs[0]*handle->vs[1]*handle->vs[2]/resolution_ratio); //volume (mm^3)
     if(region.empty())
         return;
-    image::vector<3,float> cm;
-    image::vector<3,float> max(region[0]),min(region[0]);
+    tipl::vector<3,float> cm;
+    tipl::vector<3,float> max(region[0]),min(region[0]);
     for (unsigned int index = 0; index < region.size(); ++index)
     {
         cm += region[index];
@@ -487,9 +487,9 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
     std::copy(min.begin(),min.end(),std::back_inserter(data)); // bounding box
 
     handle->get_index_titles(titles); // other index
-    std::vector<image::vector<3> > points;
+    std::vector<tipl::vector<3> > points;
     for (unsigned int index = 0; index < region.size(); ++index)
-        points.push_back(image::vector<3>(region[index][0]/resolution_ratio,
+        points.push_back(tipl::vector<3>(region[index][0]/resolution_ratio,
                                           region[index][1]/resolution_ratio,
                                           region[index][2]/resolution_ratio));
 
@@ -499,7 +499,7 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
         if(handle->view_item[data_index].name == "color")
             continue;
         float mean,sd;
-        image::const_pointer_image<float, 3> I(handle->view_item[data_index].image_data);
+        tipl::const_pointer_image<float, 3> I(handle->view_item[data_index].image_data);
         if(handle->view_item[data_index].image_data.geometry() != handle->dim)
             calculate_region_stat(I,points,mean,sd,&handle->view_item[data_index].iT[0]);
         else
@@ -515,7 +515,7 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
             std::vector<std::vector<float> > fa_data;
             handle->db.get_subject_fa(subject_index,fa_data);
             float mean,sd;
-            image::const_pointer_image<float, 3> I(&fa_data[0][0],handle->dim);
+            tipl::const_pointer_image<float, 3> I(&fa_data[0][0],handle->dim);
             calculate_region_stat(I,points,mean,sd);
             data.push_back(mean);
             data.push_back(sd);

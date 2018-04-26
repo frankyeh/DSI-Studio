@@ -4,7 +4,7 @@
 #include <QSettings>
 #include "dicom_parser.h"
 #include "ui_dicom_parser.h"
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "mainwindow.h"
 #include "prog_interface_static_link.h"
 #include "libs/gzip_interface.hpp"
@@ -12,13 +12,13 @@
 
 
 
-void get_report_from_dicom(const image::io::dicom& header,std::string& report_);
-void get_report_from_bruker(const image::io::bruker_info& header,std::string& report_);
-void get_report_from_bruker2(const image::io::bruker_info& header,std::string& report_);
+void get_report_from_dicom(const tipl::io::dicom& header,std::string& report_);
+void get_report_from_bruker(const tipl::io::bruker_info& header,std::string& report_);
+void get_report_from_bruker2(const tipl::io::bruker_info& header,std::string& report_);
 
 QString get_src_name(QString file_name)
 {
-    image::io::dicom header;
+    tipl::io::dicom header;
     if (header.load_from_file(file_name.toLocal8Bit().begin()))
     {
         std::string Person;
@@ -43,7 +43,7 @@ dicom_parser::dicom_parser(QStringList file_list,QWidget *parent) :
     if (!dwi_files.empty())
     {
         ui->SrcName->setText(get_src_name(file_list[0]));
-        image::io::dicom header;
+        tipl::io::dicom header;
         if (header.load_from_file(file_list[0].toLocal8Bit().begin()))
         {
             slice_orientation.resize(9);
@@ -63,10 +63,10 @@ dicom_parser::~dicom_parser()
 
 bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
-    image::io::dicom dicom_header;// multiple frame image
+    tipl::io::dicom dicom_header;// multiple frame image
     if(!dicom_header.load_from_file(file_name))
         return false;
-    image::basic_image<float,3> buf_image;
+    tipl::image<float,3> buf_image;
     dicom_header >> buf_image;
     unsigned int slice_num = dicom_header.get_int(0x2001,0x1018);
     std::vector<float> b_table;
@@ -87,7 +87,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
             bz.resize(buf_image.depth()/slice_num);
             for(int i = 0;i < b.size();++i)
             {
-                image::vector<3, float> bvec(bx[i],by[i],bz[i]);
+                tipl::vector<3, float> bvec(bx[i],by[i],bz[i]);
                 b_table.push_back(b[i]*bvec.length());
                 if(bvec.length() > 0)
                     bvec.normalize();
@@ -107,7 +107,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
                 for(int j = 0;j < buf_image.depth();++j)
                 {
                     std::string pos;
-                    if(!image::io::dicom::get_values(dicom_header.data[i].sq_data[j],0x0020,0x0032,
+                    if(!tipl::io::dicom::get_values(dicom_header.data[i].sq_data[j],0x0020,0x0032,
                                                     j ? pos : slice_pos))
                         break;
                     if(j && pos != slice_pos)
@@ -116,9 +116,9 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
                         break;
                     }
                     float b_value = 0;
-                    image::io::dicom::get_value(dicom_header.data[i].sq_data[j],0x0018,0x9087,b_value);
+                    tipl::io::dicom::get_value(dicom_header.data[i].sq_data[j],0x0018,0x9087,b_value);
                     b_table.push_back(b_value);
-                    if(b_value == 0 || !image::io::dicom::get_values(dicom_header.data[i].sq_data[j],0x0018,0x9089,b_table))
+                    if(b_value == 0 || !tipl::io::dicom::get_values(dicom_header.data[i].sq_data[j],0x0018,0x9089,b_table))
                     {
                         b_table.push_back(0);
                         b_table.push_back(0);
@@ -143,7 +143,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
         if(index == 0)
             get_report_from_dicom(dicom_header,new_file->report);
-        new_file->image.resize(image::geometry<3>(buf_image.width(),buf_image.height(),slice_num));
+        new_file->image.resize(tipl::geometry<3>(buf_image.width(),buf_image.height(),slice_num));
 
         for(unsigned int j = 0;j < slice_num;++j)
         std::copy(buf_image.begin()+(j*num_gradient + index)*plane_size,
@@ -155,7 +155,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
         new_file->file_name += out.str();
         dicom_header.get_voxel_size(new_file->voxel_size);
         new_file->bvalue = b_table[index*4];
-        new_file->bvec = image::vector<3, float>(b_table[index*4+1],b_table[index*4+2],b_table[index*4+3]);
+        new_file->bvec = tipl::vector<3, float>(b_table[index*4+1],b_table[index*4+2],b_table[index*4+3]);
         dwi_files.push_back(new_file);
     }
     return true;
@@ -178,7 +178,7 @@ void load_bvec(const char* file_name,std::vector<double>& b_table)
         ++total_line;
     }
     if(total_line == 3)
-        image::mat::transpose(b_table.begin(),image::dyndim(3,b_table.size()/3));
+        tipl::mat::transpose(b_table.begin(),tipl::dyndim(3,b_table.size()/3));
 }
 void load_bval(const char* file_name,std::vector<double>& bval)
 {
@@ -251,8 +251,8 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
             bvecs.clear();
         }
     }
-    image::basic_image<float,4> grad_dev;
-    image::basic_image<unsigned char,3> mask;
+    tipl::image<float,4> grad_dev;
+    tipl::image<unsigned char,3> mask;
     if(QFileInfo(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").exists())
     {
         gz_nifti grad_header;
@@ -277,7 +277,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
     for(unsigned int index = 0;index < analyze_header.dim(4);++index)
     {
         std::auto_ptr<DwiHeader> new_file(new DwiHeader);
-        image::basic_image<float,3> data;
+        tipl::image<float,3> data;
         if(!analyze_header.toLPS(data,index == 0))
             break;
         max_value = std::max<float>(max_value,*std::max_element(data.begin(),data.end()));
@@ -289,10 +289,10 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         for(unsigned int index = 0;index < analyze_header.dim(4);++index)
         {
             std::shared_ptr<DwiHeader> new_file(new DwiHeader);
-            image::basic_image<float,3> data;
+            tipl::image<float,3> data;
             if(!analyze_header.toLPS(data,false))
                 break;
-            image::lower_threshold(data,0.0);
+            tipl::lower_threshold(data,0.0);
             if(analyze_header.nif_header2.datatype == 16 ||
                analyze_header.nif_header2.datatype == 64) // if floating point, scale and convert to interger
                 data *= 32767.0/max_value;
@@ -312,7 +312,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
                 if(new_file->bvalue < 10)
                 {
                     new_file->bvalue = 0;
-                    new_file->bvec = image::vector<3>(0,0,0);
+                    new_file->bvec = tipl::vector<3>(0,0,0);
                 }
             }
             if(index == 0 && !grad_dev.empty())
@@ -328,19 +328,19 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
 
 bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
-    image::io::bruker_2dseq bruker_header;
+    tipl::io::bruker_2dseq bruker_header;
     if(!bruker_header.load_from_file(file_name))
         return false;
     float vs[3];
     std::vector<float> bvalues;
-    std::vector<image::vector<3> > bvecs;
+    std::vector<tipl::vector<3> > bvecs;
     std::string report;
     bruker_header.get_voxel_size(vs);
 
     QString system_path =QFileInfo(QFileInfo(QFileInfo(file_name).absolutePath()).absolutePath()).absolutePath();
     if(QFileInfo(system_path+"/method").exists())
     {
-        image::io::bruker_info method_file;
+        tipl::io::bruker_info method_file;
         QString method_name = system_path+"/method";
         if(!method_file.load_from_file(method_name.toLocal8Bit().begin()))
         {
@@ -371,9 +371,9 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
         if(QFileInfo(system_path+"/imnd").exists())
         {
             bvalues.push_back(0);
-            bvecs.push_back(image::vector<3>());
+            bvecs.push_back(tipl::vector<3>());
 
-            image::io::bruker_info imnd_file;
+            tipl::io::bruker_info imnd_file;
             QString imnd_name = QFileInfo(QFileInfo(QFileInfo(file_name).
                     absolutePath()).absolutePath()).absolutePath()+"/imnd";
             if(!imnd_file.load_from_file(imnd_name.toLocal8Bit().begin()))
@@ -393,13 +393,13 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
     }
 
 
-    image::geometry<3> dim(bruker_header.get_image().geometry());
+    tipl::geometry<3> dim(bruker_header.get_image().geometry());
     dim[2] /= bvalues.size();
 
     if(dwi_files.size() && dwi_files.back()->image.geometry() != dim)
         return false;
-    image::lower_threshold(bruker_header.get_image(),0.0);
-    image::normalize(bruker_header.get_image(),32767.0);
+    tipl::lower_threshold(bruker_header.get_image(),0.0);
+    tipl::normalize(bruker_header.get_image(),32767.0);
 
     for (unsigned int index = 0;index < bvalues.size();++index)
     {
@@ -423,8 +423,8 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
 
 bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
-    image::io::dicom dicom_header;// multiple frame image
-    image::geometry<3> geo;
+    tipl::io::dicom dicom_header;// multiple frame image
+    tipl::geometry<3> geo;
     if(!dicom_header.load_from_file(file_list[0].toLocal8Bit().begin()))
         return false;
     dicom_header.get_image_dimension(geo);
@@ -432,7 +432,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
     if(geo[2] != 1 || dicom_header.is_mosaic)
         return false;
 
-    image::io::dicom dicom_header2;
+    tipl::io::dicom dicom_header2;
     if(!dicom_header2.load_from_file(file_list[1].toLocal8Bit().begin()))
         return false;
     float s1 = dicom_header.get_slice_location();
@@ -592,7 +592,7 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
             for(unsigned int i = 0;i < dwi_num;++i)
             {
                 dwi_files.push_back(std::make_shared<DwiHeader>());
-                dwi_files.back()->image.resize(image::geometry<3>(width,height,depth));
+                dwi_files.back()->image.resize(tipl::geometry<3>(width,height,depth));
                 dwi_files.back()->voxel_size[0] = fov1*10.0/width;
                 dwi_files.back()->voxel_size[1] = fov2*10.0/height;
                 dwi_files.back()->voxel_size[2] = fov3*100.0/depth;
@@ -848,7 +848,7 @@ void dicom_parser::on_actionOpen_b_table_triggered()
     {
         auto& I = dwi_files[0]->image;
         unsigned int b_count = b_table.size()/4;
-        image::geometry<3> dim(I.width(),I.height(),I.depth()/b_count);
+        tipl::geometry<3> dim(I.width(),I.height(),I.depth()/b_count);
         std::vector<std::shared_ptr<DwiHeader> > new_files;
         unsigned int plane_size = I.plane_size();
         for(int i = 0;i < b_count;++i)

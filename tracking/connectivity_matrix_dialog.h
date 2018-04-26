@@ -2,7 +2,7 @@
 #define CONNECTIVITY_MATRIX_DIALOG_H
 #include <QDialog>
 #include <QGraphicsScene>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "libs/tracking/tract_model.hpp"
 
 class TractModel;
@@ -15,7 +15,7 @@ class tracking_window;
 class connectivity_matrix_dialog : public QDialog
 {
     Q_OBJECT
-    image::color_image cm;
+    tipl::color_image cm;
     QImage view_image;
     QGraphicsScene scene;
     QString method;

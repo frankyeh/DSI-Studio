@@ -14,7 +14,7 @@ class QSpace2Pdf  : public BaseProcess
     std::vector<unsigned int> qspace_mapping1;
     std::vector<unsigned int> qspace_mapping2;
     std::vector<float> hanning_filter;
-    std::auto_ptr<image::fftn<3> > fft;
+    std::auto_ptr<tipl::fftn<3> > fft;
 public:
     static double get_min_b(const Voxel& voxel)
     {
@@ -32,18 +32,18 @@ public:
         }
         return 0;
     }
-    static void get_q_table(const Voxel& voxel,std::vector<image::vector<3,int> >& q_table)
+    static void get_q_table(const Voxel& voxel,std::vector<tipl::vector<3,int> >& q_table)
     {
         float b_min = get_min_b(voxel);
         for (unsigned int index = 0; index < voxel.bvalues.size(); ++index)
         {
-            image::vector<3,float> bvec = voxel.bvectors[index];
+            tipl::vector<3,float> bvec = voxel.bvectors[index];
             bvec.normalize();
             bvec *= std::sqrt(std::abs(voxel.bvalues[index]/b_min));
             bvec[0] = std::round(bvec[0]);
             bvec[1] = std::round(bvec[1]);
             bvec[2] = std::round(bvec[2]);
-            q_table.push_back(image::vector<3,int>(bvec[0],bvec[1],bvec[2]));
+            q_table.push_back(tipl::vector<3,int>(bvec[0],bvec[1],bvec[2]));
         }
 
     }
@@ -53,7 +53,7 @@ public:
         qspace_mapping1.resize(voxel.bvalues.size());
         qspace_mapping2.resize(voxel.bvalues.size());
         hanning_filter.resize(voxel.bvalues.size());
-        std::vector<image::vector<3,int> > q_table;
+        std::vector<tipl::vector<3,int> > q_table;
         get_q_table(voxel,q_table);
 
 
@@ -69,7 +69,7 @@ public:
             float r = (float)std::sqrt((float)(x*x+y*y+z*z));
             hanning_filter[index] = 0.5 * (1.0+std::cos(2.0*r*M_PI/((float)filter_width)));
         }
-        fft.reset(new image::fftn<3>(image::geometry<3>(space_length,space_length,space_length)));
+        fft.reset(new tipl::fftn<3>(tipl::geometry<3>(space_length,space_length,space_length)));
     }
     virtual void run(Voxel&, VoxelData& data)
     {
@@ -114,9 +114,9 @@ public:
         for(unsigned int index = 0;index < sample_group.size();++index)
             sample_group[index].sampleODFValueWeighted(data.space,data.odf);
         // normalization
-        float sum = image::mean(data.odf.begin(),data.odf.end());
+        float sum = tipl::mean(data.odf.begin(),data.odf.end());
         if (sum != 0.0)
-            image::multiply_constant(data.odf,data.space[b0_index]/sum);
+            tipl::multiply_constant(data.odf,data.space[b0_index]/sum);
     }
 };
 

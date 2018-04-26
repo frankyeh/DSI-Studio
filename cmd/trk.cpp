@@ -4,7 +4,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "tracking/region/Regions.h"
 #include "libs/tracking/tract_model.hpp"
 #include "libs/tracking/tracking_thread.hpp"
@@ -66,7 +66,7 @@ void save_connectivity_matrix(TractModel& tract_model,
     out << report;
 }
 void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
-                          std::map<int,image::rgb_color>& label_color,bool mute_cmd);
+                          std::map<int,tipl::rgb>& label_color,bool mute_cmd);
 void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                              TractModel& tract_model)
 {
@@ -103,7 +103,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                     std::cout << "Failed to open file as a region:" << fn << std::endl;
                     return;
                 }
-                data.regions.push_back(std::vector<image::vector<3,short> >());
+                data.regions.push_back(std::vector<tipl::vector<3,short> >());
                 region.get_region_voxels(data.regions.back());
                 data.region_name.push_back(QFileInfo(line.c_str()).baseName().toStdString());
             }
@@ -112,7 +112,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
         else
         {
             gz_nifti header;
-            image::basic_image<unsigned int, 3> from;
+            tipl::image<unsigned int, 3> from;
             // if an ROI file is assigned, load it
             if (header.load_from_file(roi_file_name))
                 header.toLPS(from);
@@ -140,7 +140,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                 std::cout << roi_file_name << " is used as a native space ROI." << std::endl;
                 std::vector<unsigned char> value_map(std::numeric_limits<unsigned short>::max());
                 unsigned int max_value = 0;
-                for (image::pixel_index<3>index(from.geometry()); index < from.size();++index)
+                for (tipl::pixel_index<3>index(from.geometry()); index < from.size();++index)
                 {
                     value_map[(unsigned short)from[index.index()]] = 1;
                     max_value = std::max<unsigned short>(from[index.index()],max_value);
@@ -156,18 +156,18 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
 
                 // get label file
                 std::map<int,std::string> label_map;
-                std::map<int,image::rgb_color> label_color;
+                std::map<int,tipl::rgb> label_color;
                 get_roi_label(roi_file_name.c_str(),label_map,label_color,false);
                 for(unsigned int value = 1;value < value_map.size();++value)
                     if(value_map[value])
                     {
-                        image::basic_image<unsigned char,3> mask(from.geometry());
+                        tipl::image<unsigned char,3> mask(from.geometry());
                         for(unsigned int i = 0;i < mask.size();++i)
                             if(from[i] == value)
                                 mask[i] = 1;
                         ROIRegion region(handle);
                         region.LoadFromBuffer(mask);
-                        data.regions.push_back(std::vector<image::vector<3,short> >());
+                        data.regions.push_back(std::vector<tipl::vector<3,short> >());
                         region.get_region_voxels(data.regions.back());
                         if(label_map.find(value) != label_map.end())
                             data.region_name.push_back(label_map[value]);
@@ -224,30 +224,30 @@ bool load_region(std::shared_ptr<fib_data> handle,
             std::cout << "Cannot output connectivity: no mni mapping." << std::endl;
             return false;
         }
-        const image::basic_image<image::vector<3,float>,3 >& mapping = handle->get_mni_mapping();
+        const tipl::image<tipl::vector<3,float>,3 >& mapping = handle->get_mni_mapping();
         std::string atlas_name = file_name.substr(0,file_name.find(':'));
         std::string region_name = file_name.substr(file_name.find(':')+1);
         std::cout << "Loading " << region_name << " from " << atlas_name << " atlas" << std::endl;
         if(!atl_load_atlas(atlas_name))
             return false;
 
-        image::vector<3> null;
-        std::vector<image::vector<3,short> > cur_region;
+        tipl::vector<3> null;
+        std::vector<tipl::vector<3,short> > cur_region;
         for(unsigned int i = 0;i < atlas_list.size();++i)
             if(atlas_list[i].name == atlas_name)
                 for (unsigned int label_index = 0; label_index < atlas_list[i].get_list().size(); ++label_index)
                     if(atlas_list[i].get_list()[label_index] == region_name)
                 {
-                    for (image::pixel_index<3>index(mapping.geometry());index < mapping.size();++index)
+                    for (tipl::pixel_index<3>index(mapping.geometry());index < mapping.size();++index)
                         if(mapping[index.index()] != null && atlas_list[i].is_labeled_as(mapping[index.index()],label_index))
-                            cur_region.push_back(image::vector<3,short>(index.begin()));
+                            cur_region.push_back(tipl::vector<3,short>(index.begin()));
                 }
         roi.add_points(cur_region,false);
     }
     else
     {
-        image::geometry<3> t1t2_geo;
-        image::matrix<4,4,float> convert;
+        tipl::geometry<3> t1t2_geo;
+        tipl::matrix<4,4,float> convert;
 
         if(po.has("t1t2"))
         {
@@ -281,11 +281,11 @@ bool load_region(std::shared_ptr<fib_data> handle,
                 std::cout << "Not a valid nifti file:" << file_name << std::endl;
                 return false;
             }
-            image::basic_image<unsigned int, 3> from;
+            tipl::image<unsigned int, 3> from;
             {
-                image::basic_image<float, 3> tmp;
+                tipl::image<float, 3> tmp;
                 header.toLPS(tmp);
-                image::add_constant(tmp,0.5);
+                tipl::add_constant(tmp,0.5);
                 from = tmp;
             }
             if(t1t2_geo != from.geometry())
@@ -431,9 +431,9 @@ int trk(void)
         }
     }
 
-    image::geometry<3> geometry = handle->dim;
+    tipl::geometry<3> geometry = handle->dim;
     const float *fa0 = handle->dir.fa[0];
-    float otsu = image::segmentation::otsu_threshold(image::make_image(fa0,geometry));
+    float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(fa0,geometry));
 
 
     ThreadData tracking_thread;
@@ -526,12 +526,12 @@ int trk(void)
         float seed_threshold = tracking_thread.param.threshold;
         if(seed_threshold == 0)
             seed_threshold = otsu*tracking_thread.param.default_otsu;
-        std::vector<image::vector<3,short> > seed;
+        std::vector<tipl::vector<3,short> > seed;
         std::cout << "no seeding area assigned. use whole brain seeding" << std::endl;
-        for(image::pixel_index<3> index(geometry);index < geometry.size();++index)
+        for(tipl::pixel_index<3> index(geometry);index < geometry.size();++index)
             if(fa0[index.index()] > seed_threshold)
-                seed.push_back(image::vector<3,short>(index.x(),index.y(),index.z()));
-        tracking_thread.roi_mgr.setRegions(geometry,seed,1.0,3,"whole brain",image::vector<3>());
+                seed.push_back(tipl::vector<3,short>(index.x(),index.y(),index.z()));
+        tracking_thread.roi_mgr.setRegions(geometry,seed,1.0,3,"whole brain",tipl::vector<3>());
     }
 
     if(!cnt_file_name.empty())

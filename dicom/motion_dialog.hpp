@@ -2,7 +2,7 @@
 #define MOTION_DIALOG_HPP
 #include <QDialog>
 #include "dwi_header.hpp"
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 
 namespace Ui {
 class motion_dialog;
@@ -15,7 +15,7 @@ private:
     dicom_parser& dicom_gui;
     std::vector<std::shared_ptr<DwiHeader> >& dwi_files;
     std::vector<unsigned int> b0_index;
-    std::vector<image::affine_transform<double> > arg;
+    std::vector<tipl::affine_transform<double> > arg;
     bool terminated;
     unsigned int finished;
     std::vector<std::shared_ptr<std::future<void> > > threads;

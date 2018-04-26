@@ -2,7 +2,7 @@
 #define DTI_PROCESS_HPP
 #include <cmath>
 #include "basic_voxel.hpp"
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 
 class Dwi2Tensor : public BaseProcess
 {
@@ -61,7 +61,7 @@ public:
         }
 
         b_count = voxel.bvalues.size()-1;
-        std::vector<image::vector<3> > b_data(b_count);
+        std::vector<tipl::vector<3> > b_data(b_count);
         //skip b0
         std::copy(voxel.bvectors.begin()+1,voxel.bvectors.end(),b_data.begin());
         for(unsigned int index = 0; index < b_count; ++index)
@@ -76,8 +76,8 @@ public:
             {
                 //qq = q qT
                 std::vector<float> qq(3*3);
-                image::mat::product_transpose(b_data[i].begin(),b_data[i].begin(),qq.begin(),
-                                               image::dyndim(3,1),image::dyndim(3,1));
+                tipl::mat::product_transpose(b_data[i].begin(),b_data[i].begin(),qq.begin(),
+                                               tipl::dyndim(3,1),tipl::dyndim(3,1));
 
                 /*
                       q11 q15 q19 2*q12 2*q13 2*q16
@@ -94,15 +94,15 @@ public:
         {
             iKtK[i].resize(6*6);
             iKtK_pivot[i].resize(6);
-            image::mat::product_transpose(Kt.begin(),Kt.begin(),iKtK[i].begin(),
-                                           image::dyndim(6,b_count),image::dyndim(6,b_count));
+            tipl::mat::product_transpose(Kt.begin(),Kt.begin(),iKtK[i].begin(),
+                                           tipl::dyndim(6,b_count),tipl::dyndim(6,b_count));
             if(i)
             {
                 double w = 0.005*std::pow(2.0,(double)i)*(*std::max_element(iKtK[i].begin(),iKtK[i].end()));
                 for(unsigned int j = 0;j < 36;j += 7)
                     iKtK[i][j] += w;
             }
-            image::mat::lu_decomposition(iKtK[i].begin(),iKtK_pivot[i].begin(),image::dyndim(6,6));
+            tipl::mat::lu_decomposition(iKtK[i].begin(),iKtK_pivot[i].begin(),tipl::dyndim(6,6));
         }
     }
 public:
@@ -121,15 +121,15 @@ public:
         double V[9],d[3];
         for(unsigned int i = 0;i < iKtK.size();++i)
         {
-            image::mat::product(Kt.begin(),signal.begin(),KtS,image::dyndim(6,b_count),image::dyndim(b_count,1));
-            image::mat::lu_solve(iKtK[i].begin(),iKtK_pivot[i].begin(),KtS,tensor_param,image::dyndim(6,6));
+            tipl::mat::product(Kt.begin(),signal.begin(),KtS,tipl::dyndim(6,b_count),tipl::dyndim(b_count,1));
+            tipl::mat::lu_solve(iKtK[i].begin(),iKtK_pivot[i].begin(),KtS,tensor_param,tipl::dyndim(6,6));
 
 
             unsigned int tensor_index[9] = {0,3,4,3,1,5,4,5,2};
             for (unsigned int index = 0; index < 9; ++index)
                 tensor[index] = tensor_param[tensor_index[index]];
 
-            image::mat::eigen_decomposition_sym(tensor,V,d,image::dim<3,3>());
+            tipl::mat::eigen_decomposition_sym(tensor,V,d,tipl::dim<3,3>());
             if(d[0] > 0.0 && d[1] > 0.0 && d[2] > 0.0)
                 break;
         }

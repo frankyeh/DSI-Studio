@@ -98,8 +98,8 @@ void color_bar_dialog::update_color_map(void)
 
     if(ui->color_bar_style->currentIndex() == 0)
     {
-        image::rgb_color from_color = ui->color_from->color().rgb();
-        image::rgb_color to_color = ui->color_to->color().rgb();
+        tipl::rgb from_color = ui->color_from->color().rgb();
+        tipl::rgb to_color = ui->color_to->color().rgb();
         bar.two_color(from_color,to_color);
         std::swap(from_color.r,from_color.b);
         std::swap(to_color.r,to_color.b);

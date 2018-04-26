@@ -1,13 +1,13 @@
 #include <QApplication>
 #include <QFileInfo>
 #include "program_option.hpp"
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "gzip_interface.hpp"
 
 int cnn(void)
 {
     std::string train_file_name = po.get("train");
-    image::ml::network_data<float,unsigned char> nn_data,nn_test;
+    tipl::ml::network_data<float,unsigned char> nn_data,nn_test;
     if(!nn_data.load_from_file<gz_istream>(train_file_name.c_str()))
     {
         std::cout << "Cannot load training data at " << train_file_name << std::endl;
@@ -23,7 +23,7 @@ int cnn(void)
         }
     }
     std::string network = po.get("network");
-    image::ml::network nn;
+    tipl::ml::network nn;
 
     if(!(nn << network))
     {

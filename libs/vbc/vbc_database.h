@@ -2,7 +2,7 @@
 #define VBC_DATABASE_H
 #include <vector>
 #include <iostream>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "gzip_interface.hpp"
 #include "prog_interface_static_link.h"
 #include "libs/tracking/tract_model.hpp"
@@ -55,7 +55,7 @@ public:// for FDR analysis
     unsigned int progress;// 0~100
     bool terminated = false;
 public:
-    std::vector<std::vector<image::vector<3,short> > > roi_list;
+    std::vector<std::vector<tipl::vector<3,short> > > roi_list;
     std::vector<float> roi_r_list;
     std::vector<unsigned char> roi_type;
 public:

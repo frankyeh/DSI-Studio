@@ -3,7 +3,7 @@
 
 #include <QDialog>
 #include <QGraphicsScene>
-#include <image/image.hpp>
+#include <tipl/tipl.hpp>
 
 namespace Ui {
 class view_image;
@@ -25,10 +25,10 @@ private slots:
 
 private:
     Ui::view_image *ui;
-    image::basic_image<float,3> data;
+    tipl::image<float,3> data;
 private:
     QGraphicsScene source;
-    image::color_image buffer;
+    tipl::color_image buffer;
     QImage source_image;
     float max_source_value,source_ratio;
 

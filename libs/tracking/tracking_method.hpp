@@ -6,7 +6,7 @@
 #include <boost/mpl/for_each.hpp>
 #include <deque>
 #include <vector>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "interpolation_process.hpp"
 #include "basic_process.hpp"
 #include "roi.hpp"
@@ -151,9 +151,9 @@ class TrackingMethod{
 private:
     std::auto_ptr<basic_interpolation> interpolation;
 public:// Parameters
-    image::vector<3,float> position;
-    image::vector<3,float> dir;
-    image::vector<3,float> next_dir;
+    tipl::vector<3,float> position;
+    tipl::vector<3,float> dir;
+    tipl::vector<3,float> next_dir;
     bool terminated;
     bool forward;
 public:
@@ -164,7 +164,7 @@ public:
     float current_step_size_in_voxel[3];
     int current_min_steps3;
     int current_max_steps3;
-    void scaling_in_voxel(image::vector<3,float>& dir) const
+    void scaling_in_voxel(tipl::vector<3,float>& dir) const
     {
         dir[0] *= current_step_size_in_voxel[0];
         dir[1] *= current_step_size_in_voxel[1];
@@ -188,9 +188,9 @@ public:
 	{
 		return (buffer_back_pos-buffer_front_pos)/3;
 	}
-    bool get_dir(const image::vector<3,float>& position,
-                      const image::vector<3,float>& ref_dir,
-                      image::vector<3,float>& result_dir)
+    bool get_dir(const tipl::vector<3,float>& position,
+                      const tipl::vector<3,float>& ref_dir,
+                      tipl::vector<3,float>& result_dir)
     {
         return interpolation->evaluate(trk,position,ref_dir,result_dir,current_fa_threshold,current_tracking_angle);
     }
@@ -222,14 +222,14 @@ public:
 	template<class ProcessList>
     bool start_tracking(bool smoothing)
     {
-        image::vector<3,float> seed_pos(position);
-        image::vector<3,float> begin_dir(dir);
+        tipl::vector<3,float> seed_pos(position);
+        tipl::vector<3,float> begin_dir(dir);
         // floatd for full backward or full forward
         track_buffer.resize(current_max_steps3 << 1);
         reverse_buffer.resize(current_max_steps3 << 1);
         buffer_front_pos = current_max_steps3;
         buffer_back_pos = current_max_steps3;
-        image::vector<3,float> end_point1;
+        tipl::vector<3,float> end_point1;
         terminated = false;
 		do
 		{
@@ -301,14 +301,14 @@ public:
 
 	}
         bool init(unsigned char initial_direction,
-                  const image::vector<3,float>& position_,
+                  const tipl::vector<3,float>& position_,
                   std::mt19937& seed)
         {
             std::uniform_real_distribution<float> gen(0,1);
             position = position_;
             terminated = false;
             forward = true;
-            image::pixel_index<3> pindex(std::round(position[0]),
+            tipl::pixel_index<3> pindex(std::round(position[0]),
                                     std::round(position[1]),
                                     std::round(position[2]),trk.dim);
             if (!trk.dim.is_valid(pindex))
@@ -331,7 +331,7 @@ public:
                     float x = std::sin(txy)*std::sin(tz);
                     float y = std::cos(txy)*std::sin(tz);
                     float z = std::cos(tz);
-                    if (get_dir(position,image::vector<3,float>(x,y,z),dir))
+                    if (get_dir(position,tipl::vector<3,float>(x,y,z),dir))
                         return true;
                 }
                 return false;
@@ -381,10 +381,10 @@ public:
 
 	const float* get_result(void) const
 	{
-                image::vector<3,float> head(&*(track_buffer.begin() + buffer_front_pos));
-                image::vector<3,float> tail(&*(track_buffer.begin() + buffer_back_pos-3));
+                tipl::vector<3,float> head(&*(track_buffer.begin() + buffer_front_pos));
+                tipl::vector<3,float> tail(&*(track_buffer.begin() + buffer_back_pos-3));
 		tail -= head;
-                image::vector<3,float> abs_dis(std::abs(tail[0]),std::abs(tail[1]),std::abs(tail[2]));
+                tipl::vector<3,float> abs_dis(std::abs(tail[0]),std::abs(tail[1]),std::abs(tail[2]));
 		
 		if((abs_dis[0] > abs_dis[1] && abs_dis[0] > abs_dis[2] && tail[0] < 0) ||
 		   (abs_dis[1] > abs_dis[0] && abs_dis[1] > abs_dis[2] && tail[1] < 0) ||

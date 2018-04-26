@@ -63,7 +63,7 @@ void ImageDelegate::setEditorData(QWidget *editor,
     else
         if (index.column() == 2)
         {
-            image::rgb_color color((unsigned int)(index.data(Qt::UserRole).toInt()));
+            tipl::rgb color((unsigned int)(index.data(Qt::UserRole).toInt()));
             ((QColorToolButton*)editor)->setColor(
                 QColor(color.r,color.g,color.b));
         }
@@ -144,7 +144,7 @@ QColor RegionTableWidget::currentRowColor(void)
 }
 void RegionTableWidget::add_region_from_atlas(unsigned int atlas,unsigned int label)
 {
-    std::vector<image::vector<3,short> > points;
+    std::vector<tipl::vector<3,short> > points;
     add_region(atlas_list[atlas].get_list()[label].c_str(),roi_id);
     float r;
     cur_tracking_window.handle->get_atlas_roi(atlas,label,points,r);
@@ -157,7 +157,7 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
 {
     if(color == 0x00FFFFFF || !color)
     {
-        image::rgb_color c;
+        tipl::rgb c;
         c.from_hsl(((color_gen++)*1.1-std::floor((color_gen++)*1.1/6)*6)*3.14159265358979323846/3.0,0.85,0.7);
         color = c.color;
     }
@@ -211,7 +211,7 @@ void RegionTableWidget::check_check_status(int row, int col)
     }
 }
 
-void RegionTableWidget::draw_region(image::color_image& I)
+void RegionTableWidget::draw_region(tipl::color_image& I)
 {
     auto current_slice = cur_tracking_window.current_slice;
     int slice_pos = current_slice->slice_pos[cur_tracking_window.cur_dim];
@@ -230,14 +230,14 @@ void RegionTableWidget::draw_region(image::color_image& I)
         {
             float r = checked_regions[roi_index]->resolution_ratio;
             unsigned int cur_color = checked_regions[roi_index]->show_region.color;
-            image::par_for(checked_regions[roi_index]->size(),[&](unsigned int index)
+            tipl::par_for(checked_regions[roi_index]->size(),[&](unsigned int index)
             {
-                image::vector<3,float> p(checked_regions[roi_index]->region[index]);
+                tipl::vector<3,float> p(checked_regions[roi_index]->region[index]);
                 if(r != 1.0)
                     p /= r;
                 p.round();
                 int X, Y, Z;
-                image::space2slice(cur_tracking_window.cur_dim,p[0],p[1],p[2],X,Y,Z);
+                tipl::space2slice(cur_tracking_window.cur_dim,p[0],p[1],p[2],X,Y,Z);
                 if (slice_pos != Z || X < 0 || Y < 0 || X >= I.width() || Y >= I.height())
                     return;
                 unsigned int pos = X+Y*I.width();
@@ -249,14 +249,14 @@ void RegionTableWidget::draw_region(image::color_image& I)
     {
         //handle resolution_ratio = 1 all together
         {
-            image::basic_image<unsigned int,3> buf(cur_tracking_window.handle->dim);
+            tipl::image<unsigned int,3> buf(cur_tracking_window.handle->dim);
             for(unsigned int roi_index = 0;roi_index < checked_regions.size();++roi_index)
             {
                 unsigned int cur_color = checked_regions[roi_index]->show_region.color;
                 if(checked_regions[roi_index]->resolution_ratio == 1)
-                image::par_for(regions[roi_index]->size(),[&](unsigned int index)
+                tipl::par_for(regions[roi_index]->size(),[&](unsigned int index)
                 {
-                    image::pixel_index<3> pindex(regions[roi_index]->region[index][0],
+                    tipl::pixel_index<3> pindex(regions[roi_index]->region[index][0],
                                                  regions[roi_index]->region[index][1],
                                                  regions[roi_index]->region[index][2],buf.geometry());
                     if(pindex.index() >= buf.size())
@@ -271,7 +271,7 @@ void RegionTableWidget::draw_region(image::color_image& I)
                     current_slice->toDiffusionSpace(cur_tracking_window.cur_dim,x,y,dx,dy,dz);
                     if(!buf.geometry().is_valid(dx,dy,dz))
                         continue;
-                    image::pixel_index<3> pindex(dx,dy,dz,buf.geometry());
+                    tipl::pixel_index<3> pindex(dx,dy,dz,buf.geometry());
                     if(buf[pindex.index()] != 0)
                         I[index] = (unsigned int)I[index] | buf[pindex.index()];
 
@@ -279,13 +279,13 @@ void RegionTableWidget::draw_region(image::color_image& I)
         }
 
         // now the most time consuming part with high resolution regions
-        image::par_for(checked_regions.size(),[&](unsigned int roi_index)
+        tipl::par_for(checked_regions.size(),[&](unsigned int roi_index)
         {
             if(checked_regions[roi_index]->resolution_ratio == 1)
                 return;
             unsigned int cur_color = checked_regions[roi_index]->show_region.color;
             float r = checked_regions[roi_index]->resolution_ratio;
-            image::geometry<3> geo(cur_tracking_window.handle->dim);
+            tipl::geometry<3> geo(cur_tracking_window.handle->dim);
             geo[0] *= r;
             geo[1] *= r;
             geo[2] *= r;
@@ -303,10 +303,10 @@ void RegionTableWidget::draw_region(image::color_image& I)
                     y_pos.resize(geo[2]);
                 y_pos[p[2]] = cur_color;
 
-                image::vector<3> v(p),v2;
+                tipl::vector<3> v(p),v2;
                 v /= r;
                 v.to(current_slice->invT);
-                image::space2slice(cur_tracking_window.cur_dim,v[0],v[1],v[2],v2[0],v2[1],v2[2]);
+                tipl::space2slice(cur_tracking_window.cur_dim,v[0],v[1],v[2],v2[0],v2[1],v2[2]);
                 v2.round();
                 if(v2[2] == slice_pos && I.geometry().is_valid(v2))
                 {
@@ -319,8 +319,8 @@ void RegionTableWidget::draw_region(image::color_image& I)
                 for(int x = 0;x < I.width();++x,++index)
                 {
 
-                    image::vector<3,float> v;
-                    image::slice2space(cur_tracking_window.cur_dim, x, y,
+                    tipl::vector<3,float> v;
+                    tipl::slice2space(cur_tracking_window.cur_dim, x, y,
                                        slice_pos, v[0],v[1],v[2]);
                     v.to(current_slice->T);
                     v *= r;
@@ -349,8 +349,8 @@ void RegionTableWidget::draw_edge(QImage&,QImage&)
         return;
     /*
     int X, Y, Z;
-    image::basic_image<unsigned char,2> cur_image_mask;
-    cur_image_mask.resize(image::geometry<2>(qimage.width(),qimage.height()));
+    tipl::image<unsigned char,2> cur_image_mask;
+    cur_image_mask.resize(tipl::geometry<2>(qimage.width(),qimage.height()));
     for (unsigned int index = 0;index < regions[currentRow()]->size();++index)
     {
         regions[currentRow()]->getSlicePosition(cur_tracking_window.cur_dim, index, X, Y, Z);
@@ -388,7 +388,7 @@ void RegionTableWidget::draw_edge(QImage&,QImage&)
 
 void RegionTableWidget::draw_mosaic_region(QImage& qimage,unsigned int mosaic_size,unsigned int skip)
 {
-    image::geometry<3> geo = cur_tracking_window.handle->dim;
+    tipl::geometry<3> geo = cur_tracking_window.handle->dim;
     unsigned int slice_number = geo[2] / skip;
     std::vector<int> shift_x(slice_number),shift_y(slice_number);
     for(unsigned int z = 0;z < slice_number;++z)
@@ -404,7 +404,7 @@ void RegionTableWidget::draw_mosaic_region(QImage& qimage,unsigned int mosaic_si
         unsigned int cur_color = regions[roi_index]->show_region.color;
         for (unsigned int index = 0;index < regions[roi_index]->size();++index)
         {
-            image::vector<3,short> p = regions[roi_index]->get_region_voxel(index);
+            tipl::vector<3,short> p = regions[roi_index]->get_region_voxel(index);
             if(p[2] != ((p[2] / skip) * skip))
                 continue;
             p[0] += shift_x[p[2] / skip];
@@ -468,7 +468,7 @@ void load_nii_label(const char* filename,std::map<int,std::string>& label_map)
     }
 }
 void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
-                          std::map<int,image::rgb_color>& label_color,bool mute_cmd = true)
+                          std::map<int,tipl::rgb>& label_color,bool mute_cmd = true)
 {
     label_map.clear();
     label_color.clear();
@@ -491,7 +491,7 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
                 std::string name;
                 in >> value >> name >> r >> g >> b;
                 label_map[value] = name;
-                label_color[value] = image::rgb_color(r,g,b);
+                label_color[value] = tipl::rgb(r,g,b);
             }
             return;
         }
@@ -513,17 +513,17 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     if (!header.load_from_file(file_name.toLocal8Bit().begin()))
         return false;
 
-    image::basic_image<unsigned int, 3> from;
+    tipl::image<unsigned int, 3> from;
     {
-        image::basic_image<float, 3> tmp;
+        tipl::image<float, 3> tmp;
         header.toLPS(tmp);
-        image::add_constant(tmp,0.5);
+        tipl::add_constant(tmp,0.5);
         from = tmp;
     }
 
     std::vector<unsigned char> value_map(std::numeric_limits<unsigned short>::max());
     unsigned int max_value = 0;
-    for (image::pixel_index<3>index(from.geometry());index < from.size();++index)
+    for (tipl::pixel_index<3>index(from.geometry());index < from.size();++index)
     {
         value_map[(unsigned short)from[index.index()]] = 1;
         max_value = std::max<unsigned short>(from[index.index()],max_value);
@@ -535,12 +535,12 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 
 
     std::map<int,std::string> label_map;
-    std::map<int,image::rgb_color> label_color;
+    std::map<int,tipl::rgb> label_color;
 
     if(multiple_roi)
         get_roi_label(file_name,label_map,label_color);
 
-    image::matrix<4,4,float> convert;
+    tipl::matrix<4,4,float> convert;
     bool has_transform = false;
 
     // searching for T1/T2 mappings
@@ -566,14 +566,14 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         if(cur_tracking_window.handle->is_qsdr && !has_transform)// use transformation information
         {
             // searching QSDR mappings
-            image::basic_image<unsigned int, 3> new_from;
+            tipl::image<unsigned int, 3> new_from;
             for(unsigned int index = 0;index < cur_tracking_window.handle->view_item.size();++index)
                 if(cur_tracking_window.handle->view_item[index].native_geo == from.geometry())
                 {
                     new_from.resize(cur_tracking_window.handle->dim);
-                    for(image::pixel_index<3> pos(new_from.geometry());pos < new_from.size();++pos)
+                    for(tipl::pixel_index<3> pos(new_from.geometry());pos < new_from.size();++pos)
                     {
-                        image::vector<3> new_pos(cur_tracking_window.handle->view_item[index].mx[pos.index()],
+                        tipl::vector<3> new_pos(cur_tracking_window.handle->view_item[index].mx[pos.index()],
                                                  cur_tracking_window.handle->view_item[index].my[pos.index()],
                                                  cur_tracking_window.handle->view_item[index].mz[pos.index()]);
                         new_pos.round();
@@ -636,7 +636,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     for(unsigned int value = 1;check_prog(value,value_map.size());++value)
         if(value_map[value])
         {
-            image::basic_image<unsigned char,3> mask(from.geometry());
+            tipl::image<unsigned char,3> mask(from.geometry());
             for(unsigned int i = 0;i < mask.size();++i)
                 if(from[i] == value)
                     mask[i] = 1;
@@ -836,16 +836,16 @@ void RegionTableWidget::save_all_regions(void)
         base_name = QFileInfo(base_name).completeBaseName();
     QString label_file = QFileInfo(filename).absolutePath()+"/"+base_name+".txt";
     std::ofstream out(label_file.toLocal8Bit().begin());
-    image::geometry<3> geo = cur_tracking_window.handle->dim;
-    image::basic_image<unsigned int, 3> mask(geo);
+    tipl::geometry<3> geo = cur_tracking_window.handle->dim;
+    tipl::image<unsigned int, 3> mask(geo);
     for (unsigned int i = 0; i < regions.size(); ++i)
         if (item(i,0)->checkState() == Qt::Checked)
         {
             for (unsigned int j = 0; j < regions[i]->size(); ++j)
             {
-                image::vector<3,short> p = regions[i]->get_region_voxel(j);
+                tipl::vector<3,short> p = regions[i]->get_region_voxel(j);
                 if (geo.is_valid(p))
-                    mask[image::pixel_index<3>(p[0],p[1],p[2], geo).index()] = i+1;
+                    mask[tipl::pixel_index<3>(p[0],p[1],p[2], geo).index()] = i+1;
 
             }
             out << i+1 << " " << item(i,0)->text().toStdString() << std::endl;
@@ -856,7 +856,7 @@ void RegionTableWidget::save_all_regions(void)
         header.set_LPS_transformation(
                     cur_tracking_window.handle->trans_to_mni.begin(),
                     mask.geometry());
-    image::flip_xy(mask);
+    tipl::flip_xy(mask);
     header << mask;
     header.save_to_file(filename.toLocal8Bit().begin());
 
@@ -886,7 +886,7 @@ void RegionTableWidget::save_region_info(void)
     for(int index = 0;index < regions[currentRow()]->size();++index)
     {
         std::vector<float> data;
-        image::vector<3,short> point = regions[currentRow()]->get_region_voxel(index);
+        tipl::vector<3,short> point = regions[currentRow()]->get_region_voxel(index);
         cur_tracking_window.handle->get_voxel_info2(point[0],point[1],point[2],data);
         cur_tracking_window.handle->get_voxel_information(point[0],point[1],point[2],data);
         std::copy(point.begin(),point.end(),std::ostream_iterator<float>(out,"\t"));
@@ -911,16 +911,16 @@ void RegionTableWidget::delete_all_region(void)
     emit need_update();
 }
 
-void RegionTableWidget::whole_brain_points(std::vector<image::vector<3,short> >& points)
+void RegionTableWidget::whole_brain_points(std::vector<tipl::vector<3,short> >& points)
 {
-    image::geometry<3> geo = cur_tracking_window.handle->dim;
+    tipl::geometry<3> geo = cur_tracking_window.handle->dim;
     float threshold = cur_tracking_window["fa_threshold"].toFloat();
     if(threshold == 0)
         threshold = cur_tracking_window["otsu_threshold"].toFloat()
-                        *image::segmentation::otsu_threshold(image::make_image(cur_tracking_window.handle->dir.fa[0],cur_tracking_window.handle->dim));
-    for (image::pixel_index<3>index(geo); index < geo.size();++index)
+                        *tipl::segmentation::otsu_threshold(tipl::make_image(cur_tracking_window.handle->dir.fa[0],cur_tracking_window.handle->dim));
+    for (tipl::pixel_index<3>index(geo); index < geo.size();++index)
     {
-        image::vector<3,short> pos(index);
+        tipl::vector<3,short> pos(index);
         if(cur_tracking_window.handle->dir.fa[0][index.index()] > threshold)
             points.push_back(pos);
     }
@@ -928,7 +928,7 @@ void RegionTableWidget::whole_brain_points(std::vector<image::vector<3,short> >&
 
 void RegionTableWidget::whole_brain(void)
 {
-    std::vector<image::vector<3,short> > points;
+    std::vector<tipl::vector<3,short> > points;
     whole_brain_points(points);
     add_region("whole brain",seed_id);
     add_points(points,false,1.0);
@@ -942,7 +942,7 @@ void get_regions_statistics(std::shared_ptr<fib_data> handle,
 {
     std::vector<std::string> titles;
     std::vector<std::vector<float> > data(regions.size());
-    image::par_for(regions.size(),[&](unsigned int index){
+    tipl::par_for(regions.size(),[&](unsigned int index){
         std::vector<std::string> dummy;
         regions[index]->get_quantitative_data(handle,(index == 0) ? titles : dummy,data[index]);
     });
@@ -1005,7 +1005,7 @@ void RegionTableWidget::show_statistics(void)
 }
 
 extern std::vector<float> mni_fa0_template_tran;
-extern image::basic_image<float,3> mni_fa0_template;
+extern tipl::image<float,3> mni_fa0_template;
 
 bool RegionTableWidget::has_seeding(void)
 {
@@ -1018,9 +1018,9 @@ bool RegionTableWidget::has_seeding(void)
 }
 void RegionTableWidget::set_whole_brain(ThreadData* data)
 {
-    std::vector<image::vector<3,short> > points;
+    std::vector<tipl::vector<3,short> > points;
     whole_brain_points(points);
-    data->roi_mgr.setRegions(cur_tracking_window.handle->dim,points,1.0,seed_id,"whole brain",image::vector<3>());
+    data->roi_mgr.setRegions(cur_tracking_window.handle->dim,points,1.0,seed_id,"whole brain",tipl::vector<3>());
 }
 
 void RegionTableWidget::setROIs(ThreadData* data)
@@ -1071,15 +1071,15 @@ void RegionTableWidget::do_action(QString action)
         cur_region.perform(action.toStdString());
         if(action == "thresholding")
         {
-            image::basic_image<unsigned char, 3>mask;
-            image::const_pointer_image<float,3> I = cur_tracking_window.current_slice->get_source();
+            tipl::image<unsigned char, 3>mask;
+            tipl::const_pointer_image<float,3> I = cur_tracking_window.current_slice->get_source();
             if(I.empty())
                 return;
             mask.resize(I.geometry());
             auto m = std::minmax_element(I.begin(),I.end());
             bool ok;
             float threshold = QInputDialog::getDouble(this,
-                "DSI Studio","Threshold:", image::segmentation::otsu_threshold(I),
+                "DSI Studio","Threshold:", tipl::segmentation::otsu_threshold(I),
                 *m.first,
                 *m.second,
                 4, &ok);
@@ -1092,12 +1092,12 @@ void RegionTableWidget::do_action(QString action)
         }
         if(action == "separate")
         {
-            image::basic_image<unsigned char, 3>mask;
+            tipl::image<unsigned char, 3>mask;
             cur_region.SaveToBuffer(mask, 1);
             QString name = item(currentRow(),0)->text();
-            image::basic_image<unsigned int,3> labels;
+            tipl::image<unsigned int,3> labels;
             std::vector<std::vector<unsigned int> > r;
-            image::morphology::connected_component_labeling(mask,labels,r);
+            tipl::morphology::connected_component_labeling(mask,labels,r);
 
             for(unsigned int j = 0,total_count = 0;j < r.size() && total_count < 10;++j)
                 if(!r[j].empty())

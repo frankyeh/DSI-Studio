@@ -1,11 +1,11 @@
 #include <sstream>
 #include <string>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include "dwi_header.hpp"
 #include "gzip_interface.hpp"
 #include "prog_interface_static_link.h"
 #include "image_model.hpp"
-void get_report_from_dicom(const image::io::dicom& header,std::string& report)
+void get_report_from_dicom(const tipl::io::dicom& header,std::string& report)
 {
     std::string manu,make,seq;
     header.get_text(0x0008,0x0070,manu);//Manufacturer
@@ -28,7 +28,7 @@ void get_report_from_dicom(const image::io::dicom& header,std::string& report)
         << " TE=" << te << " ms, and TR=" << tr << " ms.";
     report += out.str();
 }
-void get_report_from_bruker(const image::io::bruker_info& header,std::string& report)
+void get_report_from_bruker(const tipl::io::bruker_info& header,std::string& report)
 {
     std::ostringstream out;
     out << " The diffusion images were acquired on a " << header["ORIGIN"] << " scanner using a "
@@ -37,7 +37,7 @@ void get_report_from_bruker(const image::io::bruker_info& header,std::string& re
         << " The diffusion time was " << header["PVM_DwGradSep"] << " ms. The diffusion encoding duration was " << header["PVM_DwGradDur"] << " ms.";
     report += out.str();
 }
-void get_report_from_bruker2(const image::io::bruker_info& header,std::string& report)
+void get_report_from_bruker2(const tipl::io::bruker_info& header,std::string& report)
 {
     std::ostringstream out;
     out << " The diffusion images were acquired on a " << header["ORIGIN"]
@@ -50,14 +50,14 @@ void get_report_from_bruker2(const image::io::bruker_info& header,std::string& r
 
 bool DwiHeader::open(const char* filename)
 {
-    image::io::dicom header;
+    tipl::io::dicom header;
     if (!header.load_from_file(filename))
     {
-        image::io::nifti analyze_header;
+        tipl::io::nifti analyze_header;
         if (!analyze_header.load_from_file(filename))
             return false;
         analyze_header >> image;
-        image::flip_xy(image);
+        tipl::flip_xy(image);
         analyze_header.get_voxel_size(voxel_size);
         return true;
     }
@@ -73,10 +73,10 @@ bool DwiHeader::open(const char* filename)
 
     if(header.get_image_orientation(orientation_matrix))
     {
-        image::get_orientation(3,orientation_matrix,dim_order,flip);
-        image::reorient_vector(voxel_size,dim_order);
-        image::reorient_matrix(orientation_matrix,dim_order,flip);
-        image::reorder(image,dim_order,flip);
+        tipl::get_orientation(3,orientation_matrix,dim_order,flip);
+        tipl::reorient_vector(voxel_size,dim_order);
+        tipl::reorient_matrix(orientation_matrix,dim_order,flip);
+        tipl::reorder(image,dim_order,flip);
         has_orientation_info = true;
     }
 
@@ -250,7 +250,7 @@ bool DwiHeader::open(const char* filename)
     if(has_orientation_info)
     {
         {
-            image::reorient_vector(bvec.begin(),dim_order);
+            tipl::reorient_vector(bvec.begin(),dim_order);
             float x = bvec[dim_order[0]];
             float y = bvec[dim_order[1]];
             float z = bvec[dim_order[2]];
@@ -258,8 +258,8 @@ bool DwiHeader::open(const char* filename)
             bvec[1] = y;
             bvec[2] = z;
         }
-        image::vector<3,float> cbvec;
-        image::vector_rotation(bvec.begin(),cbvec.begin(),orientation_matrix,image::vdim<3>());
+        tipl::vector<3,float> cbvec;
+        tipl::vector_rotation(bvec.begin(),cbvec.begin(),orientation_matrix,tipl::vdim<3>());
         bvec = cbvec;
     }
     bvec.normalize();
@@ -308,7 +308,7 @@ void sort_dwi(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 
 void correct_t2(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
-    image::geometry<3> geo = dwi_files.front()->image.geometry();
+    tipl::geometry<3> geo = dwi_files.front()->image.geometry();
     //find out if there are two b0 images having different TE
     std::vector<unsigned int> b0_index;
     std::vector<float> b0_te;
@@ -325,8 +325,8 @@ void correct_t2(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
     // average the b0 images
     {
         for (unsigned int index = 0;index < b0_index.size();++index)
-            image::add(spin_density.begin(),spin_density.end(),dwi_files[b0_index[index]]->begin());
-        image::divide_constant(spin_density.begin(),spin_density.end(),b0_index.size());
+            tipl::add(spin_density.begin(),spin_density.end(),dwi_files[b0_index[index]]->begin());
+        tipl::divide_constant(spin_density.begin(),spin_density.end(),b0_index.size());
     }
 
     // if multiple TE, then we can perform T2 correction
@@ -335,12 +335,12 @@ void correct_t2(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
         std::vector<double> neg_inv_T2(geo.size());//-1/T2
         {
             //begin_prog("Eliminating T2 effect");
-            for (image::pixel_index<3> index(geo);index < geo.size();++index)
+            for (tipl::pixel_index<3> index(geo);index < geo.size();++index)
             {
                 std::vector<float> te_samples;
                 std::vector<float> log_Mxy_samples;
-                std::vector<image::pixel_index<3> > neighbor_index1,neighbor_index2;
-                image::get_neighbors(index,geo,1,neighbor_index1);
+                std::vector<tipl::pixel_index<3> > neighbor_index1,neighbor_index2;
+                tipl::get_neighbors(index,geo,1,neighbor_index1);
                 for (unsigned int i = 0;i < b0_te.size();++i)
                 {
                     log_Mxy_samples.push_back(dwi_files[b0_index[i]]->image[index.index()]);
@@ -354,7 +354,7 @@ void correct_t2(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
                 // if not enough b0 images, take the neighbors!
                 if (b0_te.size() < 4)
                 {
-                    image::get_neighbors(index,geo,2,neighbor_index2);
+                    tipl::get_neighbors(index,geo,2,neighbor_index2);
                     for (unsigned int i = 0;i < b0_te.size();++i)
                     {
                         log_Mxy_samples.push_back(dwi_files[b0_index[i]]->image[index.index()]);
@@ -385,7 +385,7 @@ void correct_t2(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
                 if (log_Mxy_samples.empty())
                     continue;
                 // (-1/T2,logM0);
-                std::pair<double,double> T2_M0 = image::linear_regression(te_samples.begin(),te_samples.end(),log_Mxy_samples.begin());
+                std::pair<double,double> T2_M0 = tipl::linear_regression(te_samples.begin(),te_samples.end(),log_Mxy_samples.begin());
                 /*												T1			T2
                 Cerebrospinal fluid (similar to pure water) 	2200-2400 	500-1400
                 Gray matter of cerebrum 						920 		100
@@ -465,7 +465,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
     if(!write_mat)
         return false;
 
-    image::geometry<3> geo = dwi_files.front()->image.geometry();
+    tipl::geometry<3> geo = dwi_files.front()->image.geometry();
 
     //store dimension
     unsigned int output_size = 0;
@@ -517,7 +517,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
     for (unsigned int index = 0;check_prog(index,(unsigned int)(dwi_files.size()));++index)
     {
         std::ostringstream name;
-        image::basic_image<unsigned short,3> buffer;
+        tipl::image<unsigned short,3> buffer;
         const unsigned short* ptr = 0;
         name << "image" << index;
         ptr = (const unsigned short*)dwi_files[index]->begin();
@@ -526,18 +526,18 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
             buffer.resize(geo);
             std::copy(ptr,ptr+geo.size(),buffer.begin());
             if(upsampling == 1)
-                image::upsampling(buffer);
+                tipl::upsampling(buffer);
             if(upsampling == 2)
-                image::downsampling(buffer);
+                tipl::downsampling(buffer);
             if(upsampling == 3)
             {
-                image::upsampling(buffer);
-                image::upsampling(buffer);
+                tipl::upsampling(buffer);
+                tipl::upsampling(buffer);
             }
             if(upsampling == 4)
             {
-                image::downsampling(buffer);
-                image::downsampling(buffer);
+                tipl::downsampling(buffer);
+                tipl::downsampling(buffer);
             }
             ptr = (const unsigned short*)&*buffer.begin();
         }
@@ -553,7 +553,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
         ImageModel image_model;
         for (unsigned int index = 0;index < dwi_files.size();++index)
             image_model.src_bvalues.push_back(dwi_files[index]->get_bvalue());
-        image_model.voxel.vs = image::vector<3>(dwi_files.front()->voxel_size);
+        image_model.voxel.vs = tipl::vector<3>(dwi_files.front()->voxel_size);
         image_model.get_report(report2);
     }
     report1 += report2;

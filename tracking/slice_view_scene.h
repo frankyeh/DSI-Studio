@@ -2,7 +2,7 @@
 #define SLICE_VIEW_SCENE_H
 #include <QGraphicsScene>
 #include <vector>
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 #include <QStatusBar>
 class fib_data;
 class tracking_window;
@@ -24,15 +24,15 @@ public:
     QStatusBar* statusbar;
 private:
     tracking_window& cur_tracking_window;
-    image::color_image slice_image,mosaic_image;
+    tipl::color_image slice_image,mosaic_image;
 public:
     unsigned int mosaic_size;
     void adjust_xy_to_layout(float& X,float& Y);
-    bool to_3d_space_single_slice(float x,float y,image::vector<3,float>& pos);
-    bool to_3d_space(float x,float y,image::vector<3,float>& pos);
+    bool to_3d_space_single_slice(float x,float y,tipl::vector<3,float>& pos);
+    bool to_3d_space(float x,float y,tipl::vector<3,float>& pos);
 public:    // record the mouse press points
-    std::vector<image::vector<3,float> >sel_coord;
-    std::vector<image::vector<2,short> >sel_point;
+    std::vector<tipl::vector<3,float> >sel_coord;
+    std::vector<tipl::vector<2,short> >sel_point;
     int cur_region;
     bool mouse_down;
     bool mid_down;

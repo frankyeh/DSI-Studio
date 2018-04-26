@@ -1,11 +1,11 @@
 #ifndef FA_TEMPLATE_HPP
 #define FA_TEMPLATE_HPP
 
-#include "image/image.hpp"
+#include "tipl/tipl.hpp"
 struct fa_template{
     std::string template_file_name,error_msg;
-    image::vector<3> vs,shift;
-    image::basic_image<float,3> I;
+    tipl::vector<3> vs,shift;
+    tipl::image<float,3> I;
     float tran[16];
     bool load_from_file(void);
     template<typename v_type>
