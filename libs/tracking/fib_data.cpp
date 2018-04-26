@@ -745,54 +745,35 @@ void fib_data::run_normalization(bool background)
             prog = 5;
             return;
         }
-        tipl::affine_transform<float> arg,arg2;
-        tipl::transformation_matrix<float> T,T2;
-        tipl::image<float,3> S(dir.fa[0],dim);
-        tipl::filter::gaussian(S);
-        S -= tipl::segmentation::otsu_threshold(S);
-        tipl::lower_threshold(S,0.0);
-        tipl::normalize(S,1.0);
+        auto& It = fa_template_imp.I;
+        tipl::transformation_matrix<float> T;
+        tipl::image<float,3> Is(dir.fa[0],dim);
+        tipl::filter::gaussian(Is);
         prog = 1;
-        tipl::par_for(2,[&](int i){
-            if(i)
-            {
-                tipl::reg::linear_mr(fa_template_imp.I,fa_template_imp.vs,S,vs,arg,tipl::reg::affine,
-                    tipl::reg::mutual_information(),thread.terminated);
-            }
-            else
-            {
-                tipl::reg::linear_mr(S,vs,fa_template_imp.I,fa_template_imp.vs,arg2,tipl::reg::affine,
-                    tipl::reg::mutual_information(),thread.terminated);
-            }
-        });
-        T = tipl::transformation_matrix<float>(arg,fa_template_imp.I.geometry(),fa_template_imp.vs,S.geometry(),vs);
-        T2 = tipl::transformation_matrix<float>(arg2,S.geometry(),vs,fa_template_imp.I.geometry(),fa_template_imp.vs);
-        T2.inverse();
-        if(tipl::reg::mutual_information()(fa_template_imp.I,S,T2) < tipl::reg::mutual_information()(fa_template_imp.I,S,T))
-            T = T2;
+        tipl::reg::two_way_linear_mr(It,fa_template_imp.vs,Is,vs,T,tipl::reg::affine,
+                                     tipl::reg::mutual_information(),thread.terminated);
         prog = 2;
         if(thread.terminated)
             return;
-        tipl::reg::bfnorm_mapping<float,3> bf(fa_template_imp.I.geometry(),tipl::geometry<3>(7,9,7));
-        tipl::image<float,3> new_S(fa_template_imp.I.geometry());
-        tipl::resample_mt(S,new_S,T,tipl::linear);
+        tipl::image<float,3> Iss(It.geometry());
+        tipl::resample_mt(Is,Iss,T,tipl::linear);
         prog = 3;
-        tipl::reg::bfnorm(bf,new_S,fa_template_imp.I,thread.terminated,std::thread::hardware_concurrency());
+        tipl::image<tipl::vector<3>,3> dis;
+        tipl::reg::cdm(It,Iss,dis,thread.terminated,2.0f,0.95f);
         if(thread.terminated)
             return;
         prog = 4;
-        tipl::image<tipl::vector<3,float>,3 > mni(S.geometry());
-        T.inverse();
+        tipl::image<tipl::vector<3,float>,3 > mni(Is.geometry());
         if(thread.terminated)
             return;
+        T.inverse();
         mni.for_each_mt([&](tipl::vector<3,float>& v,const tipl::pixel_index<3>& pos)
         {
-            tipl::vector<3> p(pos);
+            tipl::vector<3> p(pos),d;
             T(p);
             v = p;
-            p.round();
-            bf.get_displacement(tipl::vector<3,int>(p[0],p[1],p[2]),p);
-            v += p;
+            tipl::estimate(dis,v,d,tipl::linear);
+            v += d;
             fa_template_imp.to_mni(v);
         });
         if(thread.terminated)

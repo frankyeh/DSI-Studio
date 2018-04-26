@@ -15,7 +15,6 @@
 #include "program_option.hpp"
 #include "cmd/cnt.cpp" // Qt project cannot build cnt.cpp without adding this.
 
-
 track_recognition track_network;
 fa_template fa_template_imp;
 std::string fa_template_file_name,
@@ -198,6 +197,7 @@ int run_cmd(int ac, char *av[])
     }
     return 0;
 }
+
 
 int main(int ac, char *av[])
 {
