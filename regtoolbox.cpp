@@ -67,7 +67,7 @@ void RegToolBox::on_OpenTemplate_clicked()
     }
     nifti.toLPS(It);
     nifti.get_image_transformation(ItR);
-    It *= 1.0f/image::mean(It);
+    It *= 1.0f/tipl::mean(It);
     nifti.get_voxel_size(Itvs.begin());
     ui->slice_pos->setMaximum(It.depth()-1);
     ui->slice_pos->setValue(It.depth()/2);
@@ -92,7 +92,7 @@ void RegToolBox::on_OpenSubject_clicked()
         return;
     }
     nifti.toLPS(I);
-    I *= 1.0f/image::mean(I);
+    I *= 1.0f/tipl::mean(I);
     nifti.get_voxel_size(Ivs.begin());
     clear();
     show_image();
@@ -101,20 +101,20 @@ void RegToolBox::on_OpenSubject_clicked()
 }
 
 
-void show_slice_at(QGraphicsScene& scene,image::basic_image<float,2>& tmp,image::color_image& buf,float ratio)
+void show_slice_at(QGraphicsScene& scene,tipl::image<float,2>& tmp,tipl::color_image& buf,float ratio)
 {
-    image::normalize(tmp,255.0);
-    image::upper_lower_threshold(tmp.begin(),tmp.end(),tmp.begin(),0.0f,255.0f);
+    tipl::normalize(tmp,255.0);
+    tipl::upper_lower_threshold(tmp.begin(),tmp.end(),tmp.begin(),0.0f,255.0f);
     buf = tmp;
     show_view(scene,QImage((unsigned char*)&*buf.begin(),buf.width(),buf.height(),QImage::Format_RGB32).
               scaled(buf.width()*ratio,buf.height()*ratio));
 }
 
 
-void show_slice_at(QGraphicsScene& scene,const image::basic_image<float,3>& source,image::color_image& buf,int slice_pos,float ratio)
+void show_slice_at(QGraphicsScene& scene,const tipl::image<float,3>& source,tipl::color_image& buf,int slice_pos,float ratio)
 {
-    image::basic_image<float,2> tmp;
-    image::reslicing(source,tmp,2,slice_pos);
+    tipl::image<float,2> tmp;
+    tipl::reslicing(source,tmp,2,slice_pos);
     show_slice_at(scene,tmp,buf,ratio);
 }
 
@@ -140,9 +140,9 @@ void RegToolBox::show_image(void)
     {
         if(ui->dis_map->isChecked())
         {
-            image::basic_image<float,2> J_view_slice(J_view.slice_at(ui->slice_pos->value()));
-            image::normalize(J_view_slice,255.0);
-            image::upper_lower_threshold(J_view_slice.begin(),J_view_slice.end(),J_view_slice.begin(),0.0f,255.0f);
+            tipl::image<float,2> J_view_slice(J_view.slice_at(ui->slice_pos->value()));
+            tipl::normalize(J_view_slice,255.0);
+            tipl::upper_lower_threshold(J_view_slice.begin(),J_view_slice.end(),J_view_slice.begin(),0.0f,255.0f);
             cJ = J_view_slice;
             QImage qcJ = QImage((unsigned char*)&*cJ.begin(),cJ.width(),cJ.height(),QImage::Format_RGB32).
                           scaled(cJ.width()*ratio,cJ.height()*ratio);
@@ -210,7 +210,7 @@ void RegToolBox::on_timer()
         if(J.empty()) // linear registration
         {
             J_view.resize(It.geometry());
-            image::resample_mt(I,J_view,image::transformation_matrix<double>(arg,It.geometry(),Itvs,I.geometry(),Ivs),image::linear);
+            tipl::resample_mt(I,J_view,tipl::transformation_matrix<double>(arg,It.geometry(),Itvs,I.geometry(),Ivs),tipl::linear);
             show_image();
         }
         else // nonlinear
@@ -219,20 +219,20 @@ void RegToolBox::on_timer()
             {
                 dis_view = dis;
                 J_view = J;
-                std::vector<image::geometry<3> > geo_stack;
+                std::vector<tipl::geometry<3> > geo_stack;
                 while(J_view.width() > dis_view.width())
                 {
                     geo_stack.push_back(J_view.geometry());
-                    image::downsample_with_padding(J_view,J_view);
+                    tipl::downsample_with_padding(J_view,J_view);
                 }
                 if(J_view.geometry() != dis_view.geometry())
                     return;
-                image::compose_displacement(J_view,dis_view,J_view2);
+                tipl::compose_displacement(J_view,dis_view,J_view2);
                 while(!geo_stack.empty())
                 {
-                    image::upsample_with_padding(J_view,J_view,geo_stack.back());
-                    image::upsample_with_padding(J_view2,J_view2,geo_stack.back());
-                    image::upsample_with_padding(dis_view,dis_view,geo_stack.back());
+                    tipl::upsample_with_padding(J_view,J_view,geo_stack.back());
+                    tipl::upsample_with_padding(J_view2,J_view2,geo_stack.back());
+                    tipl::upsample_with_padding(dis_view,dis_view,geo_stack.back());
                     dis_view *= 2.0f;
                     geo_stack.pop_back();
                 }
@@ -251,32 +251,15 @@ void RegToolBox::on_timer()
     }
 }
 
-void RegToolBox::linear_reg(image::reg::reg_type reg_type)
+void RegToolBox::linear_reg(tipl::reg::reg_type reg_type)
 {
     status = "linear registration";
-    image::affine_transform<double> arg2;
-    image::par_for(2,[&](int i){
-        if(i)
-        {
-        image::reg::linear_mr(It,Itvs,I,Ivs,arg,reg_type,image::reg::mutual_information(),thread.terminated,0.1);
-        image::reg::linear_mr(It,Itvs,I,Ivs,arg,reg_type,image::reg::mutual_information(),thread.terminated,0.01);
-        }
-        else
-        {
-        image::reg::linear_mr(I,Ivs,It,Itvs,arg2,reg_type,image::reg::mutual_information(),thread.terminated,0.1);
-        image::reg::linear_mr(I,Ivs,It,Itvs,arg2,reg_type,image::reg::mutual_information(),thread.terminated,0.01);
-        }
-    });
-
-    image::transformation_matrix<double> T(arg,It.geometry(),Itvs,I.geometry(),Ivs);
-    image::transformation_matrix<double> T2(arg2,I.geometry(),Ivs,It.geometry(),Itvs);
-    T2.inverse();
-    if(image::reg::mutual_information()(It,I,T2) < image::reg::mutual_information()(It,I,T))
-        T = T2;
-
-    image::basic_image<float,3> J2(It.geometry());
-    image::resample_mt(I,J2,T,image::cubic);
-    float r2 = image::correlation(J2.begin(),J2.end(),It.begin());
+    tipl::transformation_matrix<double> T;
+    tipl::reg::two_way_linear_mr(It,Itvs,I,Ivs,T,reg_type,tipl::reg::mutual_information(),thread.terminated,
+                                  std::thread::hardware_concurrency(),&arg);
+    tipl::image<float,3> J2(It.geometry());
+    tipl::resample_mt(I,J2,T,tipl::cubic);
+    float r2 = tipl::correlation(J2.begin(),J2.end(),It.begin());
     std::cout << "linear:" << r2 << std::endl;
     J.swap(J2);
     J_view = J;
@@ -288,22 +271,22 @@ void RegToolBox::nonlinear_reg(int method)
     status = "nonlinear registration";
     if(method == 1)
     {
-        image::reg::cdm(It,J,dis,thread.terminated,2.0f,ui->smoothness->value());
+        tipl::reg::cdm(It,J,dis,thread.terminated,2.0f,ui->smoothness->value());
     }
     if(method == 0)
     {
         int order = ui->order->value();
-        bnorm_data.reset(new image::reg::bfnorm_mapping<float,3>(It.geometry(),image::geometry<3>(7*order,9*order,7*order)));
-        image::reg::bfnorm(*bnorm_data.get(),It,J,thread.terminated,std::thread::hardware_concurrency());
-        image::basic_image<image::vector<3>,3> dis2(It.geometry());
+        bnorm_data.reset(new tipl::reg::bfnorm_mapping<float,3>(It.geometry(),tipl::geometry<3>(7*order,9*order,7*order)));
+        tipl::reg::bfnorm(*bnorm_data.get(),It,J,thread.terminated,std::thread::hardware_concurrency());
+        tipl::image<tipl::vector<3>,3> dis2(It.geometry());
         status += "..output mapping";
-        dis2.for_each_mt([&](image::vector<3>& v,image::pixel_index<3>& index){
+        dis2.for_each_mt([&](tipl::vector<3>& v,tipl::pixel_index<3>& index){
             bnorm_data->get_displacement(index,v);
         });
         dis2.swap(dis);
     }
-    image::compose_displacement(J,dis,JJ);
-    std::cout << "nonlinear:" << image::correlation(JJ.begin(),JJ.end(),It.begin()) << std::endl;
+    tipl::compose_displacement(J,dis,JJ);
+    std::cout << "nonlinear:" << tipl::correlation(JJ.begin(),JJ.end(),It.begin()) << std::endl;
 }
 
 void RegToolBox::on_run_reg_clicked()
@@ -316,7 +299,7 @@ void RegToolBox::on_run_reg_clicked()
     case 0: // rigid body
         thread.run([this]()
         {
-            linear_reg(image::reg::rigid_body);
+            linear_reg(tipl::reg::rigid_body);
             reg_done = true;
             status = "registration done";
         });
@@ -324,7 +307,7 @@ void RegToolBox::on_run_reg_clicked()
     case 1: // linear + nonlinear
         thread.run([this]()
         {
-            linear_reg(image::reg::affine);
+            linear_reg(tipl::reg::affine);
             nonlinear_reg(ui->reg_method->currentIndex());
             reg_done = true;
             status = "registration done";
@@ -334,7 +317,7 @@ void RegToolBox::on_run_reg_clicked()
         thread.run([this]()
         {
             if(I.geometry() != It.geometry())
-                linear_reg(image::reg::affine);
+                linear_reg(tipl::reg::affine);
             else
                 J = I;
             nonlinear_reg(ui->reg_method->currentIndex());
@@ -345,7 +328,7 @@ void RegToolBox::on_run_reg_clicked()
     case 3: // nonlinear only
         thread.run([this]()
         {
-            linear_reg(image::reg::affine);
+            linear_reg(tipl::reg::affine);
             reg_done = true;
             status = "registration done";
         });
@@ -371,7 +354,7 @@ void RegToolBox::on_action_Save_Warpped_Image_triggered()
         gz_nifti nii;
         nii.set_voxel_size(Itvs);
         nii.set_LPS_transformation(ItR,JJ.geometry());
-        image::flip_xy(JJ);
+        tipl::flip_xy(JJ);
         nii << JJ;
         nii.save_to_file(filename.toStdString().c_str());
         return;
@@ -381,7 +364,7 @@ void RegToolBox::on_action_Save_Warpped_Image_triggered()
         gz_nifti nii;
         nii.set_voxel_size(Itvs);
         nii.set_LPS_transformation(ItR,J.geometry());
-        image::flip_xy(J);
+        tipl::flip_xy(J);
         nii << J;
         nii.save_to_file(filename.toStdString().c_str());
 
@@ -428,13 +411,13 @@ void RegToolBox::on_actionRemove_Skull_triggered()
 {
     if(!It.empty())
     {
-        image::vector<3> from(fa_template_imp.shift);
+        tipl::vector<3> from(fa_template_imp.shift);
         from[0] -= (int)fa_template_imp.I.width()+ItR[3]-(int)It.width();
         from[1] -= (int)fa_template_imp.I.height()+ItR[7]-(int)It.height();
         from[2] -= ItR[11];
 
-        It.for_each_mt([&](float& v,const image::pixel_index<3>& pos){
-           image::vector<3> p(pos);
+        It.for_each_mt([&](float& v,const tipl::pixel_index<3>& pos){
+           tipl::vector<3> p(pos);
            p -= from;
            p.round();
            if(fa_template_imp.I.geometry().is_valid(p) && fa_template_imp.I.at(p[0],p[1],p[2]) > 0)
@@ -450,7 +433,7 @@ void RegToolBox::on_actionMatch_Intensity_triggered()
 {
     if(I.geometry() == It.geometry())
     {
-        image::homogenize(I,It);
+        tipl::homogenize(I,It);
         show_image();
     }
 }
@@ -459,9 +442,9 @@ void RegToolBox::on_actionRemove_Background_triggered()
 {
     if(!I.empty())
     {
-        I -= image::segmentation::otsu_threshold(I);
-        image::lower_threshold(I,0.0);
-        image::normalize(I,1.0);
+        I -= tipl::segmentation::otsu_threshold(I);
+        tipl::lower_threshold(I,0.0);
+        tipl::normalize(I,1.0);
         show_image();
     }
 }
@@ -498,63 +481,63 @@ void get_location_vector(const std::vector<float>& d,std::vector<float>& locatio
 
 
 template<class pixel_type,unsigned int dimension,class terminate_type>
-double topup(const image::basic_image<pixel_type,dimension>& It,
-            const image::basic_image<pixel_type,dimension>& Is,
-            image::basic_image<pixel_type,dimension>& I,
-            image::basic_image<float,dimension>& d,// displacement field
+double topup(const tipl::image<pixel_type,dimension>& It,
+            const tipl::image<pixel_type,dimension>& Is,
+            tipl::image<pixel_type,dimension>& I,
+            tipl::image<float,dimension>& d,// displacement field
             terminate_type& terminated,
             unsigned int steps = 30)
 {
-    image::geometry<dimension> geo = It.geometry();
+    tipl::geometry<dimension> geo = It.geometry();
     d.resize(geo);
     // multi resolution
     if (*std::min_element(geo.begin(),geo.end()) > 32)
     {
         //downsampling
-        basic_image<pixel_type,dimension> rIs,rIt,I;
+        image<pixel_type,dimension> rIs,rIt,I;
         downsample_with_padding(It,rIt);
         downsample_with_padding(Is,rIs);
         float r = topup(rIt,rIs,I,d,terminated,steps);
         upsample_with_padding(d,d,geo);
         d *= 2.0f;
     }
-    image::basic_image<pixel_type,dimension> Js;// transformed I
-    image::basic_image<float,dimension> new_d(d.geometry());// new displacements
+    tipl::image<pixel_type,dimension> Js;// transformed I
+    tipl::image<float,dimension> new_d(d.geometry());// new displacements
 
     for (unsigned int index = 0;index < steps && !terminated;++index)
     {
-        image::compose_displacement(Is,d,Js);
-        r = image::correlation(Js.begin(),Js.end(),It.begin());
+        tipl::compose_displacement(Is,d,Js);
+        r = tipl::correlation(Js.begin(),Js.end(),It.begin());
         if(r <= prev_r)
         {
             new_d.swap(d);
             break;
         }
         // dJ(cJ-I)
-        image::gradient_sobel(Js,new_d);
-        Js.for_each_mt([&](pixel_type&,image::pixel_index<dimension>& index){
+        tipl::gradient_sobel(Js,new_d);
+        Js.for_each_mt([&](pixel_type&,tipl::pixel_index<dimension>& index){
             if(It[index.index()] == 0.0 || It.geometry().is_edge(index))
             {
                 new_d[index.index()] = vtor_type();
                 return;
             }
             std::vector<pixel_type> Itv,Jv;
-            image::get_window(index,It,window_size,Itv);
-            image::get_window(index,Js,window_size,Jv);
+            tipl::get_window(index,It,window_size,Itv);
+            tipl::get_window(index,Js,window_size,Jv);
             double a,b,r2;
-            image::linear_regression(Jv.begin(),Jv.end(),Itv.begin(),a,b,r2);
+            tipl::linear_regression(Jv.begin(),Jv.end(),Itv.begin(),a,b,r2);
             if(a <= 0.0f)
                 new_d[index.index()] = vtor_type();
             else
                 new_d[index.index()] *= (Js[index.index()]*a+b-It[index.index()]);
         });
         // solving the poisson equation using Jacobi method
-        basic_image<vtor_type,dimension> solve_d(new_d);
-        image::multiply_constant_mt(solve_d,-inv_d2);
+        image<vtor_type,dimension> solve_d(new_d);
+        tipl::multiply_constant_mt(solve_d,-inv_d2);
         for(int iter = 0;iter < window_size*2 & !terminated;++iter)
         {
-            basic_image<vtor_type,dimension> new_solve_d(new_d.geometry());
-            image::par_for(solve_d.size(),[&](int pos)
+            image<vtor_type,dimension> new_solve_d(new_d.geometry());
+            tipl::par_for(solve_d.size(),[&](int pos)
             {
                 for(int d = 0;d < dimension;++d)
                 {
@@ -570,24 +553,24 @@ double topup(const image::basic_image<pixel_type,dimension>& It,
             });
             solve_d.swap(new_solve_d);
         }
-        image::minus_constant_mt(solve_d,solve_d[0]);
+        tipl::minus_constant_mt(solve_d,solve_d[0]);
 
         new_d = solve_d;
         if(theta == 0.0f)
         {
-            image::par_for(new_d.size(),[&](int i)
+            tipl::par_for(new_d.size(),[&](int i)
             {
                float l = new_d[i].length();
                if(l > theta)
                    theta = l;
             });
         }
-        image::multiply_constant_mt(new_d,0.5f/theta);
-        image::add(new_d,d);
+        tipl::multiply_constant_mt(new_d,0.5f/theta);
+        tipl::add(new_d,d);
 
-        basic_image<vtor_type,dimension> new_ds(new_d);
-        image::filter::gaussian2(new_ds);
-        image::par_for(new_d.size(),[&](int i){
+        image<vtor_type,dimension> new_ds(new_d);
+        tipl::filter::gaussian2(new_ds);
+        tipl::par_for(new_d.size(),[&](int i){
            new_ds[i] *= cdm_smoothness;
            new_d[i] *= cdm_smoothness2;
            new_d[i] += new_ds[i];

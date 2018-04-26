@@ -24,42 +24,42 @@ SliceModel::SliceModel(std::shared_ptr<fib_data> handle_,int view_id_):handle(ha
     slice_pos[2] = geometry.depth() >> 1;
 }
 // ---------------------------------------------------------------------------
-void SliceModel::get_mosaic(image::color_image& show_image,
+void SliceModel::get_mosaic(tipl::color_image& show_image,
                                unsigned int mosaic_size,
-                               const image::value_to_color<float>& v2c,
+                               const tipl::value_to_color<float>& v2c,
                                unsigned int skip,
                                const SliceModel* overlay,
-                               const image::value_to_color<float>& overlay_v2c)
+                               const tipl::value_to_color<float>& overlay_v2c)
 {
     unsigned slice_num = geometry[2] / skip;
     show_image.clear();
-    show_image.resize(image::geometry<2>(geometry[0]*mosaic_size,
+    show_image.resize(tipl::geometry<2>(geometry[0]*mosaic_size,
                                           geometry[1]*(std::ceil((float)slice_num/(float)mosaic_size))));
     int old_z = slice_pos[2];
     for(unsigned int z = 0;z < slice_num;++z)
     {
         slice_pos[2] = z*skip;
-        image::color_image slice_image;
+        tipl::color_image slice_image;
         get_slice(slice_image,2,v2c,overlay,overlay_v2c);
-        image::vector<2,int> pos(geometry[0]*(z%mosaic_size),
+        tipl::vector<2,int> pos(geometry[0]*(z%mosaic_size),
                                  geometry[1]*(z/mosaic_size));
-        image::draw(slice_image,show_image,pos);
+        tipl::draw(slice_image,show_image,pos);
     }
     slice_pos[2] = old_z;
 }
-void SliceModel::apply_overlay(image::color_image& show_image,
+void SliceModel::apply_overlay(tipl::color_image& show_image,
                     unsigned char cur_dim,
                     const SliceModel* other_slice,
-                    const image::value_to_color<float>& overlay_v2c) const
+                    const tipl::value_to_color<float>& overlay_v2c) const
 {
     std::pair<float,float> range = other_slice->get_contrast_range();
     for(int y = 0,pos = 0;y < show_image.height();++y)
         for(int x = 0;x < show_image.width();++x,++pos)
         {
-            image::vector<3,float> v;
+            tipl::vector<3,float> v;
             toOtherSlice(other_slice,cur_dim,x,y,v);
             float value = 0;
-            if(!image::estimate(other_slice->get_source(),v,value))
+            if(!tipl::estimate(other_slice->get_source(),v,value))
                 continue;
             if(value > range.first)
                 show_image[pos] = overlay_v2c[value];
@@ -95,17 +95,17 @@ void SliceModel::set_contrast_color(unsigned int min_c,unsigned int max_c)
     handle->view_item[view_id].max_color = max_c;
 }
 // ---------------------------------------------------------------------------
-void SliceModel::get_slice(image::color_image& show_image,unsigned char cur_dim,
-                              const image::value_to_color<float>& v2c,
+void SliceModel::get_slice(tipl::color_image& show_image,unsigned char cur_dim,
+                              const tipl::value_to_color<float>& v2c,
                               const SliceModel* overlay,
-                              const image::value_to_color<float>& overlay_v2c) const
+                              const tipl::value_to_color<float>& overlay_v2c) const
 {
     handle->get_slice(view_id,cur_dim, slice_pos[cur_dim],show_image,v2c);
     if(overlay && this != overlay)
         apply_overlay(show_image,cur_dim,overlay,overlay_v2c);
 }
 // ---------------------------------------------------------------------------
-image::const_pointer_image<float, 3> SliceModel::get_source(void) const
+tipl::const_pointer_image<float, 3> SliceModel::get_source(void) const
 {
     return handle->view_item[view_id].image_data;
 }
@@ -140,13 +140,13 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
                 nifti.get_image_transformation(invT.begin());
                 invT.inv();
                 invT *= handle->trans_to_mni;
-                T = image::inverse(invT);
+                T = tipl::inverse(invT);
                 has_transform = true;
             }
         }
         else
         {
-            image::io::bruker_2dseq bruker;
+            tipl::io::bruker_2dseq bruker;
             if(bruker.load_from_file(files[0].c_str()))
             {
                 bruker.get_voxel_size(voxel_size.begin());
@@ -155,7 +155,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
                 if(d.cdUp() && d.cdUp())
                 {
                     QString method_file_name = d.absolutePath()+ "/method";
-                    image::io::bruker_info method;
+                    tipl::io::bruker_info method;
                     if(method.load_from_file(method_file_name.toStdString().c_str()))
                         name = method["Method"];
                 }
@@ -207,7 +207,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
                 T[8] *= 2.0;
                 T[9] *= 2.0;
             }
-            image::geometry<3> geo(geometry);
+            tipl::geometry<3> geo(geometry);
 
             bool ok;
             int down_size = QInputDialog::getInt(0,
@@ -225,7 +225,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
                 else
                 {
                     try{
-                        image::basic_image<float, 3> buf;
+                        tipl::image<float, 3> buf;
                         buf.resize(geo);
                         buf.swap(source_images);
                     }
@@ -240,16 +240,16 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
                 geo[1] = geo[1] >> 1;
                 geo[2] = geo[2] >> 1;
                 voxel_size *= 2.0;
-                image::multiply_constant(T.begin(),T.begin()+3,2.0);
-                image::multiply_constant(T.begin()+4,T.begin()+7,2.0);
-                image::multiply_constant(T.begin()+8,T.begin()+11,2.0);
+                tipl::multiply_constant(T.begin(),T.begin()+3,2.0);
+                tipl::multiply_constant(T.begin()+4,T.begin()+7,2.0);
+                tipl::multiply_constant(T.begin()+8,T.begin()+11,2.0);
                 ++in_plane_subsample;
                 ++slice_subsample;
             }
             begin_prog("loading images");
             for(unsigned int i = 0;check_prog(i,geo[2]);++i)
             {
-                image::basic_image<short,2> I;
+                tipl::image<short,2> I;
                 QImage in;
                 unsigned int file_index = (slice_subsample == 1 ? i : (i << (slice_subsample-1)));
                 if(file_index >= files.size())
@@ -262,13 +262,13 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
                     return false;
                 }
                 QImage buf = in.convertToFormat(QImage::Format_RGB32).mirrored();
-                I.resize(image::geometry<2>(in.width(),in.height()));
+                I.resize(tipl::geometry<2>(in.width(),in.height()));
                 const uchar* ptr = buf.bits();
                 for(int j = 0;j < I.size();++j,ptr += 4)
                     I[j] = *ptr;
 
                 for(int j = 1;j < in_plane_subsample;++j)
-                    image::downsampling(I);
+                    tipl::downsampling(I);
                 if(I.size() != source_images.plane_size())
                 {
                     error_msg = "Invalid BMP image size: ";
@@ -277,7 +277,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
                 }
                 std::copy(I.begin(),I.end(),source_images.begin() + i*source_images.plane_size());
             }
-            image::io::nifti nii;
+            tipl::io::nifti nii;
             nii.set_dim(geo);
             nii.set_voxel_size(voxel_size.begin());
             nii.set_image_transformation(T.begin());
@@ -294,12 +294,12 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
             T[5] = -T[5];
             T[8] = -T[8];
             T[9] = -T[9];
-            invT = image::inverse(T);
+            invT = tipl::inverse(T);
             has_transform = true;
         }
         else
         {
-            image::io::volume volume;
+            tipl::io::volume volume;
             if(volume.load_from_files(files,files.size()))
             {
                 volume.get_voxel_size(voxel_size.begin());
@@ -325,33 +325,33 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
     // quality control for t1w
     if(correct_intensity)
     {
-        float t = image::segmentation::otsu_threshold(source_images);
-        float snr = image::mean(source_images.begin()+source_images.width(),source_images.begin()+2*source_images.width());
+        float t = tipl::segmentation::otsu_threshold(source_images);
+        float snr = tipl::mean(source_images.begin()+source_images.width(),source_images.begin()+2*source_images.width());
         // correction for SNR
         for(unsigned int i = 0;i < 6 && snr != 0 && t/snr < 10;++i)
         {
-            image::filter::gaussian(source_images);
-            t = image::segmentation::otsu_threshold(source_images);
-            snr = image::mean(source_images.begin()+source_images.width(),source_images.begin()+2*source_images.width());
+            tipl::filter::gaussian(source_images);
+            t = tipl::segmentation::otsu_threshold(source_images);
+            snr = tipl::mean(source_images.begin()+source_images.width(),source_images.begin()+2*source_images.width());
         }
 
         // correction for intensity bias
-        t = image::segmentation::otsu_threshold(source_images);
+        t = tipl::segmentation::otsu_threshold(source_images);
         std::vector<float> x,y;
         for(unsigned char dim = 0;dim < 3;++dim)
         {
             x.clear();
             y.clear();
-            for(image::pixel_index<3> i(source_images.geometry());i < source_images.size();++i)
+            for(tipl::pixel_index<3> i(source_images.geometry());i < source_images.size();++i)
             if(source_images[i.index()] > t)
             {
                 x.push_back(i[dim]);
                 y.push_back(source_images[i.index()]);
             }
-            std::pair<double,double> r = image::linear_regression(x.begin(),x.end(),y.begin());
-            for(image::pixel_index<3> i(source_images.geometry());i < source_images.size();++i)
+            std::pair<double,double> r = tipl::linear_regression(x.begin(),x.end(),y.begin());
+            for(tipl::pixel_index<3> i(source_images.geometry());i < source_images.size();++i)
                 source_images[i.index()] -= (float)i[dim]*r.first;
-            image::lower_threshold(source_images,0);
+            tipl::lower_threshold(source_images,0);
         }
     }
 
@@ -365,11 +365,11 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
             invT[5] = (float)source_images.height()/(float)handle->dim.height();
             invT[10] = (float)source_images.depth()/(float)handle->dim.depth();
             invT[15] = 1.0;
-            T = image::inverse(invT);
+            T = tipl::inverse(invT);
         }
         else
         {
-            from = image::make_image(handle->dir.fa[0],handle->dim);
+            from = tipl::make_image(handle->dir.fa[0],handle->dim);
             size_t iso = handle->get_name_index("iso");// for DDI
             if(handle->view_item.size() != iso)
                 from = handle->view_item[iso].image_data;
@@ -378,11 +378,11 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
                 from = handle->view_item[base_nqa].image_data;
             from_vs = handle->vs;
             thread.reset(new std::future<void>(
-                             std::async(std::launch::async,[this](){argmin(image::reg::rigid_body);})));
+                             std::async(std::launch::async,[this](){argmin(tipl::reg::rigid_body);})));
         }
     }
     geometry = source_images.geometry();
-    handle->view_item.back().image_data = image::make_image(&*source_images.begin(),source_images.geometry());
+    handle->view_item.back().image_data = tipl::make_image(&*source_images.begin(),source_images.geometry());
     handle->view_item.back().set_scale(source_images.begin(),source_images.end());
     handle->view_item.back().name = name;
     slice_pos[0] = geometry.width() >> 1;
@@ -394,23 +394,26 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
 }
 
 // ---------------------------------------------------------------------------
-void CustomSliceModel::argmin(image::reg::reg_type reg_type)
+void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
 {
     terminated = false;
     ended = false;
-    image::const_pointer_image<float,3> to = source_images;
-    image::reg::linear_mr(from,from_vs,to,voxel_size,arg_min,reg_type,image::reg::mutual_information(),terminated,0.1);
-    image::reg::linear_mr(from,from_vs,to,voxel_size,arg_min,reg_type,image::reg::mutual_information(),terminated,0.01);
+    tipl::const_pointer_image<float,3> to = source_images;
+    tipl::transformation_matrix<double> M;
+    tipl::reg::two_way_linear_mr(from,from_vs,to,voxel_size,M,reg_type,tipl::reg::mutual_information(),terminated,
+                                  std::thread::hardware_concurrency(),&arg_min);
     ended = true;
-
+    M.save_to_transform(invT.begin());
+    handle->view_item[view_id].T = T = tipl::inverse(invT);
+    handle->view_item[view_id].iT = invT;
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::update(void)
 {
-    image::transformation_matrix<double> M(arg_min,from.geometry(),from_vs,source_images.geometry(),voxel_size);
+    tipl::transformation_matrix<double> M(arg_min,from.geometry(),from_vs,source_images.geometry(),voxel_size);
     invT.identity();
     M.save_to_transform(invT.begin());
-    handle->view_item[view_id].T = T = image::inverse(invT);
+    handle->view_item[view_id].T = T = tipl::inverse(invT);
     handle->view_item[view_id].iT = invT;
 }
 // ---------------------------------------------------------------------------
@@ -427,13 +430,13 @@ bool CustomSliceModel::stripskull(float qa_threshold)
     if(!ended)
         return false;
     update();
-    image::basic_image<float,3> filter(source_images.geometry());
-    image::resample(from,filter,T,image::linear);
-    image::upper_threshold(filter,qa_threshold);
-    image::filter::gaussian(filter);
-    image::filter::gaussian(filter);
+    tipl::image<float,3> filter(source_images.geometry());
+    tipl::resample(from,filter,T,tipl::linear);
+    tipl::upper_threshold(filter,qa_threshold);
+    tipl::filter::gaussian(filter);
+    tipl::filter::gaussian(filter);
     float m = *std::max_element(source_images.begin(),source_images.end());
     source_images *= filter;
-    image::normalize(source_images,m);
+    tipl::normalize(source_images,m);
     return true;
 }
