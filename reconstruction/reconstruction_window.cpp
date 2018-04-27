@@ -113,7 +113,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         break;
     }
     ui->AdvancedWidget->setVisible(false);
-    ui->ThreadCount->setValue(settings.value("rec_thread_num",2).toInt());
+    ui->ThreadCount->setValue(settings.value("rec_thread_count",std::thread::hardware_concurrency()).toInt());
     ui->NumOfFibers->setValue(settings.value("rec_num_fiber",5).toInt());
     ui->ODFDef->setCurrentIndex(settings.value("rec_gqi_def",0).toInt());
     ui->reg_method->setCurrentIndex(settings.value("rec_reg_method",0).toInt());
@@ -295,7 +295,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
         handle->voxel.external_template = fa_template_list[ui->template_box->currentIndex()];
 
     settings.setValue("rec_method_id",method_id);
-    settings.setValue("rec_thread_num",ui->ThreadCount->value());
+    settings.setValue("rec_thread_count",ui->ThreadCount->value());
     settings.setValue("rec_odf_sharpening",ui->odf_sharpening->currentIndex());
     settings.setValue("rec_num_fiber",ui->NumOfFibers->value());
     settings.setValue("rec_gqi_def",ui->ODFDef->currentIndex());

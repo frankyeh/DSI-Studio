@@ -12,10 +12,11 @@ CONFIG += c++11
 TARGET = dsi_studio
 TEMPLATE = app
 
-
-#LIBS += -lcudart -lcudadevrt -lcuda -lnvrtc -lcublas
-
 win32* {
+# GPU computation
+LIBS += -L"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\lib\x64" -lcudart_static -lcublas
+INCLUDEPATH += "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include"
+
 INCLUDEPATH += ../include
 QMAKE_CXXFLAGS += -wd4244 -wd4267 -wd4018
 RC_FILE = dsi_studio.rc

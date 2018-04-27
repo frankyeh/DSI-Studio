@@ -129,13 +129,13 @@ void Voxel::run(void)
             ++total_voxel;
 
     unsigned int total = 0;
-    tipl::par_for2(mask.size(),
-                    [&](int voxel_index,int thread_index)
+    tipl::par_for_asyn2(mask.size(),
+                    [&](int voxel_index,int thread_id)
     {
         ++total;
         if(terminated || !mask[voxel_index])
             return;
-        if(thread_index == 0)
+        if(thread_id == 0)
         {
             if(prog_aborted())
             {
@@ -144,10 +144,10 @@ void Voxel::run(void)
             }
             check_prog(total,mask.size());
         }
-        voxel_data[thread_index].init();
-        voxel_data[thread_index].voxel_index = voxel_index;
+        voxel_data[thread_id].init();
+        voxel_data[thread_id].voxel_index = voxel_index;
         for (int index = 0; index < process_list.size(); ++index)
-            process_list[index]->run(*this,voxel_data[thread_index]);
+            process_list[index]->run(*this,voxel_data[thread_id]);
     },thread_count);
     check_prog(1,1);
     }

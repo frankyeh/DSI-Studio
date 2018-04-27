@@ -7,7 +7,6 @@
 #include "basic_voxel.hpp"
 #include "image_model.hpp"
 
-
 double base_function(double theta);
 class GQI_Recon  : public BaseProcess
 {
