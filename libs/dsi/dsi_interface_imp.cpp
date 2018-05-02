@@ -85,6 +85,7 @@ typedef boost::mpl::vector<
     BalanceScheme,
     GQI_Recon,
     RDI_Recon,
+    Dwi2Tensor,
     ODFDeconvolusion,
     ODFDecomposition,
     EstimateZ0_MNI,
@@ -97,13 +98,15 @@ typedef boost::mpl::vector<
 typedef odf_reco_type<boost::mpl::vector<
     BalanceScheme,
     GQI_Recon,
-    RDI_Recon
+    RDI_Recon,
+    Dwi2Tensor
 > >::type gqi_process;
 
 typedef boost::mpl::vector<
     ReadDWIData,
     BalanceScheme,
     GQI_Recon,
+    Dwi2Tensor,
     ReadDDIData,
     BalanceScheme,
     GQI_Recon,

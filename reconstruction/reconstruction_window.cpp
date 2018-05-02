@@ -508,8 +508,9 @@ void reconstruction_window::on_DTI_toggled(bool checked)
     ui->ODFOption->setVisible(!checked);
     ui->output_mapping->setVisible(!checked);
     ui->output_jacobian->setVisible(!checked);
-    ui->output_diffusivity->setVisible(checked);
     ui->output_tensor->setVisible(checked);
+    ui->output_diffusivity->setVisible(!checked);
+
     ui->RecordODF->setVisible(!checked);
     ui->rdi->setVisible(!checked);
 
@@ -531,8 +532,8 @@ void reconstruction_window::on_DSI_toggled(bool checked)
 
     ui->output_mapping->setVisible(!checked);
     ui->output_jacobian->setVisible(!checked);
-    ui->output_diffusivity->setVisible(!checked);
     ui->output_tensor->setVisible(!checked);
+    ui->output_diffusivity->setVisible(checked);
 
     ui->RecordODF->setVisible(checked);
     ui->rdi->setVisible(!checked);
@@ -553,8 +554,9 @@ void reconstruction_window::on_QBI_toggled(bool checked)
 
     ui->output_mapping->setVisible(!checked);
     ui->output_jacobian->setVisible(!checked);
-    ui->output_diffusivity->setVisible(!checked);
     ui->output_tensor->setVisible(!checked);
+    ui->output_diffusivity->setVisible(checked);
+
     ui->RecordODF->setVisible(checked);
     ui->rdi->setVisible(!checked);
 
@@ -575,8 +577,9 @@ void reconstruction_window::on_GQI_toggled(bool checked)
 
     ui->output_mapping->setVisible(!checked);
     ui->output_jacobian->setVisible(!checked);
-    ui->output_diffusivity->setVisible(!checked);
     ui->output_tensor->setVisible(!checked);
+    ui->output_diffusivity->setVisible(checked);
+
     ui->RecordODF->setVisible(checked);
 
     ui->rdi->setVisible(checked);
@@ -608,8 +611,9 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
 
     ui->output_mapping->setVisible(checked);
     ui->output_jacobian->setVisible(checked);
-    ui->output_diffusivity->setVisible(!checked);
     ui->output_tensor->setVisible(!checked);
+    ui->output_diffusivity->setVisible(checked);
+
     ui->RecordODF->setVisible(checked);
     ui->rdi->setVisible(checked);
     if(checked)

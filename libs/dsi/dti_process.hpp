@@ -31,7 +31,7 @@ public:
         voxel.fib_fa.resize(voxel.dim.size());
         voxel.fib_dir.clear();
         voxel.fib_dir.resize(voxel.dim.size()*3);
-        if(voxel.output_diffusivity)
+        if(voxel.output_diffusivity || voxel.method_id == 1)
         {
             md.clear();
             md.resize(voxel.dim.size());
@@ -44,7 +44,7 @@ public:
             d3.clear();
             d3.resize(voxel.dim.size());
         }
-        if(voxel.output_tensor)
+        if(voxel.output_tensor && voxel.method_id == 1)
         {
             txx.clear();
             txx.resize(voxel.dim.size());
@@ -108,6 +108,8 @@ public:
 public:
     virtual void run(Voxel& voxel, VoxelData& data)
     {
+        if(!voxel.output_diffusivity && voxel.method_id != 1)
+            return;
         std::vector<float> signal(data.space.size());
         if (data.space.front() != 0.0)
         {
@@ -148,7 +150,7 @@ public:
         }
         std::copy(V,V+3,voxel.fib_dir.begin() + data.voxel_index + data.voxel_index + data.voxel_index);
         data.fa[0] = voxel.fib_fa[data.voxel_index] = get_fa(d[0],d[1],d[2]);
-        if(voxel.output_diffusivity)
+        if(voxel.output_diffusivity || voxel.method_id == 1)
         {
             md[data.voxel_index] = 1000.0*(d[0]+d[1]+d[2])/3.0;
             d0[data.voxel_index] = 1000.0*d[0];
@@ -156,7 +158,7 @@ public:
             d3[data.voxel_index] = 1000.0*d[2];
             d1[data.voxel_index] = 1000.0*(d[1]+d[2])/2.0;
         }
-        if(voxel.output_tensor)
+        if(voxel.output_tensor && voxel.method_id == 1)
         {
             txx[data.voxel_index] = tensor[0];
             txy[data.voxel_index] = tensor[1];
@@ -168,10 +170,24 @@ public:
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
-        mat_writer.write("fa0",&*voxel.fib_fa.begin(),1,voxel.fib_fa.size());
-        mat_writer.write("dir0",&*voxel.fib_dir.begin(),1,voxel.fib_dir.size());
-        if(voxel.output_diffusivity)
+        if(voxel.method_id == 1) // DTI
         {
+            mat_writer.write("fa0",&*voxel.fib_fa.begin(),1,voxel.fib_fa.size());
+            mat_writer.write("dir0",&*voxel.fib_dir.begin(),1,voxel.fib_dir.size());
+            if(voxel.output_tensor)
+            {
+                mat_writer.write("txx",&*txx.begin(),1,txx.size());
+                mat_writer.write("txy",&*txy.begin(),1,txy.size());
+                mat_writer.write("txz",&*txz.begin(),1,txz.size());
+                mat_writer.write("tyy",&*tyy.begin(),1,tyy.size());
+                mat_writer.write("tyz",&*tyz.begin(),1,tyz.size());
+                mat_writer.write("tzz",&*tzz.begin(),1,tzz.size());
+            }
+        }
+        if(voxel.output_diffusivity || voxel.method_id == 1)
+        {
+            if(voxel.method_id != 1) // DTI
+                mat_writer.write("dti_fa",&*voxel.fib_fa.begin(),1,voxel.fib_fa.size());
             mat_writer.write("md",&*md.begin(),1,md.size());
             mat_writer.write("ad",&*d0.begin(),1,d0.size());
             mat_writer.write("rd",&*d1.begin(),1,d1.size());
@@ -187,15 +203,7 @@ public:
             mat_writer.write("cp",&*cp.begin(),1,cp.size());
             */
         }
-        if(voxel.output_tensor)
-        {
-            mat_writer.write("txx",&*txx.begin(),1,txx.size());
-            mat_writer.write("txy",&*txy.begin(),1,txy.size());
-            mat_writer.write("txz",&*txz.begin(),1,txz.size());
-            mat_writer.write("tyy",&*tyy.begin(),1,tyy.size());
-            mat_writer.write("tyz",&*tyz.begin(),1,tyz.size());
-            mat_writer.write("tzz",&*tzz.begin(),1,tzz.size());
-        }
+
     }
 };
 

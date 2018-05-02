@@ -466,7 +466,7 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>-94</y>
+         <y>0</y>
          <width>717</width>
          <height>597</height>
         </rect>
@@ -1017,7 +1017,7 @@
            <item row="4" column="0">
             <widget class="QCheckBox" name="output_tensor">
              <property name="text">
-              <string>Tensor</string>
+              <string>Tensor Matrix</string>
              </property>
             </widget>
            </item>
@@ -1055,7 +1055,7 @@
            <item row="4" column="1">
             <widget class="QCheckBox" name="output_diffusivity">
              <property name="text">
-              <string>Diffusivity</string>
+              <string>DTI measures</string>
              </property>
             </widget>
            </item>
