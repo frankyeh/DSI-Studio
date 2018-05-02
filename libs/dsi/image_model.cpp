@@ -127,7 +127,7 @@ std::string ImageModel::check_b_table(void)
     set_title("checking b-table");
     bool output_dif = voxel.output_diffusivity;
     bool output_tensor = voxel.output_tensor;
-    voxel.output_diffusivity = false;
+    voxel.output_diffusivity = true;
     voxel.output_tensor = false;
     reconstruct<check_btable_process>();
     voxel.output_diffusivity = output_dif;

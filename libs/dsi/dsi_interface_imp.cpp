@@ -395,10 +395,6 @@ const char* ImageModel::reconstruction(void)
             study_src->voxel.load_from_src(*(study_src.get()));
             if(voxel.check_btable)
                 study_src->check_b_table();
-
-
-
-
             begin_prog("Registration between longitudinal scans");
             {
                 tipl::transformation_matrix<double> arg;
@@ -420,6 +416,7 @@ const char* ImageModel::reconstruction(void)
                     voxel.mask[i] = 0;
             // smooth DWI to avoid boosting noise in DDI
             {
+            /*
                 begin_prog("Smoothing");
                 check_prog(0,2);
                 tipl::par_for(src_dwi_data.size(),[&](int i)
@@ -434,6 +431,7 @@ const char* ImageModel::reconstruction(void)
                     tipl::filter::gaussian(I);
                 },voxel.thread_count);
                 check_prog(2,2);
+                */
             }
             // Signal match on b0 to allow for quantitative MRI in DDI
             double r2 = 0.0;
