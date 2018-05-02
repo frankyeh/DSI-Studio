@@ -297,10 +297,11 @@ public:
         voxel.run();
         return !prog_aborted();
     }
-
+    const char* reconstruction(void);
 
 
 };
 
+const char* odf_average(const char* out_name,std::vector<std::string>& file_names);
 
 #endif//IMAGE_MODEL_HPP

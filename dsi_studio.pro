@@ -14,8 +14,8 @@ TEMPLATE = app
 
 win32* {
 # GPU computation
-LIBS += -L"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\lib\x64" -lcudart_static -lcublas
-INCLUDEPATH += "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include"
+# LIBS += -L"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\lib\x64" -lcudart_static -lcublas
+# INCLUDEPATH += "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include"
 
 INCLUDEPATH += ../include
 QMAKE_CXXFLAGS += -wd4244 -wd4267 -wd4018
@@ -60,7 +60,6 @@ HEADERS += mainwindow.h \
     libs/dsi/dti_process.hpp \
     libs/dsi/dsi_process.hpp \
     libs/dsi/basic_voxel.hpp \
-    libs/dsi_interface_static_link.h \
     SliceModel.h \
     tracking/tracking_window.h \
     reconstruction/reconstruction_window.h \

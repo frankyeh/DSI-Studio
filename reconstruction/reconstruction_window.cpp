@@ -2,7 +2,6 @@
 #include <QThread>
 #include "reconstruction_window.h"
 #include "ui_reconstruction_window.h"
-#include "dsi_interface_static_link.h"
 #include "mapping/fa_template.hpp"
 #include "tipl/tipl.hpp"
 #include "mainwindow.h"
@@ -258,15 +257,15 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
 
     if (ui->odf_sharpening->currentIndex() == 1 && method_id != 1) // deconvolution
     {
-        params[2] = ui->decon_param->value();
-        settings.setValue("rec_deconvolution_param",params[2]);
+        handle->voxel.param[2] = ui->decon_param->value();
+        settings.setValue("rec_deconvolution_param",handle->voxel.param[2]);
     }
     if (ui->odf_sharpening->currentIndex() == 2 && method_id != 1) // decomposition
     {
-        params[3] = ui->decom_fraction->value();
-        params[4] = ui->decom_m->value();
-        settings.setValue("rec_decomposition_param",params[3]);
-        settings.setValue("rec_decom_m",params[4]);
+        handle->voxel.param[3] = ui->decom_fraction->value();
+        handle->voxel.param[4] = ui->decom_m->value();
+        settings.setValue("rec_decomposition_param",handle->voxel.param[3]);
+        settings.setValue("rec_decom_m",handle->voxel.param[4]);
     }
     //T1W DMDM
     if(method_id == 7 && ui->reg_method->currentIndex() == 4)
@@ -314,6 +313,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
 
     begin_prog("reconstruction",true);
     int odf_order[8] = {4, 5, 6, 8, 10, 12, 16, 20};
+    handle->voxel.method_id = method_id;
     handle->voxel.ti.init(odf_order[ui->ODFDim->currentIndex()]);
     handle->voxel.odf_deconvolusion = 0;//ui->odf_sharpening->currentIndex() == 1 ? 1 : 0;
     handle->voxel.odf_decomposition = 0;//ui->odf_sharpening->currentIndex() == 2 ? 1 : 0;
@@ -324,14 +324,15 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.max_fiber_number = ui->NumOfFibers->value();
     handle->voxel.r2_weighted = ui->ODFDef->currentIndex();
     handle->voxel.reg_method = ui->reg_method->currentIndex();
-    handle->voxel.need_odf = ui->RecordODF->isChecked() ? 1 : 0;
-    handle->voxel.output_jacobian = ui->output_jacobian->isChecked() ? 1 : 0;
-    handle->voxel.output_mapping = ui->output_mapping->isChecked() ? 1 : 0;
-    handle->voxel.output_diffusivity = ui->output_diffusivity->isChecked() ? 1 : 0;
-    handle->voxel.output_tensor = ui->output_tensor->isChecked() ? 1 : 0;
-    handle->voxel.output_rdi = ui->rdi->isChecked() ? 1 : 0;
+    handle->voxel.need_odf = ui->RecordODF->isChecked();
+    handle->voxel.check_btable = ui->check_btable->isChecked();
+    handle->voxel.output_jacobian = ui->output_jacobian->isChecked();
+    handle->voxel.output_mapping = ui->output_mapping->isChecked();
+    handle->voxel.output_diffusivity = ui->output_diffusivity->isChecked();
+    handle->voxel.output_tensor = ui->output_tensor->isChecked();
+    handle->voxel.output_rdi = ui->rdi->isChecked();
     handle->voxel.thread_count = ui->ThreadCount->value();
-    handle->voxel.ddi_type = ui->ddi_dir->currentIndex() == 0 ? true:false;
+    handle->voxel.ddi_type = ui->ddi_dir->currentIndex() == 0;
 
 
     if(method_id == 7 || method_id == 4 || method_id == 8)
@@ -345,8 +346,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
         handle->voxel.scheme_balance = false;
     }
 
-    const char* msg = (const char*)reconstruction(handle.get(), method_id,
-                                                  params,ui->check_btable->isChecked());
+    const char* msg = handle->reconstruction();
     if (!QFileInfo(msg).exists())
     {
         QMessageBox::information(this,"error",msg,0);
@@ -448,23 +448,23 @@ void reconstruction_window::on_doDTI_clicked()
             if(!load_src(index))
                 return;
         }
-        std::fill(params,params+5,0.0);
+        std::fill(handle->voxel.param.begin(),handle->voxel.param.end(),0.0);
         if(ui->DTI->isChecked())
             doReconstruction(1,index+1 == filenames.size());
         else
         if(ui->DSI->isChecked())
         {
-            params[0] = ui->hamming_filter->value();
-            settings.setValue("rec_hamming_filter",params[0]);
+            handle->voxel.param[0] = ui->hamming_filter->value();
+            settings.setValue("rec_hamming_filter",handle->voxel.param[0]);
             doReconstruction(0,index+1 == filenames.size());
         }
         else
         if(ui->QBI->isChecked())
         {
-            params[0] = ui->regularization_param->value();
-            params[1] = ui->SHOrder->value();
-            settings.setValue("rec_qbi_reg",params[0]);
-            settings.setValue("rec_qbi_sh_order",params[1]);
+            handle->voxel.param[0] = ui->regularization_param->value();
+            handle->voxel.param[1] = ui->SHOrder->value();
+            settings.setValue("rec_qbi_reg",handle->voxel.param[0]);
+            settings.setValue("rec_qbi_sh_order",handle->voxel.param[1]);
             doReconstruction(3,index+1 == filenames.size());
         }
         else
@@ -475,15 +475,15 @@ void reconstruction_window::on_doDTI_clicked()
                 QMessageBox::information(this,"Error","Please assign study SRC file",0);
                 return;
             }
-            params[0] = ui->diffusion_sampling->value();
+            handle->voxel.param[0] = ui->diffusion_sampling->value();
             settings.setValue("rec_gqi_sampling",ui->diffusion_sampling->value());
             doReconstruction(8,index+1 == filenames.size());
         }
         if(ui->GQI->isChecked() || ui->QSDR->isChecked())
         {
-            params[0] = ui->diffusion_sampling->value();
-            if(params[0] == 0.0)
-                params[1] = ui->diffusion_time->value();
+            handle->voxel.param[0] = ui->diffusion_sampling->value();
+            if(handle->voxel.param[0] == 0.0)
+                handle->voxel.param[1] = ui->diffusion_time->value();
             settings.setValue("rec_gqi_sampling",ui->diffusion_sampling->value());
             if(ui->QSDR->isChecked())
                 doReconstruction(7,index+1 == filenames.size());

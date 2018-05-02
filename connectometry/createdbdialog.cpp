@@ -7,7 +7,7 @@
 #include "fib_data.hpp"
 #include "libs/vbc/vbc_database.h"
 #include "prog_interface_static_link.h"
-#include "dsi_interface_static_link.h"
+#include "image_model.hpp"
 
 extern std::string fib_template_file_name_1mm,fib_template_file_name_2mm;
 CreateDBDialog::CreateDBDialog(QWidget *parent,bool create_db_) :

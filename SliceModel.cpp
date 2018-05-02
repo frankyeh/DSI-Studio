@@ -425,18 +425,51 @@ void CustomSliceModel::terminate(void)
     ended = true;
 }
 // ---------------------------------------------------------------------------
-bool CustomSliceModel::stripskull(float qa_threshold)
+extern std::string t1w_template_file_name,t1w_mask_template_file_name;
+bool CustomSliceModel::stripskull(void)
 {
-    if(!ended)
+    gz_nifti in1,in2;
+    tipl::image<float,3> It,Iw;
+    if(!in1.load_from_file(t1w_template_file_name.c_str()) || !in1.toLPS(It))
+    {
+        error_msg = "Cannot load T1W template";
         return false;
-    update();
-    tipl::image<float,3> filter(source_images.geometry());
-    tipl::resample(from,filter,T,tipl::linear);
-    tipl::upper_threshold(filter,qa_threshold);
-    tipl::filter::gaussian(filter);
-    tipl::filter::gaussian(filter);
-    float m = *std::max_element(source_images.begin(),source_images.end());
-    source_images *= filter;
-    tipl::normalize(source_images,m);
+    }
+    if(!in2.load_from_file(t1w_mask_template_file_name.c_str()) || !in2.toLPS(Iw))
+    {
+        error_msg = "Cannot load T1W mask";
+        return false;
+    }
+    tipl::vector<3> Itvs;
+    in1.get_voxel_size(Itvs.begin());
+    bool terminated = false;
+    tipl::transformation_matrix<double> T,iT;
+    tipl::reg::two_way_linear_mr(It,Itvs,source_images,voxel_size,T,
+                                 tipl::reg::affine,tipl::reg::mutual_information(),
+                                 terminated,std::thread::hardware_concurrency(),0);
+    iT = T;
+    iT.inverse();
+    tipl::image<float,3> J(It.geometry());
+    tipl::resample_mt(source_images,J,T,tipl::cubic);
+    J.save_to_file<tipl::io::nifti>("test.nii");
+    tipl::image<tipl::vector<3>,3> dis;
+    tipl::reg::cdm(It,J,dis,terminated,2.0f,0.5);
+    source_images.for_each_mt([&](float& v,const tipl::pixel_index<3>& p){
+        tipl::vector<3> pos(p);
+        iT(pos);
+        if(!dis.geometry().is_valid(pos[0],pos[1],pos[2]))
+        {
+            v = 0;
+            return;
+        }
+        tipl::vector<3> d;
+        if(!tipl::estimate(dis,pos,d))
+            return;
+        pos += d;
+        pos.round();
+        tipl::pixel_index<3> p2(pos[0],pos[1],pos[2],Iw.geometry());
+        if(!Iw.geometry().is_valid(p2) || Iw[p2.index()] < 0.05 )
+            v = 0;
+    });
     return true;
 }

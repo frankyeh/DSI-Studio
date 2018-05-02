@@ -1560,7 +1560,7 @@ void tracking_window::on_actionStrip_skull_for_T1w_image_triggered()
     CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
     if(!reg_slice)
         return;
-    reg_slice->stripskull(renderWidget->getData("fa_threshold").toFloat());
+    reg_slice->stripskull();
     scene.show_slice();
 }
 

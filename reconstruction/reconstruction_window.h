@@ -41,7 +41,6 @@ private:
 private:
     Ui::reconstruction_window *ui;
     std::auto_ptr<ImageModel> handle;
-    float params[5];
     tipl::image<unsigned char, 3>dwi;
     bool load_src(int index);
     void update_dimension(void);

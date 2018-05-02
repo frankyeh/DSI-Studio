@@ -65,11 +65,14 @@ public:
     std::ostringstream recon_report;
     unsigned int thread_count = 1;
     void load_from_src(ImageModel& image_model);
-public:// parameters;
+public:
+    unsigned char method_id;
+    std::vector<float> param;
     tessellated_icosahedron ti;
-    const float* param;
+public:
     std::string file_name;
     bool need_odf = false;
+    bool check_btable = true;
     unsigned int max_fiber_number = 5;
     std::vector<std::string> file_list;
 public:// DTI
@@ -92,6 +95,7 @@ public:// gradient deviation
     std::vector<tipl::image<float,3> > new_grad_dev;
     std::vector<tipl::pointer_image<float,3> > grad_dev;
 public:// used in QSDR
+    float trans_to_mni[16];
     std::string external_template;
     unsigned char reg_method = 0;
     tipl::transformation_matrix<double> qsdr_trans;
@@ -130,6 +134,7 @@ public:// for template creation
 public:
     std::vector<VoxelData> voxel_data;
 public:
+    Voxel(void):param(5){}
     template<class ProcessList>
     void CreateProcesses(void)
     {

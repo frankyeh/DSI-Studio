@@ -95,6 +95,16 @@ void load_file_name(void)
         wm_template_file_name = filename.toStdString();
 
 
+    filename = QCoreApplication::applicationDirPath() + "/mni_icbm152_t1_tal_nlin_asym_09c_mask.nii.gz";
+    if(QFileInfo(filename).exists())
+        t1w_mask_template_file_name = filename.toStdString();
+    filename = QDir::currentPath() + "/mni_icbm152_t1_tal_nlin_asym_09c_mask.nii.gz";
+    if(QFileInfo(filename).exists())
+        t1w_mask_template_file_name = filename.toStdString();
+
+
+
+
     QDir dir = QCoreApplication::applicationDirPath()+ "/template";
     if(!dir.exists())
         dir = QDir::currentPath()+ "/template";

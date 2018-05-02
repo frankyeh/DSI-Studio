@@ -2,7 +2,6 @@
 #include <QFileDialog>
 #include "simulation.h"
 #include "ui_simulation.h"
-#include "libs/dsi_interface_static_link.h"
 #include "mix_gaussian_model.hpp"
 #include "racian_noise.hpp"
 #include "layout.hpp"

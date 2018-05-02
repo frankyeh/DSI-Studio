@@ -651,9 +651,13 @@ bool ImageModel::need_scheme_balance(void)
         calculate_shell();
     if(is_dsi() || shell.size() > 6)
         return false;
-    for(int i = 0;i < shell.size()-1;++i)
-        if(shell[i]-shell[i] < 128)
+    for(int i = 0;i < shell.size();++i)
+    {
+        unsigned int from = shell[i];
+        unsigned int to = (i + 1 == shell.size() ? shell.size():shell[i+1]);
+        if(to-from < 128)
             return true;
+    }
     return false;
 }
 

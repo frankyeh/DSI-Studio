@@ -163,7 +163,7 @@ public:
 
     bool initialize(const std::vector<std::string>& files,bool correct_intensity);
 public:
-    bool stripskull(float qa_threshold);
+    bool stripskull(void);
 };
 
 #endif

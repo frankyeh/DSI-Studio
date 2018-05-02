@@ -25,8 +25,6 @@ protected:
 protected: // for warping other image modality
     std::vector<tipl::image<float,3> > other_image,other_image_x,other_image_y,other_image_z;
 protected:
-    double trans_to_mni[16];
-protected:
     std::vector<float> jdet;
     std::vector<float> mx,my,mz;
 protected:
@@ -82,14 +80,14 @@ public:
             des_geo[1] = std::ceil((VG.height()-1)/resolution_ratio+1);
             des_geo[2] = std::ceil((VG.depth()-1)/resolution_ratio+1);
             // setup transformation matrix
-            std::fill(trans_to_mni,trans_to_mni+16,0.0);
-            trans_to_mni[15] = 1.0;
-            trans_to_mni[0] = -VGvs[0]*resolution_ratio;
-            trans_to_mni[5] = -VGvs[1]*resolution_ratio;
-            trans_to_mni[10] = VGvs[2]*resolution_ratio;
-            trans_to_mni[3] = VGshift[0];
-            trans_to_mni[7] = VGshift[1];
-            trans_to_mni[11] = VGshift[2];
+            std::fill(voxel.trans_to_mni,voxel.trans_to_mni+16,0.0);
+            voxel.trans_to_mni[15] = 1.0;
+            voxel.trans_to_mni[0] = -VGvs[0]*resolution_ratio;
+            voxel.trans_to_mni[5] = -VGvs[1]*resolution_ratio;
+            voxel.trans_to_mni[10] = VGvs[2]*resolution_ratio;
+            voxel.trans_to_mni[3] = VGshift[0];
+            voxel.trans_to_mni[7] = VGshift[1];
+            voxel.trans_to_mni[11] = VGshift[2];
         }
 
         bool export_intermediate = false;
@@ -317,10 +315,10 @@ public:
 
         if(VG.geometry() == tipl::geometry<3>(157,189,136)) // if default template is used
         {
-            voxel.csf_pos1 = mni_to_voxel_index(6,0,18);
-            voxel.csf_pos2 = mni_to_voxel_index(-6,0,18);
-            voxel.csf_pos3 = mni_to_voxel_index(4,18,10);
-            voxel.csf_pos4 = mni_to_voxel_index(-4,18,10);
+            voxel.csf_pos1 = mni_to_voxel_index(voxel,6,0,18);
+            voxel.csf_pos2 = mni_to_voxel_index(voxel,-6,0,18);
+            voxel.csf_pos3 = mni_to_voxel_index(voxel,4,18,10);
+            voxel.csf_pos4 = mni_to_voxel_index(voxel,-4,18,10);
         }
         else
         {
@@ -339,11 +337,11 @@ public:
         voxel.qsdr = true;
     }
 
-    tipl::vector<3,int> mni_to_voxel_index(int x,int y,int z) const
+    tipl::vector<3,int> mni_to_voxel_index(Voxel& voxel,int x,int y,int z) const
     {               
-        x = trans_to_mni[3]-x;
-        y = trans_to_mni[7]-y;
-        z -= trans_to_mni[11];
+        x = voxel.trans_to_mni[3]-x;
+        y = voxel.trans_to_mni[7]-y;
+        z -= voxel.trans_to_mni[11];
         x /= resolution_ratio;
         y /= resolution_ratio;
         z /= resolution_ratio;
@@ -493,7 +491,7 @@ public:
             });
             mat_writer.write("t1w",&output_t1w[0],1,output_t1w.size());
         }
-        mat_writer.write("trans",&*trans_to_mni,4,4);
+        mat_writer.write("trans",voxel.trans_to_mni,4,4);
         mat_writer.write("R2",&voxel.R2,1,1);
     }
 

@@ -5,7 +5,6 @@
 #include <string>
 #include "tipl/tipl.hpp"
 #include "libs/dsi/image_model.hpp"
-#include "dsi_interface_static_link.h"
 #include "mapping/fa_template.hpp"
 #include "libs/gzip_interface.hpp"
 #include "reconstruction/reconstruction_window.h"
@@ -60,35 +59,31 @@ int rec(void)
         handle->rotate(handle->voxel.dim,affine);
     }
 
-    float param[4] = {0,0,0,0};
-    int method_index = 0;
-
-
-    method_index = po.get("method",int(0));
+    int method_index = po.get("method",int(0));
     std::cout << "method=" << method_index << std::endl;
 
     if(method_index == 0) // DSI
-        param[0] = 17.0f;
+        handle->voxel.param[0] = 17.0f;
     if(method_index == 2)
     {
-        param[0] = 5.0f;
-        param[1] = 15.0f;
+        handle->voxel.param[0] = 5.0f;
+        handle->voxel.param[1] = 15.0f;
     }
     if(method_index == 3) // QBI-SH
     {
-        param[0] = 0.006f;
-        param[1] = 8.0f;
+        handle->voxel.param[0] = 0.006f;
+        handle->voxel.param[1] = 8.0f;
     }
     if(method_index == 4)
-        param[0] = 1.2f;
+        handle->voxel.param[0] = 1.2f;
     if(method_index == 6) // Convert to HARDI
     {
-        param[0] = 1.25f;
-        param[1] = 3000.0f;
-        param[2] = 0.05f;
+        handle->voxel.param[0] = 1.25f;
+        handle->voxel.param[1] = 3000.0f;
+        handle->voxel.param[2] = 0.05f;
     }
     if(method_index == 7) // QSDR
-        param[0] = 1.25f;
+        handle->voxel.param[0] = 1.25f;
     if(method_index == 8) // DDI
     {
         if (!po.has("study_src"))
@@ -110,41 +105,43 @@ int rec(void)
     }
     if(po.get("deconvolution",int(0)))
     {
-        param[2] = 7.0f;
+        handle->voxel.param[2] = 7.0f;
     }
     if(po.get("decomposition",int(0)))
     {
-        param[3] = 0.05f;
-        param[4] = 10.0f;
+        handle->voxel.param[3] = 0.05f;
+        handle->voxel.param[4] = 10.0f;
     }
     if (po.has("param0"))
     {
-        param[0] = po.get("param0",float(0));
-        std::cout << "param0=" << param[0] << std::endl;
+        handle->voxel.param[0] = po.get("param0",float(0));
+        std::cout << "param0=" << handle->voxel.param[0] << std::endl;
     }
     if (po.has("param1"))
     {
-        param[1] = po.get("param1",float(0));
-        std::cout << "param1=" << param[1] << std::endl;
+        handle->voxel.param[1] = po.get("param1",float(0));
+        std::cout << "param1=" << handle->voxel.param[1] << std::endl;
     }
     if (po.has("param2"))
     {
-        param[2] = po.get("param2",float(0));
-        std::cout << "param2=" << param[2] << std::endl;
+        handle->voxel.param[2] = po.get("param2",float(0));
+        std::cout << "param2=" << handle->voxel.param[2] << std::endl;
     }
     if (po.has("param3"))
     {
-        param[3] = po.get("param3",float(0));
-        std::cout << "param3=" << param[3] << std::endl;
+        handle->voxel.param[3] = po.get("param3",float(0));
+        std::cout << "param3=" << handle->voxel.param[3] << std::endl;
     }
     if (po.has("param4"))
     {
-        param[4] = po.get("param4",float(0));
-        std::cout << "param4=" << param[4] << std::endl;
+        handle->voxel.param[4] = po.get("param4",float(0));
+        std::cout << "param4=" << handle->voxel.param[4] << std::endl;
     }
 
+    handle->voxel.method_id = method_index;
     handle->voxel.ti.init(po.get("odf_order",int(8)));
     handle->voxel.need_odf = po.get("record_odf",int(0));
+    handle->voxel.check_btable = po.get("check_btable",int(1));
     handle->voxel.output_jacobian = po.get("output_jac",int(0));
     handle->voxel.output_mapping = po.get("output_map",int(0));
     handle->voxel.output_diffusivity = po.get("output_dif",int(1));
@@ -250,8 +247,7 @@ int rec(void)
         std::cout << "Done." <<std::endl;
     }
     std::cout << "start reconstruction..." <<std::endl;
-    const char* msg = reconstruction(handle.get(),method_index,
-                                     param,po.get("check_btable",int(1)));
+    const char* msg = handle->reconstruction();
     if (!msg)
         std::cout << "Reconstruction finished." << std::endl;
     else

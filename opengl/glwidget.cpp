@@ -634,6 +634,7 @@ void GLWidget::renderLR()
 
         if(get_param("tract_shader"))
         {
+            /*
             if(!shader.get())
             {
                 QFile source1(":/data/shader_fragment.txt"),source2(":/data/shader_vertex.txt"),
@@ -667,9 +668,11 @@ void GLWidget::renderLR()
                 else
                     std::cout << "Failed to load shader." << std::endl;
             }
+            */
         }
-        if(shader.get() && get_param("tract_shader"))
+        //if(shader.get() && get_param("tract_shader"))
         {
+            /*
             if(!shader->bind())
                 std::cout << "Shader failed to bind:" << shader->log().toStdString() << std::endl;
 
@@ -680,7 +683,6 @@ void GLWidget::renderLR()
 
             shader->setUniformValue( s_mvp,mvp);
             //shader2->setUniformValue( s_mvp2, mvp);
-            /*
             QOpenGLFunctions *glFuncs = QOpenGLContext::currentContext()->functions();
 
             GLuint FramebufferName = 0;
@@ -730,8 +732,8 @@ void GLWidget::renderLR()
         glDisable(GL_BLEND);
         glDisable(GL_TEXTURE_2D);
         glDepthMask(true);
-        if(shader.get() && get_param("tract_shader"))
-            shader->release();
+        //if(shader.get() && get_param("tract_shader"))
+        //    shader->release();
         check_error("show_tract");
     }
 
@@ -2143,6 +2145,19 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
                 tipl::filter::gaussian(crop_image);
                 break;
             case 2:
+                {
+                tipl::image<unsigned char,3> mask(crop_image);
+                for(int i = 0;i < mask.size();++i)
+                    mask[i] = (crop_image[i] > threshold? 1:0);
+                tipl::morphology::defragment(mask);
+                tipl::morphology::negate(mask);
+                tipl::morphology::defragment(mask);
+                tipl::morphology::negate(mask);
+                for(int i = 0;i < mask.size();++i)
+                    if(mask[i] == 0)
+                        crop_image[i] = 0;
+
+                }
                 tipl::filter::gaussian(crop_image);
                 tipl::filter::gaussian(crop_image);
                 break;

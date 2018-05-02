@@ -6,6 +6,7 @@
 #include <QClipboard>
 #include <QSettings>
 #include <QTableWidgetItem>
+#include <QTextStream>
 #include "regiontablewidget.h"
 #include "tracking/tracking_window.h"
 #include "qcolorcombobox.h"

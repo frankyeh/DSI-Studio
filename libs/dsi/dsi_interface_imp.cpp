@@ -164,238 +164,234 @@ typedef boost::mpl::vector<
 > reprocess_odf;
 
 
-const char* reconstruction(ImageModel* image_model,
-                           unsigned int method_id,
-                           const float* param_values,
-                           bool check_b_table)
+const char* ImageModel::reconstruction(void)
 {
     static std::string output_name;
     try
     {
-        if(!image_model->is_human_data())
-            image_model->voxel.csf_calibration = false;
-        image_model->voxel.recon_report.clear();
-        image_model->voxel.recon_report.str("");
-        image_model->voxel.param = param_values;
+        if(!is_human_data())
+            voxel.csf_calibration = false;
+        voxel.recon_report.clear();
+        voxel.recon_report.str("");
         std::ostringstream out;
-        if(method_id != 4 && method_id != 7)
-            image_model->voxel.output_rdi = 0;
-        if(method_id == 1) // DTI
+        if(voxel.method_id != 4 && voxel.method_id != 7)
+            voxel.output_rdi = 0;
+        if(voxel.method_id == 1) // DTI
         {
-            image_model->voxel.need_odf = 0;
-            image_model->voxel.output_jacobian = 0;
-            image_model->voxel.output_mapping = 0;
-            image_model->voxel.scheme_balance = 0;
-            image_model->voxel.half_sphere = 0;
-            image_model->voxel.odf_deconvolusion = 0;
-            image_model->voxel.odf_decomposition = 0;
+            voxel.need_odf = 0;
+            voxel.output_jacobian = 0;
+            voxel.output_mapping = 0;
+            voxel.scheme_balance = 0;
+            voxel.half_sphere = 0;
+            voxel.odf_deconvolusion = 0;
+            voxel.odf_decomposition = 0;
         }
         else
         {
-            if(method_id == 8) // DDI
+            if(voxel.method_id == 8) // DDI
             {
-                image_model->voxel.odf_deconvolusion = 0;
-                image_model->voxel.odf_decomposition = 0;
-                image_model->voxel.csf_calibration = false;
+                voxel.odf_deconvolusion = 0;
+                voxel.odf_decomposition = 0;
+                voxel.csf_calibration = false;
             }
-            out << ".odf" << image_model->voxel.ti.fold;// odf_order
-            out << ".f" << image_model->voxel.max_fiber_number;
-            if (image_model->voxel.need_odf)
+            out << ".odf" << voxel.ti.fold;// odf_order
+            out << ".f" << voxel.max_fiber_number;
+            if (voxel.need_odf)
                 out << "rec";
-            if (image_model->voxel.scheme_balance)
+            if (voxel.scheme_balance)
                 out << ".bal";
-            if (image_model->voxel.half_sphere)
+            if (voxel.half_sphere)
                 out << ".hs";
-            if (image_model->voxel.csf_calibration && method_id == 4) // GQI
+            if (voxel.csf_calibration && voxel.method_id == 4) // GQI
                 out << ".csfc";
             else
-                image_model->voxel.csf_calibration = false;
-            if (image_model->voxel.odf_deconvolusion)
+                voxel.csf_calibration = false;
+            if (voxel.odf_deconvolusion)
             {
-                out << ".de" << param_values[2];
-                if(image_model->voxel.odf_xyz[0] != 0 ||
-                   image_model->voxel.odf_xyz[1] != 0 ||
-                   image_model->voxel.odf_xyz[2] != 0)
-                    out << ".at_" << image_model->voxel.odf_xyz[0]
-                        << "_" << image_model->voxel.odf_xyz[1]
-                        << "_" << image_model->voxel.odf_xyz[2];
+                out << ".de" << voxel.param[2];
+                if(voxel.odf_xyz[0] != 0 ||
+                   voxel.odf_xyz[1] != 0 ||
+                   voxel.odf_xyz[2] != 0)
+                    out << ".at_" << voxel.odf_xyz[0]
+                        << "_" << voxel.odf_xyz[1]
+                        << "_" << voxel.odf_xyz[2];
             }
-            if (image_model->voxel.odf_decomposition)
+            if (voxel.odf_decomposition)
             {
-                out << ".dec" << param_values[3] << "m" << (int)param_values[4];
-                if(image_model->voxel.odf_xyz[0] != 0 ||
-                   image_model->voxel.odf_xyz[1] != 0 ||
-                   image_model->voxel.odf_xyz[2] != 0)
-                    out << ".at_" << image_model->voxel.odf_xyz[0]
-                        << "_" << image_model->voxel.odf_xyz[1]
-                        << "_" << image_model->voxel.odf_xyz[2];
+                out << ".dec" << voxel.param[3] << "m" << (int)voxel.param[4];
+                if(voxel.odf_xyz[0] != 0 ||
+                   voxel.odf_xyz[1] != 0 ||
+                   voxel.odf_xyz[2] != 0)
+                    out << ".at_" << voxel.odf_xyz[0]
+                        << "_" << voxel.odf_xyz[1]
+                        << "_" << voxel.odf_xyz[2];
             }
         }
 
         // Copy SRC b-table to voxel b-table and sort it
-        image_model->voxel.load_from_src(*image_model);
+        voxel.load_from_src(*this);
 
         // correct for b-table orientation
-        if(check_b_table)
-            out << image_model->check_b_table();
+        if(voxel.check_btable)
+            out << check_b_table();
 
-        switch (method_id)
+        switch (voxel.method_id)
         {
         case 0: //DSI local max
-            image_model->voxel.recon_report <<
-            " The diffusion data were reconstructed using diffusion spectrum imaging (Wedeen et al. MRM, 2005) with a Hanning filter of " << (int)param_values[0] << ".";
-            if (image_model->voxel.odf_deconvolusion || image_model->voxel.odf_decomposition)
+            voxel.recon_report <<
+            " The diffusion data were reconstructed using diffusion spectrum imaging (Wedeen et al. MRM, 2005) with a Hanning filter of " << (int)voxel.param[0] << ".";
+            if (voxel.odf_deconvolusion || voxel.odf_decomposition)
             {
-                if (!image_model->reconstruct<dsi_estimate_response_function>())
+                if (!reconstruct<dsi_estimate_response_function>())
                     return "reconstruction canceled";
             }
-            out << ".dsi."<< (int)param_values[0] << ".fib.gz";
-            if (!image_model->reconstruct<dsi_process>())
+            out << ".dsi."<< (int)voxel.param[0] << ".fib.gz";
+            if (!reconstruct<dsi_process>())
                 return "reconstruction canceled";
             break;
         case 1://DTI
-            image_model->voxel.recon_report << " The diffusion tensor was calculated.";
+            voxel.recon_report << " The diffusion tensor was calculated.";
             out << ".dti.fib.gz";
-            image_model->voxel.max_fiber_number = 1;
-            if (!image_model->reconstruct<dti_process>())
+            voxel.max_fiber_number = 1;
+            if (!reconstruct<dti_process>())
                 return "reconstruction canceled";
             break;
 
         case 2://QBI
-            image_model->voxel.recon_report << " The diffusion data was reconstructed using q-ball imaging (Tuch, MRM 2004).";
-            if (image_model->voxel.odf_deconvolusion || image_model->voxel.odf_decomposition)
+            voxel.recon_report << " The diffusion data was reconstructed using q-ball imaging (Tuch, MRM 2004).";
+            if (voxel.odf_deconvolusion || voxel.odf_decomposition)
             {
-                if (!image_model->reconstruct<qbi_estimate_response_function>())
+                if (!reconstruct<qbi_estimate_response_function>())
                     return "reconstruction canceled";
             }
-            out << ".qbi."<< param_values[0] << "_" << param_values[1] << ".fib.gz";
-            if (!image_model->reconstruct<qbi_process>())
+            out << ".qbi."<< voxel.param[0] << "_" << voxel.param[1] << ".fib.gz";
+            if (!reconstruct<qbi_process>())
                 return "reconstruction canceled";
             break;
         case 3://QBI
-            image_model->voxel.recon_report << " The diffusion data was reconstructed using spherical-harmonic-based q-ball imaging (Descoteaux et al., MRM 2007).";
-            if (image_model->voxel.odf_deconvolusion || image_model->voxel.odf_decomposition)
+            voxel.recon_report << " The diffusion data was reconstructed using spherical-harmonic-based q-ball imaging (Descoteaux et al., MRM 2007).";
+            if (voxel.odf_deconvolusion || voxel.odf_decomposition)
             {
-                if (!image_model->reconstruct<qbi_sh_estimate_response_function>())
+                if (!reconstruct<qbi_sh_estimate_response_function>())
                     return "reconstruction canceled";
             }
-            out << ".qbi.sh"<< (int) param_values[1] << "." << param_values[0] << ".fib.gz";
-            if (!image_model->reconstruct<qbi_sh_process>())
+            out << ".qbi.sh"<< (int) voxel.param[1] << "." << voxel.param[0] << ".fib.gz";
+            if (!reconstruct<qbi_sh_process>())
                 return "reconstruction canceled";
             break;
 
         case 4://GQI
-            if(param_values[0] == 0.0) // spectral analysis
+            if(voxel.param[0] == 0.0) // spectral analysis
             {
-                image_model->voxel.recon_report <<
+                voxel.recon_report <<
                 " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010).";
-                out << (image_model->voxel.r2_weighted ? ".gqi2.spec.fib.gz":".gqi.spec.fib.gz");
-                if (!image_model->reconstruct<gqi_spectral_process>())
+                out << (voxel.r2_weighted ? ".gqi2.spec.fib.gz":".gqi.spec.fib.gz");
+                if (!reconstruct<gqi_spectral_process>())
                     return "reconstruction canceled";
                 break;
             }
-            image_model->voxel.recon_report <<
-            " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010) with a diffusion sampling length ratio of " << (float)param_values[0] << ".";
-            if(image_model->voxel.output_rdi)
-                image_model->voxel.recon_report <<
+            voxel.recon_report <<
+            " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010) with a diffusion sampling length ratio of " << (float)voxel.param[0] << ".";
+            if(voxel.output_rdi)
+                voxel.recon_report <<
                     " The restricted diffusion was quantified using restricted diffusion imaging (Yeh et al., MRM, 77:603–612 (2017)).";
 
-            if (image_model->voxel.odf_deconvolusion || image_model->voxel.odf_decomposition)
+            if (voxel.odf_deconvolusion || voxel.odf_decomposition)
             {
-                if (!image_model->reconstruct<gqi_estimate_response_function>())
+                if (!reconstruct<gqi_estimate_response_function>())
                     return "reconstruction canceled";
             }
-            if(image_model->voxel.r2_weighted)
-                image_model->voxel.recon_report << " The ODF calculation was weighted by the square of the diffuion displacement.";
-            if (image_model->voxel.output_rdi)
+            if(voxel.r2_weighted)
+                voxel.recon_report << " The ODF calculation was weighted by the square of the diffuion displacement.";
+            if (voxel.output_rdi)
                 out << ".rdi";
-            out << (image_model->voxel.r2_weighted ? ".gqi2.":".gqi.") << param_values[0] << ".fib.gz";
+            out << (voxel.r2_weighted ? ".gqi2.":".gqi.") << voxel.param[0] << ".fib.gz";
 
-            if(image_model->src_dwi_data.size() == 1)
+            if(src_dwi_data.size() == 1)
             {
-                if (!image_model->reconstruct<hgqi_process>())
+                if (!reconstruct<hgqi_process>())
                     return "reconstruction canceled";
                 break;
             }
 
-            if (!image_model->reconstruct<gqi_process>())
+            if (!reconstruct<gqi_process>())
                 return "reconstruction canceled";
             break;
         case 6:
-            image_model->voxel.recon_report
-                    << " The diffusion data were converted to HARDI using generalized q-sampling method with a regularization parameter of " << param_values[2] << ".";
-            out << ".hardi."<< param_values[0]
-                << ".b" << param_values[1]
-                << ".reg" << param_values[2] << ".src.gz";
-            if (!image_model->reconstruct<hardi_convert_process>())
+            voxel.recon_report
+                    << " The diffusion data were converted to HARDI using generalized q-sampling method with a regularization parameter of " << voxel.param[2] << ".";
+            out << ".hardi."<< voxel.param[0]
+                << ".b" << voxel.param[1]
+                << ".reg" << voxel.param[2] << ".src.gz";
+            if (!reconstruct<hardi_convert_process>())
                 return "reconstruction canceled";
             break;
         case 7:
-            if(image_model->voxel.reg_method == 4) // CDM
+            if(voxel.reg_method == 4) // CDM
             {
-                if(!image_model->voxel.external_template.empty())
+                if(!voxel.external_template.empty())
                     return "T1W-CDM does not support using an external template";
                 {
                     gz_nifti in;
-                    if(!in.load_from_file(t1w_template_file_name.c_str()) || !in.toLPS(image_model->voxel.t1wt))
+                    if(!in.load_from_file(t1w_template_file_name.c_str()) || !in.toLPS(voxel.t1wt))
                         return "Cannot load T1W template";
-                    in.get_voxel_size(image_model->voxel.t1wt_vs.begin());
-                    in.get_image_transformation(image_model->voxel.t1wt_tran);
+                    in.get_voxel_size(voxel.t1wt_vs.begin());
+                    in.get_image_transformation(voxel.t1wt_tran);
                 }
                 {
                     gz_nifti in;
-                    if(!in.load_from_file(image_model->voxel.t1w_file_name.c_str()) || !in.toLPS(image_model->voxel.t1w))
+                    if(!in.load_from_file(voxel.t1w_file_name.c_str()) || !in.toLPS(voxel.t1w))
                         return "Cannot load T1W for DMDM normaliztion";
-                    in.get_voxel_size(image_model->voxel.t1w_vs.begin());
+                    in.get_voxel_size(voxel.t1w_vs.begin());
                 }
             }
 
 
-            image_model->voxel.recon_report
+            voxel.recon_report
             << " The diffusion data were reconstructed in the MNI space using q-space diffeomorphic reconstruction (Yeh et al., Neuroimage, 58(1):91-9, 2011) to obtain the spin distribution function (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010). "
             << " A diffusion sampling length ratio of "
-            << (float)param_values[0] << " was used";
+            << (float)voxel.param[0] << " was used";
             // run gqi to get the spin quantity
 
-            if(image_model->voxel.output_rdi)
-                image_model->voxel.recon_report <<
+            if(voxel.output_rdi)
+                voxel.recon_report <<
                     " The restricted diffusion was quantified using restricted diffusion imaging (Yeh et al., MRM, 77:603–612 (2017)).";
 
             {
                 std::vector<tipl::pointer_image<float,3> > tmp;
-                tmp.swap(image_model->voxel.grad_dev);
+                tmp.swap(voxel.grad_dev);
                 // clear mask to create whole volume QA map
-                std::fill(image_model->voxel.mask.begin(),image_model->voxel.mask.end(),1.0);
-                if (!image_model->reconstruct<gqi_estimate_response_function>())
+                std::fill(voxel.mask.begin(),voxel.mask.end(),1.0);
+                if (!reconstruct<gqi_estimate_response_function>())
                     return "reconstruction canceled";
-                tmp.swap(image_model->voxel.grad_dev);
+                tmp.swap(voxel.grad_dev);
             }
 
-            if(image_model->voxel.reg_method < 4) // 0,1,2 SPM norm, 3 CDM, 4 CDM-T1W
+            if(voxel.reg_method < 4) // 0,1,2 SPM norm, 3 CDM, 4 CDM-T1W
             {
-                if(image_model->voxel.reg_method == 3)
+                if(voxel.reg_method == 3)
                     out << ".cdm";
                 else
-                    out << ".reg" << (int)image_model->voxel.reg_method;
+                    out << ".reg" << (int)voxel.reg_method;
             }
             else
                 out << ".cdmt1w";
 
 
-            out << (image_model->voxel.r2_weighted ? ".qsdr2.":".qsdr.");
-            out << param_values[0];
-            if(image_model->voxel.output_jacobian)
+            out << (voxel.r2_weighted ? ".qsdr2.":".qsdr.");
+            out << voxel.param[0];
+            if(voxel.output_jacobian)
                 out << ".jac";
-            if(image_model->voxel.output_mapping)
+            if(voxel.output_mapping)
                 out << ".map";
-            if (!image_model->reconstruct<qsdr_process>())
+            if (!reconstruct<qsdr_process>())
                 return "reconstruction canceled";
-            out << ".R" << (int)std::floor(image_model->voxel.R2*100.0) << ".fib.gz";
+            out << ".R" << (int)std::floor(voxel.R2*100.0) << ".fib.gz";
             break;
         case 8: // DDI
-            image_model->study_src->voxel.load_from_src(*(image_model->study_src.get()));
-            if(check_b_table)
-                image_model->study_src->check_b_table();
+            study_src->voxel.load_from_src(*(study_src.get()));
+            if(voxel.check_btable)
+                study_src->check_b_table();
 
 
 
@@ -405,73 +401,73 @@ const char* reconstruction(ImageModel* image_model,
                 tipl::transformation_matrix<double> arg;
                 bool terminated = false;
                 check_prog(0,1);
-                tipl::reg::two_way_linear_mr(image_model->dwi_sum,
-                                              image_model->voxel.vs,
-                                              image_model->study_src->dwi_sum,
-                                              image_model->study_src->voxel.vs,
+                tipl::reg::two_way_linear_mr(dwi_sum,
+                                              voxel.vs,
+                                              study_src->dwi_sum,
+                                              study_src->voxel.vs,
                                 arg,tipl::reg::rigid_body,tipl::reg::correlation(),terminated);
-                image_model->study_src->rotate(image_model->dwi_sum,arg);
-                image_model->study_src->voxel.load_from_src(*(image_model->study_src.get()));
-                image_model->study_src->voxel.vs = image_model->voxel.vs;
+                study_src->rotate(dwi_sum,arg);
+                study_src->voxel.load_from_src(*(study_src.get()));
+                study_src->voxel.vs = voxel.vs;
                 check_prog(1,1);
             }
             // update mask to cover both regions
-            for(int i = 0;i < image_model->voxel.mask.size();++i)
-                if(image_model->study_src->src_dwi_data[0][i] == 0)
-                    image_model->voxel.mask[i] = 0;
+            for(int i = 0;i < voxel.mask.size();++i)
+                if(study_src->src_dwi_data[0][i] == 0)
+                    voxel.mask[i] = 0;
             // smooth DWI to avoid boosting noise in DDI
             {
                 begin_prog("Smoothing");
                 check_prog(0,2);
-                tipl::par_for(image_model->src_dwi_data.size(),[&](int i)
+                tipl::par_for(src_dwi_data.size(),[&](int i)
                 {
-                    auto I = tipl::make_image((unsigned short*)image_model->src_dwi_data[i],image_model->voxel.dim);
+                    auto I = tipl::make_image((unsigned short*)src_dwi_data[i],voxel.dim);
                     tipl::filter::gaussian(I);
-                },image_model->voxel.thread_count);
+                },voxel.thread_count);
                 check_prog(1,2);
-                tipl::par_for(image_model->study_src->new_dwi.size(),[&](int i)
+                tipl::par_for(study_src->new_dwi.size(),[&](int i)
                 {
-                    auto I = tipl::make_image((unsigned short*)&image_model->study_src->new_dwi[i][0],image_model->study_src->voxel.dim);
+                    auto I = tipl::make_image((unsigned short*)&study_src->new_dwi[i][0],study_src->voxel.dim);
                     tipl::filter::gaussian(I);
-                },image_model->voxel.thread_count);
+                },voxel.thread_count);
                 check_prog(2,2);
             }
             // Signal match on b0 to allow for quantitative MRI in DDI
             double r2 = 0.0;
             {
                 double a,b;
-                tipl::linear_regression(image_model->study_src->src_dwi_data[0],
-                                                     image_model->study_src->src_dwi_data[0]+
-                                                     image_model->study_src->voxel.dim.size(),
-                                                     image_model->src_dwi_data[0],a,b,r2);
+                tipl::linear_regression(study_src->src_dwi_data[0],
+                                                     study_src->src_dwi_data[0]+
+                                                     study_src->voxel.dim.size(),
+                                                     src_dwi_data[0],a,b,r2);
                 std::cout << "y=" << a << "x+" << b << " r2=" << r2 << std::endl;
-                tipl::par_for(image_model->study_src->new_dwi.size(),[&](int i)
+                tipl::par_for(study_src->new_dwi.size(),[&](int i)
                 {
-                    tipl::multiply_constant(image_model->study_src->new_dwi[i].begin(),image_model->study_src->new_dwi[i].end(),a);
-                    tipl::add_constant(image_model->study_src->new_dwi[i].begin(),image_model->study_src->new_dwi[i].end(),b);
-                    tipl::lower_threshold(image_model->study_src->new_dwi[i].begin(),image_model->study_src->new_dwi[i].end(),0.0f);
-                },image_model->voxel.thread_count);
+                    tipl::multiply_constant(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),a);
+                    tipl::add_constant(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),b);
+                    tipl::lower_threshold(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),0.0f);
+                },voxel.thread_count);
 
             }
-            image_model->voxel.study_data = &(image_model->study_src->voxel);
+            voxel.study_data = &(study_src->voxel);
 
-            image_model->voxel.recon_report <<
+            voxel.recon_report <<
             " The diffusion data were compared with baseline scan using diffusion difference imaging with a diffusion sampling length ratio of "
-            << (float)param_values[0] << " to study " << (image_model->voxel.ddi_type ? "increased":"decreased") << " connectivity.";
+            << (float)voxel.param[0] << " to study " << (voxel.ddi_type ? "increased":"decreased") << " connectivity.";
 
-            if(image_model->voxel.r2_weighted)
-                image_model->voxel.recon_report << " The ODF calculation was weighted by the square of the diffuion displacement.";
-            out << "." << image_model->voxel.study_name
+            if(voxel.r2_weighted)
+                voxel.recon_report << " The ODF calculation was weighted by the square of the diffuion displacement.";
+            out << "." << voxel.study_name
                 << ".R" << (int)(r2*100.0f)
-                << (image_model->voxel.r2_weighted ? ".ddi2":".ddi")
-                << (image_model->voxel.ddi_type ? ".inc.":".dec.")
-                << param_values[0] << ".fib.gz";
-            if (!image_model->reconstruct<ddi_process>())
+                << (voxel.r2_weighted ? ".ddi2":".ddi")
+                << (voxel.ddi_type ? ".inc.":".dec.")
+                << voxel.param[0] << ".fib.gz";
+            if (!reconstruct<ddi_process>())
                 return "reconstruction canceled";
             break;
         }
-        image_model->save_fib(out.str());
-        output_name = image_model->file_name + out.str();
+        save_fib(out.str());
+        output_name = file_name + out.str();
     }
     catch (std::exception& e)
     {
@@ -505,9 +501,9 @@ bool output_odfs(const tipl::image<unsigned char,3>& mni_mask,
     image_model.voxel.max_fiber_number = 5;
     image_model.voxel.need_odf = record_odf;
     image_model.voxel.template_odfs.swap(odfs);
-    image_model.voxel.param = mni;
     image_model.file_name = out_name;
     image_model.voxel.mask = mni_mask;
+    std::copy(mni,mni+16,image_model.voxel.trans_to_mni);
     std::copy(vs,vs+3,image_model.voxel.vs.begin());
     if (prog_aborted() || !image_model.reconstruct<reprocess_odf>())
         return false;

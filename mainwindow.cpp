@@ -12,7 +12,6 @@
 #include <qmessagebox.h>
 #include "filebrowser.h"
 #include "reconstruction/reconstruction_window.h"
-#include "dsi_interface_static_link.h"
 #include "prog_interface_static_link.h"
 #include "tracking/tracking_window.h"
 #include "mainwindow.h"
@@ -833,7 +832,8 @@ void MainWindow::on_ReconstructSRC_clicked()
             return;
         }
 
-        float params[5] = {1.25,0,0,0,0};
+        handle->voxel.method_id = 7; // QSDR
+        handle->voxel.param[0] = 1.25f;
         handle->voxel.ti.init(8); // odf order of 8
         handle->voxel.odf_deconvolusion = 0;//ui->odf_sharpening->currentIndex() == 1 ? 1 : 0;
         handle->voxel.odf_decomposition = 0;//ui->odf_sharpening->currentIndex() == 2 ? 1 : 0;
@@ -844,12 +844,13 @@ void MainWindow::on_ReconstructSRC_clicked()
         handle->voxel.max_fiber_number = 5;
         handle->voxel.r2_weighted = 0;
         handle->voxel.reg_method = 3; // CDM
-        handle->voxel.need_odf = 1; // output ODF
-        handle->voxel.output_jacobian = 0;
-        handle->voxel.output_mapping = 0;
-        handle->voxel.output_diffusivity = 0;
-        handle->voxel.output_tensor = 0;
-        handle->voxel.output_rdi = 1;
+        handle->voxel.need_odf = true; // output ODF
+        handle->voxel.check_btable = true;
+        handle->voxel.output_jacobian = false;
+        handle->voxel.output_mapping = false;
+        handle->voxel.output_diffusivity = false;
+        handle->voxel.output_tensor = false;
+        handle->voxel.output_rdi = true;
         handle->voxel.thread_count = std::thread::hardware_concurrency();
         //checking half shell
         {
@@ -857,8 +858,7 @@ void MainWindow::on_ReconstructSRC_clicked()
             handle->voxel.scheme_balance = handle->need_scheme_balance();
         }
 
-        const char* msg = (const char*)reconstruction(handle.get(), 7 /*QSDR*/,
-                                                      params,true /*check b-table*/);
+        const char* msg = handle->reconstruction();
         if (QFileInfo(msg).exists())
             continue;
         QMessageBox::information(this,"error",msg,0);

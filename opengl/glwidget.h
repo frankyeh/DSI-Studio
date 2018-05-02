@@ -2,7 +2,7 @@
 #define GLWIDGET_H
 #include <QTimer>
 #include <QTime>
-#include <QOpenGLShaderProgram>
+//#include <QOpenGLShaderProgram>
 #define NOMINMAX
 #include <memory>
 #include "QtOpenGL/QGLWidget"
@@ -20,8 +20,8 @@ Q_OBJECT
               QWidget *parent = 0);
      ~GLWidget();
 public:
-     std::shared_ptr<QOpenGLShaderProgram> shader,shader2;
-     int s_mvp,s_mvp2,s_depthMap;
+     //std::shared_ptr<QOpenGLShaderProgram> shader,shader2;
+     //int s_mvp,s_mvp2,s_depthMap;
  public:// editing
      enum {none = 0,selecting = 1, moving = 2, dragging = 3} editing_option;
      tipl::vector<3,float> pos,dir1,dir2;
