@@ -2229,28 +2229,46 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
     {
         if(param.isEmpty())
             param = QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".rotation_movie.avi";
-        begin_prog("save video");
-        float angle = (param2.isEmpty()) ? 1 : param2.toFloat();
-        int ow = width(),oh = height();
-        tipl::io::avi avi;
-        #ifndef __APPLE__
-            resize(1980,1080);
-        #endif
-        for(float index = 0;check_prog(index,360);index += angle)
+        if(QFileInfo(param).suffix() == "avi")
         {
-            rotate_angle(angle,0,1.0,0.0);
-            QBuffer buffer;
-            QImageWriter writer(&buffer, "JPG");
-            updateGL();
-            QImage I = grabFrameBuffer();
-            writer.write(I);
-            if(index == 0.0)
-                avi.open(param.toLocal8Bit().begin(),I.width(),I.height(), "MJPG", 30/*fps*/);
-            QByteArray data = buffer.data();
-            avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
+            begin_prog("save video");
+            float angle = (param2.isEmpty()) ? 1 : param2.toFloat();
+            int ow = width(),oh = height();
+            tipl::io::avi avi;
+            #ifndef __APPLE__
+                resize(1980,1080);
+            #endif
+            for(float index = 0;check_prog(index,360);index += angle)
+            {
+                rotate_angle(angle,0,1.0,0.0);
+                QBuffer buffer;
+                QImageWriter writer(&buffer, "JPG");
+                updateGL();
+                QImage I = grabFrameBuffer();
+                writer.write(I);
+                if(index == 0.0)
+                    avi.open(param.toLocal8Bit().begin(),I.width(),I.height(), "MJPG", 30/*fps*/);
+                QByteArray data = buffer.data();
+                avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
+            }
+            avi.close();
+            resize(ow,oh);
         }
-        avi.close();
-        resize(ow,oh);
+        else
+        {
+            begin_prog("save image");
+            float angle = (param2.isEmpty()) ? 1 : param2.toFloat();
+            for(float index = 0;check_prog(index,360);index += angle)
+            {
+                QString file_name = QFileInfo(param).absolutePath()+"//"+
+                        QFileInfo(param).completeBaseName()+"_"+QString::number(index)+"."+
+                        QFileInfo(param).suffix();
+                std::cout << file_name.toStdString() << std::endl;
+                rotate_angle(angle,0,1.0,0.0);
+                QImage I = grabFrameBuffer();
+                I.save(file_name);
+            }
+        }
         return true;
     }
     return false;
@@ -2302,7 +2320,7 @@ void GLWidget::saveRotationSeries(void)
                 this,
                 "Assign video name",
                 QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".rotation_movie.avi",
-                "Video file (*.avi);;All files (*)");
+                "Video file (*.avi);;Image filess (*.jpg *.png);;All files (*)");
     if(filename.isEmpty())
         return;
     bool ok;
