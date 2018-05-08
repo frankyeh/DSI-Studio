@@ -6,7 +6,7 @@
 
 class Dwi2Tensor : public BaseProcess
 {
-    std::vector<float> d0,d1,d2,d3,md,txx,txy,txz,tyy,tyz,tzz;
+    std::vector<float> d0,d1,d2,d3,md,txx,txy,txz,tyy,tyz,tzz,ha;
     float get_fa(float l1,float l2,float l3)
     {
         float ll = (l1+l2+l3)/3.0;
@@ -43,6 +43,8 @@ public:
             d2.resize(voxel.dim.size());
             d3.clear();
             d3.resize(voxel.dim.size());
+            ha.clear();
+            ha.resize(voxel.dim.size());
         }
         if(voxel.output_tensor && voxel.method_id == 1)
         {
@@ -157,6 +159,7 @@ public:
             d2[data.voxel_index] = 1000.0*d[1];
             d3[data.voxel_index] = 1000.0*d[2];
             d1[data.voxel_index] = 1000.0*(d[1]+d[2])/2.0;
+            ha[data.voxel_index] = std::acos(std::sqrt(V[0]*V[0]+V[1]*V[1]))*180.0f/3.14159265358979323846f;
         }
         if(voxel.output_tensor && voxel.method_id == 1)
         {
@@ -167,6 +170,7 @@ public:
             tyz[data.voxel_index] = tensor[5];
             tzz[data.voxel_index] = tensor[8];
         }
+
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
@@ -193,6 +197,7 @@ public:
             mat_writer.write("rd",&*d1.begin(),1,d1.size());
             mat_writer.write("rd1",&*d2.begin(),1,d2.size());
             mat_writer.write("rd2",&*d3.begin(),1,d3.size());
+            //mat_writer.write("ha",&*ha.begin(),1,ha.size());
             /*
             std::vector<float> cl(d0.size()),cp(d0.size());
             for(int i = 0;i < cl.size();++i)
