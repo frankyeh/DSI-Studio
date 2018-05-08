@@ -416,7 +416,6 @@ const char* ImageModel::reconstruction(void)
                     voxel.mask[i] = 0;
             // smooth DWI to avoid boosting noise in DDI
             {
-            /*
                 begin_prog("Smoothing");
                 check_prog(0,2);
                 tipl::par_for(src_dwi_data.size(),[&](int i)
@@ -431,7 +430,6 @@ const char* ImageModel::reconstruction(void)
                     tipl::filter::gaussian(I);
                 },voxel.thread_count);
                 check_prog(2,2);
-                */
             }
             // Signal match on b0 to allow for quantitative MRI in DDI
             double r2 = 0.0;
@@ -454,14 +452,13 @@ const char* ImageModel::reconstruction(void)
 
             voxel.recon_report <<
             " The diffusion data were compared with baseline scan using diffusion difference imaging with a diffusion sampling length ratio of "
-            << (float)voxel.param[0] << " to study " << (voxel.ddi_type ? "increased":"decreased") << " connectivity.";
+            << (float)voxel.param[0] << " to study neuronal change.";
 
             if(voxel.r2_weighted)
                 voxel.recon_report << " The ODF calculation was weighted by the square of the diffuion displacement.";
             out << "." << voxel.study_name
                 << ".R" << (int)(r2*100.0f)
-                << (voxel.r2_weighted ? ".ddi2":".ddi")
-                << (voxel.ddi_type ? ".inc.":".dec.")
+                << (voxel.r2_weighted ? ".ddi2.":".ddi.")
                 << voxel.param[0] << ".fib.gz";
             if (!reconstruct<ddi_process>())
                 return "reconstruction canceled";

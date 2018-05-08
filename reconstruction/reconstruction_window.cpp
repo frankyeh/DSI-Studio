@@ -332,7 +332,6 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.output_tensor = ui->output_tensor->isChecked();
     handle->voxel.output_rdi = ui->rdi->isChecked();
     handle->voxel.thread_count = ui->ThreadCount->value();
-    handle->voxel.ddi_type = ui->ddi_dir->currentIndex() == 0;
 
 
     if(method_id == 7 || method_id == 4 || method_id == 8)

@@ -575,27 +575,6 @@
             <number>6</number>
            </property>
            <item>
-            <widget class="QLabel" name="label_17">
-             <property name="text">
-              <string>Directionality:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QComboBox" name="ddi_dir">
-             <item>
-              <property name="text">
-               <string>Increased connectivity</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Decreased connectivity</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item>
             <widget class="QLabel" name="label_16">
              <property name="text">
               <string>Study SRC file:</string>

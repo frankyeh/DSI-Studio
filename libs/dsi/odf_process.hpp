@@ -28,7 +28,7 @@ public:
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        data.rdi = data.odf;
+        data.baseline_odf = data.odf;
         data.space.resize(voxel.study_data->dwi_data.size());
         for (unsigned int index = 0; index < data.space.size(); ++index)
             data.space[index] = voxel.study_data->dwi_data[index][data.voxel_index];
@@ -37,33 +37,23 @@ public:
 };
 
 class CalculateDifference : public BaseProcess{
-    std::vector<float> nqa;
+
 public:
-    virtual void init(Voxel& voxel)
-    {
-        nqa.resize(voxel.dim.size());
-    }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        tipl::minus_constant(data.rdi,*std::min_element(data.rdi.begin(),data.rdi.end()));
+        tipl::minus_constant(data.baseline_odf,*std::min_element(data.baseline_odf.begin(),data.baseline_odf.end()));
         tipl::minus_constant(data.odf,*std::min_element(data.odf.begin(),data.odf.end()));
 
-        float qa = *std::max_element(data.rdi.begin(),data.rdi.end());
+        float qa = *std::max_element(data.baseline_odf.begin(),data.baseline_odf.end());
         if(qa > voxel.z0)
             voxel.z0 = qa; // z0 is the maximum qa in the baseline
-        // data.rdi : baseline ODF
-        // data.odf : study ODF
-        if(!voxel.ddi_type) // study decreased connectivity
-            std::swap(data.rdi,data.odf);
-        tipl::minus(data.odf.begin(),data.odf.end(),data.rdi.begin());
-        tipl::lower_threshold(data.odf,0);
-        nqa[data.voxel_index] = qa;
-    }
-    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
-    {
-        if(voxel.z0 != 0.0f)
-            tipl::divide_constant(nqa,voxel.z0);
-        mat_writer.write("base_nqa",&*nqa.begin(),1,nqa.size());
+        for(int i = 0;i < data.odf.size();++i)
+        {
+            float study = data.odf[i];
+            float base = data.baseline_odf[i];
+            data.odf[i] = (study+base)*0.5f;
+            data.baseline_odf[i] = (study-base)*0.5f;
+        }
     }
 };
 
@@ -373,8 +363,22 @@ struct SaveMetrics : public BaseProcess
 {
 protected:
     std::vector<float> iso,gfa;
-    std::vector<std::vector<float> > fa;
-    std::vector<std::vector<float> > rdi;
+    std::vector<std::vector<float> > fa,rdi,qa_inc,qa_dec;
+
+    void output_anisotropy(gz_mat_write& mat_writer,
+                           const char* name,const std::vector<std::vector<float> >& metrics)
+    {
+        for (unsigned int index = 0;index < metrics.size();++index)
+        {
+            std::ostringstream out;
+            out << index;
+            std::string num = out.str();
+            std::string str = name + num;
+            set_title(str.c_str());
+            mat_writer.write(str.c_str(),&*metrics[index].begin(),1,metrics[index].size());
+        }
+    }
+
 protected:
     float z0;
 public:
@@ -417,6 +421,11 @@ public:
                                     tipl::dyndim(odf.size(),dwi.size()));
             z0 = tipl::mean(odf.begin(),odf.end());
         }
+        if(voxel.method_id == 8) // DDI
+        {
+            qa_inc = fa;
+            qa_dec = fa;
+        }
         voxel.z0 = 0.0;
     }
     virtual void run(Voxel& voxel, VoxelData& data)
@@ -430,6 +439,17 @@ public:
                 rdi[index][data.voxel_index] = data.rdi[index];
         if(data.min_odf > voxel.z0)
             voxel.z0 = data.min_odf;
+        if(voxel.method_id == 8) // DDI
+        {
+            for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
+            {
+                float change = data.baseline_odf[data.dir_index[index]];
+                if(change > 0.0f)
+                    qa_inc[index][data.voxel_index] = change;
+                else
+                    qa_dec[index][data.voxel_index] = -change;
+            }
+        }
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
@@ -444,16 +464,9 @@ public:
 
 
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-        {
             tipl::divide_constant(fa[index],voxel.z0);
-            std::ostringstream out;
-            out << index;
-            std::string num = out.str();
-            std::string fa_str = "fa";
-            fa_str += num;
-            set_title(fa_str.c_str());
-            mat_writer.write(fa_str.c_str(),&*fa[index].begin(),1,fa[index].size());
-        }
+        output_anisotropy(mat_writer,"fa",fa);
+
 
         tipl::divide_constant(iso,voxel.z0);
         mat_writer.write("iso",&*iso.begin(),1,iso.size());
@@ -466,18 +479,23 @@ public:
                 max_qa = std::max<float>(*std::max_element(fa[i].begin(),fa[i].end()),max_qa);
 
             if(max_qa != 0.0)
-            for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             {
-                tipl::divide_constant(fa[index],max_qa);
-                std::ostringstream out;
-                out << index;
-                std::string num = out.str();
-                std::string fa_str = "nqa";
-                fa_str += num;
-                set_title(fa_str.c_str());
-                mat_writer.write(fa_str.c_str(),&*fa[index].begin(),1,fa[index].size());
+                for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
+                    tipl::divide_constant(fa[index],max_qa);
+                output_anisotropy(mat_writer,"nqa",fa);
+            }
+            if(voxel.method_id == 8) // DDI
+            {
+                for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
+                {
+                    tipl::divide_constant(qa_inc[index],voxel.z0);
+                    tipl::divide_constant(qa_dec[index],voxel.z0);
+                }
+                output_anisotropy(mat_writer,"inc",qa_inc);
+                output_anisotropy(mat_writer,"dec",qa_dec);
             }
         }
+
 
         if(voxel.output_rdi)
         {

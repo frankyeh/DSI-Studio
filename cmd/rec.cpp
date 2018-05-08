@@ -101,7 +101,6 @@ int rec(void)
         }
         handle->study_src = study_src;
         handle->voxel.study_name = QFileInfo(study_file_name.c_str()).baseName().toStdString();
-        handle->voxel.ddi_type = po.get("ddi_type",int(1)); // 1:increased 0 :decreased
     }
     if(po.get("deconvolution",int(0)))
     {
@@ -215,19 +214,24 @@ int rec(void)
     if(po.has("mask"))
     {
         std::string mask_file = po.get("mask");
-        std::cout << "reading mask..." << mask_file << std::endl;
-        gz_nifti header;
-        if(header.load_from_file(mask_file.c_str()))
-        {
-            tipl::image<unsigned char,3> external_mask;
-            header.toLPS(external_mask);
-            if(external_mask.geometry() != handle->voxel.dim)
-                std::cout << "In consistent the mask dimension...using default mask" << std::endl;
-            else
-                handle->voxel.mask = external_mask;
-        }
+        if(mask_file == "1")
+            std::fill(handle->voxel.mask.begin(),handle->voxel.mask.end(),1);
         else
-            std::cout << "fail reading the mask...using default mask" << std::endl;
+        {
+            std::cout << "reading mask..." << mask_file << std::endl;
+            gz_nifti header;
+            if(header.load_from_file(mask_file.c_str()))
+            {
+                tipl::image<unsigned char,3> external_mask;
+                header.toLPS(external_mask);
+                if(external_mask.geometry() != handle->voxel.dim)
+                    std::cout << "In consistent the mask dimension...using default mask" << std::endl;
+                else
+                    handle->voxel.mask = external_mask;
+            }
+            else
+                std::cout << "fail reading the mask...using default mask" << std::endl;
+        }
     }
 
     if(method_index == 7 && handle->voxel.reg_method == 4)

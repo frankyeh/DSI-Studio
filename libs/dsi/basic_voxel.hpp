@@ -29,6 +29,7 @@ struct VoxelData
     unsigned int voxel_index;
     std::vector<float> space;
     std::vector<float> odf;
+    std::vector<float> baseline_odf;
     std::vector<float> fa;
     std::vector<float> rdi;
     std::vector<tipl::vector<3,float> > dir;
@@ -121,7 +122,6 @@ public: // for fib evaluation
 public: // for DDI
     Voxel* study_data = 0;
     std::string study_name;
-    bool ddi_type = true; // true:increased or false:decreased
 public:
     float z0 = 0.0;
     // other information for second pass processing
