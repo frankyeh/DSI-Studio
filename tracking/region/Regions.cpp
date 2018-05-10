@@ -15,8 +15,6 @@ tipl::geometry<3> ROIRegion::get_buffer_dim(void) const
 
 void ROIRegion::add_points(std::vector<tipl::vector<3,float> >& points,bool del,float point_resolution)
 {
-    if(resolution_ratio > 32.0f)
-        return;
     change_resolution(points,point_resolution);
     std::vector<tipl::vector<3,short> > new_points(points.size());
     for(int i = 0;i < points.size();++i)
@@ -29,8 +27,6 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,float> >& points,bool del,
 // ---------------------------------------------------------------------------
 void ROIRegion::add_points(std::vector<tipl::vector<3,short> >& points, bool del,float point_resolution)
 {
-    if(resolution_ratio > 32.0f)
-        return;
     change_resolution(points,point_resolution);
     if(!region.empty())
         undo_backup.push_back(region);
@@ -171,7 +167,7 @@ void ROIRegion::SaveToFile(const char* FileName)
             out << resolution_ratio << " -1 -1" << std::endl;
     }
     else if (ext == std::string(".mat")) {
-        if(resolution_ratio > 32.0f)
+        if(resolution_ratio > 8.0f)
             return;
         tipl::image<unsigned char, 3> mask(handle->dim);
         if(resolution_ratio != 1.0)
@@ -187,6 +183,8 @@ void ROIRegion::SaveToFile(const char* FileName)
     }
     else if (ext == std::string(".nii") || ext == std::string("i.gz"))
     {
+        if(resolution_ratio > 8.0f)
+            return;
         unsigned int color = show_region.color.color & 0x00FFFFFF;
         tipl::image<unsigned char, 3>mask;
         SaveToBuffer(mask,1);
@@ -351,6 +349,28 @@ void ROIRegion::SaveToBuffer(tipl::image<unsigned char, 3>& mask,
 // ---------------------------------------------------------------------------
 void ROIRegion::perform(const std::string& action)
 {
+    if(action == "flipx")
+        Flip(0);
+    if(action == "flipy")
+        Flip(1);
+    if(action == "flipz")
+        Flip(2);
+    if(action == "shiftx")
+        shift(tipl::vector<3,float>(1.0, 0, 0));
+    if(action == "shiftnx")
+        shift(tipl::vector<3,float>(-1.0, 0, 0));
+    if(action == "shifty")
+        shift(tipl::vector<3,float>(0, 1.0, 0));
+    if(action == "shiftny")
+        shift(tipl::vector<3,float>(0, -1.0, 0));
+    if(action == "shiftz")
+        shift(tipl::vector<3,float>(0, 0, 1.0));
+    if(action == "shiftnz")
+        shift(tipl::vector<3,float>(0, 0, -1.0));
+
+
+    if(resolution_ratio > 8)
+        return;
     tipl::image<unsigned char, 3>mask;
     if(action == "smoothing")
     {
@@ -382,24 +402,7 @@ void ROIRegion::perform(const std::string& action)
         tipl::morphology::negate(mask);
         LoadFromBuffer(mask);
     }
-    if(action == "flipx")
-        Flip(0);
-    if(action == "flipy")
-        Flip(1);
-    if(action == "flipz")
-        Flip(2);
-    if(action == "shiftx")
-        shift(tipl::vector<3,float>(1.0, 0, 0));
-    if(action == "shiftnx")
-        shift(tipl::vector<3,float>(-1.0, 0, 0));
-    if(action == "shifty")
-        shift(tipl::vector<3,float>(0, 1.0, 0));
-    if(action == "shiftny")
-        shift(tipl::vector<3,float>(0, -1.0, 0));
-    if(action == "shiftz")
-        shift(tipl::vector<3,float>(0, 0, 1.0));
-    if(action == "shiftnz")
-        shift(tipl::vector<3,float>(0, 0, -1.0));
+
 }
 
 // ---------------------------------------------------------------------------

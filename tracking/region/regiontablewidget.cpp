@@ -436,7 +436,7 @@ void RegionTableWidget::new_high_resolution_region(void)
     bool ok;
     int ratio = QInputDialog::getInt(this,
             "DSI Studio",
-            "Input resolution ratio (e.g. 2 for 2X, 8 for 8X",8,2,16,2,&ok);
+            "Input resolution ratio (e.g. 2 for 2X, 8 for 8X",8,2,32,2,&ok);
     if(!ok)
         return;
     add_region("New High Resolution Region",roi_id);

@@ -52,7 +52,7 @@ void RegionModel::sortIndices(void)
 
 
 
-bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, double scale,unsigned char smooth)
+bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, double resolution_ratio,unsigned char smooth)
 {
     if(seeds.empty())
         return false;
@@ -62,7 +62,7 @@ bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, double 
     center = max_value;
     center += min_value;
     center *= 0.5;
-    center /= scale;
+    center /= resolution_ratio;
 
     max_value += tipl::vector<3,short>(5, 5, 5);
     min_value -= tipl::vector<3,short>(5, 5, 5);
@@ -102,10 +102,10 @@ bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, double 
         return 0;
     }
     tipl::vector<3,float>shift(min_value);
-    if (scale != 1.0)
+    if (resolution_ratio != 1.0)
     {
-        cur_scale /= scale;
-        shift /= scale;
+        cur_scale /= resolution_ratio;
+        shift /= resolution_ratio;
     }
     tipl::par_for(object->point_list.size(),[&](unsigned int index)
     {
