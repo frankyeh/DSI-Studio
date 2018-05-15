@@ -129,7 +129,7 @@ void Voxel::run(void)
             ++total_voxel;
 
     unsigned int total = 0;
-    tipl::par_for_asyn2(mask.size(),
+    tipl::par_for2(mask.size(),
                     [&](int voxel_index,int thread_id)
     {
         ++total;
