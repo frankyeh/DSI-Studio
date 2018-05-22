@@ -162,7 +162,7 @@ int run_cmd(int ac, char *av[])
             cmd->setOrganizationName("LabSolver");
             cmd->setApplicationName("DSI Studio");
         }
-        if (!po.has("action") || !po.has("source"))
+        if (!po.has("action"))
         {
             std::cout << "invalid command, use --help for more detail" << std::endl;
             return 1;
