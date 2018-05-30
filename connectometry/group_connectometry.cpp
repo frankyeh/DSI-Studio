@@ -626,7 +626,7 @@ void group_connectometry::calculate_FDR(void)
     html_report << "<h3>Positive Correlation with " << vbc->foi_str << "</h3>" << std::endl;
     if(vbc->progress == 100 && ui->output_track_image->isChecked())
     {
-        html_report << "<img src = \""<< QFileInfo(vbc->trk_file_names[0]+".positive.jpg").fileName() << "\" width=\"800\"/>" << std::endl;
+        html_report << "<img src = \""<< QFileInfo(QString(vbc->trk_file_names[0].c_str())+".positive.jpg").fileName().toStdString() << "\" width=\"800\"/>" << std::endl;
         html_report << "<p><b>Fig.</b> Tracks positively correlated with "<< vbc->foi_str << "</p>";
     }
     html_report << "<p>" << out_greater.str().c_str() << "</p>" << std::endl;
@@ -634,7 +634,7 @@ void group_connectometry::calculate_FDR(void)
     html_report << "<h3>Negatively Correlation with " << vbc->foi_str << "</h3>" << std::endl;
     if(vbc->progress == 100 && ui->output_track_image->isChecked())
     {
-        html_report << "<img src = \""<< QFileInfo((vbc->trk_file_names[0]+".negative.jpg").fileName() << "\" width=\"800\"/>" << std::endl;
+        html_report << "<img src = \""<< QFileInfo(QString(vbc->trk_file_names[0].c_str())+".negative.jpg").fileName().toStdString() << "\" width=\"800\"/>" << std::endl;
         html_report << "<p><b>Fig.</b> Tracks negatively correlated with "<< vbc->foi_str << "</p>";
     }
     html_report << "<p>" << out_lesser.str().c_str() << "</p>" << std::endl;
