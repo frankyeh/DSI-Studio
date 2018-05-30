@@ -128,7 +128,7 @@ void get_files_in_folder(std::string dir,std::string file,std::vector<std::strin
         }
         name_list.push_back(file_name);
     }
-    name_list.swap(files);
+    files = std::move(name_list);
 }
 
 int atl(void)

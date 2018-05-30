@@ -987,8 +987,7 @@ void TractModel::delete_tracts(const std::vector<unsigned int>& tracts_to_delete
         return;
     for (unsigned int index = 0;index < tracts_to_delete.size();++index)
     {
-        deleted_tract_data.push_back(std::vector<float>());
-        deleted_tract_data.back().swap(tract_data[tracts_to_delete[index]]);
+        deleted_tract_data.push_back(std::move(tract_data[tracts_to_delete[index]]));
         deleted_tract_color.push_back(tract_color[tracts_to_delete[index]]);
     }
     // delete all blank tract
@@ -1460,8 +1459,7 @@ void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract,tipl::rg
     {
         if (new_tract[index].empty())
             continue;
-        tract_data.push_back(std::vector<float>());
-        tract_data.back().swap(new_tract[index]);
+        tract_data.push_back(std::move(new_tract[index]));
         tract_color.push_back(color);
     }
 }
@@ -1474,8 +1472,7 @@ void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract, unsigne
     {
         if (new_tract[index].size()/3-1 < length_threshold)
             continue;
-        tract_data.push_back(std::vector<float>());
-        tract_data.back().swap(new_tract[index]);
+        tract_data.push_back(std::move(new_tract[index]));
         tract_color.push_back(def_color);
     }
 }

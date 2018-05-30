@@ -202,7 +202,7 @@ bool view_image::open(QStringList file_names)
             else
             if(seq.load_from_file(file_name.toLocal8Bit().begin()))
             {
-                seq.get_image().swap(data);
+                data = std::move(seq.get_image());
                 seq.get_voxel_size(vs);
             }
     check_prog(0,0);

@@ -150,7 +150,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
             if(bruker.load_from_file(files[0].c_str()))
             {
                 bruker.get_voxel_size(voxel_size.begin());
-                bruker.get_image().swap(source_images);
+                source_images = std::move(bruker.get_image());
                 QDir d = QFileInfo(files[0].c_str()).dir();
                 if(d.cdUp() && d.cdUp())
                 {
@@ -225,9 +225,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
                 else
                 {
                     try{
-                        tipl::image<float, 3> buf;
-                        buf.resize(geo);
-                        buf.swap(source_images);
+                        source_images = std::move(tipl::image<float, 3>(geo));
                     }
                     catch(...)
                     {
