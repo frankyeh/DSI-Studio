@@ -18,9 +18,9 @@ bool train_cnn(std::string network,
     }
     std::cout << "training network=" << network << std::endl;
     nn.learning_rate = po.get("learning_rate",0.01f);
-    nn.w_decay_rate = po.get("w_decay_rate",0.0001f);
-    nn.b_decay_rate = po.get("b_decay_rate",0.2f);
-    nn.momentum = po.get("momentum",0.05f);
+    nn.w_decay_rate = po.get("w_decay_rate",0.0f);
+    nn.b_decay_rate = po.get("b_decay_rate",0.0f);
+    nn.momentum = po.get("momentum",0.5f);
     nn.batch_size = po.get("batch_size",64);
     nn.epoch = po.get("epoch",2000);
 
