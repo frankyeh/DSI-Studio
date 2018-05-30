@@ -1278,67 +1278,7 @@ void TractModel::cut_by_mask(const char*)
 
 bool TractModel::trim(void)
 {
-    /*
-    std::vector<char> continuous(tract_data.size());
-    float epsilon = 2.0f;
-    tipl::par_for(tract_data.size(),[&](int i)
-    {
-        if(tract_data[i].empty() || continuous[i])
-            return;
-        const float* t1 = &tract_data[i][0];
-        const float* t1_end = &tract_data[i][tract_data[i].size()-3];
-        for(int j = i+1;j < tract_data.size();++j)
-        {
-            if(tract_data[j].empty())
-                continue;
-            const float* t2 = &tract_data[j][0];
-            const float* t2_end = &tract_data[j][tract_data[j].size()-3];
-            if(std::min<float>(
-                        tipl::vector<3>(t1[0]-t2[0],t1[1]-t2[1],t1[2]-t2[2]).length(),
-                        tipl::vector<3>(t1[0]-t2_end[0],t1[1]-t2_end[1],t1[2]-t2_end[2]).length()) > epsilon)
-                continue;
-            if(std::min<float>(
-                        tipl::vector<3>(t1_end[0]-t2[0],t1_end[1]-t2[1],t1_end[2]-t2[2]).length(),
-                        tipl::vector<3>(t1_end[0]-t2_end[0],t1_end[1]-t2_end[1],t1_end[2]-t2_end[2]).length()) > epsilon)
-                continue;
-            unsigned int length1 = tract_data[i].size()-3;
-            unsigned int length2 = tract_data[j].size()-3;
-
-            bool con = true;
-            for(int m = 3;m < length1;m += 3)
-            {
-                bool has_c = false;
-                for(int n = 3;n < length2;n += 3)
-                    if(tipl::vector<3>(t1[m]-t2[n],t1[m+1]-t2[n+1],t1[m+2]-t2[n+2]).length() < epsilon)
-                    {
-                        has_c = true;
-                        break;
-                    }
-                if(!has_c)
-                {
-                    con = false;
-                    break;
-                }
-            }
-            if(con)
-            {
-                ++continuous[i];
-                ++continuous[j];
-            }
-        }
-    });
-    std::vector<unsigned int> tracts_to_delete;
-    for (unsigned int index = 0;index < continuous.size();++index)
-        if (!continuous[index])
-            tracts_to_delete.push_back(index);
-    if(tracts_to_delete.empty())
-        return false;
-    delete_tracts(tracts_to_delete);
-    */
-
     tipl::image<unsigned int,3> label(geometry);
-
-
     int total_track_number = tract_data.size();
     int no_fiber_label = total_track_number;
     int have_multiple_fiber_label = total_track_number+1;
