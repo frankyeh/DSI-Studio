@@ -111,7 +111,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
     tracking_data fib;
     fib.read(*handle);
     std::vector<std::vector<float> > tracks;
-
+    const int max_visible_track = 500000;
     if(model->type == 2) // individual
     {
 
@@ -212,6 +212,8 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             if(output_resampling && !null)
             {
                 std::lock_guard<std::mutex> lock(lock_lesser_tracks);
+                if(tracks.size() > max_visible_track/permutation_count)
+                    tracks.resize(max_visible_track/permutation_count);
                 lesser_tracks[0]->add_tracts(tracks,length_threshold);
                 tracks.clear();
             }
@@ -229,6 +231,8 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             if(output_resampling && !null)
             {
                 std::lock_guard<std::mutex> lock(lock_greater_tracks);
+                if(tracks.size() > max_visible_track/permutation_count)
+                    tracks.resize(max_visible_track/permutation_count);
                 greater_tracks[0]->add_tracts(tracks,length_threshold);
                 tracks.clear();
             }
@@ -253,9 +257,13 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             {
                 fib.fa = spm_maps[0]->lesser_ptr;
                 run_track(fib,tracks,seed_ratio*permutation_count,threads.size());
+                if(tracks.size() > max_visible_track)
+                    tracks.resize(max_visible_track);
                 lesser_tracks[0]->add_tracts(tracks,length_threshold);
                 fib.fa = spm_maps[0]->greater_ptr;
                 run_track(fib,tracks,seed_ratio*permutation_count,threads.size());
+                if(tracks.size() > max_visible_track)
+                    tracks.resize(max_visible_track);
                 greater_tracks[0]->add_tracts(tracks,length_threshold);
             }
         }
