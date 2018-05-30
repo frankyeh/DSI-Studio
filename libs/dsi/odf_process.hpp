@@ -449,6 +449,7 @@ public:
                 else
                     qa_dec[index][data.voxel_index] = -change;
             }
+            data.odf = data.baseline_odf;
         }
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)

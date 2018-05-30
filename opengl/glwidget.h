@@ -114,6 +114,7 @@ protected:
      unsigned char end_point_shift;
      unsigned char odf_position;
      unsigned char odf_skip;
+     unsigned char odf_color;
      float odf_scale;
  public:
      GLuint tracts,slice_texture[3];

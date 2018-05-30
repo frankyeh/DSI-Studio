@@ -491,6 +491,7 @@ void GLWidget::renderLR()
         if(odf_position != get_param("odf_position") ||
            odf_skip != get_param("odf_skip") ||
            odf_scale != get_param("odf_scale") ||
+           odf_color != get_param("odf_color") ||
            (get_param("odf_position") <=1 && (odf_dim != cur_tracking_window.cur_dim ||
                                                odf_slide_pos != current_slice->slice_pos[cur_tracking_window.cur_dim])))
         {
@@ -499,6 +500,11 @@ void GLWidget::renderLR()
             odf_scale = get_param("odf_scale");
             odf_dim = cur_tracking_window.cur_dim;
             odf_slide_pos = current_slice->slice_pos[cur_tracking_window.cur_dim];
+            if(odf_color != get_param("odf_color"))
+            {
+                odf_colors.clear();
+                odf_color = get_param("odf_color");
+            }
             odf_points.clear();
         }
 
@@ -507,6 +513,8 @@ void GLWidget::renderLR()
         unsigned char mask = skip_mask_set[odf_skip];
         auto& slice = cur_tracking_window.slices[0];
         auto& geo = cur_tracking_window.handle->dim;
+        if(odf_color == 1)
+            odf_colors.clear();
         if(odf_points.empty())
         switch(odf_position) // along slide
         {
@@ -545,13 +553,30 @@ void GLWidget::renderLR()
         }
         if(odf_colors.empty())
         {
-            for (unsigned int index = 0; index <
-                 cur_tracking_window.odf_size; ++index)
-            {
-                odf_colors.push_back(std::abs(handle->dir.odf_table[index][0]));
-                odf_colors.push_back(std::abs(handle->dir.odf_table[index][1]));
-                odf_colors.push_back(std::abs(handle->dir.odf_table[index][2]));
-            }
+            if(odf_color == 0) // Directional
+                for (unsigned int index = 0; index <
+                     cur_tracking_window.odf_size; ++index)
+                {
+                    odf_colors.push_back(std::abs(handle->dir.odf_table[index][0]));
+                    odf_colors.push_back(std::abs(handle->dir.odf_table[index][1]));
+                    odf_colors.push_back(std::abs(handle->dir.odf_table[index][2]));
+                }
+            if(odf_color == 2) // Directional
+                for (unsigned int index = 0; index <
+                     cur_tracking_window.odf_size; ++index)
+                {
+                    odf_colors.push_back(0);
+                    odf_colors.push_back(0);
+                    odf_colors.push_back(1);
+                }
+            if(odf_color == 3) // Directional
+                for (unsigned int index = 0; index <
+                     cur_tracking_window.odf_size; ++index)
+                {
+                    odf_colors.push_back(1);
+                    odf_colors.push_back(0);
+                    odf_colors.push_back(0);
+                }
         }
 
         glEnable(GL_COLOR_MATERIAL);
@@ -566,7 +591,10 @@ void GLWidget::renderLR()
             ++index,base_index += cur_tracking_window.odf_size)
         {
             glVertexPointer(3, GL_FLOAT, 0, (float*)&odf_points[base_index]);
-            glColorPointer(3, GL_FLOAT, 0, (float*)&odf_colors.front());
+            if(odf_color == 1)
+                glColorPointer(3, GL_FLOAT, 0, (float*)&odf_colors[base_index*3]);
+            else
+                glColorPointer(3, GL_FLOAT, 0, (float*)&odf_colors.front());
             glDrawElements(GL_TRIANGLES, face_size,
                            GL_UNSIGNED_SHORT,handle->dir.odf_faces[0].begin());
         }
@@ -998,7 +1026,16 @@ void GLWidget::add_odf(tipl::pixel_index<3> pos)
     std::vector<tipl::vector<3,float> >::iterator end = odf_points.end();
     std::fill(iter,end,pos);
 
+    std::vector<float>::iterator color_iter;
+    if(odf_color == 1) // Blue-Red
+    {
+        odf_colors.resize(odf_colors.size()+odf_dim*3);
+        color_iter = odf_colors.end()-odf_dim*3;
+    }
+
     float odf_min = *std::min_element(odf_buffer,odf_buffer+half_odf);
+    if(odf_min < 0)
+        odf_min = 0;
     float max_fa = *std::max_element(cur_tracking_window.handle->dir.fa[0],cur_tracking_window.handle->dir.fa[0] + cur_tracking_window.handle->dim.size());
     if(max_fa == 0.0)
         max_fa = 1.0;
@@ -1045,9 +1082,41 @@ void GLWidget::add_odf(tipl::pixel_index<3> pos)
     for(unsigned int index = 0;index < half_odf;++index,++iter)
     {
         tipl::vector<3,float> displacement(handle->dir.odf_table[index]);
-        displacement *= (odf_buffer[index]-odf_min)*scaling;
+        if(odf_color <= 1) // 0:directional 1: Blue-Red
+            displacement *= (std::fabs(odf_buffer[index])-odf_min)*scaling;
+        else
+        {
+            if(odf_color == 2) // Blue: increased ODF
+                displacement *= std::max<float>(0.0f,odf_buffer[index])*scaling;
+            else
+                // Red: decreased ODF
+                displacement *= -std::min<float>(0.0f,odf_buffer[index])*scaling;
+        }
         *(iter) += displacement;
         *(iter+half_odf) -= displacement;
+        if(odf_color == 1) // Blue-Red
+        {
+            int i3 = index*3;
+            int ih3 = (index + half_odf)*3;
+            if(odf_buffer[index] > 0)
+            {
+                color_iter[i3] = 0;
+                color_iter[i3+1] = 0;
+                color_iter[i3+2] = 1;
+                color_iter[ih3] = 0;
+                color_iter[ih3+1] = 0;
+                color_iter[ih3+2] = 1;
+            }
+            else
+            {
+                color_iter[i3] = 1;
+                color_iter[i3+1] = 0;
+                color_iter[i3+2] = 0;
+                color_iter[ih3] = 1;
+                color_iter[ih3+1] = 0;
+                color_iter[ih3+2] = 0;
+            }
+        }
     }
 }
 void myglColor(const tipl::vector<3,float>& color,float alpha)

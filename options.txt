@@ -108,6 +108,7 @@ Label/Region Label Bold/region_label_bold/Off:On/1
 Label/Region Label Size/region_label_size/int:2:24:2/12
 ODF/Position/odf_position/Along Slide:Slide Intersection:All/0
 ODF/Size/odf_scale/float:1:32:1:1/2
+ODF/Color/odf_color/Dir:Blue-Red:Blue:Red/0
 ODF/Interleaved/odf_skip/none:2:4/0
 ODF/Smoothing/odf_smoothing/off:on/0
 ODF/Min-Max Normalization/odf_min_max/off:on/1
