@@ -650,10 +650,8 @@ void TractTableWidget::deep_learning_train(void)
                 }
             }
             while(tipl::morphology::smoothing_fill(track_map))
-                tipl::morphology::defragment(track_map);
-            tipl::morphology::smoothing(track_map);
+                ;
             tipl::morphology::defragment(track_map);
-
 
             QString track_file_name = QFileInfo(filename).absolutePath() + "/" + item(index,0)->text() + ".nii.gz";
             gz_nifti nifti2;
