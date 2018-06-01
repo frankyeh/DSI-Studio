@@ -60,7 +60,7 @@ Tract/Tube Detail/tract_tube_detail/Coarse:Fine:Finer:Finest/1
 Tract/Tube Diameter (voxel)/tube_diameter/float:0.01:1:0.1:2/0.1
 Tract/Endpoint Shift (voxel)/end_point_shift/int:0:10:1/0
 Tract/Light/tract_light_option/One source:Two sources:Three sources/0
-Tract/Light Direction/tract_light_dir/int/6
+Tract/Light Direction/tract_light_dir/int/2
 Tract/Light Shading/tract_light_shading/int/2
 Tract/Light Diffuse/tract_light_diffuse/int/10
 Tract/Light Ambient/tract_light_ambient/int/0
