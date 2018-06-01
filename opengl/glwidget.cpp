@@ -239,7 +239,7 @@ void setupLight(float ambient,float diffuse,float specular,float angle,float ang
 
 void setupMaterial(float emission,float specular,int shininess)
 {
-    GLfloat material2[4] = { 0.0f, 0.0f, 0.0f, 0.0f};
+    GLfloat material2[4] = { 0.0f, 0.0f, 0.0f, 1.0f};
     std::fill(material2,material2+3,emission);
     glMaterialfv(GL_FRONT_AND_BACK,GL_EMISSION,material2);
 
@@ -1002,6 +1002,8 @@ void GLWidget::renderLR()
             glColor3f (0.3f,1.0f,0.3f);
             renderText(0,L,0,"P",font);
         }
+        // This keep shade on other regions black
+        glColor3f (0.0f,0.0f,0.0f);
         glEnable(GL_DEPTH_TEST);
         glPopMatrix();
         glMatrixMode(GL_PROJECTION);
