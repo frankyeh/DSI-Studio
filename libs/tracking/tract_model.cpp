@@ -1278,6 +1278,90 @@ void TractModel::cut_by_mask(const char*)
 
 bool TractModel::trim(void)
 {
+    /*
+    std::vector<char> continuous(tract_data.size());
+        float epsilon = 2.0f;
+        tipl::par_for(tract_data.size(),[&](int i)
+        {
+            if(tract_data[i].empty())
+                return;
+            const float* t1 = &tract_data[i][0];
+            const float* t1_end = &tract_data[i][tract_data[i].size()-3];
+            for(int j = 1;j < tract_data.size();++j)
+            {
+                if(i == j)
+                    continue;
+                if(tract_data[j].empty())
+                    continue;
+                const float* t2 = &tract_data[j][0];
+                const float* t2_end = &tract_data[j][tract_data[j].size()-3];
+                float d1 = std::fabs(t1[0]-t2[0])+std::fabs(t1[1]-t2[1])+std::fabs(t1[2]-t2[2]);
+                float d2 = std::fabs(t1[0]-t2_end[0])+std::fabs(t1[1]-t2_end[1])+std::fabs(t1[2]-t2_end[2]);
+                if(d1 > epsilon && d2 > epsilon)
+                    continue;
+                float d3 = std::fabs(t1_end[0]-t2[0])+std::fabs(t1_end[1]-t2[1])+std::fabs(t1_end[2]-t2[2]);
+                float d4 = std::fabs(t1_end[0]-t2_end[0])+std::fabs(t1_end[1]-t2_end[1])+std::fabs(t1_end[2]-t2_end[2]);
+                if(d1 <= epsilon && d4 > epsilon)
+                    continue;
+                if(d2 <= epsilon && d3 > epsilon)
+                    continue;
+
+                unsigned int length1 = tract_data[i].size();
+                unsigned int length2 = tract_data[j].size();
+
+                bool con = true;
+                for(int m = 0;m < length1;m += 3)
+                {
+                    bool has_c = false;
+                    for(int n = 0;n < length2;n += 3)
+                        if(t1[m]-t2[n] < epsilon &&
+                           t1[m+1]-t2[n+1] < epsilon &&
+                           t1[m+2]-t2[n+2] < epsilon)
+                        {
+                            has_c = true;
+                            break;
+                        }
+                    if(!has_c)
+                    {
+                        con = false;
+                        break;
+                    }
+                }
+                if(!con)
+                    continue;
+                for(int n = 0;n < length2;n += 3)
+                {
+                    bool has_c = false;
+                    for(int m = 0;m < length1;m += 3)
+                        if(t1[m]-t2[n] < epsilon &&
+                           t1[m+1]-t2[n+1] < epsilon &&
+                           t1[m+2]-t2[n+2] < epsilon)
+                        {
+                            has_c = true;
+                            break;
+                        }
+                    if(!has_c)
+                    {
+                        con = false;
+                        break;
+                    }
+                }
+                if(con)
+                {
+                    ++continuous[i];
+                    ++continuous[j];
+                }
+            }
+        });
+        std::vector<unsigned int> tracts_to_delete;
+        for (unsigned int index = 0;index < continuous.size();++index)
+            if (continuous[index] < 2)
+                tracts_to_delete.push_back(index);
+        if(tracts_to_delete.empty())
+            return false;
+        delete_tracts(tracts_to_delete);
+    */
+
     tipl::image<unsigned int,3> label(geometry);
     int total_track_number = tract_data.size();
     int no_fiber_label = total_track_number;
@@ -1327,7 +1411,6 @@ bool TractModel::trim(void)
     if(tracts_to_delete.empty())
         return false;
     delete_tracts(std::vector<unsigned int>(tracts_to_delete.begin(),tracts_to_delete.end()));
-
     return true;
 }
 //---------------------------------------------------------------------------

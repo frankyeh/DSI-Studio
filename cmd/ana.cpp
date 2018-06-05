@@ -1,3 +1,4 @@
+#include <regex>
 #include <QFileInfo>
 #include <QStringList>
 #include <QImage>
@@ -26,25 +27,6 @@ void get_regions_statistics(std::shared_ptr<fib_data> handle,
                             const std::vector<std::shared_ptr<ROIRegion> >& regions,
                             const std::vector<std::string>& region_name,
                             std::string& result);
-void export_indices(std::shared_ptr<fib_data> handle,ROIRegion& region,const std::string& file_name)
-{
-    if(po.has("export") && po.get("export") == std::string("stat"))
-    {
-        std::string file_name_stat(file_name);
-        std::replace(file_name_stat.begin(),file_name_stat.end(),':','_');
-        std::replace(file_name_stat.begin(),file_name_stat.end(),',','_');
-        file_name_stat += ".statistics.txt";
-        std::cout << "export ROI statistics to file:" << file_name_stat << std::endl;
-        std::ofstream out(file_name_stat.c_str());
-        std::vector<std::string> titles;
-        std::vector<float> data;
-        region.get_quantitative_data(handle,titles,data);
-        for(unsigned int i = 0;i < titles.size() && i < data.size();++i)
-            out << titles[i] << "\t" << data[i] << std::endl;
-    }
-    else
-        std::cout << "Please specify the export parameters" << std::endl;
-}
 void export_track_info(const std::string& file_name,
                        std::string export_option,
                        std::shared_ptr<fib_data> handle,
@@ -178,57 +160,67 @@ int ana(void)
     std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
     if(!handle.get())
         return 0;
-    if(po.has("atlas"))
+    if(po.has("atlas") || po.has("roi"))
     {
-        std::cout << "export information from " << po.get("atlas") << std::endl;
-        if(!atl_load_atlas(po.get("atlas")))
-            return 0;
-        for(unsigned int i = 0;i < atlas_list.size();++i)
+        std::vector<std::string> region_list;
+        std::vector<std::shared_ptr<ROIRegion> > regions;
+        if(po.has("atlas"))
         {
-            std::vector<std::shared_ptr<ROIRegion> > regions;
-            std::vector<std::string> region_list;
-            for(unsigned int j = 0;j < atlas_list[i].get_list().size();++j)
+            std::cout << "export information from " << po.get("atlas") << std::endl;
+            if(!atl_load_atlas(po.get("atlas")))
+                return 0;
+            for(unsigned int i = 0;i < atlas_list.size();++i)
             {
-                std::shared_ptr<ROIRegion> region(std::make_shared<ROIRegion>(handle));
-                std::string region_name = atlas_list[i].name;
-                region_name += ":";
-                region_name += atlas_list[i].get_list()[j];
-                if(!load_region(handle,*region.get(),region_name))
+                for(unsigned int j = 0;j < atlas_list[i].get_list().size();++j)
                 {
-                    std::cout << "Fail to load the ROI file:" << region_name << std::endl;
+                    std::shared_ptr<ROIRegion> region(std::make_shared<ROIRegion>(handle));
+                    std::string region_name = atlas_list[i].name;
+                    region_name += ":";
+                    region_name += atlas_list[i].get_list()[j];
+                    if(!load_region(handle,*region.get(),region_name))
+                    {
+                        std::cout << "Fail to load the ROI file:" << region_name << std::endl;
+                        return 0;
+                    }
+                    region_list.push_back(atlas_list[i].get_list()[j]);
+                    regions.push_back(region);
+                }
+
+            }
+        }
+        if(po.has("roi"))
+        {
+            std::string text = po.get("roi");
+            std::regex reg("[;]");
+            std::sregex_token_iterator first{text.begin(), text.end(),reg, -1},last;
+            std::vector<std::string> roi_list = {first, last};
+            for(int i = 0;i < roi_list.size();++i)
+            {
+                std::shared_ptr<ROIRegion> region(new ROIRegion(handle));
+                if(!load_region(handle,*region.get(),roi_list[i]))
+                {
+                    std::cout << "Fail to load the ROI file." << std::endl;
                     return 0;
                 }
-                region_list.push_back(atlas_list[i].get_list()[j]);
+                region_list.push_back(roi_list[i]);
                 regions.push_back(region);
             }
-            std::string result;
-            get_regions_statistics(handle,regions,region_list,result);
-
-            std::string file_name(po.get("source"));
-            file_name += ".";
-            file_name += atlas_list[i].name;
-            file_name += ".statistics.txt";
-            std::cout << "export ROI statistics to file:" << file_name << std::endl;
-            std::ofstream out(file_name.c_str());
-            out << result <<std::endl;
         }
+        std::string result;
+        get_regions_statistics(handle,regions,region_list,result);
+        std::string file_name(po.get("source"));
+        file_name += ".statistics.txt";
+        if(po.has("output"))
+            file_name = po.get("output");
+        std::cout << "export ROI statistics to file:" << file_name << std::endl;
+        std::ofstream out(file_name.c_str());
+        out << result <<std::endl;
         return 0;
     }
 
     if(!po.has("tract"))
     {
-        if(!po.has("roi"))
-        {
-            std::cout << "No tract file or ROI file assigned." << std::endl;
-            return 0;
-        }
-        ROIRegion region(handle);
-        if(!load_region(handle,region,po.get("roi")))
-        {
-            std::cout << "Fail to load the ROI file." << std::endl;
-            return 0;
-        }
-        export_indices(handle,region,po.get("roi"));
+        std::cout << "No tract file or ROI file assigned." << std::endl;
         return 0;
     }
 
