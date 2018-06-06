@@ -49,7 +49,7 @@ struct TrackingParam
     unsigned char tracking_method = 0;
     unsigned char initial_direction = 0;
     unsigned char random_seed = 0;
-    unsigned char reserved0 = 0;
+    unsigned char tip_iteration = 0;
 
     unsigned int reserved1 = 0;
     unsigned int reserved2 = 0;

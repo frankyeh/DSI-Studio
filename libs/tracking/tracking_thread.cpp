@@ -44,11 +44,12 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,
     try{
         std::vector<std::vector<float> > local_track_buffer;
         while(!joinning &&
-              (!param.stop_by_tract || tract_count[thread_id] < max_count) &&
-              (param.stop_by_tract || seed_count[thread_id] < max_count) &&
-              (param.max_seed_count == 0 || seed_count[thread_id] < param.max_seed_count) &&
-              (!param.center_seed || iteration < roi_mgr.seeds.size()))
+              !(param.stop_by_tract == 1 && tract_count[thread_id] >= max_count) &&
+              !(param.stop_by_tract == 0 && seed_count[thread_id] >= max_count) &&
+              !(param.max_seed_count > 0 && seed_count[thread_id] >= param.max_seed_count) &&
+              !(param.center_seed && iteration >= roi_mgr.seeds.size()))
         {
+
             if(!pushing_data && (iteration & 0x00000FFF) == 0x00000FFF && !local_track_buffer.empty())
                 push_tracts(local_track_buffer);
             if(param.threshold == 0.0f)
