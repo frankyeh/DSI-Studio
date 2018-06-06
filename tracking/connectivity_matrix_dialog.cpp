@@ -98,21 +98,22 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
     if(ui->region_list->currentIndex() == 0)
         {
             cm.clear();
-            data.regions.clear();
+            std::vector<std::vector<tipl::vector<3,short> > > regions;
             data.region_name.clear();
             for(unsigned int index = 0;index < cur_tracking_window->regionWidget->regions.size();++index)
             if(cur_tracking_window->regionWidget->item(index,0)->checkState() == Qt::Checked)
             {
-                data.regions.push_back(std::vector<tipl::vector<3,short> >());
-                cur_tracking_window->regionWidget->regions[index]->get_region_voxels(data.regions.back());
+                regions.push_back(std::vector<tipl::vector<3,short> >());
+                cur_tracking_window->regionWidget->regions[index]->get_region_voxels(regions.back());
                 data.region_name.push_back(std::string(cur_tracking_window->regionWidget->item(index,0)->text().toLocal8Bit().begin()));
             }
 
-            if(data.regions.empty())
+            if(regions.empty())
             {
                 QMessageBox::information(this,"Error","No checked ROI in the region list. Please assign/check ROIs.");
                 return;
             }
+            data.set_regions(cur_tracking_window->handle->dim,regions);
         }
     else
         {

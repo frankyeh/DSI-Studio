@@ -2021,54 +2021,23 @@ void TractModel::get_tracts_data(unsigned int data_index,float& mean, float& sd)
     sd = std::sqrt(sum_data2/(double)total-sum_data*sum_data/(double)total/(double)total);
 
 }
-// return region overlapped ratio
-float create_region_map(const tipl::geometry<3>& geometry,
-                      const std::vector<std::vector<tipl::vector<3,short> > >& regions,
-                      std::vector<std::vector<short> >& region_map)
-{
-    std::vector<std::set<short> > regions_set(geometry.size());
-    region_map.resize(geometry.size());
-    for(unsigned int roi = 0;roi < regions.size();++roi)
-    {
-        for(unsigned int index = 0;index < regions[roi].size();++index)
-        {
-            tipl::vector<3,short> pos = regions[roi][index];
-            if(geometry.is_valid(pos))
-                regions_set[tipl::pixel_index<3>(pos[0],pos[1],pos[2],geometry).index()].insert(roi);
 
-        }
-    }
-    unsigned int overlap_count = 0,total_count = 0;
-    for(unsigned int index = 0;index < geometry.size();++index)
-        if(!regions_set[index].empty())
-        {
-            for(auto i : regions_set[index])
-                region_map[index].push_back(i);
-            ++total_count;
-            if(region_map[index].size() > 1)
-                ++overlap_count;
-        }
-    return (float)overlap_count/(float)total_count;
-}
-
-void TractModel::get_passing_list(const std::vector<std::vector<tipl::vector<3,short> > >& regions,
+void TractModel::get_passing_list(const std::vector<std::vector<short> >& region_map,
+                                  unsigned int region_count,
                                   std::vector<std::vector<short> >& passing_list1,
-                                  std::vector<std::vector<short> >& passing_list2,
-                                  float& overlap_ratio) const
+                                  std::vector<std::vector<short> >& passing_list2) const
 {
     passing_list1.clear();
     passing_list1.resize(tract_data.size());
     passing_list2.clear();
     passing_list2.resize(tract_data.size());
     // create regions maps
-    std::vector<std::vector<short> > region_map;
-    overlap_ratio = create_region_map(geometry,regions,region_map);
 
     for(unsigned int index = 0;index < tract_data.size();++index)
     {
         if(tract_data[index].size() < 6)
             continue;
-        std::vector<unsigned char> has_region(regions.size());
+        std::vector<unsigned char> has_region(region_count);
         unsigned int half_length = tract_data[index].size()/2;
         for(unsigned int ptr = 0;ptr < tract_data[index].size();ptr += 3)
         {
@@ -2091,19 +2060,14 @@ void TractModel::get_passing_list(const std::vector<std::vector<tipl::vector<3,s
     }
 }
 
-void TractModel::get_end_list(const std::vector<std::vector<tipl::vector<3,short> > >& regions,
-                                  std::vector<std::vector<short> >& end_pair1,
-                                  std::vector<std::vector<short> >& end_pair2,
-                                    float& overlap_ratio) const
+void TractModel::get_end_list(const std::vector<std::vector<short> >& region_map,
+                              std::vector<std::vector<short> >& end_pair1,
+                              std::vector<std::vector<short> >& end_pair2) const
 {
     end_pair1.clear();
     end_pair1.resize(tract_data.size());
     end_pair2.clear();
     end_pair2.resize(tract_data.size());
-    // create regions maps
-    std::vector<std::vector<short> > region_map;
-    overlap_ratio = create_region_map(geometry,regions,region_map);
-
     for(unsigned int index = 0;index < tract_data.size();++index)
     {
         if(tract_data[index].size() < 6)
@@ -2243,23 +2207,58 @@ void ConnectivityMatrix::save_to_connectogram(const char* file_name)
     }
 }
 
+void ConnectivityMatrix::set_regions(const tipl::geometry<3>& geo,
+                                     const std::vector<std::vector<tipl::vector<3,short> > >& regions)
+{
+    region_count = regions.size();
+
+    region_map.clear();
+    region_map.resize(geo.size());
+
+    std::vector<std::set<short> > regions_set(geo.size());
+    for(unsigned int roi = 0;roi < region_count;++roi)
+    {
+        for(unsigned int index = 0;index < regions[roi].size();++index)
+        {
+            tipl::vector<3,short> pos = regions[roi][index];
+            if(geo.is_valid(pos))
+                regions_set[tipl::pixel_index<3>(pos[0],pos[1],pos[2],geo).index()].insert(roi);
+        }
+    }
+    unsigned int overlap_count = 0,total_count = 0;
+    for(unsigned int index = 0;index < geo.size();++index)
+        if(!regions_set[index].empty())
+        {
+            for(auto i : regions_set[index])
+                region_map[index].push_back(i);
+            ++total_count;
+            if(region_map[index].size() > 1)
+                ++overlap_count;
+        }
+    overlap_ratio = (float)overlap_count/(float)total_count;
+}
+
 void ConnectivityMatrix::set_atlas(atlas& data,const tipl::image<tipl::vector<3,float>,3 >& mni_position)
 {
     if(mni_position.empty())
         return;
     tipl::geometry<3> geo(mni_position.geometry());
     tipl::vector<3> null;
-    regions.clear();
+    region_count = data.get_list().size();
     region_name.clear();
-    for (unsigned int label_index = 0; label_index < data.get_list().size(); ++label_index)
-    {
-        std::vector<tipl::vector<3,short> > cur_region;
-        for (tipl::pixel_index<3> index(geo); index < geo.size();++index)
-            if(mni_position[index.index()] != null && data.is_labeled_as(mni_position[index.index()],label_index))
-                cur_region.push_back(tipl::vector<3,short>(index.begin()));
-        regions.push_back(cur_region);
+    for (unsigned int label_index = 0; label_index < region_count; ++label_index)
         region_name.push_back(data.get_list()[label_index]);
-    }
+
+    std::vector<std::vector<tipl::vector<3,short> > > regions(region_count);
+    data.is_labeled_as(mni_position.front(),0);// trigger load from file
+    tipl::par_for (region_count,[&](int i)
+    {
+        for (tipl::pixel_index<3> index(geo); index < geo.size();++index)
+            if(mni_position[index.index()] != null && data.is_labeled_as(mni_position[index.index()],i))
+                regions[i].push_back(tipl::vector<3,short>(index.begin()));
+    });
+
+    set_regions(geo,regions);
 }
 
 
@@ -2292,7 +2291,7 @@ void for_each_connectivity(const T& end_list1,
 
 bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_value_type,bool use_end_only,float threshold)
 {
-    if(regions.size() == 0)
+    if(region_count == 0)
     {
         error_msg = "No region information. Please assign regions";
         return false;
@@ -2300,13 +2299,13 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
 
     std::vector<std::vector<short> > end_list1,end_list2;
     if(use_end_only)
-        tract_model.get_end_list(regions,end_list1,end_list2,overlap_ratio);
+        tract_model.get_end_list(region_map,end_list1,end_list2);
     else
-        tract_model.get_passing_list(regions,end_list1,end_list2,overlap_ratio);
+        tract_model.get_passing_list(region_map,region_count,end_list1,end_list2);
     if(matrix_value_type == "trk")
     {
         std::vector<std::vector<std::vector<unsigned int> > > region_passing_list;
-        init_matrix(region_passing_list,regions.size());
+        init_matrix(region_passing_list,region_count);
 
         for_each_connectivity(end_list1,end_list2,
                               [&](unsigned int index,short i,short j){
@@ -2330,9 +2329,9 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
         return true;
     }
     matrix_value.clear();
-    matrix_value.resize(tipl::geometry<2>(regions.size(),regions.size()));
+    matrix_value.resize(tipl::geometry<2>(region_count,region_count));
     std::vector<std::vector<unsigned int> > count;
-    init_matrix(count,regions.size());
+    init_matrix(count,region_count);
 
     for_each_connectivity(end_list1,end_list2,
                           [&](unsigned int,short i,short j){
@@ -2356,7 +2355,7 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
     if(matrix_value_type == "ncount" || matrix_value_type == "ncount2")
     {
         std::vector<std::vector<std::vector<unsigned int> > > length_matrix;
-        init_matrix(length_matrix,regions.size());
+        init_matrix(length_matrix,region_count);
 
         for_each_connectivity(end_list1,end_list2,
                               [&](unsigned int index,short i,short j){
@@ -2387,8 +2386,8 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
     if(matrix_value_type == "mean_length")
     {
         std::vector<std::vector<unsigned int> > sum_length,sum_n;
-        init_matrix(sum_length,regions.size());
-        init_matrix(sum_n,regions.size());
+        init_matrix(sum_length,region_count);
+        init_matrix(sum_n,region_count);
 
         for_each_connectivity(end_list1,end_list2,
                               [&](unsigned int index,short i,short j){
@@ -2410,7 +2409,7 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
         return false;
     }
     std::vector<std::vector<float> > sum;
-    init_matrix(sum,regions.size());
+    init_matrix(sum,region_count);
 
     std::vector<float> m(data.size());
     for(unsigned int index = 0;index < data.size();++index)

@@ -90,6 +90,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
             dir += "/";
             std::ifstream in(roi_file_name.c_str());
             std::string line;
+            std::vector<std::vector<tipl::vector<3,short> > > regions;
             while(std::getline(in,line))
             {
                 ROIRegion region(handle);
@@ -103,11 +104,12 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                     std::cout << "Failed to open file as a region:" << fn << std::endl;
                     return;
                 }
-                data.regions.push_back(std::vector<tipl::vector<3,short> >());
-                region.get_region_voxels(data.regions.back());
+                regions.push_back(std::vector<tipl::vector<3,short> >());
+                region.get_region_voxels(regions.back());
                 data.region_name.push_back(QFileInfo(line.c_str()).baseName().toStdString());
             }
-            std::cout << "A total of " << data.regions.size() << " regions are loaded." << std::endl;
+            data.set_regions(handle->dim,regions);
+            std::cout << "A total of " << data.region_count << " regions are loaded." << std::endl;
         }
         else
         {
@@ -158,6 +160,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                 std::map<int,std::string> label_map;
                 std::map<int,tipl::rgb> label_color;
                 get_roi_label(roi_file_name.c_str(),label_map,label_color,false);
+                std::vector<std::vector<tipl::vector<3,short> > > regions;
                 for(unsigned int value = 1;value < value_map.size();++value)
                     if(value_map[value])
                     {
@@ -167,8 +170,8 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                                 mask[i] = 1;
                         ROIRegion region(handle);
                         region.LoadFromBuffer(mask);
-                        data.regions.push_back(std::vector<tipl::vector<3,short> >());
-                        region.get_region_voxels(data.regions.back());
+                        regions.push_back(std::vector<tipl::vector<3,short> >());
+                        region.get_region_voxels(regions.back());
                         if(label_map.find(value) != label_map.end())
                             data.region_name.push_back(label_map[value]);
                         else
@@ -178,6 +181,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                             data.region_name.push_back(out.str());
                         }
                     }
+                data.set_regions(handle->dim,regions);
             }
         }
         for(unsigned int j = 0;j < connectivity_type_list.size();++j)
