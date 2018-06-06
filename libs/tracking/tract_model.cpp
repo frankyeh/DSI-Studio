@@ -2248,17 +2248,27 @@ void ConnectivityMatrix::set_atlas(atlas& data,const tipl::image<tipl::vector<3,
     region_name.clear();
     for (unsigned int label_index = 0; label_index < region_count; ++label_index)
         region_name.push_back(data.get_list()[label_index]);
-
-    std::vector<std::vector<tipl::vector<3,short> > > regions(region_count);
     data.is_labeled_as(mni_position.front(),0);// trigger load from file
-    tipl::par_for (region_count,[&](int i)
-    {
-        for (tipl::pixel_index<3> index(geo); index < geo.size();++index)
-            if(mni_position[index.index()] != null && data.is_labeled_as(mni_position[index.index()],i))
-                regions[i].push_back(tipl::vector<3,short>(index.begin()));
-    });
 
-    set_regions(geo,regions);
+    region_map.clear();
+    region_map.resize(geo.size());
+    for(int i = 0;i < region_count;++i)
+    {
+        mni_position.for_each_mt([&](const tipl::vector<3,float>& mni,const tipl::pixel_index<3>& index)
+        {
+            if(mni != null && data.is_labeled_as(mni,i))
+                region_map[index.index()].push_back(i);
+        });
+    }
+    unsigned int overlap_count = 0,total_count = 0;
+    for(unsigned int index = 0;index < geo.size();++index)
+        if(!region_map[index].empty())
+        {
+            ++total_count;
+            if(region_map[index].size() > 1)
+                ++overlap_count;
+        }
+    overlap_ratio = (float)overlap_count/(float)total_count;
 }
 
 
