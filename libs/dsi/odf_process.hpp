@@ -384,22 +384,19 @@ protected:
 public:
     virtual void init(Voxel& voxel)
     {
-
-        fa.resize(voxel.max_fiber_number);
-        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-            fa[index].resize(voxel.dim.size());
-        gfa.clear();
-        gfa.resize(voxel.dim.size());
-        iso.clear();
-        iso.resize(voxel.dim.size());
+        fa = std::move(std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(voxel.dim.size())));
+        gfa = std::move(std::vector<float>(voxel.dim.size()));
+        iso= std::move(std::vector<float>(voxel.dim.size()));
+        if(voxel.method_id == 8) // DDI
+        {
+            qa_inc = std::move(std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(voxel.dim.size())));;
+            qa_dec = std::move(std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(voxel.dim.size())));;
+        }
         if(voxel.output_rdi)
         {
             float sigma = voxel.param[0]; //optimal 1.24
             for(float L = 0.2f;L <= sigma;L+= 0.2f)
-            {
-                rdi.push_back(std::vector<float>());
-                rdi.back().resize(voxel.dim.size());
-            }
+                rdi.push_back(std::move(std::vector<float>(voxel.dim.size())));
         }
 
         if(voxel.csf_calibration)
@@ -421,11 +418,7 @@ public:
                                     tipl::dyndim(odf.size(),dwi.size()));
             z0 = tipl::mean(odf.begin(),odf.end());
         }
-        if(voxel.method_id == 8) // DDI
-        {
-            qa_inc = fa;
-            qa_dec = fa;
-        }
+
         voxel.z0 = 0.0;
     }
     virtual void run(Voxel& voxel, VoxelData& data)

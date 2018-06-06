@@ -32,9 +32,8 @@ void SliceModel::get_mosaic(tipl::color_image& show_image,
                                const tipl::value_to_color<float>& overlay_v2c)
 {
     unsigned slice_num = geometry[2] / skip;
-    show_image.clear();
-    show_image.resize(tipl::geometry<2>(geometry[0]*mosaic_size,
-                                          geometry[1]*(std::ceil((float)slice_num/(float)mosaic_size))));
+    show_image = std::move(tipl::color_image(tipl::geometry<2>(geometry[0]*mosaic_size,
+                                          geometry[1]*(std::ceil((float)slice_num/(float)mosaic_size)))));
     int old_z = slice_pos[2];
     for(unsigned int z = 0;z < slice_num;++z)
     {

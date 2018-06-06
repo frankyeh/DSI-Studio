@@ -207,8 +207,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                 std::vector<float> tract(index_shift*n_point + trk.n_properties);
                 in.read((char*)&*tract.begin(),sizeof(float)*tract.size());
 
-                loaded_tract_data.push_back(std::vector<float>());
-                loaded_tract_data.back().resize(n_point*3);
+                loaded_tract_data.push_back(std::move(std::vector<float>(n_point*3)));
                 const float *from = &*tract.begin();
                 float *to = &*loaded_tract_data.back().begin();
                 for (unsigned int i = 0;i < n_point;++i,from += index_shift,to += 3)
@@ -313,8 +312,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                     for(unsigned int index = 0;index < buf.size();)
                     {
                         unsigned int end = std::find(buf.begin()+index,buf.end(),2143289344)-buf.begin(); // NaN
-                        loaded_tract_data.push_back(std::vector<float>());
-                        loaded_tract_data.back().resize(end-index);
+                        loaded_tract_data.push_back(std::move(std::vector<float>(end-index)));
                         std::copy((const float*)&*buf.begin() + index,
                                   (const float*)&*buf.begin() + end,
                                   loaded_tract_data.back().begin());
