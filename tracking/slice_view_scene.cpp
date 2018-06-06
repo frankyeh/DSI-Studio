@@ -41,9 +41,9 @@ void slice_view_scene::show_ruler(QPainter& paint)
         from -= to;
         float pixel_length = from.length();
         from /= cur_tracking_window.get_scene_zoom();
-        from[0] *= cur_tracking_window.handle->vs[0];
-        from[1] *= cur_tracking_window.handle->vs[1];
-        from[2] *= cur_tracking_window.handle->vs[2];
+        from[0] *= cur_tracking_window.current_slice->voxel_size[0];
+        from[1] *= cur_tracking_window.current_slice->voxel_size[1];
+        from[2] *= cur_tracking_window.current_slice->voxel_size[2];
         float length = from.length();
         float precision = std::pow(10.0,std::floor(std::log10((double)length))-1);
         float tic_dis = std::pow(10.0,std::floor(std::log10((double)50.0*length/pixel_length)));
@@ -574,11 +574,8 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 
     if(sel_mode != 4)
     {
-        if(sel_mode != 6)
-        {
-            sel_point.clear();
-            sel_coord.clear();
-        }
+        sel_point.clear();
+        sel_coord.clear();
         sel_point.push_back(tipl::vector<2,short>(X, Y));
         sel_coord.push_back(pos);
     }
