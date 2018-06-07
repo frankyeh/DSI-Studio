@@ -212,11 +212,10 @@ public:
                     if (handle->dim.is_valid(p))
                         points.push_back(tipl::vector<3,float>(p[0],p[1],p[2]));
                 }
+
             }
-            det = std::round(det);
-            tipl::multiply_constant(points,det);
             region.clear();
-            add_points(points,false,det);
+            add_points(points,false,1.0f);
         }
 
         template<class image_type>
