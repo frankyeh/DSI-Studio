@@ -2737,6 +2737,8 @@ void ConnectivityMatrix::network_property(std::string& report)
     }
 
 
+
+
     // calculate assortativity
     {
         std::vector<float> degi,degj;
@@ -2756,6 +2758,56 @@ void ConnectivityMatrix::network_property(std::string& report)
                    std::accumulate(degj.begin(),degj.end(),0.0))/2.0/degi.size();
         out << "assortativity_coefficient(weighted)\t" << ( sum  - a*a)/ ( b - a*a ) << std::endl;
     }
+
+    //rich club binary
+    {
+        for(int k = 5;k <= 25;k += 5)
+        {
+            float nk = 0.0f,ek = 0.0f;
+            for(int i = 0;i < binary_matrix.height();++i)
+            {
+                if(degree[i] <= k)
+                    continue;
+                nk += 1.0f;
+                int pos = i*binary_matrix.width();
+                for(int j = 0;j < binary_matrix.width();++j)
+                {
+                    if(degree[j] <= k || i == j)
+                        continue;
+                    ek += binary_matrix[pos + j];
+                }
+            }
+            float nk_nk1 = nk*(nk-1.0f);
+            out << "rich_club_k" << k << "(binary)\t" << (nk_nk1 == 0.0f ? 0.0f: ek/nk_nk1) << std::endl;
+        }
+    }
+
+    //rich club weighted
+    {
+        std::vector<float> wrant(norm_matrix.begin(),norm_matrix.end());
+        std::sort(wrant.begin(),wrant.end(),std::greater<float>());
+        for(int k = 5;k <= 25;k += 5)
+        {
+            float wr = 0.0f;
+            int er = 0;
+            for(int i = 0;i < norm_matrix.height();++i)
+            {
+                if(degree[i] <= k)
+                    continue;
+                int pos = i*norm_matrix.width();
+                for(int j = 0;j < norm_matrix.width();++j)
+                {
+                    if(degree[j] <= k || i == j)
+                        continue;
+                    wr += norm_matrix[pos + j];
+                    ++er;
+                }
+            }
+            float wrank_r = std::accumulate(wrant.begin(),wrant.begin()+er,0.0f);
+            out << "rich_club_k" << k << "(weighted)\t" << (wrank_r == 0.0f ? 0.0f: wr/wrank_r) << std::endl;
+        }
+    }
+
     // betweenness
     std::vector<float> betweenness_bin(n);
     {
