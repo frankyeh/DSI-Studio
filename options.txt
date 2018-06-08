@@ -72,15 +72,16 @@ Tract/Tract Selection Angle/tract_sel_angle/int:0:90:5/45
 Tract/Blend Func1/tract_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
 Tract/Blend Func2/tract_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
 Region/Opacity/region_alpha/float:0:1:0.1:2/0.8
+Region/Sphere/region_sphere_only/Off:On/0
 Region/Mesh Rendering/region_mesh_smoothed/Original:Smoothed:Smoothed2/1
-Region/Light/region_light_option/One source:Two sources:Three sources/2
-Region/Light Direction/region_light_dir/int/5
-Region/Light Shading/region_light_shading/int/1
-Region/Light Diffuse/region_light_diffuse/int/6
+Region/Light/region_light_option/One source:Two sources:Three sources/0
+Region/Light Direction/region_light_dir/int/2
+Region/Light Shading/region_light_shading/int/2
+Region/Light Diffuse/region_light_diffuse/int/10
 Region/Light Ambient/region_light_ambient/int/0
 Region/Light Specular/region_light_specular/int/0
 Region/Material Specular/region_specular/int/0
-Region/Material Emission/region_emission/int/0
+Region/Material Emission/region_emission/int/1
 Region/Material Shininess/region_shininess/int/0
 Region/Blend Func1/region_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
 Region/Blend Func2/region_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
