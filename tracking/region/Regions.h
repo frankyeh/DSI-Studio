@@ -75,6 +75,18 @@ public: // rendering options
             result[2] = (float)result[2]/resolution_ratio;
             return result;
         }
+        tipl::vector<3,float> get_center(void) const
+        {
+            tipl::vector<3,float> c;
+            if(region.size())
+            {
+                c = region.front();
+                c += region.back();
+                c *= 0.5;
+                c /= resolution_ratio;
+            }
+            return c;
+        }
         void get_region_voxels(std::vector<tipl::vector<3,short> >& output) const
         {
             output = region;

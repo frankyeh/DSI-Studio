@@ -6,9 +6,24 @@
 #define NOMINMAX
 #include <memory>
 #include "QtOpenGL/QGLWidget"
+#include <gl/GLU.h>
 #include "tracking/region/RegionModel.h"
 #include "tracking/tracking_window.h"
 class RenderingTableWidget;
+class GluQua{
+private:
+    GLUquadricObj* ptr;
+public:
+    GluQua(void):ptr(gluNewQuadric())
+    {
+    }
+    ~GluQua(void)
+    {
+        gluDeleteQuadric(ptr);
+    }
+    GLUquadricObj* get(void) {return ptr;}
+};
+
 class GLWidget : public QGLWidget
 {
 Q_OBJECT
@@ -62,6 +77,8 @@ public:
      int odf_dim;
      int odf_slide_pos;
      void add_odf(tipl::pixel_index<3> pos);
+private: //glu
+     std::shared_ptr<GluQua> RegionSpheres;
  private:
      void rotate_angle(float angle,float x,float y,float z);
  public slots:

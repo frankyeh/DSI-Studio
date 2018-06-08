@@ -841,34 +841,60 @@ void GLWidget::renderLR()
                    (float)(get_param("region_light_dir"))*3.1415926*2.0/10.0,
                    (float)(get_param("region_light_shading"))*3.1415926/20.0,
                    get_param("region_light_option"));
-
-        glPushMatrix();
-        glMultMatrixf(transformation_matrix.begin());
-
         setupMaterial((float)(get_param("region_emission"))/10.0,
                       (float)(get_param("region_specular"))/10.0,
                       get_param("region_shininess")*10);
 
-        float alpha = get_param_float("region_alpha");
-        unsigned char cur_view = (alpha == 1.0 ? 0 : getCurView(transformation_matrix));
+        glPushMatrix();
+        glMultMatrixf(transformation_matrix.begin());
 
-        std::vector<unsigned int> region_need_update;
-        for(unsigned int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
-            if(cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked &&
-                    cur_tracking_window.regionWidget->regions[index]->modified)
-                region_need_update.push_back(index);
-
-        int smoothed = get_param("region_mesh_smoothed");
-        tipl::par_for(region_need_update.size(),[&](unsigned int index){
-            cur_tracking_window.regionWidget->regions[region_need_update[index]]->makeMeshes(smoothed);
-        });
-
-        for(unsigned int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
-            if(cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked)
+        if(get_param("region_sphere_only"))
+        {
+            if (cur_tracking_window.regionWidget->regions.size())
             {
-                drawRegion(cur_tracking_window.regionWidget->regions[index]->show_region,
-                           cur_view,alpha,get_param("region_bend1"),get_param("region_bend2"));
+                glEnable(GL_COLOR_MATERIAL);
+                if(!RegionSpheres.get())
+                    RegionSpheres.reset(new GluQua);
+                for(unsigned int i = 0;i < cur_tracking_window.regionWidget->regions.size();++i)
+                    if(cur_tracking_window.regionWidget->item(i,0)->checkState() == Qt::Checked &&
+                       !cur_tracking_window.regionWidget->regions[i]->region.empty())
+                    {
+                        auto& cur_region = cur_tracking_window.regionWidget->regions[i];
+                        auto center = cur_tracking_window.regionWidget->regions[i]->get_center();
+                        glPushMatrix();
+                        glTranslatef(center[0],center[1],center[2]);
+                        glColor4f(cur_region->show_region.color.r/255.0f,
+                                  cur_region->show_region.color.g/255.0f,
+                                  cur_region->show_region.color.b/255.0f,0.5f);
+                        gluSphere(RegionSpheres->get(),5,60,60);
+                        glPopMatrix();
+                    }
+                glDisable(GL_COLOR_MATERIAL);
             }
+        }
+        else
+        {
+            float alpha = get_param_float("region_alpha");
+            unsigned char cur_view = (alpha == 1.0 ? 0 : getCurView(transformation_matrix));
+
+            std::vector<unsigned int> region_need_update;
+            for(unsigned int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
+                if(cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked &&
+                        cur_tracking_window.regionWidget->regions[index]->modified)
+                    region_need_update.push_back(index);
+
+            int smoothed = get_param("region_mesh_smoothed");
+            tipl::par_for(region_need_update.size(),[&](unsigned int index){
+                cur_tracking_window.regionWidget->regions[region_need_update[index]]->makeMeshes(smoothed);
+            });
+
+            for(unsigned int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
+                if(cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked)
+                {
+                    drawRegion(cur_tracking_window.regionWidget->regions[index]->show_region,
+                               cur_view,alpha,get_param("region_bend1"),get_param("region_bend2"));
+                }
+        }
         glDisable(GL_BLEND);
         glPopMatrix();
         check_error("show_region");
