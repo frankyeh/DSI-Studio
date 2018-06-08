@@ -1029,8 +1029,14 @@ void RegionTableWidget::setROIs(ThreadData* data)
     // check if there is seeds
     if(!has_seeding())
         set_whole_brain(data);
+    int roi_count = 0;
     for (unsigned int index = 0;index < regions.size();++index)
-        if (!regions[index]->empty() && item(index,0)->checkState() == Qt::Checked)
+        if (!regions[index]->empty() && item(index,0)->checkState() == Qt::Checked
+                && regions[index]->regions_feature == 0 /*ROI*/)
+            ++roi_count;
+    for (unsigned int index = 0;index < regions.size();++index)
+        if (!regions[index]->empty() && item(index,0)->checkState() == Qt::Checked
+                && !(regions[index]->regions_feature == 0 && roi_count > 5))
             data->roi_mgr.setRegions(cur_tracking_window.handle->dim,regions[index]->get_region_voxels_raw(),
                                      regions[index]->resolution_ratio,
                              regions[index]->regions_feature,item(index,0)->text().toLocal8Bit().begin(),
