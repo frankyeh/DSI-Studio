@@ -6,7 +6,11 @@
 #define NOMINMAX
 #include <memory>
 #include "QtOpenGL/QGLWidget"
+#ifdef __APPLE__
+#include <OpenGL/GLU.h>
+#else
 #include <gl/GLU.h>
+#endif
 #include "tracking/region/RegionModel.h"
 #include "tracking/tracking_window.h"
 class RenderingTableWidget;
