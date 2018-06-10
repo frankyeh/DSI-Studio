@@ -1913,3 +1913,79 @@ void tracking_window::on_is_overlay_clicked()
 }
 
 
+
+void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
+{
+    QStringList filenames = QFileDialog::getOpenFileNames(
+        this,"Open Connectivity Matrices files",QFileInfo(windowTitle()).absolutePath(),
+                "Connectivity files (*.mat);;All files (*)" );
+    if( filenames.isEmpty())
+        return;
+    tipl::image<float,2> connectivity;
+    std::string atlas;
+    for(int i = 0;i < filenames.size();++i)
+    {
+        tipl::io::mat_read in;
+        if(!in.load_from_file(filenames[i].toStdString().c_str()))
+        {
+            QMessageBox::information(this,"Error",QString("Failed to load file:")+filenames[i],0);
+            return;
+        }
+        unsigned int row,col;
+        const char* ptr = 0;
+        if(!in.read("atlas",row,col,ptr))
+        {
+            QMessageBox::information(this,"Error",QString("Cannot find atlas matrix in file:")+filenames[i],0);
+            return;
+        }
+        if(i == 0)
+            atlas = ptr;
+        else
+        {
+            if(atlas != std::string(ptr))
+            {
+                QMessageBox::information(this,"Error",QString("Inconsistent atlas setting in file:")+filenames[i],0);
+                return;
+            }
+        }
+        const float* buf = 0;
+        if(!in.read("connectivity",row,col,buf))
+        {
+            QMessageBox::information(this,"Error",QString("Cannot find connectivity matrix in file:")+filenames[i],0);
+            return;
+        }
+        if(i == 0)
+        {
+            connectivity.resize(tipl::geometry<2>(row,col));
+            std::copy(buf,buf+row*col,connectivity.begin());
+        }
+        else
+        {
+            if(row != connectivity.width() || col != connectivity.height())
+            {
+                QMessageBox::information(this,"Error",QString("Inconsistent matrix size in file:")+filenames[i],0);
+                return;
+            }
+            tipl::add(connectivity.begin(),connectivity.end(),buf);
+        }
+    }
+    tipl::multiply_constant(connectivity,1.0f/tipl::maximum(connectivity));
+    for(int i = 0;i < connectivity.size();++i)
+        if(connectivity[i] < 0.05)
+            connectivity[i] = 0.0f;
+    glWidget->connectivity = std::move(connectivity);
+    if(atlas != "roi")
+    {
+        regionWidget->delete_all_region();
+        for(int i = 0;i < atlas_list.size();++i)
+            if(atlas == atlas_list[i].name)
+            {
+                for(int j = 0;j < atlas_list[i].get_list().size();++j)
+                    regionWidget->add_region_from_atlas(i,j);
+                return;
+            }
+        QMessageBox::information(this,"Error",QString("Cannot find ")+atlas.c_str()+
+        " atlas in DSI Studio. Please update DSI Studio package or check the atlas folder",0);
+
+    }
+}

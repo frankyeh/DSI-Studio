@@ -174,6 +174,7 @@ private slots:
 
     void on_is_overlay_clicked();
     void on_actionInsert_MNI_images_triggered();
+    void on_actionOpen_Connectivity_Matrix_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

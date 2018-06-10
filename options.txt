@@ -72,7 +72,9 @@ Tract/Tract Selection Angle/tract_sel_angle/int:0:90:5/45
 Tract/Blend Func1/tract_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
 Tract/Blend Func2/tract_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
 Region/Opacity/region_alpha/float:0:1:0.1:2/0.8
-Region/Sphere/region_sphere_only/Off:On/0
+Region/Graph/region_graph/Off:On/0
+Region/Node Size/region_node_size/int/4
+Region/Edge Size/region_edge_size/int/4
 Region/Mesh Rendering/region_mesh_smoothed/Original:Smoothed:Smoothed2/1
 Region/Light/region_light_option/One source:Two sources:Three sources/0
 Region/Light Direction/region_light_dir/int/2

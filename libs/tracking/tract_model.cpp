@@ -2161,7 +2161,8 @@ void ConnectivityMatrix::save_to_file(const char* file_name)
     std::ostringstream out;
     std::copy(region_name.begin(),region_name.end(),std::ostream_iterator<std::string>(out,"\n"));
     std::string result(out.str());
-    mat_header.write("name",result.c_str(),1,result.length());
+    mat_header.write("name",result.c_str(),1,result.length()+1);
+    mat_header.write("atlas",atlas_name.c_str(),1,atlas_name.length()+1);
 }
 
 void ConnectivityMatrix::save_to_text(std::string& text)
@@ -2234,6 +2235,7 @@ void ConnectivityMatrix::set_regions(const tipl::geometry<3>& geo,
                 ++overlap_count;
         }
     overlap_ratio = (float)overlap_count/(float)total_count;
+    atlas_name = "roi";
 }
 
 void ConnectivityMatrix::set_atlas(atlas& data,const tipl::image<tipl::vector<3,float>,3 >& mni_position)
@@ -2267,6 +2269,7 @@ void ConnectivityMatrix::set_atlas(atlas& data,const tipl::image<tipl::vector<3,
                 ++overlap_count;
         }
     overlap_ratio = (float)overlap_count/(float)total_count;
+    atlas_name = data.name;
 }
 
 

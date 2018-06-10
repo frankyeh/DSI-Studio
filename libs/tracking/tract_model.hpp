@@ -157,7 +157,7 @@ public:
     std::vector<std::vector<short> > region_map;
     unsigned int region_count;
     std::vector<std::string> region_name;
-    std::string error_msg;
+    std::string error_msg,atlas_name;
     float overlap_ratio;
     void set_atlas(atlas& data,const tipl::image<tipl::vector<3,float>,3 >& mni_position);
     void set_regions(const tipl::geometry<3>& geo,

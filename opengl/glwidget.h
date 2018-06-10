@@ -79,6 +79,8 @@ public:
      void add_odf(tipl::pixel_index<3> pos);
 private: //glu
      std::shared_ptr<GluQua> RegionSpheres;
+public:
+     tipl::image<float,2> connectivity;
  private:
      void rotate_angle(float angle,float x,float y,float z);
  public slots:

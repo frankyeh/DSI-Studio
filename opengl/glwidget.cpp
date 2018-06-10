@@ -478,6 +478,18 @@ void GLWidget::paintGL()
     }
 }
 
+void CylinderGL(GLUquadricObj* ptr,const tipl::vector<3>& p1,const tipl::vector<3>& p2,float r)
+{
+     tipl::vector<3> z(0,0,1),dis(p1-p2);
+     tipl::vector<3> t = z.cross_product(dis);
+     float v = dis.length();
+     double angle = 180.0f / 3.1415926*std::acos (dis[2]/v);
+     glPushMatrix();
+     glTranslated(p2[0],p2[1],p2[2]);
+     glRotated(angle,t[0],t[1],t[2]);
+     gluCylinder(ptr,r,r,v,10,v/10+1);		// Draw A cylinder
+     glPopMatrix();
+}
 
 void GLWidget::renderLR()
 {
@@ -844,17 +856,22 @@ void GLWidget::renderLR()
         setupMaterial((float)(get_param("region_emission"))/10.0,
                       (float)(get_param("region_specular"))/10.0,
                       get_param("region_shininess")*10);
-
         glPushMatrix();
         glMultMatrixf(transformation_matrix.begin());
 
-        if(get_param("region_sphere_only"))
+
+
+        if(get_param("region_graph"))
         {
+
             if (cur_tracking_window.regionWidget->regions.size())
             {
                 glEnable(GL_COLOR_MATERIAL);
                 if(!RegionSpheres.get())
+                {
                     RegionSpheres.reset(new GluQua);
+                    gluQuadricNormals(RegionSpheres->get(), GLU_SMOOTH);
+                }
                 for(unsigned int i = 0;i < cur_tracking_window.regionWidget->regions.size();++i)
                     if(cur_tracking_window.regionWidget->item(i,0)->checkState() == Qt::Checked &&
                        !cur_tracking_window.regionWidget->regions[i]->region.empty())
@@ -865,9 +882,26 @@ void GLWidget::renderLR()
                         glTranslatef(center[0],center[1],center[2]);
                         glColor4f(cur_region->show_region.color.r/255.0f,
                                   cur_region->show_region.color.g/255.0f,
-                                  cur_region->show_region.color.b/255.0f,0.5f);
-                        gluSphere(RegionSpheres->get(),5,60,60);
+                                  cur_region->show_region.color.b/255.0f,1.0f);
+                        gluSphere(RegionSpheres->get(),
+                                  std::pow(cur_tracking_window.regionWidget->regions[i]->region.size()
+                                           *(get_param("region_node_size")+1),1.0f/3.0f)/8.0f,10,10);
                         glPopMatrix();
+                    }
+                if(!connectivity.empty() && connectivity.width() == cur_tracking_window.regionWidget->regions.size())
+                for(unsigned int i = 0;i < cur_tracking_window.regionWidget->regions.size();++i)
+                    for(unsigned int j = i+1;j < cur_tracking_window.regionWidget->regions.size();++j)
+                    if(cur_tracking_window.regionWidget->item(i,0)->checkState() == Qt::Checked &&
+                       cur_tracking_window.regionWidget->item(j,0)->checkState() == Qt::Checked &&
+                       !cur_tracking_window.regionWidget->regions[i]->region.empty() &&
+                            !cur_tracking_window.regionWidget->regions[j]->region.empty() &&
+                            connectivity.at(i,j) != 0.0f)
+                    {
+                        auto centeri = cur_tracking_window.regionWidget->regions[i]->get_center();
+                        auto centerj = cur_tracking_window.regionWidget->regions[j]->get_center();
+                        glColor4f(1.0f,1.0f,1.0f,1.0f);
+                        CylinderGL(RegionSpheres->get(),centeri,centerj,
+                                   connectivity.at(i,j)*(get_param("region_edge_size")+1)/cur_tracking_window.handle->vs[0]);
                     }
                 glDisable(GL_COLOR_MATERIAL);
             }
