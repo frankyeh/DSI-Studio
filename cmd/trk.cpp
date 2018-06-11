@@ -455,6 +455,7 @@ int trk(void)
     tracking_thread.param.center_seed = po.get("seed_plan",int(0));
     tracking_thread.param.random_seed = po.get("random_seed",int(0));
     tracking_thread.param.check_ending = po.get("check_ending",int(0));
+    tracking_thread.param.tip_iteration = po.get("tip_iteration",int(1));
     if(po.has("otsu_threshold"))
     {
         if(po.has("fa_threshold"))
@@ -520,6 +521,7 @@ int trk(void)
         std::cout << "interpolation=" << (int)tracking_thread.param.interpolation_strategy << std::endl;
         std::cout << "voxelwise=" << (int)tracking_thread.param.center_seed << std::endl;
         std::cout << "default_otsu=" << tracking_thread.param.default_otsu << std::endl;
+        std::cout << "tip_iteration=" << (int)tracking_thread.param.tip_iteration << std::endl;
         std::cout << (tracking_thread.param.stop_by_tract ? "fiber_count=" : "seed_count=") <<
                 tracking_thread.param.termination_count << std::endl;
         std::cout << "thread_count=" << po.get("thread_count",int(std::thread::hardware_concurrency())) << std::endl;

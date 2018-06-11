@@ -575,6 +575,8 @@ void tracking_window::set_tracking_param(ThreadData& tracking_thread)
     tracking_thread.param.check_ending = renderWidget->getData("check_ending").toInt();
     tracking_thread.param.termination_count = renderWidget->getData("track_count").toInt();
     tracking_thread.param.default_otsu = renderWidget->getData("otsu_threshold").toFloat();
+    tracking_thread.param.tip_iteration = renderWidget->getData("tip_iteration").toInt();
+
 }
 float tracking_window::get_scene_zoom(void)
 {

@@ -16,6 +16,7 @@ Tracking/Step Size(mm)(0=random)/step_size/float:0.00:10:0.1:2/0
 Tracking/Smoothing (1=random)/smoothing/float:-1.5:1:0.1:2/1
 Tracking/Min Length(mm)/min_length/float:0:800:50:1/30
 Tracking/Max Length(mm)/max_length/float:0:800:50:1/300
+Tracking/Topology-Informed Pruning (iteration)/tip_iteration/int:0:10:1/1
 Tracking/Seed Orientation/initial_direction/Primary:Random:All/0
 Tracking/Seed Position/seed_plan/Subvoxel:Voxel Center/0
 Tracking/Randomize Seeding/random_seed/Off:On/0
