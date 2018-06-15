@@ -28,6 +28,7 @@
 #include "connectometry/createdbdialog.h"
 #include "connectometry/db_window.h"
 #include "connectometry/group_connectometry.hpp"
+#include "connectometry/nn_connectometry.h"
 #include "program_option.hpp"
 #include "libs/dsi/image_model.hpp"
 extern program_option po;
@@ -1004,4 +1005,15 @@ void MainWindow::on_parse_network_measures_clicked()
 
     QMessageBox::information(this,"DSI Studio",QString("File saved to")+filename[0]+".collected.txt",0);
 
+}
+
+void MainWindow::on_connectometry_nn_clicked()
+{
+    QString filename;
+    std::shared_ptr<vbc_database> database;
+    if(!load_db(database,filename))
+        return;
+    nn_connectometry* nn_cnt = new nn_connectometry(this,database,filename,true);
+    nn_cnt->setAttribute(Qt::WA_DeleteOnClose);
+    nn_cnt->show();
 }

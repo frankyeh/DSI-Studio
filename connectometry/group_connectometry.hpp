@@ -60,7 +60,7 @@ public:
     ~group_connectometry();
 
 public:
-    bool load_demographic_file(QString filename);
+    bool load_demographic_file(QString filename,std::string& error_msg);
 public slots:
 
     void show_report();

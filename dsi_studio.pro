@@ -106,7 +106,8 @@ HEADERS += mainwindow.h \
     connectometry/match_db.h \
     connectometry/db_window.h \
     connectometry/group_connectometry.hpp \
-    regtoolbox.h
+    regtoolbox.h \
+    connectometry/nn_connectometry.h
 
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
@@ -126,7 +127,8 @@ FORMS += mainwindow.ui \
     connectometry/match_db.ui \
     connectometry/db_window.ui \
     connectometry/group_connectometry.ui \
-    regtoolbox.ui
+    regtoolbox.ui \
+    connectometry/nn_connectometry.ui
 RESOURCES += \
     icons.qrc
 SOURCES += main.cpp \
@@ -186,7 +188,8 @@ SOURCES += main.cpp \
     cmd/cnn.cpp \
     cmd/qc.cpp \
     libs/dsi/basic_voxel.cpp \
-    libs/dsi/image_model.cpp
+    libs/dsi/image_model.cpp \
+    connectometry/nn_connectometry.cpp
 
 OTHER_FILES += \
     options.txt \

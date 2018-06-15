@@ -270,7 +270,20 @@ void connectometry_db::get_subject_vector(unsigned int from,unsigned int to,
             tipl::multiply_constant(subject_vector[index].begin(),subject_vector[index].end(),1.0/sd);
     });
 }
-
+void connectometry_db::get_subject_vector_pos(std::vector<int>& subject_vector_pos,
+                            const tipl::image<int,3>& cerebrum_mask,float fiber_threshold) const
+{
+    subject_vector_pos.clear();
+    for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
+    {
+        unsigned int cur_index = si2vi[s_index];
+        if(!cerebrum_mask[cur_index])
+            continue;
+        for(unsigned int j = 0,fib_offset = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;
+                ++j,fib_offset+=si2vi.size())
+            subject_vector_pos.push_back(cur_index);
+    }
+}
 void connectometry_db::get_subject_vector(unsigned int subject_index,std::vector<float>& subject_vector,
                         const tipl::image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp) const
 {

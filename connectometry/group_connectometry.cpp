@@ -319,30 +319,30 @@ void group_connectometry::on_open_mr_files_clicked()
                 "Text or CSV file (*.txt *.csv);;All files (*)");
     if(filename.isEmpty())
         return;
-    load_demographic_file(filename);
+    std::string error_msg;
+    if(!load_demographic_file(filename,error_msg))
+        QMessageBox::information(this,"Error",error_msg.c_str(),0);
 }
 
-bool group_connectometry::load_demographic_file(QString filename)
+bool parse_demo(std::shared_ptr<vbc_database>& vbc,
+                QString filename,
+                std::vector<std::string>& titles,
+                std::vector<std::string>& items,
+                std::vector<int>& feature_location,
+                std::vector<double>& X,
+                float missing_value,
+                std::string& error_msg)
 {
-    model.reset(new stat_model);
-    model->init(vbc->handle->db.num_subjects);
-    file_names.clear();
-    file_names.push_back(filename.toLocal8Bit().begin());
-
+    titles.clear();
+    items.clear();
     int col_count = 0;
-    std::vector<std::string> titles;
-    std::vector<std::string> items;
-    // read demographic file
     {
         int row_count = 0,last_item_size = 0;
         bool is_csv = (QFileInfo(filename).completeSuffix() == "csv");
         std::ifstream in(filename.toLocal8Bit().begin());
         if(!in)
         {
-            if(gui)
-                QMessageBox::information(this,"Error",QString("Cannot find the demographic file."));
-            else
-                std::cout << "cannot find the demographic file at" << filename.toLocal8Bit().begin() << std::endl;
+            error_msg = "Cannot open the demographic file";
             return false;
         }
 
@@ -370,10 +370,9 @@ bool group_connectometry::load_demographic_file(QString filename)
             else
                 if(items.size()-last_item_size != col_count)
                 {
-                    QString error_msg = QString("Row number %1 has %2 fields, which is different from the column size %3.").arg(row_count).arg(items.size()-last_item_size).arg(col_count);
-                    if(!gui)
-                        std::cout << error_msg.toStdString() << std::endl;
-                    items.resize(col_count+last_item_size);
+                    error_msg = QString("Row number %1 has %2 fields, which is different from the column size %3.").
+                                        arg(row_count).arg(items.size()-last_item_size).arg(col_count).toStdString();
+                    return false;
                 }
             last_item_size = items.size();
         }
@@ -382,25 +381,112 @@ bool group_connectometry::load_demographic_file(QString filename)
 
         if(items.size()/col_count < 2)
         {
-            if(gui)
-                QMessageBox::information(0,"Error","Invalid demographic file format",0);
-            else
-                std::cout << "Invalid demographic file format" << std::endl;
+            error_msg = "Invalid demographic file format";
             return false;
         }
         // check subject count for command line
-        if(items.size()/col_count != vbc->handle->db.num_subjects+1 && !gui) // +1 for title
-        {
-            QString error_msg = QString("Subject number mismatch. The demographic file has %1 subjects, but the database has %2 subjects.").arg(row_count-1).arg(vbc->handle->db.num_subjects);
-            std::cout << error_msg.toStdString() << std::endl;
-            return false;
-        }
+        if(items.size()/col_count != vbc->handle->db.num_subjects+1) // +1 for title
+            std::cout << QString("Subject number mismatch. The demographic file has %1 subjects, but the database has %2 subjects.").
+                         arg(row_count-1).arg(vbc->handle->db.num_subjects).toStdString() << std::endl;
     }
     // first line moved to title vector
     titles.insert(titles.end(),items.begin(),items.begin()+col_count);
     items.erase(items.begin(),items.begin()+col_count);
 
+    // find which column can be used as features
+    for(int i = 0;i < titles.size();++i)
+    {
+        bool okay = true;
+        QString(items[i].c_str()).toDouble(&okay);
+        if(okay)
+            feature_location.push_back(i);
+    }
+    //  get feature matrix
+    X.clear();
+    for(unsigned int i = 0;i < vbc->handle->db.num_subjects;++i)
+    {
+        bool ok = false;
+        X.push_back(1); // for the intercep
+        for(unsigned int j = 0;j < feature_location.size();++j)
+        {
+            int item_pos = i*titles.size() + feature_location[j];
+            if(item_pos >= items.size())
+            {
+                X.push_back(missing_value);
+                continue;
+            }
+            double value = QString(items[item_pos].c_str()).toDouble(&ok);
+            if(!ok)
+            {
+                QString text = QString("Cannot parse '")+
+                QString(items[item_pos].c_str())+
+                QString("' at subject%1 feature%2.").arg(i+1).arg(j+1);
+                error_msg = text.toStdString();
+                return false;
+            }
+            X.push_back(value);
+        }
+    }
+    return true;
+}
+void fill_demo_table(std::shared_ptr<vbc_database>& vbc,
+                     QTableWidget* table,
+                     const std::vector<std::string>& titles,
+                     const std::vector<std::string>& items,
+                     const std::vector<double>& X)
+{
+    std::vector<int> col_has_value(titles.size());
+    for(int i = 0;i < titles.size();++i)
+    {
+        bool okay = true;
+        QString(items[i].c_str()).toDouble(&okay);
+        col_has_value[i] = okay ? 1:0;
+    }
+    QStringList t2;
+    t2 << "Subject";
+    for(int i = 0;i < titles.size();++i)
+        t2 << titles[i].c_str();
+    table->clear();
+    table->setColumnCount(t2.size());
+    table->setHorizontalHeaderLabels(t2);
+    table->setRowCount(vbc->handle->db.num_subjects);
+    for(unsigned int row = 0,index = 0;row < table->rowCount();++row)
+    {
+        table->setItem(row,0,new QTableWidgetItem(QString(vbc->handle->db.subject_names[row].c_str())));
+        ++index;// skip intercep
+        for(unsigned int col = 0;col < col_has_value.size();++col)
+        {
+            if(col_has_value[col])
+            {
+                table->setItem(row,col+1,new QTableWidgetItem(QString::number(X[index])));
+                ++index;
+                continue;
+            }
+            int item_pos = row*titles.size()+col;
+            if(item_pos < items.size())
+                table->setItem(row,col+1,new QTableWidgetItem(QString(items[item_pos].c_str())));
+            else
+                table->setItem(row,col+1,new QTableWidgetItem(QString()));
+        }
+    }
+}
+
+bool group_connectometry::load_demographic_file(QString filename,std::string& error_msg)
+{
+    model.reset(new stat_model);
+    model->init(vbc->handle->db.num_subjects);
+    file_names.clear();
+    file_names.push_back(filename.toLocal8Bit().begin());
+
+    std::vector<std::string> titles;
+    std::vector<std::string> items;
+    std::vector<int> feature_location;
+    std::vector<double> X;
+    // read demographic file
+    if(!parse_demo(vbc,filename,titles,items,feature_location,X,ui->missing_value->value(),error_msg))
+        return false;
     // get age and sex from subject name
+    /*
     if((QString(vbc->handle->db.subject_names[0].c_str()).contains("_M") ||
         QString(vbc->handle->db.subject_names[0].c_str()).contains("_F")) &&
         QString(vbc->handle->db.subject_names[0].c_str()).contains("Y_") && gui &&
@@ -408,6 +494,7 @@ bool group_connectometry::load_demographic_file(QString filename)
                                  "Pull age and sex (1 = male, 0 = female) information from connectometry db?",
                                  QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
         {
+            int col_count = titles.size();
             titles.insert(titles.begin(),"Sex");
             titles.insert(titles.begin(),"Age");
             std::vector<std::string> new_items;
@@ -435,53 +522,13 @@ bool group_connectometry::load_demographic_file(QString filename)
                         new_items.push_back("");
                 }
             }
-            col_count += 2;
             items.swap(new_items);
         }
-
+    */
     // fill up regression values
     {
-        std::vector<int> feature_location;
-        for(int i = 0;i < col_count;++i)
-        {
-            bool okay = true;
-            QString(items[i].c_str()).toDouble(&okay);
-            if(okay)
-                feature_location.push_back(i);
-        }
-
-        std::vector<double> X;
-        for(unsigned int i = 0;i < vbc->handle->db.num_subjects;++i)
-        {
-            bool ok = false;
-            X.push_back(1); // for the intercep
-            for(unsigned int j = 0;j < feature_location.size();++j)
-            {
-                int item_pos = i*col_count + feature_location[j];
-                if(item_pos >= items.size())
-                {
-                    X.push_back(ui->missing_value->value());
-                    continue;
-                }
-                double value = QString(items[item_pos].c_str()).toDouble(&ok);
-                if(!ok)
-                {
-                    if(!gui)
-                    {
-                        QString text = QString("Cannot parse '")+
-                        QString(items[item_pos].c_str())+
-                        QString("' at subject%1 feature%2.").arg(i+1).arg(j+1);
-                        std::cout << text.toStdString() << std::endl;
-                        return false;
-                    }
-                    value = ui->missing_value->value();
-                }
-                X.push_back(value);
-            }
-        }
-
         model->type = 1;
-        model->X = X;
+        model->X = std::move(X);
         model->feature_count = feature_location.size()+1; // additional one for intercept
         QStringList t;
         for(unsigned int index = 0;index < feature_location.size();++index)
@@ -499,49 +546,13 @@ bool group_connectometry::load_demographic_file(QString filename)
         }
 
         ui->foi->clear();
-        ui->foi->addItems(t);
-        ui->foi->setCurrentIndex(ui->foi->count()-1);
+        ui->foi->addItem(t[0]);
+        ui->foi->setCurrentIndex(0);
         ui->foi_widget->show();
-        ui->missing_data_checked->setChecked(std::find(X.begin(),X.end(),ui->missing_value->value()) != X.end());
+        ui->missing_data_checked->setChecked(std::find(model->X.begin(),model->X.end(),ui->missing_value->value()) != model->X.end());
     }
 
-    // show demographic GUI
-    {
-        std::vector<int> col_has_value(col_count);
-        for(int i = 0;i < col_count;++i)
-        {
-            bool okay = true;
-            QString(items[i].c_str()).toDouble(&okay);
-            col_has_value[i] = okay ? 1:0;
-        }
-        QStringList t2;
-        t2 << "Subject";
-        for(int i = 0;i < titles.size();++i)
-            t2 << titles[i].c_str();
-        ui->subject_demo->clear();
-        ui->subject_demo->setColumnCount(t2.size());
-        ui->subject_demo->setHorizontalHeaderLabels(t2);
-        ui->subject_demo->setRowCount(vbc->handle->db.num_subjects);
-        for(unsigned int row = 0,index = 0;row < ui->subject_demo->rowCount();++row)
-        {
-            ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->handle->db.subject_names[row].c_str())));
-            ++index;// skip intercep
-            for(unsigned int col = 0;col < col_has_value.size();++col)
-            {
-                if(col_has_value[col])
-                {
-                    ui->subject_demo->setItem(row,col+1,new QTableWidgetItem(QString::number(model->X[index])));
-                    ++index;
-                    continue;
-                }
-                int item_pos = row*col_count+col;
-                if(item_pos < items.size())
-                    ui->subject_demo->setItem(row,col+1,new QTableWidgetItem(QString(items[item_pos].c_str())));
-                else
-                    ui->subject_demo->setItem(row,col+1,new QTableWidgetItem(QString()));
-            }
-        }
-    }
+    fill_demo_table(vbc,ui->subject_demo,titles,items,model->X);
     return true;
 }
 

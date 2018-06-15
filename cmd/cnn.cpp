@@ -17,30 +17,32 @@ bool train_cnn(std::string network,
         return false;
     }
     std::cout << "training network=" << network << std::endl;
-    nn.learning_rate = po.get("learning_rate",0.01f);
-    nn.w_decay_rate = po.get("w_decay_rate",0.0f);
-    nn.b_decay_rate = po.get("b_decay_rate",0.0f);
-    nn.momentum = po.get("momentum",0.5f);
-    nn.batch_size = po.get("batch_size",64);
-    nn.epoch = po.get("epoch",2000);
+    tipl::ml::trainer t;
+    t.learning_rate = po.get("learning_rate",0.01f);
+    t.w_decay_rate = po.get("w_decay_rate",0.0f);
+    t.b_decay_rate = po.get("b_decay_rate",0.0f);
+    t.momentum = po.get("momentum",0.5f);
+    t.batch_size = po.get("batch_size",64);
+    t.epoch = po.get("epoch",2000);
 
-    std::cout << "learning rate=" << nn.learning_rate << std::endl;
-    std::cout << "weight decay=" << nn.w_decay_rate << std::endl;
-    std::cout << "bias decay=" << nn.b_decay_rate << std::endl;
-    std::cout << "momentum=" << nn.momentum << std::endl;
-    std::cout << "batch size=" << nn.batch_size << std::endl;
-    std::cout << "epoch=" << nn.epoch << std::endl;
+    std::cout << "learning rate=" << t.learning_rate << std::endl;
+    std::cout << "weight decay=" << t.w_decay_rate << std::endl;
+    std::cout << "bias decay=" << t.b_decay_rate << std::endl;
+    std::cout << "momentum=" << t.momentum << std::endl;
+    std::cout << "batch size=" << t.batch_size << std::endl;
+    std::cout << "epoch=" << t.epoch << std::endl;
 
     auto on_enumerate_epoch = [&](){
         if(po.has("rotation"))
             nn_data.rotate_permute();
         if(!nn_test.empty())
             std::cout << "testing error:" << (test_error = nn.test_error(nn_test.data,nn_test.data_label)) << "%" << std::endl;
-        std::cout << "training error:" << (train_error = nn.get_training_error()) << "%" << std::endl;
+        std::cout << "training error:" << (train_error = t.get_training_error()) << "%" << std::endl;
         };
     nn.init_weights();
     bool terminated = false;
-    nn.train(nn_data,terminated, on_enumerate_epoch);
+
+    t.train(nn,nn_data,terminated, on_enumerate_epoch);
     return true;
 }
 

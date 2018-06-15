@@ -23,9 +23,10 @@ int cnt(void)
         std::cout << "please assign demographic file" << std::endl;
         return 0;
     }
-    if(!vbc->load_demographic_file(po.get("demo").c_str()))
+    std::string error_msg;
+    if(!vbc->load_demographic_file(po.get("demo").c_str(),error_msg))
     {
-        std::cout << "Invalid demographic file" << std::endl;
+        std::cout << error_msg << std::endl;
         return 0;
     }
 

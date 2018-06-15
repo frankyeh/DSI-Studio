@@ -54,7 +54,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>1</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -211,6 +211,16 @@
           </property>
           <property name="description">
            <string>Compare logitudinal scans of an individual</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="connectometry_nn">
+          <property name="text">
+           <string>Connectometry Neural Network Analysis</string>
+          </property>
+          <property name="description">
+           <string>Neural Network Prediction on Local Connectome Fingerprint</string>
           </property>
          </widget>
         </item>

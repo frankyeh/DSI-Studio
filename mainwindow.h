@@ -58,6 +58,7 @@ private slots:
     void on_nonlinear_reg_clicked();
     void on_SRC_qc_clicked();
     void on_parse_network_measures_clicked();
+    void on_connectometry_nn_clicked();
 };
 
 #endif // MAINWINDOW_H
