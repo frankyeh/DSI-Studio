@@ -2036,7 +2036,6 @@ void TractModel::get_passing_list(const std::vector<std::vector<short> >& region
         if(tract_data[index].size() < 6)
             continue;
         std::vector<unsigned char> has_region(region_count);
-        unsigned int half_length = tract_data[index].size()/2;
         for(unsigned int ptr = 0;ptr < tract_data[index].size();ptr += 3)
         {
             tipl::pixel_index<3> pos(std::round(tract_data[index][ptr]),
@@ -2046,15 +2045,14 @@ void TractModel::get_passing_list(const std::vector<std::vector<short> >& region
                 continue;
             unsigned int pos_index = pos.index();
             for(unsigned int j = 0;j < region_map[pos_index].size();++j)
-                has_region[region_map[pos_index][j]] = (ptr > half_length ? 1: 2);
+                has_region[region_map[pos_index][j]] = 1;
         }
         for(unsigned int i = 0;i < has_region.size();++i)
-        {
-            if(has_region[i] == 1)
+            if(has_region[i])
+            {
                 passing_list1[index].push_back(i);
-            if(has_region[i] == 2)
                 passing_list2[index].push_back(i);
-        }
+            }
     }
 }
 
