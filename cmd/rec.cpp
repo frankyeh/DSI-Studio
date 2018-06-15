@@ -238,7 +238,7 @@ int rec(void)
     {
         if(!po.has("t1w"))
         {
-            std::cout << "Please assign --t1w with T1W file for CDM normalization" << std::endl;
+            std::cout << "Please assign --t1w with T1W file for CDM normalization or assign --reg_method=3 to use CDM without T1W" << std::endl;
             return 0;
         }
         handle->voxel.t1w_file_name = po.get("t1w");
