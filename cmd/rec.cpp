@@ -3,6 +3,8 @@
 #include <iostream>
 #include <iterator>
 #include <string>
+#include "fib_data.hpp"
+#include "tracking/region/Regions.h"
 #include "tipl/tipl.hpp"
 #include "libs/dsi/image_model.hpp"
 #include "mapping/fa_template.hpp"
@@ -17,6 +19,8 @@ void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>
 bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
 bool is_dsi(const std::vector<unsigned int>& shell);
 bool need_scheme_balance(const std::vector<unsigned int>& shell);
+bool load_region(std::shared_ptr<fib_data> handle,
+                 ROIRegion& roi,const std::string& region_text);
 /**
  perform reconstruction
  */
@@ -213,24 +217,25 @@ int rec(void)
     }
     if(po.has("mask"))
     {
+        std::shared_ptr<fib_data> fib_handle(new fib_data);
+        fib_handle->dim = handle->voxel.dim;
+        fib_handle->vs = handle->voxel.vs;
         std::string mask_file = po.get("mask");
+
         if(mask_file == "1")
             std::fill(handle->voxel.mask.begin(),handle->voxel.mask.end(),1);
         else
         {
+            ROIRegion roi(fib_handle);
             std::cout << "reading mask..." << mask_file << std::endl;
-            gz_nifti header;
-            if(header.load_from_file(mask_file.c_str()))
-            {
-                tipl::image<unsigned char,3> external_mask;
-                header.toLPS(external_mask);
-                if(external_mask.geometry() != handle->voxel.dim)
-                    std::cout << "In consistent the mask dimension...using default mask" << std::endl;
-                else
-                    handle->voxel.mask = external_mask;
-            }
+            if(!load_region(fib_handle,roi,mask_file))
+                return 0;
+            tipl::image<unsigned char,3> external_mask;
+            roi.SaveToBuffer(external_mask);
+            if(external_mask.geometry() != handle->voxel.dim)
+                std::cout << "In consistent the mask dimension...using default mask" << std::endl;
             else
-                std::cout << "fail reading the mask...using default mask" << std::endl;
+                handle->voxel.mask = external_mask;
         }
     }
 
