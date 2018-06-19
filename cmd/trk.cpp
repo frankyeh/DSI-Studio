@@ -555,12 +555,12 @@ int trk(void)
             std::cout << "loading individual file:" << cnt_file_name[i].toStdString() << std::endl;
             if(cnt_type == "iva" && !cnt.individual_vs_atlas(handle,cnt_file_name[i].toLocal8Bit().begin(),0))
             {
-                std::cout << "Error loading connectomnetry file:" << cnt.error_msg <<std::endl;
+                std::cout << "Error loading connectometry file:" << cnt.error_msg <<std::endl;
                 return -1;
             }
             if(cnt_type == "ivp" && !cnt.individual_vs_db(handle,cnt_file_name[i].toLocal8Bit().begin()))
             {
-                std::cout << "Error loading connectomnetry file:" << cnt.error_msg <<std::endl;
+                std::cout << "Error loading connectometry file:" << cnt.error_msg <<std::endl;
                 return -1;
             }
             if(cnt_type == "ivi")
@@ -569,7 +569,7 @@ int trk(void)
                 if(!cnt.individual_vs_individual(handle,cnt_file_name[i].toLocal8Bit().begin(),
                                                               cnt_file_name[i+1].toLocal8Bit().begin(),0))
                 {
-                    std::cout << "Error loading connectomnetry file:" << cnt.error_msg <<std::endl;
+                    std::cout << "Error loading connectometry file:" << cnt.error_msg <<std::endl;
                     return -1;
                 }
                 ++i;
