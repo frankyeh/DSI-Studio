@@ -112,11 +112,6 @@ int cnt(void)
         vbc->ui->normalize_qa->setChecked(true);
     }
 
-    vbc->ui->output_report->setChecked(po.get("output_report",int(1)));
-    vbc->ui->output_track_image->setChecked(po.get("output_track_image",int(1)));
-    vbc->ui->output_track_data->setChecked(po.get("output_track_data",int(1)));
-    vbc->ui->output_fdr->setChecked(po.get("output_fdr",int(0)));
-    vbc->ui->output_dist->setChecked(po.get("output_dist",int(0)));
     if(po.has("fdr_threshold"))
     {
         vbc->ui->rb_fdr->setChecked(true);

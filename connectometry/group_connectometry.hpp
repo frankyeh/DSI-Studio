@@ -43,8 +43,8 @@ private:
     void add_new_roi(QString name,QString source,const std::vector<tipl::vector<3,short> >& new_roi,float r);
 public:
     bool gui = true;
-    QString work_dir;
-    std::vector<std::string> file_names;
+    QString db_file_name,work_dir;
+    std::string demo_file_name;
 public:
     std::vector<std::vector<tipl::vector<3,short> > > roi_list;
     std::vector<float> roi_r_list;
@@ -52,7 +52,6 @@ public:
 public:
     std::shared_ptr<vbc_database> vbc;
     std::auto_ptr<stat_model> model;
-    std::vector<std::vector<float> > individual_data;
     std::auto_ptr<QTimer> timer;
     bool setup_model(stat_model& model);
 
@@ -88,6 +87,8 @@ private slots:
     void on_load_roi_from_atlas_clicked();
     void on_clear_all_roi_clicked();
     void on_load_roi_from_file_clicked();
+    void on_rb_longitudina_dif_clicked();
+    void on_rb_regression_clicked();
 };
 
 #endif // VBC_DIALOG_HPP

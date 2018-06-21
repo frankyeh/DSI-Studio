@@ -36,9 +36,8 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,
             angle_gen(float(15.0*M_PI/180.0),float(90.0*M_PI/180.0)),
             smoothing_gen(0.0f,0.95f),
             step_gen(method->trk.vs[0]*0.1f,method->trk.vs[0]),
-            threshold_gen(fa_threshold1, fa_threshold2);
+            threshold_gen(0.0,1.0);
     unsigned int iteration = thread_id; // for center seed
-
     float white_matter_t = param.threshold*1.2f;
     if(!roi_mgr.seeds.empty())
     try{
@@ -54,7 +53,8 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,
                 push_tracts(local_track_buffer);
             if(param.threshold == 0.0f)
             {
-                method->current_fa_threshold = threshold_gen(seed);
+                float w = threshold_gen(seed);
+                method->current_fa_threshold = w*fa_threshold1 + (1.0f-w)*fa_threshold2;
                 white_matter_t = method->current_fa_threshold*1.2f;
             }
             if(param.cull_cos_angle == 1.0f)
@@ -193,6 +193,8 @@ void ThreadData::run(const tracking_data& trk,
         fa_threshold1 = (param.default_otsu-0.1f)*otsu;
         fa_threshold2 = (param.default_otsu+0.1f)*otsu;
     }
+    else
+        fa_threshold1 = fa_threshold2 = 0.0;
 
     report.clear();
     report.str("");

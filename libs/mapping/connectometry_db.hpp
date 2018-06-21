@@ -82,6 +82,7 @@ public: // multiple regression
     std::vector<double> X,X_min,X_max,X_range;
     unsigned int feature_count;
     unsigned int study_feature;
+    std::vector<std::string> variables;
     enum {percentage = 0,t = 1,beta = 2,percentile = 3,mean_dif = 4} threshold_type;
     tipl::multiple_regression<double> mr;
     void select_variables(const std::vector<char>& sel);
@@ -96,7 +97,6 @@ public:
     void remove_missing_data(double missing_value);
     bool resample(stat_model& rhs,bool null,bool bootstrap);
     bool pre_process(void);
-    void select(const std::vector<double>& population,std::vector<double>& selected_population)const;
     double operator()(const std::vector<double>& population,unsigned int pos) const;
     void clear(void)
     {

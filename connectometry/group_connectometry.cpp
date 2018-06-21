@@ -2,6 +2,7 @@
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QStringListModel>
+#include <QScrollBar>
 #include "group_connectometry.hpp"
 #include "ui_group_connectometry.h"
 #include "ui_tracking_window.h"
@@ -57,7 +58,7 @@ void ROIViewDelegate::emitCommitData()
 
 
 group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<vbc_database> vbc_,QString db_file_name_,bool gui_) :
-    QDialog(parent),vbc(vbc_),work_dir(QFileInfo(db_file_name_).absoluteDir().absolutePath()),gui(gui_),
+    QDialog(parent),vbc(vbc_),db_file_name(db_file_name_),work_dir(QFileInfo(db_file_name_).absoluteDir().absolutePath()),gui(gui_),
     ui(new Ui::group_connectometry)
 {
 
@@ -475,9 +476,7 @@ bool group_connectometry::load_demographic_file(QString filename,std::string& er
 {
     model.reset(new stat_model);
     model->init(vbc->handle->db.num_subjects);
-    file_names.clear();
-    file_names.push_back(filename.toLocal8Bit().begin());
-
+    demo_file_name = filename.toStdString();
     std::vector<std::string> titles;
     std::vector<std::string> items;
     std::vector<int> feature_location;
@@ -527,7 +526,6 @@ bool group_connectometry::load_demographic_file(QString filename,std::string& er
     */
     // fill up regression values
     {
-        model->type = 1;
         model->X = std::move(X);
         model->feature_count = feature_location.size()+1; // additional one for intercept
         QStringList t;
@@ -558,23 +556,38 @@ bool group_connectometry::load_demographic_file(QString filename,std::string& er
 
 bool group_connectometry::setup_model(stat_model& m)
 {
-    m = *(model.get());
-    m.study_feature = ui->foi->currentIndex()+1; // this index is after selection
-    std::vector<char> sel(ui->variable_list->count()+1);
-    sel[0] = 1; // intercept
-    for(int i = 1;i < sel.size();++i)
-        if(ui->variable_list->item(i-1)->checkState() == Qt::Checked)
-            sel[i] = 1;
-    m.select_variables(sel);
-    m.threshold_type = stat_model::t;
-    if(ui->missing_data_checked->isChecked())
-        m.remove_missing_data(ui->missing_value->value());
+    if(ui->rb_regression->isChecked())
+    {
+        m = *(model.get());
+        m.type = 1;
+        m.study_feature = ui->foi->currentIndex()+1; // this index is after selection
+        m.variables.clear();
+        std::vector<char> sel(ui->variable_list->count()+1);
+        sel[0] = 1; // intercept
+        m.variables.push_back("intercept");
+        for(int i = 1;i < sel.size();++i)
+            if(ui->variable_list->item(i-1)->checkState() == Qt::Checked)
+            {
+                sel[i] = 1;
+                m.variables.push_back(ui->variable_list->item(i-1)->text().toStdString());
+            }
+        m.select_variables(sel);
+        m.threshold_type = stat_model::t;
+        if(ui->missing_data_checked->isChecked())
+            m.remove_missing_data(ui->missing_value->value());
+    }
+    if(ui->rb_longitudina_dif->isChecked())
+    {
+        m.type = 3;
+        m.init(vbc->handle->db.num_subjects);
+    }
     return m.pre_process();
 }
 
 
 void group_connectometry::calculate_FDR(void)
 {
+    ui->progressBar->setValue(vbc->progress);
     vbc->calculate_FDR();
     show_report();
     show_dis_table();
@@ -585,112 +598,50 @@ void group_connectometry::calculate_FDR(void)
         vbc->wait();// make sure that all threads done
         if(timer.get())
             timer->stop();
-    }
-    std::ostringstream html_report((vbc->trk_file_names[0]+".report.html").c_str());
-    html_report << "<!DOCTYPE html>" << std::endl;
-    html_report << "<html><head><title>Connectometry Report</title></head>" << std::endl;
-    html_report << "<body>" << std::endl;
-    if(!vbc->handle->report.empty())
-    {
-        html_report << "<h2>MRI Acquisition</h2>" << std::endl;
-        html_report << "<p>" << vbc->handle->report << "</p>" << std::endl;
-    }
-    if(!vbc->report.empty())
-    {
-        html_report << "<h2>Connectometry analysis</h2>" << std::endl;
-        html_report << "<p>" << vbc->report.c_str() << "</p>" << std::endl;
-    }
-    if(vbc->progress == 100)
-    {
-        if(ui->output_track_data->isChecked())
-            vbc->save_tracks_files(); // this also give track recognition
-    }
 
-    std::ostringstream out_greater,out_lesser;
-    if(vbc->fdr_threshold == 0.0)
-    {
-        out_greater << " The connectometry analysis identified "
-        << (vbc->fdr_greater[vbc->length_threshold]>0.5 || !vbc->has_greater_result ? "no track": vbc->greater_tracks_result.c_str())
-        << " with increased connectivity related to "
-        << vbc->foi_str << " (FDR="
-        << vbc->fdr_greater[vbc->length_threshold] << ").";
-
-        out_lesser << " The connectometry analysis identified "
-        << (vbc->fdr_lesser[vbc->length_threshold]>0.5 || !vbc->has_lesser_result ? "no track": vbc->lesser_tracks_result.c_str())
-        << " with decreased connectivity related to "
-        << vbc->foi_str << " (FDR="
-        << vbc->fdr_lesser[vbc->length_threshold] << ").";
+        vbc->save_tracks_files();
     }
-    else
-    {
-        out_greater << " The connectometry analysis identified "
-        << (!vbc->has_greater_result ? "no track": vbc->greater_tracks_result.c_str())
-        << " with increased connectivity related to " << vbc->foi_str << ".";
-
-        out_lesser << " The connectometry analysis identified "
-        << (!vbc->has_lesser_result ? "no track": vbc->lesser_tracks_result.c_str())
-        << " with decreased connectivity related to " << vbc->foi_str << ".";
-    }
-
-
-    html_report << "<h2>Results</h2>" << std::endl;
-    html_report << "<h3>Positive Correlation with " << vbc->foi_str << "</h3>" << std::endl;
-    if(vbc->progress == 100 && ui->output_track_image->isChecked())
-    {
-        html_report << "<img src = \""<< QFileInfo(QString(vbc->trk_file_names[0].c_str())+".positive.jpg").fileName().toStdString() << "\" width=\"800\"/>" << std::endl;
-        html_report << "<p><b>Fig.</b> Tracks positively correlated with "<< vbc->foi_str << "</p>";
-    }
-    html_report << "<p>" << out_greater.str().c_str() << "</p>" << std::endl;
-
-    html_report << "<h3>Negatively Correlation with " << vbc->foi_str << "</h3>" << std::endl;
-    if(vbc->progress == 100 && ui->output_track_image->isChecked())
-    {
-        html_report << "<img src = \""<< QFileInfo(QString(vbc->trk_file_names[0].c_str())+".negative.jpg").fileName().toStdString() << "\" width=\"800\"/>" << std::endl;
-        html_report << "<p><b>Fig.</b> Tracks negatively correlated with "<< vbc->foi_str << "</p>";
-    }
-    html_report << "<p>" << out_lesser.str().c_str() << "</p>" << std::endl;
-
-
+    std::string output;
+    vbc->generate_report(output);
+    int pos = ui->textBrowser->verticalScrollBar()->value();
+    ui->textBrowser->setHtml(output.c_str());
+    ui->textBrowser->verticalScrollBar()->setValue(pos);
 
 
     if(vbc->progress < 100)
-    {
-        ui->progressBar->setValue(vbc->progress);
-        html_report << "</body></html>" << std::endl;
-        ui->textBrowser->setHtml(html_report.str().c_str());
         return;
-    }
+
     // progress = 100
     {
 
 
-        if(ui->output_dist->isChecked())
+        // output distribution image
         {
             ui->show_null_greater->setChecked(true);
             ui->show_greater->setChecked(true);
             ui->show_null_lesser->setChecked(false);
             ui->show_lesser->setChecked(false);
-            ui->null_dist->saveBmp((vbc->trk_file_names[0]+".greater.dist.bmp").c_str(),300,300,3);
+            ui->null_dist->saveBmp((vbc->output_file_name+".greater.dist.bmp").c_str(),300,300,3);
 
             ui->show_null_greater->setChecked(false);
             ui->show_greater->setChecked(false);
             ui->show_null_lesser->setChecked(true);
             ui->show_lesser->setChecked(true);
-            ui->null_dist->saveBmp((vbc->trk_file_names[0]+".lesser.dist.bmp").c_str(),300,300,3);
-            ui->null_dist->saveTxt((vbc->trk_file_names[0]+".dist_value.txt").c_str());
+            ui->null_dist->saveBmp((vbc->output_file_name+".lesser.dist.bmp").c_str(),300,300,3);
+            ui->null_dist->saveTxt((vbc->output_file_name+".dist_value.txt").c_str());
         }
 
-        if(ui->output_fdr->isChecked())
+        // output fdr
         {
             ui->show_greater_2->setChecked(true);
             ui->show_lesser_2->setChecked(false);
-            ui->fdr_dist->saveBmp((vbc->trk_file_names[0]+".greater.fdr.bmp").c_str(),300,300,3);
+            ui->fdr_dist->saveBmp((vbc->output_file_name+".greater.fdr.bmp").c_str(),300,300,3);
 
             ui->show_greater_2->setChecked(false);
             ui->show_lesser_2->setChecked(true);
-            ui->fdr_dist->saveBmp((vbc->trk_file_names[0]+".lesser.fdr.bmp").c_str(),300,300,3);
+            ui->fdr_dist->saveBmp((vbc->output_file_name+".lesser.fdr.bmp").c_str(),300,300,3);
 
-            ui->fdr_dist->saveTxt((vbc->trk_file_names[0]+".fdr_value.txt").c_str());
+            ui->fdr_dist->saveTxt((vbc->output_file_name+".fdr_value.txt").c_str());
         }
 
         // restore all checked status
@@ -699,36 +650,6 @@ void group_connectometry::calculate_FDR(void)
         ui->show_greater_2->setChecked(true);
 
 
-
-        if(ui->output_track_image->isChecked())
-        {
-            std::shared_ptr<fib_data> new_data(new fib_data);
-            *(new_data.get()) = *(vbc->handle);
-            tracking_window* new_mdi = new tracking_window(0,new_data);
-            new_mdi->setWindowTitle(vbc->trk_file_names[0].c_str());
-            new_mdi->showMaximized();
-            new_mdi->update();
-            new_mdi->command("set_zoom","0.8");
-            new_mdi->command("set_param","show_surface","1");
-            new_mdi->command("set_param","show_slice","0");
-            new_mdi->command("set_param","show_region","0");
-            new_mdi->command("set_param","bkg_color","16777215");
-            new_mdi->command("set_param","surface_alpha","0.1");
-            new_mdi->command("set_roi_view_index","icbm_wm");
-            new_mdi->command("add_surface");
-            new_mdi->tractWidget->addNewTracts("greater");
-            new_mdi->tractWidget->tract_models[0]->add(*vbc->greater_tracks[0].get());
-            new_mdi->command("update_track");
-            new_mdi->command("save_h3view_image",(vbc->trk_file_names[0]+".positive.jpg").c_str());
-            // do it twice to eliminate 3D artifact
-            new_mdi->command("save_h3view_image",(vbc->trk_file_names[0]+".positive.jpg").c_str());
-            new_mdi->command("delete_all_tract");
-            new_mdi->tractWidget->addNewTracts("lesser");
-            new_mdi->tractWidget->tract_models[0]->add(*vbc->lesser_tracks[0].get());
-            new_mdi->command("update_track");
-            new_mdi->command("save_h3view_image",(vbc->trk_file_names[0]+".negative.jpg").c_str());
-            new_mdi->close();
-        }
         if(gui)
         {
             if(vbc->has_greater_result || vbc->has_lesser_result)
@@ -744,14 +665,10 @@ void group_connectometry::calculate_FDR(void)
                 std::cout << "no significant finding" << std::endl;
         }
 
-        html_report << "</body></html>" << std::endl;
-        ui->textBrowser->setHtml(html_report.str().c_str());
-
         // save report in text
-        if(ui->output_report->isChecked())
         {
-            std::ofstream out((vbc->trk_file_names[0]+".report.html").c_str());
-            out << html_report.str().c_str() << std::endl;
+            std::ofstream out((vbc->output_file_name+".report.html").c_str());
+            out << output << std::endl;
         }
 
         ui->run->setText("Run");
@@ -773,9 +690,9 @@ void group_connectometry::on_run_clicked()
     ui->run->setText("Stop");
     ui->span_to->setValue(80);
     vbc->seed_ratio = ui->seed_ratio->value();
-    vbc->trk_file_names = file_names;
     vbc->normalize_qa = ui->normalize_qa->isChecked();
     vbc->output_resampling = ui->output_resampling->isChecked();
+    vbc->foi_str = ui->foi->currentText().toStdString();
     if(ui->rb_fdr->isChecked())
     {
         vbc->fdr_threshold = ui->fdr_threshold->value();
@@ -787,9 +704,7 @@ void group_connectometry::on_run_clicked()
         vbc->length_threshold = ui->length_threshold->value();
     }
     vbc->track_trimming = ui->track_trimming->value();
-    vbc->individual_data.clear();
     vbc->tracking_threshold = ui->threshold->value();
-    vbc->foi_str = ui->foi->currentText().toStdString();
     vbc->model.reset(new stat_model);
     if(!setup_model(*vbc->model.get()))
     {
@@ -799,107 +714,32 @@ void group_connectometry::on_run_clicked()
             std::cout << "setup model failed" << std::endl;
         return;
     }
+    if(vbc->model->type == 1) // regression
+        vbc->output_file_name = demo_file_name;
+    if(vbc->model->type == 3) // longitudinal change
+        vbc->output_file_name = db_file_name.toStdString();
 
-
-    std::ostringstream out;
-    std::string parameter_str;
-    {
-        std::ostringstream out;
-        if(ui->normalize_qa->isChecked())
-            out << ".nqa";
-        char threshold_type[5][11] = {"percentage","t","beta","percentile","mean_dif"};
-        if(vbc->fdr_threshold == 0)
-            out << ".length" << vbc->length_threshold;
-        else
-            out << ".fdr" << vbc->fdr_threshold;
-        out << "." << threshold_type[vbc->model->threshold_type] << vbc->tracking_threshold;
-        parameter_str = out.str();
-    }
-
-    out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was used to study the effect of "
-        << vbc->foi_str
-        << ". A multiple regression model was used to consider ";
-    for(unsigned int index = 0;index < ui->foi->count();++index)
-    {
-        if(index && ui->foi->count() > 2)
-            out << ",";
-        out << " ";
-        if(ui->foi->count() >= 2 && index+1 == ui->foi->count())
-            out << "and ";
-        out << ui->foi->itemText(index).toStdString();
-    }
-    out << " in a total of "
-        << vbc->model->subject_index.size()
-        << " subjects. ";
-
-    vbc->trk_file_names[0] += parameter_str;
-    vbc->trk_file_names[0] += ".";
-    vbc->trk_file_names[0] += vbc->foi_str;
-
-
-    if(ui->normalize_qa->isChecked())
-        out << " The SDF was normalized.";
-    out << " A T-score threshold of " << ui->threshold->value();
-    out << " was assigned to select local connectomes, and the local connectomes were tracked using a deterministic fiber tracking algorithm (Yeh et al. PLoS ONE 8(11): e80713, 2013).";
-
-    // load region
     if(!ui->roi_whole_brain->isChecked() && !roi_list.empty())
     {
-        out << " The tracking algorithm used ";
-        const char roi_type_name[5][20] = {"region of interst","region of avoidance","ending region","seeding region","terminating region"};
-        const char roi_type_name2[5][5] = {"roi","roa","end","seed"};
         vbc->roi_list = roi_list;
         vbc->roi_r_list = roi_r_list;
         vbc->roi_type.resize(roi_list.size());
+        vbc->roi_name.resize(roi_list.size());
         for(unsigned int index = 0;index < roi_list.size();++index)
         {
-            if(index && roi_list.size() > 2)
-                out << ",";
-            out << " ";
-            if(roi_list.size() >= 2 && index+1 == roi_list.size())
-                out << "and ";
-            out << ui->roi_table->item(index,0)->text().toStdString() << " as the " << roi_type_name[ui->roi_table->item(index,2)->text().toInt()];
-            QString name = ui->roi_table->item(index,0)->text();
-            name = name.replace('?','_');
-            name = name.replace(':','_');
-            name = name.replace('/','_');
-            name = name.replace('\\','_');
             vbc->roi_type[index] = ui->roi_table->item(index,2)->text().toInt();
-            for(unsigned int index = 0;index < vbc->trk_file_names.size();++index)
-            {
-                vbc->trk_file_names[index] += ".";
-                vbc->trk_file_names[index] += roi_type_name2[vbc->roi_type.front()];
-                vbc->trk_file_names[index] += ".";
-                vbc->trk_file_names[index] += name.toStdString();
-            }
+            vbc->roi_name[index] = ui->roi_table->item(index,0)->text().toStdString();
         }
-        out << ".";
     }
     else
     {
         vbc->roi_list.clear();
         vbc->roi_r_list.clear();
         vbc->roi_type.clear();
+        vbc->roi_name.clear();
     }
 
-    if(vbc->track_trimming)
-        out << " Track trimming was conducted with " << vbc->track_trimming << " iterations.";
 
-    if(vbc->output_resampling)
-        out << " All tracks generated from bootstrap resampling were included.";
-
-    if(vbc->fdr_threshold == 0.0f)
-        out << " A length threshold of " << ui->length_threshold->value() << " voxel distance was used to select tracks.";
-    else
-        out << " An FDR threshold of " << ui->fdr_threshold->value() << " was used to select tracks.";
-    out << " The track density was " <<
-            ui->seed_ratio->value() << " per voxel.";
-
-    out << " To estimate the false discovery rate, a total of "
-        << ui->permutation_count->value()
-        << " randomized permutations were applied to the group label to obtain the null distribution of the track length.";
-
-    vbc->report = out.str().c_str();
     vbc->run_permutation(ui->multithread->value(),ui->permutation_count->value());
     if(gui)
     {
@@ -912,12 +752,6 @@ void group_connectometry::on_run_clicked()
 
 void group_connectometry::on_show_result_clicked()
 {
-    if((vbc->greater_tracks.empty()))\
-    {
-        QMessageBox::information(this,"Error","Run connectometry analysis to get the results");
-        return;
-    }
-
     std::shared_ptr<fib_data> new_data(new fib_data);
     *(new_data.get()) = *(vbc->handle);
     stat_model cur_model;
@@ -949,14 +783,14 @@ void group_connectometry::on_show_result_clicked()
     }
     tracking_window* current_tracking_window = new tracking_window(this,new_data);
     current_tracking_window->setAttribute(Qt::WA_DeleteOnClose);
-    current_tracking_window->setWindowTitle(vbc->trk_file_names[0].c_str());
+    current_tracking_window->setWindowTitle(vbc->output_file_name.c_str());
     current_tracking_window->showNormal();
     current_tracking_window->tractWidget->delete_all_tract();
     current_tracking_window->tractWidget->addNewTracts("Positive Correlation");
     current_tracking_window->tractWidget->addNewTracts("Negative Correlation");
 
-    current_tracking_window->tractWidget->tract_models[0]->add(*(vbc->greater_tracks[0].get()));
-    current_tracking_window->tractWidget->tract_models[1]->add(*(vbc->lesser_tracks[0].get()));
+    current_tracking_window->tractWidget->tract_models[0]->add(*(vbc->greater_track.get()));
+    current_tracking_window->tractWidget->tract_models[1]->add(*(vbc->lesser_track.get()));
 
     current_tracking_window->command("set_zoom","0.8");
     current_tracking_window->command("set_param","show_surface","1");
@@ -1088,4 +922,14 @@ void group_connectometry::on_variable_list_clicked(const QModelIndex &)
         ui->foi->addItem(ui->variable_list->item(0)->text());
     }
     ui->foi->setCurrentIndex(ui->foi->count()-1);
+}
+
+void group_connectometry::on_rb_longitudina_dif_clicked()
+{
+    ui->gb_regression->setEnabled(false);
+}
+
+void group_connectometry::on_rb_regression_clicked()
+{
+    ui->gb_regression->setEnabled(true);
 }

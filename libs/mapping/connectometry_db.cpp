@@ -1029,6 +1029,7 @@ bool stat_model::pre_process(void)
         }
         return mr.set_variables(&*X.begin(),feature_count,X.size()/feature_count);
     case 2:
+    case 3: //longitudinal change
         return true;
     }
     return false;
@@ -1130,6 +1131,25 @@ bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap)
             }
 
             break;
+        case 3: // longitudinal
+            for(unsigned int index = 0;index < rhs.subject_index.size();++index)
+            {
+                unsigned int new_index = bootstrap ? rhs.rand_gen(rhs.subject_index.size()) : index;
+                subject_index[index] = rhs.subject_index[new_index];
+            }
+            if(null)
+            {
+                label.resize(subject_index.size());
+                for(int i = 0;i < label.size();++i)
+                    label[i] = rhs.rand_gen(2);
+            }
+            else
+            {
+                label.resize(subject_index.size());
+                for(int i = 0;i < label.size();++i)
+                    label[i] = 1;
+            }
+            break;
         case 2: // individual
             for(unsigned int index = 0;index < rhs.subject_index.size();++index)
             {
@@ -1144,17 +1164,13 @@ bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap)
 
     return true;
 }
-void stat_model::select(const std::vector<double>& population,std::vector<double>& selected_population) const
-{
-    for(unsigned int index = 0;index < subject_index.size();++index)
-        selected_population[index] = population[subject_index[index]];
-    selected_population.resize(subject_index.size());
-}
 
 double stat_model::operator()(const std::vector<double>& original_population,unsigned int pos) const
 {
     std::vector<double> population(subject_index.size());
-    select(original_population,population);
+    for(unsigned int index = 0;index < subject_index.size();++index)
+        population[index] = original_population[subject_index[index]];
+
     switch(type)
     {
     case 0: // group
@@ -1251,6 +1267,15 @@ double stat_model::operator()(const std::vector<double>& original_population,uns
             }
     }
         break;
+    case 3: // longitudinal change
+        {
+            for(int i = 0;i < population.size();++i)
+                if(label[i] == 0.0)
+                    population[i] = -population[i];
+            double mean = tipl::mean(population);
+            double sd = tipl::standard_deviation(population.begin(),population.end(),mean);
+            return sd == 0.0? 0.0 : mean/sd;
+        }
     }
 
     return 0.0;

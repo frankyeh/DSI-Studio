@@ -57,23 +57,21 @@ public:// for FDR analysis
     bool terminated = false;
 public:
     std::vector<std::vector<tipl::vector<3,short> > > roi_list;
+    std::vector<std::string> roi_name;
     std::vector<float> roi_r_list;
     std::vector<unsigned char> roi_type;
 public:
-    std::vector<std::string> trk_file_names;
+    std::string output_file_name;
     bool has_greater_result,has_lesser_result;
     float seed_ratio;
     std::mutex  lock_resampling,lock_greater_tracks,lock_lesser_tracks;
-    std::vector<std::shared_ptr<TractModel> > greater_tracks;
-    std::vector<std::shared_ptr<TractModel> > lesser_tracks;
-    std::vector<std::shared_ptr<connectometry_result> > spm_maps;
+    std::shared_ptr<TractModel> greater_track;
+    std::shared_ptr<TractModel> lesser_track;
+    std::shared_ptr<connectometry_result> spm_map;
     std::string greater_tracks_result,lesser_tracks_result;
     void save_tracks_files(void);
-public:// Individual analysis
-    std::vector<std::vector<float> > individual_data;
-    std::vector<float> individual_data_sd;
 public:// Multiple regression
-    std::auto_ptr<stat_model> model;
+    std::shared_ptr<stat_model> model;
     float tracking_threshold;
     float length_threshold,fdr_threshold;
     unsigned int track_trimming;
@@ -81,7 +79,7 @@ public:// Multiple regression
     void run_permutation_multithread(unsigned int id,unsigned int thread_count,unsigned int permutation_count);
     void run_permutation(unsigned int thread_count,unsigned int permutation_count);
     void calculate_FDR(void);
-
+    void generate_report(std::string& output);
 };
 
 #endif // VBC_DATABASE_H
