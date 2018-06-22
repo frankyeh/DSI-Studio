@@ -156,7 +156,6 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
     cur_tracking_window.current_slice->get_slice(slice_image,
                                                  cur_tracking_window.cur_dim,cur_tracking_window.v2c,
                                                  cur_tracking_window.overlay_slice.get(),cur_tracking_window.overlay_v2c);
-
     // draw region colors on the image
     tipl::color_image slice_image_with_region(slice_image);
     cur_tracking_window.regionWidget->draw_region(slice_image_with_region);

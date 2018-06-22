@@ -593,6 +593,7 @@ void tracking_window::SliderValueChanged(void)
             ui->glCorSlider->value(),
             ui->glAxiSlider->value()))
     {
+        ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
         scene.show_slice();
         glWidget->updateGL();
     }
@@ -751,7 +752,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     ui->glCorBox->setValue(slice_position[1]);
     ui->glAxiBox->setValue(slice_position[2]);
     ui->SlicePos->setRange(0,current_slice->geometry[cur_dim]-1);
-    ui->SlicePos->setValue(slice_position[cur_dim]);
+    ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
 
 
     std::pair<float,float> range = current_slice->get_value_range();
@@ -1833,26 +1834,6 @@ void tracking_window::on_track_style_currentIndexChanged(int index)
     glWidget->update();
 }
 
-void tracking_window::on_SlicePos_sliderMoved(int position)
-{
-    if(cur_dim ==0)
-    {
-        if(ui->glSagSlider->value() != position)
-            ui->glSagSlider->setValue(position);
-    }
-    if(cur_dim ==1)
-    {
-        if(ui->glCorSlider->value() != position)
-            ui->glCorSlider->setValue(position);
-    }
-    if(cur_dim ==2)
-    {
-        if(ui->glAxiSlider->value() != position)
-            ui->glAxiSlider->setValue(position);
-    }
-    SliderValueChanged();
-}
-
 void tracking_window::on_addSlices_clicked()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
@@ -1989,5 +1970,24 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
         QMessageBox::information(this,"Error",QString("Cannot find ")+atlas.c_str()+
         " atlas in DSI Studio. Please update DSI Studio package or check the atlas folder",0);
 
+    }
+}
+
+void tracking_window::on_SlicePos_valueChanged(int value)
+{
+    if(cur_dim ==0)
+    {
+        if(ui->glSagSlider->value() != value)
+            ui->glSagSlider->setValue(value);
+    }
+    if(cur_dim ==1)
+    {
+        if(ui->glCorSlider->value() != value)
+            ui->glCorSlider->setValue(value);
+    }
+    if(cur_dim ==2)
+    {
+        if(ui->glAxiSlider->value() != value)
+            ui->glAxiSlider->setValue(value);
     }
 }
