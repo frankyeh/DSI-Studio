@@ -158,6 +158,7 @@ int rec(void)
     handle->voxel.csf_calibration = po.get("csf_calibration",int(0)) && method_index == 4;
     handle->voxel.thread_count = po.get("thread_count",int(std::thread::hardware_concurrency()));
 
+
     if (po.has("template"))
     {
         std::cout << "external template = " << po.get("template") << std::endl;
@@ -247,6 +248,29 @@ int rec(void)
             return 0;
         }
         handle->voxel.t1w_file_name = po.get("t1w");
+    }
+
+    if(po.has("rotate_to"))
+    {
+        std::string file_name = po.get("rotate_to");
+        gz_nifti in;
+        if(!in.load_from_file(file_name.c_str()))
+        {
+            std::cout << "Failed to read " << file_name << std::endl;
+            return 0;
+        }
+        tipl::image<float,3> I;
+        tipl::vector<3> vs;
+        in.get_voxel_size(vs.begin());
+        in.toLPS(I);
+        std::cout << "Running rigid body transformation" << std::endl;
+        tipl::transformation_matrix<double> T;
+        bool terminated = false;
+        tipl::reg::two_way_linear_mr(I,vs,handle->dwi_sum,handle->voxel.vs,
+                       T,tipl::reg::rigid_body,tipl::reg::mutual_information(),
+                        terminated,handle->voxel.thread_count);
+        std::cout << "DWI rotated." << std::endl;
+        handle->rotate(I,T);
     }
 
     if(po.get("motion_correction",int(0)))
