@@ -74,7 +74,7 @@
            <item>
             <widget class="QRadioButton" name="rb_regression">
              <property name="text">
-              <string>Regression</string>
+              <string>Multiple Regression</string>
              </property>
              <property name="checked">
               <bool>true</bool>
@@ -84,7 +84,7 @@
            <item>
             <widget class="QRadioButton" name="rb_longitudina_dif">
              <property name="text">
-              <string>Longitudinal change</string>
+              <string>Paired Longitudinal Change</string>
              </property>
             </widget>
            </item>
