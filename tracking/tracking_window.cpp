@@ -1825,7 +1825,7 @@ void tracking_window::on_track_style_currentIndexChanged(int index)
         case 3:
             set_data("tract_style",0);
             set_data("bkg_color",0);
-            set_data("tract_alpha",0.9);
+            set_data("tract_alpha",0.2);
             set_data("tract_alpha_style",0);
             set_data("tract_bend2",1);
             break;
