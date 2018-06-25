@@ -175,6 +175,7 @@ private slots:
     void on_actionInsert_MNI_images_triggered();
     void on_actionOpen_Connectivity_Matrix_triggered();
     void on_SlicePos_valueChanged(int value);
+    void on_actionKeep_Current_Slice_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

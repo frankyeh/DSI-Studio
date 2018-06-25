@@ -33,16 +33,9 @@ GLWidget::GLWidget(bool samplebuffer,
                        : QGLWidget(samplebuffer ? QGLFormat(QGL::SampleBuffers):QGLFormat(),parent),
         cur_tracking_window(cur_tracking_window_),
         renderWidget(renderWidget_),
-        tracts(0),
-        cur_height(1),
-        cur_width(1),
-        editing_option(none),
-        set_view_flip(false),
-        view_mode(view_mode_type::single)
+        slice_texture(3),
+        editing_option(none)
 {
-    std::fill(slice_texture,slice_texture+3,0);
-    odf_dim = 0;
-    odf_slide_pos = 0;
     slice_pos[0] = slice_pos[1] = slice_pos[2] = -1;
     transformation_matrix.identity();
     rotation_matrix.identity();
@@ -53,9 +46,8 @@ GLWidget::GLWidget(bool samplebuffer,
 GLWidget::~GLWidget()
 {
     makeCurrent();
-    deleteTexture(slice_texture[0]);
-    deleteTexture(slice_texture[1]);
-    deleteTexture(slice_texture[2]);
+    for(int i = 0;i < slice_texture.size();++i)
+        deleteTexture(slice_texture[i]);
     glDeleteLists(tracts, 1);
     //std::cout << __FUNCTION__ << " " << __FILE__ << std::endl;
 }
@@ -792,19 +784,14 @@ void GLWidget::renderLR()
 
         std::vector<tipl::vector<3,float> > points(4);
 
-
-
-        bool show_slice[3];
-        show_slice[0] = cur_tracking_window.ui->glSagCheck->checkState();
-        show_slice[1] = cur_tracking_window.ui->glCorCheck->checkState();
-        show_slice[2] = cur_tracking_window.ui->glAxiCheck->checkState();
-
-        for(unsigned char dim = 0;dim < 3;++dim)
+        for(unsigned char dim = 0;dim < slice_texture.size();++dim)
         {
-            if(!show_slice[dim])
+            if((dim == 0 && !cur_tracking_window.ui->glSagCheck->checkState()) ||
+               (dim == 1 && !cur_tracking_window.ui->glCorCheck->checkState()) ||
+               (dim == 2 && !cur_tracking_window.ui->glAxiCheck->checkState()))
                 continue;
 
-            if(slice_pos[dim] != current_slice->slice_pos[dim])
+            if(dim < 3 && slice_pos[dim] != current_slice->slice_pos[dim])
             {
                 if(slice_texture[dim])
                     deleteTexture(slice_texture[dim]);
@@ -813,28 +800,46 @@ void GLWidget::renderLR()
                                            cur_tracking_window.overlay_slice.get(),cur_tracking_window.overlay_v2c);
                 slice_texture[dim] =
                     bindTexture(QImage((unsigned char*)&*texture.begin(),
-                texture.width(),texture.height(),QImage::Format_RGB32));
+                                       texture.width(),texture.height(),QImage::Format_RGB32));
                 slice_pos[dim] = current_slice->slice_pos[dim];
             }
 
-            glBindTexture(GL_TEXTURE_2D, slice_texture[dim]);
-            int texparam[] = {GL_NEAREST,
-                               GL_LINEAR};
-            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,texparam[get_param("slice_mag_filter")]);
+            if(slice_texture[dim])
+            {
+                glBindTexture(GL_TEXTURE_2D, slice_texture[dim]);
+                int texparam[] = {GL_NEAREST,
+                                   GL_LINEAR};
+                glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,texparam[get_param("slice_mag_filter")]);
 
-            glBegin(GL_QUADS);
-            glColor4f(1.0,1.0,1.0,std::min(alpha+0.2,1.0));
+                glBegin(GL_QUADS);
+                glColor4f(1.0,1.0,1.0,std::min(alpha+0.2,1.0));
 
-            slice_location(dim,points);
-            glTexCoord2f(0.0f, 1.0f);
-            glVertex3f(points[0][0],points[0][1],points[0][2]);
-            glTexCoord2f(1.0f, 1.0f);
-            glVertex3f(points[1][0],points[1][1],points[1][2]);
-            glTexCoord2f(1.0f, 0.0f);
-            glVertex3f(points[3][0],points[3][1],points[3][2]);
-            glTexCoord2f(0.0f, 0.0f);
-            glVertex3f(points[2][0],points[2][1],points[2][2]);
-            glEnd();
+                if(dim < 3)
+                    slice_location(dim,points);
+                else
+                    points = keep_slice_points;
+                glTexCoord2f(0.0f, 1.0f);
+                glVertex3f(points[0][0],points[0][1],points[0][2]);
+                glTexCoord2f(1.0f, 1.0f);
+                glVertex3f(points[1][0],points[1][1],points[1][2]);
+                glTexCoord2f(1.0f, 0.0f);
+                glVertex3f(points[3][0],points[3][1],points[3][2]);
+                glTexCoord2f(0.0f, 0.0f);
+                glVertex3f(points[2][0],points[2][1],points[2][2]);
+                glEnd();
+            }
+            if(keep_slice && dim == cur_tracking_window.cur_dim)
+            {
+                if(slice_texture.size() > 3)
+                {
+                    deleteTexture(slice_texture[3]);
+                    slice_texture.pop_back();
+                }
+                slice_texture.push_back(slice_texture[dim]);
+                slice_texture[dim] = 0;
+                keep_slice_points = points;
+                keep_slice = false;
+            }
         }
         glPopMatrix();
         glDisable(GL_BLEND);

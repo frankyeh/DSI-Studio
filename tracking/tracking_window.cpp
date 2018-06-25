@@ -734,11 +734,14 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     if(!current_slice->is_diffusion_space)
         slice_position.to(current_slice->invT);
     slice_position.round();
+    for(int i = 0;i < 3; ++i)
+    {
+        if(slice_position[i] < 0)
+            slice_position[i] = 0;
+        if(slice_position[i] >= current_slice->geometry[i]-1)
+            slice_position[i] = 0;
+    }
     current_slice->slice_pos = slice_position;
-
-
-
-
     ui->glSagSlider->setRange(0,current_slice->geometry[0]-1);
     ui->glCorSlider->setRange(0,current_slice->geometry[1]-1);
     ui->glAxiSlider->setRange(0,current_slice->geometry[2]-1);
@@ -1990,4 +1993,11 @@ void tracking_window::on_SlicePos_valueChanged(int value)
         if(ui->glAxiSlider->value() != value)
             ui->glAxiSlider->setValue(value);
     }
+}
+
+void tracking_window::on_actionKeep_Current_Slice_triggered()
+{
+    glWidget->keep_slice = true;
+    glWidget->updateGL();
+    QMessageBox::information(this,"DSI Studio","Current viewing slice will reamin in the 3D window",0);
 }

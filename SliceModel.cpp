@@ -127,172 +127,168 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
     // QSDR loaded, use MNI transformation instead
     bool has_transform = false;
     name = QFileInfo(files[0].c_str()).completeBaseName().toStdString();
-    if(files.size() == 1)
+    if(QFileInfo(files[0].c_str()).completeSuffix() == "bmp" ||
+            QFileInfo(files[0].c_str()).completeSuffix() == "jpg")
+
     {
-        if(nifti.load_from_file(files[0]))
+        QString info_file = QString(files[0].c_str()) + ".info.txt";
+        if(!QFileInfo(info_file).exists())
         {
-            nifti.get_voxel_size(voxel_size.begin());
-            nifti.toLPS(source_images);
-            if(handle->is_qsdr)
-            {
-                invT.identity();
-                nifti.get_image_transformation(invT.begin());
-                invT.inv();
-                invT *= handle->trans_to_mni;
-                T = tipl::inverse(invT);
-                has_transform = true;
-            }
+            error_msg = "Cannot find ";
+            error_msg += info_file.toStdString();
+            return false;
         }
-        else
+        std::ifstream in(info_file.toStdString().c_str());
+        in >> geometry[0];
+        in >> geometry[1];
+        in >> geometry[2];
+        in >> voxel_size[0];
+        in >> voxel_size[1];
+        in >> voxel_size[2];
+        std::copy(std::istream_iterator<float>(in),
+                  std::istream_iterator<float>(),T.begin());
+        if(geometry[2] != files.size())
         {
-            tipl::io::bruker_2dseq bruker;
-            if(bruker.load_from_file(files[0].c_str()))
-            {
-                bruker.get_voxel_size(voxel_size.begin());
-                source_images = std::move(bruker.get_image());
-                QDir d = QFileInfo(files[0].c_str()).dir();
-                if(d.cdUp() && d.cdUp())
-                {
-                    QString method_file_name = d.absolutePath()+ "/method";
-                    tipl::io::bruker_info method;
-                    if(method.load_from_file(method_file_name.toStdString().c_str()))
-                        name = method["Method"];
-                }
-            }
+            error_msg = "Invalid BMP info text: file count does not match.";
+            return false;
         }
+        unsigned int in_plane_subsample = 1;
+        unsigned int slice_subsample = 1;
+
+        // non isotropic condition
+        while(voxel_size[2]/voxel_size[0] > 1.5f)
+        {
+            ++in_plane_subsample;
+            geometry[0] = geometry[0] >> 1;
+            geometry[1] = geometry[1] >> 1;
+            voxel_size[0] *= 2.0;
+            voxel_size[1] *= 2.0;
+            T[0] *= 2.0;
+            T[1] *= 2.0;
+            T[4] *= 2.0;
+            T[5] *= 2.0;
+            T[8] *= 2.0;
+            T[9] *= 2.0;
+        }
+        tipl::geometry<3> geo(geometry);
+
+        bool ok = true;
+        int down_size = (geo[2] > 1 ? QInputDialog::getInt(0,
+                "DSI Studio",
+                "Downsampling count (0:no downsampling)",1,0,4,1,&ok) : 0);
+        if(!ok)
+        {
+            error_msg = "Slice loading canceled";
+            return false;
+        }
+        for(int i = 0;i < down_size;++i)
+        {
+            geo[0] = geo[0] >> 1;
+            geo[1] = geo[1] >> 1;
+            geo[2] = geo[2] >> 1;
+            voxel_size *= 2.0;
+            tipl::multiply_constant(T.begin(),T.begin()+3,2.0);
+            tipl::multiply_constant(T.begin()+4,T.begin()+7,2.0);
+            tipl::multiply_constant(T.begin()+8,T.begin()+11,2.0);
+            ++in_plane_subsample;
+            ++slice_subsample;
+        }
+        try{
+            source_images = std::move(tipl::image<float, 3>(geo));
+        }
+        catch(...)
+        {
+            error_msg = "Memory allocation failed. Please increase downsampling count";
+            return false;
+        }
+
+
+        begin_prog("loading images");
+        for(unsigned int i = 0;check_prog(i,geo[2]);++i)
+        {
+            tipl::image<short,2> I;
+            QImage in;
+            unsigned int file_index = (slice_subsample == 1 ? i : (i << (slice_subsample-1)));
+            if(file_index >= files.size())
+                break;
+            QString filename(files[file_index].c_str());
+            if(!in.load(filename))
+            {
+                error_msg = "Invalid image format: ";
+                error_msg += files[file_index];
+                return false;
+            }
+            QImage buf = in.convertToFormat(QImage::Format_RGB32).mirrored();
+            I.resize(tipl::geometry<2>(in.width(),in.height()));
+            const uchar* ptr = buf.bits();
+            for(int j = 0;j < I.size();++j,ptr += 4)
+                I[j] = *ptr;
+
+            for(int j = 1;j < in_plane_subsample;++j)
+                tipl::downsampling(I);
+            if(I.size() != source_images.plane_size())
+            {
+                error_msg = "Invalid BMP image size: ";
+                error_msg += files[file_index];
+                return false;
+            }
+            std::copy(I.begin(),I.end(),source_images.begin() + i*source_images.plane_size());
+        }
+        tipl::io::nifti nii;
+        nii.set_dim(geo);
+        nii.set_voxel_size(voxel_size.begin());
+        nii.set_image_transformation(T.begin());
+        nii << source_images;
+        nii.toLPS(source_images);
+        nii.get_voxel_size(voxel_size.begin());
+        T.identity();
+        nii.get_image_transformation(T.begin());
+        // LPS matrix switched to RAS
+
+        T[0] = -T[0];
+        T[1] = -T[1];
+        T[4] = -T[4];
+        T[5] = -T[5];
+        T[8] = -T[8];
+        T[9] = -T[9];
+        invT = tipl::inverse(T);
+        has_transform = true;
     }
     else
     {
-        if(QFileInfo(files[0].c_str()).completeSuffix() == "bmp" ||
-                QFileInfo(files[0].c_str()).completeSuffix() == "jpg")
-
+        if(files.size() == 1)
         {
-            QString info_file = QString(files[0].c_str()) + ".info.txt";
-            if(!QFileInfo(info_file).exists())
+            if(nifti.load_from_file(files[0]))
             {
-                error_msg = "Cannot find ";
-                error_msg += info_file.toStdString();
-                return false;
-            }
-            std::ifstream in(info_file.toStdString().c_str());
-            in >> geometry[0];
-            in >> geometry[1];
-            in >> geometry[2];
-            in >> voxel_size[0];
-            in >> voxel_size[1];
-            in >> voxel_size[2];
-            std::copy(std::istream_iterator<float>(in),
-                      std::istream_iterator<float>(),T.begin());
-            if(geometry[2] != files.size())
-            {
-                error_msg = "Invalid BMP info text: file count does not match.";
-                return false;
-            }
-            unsigned int in_plane_subsample = 1;
-            unsigned int slice_subsample = 1;
-
-            // non isotropic condition
-            while(voxel_size[2]/voxel_size[0] > 1.5f)
-            {
-                ++in_plane_subsample;
-                geometry[0] = geometry[0] >> 1;
-                geometry[1] = geometry[1] >> 1;
-                voxel_size[0] *= 2.0;
-                voxel_size[1] *= 2.0;
-                T[0] *= 2.0;
-                T[1] *= 2.0;
-                T[4] *= 2.0;
-                T[5] *= 2.0;
-                T[8] *= 2.0;
-                T[9] *= 2.0;
-            }
-            tipl::geometry<3> geo(geometry);
-
-            bool ok;
-            int down_size = QInputDialog::getInt(0,
-                    "DSI Studio",
-                    "Downsampling count (0:no downsampling)",1,0,4,1,&ok);
-            if(!ok)
-            {
-                error_msg = "Slice loading canceled";
-                return false;
-            }
-            while(1)
-            {
-                if(down_size)
-                    --down_size;
-                else
+                nifti.get_voxel_size(voxel_size.begin());
+                nifti.toLPS(source_images);
+                if(handle->is_qsdr)
                 {
-                    try{
-                        source_images = std::move(tipl::image<float, 3>(geo));
-                    }
-                    catch(...)
+                    invT.identity();
+                    nifti.get_image_transformation(invT.begin());
+                    invT.inv();
+                    invT *= handle->trans_to_mni;
+                    T = tipl::inverse(invT);
+                    has_transform = true;
+                }
+            }
+            else
+            {
+                tipl::io::bruker_2dseq bruker;
+                if(bruker.load_from_file(files[0].c_str()))
+                {
+                    bruker.get_voxel_size(voxel_size.begin());
+                    source_images = std::move(bruker.get_image());
+                    QDir d = QFileInfo(files[0].c_str()).dir();
+                    if(d.cdUp() && d.cdUp())
                     {
-                        error_msg = "Memory allocation failed. Please increase downsampling count";
-                        return false;
+                        QString method_file_name = d.absolutePath()+ "/method";
+                        tipl::io::bruker_info method;
+                        if(method.load_from_file(method_file_name.toStdString().c_str()))
+                            name = method["Method"];
                     }
-                    break;
                 }
-                geo[0] = geo[0] >> 1;
-                geo[1] = geo[1] >> 1;
-                geo[2] = geo[2] >> 1;
-                voxel_size *= 2.0;
-                tipl::multiply_constant(T.begin(),T.begin()+3,2.0);
-                tipl::multiply_constant(T.begin()+4,T.begin()+7,2.0);
-                tipl::multiply_constant(T.begin()+8,T.begin()+11,2.0);
-                ++in_plane_subsample;
-                ++slice_subsample;
             }
-            begin_prog("loading images");
-            for(unsigned int i = 0;check_prog(i,geo[2]);++i)
-            {
-                tipl::image<short,2> I;
-                QImage in;
-                unsigned int file_index = (slice_subsample == 1 ? i : (i << (slice_subsample-1)));
-                if(file_index >= files.size())
-                    break;
-                QString filename(files[file_index].c_str());
-                if(!in.load(filename))
-                {
-                    error_msg = "Invalid BMP format: ";
-                    error_msg += files[file_index];
-                    return false;
-                }
-                QImage buf = in.convertToFormat(QImage::Format_RGB32).mirrored();
-                I.resize(tipl::geometry<2>(in.width(),in.height()));
-                const uchar* ptr = buf.bits();
-                for(int j = 0;j < I.size();++j,ptr += 4)
-                    I[j] = *ptr;
-
-                for(int j = 1;j < in_plane_subsample;++j)
-                    tipl::downsampling(I);
-                if(I.size() != source_images.plane_size())
-                {
-                    error_msg = "Invalid BMP image size: ";
-                    error_msg += files[file_index];
-                    return false;
-                }
-                std::copy(I.begin(),I.end(),source_images.begin() + i*source_images.plane_size());
-            }
-            tipl::io::nifti nii;
-            nii.set_dim(geo);
-            nii.set_voxel_size(voxel_size.begin());
-            nii.set_image_transformation(T.begin());
-            nii << source_images;
-            nii.toLPS(source_images);
-            nii.get_voxel_size(voxel_size.begin());
-            T.identity();
-            nii.get_image_transformation(T.begin());
-            // LPS matrix switched to RAS
-
-            T[0] = -T[0];
-            T[1] = -T[1];
-            T[4] = -T[4];
-            T[5] = -T[5];
-            T[8] = -T[8];
-            T[9] = -T[9];
-            invT = tipl::inverse(T);
-            has_transform = true;
         }
         else
         {
@@ -304,6 +300,9 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
             }
         }
     }
+
+
+
 
     if(source_images.empty())
     {

@@ -78,8 +78,8 @@ public:
  private://odf
      std::vector<tipl::vector<3,float> >odf_points;
      std::vector<float>odf_colors;
-     int odf_dim;
-     int odf_slide_pos;
+     int odf_dim = 0;
+     int odf_slide_pos = 0;
      void add_odf(tipl::pixel_index<3> pos);
 private: //glu
      std::shared_ptr<GluQua> RegionSpheres;
@@ -117,7 +117,7 @@ protected:
  private:
      tracking_window& cur_tracking_window;
      RenderingTableWidget* renderWidget;
-     int cur_width,cur_height;
+     int cur_width = 1,cur_height = 1;
  private:
      int get_param(const char* name);
      float get_param_float(const char* name);
@@ -139,14 +139,19 @@ protected:
      unsigned char odf_skip;
      unsigned char odf_color;
      float odf_scale;
- public:
-     GLuint tracts,slice_texture[3];
+public:
+     bool keep_slice = false;
+     std::vector<tipl::vector<3,float> > keep_slice_points;
+public:
+     GLuint tracts = 0;
+     std::vector<GLuint> slice_texture;
+
      int slice_pos[3];
      QPoint lastPos,last_select_point;
      tipl::matrix<4,4,float> mat,transformation_matrix,transformation_matrix2,rotation_matrix,rotation_matrix2;
-     enum class view_mode_type { single, two, stereo} view_mode;
+     enum class view_mode_type { single, two, stereo} view_mode = view_mode_type::single;
 
-     bool set_view_flip;
+     bool set_view_flip = false;
      void get3View(QImage& I,unsigned int type);
      bool command(QString cmd,QString param = "",QString param2 = "");
  };
