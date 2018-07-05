@@ -1723,7 +1723,7 @@ bool TractModel::recognize(std::map<float,std::string,std::greater<float> >& res
         std::vector<float> input;
         if(!handle->get_profile(tract_data[i],input))
             return;
-        track_network.cnn.predict(input);
+        track_network.cnn.forward_propagation(input);
         tipl::minus_constant(input,*std::min_element(input.begin(),input.end()));
         tipl::multiply_constant(input,1.0f/std::accumulate(input.begin(),input.end(),0.0f));
         tipl::add(accu_input,input);
@@ -1733,7 +1733,6 @@ bool TractModel::recognize(std::map<float,std::string,std::greater<float> >& res
         result[accu_input[i]] = track_network.track_name[i];
     return true;
 }
-extern atlas* track_atlas;
 void TractModel::recognize_report(std::string& report)
 {
     /*
@@ -1786,7 +1785,7 @@ void TractModel::recognize_report(std::string& report)
         std::vector<float> input;
         if(!handle->get_profile(tract_data[i],input))
             return;
-        track_network.cnn.predict(input);
+        track_network.cnn.forward_propagation(input);
         input[80] = -100;// suppress false tracks ID:20
         ++recog_count[std::max_element(input.begin(),input.end())-input.begin()];
     });
@@ -2116,7 +2115,7 @@ void TractModel::run_clustering(unsigned char method_id,unsigned int cluster_cou
                 std::vector<float> input;
                 if(!handle->get_profile(tract_data[i],input))
                     return;
-                tract_cluster[i] = track_network.cnn.predict_label(input);
+                track_network.cnn.predict(input,tract_cluster[i]);
             });
         }
         return;
