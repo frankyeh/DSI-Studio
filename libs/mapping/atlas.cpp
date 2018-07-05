@@ -6,7 +6,6 @@
 #include <QDir>
 
 std::vector<atlas> atlas_list;
-atlas* track_atlas = 0;
 void load_atlas(void)
 {
     QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
@@ -21,8 +20,6 @@ void load_atlas(void)
     {
         atlas_list[index].name = QFileInfo(atlas_name_list[index]).baseName().toLocal8Bit().begin();
         atlas_list[index].filename = (dir.absolutePath() + "/" + atlas_name_list[index]).toLocal8Bit().begin();
-        if(atlas_list[index].name == "tracks")
-            track_atlas = &atlas_list[index];
     }
 
 }
