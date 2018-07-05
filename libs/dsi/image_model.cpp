@@ -654,7 +654,7 @@ bool ImageModel::need_scheme_balance(void)
     for(int i = 0;i < shell.size();++i)
     {
         unsigned int from = shell[i];
-        unsigned int to = (i + 1 == shell.size() ? shell.size():shell[i+1]);
+        unsigned int to = (i + 1 == shell.size() ? src_bvalues.size():shell[i+1]);
         if(to-from < 128)
             return true;
     }
