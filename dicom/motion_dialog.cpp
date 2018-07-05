@@ -134,8 +134,7 @@ void motion_dialog::show_progress(void)
     color[1] = QColor(100,20,20,200);
     color[2] = QColor(20,100,20,200);
     QVector<double> index(arg.size());
-    for(unsigned int j = 0;j < arg.size();++j)
-        index[j] = j;
+    std::iota(index.begin(),index.end(),0);
     std::vector<QVector<double> > data(6);
 
     for(unsigned int i = 0;i < 6;++i)
@@ -143,7 +142,6 @@ void motion_dialog::show_progress(void)
         data[i].resize(arg.size());
         for(unsigned int j = 0;j < arg.size();++j)
         {
-            index[j] = j;
             data[i][j] = arg[j].translocation[i];
             if(i >= 3)
                 data[i][j] *= 180.0/3.14159265358979323846;

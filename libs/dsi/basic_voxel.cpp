@@ -54,8 +54,7 @@ void Voxel::calculate_q_vec_t(std::vector<tipl::vector<3,float> >& q_vectors_tim
 void Voxel::load_from_src(ImageModel& image_model)
 {
     std::vector<int> sorted_index(image_model.src_bvalues.size());
-    for(int i = 0;i < sorted_index.size();++i)
-        sorted_index[i] = i;
+    std::iota(sorted_index.begin(),sorted_index.end(),0);
 
     std::sort(sorted_index.begin(),sorted_index.end(),
               [&image_model](int left,int right)

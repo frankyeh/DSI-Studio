@@ -977,8 +977,7 @@ bool connectometry_result::individual_vs_individual(std::shared_ptr<fib_data> ha
 void stat_model::init(unsigned int subject_count)
 {
     subject_index.resize(subject_count);
-    for(unsigned int index = 0;index < subject_count;++index)
-        subject_index[index] = index;
+    std::iota(subject_index.begin(),subject_index.end(),0);
 }
 
 void stat_model::select_variables(const std::vector<char>& sel)

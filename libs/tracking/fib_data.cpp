@@ -659,8 +659,8 @@ void fib_data::get_slice(unsigned int view_index,
         if(view_item[view_index].color_map_buf.empty())
         {
             view_item[view_index].color_map_buf.resize(dim);
-            for (unsigned int index = 0;index < dim.size();++index)
-                view_item[view_index].color_map_buf[index] = index;
+            std::iota(view_item[view_index].color_map_buf.begin(),
+                      view_item[view_index].color_map_buf.end(),0);
         }
         tipl::image<unsigned int,2> buf;
         tipl::reslicing(view_item[view_index].color_map_buf, buf, d_index, pos);
