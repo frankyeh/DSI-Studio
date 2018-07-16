@@ -591,6 +591,7 @@
      <string>Tools</string>
     </property>
     <addaction name="actionCalculate_change"/>
+    <addaction name="actionSelect_Subjects"/>
    </widget>
    <widget class="QMenu" name="menuFingerprinting">
     <property name="title">
@@ -682,6 +683,11 @@
    </property>
    <property name="text">
     <string>Save fingerprint mask...</string>
+   </property>
+  </action>
+  <action name="actionSelect_Subjects">
+   <property name="text">
+    <string>Select Subjects...</string>
    </property>
   </action>
  </widget>

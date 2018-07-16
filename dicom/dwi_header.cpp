@@ -299,11 +299,18 @@ if (sort_and_merge)
 
 void sort_dwi(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
-    // selection sort
-    for (unsigned int i = 0;i < dwi_files.size();++i)
-        for (unsigned int j = i+1;j < dwi_files.size();++j)
-            if ((*dwi_files[j]) < (*dwi_files[i]))
-                dwi_files[i].swap(dwi_files[j]);
+    std::sort(dwi_files.begin(),dwi_files.end(),[&]
+              (std::shared_ptr<DwiHeader>& lhs,std::shared_ptr<DwiHeader>& rhs){return *lhs < *rhs;});
+    for (int i = dwi_files.size()-1;i >= 1;--i)
+        if (dwi_files[i]->bvalue == dwi_files[i-1]->bvalue &&
+                dwi_files[i]->bvec == dwi_files[i-1]->bvec)
+        {
+            tipl::image<float,3> I = dwi_files[i]->image;
+            I += dwi_files[i-1]->image;
+            I *= 0.5f;
+            dwi_files[i-1]->image = I;
+            dwi_files.erase(dwi_files.begin()+i);
+        }
 }
 
 void correct_t2(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)

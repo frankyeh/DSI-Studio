@@ -185,7 +185,7 @@ public:
     tipl::thread thread;
 public:
     tipl::ml::network cnn;
-    tipl::ml::network_data<float,unsigned char> cnn_data;
+    tipl::ml::network_data<unsigned char> cnn_data;
 
     std::vector<std::string> cnn_name;
     std::string err_msg,msg;

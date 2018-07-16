@@ -5,13 +5,13 @@
 #include "gzip_interface.hpp"
 bool train_cnn(std::string network,
                tipl::ml::network& nn,
-               tipl::ml::network_data<float,unsigned char>& nn_data_,
-               tipl::ml::network_data<float,unsigned char>& nn_test_,
+               tipl::ml::network_data<unsigned char>& nn_data_,
+               tipl::ml::network_data<unsigned char>& nn_test_,
                float& test_error,
                float& train_error)
 {
-    tipl::ml::network_data_proxy<float,unsigned char> nn_data = nn_data_;
-    tipl::ml::network_data_proxy<float,unsigned char> nn_test = nn_test_;
+    tipl::ml::network_data_proxy<unsigned char> nn_data = nn_data_;
+    tipl::ml::network_data_proxy<unsigned char> nn_test = nn_test_;
 
     if(!(nn << network))
     {
@@ -21,13 +21,13 @@ bool train_cnn(std::string network,
     std::cout << "training network=" << network << std::endl;
     tipl::ml::trainer t;
     t.learning_rate = po.get("learning_rate",0.01f);
-    t.w_decay_rate = po.get("w_decay_rate",0.0f);
+    //t.w_decay_rate = po.get("w_decay_rate",0.0f);
     t.momentum = po.get("momentum",0.5f);
     t.batch_size = po.get("batch_size",64);
     t.epoch = po.get("epoch",2000);
 
     std::cout << "learning rate=" << t.learning_rate << std::endl;
-    std::cout << "weight decay=" << t.w_decay_rate << std::endl;
+    //std::cout << "weight decay=" << t.w_decay_rate << std::endl;
     std::cout << "momentum=" << t.momentum << std::endl;
     std::cout << "batch size=" << t.batch_size << std::endl;
     std::cout << "epoch=" << t.epoch << std::endl;
@@ -45,7 +45,7 @@ bool train_cnn(std::string network,
 int cnn(void)
 {
     std::string train_file_name = po.get("train");
-    tipl::ml::network_data<float,unsigned char> nn_data,nn_test;
+    tipl::ml::network_data<unsigned char> nn_data,nn_test;
     if(!nn_data.load_from_file<gz_istream>(train_file_name.c_str()))
     {
         std::cout << "Cannot load training data at " << train_file_name << std::endl;

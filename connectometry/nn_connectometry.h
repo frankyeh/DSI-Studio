@@ -25,23 +25,24 @@ public:
 public:
     tipl::ml::trainer t;
     tipl::ml::network nn;
-    tipl::ml::network_data<float,float> fp_data;
-    std::vector<tipl::ml::network_data_proxy<float,float> > train_data;
-    std::vector<tipl::ml::network_data_proxy<float,float> > test_data;
+    tipl::ml::network_data<float> fp_data;
+    tipl::ml::network_data<std::vector<float> > fp_mdata;
+    std::vector<tipl::ml::network_data_proxy<float> > train_data;
+    std::vector<tipl::ml::network_data_proxy<float> > test_data;
+    std::vector<tipl::ml::network_data_proxy<std::vector<float> > > train_mdata;
+    std::vector<tipl::ml::network_data_proxy<std::vector<float> > > test_mdata;
     QTimer* timer = 0;
     bool terminated;
     std::future<void> future;
     void init_partially_connected_layer(tipl::ml::network& nn);
 public:
-    std::vector<int> source_location;
+    std::vector<int> subject_index;
     std::vector<float> selected_label;
-    float selected_label_max,selected_label_min,selected_label_mean,selected_label_scale;
+    std::vector<std::vector<float> > selected_mlabel;
 public:
-    std::vector<unsigned int> train_seq;
-    std::vector<float> train_result;
     std::vector<unsigned int> test_seq;
     std::vector<float> test_result;
-
+    std::vector<std::vector<float> > test_mresult;
 public:
     std::shared_ptr<vbc_database> vbc;
     std::vector<double> X;
@@ -71,6 +72,8 @@ private slots:
     void on_foi_currentIndexChanged(int index);
 
     void on_otsu_valueChanged(double arg1);
+
+    void on_regress_all_clicked();
 
 private:
     Ui::nn_connectometry *ui;

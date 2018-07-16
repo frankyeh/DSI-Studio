@@ -63,6 +63,8 @@ private slots:
 
     void on_actionAdd_DB_triggered();
 
+    void on_actionSelect_Subjects_triggered();
+
 private:
     Ui::db_window *ui;
 };

@@ -517,3 +517,24 @@ void db_window::on_actionAdd_DB_triggered()
     }
     update_db();
 }
+
+void db_window::on_actionSelect_Subjects_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(
+                           this,
+                           "Open Selection Text files",
+                           QFileInfo(windowTitle()).absoluteDir().absolutePath(),
+                           "Text files (*.txt);;All files (*)");
+    if (filename.isEmpty())
+        return;
+    std::ifstream in(filename.toStdString().c_str());
+    std::vector<char> selected;
+    std::copy(std::istream_iterator<int>(in),std::istream_iterator<int>(),std::back_inserter(selected));
+    selected.resize(vbc->handle->db.num_subjects);
+    for(int i = selected.size()-1;i >=0;--i)
+        if(selected[i])
+        {
+            vbc->handle->db.remove_subject(i);
+            ui->subject_list->removeRow(i);
+        }
+}
