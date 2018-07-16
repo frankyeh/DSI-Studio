@@ -1318,9 +1318,8 @@ void tracking_window::on_actionQuality_Assessment_triggered()
     }
     std::pair<float,float> result = evaluate_fib(handle->dim,fib_fa,fib_dir);
     std::ostringstream out;
-    out << "Number of connected fibers: " << result.first << std::endl;
-    out << "Number of disconnected fibers: " << result.second << std::endl;
-    out << "Error ratio: " << 100.0*(float)result.second/(float)result.first << "%" << std::endl;
+    out << "Fiber coherent index: " << result.first << std::endl;
+    out << "Fiber discoherent index: " << result.second << std::endl;
     show_info_dialog("Quality assessment",out.str().c_str());
 }
 
