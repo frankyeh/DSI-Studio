@@ -54,7 +54,7 @@ std::pair<float,float> evaluate_fib(
         dis[i] = tipl::vector<3>(dx[i],dy[i],dz[i]);
         dis[i].normalize();
     }
-    float otsu = *std::max_element(fib_fa[0].begin(),fib_fa[0].end())*0.1;
+    float otsu = *std::max_element(fib_fa[0].begin(),fib_fa[0].end())*0.6f;
     std::vector<std::vector<unsigned char> > connected(fib_fa.size());
     for(unsigned int index = 0;index < connected.size();++index)
         connected[index].resize(dim.size());
@@ -87,6 +87,7 @@ std::pair<float,float> evaluate_fib(
                         connected[fib1][index.index()] = 1;
                         connected[fib2][other_index.index()] = 1;
                         connection_count += fib_fa[fib2][other_index.index()];
+                        // no need to add fib1 because it will be counted if fib2 becomes fib1
                     }
             }
         }
