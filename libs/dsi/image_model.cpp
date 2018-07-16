@@ -123,6 +123,25 @@ void flip_fib_dir(std::vector<float>& fib_dir,const unsigned char* order)
             fib_dir[j+2] = -fib_dir[j+2];
     }
 }
+void ImageModel::flip_b_table(const unsigned char* order)
+{
+    for(unsigned int index = 0;index < src_bvectors.size();++index)
+    {
+        float x = src_bvectors[index][order[0]];
+        float y = src_bvectors[index][order[1]];
+        float z = src_bvectors[index][order[2]];
+        src_bvectors[index][0] = x;
+        src_bvectors[index][1] = y;
+        src_bvectors[index][2] = z;
+        if(order[3])
+            src_bvectors[index][0] = -src_bvectors[index][0];
+        if(order[4])
+            src_bvectors[index][1] = -src_bvectors[index][1];
+        if(order[5])
+            src_bvectors[index][2] = -src_bvectors[index][2];
+    }
+    voxel.grad_dev.clear();
+}
 std::string ImageModel::check_b_table(void)
 {
     set_title("checking b-table");
@@ -138,41 +157,48 @@ std::string ImageModel::check_b_table(void)
     fib_fa[0].swap(voxel.fib_fa);
     fib_dir[0].swap(voxel.fib_dir);
 
-    const unsigned char order[18][6] = {
+    const unsigned char order[24][6] = {
+                            {0,1,2,0,0,0},
                             {0,1,2,1,0,0},
                             {0,1,2,0,1,0},
                             {0,1,2,0,0,1},
+                            {0,2,1,0,0,0},
                             {0,2,1,1,0,0},
                             {0,2,1,0,1,0},
                             {0,2,1,0,0,1},
+                            {1,0,2,0,0,0},
                             {1,0,2,1,0,0},
                             {1,0,2,0,1,0},
                             {1,0,2,0,0,1},
+                            {1,2,0,0,0,0},
                             {1,2,0,1,0,0},
                             {1,2,0,0,1,0},
                             {1,2,0,0,0,1},
+                            {2,1,0,0,0,0},
                             {2,1,0,1,0,0},
                             {2,1,0,0,1,0},
                             {2,1,0,0,0,1},
+                            {2,0,1,0,0,0},
                             {2,0,1,1,0,0},
                             {2,0,1,0,1,0},
                             {2,0,1,0,0,1}};
-    const char txt[18][7] = {".012fx",".012fy",".012fz",
-                             ".021fx",".021fy",".021fz",
-                             ".102fx",".102fy",".102fz",
-                             ".120fx",".120fy",".120fz",
-                             ".210fx",".210fy",".210fz",
-                             ".201fx",".201fy",".201fz"};
+    const char txt[24][7] = {".012",".012fx",".012fy",".012fz",
+                             ".021",".021fx",".021fy",".021fz",
+                             ".102",".102fx",".102fy",".102fz",
+                             ".120",".120fx",".120fy",".120fz",
+                             ".210",".210fx",".210fy",".210fz",
+                             ".201",".201fx",".201fy",".201fz"};
 
-    float result[18] = {0};
+    float result[24] = {0};
     float cur_score = evaluate_fib(voxel.dim,fib_fa,fib_dir).first;
-    for(int i = 0;i < 18;++i)
+    result[0] = cur_score;
+    for(int i = 1;i < 24;++i)// 0 is the current score
     {
         std::vector<std::vector<float> > new_dir(fib_dir);
         flip_fib_dir(new_dir[0],order[i]);
         result[i] = evaluate_fib(voxel.dim,fib_fa,new_dir).first;
     }
-    int best = std::max_element(result,result+18)-result;
+    int best = std::max_element(result,result+24)-result;
 
     if(result[best] > cur_score)
     {
@@ -232,25 +258,7 @@ bool ImageModel::is_human_data(void) const
 {
     return voxel.dim[0]*voxel.vs[0] > 100 && voxel.dim[1]*voxel.vs[1] > 120 && voxel.dim[2]*voxel.vs[2] > 40;
 }
-void ImageModel::flip_b_table(const unsigned char* order)
-{
-    for(unsigned int index = 0;index < src_bvectors.size();++index)
-    {
-        float x = src_bvectors[index][order[0]];
-        float y = src_bvectors[index][order[1]];
-        float z = src_bvectors[index][order[2]];
-        src_bvectors[index][0] = x;
-        src_bvectors[index][1] = y;
-        src_bvectors[index][2] = z;
-        if(order[3])
-            src_bvectors[index][0] = -src_bvectors[index][0];
-        if(order[4])
-            src_bvectors[index][1] = -src_bvectors[index][1];
-        if(order[5])
-            src_bvectors[index][2] = -src_bvectors[index][2];
-    }
-    voxel.grad_dev.clear();
-}
+
 void ImageModel::flip_b_table(unsigned char dim)
 {
     for(unsigned int index = 0;index < src_bvectors.size();++index)
