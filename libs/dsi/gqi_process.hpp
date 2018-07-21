@@ -6,6 +6,7 @@
 #include "basic_process.hpp"
 #include "basic_voxel.hpp"
 #include "image_model.hpp"
+#include "odf_process.hpp"
 
 double base_function(double theta);
 class GQI_Recon  : public BaseProcess
@@ -58,6 +59,54 @@ public:
             tipl::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
                                     tipl::dyndim(data.odf.size(),data.space.size()));
     }
+};
+
+class dGQI_Recon : public BaseProcess{
+    BalanceScheme bs;
+    GQI_Recon gr;
+public:
+    virtual void init(Voxel& v)
+    {
+        if(!v.compare_voxel)
+            return;
+        v.bvalues = v.compare_voxel->bvalues;
+        v.bvectors = v.compare_voxel->bvectors;
+        bs.init(v);
+        gr.init(v);
+    }
+    virtual void run(Voxel& voxel, VoxelData& data)
+    {
+        if(!voxel.compare_voxel)
+            return;
+        if(voxel.compare_voxel->dwi_data[0][data.voxel_index] == 0) // no data in the compared dataset
+        {
+            data.odf_difference.clear();
+            data.odf_difference.resize(data.odf.size());
+            return;
+        }
+        data.space.resize(voxel.compare_voxel->dwi_data.size());
+        for (unsigned int index = 0; index < data.space.size(); ++index)
+            data.space[index] = voxel.compare_voxel->dwi_data[index][data.voxel_index];
+        data.odf_difference = data.odf;
+
+        bs.run(voxel,data);
+        gr.run(voxel,data);
+
+        tipl::minus_constant(data.odf_difference,*std::min_element(data.odf_difference.begin(),data.odf_difference.end()));
+        tipl::minus_constant(data.odf,*std::min_element(data.odf.begin(),data.odf.end()));
+
+        float qa = *std::max_element(data.odf_difference.begin(),data.odf_difference.end());
+        if(qa > voxel.z0)
+            voxel.z0 = qa; // z0 is the maximum qa in the baseline
+        for(int i = 0;i < data.odf.size();++i)
+        {
+            float study = data.odf[i];
+            float base = data.odf_difference[i];
+            data.odf[i] = base;
+            data.odf_difference[i] = (study-base)*0.5f;
+        }
+    }
+    virtual void end(Voxel&,gz_mat_write&) {}
 };
 
 class HGQI_Recon  : public BaseProcess

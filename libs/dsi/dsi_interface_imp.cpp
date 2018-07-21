@@ -99,25 +99,9 @@ typedef odf_reco_type<boost::mpl::vector<
     BalanceScheme,
     GQI_Recon,
     RDI_Recon,
-    Dwi2Tensor
-> >::type gqi_process;
-
-typedef boost::mpl::vector<
-    ReadDWIData,
-    BalanceScheme,
-    GQI_Recon,
     Dwi2Tensor,
-    ReadDDIData,
-    BalanceScheme,
-    GQI_Recon,
-    CalculateDifference,
-    DetermineFiberDirections,
-    SaveMetrics,
-    SaveDirIndex,
-    OutputODF
-> ddi_process;
-
-
+    dGQI_Recon
+> >::type gqi_process;
 
 typedef boost::mpl::vector<
     ReadDWIData,
@@ -191,7 +175,7 @@ const char* ImageModel::reconstruction(void)
         }
         else
         {
-            if(voxel.method_id == 8) // DDI
+            if(voxel.compare_voxel) // DDI
             {
                 voxel.odf_deconvolusion = 0;
                 voxel.odf_decomposition = 0;
@@ -237,6 +221,13 @@ const char* ImageModel::reconstruction(void)
         // correct for b-table orientation
         if(voxel.check_btable)
             out << check_b_table();
+
+        if(voxel.compare_voxel)
+        {
+            study_src->voxel.load_from_src(*(study_src.get()));
+            if(voxel.check_btable)
+                study_src->check_b_table();
+        }
 
         switch (voxel.method_id)
         {
@@ -392,76 +383,18 @@ const char* ImageModel::reconstruction(void)
             out << ".R" << (int)std::floor(voxel.R2*100.0) << ".fib.gz";
             break;
         case 8: // DDI
-            study_src->voxel.load_from_src(*(study_src.get()));
-            if(voxel.check_btable)
-                study_src->check_b_table();
-            begin_prog("Registration between longitudinal scans");
-            {
-                tipl::transformation_matrix<double> arg;
-                bool terminated = false;
-                check_prog(0,1);
-                tipl::reg::two_way_linear_mr(dwi_sum,
-                                              voxel.vs,
-                                              study_src->dwi_sum,
-                                              study_src->voxel.vs,
-                                arg,tipl::reg::rigid_body,tipl::reg::correlation(),terminated);
-                study_src->rotate(dwi_sum,arg);
-                study_src->voxel.load_from_src(*(study_src.get()));
-                study_src->voxel.vs = voxel.vs;
-                check_prog(1,1);
-            }
-            // update mask to cover both regions
-            for(int i = 0;i < voxel.mask.size();++i)
-                if(study_src->src_dwi_data[0][i] == 0)
-                    voxel.mask[i] = 0;
-            // smooth DWI to avoid boosting noise in DDI
-            {
-                begin_prog("Smoothing");
-                check_prog(0,2);
-                tipl::par_for(src_dwi_data.size(),[&](int i)
-                {
-                    auto I = tipl::make_image((unsigned short*)src_dwi_data[i],voxel.dim);
-                    tipl::filter::gaussian(I);
-                },voxel.thread_count);
-                check_prog(1,2);
-                tipl::par_for(study_src->new_dwi.size(),[&](int i)
-                {
-                    auto I = tipl::make_image((unsigned short*)&study_src->new_dwi[i][0],study_src->voxel.dim);
-                    tipl::filter::gaussian(I);
-                },voxel.thread_count);
-                check_prog(2,2);
-            }
-            // Signal match on b0 to allow for quantitative MRI in DDI
-            double r2 = 0.0;
-            {
-                double a,b;
-                tipl::linear_regression(study_src->src_dwi_data[0],
-                                                     study_src->src_dwi_data[0]+
-                                                     study_src->voxel.dim.size(),
-                                                     src_dwi_data[0],a,b,r2);
-                std::cout << "y=" << a << "x+" << b << " r2=" << r2 << std::endl;
-                tipl::par_for(study_src->new_dwi.size(),[&](int i)
-                {
-                    tipl::multiply_constant(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),a);
-                    tipl::add_constant(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),b);
-                    tipl::lower_threshold(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),0.0f);
-                },voxel.thread_count);
-
-            }
-            voxel.study_data = &(study_src->voxel);
-
             voxel.recon_report <<
             " The diffusion data were compared with baseline scan using diffusion difference imaging with a diffusion sampling length ratio of "
             << (float)voxel.param[0] << " to study neuronal change.";
 
             if(voxel.r2_weighted)
                 voxel.recon_report << " The ODF calculation was weighted by the square of the diffuion displacement.";
+            if (!reconstruct<gqi_process>())
+                return "reconstruction canceled";
             out << "." << voxel.study_name
-                << ".R" << (int)(r2*100.0f)
+                << ".R" << (int)(voxel.R2*100.0f)
                 << (voxel.r2_weighted ? ".ddi2.":".ddi.")
                 << voxel.param[0] << ".fib.gz";
-            if (!reconstruct<ddi_process>())
-                return "reconstruction canceled";
             break;
         }
         save_fib(out.str());

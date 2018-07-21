@@ -269,6 +269,7 @@ public:
                 bool super_resolution = false);
     void trim(void);
     void distortion_correction(const ImageModel& rhs);
+    bool compare_src(const char* file_name);
 public:
 
 

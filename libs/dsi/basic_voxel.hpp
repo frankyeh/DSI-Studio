@@ -29,7 +29,7 @@ struct VoxelData
     unsigned int voxel_index;
     std::vector<float> space;
     std::vector<float> odf;
-    std::vector<float> baseline_odf;
+    std::vector<float> odf_difference;
     std::vector<float> fa;
     std::vector<float> rdi;
     std::vector<tipl::vector<3,float> > dir;
@@ -120,7 +120,7 @@ public: // for fib evaluation
     std::vector<float> fib_fa;
     std::vector<float> fib_dir;
 public: // for DDI
-    Voxel* study_data = 0;
+    Voxel* compare_voxel = 0;
     std::string study_name;
 public:
     float z0 = 0.0;

@@ -19,43 +19,7 @@ public:
     }
     virtual void end(Voxel&,gz_mat_write&) {}
 };
-class ReadDDIData : public BaseProcess{
-public:
-    virtual void init(Voxel& v)
-    {
-        v.bvalues = v.study_data->bvalues;
-        v.bvectors = v.study_data->bvectors;
-    }
-    virtual void run(Voxel& voxel, VoxelData& data)
-    {
-        data.baseline_odf = data.odf;
-        data.space.resize(voxel.study_data->dwi_data.size());
-        for (unsigned int index = 0; index < data.space.size(); ++index)
-            data.space[index] = voxel.study_data->dwi_data[index][data.voxel_index];
-    }
-    virtual void end(Voxel&,gz_mat_write&) {}
-};
 
-class CalculateDifference : public BaseProcess{
-
-public:
-    virtual void run(Voxel& voxel, VoxelData& data)
-    {
-        tipl::minus_constant(data.baseline_odf,*std::min_element(data.baseline_odf.begin(),data.baseline_odf.end()));
-        tipl::minus_constant(data.odf,*std::min_element(data.odf.begin(),data.odf.end()));
-
-        float qa = *std::max_element(data.baseline_odf.begin(),data.baseline_odf.end());
-        if(qa > voxel.z0)
-            voxel.z0 = qa; // z0 is the maximum qa in the baseline
-        for(int i = 0;i < data.odf.size();++i)
-        {
-            float study = data.odf[i];
-            float base = data.baseline_odf[i];
-            data.odf[i] = (study+base)*0.5f;
-            data.baseline_odf[i] = (study-base)*0.5f;
-        }
-    }
-};
 
 void calculate_shell(const std::vector<float>& sorted_bvalues,
                      std::vector<unsigned int>& shell);
@@ -387,7 +351,7 @@ public:
         fa = std::move(std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(voxel.dim.size())));
         gfa = std::move(std::vector<float>(voxel.dim.size()));
         iso= std::move(std::vector<float>(voxel.dim.size()));
-        if(voxel.method_id == 8) // DDI
+        if(voxel.compare_voxel) // DDI
         {
             qa_inc = std::move(std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(voxel.dim.size())));;
             qa_dec = std::move(std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(voxel.dim.size())));;
@@ -432,17 +396,17 @@ public:
                 rdi[index][data.voxel_index] = data.rdi[index];
         if(data.min_odf > voxel.z0)
             voxel.z0 = data.min_odf;
-        if(voxel.method_id == 8) // DDI
+        if(voxel.compare_voxel) // DDI
         {
             for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             {
-                float change = data.baseline_odf[data.dir_index[index]];
+                float change = data.odf_difference[data.dir_index[index]];
                 if(change > 0.0f)
                     qa_inc[index][data.voxel_index] = change;
                 else
                     qa_dec[index][data.voxel_index] = -change;
             }
-            data.odf = data.baseline_odf;
+            data.odf = data.odf_difference;
         }
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
@@ -478,7 +442,7 @@ public:
                     tipl::divide_constant(fa[index],max_qa);
                 output_anisotropy(mat_writer,"nqa",fa);
             }
-            if(voxel.method_id == 8) // DDI
+            if(voxel.compare_voxel) // DDI
             {
                 for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
                 {

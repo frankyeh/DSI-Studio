@@ -937,3 +937,46 @@ bool ImageModel::save_bvec(const char* file_name) const
     }
     return out.good();
 }
+bool ImageModel::compare_src(const char* file_name)
+{
+    std::shared_ptr<ImageModel> bl(new ImageModel);
+    begin_prog("reading");
+    if(!bl->load_from_file(file_name))
+    {
+        error_msg = bl->error_msg;
+        return false;
+    }
+    study_src = bl;
+    voxel.study_name = QFileInfo(file_name).baseName().toStdString();
+    voxel.compare_voxel = &(study_src->voxel);
+
+    begin_prog("Registration between longitudinal scans");
+    {
+        tipl::transformation_matrix<double> arg;
+        bool terminated = false;
+        check_prog(0,1);
+        tipl::reg::two_way_linear_mr(dwi_sum,voxel.vs,
+                                     study_src->dwi_sum,study_src->voxel.vs,
+                        arg,tipl::reg::rigid_body,tipl::reg::correlation(),terminated);
+        study_src->rotate(dwi_sum,arg);
+        study_src->voxel.vs = voxel.vs;
+        check_prog(1,1);
+    }
+    // Signal match on b0 to allow for quantitative MRI in DDI
+    {
+        double a,b;
+        tipl::linear_regression(study_src->src_dwi_data[0],
+                                             study_src->src_dwi_data[0]+
+                                             study_src->voxel.dim.size(),
+                                             src_dwi_data[0],a,b,voxel.R2);
+        std::cout << "y=" << a << "x+" << b << " r2=" << voxel.R2 << std::endl;
+        tipl::par_for(study_src->new_dwi.size(),[&](int i)
+        {
+            tipl::multiply_constant(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),a);
+            tipl::add_constant(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),b);
+            tipl::lower_threshold(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),0.0f);
+        });
+
+    }
+    return true;
+}
