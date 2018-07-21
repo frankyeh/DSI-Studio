@@ -155,11 +155,19 @@ int trk_post(std::shared_ptr<fib_data> handle,
              TractModel& tract_model,
              const std::string& file_name);
 std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
+std::pair<float,float> evaluate_fib(std::shared_ptr<fib_data> handle);
 int ana(void)
 {
     std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
     if(!handle.get())
         return 0;
+    if(po.has("info"))
+    {
+        auto result = evaluate_fib(handle);
+        std::ofstream out(po.get("info"));
+        out << "fiber coherence index\t" << result.first << std::endl;
+    }
+
     if(po.has("atlas") || po.has("roi"))
     {
         std::vector<std::string> region_list;

@@ -1299,7 +1299,7 @@ std::pair<float,float> evaluate_fib(
         const tipl::geometry<3>& dim,
         const std::vector<std::vector<float> >& fib_fa,
         const std::vector<std::vector<float> >& fib_dir);
-void tracking_window::on_actionQuality_Assessment_triggered()
+std::pair<float,float> evaluate_fib(std::shared_ptr<fib_data> handle)
 {
     std::vector<std::vector<float> > fib_fa(handle->dir.num_fiber);
     std::vector<std::vector<float> > fib_dir(handle->dir.num_fiber);
@@ -1316,9 +1316,15 @@ void tracking_window::on_actionQuality_Assessment_triggered()
             fib_dir[i][j+2] = v[2];
         }
     }
-    std::pair<float,float> result = evaluate_fib(handle->dim,fib_fa,fib_dir);
+    return evaluate_fib(handle->dim,fib_fa,fib_dir);
+}
+
+void tracking_window::on_actionQuality_Assessment_triggered()
+{
+
+    std::pair<float,float> result = evaluate_fib(handle);
     std::ostringstream out;
-    out << "Fiber coherent index: " << result.first << std::endl;
+    out << "Fiber coherence index: " << result.first << std::endl;
     out << "Fiber discoherent index: " << result.second << std::endl;
     show_info_dialog("Quality assessment",out.str().c_str());
 }
