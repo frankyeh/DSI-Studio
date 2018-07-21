@@ -524,7 +524,7 @@
         <item>
          <widget class="QLineEdit" name="network_text">
           <property name="text">
-           <string>res,relu|1,1,8|full,relu|1,1,8|full,relu|1,1,8|full,identity</string>
+           <string>res,relu|1,1,8|full,relu|1,1,8|full,relu|1,1,8|full,relu</string>
           </property>
          </widget>
         </item>

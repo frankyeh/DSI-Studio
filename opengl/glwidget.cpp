@@ -41,6 +41,23 @@ GLWidget::GLWidget(bool samplebuffer,
     rotation_matrix.identity();
     transformation_matrix2.identity();
     rotation_matrix2.identity();
+    if (cur_tracking_window.handle->has_odfs())
+    {
+        for (unsigned int index = 0; index < cur_tracking_window.odf_size; ++index)
+        {
+            odf_color1.push_back(std::abs(cur_tracking_window.handle->dir.odf_table[index][0]));
+            odf_color1.push_back(std::abs(cur_tracking_window.handle->dir.odf_table[index][1]));
+            odf_color1.push_back(std::abs(cur_tracking_window.handle->dir.odf_table[index][2]));
+
+            odf_color2.push_back(0.1f);
+            odf_color2.push_back(0.1f);
+            odf_color2.push_back(0.8f);
+
+            odf_color3.push_back(0.8f);
+            odf_color3.push_back(0.1f);
+            odf_color3.push_back(0.1f);
+        }
+    }
 }
 
 GLWidget::~GLWidget()
@@ -503,13 +520,9 @@ void GLWidget::renderLR()
             odf_skip = get_param("odf_skip");
             odf_scale = get_param("odf_scale");
             odf_dim = cur_tracking_window.cur_dim;
+            odf_color = get_param("odf_color");
             odf_slide_pos = current_slice->slice_pos[cur_tracking_window.cur_dim];
-            if(odf_color != get_param("odf_color"))
-            {
-                odf_colors.clear();
-                odf_color = get_param("odf_color");
-            }
-            odf_points.clear();
+            odf_points.clear();            
         }
 
         std::shared_ptr<fib_data> handle = cur_tracking_window.handle;
@@ -517,95 +530,96 @@ void GLWidget::renderLR()
         unsigned char mask = skip_mask_set[odf_skip];
         auto& slice = cur_tracking_window.slices[0];
         auto& geo = cur_tracking_window.handle->dim;
-        if(odf_color == 1)
-            odf_colors.clear();
         if(odf_points.empty())
-        switch(odf_position) // along slide
         {
+            std::vector<tipl::pixel_index<3> > odf_pos;
+            switch(odf_position) // along slide
+            {
 
-        case 0:
-            {
-                tipl::geometry<2> geo2(slice->geometry[odf_dim==0?1:0],
-                                       slice->geometry[odf_dim==2?1:2]);
-                for(tipl::pixel_index<2> index(geo2);index < geo2.size();++index)
+            case 0:
                 {
-                    if((index[0] & mask) | (index[1] & mask))
-                        continue;
-                    int x,y,z;
-                    if (!slice->to3DSpace(cur_tracking_window.cur_dim,index[0],index[1],x,y,z))
-                        continue;
-                    tipl::pixel_index<3> pos(x,y,z,geo);
-                    if (handle->dir.get_fa(pos.index(),0) <= fa_threshold)
-                        continue;
-                    add_odf(pos);
+                    tipl::geometry<2> geo2(slice->geometry[odf_dim==0?1:0],
+                                           slice->geometry[odf_dim==2?1:2]);
+                    for(tipl::pixel_index<2> index(geo2);index < geo2.size();++index)
+                    {
+                        if((index[0] & mask) | (index[1] & mask))
+                            continue;
+                        int x,y,z;
+                        if (!slice->to3DSpace(cur_tracking_window.cur_dim,index[0],index[1],x,y,z))
+                            continue;
+                        tipl::pixel_index<3> pos(x,y,z,geo);
+                        if (handle->dir.get_fa(pos.index(),0) <= fa_threshold)
+                            continue;
+                        odf_pos.push_back(pos);
+                    }
                 }
+                break;
+            case 1: // intersection
+                odf_pos.push_back(tipl::pixel_index<3>(slice->slice_pos[0],slice->slice_pos[1],slice->slice_pos[2],
+                                              geo));
+                break;
+            case 2: //all
+                for(tipl::pixel_index<3> index(geo);index < geo.size();++index)
+                {
+                    if(((index[0] & mask) | (index[1] & mask) | (index[2] & mask)) ||
+                       handle->dir.get_fa(index.index(),0) <= fa_threshold)
+                        continue;
+                    odf_pos.push_back(index);
+                }
+                break;
             }
-            break;
-        case 1: // intersection
-            add_odf(tipl::pixel_index<3>(slice->slice_pos[0],slice->slice_pos[1],slice->slice_pos[2],
-                                          geo));
-            break;
-        case 2: //all
-            for(tipl::pixel_index<3> index(geo);index < geo.size();++index)
-            {
-                if(((index[0] & mask) | (index[1] & mask) | (index[2] & mask)) ||
-                   handle->dir.get_fa(index.index(),0) <= fa_threshold)
-                    continue;
-                add_odf(index);
-            }
-            break;
-        }
-        if(odf_colors.empty())
-        {
-            if(odf_color == 0) // Directional
-                for (unsigned int index = 0; index <
-                     cur_tracking_window.odf_size; ++index)
-                {
-                    odf_colors.push_back(std::abs(handle->dir.odf_table[index][0]));
-                    odf_colors.push_back(std::abs(handle->dir.odf_table[index][1]));
-                    odf_colors.push_back(std::abs(handle->dir.odf_table[index][2]));
-                }
-            if(odf_color == 2) // Directional
-                for (unsigned int index = 0; index <
-                     cur_tracking_window.odf_size; ++index)
-                {
-                    odf_colors.push_back(0);
-                    odf_colors.push_back(0);
-                    odf_colors.push_back(1);
-                }
-            if(odf_color == 3) // Directional
-                for (unsigned int index = 0; index <
-                     cur_tracking_window.odf_size; ++index)
-                {
-                    odf_colors.push_back(1);
-                    odf_colors.push_back(0);
-                    odf_colors.push_back(0);
-                }
+            add_odf(odf_pos);
         }
 
+        float* odf_color_ptr = (float*)&odf_color1.front();
+        switch(odf_color)
+        {
+            case 1:
+                odf_color_ptr = (float*)&odf_color2.front();
+                break;
+            case 2:
+                odf_color_ptr = (float*)&odf_color3.front();
+                break;
+        }
         glEnable(GL_COLOR_MATERIAL);
-        glDisable(GL_LIGHTING);
+        setupLight((float)(get_param("odf_light_ambient"))/10.0,
+                   (float)(get_param("odf_light_diffuse"))/10.0,
+                   (float)(get_param("odf_light_specular"))/10.0,
+                   (float)(get_param("odf_light_dir"))*3.1415926*2.0/10.0,
+                   (float)(get_param("odf_light_shading"))*3.1415926/20.0,
+                   get_param("odf_light_option"));
+        setupMaterial((float)(get_param("odf_emission"))/10.0,
+                      (float)(get_param("odf_specular"))/10.0,
+                      get_param("odf_shininess")*10);
+
         glPushMatrix();
         glMultMatrixf(transformation_matrix.begin());
+
         glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_NORMAL_ARRAY);
         glEnableClientState(GL_COLOR_ARRAY);
         unsigned int num_odf = odf_points.size()/cur_tracking_window.odf_size;
         unsigned int face_size = cur_tracking_window.odf_face_size*3;
+
+
         for(unsigned int index = 0,base_index = 0;index < num_odf;
             ++index,base_index += cur_tracking_window.odf_size)
         {
             glVertexPointer(3, GL_FLOAT, 0, (float*)&odf_points[base_index]);
-            if(odf_color == 1)
-                glColorPointer(3, GL_FLOAT, 0, (float*)&odf_colors[base_index*3]);
-            else
-                glColorPointer(3, GL_FLOAT, 0, (float*)&odf_colors.front());
+            glColorPointer(3, GL_FLOAT, 0, odf_color_ptr);
+            glNormalPointer(GL_FLOAT, 0, (float*)&odf_norm[base_index]);
             glDrawElements(GL_TRIANGLES, face_size,
                            GL_UNSIGNED_SHORT,handle->dir.odf_faces[0].begin());
         }
         glDisableClientState(GL_VERTEX_ARRAY);
         glDisableClientState(GL_COLOR_ARRAY);
+        glDisableClientState(GL_NORMAL_ARRAY);
         glPopMatrix();
         glDisable(GL_COLOR_MATERIAL);
+
+
+
+
 
     }
 
@@ -1079,112 +1093,103 @@ void GLWidget::renderLR()
 }
 
 
-void GLWidget::add_odf(tipl::pixel_index<3> pos)
+void GLWidget::add_odf(const std::vector<tipl::pixel_index<3> >& odf_pos_)
 {
     std::shared_ptr<fib_data> handle = cur_tracking_window.handle;
-    const float* odf_buffer =
-            handle->get_odf_data(pos.index());
-    if(!odf_buffer)
-        return;
+    std::vector<const float*> odf_buffers;
+    std::vector<tipl::pixel_index<3> > odf_pos;
+    for(int i = 0;i < odf_pos_.size();++i)
+    {
+        const float* odf_buffer =
+            handle->get_odf_data(odf_pos_[i].index());
+        if(!odf_buffer)
+            continue;
+        odf_buffers.push_back(odf_buffer);
+        odf_pos.push_back(odf_pos_[i]);
+    }
+
     unsigned int odf_dim = cur_tracking_window.odf_size;
     unsigned int half_odf = odf_dim >> 1;
-    odf_points.resize(odf_points.size()+odf_dim);
-    std::vector<tipl::vector<3,float> >::iterator iter = odf_points.end()-odf_dim;
-    std::vector<tipl::vector<3,float> >::iterator end = odf_points.end();
-    std::fill(iter,end,pos);
-
-    std::vector<float>::iterator color_iter;
-    if(odf_color == 1) // Blue-Red
+    odf_points.resize(odf_pos.size()*odf_dim);
+    odf_norm.resize(odf_pos.size()*odf_dim);
+    bool odf_min_max = get_param("odf_min_max");
+    bool odf_smoothing = get_param("odf_smoothing");
+    tipl::par_for(odf_pos.size(),[&](int i)
     {
-        odf_colors.resize(odf_colors.size()+odf_dim*3);
-        color_iter = odf_colors.end()-odf_dim*3;
-    }
 
-    float odf_min = *std::min_element(odf_buffer,odf_buffer+half_odf);
-    if(odf_min < 0)
-        odf_min = 0;
-    float max_fa = *std::max_element(cur_tracking_window.handle->dir.fa[0],cur_tracking_window.handle->dir.fa[0] + cur_tracking_window.handle->dim.size());
-    if(max_fa == 0.0)
-        max_fa = 1.0;
-    float scaling = odf_scale/max_fa;
-    if(!get_param("odf_min_max"))
-    {
-        scaling = 0.5*odf_scale/(max_fa+odf_min);
-        odf_min = 0;
-    }
-    // smooth the odf a bit
+        const float* odf_buffer = odf_buffers[i];
 
-    std::vector<float> new_odf_buffer;
-    if(get_param("odf_smoothing"))
-    {
-        new_odf_buffer.resize(half_odf);
-        std::copy(odf_buffer,odf_buffer+half_odf,new_odf_buffer.begin());
-        std::vector<tipl::vector<3,unsigned short> >& odf_faces =
-                handle->dir.odf_faces;
-        for(int index = 0;index < odf_faces.size();++index)
+        float odf_min = *std::min_element(odf_buffer,odf_buffer+half_odf);
+        if(odf_min < 0 || !odf_min_max)
+            odf_min = 0;
+        // smooth the odf a bit
+
+        std::vector<float> new_odf_buffer;
+        if(odf_smoothing)
         {
-            unsigned short f1 = odf_faces[index][0];
-            unsigned short f2 = odf_faces[index][1];
-            unsigned short f3 = odf_faces[index][2];
-            if(f1 >= half_odf)
-                f1 -= half_odf;
-            if(f2 >= half_odf)
-                f2 -= half_odf;
-            if(f3 >= half_odf)
-                f3 -= half_odf;
-            float sum = odf_buffer[f1]+odf_buffer[f2]+odf_buffer[f3]-odf_min-odf_min-odf_min;
-            sum *= 0.1f;
-            sum += odf_min;
-            if(odf_buffer[f1] == odf_min)
-                new_odf_buffer[f1] = std::max(sum,new_odf_buffer[f1]);
-            if(odf_buffer[f2] == odf_min)
-                new_odf_buffer[f2] = std::max(sum,new_odf_buffer[f2]);
-            if(odf_buffer[f3] == odf_min)
-                new_odf_buffer[f3] = std::max(sum,new_odf_buffer[f3]);
-        }
-        odf_buffer = &new_odf_buffer[0];
-    }
-
-
-    for(unsigned int index = 0;index < half_odf;++index,++iter)
-    {
-        tipl::vector<3,float> displacement(handle->dir.odf_table[index]);
-        if(odf_color <= 1) // 0:directional 1: Blue-Red
-            displacement *= (std::fabs(odf_buffer[index])-odf_min)*scaling;
-        else
-        {
-            if(odf_color == 2) // Blue: increased ODF
-                displacement *= std::max<float>(0.0f,odf_buffer[index])*scaling;
-            else
-                // Red: decreased ODF
-                displacement *= -std::min<float>(0.0f,odf_buffer[index])*scaling;
-        }
-        *(iter) += displacement;
-        *(iter+half_odf) -= displacement;
-        if(odf_color == 1) // Blue-Red
-        {
-            int i3 = index*3;
-            int ih3 = (index + half_odf)*3;
-            if(odf_buffer[index] > 0)
+            new_odf_buffer.resize(half_odf);
+            std::copy(odf_buffer,odf_buffer+half_odf,new_odf_buffer.begin());
+            auto& odf_faces = handle->dir.odf_faces;
+            for(int index = 0;index < odf_faces.size();++index)
             {
-                color_iter[i3] = 0;
-                color_iter[i3+1] = 0;
-                color_iter[i3+2] = 1;
-                color_iter[ih3] = 0;
-                color_iter[ih3+1] = 0;
-                color_iter[ih3+2] = 1;
+                unsigned short f1 = odf_faces[index][0];
+                unsigned short f2 = odf_faces[index][1];
+                unsigned short f3 = odf_faces[index][2];
+                if(f1 >= half_odf)
+                    f1 -= half_odf;
+                if(f2 >= half_odf)
+                    f2 -= half_odf;
+                if(f3 >= half_odf)
+                    f3 -= half_odf;
+                float sum = odf_buffer[f1]+odf_buffer[f2]+odf_buffer[f3]-odf_min-odf_min-odf_min;
+                sum *= 0.1f;
+                sum += odf_min;
+                if(odf_buffer[f1] == odf_min)
+                    new_odf_buffer[f1] = std::max(sum,new_odf_buffer[f1]);
+                if(odf_buffer[f2] == odf_min)
+                    new_odf_buffer[f2] = std::max(sum,new_odf_buffer[f2]);
+                if(odf_buffer[f3] == odf_min)
+                    new_odf_buffer[f3] = std::max(sum,new_odf_buffer[f3]);
             }
+            odf_buffer = &new_odf_buffer[0];
+        }
+        auto iter = odf_points.begin()+odf_dim*i;
+        std::fill(iter,iter + odf_dim,odf_pos[i]);
+
+        for(unsigned int index = 0;index < half_odf;++index)
+        {
+            tipl::vector<3,float> displacement(handle->dir.odf_table[index]);
+            if(odf_color == 0) // 0:directional
+                displacement *= (std::fabs(odf_buffer[index])-odf_min)*odf_scale;
             else
             {
-                color_iter[i3] = 1;
-                color_iter[i3+1] = 0;
-                color_iter[i3+2] = 0;
-                color_iter[ih3] = 1;
-                color_iter[ih3+1] = 0;
-                color_iter[ih3+2] = 0;
+                if(odf_color == 1) // Blue: increased ODF
+                    displacement *= std::max<float>(0.0f,odf_buffer[index])*odf_scale;
+                else
+                    // Red: decreased ODF
+                    displacement *= -std::min<float>(0.0f,odf_buffer[index])*odf_scale;
             }
+            iter[index] += displacement;
+            iter[index+half_odf] -= displacement;
         }
-    }
+
+        // calculate normal
+        std::vector<tipl::vector<3,float> >::iterator iter2 = odf_norm.begin()+i*odf_dim;
+        std::vector<tipl::vector<3,float> >::iterator end2 = iter2+odf_dim;
+        for(int j = 0;j < handle->dir.odf_faces.size();++j)
+        {
+            unsigned short p1 = handle->dir.odf_faces[j][0];
+            unsigned short p2 = handle->dir.odf_faces[j][1];
+            unsigned short p3 = handle->dir.odf_faces[j][2];
+            auto n = (iter[p1] - iter[p2]).cross_product(iter[p2] - iter[p3]);
+            n.normalize();
+            iter2[p1] += n;
+            iter2[p2] += n;
+            iter2[p3] += n;
+        }
+        for(;iter2 != end2;++iter2)
+            iter2->normalize();
+    });
 }
 void myglColor(const tipl::vector<3,float>& color,float alpha)
 {

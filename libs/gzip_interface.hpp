@@ -45,7 +45,10 @@ public:
         if(is_gz(file_name))
         {
             in.close();
-            size_ = gz_size;
+            if(size_ > gz_size) // size > 4G
+                size_ = size_*2;
+            else
+                size_ = gz_size;
             handle = gzopen(file_name, "rb");
             return handle;
         }
@@ -53,7 +56,7 @@ public:
     }
     bool read(void* buf,size_t buf_size)
     {
-        check_prog((unsigned int)cur(),(unsigned int)size());
+        check_prog(100*cur()/size(),100);
         if(prog_aborted())
             return false;
         if(handle)

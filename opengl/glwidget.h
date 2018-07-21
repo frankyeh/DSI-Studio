@@ -77,10 +77,11 @@ public:
 
  private://odf
      std::vector<tipl::vector<3,float> >odf_points;
-     std::vector<float>odf_colors;
+     std::vector<tipl::vector<3,float> >odf_norm;
+     std::vector<float> odf_color1,odf_color2,odf_color3;
      int odf_dim = 0;
      int odf_slide_pos = 0;
-     void add_odf(tipl::pixel_index<3> pos);
+     void add_odf(const std::vector<tipl::pixel_index<3> >& odf_pos);
 private: //glu
      std::shared_ptr<GluQua> RegionSpheres;
 public:
