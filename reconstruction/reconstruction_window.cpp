@@ -1102,7 +1102,11 @@ void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
         QMessageBox::information(this,"error","The image dimension is different.",0);
         return;
     }
-
+    if(handle->src_dwi_data.size() != src2.src_dwi_data.size())
+    {
+        QMessageBox::information(this,"error","The DWI number is different.",0);
+        return;
+    }
     handle->distortion_correction(src2);
     update_image();
     on_SlicePos_valueChanged(ui->SlicePos->value());

@@ -35,6 +35,33 @@ int rec(void)
         return 1;
     }
     std::cout << "src loaded" <<std::endl;
+    if(po.has("other_src"))
+    {
+        std::string file_name2 = po.get("other_src");
+        std::auto_ptr<ImageModel> handle2(new ImageModel);
+        if (!handle2->load_from_file(file_name2.c_str()))
+        {
+            std::cout << "Load other src file failed:" << handle2->error_msg << std::endl;
+            return 1;
+        }
+
+        if(handle->voxel.dim != handle2->voxel.dim)
+        {
+            std::cout << "The image dimension is different." << std::endl;
+            return 1;
+        }
+
+        if(handle->src_dwi_data.size() != handle2->src_dwi_data.size())
+        {
+            std::cout << "The DWI number is different in other src." << std::endl;
+            return 1;
+        }
+
+        handle->distortion_correction(*handle2.get());
+        std::cout << "Phase correction done with " << file_name2 << std::endl;
+    }
+
+
     if (po.has("flip"))
     {
         std::string flip_seq = po.get("flip");
