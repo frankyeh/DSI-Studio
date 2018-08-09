@@ -39,14 +39,14 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,
             threshold_gen(0.0,1.0);
     unsigned int iteration = thread_id; // for center seed
     float white_matter_t = param.threshold*1.2f;
-    if(!roi_mgr.seeds.empty())
+    if(!roi_mgr->seeds.empty())
     try{
         std::vector<std::vector<float> > local_track_buffer;
         while(!joinning &&
               !(param.stop_by_tract == 1 && tract_count[thread_id] >= max_count) &&
               !(param.stop_by_tract == 0 && seed_count[thread_id] >= max_count) &&
               !(param.max_seed_count > 0 && seed_count[thread_id] >= param.max_seed_count) &&
-              !(param.center_seed && iteration >= roi_mgr.seeds.size()))
+              !(param.center_seed && iteration >= roi_mgr->seeds.size()))
         {
 
             if(!pushing_data && (iteration & 0x00000FFF) == 0x00000FFF && !local_track_buffer.empty())
@@ -74,9 +74,9 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,
             if(param.center_seed)
             {
                 if(!method->init(param.initial_direction,
-                    tipl::vector<3,float>(roi_mgr.seeds[iteration].x()/roi_mgr.seeds_r[iteration],
-                                           roi_mgr.seeds[iteration].y()/roi_mgr.seeds_r[iteration],
-                                           roi_mgr.seeds[iteration].z()/roi_mgr.seeds_r[iteration]),
+                    tipl::vector<3,float>(roi_mgr->seeds[iteration].x()/roi_mgr->seeds_r[iteration],
+                                           roi_mgr->seeds[iteration].y()/roi_mgr->seeds_r[iteration],
+                                           roi_mgr->seeds[iteration].z()/roi_mgr->seeds_r[iteration]),
                                  seed))
                 {
                     iteration+=thread_count;
@@ -90,13 +90,13 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,
                 // this ensure consistency
                 std::lock_guard<std::mutex> lock(lock_seed_function);
                 iteration+=thread_count;
-                unsigned int i = rand_gen(seed)*((float)roi_mgr.seeds.size()-1.0f);
+                unsigned int i = rand_gen(seed)*((float)roi_mgr->seeds.size()-1.0f);
                 tipl::vector<3,float> pos;
-                pos[0] = (float)roi_mgr.seeds[i].x() + rand_gen(seed)-0.5f;
-                pos[1] = (float)roi_mgr.seeds[i].y() + rand_gen(seed)-0.5f;
-                pos[2] = (float)roi_mgr.seeds[i].z() + rand_gen(seed)-0.5f;
-                if(roi_mgr.seeds_r[i] != 1.0f)
-                    pos /= roi_mgr.seeds_r[i];
+                pos[0] = (float)roi_mgr->seeds[i].x() + rand_gen(seed)-0.5f;
+                pos[1] = (float)roi_mgr->seeds[i].y() + rand_gen(seed)-0.5f;
+                pos[2] = (float)roi_mgr->seeds[i].z() + rand_gen(seed)-0.5f;
+                if(roi_mgr->seeds_r[i] != 1.0f)
+                    pos /= roi_mgr->seeds_r[i];
                 if(!method->init(param.initial_direction,pos,seed))
                     continue;
             }
@@ -199,7 +199,7 @@ void ThreadData::run(const tracking_data& trk,
     report.clear();
     report.str("");
     report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was used."
-           << roi_mgr.report;
+           << roi_mgr->report;
     report << param.get_report();
     // to ensure consistency, seed initialization with all orientation only fits with single thread
     if(param.initial_direction == 2)
@@ -207,7 +207,7 @@ void ThreadData::run(const tracking_data& trk,
     if(param.center_seed)
     {
         std::srand(0);
-        std::random_shuffle(roi_mgr.seeds.begin(),roi_mgr.seeds.end());
+        std::random_shuffle(roi_mgr->seeds.begin(),roi_mgr->seeds.end());
     }
     seed = std::mt19937(param.random_seed ? std::random_device()():0);
     seed_count.clear();

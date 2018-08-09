@@ -1168,14 +1168,14 @@ void TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater)
     redo_size.clear();
 }
 //---------------------------------------------------------------------------
-void TractModel::filter_by_roi(RoiMgr& roi_mgr)
+void TractModel::filter_by_roi(std::shared_ptr<RoiMgr> roi_mgr)
 {
     std::vector<unsigned int> tracts_to_delete;
     for (unsigned int index = 0;index < tract_data.size();++index)
     if(tract_data[index].size() >= 6)
     {
-        if(!roi_mgr.have_include(&(tract_data[index][0]),tract_data[index].size()) ||
-           !roi_mgr.fulfill_end_point(tipl::vector<3,float>(tract_data[index][0],
+        if(!roi_mgr->have_include(&(tract_data[index][0]),tract_data[index].size()) ||
+           !roi_mgr->fulfill_end_point(tipl::vector<3,float>(tract_data[index][0],
                                                              tract_data[index][1],
                                                              tract_data[index][2]),
                                       tipl::vector<3,float>(tract_data[index][tract_data[index].size()-3],
@@ -1185,10 +1185,10 @@ void TractModel::filter_by_roi(RoiMgr& roi_mgr)
             tracts_to_delete.push_back(index);
             continue;
         }
-        if(!roi_mgr.exclusive.empty())
+        if(!roi_mgr->exclusive.empty())
         {
             for(unsigned int i = 0;i < tract_data[index].size();i+=3)
-                if(roi_mgr.is_excluded_point(tipl::vector<3,float>(tract_data[index][i],
+                if(roi_mgr->is_excluded_point(tipl::vector<3,float>(tract_data[index][i],
                                                                     tract_data[index][i+1],
                                                                     tract_data[index][i+2])))
                 {

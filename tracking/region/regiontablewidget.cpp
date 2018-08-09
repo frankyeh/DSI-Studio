@@ -1021,7 +1021,7 @@ void RegionTableWidget::set_whole_brain(ThreadData* data)
 {
     std::vector<tipl::vector<3,short> > points;
     whole_brain_points(points);
-    data->roi_mgr.setRegions(cur_tracking_window.handle->dim,points,1.0,seed_id,"whole brain",tipl::vector<3>());
+    data->roi_mgr->setRegions(cur_tracking_window.handle->dim,points,1.0,seed_id,"whole brain",tipl::vector<3>());
 }
 
 void RegionTableWidget::setROIs(ThreadData* data)
@@ -1037,7 +1037,7 @@ void RegionTableWidget::setROIs(ThreadData* data)
     for (unsigned int index = 0;index < regions.size();++index)
         if (!regions[index]->empty() && item(index,0)->checkState() == Qt::Checked
                 && !(regions[index]->regions_feature == 0 && roi_count > 5))
-            data->roi_mgr.setRegions(cur_tracking_window.handle->dim,regions[index]->get_region_voxels_raw(),
+            data->roi_mgr->setRegions(cur_tracking_window.handle->dim,regions[index]->get_region_voxels_raw(),
                                      regions[index]->resolution_ratio,
                              regions[index]->regions_feature,item(index,0)->text().toLocal8Bit().begin(),
                                      cur_tracking_window.handle->vs);

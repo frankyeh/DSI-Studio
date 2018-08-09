@@ -16,7 +16,7 @@ private:
     std::mt19937 seed;
 
 public:
-    RoiMgr roi_mgr;
+    std::shared_ptr<RoiMgr> roi_mgr;
 
 public:
     std::ostringstream report;
@@ -24,7 +24,7 @@ public:
     float fa_threshold1,fa_threshold2;// use only if fa_threshold=0
 
 public:
-    ThreadData(void):joinning(false),seed(0){}
+    ThreadData(void):joinning(false),seed(0),roi_mgr(new RoiMgr){}
     ~ThreadData(void)
     {
         end_thread();

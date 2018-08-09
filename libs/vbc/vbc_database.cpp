@@ -70,11 +70,11 @@ int vbc_database::run_track(const tracking_data& fib,std::vector<std::vector<flo
     tracking_thread.param.termination_count = count;
     // if no seed assigned, assign whole brain
     if(roi_list.empty() || std::find(roi_type.begin(),roi_type.end(),3) == roi_type.end())
-        tracking_thread.roi_mgr.setRegions(fib.dim,seed,1.0,3,"whole brain",tipl::vector<3>());
+        tracking_thread.roi_mgr->setRegions(fib.dim,seed,1.0,3,"whole brain",tipl::vector<3>());
     if(!roi_list.empty())
     {
         for(unsigned int index = 0;index < roi_list.size();++index)
-            tracking_thread.roi_mgr.setRegions(fib.dim,roi_list[index],roi_r_list[index],roi_type[index],
+            tracking_thread.roi_mgr->setRegions(fib.dim,roi_list[index],roi_r_list[index],roi_type[index],
                                                "user assigned region",fib.vs);
     }
     tracking_thread.run(fib,thread_count,true);

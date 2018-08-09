@@ -400,7 +400,7 @@ int trk_post(std::shared_ptr<fib_data> handle,
 
 }
 
-bool load_roi(std::shared_ptr<fib_data> handle,RoiMgr& roi_mgr)
+bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
 {
     const int total_count = 18;
     char roi_names[total_count][5] = {"roi","roi2","roi3","roi4","roi5","roa","roa2","roa3","roa4","roa5","end","end2","seed","ter","ter2","ter3","ter4","ter5"};
@@ -411,7 +411,7 @@ bool load_roi(std::shared_ptr<fib_data> handle,RoiMgr& roi_mgr)
         ROIRegion roi(handle);
         if(!load_region(handle,roi,po.get(roi_names[index])))
             return false;
-        roi_mgr.setRegions(handle->dim,roi.get_region_voxels_raw(),roi.resolution_ratio,type[index],po.get(roi_names[index]).c_str(),handle->vs);
+        roi_mgr->setRegions(handle->dim,roi.get_region_voxels_raw(),roi.resolution_ratio,type[index],po.get(roi_names[index]).c_str(),handle->vs);
         std::cout << roi_names[index] << "=" << po.get(roi_names[index]) << std::endl;
     }
     return true;
@@ -537,7 +537,7 @@ int trk(void)
         for(tipl::pixel_index<3> index(geometry);index < geometry.size();++index)
             if(fa0[index.index()] > seed_threshold)
                 seed.push_back(tipl::vector<3,short>(index.x(),index.y(),index.z()));
-        tracking_thread.roi_mgr.setRegions(geometry,seed,1.0,3,"whole brain",tipl::vector<3>());
+        tracking_thread.roi_mgr->setRegions(geometry,seed,1.0,3,"whole brain",tipl::vector<3>());
     }
 
     if(!cnt_file_name.empty())

@@ -174,7 +174,7 @@ public:
         dir[2] *= current_step_size_in_voxel[2];
     }
 private:
-    const RoiMgr& roi_mgr;
+    std::shared_ptr<RoiMgr> roi_mgr;
 	std::vector<float> track_buffer;
 	mutable std::vector<float> reverse_buffer;
     unsigned int buffer_front_pos;
@@ -199,7 +199,7 @@ public:
     }
 public:
     TrackingMethod(const tracking_data& trk_,basic_interpolation* interpolation_,
-                   const RoiMgr& roi_mgr_):
+                   std::shared_ptr<RoiMgr> roi_mgr_):
         trk(trk_),interpolation(interpolation_),roi_mgr(roi_mgr_),init_fib_index(0)
 	{
 
@@ -238,13 +238,13 @@ public:
 		{
             if(get_buffer_size() > current_max_steps3 || buffer_back_pos + 3 >= track_buffer.size())
 				return false;
-            if(roi_mgr.is_excluded_point(position))
+            if(roi_mgr->is_excluded_point(position))
 				return false;
             track_buffer[buffer_back_pos] = position[0];
             track_buffer[buffer_back_pos+1] = position[1];
             track_buffer[buffer_back_pos+2] = position[2];
             buffer_back_pos += 3;
-            if(roi_mgr.is_terminate_point(position))
+            if(roi_mgr->is_terminate_point(position))
                 break;
             tracking(ProcessList());
 			// make sure that the length won't overflow
@@ -266,13 +266,13 @@ public:
             if(terminated)
 				break;
 			buffer_front_pos -= 3;
-            if(roi_mgr.is_excluded_point(position))
+            if(roi_mgr->is_excluded_point(position))
 				return false;
             track_buffer[buffer_front_pos] = position[0];
             track_buffer[buffer_front_pos+1] = position[1];
             track_buffer[buffer_front_pos+2] = position[2];
         }
-        while(!roi_mgr.is_terminate_point(position));
+        while(!roi_mgr->is_terminate_point(position));
 
         if(smoothing)
         {
@@ -298,8 +298,8 @@ public:
         }
 
         return get_buffer_size() > current_min_steps3 &&
-               roi_mgr.have_include(get_result(),get_buffer_size()) &&
-               roi_mgr.fulfill_end_point(position,end_point1);
+               roi_mgr->have_include(get_result(),get_buffer_size()) &&
+               roi_mgr->fulfill_end_point(position,end_point1);
 
 
 	}
