@@ -30,7 +30,6 @@ public:
     bool load_database(const char* database_name);
 public:// database information
     float fiber_threshold;
-    unsigned int voxels_in_threshold;
     bool normalize_qa;
     bool output_resampling;
 public:
@@ -40,7 +39,7 @@ public:
     }
 private: // single subject analysis result
     int run_track(const tracking_data& fib,std::vector<std::vector<float> >& track,
-                  float seed_ratio = 1.0,unsigned int thread_count = 1);
+                  int seed_count,unsigned int thread_count = 1);
 public:// for FDR analysis
     std::vector<std::shared_ptr<std::future<void> > > threads;
     std::vector<unsigned int> subject_greater_null;
@@ -56,14 +55,13 @@ public:// for FDR analysis
     unsigned int progress;// 0~100
     bool terminated = false;
 public:
-    std::vector<std::vector<tipl::vector<3,short> > > roi_list;
-    std::vector<std::string> roi_name;
-    std::vector<float> roi_r_list;
-    std::vector<unsigned char> roi_type;
+    std::shared_ptr<RoiMgr> roi_mgr;
+    std::string roi_mgr_text;
+    std::string output_roi_suffix;
 public:
     std::string output_file_name;
     bool has_greater_result,has_lesser_result;
-    float seed_ratio;
+    int seed_count;
     std::mutex  lock_resampling,lock_greater_tracks,lock_lesser_tracks;
     std::shared_ptr<TractModel> greater_track;
     std::shared_ptr<TractModel> lesser_track;

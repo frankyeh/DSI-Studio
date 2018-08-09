@@ -83,15 +83,6 @@ public:
     std::vector<std::shared_ptr<Roi> > exclusive;
     std::vector<std::shared_ptr<Roi> > terminate;
 public:
-    void clear(void)
-    {
-        inclusive.clear();
-        end.clear();
-        exclusive.clear();
-        terminate.clear();
-        report.clear();
-    }
-
     bool is_excluded_point(const tipl::vector<3,float>& point) const
     {
         for(unsigned int index = 0; index < exclusive.size(); ++index)

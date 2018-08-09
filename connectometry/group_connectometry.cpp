@@ -3,6 +3,7 @@
 #include <QInputDialog>
 #include <QStringListModel>
 #include <QScrollBar>
+#include "tracking/region/Regions.h"
 #include "group_connectometry.hpp"
 #include "ui_group_connectometry.h"
 #include "ui_tracking_window.h"
@@ -10,6 +11,7 @@
 #include "tracking/tract/tracttablewidget.h"
 #include "libs/tracking/fib_data.hpp"
 #include "tracking/atlasdialog.h"
+#include "tracking/roi.hpp"
 extern std::vector<atlas> atlas_list;
 
 QWidget *ROIViewDelegate::createEditor(QWidget *parent,
@@ -689,7 +691,7 @@ void group_connectometry::on_run_clicked()
     }
     ui->run->setText("Stop");
     ui->span_to->setValue(80);
-    vbc->seed_ratio = ui->seed_ratio->value();
+    vbc->seed_count = ui->seed_count->value();
     vbc->normalize_qa = ui->normalize_qa->isChecked();
     vbc->output_resampling = ui->output_resampling->isChecked();
     vbc->foi_str = ui->foi->currentText().toStdString();
@@ -719,26 +721,69 @@ void group_connectometry::on_run_clicked()
     if(vbc->model->type == 3) // longitudinal change
         vbc->output_file_name = db_file_name.toStdString();
 
-    if(!ui->roi_whole_brain->isChecked() && !roi_list.empty())
+    if(ui->roi_whole_brain->isChecked())
+        roi_list.clear();
+
     {
-        vbc->roi_list = roi_list;
-        vbc->roi_r_list = roi_r_list;
-        vbc->roi_type.resize(roi_list.size());
-        vbc->roi_name.resize(roi_list.size());
+        std::vector<int> roi_type(roi_list.size());
+        std::vector<std::string> roi_name(roi_list.size());
         for(unsigned int index = 0;index < roi_list.size();++index)
         {
-            vbc->roi_type[index] = ui->roi_table->item(index,2)->text().toInt();
-            vbc->roi_name[index] = ui->roi_table->item(index,0)->text().toStdString();
+            roi_type[index] = ui->roi_table->item(index,2)->text().toInt();
+            roi_name[index] = ui->roi_table->item(index,0)->text().toStdString();
+        }
+        // if no seed assigned, assign whole brain
+        vbc->roi_mgr = std::make_shared<RoiMgr>();
+        if(roi_list.empty() || std::find(roi_type.begin(),roi_type.end(),3) == roi_type.end())
+        {
+            std::vector<tipl::vector<3,short> > seed;
+            for(tipl::pixel_index<3> index(vbc->handle->dim);index < vbc->handle->dim.size();++index)
+                if(vbc->handle->dir.fa[0][index.index()] > vbc->fiber_threshold)
+                    seed.push_back(tipl::vector<3,short>(index.x(),index.y(),index.z()));
+
+            vbc->roi_mgr->setRegions(vbc->handle->dim,seed,1.0f,3/*seed*/,"whole brain",tipl::vector<3>());
+        }
+
+
+        for(unsigned int index = 0;index < roi_list.size();++index)
+            vbc->roi_mgr->setRegions(vbc->handle->dim,roi_list[index],1.0f,roi_type[index],
+                                               "user assigned region",vbc->handle->vs);
+
+        // setup roi related report text
+        vbc->roi_mgr_text.clear();
+        if(!roi_list.empty())
+        {
+            std::ostringstream out;
+            out << " The tracking algorithm used";
+            const char roi_type_name[5][20] = {"region of interst","region of avoidance","ending region","seeding region","terminating region"};
+            for(unsigned int index = 0;index < roi_list.size();++index)
+            {
+                if(index && roi_list.size() > 2)
+                    out << ",";
+                out << " ";
+                if(roi_list.size() >= 2 && index+1 == roi_list.size())
+                    out << "and ";
+                out << roi_name[index] << " as the " << roi_type_name[roi_type[index]];
+            }
+            out << ".";
+            vbc->roi_mgr_text = out.str();
+        }
+
+        // setup roi related output suffix
+        vbc->output_roi_suffix.clear();
+        if(!roi_list.empty())
+        {
+            const char roi_type_name2[5][5] = {"roi","roa","end","seed"};
+            for(unsigned int index = 0;index < roi_list.size();++index)
+            {
+                vbc->output_roi_suffix += ".";
+                vbc->output_roi_suffix += roi_type_name2[roi_type[index]];
+                vbc->output_roi_suffix += ".";
+                vbc->output_roi_suffix += roi_name[index];
+            }
+            std::replace(vbc->output_roi_suffix.begin(),vbc->output_roi_suffix.end(),':','_');
         }
     }
-    else
-    {
-        vbc->roi_list.clear();
-        vbc->roi_r_list.clear();
-        vbc->roi_type.clear();
-        vbc->roi_name.clear();
-    }
-
 
     vbc->run_permutation(ui->multithread->value(),ui->permutation_count->value());
     if(gui)
@@ -828,17 +873,17 @@ void group_connectometry::on_missing_data_checked_toggled(bool checked)
 
 void group_connectometry::add_new_roi(QString name,QString source,
                                       const std::vector<tipl::vector<3,short> >& new_roi,
-                                      float r)
+                                      int type)
 {
     ui->roi_table->setRowCount(ui->roi_table->rowCount()+1);
     ui->roi_table->setItem(ui->roi_table->rowCount()-1,0,new QTableWidgetItem(name));
     ui->roi_table->setItem(ui->roi_table->rowCount()-1,1,new QTableWidgetItem(source));
-    ui->roi_table->setItem(ui->roi_table->rowCount()-1,2,new QTableWidgetItem(QString::number(0)));
+    ui->roi_table->setItem(ui->roi_table->rowCount()-1,2,new QTableWidgetItem(QString::number(type)));
     ui->roi_table->openPersistentEditor(ui->roi_table->item(ui->roi_table->rowCount()-1,2));
     roi_list.push_back(new_roi);
-    roi_r_list.push_back(r);
 }
-
+bool load_region(std::shared_ptr<fib_data> handle,
+                 ROIRegion& roi,const std::string& region_text);
 void group_connectometry::on_load_roi_from_atlas_clicked()
 {
     std::auto_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this));
@@ -846,11 +891,11 @@ void group_connectometry::on_load_roi_from_atlas_clicked()
     {
         for(unsigned int i = 0;i < atlas_dialog->roi_list.size();++i)
         {
-            std::vector<tipl::vector<3,short> > new_roi;
-            float r;
-            vbc->handle->get_atlas_roi(atlas_dialog->atlas_index,atlas_dialog->roi_list[i],new_roi,r);
-            if(!new_roi.empty())
-                add_new_roi(atlas_dialog->roi_name[i].c_str(),atlas_dialog->atlas_name.c_str(),new_roi,r);
+            ROIRegion roi(vbc->handle);
+            if(!load_region(vbc->handle,roi,atlas_dialog->atlas_name + ":" + atlas_dialog->roi_name[i]))
+                return;
+            add_new_roi(atlas_dialog->roi_name[i].c_str(),atlas_dialog->atlas_name.c_str(),
+                             roi.get_region_voxels_raw());
         }
     }
 }
@@ -858,7 +903,6 @@ void group_connectometry::on_load_roi_from_atlas_clicked()
 void group_connectometry::on_clear_all_roi_clicked()
 {
     roi_list.clear();
-    roi_r_list.clear();
     ui->roi_table->setRowCount(0);
 }
 
@@ -899,7 +943,7 @@ void group_connectometry::on_load_roi_from_file_clicked()
         QMessageBox::information(this,"Error","The nifti contain no voxel with value greater than 0.",0);
         return;
     }
-    add_new_roi(QFileInfo(file).baseName(),"Local File",new_roi,1.0);
+    add_new_roi(QFileInfo(file).baseName(),"Local File",new_roi);
 }
 
 

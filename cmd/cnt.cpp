@@ -1,9 +1,13 @@
 #include <QApplication>
 #include <QFileInfo>
+
+#include "tracking/region/Regions.h"
+#include "tracking/atlasdialog.h"
 #include "connectometry/group_connectometry.hpp"
 #include "ui_group_connectometry.h"
 #include "program_option.hpp"
-
+bool load_region(std::shared_ptr<fib_data> handle,
+                 ROIRegion& roi,const std::string& region_text);
 int cnt(void)
 {
     std::shared_ptr<vbc_database> database(new vbc_database);
@@ -93,8 +97,8 @@ int cnt(void)
     vbc->ui->threshold->setValue(po.get("t_threshold",float(vbc->ui->threshold->value())));
     std::cout << "t_threshold=" << vbc->ui->threshold->value() << std::endl;
 
-    vbc->ui->seed_ratio->setValue(po.get("seed_ratio",5.0f));
-    std::cout << "seed_ratio=" << vbc->ui->seed_ratio->value() << std::endl;
+    vbc->ui->seed_count->setValue(po.get("seed_count",10000));
+    std::cout << "seed_count=" << vbc->ui->seed_count->value() << std::endl;
 
     vbc->ui->permutation_count->setValue(po.get("permutation",int(2000)));
     std::cout << "permutation=" << vbc->ui->permutation_count->value() << std::endl;
@@ -124,6 +128,28 @@ int cnt(void)
         vbc->ui->length_threshold->setValue(po.get("length_threshold",int(40)));
         std::cout << "length_threshold=" << vbc->ui->length_threshold->value() << std::endl;
     }
+
+    // check rois
+    {
+        const int total_count = 18;
+        char roi_names[total_count][5] = {"roi","roi2","roi3","roi4","roi5","roa","roa2","roa3","roa4","roa5","end","end2","seed","ter","ter2","ter3","ter4","ter5"};
+        unsigned char type[total_count] = {0,0,0,0,0,1,1,1,1,1,2,2,3,4,4,4,4,4};
+        for(int index = 0;index < total_count;++index)
+        if (po.has(roi_names[index]))
+        {
+            ROIRegion roi(vbc->vbc->handle);
+            if(!load_region(vbc->vbc->handle,roi,po.get(roi_names[index])))
+                return false;
+            vbc->add_new_roi(po.get(roi_names[index]).c_str(),
+                             po.get(roi_names[index]).c_str(),
+                             roi.get_region_voxels_raw(),type[index]);
+            std::cout << roi_names[index] << "=" << po.get(roi_names[index]) << std::endl;
+            vbc->ui->roi_user_defined->setChecked(true);
+            vbc->ui->roi_whole_brain->setChecked(false);
+        }
+    }
+
+
 
     vbc->on_run_clicked();
     std::cout << vbc->vbc->report << std::endl;

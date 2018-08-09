@@ -8,7 +8,7 @@
 
 
 
-vbc_database::vbc_database():handle(0),roi_type(0),normalize_qa(true)
+vbc_database::vbc_database():handle(0),normalize_qa(true)
 {
 }
 
@@ -34,26 +34,12 @@ bool vbc_database::load_database(const char* database_name)
         return false;
     }
     fiber_threshold = 0.6*tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
-    voxels_in_threshold = 0;
-    for(int i = 0;i < handle->dim.size();++i)
-        if(handle->dir.fa[0][i] > fiber_threshold)
-            ++voxels_in_threshold;
     return handle->db.has_db();
 }
 
 
-int vbc_database::run_track(const tracking_data& fib,std::vector<std::vector<float> >& tracks,float seed_ratio, unsigned int thread_count)
+int vbc_database::run_track(const tracking_data& fib,std::vector<std::vector<float> >& tracks,int seed_count, unsigned int thread_count)
 {
-    std::vector<tipl::vector<3,short> > seed;
-    for(tipl::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
-        if(fib.fa[0][index.index()] > tracking_threshold)
-            seed.push_back(tipl::vector<3,short>(index.x(),index.y(),index.z()));
-    unsigned int count = seed.size()*seed_ratio*10000.0f/(float)voxels_in_threshold;
-    if(!count)
-    {
-        tracks.clear();
-        return 0;
-    }
     ThreadData tracking_thread;
     tracking_thread.param.threshold = tracking_threshold;
     tracking_thread.param.cull_cos_angle = 1.0f;
@@ -67,16 +53,8 @@ int vbc_database::run_track(const tracking_data& fib,std::vector<std::vector<flo
     tracking_thread.param.stop_by_tract = 0;// stop by seed
     tracking_thread.param.center_seed = 0;// subvoxel seeding
     tracking_thread.param.random_seed = 0;
-    tracking_thread.param.termination_count = count;
-    // if no seed assigned, assign whole brain
-    if(roi_list.empty() || std::find(roi_type.begin(),roi_type.end(),3) == roi_type.end())
-        tracking_thread.roi_mgr->setRegions(fib.dim,seed,1.0,3,"whole brain",tipl::vector<3>());
-    if(!roi_list.empty())
-    {
-        for(unsigned int index = 0;index < roi_list.size();++index)
-            tracking_thread.roi_mgr->setRegions(fib.dim,roi_list[index],roi_r_list[index],roi_type[index],
-                                               "user assigned region",fib.vs);
-    }
+    tracking_thread.param.termination_count = seed_count;
+    tracking_thread.roi_mgr = roi_mgr;
     tracking_thread.run(fib,thread_count,true);
     tracking_thread.track_buffer.swap(tracks);
 
@@ -123,7 +101,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             calculate_spm(data,info,normalize_qa);
 
             fib.fa = data.lesser_ptr;
-            unsigned int s = run_track(fib,tracks,seed_ratio);
+            unsigned int s = run_track(fib,tracks,seed_count);
             if(null)
                 seed_lesser_null[i] = s;
             else
@@ -148,7 +126,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             info.resample(*model.get(),null,true);
             calculate_spm(data,info,normalize_qa);
             fib.fa = data.greater_ptr;
-            s = run_track(fib,tracks,seed_ratio);
+            s = run_track(fib,tracks,seed_count);
             if(null)
                 seed_greater_null[i] = s;
             else
@@ -188,12 +166,12 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
             if(!output_resampling)
             {
                 fib.fa = spm_map->lesser_ptr;
-                run_track(fib,tracks,seed_ratio*permutation_count,threads.size());
+                run_track(fib,tracks,seed_count*permutation_count,threads.size());
                 if(tracks.size() > max_visible_track)
                     tracks.resize(max_visible_track);
                 lesser_track->add_tracts(tracks,length_threshold);
                 fib.fa = spm_map->greater_ptr;
-                run_track(fib,tracks,seed_ratio*permutation_count,threads.size());
+                run_track(fib,tracks,seed_count*permutation_count,threads.size());
                 if(tracks.size() > max_visible_track)
                     tracks.resize(max_visible_track);
                 greater_track->add_tracts(tracks,length_threshold);
@@ -371,27 +349,13 @@ void vbc_database::run_permutation(unsigned int thread_count,unsigned int permut
             out << " A length threshold of " << length_threshold << " voxel distance was used to select tracks.";
         else
             out << " An FDR threshold of " << fdr_threshold << " was used to select tracks.";
-        out << " The track density was " << seed_ratio << " per voxel.";
+        out << " The seeding number for each permutation was " << seed_count << ".";
 
         out << " To estimate the false discovery rate, a total of "
             << permutation_count
             << " randomized permutations were applied to the group label to obtain the null distribution of the track length.";
-
-        if(!roi_list.empty())
-        {
-            out << " The tracking algorithm used ";
-            const char roi_type_name[5][20] = {"region of interst","region of avoidance","ending region","seeding region","terminating region"};
-            for(unsigned int index = 0;index < roi_list.size();++index)
-            {
-                if(index && roi_list.size() > 2)
-                    out << ",";
-                out << " ";
-                if(roi_list.size() >= 2 && index+1 == roi_list.size())
-                    out << "and ";
-                out << roi_name[index] << " as the " << roi_type_name[roi_type[index]];
-            }
-            out << ".";
-        }
+        if(!roi_mgr_text.empty())
+            out << roi_mgr_text << std::endl;
         report = out.str().c_str();
     }
 
@@ -422,17 +386,7 @@ void vbc_database::run_permutation(unsigned int thread_count,unsigned int permut
             output_file_name += ".fdr";
             output_file_name += std::to_string((int)fdr_threshold*100);
         }
-        if(!roi_list.empty())
-        {
-            const char roi_type_name2[5][5] = {"roi","roa","end","seed"};
-            for(unsigned int index = 0;index < roi_list.size();++index)
-            {
-                output_file_name += ".";
-                output_file_name += roi_type_name2[roi_type[index]];
-                output_file_name += ".";
-                output_file_name += roi_name[index];
-            }
-        }
+        output_file_name += output_roi_suffix;
     }
 
     terminated = false;
