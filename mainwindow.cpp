@@ -787,7 +787,11 @@ void MainWindow::on_group_connectometry_clicked()
 
 void MainWindow::on_run_cmd_clicked()
 {
-    po.init(ui->cmd_line->text().toStdString());
+    if(!po.parse(ui->cmd_line->text().toStdString()))
+    {
+        QMessageBox::information(this,"Error",po.error_msg.c_str(),0);
+        return;
+    }
     if (!po.has("action") || !po.has("source"))
     {
         std::cout << "invalid command, use --help for more detail" << std::endl;

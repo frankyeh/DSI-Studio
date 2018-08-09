@@ -4,36 +4,50 @@
 #include <sstream>
 class program_option{
     std::map<std::string,std::string> options;
-    void add_option(const std::string& str)
+    bool add_option(const std::string& str)
     {
         if(str.length() < 3 || str[0] != '-' || str[1] != '-')
-            return;
+            return false;
         auto pos = std::find(str.begin(),str.end(),'=');
         if(pos == str.end())
-            return;
+            return false;
         options[std::string(str.begin()+2,pos)] = std::string(pos+1,str.end());
+        return true;
     }
 
 public:
-    void init(int ac, char *av[])
+    std::string error_msg;
+    bool parse(int ac, char *av[])
     {
         options.clear();
         for(int i = 1;i < ac;++i)
         {
             std::string str(av[i]);
-            add_option(str);
+            if(!add_option(str))
+            {
+                error_msg = "cannot parse: ";
+                error_msg += str;
+                return false;
+            }
         }
+        return true;
     }
-    void init(const std::string& str)
+    bool parse(const std::string& av)
     {
         options.clear();
-        std::istringstream in(str);
+        std::istringstream in(av);
         while(in)
         {
             std::string str;
             in >> str;
-            add_option(str);
+            if(!add_option(str))
+            {
+                error_msg = "cannot parse: ";
+                error_msg += str;
+                return false;
+            }
         }
+        return true;
     }
 
     bool has(const char* name)

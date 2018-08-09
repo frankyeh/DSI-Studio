@@ -90,7 +90,7 @@ int rec(void)
         handle->rotate(handle->voxel.dim,affine);
     }
 
-    int method_index = po.get("method",int(0));
+    int method_index = po.get("method",4);
     std::cout << "method=" << method_index << std::endl;
 
     if(method_index == 0) // DSI

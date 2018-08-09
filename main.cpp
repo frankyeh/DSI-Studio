@@ -142,7 +142,11 @@ int run_cmd(int ac, char *av[])
     try
     {
         std::cout << "DSI Studio " << __DATE__ << ", Fang-Cheng Yeh" << std::endl;
-        po.init(ac,av);
+        if(!po.parse(ac,av))
+        {
+            std::cout << po.error_msg << std::endl;
+            return 1;
+        }
         std::auto_ptr<QApplication> gui;
         std::auto_ptr<QCoreApplication> cmd;
         for (int i = 1; i < ac; ++i)
