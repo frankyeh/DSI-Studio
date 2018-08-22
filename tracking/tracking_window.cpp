@@ -124,33 +124,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     if(!handle->is_human_data || handle->is_qsdr)
         ui->actionManual_Registration->setEnabled(false);
 
-
-    {
-        std::vector<std::string> index_list;
-        fib.get_index_list(index_list);
-        // save along track index
-        for (int index = 0; index < index_list.size(); ++index)
-            {
-                std::string& name = index_list[index];
-                QAction* Item = new QAction(this);
-                Item->setText(QString("Save %1...").arg(name.c_str()));
-                Item->setData(QString(name.c_str()));
-                Item->setVisible(true);
-                connect(Item, SIGNAL(triggered()),tractWidget, SLOT(save_tracts_data_as()));
-                ui->menuSave->addAction(Item);
-            }
-        // export index mapping
-        for (unsigned int index = 0;index < fib.view_item.size(); ++index)
-        {
-            std::string name = fib.view_item[index].name;
-            QAction* Item = new QAction(this);
-            Item->setText(QString("Save %1...").arg(name.c_str()));
-            Item->setData(QString(name.c_str()));
-            Item->setVisible(true);
-            connect(Item, SIGNAL(triggered()),&scene, SLOT(save_slice_as()));
-            ui->menuE_xport->addAction(Item);
-        }
-    }
+    updateSlicesMenu();
 
     // opengl
     {
@@ -953,6 +927,7 @@ void tracking_window::on_deleteSlice_clicked()
     slices.erase(slices.begin()+index);
     ui->SliceModality->setCurrentIndex(0);
     ui->SliceModality->removeItem(index);
+    updateSlicesMenu();
 }
 
 
@@ -1709,6 +1684,37 @@ void tracking_window::on_actionInsert_MNI_images_triggered()
     ui->SliceModality->setCurrentIndex(handle->view_item.size()-1);
 
 }
+void tracking_window::updateSlicesMenu(void)
+{
+    fib_data& fib = *handle;
+    std::vector<std::string> index_list;
+    fib.get_index_list(index_list);
+    // save along track index
+    ui->menuSave->clear();
+    for (int index = 0; index < index_list.size(); ++index)
+        {
+            std::string& name = index_list[index];
+            QAction* Item = new QAction(this);
+            Item->setText(QString("Save %1...").arg(name.c_str()));
+            Item->setData(QString(name.c_str()));
+            Item->setVisible(true);
+            connect(Item, SIGNAL(triggered()),tractWidget, SLOT(save_tracts_data_as()));
+            ui->menuSave->addAction(Item);
+        }
+    // export index mapping
+    ui->menuE_xport->clear();
+    for (unsigned int index = 0;index < fib.view_item.size(); ++index)
+    {
+        std::string name = fib.view_item[index].name;
+        QAction* Item = new QAction(this);
+        Item->setText(QString("Save %1...").arg(name.c_str()));
+        Item->setData(QString(name.c_str()));
+        Item->setVisible(true);
+        connect(Item, SIGNAL(triggered()),&scene, SLOT(save_slice_as()));
+        ui->menuE_xport->addAction(Item);
+    }
+}
+
 bool tracking_window::addSlices(QStringList filenames,QString name,bool correct_intensity,bool cmd)
 {
     std::vector<std::string> files(filenames.size());
@@ -1738,6 +1744,7 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool correct_
         check_reg();
     }
     ui->SliceModality->setCurrentIndex(handle->view_item.size()-1);
+    updateSlicesMenu();
     return true;
 }
 
