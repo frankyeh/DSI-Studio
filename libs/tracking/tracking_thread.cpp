@@ -200,6 +200,33 @@ void ThreadData::run(const tracking_data& trk,
     report.str("");
     report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was used."
            << roi_mgr->report;
+
+    if(trk.threshold_name == "dec")
+    {
+        report << " The regions with connectivity decreass greater than " << int(param.threshold * 100) << "% were tracked.";
+        goto next;
+    }
+    if(trk.threshold_name == "inc")
+    {
+        report << " The regions with connectivity increase greater than " << int(param.threshold * 100) << "% were tracked.";
+        goto next;
+    }
+    if(trk.threshold_name == "+t")
+    {
+        report << " The regions with positive correlation greater than " << param.threshold << " t-score were tracked.";
+        goto next;
+    }
+    if(trk.threshold_name == "-t")
+    {
+        report << " The regions with negative correlation greater than " << param.threshold << " t-score were tracked.";
+        goto next;
+    }
+    if(param.threshold == 0.0)
+        report << " The " << trk.threshold_name << " threshold was randomly selected.";
+    else
+        report << " The " << trk.threshold_name << " threshold was " << param.threshold << ".";
+
+    next:
     report << param.get_report();
     // to ensure consistency, seed initialization with all orientation only fits with single thread
     if(param.initial_direction == 2)

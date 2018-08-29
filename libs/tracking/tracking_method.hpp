@@ -125,11 +125,6 @@ struct TrackingParam
         else
             report << " The step size was randomly selected from 0.1 voxel to 3 voxels.";
 
-        if(threshold == 0.0)
-            report << " The anisotropy threshold was randomly selected.";
-        else
-            report << " The anisotropy threshold was " << threshold << ".";
-
         if(smooth_fraction != 0.0)
         {
             if(smooth_fraction != 1.0)

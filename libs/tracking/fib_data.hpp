@@ -38,6 +38,7 @@ public:
 public:
     std::vector<std::string> index_name;
     std::vector<std::vector<const float*> > index_data;
+    int cur_index = 0;
 public:
     std::vector<const float*> fa;
     std::vector<tipl::vector<3,float> > odf_table;
@@ -62,6 +63,7 @@ public:
     tipl::geometry<3> dim;
     tipl::vector<3> vs;
     unsigned char fib_num;
+    std::string threshold_name;
     std::vector<const float*> dir;
     std::vector<const float*> fa;
     std::vector<const short*> findex;

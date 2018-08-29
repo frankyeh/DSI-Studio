@@ -945,7 +945,7 @@ bool connectometry_result::individual_vs_individual(std::shared_ptr<fib_data> ha
                                                     const char* file_name1,const char* file_name2,
                                                     unsigned char normalization)
 {
-    report = " Individual connectometry was conducted by comparing individual scans.";
+    report = " Individual connectometry was conducted by comparing individual scans (Yeh, NeuroImage: Clinical 2,912-921,2013).";
     // restore fa0 to QA
     handle->dir.set_tracking_index(0);
     std::vector<std::vector<float> > data1,data2;

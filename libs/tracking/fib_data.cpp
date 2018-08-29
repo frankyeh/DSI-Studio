@@ -275,6 +275,7 @@ bool fiber_directions::set_tracking_index(int new_index)
     if(new_index >= index_data.size() || new_index < 0)
         return false;
     fa = index_data[new_index];
+    cur_index = new_index;
     return true;
 }
 
@@ -345,6 +346,7 @@ void tracking_data::read(const fib_data& fib)
     findex = fib.dir.findex;
     dir = fib.dir.dir;
     other_index = fib.dir.index_data;
+    threshold_name = fib.dir.index_name[fib.dir.cur_index];
 }
 bool tracking_data::get_dir(unsigned int space_index,
                      const tipl::vector<3,float>& dir, // reference direction, should be unit vector
