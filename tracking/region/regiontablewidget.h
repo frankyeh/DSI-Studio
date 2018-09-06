@@ -51,7 +51,7 @@ public:
 
     QColor currentRowColor(void);
     bool has_seeding(void);
-    void add_region_from_atlas(unsigned int atlas_id,unsigned int roi_is);
+    void add_region_from_atlas(atlas& at,unsigned int roi_is);
     void add_region(QString name,unsigned char type,int color = 0x00FFFFFF);
     void set_whole_brain(ThreadData* data);
     void setROIs(ThreadData* data);
@@ -77,6 +77,7 @@ public slots:
     void save_all_regions_to_dir(void);
     void save_region_info(void);
     void load_region(void);
+    void load_mni_region(void);
     void delete_region(void);
     void delete_all_region(void);
 

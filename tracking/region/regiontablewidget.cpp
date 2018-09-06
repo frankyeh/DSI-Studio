@@ -16,7 +16,6 @@
 #include "opengl/glwidget.h"
 #include "libs/tracking/fib_data.hpp"
 #include "libs/tracking/tracking_thread.hpp"
-extern std::vector<atlas> atlas_list;
 extern fa_template fa_template_imp;
 
 
@@ -143,12 +142,12 @@ QColor RegionTableWidget::currentRowColor(void)
 {
     return (unsigned int)regions[currentRow()]->show_region.color;
 }
-void RegionTableWidget::add_region_from_atlas(unsigned int atlas,unsigned int label)
+void RegionTableWidget::add_region_from_atlas(atlas& at,unsigned int label)
 {
     std::vector<tipl::vector<3,short> > points;
-    add_region(atlas_list[atlas].get_list()[label].c_str(),roi_id);
+    add_region(at.get_list()[label].c_str(),roi_id);
     float r;
-    cur_tracking_window.handle->get_atlas_roi(atlas,label,points,r);
+    cur_tracking_window.handle->get_atlas_roi(at,label,points,r);
     regions.back()->resolution_ratio = r;
     regions.back()->add_points(points,false,r);
 
@@ -684,6 +683,31 @@ void RegionTableWidget::load_region(void)
     }
     emit need_update();
 }
+
+void RegionTableWidget::load_mni_region(void)
+{
+    QStringList filenames = QFileDialog::getOpenFileNames(
+                                this,"Open region",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),"NIFTI files (*.nii *nii.gz);;All files (*)" );
+    if (filenames.isEmpty())
+        return;
+
+    if(!cur_tracking_window.can_map_to_mni())
+    {
+        QMessageBox::information(this,"Error","Atlas is not supported for the current image resolution.",0);
+        return;
+    }
+
+    for (unsigned int index = 0;index < filenames.size();++index)
+    {
+        atlas a;
+        a.filename = filenames[index].toStdString();
+        for(int j = 0;j < a.get_list().size();++j)
+            add_region_from_atlas(a,0);
+
+    }
+    emit need_update();
+}
+
 
 void RegionTableWidget::merge_all(void)
 {

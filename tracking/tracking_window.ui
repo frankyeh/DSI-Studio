@@ -663,7 +663,7 @@
      <x>0</x>
      <y>0</y>
      <width>1496</width>
-     <height>23</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="sizePolicy">
@@ -715,6 +715,7 @@
     </widget>
     <addaction name="actionNewRegion"/>
     <addaction name="actionOpenRegion"/>
+    <addaction name="actionOpen_MNI_Region"/>
     <addaction name="actionLoad_From_Atlas"/>
     <addaction name="separator"/>
     <addaction name="actionSaveRegionAs"/>
@@ -3235,6 +3236,15 @@ Tracking</string>
   <action name="actionKeep_Current_Slice">
    <property name="text">
     <string>Keep Current Slice on Top</string>
+   </property>
+  </action>
+  <action name="actionOpen_MNI_Region">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Open MNI Region...</string>
    </property>
   </action>
  </widget>

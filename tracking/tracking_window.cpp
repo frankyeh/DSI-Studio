@@ -188,6 +188,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionNewRegion,SIGNAL(triggered()),regionWidget,SLOT(new_region()));
         connect(ui->actionNew_Super_Resolution_Region,SIGNAL(triggered()),regionWidget,SLOT(new_high_resolution_region()));
         connect(ui->actionOpenRegion,SIGNAL(triggered()),regionWidget,SLOT(load_region()));
+        connect(ui->actionOpen_MNI_Region,SIGNAL(triggered()),regionWidget,SLOT(load_mni_region()));
         connect(ui->actionLoad_From_Atlas,SIGNAL(triggered()),this,SLOT(on_addRegionFromAtlas_clicked()));
         connect(ui->actionSaveRegionAs,SIGNAL(triggered()),regionWidget,SLOT(save_region()));
         connect(ui->actionSave_All_Regions_As,SIGNAL(triggered()),regionWidget,SLOT(save_all_regions()));
@@ -1208,14 +1209,14 @@ void tracking_window::on_addRegionFromAtlas_clicked()
     }
     if(!can_map_to_mni())
     {
-        QMessageBox::information(this,"Error","Atlas is not support for the current image resolution.",0);
+        QMessageBox::information(this,"Error","Atlas is not supported for the current image resolution.",0);
         return;
     }
     std::auto_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this));
     if(atlas_dialog->exec() == QDialog::Accepted)
     {
         for(unsigned int i = 0;i < atlas_dialog->roi_list.size();++i)
-            regionWidget->add_region_from_atlas(atlas_dialog->atlas_index,atlas_dialog->roi_list[i]);
+            regionWidget->add_region_from_atlas(atlas_list[atlas_dialog->atlas_index],atlas_dialog->roi_list[i]);
 
         glWidget->updateGL();
         scene.show_slice();
@@ -1234,7 +1235,7 @@ void tracking_window::add_roi_from_atlas()
             for(int j = 0;j < atlas_list[i].get_list().size();++j)
             if(atlas_list[i].get_list()[j] == name_value[0].toStdString())
             {
-                regionWidget->add_region_from_atlas(i,j);
+                regionWidget->add_region_from_atlas(atlas_list[i],j);
                 ui->search_atlas->setText("");
                 glWidget->updateGL();
                 scene.show_slice();
@@ -1979,7 +1980,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
             if(atlas == atlas_list[i].name)
             {
                 for(int j = 0;j < atlas_list[i].get_list().size();++j)
-                    regionWidget->add_region_from_atlas(i,j);
+                    regionWidget->add_region_from_atlas(atlas_list[i],j);
                 return;
             }
         QMessageBox::information(this,"Error",QString("Cannot find ")+atlas.c_str()+

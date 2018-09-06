@@ -2,7 +2,6 @@
 #include <QFileInfo>
 #include "fib_data.hpp"
 #include "fa_template.hpp"
-#include "atlas.hpp"
 
 
 extern std::vector<atlas> atlas_list;
@@ -823,12 +822,12 @@ void fib_data::subject2mni(tipl::pixel_index<3>& index,tipl::vector<3>& pos)
     return;
 }
 
-void fib_data::get_atlas_roi(int atlas_index,int roi_index,std::vector<tipl::vector<3,short> >& points,float& r)
+void fib_data::get_atlas_roi(atlas& at,int roi_index,std::vector<tipl::vector<3,short> >& points,float& r)
 {
     if(get_mni_mapping().empty())
         return;
     // this will load the files from storage to prevent GUI multishread crash
-    atlas_list[atlas_index].is_labeled_as(tipl::vector<3>(0,0,0), roi_index);
+    at.is_labeled_as(tipl::vector<3>(0,0,0), roi_index);
     unsigned int thread_count = std::thread::hardware_concurrency();
     std::vector<std::vector<tipl::vector<3,short> > > buf(thread_count);
     r = 1.0;
@@ -836,7 +835,7 @@ void fib_data::get_atlas_roi(int atlas_index,int roi_index,std::vector<tipl::vec
     {
         tipl::vector<3> rmni(mni);
         rmni.round();
-        if (atlas_list[atlas_index].is_labeled_as(rmni, roi_index))
+        if (at.is_labeled_as(rmni, roi_index))
             buf[id].push_back(tipl::vector<3,short>(index.begin()));
     });
     points.clear();
