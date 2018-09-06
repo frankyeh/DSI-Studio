@@ -300,7 +300,7 @@ if (sort_and_merge)
 void sort_dwi(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
     std::sort(dwi_files.begin(),dwi_files.end(),[&]
-              (std::shared_ptr<DwiHeader>& lhs,std::shared_ptr<DwiHeader>& rhs){return *lhs < *rhs;});
+              (const std::shared_ptr<DwiHeader>& lhs,const std::shared_ptr<DwiHeader>& rhs){return *lhs < *rhs;});
     for (int i = dwi_files.size()-1;i >= 1;--i)
         if (dwi_files[i]->bvalue == dwi_files[i-1]->bvalue &&
                 dwi_files[i]->bvec == dwi_files[i-1]->bvec)
