@@ -1068,15 +1068,16 @@ void RegionTableWidget::redo(void)
 
 void RegionTableWidget::do_action(QString action)
 {
-    if (regions.empty())
+    if(regions.empty())
         return;
-    unsigned total_region_size = regions.size();
-    for (unsigned int k = 0;k < total_region_size;++k)
-    if (!regions[k]->empty() && item(k,0)->checkState() == Qt::Checked)
+    unsigned int k = currentRow();
+    if (item(k,0)->checkState() != Qt::Checked)
+        item(k,0)->setCheckState(Qt::Checked);
+
     {
         ROIRegion& cur_region = *regions[k];
         cur_region.perform(action.toStdString());
-        if(action == "thresholding")
+        if(action == "threshold")
         {
             tipl::image<unsigned char, 3>mask;
             tipl::const_pointer_image<float,3> I = cur_tracking_window.current_slice->get_source();

@@ -105,7 +105,7 @@ public slots:
     void action_shiftny(void){do_action("shiftny");}
     void action_shiftz(void){do_action("shiftz");}
     void action_shiftnz(void){do_action("shiftnz");}
-    void action_threshold(void){do_action("threshold");}
+    void action_threshold(void){new_region();do_action("threshold");}
     void action_separate(void){do_action("separate");}
 };
 
