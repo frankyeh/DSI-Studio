@@ -96,6 +96,8 @@ void atlas::load_from_file(void)
     gz_nifti nii;
     if(!nii.load_from_file(filename.c_str()))
         throw std::runtime_error("Cannot load atlas file");
+    if(name.empty())
+        name = QFileInfo(filename.c_str()).baseName().toStdString();
     is_track = (nii.dim(4) > 1); // 4d nifti as track files
     if(is_track)
     {

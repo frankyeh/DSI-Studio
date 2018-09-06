@@ -145,7 +145,13 @@ QColor RegionTableWidget::currentRowColor(void)
 void RegionTableWidget::add_region_from_atlas(atlas& at,unsigned int label)
 {
     std::vector<tipl::vector<3,short> > points;
-    add_region(at.get_list()[label].c_str(),roi_id);
+    std::string name = at.name;
+    if(at.get_list().size() > 1)
+    {
+        name += "_";
+        name += at.get_list()[label];
+    }
+    add_region(name.c_str(),roi_id);
     float r;
     cur_tracking_window.handle->get_atlas_roi(at,label,points,r);
     regions.back()->resolution_ratio = r;
