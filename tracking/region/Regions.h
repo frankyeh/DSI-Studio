@@ -201,30 +201,13 @@ public:
         void LoadFromBuffer(const image_type& from,const tipl::matrix<4,4,float>& trans)
         {
             std::vector<tipl::vector<3,float> > points;
-            float det = std::fabs(trans.det());
-            if(det < 8) // from a low resolution image
             for (tipl::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
             {
                 tipl::vector<3> p(index.begin());
                 p.to(trans);
+                p += 0.5;
                 if (from.geometry().is_valid(p) && from.at(p[0],p[1],p[2]) != 0)
                     points.push_back(tipl::vector<3>(index.begin()));
-            }
-            else// from a high resolution image
-            {
-                tipl::matrix<4,4,float> inv(trans);
-                if(!inv.inv())
-                    return;
-                for (tipl::pixel_index<3> index(from.geometry());
-                     index < from.geometry().size();++index)
-                if(from[index.index()])
-                {
-                    tipl::vector<3> p(index.begin());
-                    p.to(inv);
-                    if (handle->dim.is_valid(p))
-                        points.push_back(tipl::vector<3,float>(p[0],p[1],p[2]));
-                }
-
             }
             region.clear();
             add_points(points,false,1.0f);

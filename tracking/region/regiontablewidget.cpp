@@ -1096,7 +1096,16 @@ void RegionTableWidget::do_action(QString action)
 
             for(unsigned int i = 0;i < mask.size();++i)
                 mask[i]  = I[i] > threshold ? 1:0;
-            cur_region.LoadFromBuffer(mask);
+
+            if(cur_tracking_window.current_slice->is_diffusion_space)
+                cur_region.LoadFromBuffer(mask);
+            else
+            {
+                auto iT = cur_tracking_window.current_slice->T;
+                iT.inv();
+                cur_region.LoadFromBuffer(mask,iT);
+            }
+
         }
         if(action == "separate")
         {
