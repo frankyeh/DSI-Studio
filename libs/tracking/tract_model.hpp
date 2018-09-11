@@ -18,11 +18,15 @@ private:
         std::vector<std::vector<float> > tract_data;
         std::vector<std::vector<float> > deleted_tract_data;
         std::vector<unsigned int> tract_color;
+        std::vector<unsigned int> tract_tag;
         std::vector<unsigned int> deleted_tract_color;
+        std::vector<unsigned int> deleted_tract_tag;
         std::vector<unsigned int> deleted_count;
-        std::vector<std::pair<unsigned int,unsigned int> > deleted_cut_count;
+        std::vector<char> is_cut;
+        unsigned int cur_cut_id = 1;
         std::vector<std::pair<unsigned int,unsigned int> > redo_size;
         // offset, size
+        void erase_empty(void);
 private:
         // for loading multiple clusters
         std::vector<unsigned int> tract_cluster;
@@ -48,6 +52,7 @@ public:
             handle = rhs.handle;
             tract_data = rhs.tract_data;
             tract_color = rhs.tract_color;
+            tract_tag = rhs.tract_tag;
             report = rhs.report;
             return *this;
         }

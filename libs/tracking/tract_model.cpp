@@ -164,18 +164,20 @@ void TractModel::add(const TractModel& rhs)
                                            rhs.redo_size[index].second));
     tract_data.insert(tract_data.end(),rhs.tract_data.begin(),rhs.tract_data.end());
     tract_color.insert(tract_color.end(),rhs.tract_color.begin(),rhs.tract_color.end());
+    tract_tag.insert(tract_tag.end(),rhs.tract_tag.begin(),rhs.tract_tag.end());
     deleted_tract_data.insert(deleted_tract_data.end(),
                               rhs.deleted_tract_data.begin(),
                               rhs.deleted_tract_data.end());
     deleted_tract_color.insert(deleted_tract_color.end(),
                                rhs.deleted_tract_color.begin(),
                                rhs.deleted_tract_color.end());
+    deleted_tract_tag.insert(deleted_tract_tag.end(),
+                               rhs.deleted_tract_tag.begin(),
+                               rhs.deleted_tract_tag.end());
     deleted_count.insert(deleted_count.begin(),
                          rhs.deleted_count.begin(),
                          rhs.deleted_count.end());
-    deleted_cut_count.insert(deleted_cut_count.end(),
-                              rhs.deleted_cut_count.begin(),
-                              rhs.deleted_cut_count.end());
+    is_cut.insert(is_cut.end(),rhs.is_cut.begin(),rhs.is_cut.end());
 }
 //---------------------------------------------------------------------------
 bool TractModel::load_from_file(const char* file_name_,bool append)
@@ -334,12 +336,15 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     else
         tract_cluster.clear();
     loaded_tract_data.swap(tract_data);
+    tract_color.clear();
     tract_color.resize(tract_data.size());
-    std::fill(tract_color.begin(),tract_color.end(),0);
+    tract_tag.clear();
+    tract_tag.resize(tract_data.size());
     deleted_tract_data.clear();
     deleted_tract_color.clear();
+    deleted_tract_tag.clear();
     deleted_count.clear();
-    deleted_cut_count.clear();
+    is_cut.clear();
     redo_size.clear();
     return true;
 }
@@ -976,7 +981,18 @@ void TractModel::release_tracts(std::vector<std::vector<float> >& released_track
     released_tracks.clear();
     released_tracks.swap(tract_data);
     tract_color.clear();
+    tract_tag.clear();
     redo_size.clear();
+}
+//---------------------------------------------------------------------------
+void TractModel::erase_empty(void)
+{
+    tract_color.erase(std::remove_if(tract_color.begin(),tract_color.end(),
+                        [&](const unsigned int& data){return tract_data[&data-&tract_color[0]].empty();}), tract_color.end());
+    tract_tag.erase(std::remove_if(tract_tag.begin(),tract_tag.end(),
+                        [&](const unsigned int& data){return tract_data[&data-&tract_tag[0]].empty();}), tract_tag.end());
+    tract_data.erase(std::remove_if(tract_data.begin(),tract_data.end(),
+                        [&](const std::vector<float>& data){return data.empty();}), tract_data.end() );
 }
 //---------------------------------------------------------------------------
 void TractModel::delete_tracts(const std::vector<unsigned int>& tracts_to_delete)
@@ -987,27 +1003,11 @@ void TractModel::delete_tracts(const std::vector<unsigned int>& tracts_to_delete
     {
         deleted_tract_data.push_back(std::move(tract_data[tracts_to_delete[index]]));
         deleted_tract_color.push_back(tract_color[tracts_to_delete[index]]);
+        deleted_tract_tag.push_back(tract_tag[tracts_to_delete[index]]);
     }
-    // delete all blank tract
-    std::vector<unsigned int> index_list(tract_data.size()+1);
-    unsigned int new_ptr = 0;
-    for (unsigned int index = 0;index < tract_data.size();++index)
-    {
-        index_list[index] = new_ptr;
-        if (!tract_data[index].empty())
-        {
-            if(new_ptr != index)
-            {
-                tract_data[new_ptr].swap(tract_data[index]);
-                std::swap(tract_color[new_ptr],tract_color[index]);
-            }
-            ++new_ptr;
-        }
-    }
-    index_list.back() = new_ptr;
-    tract_data.resize(new_ptr);
+    erase_empty();
     deleted_count.push_back(tracts_to_delete.size());
-    deleted_cut_count.push_back(std::make_pair(tract_data.size(),0));
+    is_cut.push_back(0);
     // no redo once track deleted
     redo_size.clear();
 }
@@ -1107,7 +1107,8 @@ void TractModel::cut(float select_angle,const std::vector<tipl::vector<3,float> 
 
     std::vector<unsigned int> tract_to_delete;
     for (unsigned int index = 0;index < selected.size();++index)
-        if (selected[index] && tract_data[index].size() > 6)
+        if (selected[index] && selected[index] < tract_data[index].size() &&
+            tract_data[index].size() > 6)
         {
             new_tract.push_back(std::vector<float>(tract_data[index].begin(),tract_data[index].begin()+selected[index]));
             new_tract_color.push_back(tract_color[index]);
@@ -1118,13 +1119,14 @@ void TractModel::cut(float select_angle,const std::vector<tipl::vector<3,float> 
     if(tract_to_delete.empty())
         return;
     delete_tracts(tract_to_delete);
-    deleted_cut_count.back().second = new_tract.size();
+    is_cut.back() = cur_cut_id;
     for (unsigned int index = 0;index < new_tract.size();++index)
     {
-        tract_data.push_back(std::vector<float>());
-        tract_data.back().swap(new_tract[index]);
+        tract_data.push_back(std::move(new_tract[index]));
         tract_color.push_back(new_tract_color[index]);
+        tract_tag.push_back(cur_cut_id);
     }
+    ++cur_cut_id;
     redo_size.clear();
 
 }
@@ -1157,14 +1159,15 @@ void TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater)
         tract_to_delete.push_back(i);
     }
     delete_tracts(tract_to_delete);
+    is_cut.back() = cur_cut_id;
     for (unsigned int index = 0;index < new_tract.size();++index)
     if(new_tract[index].size() >= 6)
         {
-            tract_data.push_back(std::vector<float>());
-            tract_data.back().swap(new_tract[index]);
+            tract_data.push_back(std::move(new_tract[index]));
             tract_color.push_back(new_tract_color[index]);
-            ++deleted_cut_count.back().second;
+            tract_tag.push_back(cur_cut_id);
         }
+    ++cur_cut_id;
     redo_size.clear();
 }
 //---------------------------------------------------------------------------
@@ -1415,9 +1418,9 @@ bool TractModel::trim(void)
 void TractModel::clear_deleted(void)
 {
     deleted_count.clear();
-    deleted_cut_count.clear();
     deleted_tract_data.clear();
     deleted_tract_color.clear();
+    deleted_tract_tag.clear();
     redo_size.clear();
 }
 
@@ -1426,28 +1429,25 @@ void TractModel::undo(void)
     if (deleted_count.empty())
         return;
     redo_size.push_back(std::make_pair((unsigned int)tract_data.size(),deleted_count.back()));
-    if(deleted_cut_count.back().second)
-    {
-        std::vector<unsigned int> cut_tracts(deleted_cut_count.back().second);
-        for (unsigned int index = 0;index < cut_tracts.size();++index)
-            cut_tracts[index] = deleted_cut_count.back().first + index;
-        delete_tracts(cut_tracts);
-        for(unsigned int index = 0;index < cut_tracts.size();++index)
-            deleted_tract_data.pop_back();
-        deleted_count.pop_back();
-        deleted_cut_count.pop_back();
-    }
     for (unsigned int index = 0;index < deleted_count.back();++index)
     {
-        tract_data.push_back(std::vector<float>());
-        tract_data.back().swap(deleted_tract_data.back());
+        tract_data.push_back(std::move(deleted_tract_data.back()));
         tract_color.push_back(deleted_tract_color.back());
+        tract_tag.push_back(deleted_tract_tag.back());
         deleted_tract_data.pop_back();
         deleted_tract_color.pop_back();
+        deleted_tract_tag.pop_back();
     }
+    // handle the cut situation
+    if(is_cut.back())
+    {
+        for(int i = 0;i < tract_tag.size();++i)
+            if(tract_tag[i] == is_cut.back())
+                tract_data[i].clear();
+        erase_empty();
+    }
+    is_cut.pop_back();
     deleted_count.pop_back();
-    deleted_cut_count.pop_back();
-
 }
 
 
@@ -1482,6 +1482,7 @@ void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract,tipl::rg
             continue;
         tract_data.push_back(std::move(new_tract[index]));
         tract_color.push_back(color);
+        tract_tag.push_back(0);
     }
 }
 
@@ -1495,6 +1496,7 @@ void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract, unsigne
             continue;
         tract_data.push_back(std::move(new_tract[index]));
         tract_color.push_back(def_color);
+        tract_tag.push_back(0);
     }
 }
 //---------------------------------------------------------------------------
