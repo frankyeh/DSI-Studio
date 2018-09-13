@@ -340,7 +340,7 @@ void vbc_database::run_permutation(unsigned int thread_count,unsigned int permut
         if(normalize_qa)
             out << " The SDF was normalized.";
         if(track_trimming)
-            out << " Track trimming was conducted with " << track_trimming << " iterations.";
+            out << " Topology-informed pruning (Yeh et al. Neurotherapeutics 2018) was conducted with " << track_trimming << " iterations to remove false connections.";
 
         if(output_resampling)
             out << " All tracks generated from bootstrap resampling were included.";

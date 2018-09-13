@@ -2408,7 +2408,7 @@ Tracking</string>
   </action>
   <action name="actionTrim">
    <property name="text">
-    <string>Trim</string>
+    <string>Pruning (TIP)</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+T</string>
