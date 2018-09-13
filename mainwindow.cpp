@@ -859,7 +859,7 @@ void MainWindow::on_ReconstructSRC_clicked()
         handle->voxel.check_btable = true;
         handle->voxel.output_jacobian = false;
         handle->voxel.output_mapping = false;
-        handle->voxel.output_diffusivity = false;
+        handle->voxel.output_diffusivity = true;
         handle->voxel.output_tensor = false;
         handle->voxel.output_rdi = true;
         handle->voxel.thread_count = std::thread::hardware_concurrency();
