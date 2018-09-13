@@ -73,6 +73,8 @@ public:
         resolution_ratio = std::round((voxel.vs[0]+voxel.vs[1]+voxel.vs[2])/3.0f/VGvs[0]);
         if(resolution_ratio < 1.0f)
             resolution_ratio = 1.0f;
+        if(resolution_ratio > 2.0f)
+            resolution_ratio = 2.0f;
 
         // setup output bounding box
         {
