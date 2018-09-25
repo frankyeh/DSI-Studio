@@ -46,7 +46,7 @@ int vbc_database::run_track(const tracking_data& fib,std::vector<std::vector<flo
     tracking_thread.param.step_size = handle->vs[0];
     tracking_thread.param.smooth_fraction = 0;
     tracking_thread.param.min_length = 0;
-    tracking_thread.param.max_length = 200;
+    tracking_thread.param.max_length = 2.0*std::max<int>(fib.dim[0],std::max<int>(fib.dim[1],fib.dim[2]))*handle->vs[0];
     tracking_thread.param.tracking_method = 0;// streamline fiber tracking
     tracking_thread.param.initial_direction = 0;// main directions
     tracking_thread.param.interpolation_strategy = 0; // trilinear interpolation
