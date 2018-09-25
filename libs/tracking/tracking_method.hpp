@@ -123,7 +123,7 @@ struct TrackingParam
         if(step_size != 0.0)
             report << " The step size was " << step_size << " mm.";
         else
-            report << " The step size was randomly selected from 0.1 voxel to 3 voxels.";
+            report << " The step size was randomly selected from 0.5 voxel to 1.5 voxels.";
 
         if(smooth_fraction != 0.0)
         {
