@@ -441,7 +441,7 @@ void RegionTableWidget::new_high_resolution_region(void)
     bool ok;
     int ratio = QInputDialog::getInt(this,
             "DSI Studio",
-            "Input resolution ratio (e.g. 2 for 2X, 8 for 8X",8,2,32,2,&ok);
+            "Input resolution ratio (e.g. 2 for 2X, 8 for 8X",8,2,64,2,&ok);
     if(!ok)
         return;
     add_region("New High Resolution Region",roi_id);
@@ -673,7 +673,8 @@ void RegionTableWidget::load_region(void)
     {
         // check for multiple nii
         if((QFileInfo(filenames[index]).suffix() == "gz" ||
-           QFileInfo(filenames[index]).suffix() == "nii") &&
+            QFileInfo(filenames[index]).suffix() == "nii" ||
+            QFileInfo(filenames[index]).suffix() == "hdr") &&
                 load_multiple_roi_nii(filenames[index]))
             continue;
 

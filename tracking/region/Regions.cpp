@@ -281,7 +281,10 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
     {
         gz_nifti header;
         if (!header.load_from_file(FileName))
+        {
+            std::cout << header.error << std::endl;
             return false;
+        }
         // use unsigned int to avoid the nan background problem
         tipl::image<unsigned int, 3>from;
         tipl::geometry<3> nii_geo;

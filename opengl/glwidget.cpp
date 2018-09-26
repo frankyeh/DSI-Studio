@@ -908,20 +908,22 @@ void GLWidget::renderLR()
                         glPopMatrix();
                     }
                 if(!connectivity.empty() && connectivity.width() == cur_tracking_window.regionWidget->regions.size())
-                for(unsigned int i = 0;i < cur_tracking_window.regionWidget->regions.size();++i)
-                    for(unsigned int j = i+1;j < cur_tracking_window.regionWidget->regions.size();++j)
-                    if(cur_tracking_window.regionWidget->item(i,0)->checkState() == Qt::Checked &&
-                       cur_tracking_window.regionWidget->item(j,0)->checkState() == Qt::Checked &&
-                       !cur_tracking_window.regionWidget->regions[i]->region.empty() &&
-                            !cur_tracking_window.regionWidget->regions[j]->region.empty() &&
-                            connectivity.at(i,j) != 0.0f)
-                    {
-                        auto centeri = cur_tracking_window.regionWidget->regions[i]->get_center();
-                        auto centerj = cur_tracking_window.regionWidget->regions[j]->get_center();
-                        glColor4f(1.0f,1.0f,1.0f,1.0f);
-                        CylinderGL(RegionSpheres->get(),centeri,centerj,
-                                   connectivity.at(i,j)*(get_param("region_edge_size")+1)/cur_tracking_window.handle->vs[0]);
-                    }
+                {
+                    for(unsigned int i = 0;i < cur_tracking_window.regionWidget->regions.size();++i)
+                        for(unsigned int j = i+1;j < cur_tracking_window.regionWidget->regions.size();++j)
+                        if(cur_tracking_window.regionWidget->item(i,0)->checkState() == Qt::Checked &&
+                           cur_tracking_window.regionWidget->item(j,0)->checkState() == Qt::Checked &&
+                           !cur_tracking_window.regionWidget->regions[i]->region.empty() &&
+                                !cur_tracking_window.regionWidget->regions[j]->region.empty() &&
+                                connectivity.at(i,j) != 0.0f)
+                        {
+                            auto centeri = cur_tracking_window.regionWidget->regions[i]->get_center();
+                            auto centerj = cur_tracking_window.regionWidget->regions[j]->get_center();
+                            glColor4f(1.0f,1.0f,1.0f,1.0f);
+                            CylinderGL(RegionSpheres->get(),centeri,centerj,
+                                       connectivity.at(i,j)*(get_param("region_edge_size")+1));
+                        }
+                }
                 glDisable(GL_COLOR_MATERIAL);
             }
         }
