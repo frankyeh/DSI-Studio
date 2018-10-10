@@ -2676,8 +2676,6 @@ void ConnectivityMatrix::network_property(std::string& report)
             inv_dis(invD,invD);
             local_efficiency_bin[i] = std::accumulate(invD.begin(),invD.end(),0.0)/(new_n*new_n-new_n);
         }
-        out << "local_efficiency(binary)\t" << std::accumulate(local_efficiency_bin.begin(),local_efficiency_bin.end(),0.0) << std::endl;
-
     }
 
     std::vector<float> local_efficiency_wei(n);
@@ -2712,8 +2710,6 @@ void ConnectivityMatrix::network_property(std::string& report)
                     numer += std::pow(invD[index],(float)(1.0/3.0))*sw[j]*sw[k];
             local_efficiency_wei[i] = numer/(new_n*new_n-new_n);
         }
-        out << "local_efficiency(weighted)\t" << std::accumulate(local_efficiency_wei.begin(),local_efficiency_wei.end(),0.0) << std::endl;
-
     }
 
 
