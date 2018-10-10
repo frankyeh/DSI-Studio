@@ -19,8 +19,6 @@ int src(void)
     std::string output;
     if(po.has("output"))
         output = po.get("output");
-    else
-        output = source + ".src.gz";
     if(QFileInfo(output.c_str()).exists())
     {
         std::cout << output << " exists. skipping..." << std::endl;
@@ -31,10 +29,16 @@ int src(void)
     if(ext ==".nii" || ext == ".dcm" || ext == "dseq" || ext == "i.gz")
     {
         std::cout << "image=" << source.c_str() << std::endl;
-        file_list << source.c_str();
+        std::istringstream ss(source);
+        std::string token;
+        while(std::getline(ss, token, ','))
+            file_list << source.c_str();
+        if(!po.has("output"))
+            output = file_list.front().toStdString() + ".src.gz";
     }
     else
     {
+
         std::cout << "load files in directory " << source.c_str() << std::endl;
         QDir directory = QString(source.c_str());
         if(po.has("recursive"))
@@ -51,6 +55,8 @@ int src(void)
                 file_list[index] = QString(source.c_str()) + "/" + file_list[index];
         }
         std::cout << "A total of " << file_list.size() <<" files found in the directory" << std::endl;
+        if(!po.has("output"))
+            output = source + ".src.gz";
     }
 
     if(file_list.empty())
