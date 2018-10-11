@@ -22,7 +22,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     to.swap(to_);
     tipl::normalize(from,1.0);
     tipl::normalize(to,1.0);
-    tipl::reg::get_bound(from,arg,b_upper,b_lower,reg_type);
+    tipl::reg::get_bound(from,to,arg,b_upper,b_lower,reg_type);
 
     ui->setupUi(this);
     ui->reg_type->setCurrentIndex(reg_type == tipl::reg::rigid_body? 0: 1);
@@ -304,7 +304,7 @@ void manual_alignment::on_save_warpped_clicked()
 
 void manual_alignment::on_reg_type_currentIndexChanged(int index)
 {
-    tipl::reg::get_bound(from,arg,b_upper,b_lower,
+    tipl::reg::get_bound(from,to,arg,b_upper,b_lower,
                           ui->reg_type->currentIndex() == 0 ? tipl::reg::rigid_body : tipl::reg::affine);
     if(index == 0) // rigid body
     {

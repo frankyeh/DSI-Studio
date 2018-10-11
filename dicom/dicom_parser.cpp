@@ -501,22 +501,25 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
         }
     }
 
-    if(iterate_slice_first)
+
+    begin_prog("loading images");
+    for (unsigned int index = 0,b_index = 0,slice_index = 0;check_prog(index,file_list.size());++index)
     {
-        for (unsigned int index = 0,b_index = 0,slice_index = 0;check_prog(index,file_list.size());++index)
+        std::shared_ptr<DwiHeader> dwi(new DwiHeader);
+        if(!dwi->open(file_list[index].toLocal8Bit().begin()))
+            return false;
+        if(slice_index == 0)
         {
-            if(!dicom_header2.load_from_file(file_list[index].toLocal8Bit().begin()))
-                return false;
-            if(slice_index == 0)
-            {
-                dwi_files.push_back(std::make_shared<DwiHeader>());
-                dwi_files.back()->open(file_list[index].toLocal8Bit().begin());
-                dwi_files.back()->file_name = file_list[index].toLocal8Bit().begin();
-                dwi_files.back()->image.resize(geo);
-                dicom_header.get_voxel_size(dwi_files.back()->voxel_size);
-            }
-            dicom_header2.save_to_buffer(
-                    dwi_files[b_index]->image.begin() + slice_index*geo.plane_size(),geo.plane_size());
+            dwi_files.push_back(dwi);
+            dwi_files.back()->file_name = file_list[index].toLocal8Bit().begin();
+            dwi_files.back()->image.resize(geo);
+            dicom_header.get_voxel_size(dwi_files.back()->voxel_size);
+        }
+        else
+            std::copy(dwi->image.begin(),dwi->image.end(),
+                dwi_files[b_index]->image.begin() + slice_index*geo.plane_size());
+        if(iterate_slice_first)
+        {
             ++slice_index;
             if(slice_index >= slice_num)
             {
@@ -524,24 +527,8 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
                 ++b_index;
             }
         }
-    }
-    else
-    {
-        begin_prog("loading images");
-        for (unsigned int index = 0,b_index = 0,slice_index = 0;check_prog(index,file_list.size());++index)
+        else
         {
-            if(!dicom_header2.load_from_file(file_list[index].toLocal8Bit().begin()))
-                return false;
-            if(slice_index == 0)
-            {
-                dwi_files.push_back(std::make_shared<DwiHeader>());
-                dwi_files.back()->open(file_list[index].toLocal8Bit().begin());
-                dwi_files.back()->image.resize(geo);
-                dwi_files.back()->file_name = file_list[index].toLocal8Bit().begin();
-                dicom_header.get_voxel_size(dwi_files.back()->voxel_size);
-            }
-            dicom_header2.save_to_buffer(
-                    dwi_files[b_index]->image.begin() + slice_index*geo.plane_size(),geo.plane_size());
             ++b_index;
             if(b_index >= b_num)
             {

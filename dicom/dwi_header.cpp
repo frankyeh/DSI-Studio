@@ -47,7 +47,7 @@ void get_report_from_bruker2(const tipl::io::bruker_info& header,std::string& re
         << header["IMND_diff_grad_dur"] << " ms.";
     report += out.str();
 }
-
+void get_compressed_image(tipl::io::dicom& dicom,tipl::image<short,2>& I);
 bool DwiHeader::open(const char* filename)
 {
     tipl::io::dicom header;
@@ -63,6 +63,13 @@ bool DwiHeader::open(const char* filename)
     }
 
     header >> image;
+    if(header.is_compressed)
+    {
+        tipl::image<short,2> I;
+        get_compressed_image(header,I);
+        if(I.size() == image.size())
+            std::copy(I.begin(),I.end(),image.begin());
+    }
     header.get_voxel_size(voxel_size);
     get_report_from_dicom(header,report);
 

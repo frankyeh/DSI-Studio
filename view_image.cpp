@@ -5,6 +5,8 @@
 #include <QPlainTextEdit>
 #include <QFileInfo>
 #include <QMessageBox>
+#include <QBuffer>
+#include <QImageReader>
 
 void show_view(QGraphicsScene& scene,QImage I);
 bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl::vector<3>& vs)
@@ -84,6 +86,21 @@ bool view_image::eventFilter(QObject *obj, QEvent *event)
         return true;
     ui->info_label->setText(QString("(%1,%2,%3) = %4").arg(pos[0]).arg(pos[1]).arg(pos[2]).arg(data.at(pos[0],pos[1],pos[2])));
     return true;
+}
+
+void get_compressed_image(tipl::io::dicom& dicom,tipl::image<short,2>& I)
+{
+    QByteArray array((char*)&*dicom.compressed_buf.begin(),dicom.buf_size);
+    QBuffer qbuff(&array);
+    QImageReader qimg;
+    qimg.setDecideFormatFromContent(true);
+    qimg.setDevice(&qbuff);
+    QImage img=qimg.read();
+    QImage buf = img.convertToFormat(QImage::Format_RGB32);
+    I.resize(tipl::geometry<2>(buf.width(),buf.height()));
+    const uchar* ptr = buf.bits();
+    for(int j = 0;j < I.size();++j,ptr += 4)
+        I[j] = *ptr;
 }
 
 bool view_image::open(QStringList file_names)
@@ -178,6 +195,13 @@ bool view_image::open(QStringList file_names)
         if(dicom.load_from_file(file_name.toLocal8Bit().begin()))
         {
             dicom >> data;
+            if(dicom.is_compressed)
+            {
+                tipl::image<short,2> I;
+                get_compressed_image(dicom,I);
+                if(I.size() == data.size())
+                    std::copy(I.begin(),I.end(),data.begin());
+            }
             dicom.get_voxel_size(vs);
             std::string info_;
             dicom >> info_;
@@ -232,7 +256,7 @@ bool view_image::open(QStringList file_names)
                                 arg(vs[2]));
         update_image();
     }
-    return !data.empty();
+    return !data.empty() || !info.isEmpty();
 }
 void view_image::update_image(void)
 {
