@@ -190,12 +190,12 @@ void ROIRegion::SaveToFile(const char* FileName)
         SaveToBuffer(mask,1);
         gz_nifti header;
         if(resolution_ratio == 1.0)
-            header.set_voxel_size(handle->vs.begin());
+            header.set_voxel_size(handle->vs);
         else
         {
             tipl::vector<3,float> rvs = handle->vs;
             rvs /= resolution_ratio;
-            header.set_voxel_size(rvs.begin());
+            header.set_voxel_size(rvs);
         }
         // output color information and roi information
         std::ostringstream out;

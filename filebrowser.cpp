@@ -191,7 +191,7 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int , int p
                 QStringList item_list;
                 item_list << sub_dir_list[i] + "(DICOM)";
                 item_list << QString("%1/%2/%3").arg(dcm.width()).arg(dcm.height()).arg(dcm.depth());
-                float vs[3];
+                tipl::vector<3,float> vs;
                 dcm.get_voxel_size(vs);
                 item_list << QString("%1/%2/%3").arg(vs[0]).arg(vs[1]).arg(vs[2]);
                 for(int col = 0;col < item_list.count();++col)
@@ -213,7 +213,7 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int , int p
             QStringList item_list;
             item_list << nii_file_list[i];
             item_list << QString("%1/%2/%3").arg(nii.width()).arg(nii.height()).arg(nii.depth());
-            float vs[3];
+            tipl::vector<3,float> vs;
             nii.get_voxel_size(vs);
             item_list << QString("%1/%2/%3").arg(vs[0]).arg(vs[1]).arg(vs[2]);
             for(int col = 0;col < item_list.count();++col)

@@ -288,7 +288,7 @@ int rec(void)
         }
         tipl::image<float,3> I;
         tipl::vector<3> vs;
-        in.get_voxel_size(vs.begin());
+        in.get_voxel_size(vs);
         in.toLPS(I);
         std::cout << "Running rigid body transformation" << std::endl;
         tipl::transformation_matrix<double> T;

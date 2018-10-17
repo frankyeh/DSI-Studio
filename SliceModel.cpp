@@ -237,11 +237,11 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
         }
         tipl::io::nifti nii;
         nii.set_dim(geo);
-        nii.set_voxel_size(voxel_size.begin());
+        nii.set_voxel_size(voxel_size);
         nii.set_image_transformation(T.begin());
         nii << source_images;
         nii.toLPS(source_images);
-        nii.get_voxel_size(voxel_size.begin());
+        nii.get_voxel_size(voxel_size);
         T.identity();
         nii.get_image_transformation(T.begin());
         // LPS matrix switched to RAS
@@ -261,7 +261,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
         {
             if(nifti.load_from_file(files[0]))
             {
-                nifti.get_voxel_size(voxel_size.begin());
+                nifti.get_voxel_size(voxel_size);
                 nifti.toLPS(source_images);
                 if(handle->is_qsdr)
                 {
@@ -278,7 +278,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
                 tipl::io::bruker_2dseq bruker;
                 if(bruker.load_from_file(files[0].c_str()))
                 {
-                    bruker.get_voxel_size(voxel_size.begin());
+                    bruker.get_voxel_size(voxel_size);
                     source_images = std::move(bruker.get_image());
                     QDir d = QFileInfo(files[0].c_str()).dir();
                     if(d.cdUp() && d.cdUp())
@@ -296,7 +296,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
             tipl::io::volume volume;
             if(volume.load_from_files(files,files.size()))
             {
-                volume.get_voxel_size(voxel_size.begin());
+                volume.get_voxel_size(voxel_size);
                 volume >> source_images;
             }
         }
@@ -440,7 +440,7 @@ bool CustomSliceModel::stripskull(void)
             return false;
         }
         tipl::vector<3> Itvs;
-        in1.get_voxel_size(Itvs.begin());
+        in1.get_voxel_size(Itvs);
         bool terminated = false;
         tipl::transformation_matrix<double> T,iT;
         tipl::reg::two_way_linear_mr(It,Itvs,source_images,voxel_size,T,

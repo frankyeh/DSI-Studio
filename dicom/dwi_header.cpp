@@ -257,7 +257,7 @@ bool DwiHeader::open(const char* filename)
     if(has_orientation_info)
     {
         {
-            tipl::reorient_vector(bvec.begin(),dim_order);
+            tipl::reorient_vector(bvec,dim_order);
             float x = bvec[dim_order[0]];
             float y = bvec[dim_order[1]];
             float z = bvec[dim_order[2]];
@@ -499,17 +499,16 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
     }
     //store voxel size
     {
-        float voxel_size[3];
-        std::copy(dwi_files.front()->voxel_size,dwi_files.front()->voxel_size+3,voxel_size);
+        tipl::vector<3> voxel_size(dwi_files.front()->voxel_size);
         if(upsampling == 1) // upsampling 2
-            std::for_each(voxel_size,voxel_size+3,[](float& i){i /= 2.0;});
+            voxel_size /= 2.0;
         if(upsampling == 2) // downsampling 2
-            std::for_each(voxel_size,voxel_size+3,[](float& i){i *= 2.0;});
+            voxel_size *= 2.0;
         if(upsampling == 3) // upsampling 4
-            std::for_each(voxel_size,voxel_size+3,[](float& i){i /= 4.0;});
+            voxel_size /= 4.0;
         if(upsampling == 4) // downsampling 4
-            std::for_each(voxel_size,voxel_size+3,[](float& i){i *= 4.0;});
-        write_mat.write("voxel_size",voxel_size,1,3);
+            voxel_size *= 4.0;
+        write_mat.write("voxel_size",&*voxel_size.begin(),1,3);
     }
     // store bvec file
     {

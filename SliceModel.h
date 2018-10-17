@@ -13,7 +13,7 @@ public:
     bool is_diffusion_space = true;
     tipl::matrix<4,4,float> T,invT; // T: image->diffusion iT: diffusion->image
     tipl::geometry<3>geometry;
-    tipl::vector<3,float>voxel_size;
+    tipl::vector<3,float> voxel_size;
 public:
     // for directx
     tipl::vector<3,int> slice_pos;

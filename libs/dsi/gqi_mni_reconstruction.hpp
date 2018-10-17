@@ -51,7 +51,7 @@ public:
             if(read.load_from_file(voxel.external_template.c_str()))
             {
                 read.toLPS(VG);
-                read.get_voxel_size(VGvs.begin());
+                read.get_voxel_size(VGvs);
                 float tran[16];
                 read.get_image_transformation(tran);
                 VGshift[0] = tran[3];

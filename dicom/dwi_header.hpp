@@ -16,9 +16,9 @@ public:// for HCP dataset
     tipl::image<float, 4> grad_dev;
     tipl::image<unsigned char, 3> mask;
 public:
-    tipl::vector<3, float> bvec;
+    tipl::vector<3,float> bvec;
     float bvalue;
-    float voxel_size[3];
+    tipl::vector<3,float> voxel_size;
 public:
     DwiHeader(void): bvalue(0.0), te(0.0) {}
     bool open(const char* filename);

@@ -272,7 +272,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         }
     }
     // check data range
-    float vs[4];
+    tipl::vector<3,float> vs;
     float max_value = 0.0;
     for(unsigned int index = 0;index < analyze_header.dim(4);++index)
     {
@@ -301,7 +301,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
             std::ostringstream out;
             out << index;
             new_file->file_name += out.str();
-            std::copy(vs,vs+3,new_file->voxel_size);
+            new_file->voxel_size = vs;
             if(!bvals.empty())
             {
                 new_file->bvalue = bvals[index];
@@ -331,7 +331,7 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
     tipl::io::bruker_2dseq bruker_header;
     if(!bruker_header.load_from_file(file_name))
         return false;
-    float vs[3];
+    tipl::vector<3,float> vs;
     std::vector<float> bvalues;
     std::vector<tipl::vector<3> > bvecs;
     std::string report;
@@ -413,7 +413,7 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
         std::ostringstream out;
         out << index;
         new_file->file_name += out.str();
-        std::copy(vs,vs+3,new_file->voxel_size);
+        new_file->voxel_size = vs;
         dwi_files.push_back(new_file);
         dwi_files.back()->bvalue = bvalues[index];
         dwi_files.back()->bvec = bvecs[index];
@@ -841,7 +841,7 @@ void dicom_parser::on_actionOpen_b_table_triggered()
         for(int i = 0;i < b_count;++i)
         {
             std::shared_ptr<DwiHeader> new_file(new DwiHeader);
-            std::copy(dwi_files[0]->voxel_size,dwi_files[0]->voxel_size+3,new_file->voxel_size);
+            new_file->voxel_size = dwi_files[0]->voxel_size;
             new_file->bvalue = b_table[i*4];
             new_file->bvec[0] = b_table[i*4+1];
             new_file->bvec[1] = b_table[i*4+2];

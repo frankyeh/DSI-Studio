@@ -19,7 +19,7 @@ bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl:
             QMessageBox::information(0,"Error","Not a valid nifti file",0);
             return false;
         }
-        in.get_voxel_size(vs.begin());
+        in.get_voxel_size(vs);
         return true;
     }
     else
@@ -32,7 +32,7 @@ bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl:
                 return false;
             }
             seq.get_image().swap(ref);
-            seq.get_voxel_size(vs.begin());
+            seq.get_voxel_size(vs);
             return true;
         }
     else
@@ -43,7 +43,7 @@ bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl:
             file_list.push_back(filenames[i].toStdString());
         v.load_from_files(file_list,file_list.size());
         v >> ref;
-        v.get_voxel_size(vs.begin());
+        v.get_voxel_size(vs);
         return true;
     }
 }
@@ -110,7 +110,7 @@ bool view_image::open(QStringList file_names)
     tipl::io::bruker_2dseq seq;
     gz_mat_read mat;
     data.clear();
-    float vs[3] = {1.0,1.0,1.0};
+    tipl::vector<3,float> vs;
     QString info;
     QString file_name = file_names[0];
     setWindowTitle(QFileInfo(file_name).fileName());

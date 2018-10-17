@@ -566,7 +566,7 @@ void MainWindow::on_batch_src_clicked()
                 {
                     if(!DwiHeader::has_b_table(dwi_files))
                     {
-                        std::ofstream(QString(dir_list[i] + "/data.nii.gz.b_table_mismatch.txt").toLocal8Bit().begin());
+                        std::ofstream(QString(dir_list[i] + "/data.nii.gz.b_table_not_found.txt").toLocal8Bit().begin());
                         continue;
                     }
                     DwiHeader::output_src(QString(dir_list[i] + "/data.src.gz").toLocal8Bit().begin(),dwi_files,0,false);
@@ -589,13 +589,17 @@ void MainWindow::on_batch_src_clicked()
                     }
                     if(!DwiHeader::has_b_table(dwi_files))
                     {
-                        std::ofstream(QString(dir_list[i] + "/" + nifti_file_list[index] + ".b_table_mismatch.txt").toLocal8Bit().begin());
+                        std::ofstream(QString(dir_list[i] + "/" + nifti_file_list[index] + ".b_table_not_found.txt").toLocal8Bit().begin());
                         continue;
                     }
                     DwiHeader::output_src(QString(dir_list[i] + "/" +
                         QFileInfo(nifti_file_list[index]).baseName() + ".src.gz").toLocal8Bit().begin(),dwi_files,0,false);
                     dwi_files.clear();
                     continue;
+                }
+                else
+                {
+                    std::ofstream(QString(dir_list[i] + "/bvals_bvec_not_found.txt").toLocal8Bit().begin());
                 }
             }
 
@@ -649,7 +653,7 @@ void MainWindow::on_batch_src_clicked()
                 tipl::image<float,3> I;
                 tipl::vector<3> vs;
                 v >> I;
-                v.get_voxel_size(vs.begin());
+                v.get_voxel_size(vs);
                 gz_nifti nii_out;
                 tipl::flip_xy(I);
                 nii_out << I;

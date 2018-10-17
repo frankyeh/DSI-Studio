@@ -68,7 +68,7 @@ void RegToolBox::on_OpenTemplate_clicked()
     nifti.toLPS(It);
     nifti.get_image_transformation(ItR);
     It *= 1.0f/tipl::mean(It);
-    nifti.get_voxel_size(Itvs.begin());
+    nifti.get_voxel_size(Itvs);
     ui->slice_pos->setMaximum(It.depth()-1);
     ui->slice_pos->setValue(It.depth()/2);
     clear();
@@ -93,7 +93,7 @@ void RegToolBox::on_OpenSubject_clicked()
     }
     nifti.toLPS(I);
     I *= 1.0f/tipl::mean(I);
-    nifti.get_voxel_size(Ivs.begin());
+    nifti.get_voxel_size(Ivs);
     clear();
     show_image();
     if(It.geometry() == I.geometry())

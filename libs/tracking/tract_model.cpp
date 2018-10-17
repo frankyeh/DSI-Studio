@@ -1598,7 +1598,7 @@ void TractModel::save_tdi(const char* file_name,bool sub_voxel,bool endpoint,con
 
     get_density_map(tdi,tr,endpoint);
     gz_nifti nii_header;
-    nii_header.set_voxel_size(new_vs.begin());
+    nii_header.set_voxel_size(new_vs);
     if(!trans.empty())
     {
         if(sub_voxel)

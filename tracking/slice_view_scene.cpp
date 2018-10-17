@@ -237,7 +237,7 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
                 std::copy(I.begin(),I.end(),buf.begin()+z*buf.plane_size());
             }
             gz_nifti file;
-            file.set_voxel_size(cur_tracking_window.current_slice->voxel_size.begin());
+            file.set_voxel_size(cur_tracking_window.current_slice->voxel_size);
             if(cur_tracking_window.handle->is_qsdr) //QSDR condition
                 file.set_LPS_transformation(cur_tracking_window.handle->trans_to_mni.begin(),buf.geometry());
             tipl::flip_xy(buf);
@@ -255,7 +255,7 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
         {
             tipl::image<float,3> buf(cur_tracking_window.handle->view_item[index].image_data);
             gz_nifti file;
-            file.set_voxel_size(cur_tracking_window.current_slice->voxel_size.begin());
+            file.set_voxel_size(cur_tracking_window.current_slice->voxel_size);
             if(cur_tracking_window.handle->is_qsdr &&
                cur_tracking_window.handle->view_item[index].image_data.geometry() ==
                     cur_tracking_window.handle->dim) //QSDR condition

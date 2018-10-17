@@ -117,7 +117,7 @@ int exp(void)
                 nifti_header.set_LPS_transformation(trans,fibers.geometry());
             tipl::flip_xy(fibers);
             nifti_header << fibers;
-            nifti_header.set_voxel_size(vs);
+            nifti_header.set_voxel_size(tipl::vector<3>(vs));
             nifti_header.save_to_file(file_name_stat.c_str());
             std::cout << "write to file " << file_name_stat << std::endl;
             continue;
@@ -141,7 +141,7 @@ int exp(void)
                 nifti_header.set_LPS_transformation(trans,data.geometry());
             tipl::flip_xy(data);
             nifti_header << data;
-            nifti_header.set_voxel_size(vs);
+            nifti_header.set_voxel_size(tipl::vector<3>(vs));
             nifti_header.save_to_file(file_name_stat.c_str());
             std::cout << "write to file " << file_name_stat << std::endl;
             continue;

@@ -420,7 +420,7 @@ bool tracking_data::is_white_matter(const tipl::vector<3,float>& pos,float t) co
 bool fib_data::load_from_file(const char* file_name)
 {
     tipl::image<float,3> I;
-    float vs[3];
+    tipl::vector<3,float> vs;
     if(QFileInfo(file_name).completeSuffix() == "nii" ||
        QFileInfo(file_name).completeSuffix() == "nii.gz")
     {
@@ -448,7 +448,7 @@ bool fib_data::load_from_file(const char* file_name)
     if(!I.empty())
     {
         mat_reader.add("dimension",I.geometry().begin(),3,1);
-        mat_reader.add("voxel_size",vs,3,1);
+        mat_reader.add("voxel_size",&*vs.begin(),3,1);
         mat_reader.add("image",&*I.begin(),I.size(),1);
         load_from_mat();
         dir.index_name[0] = "image";

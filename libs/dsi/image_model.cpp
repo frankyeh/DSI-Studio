@@ -876,10 +876,10 @@ void ImageModel::save_fib(const std::string& ext)
 bool ImageModel::save_to_nii(const char* nifti_file_name) const
 {
     gz_nifti header;
-    float vs[4];
-    std::copy(voxel.vs.begin(),voxel.vs.end(),vs);
-    vs[3] = 1.0;
-    header.set_voxel_size(vs);
+    header.set_voxel_size(voxel.vs);
+    header.nif_header.pixdim[0] = 4;
+    header.nif_header2.pixdim[0] = 4;
+
     tipl::geometry<4> nifti_dim;
     std::copy(voxel.dim.begin(),voxel.dim.end(),nifti_dim.begin());
     nifti_dim[3] = src_bvalues.size();

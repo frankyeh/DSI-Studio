@@ -991,7 +991,7 @@ bool add_other_image(ImageModel* handle,QString name,QString filename,bool full_
         }
     if(!has_registered && ref.geometry() != handle->voxel.dim)
     {
-        in.get_voxel_size(vs.begin());
+        in.get_voxel_size(vs);
         if(full_auto)
         {
             std::cout << "add " << filename.toStdString() << " as " << name.toStdString() << std::endl;
@@ -1061,7 +1061,7 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
         QMessageBox::information(this,"Error","Not a valid nifti file",0);
         return;
     }
-    in.get_voxel_size(vs.begin());
+    in.get_voxel_size(vs);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,dwi,handle->voxel.vs,ref,vs,tipl::reg::rigid_body,tipl::reg::cost_type::corr));
     manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)

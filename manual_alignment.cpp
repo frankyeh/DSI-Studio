@@ -296,7 +296,7 @@ void manual_alignment::on_save_warpped_clicked()
     tipl::image<float,3> I(to.geometry());
     tipl::resample(from_original,I,iT,tipl::cubic);
     gz_nifti nii;
-    nii.set_voxel_size(to_vs.begin());
+    nii.set_voxel_size(to_vs);
     tipl::flip_xy(I);
     nii << I;
     nii.save_to_file(filename.toStdString().c_str());

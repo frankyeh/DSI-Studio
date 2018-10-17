@@ -329,14 +329,14 @@ const char* ImageModel::reconstruction(void)
                     gz_nifti in;
                     if(!in.load_from_file(t1w_template_file_name.c_str()) || !in.toLPS(voxel.t1wt))
                         return "Cannot load T1W template";
-                    in.get_voxel_size(voxel.t1wt_vs.begin());
+                    in.get_voxel_size(voxel.t1wt_vs);
                     in.get_image_transformation(voxel.t1wt_tran);
                 }
                 {
                     gz_nifti in;
                     if(!in.load_from_file(voxel.t1w_file_name.c_str()) || !in.toLPS(voxel.t1w))
                         return "Cannot load T1W for DMDM normaliztion";
-                    in.get_voxel_size(voxel.t1w_vs.begin());
+                    in.get_voxel_size(voxel.t1w_vs);
                 }
             }
 
