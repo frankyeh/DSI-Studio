@@ -2171,6 +2171,13 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         paintGL();
         return true;
     }
+    if(cmd == "set_stereoscopic")
+    {
+        makeCurrent();
+        view_mode = GLWidget::view_mode_type::stereo;
+        paintGL();
+        return true;
+    }
     if(cmd == "move_slice")
     {
         switch(param.toInt())
