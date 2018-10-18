@@ -253,5 +253,10 @@ int ana(void)
     if(!load_roi(handle,roi_mgr))
         return -1;
     tract_model.filter_by_roi(roi_mgr);
+    if(tract_model.get_visible_track_count() == 0)
+    {
+        std::cout << "No tracks remained after ROI selection." << std::endl;
+        return 0;
+    }
     return trk_post(handle,tract_model,po.get("output"));
 }
