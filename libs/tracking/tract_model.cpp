@@ -253,6 +253,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                 if(loaded_tract_data.back().size() == 1)// cluster info
                     loaded_tract_cluster.push_back(loaded_tract_data.back()[0]);
             }
+            check_prog(0,0);
 
         }
         else

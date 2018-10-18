@@ -201,9 +201,9 @@ void TractTableWidget::load_tracts(QStringList filenames)
         if(!tract_models.back()->load_from_file(&*sfilename.begin(),false))
         {
             QMessageBox::information(this,"Error",
-                                     QString("Fail to open the tracks file named %1. \
+                                     QString("Fail to load tracks from %1. \
                                 Please check file access privelige or move file to other location.").arg(QFileInfo(filename).baseName()),0);
-            break;
+            continue;
         }
         if(tract_models.back()->get_cluster_info().empty()) // not multiple cluster file
         {
