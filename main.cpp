@@ -137,6 +137,39 @@ void init_application(void)
 }
 
 program_option po;
+int run_action(std::shared_ptr<QApplication> gui)
+{
+    if(po.get("action") == std::string("rec"))
+        return rec();
+    if(po.get("action") == std::string("trk"))
+        return trk();
+    if(po.get("action") == std::string("src"))
+        return src();
+    if(po.get("action") == std::string("ana"))
+        return ana();
+    if(po.get("action") == std::string("exp"))
+        return exp();
+    if(po.get("action") == std::string("atl"))
+        return atl();
+    if(po.get("action") == std::string("cnt"))
+        return cnt();
+    if(po.get("action") == std::string("ren"))
+        return ren();
+    if(po.get("action") == std::string("cnn"))
+        return cnn();
+    if(po.get("action") == std::string("qc"))
+        return qc();
+    if(po.get("action") == std::string("vis"))
+    {
+        vis();
+        if(po.get("stay_open") == std::string("1"))
+            gui->exec();
+        return 1;
+    }
+    std::cout << "Unknown action:" << po.get("action") << std::endl;
+    return 1;
+}
+
 int run_cmd(int ac, char *av[])
 {
     try
@@ -147,8 +180,8 @@ int run_cmd(int ac, char *av[])
             std::cout << po.error_msg << std::endl;
             return 1;
         }
-        std::auto_ptr<QApplication> gui;
-        std::auto_ptr<QCoreApplication> cmd;
+        std::shared_ptr<QApplication> gui;
+        std::shared_ptr<QCoreApplication> cmd;
         for (int i = 1; i < ac; ++i)
             if (std::string(av[i]) == std::string("--action=cnt") ||
                 std::string(av[i]) == std::string("--action=vis"))
@@ -172,35 +205,21 @@ int run_cmd(int ac, char *av[])
             return 1;
         }
         QDir::setCurrent(QFileInfo(po.get("source").c_str()).absolutePath());
-        if(po.get("action") == std::string("rec"))
-            return rec();
-        if(po.get("action") == std::string("trk"))
-            return trk();
-        if(po.get("action") == std::string("src"))
-            return src();
-        if(po.get("action") == std::string("ana"))
-            return ana();
-        if(po.get("action") == std::string("exp"))
-            return exp();
-        if(po.get("action") == std::string("atl"))
-            return atl();
-        if(po.get("action") == std::string("cnt"))
-            return cnt();
-        if(po.get("action") == std::string("ren"))
-            return ren();
-        if(po.get("action") == std::string("cnn"))
-            return cnn();
-        if(po.get("action") == std::string("qc"))
-            return qc();
-        if(po.get("action") == std::string("vis"))
+        if(po.get("source").find('*') != std::string::npos)
         {
-            vis();
-            if(po.get("stay_open") == std::string("1"))
-                gui->exec();
-            return 1;
+            auto file_list = QDir::current().entryList(QStringList(QFileInfo(po.get("source").c_str()).fileName()),
+                                            QDir::Files|QDir::NoSymLinks);
+            for (unsigned int index = 0;index < file_list.size();++index)
+            {
+                QString filename = QDir::current().absoluteFilePath(file_list[index]);
+                std::cout << "=======================================" << std::endl;
+                std::cout << "Process file:" << filename.toStdString() << std::endl;
+                po.set("source",filename.toStdString());
+                run_action(gui);
+            }
         }
-        std::cout << "Unknown action:" << po.get("action") << std::endl;
-        return 1;
+        else
+            return run_action(gui);
     }
     catch(const std::exception& e ) {
         std::cout << e.what() << std::endl;

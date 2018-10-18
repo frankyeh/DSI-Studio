@@ -55,6 +55,11 @@ public:
         return options.find(name) != options.end();
     }
 
+    void set(const char* name,const std::string& value)
+    {
+        options[name] = value;
+    }
+
     std::string get(const char* name)
     {
         std::string df;
