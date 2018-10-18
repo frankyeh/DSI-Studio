@@ -168,7 +168,7 @@ int ana(void)
         out << "fiber coherence index\t" << result.first << std::endl;
     }
 
-    if(po.has("atlas") || po.has("roi"))
+    if(po.has("atlas") || po.has("region"))
     {
         std::vector<std::string> region_list;
         std::vector<std::shared_ptr<ROIRegion> > regions;
@@ -196,9 +196,9 @@ int ana(void)
 
             }
         }
-        if(po.has("roi"))
+        if(po.has("region"))
         {
-            std::string text = po.get("roi");
+            std::string text = po.get("region");
             std::regex reg("[;]");
             std::sregex_token_iterator first{text.begin(), text.end(),reg, -1},last;
             std::vector<std::string> roi_list = {first, last};
