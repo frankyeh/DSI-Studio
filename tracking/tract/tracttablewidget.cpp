@@ -779,11 +779,7 @@ void TractTableWidget::load_tracts_color(void)
             "Color files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-
-    std::string sfilename = filename.toLocal8Bit().begin();
-    tract_models[currentRow()]->load_tracts_color_from_file(&*sfilename.begin());
-    cur_tracking_window.set_data("tract_color_style",1);//manual assigned
-    emit need_update();
+    command("load_track_color",filename,"");
 }
 
 void TractTableWidget::load_tracts_value(void)
@@ -930,6 +926,15 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
     if(cmd == "save_tracks")
     {
         TractModel::save_all(param.toStdString().c_str(),tract_models);
+        return true;
+    }
+    if(cmd == "load_track_color")
+    {
+        TractModel::save_all(param.toStdString().c_str(),tract_models);
+        std::string sfilename = param.toStdString().c_str();
+        tract_models[currentRow()]->load_tracts_color_from_file(&*sfilename.begin());
+        cur_tracking_window.set_data("tract_color_style",1);//manual assigned
+        emit need_update();
         return true;
     }
     return false;
