@@ -566,7 +566,7 @@ void MainWindow::on_batch_src_clicked()
                 {
                     if(!DwiHeader::has_b_table(dwi_files))
                     {
-                        std::ofstream(QString(dir_list[i] + "/data.nii.gz.b_table_not_found.txt").toLocal8Bit().begin());
+                        std::ofstream(QString(dir_list[i] + "/data.nii.gz.invalid_b_table.txt").toLocal8Bit().begin());
                         continue;
                     }
                     DwiHeader::output_src(QString(dir_list[i] + "/data.src.gz").toLocal8Bit().begin(),dwi_files,0,false);
@@ -589,7 +589,7 @@ void MainWindow::on_batch_src_clicked()
                     }
                     if(!DwiHeader::has_b_table(dwi_files))
                     {
-                        std::ofstream(QString(dir_list[i] + "/" + nifti_file_list[index] + ".b_table_not_found.txt").toLocal8Bit().begin());
+                        std::ofstream(QString(dir_list[i] + "/" + nifti_file_list[index] + ".invalid_b_table.txt").toLocal8Bit().begin());
                         continue;
                     }
                     DwiHeader::output_src(QString(dir_list[i] + "/" +
