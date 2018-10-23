@@ -54,8 +54,8 @@ Tract/Transparent Style/tract_alpha_style/Sketch:Classic/0
 Tract/Style/tract_style/Line:Tube:End points/1
 Tract/Color/tract_color_style/Directional:Assigned:Local Index:Averaged Index:Averaged Directional:Max Index/0
 Tract/Visible Tracts/tract_visible_tract/int:5000:1000000:5000/25000
-Tract/Variant Color/tract_variant_color/Off:On/1
-Tract/Variant Size/tract_variant_size/Off:On/1
+Tract/Variant Color/tract_variant_color/Off:On/0
+Tract/Variant Size/tract_variant_size/Off:On/0
 Tract/Shader/tract_shader/Off:On/0
 Tract/Tube Detail/tract_tube_detail/Coarse:Fine:Finer:Finest/1
 Tract/Tube Diameter (voxel)/tube_diameter/float:0.01:1:0.1:2/0.1
