@@ -261,8 +261,8 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
         {
             if(nifti.load_from_file(files[0]))
             {
-                nifti.get_voxel_size(voxel_size);
                 nifti.toLPS(source_images);
+                nifti.get_voxel_size(voxel_size);
                 if(handle->is_qsdr)
                 {
                     invT.identity();
