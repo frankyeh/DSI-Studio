@@ -80,31 +80,32 @@ public:
             return;
         if(voxel.compare_voxel->dwi_data[0][data.voxel_index] == 0) // no data in the compared dataset
         {
-            data.odf_difference.clear();
-            data.odf_difference.resize(data.odf.size());
+            data.odf1.clear();
+            data.odf1.resize(data.odf.size());
+            data.odf = data.odf1;
+            data.odf2 = data.odf1;
             return;
         }
         data.space.resize(voxel.compare_voxel->dwi_data.size());
         for (unsigned int index = 0; index < data.space.size(); ++index)
             data.space[index] = voxel.compare_voxel->dwi_data[index][data.voxel_index];
-        data.odf_difference = data.odf;
+
+        //temporarily store baseline odf here
+        tipl::minus_constant(data.odf,*std::min_element(data.odf.begin(),data.odf.end()));
+        data.odf1 = data.odf;
 
         bs.run(voxel,data);
         gr.run(voxel,data);
 
-        tipl::minus_constant(data.odf_difference,*std::min_element(data.odf_difference.begin(),data.odf_difference.end()));
         tipl::minus_constant(data.odf,*std::min_element(data.odf.begin(),data.odf.end()));
+        data.odf2 = data.odf;
 
-        float qa = *std::max_element(data.odf_difference.begin(),data.odf_difference.end());
+        tipl::add(data.odf,data.odf1);
+        tipl::multiply_constant(data.odf,0.5f);
+        float qa = *std::max_element(data.odf.begin(),data.odf.end());
         if(qa > voxel.z0)
             voxel.z0 = qa; // z0 is the maximum qa in the baseline
-        for(int i = 0;i < data.odf.size();++i)
-        {
-            float study = data.odf[i];
-            float base = data.odf_difference[i];
-            data.odf[i] = base;
-            data.odf_difference[i] = (study-base)*0.5f;
-        }
+
     }
     virtual void end(Voxel&,gz_mat_write&) {}
 };

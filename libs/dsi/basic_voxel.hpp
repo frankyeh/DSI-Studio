@@ -29,7 +29,7 @@ struct VoxelData
     unsigned int voxel_index;
     std::vector<float> space;
     std::vector<float> odf;
-    std::vector<float> odf_difference;
+    std::vector<float> odf1,odf2;
     std::vector<float> fa;
     std::vector<float> rdi;
     std::vector<tipl::vector<3,float> > dir;
@@ -117,11 +117,12 @@ public: // for T1W based DMDM
     std::string t1w_file_name;
 
 public: // for fib evaluation
-    std::vector<float> fib_fa;
+    tipl::image<float,3> fib_fa;
     std::vector<float> fib_dir;
 public: // for DDI
     Voxel* compare_voxel = 0;
     std::string study_name;
+    std::string study_src_file_path;
 public:
     float z0 = 0.0;
     // other information for second pass processing

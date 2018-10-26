@@ -175,7 +175,7 @@ const char* ImageModel::reconstruction(void)
         }
         else
         {
-            if(voxel.compare_voxel) // DDI
+            if(!voxel.study_src_file_path.empty()) // DDI
             {
                 voxel.odf_deconvolusion = 0;
                 voxel.odf_decomposition = 0;
@@ -215,19 +215,12 @@ const char* ImageModel::reconstruction(void)
             }
         }
 
-        // Copy SRC b-table to voxel b-table and sort it
-        voxel.load_from_src(*this);
+
 
         // correct for b-table orientation
         if(voxel.check_btable)
             out << check_b_table();
 
-        if(voxel.compare_voxel)
-        {
-            study_src->voxel.load_from_src(*(study_src.get()));
-            if(voxel.check_btable)
-                study_src->check_b_table();
-        }
 
         switch (voxel.method_id)
         {
@@ -284,11 +277,46 @@ const char* ImageModel::reconstruction(void)
                     return "reconstruction canceled";
                 break;
             }
+
             voxel.recon_report <<
             " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010) with a diffusion sampling length ratio of " << (float)voxel.param[0] << ".";
             if(voxel.output_rdi)
                 voxel.recon_report <<
                     " The restricted diffusion was quantified using restricted diffusion imaging (Yeh et al., MRM, 77:603–612 (2017)).";
+
+
+            if(!voxel.study_src_file_path.empty())
+            {
+               if(!compare_src(voxel.study_src_file_path.c_str()))
+                    return "Failed to load DDI study SRC file.";
+
+                // nonlinear part
+                if(1)
+                {
+                    bool terminated = false;
+                    tipl::image<tipl::vector<3>,3> cdm_dis;
+                    begin_prog("Nonlinear registration between longitudinal scans");
+                    tipl::reg::cdm(voxel.fib_fa,study_src->voxel.fib_fa,cdm_dis,terminated,2.0f);
+                    tipl::image<float,3> J(study_src->voxel.fib_fa);
+                    tipl::compose_displacement(J,cdm_dis,study_src->voxel.fib_fa);
+                    voxel.R2 = tipl::correlation(study_src->voxel.fib_fa.begin(),study_src->voxel.fib_fa.end(),voxel.fib_fa.begin());
+                    check_prog(0,1);
+                    tipl::par_for(study_src->new_dwi.size(),[&](int i)
+                    {
+                        tipl::image<float,3> I(study_src->new_dwi[i]);
+                        tipl::compose_displacement(I,cdm_dis,study_src->new_dwi[i]);
+                    });
+                    check_prog(1,1);
+                }
+
+
+
+                voxel.recon_report <<
+                " The diffusion data were compared with baseline scan using differential diffusion imaging"
+                << (float)voxel.param[0] << " to study neuronal change.";
+
+                out << ".df." << voxel.study_name << ".R" << (int)(voxel.R2*100.0f);
+            }
 
             if (voxel.odf_deconvolusion || voxel.odf_decomposition)
             {
@@ -382,20 +410,8 @@ const char* ImageModel::reconstruction(void)
                 return "reconstruction canceled";
             out << ".R" << (int)std::floor(voxel.R2*100.0) << ".fib.gz";
             break;
-        case 8: // DDI
-            voxel.recon_report <<
-            " The diffusion data were compared with baseline scan using diffusion difference imaging with a diffusion sampling length ratio of "
-            << (float)voxel.param[0] << " to study neuronal change.";
-
-            if(voxel.r2_weighted)
-                voxel.recon_report << " The ODF calculation was weighted by the square of the diffuion displacement.";
-            if (!reconstruct<gqi_process>())
-                return "reconstruction canceled";
-            out << "." << voxel.study_name
-                << ".R" << (int)(voxel.R2*100.0f)
-                << (voxel.r2_weighted ? ".ddi2.":".ddi.")
-                << voxel.param[0] << ".fib.gz";
-            break;
+        default:
+            return "Unknown method";
         }
         save_fib(out.str());
         output_name = file_name + out.str();

@@ -68,6 +68,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->setupUi(this);
     if(!load_src(0))
         throw std::runtime_error("Cannot load src file");
+    setWindowTitle(filenames[0]);
     ui->ThreadCount->setMaximum(std::thread::hardware_concurrency());
     ui->toolBox->setCurrentIndex(1);
     ui->graphicsView->setScene(&scene);
@@ -77,12 +78,8 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->b_table->setColumnWidth(2,80);
     ui->b_table->setColumnWidth(3,80);
     ui->b_table->setHorizontalHeaderLabels(QStringList() << "b value" << "bx" << "by" << "bz");
-    ui->gqi_spectral->hide();
-    ui->DSI->hide();
-    ui->QBI->hide();
-    ui->DDI->hide();
-    ui->ODFSharpening->setVisible(false);
-    ui->ODFSharpening->setEnabled(false);
+
+
 
 
     v2c.two_color(tipl::rgb(0,0,0),tipl::rgb(255,255,255));
@@ -101,16 +98,14 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui->QSDR->setChecked(true);
         on_QSDR_toggled(true);
         break;
-    case 8:
-        ui->DDI->setVisible(true);
-        ui->DDI->setChecked(true);
-        on_DDI_toggled(true);
-        break;
     default:
         ui->GQI->setChecked(true);
         on_GQI_toggled(true);
         break;
     }
+
+    ui->open_ddi_study_src->setVisible(false);
+
     ui->AdvancedWidget->setVisible(false);
     ui->ThreadCount->setValue(settings.value("rec_thread_count",std::thread::hardware_concurrency()).toInt());
     ui->NumOfFibers->setValue(settings.value("rec_num_fiber",5).toInt());
@@ -119,13 +114,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     ui->diffusion_sampling->setValue(settings.value("rec_gqi_sampling",1.25).toDouble());
     ui->csf_calibration->setChecked(settings.value("csf_calibration",1).toInt());
-    ui->regularization_param->setValue(settings.value("rec_qbi_reg",0.006).toDouble());
-    ui->SHOrder->setValue(settings.value("rec_qbi_sh_order",8).toInt());
-    ui->hamming_filter->setValue(settings.value("rec_hamming_filter",17).toDouble());
 
-    ui->odf_sharpening->setCurrentIndex(settings.value("rec_odf_sharpening",0).toInt());
-    ui->decon_param->setValue(settings.value("rec_deconvolution_param",3.0).toDouble());
-    ui->decom_m->setValue(settings.value("rec_decom_m",10).toInt());
     ui->ODFDim->setCurrentIndex(settings.value("odf_order",3).toInt());
 
     ui->RecordODF->setChecked(settings.value("rec_record_odf",0).toInt());
@@ -143,7 +132,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
 
 
-    on_odf_sharpening_currentIndexChanged(ui->odf_sharpening->currentIndex());
     connect(ui->z_pos,SIGNAL(valueChanged(int)),this,SLOT(on_b_table_itemSelectionChanged()));
     connect(ui->max_value,SIGNAL(valueChanged(double)),this,SLOT(on_b_table_itemSelectionChanged()));
     connect(ui->min_value,SIGNAL(valueChanged(double)),this,SLOT(on_b_table_itemSelectionChanged()));
@@ -157,28 +145,8 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         if(handle->is_dsi())
             ui->scheme_balance->setEnabled(false);
         else
-        // not dsi
-        {
-            if(ui->DSI->isChecked())
-            {
-                ui->GQI->setChecked(true);
-                on_GQI_toggled(true);
-            }
-            ui->DSI->setEnabled(false);
             ui->half_sphere->setEnabled(false);
-        }
-        if(handle->is_dsi() || handle->is_multishell())
-        {
-            if(ui->QBI->isChecked())
-            {
-                ui->GQI->setChecked(true);
-                on_GQI_toggled(true);
-            }
-            ui->QBI->setEnabled(false);
-        }
     }
-
-
 
 }
 void reconstruction_window::update_dimension(void)
@@ -187,9 +155,6 @@ void reconstruction_window::update_dimension(void)
     ui->SlicePos->setValue((handle->voxel.dim[2]-1) >> 1);
     ui->z_pos->setRange(0,handle->voxel.dim[2]-1);
     ui->z_pos->setValue((handle->voxel.dim[2]-1) >> 1);
-    ui->x->setMaximum(handle->voxel.dim[0]-1);
-    ui->y->setMaximum(handle->voxel.dim[1]-1);
-    ui->z->setMaximum(handle->voxel.dim[2]-1);
     source_ratio = std::max(1.0,500/(double)handle->voxel.dim.height());
 }
 
@@ -255,18 +220,6 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
         return;
     }
 
-    if (ui->odf_sharpening->currentIndex() == 1 && method_id != 1) // deconvolution
-    {
-        handle->voxel.param[2] = ui->decon_param->value();
-        settings.setValue("rec_deconvolution_param",handle->voxel.param[2]);
-    }
-    if (ui->odf_sharpening->currentIndex() == 2 && method_id != 1) // decomposition
-    {
-        handle->voxel.param[3] = ui->decom_fraction->value();
-        handle->voxel.param[4] = ui->decom_m->value();
-        settings.setValue("rec_decomposition_param",handle->voxel.param[3]);
-        settings.setValue("rec_decom_m",handle->voxel.param[4]);
-    }
     //T1W DMDM
     if(method_id == 7 && ui->reg_method->currentIndex() == 4)
     {
@@ -295,7 +248,6 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
 
     settings.setValue("rec_method_id",method_id);
     settings.setValue("rec_thread_count",ui->ThreadCount->value());
-    settings.setValue("rec_odf_sharpening",ui->odf_sharpening->currentIndex());
     settings.setValue("rec_num_fiber",ui->NumOfFibers->value());
     settings.setValue("rec_gqi_def",ui->ODFDef->currentIndex());
     settings.setValue("rec_reg_method",ui->reg_method->currentIndex());
@@ -315,11 +267,6 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     int odf_order[8] = {4, 5, 6, 8, 10, 12, 16, 20};
     handle->voxel.method_id = method_id;
     handle->voxel.ti.init(odf_order[ui->ODFDim->currentIndex()]);
-    handle->voxel.odf_deconvolusion = 0;//ui->odf_sharpening->currentIndex() == 1 ? 1 : 0;
-    handle->voxel.odf_decomposition = 0;//ui->odf_sharpening->currentIndex() == 2 ? 1 : 0;
-    handle->voxel.odf_xyz[0] = ui->x->value();
-    handle->voxel.odf_xyz[1] = ui->y->value();
-    handle->voxel.odf_xyz[2] = ui->z->value();
     handle->voxel.csf_calibration = (ui->csf_calibration->isVisible() && ui->csf_calibration->isChecked()) ? 1: 0;
     handle->voxel.max_fiber_number = ui->NumOfFibers->value();
     handle->voxel.r2_weighted = ui->ODFDef->currentIndex();
@@ -334,7 +281,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.thread_count = ui->ThreadCount->value();
 
 
-    if(method_id == 7 || method_id == 4 || method_id == 8)
+    if(method_id == 7 || method_id == 4)
     {
         handle->voxel.half_sphere = ui->half_sphere->isChecked() ? 1:0;
         handle->voxel.scheme_balance = ui->scheme_balance->isChecked() ? 1:0;
@@ -451,38 +398,9 @@ void reconstruction_window::on_doDTI_clicked()
         if(ui->DTI->isChecked())
             doReconstruction(1,index+1 == filenames.size());
         else
-        if(ui->DSI->isChecked())
-        {
-            handle->voxel.param[0] = ui->hamming_filter->value();
-            settings.setValue("rec_hamming_filter",handle->voxel.param[0]);
-            doReconstruction(0,index+1 == filenames.size());
-        }
-        else
-        if(ui->QBI->isChecked())
-        {
-            handle->voxel.param[0] = ui->regularization_param->value();
-            handle->voxel.param[1] = ui->SHOrder->value();
-            settings.setValue("rec_qbi_reg",handle->voxel.param[0]);
-            settings.setValue("rec_qbi_sh_order",handle->voxel.param[1]);
-            doReconstruction(3,index+1 == filenames.size());
-        }
-        else
-        if(ui->DDI->isChecked())
-        {
-            if(!handle->study_src.get())
-            {
-                QMessageBox::information(this,"Error","Please assign study SRC file",0);
-                return;
-            }
-            handle->voxel.param[0] = ui->diffusion_sampling->value();
-            settings.setValue("rec_gqi_sampling",ui->diffusion_sampling->value());
-            doReconstruction(8,index+1 == filenames.size());
-        }
         if(ui->GQI->isChecked() || ui->QSDR->isChecked())
         {
             handle->voxel.param[0] = ui->diffusion_sampling->value();
-            if(handle->voxel.param[0] == 0.0)
-                handle->voxel.param[1] = ui->diffusion_time->value();
             settings.setValue("rec_gqi_sampling",ui->diffusion_sampling->value());
             if(ui->QSDR->isChecked())
                 doReconstruction(7,index+1 == filenames.size());
@@ -497,11 +415,7 @@ void reconstruction_window::on_doDTI_clicked()
 void reconstruction_window::on_DTI_toggled(bool checked)
 {
     ui->ResolutionBox->setVisible(!checked);
-    //ui->ODFSharpening->setVisible(!checked);
-    ui->DSIOption_2->setVisible(!checked);
-    ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(!checked);
-    ui->DDIOption->setVisible(!checked);
 
     ui->AdvancedOptions->setVisible(checked);
     ui->ODFOption->setVisible(!checked);
@@ -517,59 +431,13 @@ void reconstruction_window::on_DTI_toggled(bool checked)
 
 }
 
-void reconstruction_window::on_DSI_toggled(bool checked)
-{
-    ui->ResolutionBox->setVisible(!checked);
-    //ui->ODFSharpening->setVisible(checked);
-    ui->DSIOption_2->setVisible(checked);
-    ui->QBIOption_2->setVisible(!checked);
-    ui->GQIOption_2->setVisible(!checked);
-    ui->DDIOption->setVisible(!checked);
-
-    ui->AdvancedOptions->setVisible(checked);
-    ui->ODFOption->setVisible(checked);
-
-    ui->output_mapping->setVisible(!checked);
-    ui->output_jacobian->setVisible(!checked);
-    ui->output_tensor->setVisible(!checked);
-    ui->output_diffusivity->setVisible(checked);
-
-    ui->RecordODF->setVisible(checked);
-    ui->rdi->setVisible(!checked);
-
-}
-
-void reconstruction_window::on_QBI_toggled(bool checked)
-{
-    ui->ResolutionBox->setVisible(!checked);
-    //ui->ODFSharpening->setVisible(checked);
-    ui->DSIOption_2->setVisible(!checked);
-    ui->QBIOption_2->setVisible(checked);
-    ui->GQIOption_2->setVisible(!checked);
-    ui->DDIOption->setVisible(!checked);
-
-    ui->AdvancedOptions->setVisible(checked);
-    ui->ODFOption->setVisible(checked);
-
-    ui->output_mapping->setVisible(!checked);
-    ui->output_jacobian->setVisible(!checked);
-    ui->output_tensor->setVisible(!checked);
-    ui->output_diffusivity->setVisible(checked);
-
-    ui->RecordODF->setVisible(checked);
-    ui->rdi->setVisible(!checked);
-
-}
 
 void reconstruction_window::on_GQI_toggled(bool checked)
 {
     ui->ResolutionBox->setVisible(!checked);
 
 
-    ui->DSIOption_2->setVisible(!checked);
-    ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(checked);
-    ui->DDIOption->setVisible(!checked);
 
     ui->AdvancedOptions->setVisible(checked);
     ui->ODFOption->setVisible(checked);
@@ -586,24 +454,11 @@ void reconstruction_window::on_GQI_toggled(bool checked)
         ui->rdi->setChecked(true);
     ui->csf_calibration->setVisible(handle->is_human_data());
 }
-void reconstruction_window::on_DDI_toggled(bool checked)
-{
-    on_GQI_toggled(checked);
-    ui->rdi->setVisible(false);
-    ui->DDIOption->setVisible(checked);
-    ui->csf_calibration->setVisible(false);
-
-}
 
 void reconstruction_window::on_QSDR_toggled(bool checked)
 {
     ui->ResolutionBox->setVisible(checked);
-    //ui->ODFSharpening->setVisible(checked);
-    ui->DSIOption_2->setVisible(!checked);
-    ui->QBIOption_2->setVisible(!checked);
     ui->GQIOption_2->setVisible(checked);
-    ui->DDIOption->setVisible(!checked);
-
 
     ui->AdvancedOptions->setVisible(checked);
     ui->ODFOption->setVisible(checked);
@@ -660,19 +515,6 @@ void reconstruction_window::on_manual_reg_clicked()
             tipl::reg::affine,tipl::reg::cost_type::corr));
     if(manual->exec() == QDialog::Accepted)
         handle->voxel.qsdr_trans = manual->T;
-}
-
-void reconstruction_window::on_odf_sharpening_currentIndexChanged(int)
-{
-    ui->xyz_widget->setVisible(ui->odf_sharpening->currentIndex() > 0);
-    ui->decom_panel->setVisible(ui->odf_sharpening->currentIndex() == 2);
-    ui->decon_param->setVisible(ui->odf_sharpening->currentIndex() == 1);
-    on_RFSelection_currentIndexChanged(0);
-}
-
-void reconstruction_window::on_RFSelection_currentIndexChanged(int)
-{
-    ui->ODFSelection->setVisible(ui->RFSelection->currentIndex() > 0);
 }
 
 void reconstruction_window::on_AdvancedOptions_clicked()
@@ -880,14 +722,6 @@ void reconstruction_window::on_actionTrim_image_triggered()
     update_image();
     update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
-}
-
-void reconstruction_window::on_diffusion_sampling_valueChanged(double arg1)
-{
-    if(arg1 == 0.0)
-        ui->gqi_spectral->show();
-    else
-        ui->gqi_spectral->hide();
 }
 
 void reconstruction_window::on_SlicePos_valueChanged(int position)
@@ -1116,11 +950,7 @@ void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
 
 void reconstruction_window::on_actionEnable_TEST_features_triggered()
 {
-    ui->DSI->setVisible(true);
-    ui->QBI->setVisible(true);
-    ui->DDI->setVisible(true);
-    ui->ODFSharpening->setVisible(true);
-    ui->ODFSharpening->setEnabled(true);
+    ui->open_ddi_study_src->setVisible(true);
 }
 
 void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
@@ -1166,11 +996,15 @@ void reconstruction_window::on_open_ddi_study_src_clicked()
             "Images (*src.gz);;All files (*)" );
     if( filename.isEmpty())
         return;
-    if(!handle->compare_src(filename.toStdString().c_str()))
-    {
-        QMessageBox::information(this,"error",QString("Cannot open ") +
-            filename + " : " +handle->error_msg.c_str(),0);
-        return;
-    }
+    handle->voxel.study_src_file_path = filename.toStdString();
     ui->ddi_file->setText(QFileInfo(filename).baseName());
+}
+
+void reconstruction_window::on_actionRotate_to_MNI_triggered()
+{
+    begin_prog("rotating");
+    handle->rotate_to_mni();
+    update_image();
+    update_dimension();
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }

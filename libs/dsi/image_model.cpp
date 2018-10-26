@@ -33,6 +33,7 @@ void ImageModel::remove(unsigned int index)
     src_bvalues.erase(src_bvalues.begin()+index);
     src_bvectors.erase(src_bvectors.begin()+index);
     shell.clear();
+    voxel.dwi_data.clear();
 }
 
 typedef boost::mpl::vector<
@@ -41,7 +42,7 @@ typedef boost::mpl::vector<
 > check_btable_process;
 std::pair<float,float> evaluate_fib(
         const tipl::geometry<3>& dim,
-        const std::vector<std::vector<float> >& fib_fa,
+        const std::vector<tipl::image<float,3> >& fib_fa,
         const std::vector<std::vector<float> >& fib_dir)
 {
     unsigned char num_fib = fib_fa.size();
@@ -142,9 +143,8 @@ void ImageModel::flip_b_table(const unsigned char* order)
     }
     voxel.grad_dev.clear();
 }
-std::string ImageModel::check_b_table(void)
+void ImageModel::pre_dti(void)
 {
-    set_title("checking b-table");
     bool output_dif = voxel.output_diffusivity;
     bool output_tensor = voxel.output_tensor;
     voxel.output_diffusivity = true;
@@ -152,7 +152,13 @@ std::string ImageModel::check_b_table(void)
     reconstruct<check_btable_process>();
     voxel.output_diffusivity = output_dif;
     voxel.output_tensor = output_tensor;
-    std::vector<std::vector<float> > fib_fa(1);
+}
+
+std::string ImageModel::check_b_table(void)
+{
+    set_title("checking b-table");
+    pre_dti();
+    std::vector<tipl::image<float,3> > fib_fa(1);
     std::vector<std::vector<float> > fib_dir(1);
     fib_fa[0].swap(voxel.fib_fa);
     fib_dir[0].swap(voxel.fib_dir);
@@ -202,12 +208,83 @@ std::string ImageModel::check_b_table(void)
 
     if(result[best] > cur_score)
     {
-        std::cout << "b-table corrected." << std::endl;
+        std::cout << "b-table corrected by " << txt[best] << " for " << file_name << std::endl;
         flip_b_table(order[best]);
         voxel.load_from_src(*this);
         return txt[best];
     }
+    fib_fa[0].swap(voxel.fib_fa);
+    fib_dir[0].swap(voxel.fib_dir);
+
     return std::string();
+}
+float ImageModel::bad_slice_count(void)
+{
+    voxel.load_from_src(*this);
+    tipl::image<float,2> cor_values(tipl::geometry<2>(voxel.dwi_data.size(),voxel.dim.depth()));
+
+    tipl::par_for(voxel.dwi_data.size(),[&](int index)
+    {
+        auto I = tipl::make_image(voxel.dwi_data[index],voxel.dim);
+        int value_index = index*(voxel.dim.depth());
+        for(int z = 0,pos = 0;z < voxel.dim.depth();++z,pos += I.plane_size())
+        {
+            float cor = 0.0f;
+            if(z)
+                cor = tipl::correlation(&I[pos],&I[pos]+I.plane_size(),&I[pos]-I.plane_size());
+            if(z+1 < voxel.dim.depth())
+                cor = std::max<float>(cor,tipl::correlation(&I[pos],&I[pos]+I.plane_size(),&I[pos]+I.plane_size()));
+            cor_values[value_index+z] = cor;
+        }
+    });
+    // check the difference with neighborings
+    std::vector<int> bad_i,bad_z;
+    std::vector<float> sum;
+    for(int i = 0,pos = 0;i < voxel.dwi_data.size();++i)
+    {
+        for(int z = 0;z < voxel.dim.depth();++z,++pos)
+        {
+            // ignore the top and bottom slices
+            if(z <= 1 || z + 2 >= voxel.dim.depth())
+                continue;
+            float v[4] = {0.0f,0.0f,0.0f,0.0f};
+            if(z > 0)
+                v[0] = cor_values[pos-1]-cor_values[pos];
+            if(z+1 < voxel.dim.depth())
+                v[1] = cor_values[pos+1]-cor_values[pos];
+            if(i > 0)
+                v[2] = cor_values[pos-voxel.dim.depth()]-cor_values[pos];
+            if(i+1 < voxel.dwi_data.size())
+                v[3] = cor_values[pos+voxel.dim.depth()]-cor_values[pos];
+            float s = 0.0;
+            if(v[0] < 0.0f || v[1] < 0.0f || v[2] < 0.0f || v[3] < 0.0f)
+                s = 0;
+            else
+                s = v[0]+v[1]+v[2]+v[3];
+            if(s > 0.6f)
+            {
+                bad_i.push_back(i);
+                bad_z.push_back(z);
+                sum.push_back(s);
+            }
+        }
+    }
+    /*
+    if(sum.size())
+    {
+        auto arg = tipl::arg_sort(sum,std::less<>());
+        tipl::image<float,3> bad_I(tipl::geometry<3>(voxel.dim[0],voxel.dim[1],bad_i.size()));
+        for(int i = 0,out_pos = 0;i < bad_i.size();++i,out_pos += voxel.dim.plane_size())
+        {
+            std::cout << bad_i[arg[i]] << " " << bad_z[arg[i]] << " " << sum[arg[i]] << std::endl;
+
+            int pos = bad_z[arg[i]]*voxel.dim.plane_size();
+            std::copy(voxel.dwi_data[bad_i[arg[i]]]+pos,voxel.dwi_data[bad_i[arg[i]]]+pos+voxel.dim.plane_size(),bad_I.begin()+out_pos);
+        }
+        bad_I.save_to_file<gz_nifti>("D:/bad.nii.gz");
+    }
+    */
+    return sum.size();
 }
 
 float ImageModel::quality_control_neighboring_dwi_corr(void)
@@ -320,6 +397,7 @@ void ImageModel::flip_dwi(unsigned char type)
         tipl::flip(I,type);
     }
     voxel.dim = dwi_sum.geometry();
+    voxel.dwi_data.clear();
 }
 // used in eddy correction for each dwi
 void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformation_matrix<double>& affine)
@@ -357,7 +435,6 @@ void ImageModel::rotate(const tipl::image<float,3>& ref,
     });
     check_prog(0,0);
     dwi.swap(new_dwi);
-
     // rotate b-table
     if(has_image_rotation)
     {
@@ -396,10 +473,52 @@ void ImageModel::rotate(const tipl::image<float,3>& ref,
         new_gra_dev.swap(voxel.new_grad_dev);
     }
     voxel.dim = new_geo;
+    voxel.dwi_data.clear();
     calculate_dwi_sum();
     voxel.calculate_mask(dwi_sum);
 
 }
+extern std::string fib_template_file_name_1mm,fib_template_file_name_2mm;
+bool ImageModel::rotate_to_mni(void)
+{
+    std::string file_name;
+    if(voxel.vs[0]+voxel.vs[0]+voxel.vs[0] < 6.0)
+        file_name = fib_template_file_name_1mm;
+    else
+        file_name = fib_template_file_name_2mm;
+
+    gz_mat_read read;
+    if(!read.load_from_file(file_name.c_str()))
+    {
+        error_msg = "Failed to load/find fib template.";
+        return false;
+    }
+    tipl::image<float,3> I;
+    if(!read.save_to_image(I,"iso"))
+    {
+        error_msg = "Failed to read image from fib template.";
+        return false;
+    }
+    tipl::vector<3> vs;
+    if(!read.get_voxel_size(vs))
+    {
+        error_msg = "Failed to get voxel size from fib template.";
+        return false;
+    }
+
+    tipl::transformation_matrix<double> arg;
+    bool terminated = false;
+    begin_prog("registering to the MNI space");
+    check_prog(0,1);
+    tipl::reg::two_way_linear_mr(I,vs,dwi_sum,voxel.vs,
+                    arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated);
+    begin_prog("rotating to the MNI space");
+    rotate(I,arg);
+    voxel.vs = vs;
+    check_prog(1,1);
+    return true;
+}
+
 void ImageModel::trim(void)
 {
     tipl::geometry<3> range_min,range_max;
@@ -414,6 +533,7 @@ void ImageModel::trim(void)
     }
     tipl::crop(voxel.mask,range_min,range_max);
     voxel.dim = voxel.mask.geometry();
+    voxel.dwi_data.clear();
     calculate_dwi_sum();
     voxel.calculate_mask(dwi_sum);
 }
@@ -947,8 +1067,21 @@ bool ImageModel::compare_src(const char* file_name)
         return false;
     }
     study_src = bl;
+
     voxel.study_name = QFileInfo(file_name).baseName().toStdString();
     voxel.compare_voxel = &(study_src->voxel);
+
+    // spatial smoothing to reduce noise
+    tipl::par_for(study_src->new_dwi.size(),[&](int i)
+    {
+        tipl::filter::gaussian(study_src->new_dwi[i]);
+    });
+
+    tipl::par_for(src_dwi_data.size(),[&](int i)
+    {
+        tipl::filter::gaussian(tipl::make_image((unsigned short*)src_dwi_data[i],voxel.dim));
+    });
+
 
     begin_prog("Registration between longitudinal scans");
     {
@@ -960,23 +1093,47 @@ bool ImageModel::compare_src(const char* file_name)
                         arg,tipl::reg::rigid_body,tipl::reg::correlation(),terminated);
         study_src->rotate(dwi_sum,arg);
         study_src->voxel.vs = voxel.vs;
+        study_src->voxel.mask = voxel.mask;
         check_prog(1,1);
     }
+    // correct b_table first
+    if(voxel.check_btable)
+        study_src->check_b_table();
+
+
+    for(int i = 0;i < voxel.mask.size();++i)
+        if(study_src->src_dwi_data[0][i] == 0)
+            voxel.mask[i] = 0;
+
+
+
     // Signal match on b0 to allow for quantitative MRI in DDI
+    /*
     {
         double a,b;
-        tipl::linear_regression(study_src->src_dwi_data[0],
-                                             study_src->src_dwi_data[0]+
-                                             study_src->voxel.dim.size(),
-                                             src_dwi_data[0],a,b,voxel.R2);
-        std::cout << "y=" << a << "x+" << b << " r2=" << voxel.R2 << std::endl;
-        tipl::par_for(study_src->new_dwi.size(),[&](int i)
+        std::vector<float> x,y;
+        for(int i = 0;i < voxel.mask.size();++i)
+            if(voxel.mask[i])
+            {
+                x.push_back(study_src->src_dwi_data[0][i]);
+                y.push_back(src_dwi_data[0][i]);
+            }
+        tipl::linear_regression(x.begin(),x.end(),y.begin(),a,b,voxel.R2);
+        if(0)
         {
-            tipl::multiply_constant(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),a);
-            tipl::add_constant(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),b);
-            tipl::lower_threshold(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),0.0f);
-        });
-
+            std::cout << "y=" << a << "x+" << b << " r2=" << voxel.R2 << std::endl;
+            tipl::par_for(study_src->new_dwi.size(),[&](int i)
+            {
+                tipl::multiply_constant(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),a);
+                tipl::add_constant(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),b);
+                tipl::lower_threshold(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),0.0f);
+            });
+            study_src->calculate_dwi_sum();
+        }
     }
+    */
+    // prepare FA maps
+    pre_dti();
+    study_src->pre_dti();
     return true;
 }

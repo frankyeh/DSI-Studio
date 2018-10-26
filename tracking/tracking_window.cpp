@@ -900,8 +900,8 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
         scene.show_slice();
         return;
     }
-    if(handle->dir.index_name[index] == "inc" ||
-        handle->dir.index_name[index] == "dec")
+    if(handle->dir.index_name[index].find("inc") != std::string::npos ||
+        handle->dir.index_name[index].find("dec") != std::string::npos)
     {
         // percentile threshold
         renderWidget->setMinMax("fa_threshold",0.0f,1.0f,0.05f);
@@ -1273,15 +1273,15 @@ void tracking_window::on_zoom_out_clicked()
 
 std::pair<float,float> evaluate_fib(
         const tipl::geometry<3>& dim,
-        const std::vector<std::vector<float> >& fib_fa,
+        const std::vector<tipl::image<float,3> >& fib_fa,
         const std::vector<std::vector<float> >& fib_dir);
 std::pair<float,float> evaluate_fib(std::shared_ptr<fib_data> handle)
 {
-    std::vector<std::vector<float> > fib_fa(handle->dir.num_fiber);
+    std::vector<tipl::image<float,3> > fib_fa(handle->dir.num_fiber);
     std::vector<std::vector<float> > fib_dir(handle->dir.num_fiber);
     for(unsigned int i = 0;i < fib_fa.size();++i)
     {
-        fib_fa[i].resize(handle->dim.size());
+        fib_fa[i].resize(handle->dim);
         std::copy(handle->dir.fa[i],handle->dir.fa[i]+handle->dim.size(),fib_fa[i].begin());
         fib_dir[i].resize(handle->dim.size()*3);
         for(unsigned int j = 0,index = 0;j < fib_dir[i].size();j += 3,++index)

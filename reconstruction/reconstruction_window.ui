@@ -61,7 +61,7 @@
          <x>0</x>
          <y>0</y>
          <width>731</width>
-         <height>524</height>
+         <height>535</height>
         </rect>
        </property>
        <attribute name="label">
@@ -344,7 +344,7 @@
          <x>0</x>
          <y>0</y>
          <width>731</width>
-         <height>524</height>
+         <height>535</height>
         </rect>
        </property>
        <attribute name="label">
@@ -467,8 +467,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>717</width>
-         <height>597</height>
+         <width>731</width>
+         <height>535</height>
         </rect>
        </property>
        <property name="minimumSize">
@@ -519,27 +519,6 @@
             </widget>
            </item>
            <item>
-            <widget class="QRadioButton" name="DSI">
-             <property name="text">
-              <string>DSI</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="QBI">
-             <property name="text">
-              <string>QBI</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="DDI">
-             <property name="text">
-              <string>DDI</string>
-             </property>
-            </widget>
-           </item>
-           <item>
             <widget class="QRadioButton" name="GQI">
              <property name="text">
               <string>GQI</string>
@@ -563,11 +542,8 @@
          </widget>
         </item>
         <item>
-         <widget class="QGroupBox" name="DDIOption">
-          <property name="title">
-           <string/>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout">
+         <widget class="QGroupBox" name="GQIOption_2">
+          <layout class="QHBoxLayout" name="GQIOption">
            <property name="topMargin">
             <number>6</number>
            </property>
@@ -575,21 +551,31 @@
             <number>6</number>
            </property>
            <item>
-            <widget class="QLabel" name="label_16">
+            <widget class="QPushButton" name="open_ddi_study_src">
              <property name="text">
-              <string>Study SRC file:</string>
+              <string>Comparison SRC...</string>
              </property>
             </widget>
            </item>
            <item>
             <widget class="QLabel" name="ddi_file">
              <property name="text">
-              <string>Please assign study SRC file</string>
+              <string/>
              </property>
             </widget>
            </item>
            <item>
-            <spacer name="horizontalSpacer_5">
+            <widget class="QCheckBox" name="csf_calibration">
+             <property name="text">
+              <string>CSF calibration</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_9">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
@@ -602,215 +588,9 @@
             </spacer>
            </item>
            <item>
-            <widget class="QPushButton" name="open_ddi_study_src">
-             <property name="text">
-              <string>Open Study SRC...</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="DSIOption_2">
-          <layout class="QHBoxLayout" name="DSIOption">
-           <property name="topMargin">
-            <number>6</number>
-           </property>
-           <property name="bottomMargin">
-            <number>6</number>
-           </property>
-           <item>
-            <widget class="QLabel" name="label_5">
-             <property name="text">
-              <string>DSI Hamming filter</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSpinBox" name="hamming_filter">
-             <property name="maximumSize">
-              <size>
-               <width>75</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="minimum">
-              <number>8</number>
-             </property>
-             <property name="maximum">
-              <number>20</number>
-             </property>
-             <property name="value">
-              <number>16</number>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="QBIOption_2">
-          <layout class="QHBoxLayout" name="QBIOption">
-           <property name="topMargin">
-            <number>6</number>
-           </property>
-           <property name="bottomMargin">
-            <number>6</number>
-           </property>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_12">
-             <item>
-              <widget class="QLabel" name="label">
-               <property name="text">
-                <string>SH order</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QSpinBox" name="SHOrder">
-               <property name="maximumSize">
-                <size>
-                 <width>75</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="minimum">
-                <number>4</number>
-               </property>
-               <property name="maximum">
-                <number>10</number>
-               </property>
-               <property name="value">
-                <number>8</number>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_13">
-             <item>
-              <widget class="QLabel" name="label_6">
-               <property name="text">
-                <string>QBI Regularization</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QDoubleSpinBox" name="regularization_param">
-               <property name="maximumSize">
-                <size>
-                 <width>75</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="decimals">
-                <number>3</number>
-               </property>
-               <property name="minimum">
-                <double>0.001000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>1.000000000000000</double>
-               </property>
-               <property name="singleStep">
-                <double>0.001000000000000</double>
-               </property>
-               <property name="value">
-                <double>0.006000000000000</double>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="GQIOption_2">
-          <layout class="QHBoxLayout" name="GQIOption">
-           <property name="topMargin">
-            <number>6</number>
-           </property>
-           <property name="bottomMargin">
-            <number>6</number>
-           </property>
-           <item>
             <widget class="QLabel" name="label_7">
              <property name="text">
               <string>Diffusion sampling length ratio</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QWidget" name="gqi_spectral" native="true">
-             <layout class="QHBoxLayout" name="horizontalLayout_26">
-              <property name="spacing">
-               <number>0</number>
-              </property>
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <spacer name="horizontalSpacer_9">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item>
-               <widget class="QLabel" name="label_19">
-                <property name="text">
-                 <string>diffusion time:</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QDoubleSpinBox" name="diffusion_time">
-                <property name="maximum">
-                 <double>200.000000000000000</double>
-                </property>
-                <property name="singleStep">
-                 <double>2.000000000000000</double>
-                </property>
-                <property name="value">
-                 <double>80.000000000000000</double>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLabel" name="label_18">
-                <property name="text">
-                 <string>ms</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="csf_calibration">
-             <property name="text">
-              <string>CSF calibration</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -826,7 +606,7 @@
               <number>2</number>
              </property>
              <property name="minimum">
-              <double>0.000000000000000</double>
+              <double>0.050000000000000</double>
              </property>
              <property name="maximum">
               <double>3.000000000000000</double>
@@ -1090,323 +870,6 @@
             <number>0</number>
            </property>
            <item>
-            <widget class="QGroupBox" name="ODFSharpening">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="title">
-              <string>ODF Sharpening (NOT RECOMMENDED)</string>
-             </property>
-             <layout class="QVBoxLayout" name="verticalLayout_10">
-              <property name="spacing">
-               <number>6</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
-               <number>6</number>
-              </property>
-              <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_14">
-                <property name="spacing">
-                 <number>0</number>
-                </property>
-                <item>
-                 <widget class="QComboBox" name="odf_sharpening">
-                  <property name="maximumSize">
-                   <size>
-                    <width>16777215</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <item>
-                   <property name="text">
-                    <string>Off</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>Deconvolution</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>Decomposition</string>
-                   </property>
-                  </item>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QWidget" name="decom_panel" native="true">
-                  <layout class="QHBoxLayout" name="horizontalLayout_5">
-                   <property name="spacing">
-                    <number>0</number>
-                   </property>
-                   <property name="leftMargin">
-                    <number>0</number>
-                   </property>
-                   <property name="topMargin">
-                    <number>0</number>
-                   </property>
-                   <property name="rightMargin">
-                    <number>0</number>
-                   </property>
-                   <property name="bottomMargin">
-                    <number>0</number>
-                   </property>
-                   <item>
-                    <widget class="QLabel" name="label_12">
-                     <property name="maximumSize">
-                      <size>
-                       <width>10</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <property name="text">
-                      <string>ϵ</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QDoubleSpinBox" name="decom_fraction">
-                     <property name="maximumSize">
-                      <size>
-                       <width>75</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <property name="minimum">
-                      <double>0.010000000000000</double>
-                     </property>
-                     <property name="maximum">
-                      <double>0.500000000000000</double>
-                     </property>
-                     <property name="singleStep">
-                      <double>0.050000000000000</double>
-                     </property>
-                     <property name="value">
-                      <double>0.050000000000000</double>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QLabel" name="label_11">
-                     <property name="maximumSize">
-                      <size>
-                       <width>10</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <property name="text">
-                      <string>m</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QSpinBox" name="decom_m">
-                     <property name="maximumSize">
-                      <size>
-                       <width>35</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <property name="minimum">
-                      <number>3</number>
-                     </property>
-                     <property name="maximum">
-                      <number>20</number>
-                     </property>
-                     <property name="value">
-                      <number>10</number>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="decon_param">
-                  <property name="maximumSize">
-                   <size>
-                    <width>45</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="minimum">
-                   <double>0.010000000000000</double>
-                  </property>
-                  <property name="maximum">
-                   <double>20.000000000000000</double>
-                  </property>
-                  <property name="singleStep">
-                   <double>0.500000000000000</double>
-                  </property>
-                  <property name="value">
-                   <double>3.000000000000000</double>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <spacer name="horizontalSpacer_7">
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>40</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QHBoxLayout" name="xyz">
-                <property name="spacing">
-                 <number>0</number>
-                </property>
-                <property name="topMargin">
-                 <number>0</number>
-                </property>
-                <item>
-                 <widget class="QWidget" name="xyz_widget" native="true">
-                  <layout class="QHBoxLayout" name="horizontalLayout_4">
-                   <property name="spacing">
-                    <number>0</number>
-                   </property>
-                   <property name="leftMargin">
-                    <number>0</number>
-                   </property>
-                   <property name="topMargin">
-                    <number>0</number>
-                   </property>
-                   <property name="rightMargin">
-                    <number>0</number>
-                   </property>
-                   <property name="bottomMargin">
-                    <number>0</number>
-                   </property>
-                   <item>
-                    <widget class="QLabel" name="label_4">
-                     <property name="text">
-                      <string>Response Function Selection</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QComboBox" name="RFSelection">
-                     <property name="maximumSize">
-                      <size>
-                       <width>60</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <item>
-                      <property name="text">
-                       <string>Auto</string>
-                      </property>
-                     </item>
-                     <item>
-                      <property name="text">
-                       <string>Manual</string>
-                      </property>
-                     </item>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QWidget" name="ODFSelection" native="true">
-                     <layout class="QHBoxLayout" name="horizontalLayout_15">
-                      <property name="spacing">
-                       <number>0</number>
-                      </property>
-                      <property name="leftMargin">
-                       <number>7</number>
-                      </property>
-                      <property name="topMargin">
-                       <number>0</number>
-                      </property>
-                      <property name="rightMargin">
-                       <number>0</number>
-                      </property>
-                      <property name="bottomMargin">
-                       <number>0</number>
-                      </property>
-                      <item>
-                       <widget class="QLabel" name="label_10">
-                        <property name="minimumSize">
-                         <size>
-                          <width>20</width>
-                          <height>0</height>
-                         </size>
-                        </property>
-                        <property name="maximumSize">
-                         <size>
-                          <width>60</width>
-                          <height>16777215</height>
-                         </size>
-                        </property>
-                        <property name="text">
-                         <string>at (x,y,z)=</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QSpinBox" name="x">
-                        <property name="maximumSize">
-                         <size>
-                          <width>35</width>
-                          <height>16777215</height>
-                         </size>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QSpinBox" name="y">
-                        <property name="maximumSize">
-                         <size>
-                          <width>35</width>
-                          <height>16777215</height>
-                         </size>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QSpinBox" name="z">
-                        <property name="maximumSize">
-                         <size>
-                          <width>35</width>
-                          <height>16777215</height>
-                         </size>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <spacer name="horizontalSpacer_3">
-                        <property name="orientation">
-                         <enum>Qt::Horizontal</enum>
-                        </property>
-                        <property name="sizeHint" stdset="0">
-                         <size>
-                          <width>40</width>
-                          <height>20</height>
-                         </size>
-                        </property>
-                       </spacer>
-                      </item>
-                     </layout>
-                    </widget>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item>
             <widget class="QGroupBox" name="ODFOption">
              <property name="title">
               <string>Others</string>
@@ -1663,7 +1126,7 @@
      <x>0</x>
      <y>0</y>
      <width>731</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1688,6 +1151,7 @@
     <addaction name="actionFlip_xz"/>
     <addaction name="actionFlip_yz"/>
     <addaction name="separator"/>
+    <addaction name="actionRotate_to_MNI"/>
     <addaction name="actionRotate"/>
     <addaction name="actionTrim_image"/>
     <addaction name="actionManual_Rotation"/>
@@ -1808,6 +1272,11 @@
   <action name="actionImage_upsample_to_T1W_TESTING">
    <property name="text">
     <string>Image upsample to T1W (TESTING)...</string>
+   </property>
+  </action>
+  <action name="actionRotate_to_MNI">
+   <property name="text">
+    <string>Rotate to MNI...</string>
    </property>
   </action>
  </widget>

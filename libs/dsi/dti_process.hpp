@@ -28,7 +28,7 @@ public:
     virtual void init(Voxel& voxel)
     {
         voxel.fib_fa.clear();
-        voxel.fib_fa.resize(voxel.dim.size());
+        voxel.fib_fa.resize(voxel.dim);
         voxel.fib_dir.clear();
         voxel.fib_dir.resize(voxel.dim.size()*3);
         if(voxel.output_diffusivity || voxel.method_id == 1)

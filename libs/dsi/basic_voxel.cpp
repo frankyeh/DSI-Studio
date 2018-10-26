@@ -82,6 +82,7 @@ void Voxel::load_from_src(ImageModel& image_model)
             bvectors.push_back(image_model.src_bvectors[sorted_index[i]]);
             dwi_data.push_back(image_model.src_dwi_data[sorted_index[i]]);
         }
+
     if(image_model.has_image_rotation)
         for (unsigned int index = 0;index < bvectors.size();++index)
             {
@@ -90,6 +91,7 @@ void Voxel::load_from_src(ImageModel& image_model)
                 tmp.normalize();
                 bvectors[index] = tmp;
             }
+
 }
 
 

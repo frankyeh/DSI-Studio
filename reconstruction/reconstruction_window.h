@@ -49,10 +49,7 @@ private:
 private slots:
     void on_QSDR_toggled(bool checked);
     void on_GQI_toggled(bool checked);
-    void on_QBI_toggled(bool checked);
-    void on_DSI_toggled(bool checked);
     void on_DTI_toggled(bool checked);
-    void on_DDI_toggled(bool checked);
     void on_load_mask_clicked();
     void on_save_mask_clicked();
     void on_thresholding_clicked();
@@ -67,8 +64,6 @@ private slots:
     void on_zoom_in_clicked();
     void on_zoom_out_clicked();
     void on_manual_reg_clicked();
-    void on_odf_sharpening_currentIndexChanged(int index);
-    void on_RFSelection_currentIndexChanged(int index);
     void on_AdvancedOptions_clicked();
     void on_actionSave_4D_nifti_triggered();
     void on_actionSave_b_table_triggered();
@@ -83,7 +78,6 @@ private slots:
     void on_actionRotate_triggered();
     void on_delete_2_clicked();
     void on_actionTrim_image_triggered();
-    void on_diffusion_sampling_valueChanged(double arg1);
     void on_SlicePos_valueChanged(int value);
     void on_motion_correction_clicked();
     void on_scheme_balance_toggled(bool checked);
@@ -97,6 +91,7 @@ private slots:
     void on_actionEnable_TEST_features_triggered();
     void on_actionImage_upsample_to_T1W_TESTING_triggered();
     void on_open_ddi_study_src_clicked();
+    void on_actionRotate_to_MNI_triggered();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

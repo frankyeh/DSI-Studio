@@ -94,7 +94,7 @@ int rec(void)
     std::cout << "method=" << method_index << std::endl;
 
     if(method_index == 0) // DSI
-        handle->voxel.param[0] = 17.0f;
+        handle->voxel.param[0] = 17.0f;// Hamming filter
     if(method_index == 2)
     {
         handle->voxel.param[0] = 5.0f;
@@ -102,8 +102,8 @@ int rec(void)
     }
     if(method_index == 3) // QBI-SH
     {
-        handle->voxel.param[0] = 0.006f;
-        handle->voxel.param[1] = 8.0f;
+        handle->voxel.param[0] = 0.006f; // Regularization
+        handle->voxel.param[1] = 8.0f; // SH order
     }
     if(method_index == 4)
         handle->voxel.param[0] = 1.2f;
@@ -115,23 +115,10 @@ int rec(void)
     }
     if(method_index == 7) // QSDR
         handle->voxel.param[0] = 1.25f;
-    if(method_index == 8) // DDI
+    if(po.has("study_src")) // DDI
     {
-        if (!po.has("study_src"))
-        {
-            std::cout << "No study SRC assigned for DDI." << std::endl;
-            return 1;
-        }
-        std::string study_file_name = po.get("study_src");
-        std::cout << "loading study src..." << std::endl;
-        std::shared_ptr<ImageModel> study_src(new ImageModel);
-        if (!study_src->load_from_file(study_file_name.c_str()))
-        {
-            std::cout << "Load src file failed:" << study_src->error_msg << std::endl;
-            return 1;
-        }
-        handle->study_src = study_src;
-        handle->voxel.study_name = QFileInfo(study_file_name.c_str()).baseName().toStdString();
+        handle->voxel.study_src_file_path = po.get("study_src");
+        std::cout << "Comparison src=" << handle->voxel.study_src_file_path << std::endl;
     }
     if(po.get("deconvolution",int(0)))
     {

@@ -5,11 +5,11 @@
 #include <QApplication>
 #include <QDir>
 
-extern std::string fa_template_file_name;
+extern std::string qa_template_1mm;
 bool fa_template::load_from_file(void)
 {
     gz_nifti read;
-    if(read.load_from_file(fa_template_file_name.c_str()))
+    if(read.load_from_file(qa_template_1mm.c_str()))
     {
         read.toLPS(I);
         read.get_image_transformation(tran);
@@ -25,7 +25,7 @@ bool fa_template::load_from_file(void)
         return true;
     }
     error_msg = "Failed to load template file at ";
-    error_msg += fa_template_file_name;
+    error_msg += qa_template_1mm;
     return false;
 }
 

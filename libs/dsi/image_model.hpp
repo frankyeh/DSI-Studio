@@ -247,6 +247,7 @@ public:
     std::shared_ptr<ImageModel> study_src;
     void calculate_dwi_sum(void);
     void remove(unsigned int index);
+    void pre_dti(void);
     std::string check_b_table(void);
 public:
     std::vector<unsigned int> shell;
@@ -257,6 +258,7 @@ public:
     bool is_multishell(void);
     void get_report(std::string& report);
 public:
+    float bad_slice_count(void);
     float quality_control_neighboring_dwi_corr(void);
     bool is_human_data(void) const;
     void flip_b_table(const unsigned char* order);
@@ -267,6 +269,7 @@ public:
     void rotate(const tipl::image<float,3>& ref,
                 const tipl::transformation_matrix<double>& affine,
                 bool super_resolution = false);
+    bool rotate_to_mni(void);
     void trim(void);
     void distortion_correction(const ImageModel& rhs);
     bool compare_src(const char* file_name);
@@ -293,6 +296,8 @@ public:
     bool reconstruct(void)
     {
         begin_prog("reconstruction");
+        // Copy SRC b-table to voxel b-table and sort it
+        voxel.load_from_src(*this);
         voxel.CreateProcesses<ProcessType>();
         voxel.init();
         voxel.run();
