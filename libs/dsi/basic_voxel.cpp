@@ -59,6 +59,8 @@ void Voxel::load_from_src(ImageModel& image_model)
     std::sort(sorted_index.begin(),sorted_index.end(),
               [&image_model](int left,int right)
     {
+        if((int)image_model.src_bvalues[left]/400 == (int)image_model.src_bvalues[right]/400)
+            return image_model.src_bvectors[left] < image_model.src_bvectors[right];
         return image_model.src_bvalues[left] < image_model.src_bvalues[right];
     }
     );

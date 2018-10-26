@@ -114,7 +114,7 @@ void show_slice_at(QGraphicsScene& scene,tipl::image<float,2>& tmp,tipl::color_i
 void show_slice_at(QGraphicsScene& scene,const tipl::image<float,3>& source,tipl::color_image& buf,int slice_pos,float ratio)
 {
     tipl::image<float,2> tmp;
-    tipl::reslicing(source,tmp,2,slice_pos);
+    tipl::volume2slice(source,tmp,2,slice_pos);
     show_slice_at(scene,tmp,buf,ratio);
 }
 

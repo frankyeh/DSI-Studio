@@ -653,7 +653,7 @@ void fib_data::get_slice(unsigned int view_index,
     {
         {
             tipl::image<float,2> buf;
-            tipl::reslicing(view_item[0].image_data, buf, d_index, pos);
+            tipl::volume2slice(view_item[0].image_data, buf, d_index, pos);
             v2c.convert(buf,show_image);
         }
 
@@ -664,7 +664,7 @@ void fib_data::get_slice(unsigned int view_index,
                       view_item[view_index].color_map_buf.end(),0);
         }
         tipl::image<unsigned int,2> buf;
-        tipl::reslicing(view_item[view_index].color_map_buf, buf, d_index, pos);
+        tipl::volume2slice(view_item[view_index].color_map_buf, buf, d_index, pos);
         for (unsigned int index = 0;index < buf.size();++index)
         {
             const float* d = dir.get_dir(buf[index],0);
@@ -676,7 +676,7 @@ void fib_data::get_slice(unsigned int view_index,
     else
     {
         tipl::image<float,2> buf;
-        tipl::reslicing(view_item[view_index].image_data, buf, d_index, pos);
+        tipl::volume2slice(view_item[view_index].image_data, buf, d_index, pos);
         v2c.convert(buf,show_image);
     }
 

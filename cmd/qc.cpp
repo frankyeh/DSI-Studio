@@ -46,7 +46,7 @@ std::string quality_check_src_files(QString dir)
         // calculate neighboring DWI correlation
         out << handle.quality_control_neighboring_dwi_corr() << "\t";
 
-        out << handle.bad_slice_count() << "\t";
+        out << handle.get_bad_slices().size() << "\t";
 
         out << std::endl;
     }

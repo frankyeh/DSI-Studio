@@ -153,8 +153,8 @@ void reconstruction_window::update_dimension(void)
 {
     ui->SlicePos->setRange(0,handle->voxel.dim[2]-1);
     ui->SlicePos->setValue((handle->voxel.dim[2]-1) >> 1);
-    ui->z_pos->setRange(0,handle->voxel.dim[2]-1);
-    ui->z_pos->setValue((handle->voxel.dim[2]-1) >> 1);
+    ui->z_pos->setRange(0,handle->voxel.dim[view_orientation]-1);
+    ui->z_pos->setValue((handle->voxel.dim[view_orientation]-1) >> 1);
     source_ratio = std::max(1.0,500/(double)handle->voxel.dim.height());
 }
 
@@ -174,15 +174,15 @@ void reconstruction_window::load_b_table(void)
 void reconstruction_window::on_b_table_itemSelectionChanged()
 {
     v2c.set_range(ui->min_value->value(),ui->max_value->value());
-    tipl::image<float,2> tmp(tipl::geometry<2>(handle->voxel.dim[0],handle->voxel.dim[1]));
-    unsigned int b_index = ui->b_table->currentRow();
-    std::copy(handle->src_dwi_data[b_index] + ui->z_pos->value()*tmp.size(),
-              handle->src_dwi_data[b_index] + ui->z_pos->value()*tmp.size() + tmp.size(),tmp.begin());
+    tipl::image<float,2> tmp;
+    tipl::volume2slice(tipl::make_image(handle->src_dwi_data[ui->b_table->currentRow()],handle->voxel.dim),tmp,view_orientation,ui->z_pos->value());
     buffer_source.resize(tmp.geometry());
     for(int i = 0;i < tmp.size();++i)
         buffer_source[i] = v2c[tmp[i]];
     source_image = QImage((unsigned char*)&*buffer_source.begin(),tmp.width(),tmp.height(),QImage::Format_RGB32).
                     scaled(tmp.width()*source_ratio,tmp.height()*source_ratio);
+    if(view_orientation != 2)
+        source_image = source_image.mirrored();
     show_view(source,source_image);
 }
 
@@ -1007,4 +1007,28 @@ void reconstruction_window::on_actionRotate_to_MNI_triggered()
     update_image();
     update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
+}
+
+void reconstruction_window::on_SagView_clicked()
+{
+    view_orientation = 0;
+    ui->z_pos->setRange(0,handle->voxel.dim[view_orientation]-1);
+    ui->z_pos->setValue((handle->voxel.dim[view_orientation]-1) >> 1);
+    on_b_table_itemSelectionChanged();
+}
+
+void reconstruction_window::on_CorView_clicked()
+{
+    view_orientation = 1;
+    ui->z_pos->setRange(0,handle->voxel.dim[view_orientation]-1);
+    ui->z_pos->setValue((handle->voxel.dim[view_orientation]-1) >> 1);
+    on_b_table_itemSelectionChanged();
+}
+
+void reconstruction_window::on_AxiView_clicked()
+{
+    view_orientation = 2;
+    ui->z_pos->setRange(0,handle->voxel.dim[view_orientation]-1);
+    ui->z_pos->setValue((handle->voxel.dim[view_orientation]-1) >> 1);
+    on_b_table_itemSelectionChanged();
 }

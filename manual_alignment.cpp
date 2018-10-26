@@ -202,8 +202,8 @@ void manual_alignment::slice_pos_moved()
     for(unsigned char dim = 0;dim < 3;++dim)
     {
         tipl::image<float,2> slice,slice2;
-        tipl::reslicing(warped_from,slice,dim,slice_pos[dim]);
-        tipl::reslicing(to,slice2,dim,slice_pos[dim]);
+        tipl::volume2slice(warped_from,slice,dim,slice_pos[dim]);
+        tipl::volume2slice(to,slice2,dim,slice_pos[dim]);
         buffer[dim].resize(slice.geometry());
         for (unsigned int index = 0; index < slice.size(); ++index)
         {

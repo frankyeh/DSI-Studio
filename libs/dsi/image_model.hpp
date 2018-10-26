@@ -258,7 +258,7 @@ public:
     bool is_multishell(void);
     void get_report(std::string& report);
 public:
-    float bad_slice_count(void);
+    std::vector<std::pair<int,int> > get_bad_slices(void);
     float quality_control_neighboring_dwi_corr(void);
     bool is_human_data(void) const;
     void flip_b_table(const unsigned char* order);

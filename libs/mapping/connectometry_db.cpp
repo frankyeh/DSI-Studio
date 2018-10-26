@@ -447,7 +447,7 @@ void connectometry_db::get_subject_slice(unsigned int subject_index,unsigned cha
                         tipl::image<float,2>& slice) const
 {
     tipl::image<unsigned int,2> tmp;
-    tipl::reslicing(vi2si, tmp, dim, pos);
+    tipl::volume2slice(vi2si, tmp, dim, pos);
     slice.clear();
     slice.resize(tmp.geometry());
     for(unsigned int index = 0;index < slice.size();++index)

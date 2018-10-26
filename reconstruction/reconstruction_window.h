@@ -38,6 +38,7 @@ private:
     tipl::color_image buffer;
     QImage slice_image;
     tipl::value_to_color<float> v2c;
+    char view_orientation = 2;
 private:
     Ui::reconstruction_window *ui;
     std::auto_ptr<ImageModel> handle;
@@ -92,6 +93,9 @@ private slots:
     void on_actionImage_upsample_to_T1W_TESTING_triggered();
     void on_open_ddi_study_src_clicked();
     void on_actionRotate_to_MNI_triggered();
+    void on_SagView_clicked();
+    void on_CorView_clicked();
+    void on_AxiView_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H
