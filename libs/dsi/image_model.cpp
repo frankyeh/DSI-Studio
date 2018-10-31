@@ -280,7 +280,7 @@ std::vector<std::pair<int,int> > ImageModel::get_bad_slices(void)
 
     std::vector<std::pair<int,int> > result;
 
-    auto arg = tipl::arg_sort(sum,std::less<>());
+    auto arg = tipl::arg_sort(sum,std::less<float>());
     //tipl::image<float,3> bad_I(tipl::geometry<3>(voxel.dim[0],voxel.dim[1],bad_i.size()));
     for(int i = 0,out_pos = 0;i < bad_i.size();++i,out_pos += voxel.dim.plane_size())
     {
