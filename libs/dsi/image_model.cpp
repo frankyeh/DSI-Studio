@@ -1084,7 +1084,8 @@ bool ImageModel::compare_src(const char* file_name)
 
     tipl::par_for(src_dwi_data.size(),[&](int i)
     {
-        tipl::filter::gaussian(tipl::make_image((unsigned short*)src_dwi_data[i],voxel.dim));
+        auto I = tipl::make_image((unsigned short*)src_dwi_data[i],voxel.dim);
+        tipl::filter::gaussian(I);
     });
 
 

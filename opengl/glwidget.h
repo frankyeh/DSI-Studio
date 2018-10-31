@@ -9,7 +9,7 @@
 #ifdef __APPLE__
 #include <OpenGL/glu.h>
 #else
-#include <GL/glu.h>
+#include <gl/GLU.h>
 #endif
 #include "tracking/region/RegionModel.h"
 #include "tracking/tracking_window.h"

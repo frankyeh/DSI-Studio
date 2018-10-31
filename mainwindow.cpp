@@ -8,6 +8,7 @@
 #include <QProgressDialog>
 #include <QDragEnterEvent>
 #include <QMimeData>
+#include <QAction>
 #include <regtoolbox.h>
 #include <qmessagebox.h>
 #include "filebrowser.h"

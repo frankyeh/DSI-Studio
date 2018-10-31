@@ -210,6 +210,10 @@ bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
         bvec_name.push_back(path + "bvecs");
         bvec_name.push_back(path + "bvec");
     }
+    for(int i = bval_name.size()-1;i >= 0;--i)
+        bval_name.push_back(bval_name[i] + ".txt");
+    for(int i = bvec_name.size()-1;i >= 0;--i)
+        bvec_name.push_back(bvec_name[i] + ".txt");
 
     for(int i = 0;i < bval_name.size();++i)
         if(QFileInfo(bval_name[i]).exists())
@@ -223,7 +227,6 @@ bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
             bvec = bvec_name[i];
             break;
         }
-
     return QFileInfo(bval).exists() && QFileInfo(bvec).exists();
 }
 
