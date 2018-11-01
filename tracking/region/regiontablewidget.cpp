@@ -257,11 +257,11 @@ void RegionTableWidget::draw_region(tipl::color_image& I)
             {
                 unsigned int cur_color = checked_regions[roi_index]->show_region.color;
                 if(checked_regions[roi_index]->resolution_ratio == 1)
-                tipl::par_for(regions[roi_index]->size(),[&](unsigned int index)
+                tipl::par_for(checked_regions[roi_index]->size(),[&](unsigned int index)
                 {
-                    tipl::pixel_index<3> pindex(regions[roi_index]->region[index][0],
-                                                 regions[roi_index]->region[index][1],
-                                                 regions[roi_index]->region[index][2],buf.geometry());
+                    tipl::pixel_index<3> pindex(checked_regions[roi_index]->region[index][0],
+                                                 checked_regions[roi_index]->region[index][1],
+                                                 checked_regions[roi_index]->region[index][2],buf.geometry());
                     if(pindex.index() >= buf.size())
                         return;
                     buf[pindex.index()] = cur_color;
