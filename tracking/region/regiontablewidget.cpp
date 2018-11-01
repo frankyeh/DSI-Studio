@@ -12,11 +12,9 @@
 #include "qcolorcombobox.h"
 #include "ui_tracking_window.h"
 #include "mapping/atlas.hpp"
-#include "mapping/fa_template.hpp"
 #include "opengl/glwidget.h"
 #include "libs/tracking/fib_data.hpp"
 #include "libs/tracking/tracking_thread.hpp"
-extern fa_template fa_template_imp;
 
 
 void split(std::vector<std::string>& list,const std::string& input, const std::string& regex) {
@@ -221,13 +219,7 @@ void RegionTableWidget::draw_region(tipl::color_image& I)
 {
     auto current_slice = cur_tracking_window.current_slice;
     int slice_pos = current_slice->slice_pos[cur_tracking_window.cur_dim];
-    std::vector<std::shared_ptr<ROIRegion> > checked_regions;
-    for (unsigned int roi_index = 0;roi_index < regions.size();++roi_index)
-    {
-        if (item(roi_index,0)->checkState() != Qt::Checked)
-            continue;
-        checked_regions.push_back(regions[roi_index]);
-    }
+    auto checked_regions = get_checked_regions();
     if(checked_regions.empty())
         return;
     if(current_slice->is_diffusion_space)
@@ -403,14 +395,12 @@ void RegionTableWidget::draw_mosaic_region(QImage& qimage,unsigned int mosaic_si
         shift_y[z] = geo[1]*(z/mosaic_size);
     }
 
-    for (unsigned int roi_index = 0;roi_index < regions.size();++roi_index)
+    for_each_checked_region([&](std::shared_ptr<ROIRegion> region)
     {
-        if (item(roi_index,0)->checkState() != Qt::Checked)
-            continue;
-        unsigned int cur_color = regions[roi_index]->show_region.color;
-        for (unsigned int index = 0;index < regions[roi_index]->size();++index)
+        unsigned int cur_color = region->show_region.color;
+        for (unsigned int index = 0;index < region->size();++index)
         {
-            tipl::vector<3,short> p = regions[roi_index]->get_region_voxel(index);
+            tipl::vector<3,short> p = region->get_region_voxel(index);
             if(p[2] != ((p[2] / skip) * skip))
                 continue;
             p[0] += shift_x[p[2] / skip];
@@ -419,7 +409,7 @@ void RegionTableWidget::draw_mosaic_region(QImage& qimage,unsigned int mosaic_si
                 continue;
             qimage.setPixel(p[0],p[1],(unsigned int)qimage.pixel(p[0],p[1]) | cur_color);
         }
-    }
+    });
 }
 
 void RegionTableWidget::new_region(void)
@@ -1108,6 +1098,35 @@ void RegionTableWidget::do_action(QString action)
     {
         ROIRegion& cur_region = *regions[k];
         cur_region.perform(action.toStdString());
+        if(action == "A-B" || action == "B-A" || action == "A*B")
+        {
+            auto checked_regions = get_checked_regions();
+            if(checked_regions.size() != 2)
+                return;
+            tipl::image<unsigned char, 3> A,B;
+            checked_regions[0]->SaveToBuffer(A, 1);
+            checked_regions[1]->SaveToBuffer(B, 1);
+            if(action == "A-B")
+            {
+                for(int i = 0;i < A.size();++i)
+                    if(B[i])
+                        A[i] = 0;
+                checked_regions[0]->LoadFromBuffer(A);
+            }
+            if(action == "B-A")
+            {
+                for(int i = 0;i < A.size();++i)
+                    if(A[i])
+                        B[i] = 0;
+                checked_regions[1]->LoadFromBuffer(B);
+            }
+            if(action == "A*B")
+            {
+                for(int i = 0;i < A.size();++i)
+                    A[i] = (A[i] & B[i]);
+                checked_regions[0]->LoadFromBuffer(A);
+            }
+        }
         if(action == "threshold")
         {
             tipl::image<unsigned char, 3>mask;

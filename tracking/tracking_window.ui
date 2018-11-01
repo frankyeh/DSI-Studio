@@ -698,6 +698,9 @@
      <addaction name="actionDefragment"/>
      <addaction name="actionThreshold"/>
      <addaction name="actionSeparate"/>
+     <addaction name="actionA_B"/>
+     <addaction name="actionB_A"/>
+     <addaction name="actionAB"/>
     </widget>
     <widget class="QMenu" name="menuMove_Region">
      <property name="title">
@@ -1493,6 +1496,22 @@ Tracking</string>
         <widget class="Line" name="line">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="all_edit">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>24</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>All</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -3245,6 +3264,21 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Open MNI Region...</string>
+   </property>
+  </action>
+  <action name="actionA_B">
+   <property name="text">
+    <string>A-B</string>
+   </property>
+  </action>
+  <action name="actionB_A">
+   <property name="text">
+    <string>B-A</string>
+   </property>
+  </action>
+  <action name="actionAB">
+   <property name="text">
+    <string>A*B</string>
    </property>
   </action>
  </widget>

@@ -40,6 +40,27 @@ private:
     void do_action(QString action);
     void whole_brain_points(std::vector<tipl::vector<3,short> >& points);
     bool load_multiple_roi_nii(QString file_name);
+private:
+    template<typename func>
+    void for_each_checked_region(func fun)
+    {
+        for (unsigned int roi_index = 0;roi_index < regions.size();++roi_index)
+        {
+            if (item(roi_index,0)->checkState() != Qt::Checked)
+                continue;
+            fun(regions[roi_index]);
+        }
+    }
+    std::vector<std::shared_ptr<ROIRegion> > get_checked_regions(void)
+    {
+        std::vector<std::shared_ptr<ROIRegion> > checked_regions;
+        for_each_checked_region([&](std::shared_ptr<ROIRegion> region)
+        {
+            checked_regions.push_back(region);
+        });
+        return checked_regions;
+    }
+
 signals:
     void need_update(void);
 public:
@@ -56,13 +77,24 @@ public:
     void set_whole_brain(ThreadData* data);
     void setROIs(ThreadData* data);
     QString getROIname(void);
-    template<typename value_type>
-    void add_points(std::vector<tipl::vector<3,value_type> >& points,bool erase,float resolution = 1.0)
+    template<typename type>
+    void add_points(std::vector<tipl::vector<3,type> >& points,bool erase,bool all,float resolution = 1.0)
     {
         if (currentRow() < 0 || currentRow() >= regions.size())
             return;
-        regions[currentRow()]->add_points(points,erase,resolution);
+        if(all)
+        {
+            auto regions = get_checked_regions();
+            tipl::par_for(regions.size(),[&](int i)
+            {
+                std::vector<tipl::vector<3,type> > p = points;
+                regions[i]->add_points(p,erase,resolution);
+            });
+        }
+        else
+            regions[currentRow()]->add_points(points,erase,resolution);
     }
+
     QString output_format(void);
 public slots:
     void draw_region(tipl::color_image& I);
@@ -108,6 +140,9 @@ public slots:
     void action_shiftnz(void){do_action("shiftnz");}
     void action_threshold(void){new_region();do_action("threshold");}
     void action_separate(void){do_action("separate");}
+    void action_A_B(void){do_action("A-B");}
+    void action_B_A(void){do_action("B-A");}
+    void action_AB(void){do_action("A*B");}
 };
 
 #endif // REGIONTABLEWIDGET_H

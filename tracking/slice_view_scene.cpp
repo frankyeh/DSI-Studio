@@ -563,8 +563,8 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
             {
                 find_region = true;
                 cur_tracking_window.regionWidget->selectRow(index);
-                std::vector<tipl::vector<3,short> > dummy;
-                cur_tracking_window.regionWidget->add_points(dummy,true); // create a undo point
+                std::vector<tipl::vector<3,float> > dummy;
+                cur_tracking_window.regionWidget->add_points(dummy,true,false); // create a undo point
                 break;
             }
         if(!find_region)
@@ -905,7 +905,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         });
     }
 
-    cur_tracking_window.regionWidget->add_points(points,mouseEvent->button() == Qt::RightButton,resolution);
+    cur_tracking_window.regionWidget->add_points(points,mouseEvent->button() == Qt::RightButton,cur_tracking_window.ui->all_edit->isChecked(),resolution);
     need_update();
 }
 

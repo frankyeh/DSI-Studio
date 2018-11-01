@@ -223,6 +223,9 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionNegate,SIGNAL(triggered()),regionWidget,SLOT(action_negate()));
         connect(ui->actionDefragment,SIGNAL(triggered()),regionWidget,SLOT(action_defragment()));
         connect(ui->actionSeparate,SIGNAL(triggered()),regionWidget,SLOT(action_separate()));
+        connect(ui->actionA_B,SIGNAL(triggered()),regionWidget,SLOT(action_A_B()));
+        connect(ui->actionB_A,SIGNAL(triggered()),regionWidget,SLOT(action_B_A()));
+        connect(ui->actionAB,SIGNAL(triggered()),regionWidget,SLOT(action_AB()));
 
         connect(ui->actionMerge_All_2,SIGNAL(triggered()),regionWidget,SLOT(merge_all()));
 
@@ -787,7 +790,7 @@ void tracking_window::on_actionEndpoints_to_seeding_triggered()
     regionWidget->add_region(
             tractWidget->item(tractWidget->currentRow(),0)->text()+
             QString(" end points"),roi_id);
-    regionWidget->add_points(points,false,1.0);
+    regionWidget->add_points(points,false,false,1.0);
     scene.show_slice();
     glWidget->updateGL();
 }
@@ -802,7 +805,7 @@ void tracking_window::on_actionTracts_to_seeds_triggered()
         return;
     regionWidget->add_region(
             tractWidget->item(tractWidget->currentRow(),0)->text(),roi_id);
-    regionWidget->add_points(points,false,1.0);
+    regionWidget->add_points(points,false,false,1.0);
     scene.show_slice();
     glWidget->updateGL();
 }
