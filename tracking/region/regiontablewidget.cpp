@@ -142,7 +142,12 @@ QColor RegionTableWidget::currentRowColor(void)
 }
 void RegionTableWidget::add_region_from_atlas(atlas& at,unsigned int label)
 {
+    float r = 1.0f;
     std::vector<tipl::vector<3,short> > points;
+    auto thread = std::async([&]
+    {
+        cur_tracking_window.handle->get_atlas_roi(at,label,points,r);
+    });
     std::string name = at.name;
     if(at.get_list().size() > 1)
     {
@@ -150,11 +155,10 @@ void RegionTableWidget::add_region_from_atlas(atlas& at,unsigned int label)
         name += at.get_list()[label];
     }
     add_region(name.c_str(),roi_id);
-    float r;
-    cur_tracking_window.handle->get_atlas_roi(at,label,points,r);
+    thread.wait();
     regions.back()->resolution_ratio = r;
     regions.back()->add_points(points,false,r);
-
+    QApplication::processEvents();
 }
 
 void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
@@ -169,7 +173,8 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
     regions.back()->show_region.color = color;
     regions.back()->regions_feature = feature;
     cur_tracking_window.scene.no_show = true;
-    setRowCount(regions.size());
+
+    insertRow(regions.size()-1);
 
     QTableWidgetItem *item0 = new QTableWidgetItem(name);
 
@@ -190,8 +195,8 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
 
     setRowHeight(regions.size()-1,22);
     setCurrentCell(regions.size()-1,0);
-    cur_tracking_window.scene.no_show = false;
 
+    cur_tracking_window.scene.no_show = false;
 }
 void RegionTableWidget::check_check_status(int row, int col)
 {

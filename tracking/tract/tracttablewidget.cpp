@@ -65,8 +65,7 @@ void TractTableWidget::addNewTracts(QString tract_name,bool checked)
 {
     thread_data.push_back(0);
     tract_models.push_back(new TractModel(cur_tracking_window.handle));
-
-    setRowCount(tract_models.size());
+    insertRow(tract_models.size()-1);
     QTableWidgetItem *item0 = new QTableWidgetItem(tract_name);
     item0->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
     setItem(tract_models.size()-1, 0, item0);

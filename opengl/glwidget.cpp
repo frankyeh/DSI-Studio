@@ -503,8 +503,6 @@ void CylinderGL(GLUquadricObj* ptr,const tipl::vector<3>& p1,const tipl::vector<
 void GLWidget::renderLR()
 {
     std::shared_ptr<SliceModel> current_slice = cur_tracking_window.current_slice;
-
-
     if (cur_tracking_window.handle->has_odfs() &&
         get_param("show_odf"))
     {
