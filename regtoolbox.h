@@ -61,8 +61,6 @@ private slots:
 
     void on_reg_method_currentIndexChanged(int index);
 
-    void on_actionRemove_Skull_triggered();
-
     void on_actionMatch_Intensity_triggered();
 
     void on_actionRemove_Background_triggered();

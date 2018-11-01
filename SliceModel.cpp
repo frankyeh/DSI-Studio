@@ -8,7 +8,6 @@
 #include "SliceModel.h"
 #include "prog_interface_static_link.h"
 #include "fib_data.hpp"
-#include "fa_template.hpp"
 
 SliceModel::SliceModel(std::shared_ptr<fib_data> handle_,int view_id_):handle(handle_),view_id(view_id_)
 {

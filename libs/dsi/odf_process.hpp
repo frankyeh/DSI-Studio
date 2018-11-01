@@ -4,10 +4,6 @@
 #include "basic_process.hpp"
 #include "basic_voxel.hpp"
 
-
-#include "mapping/fa_template.hpp"
-extern fa_template fa_template_imp;
-
 class ReadDWIData : public BaseProcess{
 public:
     virtual void init(Voxel&) {}

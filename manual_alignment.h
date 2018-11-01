@@ -22,6 +22,7 @@ public:
     QGraphicsScene scene[3];
     tipl::color_image buffer[3];
     QImage slice_image[3];
+    tipl::reg::reg_type reg_type;
 private:
     tipl::thread thread;
 private:
@@ -55,7 +56,6 @@ private slots:
 
     void on_save_warpped_clicked();
 
-    void on_reg_type_currentIndexChanged(int index);
 public slots:
     void on_rerun_clicked();
 private:

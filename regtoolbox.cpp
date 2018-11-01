@@ -6,9 +6,6 @@
 #include "libs/gzip_interface.hpp"
 #include "basic_voxel.hpp"
 
-#include "mapping/fa_template.hpp"
-extern fa_template fa_template_imp;
-
 
 void show_view(QGraphicsScene& scene,QImage I);
 RegToolBox::RegToolBox(QWidget *parent) :
@@ -407,27 +404,6 @@ void RegToolBox::on_reg_method_currentIndexChanged(int index)
     }
 }
 
-void RegToolBox::on_actionRemove_Skull_triggered()
-{
-    if(!It.empty())
-    {
-        tipl::vector<3> from(fa_template_imp.shift);
-        from[0] -= (int)fa_template_imp.I.width()+ItR[3]-(int)It.width();
-        from[1] -= (int)fa_template_imp.I.height()+ItR[7]-(int)It.height();
-        from[2] -= ItR[11];
-
-        It.for_each_mt([&](float& v,const tipl::pixel_index<3>& pos){
-           tipl::vector<3> p(pos);
-           p -= from;
-           p.round();
-           if(fa_template_imp.I.geometry().is_valid(p) && fa_template_imp.I.at(p[0],p[1],p[2]) > 0)
-               return;
-           v = 0.0f;
-        });
-    }
-
-    show_image();
-}
 
 void RegToolBox::on_actionMatch_Intensity_triggered()
 {

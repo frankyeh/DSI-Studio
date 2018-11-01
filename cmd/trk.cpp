@@ -10,7 +10,6 @@
 #include "libs/tracking/tracking_thread.hpp"
 #include "fib_data.hpp"
 #include "libs/gzip_interface.hpp"
-#include "mapping/fa_template.hpp"
 #include "mapping/atlas.hpp"
 #include "SliceModel.h"
 #include "vbc/vbc_database.h"

@@ -2,9 +2,6 @@
 #include "manual_alignment.h"
 #include "ui_manual_alignment.h"
 #include "tracking/tracking_window.h"
-#include "fa_template.hpp"
-
-
 
 void show_view(QGraphicsScene& scene,QImage I);
 
@@ -13,9 +10,9 @@ manual_alignment::manual_alignment(QWidget *parent,
                                    const tipl::vector<3>& from_vs_,
                                    tipl::image<float,3> to_,
                                    const tipl::vector<3>& to_vs_,
-                                   tipl::reg::reg_type reg_type,
+                                   tipl::reg::reg_type reg_type_,
                                    tipl::reg::cost_type cost_function) :
-    QDialog(parent),ui(new Ui::manual_alignment),from_vs(from_vs_),to_vs(to_vs_),timer(0)
+    QDialog(parent),ui(new Ui::manual_alignment),from_vs(from_vs_),to_vs(to_vs_),reg_type(reg_type_),timer(0)
 {
     from_original = from_;
     from.swap(from_);
@@ -170,14 +167,26 @@ void manual_alignment::param_changed()
     arg.rotation[1] = ui->ry->value();
     arg.rotation[2] = ui->rz->value();
 
-    arg.scaling[0] = ui->sx->value();
-    arg.scaling[1] = ui->sy->value();
-    arg.scaling[2] = ui->sz->value();
+    if(reg_type != tipl::reg::rigid_body) // not rigid body
+    {
+        arg.scaling[0] = ui->sx->value();
+        arg.scaling[1] = ui->sy->value();
+        arg.scaling[2] = ui->sz->value();
 
-    arg.affine[0] = ui->xy->value();
-    arg.affine[1] = ui->xz->value();
-    arg.affine[2] = ui->yz->value();
+        arg.affine[0] = ui->xy->value();
+        arg.affine[1] = ui->xz->value();
+        arg.affine[2] = ui->yz->value();
+    }
+    else
+    {
+        ui->sx->setValue(arg.scaling[0]);
+        ui->sy->setValue(arg.scaling[1]);
+        ui->sz->setValue(arg.scaling[2]);
 
+        ui->xy->setValue(arg.affine[0]);
+        ui->xz->setValue(arg.affine[1]);
+        ui->yz->setValue(arg.affine[2]);
+    }
     update_image();
     slice_pos_moved();
 }
@@ -259,19 +268,34 @@ void manual_alignment::on_buttonBox_rejected()
 void manual_alignment::on_rerun_clicked()
 {
     auto cost = ui->cost_type->currentIndex() == 0 ? tipl::reg::corr : tipl::reg::mutual_info;
-    auto reg = ui->reg_type->currentIndex() == 0 ? tipl::reg::rigid_body : tipl::reg::affine;
-    thread.run([this,cost,reg]()
+    reg_type = ui->reg_type->currentIndex() == 0 ? tipl::reg::rigid_body : tipl::reg::affine;
+    tipl::reg::get_bound(from,to,arg,b_upper,b_lower,ui->reg_type->currentIndex() == 0 ? tipl::reg::rigid_body : tipl::reg::affine);
+    if(reg_type == tipl::reg::rigid_body)
+    {
+        ui->scaling_group->setEnabled(false);
+        ui->tilting_group->setEnabled(false);
+        arg.scaling[0] = arg.scaling[1] = arg.scaling[2] = 1.0f;
+        arg.affine[0] = arg.affine[1] = arg.affine[2] = 0.0f;
+    }
+    else
+    {
+        ui->scaling_group->setEnabled(true);
+        ui->tilting_group->setEnabled(true);
+    }
+
+
+    thread.run([this,cost]()
     {
         if(cost == tipl::reg::mutual_info)
         {
-            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg,tipl::reg::mutual_information(),thread.terminated,0.1);
-            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg,tipl::reg::mutual_information(),thread.terminated,0.01);
+            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.1);
+            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.01);
         }
         else
         {
-            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg,tipl::reg::mt_correlation<tipl::image<float,3>,
+            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mt_correlation<tipl::image<float,3>,
                            tipl::transformation_matrix<double> >(0),thread.terminated,0.1);
-            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg,tipl::reg::mt_correlation<tipl::image<float,3>,
+            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mt_correlation<tipl::image<float,3>,
                            tipl::transformation_matrix<double> >(0),thread.terminated,0.01);
         }
 
@@ -302,18 +326,3 @@ void manual_alignment::on_save_warpped_clicked()
     nii.save_to_file(filename.toStdString().c_str());
 }
 
-void manual_alignment::on_reg_type_currentIndexChanged(int index)
-{
-    tipl::reg::get_bound(from,to,arg,b_upper,b_lower,
-                          ui->reg_type->currentIndex() == 0 ? tipl::reg::rigid_body : tipl::reg::affine);
-    if(index == 0) // rigid body
-    {
-        ui->scaling_group->hide();
-        ui->tilting_group->hide();
-    }
-    else
-    {
-        ui->scaling_group->show();
-        ui->tilting_group->show();
-    }
-}
