@@ -148,13 +148,7 @@ void RegionTableWidget::add_region_from_atlas(atlas& at,unsigned int label)
     {
         cur_tracking_window.handle->get_atlas_roi(at,label,points,r);
     });
-    std::string name = at.name;
-    if(at.get_list().size() > 1)
-    {
-        name += "_";
-        name += at.get_list()[label];
-    }
-    add_region(name.c_str(),roi_id);
+    add_region(at.get_list()[label].c_str(),roi_id);
     thread.wait();
     regions.back()->resolution_ratio = r;
     regions.back()->add_points(points,false,r);
@@ -202,6 +196,7 @@ void RegionTableWidget::check_check_status(int row, int col)
 {
     if (col != 0)
         return;
+    setCurrentCell(row,col);
     if (item(row,0)->checkState() == Qt::Checked)
     {
         if (item(row,0)->data(Qt::ForegroundRole) == QBrush(Qt::gray))
@@ -731,21 +726,29 @@ void RegionTableWidget::merge_all(void)
 
 void RegionTableWidget::check_all(void)
 {
+    cur_tracking_window.glWidget->no_update = true;
+    cur_tracking_window.scene.no_show = true;
     for(unsigned int row = 0;row < rowCount();++row)
     {
         item(row,0)->setCheckState(Qt::Checked);
         item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
     }
+    cur_tracking_window.scene.no_show = false;
+    cur_tracking_window.glWidget->no_update = false;
     emit need_update();
 }
 
 void RegionTableWidget::uncheck_all(void)
 {
+    cur_tracking_window.glWidget->no_update = true;
+    cur_tracking_window.scene.no_show = true;
     for(unsigned int row = 0;row < rowCount();++row)
     {
         item(row,0)->setCheckState(Qt::Unchecked);
         item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
     }
+    cur_tracking_window.scene.no_show = false;
+    cur_tracking_window.glWidget->no_update = false;
     emit need_update();
 }
 
@@ -1102,34 +1105,42 @@ void RegionTableWidget::do_action(QString action)
 
     {
         ROIRegion& cur_region = *regions[k];
-        cur_region.perform(action.toStdString());
+        if(cur_tracking_window.ui->all_edit->isChecked())
+            for_each_checked_region([&](std::shared_ptr<ROIRegion> region){region->perform(action.toStdString());});
+        else
+            cur_region.perform(action.toStdString());
+
+
         if(action == "A-B" || action == "B-A" || action == "A*B")
         {
             auto checked_regions = get_checked_regions();
-            if(checked_regions.size() != 2)
+            if(checked_regions.size() < 2)
                 return;
             tipl::image<unsigned char, 3> A,B;
             checked_regions[0]->SaveToBuffer(A, 1);
-            checked_regions[1]->SaveToBuffer(B, 1);
-            if(action == "A-B")
+            for(int r = 1;r < checked_regions.size();++r)
             {
-                for(int i = 0;i < A.size();++i)
-                    if(B[i])
-                        A[i] = 0;
-                checked_regions[0]->LoadFromBuffer(A);
-            }
-            if(action == "B-A")
-            {
-                for(int i = 0;i < A.size();++i)
-                    if(A[i])
-                        B[i] = 0;
-                checked_regions[1]->LoadFromBuffer(B);
-            }
-            if(action == "A*B")
-            {
-                for(int i = 0;i < A.size();++i)
-                    A[i] = (A[i] & B[i]);
-                checked_regions[0]->LoadFromBuffer(A);
+                checked_regions[r]->SaveToBuffer(B, 1);
+                if(action == "A-B")
+                {
+                    for(int i = 0;i < A.size();++i)
+                        if(B[i])
+                            A[i] = 0;
+                    checked_regions[0]->LoadFromBuffer(A);
+                }
+                if(action == "B-A")
+                {
+                    for(int i = 0;i < A.size();++i)
+                        if(A[i])
+                            B[i] = 0;
+                    checked_regions[r]->LoadFromBuffer(B);
+                }
+                if(action == "A*B")
+                {
+                    for(int i = 0;i < A.size();++i)
+                        B[i] = (A[i] & B[i]);
+                    checked_regions[r]->LoadFromBuffer(B);
+                }
             }
         }
         if(action == "threshold")
