@@ -33,9 +33,11 @@ public:
 class fiber_directions
 {
 public:
+    std::vector<std::vector<short> > findex_buf;
+    std::vector<std::vector<float> > fa_buf;
+public:
     std::vector<const float*> dir;
     std::vector<const short*> findex;
-    std::vector<std::vector<short> > findex_buf;
 public:
     std::vector<std::string> index_name;
     std::vector<std::vector<const float*> > index_data;
@@ -43,13 +45,13 @@ public:
 public:
     std::vector<const float*> fa;
     std::vector<tipl::vector<3,float> > odf_table;
-    std::vector<tipl::vector<3,unsigned short> > odf_faces;
+    std::vector<tipl::vector<3,short> > odf_faces;
     unsigned int num_fiber;
     unsigned int half_odf_size;
     std::string error_msg;
-private:
-    void check_index(unsigned int index);
+
 public:
+    void check_index(unsigned int index);
     bool add_data(gz_mat_read& mat_reader);
     bool set_tracking_index(int new_index);
     bool set_tracking_index(const std::string& name);

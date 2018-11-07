@@ -2,7 +2,7 @@
 #include <QFileInfo>
 #include "fib_data.hpp"
 #include "fa_template.hpp"
-
+#include "tessellated_icosahedron.hpp"
 
 extern std::vector<atlas> atlas_list;
 
@@ -420,7 +420,7 @@ bool tracking_data::is_white_matter(const tipl::vector<3,float>& pos,float t) co
 bool fib_data::load_from_file(const char* file_name)
 {
     tipl::image<float,3> I;
-    tipl::vector<3,float> vs;
+    tipl::vector<3,float> vs_;
     if(QFileInfo(file_name).completeSuffix() == "nii" ||
        QFileInfo(file_name).completeSuffix() == "nii.gz")
     {
@@ -430,8 +430,55 @@ bool fib_data::load_from_file(const char* file_name)
             error_msg = "Invalid NIFTI format";
             return false;
         }
-        header.toLPS(I);
-        header.get_voxel_size(vs);
+        if(header.dim(4) == 3)
+        {
+            tipl::image<float,3> x,y,z;
+            header.get_voxel_size(vs_);
+            header.toLPS(x,false);
+            header.toLPS(y,false);
+            header.toLPS(z,false);
+
+            dim = x.geometry();
+            vs = vs_;
+
+            dir.check_index(0);
+            dir.num_fiber = 1;
+            dir.findex_buf.resize(1);
+            dir.findex_buf[0].resize(x.size());
+            dir.findex[0] = &*(dir.findex_buf[0].begin());
+            dir.fa_buf.resize(1);
+            dir.fa_buf[0].resize(x.size());
+            dir.fa[0] = &*(dir.fa_buf[0].begin());
+
+            dir.index_name.push_back("fiber");
+            dir.index_data.push_back(dir.fa);
+            tessellated_icosahedron ti;
+            ti.init(8);
+            dir.odf_faces = ti.faces;
+            dir.odf_table = ti.vertices;
+            dir.half_odf_size = ti.half_vertices_count;
+            tipl::par_for(x.size(),[&](int i)
+            {
+                tipl::vector<3> v(-x[i],y[i],z[i]);
+                float length = v.length();
+                if(length == 0.0f)
+                    return;
+                v /= length;
+                dir.fa_buf[0][i] = length;
+                dir.findex_buf[0][i] = ti.discretize(v);
+            });
+
+            view_item.push_back(item());
+            view_item.back().name =  "fiber";
+            view_item.back().image_data = tipl::make_image(dir.fa[0],dim);
+            view_item.back().set_scale(dir.fa[0],dir.fa[0]+dim.size());
+            return true;
+        }
+        else
+        {
+            header.toLPS(I);
+            header.get_voxel_size(vs_);
+        }
     }
     else
     if(QFileInfo(file_name).fileName() == "2dseq")
@@ -443,12 +490,12 @@ bool fib_data::load_from_file(const char* file_name)
             return false;
         }
         bruker_header.get_image().swap(I);
-        bruker_header.get_voxel_size(vs);
+        bruker_header.get_voxel_size(vs_);
     }
     if(!I.empty())
     {
         mat_reader.add("dimension",I.geometry().begin(),3,1);
-        mat_reader.add("voxel_size",&*vs.begin(),3,1);
+        mat_reader.add("voxel_size",&*vs_.begin(),3,1);
         mat_reader.add("image",&*I.begin(),I.size(),1);
         load_from_mat();
         dir.index_name[0] = "image";
