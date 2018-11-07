@@ -199,7 +199,7 @@ int ana(void)
         if(po.has("region"))
         {
             std::string text = po.get("region");
-            std::regex reg("[;]");
+            std::regex reg("[,]");
             std::sregex_token_iterator first{text.begin(), text.end(),reg, -1},last;
             std::vector<std::string> roi_list = {first, last};
             for(int i = 0;i < roi_list.size();++i)

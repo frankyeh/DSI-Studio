@@ -217,7 +217,7 @@ int rec(void)
 
     if(po.has("other_image"))
     {
-        QStringList file_list = QString(po.get("other_image").c_str()).split(";");
+        QStringList file_list = QString(po.get("other_image").c_str()).split(":");
         for(unsigned int i = 0;i < file_list.size();++i)
         {
             QStringList name_value = file_list[i].split(",");
