@@ -389,6 +389,8 @@ void GLWidget::initializeGL()
 }
 void GLWidget::paintGL()
 {
+    if(no_update)
+        return;
     glDrawBuffer(GL_BACK);
     int color = get_param("bkg_color");
     qglClearColor(QColor((float)((color & 0x00FF0000) >> 16),
@@ -1721,7 +1723,7 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
 
     if(object_selected)
     {
-        cur_tracking_window.regionWidget->item(selected_index,0)->setCheckState(Qt::CheckState());
+        cur_tracking_window.regionWidget->setCurrentCell(selected_index,0);
         emit region_edited();
     }
 }
