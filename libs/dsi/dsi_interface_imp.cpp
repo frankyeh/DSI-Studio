@@ -278,8 +278,6 @@ const char* ImageModel::reconstruction(void)
                 break;
             }
 
-            voxel.recon_report <<
-            " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010) with a diffusion sampling length ratio of " << (float)voxel.param[0] << ".";
             if(voxel.output_rdi)
                 voxel.recon_report <<
                     " The restricted diffusion was quantified using restricted diffusion imaging (Yeh et al., MRM, 77:603–612 (2017)).";
@@ -291,7 +289,7 @@ const char* ImageModel::reconstruction(void)
                     return "Failed to load DDI study SRC file.";
 
                 // nonlinear part
-                if(1)
+                if(0)
                 {
                     bool terminated = false;
                     tipl::image<tipl::vector<3>,3> cdm_dis;
@@ -312,11 +310,14 @@ const char* ImageModel::reconstruction(void)
 
 
                 voxel.recon_report <<
-                " The diffusion data were compared with baseline scan using differential diffusion imaging"
+                " The diffusion data were compared with baseline scan using differential tractography with a diffusion sampling length ratio of "
                 << (float)voxel.param[0] << " to study neuronal change.";
 
                 out << ".df." << voxel.study_name << ".R" << (int)(voxel.R2*100.0f);
             }
+            else
+                voxel.recon_report <<
+                " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010) with a diffusion sampling length ratio of " << (float)voxel.param[0] << ".";
 
             if (voxel.odf_deconvolusion || voxel.odf_decomposition)
             {

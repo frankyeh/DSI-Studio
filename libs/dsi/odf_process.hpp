@@ -401,9 +401,9 @@ public:
                     float value2 = data.odf2[data.dir_index[index]];
                     float change = value2-value1;
                     if(change > 0.0f)
-                        qa_inc[index][data.voxel_index] = change;
+                        qa_inc[index][data.voxel_index] = change/data.fa[index];
                     else
-                        qa_dec[index][data.voxel_index] = -change;
+                        qa_dec[index][data.voxel_index] = -change/data.fa[index];
                 }
             data.odf = data.odf2;
             tipl::minus(data.odf,data.odf1);
@@ -443,11 +443,6 @@ public:
             }
             if(voxel.compare_voxel) // DDI
             {
-                for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-                {
-                    tipl::divide_constant(qa_inc[index],voxel.z0);
-                    tipl::divide_constant(qa_dec[index],voxel.z0);
-                }
                 output_anisotropy(mat_writer,"inc_qa",qa_inc);
                 output_anisotropy(mat_writer,"dec_qa",qa_dec);
 

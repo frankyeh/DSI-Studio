@@ -91,20 +91,20 @@ public:
             data.space[index] = voxel.compare_voxel->dwi_data[index][data.voxel_index];
 
         //temporarily store baseline odf here
-        tipl::minus_constant(data.odf,*std::min_element(data.odf.begin(),data.odf.end()));
         data.odf1 = data.odf;
+        tipl::minus_constant(data.odf1,*std::min_element(data.odf1.begin(),data.odf1.end()));
 
         bs.run(voxel,data);
         gr.run(voxel,data);
 
-        tipl::minus_constant(data.odf,*std::min_element(data.odf.begin(),data.odf.end()));
         data.odf2 = data.odf;
+        tipl::minus_constant(data.odf2,*std::min_element(data.odf2.begin(),data.odf2.end()));
 
         tipl::add(data.odf,data.odf1);
         tipl::multiply_constant(data.odf,0.5f);
-        float qa = *std::max_element(data.odf.begin(),data.odf.end());
-        if(qa > voxel.z0)
-            voxel.z0 = qa; // z0 is the maximum qa in the baseline
+        //float qa = *std::max_element(data.odf.begin(),data.odf.end());
+        //if(qa > voxel.z0)
+        //    voxel.z0 = qa; // z0 is the maximum qa in the baseline
 
     }
     virtual void end(Voxel&,gz_mat_write&) {}

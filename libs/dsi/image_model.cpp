@@ -1077,6 +1077,7 @@ bool ImageModel::compare_src(const char* file_name)
     voxel.compare_voxel = &(study_src->voxel);
 
     // spatial smoothing to reduce noise
+    /*
     tipl::par_for(study_src->new_dwi.size(),[&](int i)
     {
         tipl::filter::gaussian(study_src->new_dwi[i]);
@@ -1087,6 +1088,7 @@ bool ImageModel::compare_src(const char* file_name)
         auto I = tipl::make_image((unsigned short*)src_dwi_data[i],voxel.dim);
         tipl::filter::gaussian(I);
     });
+    */
 
 
     begin_prog("Registration between longitudinal scans");
@@ -1096,7 +1098,7 @@ bool ImageModel::compare_src(const char* file_name)
         check_prog(0,1);
         tipl::reg::two_way_linear_mr(dwi_sum,voxel.vs,
                                      study_src->dwi_sum,study_src->voxel.vs,
-                        arg,tipl::reg::rigid_body,tipl::reg::correlation(),terminated);
+                                        arg,tipl::reg::rigid_body,tipl::reg::correlation(),terminated);
         study_src->rotate(dwi_sum,arg);
         study_src->voxel.vs = voxel.vs;
         study_src->voxel.mask = voxel.mask;
@@ -1114,32 +1116,29 @@ bool ImageModel::compare_src(const char* file_name)
 
 
     // Signal match on b0 to allow for quantitative MRI in DDI
-    /*
     {
-        double a,b;
-        std::vector<float> x,y;
+        std::vector<double> r;
         for(int i = 0;i < voxel.mask.size();++i)
             if(voxel.mask[i])
             {
-                x.push_back(study_src->src_dwi_data[0][i]);
-                y.push_back(src_dwi_data[0][i]);
+                if(study_src->src_dwi_data[0][i] && src_dwi_data[0][i])
+                    r.push_back((float)src_dwi_data[0][i]/(float)study_src->src_dwi_data[0][i]);
             }
-        tipl::linear_regression(x.begin(),x.end(),y.begin(),a,b,voxel.R2);
-        if(0)
+
+        double median_r = tipl::median(r.begin(),r.end());
+        std::cout << "median_r=" << median_r << std::endl;
+        tipl::par_for(study_src->new_dwi.size(),[&](int i)
         {
-            std::cout << "y=" << a << "x+" << b << " r2=" << voxel.R2 << std::endl;
-            tipl::par_for(study_src->new_dwi.size(),[&](int i)
-            {
-                tipl::multiply_constant(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),a);
-                tipl::add_constant(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),b);
-                tipl::lower_threshold(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),0.0f);
-            });
-            study_src->calculate_dwi_sum();
-        }
+            tipl::multiply_constant(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),median_r);
+        });
+        study_src->calculate_dwi_sum();
     }
-    */
+
+
+
     // prepare FA maps
     pre_dti();
     study_src->pre_dti();
+    voxel.R2 = tipl::correlation(voxel.fib_fa.begin(),voxel.fib_fa.end(),study_src->voxel.fib_fa.begin());
     return true;
 }
