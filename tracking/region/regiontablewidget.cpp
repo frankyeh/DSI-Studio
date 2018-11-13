@@ -469,7 +469,7 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
     label_map.clear();
     label_color.clear();
     QString base_name = QFileInfo(file_name).baseName();
-    if(base_name == "aparc+aseg") // FreeSurfer
+    if(base_name.contains("aparc+aseg")) // FreeSurfer
     {
         if(!mute_cmd)
             std::cout << "Use freesurfer labels." << std::endl;
