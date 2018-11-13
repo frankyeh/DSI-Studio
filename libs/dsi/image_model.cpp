@@ -221,6 +221,13 @@ std::string ImageModel::check_b_table(void)
 std::vector<std::pair<int,int> > ImageModel::get_bad_slices(void)
 {
     voxel.load_from_src(*this);
+    std::vector<char> skip_slice(voxel.dim.depth());
+    for(int i = 0,pos = 0;i < skip_slice.size();++i,pos += voxel.dim.plane_size())
+        if(std::accumulate(voxel.mask.begin()+pos,voxel.mask.begin()+pos+voxel.dim.plane_size(),(int)0) < voxel.dim.plane_size()/16)
+            skip_slice[i] = 1;
+        else
+            skip_slice[i] = 0
+                    ;
     tipl::image<float,2> cor_values(tipl::geometry<2>(voxel.dwi_data.size(),voxel.dim.depth()));
 
     tipl::par_for(voxel.dwi_data.size(),[&](int index)
@@ -254,6 +261,7 @@ std::vector<std::pair<int,int> > ImageModel::get_bad_slices(void)
     for(int i = 0,pos = 0;i < voxel.dwi_data.size();++i)
     {
         for(int z = 0;z < voxel.dim.depth();++z,++pos)
+        if(!skip_slice[z])
         {
             // ignore the top and bottom slices
             if(z <= 1 || z + 2 >= voxel.dim.depth())
