@@ -216,7 +216,7 @@ struct TrackVis
             int n_point = tract_data[i].size()/3;
             std::vector<float> buffer(trk.n_scalars ? tract_data[i].size()+scalar[i].size() : tract_data[i].size());
             float* to = &*buffer.begin();
-            for (unsigned int flag = 0,j = 0,k = 0;j < tract_data[i].size() && (trk.n_scalars == 0 || k < scalar[i].size());++j,++to)
+            for (unsigned int flag = 0,j = 0,k = 0;j < tract_data[i].size();++j,++to)
             {
                 *to = tract_data[i][j]*vs[flag];
                 ++flag;
