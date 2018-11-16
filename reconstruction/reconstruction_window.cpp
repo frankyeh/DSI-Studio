@@ -16,7 +16,7 @@
 #include "gzip_interface.hpp"
 #include "manual_alignment.h"
 
-extern std::vector<std::string> fa_template_list;
+extern std::vector<std::string> fa_template_list,t1w_template_list;
 void show_view(QGraphicsScene& scene,QImage I);
 bool reconstruction_window::load_src(int index)
 {
@@ -41,15 +41,6 @@ bool reconstruction_window::load_src(int index)
     ui->min_value->setSingleStep(m*0.05f);
     ui->min_value->setValue(0.0f);
 
-    // load all templates for QSDR
-    if(!fa_template_list.empty())
-    {
-        for(int index = 0;index < fa_template_list.size();++index)
-            ui->template_box->addItem(QFileInfo(fa_template_list[index].c_str()).baseName());
-        ui->template_box->setCurrentIndex(0);
-    }
-    else
-        ui->template_box->hide();
 
 
     update_image();
@@ -110,8 +101,8 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->ThreadCount->setValue(settings.value("rec_thread_count",std::thread::hardware_concurrency()).toInt());
     ui->NumOfFibers->setValue(settings.value("rec_num_fiber",5).toInt());
     ui->ODFDef->setCurrentIndex(settings.value("rec_gqi_def",0).toInt());
-    ui->reg_method->setCurrentIndex(settings.value("rec_reg_method",0).toInt());
-
+    ui->reg_method->setCurrentIndex(settings.value("rec_reg_method",3).toInt());
+    on_reg_method_currentIndexChanged(settings.value("rec_reg_method",3).toInt());
     ui->diffusion_sampling->setValue(settings.value("rec_gqi_sampling",1.25).toDouble());
     ui->csf_calibration->setChecked(settings.value("csf_calibration",1).toInt());
 
@@ -243,8 +234,14 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
             handle->voxel.t1w_file_name = filename.toStdString();
         }
      }
+
+    handle->voxel.external_template.empty();
+    //QSDR
     if(method_id == 7 && !fa_template_list.empty() && ui->template_box->currentIndex() != 0)
         handle->voxel.external_template = fa_template_list[ui->template_box->currentIndex()];
+    //QSDR with CDMT1W
+    if(method_id == 7 && ui->reg_method->currentIndex() == 4 && !t1w_template_list.empty())
+        handle->voxel.external_template = t1w_template_list[ui->template_box->currentIndex()];
 
     settings.setValue("rec_method_id",method_id);
     settings.setValue("rec_thread_count",ui->ThreadCount->value());
@@ -764,14 +761,13 @@ void rec_motion_correction(ImageModel* handle)
             return;
         if(id == 0)
             check_prog(i*99/handle->src_bvalues.size(),100);
-        tipl::transformation_matrix<double> arg;
+        tipl::affine_transform<double> arg;
         bool terminated = false;
-        tipl::reg::two_way_linear_mr(
-                                  tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim),
-                                  handle->voxel.vs,
-                                  tipl::make_image(handle->src_dwi_data[i],handle->voxel.dim),handle->voxel.vs,
-                                  arg,tipl::reg::affine,tipl::reg::correlation(),terminated);
-        handle->rotate_one_dwi(i,arg);
+        tipl::reg::linear(tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim),handle->voxel.vs,
+                          tipl::make_image(handle->src_dwi_data[i],handle->voxel.dim),handle->voxel.vs,
+                                  arg,tipl::reg::affine,tipl::reg::correlation(),false,terminated,0.0001);
+        tipl::transformation_matrix<double> T(arg,handle->voxel.dim,handle->voxel.vs,handle->voxel.dim,handle->voxel.vs);
+        handle->rotate_one_dwi(i,T);
     });
     check_prog(1,1);
 
@@ -1031,4 +1027,35 @@ void reconstruction_window::on_AxiView_clicked()
     ui->z_pos->setRange(0,handle->voxel.dim[view_orientation]-1);
     ui->z_pos->setValue((handle->voxel.dim[view_orientation]-1) >> 1);
     on_b_table_itemSelectionChanged();
+}
+
+void reconstruction_window::on_reg_method_currentIndexChanged(int index)
+{
+    ui->template_box->clear();
+    if(index == 4) // CDM_T1W
+    {
+        // load all templates for QSDR
+        if(!t1w_template_list.empty())
+        {
+            for(int index = 0;index < t1w_template_list.size();++index)
+                ui->template_box->addItem(QFileInfo(t1w_template_list[index].c_str()).baseName());
+            ui->template_box->setCurrentIndex(0);
+        }
+        else
+            ui->template_box->hide();
+    }
+    else
+    {
+        // load all templates for QSDR
+        if(!fa_template_list.empty())
+        {
+            for(int index = 0;index < fa_template_list.size();++index)
+                ui->template_box->addItem(QFileInfo(fa_template_list[index].c_str()).baseName());
+            ui->template_box->setCurrentIndex(0);
+        }
+        else
+            ui->template_box->hide();
+
+    }
+    ui->template_box->setCurrentIndex(0);
 }

@@ -5,7 +5,6 @@
 #include <QScrollBar>
 #include "nn_connectometry.h"
 #include "ui_nn_connectometry.h"
-extern std::string t1w_template_file_name;
 nn_connectometry::nn_connectometry(QWidget *parent,std::shared_ptr<vbc_database> vbc_,QString db_file_name_,bool gui_) :
     QDialog(parent),vbc(vbc_),work_dir(QFileInfo(db_file_name_).absoluteDir().absolutePath()),gui(gui_),
     ui(new Ui::nn_connectometry)

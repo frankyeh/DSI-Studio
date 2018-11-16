@@ -96,6 +96,7 @@ private slots:
     void on_SagView_clicked();
     void on_CorView_clicked();
     void on_AxiView_clicked();
+    void on_reg_method_currentIndexChanged(int index);
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

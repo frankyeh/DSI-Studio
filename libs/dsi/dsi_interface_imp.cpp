@@ -23,8 +23,6 @@
 #include "image_model.hpp"
 
 
-extern std::string t1w_template_file_name;
-
 typedef boost::mpl::vector<
     ReadDWIData,
     Dwi2Tensor
@@ -350,13 +348,11 @@ const char* ImageModel::reconstruction(void)
                 return "reconstruction canceled";
             break;
         case 7:
-            if(voxel.reg_method == 4) // CDM
+            if(voxel.reg_method == 4) // CDM-T1W
             {
-                if(!voxel.external_template.empty())
-                    return "T1W-CDM does not support using an external template";
                 {
                     gz_nifti in;
-                    if(!in.load_from_file(t1w_template_file_name.c_str()) || !in.toLPS(voxel.t1wt))
+                    if(!in.load_from_file(voxel.external_template.c_str()) || !in.toLPS(voxel.t1wt))
                         return "Cannot load T1W template";
                     in.get_voxel_size(voxel.t1wt_vs);
                     in.get_image_transformation(voxel.t1wt_tran);

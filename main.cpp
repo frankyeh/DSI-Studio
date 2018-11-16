@@ -21,7 +21,7 @@ std::string qa_template_1mm,
         fib_template_file_name_1mm,fib_template_file_name_2mm,
         t1w_template_file_name,wm_template_file_name,
         t1w_mask_template_file_name;
-std::vector<std::string> fa_template_list;
+std::vector<std::string> fa_template_list,t1w_template_list;
 
 extern std::vector<atlas> atlas_list;
 void load_atlas(void);
@@ -69,24 +69,41 @@ std::string find_full_path(QString name,bool no_empty = false)
 void load_file_name(void)
 {
     qa_template_1mm = find_full_path("/template/HCP1021_QA.nii.gz",true);
+    t1w_template_file_name = find_full_path("/template_t1w/mni_icbm152_t1_tal_nlin_asym_09c.nii.gz");
     fib_template_file_name_2mm = find_full_path("/HCP1021.2mm.fib.gz");
     fib_template_file_name_1mm = find_full_path("/HCP1021.1mm.fib.gz");
-    t1w_template_file_name = find_full_path("/mni_icbm152_t1_tal_nlin_asym_09c.nii.gz");
     wm_template_file_name = find_full_path("/mni_icbm152_wm_tal_nlin_asym_09c.nii.gz");
     t1w_mask_template_file_name = find_full_path("/mni_icbm152_t1_tal_nlin_asym_09c_mask.nii.gz");
 
-
-    QDir dir = QCoreApplication::applicationDirPath()+ "/template";
-    if(!dir.exists())
-        dir = QDir::currentPath()+ "/template";
-    QStringList name_list = dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
-    for(int i = 0;i < name_list.size();++i)
+    // search for all anisotropy template
     {
-        std::string full_path = (dir.absolutePath() + "/" + name_list[i]).toStdString();
-        if(full_path == qa_template_1mm)
-            fa_template_list.insert(fa_template_list.begin(),full_path);
-        else
-            fa_template_list.push_back(full_path);
+        QDir dir = QCoreApplication::applicationDirPath()+ "/template";
+        if(!dir.exists())
+            dir = QDir::currentPath()+ "/template";
+        QStringList name_list = dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
+        for(int i = 0;i < name_list.size();++i)
+        {
+            std::string full_path = (dir.absolutePath() + "/" + name_list[i]).toStdString();
+            if(full_path == qa_template_1mm)
+                fa_template_list.insert(fa_template_list.begin(),full_path);
+            else
+                fa_template_list.push_back(full_path);
+        }
+    }
+    // search for all t1w template
+    {
+        QDir dir = QCoreApplication::applicationDirPath()+ "/template_t1w";
+        if(!dir.exists())
+            dir = QDir::currentPath()+ "/template_t1w";
+        QStringList name_list = dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
+        for(int i = 0;i < name_list.size();++i)
+        {
+            std::string full_path = (dir.absolutePath() + "/" + name_list[i]).toStdString();
+            if(full_path == t1w_template_file_name)
+                t1w_template_list.insert(t1w_template_list.begin(),full_path);
+            else
+                t1w_template_list.push_back(full_path);
+        }
     }
 }
 

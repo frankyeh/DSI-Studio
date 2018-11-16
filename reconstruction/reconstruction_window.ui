@@ -50,7 +50,7 @@
     <item>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -706,6 +706,9 @@
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
+               </property>
+               <property name="currentIndex">
+                <number>3</number>
                </property>
                <item>
                 <property name="text">
