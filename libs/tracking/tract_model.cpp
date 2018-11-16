@@ -149,6 +149,93 @@ struct TrackVis
         version = 2;
         hdr_size = 1000;
     }
+    static bool load_from_file(const char* file_name_,
+                std::vector<std::vector<float> >& loaded_tract_data,
+                std::vector<unsigned int>& loaded_tract_cluster,
+                               tipl::vector<3> vs)
+    {
+        TrackVis trk;
+        gz_istream in;
+        if (!in.open(file_name_))
+            return false;
+        in.read((char*)&trk,1000);
+        unsigned int track_number = trk.n_count;
+        if(!track_number) // number is not stored
+            track_number = 100000000;
+        begin_prog("loading");
+        for (unsigned int index = 0;!(!in) && check_prog(index,track_number);++index)
+        {
+            unsigned int n_point;
+            in.read((char*)&n_point,sizeof(int));
+            unsigned int index_shift = 3 + trk.n_scalars;
+            std::vector<float> tract(index_shift*n_point + trk.n_properties);
+            in.read((char*)&*tract.begin(),sizeof(float)*tract.size());
+
+            loaded_tract_data.push_back(std::move(std::vector<float>(n_point*3)));
+            const float *from = &*tract.begin();
+            float *to = &*loaded_tract_data.back().begin();
+            for (unsigned int i = 0;i < n_point;++i,from += index_shift,to += 3)
+            {
+                float x = from[0]/vs[0];
+                float y = from[1]/vs[1];
+                float z = from[2]/vs[2];
+                if(trk.voxel_order[1] == 'R')
+                    to[0] = trk.dim[0]-x-1;
+                else
+                    to[0] = x;
+                if(trk.voxel_order[1] == 'A')
+                    to[1] = trk.dim[1]-y-1;
+                else
+                    to[1] = y;
+                to[2] = z;
+            }
+            if(trk.n_properties == 1)
+                loaded_tract_cluster.push_back(from[0]);
+        }
+        return true;
+    }
+    static bool save_to_file(const char* file_name,
+                             tipl::geometry<3> geo,
+                             tipl::vector<3> vs,
+                             const std::vector<std::vector<float> >& tract_data,
+                             const std::vector<std::vector<float> >& scalar)
+    {
+        gz_ostream out;
+        if (!out.open(file_name))
+            return false;
+        TrackVis trk;
+        trk.init(geo,vs);
+        trk.n_count = tract_data.size();
+        if(!scalar.empty())
+            trk.n_scalars = 1;
+        out.write((const char*)&trk,1000);
+
+        begin_prog("saving");
+        for (unsigned int i = 0;check_prog(i,tract_data.size());++i)
+        {
+            int n_point = tract_data[i].size()/3;
+            std::vector<float> buffer(trk.n_scalars ? tract_data[i].size()+scalar[i].size() : tract_data[i].size());
+            float* to = &*buffer.begin();
+            for (unsigned int flag = 0,j = 0,k = 0;j < tract_data[i].size() && (trk.n_scalars == 0 || k < scalar[i].size());++j,++to)
+            {
+                *to = tract_data[i][j]*vs[flag];
+                ++flag;
+                if (flag == 3)
+                {
+                    flag = 0;
+                    if(trk.n_scalars)
+                    {
+                        ++to;
+                        *to = scalar[i][k];
+                        ++k;
+                    }
+                }
+            }
+            out.write((const char*)&n_point,sizeof(int));
+            out.write((const char*)&*buffer.begin(),sizeof(float)*buffer.size());
+        }
+        return true;
+    }
 };
 //---------------------------------------------------------------------------
 TractModel::TractModel(std::shared_ptr<fib_data> handle_):handle(handle_),
@@ -192,44 +279,8 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
 
     if(ext == std::string(".trk") || ext == std::string("k.gz"))
         {
-            TrackVis trk;
-            gz_istream in;
-            if (!in.open(file_name_))
+            if(!TrackVis::load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,vs))
                 return false;
-            in.read((char*)&trk,1000);
-            unsigned int track_number = trk.n_count;
-            if(!track_number) // number is not stored
-                track_number = 100000000;
-            begin_prog("loading");
-            for (unsigned int index = 0;!(!in) && check_prog(index,track_number);++index)
-            {
-                unsigned int n_point;
-                in.read((char*)&n_point,sizeof(int));
-                unsigned int index_shift = 3 + trk.n_scalars;
-                std::vector<float> tract(index_shift*n_point + trk.n_properties);
-                in.read((char*)&*tract.begin(),sizeof(float)*tract.size());
-
-                loaded_tract_data.push_back(std::move(std::vector<float>(n_point*3)));
-                const float *from = &*tract.begin();
-                float *to = &*loaded_tract_data.back().begin();
-                for (unsigned int i = 0;i < n_point;++i,from += index_shift,to += 3)
-                {
-                    float x = from[0]/vs[0];
-                    float y = from[1]/vs[1];
-                    float z = from[2]/vs[2];
-                    if(trk.voxel_order[1] == 'R')
-                        to[0] = trk.dim[0]-x-1;
-                    else
-                        to[0] = x;
-                    if(trk.voxel_order[1] == 'A')
-                        to[1] = trk.dim[1]-y-1;
-                    else
-                        to[1] = y;
-                    to[2] = z;
-                }
-                if(trk.n_properties == 1)
-                    loaded_tract_cluster.push_back(from[0]);
-            }
         }
         else
         if (ext == std::string(".txt"))
@@ -362,6 +413,13 @@ bool TractModel::save_data_to_file(const char* file_name,const std::string& inde
     if(file_name_s.length() > 4)
         ext = std::string(file_name_s.end()-4,file_name_s.end());
 
+    if(ext == std::string(".trk") || ext == std::string("k.gz"))
+    {
+        if(ext == std::string(".trk"))
+            file_name_s += ".gz";
+        return TrackVis::save_to_file(file_name_s.c_str(),geometry,vs,tract_data,data);
+    }
+
     if (ext == std::string(".txt"))
     {
         std::ofstream out(file_name,std::ios::binary);
@@ -424,34 +482,8 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     {
         if(ext == std::string(".trk"))
             file_name += ".gz";
-        gz_ostream out;
-        if (!out.open(file_name.c_str()))
-            return false;
-        {
-            TrackVis trk;
-            trk.init(geometry,vs);
-            trk.n_count = tract_data.size();
-            out.write((const char*)&trk,1000);
-        }
-        begin_prog("saving");
-        for (unsigned int i = 0;check_prog(i,tract_data.size());++i)
-        {
-            int n_point = tract_data[i].size()/3;
-            std::vector<float> buffer(tract_data[i].size());
-            const float *from = &*tract_data[i].begin();
-            const float *end = from + tract_data[i].size();
-            float* to = &*buffer.begin();
-            for (unsigned int flag = 0;from != end;++from,++to)
-            {
-                *to = (*from)*vs[flag];
-                ++flag;
-                if (flag == 3)
-                    flag = 0;
-            }
-            out.write((const char*)&n_point,sizeof(int));
-            out.write((const char*)&*buffer.begin(),sizeof(float)*buffer.size());
-        }
-        return true;
+        std::vector<std::vector<float> > empty_scalar;
+        return TrackVis::save_to_file(file_name.c_str(),geometry,vs,tract_data,empty_scalar);
     }
     if (ext == std::string(".txt"))
     {
