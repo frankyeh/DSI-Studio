@@ -146,8 +146,7 @@ int atl(void)
             std::cout << "No FIB file found in the directory." << std::endl;
             return 0;
         }
-        dir += "/";
-        dir += "template";
+        dir += "/template";
         const char* msg = odf_average(dir.c_str(),name_list);
         if(msg)
             std::cout << msg << std::endl;
