@@ -464,12 +464,12 @@ void load_nii_label(const char* filename,std::map<int,std::string>& label_map)
     }
 }
 void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
-                          std::map<int,tipl::rgb>& label_color,bool mute_cmd = true)
+                          std::map<int,tipl::rgb>& label_color,bool is_free_surfer,bool mute_cmd = true)
 {
     label_map.clear();
     label_color.clear();
     QString base_name = QFileInfo(file_name).baseName();
-    if(base_name.contains("aparc+aseg")) // FreeSurfer
+    if(base_name.contains("aparc+aseg") || is_free_surfer) // FreeSurfer
     {
         if(!mute_cmd)
             std::cout << "Use freesurfer labels." << std::endl;
@@ -533,8 +533,9 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     std::map<int,std::string> label_map;
     std::map<int,tipl::rgb> label_color;
 
+    std::string des(header.get_descrip());
     if(multiple_roi)
-        get_roi_label(file_name,label_map,label_color);
+        get_roi_label(file_name,label_map,label_color,des.find("FreeSurfer") == 0);
 
     tipl::matrix<4,4,float> convert;
     bool has_transform = false;

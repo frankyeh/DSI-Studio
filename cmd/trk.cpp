@@ -65,7 +65,7 @@ void save_connectivity_matrix(TractModel& tract_model,
     out << report;
 }
 void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
-                          std::map<int,tipl::rgb>& label_color,bool mute_cmd);
+                          std::map<int,tipl::rgb>& label_color,bool is_freesurfer,bool mute_cmd);
 void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                              TractModel& tract_model)
 {
@@ -158,7 +158,8 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                 // get label file
                 std::map<int,std::string> label_map;
                 std::map<int,tipl::rgb> label_color;
-                get_roi_label(roi_file_name.c_str(),label_map,label_color,false);
+                std::string des(header.get_descrip());
+                get_roi_label(roi_file_name.c_str(),label_map,label_color,des.find("FreeSurfer") == 0,false);
                 std::vector<std::vector<tipl::vector<3,short> > > regions;
                 for(unsigned int value = 1;value < value_map.size();++value)
                     if(value_map[value])
