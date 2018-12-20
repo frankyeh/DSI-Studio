@@ -43,7 +43,12 @@ public:
     std::vector<std::vector<const float*> > index_data;
     int cur_index = 0;
 public:
+    std::vector<std::string> dt_index_name;
+    std::vector<std::vector<const float*> > dt_index_data;
+    int dt_cur_index = 0;
+public:
     std::vector<const float*> fa;
+    std::vector<const float*> dt_fa;
     std::vector<tipl::vector<3,float> > odf_table;
     std::vector<tipl::vector<3,short> > odf_faces;
     unsigned int num_fiber;
@@ -55,6 +60,9 @@ public:
     bool add_data(gz_mat_read& mat_reader);
     bool set_tracking_index(int new_index);
     bool set_tracking_index(const std::string& name);
+    bool set_dt_index(int new_index);
+    bool set_dt_index(const std::string& name);
+
     float get_fa(unsigned int index,unsigned char order) const;
     const float* get_dir(unsigned int index,unsigned int order) const;
 
@@ -66,9 +74,10 @@ public:
     tipl::geometry<3> dim;
     tipl::vector<3> vs;
     unsigned char fib_num;
-    std::string threshold_name;
+    std::string threshold_name,dt_threshold_name;
     std::vector<const float*> dir;
     std::vector<const float*> fa;
+    std::vector<const float*> dt_fa;
     std::vector<const short*> findex;
     std::vector<std::vector<const float*> > other_index;
     std::vector<tipl::vector<3,float> > odf_table;
@@ -78,13 +87,15 @@ public:
                          unsigned char& fib_order_,
                          unsigned char& reverse_,
                              float threshold,
-                             float cull_cos_angle) const;
+                             float cull_cos_angle,
+                             float dt_threshold) const;
     void read(const fib_data& fib);
     bool get_dir(unsigned int space_index,
                          const tipl::vector<3,float>& dir, // reference direction, should be unit vector
                          tipl::vector<3,float>& main_dir,
                  float threshold,
-                 float cull_cos_angle) const;
+                 float cull_cos_angle,
+                 float dt_threshold) const;
     const float* get_dir(unsigned int space_index,unsigned char fib_order) const;
     float cos_angle(const tipl::vector<3>& cur_dir,unsigned int space_index,unsigned char fib_order) const;
     float get_track_specific_index(unsigned int space_index,unsigned int index_num,

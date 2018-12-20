@@ -788,9 +788,7 @@ void connectometry_result::initialize(std::shared_ptr<fib_data> handle)
 void connectometry_result::remove_old_index(std::shared_ptr<fib_data> handle)
 {
     for(unsigned int index = 0;index < handle->dir.index_name.size();++index)
-        if(handle->dir.index_name[index] == ">%" ||
-           handle->dir.index_name[index] == "<%" ||
-           handle->dir.index_name[index] == "inc" ||
+        if(handle->dir.index_name[index] == "inc" ||
            handle->dir.index_name[index] == "dec")
         {
             handle->dir.index_name.erase(handle->dir.index_name.begin()+index);
@@ -835,7 +833,7 @@ bool connectometry_result::individual_vs_db(std::shared_ptr<fib_data> handle,con
     info.individual_data_sd = 1.0;
     float fa_threshold = 0.6*tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
     calculate_spm(handle,*this,info,fa_threshold,normalized_qa,terminated);
-    add_mapping_for_tracking(handle,">%","<%");
+    add_mapping_for_tracking(handle,"inc_db","dec_db");
     return true;
 }
 bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::vector<const float*>& fa1,
@@ -937,7 +935,7 @@ bool connectometry_result::individual_vs_atlas(std::shared_ptr<fib_data> handle,
     initialize(handle);
     if(!compare(handle,handle->dir.fa,ptr,normalization))
         return false;
-    add_mapping_for_tracking(handle,"inc","dec");
+    add_mapping_for_tracking(handle,"inc_qa","dec_qa");
     return true;
 }
 
@@ -968,7 +966,7 @@ bool connectometry_result::individual_vs_individual(std::shared_ptr<fib_data> ha
     }
     if(!compare(handle,ptr1,ptr2,normalization))
         return false;
-    add_mapping_for_tracking(handle,"inc","dec");
+    add_mapping_for_tracking(handle,"inc_qa","dec_qa");
     return true;
 }
 

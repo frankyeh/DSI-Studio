@@ -168,6 +168,7 @@ TrackingMethod* ThreadData::new_method(const tracking_data& trk)
     }
     TrackingMethod* method = new TrackingMethod(trk,interpo_method.release(),roi_mgr);
     method->current_fa_threshold = param.threshold;
+    method->current_dt_threshold = param.dt_threshold;
     method->current_tracking_angle = param.cull_cos_angle;
     method->current_tracking_smoothing = param.smooth_fraction;
     method->current_step_size_in_voxel[0] = param.step_size/method->trk.vs[0];
@@ -201,14 +202,14 @@ void ThreadData::run(const tracking_data& trk,
     report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was used."
            << roi_mgr->report;
 
-    if(trk.threshold_name == "dec")
+    if(!trk.dt_threshold_name.empty())
     {
-        report << " The regions with connectivity decreass greater than " << int(param.threshold * 100) << "% were tracked.";
-        goto next;
-    }
-    if(trk.threshold_name == "inc")
-    {
-        report << " The regions with connectivity increase greater than " << int(param.threshold * 100) << "% were tracked.";
+        report << " The pathways with " << trk.dt_threshold_name.substr(4,std::string::npos);
+        if(trk.dt_threshold_name.substr(0,4) == "inc_")
+            report << " increase";
+        else
+            report << " decrease";
+        report << " greater than " << int(param.dt_threshold * 100) << "% were tracked.";
         goto next;
     }
     if(trk.threshold_name == "+t")

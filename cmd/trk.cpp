@@ -434,6 +434,15 @@ int trk(void)
             return 0;
         }
     }
+    if (po.has("dt_threshold_index"))
+    {
+        std::cout << "setting dt index to " << po.get("dt_threshold_index") << std::endl;
+        if(!handle->dir.set_dt_index(po.get("dt_threshold_index")))
+        {
+            std::cout << "failed...cannot find the dt index" << std::endl;
+            return 0;
+        }
+    }
 
     tipl::geometry<3> geometry = handle->dim;
     const float *fa0 = handle->dir.fa[0];
@@ -443,6 +452,7 @@ int trk(void)
     ThreadData tracking_thread;
     tracking_thread.param.default_otsu = po.get("otsu_threshold",0.6f);
     tracking_thread.param.threshold = po.get("fa_threshold",tracking_thread.param.default_otsu*otsu);
+    tracking_thread.param.dt_threshold = po.get("dt_threshold",0.0f);
     tracking_thread.param.cull_cos_angle = std::cos(po.get("turning_angle",0.0)*3.14159265358979323846/180.0);
     tracking_thread.param.step_size = po.get("step_size",0.0f);
     tracking_thread.param.smooth_fraction = po.get("smoothing",1.0f);
@@ -511,6 +521,7 @@ int trk(void)
     }
     {
         std::cout << "fa_threshold=" << tracking_thread.param.threshold << std::endl;
+        std::cout << "dt_threshold=" << tracking_thread.param.dt_threshold << std::endl;
         std::cout << "turning_angle=" << std::acos(tracking_thread.param.cull_cos_angle)*180/3.14159265358979323846 << std::endl;
         std::cout << "step_size=" << tracking_thread.param.step_size << std::endl;
         std::cout << "smoothing=" << tracking_thread.param.smooth_fraction << std::endl;

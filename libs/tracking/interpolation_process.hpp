@@ -11,7 +11,8 @@ public:
                           const tipl::vector<3,float>& ref_dir,
                           tipl::vector<3,float>& result,
                           float threshold,
-                          float cull_cos_angle) = 0;
+                          float cull_cos_angle,
+                          float dt_threshold) = 0;
 };
 
 class trilinear_interpolation_with_gaussian_basis : public basic_interpolation
@@ -22,7 +23,8 @@ public:
                           const tipl::vector<3,float>& ref_dir,
                           tipl::vector<3,float>& result,
                           float threshold,
-                          float cull_cos_angle);
+                          float cull_cos_angle,
+                          float dt_threshold);
 };
 
 
@@ -34,7 +36,8 @@ public:
                           const tipl::vector<3,float>& ref_dir,
                           tipl::vector<3,float>& result,
                           float threshold,
-                          float cull_cos_angle);
+                          float cull_cos_angle,
+                          float dt_threshold);
 };
 
 
@@ -46,7 +49,8 @@ public:
                           const tipl::vector<3,float>& ref_dir,
                           tipl::vector<3,float>& result,
                           float threshold,
-                          float cull_cos_angle);
+                          float cull_cos_angle,
+                          float dt_threshold);
 };
 
 

@@ -51,7 +51,7 @@ struct TrackingParam
     unsigned char random_seed = 0;
     unsigned char tip_iteration = 0;
 
-    unsigned int reserved1 = 0;
+    float dt_threshold = 0;
     unsigned int reserved2 = 0;
 
     static char char2index(unsigned char c)
@@ -157,6 +157,7 @@ public:// Parameters
 public:
     const tracking_data& trk;
     float current_fa_threshold;
+    float current_dt_threshold = 0;
     float current_tracking_angle;
     float current_tracking_smoothing;
     float current_step_size_in_voxel[3];
@@ -190,7 +191,7 @@ public:
                       const tipl::vector<3,float>& ref_dir,
                       tipl::vector<3,float>& result_dir)
     {
-        return interpolation->evaluate(trk,position,ref_dir,result_dir,current_fa_threshold,current_tracking_angle);
+        return interpolation->evaluate(trk,position,ref_dir,result_dir,current_fa_threshold,current_tracking_angle,current_dt_threshold);
     }
 public:
     TrackingMethod(const tracking_data& trk_,basic_interpolation* interpolation_,

@@ -250,9 +250,9 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
     index_name.insert(index_name.begin(),fa.size() == 1 ? "fa":"qa");
     index_data.insert(index_data.begin(),fa);
 
-    // check index_data integrity
     for(int index = 1;index < index_data.size();++index)
     {
+        // check index_data integrity
         for(int j = 0;j < index_data[index].size();++j)
             if(!index_data[index][j] || index_data[index].size() != num_fiber)
             {
@@ -261,6 +261,18 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
                 --index;
                 break;
             }
+
+        // identify dt indices
+        if(index_name[index].find("inc_") != std::string::npos ||
+           index_name[index].find("dec_") != std::string::npos)
+        {
+            dt_index_name.push_back(index_name[index]);
+            dt_index_data.push_back(index_data[index]);
+            index_data.erase(index_data.begin()+index);
+            index_name.erase(index_name.begin()+index);
+            --index;
+            continue;
+        }
     }
 
 
@@ -277,11 +289,26 @@ bool fiber_directions::set_tracking_index(int new_index)
     cur_index = new_index;
     return true;
 }
-
 bool fiber_directions::set_tracking_index(const std::string& name)
 {
     return set_tracking_index(std::find(index_name.begin(),index_name.end(),name)-index_name.begin());
 }
+bool fiber_directions::set_dt_index(int new_index)
+{
+    if(new_index >= dt_index_data.size() || new_index < 0)
+    {
+        dt_fa.clear();
+        return false;
+    }
+    dt_fa = dt_index_data[new_index];
+    dt_cur_index = new_index;
+    return true;
+}
+bool fiber_directions::set_dt_index(const std::string& name)
+{
+    return set_dt_index(std::find(dt_index_name.begin(),dt_index_name.end(),name)-dt_index_name.begin());
+}
+
 float fiber_directions::get_fa(unsigned int index,unsigned char order) const
 {
     if(order >= fa.size())
@@ -303,9 +330,10 @@ bool tracking_data::get_nearest_dir_fib(unsigned int space_index,
                      unsigned char& fib_order_,
                      unsigned char& reverse_,
                      float threshold,
-                     float cull_cos_angle) const
+                     float cull_cos_angle,
+                     float dt_threshold) const
 {
-    if(space_index >= dim.size() || fa[0][space_index] <= threshold)
+    if(space_index >= dim.size())
         return false;
     float max_value = cull_cos_angle;
     unsigned char fib_order;
@@ -313,6 +341,8 @@ bool tracking_data::get_nearest_dir_fib(unsigned int space_index,
     for (unsigned char index = 0;index < fib_num;++index)
     {
         if (fa[index][space_index] <= threshold)
+            continue;
+        if (!dt_fa.empty() && dt_fa[index][space_index] <= dt_threshold) // for differential tractography
             continue;
         float value = cos_angle(ref_dir,space_index,index);
         if (-value > max_value)
@@ -342,20 +372,24 @@ void tracking_data::read(const fib_data& fib)
     odf_table = fib.dir.odf_table;
     fib_num = fib.dir.num_fiber;
     fa = fib.dir.fa;
+    dt_fa = fib.dir.dt_fa;
     findex = fib.dir.findex;
     dir = fib.dir.dir;
     other_index = fib.dir.index_data;
     threshold_name = fib.dir.index_name[fib.dir.cur_index];
+    if(!dt_fa.empty())
+        dt_threshold_name = fib.dir.dt_index_name[fib.dir.dt_cur_index];
 }
 bool tracking_data::get_dir(unsigned int space_index,
                      const tipl::vector<3,float>& dir, // reference direction, should be unit vector
                      tipl::vector<3,float>& main_dir,
                             float threshold,
-                            float cull_cos_angle) const
+                            float cull_cos_angle,
+                            float dt_threshold) const
 {
     unsigned char fib_order;
     unsigned char reverse;
-    if (!get_nearest_dir_fib(space_index,dir,fib_order,reverse,threshold,cull_cos_angle))
+    if (!get_nearest_dir_fib(space_index,dir,fib_order,reverse,threshold,cull_cos_angle,dt_threshold))
         return false;
     main_dir = get_dir(space_index,fib_order);
     if(reverse)

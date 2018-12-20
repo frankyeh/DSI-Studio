@@ -454,11 +454,17 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
 
 void tracking_window::initialize_tracking_index(int p)
 {
-    QStringList tracking_index_list;
+    QStringList tracking_index_list,dt_list;
+    dt_list << "none";
     for(int index = 0;index < handle->dir.index_name.size();++index)
         tracking_index_list.push_back(handle->dir.index_name[index].c_str());
+    for(int index = 0;index < handle->dir.dt_index_name.size();++index)
+        dt_list.push_back(handle->dir.dt_index_name[index].c_str());
+
     renderWidget->setList("tracking_index",tracking_index_list);
+    renderWidget->setList("dt_index",dt_list);
     set_data("tracking_index",p);
+    set_data("dt_index",0);
     on_tracking_index_currentIndexChanged(p);
     scene.center();
 }
@@ -538,6 +544,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 void tracking_window::set_tracking_param(ThreadData& tracking_thread)
 {
     tracking_thread.param.threshold = renderWidget->getData("fa_threshold").toFloat();
+    tracking_thread.param.dt_threshold = renderWidget->getData("dt_threshold").toFloat();
     tracking_thread.param.cull_cos_angle = std::cos(renderWidget->getData("turning_angle").toDouble() * 3.14159265358979323846 / 180.0);
     tracking_thread.param.step_size = renderWidget->getData("step_size").toFloat();
     tracking_thread.param.smooth_fraction = renderWidget->getData("smoothing").toFloat();
@@ -892,26 +899,8 @@ void tracking_window::on_actionRestore_window_layout_triggered()
 void tracking_window::on_tracking_index_currentIndexChanged(int index)
 {
     if(index < 0)
-        return;
+            return;
     handle->dir.set_tracking_index(index);
-    if(handle->dir.index_name[index] == "<%" ||
-        handle->dir.index_name[index] == ">%")
-    {
-        // percentile threshold
-        renderWidget->setMinMax("fa_threshold",0.0f,1.0f,0.05f);
-        set_data("fa_threshold",0.95f);
-        scene.show_slice();
-        return;
-    }
-    if(handle->dir.index_name[index].find("inc") != std::string::npos ||
-        handle->dir.index_name[index].find("dec") != std::string::npos)
-    {
-        // percentile threshold
-        renderWidget->setMinMax("fa_threshold",0.0f,1.0f,0.05f);
-        set_data("fa_threshold",0.05f);
-        scene.show_slice();
-        return;
-    }
     float max_value = *std::max_element(handle->dir.fa[0],handle->dir.fa[0]+handle->dim.size());
     renderWidget->setMinMax("fa_threshold",0.0,max_value*1.1,max_value/50.0);
     if(renderWidget->getData("fa_threshold").toFloat() != 0.0)
@@ -920,6 +909,13 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
                  tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim)));
     scene.show_slice();
 }
+
+void tracking_window::on_dt_index_currentIndexChanged(int index)
+{
+    handle->dir.set_dt_index(index-1); // skip the first "none" item
+    scene.show_slice();
+}
+
 
 
 void tracking_window::on_deleteSlice_clicked()
@@ -1347,7 +1343,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
                 dis[i] -= tipl::vector<3>(index);
                 dis[i].normalize();
                 unsigned char fib_order,reverse;
-                if(fib.get_nearest_dir_fib(neighbors[i].index(),dis[i],fib_order,reverse,threshold,cos_angle))
+                if(fib.get_nearest_dir_fib(neighbors[i].index(),dis[i],fib_order,reverse,threshold,cos_angle,0))
                 {
                     fib_dir[i] = handle->dir.get_dir(neighbors[i].index(),fib_order);
                     if(reverse)
@@ -1374,7 +1370,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
                     predict_dir.normalize();
                     unsigned char fib_order,reverse;
                     bool has_match = false;
-                    if(fib.get_nearest_dir_fib(index.index(),predict_dir,fib_order,reverse,threshold,cos_angle))
+                    if(fib.get_nearest_dir_fib(index.index(),predict_dir,fib_order,reverse,threshold,cos_angle,0))
                     {
                         if(reverse)
                             predict_dir -= tipl::vector<3>(handle->dir.get_dir(index.index(),fib_order));
