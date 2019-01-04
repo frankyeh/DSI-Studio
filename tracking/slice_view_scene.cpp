@@ -82,6 +82,7 @@ void slice_view_scene::show_ruler(QPainter& paint)
 void slice_view_scene::show_fiber(QPainter& painter)
 {
     float threshold = cur_tracking_window["fa_threshold"].toFloat();
+    float threshold2 = cur_tracking_window.handle->dir.dt_cur_index ? cur_tracking_window["dt_threshold"].toFloat() : 0.0f;
     if (threshold == 0.0f)
         threshold = 0.00000001f;
     int X,Y,Z;
@@ -119,6 +120,8 @@ void slice_view_scene::show_fiber(QPainter& painter)
                 for (char fiber = max_fiber; fiber >= 0; --fiber)
                     if(fib.dir.get_fa(pos.index(),fiber) > threshold)
                     {
+                        if(threshold2 != 0.0f && fib.dir.get_dt_fa(pos.index(),fiber) < threshold2)
+                            continue;
                         const float* dir_ptr = fib.dir.get_dir(pos.index(),fiber);
                         if(!fiber_color)
                         {

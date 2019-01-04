@@ -64,6 +64,7 @@ public:
     bool set_dt_index(const std::string& name);
 
     float get_fa(unsigned int index,unsigned char order) const;
+    float get_dt_fa(unsigned int index,unsigned char order) const;
     const float* get_dir(unsigned int index,unsigned int order) const;
 
 };

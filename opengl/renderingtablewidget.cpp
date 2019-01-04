@@ -503,7 +503,8 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
     }
 
     if(((RenderingItem*)bottomRight.internalPointer())->id == "fa_threshold" ||
-       ((RenderingItem*)bottomRight.internalPointer())->parent()->id == QString("ROI"))
+       ((RenderingItem*)bottomRight.internalPointer())->id == "dt_threshold" ||
+            ((RenderingItem*)bottomRight.internalPointer())->parent()->id == QString("ROI"))
     {
         cur_tracking_window.scene.show_slice();
         return;

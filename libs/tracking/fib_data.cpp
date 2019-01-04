@@ -315,6 +315,14 @@ float fiber_directions::get_fa(unsigned int index,unsigned char order) const
         return 0.0;
     return fa[order][index];
 }
+float fiber_directions::get_dt_fa(unsigned int index,unsigned char order) const
+{
+    if(order >= dt_fa.size())
+        return 0.0;
+    return dt_fa[order][index];
+}
+
+
 const float* fiber_directions::get_dir(unsigned int index,unsigned int order) const
 {
     if(!dir.empty())
