@@ -82,7 +82,7 @@ void slice_view_scene::show_ruler(QPainter& paint)
 void slice_view_scene::show_fiber(QPainter& painter)
 {
     float threshold = cur_tracking_window["fa_threshold"].toFloat();
-    float threshold2 = cur_tracking_window.handle->dir.dt_cur_index ? cur_tracking_window["dt_threshold"].toFloat() : 0.0f;
+    float threshold2 = cur_tracking_window["dt_index"].toInt() ? cur_tracking_window["dt_threshold"].toFloat() : 0.0f;
     if (threshold == 0.0f)
         threshold = 0.00000001f;
     int X,Y,Z;
