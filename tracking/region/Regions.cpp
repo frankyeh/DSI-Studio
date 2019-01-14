@@ -505,11 +505,10 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
         if(handle->view_item[data_index].name == "color")
             continue;
         float mean,sd;
-        tipl::const_pointer_image<float, 3> I(handle->view_item[data_index].image_data);
         if(handle->view_item[data_index].image_data.geometry() != handle->dim)
-            calculate_region_stat(I,points,mean,sd,&handle->view_item[data_index].iT[0]);
+            calculate_region_stat(handle->view_item[data_index].image_data,points,mean,sd,&handle->view_item[data_index].iT[0]);
         else
-            calculate_region_stat(I,points,mean,sd);
+            calculate_region_stat(handle->view_item[data_index].image_data,points,mean,sd);
         data.push_back(mean);
         data.push_back(sd);
     }

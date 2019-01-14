@@ -140,7 +140,7 @@ class CustomSliceModel : public SliceModel {
 public:
     std::string name,error_msg = "unknown error";
 public:
-    std::auto_ptr<std::future<void> > thread;
+    std::shared_ptr<std::future<void> > thread;
 
     tipl::const_pointer_image<float,3> from;
     tipl::vector<3> from_vs;
