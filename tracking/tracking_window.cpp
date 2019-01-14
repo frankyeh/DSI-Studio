@@ -457,7 +457,9 @@ void tracking_window::initialize_tracking_index(int p)
     QStringList tracking_index_list,dt_list;
     dt_list << "none";
     for(int index = 0;index < handle->dir.index_name.size();++index)
-        tracking_index_list.push_back(handle->dir.index_name[index].c_str());
+        if(handle->dir.index_name[index].find("dec_") != 0 &&
+           handle->dir.index_name[index].find("inc_") != 0)
+            tracking_index_list.push_back(handle->dir.index_name[index].c_str());
     for(int index = 0;index < handle->dir.dt_index_name.size();++index)
         dt_list.push_back(handle->dir.dt_index_name[index].c_str());
 

@@ -263,15 +263,15 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
             }
 
         // identify dt indices
-        if(index_name[index].find("inc_") != std::string::npos ||
-           index_name[index].find("dec_") != std::string::npos)
+        if(index_name[index].find("inc_") == 0 ||
+           index_name[index].find("dec_") == 0)
         {
             dt_index_name.push_back(index_name[index]);
             dt_index_data.push_back(index_data[index]);
-            index_data.erase(index_data.begin()+index);
-            index_name.erase(index_name.begin()+index);
-            --index;
-            continue;
+            //index_data.erase(index_data.begin()+index);
+            //index_name.erase(index_name.begin()+index);
+            //--index;
+            //continue;
         }
     }
 
