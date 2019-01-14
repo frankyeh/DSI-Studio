@@ -53,6 +53,8 @@ void Voxel::calculate_q_vec_t(std::vector<tipl::vector<3,float> >& q_vectors_tim
 
 void Voxel::load_from_src(ImageModel& image_model)
 {
+    if(image_model.src_bvalues.empty()) // e.g. template recon
+        return;
     std::vector<int> sorted_index(image_model.src_bvalues.size());
     std::iota(sorted_index.begin(),sorted_index.end(),0);
 
