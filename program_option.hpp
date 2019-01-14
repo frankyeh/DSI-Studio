@@ -1,9 +1,14 @@
 #ifndef PROGRAM_OPTION_HPP
 #define PROGRAM_OPTION_HPP
-#include <map>
 #include <sstream>
+#include <vector>
+#include <iostream>
+
 class program_option{
-    std::map<std::string,std::string> options;
+    std::vector<std::string> names;
+    std::vector<std::string> values;
+    std::vector<char> used;
+    std::string no_value;
     bool add_option(const std::string& str)
     {
         if(str.length() < 3 || str[0] != '-' || str[1] != '-')
@@ -11,15 +16,33 @@ class program_option{
         auto pos = std::find(str.begin(),str.end(),'=');
         if(pos == str.end())
             return false;
-        options[std::string(str.begin()+2,pos)] = std::string(pos+1,str.end());
+        names.push_back(std::move(std::string(str.begin()+2,pos)));
+        values.push_back(std::move(std::string(pos+1,str.end())));
+        used.push_back(0);
         return true;
     }
 
 public:
     std::string error_msg;
+
+    ~program_option(void)
+    {
+        for(int i = 0;i < used.size();++i)
+            if(!used[i])
+            {
+                std::cout << "Warning: --" << names[i] << " is not used. Please check command line syntax." << std::endl;
+            }
+    }
+    void clear(void)
+    {
+        names.clear();
+        values.clear();
+        used.clear();
+    }
+
     bool parse(int ac, char *av[])
     {
-        options.clear();
+        clear();
         for(int i = 1;i < ac;++i)
         {
             std::string str(av[i]);
@@ -34,13 +57,13 @@ public:
     }
     bool parse(const std::string& av)
     {
-        options.clear();
+        clear();
         std::istringstream in(av);
         while(in)
         {
             std::string str;
             in >> str;
-            if(!add_option(str))
+            if(!str.empty() && !add_option(str))
             {
                 error_msg = "cannot parse: ";
                 error_msg += str;
@@ -52,39 +75,56 @@ public:
 
     bool has(const char* name)
     {
-        return options.find(name) != options.end();
+        std::string str_name(name);
+        for(int i = 0;i < names.size();++i)
+            if(names[i] == str_name)
+                return true;
+        return false;
     }
 
     void set(const char* name,const std::string& value)
     {
-        options[name] = value;
+        names.push_back(name);
+        values.push_back(value);
+        used.push_back(0);
     }
 
-    std::string get(const char* name)
+    const std::string& get(const char* name)
     {
-        std::string df;
-        auto value = options.find(name);
-        if(value != options.end())
-            df = value->second;
-        return df;
+        std::string str_name(name);
+        for(int i = 0;i < names.size();++i)
+            if(names[i] == str_name)
+            {
+                used[i] = 1;
+                return values[i];
+            }
+        return no_value;
     }
 
     std::string get(const char* name,const char* df_ptr)
     {
-        std::string df;
-        auto value = options.find(name);
-        if(value != options.end())
-            df = value->second;
-        else
-            df = df_ptr;
-        return df;
+        std::string str_name(name);
+        std::string df_value(df_ptr);
+        for(int i = 0;i < names.size();++i)
+            if(names[i] == str_name)
+            {
+                used[i] = 1;
+                return values[i];
+            }
+        return df_value;
     }
+
     template<class value_type>
     value_type get(const char* name,value_type df)
     {
-        auto value = options.find(name);
-        if(value != options.end())
-            std::istringstream(value->second) >> df;
+        std::string str_name(name);
+        for(int i = 0;i < names.size();++i)
+            if(names[i] == str_name)
+            {
+                used[i] = 1;
+                std::istringstream(values[i]) >> df;
+                break;
+            }
         return df;
     }
 };
