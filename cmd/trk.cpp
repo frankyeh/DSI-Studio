@@ -263,7 +263,9 @@ bool load_region(std::shared_ptr<fib_data> handle,
                 std::cout << "Fail to insert T1T2" << std::endl;
                 return false;
             }
-            other_slice->thread->wait();
+            handle->view_item.pop_back(); // remove the new item added by initialize
+            if(other_slice->thread.get())
+                other_slice->thread->wait();
             t1t2_geo = other_slice->source_images.geometry();
             convert = other_slice->invT;
             std::cout << "Registeration complete" << std::endl;
