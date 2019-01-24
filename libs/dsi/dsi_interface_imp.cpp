@@ -217,8 +217,11 @@ const char* ImageModel::reconstruction(void)
 
         // correct for b-table orientation
         if(voxel.check_btable)
+        {
+            voxel.recon_report <<
+            " The b-table was checked by an automatic quality control routine to ensure its accuracy (Schilling et al. MRI, 2019) .";
             out << check_b_table();
-
+        }
 
         switch (voxel.method_id)
         {
