@@ -306,6 +306,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->track_up,SIGNAL(clicked()),tractWidget,SLOT(move_up()));
         connect(ui->track_down,SIGNAL(clicked()),tractWidget,SLOT(move_down()));
 
+        connect(ui->actionPPV_analysis,SIGNAL(triggered()),tractWidget,SLOT(ppv_analysis()));
 
 
     }

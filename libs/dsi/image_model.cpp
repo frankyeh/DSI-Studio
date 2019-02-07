@@ -430,6 +430,7 @@ void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformatio
 
 void ImageModel::rotate(const tipl::image<float,3>& ref,
                         const tipl::transformation_matrix<double>& affine,
+                        const tipl::image<tipl::vector<3>,3>& cdm_dis,
                         bool super_resolution)
 {
     tipl::geometry<3> new_geo = ref.geometry();
@@ -443,10 +444,20 @@ void ImageModel::rotate(const tipl::image<float,3>& ref,
         if(super_resolution)
             tipl::resample_with_ref(I,ref,dwi[index],affine);
         else
-            tipl::resample(I,dwi[index],affine,tipl::cubic);
+        {
+            if(cdm_dis.empty())
+                tipl::resample(I,dwi[index],affine,tipl::cubic);
+            else
+                tipl::resample_dis(I,dwi[index],affine,cdm_dis,tipl::cubic);
+        }
         src_dwi_data[index] = &(dwi[index][0]);
     });
     check_prog(0,0);
+    tipl::image<unsigned char,3> new_mask(new_geo);
+    tipl::resample(voxel.mask,new_mask,affine,tipl::linear);
+    voxel.mask.swap(new_mask);
+    tipl::morphology::smoothing(voxel.mask);
+
     dwi.swap(new_dwi);
     // rotate b-table
     if(has_image_rotation)
@@ -488,8 +499,6 @@ void ImageModel::rotate(const tipl::image<float,3>& ref,
     voxel.dim = new_geo;
     voxel.dwi_data.clear();
     calculate_dwi_sum();
-    voxel.calculate_mask(dwi_sum);
-
 }
 extern std::string fib_template_file_name_1mm,fib_template_file_name_2mm;
 bool ImageModel::rotate_to_mni(void)
@@ -1084,21 +1093,6 @@ bool ImageModel::compare_src(const char* file_name)
     voxel.study_name = QFileInfo(file_name).baseName().toStdString();
     voxel.compare_voxel = &(study_src->voxel);
 
-    // spatial smoothing to reduce noise
-    /*
-    tipl::par_for(study_src->new_dwi.size(),[&](int i)
-    {
-        tipl::filter::gaussian(study_src->new_dwi[i]);
-    });
-
-    tipl::par_for(src_dwi_data.size(),[&](int i)
-    {
-        auto I = tipl::make_image((unsigned short*)src_dwi_data[i],voxel.dim);
-        tipl::filter::gaussian(I);
-    });
-    */
-
-
     begin_prog("Registration between longitudinal scans");
     {
         tipl::transformation_matrix<double> arg;
@@ -1107,11 +1101,44 @@ bool ImageModel::compare_src(const char* file_name)
         tipl::reg::two_way_linear_mr(dwi_sum,voxel.vs,
                                      study_src->dwi_sum,study_src->voxel.vs,
                                         arg,tipl::reg::rigid_body,tipl::reg::correlation(),terminated);
-        study_src->rotate(dwi_sum,arg);
+        // nonlinear part
+        tipl::image<tipl::vector<3>,3> cdm_dis;
+        if(voxel.dt_deform)
+        {
+            tipl::image<float,3> new_dwi_sum(dwi_sum.geometry());
+            tipl::resample(study_src->dwi_sum,new_dwi_sum,arg,tipl::cubic);
+            tipl::match_signal(dwi_sum,new_dwi_sum);
+            bool terminated = false;
+            begin_prog("Nonlinear registration between longitudinal scans");
+            tipl::reg::cdm(dwi_sum,new_dwi_sum,cdm_dis,terminated,2.0f,0.5f);
+            check_prog(0,1);
+
+            /*
+            if(1) // debug
+            {
+                tipl::image<float,3> result(dwi_sum.geometry());
+                tipl::resample_dis(study_src->dwi_sum,result,arg,cdm_dis,tipl::cubic);
+                gz_nifti o1,o2,o3;
+                o1.set_voxel_size(voxel.vs);
+                o1.load_from_image(dwi_sum);
+                o1.save_to_file("d:/1.nii.gz");
+
+                o2.set_voxel_size(study_src->voxel.vs);
+                o2.load_from_image(new_dwi_sum);
+                o2.save_to_file("d:/2.nii.gz");
+
+                o3.set_voxel_size(study_src->voxel.vs);
+                o3.load_from_image(result);
+                o3.save_to_file("d:/3.nii.gz");
+            }*/
+        }
+        study_src->rotate(dwi_sum,arg,cdm_dis);
         study_src->voxel.vs = voxel.vs;
         study_src->voxel.mask = voxel.mask;
         check_prog(1,1);
     }
+
+
     // correct b_table first
     if(voxel.check_btable)
         study_src->check_b_table();
@@ -1141,12 +1168,8 @@ bool ImageModel::compare_src(const char* file_name)
         });
         study_src->calculate_dwi_sum();
     }
-
-
-
-    // prepare FA maps
     pre_dti();
     study_src->pre_dti();
-    voxel.R2 = tipl::correlation(voxel.fib_fa.begin(),voxel.fib_fa.end(),study_src->voxel.fib_fa.begin());
+    voxel.R2 = tipl::correlation(dwi_sum.begin(),dwi_sum.end(),study_src->dwi_sum.begin());
     return true;
 }

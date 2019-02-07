@@ -286,35 +286,15 @@ const char* ImageModel::reconstruction(void)
 
             if(!voxel.study_src_file_path.empty())
             {
+               rotate_to_mni();
                if(!compare_src(voxel.study_src_file_path.c_str()))
                     return "Failed to load DDI study SRC file.";
-
-                // nonlinear part
-                if(0)
-                {
-                    bool terminated = false;
-                    tipl::image<tipl::vector<3>,3> cdm_dis;
-                    begin_prog("Nonlinear registration between longitudinal scans");
-                    tipl::reg::cdm(voxel.fib_fa,study_src->voxel.fib_fa,cdm_dis,terminated,2.0f);
-                    tipl::image<float,3> J(study_src->voxel.fib_fa);
-                    tipl::compose_displacement(J,cdm_dis,study_src->voxel.fib_fa);
-                    voxel.R2 = tipl::correlation(study_src->voxel.fib_fa.begin(),study_src->voxel.fib_fa.end(),voxel.fib_fa.begin());
-                    check_prog(0,1);
-                    tipl::par_for(study_src->new_dwi.size(),[&](int i)
-                    {
-                        tipl::image<float,3> I(study_src->new_dwi[i]);
-                        tipl::compose_displacement(I,cdm_dis,study_src->new_dwi[i]);
-                    });
-                    check_prog(1,1);
-                }
-
-
 
                 voxel.recon_report <<
                 " The diffusion data were compared with baseline scan using differential tractography with a diffusion sampling length ratio of "
                 << (float)voxel.param[0] << " to study neuronal change.";
 
-                out << ".df." << voxel.study_name << ".R" << (int)(voxel.R2*100.0f);
+                out << (voxel.dt_deform ? ".ddf." : ".df.") << voxel.study_name << ".R" << (int)(voxel.R2*100.0f);
             }
             else
                 voxel.recon_report <<

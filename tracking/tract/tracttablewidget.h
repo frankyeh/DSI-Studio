@@ -27,7 +27,6 @@ private:
     track_recognition cnn;
     int color_gen = 10;
 public:
-    unsigned int tract_serial;
     std::vector<ThreadData*> thread_data;
     std::vector<TractModel*> tract_models;
     enum {none = 0,select = 1,del = 2,cut = 3,paint = 4}edit_option;
@@ -98,6 +97,7 @@ public slots:
     void move_down(void);
     void show_tracts_statistics(void);
     void recog_tracks(void);
+    void ppv_analysis(void);
 };
 
 #endif // TRACTTABLEWIDGET_H

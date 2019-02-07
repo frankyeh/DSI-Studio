@@ -95,7 +95,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         break;
     }
 
-    ui->open_ddi_study_src->setVisible(false);
+    ui->DT_Option->setVisible(false);
 
     ui->AdvancedWidget->setVisible(false);
     ui->ThreadCount->setValue(settings.value("rec_thread_count",std::thread::hardware_concurrency()).toInt());
@@ -289,6 +289,8 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
         handle->voxel.scheme_balance = false;
     }
 
+    if(!handle->voxel.study_src_file_path.empty())
+        handle->voxel.dt_deform = ui->dt_deform->isChecked();
     const char* msg = handle->reconstruction();
     if (!QFileInfo(msg).exists())
     {
@@ -765,7 +767,7 @@ void rec_motion_correction(ImageModel* handle)
         bool terminated = false;
         tipl::reg::linear(tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim),handle->voxel.vs,
                           tipl::make_image(handle->src_dwi_data[i],handle->voxel.dim),handle->voxel.vs,
-                                  arg,tipl::reg::affine,tipl::reg::correlation(),false,terminated,0.0001);
+                                  arg,tipl::reg::affine,tipl::reg::correlation(),terminated,0.0001);
         tipl::transformation_matrix<double> T(arg,handle->voxel.dim,handle->voxel.vs,handle->voxel.dim,handle->voxel.vs);
         handle->rotate_one_dwi(i,T);
     });
@@ -946,7 +948,7 @@ void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
 
 void reconstruction_window::on_actionEnable_TEST_features_triggered()
 {
-    ui->open_ddi_study_src->setVisible(true);
+    ui->DT_Option->setVisible(true);
 }
 
 void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
@@ -973,7 +975,10 @@ void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
     tipl::image<float,3> ref2(ref);
     float m = tipl::median(ref2.begin(),ref2.end());
     tipl::multiply_constant_mt(ref,0.5f/m);
-    handle->rotate(ref,manual->iT,true);
+
+
+    tipl::image<tipl::vector<3>,3> dummy;
+    handle->rotate(ref,manual->iT,dummy,true);
     handle->voxel.vs = vs;
     handle->voxel.report += " The diffusion images were rotated and scaled to the space of ";
     handle->voxel.report += QFileInfo(filenames[0]).baseName().toStdString();

@@ -577,26 +577,15 @@
         <item>
          <widget class="QGroupBox" name="GQIOption_2">
           <layout class="QHBoxLayout" name="GQIOption">
+           <property name="leftMargin">
+            <number>9</number>
+           </property>
            <property name="topMargin">
             <number>6</number>
            </property>
            <property name="bottomMargin">
             <number>6</number>
            </property>
-           <item>
-            <widget class="QPushButton" name="open_ddi_study_src">
-             <property name="text">
-              <string>Comparison SRC...</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="ddi_file">
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
            <item>
             <widget class="QCheckBox" name="csf_calibration">
              <property name="text">
@@ -670,6 +659,55 @@
                <string>r-squared weighted</string>
               </property>
              </item>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="DT_Option">
+          <property name="title">
+           <string/>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <property name="topMargin">
+            <number>6</number>
+           </property>
+           <property name="bottomMargin">
+            <number>6</number>
+           </property>
+           <item>
+            <widget class="QPushButton" name="open_ddi_study_src">
+             <property name="text">
+              <string>Comparison SRC...</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="ddi_file">
+             <property name="text">
+              <string>...</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_3">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="dt_deform">
+             <property name="text">
+              <string>Possible tissue deformation</string>
+             </property>
             </widget>
            </item>
           </layout>

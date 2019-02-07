@@ -123,6 +123,7 @@ public: // for DDI
     Voxel* compare_voxel = 0;
     std::string study_name;
     std::string study_src_file_path;
+    bool dt_deform = false;
 public:
     float z0 = 0.0;
     // other information for second pass processing

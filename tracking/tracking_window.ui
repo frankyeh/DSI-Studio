@@ -961,6 +961,7 @@
     <addaction name="actionManual_Registration"/>
     <addaction name="actionQuality_Assessment"/>
     <addaction name="actionImprove_Quality"/>
+    <addaction name="actionPPV_analysis"/>
    </widget>
    <widget class="QMenu" name="menuLayout">
     <property name="title">
@@ -3279,6 +3280,11 @@ Tracking</string>
   <action name="actionAB">
    <property name="text">
     <string>A*B</string>
+   </property>
+  </action>
+  <action name="actionPPV_analysis">
+   <property name="text">
+    <string>PPV analysis...</string>
    </property>
   </action>
  </widget>

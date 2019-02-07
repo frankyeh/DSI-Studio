@@ -18,11 +18,11 @@
 #include "../color_bar_dialog.hpp"
 #include "gzip_interface.hpp"
 
+void show_info_dialog(const std::string& title,const std::string& result);
 extern std::vector<atlas> atlas_list;
 
 TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget *parent) :
-    QTableWidget(parent),cur_tracking_window(cur_tracking_window_),
-    tract_serial(0)
+    QTableWidget(parent),cur_tracking_window(cur_tracking_window_)
 {
     setColumnCount(4);
     setColumnWidth(0,75);
@@ -106,8 +106,6 @@ void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vect
 
 void TractTableWidget::start_tracking(void)
 {
-
-    ++tract_serial;
     addNewTracts(cur_tracking_window.regionWidget->getROIname());
     thread_data.back() = new ThreadData();
     cur_tracking_window.set_tracking_param(*thread_data.back());
@@ -118,6 +116,80 @@ void TractTableWidget::start_tracking(void)
     tract_models.back()->report += thread_data.back()->report.str();
     cur_tracking_window.report(tract_models.back()->report.c_str());
     timer->start(1000);
+}
+
+void TractTableWidget::ppv_analysis(void)
+{
+    if(cur_tracking_window.handle->dir.dt_fa.empty()) // No dt setting
+    {
+        QMessageBox::information(this,"Error","No DT index set in the tracking parameter",0);
+        return;
+    }
+    std::vector<float> p1(100),p2(100);
+    {
+        int i = 0;
+        for(double dt_thresdhold = 0.05;dt_thresdhold <= 0.5;dt_thresdhold += 0.05)
+        for(int length_threshold = 5;length_threshold <= 50;length_threshold += 5,++i)
+        {
+            p1[i] = length_threshold;
+            p2[i] = dt_thresdhold;
+        }
+    }
+    std::vector<int> tracks_count(100);
+    ThreadData base_thread;
+    cur_tracking_window.set_tracking_param(base_thread);
+    cur_tracking_window.regionWidget->setROIs(&base_thread);
+    tracking_data fib;
+    fib.read(*cur_tracking_window.handle.get());
+
+    bool terminated = false;
+    begin_prog("PPV analysis");
+    tipl::par_for2(100,[&](int i,int j){
+        if(terminated)
+            return;
+        if(j == 0)
+        {
+            if(prog_aborted())
+            {
+                check_prog(0,0);
+                terminated = true;
+                return;
+            }
+            check_prog(i,100);
+        }
+        ThreadData new_thread;
+        new_thread.param = base_thread.param;
+        new_thread.param.min_length = p1[i];
+        new_thread.param.dt_threshold = p2[i];
+        new_thread.roi_mgr = base_thread.roi_mgr;
+        new_thread.run(fib,1,true);
+
+        TractModel trk(cur_tracking_window.handle);
+        new_thread.fetchTracks(&trk);
+        for(int k = 0;k < base_thread.param.tip_iteration;++k)
+            trk.trim();
+        tracks_count[i] = trk.get_visible_track_count();
+    });
+    check_prog(0,0);
+    if(prog_aborted())
+        return;
+
+
+    std::ostringstream out;
+    out << fib.dt_threshold_name << "\t";
+    for(int length_threshold = 5;length_threshold <= 50;length_threshold += 5)
+        out << length_threshold << " mm\t";
+    out << std::endl;
+
+    for(int dt_thresdhold = 5,i = 0;dt_thresdhold <= 50;dt_thresdhold += 5)
+    {
+        out << dt_thresdhold << "%\t";
+        for(int length_threshold = 5;length_threshold <= 50;length_threshold += 5,++i)
+            out << tracks_count[i] << "\t";
+        out << std::endl;
+    }
+
+    show_info_dialog("PPV results",out.str());
 }
 
 void TractTableWidget::filter_by_roi(void)
@@ -682,7 +754,6 @@ void TractTableWidget::deep_learning_train(void)
 
 }
 
-void show_info_dialog(const std::string& title,const std::string& result);
 void TractTableWidget::recog_tracks(void)
 {
     if(currentRow() >= tract_models.size() || tract_models[currentRow()]->get_tracts().size() == 0)

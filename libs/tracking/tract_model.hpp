@@ -13,7 +13,7 @@ private:
         std::shared_ptr<fib_data> handle;
         tipl::geometry<3> geometry;
         tipl::vector<3> vs;
-        std::auto_ptr<tracking_data> fib;
+        std::shared_ptr<tracking_data> fib;
 private:
         std::vector<std::vector<float> > tract_data;
         std::vector<std::vector<float> > deleted_tract_data;
