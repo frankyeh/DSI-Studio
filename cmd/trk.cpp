@@ -621,6 +621,10 @@ int trk(void)
 
     tracking_thread.fetchTracks(&tract_model);
     std::cout << "finished tracking." << std::endl;
+
+    for(int i = 0;i < tracking_thread.param.tip_iteration;++i)
+        tract_model.trim();
+
     if(tract_model.get_visible_track_count() == 0)
     {
         std::cout << "No tract generated. Terminating..." << std::endl;
