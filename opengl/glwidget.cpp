@@ -903,12 +903,18 @@ void GLWidget::renderLR()
                                   cur_region->show_region.color.g/255.0f,
                                   cur_region->show_region.color.b/255.0f,1.0f);
                         gluSphere(RegionSpheres->get(),
-                                  std::pow(cur_tracking_window.regionWidget->regions[i]->region.size()
-                                           *(get_param("region_node_size")+1),1.0f/3.0f)/8.0f,10,10);
+                                  std::pow(cur_tracking_window.regionWidget->regions[get_param("region_constant_node_size") ? 0:i]->region.size(),1.0f/3.0f)
+                                  *(get_param("region_node_size")+5)/50.0f,10,10);
                         glPopMatrix();
                     }
+                float edge_threshold = get_param_float("region_edge_threshold");
                 if(!connectivity.empty() && connectivity.width() == cur_tracking_window.regionWidget->regions.size())
                 {
+                    float max_connectivity = connectivity.at(0,0);
+                    for(unsigned int i = 0;i < cur_tracking_window.regionWidget->regions.size();++i)
+                        for(unsigned int j = i+1;j < cur_tracking_window.regionWidget->regions.size();++j)
+                            max_connectivity = std::max<float>(max_connectivity,connectivity.at(i,j));
+                    if(max_connectivity != 0.0f)
                     for(unsigned int i = 0;i < cur_tracking_window.regionWidget->regions.size();++i)
                         for(unsigned int j = i+1;j < cur_tracking_window.regionWidget->regions.size();++j)
                         if(cur_tracking_window.regionWidget->item(i,0)->checkState() == Qt::Checked &&
@@ -917,11 +923,13 @@ void GLWidget::renderLR()
                                 !cur_tracking_window.regionWidget->regions[j]->region.empty() &&
                                 connectivity.at(i,j) != 0.0f)
                         {
+                            if(edge_threshold != 0.0f && connectivity.at(i,j) < edge_threshold)
+                                continue;
                             auto centeri = cur_tracking_window.regionWidget->regions[i]->get_center();
                             auto centerj = cur_tracking_window.regionWidget->regions[j]->get_center();
                             glColor4f(1.0f,1.0f,1.0f,1.0f);
                             CylinderGL(RegionSpheres->get(),centeri,centerj,
-                                       connectivity.at(i,j)*(get_param("region_edge_size")+1));
+                                       (get_param("region_constant_edge_size") ? 0.5f:connectivity.at(i,j)/max_connectivity)*(get_param("region_edge_size")+5)/5.0f);
                         }
                 }
                 glDisable(GL_COLOR_MATERIAL);
@@ -1020,7 +1028,7 @@ void GLWidget::renderLR()
                 if(cur_tracking_window.regionWidget->item(i,0)->checkState() == Qt::Checked &&
                    !cur_tracking_window.regionWidget->regions[i]->region.empty())
                 {
-                    const auto& p = cur_tracking_window.regionWidget->regions[i]->show_region.center;
+                    auto p = cur_tracking_window.regionWidget->regions[i]->get_center();
                     if(p[0] == 0.0 && p[1] == 0.0 && p[2] == 0.0)
                     {
                         const auto& p2 = cur_tracking_window.regionWidget->regions[i]->show_region.center;
@@ -1029,7 +1037,7 @@ void GLWidget::renderLR()
                         renderText(p3[0],p3[1],p3[2],cur_tracking_window.regionWidget->item(i,0)->text(),font);
                     }
                     else
-                    renderText(p[0],p[1],p[2],cur_tracking_window.regionWidget->item(i,0)->text(),font);
+                        renderText(p[0],p[1],p[2],cur_tracking_window.regionWidget->item(i,0)->text(),font);
                 }
         }
         glPopMatrix();

@@ -14,8 +14,8 @@ Tracking/Threshold (0=random)/fa_threshold/float:0:2:0.01:5/0.1
 Tracking/Angular Threshold (0=random)/turning_angle/int:0:90:5/0
 Tracking/Step Size(mm)(0=random)/step_size/float:0.00:10:0.1:2/0
 Tracking/Smoothing (1=random)/smoothing/float:-1.5:1:0.1:2/1
-Tracking/Min Length(mm)/min_length/float:0:800:50:1/30
-Tracking/Max Length(mm)/max_length/float:0:800:50:1/300
+Tracking/Min Length(mm)/min_length/float:0:800:10:1/30
+Tracking/Max Length(mm)/max_length/float:0:800:10:1/300
 Tracking/Topology-Informed Pruning (iteration)/tip_iteration/int:0:10:1/0
 Tracking/Seed Orientation/initial_direction/Primary:Random:All/0
 Tracking/Seed Position/seed_plan/Subvoxel:Voxel Center/0
@@ -77,7 +77,10 @@ Tract/Blend Func2/tract_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:O
 Region/Opacity/region_alpha/float:0:1:0.1:2/0.8
 Region/Graph/region_graph/Off:On/0
 Region/Node Size/region_node_size/int/4
+Region/Constant Node Size/region_constant_node_size/Off:On/0
 Region/Edge Size/region_edge_size/int/4
+Region/Constant Edge Size/region_constant_edge_size/Off:On/0
+Region/Binary Graph Threshold (0: No threshold)/region_edge_threshold/float:0.00:1:0.1:2/0.0
 Region/Mesh Rendering/region_mesh_smoothed/Original:Smoothed:Smoothed2/1
 Region/Light/region_light_option/One source:Two sources:Three sources/0
 Region/Light Direction/region_light_dir/int/2
