@@ -159,7 +159,8 @@ public:
             d2[data.voxel_index] = 1000.0*d[1];
             d3[data.voxel_index] = 1000.0*d[2];
             d1[data.voxel_index] = 1000.0*(d[1]+d[2])/2.0;
-            ha[data.voxel_index] = std::acos(std::sqrt(V[0]*V[0]+V[1]*V[1]))*180.0f/3.14159265358979323846f;
+            if(voxel.output_helix_angle)
+                ha[data.voxel_index] = std::acos(std::sqrt(V[0]*V[0]+V[1]*V[1]))*180.0f/3.14159265358979323846f;
         }
         if(voxel.output_tensor && voxel.method_id == 1)
         {
@@ -197,7 +198,8 @@ public:
             mat_writer.write("rd",&*d1.begin(),1,d1.size());
             mat_writer.write("rd1",&*d2.begin(),1,d2.size());
             mat_writer.write("rd2",&*d3.begin(),1,d3.size());
-            //mat_writer.write("ha",&*ha.begin(),1,ha.size());
+            if(voxel.output_helix_angle)
+                mat_writer.write("ha",&*ha.begin(),1,ha.size());
             /*
             std::vector<float> cl(d0.size()),cp(d0.size());
             for(int i = 0;i < cl.size();++i)

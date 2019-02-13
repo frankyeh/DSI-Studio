@@ -79,6 +79,7 @@ public:
 public:// DTI
     bool output_diffusivity = false;
     bool output_tensor = false;
+    bool output_helix_angle = false;
 public://used in GQI
     bool r2_weighted = false;// used in GQI only
     bool half_sphere = false;

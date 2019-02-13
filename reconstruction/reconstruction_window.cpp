@@ -113,6 +113,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->output_mapping->setChecked(settings.value("output_mapping",0).toInt());
     ui->output_diffusivity->setChecked(settings.value("output_diffusivity",1).toInt());
     ui->output_tensor->setChecked(settings.value("output_tensor",0).toInt());
+    ui->output_helix_angle->setChecked(settings.value("output_helix_angle",0).toInt());
     ui->rdi->setChecked(settings.value("output_rdi",1).toInt());
     ui->check_btable->setChecked(settings.value("check_btable",1).toInt());
 
@@ -257,6 +258,8 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     settings.setValue("output_mapping",ui->output_mapping->isChecked() ? 1 : 0);
     settings.setValue("output_diffusivity",ui->output_diffusivity->isChecked() ? 1 : 0);
     settings.setValue("output_tensor",ui->output_tensor->isChecked() ? 1 : 0);
+    settings.setValue("output_helix_angle",ui->output_helix_angle->isChecked() ? 1 : 0);
+
     settings.setValue("output_rdi",(ui->rdi->isChecked() && (method_id == 4 || method_id == 7)) ? 1 : 0); // only for GQI
     settings.setValue("check_btable",ui->check_btable->isChecked() ? 1 : 0);
 
@@ -274,6 +277,8 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.output_mapping = ui->output_mapping->isChecked();
     handle->voxel.output_diffusivity = ui->output_diffusivity->isChecked();
     handle->voxel.output_tensor = ui->output_tensor->isChecked();
+    handle->voxel.output_helix_angle = ui->output_helix_angle->isChecked();
+
     handle->voxel.output_rdi = ui->rdi->isChecked();
     handle->voxel.thread_count = ui->ThreadCount->value();
 
@@ -421,6 +426,8 @@ void reconstruction_window::on_DTI_toggled(bool checked)
     ui->output_mapping->setVisible(!checked);
     ui->output_jacobian->setVisible(!checked);
     ui->output_tensor->setVisible(checked);
+    ui->output_helix_angle->setVisible(checked);
+
     ui->output_diffusivity->setVisible(!checked);
 
     ui->RecordODF->setVisible(!checked);
@@ -444,6 +451,7 @@ void reconstruction_window::on_GQI_toggled(bool checked)
     ui->output_mapping->setVisible(!checked);
     ui->output_jacobian->setVisible(!checked);
     ui->output_tensor->setVisible(!checked);
+    ui->output_helix_angle->setVisible(!checked);
     ui->output_diffusivity->setVisible(checked);
 
     ui->RecordODF->setVisible(checked);
@@ -465,6 +473,8 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
     ui->output_mapping->setVisible(checked);
     ui->output_jacobian->setVisible(checked);
     ui->output_tensor->setVisible(!checked);
+    ui->output_helix_angle->setVisible(!checked);
+
     ui->output_diffusivity->setVisible(checked);
 
     ui->RecordODF->setVisible(checked);
@@ -756,7 +766,7 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
 
 void rec_motion_correction(ImageModel* handle)
 {
-    begin_prog("correcting");
+    begin_prog("correcting motion...");
     tipl::par_for2(handle->src_bvalues.size(),[&](int i,int id)
     {
         if(i == 0 || prog_aborted())
