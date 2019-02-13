@@ -127,10 +127,10 @@ void export_track_info(const std::string& file_name,
             continue;
         }
 
-        file_name_stat += ".txt";
 
         if(cmd == "stat")
         {
+            file_name_stat += ".txt";
             std::cout << "export statistics..." << std::endl;
             std::ofstream out_stat(file_name_stat.c_str());
             std::string result;
@@ -139,13 +139,20 @@ void export_track_info(const std::string& file_name,
             continue;
         }
 
-        if(handle->get_name_index(cmd) != handle->view_item.size())
-            tract_model.save_data_to_file(file_name_stat.c_str(),cmd);
-        else
         {
-            std::cout << "invalid export option:" << cmd << std::endl;
-            continue;
+            if(cmd.find('.') != std::string::npos)
+                cmd = cmd.substr(0,cmd.find('.'));
+            else
+                file_name_stat += ".txt";
+            if(handle->get_name_index(cmd) != handle->view_item.size())
+            {
+                tract_model.save_data_to_file(file_name_stat.c_str(),cmd);
+                continue;
+            }
         }
+        std::cout << "invalid export option:" << cmd << std::endl;
+        continue;
+
     }
 }
 bool load_region(std::shared_ptr<fib_data> handle,
