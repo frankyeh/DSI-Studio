@@ -1,3 +1,5 @@
+#include <map>
+#include <QTextStream>
 #include "view_image.h"
 #include "ui_view_image.h"
 #include "libs/gzip_interface.hpp"
@@ -7,6 +9,8 @@
 #include <QMessageBox>
 #include <QBuffer>
 #include <QImageReader>
+
+std::map<std::string,std::string> dicom_dictionary;
 
 void show_view(QGraphicsScene& scene,QImage I);
 bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl::vector<3>& vs)
@@ -205,8 +209,48 @@ bool view_image::open(QStringList file_names)
             dicom.get_voxel_size(vs);
             std::string info_;
             dicom >> info_;
-            info = info_.c_str();
 
+            if(dicom_dictionary.empty())
+            {
+                QFile data(":/data/dicom_tag.txt");
+                if (data.open(QIODevice::ReadOnly | QIODevice::Text))
+                {
+                    QTextStream in(&data);
+                    while (!in.atEnd())
+                    {
+                        QStringList list = in.readLine().split('\t');
+                        if(list.size() < 3)
+                            continue;
+                        std::string value = list[2].toStdString();
+                        std::replace(value.begin(),value.end(),' ','_');
+                        dicom_dictionary[list[0].toStdString()] = value;
+                    }
+                }
+            }
+            std::ostringstream out;
+            std::istringstream in(info_);
+            std::string line;
+            while(std::getline(in,line))
+            {
+
+                for(int pos = 0;(pos = line.find('(',pos)) != std::string::npos;++pos)
+                {
+                    std::string tag = line.substr(pos,11);
+                    if(tag.length() != 11)
+                        continue;
+                    std::string tag2 = tag;
+                    tag2[3] = 'x';
+                    tag2[4] = 'x';
+                    auto iter = dicom_dictionary.find(tag);
+                    if(iter == dicom_dictionary.end())
+                        iter = dicom_dictionary.find(tag2);
+                    if(iter != dicom_dictionary.end())
+                        line.replace(pos,11,tag+iter->second);
+                }
+                out << line << std::endl;
+            }
+            info_ = out.str();
+            info = info_.c_str();
         }
         else
             if(mat.load_from_file(file_name.toLocal8Bit().begin()))

@@ -43,5 +43,6 @@
         <file>FreeSurferColorLUT.txt</file>
         <file>shader_fragment2.txt</file>
         <file>shader_vertex2.txt</file>
+        <file>dicom_tag.txt</file>
     </qresource>
 </RCC>
