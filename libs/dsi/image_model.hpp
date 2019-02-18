@@ -273,6 +273,7 @@ public:
     bool rotate_to_mni(void);
     void trim(void);
     void distortion_correction(const ImageModel& rhs);
+    void distortion_correction2(const ImageModel& rhs);
     bool compare_src(const char* file_name);
 public:
 
@@ -283,6 +284,7 @@ public:
     void save_to_file(gz_mat_write& mat_writer);
     bool save_to_nii(const char* nifti_file_name) const;
     bool save_b0_to_nii(const char* nifti_file_name) const;
+    bool save_dwi_sum_to_nii(const char* nifti_file_name) const;
     bool save_b_table(const char* file_name) const;
     bool save_bval(const char* file_name) const;
     bool save_bvec(const char* file_name) const;

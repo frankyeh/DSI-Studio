@@ -97,12 +97,17 @@ void RegToolBox::on_OpenSubject_clicked()
         ui->reg_type->setCurrentIndex(2);
 }
 
+void image2rgb(tipl::image<float,2>& tmp,tipl::color_image& buf)
+{
+    tmp *= 16.0f;
+    tipl::upper_lower_threshold(tmp.begin(),tmp.end(),tmp.begin(),0.0f,255.0f);
+    buf = tmp;
+}
+
 
 void show_slice_at(QGraphicsScene& scene,tipl::image<float,2>& tmp,tipl::color_image& buf,float ratio)
 {
-    tipl::normalize(tmp,255.0);
-    tipl::upper_lower_threshold(tmp.begin(),tmp.end(),tmp.begin(),0.0f,255.0f);
-    buf = tmp;
+    image2rgb(tmp,buf);
     show_view(scene,QImage((unsigned char*)&*buf.begin(),buf.width(),buf.height(),QImage::Format_RGB32).
               scaled(buf.width()*ratio,buf.height()*ratio));
 }
@@ -138,9 +143,7 @@ void RegToolBox::show_image(void)
         if(ui->dis_map->isChecked())
         {
             tipl::image<float,2> J_view_slice(J_view.slice_at(ui->slice_pos->value()));
-            tipl::normalize(J_view_slice,255.0);
-            tipl::upper_lower_threshold(J_view_slice.begin(),J_view_slice.end(),J_view_slice.begin(),0.0f,255.0f);
-            cJ = J_view_slice;
+            image2rgb(J_view_slice,cJ);
             QImage qcJ = QImage((unsigned char*)&*cJ.begin(),cJ.width(),cJ.height(),QImage::Format_RGB32).
                           scaled(cJ.width()*ratio,cJ.height()*ratio);
 
@@ -263,12 +266,14 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type)
 
 }
 
+
 void RegToolBox::nonlinear_reg(int method)
 {
     status = "nonlinear registration";
     if(method == 1)
     {
-        tipl::reg::cdm(It,J,dis,thread.terminated,2.0f,ui->smoothness->value());
+        //phase_estimate(It,J,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),60);
+        tipl::reg::cdm(It,J,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),60);
     }
     if(method == 0)
     {

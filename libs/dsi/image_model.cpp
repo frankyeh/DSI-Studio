@@ -698,13 +698,252 @@ void apply_distortion_map(const image_type& v1,
 }
 
 
+void phase_apply(const tipl::image<float,3>& I,
+                 const tipl::image<tipl::vector<3>,3>& d,
+                 tipl::image<float,3>& J)
+{
+    J.clear();
+    J.resize(I.geometry());
+    for(int pos = 0;pos < I.size();pos += I.width())
+    {
+        auto line = tipl::make_image(&*I.begin()+pos,tipl::geometry<1>(I.width()));
+        for(int x = 1;x < I.width();++x)
+        {
+            float delta = d[pos+x][0]-d[pos+x-1][0];
+            tipl::estimate(line,x+d[pos+x][0],J[pos+x]);
+            if(delta < 0.0f)
+                J[pos+x] *= (delta+1.0f);
+            else
+            {
+                for(float dx = 1.0;dx < delta;dx += 1.0f)
+                {
+                    float v = 0.0;
+                    tipl::estimate(line,x+d[pos+x][0]-dx,v);
+                    J[pos+x] += v;
+                }
+            }
+        }
+    }
+}
 
+double phase_estimate(const tipl::image<float,3>& It,
+            const tipl::image<float,3>& Is,
+            tipl::image<tipl::vector<3>,3>& d,// displacement field
+            bool& terminated,
+            float resolution = 2.0,
+            float cdm_smoothness = 0.3f,
+            unsigned int steps = 30)
+{
+    if(It.geometry() != Is.geometry() || It.empty())
+        throw "Invalid cdm input image";
+    tipl::geometry<3> geo = It.geometry();
+    d.resize(geo);
+    // multi resolution
+    if (*std::min_element(geo.begin(),geo.end()) > 32)
+    {
+        //downsampling
+        tipl::image<float,3> rIs,rIt;
+        tipl::downsample_with_padding(It,rIt);
+        tipl::downsample_with_padding(Is,rIs);
+        float r = phase_estimate(rIt,rIs,d,terminated,resolution/2.0,cdm_smoothness,steps);
+        tipl::upsample_with_padding(d,d,geo);
+        d *= 2.0f;
+        if(resolution > 1.0)
+            return r;
+    }
+    tipl::image<float,3> Js;// transformed I
+    tipl::image<tipl::vector<3>,3> new_d(d.geometry());// new displacements
+    double max_t = (double)(*std::max_element(It.begin(),It.end()));
+    double max_s = (double)(*std::max_element(Is.begin(),Is.end()));
+    if(max_t == 0.0 || max_s == 0.0)
+        return 0.0;
+    unsigned int window_size = 3;
+    float inv_d2 = 0.5f/3;
+    float cdm_smoothness2 = 1.0f-cdm_smoothness;
+    float r,prev_r = 0.0;
+    float theta = 0.0f;
+    for (unsigned int index = 0;index < steps && !terminated;++index)
+    {
+        //tipl::compose_displacement(Is,d,Js);
+        phase_apply(Is,d,Js);
+        r = tipl::correlation(Js.begin(),Js.end(),It.begin());
+        if(r <= prev_r)
+        {
+            new_d.swap(d);
+            break;
+        }
+        // dJ(cJ-I)
+        // gradient at x
+        {
+            new_d.clear();
+            new_d.resize(Js.geometry());
+            {
+                auto in_from1 = Js.begin();
+                auto in_from2 = Js.begin()+2;
+                auto out_from = new_d.begin()+1;
+                auto in_to = Js.end();
+                for (; in_from2 != in_to; ++in_from1,++in_from2,++out_from)
+                    (*out_from)[0] = (*in_from2 - *in_from1);
+            }
+        }
+        Js.for_each_mt([&](float&,tipl::pixel_index<3>& index){
+            if(It[index.index()] == 0.0 || It.geometry().is_edge(index))
+            {
+                new_d[index.index()] = tipl::vector<3>();
+                return;
+            }
+            std::vector<float> Itv,Jv;
+            tipl::get_window(index,It,window_size,Itv);
+            tipl::get_window(index,Js,window_size,Jv);
+            double a,b,r2;
+            tipl::linear_regression(Jv.begin(),Jv.end(),Itv.begin(),a,b,r2);
+            if(a <= 0.0f)
+                new_d[index.index()] = tipl::vector<3>();
+            else
+                new_d[index.index()] *= (Js[index.index()]*a+b-It[index.index()]);
+        });
+        // solving the poisson equation using Jacobi method
+        tipl::image<tipl::vector<3>,3> solve_d(new_d);
+        tipl::multiply_constant_mt(solve_d,-inv_d2);
+        for(int iter = 0;iter < window_size*2 && !terminated;++iter)
+        {
+            tipl::image<tipl::vector<3>,3> new_solve_d(new_d.geometry());
+            tipl::par_for(solve_d.size(),[&](int pos)
+            {
+                {
+                    int p1 = pos-1;
+                    int p2 = pos+1;
+                    if(p1 >= 0)
+                       new_solve_d[pos] += solve_d[p1];
+                    if(p2 < solve_d.size())
+                       new_solve_d[pos] += solve_d[p2];
+                }
+                new_solve_d[pos] -= new_d[pos];
+                new_solve_d[pos] *= inv_d2;
+            });
+            solve_d.swap(new_solve_d);
+        }
+        tipl::minus_constant_mt(solve_d,solve_d[0]);
+
+        new_d = solve_d;
+
+        if(theta == 0.0f)
+        {
+            int sum_n = 0;
+            tipl::par_for(new_d.size(),[&](int i)
+            {
+                float l = new_d[i].length();
+                if(l != 0.0f)
+                {
+                    theta += l;
+                    ++sum_n;
+                }
+            });
+            theta /= sum_n;
+        }
+        tipl::multiply_constant_mt(new_d,0.2f/theta);
+        tipl::par_for(new_d.size(),[&](int i)
+        {
+            float l = new_d[i].length();
+            if(l > 0.2f)
+                new_d[i] *= 0.2f/l;
+        });
+
+        tipl::add(new_d,d);
+
+        tipl::image<tipl::vector<3>,3> new_ds(new_d);
+        tipl::filter::gaussian2(new_ds);
+        tipl::par_for(new_d.size(),[&](int i){
+           new_ds[i] *= cdm_smoothness;
+           new_d[i] *= cdm_smoothness2;
+           new_d[i] += new_ds[i];
+           auto min_v = (i >= 1 ? new_d[i-1][0]:0)-0.95f;
+           auto max_v = (i+1 < new_d.size() ? new_d[i+1][0]:0)+0.95f;
+           d[i][0] = std::max<float>(min_v,std::min<float>(new_d[i][0],max_v));
+        });
+        tipl::filter::gaussian2(d);
+    }
+    return r;
+}
+
+void ImageModel::distortion_correction2(const ImageModel& rhs)
+{
+    tipl::image<float,3> v1,v2;
+    v1 = tipl::make_image(src_dwi_data[0],voxel.dim);
+    v2 = tipl::make_image(rhs.src_dwi_data[0],voxel.dim);
+
+
+    bool swap_xy = false;
+    {
+        tipl::image<float,2> px1,px2,py1,py2;
+        tipl::project_x(v1,px1);
+        tipl::project_x(v2,px2);
+        tipl::project_y(v1,py1);
+        tipl::project_y(v2,py2);
+        float cx = tipl::correlation(px1.begin(),px1.end(),px2.begin());
+        float cy = tipl::correlation(py1.begin(),py1.end(),py2.begin());
+
+        if(cx < cy)
+        {
+            tipl::swap_xy(v1);
+            tipl::swap_xy(v2);
+            swap_xy = true;
+        }
+    }
+
+
+    tipl::image<tipl::vector<3>,3> d1,d2;
+    bool terminated = false;
+    begin_prog("estimating field");
+    check_prog(0,3);
+    //phase_estimate(v1,v2,d2,terminated,1.0f,0.5f,60);
+    check_prog(1,3);
+    phase_estimate(v2,v1,d1,terminated,1.0f,0.5f,60);
+    check_prog(2,3);
+    tipl::multiply_constant_mt(d1,0.5f);
+    //tipl::multiply_constant_mt(d2,0.5f);
+
+
+    std::vector<tipl::image<unsigned short,3> > dwi(src_dwi_data.size());
+    tipl::par_for(src_dwi_data.size(),[&](int i)
+    {
+        tipl::image<float,3> I1 = tipl::make_image(src_dwi_data[i],voxel.dim);
+        tipl::image<float,3> I2 = tipl::make_image(rhs.src_dwi_data[i],rhs.voxel.dim);
+        tipl::image<float,3> J1,J2;
+        if(swap_xy)
+        {
+            tipl::swap_xy(I1);
+            tipl::swap_xy(I2);
+        }
+
+        phase_apply(I1,d1,J1);
+        //tipl::compose_displacement(I2,d2,J2);
+
+        dwi[i] = J1;
+        //tipl::add(dwi[i],J2);
+        //tipl::multiply_constant(dwi[i],0.5f);
+        if(swap_xy)
+            tipl::swap_xy(dwi[i]);
+    });
+    check_prog(3,3);
+
+
+    new_dwi.swap(dwi);
+    for(int i = 0;i < new_dwi.size();++i)
+        src_dwi_data[i] = &(new_dwi[i][0]);
+
+    calculate_dwi_sum();
+    voxel.calculate_mask(dwi_sum);
+
+}
 
 void ImageModel::distortion_correction(const ImageModel& rhs)
 {
     tipl::image<float,3> v1,v2;
-    v1 = dwi_sum;
-    v2 = rhs.dwi_sum;
+    //v1 = dwi_sum;
+    //v2 = rhs.dwi_sum;
+    v1 = tipl::make_image(src_dwi_data[0],voxel.dim);
+    v2 = tipl::make_image(rhs.src_dwi_data[0],voxel.dim);
 
 
     bool swap_xy = false;
@@ -756,7 +995,6 @@ void ImageModel::distortion_correction(const ImageModel& rhs)
     voxel.calculate_mask(dwi_sum);
 
 }
-
 
 void calculate_shell(const std::vector<float>& sorted_bvalues,
                      std::vector<unsigned int>& shell)
@@ -1045,6 +1283,17 @@ bool ImageModel::save_b0_to_nii(const char* nifti_file_name) const
     header << buffer;
     return header.save_to_file(nifti_file_name);
 }
+
+bool ImageModel::save_dwi_sum_to_nii(const char* nifti_file_name) const
+{
+    gz_nifti header;
+    header.set_voxel_size(voxel.vs);
+    tipl::image<float,3> buffer(dwi_sum);
+    tipl::flip_xy(buffer);
+    header << buffer;
+    return header.save_to_file(nifti_file_name);
+}
+
 bool ImageModel::save_b_table(const char* file_name) const
 {
     std::ofstream out(file_name);

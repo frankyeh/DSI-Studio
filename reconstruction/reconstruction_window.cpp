@@ -581,6 +581,18 @@ void reconstruction_window::on_actionSave_b0_triggered()
     handle->save_b0_to_nii(filename.toLocal8Bit().begin());
 }
 
+void reconstruction_window::on_actionSave_DWI_sum_triggered()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                                this,
+                                "Save image as...",
+                            filenames[0] + ".dwi_sum.nii.gz",
+                                "All files (*)" );
+    if ( filename.isEmpty() )
+        return;
+    handle->save_dwi_sum_to_nii(filename.toLocal8Bit().begin());
+}
+
 void reconstruction_window::on_actionSave_b_table_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
@@ -769,14 +781,14 @@ void rec_motion_correction(ImageModel* handle)
     begin_prog("correcting motion...");
     tipl::par_for2(handle->src_bvalues.size(),[&](int i,int id)
     {
-        if(i == 0 || prog_aborted())
+        if(i == 0 || prog_aborted() || handle->src_bvalues[i] > 1500)
             return;
         if(id == 0)
             check_prog(i*99/handle->src_bvalues.size(),100);
         tipl::affine_transform<double> arg;
         bool terminated = false;
-        tipl::reg::linear(tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim),handle->voxel.vs,
-                          tipl::make_image(handle->src_dwi_data[i],handle->voxel.dim),handle->voxel.vs,
+        tipl::reg::linear_mr(tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim),handle->voxel.vs,
+                             tipl::make_image(handle->src_dwi_data[i],handle->voxel.dim),handle->voxel.vs,
                                   arg,tipl::reg::affine,tipl::reg::correlation(),terminated,0.0001);
         tipl::transformation_matrix<double> T(arg,handle->voxel.dim,handle->voxel.vs,handle->voxel.dim,handle->voxel.vs);
         handle->rotate_one_dwi(i,T);
@@ -949,7 +961,7 @@ void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
         QMessageBox::information(this,"error","The DWI number is different.",0);
         return;
     }
-    handle->distortion_correction(src2);
+    handle->distortion_correction2(src2);
     update_image();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
@@ -1074,3 +1086,5 @@ void reconstruction_window::on_reg_method_currentIndexChanged(int index)
     }
     ui->template_box->setCurrentIndex(0);
 }
+
+

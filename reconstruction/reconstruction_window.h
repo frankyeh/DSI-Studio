@@ -97,6 +97,7 @@ private slots:
     void on_CorView_clicked();
     void on_AxiView_clicked();
     void on_reg_method_currentIndexChanged(int index);
+    void on_actionSave_DWI_sum_triggered();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

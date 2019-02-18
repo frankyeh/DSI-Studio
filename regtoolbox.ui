@@ -227,6 +227,13 @@
                   </property>
                  </widget>
                 </item>
+                <item>
+                 <widget class="QLabel" name="label_5">
+                  <property name="text">
+                   <string>reso</string>
+                  </property>
+                 </widget>
+                </item>
                </layout>
               </widget>
              </item>
@@ -248,6 +255,16 @@
                 <property name="bottomMargin">
                  <number>0</number>
                 </property>
+                <item>
+                 <widget class="QSpinBox" name="resolution">
+                  <property name="minimum">
+                   <number>1</number>
+                  </property>
+                  <property name="value">
+                   <number>2</number>
+                  </property>
+                 </widget>
+                </item>
                 <item>
                  <widget class="QLabel" name="label">
                   <property name="text">
@@ -616,7 +633,7 @@
      <x>0</x>
      <y>0</y>
      <width>886</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Open">
