@@ -63,6 +63,7 @@ void RegToolBox::on_OpenTemplate_clicked()
         return;
     }
     nifti.toLPS(It);
+    //tipl::swap_xy(It);
     nifti.get_image_transformation(ItR);
     It *= 1.0f/tipl::mean(It);
     nifti.get_voxel_size(Itvs);
@@ -89,6 +90,7 @@ void RegToolBox::on_OpenSubject_clicked()
         return;
     }
     nifti.toLPS(I);
+    //tipl::swap_xy(I);
     I *= 1.0f/tipl::mean(I);
     nifti.get_voxel_size(Ivs);
     clear();
@@ -265,7 +267,13 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type)
     J_view = J;
 
 }
-
+double phase_estimate(const tipl::image<float,3>& It,
+            const tipl::image<float,3>& Is,
+            tipl::image<tipl::vector<3>,3>& d,// displacement field
+            bool& terminated,
+            float resolution = 2.0,
+            float cdm_smoothness = 0.3f,
+            unsigned int steps = 30);
 
 void RegToolBox::nonlinear_reg(int method)
 {

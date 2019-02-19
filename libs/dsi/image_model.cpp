@@ -710,6 +710,7 @@ void phase_apply(const tipl::image<float,3>& I,
         for(int x = 1;x < I.width();++x)
         {
             float delta = d[pos+x][0]-d[pos+x-1][0];
+
             tipl::estimate(line,x+d[pos+x][0],J[pos+x]);
             if(delta < 0.0f)
                 J[pos+x] *= (delta+1.0f);
@@ -778,30 +779,15 @@ double phase_estimate(const tipl::image<float,3>& It,
             new_d.clear();
             new_d.resize(Js.geometry());
             {
+                auto in_to1 = It.begin()+1;
                 auto in_from1 = Js.begin();
                 auto in_from2 = Js.begin()+2;
                 auto out_from = new_d.begin()+1;
                 auto in_to = Js.end();
-                for (; in_from2 != in_to; ++in_from1,++in_from2,++out_from)
-                    (*out_from)[0] = (*in_from2 - *in_from1);
+                for (; in_from2 != in_to; ++in_from1,++in_from2,++out_from,++in_to1)
+                    (*out_from)[0] = (*in_from2 - *in_from1)*(*(in_from1+1)-*in_to1);
             }
         }
-        Js.for_each_mt([&](float&,tipl::pixel_index<3>& index){
-            if(It[index.index()] == 0.0 || It.geometry().is_edge(index))
-            {
-                new_d[index.index()] = tipl::vector<3>();
-                return;
-            }
-            std::vector<float> Itv,Jv;
-            tipl::get_window(index,It,window_size,Itv);
-            tipl::get_window(index,Js,window_size,Jv);
-            double a,b,r2;
-            tipl::linear_regression(Jv.begin(),Jv.end(),Itv.begin(),a,b,r2);
-            if(a <= 0.0f)
-                new_d[index.index()] = tipl::vector<3>();
-            else
-                new_d[index.index()] *= (Js[index.index()]*a+b-It[index.index()]);
-        });
         // solving the poisson equation using Jacobi method
         tipl::image<tipl::vector<3>,3> solve_d(new_d);
         tipl::multiply_constant_mt(solve_d,-inv_d2);
@@ -845,8 +831,8 @@ double phase_estimate(const tipl::image<float,3>& It,
         tipl::par_for(new_d.size(),[&](int i)
         {
             float l = new_d[i].length();
-            if(l > 0.2f)
-                new_d[i] *= 0.2f/l;
+            if(l > 0.5f)
+                new_d[i] *= 0.5f/l;
         });
 
         tipl::add(new_d,d);
@@ -896,12 +882,12 @@ void ImageModel::distortion_correction2(const ImageModel& rhs)
     bool terminated = false;
     begin_prog("estimating field");
     check_prog(0,3);
-    //phase_estimate(v1,v2,d2,terminated,1.0f,0.5f,60);
+    phase_estimate(v1,v2,d2,terminated,1.0f,0.2f,60);
     check_prog(1,3);
-    phase_estimate(v2,v1,d1,terminated,1.0f,0.5f,60);
+    phase_estimate(v2,v1,d1,terminated,1.0f,0.2f,60);
     check_prog(2,3);
     tipl::multiply_constant_mt(d1,0.5f);
-    //tipl::multiply_constant_mt(d2,0.5f);
+    tipl::multiply_constant_mt(d2,0.5f);
 
 
     std::vector<tipl::image<unsigned short,3> > dwi(src_dwi_data.size());
@@ -917,11 +903,11 @@ void ImageModel::distortion_correction2(const ImageModel& rhs)
         }
 
         phase_apply(I1,d1,J1);
-        //tipl::compose_displacement(I2,d2,J2);
+        tipl::compose_displacement(I2,d2,J2);
 
         dwi[i] = J1;
-        //tipl::add(dwi[i],J2);
-        //tipl::multiply_constant(dwi[i],0.5f);
+        tipl::add(dwi[i],J2);
+        tipl::multiply_constant(dwi[i],0.5f);
         if(swap_xy)
             tipl::swap_xy(dwi[i]);
     });
