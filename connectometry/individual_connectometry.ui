@@ -68,7 +68,7 @@
             </size>
            </property>
            <property name="text">
-            <string>Base line FIB:</string>
+            <string>Baseline FIB:</string>
            </property>
           </widget>
          </item>
@@ -87,7 +87,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset resource="icons.qrc">
+            <iconset resource="../icons.qrc">
              <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
            </property>
           </widget>
@@ -138,7 +138,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset resource="icons.qrc">
+            <iconset resource="../icons.qrc">
              <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
            </property>
           </widget>
@@ -200,7 +200,7 @@
          <item>
           <widget class="QRadioButton" name="norm0">
            <property name="text">
-            <string>None (recommended)</string>
+            <string>None</string>
            </property>
            <property name="checked">
             <bool>true</bool>
@@ -252,7 +252,7 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="icons.qrc">
+           <iconset resource="../icons.qrc">
             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
           </property>
          </widget>
@@ -296,7 +296,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="icons.qrc"/>
+  <include location="../icons.qrc"/>
  </resources>
  <connections/>
 </ui>
