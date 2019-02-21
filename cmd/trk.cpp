@@ -219,26 +219,36 @@ bool load_region(std::shared_ptr<fib_data> handle,
     std::cout << "read region from " << region_text << std::endl;
     QStringList str_list = QString(region_text.c_str()).split(",");// splitting actions
     std::string file_name = str_list[0].toStdString();
+    std::string region_name;
 
-    if(file_name.find(':') != std::string::npos &&
-       file_name.find(':') != 1)
+    // --roi=file_name:value
+    if(file_name.find(':') != std::string::npos)
     {
+        file_name = file_name.substr(0,file_name.find(':'));
+        region_name = file_name.substr(file_name.find(':')+1);
+    }
+
+    if(!QFileInfo(file_name.c_str()).exists())
+    {
+        LOAD_MNI:
+        std::cout << "Searching " << file_name << " from the atlas pool..." << std::endl;
+        if(!atl_load_atlas(file_name))
+        {
+            std::cout << file_name << " does not exist. terminating..." << std::endl;
+            return false;
+        }
+
         if(handle->get_mni_mapping().empty())
         {
             std::cout << "Cannot output connectivity: no mni mapping." << std::endl;
             return false;
         }
         const tipl::image<tipl::vector<3,float>,3 >& mapping = handle->get_mni_mapping();
-        std::string atlas_name = file_name.substr(0,file_name.find(':'));
-        std::string region_name = file_name.substr(file_name.find(':')+1);
-        std::cout << "Loading " << region_name << " from " << atlas_name << " atlas" << std::endl;
-        if(!atl_load_atlas(atlas_name))
-            return false;
-
+        std::cout << "Loading " << region_name << " from " << file_name << " atlas" << std::endl;
         tipl::vector<3> null;
         std::vector<tipl::vector<3,short> > cur_region;
         for(unsigned int i = 0;i < atlas_list.size();++i)
-            if(atlas_list[i].name == atlas_name)
+            if(atlas_list[i].name == file_name)
                 for (unsigned int label_index = 0; label_index < atlas_list[i].get_list().size(); ++label_index)
                     if(atlas_list[i].get_list()[label_index] == region_name)
                 {
@@ -273,12 +283,6 @@ bool load_region(std::shared_ptr<fib_data> handle,
             std::cout << convert[4] << " " << convert[5] << " " << convert[6] << " " << convert[7] << std::endl;
             std::cout << convert[8] << " " << convert[9] << " " << convert[10] << " " << convert[11] << std::endl;
         }
-
-        if(!QFileInfo(file_name.c_str()).exists())
-        {
-            std::cout << file_name << " does not exist. terminating..." << std::endl;
-            return false;
-        }
         if(!roi.LoadFromFile(file_name.c_str()))
         {
             gz_nifti header;
@@ -287,20 +291,31 @@ bool load_region(std::shared_ptr<fib_data> handle,
                 std::cout << "Not a valid nifti file:" << file_name << std::endl;
                 return false;
             }
-            tipl::image<unsigned int, 3> from;
+            tipl::image<int, 3> from;
+            header.toLPS(from);
+            if(!region_name.empty())
             {
-                tipl::image<float, 3> tmp;
-                header.toLPS(tmp);
-                tipl::add_constant(tmp,0.5);
-                from = tmp;
+                int region_value = std::stoi(region_name);
+                std::cout << "Select region with value=" << region_value << std::endl;
+                for(int i = 0 ;i < from.size();++i)
+                    from[i] = (from[i] == region_value ? 1:0);
             }
-            if(t1t2_geo != from.geometry())
+
+            if(t1t2_geo == from.geometry())
             {
-                std::cout << "Invalid region dimension:" << file_name << std::endl;
-                return false;
+                std::cout << "Using " << po.get("t1t2") << " as the reference to load " << file_name << std::endl;
+                roi.LoadFromBuffer(from,convert);
             }
-            std::cout << "Region loaded using T1T2 ref image" << std::endl;
-            roi.LoadFromBuffer(from,convert);
+            else
+            if(from.geometry() == handle->dim)
+            {
+                std::cout << "Loading " << file_name << "as a native space region" << std::endl;
+                roi.LoadFromBuffer(from);
+            }
+            // MNI space ROI
+
+            std::cout << "Loading " << file_name << "as an MNI space region" << std::endl;
+            goto LOAD_MNI;
         }
     }
     // now perform actions

@@ -700,7 +700,7 @@ void RegionTableWidget::load_mni_region(void)
         atlas a;
         a.filename = filenames[index].toStdString();
         for(int j = 0;j < a.get_list().size();++j)
-            add_region_from_atlas(a,0);
+            add_region_from_atlas(a,j);
 
     }
     emit need_update();
