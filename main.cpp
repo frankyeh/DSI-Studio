@@ -32,6 +32,7 @@ int ana(void);
 int exp(void);
 int atl(void);
 int cnt(void);
+int cnt_ind(void);
 int vis(void);
 int ren(void);
 int cnn(void);
@@ -141,6 +142,8 @@ int run_action(std::shared_ptr<QApplication> gui)
         return atl();
     if(po.get("action") == std::string("cnt"))
         return cnt();
+    if(po.get("action") == std::string("cnt_ind"))
+        return cnt_ind();
     if(po.get("action") == std::string("ren"))
         return ren();
     if(po.get("action") == std::string("cnn"))

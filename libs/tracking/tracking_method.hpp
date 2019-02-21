@@ -133,6 +133,7 @@ struct TrackingParam
             else
                 report << " The fiber trajectories were smoothed by averaging the propagation direction with a percentage of the previous direction. The percentage was randomly selected from 0% to 95%.";
         }
+
         report << " Tracks with length shorter than " << min_length << " or longer than " << max_length  << " mm were discarded.";
         report << " A total of " << termination_count << (stop_by_tract ? " tracts were calculated.":" seeds were placed.");
         if(tip_iteration)

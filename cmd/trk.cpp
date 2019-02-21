@@ -434,14 +434,27 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
     return true;
 }
 
-
+int trk(std::shared_ptr<fib_data> handle);
 int trk(void)
 {
     try{
-
-    std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
-    if(!handle.get())
-        return 0;
+        std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
+        if(!handle.get())
+            return 0;
+        return trk(handle);
+    }
+    catch(std::exception const&  ex)
+    {
+        std::cout << "program terminated due to exception:" << ex.what() << std::endl;
+    }
+    catch(...)
+    {
+        std::cout << "program terminated due to unkown exception" << std::endl;
+    }
+    return 0;
+}
+int trk(std::shared_ptr<fib_data> handle)
+{
     if (po.has("threshold_index"))
     {
         std::cout << "setting index to " << po.get("threshold_index") << std::endl;
@@ -472,7 +485,7 @@ int trk(void)
     tracking_thread.param.dt_threshold = po.get("dt_threshold",0.0f);
     tracking_thread.param.cull_cos_angle = std::cos(po.get("turning_angle",0.0)*3.14159265358979323846/180.0);
     tracking_thread.param.step_size = po.get("step_size",0.0f);
-    tracking_thread.param.smooth_fraction = po.get("smoothing",1.0f);
+    tracking_thread.param.smooth_fraction = po.get("smoothing",0.0f);
     tracking_thread.param.min_length = po.get("min_length",0.0f);
     tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,po.get("max_length",400.0f));
 
@@ -657,16 +670,4 @@ int trk(void)
         file_name = fout.str();
     }
     return trk_post(handle,tract_model,file_name);
-
-    }
-    catch(std::exception const&  ex)
-    {
-        std::cout << "program terminated due to exception:" << ex.what() << std::endl;
-    }
-    catch(...)
-    {
-        std::cout << "program terminated due to unkown exception" << std::endl;
-    }
-
-    return 0;
 }

@@ -162,3 +162,74 @@ int cnt(void)
     vbc.reset(0);
     return 0;
 }
+
+
+std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
+extern std::string fib_template_file_name_2mm;
+int trk(std::shared_ptr<fib_data> handle);
+int cnt_ind(void)
+{
+    std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
+    if(!handle.get())
+        return 0;
+    int normalization = po.get("norm",0);
+    std::cout << "normalization=" << normalization << std::endl;
+
+    if(!po.has("study"))
+    {
+        std::cout << "Please assign the study FIB file to --study." << std::endl;
+        return 0 ;
+    }
+
+    if(!handle->is_qsdr)
+    {
+        std::cout << "Please assign a QSDR reconstructed FIB file to --source." << std::endl;
+        return 0;
+    }
+
+    connectometry_result cnt_result;
+    if(handle->has_odfs())
+    {
+        std::cout << "Individual FIB compared with individual FIB." << std::endl;
+        std::shared_ptr<fib_data> temp_handle = cmd_load_fib(po.get("template",fib_template_file_name_2mm));
+        if(!temp_handle.get())
+            return 0;
+        if(!cnt_result.individual_vs_individual(temp_handle,po.get("source").c_str(),po.get("study").c_str(),normalization))
+            goto error;
+        else
+            goto run;
+    }
+
+    if(handle->db.has_db())
+    {
+        std::cout << "Connectometry db compared with individual FIB." << std::endl;
+        if(!cnt_result.individual_vs_db(handle,po.get("study").c_str()))
+            goto error;
+        else
+            goto run;
+    }
+
+    // versus template
+    {
+        std::cout << "Individual FIB compared with a template FIB" << std::endl;
+        if(normalization == 0)
+            normalization = 1;
+        if(!cnt_result.individual_vs_atlas(handle,po.get("study").c_str(),normalization))
+            goto error;
+        else
+            goto run;
+    }
+
+    {
+        run:
+        handle->report = handle->db.report + cnt_result.report;
+        trk(handle);
+        return 0;
+    }
+
+    {
+        error:
+        std::cout << cnt_result.error_msg << std::endl;
+        return 0;
+    }
+}
