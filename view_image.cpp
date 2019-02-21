@@ -92,19 +92,24 @@ bool view_image::eventFilter(QObject *obj, QEvent *event)
     return true;
 }
 
-void get_compressed_image(tipl::io::dicom& dicom,tipl::image<short,2>& I)
+bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<short,2>& I)
 {
     QByteArray array((char*)&*dicom.compressed_buf.begin(),dicom.buf_size);
     QBuffer qbuff(&array);
     QImageReader qimg;
     qimg.setDecideFormatFromContent(true);
     qimg.setDevice(&qbuff);
-    QImage img=qimg.read();
+    if(!qimg.canRead())
+        return false;
+    QImage img;
+    if(!qimg.read(&img))
+        return false;
     QImage buf = img.convertToFormat(QImage::Format_RGB32);
     I.resize(tipl::geometry<2>(buf.width(),buf.height()));
     const uchar* ptr = buf.bits();
     for(int j = 0;j < I.size();++j,ptr += 4)
         I[j] = *ptr;
+    return true;
 }
 
 bool view_image::open(QStringList file_names)
@@ -202,7 +207,11 @@ bool view_image::open(QStringList file_names)
             if(dicom.is_compressed)
             {
                 tipl::image<short,2> I;
-                get_compressed_image(dicom,I);
+                if(!get_compressed_image(dicom,I))
+                {
+                    QMessageBox::information(this,"Error","Unsupported compressed DICOM format",0);
+                    return false;
+                }
                 if(I.size() == data.size())
                     std::copy(I.begin(),I.end(),data.begin());
             }
