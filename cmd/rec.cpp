@@ -106,7 +106,7 @@ int rec(void)
         handle->voxel.param[1] = 8.0f; // SH order
     }
     if(method_index == 4)
-        handle->voxel.param[0] = 1.2f;
+        handle->voxel.param[0] = 1.25f;
     if(method_index == 6) // Convert to HARDI
     {
         handle->voxel.param[0] = 1.25f;
