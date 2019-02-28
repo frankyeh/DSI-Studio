@@ -554,6 +554,8 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
 }
 bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
+    std::vector<tipl::image<float,3> > image_buf;
+    int plane_size = 0;
     for (unsigned int index = 0;check_prog(index,file_list.size());++index)
     {
         std::map<std::string,std::string> value_list;
@@ -589,8 +591,11 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
                !(std::istringstream(value_list["slices"]) >> depth) ||
                !(std::istringstream(value_list["roi[]"]) >> fov1 >> fov2 >> fov3))
                 return false;
+            plane_size = width*height;
+            image_buf.resize(dwi_num);
             for(unsigned int i = 0;i < dwi_num;++i)
             {
+                image_buf[i].resize(tipl::geometry<3>(width,height,depth));
                 dwi_files.push_back(std::make_shared<DwiHeader>());
                 dwi_files.back()->image.resize(tipl::geometry<3>(width,height,depth));
                 dwi_files.back()->voxel_size[0] = fov1*10.0/width;
@@ -625,13 +630,23 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
                 return false;
             dwi_files[dwi_id]->bvec.normalize();
         }
-        std::vector<float> buf(dwi_files[dwi_id]->image.width()*dwi_files[dwi_id]->image.height());
         std::ifstream in(file_list[index].toLocal8Bit().begin(),std::ifstream::binary);
-        in.seekg(-(int)buf.size()*4,std::ios_base::end);
-        if(!in.read((char*)&*buf.begin(),buf.size()*4))
+        in.seekg(-(int)plane_size*4,std::ios_base::end);
+        if(!in.read((char*)&*(image_buf[dwi_id].begin() + slice_id*plane_size),plane_size*4))
             return false;
-        std::copy(buf.begin(),buf.end(),dwi_files[dwi_id]->image.begin() + slice_id*dwi_files[dwi_id]->image.plane_size());
     }
+
+    float max_value = 0.0f;
+    for(int i = 0;i < image_buf.size();++i)
+        max_value = std::max<float>(max_value,tipl::maximum(image_buf[i]));
+    if(max_value > 36728.0f)
+    {
+        float ratio = 32768.0f/max_value;
+        for(int i = 0;i < image_buf.size();++i)
+            tipl::multiply_constant(image_buf[i],ratio);
+    }
+    for(int i = 0;i < image_buf.size();++i)
+        dwi_files[i]->image = image_buf[i];
     return true;
 }
 
