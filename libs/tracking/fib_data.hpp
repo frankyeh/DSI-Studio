@@ -158,10 +158,12 @@ public:
     tipl::thread thread;
     int prog;
     std::vector<float> trans_to_mni;
-    tipl::image<tipl::vector<3,float>,3 > mni_position;
+    tipl::image<tipl::vector<3,float>,3 > mni_position,inv_mni_position;
     tipl::image<tipl::vector<3,float>,3 > native_position;
 public:
     void run_normalization(bool background);
+    bool can_map_to_mni(void);
+    void mni2subject(tipl::vector<3>& pos);
     void subject2mni(tipl::vector<3>& pos);
     void subject2mni(tipl::pixel_index<3>& index,tipl::vector<3>& pos);
     void get_atlas_roi(atlas& at,int roi_index,std::vector<tipl::vector<3,short> >& points,float& r);

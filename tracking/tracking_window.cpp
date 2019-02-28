@@ -936,21 +936,7 @@ void tracking_window::on_deleteSlice_clicked()
 
 bool tracking_window::can_map_to_mni(void)
 {
-    if(!handle->is_human_data)
-        return false;
-    if(handle->is_qsdr || !handle->mni_position.empty())
-        return true;
-    begin_prog("running normalization");
-    handle->run_normalization(true);
-    while(check_prog(handle->prog,5) && handle->mni_position.empty())
-        ;
-    check_prog(0,0);
-    if(prog_aborted())
-    {
-        handle->thread.clear();
-        return false;
-    }
-    return true;
+    return handle->can_map_to_mni();
 }
 
 void tracking_window::on_actionSave_Tracts_in_MNI_space_triggered()

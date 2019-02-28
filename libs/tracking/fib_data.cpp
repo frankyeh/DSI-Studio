@@ -848,14 +848,25 @@ void fib_data::run_normalization(bool background)
         tipl::image<float,3> Iss(It.geometry());
         tipl::resample_mt(Is,Iss,T,tipl::linear);
         prog = 3;
-        tipl::image<tipl::vector<3>,3> dis;
+        tipl::image<tipl::vector<3>,3> dis,inv_dis;
         tipl::reg::cdm(It,Iss,dis,thread.terminated,2.0f,0.95f);
+        tipl::invert_displacement(dis,inv_dis);
         if(thread.terminated)
             return;
         prog = 4;
         tipl::image<tipl::vector<3,float>,3 > mni(Is.geometry());
+        tipl::image<tipl::vector<3,float>,3 > inv_mni(It.geometry());
         if(thread.terminated)
             return;
+
+        inv_mni.for_each_mt([&](tipl::vector<3,float>& v,const tipl::pixel_index<3>& pos)
+        {
+            tipl::vector<3> p(pos);
+            v = p;
+            v += inv_dis[pos.index()];
+            T(v);
+        });
+
         T.inverse();
         mni.for_each_mt([&](tipl::vector<3,float>& v,const tipl::pixel_index<3>& pos)
         {
@@ -869,6 +880,7 @@ void fib_data::run_normalization(bool background)
         if(thread.terminated)
             return;
         mni_position.swap(mni);
+        inv_mni_position.swap(inv_mni);
         prog = 5;
     };
 
@@ -881,6 +893,44 @@ void fib_data::run_normalization(bool background)
         std::cout << "Subject normalization to MNI space." << std::endl;
         lambda();
     }
+}
+
+bool fib_data::can_map_to_mni(void)
+{
+    if(!is_human_data)
+        return false;
+    if(is_qsdr || !mni_position.empty())
+        return true;
+    begin_prog("running normalization");
+    run_normalization(true);
+    while(check_prog(prog,5) && mni_position.empty())
+        ;
+    check_prog(0,0);
+    if(prog_aborted())
+    {
+        thread.clear();
+        return false;
+    }
+    return true;
+}
+
+
+void fib_data::mni2subject(tipl::vector<3>& pos)
+{
+    if(!is_human_data)
+        return;
+    if(is_qsdr)
+    {
+        pos -= tipl::vector<3>(trans_to_mni[3],trans_to_mni[7],trans_to_mni[11]);
+        pos[0] /= trans_to_mni[0];
+        pos[1] /= trans_to_mni[5];
+        pos[2] /= trans_to_mni[10];
+        return;
+    }
+    fa_template_imp.from_mni(pos);
+    tipl::vector<3> p;
+    tipl::estimate(inv_mni_position,pos,p);
+    pos = p;
 }
 
 void fib_data::subject2mni(tipl::vector<3>& pos)

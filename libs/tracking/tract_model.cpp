@@ -13,6 +13,7 @@
 #include "mapping/atlas.hpp"
 #include "gzip_interface.hpp"
 #include "tract_cluster.hpp"
+#include "fa_template.hpp"
 #include "../../tracking/region/Regions.h"
 
 void smoothed_tracks(const std::vector<float>& track,std::vector<float>& smoothed)
@@ -149,17 +150,16 @@ struct TrackVis
         version = 2;
         hdr_size = 1000;
     }
-    static bool load_from_file(const char* file_name_,
+    bool load_from_file(const char* file_name_,
                 std::vector<std::vector<float> >& loaded_tract_data,
                 std::vector<unsigned int>& loaded_tract_cluster,
                                tipl::vector<3> vs)
     {
-        TrackVis trk;
         gz_istream in;
         if (!in.open(file_name_))
             return false;
-        in.read((char*)&trk,1000);
-        unsigned int track_number = trk.n_count;
+        in.read((char*)this,1000);
+        unsigned int track_number = n_count;
         if(!track_number) // number is not stored
             track_number = 100000000;
         begin_prog("loading");
@@ -167,8 +167,8 @@ struct TrackVis
         {
             unsigned int n_point;
             in.read((char*)&n_point,sizeof(int));
-            unsigned int index_shift = 3 + trk.n_scalars;
-            std::vector<float> tract(index_shift*n_point + trk.n_properties);
+            unsigned int index_shift = 3 + n_scalars;
+            std::vector<float> tract(index_shift*n_point + n_properties);
             in.read((char*)&*tract.begin(),sizeof(float)*tract.size());
 
             loaded_tract_data.push_back(std::move(std::vector<float>(n_point*3)));
@@ -179,17 +179,17 @@ struct TrackVis
                 float x = from[0]/vs[0];
                 float y = from[1]/vs[1];
                 float z = from[2]/vs[2];
-                if(trk.voxel_order[1] == 'R')
-                    to[0] = trk.dim[0]-x-1;
+                if(voxel_order[1] == 'R')
+                    to[0] = dim[0]-x-1;
                 else
                     to[0] = x;
-                if(trk.voxel_order[1] == 'A')
-                    to[1] = trk.dim[1]-y-1;
+                if(voxel_order[1] == 'A')
+                    to[1] = dim[1]-y-1;
                 else
                     to[1] = y;
                 to[2] = z;
             }
-            if(trk.n_properties == 1)
+            if(n_properties == 1)
                 loaded_tract_cluster.push_back(from[0]);
         }
         return true;
@@ -237,6 +237,8 @@ struct TrackVis
         return true;
     }
 };
+
+
 //---------------------------------------------------------------------------
 TractModel::TractModel(std::shared_ptr<fib_data> handle_):handle(handle_),
         report(handle_->report),geometry(handle_->dim),vs(handle_->vs),fib(new tracking_data)
@@ -267,6 +269,7 @@ void TractModel::add(const TractModel& rhs)
     is_cut.insert(is_cut.end(),rhs.is_cut.begin(),rhs.is_cut.end());
 }
 //---------------------------------------------------------------------------
+extern fa_template fa_template_imp;
 bool TractModel::load_from_file(const char* file_name_,bool append)
 {
     std::string file_name(file_name_);
@@ -279,8 +282,29 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
 
     if(ext == std::string(".trk") || ext == std::string("k.gz"))
         {
-            if(!TrackVis::load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,vs))
+            TrackVis trk;
+            if(!trk.load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,vs))
                 return false;
+            if(tipl::geometry<3>(trk.dim) == fa_template_imp.I.geometry() &&
+               tipl::geometry<3>(trk.dim) != handle->dim &&
+               handle->can_map_to_mni())
+            {
+                tipl::par_for(loaded_tract_data.size(),[&](int i)
+                {
+                    for(int j = 0;j < loaded_tract_data[i].size();j += 3)
+                    {
+                        // here the values has been divided by vs due to TrackVis store in mm;
+                        tipl::vector<3> p(loaded_tract_data[i][j]*vs[0],
+                                          loaded_tract_data[i][j+1]*vs[1],
+                                          loaded_tract_data[i][j+2]*vs[2]);
+                        fa_template_imp.to_mni(p);
+                        handle->mni2subject(p);
+                        loaded_tract_data[i][j] = p[0];
+                        loaded_tract_data[i][j+1] = p[1];
+                        loaded_tract_data[i][j+2] = p[2];
+                    }
+                });
+            }
         }
         else
         if (ext == std::string(".txt"))
