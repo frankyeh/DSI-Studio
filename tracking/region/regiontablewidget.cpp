@@ -1035,8 +1035,6 @@ void RegionTableWidget::show_statistics(void)
         QApplication::clipboard()->setText(result.c_str());
 }
 
-extern std::vector<float> mni_fa0_template_tran;
-extern tipl::image<float,3> mni_fa0_template;
 
 bool RegionTableWidget::has_seeding(void)
 {
@@ -1047,11 +1045,20 @@ bool RegionTableWidget::has_seeding(void)
             return true;
     return false;
 }
+extern std::vector<atlas> atlas_list;
 void RegionTableWidget::set_whole_brain(ThreadData* data)
 {
     std::vector<tipl::vector<3,short> > points;
-    whole_brain_points(points);
-    data->roi_mgr->setRegions(cur_tracking_window.handle->dim,points,1.0,seed_id,"whole brain",tipl::vector<3>());
+    std::string place = "whole brain";
+    if(cur_tracking_window.ui->target->currentIndex() > 0 && !atlas_list.empty() && cur_tracking_window.can_map_to_mni())
+    {
+        float r = 1.0f;
+        cur_tracking_window.handle->get_atlas_roi(atlas_list[0],cur_tracking_window.ui->target->currentIndex()-1,points,r);
+        place = cur_tracking_window.ui->target->currentText().toStdString();
+    }
+    else
+        whole_brain_points(points);
+    data->roi_mgr->setRegions(cur_tracking_window.handle->dim,points,1.0,seed_id,place.c_str(),tipl::vector<3>());
 }
 
 void RegionTableWidget::setROIs(ThreadData* data)
@@ -1071,6 +1078,11 @@ void RegionTableWidget::setROIs(ThreadData* data)
                                      regions[index]->resolution_ratio,
                              regions[index]->regions_feature,item(index,0)->text().toLocal8Bit().begin(),
                                      cur_tracking_window.handle->vs);
+
+    // has assigned a target
+    if(cur_tracking_window.ui->target->currentIndex() > 0 &&
+       tractography_atlas.get())
+        data->roi_mgr->setAtlas(tractography_atlas,cur_tracking_window.ui->target->currentIndex()-1);
 }
 
 QString RegionTableWidget::getROIname(void)

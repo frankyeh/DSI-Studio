@@ -417,6 +417,8 @@ int trk_post(std::shared_ptr<fib_data> handle,
 
 }
 
+extern std::string tractography_atlas_file_name;
+extern std::vector<std::string> tractography_atlas_list;
 bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
 {
     const int total_count = 18;
@@ -430,6 +432,15 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
             return false;
         roi_mgr->setRegions(handle->dim,roi.get_region_voxels_raw(),roi.resolution_ratio,type[index],po.get(roi_names[index]).c_str(),handle->vs);
         std::cout << roi_names[index] << "=" << po.get(roi_names[index]) << std::endl;
+    }
+    if(po.has("track_id") && po.get("track_id",0))
+    {
+        std::shared_ptr<TractModel> tractography_atlas(new TractModel(handle));
+        if(tractography_atlas->load_from_file(tractography_atlas_file_name.c_str()))
+        {
+            std::cout << "Setting target track=" << tractography_atlas_list[po.get("track_id",0)-1] << std::endl;
+            roi_mgr->setAtlas(tractography_atlas,po.get("track_id",0));
+        }
     }
     return true;
 }
@@ -496,6 +507,7 @@ int trk(std::shared_ptr<fib_data> handle)
     tracking_thread.param.random_seed = po.get("random_seed",int(0));
     tracking_thread.param.check_ending = po.get("check_ending",int(0));
     tracking_thread.param.tip_iteration = po.get("tip_iteration",int(1));
+
     if(po.has("otsu_threshold"))
     {
         if(po.has("fa_threshold"))

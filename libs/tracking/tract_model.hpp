@@ -42,6 +42,7 @@ public:
         void select_tracts(const std::vector<unsigned int>& tracts_to_select);
         void delete_repeated(double d);
         void delete_by_length(float length);
+        unsigned int find_nearest(const float* trk,unsigned int length);
 
 public:
         TractModel(std::shared_ptr<fib_data> handle_);

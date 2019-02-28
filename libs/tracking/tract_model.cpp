@@ -1084,6 +1084,53 @@ void TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select
     delete_tracts(not_selected);
 }
 //---------------------------------------------------------------------------
+unsigned int TractModel::find_nearest(const float* trk,unsigned int length)
+{
+    auto norm1 = [](const float* v1,const float* v2){return std::fabs(v1[0]-v2[0])+std::fabs(v1[1]-v2[1])+std::fabs(v1[2]-v2[2]);};
+    float best_distance = 30.0f/handle->vs[0];
+    unsigned int best_index = tract_data.size()-1;
+
+    for(int i = 0;i < tract_data.size();++i)
+    {
+        bool skip = false;
+        float max_dis = 0.0f;
+        if(norm1(&tract_data[i][0],trk) > best_distance ||
+           norm1(&tract_data[i][tract_data[i].size()-3],trk+length-3) > best_distance)
+            continue;
+        for(int m = 0;m < tract_data[i].size();m += 6)
+        {
+            float min_dis = norm1(&tract_data[i][m],trk);
+            for(int n = 0;n < length;n += 3)
+                min_dis = std::min<float>(min_dis,norm1(&tract_data[i][m],trk+n));
+            max_dis = std::max<float>(min_dis,max_dis);
+            if(max_dis > best_distance)
+            {
+                break;
+                skip = true;
+            }
+        }
+        if(!skip)
+        for(int n = 0;n < length;n += 6)
+        {
+            float min_dis = norm1(&tract_data[i][0],trk+n);
+            for(int m = 0;m < tract_data[i].size();m += 3)
+                min_dis = std::min<float>(min_dis,norm1(&tract_data[i][m],trk+n));
+            max_dis = std::max<float>(min_dis,max_dis);
+            if(max_dis > best_distance)
+            {
+                break;
+                skip = true;
+            }
+        }
+        if(!skip)
+        {
+            best_distance = max_dis;
+            best_index = i;
+        }
+    }
+    return tract_cluster[best_index];
+}
+//---------------------------------------------------------------------------
 void TractModel::delete_repeated(double d)
 {
     auto norm1 = [](const float* v1,const float* v2){return std::fabs(v1[0]-v2[0])+std::fabs(v1[1]-v2[1])+std::fabs(v1[2]-v2[2]);};
@@ -1116,7 +1163,7 @@ void TractModel::delete_repeated(double d)
                 for(int m = 0;m < tract_data[j].size();m += 3)
                 {
                     float min_dis = norm1(&tract_data[j][m],&tract_data[i][0]);
-                    for(int n = 3;n < tract_data[i].size();n += 3)
+                    for(int n = 0;n < tract_data[i].size();n += 3)
                         min_dis = std::min<float>(min_dis,norm1(&tract_data[j][m],&tract_data[i][n]));
                     if(min_dis > d)
                     {

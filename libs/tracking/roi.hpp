@@ -2,6 +2,7 @@
 #include <functional>
 #include <set>
 #include "tipl/tipl.hpp"
+#include "tract_model.hpp"
 
 class Roi {
 private:
@@ -73,6 +74,7 @@ public:
     }
 };
 
+extern std::vector<std::string> tractography_atlas_list;
 class RoiMgr {
 public:
     std::string report;
@@ -82,6 +84,9 @@ public:
     std::vector<std::shared_ptr<Roi> > end;
     std::vector<std::shared_ptr<Roi> > exclusive;
     std::vector<std::shared_ptr<Roi> > terminate;
+public:
+    std::shared_ptr<TractModel> atlas;
+    unsigned char track_id = 0;
 public:
     bool is_excluded_point(const tipl::vector<3,float>& point) const
     {
@@ -129,8 +134,22 @@ public:
         for(unsigned int index = 0; index < inclusive.size(); ++index)
             if(!inclusive[index]->included(track,buffer_size))
                 return false;
+        if(atlas.get())
+            return atlas->find_nearest(track,buffer_size) == track_id;
         return true;
     }
+    void setAtlas(std::shared_ptr<TractModel> atlas_,unsigned int track_id_)
+    {
+        atlas = atlas_;
+        track_id = track_id_;
+        if(track_id && track_id < tractography_atlas_list.size())
+        {
+            report += " The anatomy prior of a tractography atlas (Yeh NeuroImage 178, 57-68, 2018) was used to track ";
+            report += tractography_atlas_list[track_id];
+            report += ".";
+        }
+    }
+
     void setRegions(tipl::geometry<3> geo,
                     const std::vector<tipl::vector<3,short> >& points,
                     float r,
@@ -192,6 +211,7 @@ public:
             report += out.str();
         }
         report += ".";
+
     }
 };
 

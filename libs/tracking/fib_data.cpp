@@ -904,20 +904,19 @@ bool fib_data::can_map_to_mni(void)
     begin_prog("running normalization");
     run_normalization(true);
     while(check_prog(prog,5) && mni_position.empty())
-        ;
+        if(prog_aborted())
+        {
+            thread.clear();
+            return false;
+        }
     check_prog(0,0);
-    if(prog_aborted())
-    {
-        thread.clear();
-        return false;
-    }
     return true;
 }
 
 
 void fib_data::mni2subject(tipl::vector<3>& pos)
 {
-    if(!is_human_data)
+    if(!can_map_to_mni())
         return;
     if(is_qsdr)
     {

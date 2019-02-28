@@ -15,13 +15,19 @@ void load_atlas(void)
     atlas_name_list << dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
     if(atlas_name_list.empty())
         return;
+    for(int i = 1;i < atlas_name_list.size();++i)
+        if(atlas_name_list[i].contains("tractography"))
+        {
+            auto str = atlas_name_list[i];
+            atlas_name_list.removeAt(i);
+            atlas_name_list.insert(0,str);
+        }
     atlas_list.resize(atlas_name_list.size());
     for(int index = 0;index < atlas_name_list.size();++index)
     {
         atlas_list[index].name = QFileInfo(atlas_name_list[index]).baseName().toLocal8Bit().begin();
-        atlas_list[index].filename = (dir.absolutePath() + "/" + atlas_name_list[index]).toLocal8Bit().begin();
+        atlas_list[index].filename = (dir.absolutePath() + "/" + atlas_name_list[index]).toStdString();
     }
-
 }
 
 void atlas::load_label(void)

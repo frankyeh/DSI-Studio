@@ -106,7 +106,10 @@ void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vect
 
 void TractTableWidget::start_tracking(void)
 {
-    addNewTracts(cur_tracking_window.regionWidget->getROIname());
+    if(cur_tracking_window.ui->target->currentIndex() > 0)
+        addNewTracts(cur_tracking_window.ui->target->currentText());
+    else
+        addNewTracts(cur_tracking_window.regionWidget->getROIname());
     thread_data.back() = new ThreadData();
     cur_tracking_window.set_tracking_param(*thread_data.back());
     cur_tracking_window.regionWidget->setROIs(thread_data.back());
@@ -1127,7 +1130,7 @@ void TractTableWidget::merge_track_by_name(void)
 
 void TractTableWidget::move_up(void)
 {
-    if(currentRow())
+    if(currentRow() > 0)
     {
         for(unsigned int col = 0;col <= 3;++col)
         {

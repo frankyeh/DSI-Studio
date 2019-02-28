@@ -1003,7 +1003,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>332</width>
+     <width>351</width>
      <height>187</height>
     </size>
    </property>
@@ -1161,29 +1161,6 @@
               </widget>
              </item>
              <item>
-              <spacer name="horizontalSpacer_2">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_6">
-             <property name="spacing">
-              <number>0</number>
-             </property>
-             <property name="bottomMargin">
-              <number>0</number>
-             </property>
-             <item>
               <widget class="QPushButton" name="track_up">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -1228,6 +1205,46 @@
                  <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
                </property>
               </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_2">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_6">
+             <property name="spacing">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QPushButton" name="enable_auto_track">
+               <property name="text">
+                <string>Enable automatic tracking...</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="target_label">
+               <property name="text">
+                <string>Target</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="target"/>
              </item>
              <item>
               <spacer name="horizontalSpacer_3">

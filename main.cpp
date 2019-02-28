@@ -20,8 +20,8 @@ fa_template fa_template_imp;
 std::string qa_template_1mm,
         fib_template_file_name_1mm,fib_template_file_name_2mm,
         t1w_template_file_name,wm_template_file_name,
-        t1w_mask_template_file_name;
-std::vector<std::string> fa_template_list,t1w_template_list;
+        t1w_mask_template_file_name,tractography_atlas_file_name;
+std::vector<std::string> fa_template_list,t1w_template_list,tractography_atlas_list;
 
 extern std::vector<atlas> atlas_list;
 void load_atlas(void);
@@ -75,7 +75,29 @@ void load_file_name(void)
     fib_template_file_name_1mm = find_full_path("/HCP1021.1mm.fib.gz");
     wm_template_file_name = find_full_path("/mni_icbm152_wm_tal_nlin_asym_09c.nii.gz");
     t1w_mask_template_file_name = find_full_path("/mni_icbm152_t1_tal_nlin_asym_09c_mask.nii.gz");
+    tractography_atlas_file_name = find_full_path("/atlas/HCP842_tractography.trk.gz");
 
+    std::string tractography_atlas_list_file_name = find_full_path("/atlas/HCP842_tractography.txt");
+    if(!tractography_atlas_file_name.empty() && QFileInfo(tractography_atlas_list_file_name.c_str()).exists())
+    {
+        std::ifstream in(tractography_atlas_list_file_name);
+        std::string line;
+        while(std::getline(in,line))
+        {
+            std::istringstream in2(line);
+            in2 >> line;
+            in2 >> line;
+            std::replace(line.begin(),line.end(),'_',' ');
+            std::transform(line.begin(), line.end(), line.begin(),::tolower);
+            if(line.back() == 'l')
+                line = std::string("left ") + line.substr(0,line.length()-2);
+            if(line.back() == 'r')
+                line = std::string("right ") + line.substr(0,line.length()-2);
+            tractography_atlas_list.push_back(line);
+        }
+    }
+    else
+        tractography_atlas_file_name.clear();
     // search for all anisotropy template
     {
         QDir dir = QCoreApplication::applicationDirPath()+ "/template";

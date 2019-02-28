@@ -6,7 +6,7 @@
 #include <vector>
 #include "Regions.h"
 #include "tipl/tipl.hpp"
-
+#include "tract_model.hpp"
 struct ThreadData;
 class tracking_window;
 
@@ -65,6 +65,7 @@ signals:
     void need_update(void);
 public:
     std::vector<std::shared_ptr<ROIRegion> > regions;
+    std::shared_ptr<TractModel> tractography_atlas;
     int color_gen = 10;
 public:
     explicit RegionTableWidget(tracking_window& cur_tracking_window,QWidget *parent = 0);

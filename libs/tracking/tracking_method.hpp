@@ -29,7 +29,6 @@ typedef boost::mpl::vector<
 > streamline_runge_kutta_4_method_process;
 
 
-
 struct TrackingParam
 {
     float threshold;
@@ -52,7 +51,10 @@ struct TrackingParam
     unsigned char tip_iteration = 0;
 
     float dt_threshold = 0;
-    unsigned int reserved2 = 0;
+    unsigned char reserved1 = 0;
+    unsigned char reserved2 = 0;
+    unsigned char reserved3 = 0;
+    unsigned char reserved4 = 0;
 
     static char char2index(unsigned char c)
     {

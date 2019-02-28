@@ -28,6 +28,7 @@
 #include "libs/tracking/tracking_thread.hpp"
 #include "regtoolbox.h"
 
+extern std::vector<std::string> tractography_atlas_list;
 extern std::vector<atlas> atlas_list;
 extern fa_template fa_template_imp;
 extern std::string t1w_template_file_name,wm_template_file_name;
@@ -342,6 +343,24 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         }
         ui->search_atlas->setList(items);
         connect(ui->search_atlas,SIGNAL(selected()),this,SLOT(add_roi_from_atlas()));
+
+
+    }
+
+
+    {
+        ui->target->setVisible(false);
+        ui->target_label->setVisible(false);
+        ui->enable_auto_track->setVisible(false);
+        if(handle->is_human_data && !tractography_atlas_list.empty())
+            {
+                ui->target->addItem("All");
+                for(int i = 0;i < tractography_atlas_list.size();++i)
+                    ui->target->addItem(tractography_atlas_list[i].c_str());
+
+                ui->target->setCurrentIndex(0);
+                ui->enable_auto_track->setVisible(true);
+            }
     }
 
     // setup fa threshold
@@ -564,6 +583,7 @@ void tracking_window::set_tracking_param(ThreadData& tracking_thread)
     tracking_thread.param.termination_count = renderWidget->getData("track_count").toInt();
     tracking_thread.param.default_otsu = renderWidget->getData("otsu_threshold").toFloat();
     tracking_thread.param.tip_iteration = renderWidget->getData("tip_iteration").toInt();
+
 
 }
 float tracking_window::get_scene_zoom(void)
@@ -2000,4 +2020,24 @@ void tracking_window::on_actionKeep_Current_Slice_triggered()
     glWidget->keep_slice = true;
     glWidget->updateGL();
     QMessageBox::information(this,"DSI Studio","Current viewing slice will reamin in the 3D window",0);
+}
+extern std::string tractography_atlas_file_name;
+void tracking_window::on_enable_auto_track_clicked()
+{
+    if(!can_map_to_mni())
+    {
+        QMessageBox::information(this,"DSI Studio","Cannot complete normalization to a standard space",0);
+        return;
+    }
+    auto trk = std::make_shared<TractModel>(handle);
+    if(trk->load_from_file(tractography_atlas_file_name.c_str()))
+    {
+        regionWidget->tractography_atlas = trk;
+        ui->enable_auto_track->setVisible(false);
+        ui->target->setVisible(true);
+        ui->target_label->setVisible(true);
+    }
+    else
+        QMessageBox::information(this,"DSI Studio",QString("Fail to find the HCP842 tractography atlas at %1").arg(tractography_atlas_file_name.c_str()),0);
+
 }
