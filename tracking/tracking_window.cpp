@@ -358,6 +358,26 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 for(int i = 0;i < tractography_atlas_list.size();++i)
                     ui->target->addItem(tractography_atlas_list[i].c_str());
 
+                // projection
+                for(int i = 1;i < 21;++i)
+                    ui->target->setItemData(i, QBrush(QColor(40,40,220)), Qt::TextColorRole);
+                // association
+                for(int i = 21;i < 43;++i)
+                    ui->target->setItemData(i, QBrush(QColor(40,220,40)), Qt::TextColorRole);
+                // commissural
+                for(int i = 43;i < 46;++i)
+                    ui->target->setItemData(i, QBrush(QColor(220,40,40)), Qt::TextColorRole);
+                // CB
+                for(int i = 46;i < 53;++i)
+                    ui->target->setItemData(i, QBrush(QColor(40,40,160)), Qt::TextColorRole);
+                // BS
+                for(int i = 53;i < 67;++i)
+                    ui->target->setItemData(i, QBrush(QColor(40,40,80)), Qt::TextColorRole);
+                // CN
+                for(int i = 67;i < 81;++i)
+                    ui->target->setItemData(i, QBrush(QColor(40,160,40)), Qt::TextColorRole);
+
+
                 ui->target->setCurrentIndex(0);
                 ui->enable_auto_track->setVisible(true);
             }
