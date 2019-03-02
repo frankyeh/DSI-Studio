@@ -9,10 +9,9 @@
 #include "fib_data.hpp"
 #include "vbc/vbc_database.h"
 
-extern std::vector<atlas> atlas_list;
 extern std::string fib_template_file_name_1mm,fib_template_file_name_2mm;
 const char* odf_average(const char* out_name,std::vector<std::string>& file_names);
-bool atl_load_atlas(std::string atlas_name)
+bool atl_load_atlas(std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list)
 {
     QStringList name_list = QString(atlas_name.c_str()).split(",");
 
@@ -21,7 +20,7 @@ bool atl_load_atlas(std::string atlas_name)
     {
         bool has_atlas = false;
         for(unsigned int i = 0;i < atlas_list.size();++i)
-            if(atlas_list[i].name == name_list[index].toStdString())
+            if(atlas_list[i]->name == name_list[index].toStdString())
                 has_atlas = true;
         if(has_atlas)
             continue;
@@ -48,10 +47,10 @@ bool atl_load_atlas(std::string atlas_name)
 
         {
             std::cout << "loading " << name_list[index].toStdString() << "..." << std::endl;
-            atlas_list.push_back(atlas());
-            atlas_list.back().filename = file_path;
-            atlas_list.back().name = name_list[index].toStdString();
-            if(atlas_list.back().get_num().empty())
+            atlas_list.push_back(std::make_shared<atlas>());
+            atlas_list.back()->filename = file_path;
+            atlas_list.back()->name = name_list[index].toStdString();
+            if(atlas_list.back()->get_num().empty())
             {
                 std::cout << "Invalid file format. No ROI found in " << name_list[index].toStdString() << "." << std::endl;
                 return false;
@@ -59,10 +58,11 @@ bool atl_load_atlas(std::string atlas_name)
             continue;
         }
     }
-    return true;
+    return !atlas_list.empty();
 }
 
-void atl_save_mapping(const std::string& file_name,const tipl::geometry<3>& geo,
+void atl_save_mapping(std::vector<std::shared_ptr<atlas> >& atlas_list,
+                      const std::string& file_name,const tipl::geometry<3>& geo,
                       const tipl::image<tipl::vector<3>,3>& mapping,
                       const std::vector<float>& trans,
                       const tipl::vector<3>& vs,
@@ -72,17 +72,17 @@ void atl_save_mapping(const std::string& file_name,const tipl::geometry<3>& geo,
     {
         std::string base_name = file_name;
         base_name += ".";
-        base_name += atlas_list[i].name;
-        for(unsigned int j = 0;j < atlas_list[i].get_list().size();++j)
+        base_name += atlas_list[i]->name;
+        for(unsigned int j = 0;j < atlas_list[i]->get_list().size();++j)
         {
             std::string output = base_name;
             output += ".";
-            output += atlas_list[i].get_list()[j];
+            output += atlas_list[i]->get_list()[j];
             output += ".nii.gz";
 
             tipl::image<unsigned char,3> roi(geo);
             for(unsigned int k = 0;k < mapping.size();++k)
-                if (atlas_list[i].is_labeled_as(mapping[k], j))
+                if (atlas_list[i]->is_labeled_as(mapping[k], j))
                     roi[k] = 1;
             if(multiple)
             {
@@ -100,8 +100,8 @@ void atl_save_mapping(const std::string& file_name,const tipl::geometry<3>& geo,
             std::string label_name = base_name;
             label_name += ".txt";
             std::ofstream txt_out(label_name.c_str());
-            for(unsigned int j = 0;j < atlas_list[i].get_list().size();++j)
-                txt_out << atlas_list[i].get_num()[j] << " " << atlas_list[i].get_list()[j] << std::endl;
+            for(unsigned int j = 0;j < atlas_list[i]->get_list().size();++j)
+                txt_out << atlas_list[i]->get_num()[j] << " " << atlas_list[i]->get_list()[j] << std::endl;
         }
     }
 }
@@ -223,14 +223,16 @@ int atl(void)
             std::cout << handle->error_msg << std::endl;
             return 0;
         }
-        if(!atl_load_atlas(po.get("atlas")))
+        std::vector<std::shared_ptr<atlas> > atlas_list;
+        if(!atl_load_atlas(po.get("atlas"),atlas_list))
             return 0;
         if(!handle->can_map_to_mni())
         {
             std::cout << "Cannot output connectivity: no mni mapping" << std::endl;
             return 0;
         }
-        atl_save_mapping(po.get("source"),handle->dim,
+        atl_save_mapping(atlas_list,
+                         po.get("source"),handle->dim,
                          handle->get_mni_mapping(),handle->trans_to_mni,handle->vs,
                          po.get("output","multiple") == "multiple");
         return 0;

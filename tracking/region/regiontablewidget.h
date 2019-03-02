@@ -73,7 +73,7 @@ public:
 
     QColor currentRowColor(void);
     bool has_seeding(void);
-    void add_region_from_atlas(atlas& at,unsigned int roi_is);
+    void add_region_from_atlas(std::shared_ptr<atlas> at,unsigned int roi_is);
     void add_region(QString name,unsigned char type,int color = 0x00FFFFFF);
     void set_whole_brain(ThreadData* data);
     void setROIs(ThreadData* data);

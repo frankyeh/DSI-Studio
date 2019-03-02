@@ -346,7 +346,7 @@ float ImageModel::quality_control_neighboring_dwi_corr(void)
 }
 bool ImageModel::is_human_data(void) const
 {
-    return voxel.dim[0]*voxel.vs[0] > 100 && voxel.dim[1]*voxel.vs[1] > 120 && voxel.dim[2]*voxel.vs[2] > 40;
+    return voxel.dim[0]*voxel.vs[0] > 150 && voxel.dim[1]*voxel.vs[1] > 150;
 }
 
 void ImageModel::flip_b_table(unsigned char dim)

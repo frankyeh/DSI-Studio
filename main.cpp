@@ -19,9 +19,8 @@ std::string
         fib_template_file_name_1mm,fib_template_file_name_2mm,
         t1w_template_file_name,wm_template_file_name,
         t1w_mask_template_file_name,tractography_atlas_file_name;
-std::vector<std::string> fa_template_list,t1w_template_list,tractography_atlas_list;
+std::vector<std::string> fa_template_list,t1w_template_list,tractography_name_list;
 
-extern std::vector<atlas> atlas_list;
 void load_atlas(void);
 int rec(void);
 int trk(void);
@@ -65,6 +64,31 @@ std::string find_full_path(QString name,bool no_empty = false)
     return no_empty? filename.toStdString() : std::string();
 }
 
+extern std::vector<std::shared_ptr<atlas> > atlas_buffer;
+void load_atlas(void)
+{
+    QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
+    if(!dir.exists())
+        dir = QDir::currentPath()+ "/atlas";
+    QStringList name_list = dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
+    name_list << dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
+    if(name_list.empty())
+        return;
+    for(int i = 1;i < name_list.size();++i)
+        if(name_list[i].contains("tractography"))
+        {
+            auto str = name_list[i];
+            name_list.removeAt(i);
+            name_list.insert(0,str);
+        }
+    for(int index = 0;index < name_list.size();++index)
+    {
+        atlas_buffer.push_back(std::make_shared<atlas>());
+        atlas_buffer.back()->name = QFileInfo(name_list[index]).baseName().toLocal8Bit().begin();
+        atlas_buffer.back()->filename = (dir.absolutePath() + "/" + name_list[index]).toStdString();
+    }
+}
+
 void load_file_name(void)
 {
     t1w_template_file_name = find_full_path("/template_t1w/mni_icbm152_t1_tal_nlin_asym_09c.nii.gz");
@@ -74,10 +98,10 @@ void load_file_name(void)
     t1w_mask_template_file_name = find_full_path("/mni_icbm152_t1_tal_nlin_asym_09c_mask.nii.gz");
     tractography_atlas_file_name = find_full_path("/atlas/HCP842_tractography.trk.gz");
 
-    std::string tractography_atlas_list_file_name = find_full_path("/atlas/HCP842_tractography.txt");
-    if(!tractography_atlas_file_name.empty() && QFileInfo(tractography_atlas_list_file_name.c_str()).exists())
+    std::string tractography_name_list_file_name = find_full_path("/atlas/HCP842_tractography.txt");
+    if(!tractography_atlas_file_name.empty() && QFileInfo(tractography_name_list_file_name.c_str()).exists())
     {
-        std::ifstream in(tractography_atlas_list_file_name);
+        std::ifstream in(tractography_name_list_file_name);
         std::string line;
         while(std::getline(in,line))
         {
@@ -90,7 +114,7 @@ void load_file_name(void)
                 line = std::string("left ") + line.substr(0,line.length()-2);
             if(line.back() == 'r' && line[line.length()-2] == ' ')
                 line = std::string("right ") + line.substr(0,line.length()-2);
-            tractography_atlas_list.push_back(line);
+            tractography_name_list.push_back(line);
         }
     }
     else
@@ -104,7 +128,10 @@ void load_file_name(void)
         for(int i = 0;i < name_list.size();++i)
         {
             std::string full_path = (dir.absolutePath() + "/" + name_list[i]).toStdString();
-            fa_template_list.push_back(full_path);
+            if(name_list[i].contains("HCP"))
+                fa_template_list.insert(fa_template_list.begin(),full_path);
+            else
+                fa_template_list.push_back(full_path);
         }
     }
     // search for all t1w template
@@ -138,7 +165,7 @@ void init_application(void)
 
     load_file_name();
     load_atlas();
-    if(fa_template_list.empty() || t1w_template_list.empty() || atlas_list.empty())
+    if(fa_template_list.empty() || t1w_template_list.empty() || atlas_buffer.empty())
     {
         QMessageBox::information(0,"Error","Missing template and atlas files. \
             Please download dsi_studio_other_files.zip from DSI Studio website and place them with the DSI Studio executives",0);

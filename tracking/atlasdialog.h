@@ -1,8 +1,9 @@
 #ifndef ATLASDIALOG_H
 #define ATLASDIALOG_H
-
+#include <memory>
 #include <QDialog>
 
+class fib_data;
 namespace Ui {
 class AtlasDialog;
 }
@@ -10,8 +11,9 @@ class AtlasDialog : public QDialog
 {
     Q_OBJECT
 public:
-    explicit AtlasDialog(QWidget *parent);
+    explicit AtlasDialog(QWidget *parent,std::shared_ptr<fib_data> handle_);
     ~AtlasDialog();
+    std::shared_ptr<fib_data> handle;
     unsigned int atlas_index;
     std::string atlas_name;
     std::vector<unsigned int> roi_list;

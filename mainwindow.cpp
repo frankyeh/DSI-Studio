@@ -42,7 +42,6 @@ int atl(void);
 int cnt(void);
 int vis(void);
 int ren(void);
-extern std::vector<atlas> atlas_list;
 extern std::auto_ptr<QProgressDialog> progressDialog;
 
 MainWindow::MainWindow(QWidget *parent) :

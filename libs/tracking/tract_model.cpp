@@ -2340,17 +2340,17 @@ void ConnectivityMatrix::set_regions(const tipl::geometry<3>& geo,
     atlas_name = "roi";
 }
 
-void ConnectivityMatrix::set_atlas(atlas& data,const tipl::image<tipl::vector<3,float>,3 >& mni_position)
+void ConnectivityMatrix::set_atlas(std::shared_ptr<atlas> data,const tipl::image<tipl::vector<3,float>,3 >& mni_position)
 {
     if(mni_position.empty())
         return;
     tipl::geometry<3> geo(mni_position.geometry());
     tipl::vector<3> null;
-    region_count = data.get_list().size();
+    region_count = data->get_list().size();
     region_name.clear();
     for (unsigned int label_index = 0; label_index < region_count; ++label_index)
-        region_name.push_back(data.get_list()[label_index]);
-    data.is_labeled_as(mni_position.front(),0);// trigger load from file
+        region_name.push_back(data->get_list()[label_index]);
+    data->is_labeled_as(mni_position.front(),0);// trigger load from file
 
     region_map.clear();
     region_map.resize(geo.size());
@@ -2358,7 +2358,7 @@ void ConnectivityMatrix::set_atlas(atlas& data,const tipl::image<tipl::vector<3,
     {
         mni_position.for_each_mt([&](const tipl::vector<3,float>& mni,const tipl::pixel_index<3>& index)
         {
-            if(mni != null && data.is_labeled_as(mni,i))
+            if(mni != null && data->is_labeled_as(mni,i))
                 region_map[index.index()].push_back(i);
         });
     }
@@ -2371,7 +2371,7 @@ void ConnectivityMatrix::set_atlas(atlas& data,const tipl::image<tipl::vector<3,
                 ++overlap_count;
         }
     overlap_ratio = (float)overlap_count/(float)total_count;
-    atlas_name = data.name;
+    atlas_name = data->name;
 }
 
 

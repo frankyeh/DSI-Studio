@@ -16,9 +16,7 @@
 
 // test example
 // --action=ana --source=20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
-
-extern std::vector<atlas> atlas_list;
-bool atl_load_atlas(std::string atlas_name);
+bool atl_load_atlas(std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list);
 bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
 void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                              TractModel& tract_model);
@@ -182,22 +180,23 @@ int ana(void)
         if(po.has("atlas"))
         {
             std::cout << "export information from " << po.get("atlas") << std::endl;
-            if(!atl_load_atlas(po.get("atlas")))
+            std::vector<std::shared_ptr<atlas> > atlas_list;
+            if(!atl_load_atlas(po.get("atlas"),atlas_list))
                 return 0;
             for(unsigned int i = 0;i < atlas_list.size();++i)
             {
-                for(unsigned int j = 0;j < atlas_list[i].get_list().size();++j)
+                for(unsigned int j = 0;j < atlas_list[i]->get_list().size();++j)
                 {
                     std::shared_ptr<ROIRegion> region(std::make_shared<ROIRegion>(handle));
-                    std::string region_name = atlas_list[i].name;
+                    std::string region_name = atlas_list[i]->name;
                     region_name += ":";
-                    region_name += atlas_list[i].get_list()[j];
+                    region_name += atlas_list[i]->get_list()[j];
                     if(!load_region(handle,*region.get(),region_name))
                     {
                         std::cout << "Fail to load the ROI file:" << region_name << std::endl;
                         return 0;
                     }
-                    region_list.push_back(atlas_list[i].get_list()[j]);
+                    region_list.push_back(atlas_list[i]->get_list()[j]);
                     regions.push_back(region);
                 }
 

@@ -74,7 +74,7 @@ public:
     }
 };
 
-extern std::vector<std::string> tractography_atlas_list;
+extern std::vector<std::string> tractography_name_list;
 class RoiMgr {
 public:
     std::string report;
@@ -142,10 +142,10 @@ public:
     {
         atlas = atlas_;
         track_id = track_id_;
-        if(track_id && track_id < tractography_atlas_list.size())
+        if(track_id && track_id < tractography_name_list.size())
         {
             report += " The anatomy prior of a tractography atlas (Yeh NeuroImage 178, 57-68, 2018) was used to track ";
-            report += tractography_atlas_list[track_id];
+            report += tractography_name_list[track_id];
             report += ".";
         }
     }

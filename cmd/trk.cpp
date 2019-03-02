@@ -14,12 +14,11 @@
 #include "SliceModel.h"
 #include "vbc/vbc_database.h"
 #include "program_option.hpp"
-bool atl_load_atlas(const std::string atlas_name);
+bool atl_load_atlas(const std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list);
 void export_track_info(const std::string& file_name,
                        std::string export_option,
                        std::shared_ptr<fib_data> handle,
                        TractModel& tract_model);
-extern std::vector<atlas> atlas_list;
 
 void save_connectivity_matrix(TractModel& tract_model,
                               ConnectivityMatrix& data,
@@ -127,8 +126,8 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                     std::cout << "Cannot output connectivity: no mni mapping" << std::endl;
                     continue;
                 }
-                atlas_list.clear(); // some atlas may be loaded in ROI
-                if(atl_load_atlas(roi_file_name))
+                std::vector<std::shared_ptr<atlas> > atlas_list;
+                if(atl_load_atlas(roi_file_name,atlas_list))
                     data.set_atlas(atlas_list[0],handle->get_mni_mapping());
                 else
                 {
@@ -232,7 +231,8 @@ bool load_region(std::shared_ptr<fib_data> handle,
     {
         LOAD_MNI:
         std::cout << "Searching " << file_name << " from the atlas pool..." << std::endl;
-        if(!atl_load_atlas(file_name))
+        std::vector<std::shared_ptr<atlas> > atlas_list;
+        if(!atl_load_atlas(file_name,atlas_list))
         {
             std::cout << file_name << " does not exist. terminating..." << std::endl;
             return false;
@@ -248,12 +248,12 @@ bool load_region(std::shared_ptr<fib_data> handle,
         tipl::vector<3> null;
         std::vector<tipl::vector<3,short> > cur_region;
         for(unsigned int i = 0;i < atlas_list.size();++i)
-            if(atlas_list[i].name == file_name)
-                for (unsigned int label_index = 0; label_index < atlas_list[i].get_list().size(); ++label_index)
-                    if(atlas_list[i].get_list()[label_index] == region_name)
+            if(atlas_list[i]->name == file_name)
+                for (unsigned int label_index = 0; label_index < atlas_list[i]->get_list().size(); ++label_index)
+                    if(atlas_list[i]->get_list()[label_index] == region_name)
                 {
                     for (tipl::pixel_index<3>index(mapping.geometry());index < mapping.size();++index)
-                        if(mapping[index.index()] != null && atlas_list[i].is_labeled_as(mapping[index.index()],label_index))
+                        if(mapping[index.index()] != null && atlas_list[i]->is_labeled_as(mapping[index.index()],label_index))
                             cur_region.push_back(tipl::vector<3,short>(index.begin()));
                 }
         roi.add_points(cur_region,false);
@@ -418,7 +418,7 @@ int trk_post(std::shared_ptr<fib_data> handle,
 }
 
 extern std::string tractography_atlas_file_name;
-extern std::vector<std::string> tractography_atlas_list;
+extern std::vector<std::string> tractography_name_list;
 bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
 {
     const int total_count = 18;
@@ -438,7 +438,7 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
         std::shared_ptr<TractModel> tractography_atlas(new TractModel(handle));
         if(tractography_atlas->load_from_file(tractography_atlas_file_name.c_str()))
         {
-            std::cout << "Setting target track=" << tractography_atlas_list[po.get("track_id",0)-1] << std::endl;
+            std::cout << "Setting target track=" << tractography_name_list[po.get("track_id",0)-1] << std::endl;
             roi_mgr->setAtlas(tractography_atlas,po.get("track_id",0));
         }
     }

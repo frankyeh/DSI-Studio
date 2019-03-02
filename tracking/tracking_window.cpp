@@ -27,8 +27,7 @@
 #include "libs/tracking/tracking_thread.hpp"
 #include "regtoolbox.h"
 
-extern std::vector<std::string> tractography_atlas_list;
-extern std::vector<atlas> atlas_list;
+extern std::vector<std::string> tractography_name_list;
 extern std::string t1w_template_file_name,wm_template_file_name;
 QByteArray default_geo,default_state;
 
@@ -330,14 +329,14 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         ui->show_fiber->setChecked((*this)["roi_fiber"].toBool());
     }
 
-    if(handle->is_human_data)
+    if(handle->has_atlas())
     {
         QStringList items;
-        for(int i = 0;i < atlas_list.size();++i)
+        for(int i = 0;i < handle->atlas_list.size();++i)
         {
-            const std::vector<std::string>& label = atlas_list[i].get_list();
+            const std::vector<std::string>& label = handle->atlas_list[i]->get_list();
             for(auto str : label)
-                items << QString(str.c_str()) + ":" + atlas_list[i].name.c_str();
+                items << QString(str.c_str()) + ":" + handle->atlas_list[i]->name.c_str();
         }
         ui->search_atlas->setList(items);
         connect(ui->search_atlas,SIGNAL(selected()),this,SLOT(add_roi_from_atlas()));
@@ -348,11 +347,11 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         ui->target->setVisible(false);
         ui->target_label->setVisible(false);
         ui->enable_auto_track->setVisible(false);
-        if(handle->is_human_data && !tractography_atlas_list.empty())
+        if(handle->is_human_data && !tractography_name_list.empty())
             {
                 ui->target->addItem("All");
-                for(int i = 0;i < tractography_atlas_list.size();++i)
-                    ui->target->addItem(tractography_atlas_list[i].c_str());
+                for(int i = 0;i < tractography_name_list.size();++i)
+                    ui->target->addItem(tractography_name_list[i].c_str());
 
                 // projection
                 for(int i = 1;i < 21;++i)
@@ -552,13 +551,10 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
                 .arg(std::round(pos[2]*10.0)/10.0);
     }
 
-    if(handle->is_qsdr || handle->has_reg())
+    if(handle->is_qsdr || !handle->mni_position.empty())
     {
         tipl::vector<3,float> mni(pos);
-        if(handle->has_reg())
-            handle->subject2mni(mni);
-        else
-            mni.to(handle->trans_to_mni);
+        handle->subject2mni(mni);
         status += QString("MNI(%1,%2,%3) ")
                 .arg(std::round(mni[0]*10.0)/10.0)
                 .arg(std::round(mni[1]*10.0)/10.0)
@@ -1112,8 +1108,11 @@ void tracking_window::on_actionConnectivity_matrix_triggered()
         QMessageBox::information(this,"DSI Studio","Run fiber tracking first",0);
         return;
     }
-    if(atlas_list.empty())
-        QMessageBox::information(0,"Error",QString("DSI Studio cannot find atlas files in ")+QCoreApplication::applicationDirPath()+ "/atlas",0);
+    if(!handle->has_atlas() && regionWidget->regions.empty())
+    {
+        QMessageBox::information(this,"Error","Please add regions as the node for connectivity matrix",0);
+        return;
+    }
     std::ostringstream out;
     if(tractWidget->currentRow() < tractWidget->tract_models.size())
         out << tractWidget->tract_models[tractWidget->currentRow()]->report.c_str() << std::endl;
@@ -1231,39 +1230,39 @@ void tracking_window::on_actionLoad_Rendering_Parameters_triggered()
 
 void tracking_window::on_addRegionFromAtlas_clicked()
 {
-    if(atlas_list.empty())
-    {
-        QMessageBox::information(0,"Error",QString("DSI Studio cannot find atlas files in ")+QCoreApplication::applicationDirPath()+ "/atlas",0);
-        return;
-    }
     if(!can_map_to_mni())
     {
         QMessageBox::information(this,"Error","Atlas is not supported for the current image resolution.",0);
         return;
     }
-    std::auto_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this));
+    if(!handle->has_atlas())
+    {
+        QMessageBox::information(0,"Error",QString("DSI Studio cannot find atlas files in ")+QCoreApplication::applicationDirPath()+ "/atlas",0);
+        return;
+    }
+    std::shared_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this,handle));
     if(atlas_dialog->exec() == QDialog::Accepted)
     {
         for(unsigned int i = 0;i < atlas_dialog->roi_list.size();++i)
-            regionWidget->add_region_from_atlas(atlas_list[atlas_dialog->atlas_index],atlas_dialog->roi_list[i]);
+            regionWidget->add_region_from_atlas(handle->atlas_list[atlas_dialog->atlas_index],atlas_dialog->roi_list[i]);
         glWidget->updateGL();
         scene.show_slice();
     }
 }
 void tracking_window::add_roi_from_atlas()
 {
-    if(!can_map_to_mni())
+    if(!handle->has_atlas())
         return;
     QStringList name_value = ui->search_atlas->text().split(":");
     if(name_value.size() != 2)
         return;
-    for(int i = 0;i < atlas_list.size();++i)
-        if(name_value[1].toStdString() == atlas_list[i].name)
+    for(int i = 0;i < handle->atlas_list.size();++i)
+        if(name_value[1].toStdString() == handle->atlas_list[i]->name)
         {
-            for(int j = 0;j < atlas_list[i].get_list().size();++j)
-            if(atlas_list[i].get_list()[j] == name_value[0].toStdString())
+            for(int j = 0;j < handle->atlas_list[i]->get_list().size();++j)
+            if(handle->atlas_list[i]->get_list()[j] == name_value[0].toStdString())
             {
-                regionWidget->add_region_from_atlas(atlas_list[i],j);
+                regionWidget->add_region_from_atlas(handle->atlas_list[i],j);
                 ui->search_atlas->setText("");
                 glWidget->updateGL();
                 scene.show_slice();
@@ -2004,11 +2003,12 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
     if(atlas != "roi")
     {
         regionWidget->delete_all_region();
-        for(int i = 0;i < atlas_list.size();++i)
-            if(atlas == atlas_list[i].name)
+        if(handle->has_atlas())
+        for(int i = 0;i < handle->atlas_list.size();++i)
+            if(atlas == handle->atlas_list[i]->name)
             {
-                for(int j = 0;j < atlas_list[i].get_list().size();++j)
-                    regionWidget->add_region_from_atlas(atlas_list[i],j);
+                for(int j = 0;j < handle->atlas_list[i]->get_list().size();++j)
+                    regionWidget->add_region_from_atlas(handle->atlas_list[i],j);
                 return;
             }
         QMessageBox::information(this,"Error",QString("Cannot find ")+atlas.c_str()+

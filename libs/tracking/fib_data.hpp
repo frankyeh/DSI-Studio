@@ -164,7 +164,9 @@ public:
     std::string template_file_name;
     tipl::vector<3> template_vs,template_shift;
     tipl::image<float,3> template_I;
+    std::vector<std::shared_ptr<atlas> > atlas_list;
     bool has_template(void);
+    bool has_atlas(void);
     void to_mni(tipl::vector<3>& p);
     void from_mni(tipl::vector<3>& p);
 
@@ -174,7 +176,7 @@ public:
     void mni2subject(tipl::vector<3>& pos);
     void subject2mni(tipl::vector<3>& pos);
     void subject2mni(tipl::pixel_index<3>& index,tipl::vector<3>& pos);
-    void get_atlas_roi(atlas& at,int roi_index,std::vector<tipl::vector<3,short> >& points,float& r);
+    void get_atlas_roi(std::shared_ptr<atlas> at,int roi_index,std::vector<tipl::vector<3,short> >& points,float& r);
     const tipl::image<tipl::vector<3,float>,3 >& get_mni_mapping(void);
     bool has_reg(void)const{return thread.has_started();}
     bool get_profile(const std::vector<float>& tract_data,

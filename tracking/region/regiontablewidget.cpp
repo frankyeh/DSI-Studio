@@ -140,15 +140,17 @@ QColor RegionTableWidget::currentRowColor(void)
 {
     return (unsigned int)regions[currentRow()]->show_region.color;
 }
-void RegionTableWidget::add_region_from_atlas(atlas& at,unsigned int label)
+void RegionTableWidget::add_region_from_atlas(std::shared_ptr<atlas> at,unsigned int label)
 {
     float r = 1.0f;
     std::vector<tipl::vector<3,short> > points;
+    // this will load the files from storage to prevent GUI multishread crash
+    at->is_labeled_as(tipl::vector<3>(0,0,0),label);
     auto thread = std::async([&]
     {
         cur_tracking_window.handle->get_atlas_roi(at,label,points,r);
     });
-    add_region(at.get_list()[label].c_str(),roi_id);
+    add_region(at->get_list()[label].c_str(),roi_id);
     thread.wait();
     regions.back()->resolution_ratio = r;
     regions.back()->add_points(points,false,r);
@@ -697,9 +699,9 @@ void RegionTableWidget::load_mni_region(void)
 
     for (unsigned int index = 0;index < filenames.size();++index)
     {
-        atlas a;
-        a.filename = filenames[index].toStdString();
-        for(int j = 0;j < a.get_list().size();++j)
+        std::shared_ptr<atlas> a(new atlas);
+        a->filename = filenames[index].toStdString();
+        for(int j = 0;j < a->get_list().size();++j)
             add_region_from_atlas(a,j);
 
     }
@@ -1045,15 +1047,14 @@ bool RegionTableWidget::has_seeding(void)
             return true;
     return false;
 }
-extern std::vector<atlas> atlas_list;
 void RegionTableWidget::set_whole_brain(ThreadData* data)
 {
     std::vector<tipl::vector<3,short> > points;
     std::string place = "whole brain";
-    if(cur_tracking_window.ui->target->currentIndex() > 0 && !atlas_list.empty() && cur_tracking_window.can_map_to_mni())
+    if(cur_tracking_window.ui->target->currentIndex() > 0 && cur_tracking_window.can_map_to_mni() && cur_tracking_window.handle->has_atlas())
     {
         float r = 1.0f;
-        cur_tracking_window.handle->get_atlas_roi(atlas_list[0],cur_tracking_window.ui->target->currentIndex()-1,points,r);
+        cur_tracking_window.handle->get_atlas_roi(cur_tracking_window.handle->atlas_list[0],cur_tracking_window.ui->target->currentIndex()-1,points,r);
         place = cur_tracking_window.ui->target->currentText().toStdString();
     }
     else

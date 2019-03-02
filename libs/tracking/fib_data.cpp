@@ -3,9 +3,6 @@
 #include "fib_data.hpp"
 #include "tessellated_icosahedron.hpp"
 
-extern std::vector<atlas> atlas_list;
-
-
 bool odf_data::read(gz_mat_read& mat_reader)
 {
     unsigned int row,col;
@@ -823,6 +820,7 @@ void fib_data::get_index_titles(std::vector<std::string>& titles)
     }
 }
 extern std::vector<std::string> fa_template_list;
+extern std::vector<std::shared_ptr<atlas> > atlas_buffer;
 bool fib_data::has_template(void)
 {
     if(!template_I.empty())
@@ -848,11 +846,26 @@ bool fib_data::has_template(void)
                 template_shift[2] = tran[11];
                 template_I.swap(I);
                 template_vs = I_vs;
+
+                std::string atlas_file = fa_template_list[i] + ".atlas.txt";
+                std::ifstream in(atlas_file);
+                std::string line;
+                while(std::getline(in,line))
+                {
+                    for(int j = 0;j < atlas_buffer.size();++j)
+                        if(atlas_buffer[j]->name == line)
+                            atlas_list.push_back(atlas_buffer[j]);
+                }
                 return true;
             }
         }
     }
     return false;
+}
+
+bool fib_data::has_atlas(void)
+{
+    return has_template() && !atlas_list.empty();
 }
 
 void fib_data::to_mni(tipl::vector<3>& p)
@@ -864,7 +877,7 @@ void fib_data::to_mni(tipl::vector<3>& p)
     if(template_vs[1] != 1.0f)
         p[1] *= template_vs[1];
     if(template_vs[2] != 1.0f)
-        p[1] *= template_vs[2];
+        p[2] *= template_vs[2];
     p += template_shift;
 }
 
@@ -872,7 +885,7 @@ void fib_data::from_mni(tipl::vector<3>& p)
 {
     p -= template_shift;
     if(template_vs[2] != 1.0f)
-        p[1] /= template_vs[2];
+        p[2] /= template_vs[2];
     if(template_vs[1] != 1.0f)
         p[1] /= template_vs[1];
     p[1] = -p[1];
@@ -930,6 +943,7 @@ void fib_data::run_normalization(bool background)
             return;
         tipl::image<float,3> Iss(It.geometry());
         tipl::resample_mt(Is,Iss,T,tipl::linear);
+        tipl::match_signal(It,Iss);
         prog = 3;
         tipl::image<tipl::vector<3>,3> dis,inv_dis;
         tipl::reg::cdm(It,Iss,dis,thread.terminated,2.0f,0.95f);
@@ -990,7 +1004,7 @@ void fib_data::run_normalization(bool background)
 
 bool fib_data::can_map_to_mni(void)
 {
-    if(!is_human_data || !has_template())
+    if(!has_template())
         return false;
     if(is_qsdr || !mni_position.empty())
         return true;
@@ -1027,21 +1041,20 @@ void fib_data::mni2subject(tipl::vector<3>& pos)
 
 void fib_data::subject2mni(tipl::vector<3>& pos)
 {
-    if(!is_human_data)
-        return;
     if(is_qsdr)
     {
         pos.to(trans_to_mni);
         return;
     }
-    tipl::vector<3> p;
-    tipl::estimate(mni_position,pos,p);
-    pos = p;
+    if(!mni_position.empty())
+    {
+        tipl::vector<3> p;
+        tipl::estimate(mni_position,pos,p);
+        pos = p;
+    }
 }
 void fib_data::subject2mni(tipl::pixel_index<3>& index,tipl::vector<3>& pos)
 {
-    if(!is_human_data)
-        return;
     if(is_qsdr)
     {
         pos = index;
@@ -1053,12 +1066,12 @@ void fib_data::subject2mni(tipl::pixel_index<3>& index,tipl::vector<3>& pos)
     return;
 }
 
-void fib_data::get_atlas_roi(atlas& at,int roi_index,std::vector<tipl::vector<3,short> >& points,float& r)
+void fib_data::get_atlas_roi(std::shared_ptr<atlas> at,int roi_index,std::vector<tipl::vector<3,short> >& points,float& r)
 {
     if(get_mni_mapping().empty())
         return;
     // this will load the files from storage to prevent GUI multishread crash
-    at.is_labeled_as(tipl::vector<3>(0,0,0), roi_index);
+    at->is_labeled_as(tipl::vector<3>(0,0,0), roi_index);
     unsigned int thread_count = std::thread::hardware_concurrency();
     std::vector<std::vector<tipl::vector<3,short> > > buf(thread_count);
     r = 1.0;
@@ -1066,7 +1079,7 @@ void fib_data::get_atlas_roi(atlas& at,int roi_index,std::vector<tipl::vector<3,
     {
         tipl::vector<3> rmni(mni);
         rmni.round();
-        if (at.is_labeled_as(rmni, roi_index))
+        if (at->is_labeled_as(rmni, roi_index))
             buf[id].push_back(tipl::vector<3,short>(index.begin()));
     });
     points.clear();

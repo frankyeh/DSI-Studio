@@ -5,30 +5,7 @@
 #include <QCoreApplication>
 #include <QDir>
 
-std::vector<atlas> atlas_list;
-void load_atlas(void)
-{
-    QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
-    if(!dir.exists())
-        dir = QDir::currentPath()+ "/atlas";
-    QStringList atlas_name_list = dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
-    atlas_name_list << dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
-    if(atlas_name_list.empty())
-        return;
-    for(int i = 1;i < atlas_name_list.size();++i)
-        if(atlas_name_list[i].contains("tractography"))
-        {
-            auto str = atlas_name_list[i];
-            atlas_name_list.removeAt(i);
-            atlas_name_list.insert(0,str);
-        }
-    atlas_list.resize(atlas_name_list.size());
-    for(int index = 0;index < atlas_name_list.size();++index)
-    {
-        atlas_list[index].name = QFileInfo(atlas_name_list[index]).baseName().toLocal8Bit().begin();
-        atlas_list[index].filename = (dir.absolutePath() + "/" + atlas_name_list[index]).toStdString();
-    }
-}
+std::vector<std::shared_ptr<atlas> > atlas_buffer;
 
 void atlas::load_label(void)
 {

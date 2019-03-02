@@ -12,7 +12,6 @@
 #include "libs/tracking/fib_data.hpp"
 #include "tracking/atlasdialog.h"
 #include "tracking/roi.hpp"
-extern std::vector<atlas> atlas_list;
 
 QWidget *ROIViewDelegate::createEditor(QWidget *parent,
                                      const QStyleOptionViewItem &option,
@@ -886,7 +885,9 @@ bool load_region(std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text);
 void group_connectometry::on_load_roi_from_atlas_clicked()
 {
-    std::auto_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this));
+    if(!vbc->handle->has_atlas())
+        return;
+    std::shared_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this,vbc->handle));
     if(atlas_dialog->exec() == QDialog::Accepted)
     {
         for(unsigned int i = 0;i < atlas_dialog->roi_list.size();++i)

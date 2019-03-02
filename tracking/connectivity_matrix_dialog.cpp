@@ -11,7 +11,6 @@
 #include "ui_tracking_window.h"
 #include "mapping/atlas.hpp"
 #include "libs/tracking/fib_data.hpp"
-extern std::vector<atlas> atlas_list;
 void show_view(QGraphicsScene& scene,QImage I);
 connectivity_matrix_dialog::connectivity_matrix_dialog(tracking_window *parent,QString method_) :
     QDialog(parent),cur_tracking_window(parent),
@@ -27,11 +26,12 @@ connectivity_matrix_dialog::connectivity_matrix_dialog(tracking_window *parent,Q
 
     // atlas
     ui->region_list->addItem("ROIs");
-    for(int index = 0;index < atlas_list.size();++index)
-        ui->region_list->addItem(atlas_list[index].name.c_str());
-
-    if(!atlas_list.empty())
+    if(parent->handle->has_atlas())
+    {
+        for(int index = 0;index < parent->handle->atlas_list.size();++index)
+            ui->region_list->addItem(parent->handle->atlas_list[index]->name.c_str());
         ui->region_list->setCurrentIndex(1);
+    }
     for(unsigned int index = 0;index < cur_tracking_window->regionWidget->regions.size();++index)
         if(cur_tracking_window->regionWidget->item(index,0)->checkState() == Qt::Checked)
         {
@@ -117,9 +117,9 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
         }
     else
         {
-            if(!cur_tracking_window->can_map_to_mni())
+            if(!cur_tracking_window->handle->has_atlas())
                 return;
-            data.set_atlas(atlas_list[ui->region_list->currentIndex()-1],cur_tracking_window->handle->get_mni_mapping());
+            data.set_atlas(cur_tracking_window->handle->atlas_list[ui->region_list->currentIndex()-1],cur_tracking_window->handle->get_mni_mapping());
         }
 
     TractModel tracks(cur_tracking_window->handle);
