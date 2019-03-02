@@ -142,7 +142,7 @@ class fib_data
 {
 public:
     mutable std::string error_msg;
-    std::string report;
+    std::string report,fib_file_name;
     gz_mat_read mat_reader;
 public:
     tipl::geometry<3> dim;

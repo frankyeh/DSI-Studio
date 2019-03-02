@@ -463,6 +463,7 @@ bool fib_data::load_from_file(const char* file_name)
 {
     tipl::image<float,3> I;
     tipl::vector<3,float> vs_;
+    fib_file_name = file_name;
     if(QFileInfo(file_name).completeSuffix() == "nii" ||
        QFileInfo(file_name).completeSuffix() == "nii.gz")
     {
@@ -826,6 +827,35 @@ extern fa_template fa_template_imp;
 
 void fib_data::run_normalization(bool background)
 {
+    std::string output_file_name(fib_file_name);
+    output_file_name += ".mni.gz";
+    gz_mat_read in;
+    if(in.load_from_file(output_file_name.c_str()))
+    {
+        tipl::image<tipl::vector<3,float>,3 > mni(dim);
+        tipl::image<tipl::vector<3,float>,3 > inv_mni(
+                    tipl::geometry<3>(fa_template_imp.I.width()/2,
+                                      fa_template_imp.I.height()/2,
+                                      fa_template_imp.I.depth()/2));
+        const float* ptr1 = 0;
+        const float* ptr2 = 0;
+        unsigned int row1,col1;
+        unsigned int row2,col2;
+        in.read("mni_position",row1,col1,ptr1);
+        in.read("inv_mni_position",row2,col2,ptr2);
+        if(row1 == 3 && col1 == mni.size() && ptr1 &&
+           row2 == 3 && col2 == inv_mni.size() && ptr2)
+        {
+            std::copy(ptr1,ptr1+col1*row1,&mni[0][0]);
+            std::copy(ptr2,ptr2+col2*row2,&inv_mni[0][0]);
+            mni_position.swap(mni);
+            inv_mni_position.swap(inv_mni);
+            prog = 5;
+            return;
+        }
+    }
+    if(background)
+        begin_prog("running normalization");
     prog = 0;
     auto lambda = [this]()
     {
@@ -855,7 +885,7 @@ void fib_data::run_normalization(bool background)
             return;
         prog = 4;
         tipl::image<tipl::vector<3,float>,3 > mni(Is.geometry());
-        tipl::image<tipl::vector<3,float>,3 > inv_mni(It.geometry());
+        tipl::image<tipl::vector<3,float>,3 > inv_mni(tipl::geometry<3>(It.width()/2,It.height()/2,It.depth()/2));
         if(thread.terminated)
             return;
 
@@ -863,6 +893,7 @@ void fib_data::run_normalization(bool background)
         {
             tipl::vector<3> p(pos);
             v = p;
+            v += p;
             v += inv_dis[pos.index()];
             T(v);
         });
@@ -881,6 +912,15 @@ void fib_data::run_normalization(bool background)
             return;
         mni_position.swap(mni);
         inv_mni_position.swap(inv_mni);
+
+        std::string output_file_name(fib_file_name);
+        output_file_name += ".mni.gz";
+        gz_mat_write out(output_file_name.c_str());
+        if(out)
+        {
+            out.write("mni_position",&mni_position[0][0],3,mni_position.size());
+            out.write("inv_mni_position",&inv_mni_position[0][0],3,inv_mni_position.size());
+        }
         prog = 5;
     };
 
@@ -901,7 +941,6 @@ bool fib_data::can_map_to_mni(void)
         return false;
     if(is_qsdr || !mni_position.empty())
         return true;
-    begin_prog("running normalization");
     run_normalization(true);
     while(check_prog(prog,5) && mni_position.empty())
         if(prog_aborted())
@@ -928,6 +967,7 @@ void fib_data::mni2subject(tipl::vector<3>& pos)
     }
     fa_template_imp.from_mni(pos);
     tipl::vector<3> p;
+    pos *= 0.5f;
     tipl::estimate(inv_mni_position,pos,p);
     pos = p;
 }
