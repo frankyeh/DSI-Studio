@@ -2,7 +2,6 @@
 #include <QThread>
 #include "reconstruction_window.h"
 #include "ui_reconstruction_window.h"
-#include "mapping/fa_template.hpp"
 #include "tipl/tipl.hpp"
 #include "mainwindow.h"
 #include <QImage>
@@ -238,7 +237,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
 
     handle->voxel.external_template.empty();
     //QSDR
-    if(method_id == 7 && !fa_template_list.empty() && ui->template_box->currentIndex() != 0)
+    if(method_id == 7 && !fa_template_list.empty())
         handle->voxel.external_template = fa_template_list[ui->template_box->currentIndex()];
     //QSDR with CDMT1W
     if(method_id == 7 && ui->reg_method->currentIndex() == 4 && !t1w_template_list.empty())
@@ -513,17 +512,6 @@ void reconstruction_window::on_zoom_out_clicked()
 {
     source_ratio *= 0.9f;
     on_b_table_itemSelectionChanged();
-}
-
-extern fa_template fa_template_imp;
-void reconstruction_window::on_manual_reg_clicked()
-{
-    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-            dwi,handle->voxel.vs,
-            fa_template_imp.I,fa_template_imp.vs,
-            tipl::reg::affine,tipl::reg::cost_type::corr));
-    if(manual->exec() == QDialog::Accepted)
-        handle->voxel.qsdr_trans = manual->T;
 }
 
 void reconstruction_window::on_AdvancedOptions_clicked()

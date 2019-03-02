@@ -1,7 +1,6 @@
 #include <QCoreApplication>
 #include <QFileInfo>
 #include "fib_data.hpp"
-#include "fa_template.hpp"
 #include "tessellated_icosahedron.hpp"
 
 extern std::vector<atlas> atlas_list;
@@ -706,7 +705,7 @@ bool fib_data::load_from_mat(void)
         }
     }
 
-    is_human_data = dim[0]*vs[0] > 100 && dim[1]*vs[1] > 120 && dim[2]*vs[2] > 40;
+    is_human_data = dim[0]*vs[0] > 150 && dim[1]*vs[1] > 150;
     db.read_db(this);
     return true;
 }
@@ -823,7 +822,66 @@ void fib_data::get_index_titles(std::vector<std::string>& titles)
         titles.push_back(index_list[index]+" sd");
     }
 }
-extern fa_template fa_template_imp;
+extern std::vector<std::string> fa_template_list;
+bool fib_data::has_template(void)
+{
+    if(!template_I.empty())
+        return true;
+    float brain_size = vs[0]*vs[1]*vs[2]*tipl::segmentation::otsu_count(tipl::make_image(dir.fa[0],dim));
+    for(int i = 0;i < fa_template_list.size();++i)
+    {
+        gz_nifti read;
+        tipl::image<float,3> I;
+        tipl::vector<3> I_vs;
+        if(read.load_from_file(fa_template_list[i].c_str()))
+        {
+            read.toLPS(I);
+            read.get_voxel_size(I_vs);
+            float template_brain_size = I_vs[0]*I_vs[1]*I_vs[2]*tipl::segmentation::otsu_count(I);
+            float ratio = brain_size/template_brain_size;
+            if(ratio > 0.5 && ratio < 2.0)
+            {
+                float tran[16];
+                read.get_image_transformation(tran);
+                template_shift[0] = tran[3];
+                template_shift[1] = tran[7];
+                template_shift[2] = tran[11];
+                template_I.swap(I);
+                template_vs = I_vs;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void fib_data::to_mni(tipl::vector<3>& p)
+{
+    p[0] = -p[0];
+    if(template_vs[0] != 1.0f)
+        p[0] *= template_vs[0];
+    p[1] = -p[1];
+    if(template_vs[1] != 1.0f)
+        p[1] *= template_vs[1];
+    if(template_vs[2] != 1.0f)
+        p[1] *= template_vs[2];
+    p += template_shift;
+}
+
+void fib_data::from_mni(tipl::vector<3>& p)
+{
+    p -= template_shift;
+    if(template_vs[2] != 1.0f)
+        p[1] /= template_vs[2];
+    if(template_vs[1] != 1.0f)
+        p[1] /= template_vs[1];
+    p[1] = -p[1];
+    if(template_vs[0] != 1.0f)
+        p[0] /= template_vs[0];
+    p[0] = -p[0];
+
+
+}
 
 void fib_data::run_normalization(bool background)
 {
@@ -834,9 +892,9 @@ void fib_data::run_normalization(bool background)
     {
         tipl::image<tipl::vector<3,float>,3 > mni(dim);
         tipl::image<tipl::vector<3,float>,3 > inv_mni(
-                    tipl::geometry<3>(fa_template_imp.I.width()/2,
-                                      fa_template_imp.I.height()/2,
-                                      fa_template_imp.I.depth()/2));
+                    tipl::geometry<3>(template_I.width()/2,
+                                      template_I.height()/2,
+                                      template_I.depth()/2));
         const float* ptr1 = 0;
         const float* ptr2 = 0;
         unsigned int row1,col1;
@@ -859,18 +917,13 @@ void fib_data::run_normalization(bool background)
     prog = 0;
     auto lambda = [this]()
     {
-        if(fa_template_imp.I.empty() && !fa_template_imp.load_from_file())
-        {
-            std::cout << fa_template_imp.error_msg << std::endl;
-            prog = 5;
-            return;
-        }
-        auto& It = fa_template_imp.I;
+
+        auto& It = template_I;
         tipl::transformation_matrix<float> T;
         tipl::image<float,3> Is(dir.fa[0],dim);
         tipl::filter::gaussian(Is);
         prog = 1;
-        tipl::reg::two_way_linear_mr(It,fa_template_imp.vs,Is,vs,T,tipl::reg::affine,
+        tipl::reg::two_way_linear_mr(It,template_vs,Is,vs,T,tipl::reg::affine,
                                      tipl::reg::mutual_information(),thread.terminated);
         prog = 2;
         if(thread.terminated)
@@ -906,7 +959,7 @@ void fib_data::run_normalization(bool background)
             v = p;
             tipl::estimate(dis,v,d,tipl::linear);
             v += d;
-            fa_template_imp.to_mni(v);
+            to_mni(v);
         });
         if(thread.terminated)
             return;
@@ -937,7 +990,7 @@ void fib_data::run_normalization(bool background)
 
 bool fib_data::can_map_to_mni(void)
 {
-    if(!is_human_data)
+    if(!is_human_data || !has_template())
         return false;
     if(is_qsdr || !mni_position.empty())
         return true;
@@ -965,7 +1018,7 @@ void fib_data::mni2subject(tipl::vector<3>& pos)
         pos[2] /= trans_to_mni[10];
         return;
     }
-    fa_template_imp.from_mni(pos);
+    from_mni(pos);
     tipl::vector<3> p;
     pos *= 0.5f;
     tipl::estimate(inv_mni_position,pos,p);
@@ -1036,7 +1089,8 @@ const tipl::image<tipl::vector<3,float>,3 >& fib_data::get_mni_mapping(void)
         });
         return mni_position;
     }
-    run_normalization(false);
+    if(has_template())
+        run_normalization(false);
     return mni_position;
 }
 void smoothed_tracks(const std::vector<float>& track,std::vector<float>& smoothed);

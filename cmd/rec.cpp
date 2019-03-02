@@ -7,12 +7,10 @@
 #include "tracking/region/Regions.h"
 #include "tipl/tipl.hpp"
 #include "libs/dsi/image_model.hpp"
-#include "mapping/fa_template.hpp"
 #include "libs/gzip_interface.hpp"
 #include "reconstruction/reconstruction_window.h"
 #include "program_option.hpp"
 
-extern fa_template fa_template_imp;
 extern std::vector<std::string> fa_template_list;
 void rec_motion_correction(ImageModel* handle);
 void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
@@ -187,11 +185,6 @@ int rec(void)
             return 0;
         }
         handle->voxel.external_template = template_file_name;
-    }
-    if(!fa_template_imp.load_from_file())
-    {
-        std::cout << fa_template_imp.error_msg << std::endl;
-        return -1;
     }
 
     if(handle->voxel.csf_calibration && !handle->is_human_data())

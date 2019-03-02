@@ -1,14 +1,12 @@
 #ifndef MNI_RECONSTRUCTION_HPP
 #define MNI_RECONSTRUCTION_HPP
 #include <chrono>
-#include "mapping/fa_template.hpp"
 #include "basic_voxel.hpp"
 #include "basic_process.hpp"
 #include "odf_decomposition.hpp"
 #include "odf_deconvolusion.hpp"
 #include "gqi_process.hpp"
 
-extern fa_template fa_template_imp;
 class DWINormalization  : public BaseProcess
 {
 protected:
@@ -39,14 +37,13 @@ public:
                 voxel.vs[2] == 0.0)
             throw std::runtime_error("No spatial information found in src file. Recreate src file or contact developer for assistance");
 
-        tipl::image<float,3> VG,VF;
-        tipl::vector<3> VGvs = fa_template_imp.vs;
-        tipl::vector<3> VGshift = fa_template_imp.shift;
-        VG = fa_template_imp.I;
-        VF = voxel.qa_map;
-        if(!voxel.external_template.empty())
+        tipl::image<float,3> VG,VF(voxel.qa_map);
+        tipl::vector<3> VGvs;
+        tipl::vector<3> VGshift;
+        if(voxel.external_template.empty())
+            throw std::runtime_error("Invalid external template");
         {
-            std::cout << "loading external template:" << voxel.external_template << std::endl;
+            std::cout << "loading template:" << voxel.external_template << std::endl;
             gz_nifti read;
             if(read.load_from_file(voxel.external_template.c_str()))
             {
@@ -58,15 +55,11 @@ public:
                 VGshift[1] = tran[7];
                 VGshift[2] = tran[11];
             }
-            else
-                throw std::runtime_error("Invalid external template");
         }
         // check if the template has similar size as the data
         {
-            float otsu = tipl::segmentation::otsu_threshold(VG)*0.6f;
-            float vG = VGvs[0]*VGvs[0]*VGvs[0]*std::count_if(VG.begin(),VG.end(),[otsu](float v){return v > otsu;});
-            otsu = tipl::segmentation::otsu_threshold(VF)*0.6f;
-            float vF = voxel.vs[0]*voxel.vs[1]*voxel.vs[2]*std::count_if(VF.begin(),VF.end(),[otsu](float v){return v > otsu;});
+            float vG = VGvs[0]*VGvs[0]*VGvs[0]*tipl::segmentation::otsu_count(VG);
+            float vF = voxel.vs[0]*voxel.vs[1]*voxel.vs[2]*tipl::segmentation::otsu_count(VF);
             float ratio = vF/(vG+1.0f);
             if(ratio < 0.4 || ratio > 2.0)
                 throw std::runtime_error("Template/Subject FOV mismatch: Please check if the template is valid.");

@@ -122,7 +122,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                (from.empty() || QFileInfo(roi_file_name.c_str()).baseName() != "aparc+aseg"))
             {
                 std::cout << roi_file_name << " is used as an MNI space ROI." << std::endl;
-                if(handle->get_mni_mapping().empty())
+                if(!handle->can_map_to_mni())
                 {
                     std::cout << "Cannot output connectivity: no mni mapping" << std::endl;
                     continue;
@@ -238,7 +238,7 @@ bool load_region(std::shared_ptr<fib_data> handle,
             return false;
         }
 
-        if(handle->get_mni_mapping().empty())
+        if(!handle->can_map_to_mni())
         {
             std::cout << "Cannot output connectivity: no mni mapping." << std::endl;
             return false;

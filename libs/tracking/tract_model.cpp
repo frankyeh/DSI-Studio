@@ -13,7 +13,6 @@
 #include "mapping/atlas.hpp"
 #include "gzip_interface.hpp"
 #include "tract_cluster.hpp"
-#include "fa_template.hpp"
 #include "../../tracking/region/Regions.h"
 
 void smoothed_tracks(const std::vector<float>& track,std::vector<float>& smoothed)
@@ -269,7 +268,6 @@ void TractModel::add(const TractModel& rhs)
     is_cut.insert(is_cut.end(),rhs.is_cut.begin(),rhs.is_cut.end());
 }
 //---------------------------------------------------------------------------
-extern fa_template fa_template_imp;
 bool TractModel::load_from_file(const char* file_name_,bool append)
 {
     std::string file_name(file_name_);
@@ -285,7 +283,8 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
             TrackVis trk;
             if(!trk.load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,vs))
                 return false;
-            if(tipl::geometry<3>(trk.dim) == fa_template_imp.I.geometry() &&
+            if(handle->has_template() &&
+               tipl::geometry<3>(trk.dim) == handle->template_I.geometry() &&
                tipl::geometry<3>(trk.dim) != handle->dim &&
                handle->can_map_to_mni())
             {
@@ -297,7 +296,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                         tipl::vector<3> p(loaded_tract_data[i][j]*vs[0],
                                           loaded_tract_data[i][j+1]*vs[1],
                                           loaded_tract_data[i][j+2]*vs[2]);
-                        fa_template_imp.to_mni(p);
+                        handle->to_mni(p);
                         handle->mni2subject(p);
                         loaded_tract_data[i][j] = p[0];
                         loaded_tract_data[i][j+1] = p[1];

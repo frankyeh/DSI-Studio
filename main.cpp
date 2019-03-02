@@ -8,7 +8,6 @@
 #include <QDir>
 #include "mainwindow.h"
 #include "tipl/tipl.hpp"
-#include "mapping/fa_template.hpp"
 #include "mapping/atlas.hpp"
 #include <iostream>
 #include <iterator>
@@ -16,8 +15,7 @@
 #include "cmd/cnt.cpp" // Qt project cannot build cnt.cpp without adding this.
 
 track_recognition track_network;
-fa_template fa_template_imp;
-std::string qa_template_1mm,
+std::string
         fib_template_file_name_1mm,fib_template_file_name_2mm,
         t1w_template_file_name,wm_template_file_name,
         t1w_mask_template_file_name,tractography_atlas_file_name;
@@ -69,7 +67,6 @@ std::string find_full_path(QString name,bool no_empty = false)
 
 void load_file_name(void)
 {
-    qa_template_1mm = find_full_path("/template/HCP1021_QA.nii.gz",true);
     t1w_template_file_name = find_full_path("/template_t1w/mni_icbm152_t1_tal_nlin_asym_09c.nii.gz");
     fib_template_file_name_2mm = find_full_path("/HCP1021.2mm.fib.gz");
     fib_template_file_name_1mm = find_full_path("/HCP1021.1mm.fib.gz");
@@ -107,10 +104,7 @@ void load_file_name(void)
         for(int i = 0;i < name_list.size();++i)
         {
             std::string full_path = (dir.absolutePath() + "/" + name_list[i]).toStdString();
-            if(full_path == qa_template_1mm)
-                fa_template_list.insert(fa_template_list.begin(),full_path);
-            else
-                fa_template_list.push_back(full_path);
+            fa_template_list.push_back(full_path);
         }
     }
     // search for all t1w template
@@ -144,7 +138,7 @@ void init_application(void)
 
     load_file_name();
     load_atlas();
-    if(fa_template_list.empty() || t1w_template_list.empty() || !fa_template_imp.load_from_file() || atlas_list.empty())
+    if(fa_template_list.empty() || t1w_template_list.empty() || atlas_list.empty())
     {
         QMessageBox::information(0,"Error","Missing template and atlas files. \
             Please download dsi_studio_other_files.zip from DSI Studio website and place them with the DSI Studio executives",0);

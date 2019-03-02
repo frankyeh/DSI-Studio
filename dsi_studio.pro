@@ -77,7 +77,6 @@ HEADERS += mainwindow.h \
     libs/prog_interface_static_link.h \
     simulation.h \
     libs/mapping/atlas.hpp \
-    libs/mapping/fa_template.hpp \
     plot/qcustomplot.h \
     view_image.h \
     libs/vbc/vbc_database.h \
@@ -152,7 +151,6 @@ SOURCES += main.cpp \
     simulation.cpp \
     cmd/src.cpp \
     libs/mapping/atlas.cpp \
-    libs/mapping/fa_template.cpp \
     plot/qcustomplot.cpp \
     cmd/ana.cpp \
     view_image.cpp \

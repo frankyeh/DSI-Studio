@@ -11,7 +11,6 @@
 
 extern std::vector<atlas> atlas_list;
 extern std::string fib_template_file_name_1mm,fib_template_file_name_2mm;
-std::string get_fa_template_path(void);
 const char* odf_average(const char* out_name,std::vector<std::string>& file_names);
 bool atl_load_atlas(std::string atlas_name)
 {
@@ -226,7 +225,11 @@ int atl(void)
         }
         if(!atl_load_atlas(po.get("atlas")))
             return 0;
-
+        if(!handle->can_map_to_mni())
+        {
+            std::cout << "Cannot output connectivity: no mni mapping" << std::endl;
+            return 0;
+        }
         atl_save_mapping(po.get("source"),handle->dim,
                          handle->get_mni_mapping(),handle->trans_to_mni,handle->vs,
                          po.get("output","multiple") == "multiple");

@@ -23,14 +23,12 @@
 #include "connectivity_matrix_dialog.h"
 #include "vbc/vbc_database.h"
 #include "mapping/atlas.hpp"
-#include "mapping/fa_template.hpp"
 #include "tracking/atlasdialog.h"
 #include "libs/tracking/tracking_thread.hpp"
 #include "regtoolbox.h"
 
 extern std::vector<std::string> tractography_atlas_list;
 extern std::vector<atlas> atlas_list;
-extern fa_template fa_template_imp;
 extern std::string t1w_template_file_name,wm_template_file_name;
 QByteArray default_geo,default_state;
 
@@ -343,8 +341,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         }
         ui->search_atlas->setList(items);
         connect(ui->search_atlas,SIGNAL(selected()),this,SLOT(add_roi_from_atlas()));
-
-
     }
 
 
@@ -1081,13 +1077,18 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
 
 void tracking_window::on_actionManual_Registration_triggered()
 {
+    if(!handle->has_template())
+    {
+        QMessageBox::information(this,"Error","No template image loaded.",0);
+        return;
+    }
     tipl::image<float,3> from = current_slice->get_source();
     tipl::filter::gaussian(from);
     from -= tipl::segmentation::otsu_threshold(from);
     tipl::lower_threshold(from,0.0);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
                                    from,handle->vs,
-                                   fa_template_imp.I,fa_template_imp.vs,
+                                   handle->template_I,handle->template_vs,
                                    tipl::reg::affine,tipl::reg::cost_type::corr));
 
     manual->on_rerun_clicked();

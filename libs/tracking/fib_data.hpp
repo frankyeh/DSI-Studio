@@ -161,6 +161,14 @@ public:
     tipl::image<tipl::vector<3,float>,3 > mni_position,inv_mni_position;
     tipl::image<tipl::vector<3,float>,3 > native_position;
 public:
+    std::string template_file_name;
+    tipl::vector<3> template_vs,template_shift;
+    tipl::image<float,3> template_I;
+    bool has_template(void);
+    void to_mni(tipl::vector<3>& p);
+    void from_mni(tipl::vector<3>& p);
+
+public:
     void run_normalization(bool background);
     bool can_map_to_mni(void);
     void mni2subject(tipl::vector<3>& pos);

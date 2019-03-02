@@ -64,7 +64,6 @@ private slots:
     void on_b_table_itemSelectionChanged();
     void on_zoom_in_clicked();
     void on_zoom_out_clicked();
-    void on_manual_reg_clicked();
     void on_AdvancedOptions_clicked();
     void on_actionSave_4D_nifti_triggered();
     void on_actionSave_b_table_triggered();
