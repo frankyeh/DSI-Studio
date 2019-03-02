@@ -139,7 +139,7 @@ void init_application(void)
     if(fa_template_list.empty() || t1w_template_list.empty() || !fa_template_imp.load_from_file() || atlas_list.empty())
     {
         QMessageBox::information(0,"Error","Missing template and atlas files. \
-            Please download accessory files from DSI Studio website and place them with the DSI Studio executives",0);
+            Please download dsi_studio_other_files.zip from DSI Studio website and place them with the DSI Studio executives",0);
         return;
     }
 
