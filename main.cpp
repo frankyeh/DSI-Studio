@@ -134,6 +134,14 @@ void init_application(void)
 {
     QApplication::setOrganizationName("LabSolver");
     QApplication::setApplicationName("DSI Studio");
+
+    #ifdef __APPLE__
+    QFont font;
+    font.setFamily(QString::fromUtf8("Arial"));
+    QApplication::setFont(font);
+    QApplication::setStyle(QStyleFactory::create("Fusion"));
+    #endif
+
     load_file_name();
     load_atlas();
     if(fa_template_list.empty() || t1w_template_list.empty() || !fa_template_imp.load_from_file() || atlas_list.empty())
