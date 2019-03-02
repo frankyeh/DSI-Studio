@@ -1521,7 +1521,7 @@ Tracking</string>
         <widget class="QToolButton" name="all_edit">
          <property name="minimumSize">
           <size>
-           <width>0</width>
+           <width>28</width>
            <height>24</height>
           </size>
          </property>
@@ -1802,6 +1802,12 @@ Tracking</string>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
+         <property name="minimumSize">
+          <size>
+           <width>28</width>
+           <height>0</height>
+          </size>
+         </property>
          <property name="toolTip">
           <string>Show local fiber directions</string>
          </property>
@@ -1831,6 +1837,12 @@ Tracking</string>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
+         <property name="minimumSize">
+          <size>
+           <width>28</width>
+           <height>0</height>
+          </size>
+         </property>
          <property name="toolTip">
           <string>Show slice positions</string>
          </property>
@@ -1856,6 +1868,12 @@ Tracking</string>
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>28</width>
+           <height>0</height>
+          </size>
          </property>
          <property name="toolTip">
           <string>Show right side label</string>
