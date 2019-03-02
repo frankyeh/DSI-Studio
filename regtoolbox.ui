@@ -104,55 +104,75 @@
         </widget>
        </item>
        <item>
-        <widget class="QGroupBox" name="groupBox_4">
-         <property name="title">
-          <string>Methods</string>
+        <widget class="QGroupBox" name="groupBox_5">
+         <property name="minimumSize">
+          <size>
+           <width>150</width>
+           <height>0</height>
+          </size>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_2">
-          <property name="spacing">
-           <number>5</number>
-          </property>
-          <property name="leftMargin">
-           <number>5</number>
-          </property>
-          <property name="topMargin">
-           <number>5</number>
-          </property>
-          <property name="rightMargin">
-           <number>5</number>
-          </property>
-          <property name="bottomMargin">
-           <number>5</number>
-          </property>
+         <property name="title">
+          <string>Linear</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout">
           <item>
-           <widget class="QComboBox" name="reg_type">
-            <property name="minimumSize">
-             <size>
-              <width>300</width>
-              <height>0</height>
-             </size>
-            </property>
+           <widget class="QComboBox" name="linear_method">
             <property name="currentIndex">
-             <number>0</number>
+             <number>2</number>
             </property>
             <item>
              <property name="text">
-              <string>Linear rigid body (same subject data)</string>
+              <string>None</string>
              </property>
             </item>
             <item>
              <property name="text">
-              <string>Linear affine + Nonlinear (subject-template)</string>
+              <string>Rigid body</string>
              </property>
             </item>
             <item>
              <property name="text">
-              <string>Nonlinear only (subject-template)</string>
+              <string>Affine</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="cost_fun">
+            <item>
+             <property name="text">
+              <string>Mutual Information</string>
              </property>
             </item>
             <item>
              <property name="text">
-              <string>Linear affine only (subject-template)</string>
+              <string>Correlation</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_6">
+         <property name="title">
+          <string>Nonlinear</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <item>
+           <widget class="QComboBox" name="nonlinear_method">
+            <property name="currentIndex">
+             <number>1</number>
+            </property>
+            <item>
+             <property name="text">
+              <string>None</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>CDM</string>
              </property>
             </item>
            </widget>
@@ -176,23 +196,6 @@
               <number>0</number>
              </property>
              <item>
-              <widget class="QComboBox" name="reg_method">
-               <property name="currentIndex">
-                <number>1</number>
-               </property>
-               <item>
-                <property name="text">
-                 <string>SPM norm</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Diffeo</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
               <widget class="QWidget" name="order_widget" native="true">
                <layout class="QHBoxLayout" name="horizontalLayout_3">
                 <property name="spacing">
@@ -210,23 +213,6 @@
                 <property name="bottomMargin">
                  <number>0</number>
                 </property>
-                <item>
-                 <widget class="QLabel" name="label_3">
-                  <property name="text">
-                   <string>Order:</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QSpinBox" name="order">
-                  <property name="minimum">
-                   <number>1</number>
-                  </property>
-                  <property name="maximum">
-                   <number>4</number>
-                  </property>
-                 </widget>
-                </item>
                 <item>
                  <widget class="QLabel" name="label_5">
                   <property name="text">

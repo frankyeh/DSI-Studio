@@ -892,7 +892,7 @@ void MainWindow::on_set_dir_clicked()
     QDir::setCurrent(dir);
 }
 
-bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl::vector<3>& vs);
+bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl::vector<3>& vs,std::vector<float>& trans);
 
 void MainWindow::on_linear_reg_clicked()
 {
@@ -912,12 +912,12 @@ void MainWindow::on_linear_reg_clicked()
 
     tipl::image<float,3> ref1,ref2;
     tipl::vector<3> vs1,vs2;
-
-    if(!load_image_from_files(filename1,ref1,vs1) ||
-       !load_image_from_files(filename2,ref2,vs2))
+    std::vector<float> t1,t2;
+    if(!load_image_from_files(filename1,ref1,vs1,t1) ||
+       !load_image_from_files(filename2,ref2,vs2,t2))
         return;
-
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,ref1,vs1,ref2,vs2,tipl::reg::affine,tipl::reg::mutual_info));
+    manual->nifti_srow = t2;
     if(manual->exec() != QDialog::Accepted)
         return;
 }

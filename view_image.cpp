@@ -13,7 +13,7 @@
 std::map<std::string,std::string> dicom_dictionary;
 
 void show_view(QGraphicsScene& scene,QImage I);
-bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl::vector<3>& vs)
+bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl::vector<3>& vs,std::vector<float>& trans)
 {
     if(filenames.size() == 1 && filenames[0].toLower().contains("nii"))
     {
@@ -24,6 +24,8 @@ bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl:
             return false;
         }
         in.get_voxel_size(vs);
+        trans.resize(12);
+        in.get_image_transformation(trans.begin());
         return true;
     }
     else

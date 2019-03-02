@@ -89,9 +89,9 @@ void load_file_name(void)
             in2 >> line;
             std::replace(line.begin(),line.end(),'_',' ');
             std::transform(line.begin(), line.end(), line.begin(),::tolower);
-            if(line.back() == 'l')
+            if(line.back() == 'l' && line[line.length()-2] == ' ')
                 line = std::string("left ") + line.substr(0,line.length()-2);
-            if(line.back() == 'r')
+            if(line.back() == 'r' && line[line.length()-2] == ' ')
                 line = std::string("right ") + line.substr(0,line.length()-2);
             tractography_atlas_list.push_back(line);
         }

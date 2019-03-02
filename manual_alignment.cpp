@@ -5,6 +5,7 @@
 
 void show_view(QGraphicsScene& scene,QImage I);
 
+const float reg_bound2[6] = {0.25f,-0.25f,4.0,0.2,0.5,-0.5};
 manual_alignment::manual_alignment(QWidget *parent,
                                    tipl::image<float,3> from_,
                                    const tipl::vector<3>& from_vs_,
@@ -19,7 +20,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     to.swap(to_);
     tipl::normalize(from,1.0);
     tipl::normalize(to,1.0);
-    tipl::reg::get_bound(from,to,arg,b_upper,b_lower,reg_type);
+    tipl::reg::get_bound(from,to,arg,b_upper,b_lower,reg_type,reg_bound2);
 
     ui->setupUi(this);
     ui->reg_type->setCurrentIndex(reg_type == tipl::reg::rigid_body? 0: 1);
@@ -269,7 +270,7 @@ void manual_alignment::on_rerun_clicked()
 {
     auto cost = ui->cost_type->currentIndex() == 0 ? tipl::reg::corr : tipl::reg::mutual_info;
     reg_type = ui->reg_type->currentIndex() == 0 ? tipl::reg::rigid_body : tipl::reg::affine;
-    tipl::reg::get_bound(from,to,arg,b_upper,b_lower,ui->reg_type->currentIndex() == 0 ? tipl::reg::rigid_body : tipl::reg::affine);
+    tipl::reg::get_bound(from,to,arg,b_upper,b_lower,reg_type,reg_bound2);
     if(reg_type == tipl::reg::rigid_body)
     {
         ui->scaling_group->setEnabled(false);
@@ -288,15 +289,15 @@ void manual_alignment::on_rerun_clicked()
     {
         if(cost == tipl::reg::mutual_info)
         {
-            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.1);
-            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.01);
+            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.01,reg_bound2);
+            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.001,reg_bound2);
         }
         else
         {
             tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mt_correlation<tipl::image<float,3>,
-                           tipl::transformation_matrix<double> >(0),thread.terminated,0.1);
+                           tipl::transformation_matrix<double> >(0),thread.terminated,0.01,reg_bound2);
             tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mt_correlation<tipl::image<float,3>,
-                           tipl::transformation_matrix<double> >(0),thread.terminated,0.01);
+                           tipl::transformation_matrix<double> >(0),thread.terminated,0.001,reg_bound2);
         }
 
     });
@@ -318,11 +319,21 @@ void manual_alignment::on_save_warpped_clicked()
         return;
 
     tipl::image<float,3> I(to.geometry());
-    tipl::resample(from_original,I,iT,tipl::cubic);
+    bool is_label = true;
+    for(int i = 0;i < from_original.size();++i)
+        if(std::floor(from_original[i]) != from_original[i])
+        {
+            is_label = false;
+            break;
+        }
+
+    tipl::resample(from_original,I,iT,is_label ? tipl::nearest : tipl::cubic);
     gz_nifti nii;
     nii.set_voxel_size(to_vs);
     tipl::flip_xy(I);
     nii << I;
+    if(!nifti_srow.empty())
+        nii.set_LPS_transformation(nifti_srow.begin(),I.geometry());
     nii.save_to_file(filename.toStdString().c_str());
 }
 

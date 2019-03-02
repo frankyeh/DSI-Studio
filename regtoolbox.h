@@ -30,13 +30,11 @@ public:
     std::string status;
 public:
     std::shared_ptr<tipl::reg::bfnorm_mapping<float,3> > bnorm_data;
-
-    int reg_type;
     bool reg_done;
 private:
     void clear(void);
     void linear_reg(tipl::reg::reg_type reg_type);
-    void nonlinear_reg(int method);
+    void nonlinear_reg(void);
 
 public:
     explicit RegToolBox(QWidget *parent = 0);
@@ -64,8 +62,6 @@ private slots:
     void on_actionMatch_Intensity_triggered();
 
     void on_actionRemove_Background_triggered();
-
-    void on_actionTOPUP_triggered();
 
 private:
     Ui::RegToolBox *ui;

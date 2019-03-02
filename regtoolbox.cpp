@@ -71,8 +71,6 @@ void RegToolBox::on_OpenTemplate_clicked()
     ui->slice_pos->setValue(It.depth()/2);
     clear();
     show_image();
-    if(It.geometry() == I.geometry())
-        ui->reg_type->setCurrentIndex(2);
 }
 
 void RegToolBox::on_OpenSubject_clicked()
@@ -95,8 +93,6 @@ void RegToolBox::on_OpenSubject_clicked()
     nifti.get_voxel_size(Ivs);
     clear();
     show_image();
-    if(It.geometry() == I.geometry())
-        ui->reg_type->setCurrentIndex(2);
 }
 
 void image2rgb(tipl::image<float,2>& tmp,tipl::color_image& buf)
@@ -253,12 +249,13 @@ void RegToolBox::on_timer()
     }
 }
 
+extern const float reg_bound2[6] = {0.25f,-0.25f,4.0,0.2,0.5,-0.5};
 void RegToolBox::linear_reg(tipl::reg::reg_type reg_type)
 {
     status = "linear registration";
     tipl::transformation_matrix<double> T;
     tipl::reg::two_way_linear_mr(It,Itvs,I,Ivs,T,reg_type,tipl::reg::mutual_information(),thread.terminated,
-                                  std::thread::hardware_concurrency(),&arg);
+                                  std::thread::hardware_concurrency(),&arg,reg_bound2);
     tipl::image<float,3> J2(It.geometry());
     tipl::resample_mt(I,J2,T,tipl::cubic);
     float r2 = tipl::correlation(J2.begin(),J2.end(),It.begin());
@@ -275,25 +272,12 @@ double phase_estimate(const tipl::image<float,3>& It,
             float cdm_smoothness = 0.3f,
             unsigned int steps = 30);
 
-void RegToolBox::nonlinear_reg(int method)
+void RegToolBox::nonlinear_reg(void)
 {
     status = "nonlinear registration";
-    if(method == 1)
     {
         //phase_estimate(It,J,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),60);
         tipl::reg::cdm(It,J,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),60);
-    }
-    if(method == 0)
-    {
-        int order = ui->order->value();
-        bnorm_data.reset(new tipl::reg::bfnorm_mapping<float,3>(It.geometry(),tipl::geometry<3>(7*order,9*order,7*order)));
-        tipl::reg::bfnorm(*bnorm_data.get(),It,J,thread.terminated,std::thread::hardware_concurrency());
-        tipl::image<tipl::vector<3>,3> dis2(It.geometry());
-        status += "..output mapping";
-        dis2.for_each_mt([&](tipl::vector<3>& v,tipl::pixel_index<3>& index){
-            bnorm_data->get_displacement(index,v);
-        });
-        dis2.swap(dis);
     }
     tipl::compose_displacement(J,dis,JJ);
     std::cout << "nonlinear:" << tipl::correlation(JJ.begin(),JJ.end(),It.begin()) << std::endl;
@@ -301,50 +285,35 @@ void RegToolBox::nonlinear_reg(int method)
 
 void RegToolBox::on_run_reg_clicked()
 {
+    if(I.empty() || It.empty())
+    {
+        QMessageBox::information(this,"Error","Please load image first",0);
+        return;
+    }
+    if(It.geometry() != I.geometry() && ui->linear_method->currentIndex() == 0)
+    {
+        QMessageBox::information(this,"Error","Linear registration is require if subject/template images have different dimensions",0);
+        return;
+    }
     clear();
     thread.terminated = false;
-    reg_type = ui->reg_type->currentIndex();
-    switch(reg_type)
-    {
-    case 0: // rigid body
-        thread.run([this]()
-        {
-            linear_reg(tipl::reg::rigid_body);
-            reg_done = true;
-            status = "registration done";
-        });
-        break;
-    case 1: // linear + nonlinear
-        thread.run([this]()
-        {
-            linear_reg(tipl::reg::affine);
-            nonlinear_reg(ui->reg_method->currentIndex());
-            reg_done = true;
-            status = "registration done";
-        });
-        break;
-    case 2: // nonlinear only
-        thread.run([this]()
-        {
-            if(I.geometry() != It.geometry())
-                linear_reg(tipl::reg::affine);
-            else
-                J = I;
-            nonlinear_reg(ui->reg_method->currentIndex());
-            reg_done = true;
-            status = "registration done";
-        });
-        break;
-    case 3: // nonlinear only
-        thread.run([this]()
-        {
-            linear_reg(tipl::reg::affine);
-            reg_done = true;
-            status = "registration done";
-        });
-        break;
-    }
 
+    thread.run([this]()
+    {
+        if(ui->linear_method->currentIndex())
+        {
+            if(ui->linear_method->currentIndex() == 1) // rigid body
+                linear_reg(tipl::reg::rigid_body);
+            else
+                linear_reg(tipl::reg::affine);
+        }
+        else
+            J = I;
+        if(ui->nonlinear_method->currentIndex())
+            nonlinear_reg();
+        reg_done = true;
+        status = "registration done";
+    });
     ui->running_label->movie()->start();
     ui->running_label->show();
     timer->start();
@@ -437,155 +406,4 @@ void RegToolBox::on_actionRemove_Background_triggered()
         show_image();
     }
 }
-/*
 
-void phase_distortion_matrix(const std::vector<float>& location,std::vector<float>& m)
-{
-    int n = d.size();
-    m.clear();
-    m.resize(n*n);
-    for(int i = 0,pos = 0;i < n;++i)
-        for(int j = 0;j < n;++j,++pos)
-        {
-            float dis = std::fabs((float)i-location[j]);
-            if(dis > 1.0f)
-                continue;
-            m[pos] += 1.0-dis;
-        }
-}
-
-void get_location_vector(const std::vector<float>& d,std::vector<float>& location,bool ap)
-{
-    location.resize(n);
-    if(ap)
-    for(int i = 0;i < n;++i)
-        location[i] = d[i] + (float)i;
-    else
-        for(int i = 0;i < n;++i)
-            location[i] = d[i] - (float)i;
-}
-
-
-
-
-
-template<class pixel_type,unsigned int dimension,class terminate_type>
-double topup(const tipl::image<pixel_type,dimension>& It,
-            const tipl::image<pixel_type,dimension>& Is,
-            tipl::image<pixel_type,dimension>& I,
-            tipl::image<float,dimension>& d,// displacement field
-            terminate_type& terminated,
-            unsigned int steps = 30)
-{
-    tipl::geometry<dimension> geo = It.geometry();
-    d.resize(geo);
-    // multi resolution
-    if (*std::min_element(geo.begin(),geo.end()) > 32)
-    {
-        //downsampling
-        image<pixel_type,dimension> rIs,rIt,I;
-        downsample_with_padding(It,rIt);
-        downsample_with_padding(Is,rIs);
-        float r = topup(rIt,rIs,I,d,terminated,steps);
-        upsample_with_padding(d,d,geo);
-        d *= 2.0f;
-    }
-    tipl::image<pixel_type,dimension> Js;// transformed I
-    tipl::image<float,dimension> new_d(d.geometry());// new displacements
-
-    for (unsigned int index = 0;index < steps && !terminated;++index)
-    {
-        tipl::compose_displacement(Is,d,Js);
-        r = tipl::correlation(Js.begin(),Js.end(),It.begin());
-        if(r <= prev_r)
-        {
-            new_d.swap(d);
-            break;
-        }
-        // dJ(cJ-I)
-        tipl::gradient_sobel(Js,new_d);
-        Js.for_each_mt([&](pixel_type&,tipl::pixel_index<dimension>& index){
-            if(It[index.index()] == 0.0 || It.geometry().is_edge(index))
-            {
-                new_d[index.index()] = vtor_type();
-                return;
-            }
-            std::vector<pixel_type> Itv,Jv;
-            tipl::get_window(index,It,window_size,Itv);
-            tipl::get_window(index,Js,window_size,Jv);
-            double a,b,r2;
-            tipl::linear_regression(Jv.begin(),Jv.end(),Itv.begin(),a,b,r2);
-            if(a <= 0.0f)
-                new_d[index.index()] = vtor_type();
-            else
-                new_d[index.index()] *= (Js[index.index()]*a+b-It[index.index()]);
-        });
-        // solving the poisson equation using Jacobi method
-        image<vtor_type,dimension> solve_d(new_d);
-        tipl::multiply_constant_mt(solve_d,-inv_d2);
-        for(int iter = 0;iter < window_size*2 & !terminated;++iter)
-        {
-            image<vtor_type,dimension> new_solve_d(new_d.geometry());
-            tipl::par_for(solve_d.size(),[&](int pos)
-            {
-                for(int d = 0;d < dimension;++d)
-                {
-                    int p1 = pos-shift[d];
-                    int p2 = pos+shift[d];
-                    if(p1 >= 0)
-                       new_solve_d[pos] += solve_d[p1];
-                    if(p2 < solve_d.size())
-                       new_solve_d[pos] += solve_d[p2];
-                }
-                new_solve_d[pos] -= new_d[pos];
-                new_solve_d[pos] *= inv_d2;
-            });
-            solve_d.swap(new_solve_d);
-        }
-        tipl::minus_constant_mt(solve_d,solve_d[0]);
-
-        new_d = solve_d;
-        if(theta == 0.0f)
-        {
-            tipl::par_for(new_d.size(),[&](int i)
-            {
-               float l = new_d[i].length();
-               if(l > theta)
-                   theta = l;
-            });
-        }
-        tipl::multiply_constant_mt(new_d,0.5f/theta);
-        tipl::add(new_d,d);
-
-        image<vtor_type,dimension> new_ds(new_d);
-        tipl::filter::gaussian2(new_ds);
-        tipl::par_for(new_d.size(),[&](int i){
-           new_ds[i] *= cdm_smoothness;
-           new_d[i] *= cdm_smoothness2;
-           new_d[i] += new_ds[i];
-        });
-        new_d.swap(d);
-    }
-    return r;
-}
-*/
-void RegToolBox::on_actionTOPUP_triggered()
-{
-    /*
-    clear();
-    thread.terminated = false;
-    reg_type = ui->reg_type->currentIndex();
-    thread.run([this]()
-    {
-        cdm_y(It,I,dis,thread.terminated,1.0f,ui->smoothness->value());
-        reg_done = true;
-        status = "registration done";
-    });
-
-    ui->running_label->movie()->start();
-    ui->running_label->show();
-    timer->start();
-    ui->stop->show();
-    ui->run_reg->hide();
-    */
-}
