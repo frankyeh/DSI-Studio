@@ -134,17 +134,15 @@ void init_application(void)
 {
     QApplication::setOrganizationName("LabSolver");
     QApplication::setApplicationName("DSI Studio");
-    QFont font;
-    font.setFamily(QString::fromUtf8("Arial"));
-    QApplication::setFont(font);
-    QApplication::setStyle(QStyleFactory::create("Fusion"));
     load_file_name();
-    if(!fa_template_imp.load_from_file())
+    load_atlas();
+    if(fa_template_list.empty() || t1w_template_list.empty() || !fa_template_imp.load_from_file() || atlas_list.empty())
     {
-        QMessageBox::information(0,"Error",fa_template_imp.error_msg.c_str(),0);
+        QMessageBox::information(0,"Error","Missing template and atlas files. \
+            Please download accessory files from DSI Studio website and place them with the DSI Studio executives",0);
         return;
     }
-    load_atlas();
+
 }
 
 program_option po;
