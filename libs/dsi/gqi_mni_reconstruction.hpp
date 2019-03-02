@@ -63,10 +63,12 @@ public:
         }
         // check if the template has similar size as the data
         {
-            float size_ratio_x = (float)VG.width()*VGvs[0]/(float)VF.width()/voxel.vs[0];
-            float size_ratio_y = (float)VG.height()*VGvs[1]/(float)VF.height()/voxel.vs[1];
-            if(size_ratio_x < 0.4 || size_ratio_x > 2.5 ||
-               size_ratio_y < 0.4 || size_ratio_y > 2.5)
+            float otsu = tipl::segmentation::otsu_threshold(VG)*0.6f;
+            float vG = VGvs[0]*VGvs[0]*VGvs[0]*std::count_if(VG.begin(),VG.end(),[otsu](float v){return v > otsu;});
+            otsu = tipl::segmentation::otsu_threshold(VF)*0.6f;
+            float vF = voxel.vs[0]*voxel.vs[1]*voxel.vs[2]*std::count_if(VF.begin(),VF.end(),[otsu](float v){return v > otsu;});
+            float ratio = vF/(vG+1.0f);
+            if(ratio < 0.4 || ratio > 2.0)
                 throw std::runtime_error("Template/Subject FOV mismatch: Please check if the template is valid.");
         }
 
