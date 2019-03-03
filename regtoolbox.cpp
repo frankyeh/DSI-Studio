@@ -277,7 +277,15 @@ void RegToolBox::nonlinear_reg(void)
     status = "nonlinear registration";
     {
         //phase_estimate(It,J,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),60);
-        tipl::reg::cdm(It,J,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),60);
+        if(ui->edge->isChecked())
+        {
+            tipl::image<float,3> sIt(It),sJ(J);
+            tipl::filter::sobel(sIt);
+            tipl::filter::sobel(sJ);
+            tipl::reg::cdm(sIt,sJ,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),60);
+        }
+        else
+            tipl::reg::cdm(It,J,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),60);
     }
     tipl::compose_displacement(J,dis,JJ);
     std::cout << "nonlinear:" << tipl::correlation(JJ.begin(),JJ.end(),It.begin()) << std::endl;

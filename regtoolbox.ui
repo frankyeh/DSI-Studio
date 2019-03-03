@@ -280,6 +280,13 @@
             </layout>
            </widget>
           </item>
+          <item>
+           <widget class="QCheckBox" name="edge">
+            <property name="text">
+             <string>Edge Only</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
