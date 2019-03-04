@@ -9,7 +9,6 @@ private:
     std::vector<int> label_num;
     std::vector<std::string> labels;
     tipl::matrix<4,4,float> transform;
-    void load_from_file(void);
     void load_label(void);
     int get_index(tipl::vector<3,float> atlas_space);
 private:// for talairach only
@@ -22,6 +21,7 @@ private:// for track atlas only
 public:
     std::string name,filename;
 public:
+    void load_from_file(void);
     const std::vector<std::string>& get_list(void)
     {
         if(labels.empty())

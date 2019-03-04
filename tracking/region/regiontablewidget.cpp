@@ -144,17 +144,23 @@ void RegionTableWidget::add_region_from_atlas(std::shared_ptr<atlas> at,unsigned
 {
     float r = 1.0f;
     std::vector<tipl::vector<3,short> > points;
-    // this will load the files from storage to prevent GUI multishread crash
-    at->is_labeled_as(tipl::vector<3>(0,0,0),label);
-    auto thread = std::async([&]
-    {
-        cur_tracking_window.handle->get_atlas_roi(at,label,points,r);
-    });
+    cur_tracking_window.handle->get_atlas_roi(at,label,points,r);
     add_region(at->get_list()[label].c_str(),roi_id);
-    thread.wait();
     regions.back()->resolution_ratio = r;
     regions.back()->add_points(points,false,r);
-    QApplication::processEvents();
+}
+void RegionTableWidget::begin_update(void)
+{
+    cur_tracking_window.scene.no_show = true;
+    cur_tracking_window.disconnect(cur_tracking_window.regionWidget,SIGNAL(need_update()),cur_tracking_window.glWidget,SLOT(updateGL()));
+    cur_tracking_window.disconnect(cur_tracking_window.regionWidget,SIGNAL(cellChanged(int,int)),cur_tracking_window.glWidget,SLOT(updateGL()));
+}
+
+void RegionTableWidget::end_update(void)
+{
+    cur_tracking_window.scene.no_show = false;
+    cur_tracking_window.connect(cur_tracking_window.regionWidget,SIGNAL(need_update()),cur_tracking_window.glWidget,SLOT(updateGL()));
+    cur_tracking_window.connect(cur_tracking_window.regionWidget,SIGNAL(cellChanged(int,int)),cur_tracking_window.glWidget,SLOT(updateGL()));
 }
 
 void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
@@ -168,31 +174,31 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
     regions.push_back(std::make_shared<ROIRegion>(cur_tracking_window.handle));
     regions.back()->show_region.color = color;
     regions.back()->regions_feature = feature;
-    cur_tracking_window.scene.no_show = true;
 
     insertRow(regions.size()-1);
-
     QTableWidgetItem *item0 = new QTableWidgetItem(name);
-
-    setItem(regions.size()-1, 0, item0);
-
     QTableWidgetItem *item1 = new QTableWidgetItem(QString::number((int)feature));
     QTableWidgetItem *item2 = new QTableWidgetItem();
 
-    setItem(regions.size()-1, 1, item1);
     item1->setData(Qt::ForegroundRole,QBrush(Qt::white));
-    setItem(regions.size()-1, 2, item2);
+    item0->setCheckState(Qt::Checked);
     item2->setData(Qt::ForegroundRole,QBrush(Qt::white));
     item2->setData(Qt::UserRole,0xFF000000 | color);
 
+
+    setItem(regions.size()-1, 0, item0);
+    setItem(regions.size()-1, 1, item1);
+    setItem(regions.size()-1, 2, item2);
+
+
     openPersistentEditor(item1);
     openPersistentEditor(item2);
-    item0->setCheckState(Qt::Checked);
 
     setRowHeight(regions.size()-1,22);
     setCurrentCell(regions.size()-1,0);
 
-    cur_tracking_window.scene.no_show = false;
+
+
 }
 void RegionTableWidget::check_check_status(int row, int col)
 {
@@ -513,23 +519,44 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 
     tipl::image<unsigned int, 3> from;
     {
+        bool is_label = true;
         tipl::image<float, 3> tmp;
         header.toLPS(tmp);
-        tipl::add_constant(tmp,0.5);
-        from = tmp;
+        for(int i = 0;i < tmp.size();++i)
+            if(tmp[i] != std::floor(tmp[i]))
+            {
+                is_label = false;
+                break;
+            }
+        if(is_label)
+            from = tmp;
+        else
+        {
+            from.resize(tmp.geometry());
+            for(int i = 0;i < from.size();++i)
+                from[i] = (tmp[i] == 0.0f ? 0:1);
+        }
     }
 
-    std::vector<unsigned char> value_map(std::numeric_limits<unsigned short>::max());
-    unsigned int max_value = 0;
-    for (tipl::pixel_index<3>index(from.geometry());index < from.size();++index)
+    std::vector<int> value_list;
+    std::vector<unsigned short> value_map(std::numeric_limits<unsigned short>::max()+1);
+
     {
-        value_map[(unsigned short)from[index.index()]] = 1;
-        max_value = std::max<unsigned short>(from[index.index()],max_value);
+        int max_value = 0;
+        for (tipl::pixel_index<3>index(from.geometry());index < from.size();++index)
+        {
+            value_map[(unsigned short)from[index.index()]] = 1;
+            max_value = std::max<unsigned short>(from[index.index()],max_value);
+        }
+        for(int value = 1;value <= max_value;++value)
+            if(value_map[value])
+            {
+                value_map[value] = value_list.size();
+                value_list.push_back(value);
+            }
     }
-    value_map.resize(max_value+1);
 
-    unsigned short region_count = std::accumulate(value_map.begin(),value_map.end(),(unsigned short)0);
-    bool multiple_roi = region_count > 2;
+    bool multiple_roi = value_list.size() > 1;
 
 
     std::map<int,std::string> label_map;
@@ -622,8 +649,6 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
                     std::istringstream(name_value[1]) >> type;
             }
         }catch(...){}
-
-        region.show_region.color = max_value;
         add_region(QFileInfo(file_name).baseName(),type,color);
 
         regions.back()->assign(region.get_region_voxels_raw(),region.resolution_ratio);
@@ -631,26 +656,44 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
         return true;
     }
-    begin_prog("loading ROIs");
-    for(unsigned int value = 1;check_prog(value,value_map.size());++value)
-        if(value_map[value])
+
+    std::vector<std::vector<tipl::vector<3,short> > > region_points(value_list.size());
+    if(has_transform)
+    {
+        tipl::geometry<3> geo = cur_tracking_window.handle->dim;
+        for (tipl::pixel_index<3>index(geo);index < geo.size();++index)
         {
-            tipl::image<unsigned char,3> mask(from.geometry());
-            for(unsigned int i = 0;i < mask.size();++i)
-                if(from[i] == value)
-                    mask[i] = 1;
-            ROIRegion region(cur_tracking_window.handle);
-            if(has_transform)
-                region.LoadFromBuffer(mask,convert);
-            else
-                region.LoadFromBuffer(mask);
+            tipl::vector<3> p(index.begin()); // point in subject space
+            p.to(convert); // point in "from" space
+            p += 0.5;
+            if (from.geometry().is_valid(p))
+            {
+                int value = from.at(p[0],p[1],p[2]);
+                if(value)
+                    region_points[value_map[value]].push_back(tipl::vector<3,short>(index.x(), index.y(),index.z()));
+            }
+        }
+    }
+    else
+    {
+        for (tipl::pixel_index<3>index(from.geometry());index < from.size();++index)
+            if(from[index.index()])
+                region_points[value_map[(unsigned short)from[index.index()]]].push_back(tipl::vector<3,short>(index.x(), index.y(),index.z()));
+    }
+    begin_prog("loading ROIs");
+    begin_update();
+    for(int i = 0;check_prog(i,region_points.size());++i)
+        if(!region_points[i].empty())
+        {
+            unsigned short value = value_list[i];
             QString name = (label_map.find(value) == label_map.end() ?
-                                QString("roi_") + QString::number(value):QString(label_map[value].c_str()));
+                                    QString("roi_") + QString::number(value):QString(label_map[value].c_str()));
             add_region(name,roi_id,label_color.empty() ? 0x00FFFFFF : label_color[value].color);
-            regions.back()->assign(region.get_region_voxels_raw(),region.resolution_ratio);
+            regions.back()->add_points(region_points[i],false,1.0f);
             item(currentRow(),0)->setCheckState(Qt::Unchecked);
             item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
         }
+    end_update();
     return true;
 }
 
@@ -701,9 +744,12 @@ void RegionTableWidget::load_mni_region(void)
     {
         std::shared_ptr<atlas> a(new atlas);
         a->filename = filenames[index].toStdString();
-        for(int j = 0;j < a->get_list().size();++j)
+        a->load_from_file();
+        begin_prog("loading");
+        begin_update();
+        for(int j = 0;check_prog(j,a->get_list().size());++j)
             add_region_from_atlas(a,j);
-
+        end_update();
     }
     emit need_update();
 }

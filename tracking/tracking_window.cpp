@@ -1243,8 +1243,12 @@ void tracking_window::on_addRegionFromAtlas_clicked()
     std::shared_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this,handle));
     if(atlas_dialog->exec() == QDialog::Accepted)
     {
-        for(unsigned int i = 0;i < atlas_dialog->roi_list.size();++i)
+        handle->atlas_list[atlas_dialog->atlas_index]->load_from_file();
+        begin_prog("adding regions");
+        regionWidget->begin_update();
+        for(unsigned int i = 0;check_prog(i,atlas_dialog->roi_list.size());++i)
             regionWidget->add_region_from_atlas(handle->atlas_list[atlas_dialog->atlas_index],atlas_dialog->roi_list[i]);
+        regionWidget->end_update();
         glWidget->updateGL();
         scene.show_slice();
     }
@@ -2003,6 +2007,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
     if(atlas != "roi")
     {
         regionWidget->delete_all_region();
+        regionWidget->begin_update();
         if(handle->has_atlas())
         for(int i = 0;i < handle->atlas_list.size();++i)
             if(atlas == handle->atlas_list[i]->name)
@@ -2011,6 +2016,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
                     regionWidget->add_region_from_atlas(handle->atlas_list[i],j);
                 return;
             }
+        regionWidget->end_update();
         QMessageBox::information(this,"Error",QString("Cannot find ")+atlas.c_str()+
         " atlas in DSI Studio. Please update DSI Studio package or check the atlas folder",0);
 
