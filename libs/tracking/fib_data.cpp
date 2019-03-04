@@ -850,7 +850,7 @@ bool fib_data::has_template(void)
                 std::string atlas_file = fa_template_list[i] + ".atlas.txt";
                 std::ifstream in(atlas_file);
                 std::string line;
-                while(std::getline(in,line))
+                while(in >> line)
                 {
                     for(int j = 0;j < atlas_buffer.size();++j)
                         if(atlas_buffer[j]->name == line)
