@@ -65,6 +65,8 @@ public:
     std::shared_ptr<SliceModel> overlay_slice;
     tipl::value_to_color<float> overlay_v2c;
 public:
+    std::shared_ptr<TractModel> tractography_atlas;
+public:
     connectometry_result cnt_result;
 public:
     std::auto_ptr<QTimer> timer,timer2;
@@ -101,6 +103,7 @@ public slots:
     void on_show_position_toggled(bool checked);
     void check_reg(void);
     void change_contrast();
+    void on_enable_auto_track_clicked();
 private slots:
     void on_actionRestore_window_layout_triggered();
     void on_actionSave_Tracts_in_Current_Mapping_triggered();
@@ -178,7 +181,6 @@ private slots:
     void on_actionOpen_Connectivity_Matrix_triggered();
     void on_SlicePos_valueChanged(int value);
     void on_actionKeep_Current_Slice_triggered();
-    void on_enable_auto_track_clicked();
 };
 
 #endif // TRACKING_WINDOW_H

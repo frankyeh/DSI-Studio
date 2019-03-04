@@ -124,8 +124,10 @@ public:
 
         void get_quantitative_data(std::vector<float>& data);
         void get_quantitative_info(std::string& result);
-        bool recognize(std::map<float,std::string,std::greater<float> >& result);
-        void recognize_report(std::string& report);
+        bool recognize(std::vector<unsigned int>& result,std::shared_ptr<TractModel> atlas);
+        bool recognize(std::map<float,std::string,std::greater<float> >& result,std::shared_ptr<TractModel> atlas);
+        void recognize_report(std::string& report,
+                              std::shared_ptr<TractModel> atlas);
         void get_report(unsigned int profile_dir,float band_width,const std::string& index_name,
                         std::vector<float>& values,
                         std::vector<float>& data_profile);

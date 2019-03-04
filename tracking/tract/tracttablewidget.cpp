@@ -447,23 +447,28 @@ void TractTableWidget::open_cluster_label(void)
     load_cluster_label(labels);
     assign_colors();
 }
-extern track_recognition track_network;
+
+extern std::vector<std::string> tractography_name_list;
+void TractTableWidget::auto_recognition(void)
+{
+    if(!cur_tracking_window.tractography_atlas.get() && cur_tracking_window.ui->enable_auto_track->isVisible())
+        cur_tracking_window.on_enable_auto_track_clicked();
+    if(!cur_tracking_window.tractography_atlas.get())
+        return;
+    std::vector<unsigned int> c;
+    tract_models[currentRow()]->recognize(c,cur_tracking_window.tractography_atlas);
+    QStringList Names;
+    for(int i = 0;i < tractography_name_list.size();++i)
+        Names << tractography_name_list[i].c_str();
+    Names << "false tracks";
+    load_cluster_label(c,Names);
+    assign_colors();
+}
+
 void TractTableWidget::clustering(int method_id)
 {
     if(tract_models.empty())
         return;
-    if(method_id == 3) // track recognition
-    {
-        tract_models[currentRow()]->run_clustering(method_id,0,0);
-        std::vector<unsigned int> c = tract_models[currentRow()]->get_cluster_info();
-        QStringList Names;
-        for(int i = 0;i < track_network.track_name.size();++i)
-            Names << track_network.track_name[i].c_str();
-        load_cluster_label(c,Names);
-        assign_colors();
-        return;
-    }
-
     bool ok = false;
     int n = QInputDialog::getInt(this,
             "DSI Studio",
@@ -655,15 +660,6 @@ void TractTableWidget::save_profile(void)
 
 void TractTableWidget::deep_learning_train(void)
 {
-    if(cnn.is_running)
-    {
-        QMessageBox msgBox;
-        msgBox.setText("Trainning result");
-        msgBox.setDetailedText(cnn.msg.c_str());
-        msgBox.setStandardButtons(QMessageBox::Ok);
-        msgBox.setDefaultButton(QMessageBox::Ok);
-        return;
-    }
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,
@@ -671,31 +667,6 @@ void TractTableWidget::deep_learning_train(void)
                 "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-
-
-    cnn.clear();
-    begin_prog("reading");
-    for(unsigned int index = 0;check_prog(index,rowCount());++index)
-        if (item(index,0)->checkState() == Qt::Checked)
-        {
-            cnn.add_label(item(index,0)->text().toStdString());
-            for(unsigned int i = 0;i < tract_models[index]->get_tracts().size();++i)
-                cnn.add_sample(cur_tracking_window.handle.get(),index,tract_models[index]->get_tracts()[i]);
-        }
-
-    filename = QFileInfo(filename).absolutePath() + "/tracks.txt";
-    {
-        std::ofstream out(filename.toStdString().c_str());
-        std::copy(cnn.cnn_name.begin(),cnn.cnn_name.end(),std::ostream_iterator<std::string>(out,"\n"));
-    }
-
-
-    filename = QFileInfo(filename).absolutePath() + "/network_data.bin.gz";
-    cnn.cnn_data.input = tipl::geometry<3>(60,75,3);
-    cnn.cnn_data.output = tipl::geometry<3>(1,1,rowCount());
-    cnn.cnn_data.save_to_file<gz_ostream>(filename.toStdString().c_str());
-
-
     // save atlas as a nifti file
     if(cur_tracking_window.handle->is_qsdr) //QSDR condition
     {
@@ -760,24 +731,22 @@ void TractTableWidget::recog_tracks(void)
 {
     if(currentRow() >= tract_models.size() || tract_models[currentRow()]->get_tracts().size() == 0)
         return;
-    if(!cur_tracking_window.can_map_to_mni())
+    if(!cur_tracking_window.tractography_atlas.get() && cur_tracking_window.ui->enable_auto_track->isVisible())
+        cur_tracking_window.on_enable_auto_track_clicked();
+    if(!cur_tracking_window.tractography_atlas.get())
         return;
     std::map<float,std::string,std::greater<float> > sorted_list;
-    if(!tract_models[currentRow()]->recognize(sorted_list))
+    if(!tract_models[currentRow()]->recognize(sorted_list,cur_tracking_window.tractography_atlas))
     {
         QMessageBox::information(this,"Error","Cannot recognize tracks.",0);
         return;
     }
     std::ostringstream out;
     auto beg = sorted_list.begin();
-    for(int i = 0;i < 5;++i,++beg)
-        out << beg->second << "\t" << beg->first << std::endl;
+    for(int i = 0;i < sorted_list.size();++i,++beg)
+        if(beg->first != 0.0f)
+            out << beg->first*100.0f << "% " << beg->second << std::endl;
     show_info_dialog("Tract Recognition Result",out.str());
-
-    /*
-    std::string result;
-    tract_models[currentRow()]->recognize_report(result);
-    QMessageBox::information(this,"Result",result.c_str(),0);*/
 }
 void smoothed_tracks(const std::vector<float>& track,std::vector<float>& smoothed);
 void TractTableWidget::saveTransformedTracts(const float* transform)

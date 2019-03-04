@@ -2053,7 +2053,7 @@ void tracking_window::on_enable_auto_track_clicked()
     auto trk = std::make_shared<TractModel>(handle);
     if(trk->load_from_file(tractography_atlas_file_name.c_str()))
     {
-        regionWidget->tractography_atlas = trk;
+        tractography_atlas = trk;
         ui->enable_auto_track->setVisible(false);
         ui->target->setVisible(true);
         ui->target_label->setVisible(true);

@@ -5,7 +5,6 @@
 #include <QTableWidget>
 #include <QTimer>
 #include <tipl/tipl.hpp>
-#include "fib_data.hpp"
 class tracking_window;
 class TractModel;
 struct ThreadData;
@@ -24,7 +23,6 @@ private:
     tracking_window& cur_tracking_window;
     QTimer *timer;
 private:
-    track_recognition cnn;
     int color_gen = 10;
 public:
     std::vector<ThreadData*> thread_data;
@@ -54,7 +52,7 @@ public slots:
     void clustering_EM(void){clustering(2);}
     void clustering_kmeans(void){clustering(1);}
     void clustering_hie(void){clustering(0);}
-    void auto_recognition(void){clustering(3);}
+    void auto_recognition(void);
     void open_cluster_label(void);
     void set_color(void);
     void check_check_status(int,int);

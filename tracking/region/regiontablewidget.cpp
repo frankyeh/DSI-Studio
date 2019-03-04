@@ -1082,8 +1082,8 @@ void RegionTableWidget::setROIs(ThreadData* data)
 
     // has assigned a target
     if(cur_tracking_window.ui->target->currentIndex() > 0 &&
-       tractography_atlas.get())
-        data->roi_mgr->setAtlas(tractography_atlas,cur_tracking_window.ui->target->currentIndex()-1);
+       cur_tracking_window.tractography_atlas.get())
+        data->roi_mgr->setAtlas(cur_tracking_window.tractography_atlas,cur_tracking_window.ui->target->currentIndex()-1);
 }
 
 QString RegionTableWidget::getROIname(void)

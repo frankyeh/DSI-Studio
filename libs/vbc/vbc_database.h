@@ -63,6 +63,7 @@ public:
     bool has_greater_result,has_lesser_result;
     int seed_count;
     std::mutex  lock_resampling,lock_greater_tracks,lock_lesser_tracks;
+    std::shared_ptr<TractModel> tractography_atlas;
     std::shared_ptr<TractModel> greater_track;
     std::shared_ptr<TractModel> lesser_track;
     std::shared_ptr<connectometry_result> spm_map;

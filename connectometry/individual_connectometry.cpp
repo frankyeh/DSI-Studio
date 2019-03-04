@@ -8,7 +8,7 @@
 #include "tracking/tracking_window.h"
 #include "fib_data.hpp"
 
-extern std::string fib_template_file_name_1mm,fib_template_file_name_2mm;
+extern std::string fib_template_file_name_2mm;
 individual_connectometry::individual_connectometry(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::individual_connectometry)

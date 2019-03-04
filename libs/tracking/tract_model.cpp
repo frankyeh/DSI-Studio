@@ -1815,99 +1815,61 @@ void TractModel::get_quantitative_info(std::string& result)
     result = out.str();
 }
 
-extern track_recognition track_network;
-
-
-bool TractModel::recognize(std::map<float,std::string,std::greater<float> >& result)
+extern std::vector<std::string> tractography_name_list;
+bool TractModel::recognize(std::vector<unsigned int>& result,std::shared_ptr<TractModel> atlas)
 {
-    if(!track_network.can_recognize())
+    if(tractography_name_list.empty())
         return false;
-    std::vector<float> accu_input(track_network.cnn.get_output_size());
+    result.resize(tract_data.size());
     tipl::par_for(tract_data.size(),[&](int i)
     {
-        std::vector<float> input;
-        if(!handle->get_profile(tract_data[i],input))
+        if(tract_data[i].empty())
             return;
-        track_network.cnn.forward_propagation(input);
-        tipl::minus_constant(input,*std::min_element(input.begin(),input.end()));
-        tipl::multiply_constant(input,1.0f/std::accumulate(input.begin(),input.end(),0.0f));
-        tipl::add(accu_input,input);
+        result[i] = atlas->find_nearest(&tract_data[i][0],tract_data[i].size());
     });
-    tipl::multiply_constant(accu_input,1.0f/std::accumulate(accu_input.begin(),accu_input.end(),0.0f));
-    for(int i = 0;i < accu_input.size();++i)
-        result[accu_input[i]] = track_network.track_name[i];
     return true;
 }
-void TractModel::recognize_report(std::string& report)
-{
-    /*
-    if(track_atlas)
-    {
-        tipl::vector<3> dummy;
-        track_atlas->is_labeled_as(dummy,0);// invoke loading file
-        std::vector<int> recog_count(track_atlas->get_list().size());
-        tipl::par_for(tract_data.size(),[&](int i)
-        {
-            std::vector<tipl::vector<3> > points;
-            for(int j = 0;j < tract_data[i].size();j += 3)
-            {
-                points.push_back(tipl::vector<3>(&(tract_data[i][j])));
-                handle->subject2mni(points.back());
-            }
-            int result = track_atlas->get_track_label(points);
-            if(result >= 0 && result < recog_count.size())
-                ++recog_count[result];
-        });
-        int sum = std::accumulate(recog_count.begin(),recog_count.end(),(int)0);
-        std::multimap<float,std::string,std::greater<float> > sorted_result;
-        for(int i = 0;i < recog_count.size();++i)
-        {
-            float p = recog_count[i];
-            p /= sum;
-            if(p > 0.05)
-                sorted_result.insert(std::make_pair(p,track_atlas->get_list()[i]));
-        }
-        std::ostringstream out;
-        int n = 0;
-        for(auto& r : sorted_result)
-        {
-            if(n)
-                out << ((n == sorted_result.size()-1 ? (sorted_result.size() == 2 ? " and ":", and ") : ", "));
-            out << r.second << " (" << (float)(int(r.first*10000.0))/100.0 << "%)";
-            ++n;
-        }
-        report = out.str();
-    }
-    else
-        report = "tracks";
 
-    */
-    if(!handle->is_human_data || !track_network.can_recognize())
-        return;
-    std::vector<int> recog_count(track_network.cnn.get_output_size());
+bool TractModel::recognize(std::map<float,std::string,std::greater<float> >& result,
+                           std::shared_ptr<TractModel> atlas)
+{
+    if(tractography_name_list.empty())
+        return false;
+    std::vector<float> count(tractography_name_list.size());
     tipl::par_for(tract_data.size(),[&](int i)
     {
-        std::vector<float> input;
-        if(!handle->get_profile(tract_data[i],input))
+        if(tract_data[i].empty())
             return;
-        track_network.cnn.forward_propagation(input);
-        input[80] = -100;// suppress false tracks ID:20
-        ++recog_count[std::max_element(input.begin(),input.end())-input.begin()];
+        int index = atlas->find_nearest(&tract_data[i][0],tract_data[i].size());
+        if(index < count.size())
+            ++count[index];
     });
+    float sum = std::accumulate(count.begin(),count.end(),0.0f);
+    if(sum != 0.0f)
+        tipl::multiply_constant(count,1.0f/sum);
+    result.clear();
+    for(int i = 0;i < count.size();++i)
+        result[count[i]] = tractography_name_list[i];
+    return true;
+}
+void TractModel::recognize_report(std::string& report,
+                                  std::shared_ptr<TractModel> atlas)
+{
+    std::map<float,std::string,std::greater<float> > result;
+    if(!recognize(result,atlas))
+        return;
+    int n = 0;
+    for(auto& r : result)
     {
-        std::map<int,std::string,std::greater<int> > sorted_result;
-        unsigned int report_threshold = tract_data.size()/20; //5%
-        for(unsigned int i = 0;i < recog_count.size();++i)
-            if(recog_count[i] > report_threshold)
-                sorted_result[recog_count[i]] = track_network.track_name[i];
-        int n = 0;
-        for(auto& r : sorted_result)
-        {
-            if(!report.empty())
-                report += (n == sorted_result.size()-1 ? (sorted_result.size() == 2 ? " and ":", and ") : ", ");
-            report += r.second;
-            ++n;
-        }
+        if(r.first < 0.05) // only report greater than 5%
+            break;
+        if(!report.empty())
+            report += (n == result.size()-1 ? (result.size() == 2 ? " and ":", and ") : ", ");
+        report += r.second;
+        report += " (";
+        report += std::to_string(std::floor(r.first*10000.0f)/100.0f);
+        report += "%)";
+        ++n;
     }
 }
 
@@ -2209,21 +2171,6 @@ void TractModel::run_clustering(unsigned char method_id,unsigned int cluster_cou
     case 2:
         c.reset(new FeatureBasedClutering<tipl::ml::expectation_maximization<double,unsigned char> >(param));
         break;
-    case 3:
-        {
-            tract_cluster.resize(tract_data.size());
-            std::fill(tract_cluster.begin(),tract_cluster.end(),80);
-            if(!track_network.can_recognize())
-                return;
-            tipl::par_for(tract_data.size(),[&](int i)
-            {
-                std::vector<float> input;
-                if(!handle->get_profile(tract_data[i],input))
-                    return;
-                track_network.cnn.predict(input,tract_cluster[i]);
-            });
-        }
-        return;
     }
 
     c->add_tracts(tract_data);

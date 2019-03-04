@@ -207,26 +207,4 @@ public:
 };
 
 
-
-class track_recognition{
-    tipl::uniform_dist<int> dist;
-public:
-    tipl::thread thread;
-public:
-    tipl::ml::network cnn;
-    tipl::ml::network_data<unsigned char> cnn_data;
-
-    std::vector<std::string> cnn_name;
-    std::string err_msg,msg;
-    bool is_running = false;
-public:
-    std::vector<std::string> track_list;
-    std::vector<std::string> track_name;
-    bool can_recognize(void);
-public:
-    void clear(void);
-    void add_label(const std::string& name){cnn_name.push_back(name);}
-    void add_sample(fib_data* handle,unsigned char index,const std::vector<float>& tracks);
-};
-
 #endif//FIB_DATA_HPP

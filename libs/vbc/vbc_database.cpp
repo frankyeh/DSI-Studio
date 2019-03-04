@@ -7,9 +7,10 @@
 #include "tracking/tracking_window.h"
 
 
-
+extern std::string tractography_atlas_file_name;
 vbc_database::vbc_database():handle(0),normalize_qa(true)
 {
+
 }
 
 bool vbc_database::create_database(const char* template_name)
@@ -34,6 +35,12 @@ bool vbc_database::load_database(const char* database_name)
         return false;
     }
     fiber_threshold = 0.6*tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
+    if(handle->is_human_data)
+    {
+        auto trk = std::make_shared<TractModel>(handle);
+        if(trk->load_from_file(tractography_atlas_file_name.c_str()))
+            tractography_atlas = trk;
+    }
     return handle->db.has_db();
 }
 
@@ -222,7 +229,8 @@ void vbc_database::save_tracks_files(void)
             out1 << output_file_name << ".greater.trk.gz";
             greater_track->save_tracts_to_file(out1.str().c_str());
             greater_tracks_result = "";
-            greater_track->recognize_report(greater_tracks_result);
+            if(tractography_atlas.get())
+                greater_track->recognize_report(greater_tracks_result,tractography_atlas);
             if(greater_tracks_result.empty())
                 greater_tracks_result = "tracks";
             has_greater_result = true;
@@ -273,7 +281,8 @@ void vbc_database::save_tracks_files(void)
             out1 << output_file_name << ".lesser.trk.gz";
             lesser_track->save_tracts_to_file(out1.str().c_str());
             lesser_tracks_result = "";
-            lesser_track->recognize_report(lesser_tracks_result);
+            if(tractography_atlas.get())
+                lesser_track->recognize_report(lesser_tracks_result,tractography_atlas);
             if(lesser_tracks_result.empty())
                 lesser_tracks_result = "tracks";
             has_lesser_result = true;
