@@ -145,6 +145,8 @@ void RegionTableWidget::add_region_from_atlas(std::shared_ptr<atlas> at,unsigned
     float r = 1.0f;
     std::vector<tipl::vector<3,short> > points;
     cur_tracking_window.handle->get_atlas_roi(at,label,points,r);
+    if(points.empty())
+        return;
     add_region(at->get_list()[label].c_str(),roi_id);
     regions.back()->resolution_ratio = r;
     regions.back()->add_points(points,false,r);

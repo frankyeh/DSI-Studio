@@ -8,7 +8,8 @@ private:
     tipl::image<int,3> I;
     std::vector<int> label_num;
     std::vector<std::string> labels;
-    tipl::matrix<4,4,float> transform;
+    tipl::vector<3> t_scale;
+    tipl::vector<3> t_shift;
     void load_label(void);
     int get_index(tipl::vector<3,float> atlas_space);
 private:// for talairach only

@@ -1077,8 +1077,7 @@ void fib_data::get_atlas_roi(std::shared_ptr<atlas> at,int roi_index,std::vector
     r = 1.0;
     mni_position.for_each_mt2([&](const tipl::vector<3>& mni,const tipl::pixel_index<3>& index,int id)
     {
-        tipl::vector<3> rmni(mni);
-        if (at->is_labeled_as(rmni, roi_index))
+        if (at->is_labeled_as(mni, roi_index))
             buf[id].push_back(tipl::vector<3,short>(index.begin()));
     });
     points.clear();

@@ -84,17 +84,22 @@ void atlas::load_from_file(void)
     is_track = (nii.dim(4) > 1); // 4d nifti as track files
     if(is_track)
     {
-        nii >> track;
+        nii.toLPS(track);
         I.resize(tipl::geometry<3>(track.width(),track.height(),track.depth()));
         for(unsigned int i = 0;i < track.size();i += I.size())
             track_base_pos.push_back(i);
     }
     else
-        nii >> I;
+        nii.toLPS(I);
 
-    transform.identity();
-    nii.get_image_transformation(transform.begin());
-    transform.inv();
+    float trans[12];
+    nii.get_image_transformation(trans);
+    t_shift[0] = trans[3];
+    t_shift[1] = trans[7];
+    t_shift[2] = trans[11];
+    t_scale[0] = std::fabs(trans[0]);
+    t_scale[1] = std::fabs(trans[5]);
+    t_scale[2] = std::fabs(trans[10]);
 
     if(labels.empty())
         load_label();
@@ -184,13 +189,21 @@ std::string atlas::get_label_name_at(const tipl::vector<3,float>& mni_space)
     return result;
 }
 */
-int atlas::get_index(tipl::vector<3,float> atlas_space)
+int atlas::get_index(tipl::vector<3,float> p)
 {
-    atlas_space.to(transform);
-    atlas_space.round();
-    if(!I.geometry().is_valid(atlas_space))
+    p -= t_shift;
+    if(t_scale[2] != 1.0f)
+        p[2] /= t_scale[2];
+    if(t_scale[1] != 1.0f)
+        p[1] /= t_scale[1];
+    p[1] = -p[1];
+    if(t_scale[0] != 1.0f)
+        p[0] /= t_scale[0];
+    p[0] = -p[0];
+    p.round();
+    if(!I.geometry().is_valid(p))
         return 0;
-    return ((int)atlas_space[2]*I.height()+(int)atlas_space[1])*I.width()+(int)atlas_space[0];
+    return ((int)p[2]*I.height()+(int)p[1])*I.width()+(int)p[0];
 }
 
 bool atlas::is_labeled_as(const tipl::vector<3,float>& mni_space,unsigned int label_name_index)
