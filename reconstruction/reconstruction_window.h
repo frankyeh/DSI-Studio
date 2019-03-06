@@ -97,6 +97,9 @@ private slots:
     void on_AxiView_clicked();
     void on_reg_method_currentIndexChanged(int index);
     void on_actionSave_DWI_sum_triggered();
+    void on_actionFlip_bx_triggered();
+    void on_actionFlip_by_triggered();
+    void on_actionFlip_bz_triggered();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

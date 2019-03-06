@@ -1200,6 +1200,14 @@
     <property name="title">
      <string>&amp;Edit</string>
     </property>
+    <widget class="QMenu" name="menuChange_B_table">
+     <property name="title">
+      <string>Change B-table</string>
+     </property>
+     <addaction name="actionFlip_bx"/>
+     <addaction name="actionFlip_by"/>
+     <addaction name="actionFlip_bz"/>
+    </widget>
     <addaction name="actionFlip_x"/>
     <addaction name="actionFlip_y"/>
     <addaction name="actionFlip_z"/>
@@ -1217,6 +1225,8 @@
     <addaction name="separator"/>
     <addaction name="actionEnable_TEST_features"/>
     <addaction name="actionImage_upsample_to_T1W_TESTING"/>
+    <addaction name="separator"/>
+    <addaction name="menuChange_B_table"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menu_Edit"/>
@@ -1343,6 +1353,21 @@
    </property>
    <property name="text">
     <string>Save DWI sum...</string>
+   </property>
+  </action>
+  <action name="actionFlip_bx">
+   <property name="text">
+    <string>flip bx</string>
+   </property>
+  </action>
+  <action name="actionFlip_by">
+   <property name="text">
+    <string>flip by</string>
+   </property>
+  </action>
+  <action name="actionFlip_bz">
+   <property name="text">
+    <string>flip bz</string>
    </property>
   </action>
  </widget>
