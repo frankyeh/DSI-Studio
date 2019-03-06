@@ -42,7 +42,7 @@ public:
         void select_tracts(const std::vector<unsigned int>& tracts_to_select);
         void delete_repeated(double d);
         void delete_by_length(float length);
-        unsigned int find_nearest(const float* trk,unsigned int length);
+        unsigned int find_nearest(const float* trk,unsigned int length,bool contain = false);
 
 public:
         TractModel(std::shared_ptr<fib_data> handle_);
@@ -125,7 +125,8 @@ public:
         void get_quantitative_data(std::vector<float>& data);
         void get_quantitative_info(std::string& result);
         bool recognize(std::vector<unsigned int>& result,std::shared_ptr<TractModel> atlas);
-        bool recognize(std::map<float,std::string,std::greater<float> >& result,std::shared_ptr<TractModel> atlas);
+        bool recognize(std::map<float,std::string,std::greater<float> >& result,
+                       std::shared_ptr<TractModel> atlas,bool contain = false);
         void recognize_report(std::string& report,
                               std::shared_ptr<TractModel> atlas);
         void get_report(unsigned int profile_dir,float band_width,const std::string& index_name,

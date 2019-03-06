@@ -1083,19 +1083,25 @@ void TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select
     delete_tracts(not_selected);
 }
 //---------------------------------------------------------------------------
-unsigned int TractModel::find_nearest(const float* trk,unsigned int length)
+unsigned int TractModel::find_nearest(const float* trk,unsigned int length,bool contain)
 {
     auto norm1 = [](const float* v1,const float* v2){return std::fabs(v1[0]-v2[0])+std::fabs(v1[1]-v2[1])+std::fabs(v1[2]-v2[2]);};
-    float best_distance = 30.0f/handle->vs[0];
+    float best_distance = contain ? 100.0f : 30.0f/handle->vs[0];
     unsigned int best_index = tract_data.size()-1;
-
     for(int i = 0;i < tract_data.size();++i)
     {
         bool skip = false;
         float max_dis = 0.0f;
+        if(contain)
+        {
+            if(tract_cluster[i] == 80) // skipping false track
+                continue;
+        }
+        else
         if(norm1(&tract_data[i][0],trk) > best_distance ||
-           norm1(&tract_data[i][tract_data[i].size()-3],trk+length-3) > best_distance)
+            norm1(&tract_data[i][tract_data[i].size()-3],trk+length-3) > best_distance)
             continue;
+        if(!contain)
         for(int m = 0;m < tract_data[i].size();m += 6)
         {
             float min_dis = norm1(&tract_data[i][m],trk);
@@ -1117,8 +1123,8 @@ unsigned int TractModel::find_nearest(const float* trk,unsigned int length)
             max_dis = std::max<float>(min_dis,max_dis);
             if(max_dis > best_distance)
             {
-                break;
                 skip = true;
+                break;
             }
         }
         if(!skip)
@@ -1831,7 +1837,7 @@ bool TractModel::recognize(std::vector<unsigned int>& result,std::shared_ptr<Tra
 }
 
 bool TractModel::recognize(std::map<float,std::string,std::greater<float> >& result,
-                           std::shared_ptr<TractModel> atlas)
+                           std::shared_ptr<TractModel> atlas,bool contain)
 {
     if(tractography_name_list.empty())
         return false;
@@ -1840,7 +1846,7 @@ bool TractModel::recognize(std::map<float,std::string,std::greater<float> >& res
     {
         if(tract_data[i].empty())
             return;
-        int index = atlas->find_nearest(&tract_data[i][0],tract_data[i].size());
+        int index = atlas->find_nearest(&tract_data[i][0],tract_data[i].size(),contain);
         if(index < count.size())
             ++count[index];
     });
@@ -1856,21 +1862,20 @@ void TractModel::recognize_report(std::string& report,
                                   std::shared_ptr<TractModel> atlas)
 {
     std::map<float,std::string,std::greater<float> > result;
-    if(!recognize(result,atlas))
+    if(!recognize(result,atlas,true)) // true: connectometry may only show part of pathways. enable containing condition
         return;
     int n = 0;
+    std::ostringstream out;
     for(auto& r : result)
     {
         if(r.first < 0.05) // only report greater than 5%
             break;
-        if(!report.empty())
-            report += (n == result.size()-1 ? (result.size() == 2 ? " and ":", and ") : ", ");
-        report += r.second;
-        report += " (";
-        report += std::to_string(std::floor(r.first*10000.0f)/100.0f);
-        report += "%)";
+        if(n)
+            out << (n == result.size()-1 ? (result.size() == 2 ? " and ":", and ") : ", ");
+        out <<  r.second <<  " (" << std::setprecision(2) << r.first*100.0f << "%)";
         ++n;
     }
+    report += out.str();
 }
 
 void TractModel::get_report(unsigned int profile_dir,float band_width,const std::string& index_name,
