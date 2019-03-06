@@ -1078,3 +1078,24 @@ void reconstruction_window::on_reg_method_currentIndexChanged(int index)
 }
 
 
+
+void reconstruction_window::on_actionFlip_bx_triggered()
+{
+    for(int i = 0;i < handle->src_bvectors.size();++i)
+        handle->src_bvectors[i][0] = -handle->src_bvectors[i][0];
+    QMessageBox::information(this,"DSI Studio","B-table flipped",0);
+}
+
+void reconstruction_window::on_actionFlip_by_triggered()
+{
+    for(int i = 0;i < handle->src_bvectors.size();++i)
+        handle->src_bvectors[i][1] = -handle->src_bvectors[i][1];
+    QMessageBox::information(this,"DSI Studio","B-table flipped",0);
+}
+
+void reconstruction_window::on_actionFlip_bz_triggered()
+{
+    for(int i = 0;i < handle->src_bvectors.size();++i)
+        handle->src_bvectors[i][2] = -handle->src_bvectors[i][2];
+    QMessageBox::information(this,"DSI Studio","B-table flipped",0);
+}
