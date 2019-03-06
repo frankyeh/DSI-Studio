@@ -61,7 +61,7 @@ public:
             float vG = VGvs[0]*VGvs[0]*VGvs[0]*tipl::segmentation::otsu_count(VG);
             float vF = voxel.vs[0]*voxel.vs[1]*voxel.vs[2]*tipl::segmentation::otsu_count(VF);
             float ratio = vF/(vG+1.0f);
-            if(ratio < 0.4 || ratio > 2.0)
+            if(ratio < 0.25 || ratio > 4.0)
                 throw std::runtime_error("Template/Subject FOV mismatch: Please check if the template is valid.");
         }
 
