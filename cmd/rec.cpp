@@ -11,7 +11,7 @@
 #include "reconstruction/reconstruction_window.h"
 #include "program_option.hpp"
 
-extern std::vector<std::string> fa_template_list;
+extern std::vector<std::string> fa_template_list,t1w_template_list;
 void rec_motion_correction(ImageModel* handle);
 void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
@@ -68,6 +68,18 @@ int rec(void)
             {
                 handle->flip_dwi(flip_seq[index]-'0');
                 std::cout << "Flip image volume:" << (int)flip_seq[index]-'0' << std::endl;
+            }
+    }
+    if (po.has("bflip"))
+    {
+        std::string flip_seq = po.get("bflip");
+        for(unsigned int index = 0;index < flip_seq.length();++index)
+            if(flip_seq[index] >= '0' && flip_seq[index] <= '2')
+            {
+                char dim = flip_seq[index]-'0';
+                std::cout << "Flip b-table:" << (int)dim << std::endl;
+                for(int i = 0;i < handle->src_bvectors.size();++i)
+                    handle->src_bvectors[i][dim] = -handle->src_bvectors[i][dim];
             }
     }
     // apply affine transformation
@@ -166,7 +178,7 @@ int rec(void)
     handle->voxel.odf_decomposition = po.get("decomposition",int(0));
     handle->voxel.max_fiber_number = po.get("num_fiber",int(5));
     handle->voxel.r2_weighted = po.get("r2_weighted",int(0));
-    handle->voxel.reg_method = po.get("reg_method",int(0));
+    handle->voxel.reg_method = po.get("reg_method",int(3));
     handle->voxel.csf_calibration = po.get("csf_calibration",int(0)) && method_index == 4;
     handle->voxel.thread_count = po.get("thread_count",int(std::thread::hardware_concurrency()));
 
@@ -175,10 +187,11 @@ int rec(void)
     {
         std::cout << "external template = " << po.get("template") << std::endl;
         std::string template_file_name = po.get("template");
-        for(int i = 0;i < fa_template_list.size();++i)
-            if(QFileInfo(fa_template_list[i].c_str()).baseName() ==
+        std::vector<std::string>& template_list = (handle->voxel.reg_method == 3? fa_template_list: t1w_template_list);
+        for(int i = 0;i < template_list.size();++i)
+            if(QFileInfo(template_list[i].c_str()).baseName() ==
                     QFileInfo(template_file_name.c_str()).baseName())
-                template_file_name = fa_template_list[i];
+                template_file_name = template_list[i];
         if(!QFileInfo(template_file_name.c_str()).exists())
         {
             std::cout << "template does not exist." << std::endl;
