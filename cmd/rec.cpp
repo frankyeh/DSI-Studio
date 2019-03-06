@@ -124,7 +124,13 @@ int rec(void)
         handle->voxel.param[2] = 0.05f;
     }
     if(method_index == 7) // QSDR
+    {
         handle->voxel.param[0] = 1.25f;
+        if(po.get("reg_method",int(3)) == 3 && !fa_template_list.empty())
+            handle->voxel.external_template = fa_template_list[0];
+        if(po.get("reg_method",int(3)) == 4 && !t1w_template_list.empty())
+            handle->voxel.external_template = t1w_template_list[0];
+    }
     if(po.has("study_src")) // DDI
     {
         handle->voxel.study_src_file_path = po.get("study_src");
