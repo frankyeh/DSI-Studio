@@ -348,34 +348,34 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         ui->target_label->setVisible(false);
         ui->enable_auto_track->setVisible(false);
         if(handle->is_human_data && !tractography_name_list.empty())
-            {
-                ui->target->addItem("All");
-                for(int i = 0;i < tractography_name_list.size();++i)
-                    ui->target->addItem(tractography_name_list[i].c_str());
+        {
+            ui->target->addItem("All");
+            for(int i = 0;i < tractography_name_list.size();++i)
+                ui->target->addItem(tractography_name_list[i].c_str());
 
-                // projection
-                for(int i = 1;i < 21;++i)
-                    ui->target->setItemData(i, QBrush(QColor(40,40,160)), Qt::TextColorRole);
-                // association
-                for(int i = 21;i < 43;++i)
-                    ui->target->setItemData(i, QBrush(QColor(40,160,40)), Qt::TextColorRole);
-                // commissural
-                for(int i = 43;i < 46;++i)
-                    ui->target->setItemData(i, QBrush(QColor(160,40,40)), Qt::TextColorRole);
-                // CB
-                for(int i = 46;i < 53;++i)
-                    ui->target->setItemData(i, QBrush(QColor(20,20,80)), Qt::TextColorRole);
-                // BS
-                for(int i = 53;i < 67;++i)
-                    ui->target->setItemData(i, QBrush(QColor(20,20,60)), Qt::TextColorRole);
-                // CN
-                for(int i = 67;i < 81;++i)
-                    ui->target->setItemData(i, QBrush(QColor(20,80,20)), Qt::TextColorRole);
+            // projection
+            for(int i = 1;i < 21;++i)
+                ui->target->setItemData(i, QBrush(QColor(40,40,160)), Qt::TextColorRole);
+            // association
+            for(int i = 21;i < 43;++i)
+                ui->target->setItemData(i, QBrush(QColor(40,160,40)), Qt::TextColorRole);
+            // commissural
+            for(int i = 43;i < 46;++i)
+                ui->target->setItemData(i, QBrush(QColor(160,40,40)), Qt::TextColorRole);
+            // CB
+            for(int i = 46;i < 53;++i)
+                ui->target->setItemData(i, QBrush(QColor(20,20,80)), Qt::TextColorRole);
+            // BS
+            for(int i = 53;i < 67;++i)
+                ui->target->setItemData(i, QBrush(QColor(20,20,60)), Qt::TextColorRole);
+            // CN
+            for(int i = 67;i < 81;++i)
+                ui->target->setItemData(i, QBrush(QColor(20,80,20)), Qt::TextColorRole);
 
 
-                ui->target->setCurrentIndex(0);
-                ui->enable_auto_track->setVisible(true);
-            }
+            ui->target->setCurrentIndex(0);
+            ui->enable_auto_track->setVisible(true);
+        }
     }
 
     // setup fa threshold
