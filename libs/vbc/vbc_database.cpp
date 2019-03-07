@@ -510,7 +510,7 @@ void vbc_database::generate_report(std::string& output)
         << (!has_lesser_result ? "no track": lesser_tracks_result.c_str())
         << " with decreased connectivity";
         if(model->type == 1) // regression
-            out_lesser << "related to " << foi_str;
+            out_lesser << " related to " << foi_str;
         out_lesser << ".";
     }
 

@@ -249,7 +249,7 @@ void RegToolBox::on_timer()
     }
 }
 
-extern const float reg_bound2[6] = {0.25f,-0.25f,4.0,0.2,0.5,-0.5};
+extern const float reg_bound2[6] = {0.25f,-0.25f,4.0f,0.2f,0.5f,-0.5f};
 void RegToolBox::linear_reg(tipl::reg::reg_type reg_type)
 {
     status = "linear registration";

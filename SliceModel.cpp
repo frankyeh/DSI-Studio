@@ -449,7 +449,6 @@ bool CustomSliceModel::stripskull(void)
         iT.inverse();
         tipl::image<float,3> J(It.geometry());
         tipl::resample_mt(source_images,J,T,tipl::cubic);
-        J.save_to_file<tipl::io::nifti>("test.nii");
         tipl::image<tipl::vector<3>,3> dis;
         tipl::reg::cdm(It,J,dis,terminated,2.0f,0.5);
         source_images.for_each_mt([&](float& v,const tipl::pixel_index<3>& p){

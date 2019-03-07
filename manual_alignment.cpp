@@ -5,7 +5,7 @@
 
 void show_view(QGraphicsScene& scene,QImage I);
 
-const float reg_bound2[6] = {0.25f,-0.25f,4.0,0.2,0.5,-0.5};
+const float reg_bound2[6] = {0.25f,-0.25f,4.0f,0.2f,0.5f,-0.5f};
 manual_alignment::manual_alignment(QWidget *parent,
                                    tipl::image<float,3> from_,
                                    const tipl::vector<3>& from_vs_,
