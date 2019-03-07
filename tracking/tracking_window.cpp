@@ -364,7 +364,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                     ui->target->setItemData(i, QBrush(QColor(160,40,40)), Qt::TextColorRole);
                 // CB
                 for(int i = 46;i < 53;++i)
-                    ui->target->setItemData(i, QBrush(QColor(20,420,80)), Qt::TextColorRole);
+                    ui->target->setItemData(i, QBrush(QColor(20,20,80)), Qt::TextColorRole);
                 // BS
                 for(int i = 53;i < 67;++i)
                     ui->target->setItemData(i, QBrush(QColor(20,20,60)), Qt::TextColorRole);
