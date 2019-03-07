@@ -16,6 +16,7 @@ RegToolBox::RegToolBox(QWidget *parent) :
     ui->It_view->setScene(&It_scene);
     ui->I_view->setScene(&I_scene);
     connect(ui->slice_pos, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
+    connect(ui->contrast, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
     connect(ui->main_zoom, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
     connect(ui->show_warp, SIGNAL(clicked()), this, SLOT(show_image()));
     connect(ui->dis_map, SIGNAL(clicked()), this, SLOT(show_image()));
@@ -95,53 +96,94 @@ void RegToolBox::on_OpenSubject_clicked()
     show_image();
 }
 
-void image2rgb(tipl::image<float,2>& tmp,tipl::color_image& buf)
+
+void RegToolBox::on_OpenSubject2_clicked()
 {
-    tmp *= 16.0f;
+    QString filename = QFileDialog::getOpenFileName(
+            this,"Open Subject Image","",
+            "Images (*.nii *nii.gz);;All files (*)" );
+    if(filename.isEmpty())
+        return;
+
+    gz_nifti nifti;
+    if(!nifti.load_from_file(filename.toStdString()))
+    {
+        QMessageBox::information(this,"Error","Invalid file format");
+        return;
+    }
+    nifti.toLPS(I2);
+    I2 *= 1.0f/tipl::mean(I2);
+}
+
+void RegToolBox::on_OpenTemplate2_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(
+            this,"Open Template Image","",
+            "Images (*.nii *nii.gz);;All files (*)" );
+    if(filename.isEmpty())
+        return;
+
+    gz_nifti nifti;
+    if(!nifti.load_from_file(filename.toStdString()))
+    {
+        QMessageBox::information(this,"Error","Invalid file format");
+        return;
+    }
+    nifti.toLPS(It2);
+    It2 *= 1.0f/tipl::mean(It2);
+}
+
+
+void image2rgb(tipl::image<float,2>& tmp,tipl::color_image& buf,float contrast)
+{
+    tmp *= contrast;
     tipl::upper_lower_threshold(tmp.begin(),tmp.end(),tmp.begin(),0.0f,255.0f);
     buf = tmp;
 }
 
 
-void show_slice_at(QGraphicsScene& scene,tipl::image<float,2>& tmp,tipl::color_image& buf,float ratio)
+void show_slice_at(QGraphicsScene& scene,tipl::image<float,2>& tmp,tipl::color_image& buf,float ratio,float contrast)
 {
-    image2rgb(tmp,buf);
+    image2rgb(tmp,buf,contrast);
     show_view(scene,QImage((unsigned char*)&*buf.begin(),buf.width(),buf.height(),QImage::Format_RGB32).
               scaled(buf.width()*ratio,buf.height()*ratio));
 }
 
 
-void show_slice_at(QGraphicsScene& scene,const tipl::image<float,3>& source,tipl::color_image& buf,int slice_pos,float ratio)
+void show_slice_at(QGraphicsScene& scene,const tipl::image<float,3>& source,tipl::color_image& buf,int slice_pos,float ratio,float contrast)
 {
     tipl::image<float,2> tmp;
     tipl::volume2slice(source,tmp,2,slice_pos);
-    show_slice_at(scene,tmp,buf,ratio);
+    show_slice_at(scene,tmp,buf,ratio,contrast);
 }
 
 void RegToolBox::show_image(void)
 {
     float ratio = ui->main_zoom->value()/10.0;
+    float contrast = ui->contrast->value()+10;
     if(!It.empty())
     {
         if(ui->show_warp->isChecked())
         {
             if(!J_view2.empty())
-                show_slice_at(It_scene,J_view2,cIt,ui->slice_pos->value(),ratio);
+                show_slice_at(It_scene,J_view2,cIt,ui->slice_pos->value(),ratio,contrast);
             else
                 if(!J_view.empty())
-                    show_slice_at(It_scene,J_view,cIt,ui->slice_pos->value(),ratio);
+                    show_slice_at(It_scene,J_view,cIt,ui->slice_pos->value(),ratio,contrast);
                 else
-                    show_slice_at(It_scene,It,cIt,ui->slice_pos->value(),ratio);
+                    show_slice_at(It_scene,(ui->show_second->isChecked() && It2.geometry() == It.geometry() ? It2 : It),
+                                            cIt,ui->slice_pos->value(),ratio,contrast);
         }
         else
-            show_slice_at(It_scene,It,cIt,ui->slice_pos->value(),ratio);
+            show_slice_at(It_scene,(ui->show_second->isChecked() && It2.geometry() == It.geometry() ? It2 : It),
+                          cIt,ui->slice_pos->value(),ratio,contrast);
     }
     if(!J_view2.empty())
     {
         if(ui->dis_map->isChecked())
         {
             tipl::image<float,2> J_view_slice(J_view.slice_at(ui->slice_pos->value()));
-            image2rgb(J_view_slice,cJ);
+            image2rgb(J_view_slice,cJ,contrast);
             QImage qcJ = QImage((unsigned char*)&*cJ.begin(),cJ.width(),cJ.height(),QImage::Format_RGB32).
                           scaled(cJ.width()*ratio,cJ.height()*ratio);
 
@@ -184,14 +226,14 @@ void RegToolBox::show_image(void)
             show_view(I_scene,qcJ);
         }
         else
-        show_slice_at(I_scene,J_view2,cJ,ui->slice_pos->value(),ratio);
+        show_slice_at(I_scene,J_view2,cJ,ui->slice_pos->value(),ratio,contrast);
     }
     else
     if(!J_view.empty())
-        show_slice_at(I_scene,J_view,cJ,ui->slice_pos->value(),ratio);
+        show_slice_at(I_scene,J_view,cJ,ui->slice_pos->value(),ratio,contrast);
     else
         if(!I.empty())
-            show_slice_at(I_scene,I,cI,std::min(I.depth()-1,I.depth()*ui->slice_pos->value()/ui->slice_pos->maximum()),ratio);
+            show_slice_at(I_scene,I,cI,std::min(I.depth()-1,I.depth()*ui->slice_pos->value()/ui->slice_pos->maximum()),ratio,contrast);
 
     /*
     if(J_view2.empty())
@@ -208,7 +250,8 @@ void RegToolBox::on_timer()
         if(J.empty()) // linear registration
         {
             J_view.resize(It.geometry());
-            tipl::resample_mt(I,J_view,tipl::transformation_matrix<double>(arg,It.geometry(),Itvs,I.geometry(),Ivs),tipl::linear);
+            tipl::resample_mt((ui->show_second->isChecked() && I2.geometry() == I.geometry() ? I2 : I),
+                              J_view,tipl::transformation_matrix<double>(arg,It.geometry(),Itvs,I.geometry(),Ivs),tipl::linear);
             show_image();
         }
         else // nonlinear
@@ -216,7 +259,7 @@ void RegToolBox::on_timer()
             if(!dis.empty())
             {
                 dis_view = dis;
-                J_view = J;
+                J_view = (ui->show_second->isChecked() && J2.geometry() == J.geometry() ? J2 : J);
                 std::vector<tipl::geometry<3> > geo_stack;
                 while(J_view.width() > dis_view.width())
                 {
@@ -256,12 +299,19 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type)
     tipl::transformation_matrix<double> T;
     tipl::reg::two_way_linear_mr(It,Itvs,I,Ivs,T,reg_type,tipl::reg::mutual_information(),thread.terminated,
                                   std::thread::hardware_concurrency(),&arg,reg_bound2);
-    tipl::image<float,3> J2(It.geometry());
-    tipl::resample_mt(I,J2,T,tipl::cubic);
-    float r2 = tipl::correlation(J2.begin(),J2.end(),It.begin());
+    tipl::image<float,3> J_(It.geometry());
+    tipl::resample_mt(I,J_,T,tipl::cubic);
+    float r2 = tipl::correlation(J_.begin(),J_.end(),It.begin());
     std::cout << "linear:" << r2 << std::endl;
-    J.swap(J2);
+    J.swap(J_);
     J_view = J;
+
+    if(I2.geometry() == I.geometry())
+    {
+        tipl::image<float,3> J2_(It.geometry());
+        tipl::resample_mt(I2,J2_,T,tipl::cubic);
+        J2.swap(J2_);
+    }
 
 }
 double phase_estimate(const tipl::image<float,3>& It,
@@ -285,7 +335,16 @@ void RegToolBox::nonlinear_reg(void)
             tipl::reg::cdm(sIt,sJ,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),60);
         }
         else
-            tipl::reg::cdm(It,J,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),60);
+        {
+            if(It2.geometry() == It.geometry() && J2.geometry() == J.geometry())
+            {
+                std::cout << "cdm2" << std::endl;
+                tipl::reg::cdm2(It,It2,J,J2,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),60);
+
+            }
+            else
+                tipl::reg::cdm(It,J,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),60);
+        }
     }
     tipl::compose_displacement(J,dis,JJ);
     std::cout << "nonlinear:" << tipl::correlation(JJ.begin(),JJ.end(),It.begin()) << std::endl;
@@ -316,7 +375,11 @@ void RegToolBox::on_run_reg_clicked()
                 linear_reg(tipl::reg::affine);
         }
         else
+        {
             J = I;
+            if(I2.geometry() == I.geometry())
+                J2 = I2;
+        }
         if(ui->nonlinear_method->currentIndex())
             nonlinear_reg();
         reg_done = true;

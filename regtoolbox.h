@@ -16,7 +16,7 @@ class RegToolBox : public QMainWindow
     Q_OBJECT
 
 public:
-    tipl::image<float,3> It,I,J,JJ;
+    tipl::image<float,3> It,I,J,JJ,I2,It2,J2;
     tipl::image<tipl::vector<3>,3> dis;
     tipl::vector<3> Itvs,Ivs;
     float ItR[12];
@@ -62,6 +62,10 @@ private slots:
     void on_actionMatch_Intensity_triggered();
 
     void on_actionRemove_Background_triggered();
+
+    void on_OpenSubject2_clicked();
+
+    void on_OpenTemplate2_clicked();
 
 private:
     Ui::RegToolBox *ui;
