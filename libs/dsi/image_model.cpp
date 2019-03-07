@@ -1345,7 +1345,7 @@ bool ImageModel::compare_src(const char* file_name)
             tipl::match_signal(dwi_sum,new_dwi_sum);
             bool terminated = false;
             begin_prog("Nonlinear registration between longitudinal scans");
-            tipl::reg::cdm(dwi_sum,new_dwi_sum,cdm_dis,terminated,2.0f,0.5f);
+            tipl::reg::cdm(dwi_sum,new_dwi_sum,cdm_dis,terminated);
             check_prog(0,1);
 
             /*
