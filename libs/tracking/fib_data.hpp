@@ -163,7 +163,7 @@ public:
 public:
     std::string template_file_name;
     tipl::vector<3> template_vs,template_shift;
-    tipl::image<float,3> template_I;
+    tipl::image<float,3> template_I,template_I2;
     std::vector<std::shared_ptr<atlas> > atlas_list;
     bool has_template(void);
     bool has_atlas(void);

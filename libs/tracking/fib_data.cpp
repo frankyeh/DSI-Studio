@@ -819,7 +819,7 @@ void fib_data::get_index_titles(std::vector<std::string>& titles)
         titles.push_back(index_list[index]+" sd");
     }
 }
-extern std::vector<std::string> fa_template_list;
+extern std::vector<std::string> fa_template_list,iso_template_list;
 extern std::vector<std::shared_ptr<atlas> > atlas_buffer;
 bool fib_data::has_template(void)
 {
@@ -856,6 +856,15 @@ bool fib_data::has_template(void)
                         if(atlas_buffer[j]->name == line)
                             atlas_list.push_back(atlas_buffer[j]);
                 }
+
+                {
+                    gz_nifti read2;
+                    if(read2.load_from_file(iso_template_list[i].c_str()))
+                        read2.toLPS(template_I2);
+                }
+                tipl::normalize(template_I,1.0f);
+                if(!template_I2.empty())
+                    tipl::normalize(template_I2,1.0f);
                 return true;
             }
         }
@@ -932,6 +941,7 @@ void fib_data::run_normalization(bool background)
     {
 
         auto& It = template_I;
+        auto& It2 = template_I2;
         tipl::transformation_matrix<float> T;
         tipl::image<float,3> Is(dir.fa[0],dim);
         tipl::filter::gaussian(Is);
@@ -945,8 +955,26 @@ void fib_data::run_normalization(bool background)
         tipl::resample_mt(Is,Iss,T,tipl::linear);
         tipl::match_signal(It,Iss);
         prog = 3;
+        tipl::image<float,3> Iss2;
+        if(It2.geometry() == It.geometry())
+        {
+            for(int i = 0;i < view_item.size();++i)
+                if(view_item[i].name == std::string("iso"))
+                {
+                    Iss2.resize(It.geometry());
+                    tipl::resample_mt(view_item[i].image_data,Iss2,T,tipl::linear);
+                    tipl::match_signal(It2,Iss2);
+                }
+        }
+
         tipl::image<tipl::vector<3>,3> dis,inv_dis;
-        tipl::reg::cdm(It,Iss,dis,thread.terminated,2.0f,0.95f);
+        if(Iss2.geometry() == Iss.geometry())
+        {
+            set_title("dual normalization using two templates");
+            tipl::reg::cdm2(It,It2,Iss,Iss2,dis,thread.terminated);
+        }
+        else
+            tipl::reg::cdm(It,Iss,dis,thread.terminated);
         tipl::invert_displacement(dis,inv_dis);
         if(thread.terminated)
             return;

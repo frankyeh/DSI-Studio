@@ -11,7 +11,7 @@
 #include "reconstruction/reconstruction_window.h"
 #include "program_option.hpp"
 
-extern std::vector<std::string> fa_template_list,t1w_template_list;
+extern std::vector<std::string> fa_template_list,iso_template_list;
 void rec_motion_correction(ImageModel* handle);
 void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
@@ -126,10 +126,20 @@ int rec(void)
     if(method_index == 7) // QSDR
     {
         handle->voxel.param[0] = 1.25f;
-        if(po.get("reg_method",int(3)) == 3 && !fa_template_list.empty())
-            handle->voxel.external_template = fa_template_list[0];
-        if(po.get("reg_method",int(3)) == 4 && !t1w_template_list.empty())
-            handle->voxel.external_template = t1w_template_list[0];
+
+        if (po.has("template"))
+        {
+            handle->voxel.primary_template = po.get("template");
+            handle->voxel.secondary_template = po.get("template2");
+        }
+        else
+        {
+            handle->voxel.primary_template = fa_template_list[0];
+            handle->voxel.secondary_template = iso_template_list[0];
+        }
+
+        std::cout << "template = " << handle->voxel.primary_template << std::endl;
+        std::cout << "template2 = " << handle->voxel.secondary_template << std::endl;
     }
     if(po.has("study_src")) // DDI
     {
@@ -184,27 +194,11 @@ int rec(void)
     handle->voxel.odf_decomposition = po.get("decomposition",int(0));
     handle->voxel.max_fiber_number = po.get("num_fiber",int(5));
     handle->voxel.r2_weighted = po.get("r2_weighted",int(0));
-    handle->voxel.reg_method = po.get("reg_method",int(3));
     handle->voxel.csf_calibration = po.get("csf_calibration",int(0)) && method_index == 4;
     handle->voxel.thread_count = po.get("thread_count",int(std::thread::hardware_concurrency()));
 
 
-    if (po.has("template"))
-    {
-        std::cout << "external template = " << po.get("template") << std::endl;
-        std::string template_file_name = po.get("template");
-        std::vector<std::string>& template_list = (handle->voxel.reg_method == 3? fa_template_list: t1w_template_list);
-        for(int i = 0;i < template_list.size();++i)
-            if(QFileInfo(template_list[i].c_str()).baseName() ==
-                    QFileInfo(template_file_name.c_str()).baseName())
-                template_file_name = template_list[i];
-        if(!QFileInfo(template_file_name.c_str()).exists())
-        {
-            std::cout << "template does not exist." << std::endl;
-            return 0;
-        }
-        handle->voxel.external_template = template_file_name;
-    }
+
 
     if(handle->voxel.csf_calibration && !handle->is_human_data())
     {
@@ -264,16 +258,6 @@ int rec(void)
             else
                 handle->voxel.mask = external_mask;
         }
-    }
-
-    if(method_index == 7 && handle->voxel.reg_method == 4)
-    {
-        if(!po.has("t1w"))
-        {
-            std::cout << "Please assign --t1w with T1W file for CDM normalization or assign --reg_method=3 to use CDM without T1W" << std::endl;
-            return 0;
-        }
-        handle->voxel.t1w_file_name = po.get("t1w");
     }
 
     if(po.has("rotate_to"))

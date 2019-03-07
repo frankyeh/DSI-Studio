@@ -730,67 +730,28 @@
              <property name="spacing">
               <number>0</number>
              </property>
-             <item>
+             <item alignment="Qt::AlignRight">
               <widget class="QLabel" name="label_15">
                <property name="text">
-                <string>Registration method</string>
+                <string>Primary Template</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QComboBox" name="reg_method">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="currentIndex">
-                <number>3</number>
-               </property>
-               <item>
-                <property name="text">
-                 <string>norm  7-9-7</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>norm 14-18-14</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>norm 21-27-21</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>CDM</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>T1W-CDM</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_8">
-             <property name="spacing">
-              <number>0</number>
-             </property>
-             <item>
-              <widget class="QLabel" name="label_8">
-               <property name="text">
-                <string>Template:</string>
-               </property>
-              </widget>
+              <widget class="QComboBox" name="primary_template"/>
              </item>
              <item>
-              <widget class="QComboBox" name="template_box"/>
+              <spacer name="horizontalSpacer_5">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
              </item>
              <item>
               <widget class="QPushButton" name="add_t1t2">
@@ -801,7 +762,7 @@
                 </sizepolicy>
                </property>
                <property name="text">
-                <string>Add T1W/T2W...</string>
+                <string>Attached Images...</string>
                </property>
               </widget>
              </item>

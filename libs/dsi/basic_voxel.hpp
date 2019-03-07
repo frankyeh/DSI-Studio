@@ -98,8 +98,7 @@ public:// gradient deviation
     std::vector<tipl::pointer_image<float,3> > grad_dev;
 public:// used in QSDR
     float trans_to_mni[16];
-    std::string external_template;
-    unsigned char reg_method = 0;
+    std::string primary_template,secondary_template;
     tipl::transformation_matrix<double> qsdr_trans;
     bool output_jacobian = false;
     bool output_mapping = false;
@@ -111,11 +110,6 @@ public: // for QSDR associated T1WT2W
     std::vector<tipl::image<float,3> > other_image;
     std::vector<std::string> other_image_name;
     std::vector<tipl::transformation_matrix<double> > other_image_affine;
-public: // for T1W based DMDM
-    tipl::image<float,3> t1w,t1wt;
-    tipl::vector<3> t1w_vs,t1wt_vs;
-    float t1wt_tran[16];
-    std::string t1w_file_name;
 
 public: // for fib evaluation
     tipl::image<float,3> fib_fa;
@@ -129,7 +123,7 @@ public:
     float z0 = 0.0;
     // other information for second pass processing
     std::vector<float> response_function,free_water_diffusion;
-    tipl::image<float,3> qa_map;
+    tipl::image<float,3> qa_map,iso_map;
     float reponse_function_scaling;
 public:// for template creation
     std::vector<std::vector<float> > template_odfs;

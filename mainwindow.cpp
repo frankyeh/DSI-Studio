@@ -826,6 +826,8 @@ void MainWindow::on_run_cmd_clicked()
 void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
 bool need_scheme_balance(const std::vector<unsigned int>& shell);
+
+extern std::vector<std::string> fa_template_list,iso_template_list;
 void MainWindow::on_ReconstructSRC_clicked()
 {
     QString dir = QFileDialog::getExistingDirectory(
@@ -858,7 +860,6 @@ void MainWindow::on_ReconstructSRC_clicked()
         handle->voxel.csf_calibration = 0;
         handle->voxel.max_fiber_number = 5;
         handle->voxel.r2_weighted = 0;
-        handle->voxel.reg_method = 3; // CDM
         handle->voxel.need_odf = true; // output ODF
         handle->voxel.check_btable = true;
         handle->voxel.output_jacobian = false;
@@ -867,6 +868,9 @@ void MainWindow::on_ReconstructSRC_clicked()
         handle->voxel.output_tensor = false;
         handle->voxel.output_rdi = true;
         handle->voxel.thread_count = std::thread::hardware_concurrency();
+        handle->voxel.primary_template = fa_template_list[0];
+        handle->voxel.secondary_template = iso_template_list[0];
+
         //checking half shell
         {
             handle->voxel.half_sphere = handle->is_dsi_half_sphere();

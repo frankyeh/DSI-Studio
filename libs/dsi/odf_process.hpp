@@ -306,11 +306,14 @@ public:
     virtual void init(Voxel& voxel)
     {
         voxel.qa_map.resize(voxel.dim);
+        voxel.iso_map.resize(voxel.dim);
         std::fill(voxel.qa_map.begin(),voxel.qa_map.end(),0.0);
+        std::fill(voxel.iso_map.begin(),voxel.iso_map.end(),0.0);
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
         voxel.qa_map[data.voxel_index] = data.fa[0];
+        voxel.iso_map[data.voxel_index] = data.min_odf;
     }
     virtual void end(Voxel&,gz_mat_write&)
     {

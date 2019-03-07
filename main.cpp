@@ -18,8 +18,7 @@ std::string
         fib_template_file_name_1mm,fib_template_file_name_2mm,
         t1w_template_file_name,wm_template_file_name,
         t1w_mask_template_file_name,tractography_atlas_file_name;
-std::vector<std::string> fa_template_list,t1w_template_list,tractography_name_list;
-
+std::vector<std::string> fa_template_list,iso_template_list,tractography_name_list;
 void load_atlas(void);
 int rec(void);
 int trk(void);
@@ -52,7 +51,7 @@ QStringList search_files(QString dir,QString filter)
     return src_list;
 }
 
-std::string find_full_path(QString name,bool no_empty = false)
+std::string find_full_path(QString name)
 {
     QString filename = QCoreApplication::applicationDirPath() + name;
     if(QFileInfo(filename).exists())
@@ -60,7 +59,9 @@ std::string find_full_path(QString name,bool no_empty = false)
     filename = QDir::currentPath() + name;
     if(QFileInfo(filename).exists())
         return filename.toStdString();
-    return no_empty? filename.toStdString() : std::string();
+    std::string error_msg = "Cannot find ";
+    error_msg += filename.toStdString();
+    throw error_msg;
 }
 
 extern std::vector<std::shared_ptr<atlas> > atlas_buffer;
@@ -90,9 +91,9 @@ void load_atlas(void)
 
 void load_file_name(void)
 {
-    t1w_template_file_name = find_full_path("/template_t1w/mni_icbm152_t1_tal_nlin_asym_09c.nii.gz");
-    fib_template_file_name_2mm = find_full_path("/HCP1021.2mm.fib.gz");
     fib_template_file_name_1mm = find_full_path("/HCP1021.1mm.fib.gz");
+    fib_template_file_name_2mm = find_full_path("/HCP1021.2mm.fib.gz");
+    t1w_template_file_name = find_full_path("/mni_icbm152_t1_tal_nlin_asym_09c.nii.gz");
     wm_template_file_name = find_full_path("/mni_icbm152_wm_tal_nlin_asym_09c.nii.gz");
     t1w_mask_template_file_name = find_full_path("/mni_icbm152_t1_tal_nlin_asym_09c_mask.nii.gz");
     tractography_atlas_file_name = find_full_path("/atlas/HCP842_tractography.trk.gz");
@@ -124,28 +125,28 @@ void load_file_name(void)
         if(!dir.exists())
             dir = QDir::currentPath()+ "/template";
         QStringList name_list = dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
+
+        // Make HCP1021 the default
         for(int i = 0;i < name_list.size();++i)
         {
-            std::string full_path = (dir.absolutePath() + "/" + name_list[i]).toStdString();
             if(name_list[i].contains("HCP"))
-                fa_template_list.insert(fa_template_list.begin(),full_path);
-            else
-                fa_template_list.push_back(full_path);
+            {
+                QString item_to_move = name_list[i];
+                name_list.erase(name_list.begin()+i);
+                name_list.insert(name_list.begin(),item_to_move);
+            }
         }
-    }
-    // search for all t1w template
-    {
-        QDir dir = QCoreApplication::applicationDirPath()+ "/template_t1w";
-        if(!dir.exists())
-            dir = QDir::currentPath()+ "/template_t1w";
-        QStringList name_list = dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
         for(int i = 0;i < name_list.size();++i)
         {
             std::string full_path = (dir.absolutePath() + "/" + name_list[i]).toStdString();
-            if(full_path == t1w_template_file_name)
-                t1w_template_list.insert(t1w_template_list.begin(),full_path);
+            if(!QFileInfo(name_list[i]).fileName().contains(".QA.nii.gz"))
+                continue;
+            fa_template_list.push_back(full_path);
+            QString iso_file = dir.absolutePath() + "/" + QFileInfo(name_list[i]).baseName() + ".ISO.nii.gz";
+            if(QFileInfo(iso_file).exists())
+                iso_template_list.push_back(iso_file.toStdString());
             else
-                t1w_template_list.push_back(full_path);
+                iso_template_list.push_back(std::string());
         }
     }
 }
@@ -162,15 +163,15 @@ void init_application(void)
     QApplication::setStyle(QStyleFactory::create("Fusion"));
     #endif
 
+    try{
     load_file_name();
     load_atlas();
-    if(fa_template_list.empty() || t1w_template_list.empty() || atlas_buffer.empty())
-    {
-        QMessageBox::information(0,"Error","Missing template and atlas files. \
-            Please download dsi_studio_other_files.zip from DSI Studio website and place them with the DSI Studio executives",0);
-        return;
     }
-
+    catch(std::string msg)
+    {
+        QMessageBox::information(0,"Error",QString() + msg.c_str() +
+            ". Please download dsi_studio_other_files.zip from DSI Studio website and place them with the DSI Studio executives",0);
+    }
 }
 
 program_option po;
@@ -234,7 +235,14 @@ int run_cmd(int ac, char *av[])
         if(!gui.get())
         {
             cmd.reset(new QCoreApplication(ac, av));
+            try{
             load_file_name();
+            }
+            catch(std::string msg)
+            {
+                std::cout << msg << std::endl;
+                return 1;
+            }
             cmd->setOrganizationName("LabSolver");
             cmd->setApplicationName("DSI Studio");
         }

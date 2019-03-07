@@ -15,7 +15,7 @@
 #include "gzip_interface.hpp"
 #include "manual_alignment.h"
 
-extern std::vector<std::string> fa_template_list,t1w_template_list;
+extern std::vector<std::string> fa_template_list,iso_template_list;
 void show_view(QGraphicsScene& scene,QImage I);
 bool reconstruction_window::load_src(int index)
 {
@@ -43,6 +43,13 @@ bool reconstruction_window::load_src(int index)
 
 
     update_image();
+
+    if(!fa_template_list.empty())
+    {
+        for(int index = 0;index < fa_template_list.size();++index)
+            ui->primary_template->addItem(QFileInfo(fa_template_list[index].c_str()).baseName());
+        ui->primary_template->setCurrentIndex(0);
+    }
     return true;
 }
 
@@ -100,8 +107,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->ThreadCount->setValue(settings.value("rec_thread_count",std::thread::hardware_concurrency()).toInt());
     ui->NumOfFibers->setValue(settings.value("rec_num_fiber",5).toInt());
     ui->ODFDef->setCurrentIndex(settings.value("rec_gqi_def",0).toInt());
-    ui->reg_method->setCurrentIndex(settings.value("rec_reg_method",3).toInt());
-    on_reg_method_currentIndexChanged(settings.value("rec_reg_method",3).toInt());
     ui->diffusion_sampling->setValue(settings.value("rec_gqi_sampling",1.25).toDouble());
     ui->csf_calibration->setChecked(settings.value("csf_calibration",1).toInt());
 
@@ -211,43 +216,22 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
         return;
     }
 
-    //T1W DMDM
-    if(method_id == 7 && ui->reg_method->currentIndex() == 4)
-    {
-        QString t1w_file_name1 =
-                QFileInfo(handle->file_name.c_str()).absolutePath() + "/" + QFileInfo(handle->file_name.c_str()).baseName() + "_t1w.nii.gz";
-        QString t1w_file_name2 =
-                QFileInfo(handle->file_name.c_str()).absolutePath() + "/" + QFileInfo(handle->file_name.c_str()).baseName() + "_MPRAGE.nii.gz";
-        if(QFileInfo(t1w_file_name1).exists())
-            handle->voxel.t1w_file_name = t1w_file_name1.toStdString();
-        else
-        if(QFileInfo(t1w_file_name2).exists())
-            handle->voxel.t1w_file_name = t1w_file_name2.toStdString();
-        else
-        {
-            QMessageBox::information(0,"Reconstruction","Please Assign T1W file for normalization",0);
-            QString filename = QFileDialog::getOpenFileName(
-                    this,"Open T1W files",absolute_path,
-                    "Images (*.nii *nii.gz);;All files (*)" );
-            if( filename.isEmpty())
-                return;
-            handle->voxel.t1w_file_name = filename.toStdString();
-        }
-     }
-
-    handle->voxel.external_template.empty();
     //QSDR
-    if(method_id == 7 && !fa_template_list.empty())
-        handle->voxel.external_template = fa_template_list[ui->template_box->currentIndex()];
-    //QSDR with CDMT1W
-    if(method_id == 7 && ui->reg_method->currentIndex() == 4 && !t1w_template_list.empty())
-        handle->voxel.external_template = t1w_template_list[ui->template_box->currentIndex()];
+    if(method_id == 7)
+    {
+        if(fa_template_list.empty())
+        {
+            QMessageBox::information(this,"error","Cannot find template files",0);
+            return;
+        }
+        handle->voxel.primary_template = fa_template_list[ui->primary_template->currentIndex()];
+        handle->voxel.secondary_template = iso_template_list[ui->primary_template->currentIndex()];
+    }
 
     settings.setValue("rec_method_id",method_id);
     settings.setValue("rec_thread_count",ui->ThreadCount->value());
     settings.setValue("rec_num_fiber",ui->NumOfFibers->value());
     settings.setValue("rec_gqi_def",ui->ODFDef->currentIndex());
-    settings.setValue("rec_reg_method",ui->reg_method->currentIndex());
     settings.setValue("csf_calibration",ui->csf_calibration->isChecked() ? 1 : 0);
 
 
@@ -269,7 +253,6 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.csf_calibration = (ui->csf_calibration->isVisible() && ui->csf_calibration->isChecked()) ? 1: 0;
     handle->voxel.max_fiber_number = ui->NumOfFibers->value();
     handle->voxel.r2_weighted = ui->ODFDef->currentIndex();
-    handle->voxel.reg_method = ui->reg_method->currentIndex();
     handle->voxel.need_odf = ui->RecordODF->isChecked();
     handle->voxel.check_btable = ui->check_btable->isChecked();
     handle->voxel.output_jacobian = ui->output_jacobian->isChecked();
@@ -1044,37 +1027,6 @@ void reconstruction_window::on_AxiView_clicked()
     ui->z_pos->setRange(0,handle->voxel.dim[view_orientation]-1);
     ui->z_pos->setValue((handle->voxel.dim[view_orientation]-1) >> 1);
     on_b_table_itemSelectionChanged();
-}
-
-void reconstruction_window::on_reg_method_currentIndexChanged(int index)
-{
-    ui->template_box->clear();
-    if(index == 4) // CDM_T1W
-    {
-        // load all templates for QSDR
-        if(!t1w_template_list.empty())
-        {
-            for(int index = 0;index < t1w_template_list.size();++index)
-                ui->template_box->addItem(QFileInfo(t1w_template_list[index].c_str()).baseName());
-            ui->template_box->setCurrentIndex(0);
-        }
-        else
-            ui->template_box->hide();
-    }
-    else
-    {
-        // load all templates for QSDR
-        if(!fa_template_list.empty())
-        {
-            for(int index = 0;index < fa_template_list.size();++index)
-                ui->template_box->addItem(QFileInfo(fa_template_list[index].c_str()).baseName());
-            ui->template_box->setCurrentIndex(0);
-        }
-        else
-            ui->template_box->hide();
-
-    }
-    ui->template_box->setCurrentIndex(0);
 }
 
 

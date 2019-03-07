@@ -31,7 +31,6 @@ private:
     tipl::color_image buffer_source;
     QImage source_image;
     float max_source_value,source_ratio;
-
     void load_b_table(void);
 private:
     QGraphicsScene scene;
@@ -95,7 +94,6 @@ private slots:
     void on_SagView_clicked();
     void on_CorView_clicked();
     void on_AxiView_clicked();
-    void on_reg_method_currentIndexChanged(int index);
     void on_actionSave_DWI_sum_triggered();
     void on_actionFlip_bx_triggered();
     void on_actionFlip_by_triggered();
