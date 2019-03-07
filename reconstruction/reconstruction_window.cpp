@@ -39,17 +39,7 @@ bool reconstruction_window::load_src(int index)
     ui->min_value->setMinimum(0.0f);
     ui->min_value->setSingleStep(m*0.05f);
     ui->min_value->setValue(0.0f);
-
-
-
     update_image();
-
-    if(!fa_template_list.empty())
-    {
-        for(int index = 0;index < fa_template_list.size();++index)
-            ui->primary_template->addItem(QFileInfo(fa_template_list[index].c_str()).baseName());
-        ui->primary_template->setCurrentIndex(0);
-    }
     return true;
 }
 
@@ -77,7 +67,12 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->b_table->setHorizontalHeaderLabels(QStringList() << "b value" << "bx" << "by" << "bz");
 
 
-
+    if(!fa_template_list.empty())
+    {
+        for(int index = 0;index < fa_template_list.size();++index)
+            ui->primary_template->addItem(QFileInfo(fa_template_list[index].c_str()).baseName());
+        ui->primary_template->setCurrentIndex(0);
+    }
 
     v2c.two_color(tipl::rgb(0,0,0),tipl::rgb(255,255,255));
     update_dimension();
