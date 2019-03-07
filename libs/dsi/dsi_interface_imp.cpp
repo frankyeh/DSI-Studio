@@ -331,22 +331,7 @@ const char* ImageModel::reconstruction(void)
                 return "reconstruction canceled";
             break;
         case 7:
-            if(voxel.reg_method == 4) // CDM-T1W
-            {
-                {
-                    gz_nifti in;
-                    if(!in.load_from_file(voxel.external_template.c_str()) || !in.toLPS(voxel.t1wt))
-                        return "Cannot load T1W template";
-                    in.get_voxel_size(voxel.t1wt_vs);
-                    in.get_image_transformation(voxel.t1wt_tran);
-                }
-                {
-                    gz_nifti in;
-                    if(!in.load_from_file(voxel.t1w_file_name.c_str()) || !in.toLPS(voxel.t1w))
-                        return "Cannot load T1W for DMDM normaliztion";
-                    in.get_voxel_size(voxel.t1w_vs);
-                }
-            }
+
 
 
             voxel.recon_report
@@ -368,17 +353,6 @@ const char* ImageModel::reconstruction(void)
                     return "reconstruction canceled";
                 tmp.swap(voxel.grad_dev);
             }
-
-            if(voxel.reg_method < 4) // 0,1,2 SPM norm, 3 CDM, 4 CDM-T1W
-            {
-                if(voxel.reg_method == 3)
-                    out << ".cdm";
-                else
-                    out << ".reg" << (int)voxel.reg_method;
-            }
-            else
-                out << ".cdmt1w";
-
 
             out << (voxel.r2_weighted ? ".qsdr2.":".qsdr.");
             out << voxel.param[0];
