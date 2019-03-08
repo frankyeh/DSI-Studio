@@ -688,16 +688,21 @@ void ImageModel::distortion_correction(const ImageModel& rhs)
         }
     }
 
-    tipl::image<float,3> dis_map(v1.geometry()),df,gx(v1.geometry());
+    tipl::image<float,3> dis_map(v1.geometry()),df,gx(v1.geometry()),v1_gx(v1.geometry()),v2_gx(v2.geometry());
+
 
     tipl::filter::gaussian(v1);
     tipl::filter::gaussian(v2);
+
+    tipl::gradient(v1,v1_gx,1,0);
+    tipl::gradient(v2,v2_gx,1,0);
+
     get_distortion_map(v2,v1,dis_map);
     tipl::filter::gaussian(dis_map);
     tipl::filter::gaussian(dis_map);
 
 
-    for(int iter = 0;iter < 60;++iter)
+    for(int iter = 0;iter < 120;++iter)
     {
         apply_distortion_map2(v1,dis_map,vv1,true);
         apply_distortion_map2(v2,dis_map,vv2,false);
@@ -706,7 +711,9 @@ void ImageModel::distortion_correction(const ImageModel& rhs)
         vv1 += vv2;
         df *= vv1;
         tipl::gradient(df,gx,1,0);
-        tipl::normalize_abs(gx,1.0f);
+        gx += v1_gx;
+        gx -= v2_gx;
+        tipl::normalize_abs(gx,0.5f);
         tipl::filter::gaussian(gx);
         tipl::filter::gaussian(gx);
         tipl::filter::gaussian(gx);
@@ -715,7 +722,6 @@ void ImageModel::distortion_correction(const ImageModel& rhs)
 
 
     //dwi_sum = dis_map;
-    //dwi_sum = gy;
     //return;
 
 
