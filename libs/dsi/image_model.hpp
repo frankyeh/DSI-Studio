@@ -273,7 +273,6 @@ public:
     bool rotate_to_mni(void);
     void trim(void);
     void distortion_correction(const ImageModel& rhs);
-    void distortion_correction2(const ImageModel& rhs);
     bool compare_src(const char* file_name);
 public:
 

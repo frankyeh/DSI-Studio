@@ -571,46 +571,42 @@ void get_distortion_map(const image_type& v1,
                         const image_type& v2,
                         tipl::image<float,3>& dis_map)
 {
-    int h = v1.height(),w = v1.width(),hw = v1.plane_size();
+    int h = v1.height(),w = v1.width();
     dis_map.resize(v1.geometry());
-    tipl::par_for(v1.depth(),[&](int z)
+    tipl::par_for(v1.depth()*h,[&](int z)
     {
-    for(int x = 0;x < w;++x)
-    {
-        //int x = 46; for 2017_11_09 DSI-STS1
-        //int z = 32;
-        std::vector<float> cdf_y1(h),cdf_y2(h);//,cdf(h);
-        for(int y = 0,pos = x + z*hw;y < h;++y,pos += w)
-        {
-            cdf_y1[y] =  (y ? v1[pos]+cdf_y1[y-1]:0);
-            cdf_y2[y] =  (y ? v2[pos]+cdf_y2[y-1]:0);
-        }
-        //if(cdf_y1.back() == 0.0 || cdf_y2.back() == 0.0)
-        //    continue;
-        tipl::multiply_constant(cdf_y2,cdf_y1.back()/cdf_y2.back());
+        int base_pos = z*w;
+        std::vector<float> cdf_x1(w),cdf_x2(w);//,cdf(h);
+        tipl::pdf2cdf(v1.begin()+base_pos,v1.begin()+base_pos+w,&cdf_x1[0]);
+        tipl::pdf2cdf(v2.begin()+base_pos,v2.begin()+base_pos+w,&cdf_x2[0]);
+        if(cdf_x1.back() == 0.0 || cdf_x2.back() == 0.0)
+            return;
 
-        for(int y = 0,pos = x + z*hw;y < h;++y,pos += w)
+        tipl::multiply_constant(cdf_x2,(cdf_x1.back()+cdf_x2.back())*0.5f/cdf_x2.back());
+        tipl::add_constant(cdf_x2,(cdf_x1.back()-cdf_x2.back())*0.5f);
+
+        for(int x = 0,pos = base_pos;x < w;++x,++pos)
         {
-            if(cdf_y1[y] == cdf_y2[y])
+            if(cdf_x1[x] == cdf_x2[x])
             {
                 //cdf[y] = cdf_y1[y];
                 continue;
             }
-            int d = 1,y1,y2;
+            int d = 1,x1,x2;
             float v1,v2,u1,u2;
-            v2 = cdf_y1[y];
-            u2 = cdf_y2[y];
+            v2 = cdf_x1[x];
+            u2 = cdf_x2[x];
             bool positive_d = true;
-            if(cdf_y1[y] > cdf_y2[y])
+            if(cdf_x1[x] > cdf_x2[x])
             {
-                for(;d < h;++d)
+                for(;d < w;++d)
                 {
-                    y1 = y-d;
-                    y2 = y+d;
+                    x1 = x-d;
+                    x2 = x+d;
                     v1 = v2;
                     u1 = u2;
-                    v2 = (y1 >=0 ? cdf_y1[y1]:0);
-                    u2 = (y2 < cdf_y2.size() ? cdf_y2[y2]:cdf_y2.back());
+                    v2 = (x1 >=0 ? cdf_x1[x1]:0);
+                    u2 = (x2 < cdf_x2.size() ? cdf_x2[x2]:cdf_x2.back());
                     if(v2 <= u2)
                         break;
                 }
@@ -619,12 +615,12 @@ void get_distortion_map(const image_type& v1,
             {
                 for(;d < h;++d)
                 {
-                    y2 = y-d;
-                    y1 = y+d;
+                    x2 = x-d;
+                    x1 = x+d;
                     v1 = v2;
                     u1 = u2;
-                    v2 = (y1 < cdf_y1.size() ? cdf_y1[y1]:cdf_y1.back());
-                    u2 = (y2 >= 0 ? cdf_y2[y2]:0);
+                    v2 = (x1 < cdf_x1.size() ? cdf_x1[x1]:cdf_x1.back());
+                    u2 = (x2 >= 0 ? cdf_x2[x2]:0);
                     if(v2 >= u2)
                         break;
                 }
@@ -635,226 +631,41 @@ void get_distortion_map(const image_type& v1,
             if(!positive_d)
                 dis_map[pos] = -dis_map[pos];
         }
-
-        /*
-        std::cout << "A=[";
-        for(int y = 0;y < h;++y)
-            std::cout << cdf_y1[y] << " ";
-        std::cout << "];" << std::endl;
-        std::cout << "B=[";
-        for(int y = 0;y < h;++y)
-            std::cout << cdf_y2[y] << " ";
-        std::cout << "];" << std::endl;
-        std::cout << "C=[";
-        for(int y = 0;y < h;++y)
-            std::cout << cdf[y] << " ";
-        std::cout << "];" << std::endl;
-        std::cout << "D=[";
-        for(int y = 0,pos = x + z*hw;y < h;++y,pos += h)
-            std::cout << dis_map[pos] << " ";
-        std::cout << "];" << std::endl;
-        */
-        //for(int y = 0,pos = x + z*geo.plane_size();y < h;++y,pos += geo.width())
-        //    v1[pos] = std::max<float>(0.0f,cdf[y] - (y? cdf[y-1]:0));
-    }
     }
     );
 }
 
-template<typename image_type,typename out_type>
-void apply_distortion_map(const image_type& v1,
-                          const image_type& v2,
+template<typename image_type>
+void apply_distortion_map2(const image_type& v1,
                           const tipl::image<float,3>& dis_map,
-                          out_type& dwi)
+                          image_type& v1_out,bool positive)
 {
-    int h = v1.height(),w = v1.width(),hw = v1.plane_size();
-    dwi.resize(v1.geometry());
-    tipl::par_for(v1.depth(),[&](int z)
+    int w = v1.width();
+    v1_out.resize(v1.geometry());
+    tipl::par_for(v1.depth()*v1.height(),[&](int z)
     {
-    for(int x = 0;x < w;++x)
-    {
-        std::vector<float> cdf_y1(h),cdf_y2(h),cdf(h);
-        for(int y = 0,pos = x + z*hw;y < h;++y,pos += w)
+        std::vector<float> cdf_x1(w),cdf(w);
+        int base_pos = z*w;
         {
-            cdf_y1[y] = v1[pos] + (y ? cdf_y1[y-1]:0);
-            cdf_y2[y] = v2[pos] + (y ? cdf_y2[y-1]:0);
+            tipl::pdf2cdf(v1.begin()+base_pos,v1.begin()+base_pos+w,&cdf_x1[0]);
+            auto I1 = tipl::make_image(&cdf_x1[0],tipl::geometry<1>(w));
+            for(int x = 0,pos = base_pos;x < w;++x,++pos)
+                cdf[x] = tipl::estimate(I1,positive ? x+dis_map[pos] : x-dis_map[pos]);
+            for(int x = 0,pos = base_pos;x < w;++x,++pos)
+                v1_out[pos] = (x? std::max<float>(0.0f,cdf[x] - cdf[x-1]):0);
         }
-
-        auto I1 = tipl::make_image(&cdf_y1[0],tipl::geometry<1>(cdf_y1.size()));
-        auto I2 = tipl::make_image(&cdf_y2[0],tipl::geometry<1>(cdf_y2.size()));
-        for(int y = 0,pos = x + z*hw;y < h;++y,pos += w)
-        {
-            float d = dis_map[pos];
-            float y1 = y-d;
-            float y2 = y+d;
-            cdf[y] = tipl::estimate(I1,y1)+tipl::estimate(I2,y2);
-            cdf[y] *= 0.5;
-        }
-        for(int y = 1,pos = x + z*hw+w;y < h;++y,pos += w)
-            dwi[pos] = std::max<float>(0.0f,cdf[y] - (y? cdf[y-1]:0));
-    }
     }
     );
 }
 
 
-void phase_apply(const tipl::image<float,3>& I,
-                 const tipl::image<tipl::vector<3>,3>& d,
-                 tipl::image<float,3>& J)
+
+
+void ImageModel::distortion_correction(const ImageModel& rhs)
 {
-    J.clear();
-    J.resize(I.geometry());
-    for(int pos = 0;pos < I.size();pos += I.width())
-    {
-        auto line = tipl::make_image(&*I.begin()+pos,tipl::geometry<1>(I.width()));
-        for(int x = 1;x < I.width();++x)
-        {
-            float delta = d[pos+x][0]-d[pos+x-1][0];
-
-            tipl::estimate(line,x+d[pos+x][0],J[pos+x]);
-            if(delta < 0.0f)
-                J[pos+x] *= (delta+1.0f);
-            else
-            {
-                for(float dx = 1.0;dx < delta;dx += 1.0f)
-                {
-                    float v = 0.0;
-                    tipl::estimate(line,x+d[pos+x][0]-dx,v);
-                    J[pos+x] += v;
-                }
-            }
-        }
-    }
-}
-
-double phase_estimate(const tipl::image<float,3>& It,
-            const tipl::image<float,3>& Is,
-            tipl::image<tipl::vector<3>,3>& d,// displacement field
-            bool& terminated,
-            float resolution = 2.0,
-            float cdm_smoothness = 0.3f,
-            unsigned int steps = 30)
-{
-    if(It.geometry() != Is.geometry() || It.empty())
-        throw "Invalid cdm input image";
-    tipl::geometry<3> geo = It.geometry();
-    d.resize(geo);
-    // multi resolution
-    if (*std::min_element(geo.begin(),geo.end()) > 32)
-    {
-        //downsampling
-        tipl::image<float,3> rIs,rIt;
-        tipl::downsample_with_padding(It,rIt);
-        tipl::downsample_with_padding(Is,rIs);
-        float r = phase_estimate(rIt,rIs,d,terminated,resolution/2.0,cdm_smoothness,steps);
-        tipl::upsample_with_padding(d,d,geo);
-        d *= 2.0f;
-        if(resolution > 1.0)
-            return r;
-    }
-    tipl::image<float,3> Js;// transformed I
-    tipl::image<tipl::vector<3>,3> new_d(d.geometry());// new displacements
-    double max_t = (double)(*std::max_element(It.begin(),It.end()));
-    double max_s = (double)(*std::max_element(Is.begin(),Is.end()));
-    if(max_t == 0.0 || max_s == 0.0)
-        return 0.0;
-    unsigned int window_size = 3;
-    float inv_d2 = 0.5f/3;
-    float cdm_smoothness2 = 1.0f-cdm_smoothness;
-    float r,prev_r = 0.0;
-    float theta = 0.0f;
-    for (unsigned int index = 0;index < steps && !terminated;++index)
-    {
-        //tipl::compose_displacement(Is,d,Js);
-        phase_apply(Is,d,Js);
-        r = tipl::correlation(Js.begin(),Js.end(),It.begin());
-        if(r <= prev_r)
-        {
-            new_d.swap(d);
-            break;
-        }
-        // dJ(cJ-I)
-        // gradient at x
-        {
-            new_d.clear();
-            new_d.resize(Js.geometry());
-            {
-                auto in_to1 = It.begin()+1;
-                auto in_from1 = Js.begin();
-                auto in_from2 = Js.begin()+2;
-                auto out_from = new_d.begin()+1;
-                auto in_to = Js.end();
-                for (; in_from2 != in_to; ++in_from1,++in_from2,++out_from,++in_to1)
-                    (*out_from)[0] = (*in_from2 - *in_from1)*(*(in_from1+1)-*in_to1);
-            }
-        }
-        // solving the poisson equation using Jacobi method
-        tipl::image<tipl::vector<3>,3> solve_d(new_d);
-        tipl::multiply_constant_mt(solve_d,-inv_d2);
-        for(int iter = 0;iter < window_size*2 && !terminated;++iter)
-        {
-            tipl::image<tipl::vector<3>,3> new_solve_d(new_d.geometry());
-            tipl::par_for(solve_d.size(),[&](int pos)
-            {
-                {
-                    int p1 = pos-1;
-                    int p2 = pos+1;
-                    if(p1 >= 0)
-                       new_solve_d[pos] += solve_d[p1];
-                    if(p2 < solve_d.size())
-                       new_solve_d[pos] += solve_d[p2];
-                }
-                new_solve_d[pos] -= new_d[pos];
-                new_solve_d[pos] *= inv_d2;
-            });
-            solve_d.swap(new_solve_d);
-        }
-        tipl::minus_constant_mt(solve_d,solve_d[0]);
-
-        new_d = solve_d;
-
-        if(theta == 0.0f)
-        {
-            int sum_n = 0;
-            tipl::par_for(new_d.size(),[&](int i)
-            {
-                float l = new_d[i].length();
-                if(l != 0.0f)
-                {
-                    theta += l;
-                    ++sum_n;
-                }
-            });
-            theta /= sum_n;
-        }
-        tipl::multiply_constant_mt(new_d,0.2f/theta);
-        tipl::par_for(new_d.size(),[&](int i)
-        {
-            float l = new_d[i].length();
-            if(l > 0.5f)
-                new_d[i] *= 0.5f/l;
-        });
-
-        tipl::add(new_d,d);
-
-        tipl::image<tipl::vector<3>,3> new_ds(new_d);
-        tipl::filter::gaussian2(new_ds);
-        tipl::par_for(new_d.size(),[&](int i){
-           new_ds[i] *= cdm_smoothness;
-           new_d[i] *= cdm_smoothness2;
-           new_d[i] += new_ds[i];
-           auto min_v = (i >= 1 ? new_d[i-1][0]:0)-0.95f;
-           auto max_v = (i+1 < new_d.size() ? new_d[i+1][0]:0)+0.95f;
-           d[i][0] = std::max<float>(min_v,std::min<float>(new_d[i][0],max_v));
-        });
-        tipl::filter::gaussian2(d);
-    }
-    return r;
-}
-
-void ImageModel::distortion_correction2(const ImageModel& rhs)
-{
-    tipl::image<float,3> v1,v2;
+    tipl::image<float,3> v1,v2,vv1,vv2;
+    //v1 = dwi_sum;
+    //v2 = rhs.dwi_sum;
     v1 = tipl::make_image(src_dwi_data[0],voxel.dim);
     v2 = tipl::make_image(rhs.src_dwi_data[0],voxel.dim);
 
@@ -877,83 +688,34 @@ void ImageModel::distortion_correction2(const ImageModel& rhs)
         }
     }
 
+    tipl::image<float,3> dis_map(v1.geometry()),df,gx(v1.geometry());
 
-    tipl::image<tipl::vector<3>,3> d1,d2;
-    bool terminated = false;
-    begin_prog("estimating field");
-    check_prog(0,3);
-    phase_estimate(v1,v2,d2,terminated,1.0f,0.2f,60);
-    check_prog(1,3);
-    phase_estimate(v2,v1,d1,terminated,1.0f,0.2f,60);
-    check_prog(2,3);
-    tipl::multiply_constant_mt(d1,0.5f);
-    tipl::multiply_constant_mt(d2,0.5f);
-
-
-    std::vector<tipl::image<unsigned short,3> > dwi(src_dwi_data.size());
-    tipl::par_for(src_dwi_data.size(),[&](int i)
-    {
-        tipl::image<float,3> I1 = tipl::make_image(src_dwi_data[i],voxel.dim);
-        tipl::image<float,3> I2 = tipl::make_image(rhs.src_dwi_data[i],rhs.voxel.dim);
-        tipl::image<float,3> J1,J2;
-        if(swap_xy)
-        {
-            tipl::swap_xy(I1);
-            tipl::swap_xy(I2);
-        }
-
-        phase_apply(I1,d1,J1);
-        tipl::compose_displacement(I2,d2,J2);
-
-        dwi[i] = J1;
-        tipl::add(dwi[i],J2);
-        tipl::multiply_constant(dwi[i],0.5f);
-        if(swap_xy)
-            tipl::swap_xy(dwi[i]);
-    });
-    check_prog(3,3);
-
-
-    new_dwi.swap(dwi);
-    for(int i = 0;i < new_dwi.size();++i)
-        src_dwi_data[i] = &(new_dwi[i][0]);
-
-    calculate_dwi_sum();
-    voxel.calculate_mask(dwi_sum);
-
-}
-
-void ImageModel::distortion_correction(const ImageModel& rhs)
-{
-    tipl::image<float,3> v1,v2;
-    //v1 = dwi_sum;
-    //v2 = rhs.dwi_sum;
-    v1 = tipl::make_image(src_dwi_data[0],voxel.dim);
-    v2 = tipl::make_image(rhs.src_dwi_data[0],voxel.dim);
-
-
-    bool swap_xy = false;
-    {
-        tipl::image<float,2> px1,px2,py1,py2;
-        tipl::project_x(v1,px1);
-        tipl::project_x(v2,px2);
-        tipl::project_y(v1,py1);
-        tipl::project_y(v2,py2);
-        float cx = tipl::correlation(px1.begin(),px1.end(),px2.begin());
-        float cy = tipl::correlation(py1.begin(),py1.end(),py2.begin());
-
-        if(cx > cy)
-        {
-            tipl::swap_xy(v1);
-            tipl::swap_xy(v2);
-            swap_xy = true;
-        }
-    }
-    tipl::image<float,3> dis_map;
     tipl::filter::gaussian(v1);
     tipl::filter::gaussian(v2);
-    get_distortion_map(v1,v2,dis_map);
+    get_distortion_map(v2,v1,dis_map);
+    tipl::filter::gaussian(dis_map);
+    tipl::filter::gaussian(dis_map);
+
+
+    for(int iter = 0;iter < 60;++iter)
+    {
+        apply_distortion_map2(v1,dis_map,vv1,true);
+        apply_distortion_map2(v2,dis_map,vv2,false);
+        df = vv1;
+        df -= vv2;
+        vv1 += vv2;
+        df *= vv1;
+        tipl::gradient(df,gx,1,0);
+        tipl::normalize_abs(gx,1.0f);
+        tipl::filter::gaussian(gx);
+        tipl::filter::gaussian(gx);
+        tipl::filter::gaussian(gx);
+        dis_map += gx;
+    }
+
+
     //dwi_sum = dis_map;
+    //dwi_sum = gy;
     //return;
 
 
@@ -967,7 +729,9 @@ void ImageModel::distortion_correction(const ImageModel& rhs)
             tipl::swap_xy(v1);
             tipl::swap_xy(v2);
         }
-        apply_distortion_map(v1,v2,dis_map,dwi[i]);
+        apply_distortion_map2(v1,dis_map,vv1,true);
+        apply_distortion_map2(v2,dis_map,vv2,false);
+        dwi[i] = vv1;
         if(swap_xy)
             tipl::swap_xy(dwi[i]);
     }
