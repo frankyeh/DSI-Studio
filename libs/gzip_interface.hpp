@@ -118,9 +118,9 @@ public:
     {
         return size_;
     }
-
-    operator bool() const	{return handle ? true:in.good();}
-    bool operator!() const	{return !(handle? true:in.good());}
+    bool good(void) const {return handle ? !gzeof(handle):in.good();}
+    operator bool() const	{return good();}
+    bool operator!() const	{return !good();}
 };
 
 class gz_ostream{
@@ -186,8 +186,10 @@ public:
         if(out)
             out.close();
     }
-    operator bool() const	{return handle? true:out.good();}
-    bool operator!() const	{return !(handle? true:out.good());}
+    bool good(void) const {return handle ? !gzeof(handle):out.good();}
+    operator bool() const	{return good();}
+    bool operator!() const	{return !good();}
+
 };
 
 

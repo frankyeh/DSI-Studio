@@ -168,7 +168,11 @@ struct TrackVis
             in.read((char*)&n_point,sizeof(int));
             unsigned int index_shift = 3 + n_scalars;
             std::vector<float> tract(index_shift*n_point + n_properties);
-            in.read((char*)&*tract.begin(),sizeof(float)*tract.size());
+            if(!in.read((char*)&*tract.begin(),sizeof(float)*tract.size()))
+            {
+                check_prog(0,0);
+                break;
+            }
 
             loaded_tract_data.push_back(std::move(std::vector<float>(n_point*3)));
             const float *from = &*tract.begin();
