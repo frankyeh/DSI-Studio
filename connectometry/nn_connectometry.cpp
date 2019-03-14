@@ -69,40 +69,6 @@ void nn_connectometry::on_open_mr_files_clicked()
     ui->foi->addItems(t);
     ui->foi->setCurrentIndex(0);
 }
-void nn_connectometry::init_partially_connected_layer(tipl::ml::network& n)
-{
-    if(!n.empty() && dynamic_cast<tipl::ml::partially_connected_layer*>(n.layers[0].get()))
-    {
-        std::vector<char> fp_chosen(fp_index.size());
-        for(int i = 0;i < fp_index.size();++i)
-        {
-            if(fp_chosen[i])
-                continue;
-            fp_mapping.push_back(std::vector<int>());
-            tipl::pixel_index<3> cur_pos(fp_index[i]);
-            fp_chosen[i] = 1;
-            fp_mapping.back().push_back(i);
-            for(int j = i+1;j < fp_chosen.size();++j)
-            if(!fp_chosen[j] &&
-                std::abs(fp_index[j][0]-cur_pos[0]) <= 10 &&
-                std::abs(fp_index[j][1]-cur_pos[1]) <= 10 &&
-                std::abs(fp_index[j][2]-cur_pos[2]) <= 10)
-            {
-                fp_chosen[j] = 1;
-                fp_mapping.back().push_back(j);
-            }
-        }
-
-        auto* p = dynamic_cast<tipl::ml::partially_connected_layer*>(n.layers[0].get());
-        int roi_count = n.geo[1].width();
-        int channel_count = n.geo[1].height();
-        for(int i = 0,pos = 0;i < roi_count;++i)
-        {
-            for(int j = 0;j < channel_count;++j,++pos)
-                p->mapping[pos] = fp_mapping[i];
-        }
-    }
-}
 
 void nn_connectometry::on_run_clicked()
 {
@@ -350,44 +316,6 @@ void nn_connectometry::on_view_tab_currentChanged(int)
     if(ui->view_tab->currentIndex() == 1) //network view
     {
         std::vector<tipl::color_image> w_map;
-        if(dynamic_cast<tipl::ml::partially_connected_layer*>(nn.layers[0].get()))
-        {
-            int roi_count = nn.geo[1].width();
-            int channel_count = nn.geo[1].height();
-
-
-            auto& layer = *dynamic_cast<tipl::ml::partially_connected_layer*>(nn.get_layer(0).get());
-            int n = nn.get_geo(1).height();
-            auto& w = layer.weight;
-            int skip = 4;
-            w_map.resize(n);
-            for(int i = 0;i < n;++i)
-                w_map[i].resize(tipl::geometry<2>(vbc->handle->dim[0],vbc->handle->dim[1]*vbc->handle->dim[2]/skip));
-
-            float r = 512.0f/tipl::maximum(w);
-            for(int i = 0,m_pos = 0,w_pos = 0;i < roi_count;++i)
-            {
-                for(int j = 0;j < channel_count;++j,++m_pos)
-                for(int k = 0;k < layer.mapping[m_pos].size();++k,++w_pos)
-                {
-                    int f_pos = layer.mapping[m_pos][k];
-                    if(fp_index[f_pos][2] % skip)
-                        continue;
-                    int index = fp_index[f_pos][0] +
-                            (fp_index[f_pos][1]+(fp_index[f_pos][2]/skip)*vbc->handle->dim[1])*vbc->handle->dim[0];
-                    float v = w[w_pos];
-                    tipl::rgb color;
-                    if(v > 0)
-                        color.b = std::min<int>(255,r*v);
-                    else
-                        color.r = std::min<int>(255,-r*v);
-                    color.a = 255;
-                    //color = 0xFFFFFFFF;
-                    w_map[j][index] = color;
-                }
-            }
-        }
-        else
         if(dynamic_cast<tipl::ml::fully_connected_layer*>(nn.layers[0].get()))
         {
             auto& layer = *dynamic_cast<tipl::ml::fully_connected_layer*>(nn.get_layer(0).get());

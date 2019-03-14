@@ -34,7 +34,6 @@ public:
     QTimer* timer = 0;
     bool terminated;
     std::future<void> future;
-    void init_partially_connected_layer(tipl::ml::network& nn);
 public:
     std::vector<int> subject_index;
     std::vector<float> selected_label;
