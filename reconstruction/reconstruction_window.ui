@@ -381,7 +381,7 @@
         </rect>
        </property>
        <attribute name="label">
-        <string>Step 1: setup brain mask</string>
+        <string>Step T2a: setup brain mask</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_2">
         <item row="0" column="0">
@@ -511,7 +511,7 @@
         </size>
        </property>
        <attribute name="label">
-        <string>Step 2: select reconstruction method</string>
+        <string>Step T2b: select reconstruction method</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <property name="spacing">
@@ -532,7 +532,7 @@
         <item>
          <widget class="QGroupBox" name="groupBox">
           <property name="title">
-           <string>Reconstruction Method</string>
+           <string>T2b(1): Reconstruction Method</string>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_2">
            <property name="topMargin">
@@ -762,7 +762,7 @@
                 </sizepolicy>
                </property>
                <property name="text">
-                <string>Attached Images...</string>
+                <string>Attach Images...</string>
                </property>
               </widget>
              </item>
@@ -774,7 +774,7 @@
         <item>
          <widget class="QGroupBox" name="Output">
           <property name="title">
-           <string>Output</string>
+           <string>T2b(2):Additional Output</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_3">
            <property name="topMargin">
@@ -889,7 +889,7 @@
            <item>
             <widget class="QGroupBox" name="ODFOption">
              <property name="title">
-              <string>Others</string>
+              <string>T2b(3): Advanced Options</string>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_9">
               <property name="topMargin">

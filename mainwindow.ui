@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>978</width>
-    <height>652</height>
+    <width>800</width>
+    <height>600</height>
    </rect>
   </property>
   <property name="font">
@@ -49,12 +49,12 @@
      <widget class="QToolBox" name="toolBox">
       <property name="maximumSize">
        <size>
-        <width>350</width>
+        <width>400</width>
         <height>16777215</height>
        </size>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -64,12 +64,12 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>350</width>
-         <height>556</height>
+         <width>400</width>
+         <height>534</height>
         </rect>
        </property>
        <attribute name="label">
-        <string>Diffusion MRI Tractography</string>
+        <string>Diffusion MRI Analysis</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_6">
         <property name="spacing">
@@ -88,12 +88,22 @@
          <number>0</number>
         </property>
         <item>
+         <widget class="QLabel" name="label_4">
+          <property name="text">
+           <string>Tractography</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QCommandLinkButton" name="OpenDICOM">
           <property name="text">
-           <string>STEP1: Open Source Images</string>
+           <string>Step T1: Open Source Images</string>
           </property>
           <property name="description">
-           <string>Open diffusion MR images to create .src file
+           <string>Open diffusion MR images to create SRC file
 (DICOM, NIFTI, Bruker 2dseq, Varian fdf) </string>
           </property>
          </widget>
@@ -101,23 +111,95 @@
         <item>
          <widget class="QCommandLinkButton" name="Reconstruction">
           <property name="text">
-           <string>STEP2: Reconstruction</string>
+           <string>Step T2: Reconstruction</string>
           </property>
           <property name="description">
-           <string>Open .src file to do reconstructiong
-(DTI, QBI, DSI, GQI, or QSDR)</string>
+           <string>Open SRC file(s) for reconstruction</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QCommandLinkButton" name="FiberTracking">
           <property name="text">
-           <string>STEP3: Fiber tracking</string>
+           <string>Step T3: Fiber tracking</string>
           </property>
           <property name="description">
-           <string>Open .fib file to perform fiber tracking and analysis
-(track-specific analysis, connectivity matrix) 
+           <string>Open an FIB file for fiber tracking and analysis
 </string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="Line" name="line_4">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_5">
+          <property name="text">
+           <string>Connectometry</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="ReconstructSRC">
+          <property name="text">
+           <string>Step C1: Reconstruct SRC files for Connectometry</string>
+          </property>
+          <property name="description">
+           <string>Select a root folder containing the SRC files</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="vbc">
+          <property name="text">
+           <string>Step C2: Create a Connectometry Database</string>
+          </property>
+          <property name="description">
+           <string>Load a group of subjects to create a connectometry dataset</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="group_connectometry">
+          <property name="text">
+           <string>Step C3: Group Connectometry Analysis</string>
+          </property>
+          <property name="description">
+           <string>Correlate study variables with tracks</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="Line" name="line_3">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_10">
+          <property name="text">
+           <string>Quality Control</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="SRC_qc">
+          <property name="text">
+           <string>QC1: SRC files Quality Control</string>
+          </property>
+          <property name="description">
+           <string>Select a root directory that stores subjects SRC file and run a quality check on them</string>
           </property>
          </widget>
         </item>
@@ -141,12 +223,12 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>350</width>
-         <height>556</height>
+         <width>383</width>
+         <height>548</height>
         </rect>
        </property>
        <attribute name="label">
-        <string>Diffusion MRI Connectometry</string>
+        <string>Tools</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_7">
         <property name="spacing">
@@ -165,29 +247,26 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="QCommandLinkButton" name="ReconstructSRC">
-          <property name="text">
-           <string>Reconstruct SRC files for Connectometry</string>
-          </property>
-          <property name="description">
-           <string>Select a root folder containing the SRC files</string>
+         <widget class="Line" name="line">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QCommandLinkButton" name="vbc">
+         <widget class="QLabel" name="label_6">
           <property name="text">
-           <string>Create a Connectometry Database</string>
+           <string>Connectometry and Local Connectome Fingerprint</string>
           </property>
-          <property name="description">
-           <string>Load a group of subjects to create a connectometry dataset</string>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QCommandLinkButton" name="open_db">
           <property name="text">
-           <string>Open a Connectometry Database</string>
+           <string>O1: Open a Connectometry Database</string>
           </property>
           <property name="description">
            <string>Add subjects, calculate change, fingerprinting</string>
@@ -195,19 +274,9 @@
          </widget>
         </item>
         <item>
-         <widget class="QCommandLinkButton" name="group_connectometry">
-          <property name="text">
-           <string>Group Connectometry Analysis</string>
-          </property>
-          <property name="description">
-           <string>Correlate study variables with tracks</string>
-          </property>
-         </widget>
-        </item>
-        <item>
          <widget class="QCommandLinkButton" name="individual_connectometry">
           <property name="text">
-           <string>Individual Connectometry Analysis</string>
+           <string>O2: Individual Connectometry Analysis</string>
           </property>
           <property name="description">
            <string>Compare logitudinal scans of an individual</string>
@@ -217,10 +286,118 @@
         <item>
          <widget class="QCommandLinkButton" name="connectometry_nn">
           <property name="text">
-           <string>Connectometry Neural Network Analysis</string>
+           <string>O3: Connectometry Neural Network Analysis</string>
           </property>
           <property name="description">
            <string>Neural Network Prediction on Local Connectome Fingerprint</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="Line" name="line_2">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_7">
+          <property name="text">
+           <string>Image Viewer</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="view_image">
+          <property name="text">
+           <string>O4: View Images (NIFTI/DICOM/2dseq)</string>
+          </property>
+          <property name="description">
+           <string>Open image and header information</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="bruker_browser">
+          <property name="text">
+           <string>O5: Image Browser</string>
+          </property>
+          <property name="description">
+           <string>File Browser</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="Line" name="line_5">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_8">
+          <property name="text">
+           <string>Spatial Normalization</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="linear_reg">
+          <property name="text">
+           <string>O6: Linear Registration Toolbox</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="nonlinear_reg">
+          <property name="text">
+           <string>O7: Nonlinear Registration Toolbox</string>
+          </property>
+          <property name="description">
+           <string>Spatially transform images (testing)</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="Line" name="line_6">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_9">
+          <property name="text">
+           <string>Diffusion MRI Processing</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="averagefib">
+          <property name="text">
+           <string>O8: Create template/skeleton</string>
+          </property>
+          <property name="description">
+           <string>Average the ODFs to create a template</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="simulateMRI">
+          <property name="text">
+           <string>O9: Diffusion MRI Simulation</string>
+          </property>
+          <property name="description">
+           <string>Simulate diffusion images using the given b-table</string>
           </property>
          </widget>
         </item>
@@ -244,12 +421,12 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>329</width>
-         <height>671</height>
+         <width>400</width>
+         <height>534</height>
         </rect>
        </property>
        <attribute name="label">
-        <string>Tools: Batch Processing</string>
+        <string>Batch Processing</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_8">
         <property name="spacing">
@@ -270,7 +447,7 @@
         <item>
          <widget class="QCommandLinkButton" name="RenameDICOM">
           <property name="text">
-           <string>Rename DICOM Files</string>
+           <string>Step B1: Rename DICOM Files</string>
           </property>
           <property name="description">
            <string>Sort and rename DICOM files according to their sequences</string>
@@ -280,7 +457,7 @@
         <item>
          <widget class="QCommandLinkButton" name="RenameDICOMDir">
           <property name="text">
-           <string>Rename DICOM in Subfolders</string>
+           <string>Step B1: Rename DICOM in Subfolders</string>
           </property>
           <property name="description">
            <string>Select a directory containinng DICOM files and rename them by their sequence</string>
@@ -290,7 +467,7 @@
         <item>
          <widget class="QCommandLinkButton" name="batch_src">
           <property name="text">
-           <string>Create SRC files </string>
+           <string>Step B2: Create SRC files </string>
           </property>
           <property name="description">
            <string>Select a root directory that contains multiple subdirectory and generate an SRC file for each of them.</string>
@@ -298,22 +475,19 @@
          </widget>
         </item>
         <item>
-         <widget class="QCommandLinkButton" name="SRC_qc">
+         <widget class="QCommandLinkButton" name="batch_reconstruction">
           <property name="text">
-           <string>SRC files Quality Control</string>
+           <string>Step B3: Batch SRC Reconstruction</string>
           </property>
           <property name="description">
-           <string>Select a root directory that stores subjects SRC file and run a quality check on them</string>
+           <string>Select a directory that contains SRC files in the subdirectories and performan reconstruction.</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QCommandLinkButton" name="batch_reconstruction">
-          <property name="text">
-           <string>Batch SRC Reconstruction</string>
-          </property>
-          <property name="description">
-           <string>Select a directory that contains SRC files in the subdirectories and performan reconstruction.</string>
+         <widget class="Line" name="line_7">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
           </property>
          </widget>
         </item>
@@ -408,91 +582,6 @@
         </item>
         <item>
          <spacer name="verticalSpacer_2">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="page_4">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>0</y>
-         <width>350</width>
-         <height>556</height>
-        </rect>
-       </property>
-       <attribute name="label">
-        <string>Tools: Others</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout">
-        <item>
-         <widget class="QCommandLinkButton" name="view_image">
-          <property name="text">
-           <string>View Images (NIFTI/DICOM/2dseq)</string>
-          </property>
-          <property name="description">
-           <string>Open image and header information</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCommandLinkButton" name="simulateMRI">
-          <property name="text">
-           <string>Diffusion MRI Simulation</string>
-          </property>
-          <property name="description">
-           <string>Simulate diffusion images using the given b-table</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCommandLinkButton" name="averagefib">
-          <property name="text">
-           <string>Create template/skeleton</string>
-          </property>
-          <property name="description">
-           <string>Average the ODFs to create a template or skeleton. You need to use QSDR to reconstruct src files and check &quot;output ODF&quot; in the reconstruction.</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCommandLinkButton" name="bruker_browser">
-          <property name="text">
-           <string>Image Browser</string>
-          </property>
-          <property name="description">
-           <string>File Browser (testing)</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCommandLinkButton" name="linear_reg">
-          <property name="text">
-           <string>Linear Registration Toolbox</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCommandLinkButton" name="nonlinear_reg">
-          <property name="text">
-           <string>Nonlinear Registration Toolbox</string>
-          </property>
-          <property name="description">
-           <string>Spatially transform images (testing)</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="verticalSpacer">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
           </property>

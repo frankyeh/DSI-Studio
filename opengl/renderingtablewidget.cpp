@@ -241,8 +241,8 @@ TreeModel::TreeModel(RenderingTableWidget *parent)
 {
     root.reset(new RenderingItem("Objects","","root",0,0));
     root_mapping["Root"] = root.get();
-    root_mapping["ROI"] = new RenderingItem("Region Window","","ROI",0,root.get());
     root_mapping["Tracking"] = new RenderingItem("Tracking Parameters","","Tracking",0,root.get());
+    root_mapping["ROI"] = new RenderingItem("Region Window","","ROI",0,root.get());
     root_mapping["Rendering"] = new RenderingItem("Background Rendering","","Rendering",0,root.get());
     root_mapping["Slice"] = (RenderingItem*)addItem("Root","show_slice","Slice Rendering",QString("check"),Qt::Checked).internalPointer();
     root_mapping["Tract"] = (RenderingItem*)addItem("Root","show_tract","Tract Rendering",QString("check"),Qt::Checked).internalPointer();

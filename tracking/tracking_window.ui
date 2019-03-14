@@ -305,7 +305,7 @@
     </font>
    </property>
    <property name="windowTitle">
-    <string>Region List</string>
+    <string>Step T3a: Assign Regions</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>1</number>
@@ -569,7 +569,7 @@
     </size>
    </property>
    <property name="windowTitle">
-    <string>Options Window</string>
+    <string>Step T3c: Options</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
@@ -1003,7 +1003,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>351</width>
+     <width>424</width>
      <height>187</height>
     </size>
    </property>
@@ -1014,7 +1014,7 @@
     </size>
    </property>
    <property name="windowTitle">
-    <string>Tract list</string>
+    <string>Step T3d: Tracts</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
@@ -1281,7 +1281,7 @@
             <string>Click to start fiber tracking</string>
            </property>
            <property name="text">
-            <string>Fiber
+            <string>  Fiber
 Tracking</string>
            </property>
            <property name="icon">
@@ -1416,7 +1416,7 @@ Tracking</string>
     <set>QDockWidget::AllDockWidgetFeatures</set>
    </property>
    <property name="windowTitle">
-    <string>Region Window</string>
+    <string>Step T3b: Draw Regions</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>1</number>

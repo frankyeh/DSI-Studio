@@ -66,7 +66,7 @@
       <item>
        <widget class="QGroupBox" name="groupBox_4">
         <property name="title">
-         <string>STEP1: Select analysis type</string>
+         <string>Step C3a: Select analysis type</string>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_5">
          <item>
@@ -102,7 +102,7 @@
          </sizepolicy>
         </property>
         <property name="title">
-         <string>STEP2: Load demographics</string>
+         <string>Step C3b: Load demographics</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <property name="spacing">
@@ -390,7 +390,7 @@
          </sizepolicy>
         </property>
         <property name="title">
-         <string>STEP3: Setup parameters</string>
+         <string>Step C3c: Setup parameters</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_4">
          <item>
@@ -575,7 +575,7 @@
            <bool>true</bool>
           </property>
           <property name="text">
-           <string>STEP4: Run connectometry</string>
+           <string>Step C3d: Run connectometry</string>
           </property>
           <property name="icon">
            <iconset resource="../icons.qrc">
@@ -1084,7 +1084,7 @@
             <bool>true</bool>
            </property>
            <property name="text">
-            <string>View Results in 3D</string>
+            <string>Step C3e: View Results in 3D</string>
            </property>
           </widget>
          </item>
@@ -1257,7 +1257,7 @@
   <customwidget>
    <class>QCustomPlot</class>
    <extends>QWidget</extends>
-   <header>plot/qcustomplot.h</header>
+   <header>qcustomplot.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
