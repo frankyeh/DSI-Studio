@@ -190,7 +190,7 @@ void load_bval(const char* file_name,std::vector<double>& bval)
               std::back_inserter(bval));
 }
 
-bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
+bool    find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
 {
     std::vector<QString> bval_name(4),bvec_name(4);
     QString path = QFileInfo(file_name).absolutePath() + "/";
@@ -293,6 +293,12 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         tipl::image<float,3> data;
         if(!analyze_header.toLPS(data,index == 0))
             break;
+        for(int i = 0;i < data.size();++i)
+            if(std::isnan(data[i]) || std::isinf(data[i]))
+            {
+                std::cout << "NAN or INF found in the data" << std::endl;
+                return false;
+            }
         max_value = std::max<float>(max_value,*std::max_element(data.begin(),data.end()));
     }
     analyze_header.get_voxel_size(vs);
