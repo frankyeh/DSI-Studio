@@ -1,6 +1,6 @@
 #include <QFileInfo>
 #include <ctime>
-#include "connectometry/group_connectometry_db.h"
+#include "connectometry/group_connectometry_analysis.h"
 #include "fib_data.hpp"
 #include "libs/tracking/tract_model.hpp"
 #include "libs/tracking/tracking_thread.hpp"
