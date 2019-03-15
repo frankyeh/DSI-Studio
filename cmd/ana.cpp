@@ -165,7 +165,7 @@ int ana(void)
 {
     std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
     if(!handle.get())
-        return 0;
+        return 1;
     if(po.has("info"))
     {
         auto result = evaluate_fib(handle);
@@ -182,7 +182,7 @@ int ana(void)
             std::cout << "export information from " << po.get("atlas") << std::endl;
             std::vector<std::shared_ptr<atlas> > atlas_list;
             if(!atl_load_atlas(po.get("atlas"),atlas_list))
-                return 0;
+                return 1;
             for(unsigned int i = 0;i < atlas_list.size();++i)
             {
                 for(unsigned int j = 0;j < atlas_list[i]->get_list().size();++j)
@@ -194,7 +194,7 @@ int ana(void)
                     if(!load_region(handle,*region.get(),region_name))
                     {
                         std::cout << "Fail to load the ROI file:" << region_name << std::endl;
-                        return 0;
+                        return 1;
                     }
                     region_list.push_back(atlas_list[i]->get_list()[j]);
                     regions.push_back(region);
@@ -214,7 +214,7 @@ int ana(void)
                 if(!load_region(handle,*region.get(),roi_list[i]))
                 {
                     std::cout << "Fail to load the ROI file." << std::endl;
-                    return 0;
+                    return 1;
                 }
                 region_list.push_back(roi_list[i]);
                 regions.push_back(region);
@@ -245,24 +245,24 @@ int ana(void)
         if(!QFileInfo(file_name.c_str()).exists())
         {
             std::cout << file_name << " does not exist. terminating..." << std::endl;
-            return 0;
+            return 1;
         }
         if (!tract_model.load_from_file(file_name.c_str()))
         {
             std::cout << "Cannot open file " << file_name << std::endl;
-            return 0;
+            return 1;
         }
         std::cout << file_name << " loaded" << std::endl;
 
     }
     std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr);
     if(!load_roi(handle,roi_mgr))
-        return -1;
+        return 1;
     tract_model.filter_by_roi(roi_mgr);
     if(tract_model.get_visible_track_count() == 0)
     {
         std::cout << "No tracks remained after ROI selection." << std::endl;
-        return 0;
+        return 1;
     }
     return trk_post(handle,tract_model,po.get("output"));
 }

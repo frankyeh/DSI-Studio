@@ -5,7 +5,7 @@
 #include <QScrollBar>
 #include "nn_connectometry.h"
 #include "ui_nn_connectometry.h"
-nn_connectometry::nn_connectometry(QWidget *parent,std::shared_ptr<vbc_database> vbc_,QString db_file_name_,bool gui_) :
+nn_connectometry::nn_connectometry(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_,QString db_file_name_,bool gui_) :
     QDialog(parent),vbc(vbc_),work_dir(QFileInfo(db_file_name_).absoluteDir().absolutePath()),gui(gui_),
     ui(new Ui::nn_connectometry)
 {
@@ -24,7 +24,7 @@ nn_connectometry::~nn_connectometry()
     delete ui;
 }
 
-bool parse_demo(std::shared_ptr<vbc_database>& vbc,
+bool parse_demo(std::shared_ptr<group_connectometry_analysis>& vbc,
                 QString filename,
                 std::vector<std::string>& titles,
                 std::vector<std::string>& items,
@@ -32,7 +32,7 @@ bool parse_demo(std::shared_ptr<vbc_database>& vbc,
                 std::vector<double>& X,
                 float missing_value,
                 std::string& error_msg);
-void fill_demo_table(std::shared_ptr<vbc_database>& vbc,
+void fill_demo_table(std::shared_ptr<group_connectometry_analysis>& vbc,
                      QTableWidget* table,
                      const std::vector<std::string>& titles,
                      const std::vector<std::string>& items,
@@ -226,7 +226,7 @@ void nn_connectometry::on_run_clicked()
         t.train(nn,train_mdata[0],terminated, [&]()
         {
             nn.set_test_mode(true);
-            nn.sort_fully_layer();
+            //nn.sort_fully_layer();
 
             test_mresult.resize(test_mdata[0].size());
             nn.predict(test_mdata[0],test_mresult);
@@ -250,7 +250,7 @@ void nn_connectometry::on_run_clicked()
         t.train(nn,train_data[0],terminated, [&]()
         {
             nn.set_test_mode(true);
-            nn.sort_fully_layer();
+            //nn.sort_fully_layer();
 
             std::ostringstream out;
             out << "[" << round << "]";

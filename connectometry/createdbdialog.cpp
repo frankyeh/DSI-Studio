@@ -5,7 +5,7 @@
 #include "createdbdialog.h"
 #include "ui_createdbdialog.h"
 #include "fib_data.hpp"
-#include "libs/vbc/vbc_database.h"
+#include "connectometry/group_connectometry_db.h"
 #include "prog_interface_static_link.h"
 #include "image_model.hpp"
 
@@ -272,7 +272,7 @@ void CreateDBDialog::on_create_data_base_clicked()
         }
 
         begin_prog("loading skeleton");
-        std::auto_ptr<vbc_database> data(new vbc_database);
+        std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);
 
         if(!data->create_database(ui->skeleton->text().toLocal8Bit().begin()))
         {

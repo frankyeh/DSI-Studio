@@ -1,5 +1,5 @@
-#ifndef VBC_DATABASE_H
-#define VBC_DATABASE_H
+#ifndef GROUP_CONNECTOMETRY_DB_H
+#define GROUP_CONNECTOMETRY_DB_H
 #include <vector>
 #include <iostream>
 #include "tipl/tipl.hpp"
@@ -14,14 +14,14 @@ class TractModel;
 
 
 
-class vbc_database
+class group_connectometry_analysis
 {
 public:
     std::shared_ptr<fib_data> handle;
     std::string report;
     mutable std::string error_msg;
-    vbc_database();
-    ~vbc_database(){clear();}
+    group_connectometry_analysis();
+    ~group_connectometry_analysis(){clear();}
 
     void clear(void);
     void wait(void);

@@ -12,7 +12,7 @@
 #include "libs/gzip_interface.hpp"
 #include "mapping/atlas.hpp"
 #include "SliceModel.h"
-#include "vbc/vbc_database.h"
+#include "connectometry/group_connectometry_db.h"
 #include "program_option.hpp"
 bool atl_load_atlas(const std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list);
 void export_track_info(const std::string& file_name,
@@ -364,7 +364,7 @@ int trk_post(std::shared_ptr<fib_data> handle,
                 if(!new_slice.initialize(files,false))
                 {
                     std::cout << "Error reading ref image file:" << po.get("ref") << std::endl;
-                    return 0;
+                    return 1;
                 }
                 new_slice.thread->wait();
                 new_slice.update();
@@ -451,7 +451,7 @@ int trk(void)
     try{
         std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
         if(!handle.get())
-            return 0;
+            return 1;
         return trk(handle);
     }
     catch(std::exception const&  ex)
@@ -472,7 +472,7 @@ int trk(std::shared_ptr<fib_data> handle)
         if(!handle->dir.set_tracking_index(po.get("threshold_index")))
         {
             std::cout << "failed...cannot find the index" << std::endl;
-            return 0;
+            return 1;
         }
     }
     if (po.has("dt_threshold_index"))
@@ -481,7 +481,7 @@ int trk(std::shared_ptr<fib_data> handle)
         if(!handle->dir.set_dt_index(po.get("dt_threshold_index")))
         {
             std::cout << "failed...cannot find the dt index" << std::endl;
-            return 0;
+            return 1;
         }
     }
 
@@ -533,7 +533,7 @@ int trk(std::shared_ptr<fib_data> handle)
 
 
     if(!load_roi(handle,tracking_thread.roi_mgr))
-        return -1;
+        return 1;
 
     QStringList cnt_file_name;
     QString cnt_type;
@@ -545,7 +545,7 @@ int trk(std::shared_ptr<fib_data> handle)
         if(!po.has("connectometry_type"))
         {
             std::cout << "Please assign the connectometry analysis type." << std::endl;
-            return -1;
+            return 1;
         }
         cnt_type = po.get("connectometry_type").c_str();
     }
@@ -554,7 +554,7 @@ int trk(std::shared_ptr<fib_data> handle)
     if(po.get("thread_count",int(std::thread::hardware_concurrency())) < 1)
     {
         std::cout << "Invalid thread_count number" << std::endl;
-        return -1;
+        return 1;
     }
     if(po.has("parameter_id"))
     {
@@ -599,7 +599,7 @@ int trk(std::shared_ptr<fib_data> handle)
         if(!po.has("connectometry_threshold"))
         {
             std::cout << "Please assign the connectometry threshold." << std::endl;
-            return -1;
+            return 1;
         }
         connectometry_threshold = QString(po.get("connectometry_threshold").c_str()).split(",");
         for(unsigned int i = 0;i < cnt_file_name.size();++i)
@@ -609,12 +609,12 @@ int trk(std::shared_ptr<fib_data> handle)
             if(cnt_type == "iva" && !cnt.individual_vs_atlas(handle,cnt_file_name[i].toLocal8Bit().begin(),0))
             {
                 std::cout << "Error loading connectometry file:" << cnt.error_msg <<std::endl;
-                return -1;
+                return 1;
             }
             if(cnt_type == "ivp" && !cnt.individual_vs_db(handle,cnt_file_name[i].toLocal8Bit().begin()))
             {
                 std::cout << "Error loading connectometry file:" << cnt.error_msg <<std::endl;
-                return -1;
+                return 1;
             }
             if(cnt_type == "ivi")
             {
@@ -623,7 +623,7 @@ int trk(std::shared_ptr<fib_data> handle)
                                                               cnt_file_name[i+1].toLocal8Bit().begin(),0))
                 {
                     std::cout << "Error loading connectometry file:" << cnt.error_msg <<std::endl;
-                    return -1;
+                    return 1;
                 }
                 ++i;
             }
@@ -643,7 +643,7 @@ int trk(std::shared_ptr<fib_data> handle)
                 {
                     std::cout << "Cannot save file to " << out.str()
                               << ". Please check write permission, directory, and disk space." << std::endl;
-                    return 0;
+                    return 1;
                 }
                 std::vector<std::vector<float> > tmp;
                 tract_model.release_tracts(tmp);

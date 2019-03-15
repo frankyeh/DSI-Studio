@@ -230,10 +230,10 @@ int rec(void)
             if(name_value.size() != 2)
             {
                 std::cout << "Invalid command: " << file_list[i].toStdString() << std::endl;
-                return 0;
+                return 1;
             }
             if(!add_other_image(handle.get(),name_value[0],name_value[1],true))
-                return 0;
+                return 1;
         }
     }
     if(po.has("mask"))
@@ -250,7 +250,7 @@ int rec(void)
             ROIRegion roi(fib_handle);
             std::cout << "reading mask..." << mask_file << std::endl;
             if(!load_region(fib_handle,roi,mask_file))
-                return 0;
+                return 1;
             tipl::image<unsigned char,3> external_mask;
             roi.SaveToBuffer(external_mask);
             if(external_mask.geometry() != handle->voxel.dim)

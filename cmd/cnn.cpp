@@ -3,6 +3,7 @@
 #include "program_option.hpp"
 #include "tipl/tipl.hpp"
 #include "gzip_interface.hpp"
+#include "connectometry/group_connectometry_db.h"
 bool train_cnn(std::string network,
                tipl::ml::network& nn,
                tipl::ml::network_data<unsigned char>& nn_data_,
@@ -42,14 +43,46 @@ bool train_cnn(std::string network,
     return true;
 }
 
+bool parse_demo(std::shared_ptr<group_connectometry_analysis>& vbc,
+                QString filename,
+                std::vector<std::string>& titles,
+                std::vector<std::string>& items,
+                std::vector<int>& feature_location,
+                std::vector<double>& X,
+                float missing_value,
+                std::string& error_msg);
+
 int cnn(void)
 {
+    std::shared_ptr<group_connectometry_analysis> database(new group_connectometry_analysis);
+    std::cout << "reading connectometry db:" << po.get("source") << std::endl;
+    if(!database->load_database(po.get("source").c_str()))
+    {
+        std::cout << "invalid database format" << std::endl;
+        return 1;
+    }
+
+    std::vector<double> X;
+    std::vector<std::string> titles;
+    std::vector<std::string> items;
+    std::vector<int> feature_location;
+    std::string error_msg;
+    // read demographic file
+    if(!parse_demo(database,po.get("demo").c_str(),titles,items,feature_location,X,po.get("no_data",9999),error_msg))
+    {
+        std::cout << error_msg << std::endl;
+        return 1;
+    }
+
+
+
+
     std::string train_file_name = po.get("train");
     tipl::ml::network_data<unsigned char> nn_data,nn_test;
     if(!nn_data.load_from_file<gz_istream>(train_file_name.c_str()))
     {
         std::cout << "Cannot load training data at " << train_file_name << std::endl;
-        return 0;
+        return 1;
     }
     std::cout << "A total of "<< nn_data.size() << " training data are loaded." << std::endl;
     if(po.has("test"))
@@ -58,7 +91,7 @@ int cnn(void)
         if(!nn_test.load_from_file<gz_istream>(test_file_name.c_str()))
         {
             std::cout << "Cannot load testing data at " << test_file_name << std::endl;
-            return 0;
+            return 1;
         }
     }
     std::cout << "A total of "<< nn_test.size() << " testing data are loaded." << std::endl;
@@ -70,7 +103,7 @@ int cnn(void)
         if(!in)
         {
             std::cout << "Cannot open " << network << std::endl;
-            return 0;
+            return 1;
         }
         std::string line;
         while(std::getline(in,line))
@@ -109,13 +142,13 @@ int cnn(void)
                 std::cout << test_error << "\t" << train_error << "\t" << network_list[i] << std::endl;
                 out << test_error << "\t" << train_error << "\t" << network_list[i] << std::endl;
             }
-        return 0;
+        return 1;
     }
 
     float test_error = 0.0,train_error = 0.0;
     tipl::ml::network nn;
     if(!train_cnn(network_list[0],nn,nn_data,nn_test,test_error,train_error))
-        return 0;
+        return 1;
     std::cout << "Training finished" << std::endl;
     std::cout << test_error << "," << train_error << "," << network_list[0] << std::endl;
 

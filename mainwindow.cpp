@@ -22,7 +22,7 @@
 #include "view_image.h"
 #include "mapping/atlas.hpp"
 #include "libs/gzip_interface.hpp"
-#include "vbc/vbc_database.h"
+#include "connectometry/group_connectometry_db.h"
 #include "libs/tracking/fib_data.hpp"
 #include "manual_alignment.h"
 #include "connectometry/individual_connectometry.hpp"
@@ -744,7 +744,7 @@ void MainWindow::on_individual_connectometry_clicked()
 }
 
 
-bool MainWindow::load_db(std::shared_ptr<vbc_database>& database,QString& filename)
+bool MainWindow::load_db(std::shared_ptr<group_connectometry_analysis>& database,QString& filename)
 {
     filename = QFileDialog::getOpenFileName(
                            this,
@@ -755,7 +755,7 @@ bool MainWindow::load_db(std::shared_ptr<vbc_database>& database,QString& filena
         return false;
     QDir::setCurrent(QFileInfo(filename).absolutePath());
     add_work_dir(QFileInfo(filename).absolutePath());
-    database = std::make_shared<vbc_database>();
+    database = std::make_shared<group_connectometry_analysis>();
     begin_prog("reading connectometry db");
     if(!database->load_database(filename.toLocal8Bit().begin()))
     {
@@ -768,7 +768,7 @@ bool MainWindow::load_db(std::shared_ptr<vbc_database>& database,QString& filena
 void MainWindow::on_open_db_clicked()
 {
     QString filename;
-    std::shared_ptr<vbc_database> database;
+    std::shared_ptr<group_connectometry_analysis> database;
     if(!load_db(database,filename))
         return;
     db_window* db = new db_window(this,database);
@@ -780,7 +780,7 @@ void MainWindow::on_open_db_clicked()
 void MainWindow::on_group_connectometry_clicked()
 {
     QString filename;
-    std::shared_ptr<vbc_database> database;
+    std::shared_ptr<group_connectometry_analysis> database;
     if(!load_db(database,filename))
         return;
     group_connectometry* group_cnt = new group_connectometry(this,database,filename,true);
@@ -1021,7 +1021,7 @@ void MainWindow::on_parse_network_measures_clicked()
 void MainWindow::on_connectometry_nn_clicked()
 {
     QString filename;
-    std::shared_ptr<vbc_database> database;
+    std::shared_ptr<group_connectometry_analysis> database;
     if(!load_db(database,filename))
         return;
     nn_connectometry* nn_cnt = new nn_connectometry(this,database,filename,true);

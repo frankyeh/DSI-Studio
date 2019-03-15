@@ -81,7 +81,6 @@ HEADERS += mainwindow.h \
     libs/mapping/atlas.hpp \
     plot/qcustomplot.h \
     view_image.h \
-    libs/vbc/vbc_database.h \
     libs/gzip_interface.hpp \
     libs/dsi/racian_noise.hpp \
     libs/dsi/mix_gaussian_model.hpp \
@@ -102,6 +101,7 @@ HEADERS += mainwindow.h \
     connectometry/match_db.h \
     connectometry/db_window.h \
     connectometry/group_connectometry.hpp \
+    connectometry/group_connectometry_db.h \
     regtoolbox.h \
     connectometry/nn_connectometry.h
 
@@ -156,7 +156,6 @@ SOURCES += main.cpp \
     plot/qcustomplot.cpp \
     cmd/ana.cpp \
     view_image.cpp \
-    libs/vbc/vbc_database.cpp \
     manual_alignment.cpp \
     tracking/tract_report.cpp \
     tracking/color_bar_dialog.cpp \
@@ -171,14 +170,15 @@ SOURCES += main.cpp \
     filebrowser.cpp \
     qcompletelineedit.cpp \
     libs/tracking/fib_data.cpp \
-    libs/mapping/connectometry_db.cpp \
     libs/tracking/tracking_thread.cpp \
     cmd/ren.cpp \
+    libs/mapping/connectometry_db.cpp \
     connectometry/createdbdialog.cpp \
     connectometry/individual_connectometry.cpp \
     connectometry/match_db.cpp \
     connectometry/db_window.cpp \
     connectometry/group_connectometry.cpp \
+    connectometry/group_connectometry_db.cpp \
     regtoolbox.cpp \
     cmd/cnn.cpp \
     cmd/qc.cpp \

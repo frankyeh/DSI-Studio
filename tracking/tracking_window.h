@@ -11,7 +11,7 @@
 #include "SliceModel.h"
 #include "slice_view_scene.h"
 #include "tract/tracttablewidget.h"
-#include "vbc/vbc_database.h"
+#include "connectometry/group_connectometry_db.h"
 class fib_data;
 class RenderingTableWidget;
 class RegionTableWidget;

@@ -1,6 +1,6 @@
 #include <QFileInfo>
 #include <ctime>
-#include "vbc_database.h"
+#include "connectometry/group_connectometry_db.h"
 #include "fib_data.hpp"
 #include "libs/tracking/tract_model.hpp"
 #include "libs/tracking/tracking_thread.hpp"
@@ -8,12 +8,12 @@
 
 
 extern std::string tractography_atlas_file_name;
-vbc_database::vbc_database():handle(0),normalize_qa(true)
+group_connectometry_analysis::group_connectometry_analysis():handle(0),normalize_qa(true)
 {
 
 }
 
-bool vbc_database::create_database(const char* template_name)
+bool group_connectometry_analysis::create_database(const char* template_name)
 {
     handle.reset(new fib_data);
     if(!handle->load_from_file(template_name))
@@ -25,7 +25,7 @@ bool vbc_database::create_database(const char* template_name)
     handle->db.calculate_si2vi();
     return true;
 }
-bool vbc_database::load_database(const char* database_name)
+bool group_connectometry_analysis::load_database(const char* database_name)
 {
     handle.reset(new fib_data);
     if(!handle->load_from_file(database_name))
@@ -45,7 +45,7 @@ bool vbc_database::load_database(const char* database_name)
 }
 
 
-int vbc_database::run_track(const tracking_data& fib,std::vector<std::vector<float> >& tracks,int seed_count, unsigned int thread_count)
+int group_connectometry_analysis::run_track(const tracking_data& fib,std::vector<std::vector<float> >& tracks,int seed_count, unsigned int thread_count)
 {
     ThreadData tracking_thread;
     tracking_thread.param.threshold = tracking_threshold;
@@ -91,7 +91,7 @@ void cal_hist(const std::vector<std::vector<float> >& track,std::vector<unsigned
     }
 }
 
-void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thread_count,unsigned int permutation_count)
+void group_connectometry_analysis::run_permutation_multithread(unsigned int id,unsigned int thread_count,unsigned int permutation_count)
 {
     connectometry_result data;
     tracking_data fib;
@@ -188,7 +188,7 @@ void vbc_database::run_permutation_multithread(unsigned int id,unsigned int thre
     if(id == 0 && !terminated)
         progress = 100;
 }
-void vbc_database::clear(void)
+void group_connectometry_analysis::clear(void)
 {
     if(!threads.empty())
     {
@@ -198,14 +198,14 @@ void vbc_database::clear(void)
         terminated = false;
     }
 }
-void vbc_database::wait(void)
+void group_connectometry_analysis::wait(void)
 {
     for(int i = 0;i < threads.size();++i)
         threads[i]->wait();
 }
 
 
-void vbc_database::save_tracks_files(void)
+void group_connectometry_analysis::save_tracks_files(void)
 {
     for(int i = 0;i < threads.size();++i)
         threads[i]->wait();
@@ -320,7 +320,7 @@ void vbc_database::save_tracks_files(void)
     }
 }
 
-void vbc_database::run_permutation(unsigned int thread_count,unsigned int permutation_count)
+void group_connectometry_analysis::run_permutation(unsigned int thread_count,unsigned int permutation_count)
 {
     clear();
     // output report
@@ -438,7 +438,7 @@ void vbc_database::run_permutation(unsigned int thread_count,unsigned int permut
         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
             [this,index,thread_count,permutation_count](){run_permutation_multithread(index,thread_count,permutation_count);})));
 }
-void vbc_database::calculate_FDR(void)
+void group_connectometry_analysis::calculate_FDR(void)
 {
     double sum_greater_null = 0;
     double sum_lesser_null = 0;
@@ -460,7 +460,7 @@ void vbc_database::calculate_FDR(void)
         std::replace(fdr_lesser.begin(),fdr_lesser.end(),1.0,0.0);
 }
 
-void vbc_database::generate_report(std::string& output)
+void group_connectometry_analysis::generate_report(std::string& output)
 {
     std::ostringstream html_report((output_file_name+".report.html").c_str());
     html_report << "<!DOCTYPE html>" << std::endl;

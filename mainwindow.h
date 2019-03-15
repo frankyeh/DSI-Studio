@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 #include <QSettings>
-#include "vbc/vbc_database.h"
+#include "connectometry/group_connectometry_db.h"
 
 namespace Ui {
     class MainWindow;
@@ -27,7 +27,7 @@ private:
     void loadFib(QString Filename);
     void loadSrc(QStringList filenames);
     void add_work_dir(QString dir);
-    bool load_db(std::shared_ptr<vbc_database>& database,QString& file_name);
+    bool load_db(std::shared_ptr<group_connectometry_analysis>& database,QString& file_name);
 private slots:
     void on_averagefib_clicked();
     void on_vbc_clicked();

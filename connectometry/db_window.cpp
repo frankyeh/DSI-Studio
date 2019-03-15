@@ -11,7 +11,7 @@
 #include "match_db.h"
 void show_view(QGraphicsScene& scene,QImage I);
 
-db_window::db_window(QWidget *parent,std::shared_ptr<vbc_database> vbc_) :
+db_window::db_window(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_) :
     QMainWindow(parent),color_bar(10,256),vbc(vbc_),
     ui(new Ui::db_window)
 {

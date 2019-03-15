@@ -4,7 +4,7 @@
 #include "match_db.h"
 #include "ui_match_db.h"
 
-match_db::match_db(QWidget *parent,std::shared_ptr<vbc_database> vbc_) :
+match_db::match_db(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_) :
     QDialog(parent),vbc(vbc_),
     ui(new Ui::match_db)
 {

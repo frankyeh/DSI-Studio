@@ -22,7 +22,7 @@ int src(void)
     if(QFileInfo(output.c_str()).exists())
     {
         std::cout << output << " exists. skipping..." << std::endl;
-        return -1;
+        return 1;
     }
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     QStringList file_list;
@@ -64,13 +64,13 @@ int src(void)
     if(file_list.empty())
     {
         std::cout << "No file found for creating src" << std::endl;
-        return -1;
+        return 1;
     }
 
     if(!load_all_files(file_list,dwi_files))
     {
         std::cout << "Invalid file format" << std::endl;
-        return -1;
+        return 1;
     }
     if(po.has("b_table"))
     {
@@ -79,7 +79,7 @@ int src(void)
         if(!in)
         {
             std::cout << "Failed to open b-table" <<std::endl;
-            return -1;
+            return 1;
         }
         std::string line;
         std::vector<double> b_table;
@@ -93,7 +93,7 @@ int src(void)
         if(b_table.size() != dwi_files.size()*4)
         {
             std::cout << "Mismatch between b-table and the loaded images" << std::endl;
-            return -1;
+            return 1;
         }
         for(unsigned int index = 0,b_index = 0;index < dwi_files.size();++index,b_index += 4)
         {
@@ -112,12 +112,12 @@ int src(void)
         if(bval.size() != dwi_files.size())
         {
             std::cout << "Mismatch between bval file and the loaded images" << std::endl;
-            return -1;
+            return 1;
         }
         if(bvec.size() != dwi_files.size()*3)
         {
             std::cout << "Mismatch between bvec file and the loaded images" << std::endl;
-            return -1;
+            return 1;
         }
         for(unsigned int index = 0;index < dwi_files.size();++index)
         {

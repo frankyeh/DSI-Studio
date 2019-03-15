@@ -1,6 +1,6 @@
 #ifndef DB_WINDOW_H
 #define DB_WINDOW_H
-#include "vbc/vbc_database.h"
+#include "connectometry/group_connectometry_db.h"
 #include <QMainWindow>
 #include <QGraphicsScene>
 
@@ -11,7 +11,7 @@ class db_window;
 class db_window : public QMainWindow
 {
     Q_OBJECT
-    std::shared_ptr<vbc_database> vbc;
+    std::shared_ptr<group_connectometry_analysis> vbc;
 private:
     QGraphicsScene fp_dif_scene, fp_scene;
     tipl::color_image fp_dif_map;
@@ -30,7 +30,7 @@ private:
     void update_db(void);
     void update_subject_list(void);
 public:
-    explicit db_window(QWidget *parent,std::shared_ptr<vbc_database> vbc);
+    explicit db_window(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc);
     ~db_window();
     void closeEvent(QCloseEvent *event);
     bool eventFilter(QObject *obj, QEvent *event);

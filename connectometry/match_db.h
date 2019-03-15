@@ -1,7 +1,7 @@
 #ifndef DB_OPERATION_DIALOG_H
 #define DB_OPERATION_DIALOG_H
 
-#include "vbc/vbc_database.h"
+#include "connectometry/group_connectometry_db.h"
 #include <QDialog>
 
 namespace Ui {
@@ -12,10 +12,10 @@ class match_db : public QDialog
 {
     Q_OBJECT
 
-    std::shared_ptr<vbc_database> vbc;
+    std::shared_ptr<group_connectometry_analysis> vbc;
     void show_match_table(void);
 public:
-    explicit match_db(QWidget *parent,std::shared_ptr<vbc_database> vbc);
+    explicit match_db(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc);
     ~match_db();
 
 private slots:

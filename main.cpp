@@ -204,7 +204,7 @@ int run_action(std::shared_ptr<QApplication> gui)
         vis();
         if(po.get("stay_open") == std::string("1"))
             gui->exec();
-        return 1;
+        return 0;
     }
     std::cout << "Unknown action:" << po.get("action") << std::endl;
     return 1;

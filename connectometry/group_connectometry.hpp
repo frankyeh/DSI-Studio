@@ -5,7 +5,7 @@
 #include <QItemDelegate>
 #include <QTimer>
 #include "tipl/tipl.hpp"
-#include "vbc/vbc_database.h"
+#include "connectometry/group_connectometry_db.h"
 #include "atlas.hpp"
 namespace Ui {
 class group_connectometry;
@@ -49,12 +49,12 @@ public:
     void add_new_roi(QString name,QString source,const std::vector<tipl::vector<3,short> >& new_roi,int type = 0);
 
 public:
-    std::shared_ptr<vbc_database> vbc;
+    std::shared_ptr<group_connectometry_analysis> vbc;
     std::auto_ptr<stat_model> model;
     std::auto_ptr<QTimer> timer;
     bool setup_model(stat_model& model);
 
-    explicit group_connectometry(QWidget *parent,std::shared_ptr<vbc_database> vbc_ptr,QString db_file_name_,bool gui_);
+    explicit group_connectometry(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_ptr,QString db_file_name_,bool gui_);
     ~group_connectometry();
 
 public:

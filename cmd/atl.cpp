@@ -7,7 +7,7 @@
 #include "mapping/atlas.hpp"
 #include "program_option.hpp"
 #include "fib_data.hpp"
-#include "vbc/vbc_database.h"
+#include "connectometry/group_connectometry_db.h"
 
 extern std::string fib_template_file_name_1mm,fib_template_file_name_2mm;
 const char* odf_average(const char* out_name,std::vector<std::string>& file_names);
@@ -143,7 +143,7 @@ int atl(void)
         if(name_list.empty())
         {
             std::cout << "No FIB file found in the directory." << std::endl;
-            return 0;
+            return 1;
         }
         dir += "/template";
         const char* msg = odf_average(dir.c_str(),name_list);
@@ -162,7 +162,7 @@ int atl(void)
         if(name_list.empty())
         {
             std::cout << "No FIB file found in the directory." << std::endl;
-            return 0;
+            return 1;
         }
         // Determine the template
         std::string tm;
@@ -173,7 +173,7 @@ int atl(void)
             if(!fib.load_from_file(name_list[0].c_str()))
             {
                 std::cout << "Invalid FIB file format:" << name_list[0] << std::endl;
-                return 0;
+                return 1;
             }
             if(fib.vs[0] < 1.5f)
                 tm = fib_template_file_name_1mm.c_str();
@@ -183,11 +183,11 @@ int atl(void)
         }
         // Initialize the DB
         std::cout << "Loading template" << tm << std::endl;
-        std::auto_ptr<vbc_database> data(new vbc_database);
+        std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);
         if(!data->create_database(tm.c_str()))
         {
             std::cout << "Error in initializing the database:" << data->error_msg << std::endl;
-            return 0;
+            return 1;
         }
         // Extracting metrics
         std::string index_name = po.get("index_name","sdf");
@@ -200,7 +200,7 @@ int atl(void)
                 QFileInfo(name_list[index].c_str()).baseName().toStdString()))
             {
                 std::cout << "Error loading subject fib files:" << data->handle->error_msg << std::endl;
-                return 0;
+                return 1;
             }
         }
         // Output
@@ -210,7 +210,7 @@ int atl(void)
         if(!data->handle->db.save_subject_data(output.c_str()))
         {
             std::cout << "Error saving the db file:" << data->handle->error_msg << std::endl;
-            return 0;
+            return 1;
         }
         std::cout << "Connectometry db created:" << output << std::endl;
         return 0;
@@ -221,15 +221,15 @@ int atl(void)
         if(!handle.get())
         {
             std::cout << handle->error_msg << std::endl;
-            return 0;
+            return 1;
         }
         std::vector<std::shared_ptr<atlas> > atlas_list;
         if(!atl_load_atlas(po.get("atlas"),atlas_list))
-            return 0;
+            return 1;
         if(!handle->can_map_to_mni())
         {
             std::cout << "Cannot output connectivity: no mni mapping" << std::endl;
-            return 0;
+            return 1;
         }
         atl_save_mapping(atlas_list,
                          po.get("source"),handle->dim,
@@ -243,17 +243,17 @@ int atl(void)
         if(!handle.get())
         {
             std::cout << handle->error_msg << std::endl;
-            return 0;
+            return 1;
         }
         if(!handle->is_qsdr)
         {
             std::cout << "Only QSDR reconstructed FIB file is supported." << std::endl;
-            return 0;
+            return 1;
         }
         if(handle->native_position.empty())
         {
             std::cout << "No mapping information found. Please reconstruct QSDR with mapping checked in advanced option." << std::endl;
-            return 0;
+            return 1;
         }
         TractModel tract_model(handle);
         std::string file_name = po.get("tract");
@@ -262,7 +262,7 @@ int atl(void)
             if (!tract_model.load_from_file(file_name.c_str()))
             {
                 std::cout << "Cannot open file " << file_name << std::endl;
-                return 0;
+                return 1;
             }
             std::cout << file_name << " loaded" << std::endl;
         }
@@ -272,5 +272,5 @@ int atl(void)
         return 0;
     }
     std::cout << "Unknown command:" << cmd << std::endl;
-    return 0;
+    return 1;
 }

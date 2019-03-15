@@ -41,12 +41,12 @@ int exp(void)
     if(!QFileInfo(file_name.c_str()).exists())
     {
         std::cout << file_name << " does not exist. terminating..." << std::endl;
-        return 0;
+        return 1;
     }
     if (!mat_reader.load_from_file(file_name.c_str()))
     {
         std::cout << "Invalid file format" << std::endl;
-        return 0;
+        return 1;
     }
 
     unsigned int col,row;
@@ -54,13 +54,13 @@ int exp(void)
     if(!mat_reader.read("dimension",row,col,dim_buf))
     {
         std::cout << "Cannot find dimension matrix in the file" << file_name.c_str() <<std::endl;
-        return 0;
+        return 1;
     }
     const float* vs = 0;
     if(!mat_reader.read("voxel_size",row,col,vs))
     {
         std::cout << "Cannot find voxel_size matrix in the file" << file_name.c_str() <<std::endl;
-        return 0;
+        return 1;
     }
     const float* trans = 0;
     if(mat_reader.read("trans",row,col,trans))

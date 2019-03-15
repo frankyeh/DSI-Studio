@@ -12,7 +12,7 @@ int vis(void)
 {
     std::shared_ptr<fib_data> new_handle = cmd_load_fib(po.get("source"));
     if(!new_handle.get())
-        return 0;
+        return 1;
     std::cout << "starting gui" << std::endl;
     tracking_window* new_mdi = new tracking_window(0,new_handle);
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);

@@ -58,7 +58,7 @@ void ROIViewDelegate::emitCommitData()
 }
 
 
-group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<vbc_database> vbc_,QString db_file_name_,bool gui_) :
+group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_,QString db_file_name_,bool gui_) :
     QDialog(parent),vbc(vbc_),db_file_name(db_file_name_),work_dir(QFileInfo(db_file_name_).absoluteDir().absolutePath()),gui(gui_),
     ui(new Ui::group_connectometry)
 {
@@ -326,7 +326,7 @@ void group_connectometry::on_open_mr_files_clicked()
         QMessageBox::information(this,"Error",error_msg.c_str(),0);
 }
 
-bool parse_demo(std::shared_ptr<vbc_database>& vbc,
+bool parse_demo(std::shared_ptr<group_connectometry_analysis>& vbc,
                 QString filename,
                 std::vector<std::string>& titles,
                 std::vector<std::string>& items,
@@ -431,7 +431,7 @@ bool parse_demo(std::shared_ptr<vbc_database>& vbc,
     }
     return true;
 }
-void fill_demo_table(std::shared_ptr<vbc_database>& vbc,
+void fill_demo_table(std::shared_ptr<group_connectometry_analysis>& vbc,
                      QTableWidget* table,
                      const std::vector<std::string>& titles,
                      const std::vector<std::string>& items,

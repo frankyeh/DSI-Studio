@@ -3,7 +3,7 @@
 
 #include <QDialog>
 #include <QGraphicsScene>
-#include "vbc/vbc_database.h"
+#include "connectometry/group_connectometry_db.h"
 #include <tipl/tipl.hpp>
 #include <QTimer>
 
@@ -43,7 +43,7 @@ public:
     std::vector<float> test_result;
     std::vector<std::vector<float> > test_mresult;
 public:
-    std::shared_ptr<vbc_database> vbc;
+    std::shared_ptr<group_connectometry_analysis> vbc;
     std::vector<double> X;
 public:
     QString log_text;
@@ -51,7 +51,7 @@ public:
     QImage network_I,layer_I;
     std::vector<tipl::pixel_index<3> > fp_index;
 
-    explicit nn_connectometry(QWidget *parent,std::shared_ptr<vbc_database> vbc_ptr,QString db_file_name_,bool gui_);
+    explicit nn_connectometry(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_ptr,QString db_file_name_,bool gui_);
 
     ~nn_connectometry();
 
