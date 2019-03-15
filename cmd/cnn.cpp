@@ -3,7 +3,7 @@
 #include "program_option.hpp"
 #include "tipl/tipl.hpp"
 #include "gzip_interface.hpp"
-#include "connectometry/group_connectometry_db.h"
+#include "connectometry/group_connectometry_analysis.h"
 bool train_cnn(std::string network,
                tipl::ml::network& nn,
                tipl::ml::network_data<unsigned char>& nn_data_,
@@ -43,34 +43,21 @@ bool train_cnn(std::string network,
     return true;
 }
 
-bool parse_demo(std::shared_ptr<group_connectometry_analysis>& vbc,
-                QString filename,
-                std::vector<std::string>& titles,
-                std::vector<std::string>& items,
-                std::vector<int>& feature_location,
-                std::vector<double>& X,
-                float missing_value,
-                std::string& error_msg);
 
 int cnn(void)
 {
-    std::shared_ptr<group_connectometry_analysis> database(new group_connectometry_analysis);
+    std::shared_ptr<group_connectometry_analysis> gca(new group_connectometry_analysis);
     std::cout << "reading connectometry db:" << po.get("source") << std::endl;
-    if(!database->load_database(po.get("source").c_str()))
+    if(!gca->load_database(po.get("source").c_str()))
     {
         std::cout << "invalid database format" << std::endl;
         return 1;
     }
 
-    std::vector<double> X;
-    std::vector<std::string> titles;
-    std::vector<std::string> items;
-    std::vector<int> feature_location;
-    std::string error_msg;
-    // read demographic file
-    if(!parse_demo(database,po.get("demo").c_str(),titles,items,feature_location,X,po.get("no_data",9999),error_msg))
+
+    if(!gca->handle->db.parse_demo(po.get("demo").c_str(),po.get("no_data",9999)))
     {
-        std::cout << error_msg << std::endl;
+        std::cout << gca->handle->db.error_msg << std::endl;
         return 1;
     }
 

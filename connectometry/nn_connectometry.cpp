@@ -24,19 +24,8 @@ nn_connectometry::~nn_connectometry()
     delete ui;
 }
 
-bool parse_demo(std::shared_ptr<group_connectometry_analysis>& vbc,
-                QString filename,
-                std::vector<std::string>& titles,
-                std::vector<std::string>& items,
-                std::vector<int>& feature_location,
-                std::vector<double>& X,
-                float missing_value,
-                std::string& error_msg);
-void fill_demo_table(std::shared_ptr<group_connectometry_analysis>& vbc,
-                     QTableWidget* table,
-                     const std::vector<std::string>& titles,
-                     const std::vector<std::string>& items,
-                     const std::vector<double>& X);
+void fill_demo_table(const connectometry_db& db,
+                     QTableWidget* table);
 
 void nn_connectometry::on_open_mr_files_clicked()
 {
@@ -47,24 +36,18 @@ void nn_connectometry::on_open_mr_files_clicked()
                 "Text or CSV file (*.txt *.csv);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::vector<std::string> titles;
-    std::vector<std::string> items;
-    std::vector<int> feature_location;
-    std::string error_msg;
+    auto& db = vbc->handle->db;
     // read demographic file
-    if(!parse_demo(vbc,filename,titles,items,feature_location,X,9999,error_msg))
+    if(!db.parse_demo(filename.toStdString(),9999))
     {
-        QMessageBox::information(this,"Error",error_msg.c_str(),0);
+        QMessageBox::information(this,"Error",db.error_msg.c_str(),0);
         return;
     }
-    fill_demo_table(vbc,ui->subject_demo,titles,items,X);
+    X = db.X;
+    fill_demo_table(db,ui->subject_demo);
     QStringList t;
-    for(unsigned int index = 0;index < feature_location.size();++index)
-    {
-        std::replace(titles[feature_location[index]].begin(),titles[feature_location[index]].end(),'/','_');
-        std::replace(titles[feature_location[index]].begin(),titles[feature_location[index]].end(),'\\','_');
-        t << titles[feature_location[index]].c_str();
-    }
+    for(int i = 0; i < db.feature_titles.size();++i)
+        t << db.feature_titles[i].c_str();
     ui->foi->clear();
     ui->foi->addItems(t);
     ui->foi->setCurrentIndex(0);

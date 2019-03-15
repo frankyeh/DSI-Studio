@@ -101,7 +101,7 @@ HEADERS += mainwindow.h \
     connectometry/match_db.h \
     connectometry/db_window.h \
     connectometry/group_connectometry.hpp \
-    connectometry/group_connectometry_db.h \
+    connectometry/group_connectometry_analysis.h \
     regtoolbox.h \
     connectometry/nn_connectometry.h
 
@@ -178,7 +178,7 @@ SOURCES += main.cpp \
     connectometry/match_db.cpp \
     connectometry/db_window.cpp \
     connectometry/group_connectometry.cpp \
-    connectometry/group_connectometry_db.cpp \
+    connectometry/group_connectometry_analysis.cpp \
     regtoolbox.cpp \
     cmd/cnn.cpp \
     cmd/qc.cpp \

@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 #include <QSettings>
-#include "connectometry/group_connectometry_db.h"
+#include "connectometry/group_connectometry_analysis.h"
 
 namespace Ui {
     class MainWindow;

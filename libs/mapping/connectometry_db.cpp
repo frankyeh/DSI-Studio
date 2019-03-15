@@ -70,6 +70,123 @@ void connectometry_db::read_db(fib_data* handle_)
     calculate_si2vi();
 }
 
+
+bool connectometry_db::parse_demo(const std::string& filename,float missing_value)
+{
+    titles.clear();
+    items.clear();
+    int col_count = 0;
+    {
+        int row_count = 0,last_item_size = 0;
+        bool is_csv = (filename.substr(filename.length()-4,4) == std::string(".csv"));
+        std::ifstream in(filename.c_str());
+        if(!in)
+        {
+            error_msg = "Cannot open the demographic file";
+            return false;
+        }
+        std::string line;
+        while(std::getline(in,line))
+        {
+            if(is_csv)
+            {
+                std::sregex_token_iterator first{line.begin(), line.end(),std::regex(","), -1},last;
+                std::copy(first,last,std::back_inserter(items));
+            }
+            else
+            {
+                std::istringstream in2(line);
+                std::copy(std::istream_iterator<std::string>(in2),
+                          std::istream_iterator<std::string>(),std::back_inserter(items));
+            }
+            if(items.size() == last_item_size)
+                break;
+            ++row_count;
+            if(col_count == 0)
+                col_count = items.size();
+            else
+                if(items.size()-last_item_size != col_count)
+                {
+                    std::ostringstream out;
+                    out << "Row number " << row_count << " has " << items.size()-last_item_size <<
+                            " fields, which is different from the column size " << col_count << ".";
+                    error_msg = out.str();
+                    return false;
+                }
+            last_item_size = items.size();
+        }
+        if(row_count == 1)
+            col_count = items.size()/(num_subjects+1);
+
+        if(items.size()/col_count < 2)
+        {
+            error_msg = "Invalid demographic file format";
+            return false;
+        }
+        // check subject count for command line
+        if(items.size()/col_count != num_subjects+1) // +1 for title
+        {
+            std::ostringstream out;
+            out << "Subject number mismatch. The demographic file has " << row_count-1 << " subjects, but the database has " << num_subjects << " subjects.";
+            error_msg = out.str();
+            return false;
+        }
+    }
+    // first line moved to title vector
+    titles.insert(titles.end(),items.begin(),items.begin()+col_count);
+    items.erase(items.begin(),items.begin()+col_count);
+
+    // convert special characters
+    for(int i = 0;i < titles.size();++i)
+    {
+        std::replace(titles[i].begin(),titles[i].end(),'/','_');
+        std::replace(titles[i].begin(),titles[i].end(),'\\','_');
+    }
+
+    // find which column can be used as features
+    feature_location.clear();
+    feature_titles.clear();
+    for(int i = 0;i < titles.size();++i)
+    {
+        try{
+            std::stof(items[i]);
+            feature_location.push_back(i);
+            feature_titles.push_back(titles[i]);
+        }
+        catch (...)
+        {;}
+    }
+    //  get feature matrix
+    X.clear();
+    for(unsigned int i = 0;i < num_subjects;++i)
+    {
+        X.push_back(1); // for the intercep
+        for(unsigned int j = 0;j < feature_location.size();++j)
+        {
+            int item_pos = i*titles.size() + feature_location[j];
+            if(item_pos >= items.size())
+            {
+                X.push_back(missing_value);
+                continue;
+            }
+            try{
+
+                X.push_back(std::stof(items[item_pos]));
+            }
+            catch(...)
+            {
+                std::ostringstream out;
+                out << "Cannot parse '" << items[item_pos] << "' at " << subject_names[i] << "'s " << titles[feature_location[j]] << ".";
+                error_msg = out.str();
+                X.clear();
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+
 void connectometry_db::remove_subject(unsigned int index)
 {
     if(index >= subject_qa.size())
@@ -826,7 +943,7 @@ bool connectometry_result::individual_vs_db(std::shared_ptr<fib_data> handle,con
     bool normalized_qa = false;
     bool terminated = false;
     stat_model info;
-    info.init(handle->db.has_db());
+    info.read_demo(handle->db);
     info.type = 2;
     info.individual_data = &(data[0]);
     //info.individual_data_sd = normalize_qa ? individual_data_sd[subject_id]:1.0;
@@ -957,10 +1074,14 @@ bool connectometry_result::individual_vs_individual(std::shared_ptr<fib_data> ha
 
 
 
-void stat_model::init(unsigned int subject_count)
+void stat_model::read_demo(const connectometry_db& db)
 {
-    subject_index.resize(subject_count);
+    subject_index.resize(db.num_subjects);
     std::iota(subject_index.begin(),subject_index.end(),0);
+
+    X = db.X;
+    feature_count = db.feature_location.size()+1; // additional one for intercept
+
 }
 
 void stat_model::select_variables(const std::vector<char>& sel)

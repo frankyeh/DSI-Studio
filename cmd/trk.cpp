@@ -12,7 +12,7 @@
 #include "libs/gzip_interface.hpp"
 #include "mapping/atlas.hpp"
 #include "SliceModel.h"
-#include "connectometry/group_connectometry_db.h"
+#include "connectometry/group_connectometry_analysis.h"
 #include "program_option.hpp"
 bool atl_load_atlas(const std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list);
 void export_track_info(const std::string& file_name,

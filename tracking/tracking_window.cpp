@@ -21,7 +21,7 @@
 #include "tract_report.hpp"
 #include "color_bar_dialog.hpp"
 #include "connectivity_matrix_dialog.h"
-#include "connectometry/group_connectometry_db.h"
+#include "connectometry/group_connectometry_analysis.h"
 #include "mapping/atlas.hpp"
 #include "tracking/atlasdialog.h"
 #include "libs/tracking/tracking_thread.hpp"

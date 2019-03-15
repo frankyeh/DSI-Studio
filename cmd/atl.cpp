@@ -7,7 +7,7 @@
 #include "mapping/atlas.hpp"
 #include "program_option.hpp"
 #include "fib_data.hpp"
-#include "connectometry/group_connectometry_db.h"
+#include "connectometry/group_connectometry_analysis.h"
 
 extern std::string fib_template_file_name_1mm,fib_template_file_name_2mm;
 const char* odf_average(const char* out_name,std::vector<std::string>& file_names);

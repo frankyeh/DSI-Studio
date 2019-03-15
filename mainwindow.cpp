@@ -22,7 +22,7 @@
 #include "view_image.h"
 #include "mapping/atlas.hpp"
 #include "libs/gzip_interface.hpp"
-#include "connectometry/group_connectometry_db.h"
+#include "connectometry/group_connectometry_analysis.h"
 #include "libs/tracking/fib_data.hpp"
 #include "manual_alignment.h"
 #include "connectometry/individual_connectometry.hpp"

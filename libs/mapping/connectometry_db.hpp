@@ -9,9 +9,18 @@ class connectometry_db
 {
 public:
     fib_data* handle;
-    std::string report,subject_report;
+    std::string report,subject_report,error_msg;
     unsigned int num_subjects;
     bool modified;
+
+public: // demographi infomation
+    std::vector<std::string> titles;
+    std::vector<std::string> items;
+    std::vector<int> feature_location;
+    std::vector<std::string> feature_titles;
+    std::vector<double> X;
+    bool parse_demo(const std::string& filename,float missing_value);
+
 public:// subject specific data
     std::vector<std::string> subject_names;
     std::vector<float> R2;
@@ -92,7 +101,7 @@ public: // individual
 public:
     stat_model(void):individual_data(0),threshold_type(t){}
 public:
-    void init(unsigned int subject_count);
+    void read_demo(const connectometry_db& db);
     void remove_subject(unsigned int index);
     void remove_missing_data(double missing_value);
     bool resample(stat_model& rhs,bool null,bool bootstrap);

@@ -1,7 +1,7 @@
 #ifndef DB_OPERATION_DIALOG_H
 #define DB_OPERATION_DIALOG_H
 
-#include "connectometry/group_connectometry_db.h"
+#include "connectometry/group_connectometry_analysis.h"
 #include <QDialog>
 
 namespace Ui {

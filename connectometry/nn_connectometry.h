@@ -3,7 +3,7 @@
 
 #include <QDialog>
 #include <QGraphicsScene>
-#include "connectometry/group_connectometry_db.h"
+#include "connectometry/group_connectometry_analysis.h"
 #include <tipl/tipl.hpp>
 #include <QTimer>
 

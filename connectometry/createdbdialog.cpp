@@ -5,7 +5,7 @@
 #include "createdbdialog.h"
 #include "ui_createdbdialog.h"
 #include "fib_data.hpp"
-#include "connectometry/group_connectometry_db.h"
+#include "connectometry/group_connectometry_analysis.h"
 #include "prog_interface_static_link.h"
 #include "image_model.hpp"
 
