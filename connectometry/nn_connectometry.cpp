@@ -58,7 +58,7 @@ void nn_connectometry::on_run_clicked()
 
     on_stop_clicked();
 
-    nna.t.learning_rate = ui->learning_rate->value();
+    nna.t.learning_rate = ui->learning_rate->value()*0.01f;
     nna.t.momentum = 0.0f;
     nna.t.batch_size = 64;
     nna.t.epoch = ui->epoch->value();

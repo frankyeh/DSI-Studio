@@ -122,9 +122,6 @@ bool nn_connectometry_analysis::run(std::ostream& out,
             sl_scale = 1.0f/sd;
             tipl::minus_constant(selected_label,sl_mean);
             tipl::multiply_constant(selected_label,sl_scale);
-            std::cout << sl_mean << std::endl;
-            std::cout << sl_scale << std::endl;
-
             selected_label_max = *std::max_element(selected_label.begin(),selected_label.end());
         }
     }
@@ -231,10 +228,6 @@ bool nn_connectometry_analysis::run(std::ostream& out,
                 train_data[i].homogenize();
     }
 
-    t.lr_layers.clear();
-    t.lr_layers.push_back(0.01f);
-    t.lr_layers.push_back(0.01f);
-    t.lr_layers.push_back(0.01f);
     out_report << " The neural network was trained using learning rate=" << t.learning_rate <<
                   ", match size=" << t.batch_size << ", epoch=" << t.epoch << ".";
     report = out_report.str();
