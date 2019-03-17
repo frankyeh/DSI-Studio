@@ -103,7 +103,8 @@ HEADERS += mainwindow.h \
     connectometry/group_connectometry.hpp \
     connectometry/group_connectometry_analysis.h \
     regtoolbox.h \
-    connectometry/nn_connectometry.h
+    connectometry/nn_connectometry.h \
+    connectometry/nn_connectometry_analysis.h
 
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
@@ -184,7 +185,8 @@ SOURCES += main.cpp \
     cmd/qc.cpp \
     libs/dsi/basic_voxel.cpp \
     libs/dsi/image_model.cpp \
-    connectometry/nn_connectometry.cpp
+    connectometry/nn_connectometry.cpp \
+    connectometry/nn_connectometry_analysis.cpp
 
 OTHER_FILES += \
     options.txt \

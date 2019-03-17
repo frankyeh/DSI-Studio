@@ -34,7 +34,7 @@ public:
     std::string index_name;
 public://longitudinal studies
     std::vector<std::pair<int,int> > match;
-    void auto_match(const tipl::image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp);
+    void auto_match(const tipl::image<int,3>& fp_mask,float fiber_threshold,bool normalize_fp);
     void calculate_change(unsigned char dif_type,bool norm);
 public:
     connectometry_db():num_subjects(0),modified(false){;}
@@ -48,15 +48,17 @@ public:
     bool add_subject_file(const std::string& file_name,
                             const std::string& subject_name);
     void get_subject_vector_pos(std::vector<int>& subject_vector_pos,
-                                const tipl::image<int,3>& cerebrum_mask,float fiber_threshold) const;
+                                const tipl::image<int,3>& fp_mask,float fiber_threshold) const;
+    void get_subject_vector_pairs(std::vector<std::pair<int,int> >& pairs,
+                            const tipl::image<int,3>& fp_mask,float fiber_threshold) const;
     void get_subject_vector(unsigned int from,unsigned int to,
                             std::vector<std::vector<float> >& subject_vector,
-                            const tipl::image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp) const;
+                            const tipl::image<int,3>& fp_mask,float fiber_threshold,bool normalize_fp) const;
     void get_subject_vector(unsigned int subject_index,std::vector<float>& subject_vector,
-                            const tipl::image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp) const;
-    void get_dif_matrix(std::vector<float>& matrix,const tipl::image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp);
+                            const tipl::image<int,3>& fp_mask,float fiber_threshold,bool normalize_fp) const;
+    void get_dif_matrix(std::vector<float>& matrix,const tipl::image<int,3>& fp_mask,float fiber_threshold,bool normalize_fp);
     void save_subject_vector(const char* output_name,
-                             const tipl::image<int,3>& cerebrum_mask,
+                             const tipl::image<int,3>& fp_mask,
                              float fiber_threshold,
                              bool normalize_fp) const;
     bool save_subject_data(const char* output_name);

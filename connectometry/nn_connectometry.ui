@@ -339,7 +339,7 @@
                <number>10000</number>
               </property>
               <property name="value">
-               <number>500</number>
+               <number>1000</number>
               </property>
              </widget>
             </item>
@@ -362,7 +362,7 @@
                <double>10.000000000000000</double>
               </property>
               <property name="value">
-               <double>0.010000000000000</double>
+               <double>0.001000000000000</double>
               </property>
              </widget>
             </item>
@@ -399,6 +399,23 @@
              <number>0</number>
             </property>
             <item>
+             <widget class="QLabel" name="label_3">
+              <property name="text">
+               <string>Seed search</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="seed_search">
+              <property name="maximum">
+               <number>128</number>
+              </property>
+              <property name="value">
+               <number>100</number>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QLabel" name="label">
               <property name="text">
                <string>decay</string>
@@ -417,27 +434,7 @@
                <double>0.000500000000000</double>
               </property>
               <property name="value">
-               <double>0.005000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="label_5">
-              <property name="text">
-               <string>momentum</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QDoubleSpinBox" name="momentum">
-              <property name="maximum">
-               <double>0.990000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.100000000000000</double>
-              </property>
-              <property name="value">
-               <double>0.900000000000000</double>
+               <double>0.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -454,23 +451,6 @@
             <property name="topMargin">
              <number>0</number>
             </property>
-            <item>
-             <widget class="QLabel" name="label_3">
-              <property name="text">
-               <string>Seed search</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QSpinBox" name="seed_search">
-              <property name="maximum">
-               <number>128</number>
-              </property>
-              <property name="value">
-               <number>5</number>
-              </property>
-             </widget>
-            </item>
             <item>
              <spacer name="horizontalSpacer">
               <property name="orientation">
@@ -524,7 +504,7 @@
         <item>
          <widget class="QLineEdit" name="network_text">
           <property name="text">
-           <string>full,relu|1,1,8|full,relu|1,1,8|full,relu</string>
+           <string>full,relu|1,1,12|full,relu|1,1,12|full</string>
           </property>
          </widget>
         </item>

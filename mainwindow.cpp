@@ -1024,7 +1024,7 @@ void MainWindow::on_connectometry_nn_clicked()
     std::shared_ptr<group_connectometry_analysis> database;
     if(!load_db(database,filename))
         return;
-    nn_connectometry* nn_cnt = new nn_connectometry(this,database,filename,true);
+    nn_connectometry* nn_cnt = new nn_connectometry(this,database->handle,filename,true);
     nn_cnt->setAttribute(Qt::WA_DeleteOnClose);
     nn_cnt->show();
 }

@@ -5,7 +5,7 @@
 #include <QItemDelegate>
 #include <QTimer>
 #include "tipl/tipl.hpp"
-#include "connectometry/group_connectometry_analysis.h"
+#include "group_connectometry_analysis.h"
 #include "atlas.hpp"
 namespace Ui {
 class group_connectometry;

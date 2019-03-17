@@ -203,7 +203,7 @@ void connectometry_db::calculate_si2vi(void)
     vi2si.resize(handle->dim);
     for(unsigned int index = 0;index < (unsigned int)handle->dim.size();++index)
     {
-        if(handle->dir.fa[0][index] != 0.0)
+        if(handle->dir.fa[0][index] != 0.0f)
         {
             vi2si[index] = (unsigned int)si2vi.size();
             si2vi.push_back(index);
@@ -358,10 +358,36 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
     modified = true;
     return true;
 }
+void connectometry_db::get_subject_vector_pairs(std::vector<std::pair<int,int> >& pairs,
+                        const tipl::image<int,3>& fp_mask,float fiber_threshold) const
+{
+    std::vector<std::vector<int> > fp_index(handle->dir.num_fiber);
+    for(auto& i : fp_index)
+        i.resize(handle->dim.size());
+    // build a fiber index map
+    {
+        int fp_pos = 0;
+        for(auto cur_index : si2vi)
+            if(fp_mask[cur_index])
+                for(int j = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;++j)
+                    fp_index[j][cur_index] = fp_pos++;
+    }
 
+
+    evaluate_connection(handle->dim,fiber_threshold,handle->dir.fa,
+                        [this](int pos,char fib){return tipl::vector<3>(handle->dir.get_dir(pos,fib));},
+                        [&](int pos1,char fib1,int pos2,char fib2)
+                        {
+                            if(fp_index[fib1][pos1] && fp_index[fib2][pos2])
+                                pairs.push_back(std::make_pair(fp_index[fib1][pos1],fp_index[fib2][pos2]));
+
+                        });
+
+
+}
 void connectometry_db::get_subject_vector(unsigned int from,unsigned int to,
                                           std::vector<std::vector<float> >& subject_vector,
-                        const tipl::image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp) const
+                        const tipl::image<int,3>& fp_mask,float fiber_threshold,bool normalize_fp) const
 {
     unsigned int total_count = to-from;
     subject_vector.clear();
@@ -372,7 +398,7 @@ void connectometry_db::get_subject_vector(unsigned int from,unsigned int to,
         for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
         {
             unsigned int cur_index = si2vi[s_index];
-            if(!cerebrum_mask[cur_index])
+            if(!fp_mask[cur_index])
                 continue;
             for(unsigned int j = 0,fib_offset = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;
                     ++j,fib_offset+=si2vi.size())
@@ -388,27 +414,27 @@ void connectometry_db::get_subject_vector(unsigned int from,unsigned int to,
     });
 }
 void connectometry_db::get_subject_vector_pos(std::vector<int>& subject_vector_pos,
-                            const tipl::image<int,3>& cerebrum_mask,float fiber_threshold) const
+                            const tipl::image<int,3>& fp_mask,float fiber_threshold) const
 {
     subject_vector_pos.clear();
     for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
     {
         unsigned int cur_index = si2vi[s_index];
-        if(!cerebrum_mask[cur_index])
+        if(!fp_mask[cur_index])
             continue;
-        for(unsigned int j = 0,fib_offset = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;
-                ++j,fib_offset+=si2vi.size())
+        for(unsigned int j = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;++j)
             subject_vector_pos.push_back(cur_index);
     }
 }
+
 void connectometry_db::get_subject_vector(unsigned int subject_index,std::vector<float>& subject_vector,
-                        const tipl::image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp) const
+                        const tipl::image<int,3>& fp_mask,float fiber_threshold,bool normalize_fp) const
 {
     subject_vector.clear();
     for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
     {
         unsigned int cur_index = si2vi[s_index];
-        if(!cerebrum_mask[cur_index])
+        if(!fp_mask[cur_index])
             continue;
         for(unsigned int j = 0,fib_offset = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;
                 ++j,fib_offset+=si2vi.size())
@@ -421,12 +447,12 @@ void connectometry_db::get_subject_vector(unsigned int subject_index,std::vector
             tipl::multiply_constant(subject_vector.begin(),subject_vector.end(),1.0/sd);
     }
 }
-void connectometry_db::get_dif_matrix(std::vector<float>& matrix,const tipl::image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp)
+void connectometry_db::get_dif_matrix(std::vector<float>& matrix,const tipl::image<int,3>& fp_mask,float fiber_threshold,bool normalize_fp)
 {
     matrix.clear();
     matrix.resize(num_subjects*num_subjects);
     std::vector<std::vector<float> > subject_vector;
-    get_subject_vector(0,num_subjects,subject_vector,cerebrum_mask,fiber_threshold,normalize_fp);
+    get_subject_vector(0,num_subjects,subject_vector,fp_mask,fiber_threshold,normalize_fp);
     begin_prog("calculating");
     tipl::par_for2(num_subjects,[&](int i,int id){
         if(id == 0)
@@ -444,7 +470,7 @@ void connectometry_db::get_dif_matrix(std::vector<float>& matrix,const tipl::ima
 }
 
 void connectometry_db::save_subject_vector(const char* output_name,
-                         const tipl::image<int,3>& cerebrum_mask,
+                         const tipl::image<int,3>& fp_mask,
                          float fiber_threshold,
                          bool normalize_fp) const
 {
@@ -475,7 +501,7 @@ void connectometry_db::save_subject_vector(const char* output_name,
         {
             check_prog(from,num_subjects);
             std::vector<float> subject_vector;
-            get_subject_vector(index,subject_vector,cerebrum_mask,fiber_threshold,normalize_fp);
+            get_subject_vector(index,subject_vector,fp_mask,fiber_threshold,normalize_fp);
 
             std::ostringstream out;
             out << "subject" << index;
@@ -494,9 +520,9 @@ void connectometry_db::save_subject_vector(const char* output_name,
             for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
             {
                 unsigned int cur_index = si2vi[s_index];
-                if(!cerebrum_mask[cur_index])
+                if(!fp_mask[cur_index])
                     continue;
-                for(unsigned int j = 0,fib_offset = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;++j,fib_offset+=si2vi.size())
+                for(unsigned int j = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;++j)
                 {
                     voxel_location.push_back(cur_index);
                     tipl::pixel_index<3> p(cur_index,handle->dim);
@@ -729,10 +755,10 @@ void connectometry_db::move_down(int id)
     std::swap(subject_qa_sd[id],subject_qa_sd[id+1]);
 }
 
-void connectometry_db::auto_match(const tipl::image<int,3>& cerebrum_mask,float fiber_threshold,bool normalize_fp)
+void connectometry_db::auto_match(const tipl::image<int,3>& fp_mask,float fiber_threshold,bool normalize_fp)
 {
     std::vector<float> dif;
-    get_dif_matrix(dif,cerebrum_mask,fiber_threshold,normalize_fp);
+    get_dif_matrix(dif,fp_mask,fiber_threshold,normalize_fp);
 
     std::vector<float> half_dif;
     for(int i = 0;i < handle->db.num_subjects;++i)

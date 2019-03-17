@@ -3,7 +3,8 @@
 
 #include <QDialog>
 #include <QGraphicsScene>
-#include "connectometry/group_connectometry_analysis.h"
+#include "group_connectometry_analysis.h"
+#include "nn_connectometry_analysis.h"
 #include <tipl/tipl.hpp>
 #include <QTimer>
 
@@ -18,40 +19,17 @@ class nn_connectometry : public QDialog
 public:
     bool gui = true;
     QString work_dir;
+    nn_connectometry_analysis nna;
+    std::ostringstream out;
+
 public:
-    tipl::image<int,3> fp_mask;
-    std::vector<std::vector<int> > fp_mapping;
-    float fp_threshold = 0.0f;
-public:
-    tipl::ml::trainer t;
-    tipl::ml::network nn;
-    tipl::ml::network_data<float> fp_data;
-    tipl::ml::network_data<std::vector<float> > fp_mdata;
-    std::vector<tipl::ml::network_data_proxy<float> > train_data;
-    std::vector<tipl::ml::network_data_proxy<float> > test_data;
-    std::vector<tipl::ml::network_data_proxy<std::vector<float> > > train_mdata;
-    std::vector<tipl::ml::network_data_proxy<std::vector<float> > > test_mdata;
     QTimer* timer = 0;
-    bool terminated;
-    std::future<void> future;
-public:
-    std::vector<int> subject_index;
-    std::vector<float> selected_label;
-    std::vector<std::vector<float> > selected_mlabel;
-public:
-    std::vector<unsigned int> test_seq;
-    std::vector<float> test_result;
-    std::vector<std::vector<float> > test_mresult;
-public:
-    std::shared_ptr<group_connectometry_analysis> vbc;
-    std::vector<double> X;
-public:
     QString log_text;
+public:
     QGraphicsScene network_scene,layer_scene;
     QImage network_I,layer_I;
-    std::vector<tipl::pixel_index<3> > fp_index;
 
-    explicit nn_connectometry(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_ptr,QString db_file_name_,bool gui_);
+    explicit nn_connectometry(QWidget *parent,std::shared_ptr<fib_data> handle,QString db_file_name_,bool gui_);
 
     ~nn_connectometry();
 
@@ -69,8 +47,6 @@ private slots:
     void on_reset_clicked();
 
     void on_foi_currentIndexChanged(int index);
-
-    void on_otsu_valueChanged(double arg1);
 
     void on_regress_all_clicked();
 
