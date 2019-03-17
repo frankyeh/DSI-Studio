@@ -30,7 +30,7 @@ public:
         voxel.fib_fa.clear();
         voxel.fib_fa.resize(voxel.dim);
         voxel.fib_dir.clear();
-        voxel.fib_dir.resize(voxel.dim.size()*3);
+        voxel.fib_dir.resize(voxel.dim.size());
         if(voxel.output_diffusivity || voxel.method_id == 1)
         {
             md.clear();
@@ -150,7 +150,7 @@ public:
             d[1] = 0.0;
             d[2] = 0.0;
         }
-        std::copy(V,V+3,voxel.fib_dir.begin() + data.voxel_index + data.voxel_index + data.voxel_index);
+        std::copy(V,V+3,voxel.fib_dir[data.voxel_index].begin());
         data.fa[0] = voxel.fib_fa[data.voxel_index] = get_fa(d[0],d[1],d[2]);
         if(voxel.output_diffusivity || voxel.method_id == 1)
         {
@@ -178,7 +178,7 @@ public:
         if(voxel.method_id == 1) // DTI
         {
             mat_writer.write("fa0",&*voxel.fib_fa.begin(),1,voxel.fib_fa.size());
-            mat_writer.write("dir0",&*voxel.fib_dir.begin(),1,voxel.fib_dir.size());
+            mat_writer.write("dir0",&voxel.fib_dir[0][0],1,voxel.fib_dir.size()*3);
             if(voxel.output_tensor)
             {
                 mat_writer.write("txx",&*txx.begin(),1,txx.size());

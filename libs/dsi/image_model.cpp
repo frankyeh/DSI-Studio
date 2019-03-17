@@ -2,7 +2,7 @@
 #include "image_model.hpp"
 #include "odf_process.hpp"
 #include "dti_process.hpp"
-
+#include "fib_data.hpp"
 void ImageModel::calculate_dwi_sum(void)
 {
     dwi_sum.clear();
@@ -40,88 +40,19 @@ typedef boost::mpl::vector<
     ReadDWIData,
     Dwi2Tensor
 > check_btable_process;
-std::pair<float,float> evaluate_fib(
-        const tipl::geometry<3>& dim,
-        const std::vector<tipl::image<float,3> >& fib_fa,
-        const std::vector<std::vector<float> >& fib_dir)
-{
-    unsigned char num_fib = fib_fa.size();
-    char dx[13] = {1,0,0,1,1,0, 1, 1, 0, 1,-1, 1, 1};
-    char dy[13] = {0,1,0,1,0,1,-1, 0, 1, 1, 1,-1, 1};
-    char dz[13] = {0,0,1,0,1,1, 0,-1,-1, 1, 1, 1,-1};
-    std::vector<tipl::vector<3> > dis(13);
-    for(unsigned int i = 0;i < 13;++i)
-    {
-        dis[i] = tipl::vector<3>(dx[i],dy[i],dz[i]);
-        dis[i].normalize();
-    }
-    float otsu = *std::max_element(fib_fa[0].begin(),fib_fa[0].end())*0.6f;
-    std::vector<std::vector<unsigned char> > connected(fib_fa.size());
-    for(unsigned int index = 0;index < connected.size();++index)
-        connected[index].resize(dim.size());
-    float connection_count = 0;
-    for(tipl::pixel_index<3> index(dim);index < dim.size();++index)
-    {
-        if(fib_fa[0][index.index()] <= otsu)
-            continue;
-        unsigned int index3 = index.index()+index.index()+index.index();
-        for(unsigned char fib1 = 0;fib1 < num_fib;++fib1)
-        {
-            if(fib_fa[fib1][index.index()] <= otsu)
-                break;
-            for(unsigned int j = 0;j < 2;++j)
-            for(unsigned int i = 0;i < 13;++i)
-            {
-                tipl::vector<3,int> pos;
-                pos = j ? tipl::vector<3,int>(index[0] + dx[i],index[1] + dy[i],index[2] + dz[i])
-                          :tipl::vector<3,int>(index[0] - dx[i],index[1] - dy[i],index[2] - dz[i]);
-                if(!dim.is_valid(pos))
-                    continue;
-                tipl::pixel_index<3> other_index(pos[0],pos[1],pos[2],dim);
-                unsigned int other_index3 = other_index.index()+other_index.index()+other_index.index();
-                if(std::abs(tipl::vector<3>(&fib_dir[fib1][index3])*dis[i]) <= 0.8665)
-                    continue;
-                for(unsigned char fib2 = 0;fib2 < num_fib;++fib2)
-                    if(fib_fa[fib2][other_index.index()] > otsu &&
-                            std::abs(tipl::vector<3>(&fib_dir[fib2][other_index3])*dis[i]) > 0.8665)
-                    {
-                        connected[fib1][index.index()] = 1;
-                        connected[fib2][other_index.index()] = 1;
-                        connection_count += fib_fa[fib2][other_index.index()];
-                        // no need to add fib1 because it will be counted if fib2 becomes fib1
-                    }
-            }
-        }
-    }
-    float no_connection_count = 0;
-    for(tipl::pixel_index<3> index(dim);index < dim.size();++index)
-    {
-        for(unsigned int i = 0;i < num_fib;++i)
-            if(fib_fa[i][index.index()] > otsu && !connected[i][index.index()])
-            {
-                no_connection_count += fib_fa[i][index.index()];
-            }
 
-    }
 
-    return std::make_pair(connection_count,no_connection_count);
-}
-void flip_fib_dir(std::vector<float>& fib_dir,const unsigned char* order)
+void flip_fib_dir(std::vector<tipl::vector<3> >& fib_dir,const unsigned char* order)
 {
-    for(unsigned int j = 0;j+2 < fib_dir.size();j += 3)
+    for(int j = 0;j < fib_dir.size();++j)
     {
-        float x = fib_dir[j+order[0]];
-        float y = fib_dir[j+order[1]];
-        float z = fib_dir[j+order[2]];
-        fib_dir[j] = x;
-        fib_dir[j+1] = y;
-        fib_dir[j+2] = z;
+        fib_dir[j] = tipl::vector<3>(fib_dir[j][order[0]],fib_dir[j][order[1]],fib_dir[j][order[2]]);
         if(order[3])
-            fib_dir[j] = -fib_dir[j];
+            fib_dir[j][0] = -fib_dir[j][0];
         if(order[4])
-            fib_dir[j+1] = -fib_dir[j+1];
+            fib_dir[j][1] = -fib_dir[j][1];
         if(order[5])
-            fib_dir[j+2] = -fib_dir[j+2];
+            fib_dir[j][2] = -fib_dir[j][2];
     }
 }
 void ImageModel::flip_b_table(const unsigned char* order)
@@ -159,7 +90,7 @@ std::string ImageModel::check_b_table(void)
     set_title("checking b-table");
     pre_dti();
     std::vector<tipl::image<float,3> > fib_fa(1);
-    std::vector<std::vector<float> > fib_dir(1);
+    std::vector<std::vector<tipl::vector<3> > > fib_dir(1);
     fib_fa[0].swap(voxel.fib_fa);
     fib_dir[0].swap(voxel.fib_dir);
 
@@ -196,13 +127,14 @@ std::string ImageModel::check_b_table(void)
                              ".201",".201fx",".201fy",".201fz"};
 
     float result[24] = {0};
-    float cur_score = evaluate_fib(voxel.dim,fib_fa,fib_dir).first;
+    float otsu = tipl::segmentation::otsu_threshold(fib_fa[0])*0.6;
+    float cur_score = evaluate_fib(voxel.dim,otsu,fib_fa,[&](int pos,char fib){return fib_dir[fib][pos];}).first;
     result[0] = cur_score;
     for(int i = 1;i < 24;++i)// 0 is the current score
     {
-        std::vector<std::vector<float> > new_dir(fib_dir);
+        auto new_dir(fib_dir);
         flip_fib_dir(new_dir[0],order[i]);
-        result[i] = evaluate_fib(voxel.dim,fib_fa,new_dir).first;
+        result[i] = evaluate_fib(voxel.dim,otsu,fib_fa,[&](int pos,char fib){return new_dir[fib][pos];}).first;
     }
     int best = std::max_element(result,result+24)-result;
 

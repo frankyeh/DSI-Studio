@@ -69,6 +69,7 @@ public:
 
 };
 
+
 class fib_data;
 class tracking_data{
 public:
@@ -206,5 +207,85 @@ public:
     void get_index_titles(std::vector<std::string>& titles);
 };
 
+
+
+template<typename fib_fa_type,typename fun1,typename fun2>
+void evaluate_connection(
+        const tipl::geometry<3>& dim,
+        float otsu,
+        const fib_fa_type& fib_fa,
+        fun1 dir,
+        fun2 f)
+{
+    unsigned char num_fib = fib_fa.size();
+    char dx[13] = {1,0,0,1,1,0, 1, 1, 0, 1,-1, 1, 1};
+    char dy[13] = {0,1,0,1,0,1,-1, 0, 1, 1, 1,-1, 1};
+    char dz[13] = {0,0,1,0,1,1, 0,-1,-1, 1, 1, 1,-1};
+    std::vector<tipl::vector<3> > dis(13);
+    for(unsigned int i = 0;i < 13;++i)
+    {
+        dis[i] = tipl::vector<3>(dx[i],dy[i],dz[i]);
+        dis[i].normalize();
+    }
+    for(tipl::pixel_index<3> index(dim);index < dim.size();++index)
+    {
+        if(fib_fa[0][index.index()] <= otsu)
+            continue;
+        for(unsigned char fib1 = 0;fib1 < num_fib;++fib1)
+        {
+            if(fib_fa[fib1][index.index()] <= otsu)
+                break;
+            for(unsigned int j = 0;j < 2;++j)
+            for(unsigned int i = 0;i < 13;++i)
+            {
+                tipl::vector<3,int> pos;
+                pos = j ? tipl::vector<3,int>(index[0] + dx[i],index[1] + dy[i],index[2] + dz[i])
+                          :tipl::vector<3,int>(index[0] - dx[i],index[1] - dy[i],index[2] - dz[i]);
+                if(!dim.is_valid(pos))
+                    continue;
+                tipl::pixel_index<3> other_index(pos[0],pos[1],pos[2],dim);
+                if(std::abs(dir(index.index(),fib1)*dis[i]) <= 0.8665)
+                    continue;
+                for(unsigned char fib2 = 0;fib2 < num_fib;++fib2)
+                    if(fib_fa[fib2][other_index.index()] > otsu &&
+                            std::abs(dir(other_index.index(),fib2)*dis[i]) > 0.8665)
+                        f(index.index(),fib1,other_index.index(),fib2);
+            }
+        }
+    }
+}
+
+
+template<typename fib_fa_type,typename fun>
+std::pair<float,float> evaluate_fib(
+        const tipl::geometry<3>& dim,
+        float otsu,
+        const fib_fa_type& fib_fa,
+        fun dir)
+{
+    float connection_count = 0;
+    std::vector<std::vector<unsigned char> > connected(fib_fa.size());
+        for(unsigned int index = 0;index < connected.size();++index)
+            connected[index].resize(dim.size());
+
+    evaluate_connection(dim,otsu,fib_fa,dir,[&](unsigned int pos1,char fib1,unsigned int pos2,char fib2)
+    {
+        connected[fib1][pos1] = 1;
+        connected[fib2][pos2] = 1;
+        connection_count += fib_fa[fib2][pos2];
+        // no need to add fib1 because it will be counted if fib2 becomes fib1
+    });
+
+    unsigned char num_fib = fib_fa.size();
+    float no_connection_count = 0;
+    for(tipl::pixel_index<3> index(dim);index < dim.size();++index)
+    {
+        for(unsigned int i = 0;i < num_fib;++i)
+            if(fib_fa[i][index.index()] > otsu && !connected[i][index.index()])
+                no_connection_count += fib_fa[i][index.index()];
+    }
+
+    return std::make_pair(connection_count,no_connection_count);
+}
 
 #endif//FIB_DATA_HPP

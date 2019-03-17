@@ -26,6 +26,7 @@
 #include "tracking/atlasdialog.h"
 #include "libs/tracking/tracking_thread.hpp"
 #include "regtoolbox.h"
+#include "fib_data.hpp"
 
 extern std::vector<std::string> tractography_name_list;
 extern std::string t1w_template_file_name,wm_template_file_name;
@@ -1302,34 +1303,13 @@ void tracking_window::on_zoom_out_clicked()
     scene.show_slice();
 }
 
-std::pair<float,float> evaluate_fib(
-        const tipl::geometry<3>& dim,
-        const std::vector<tipl::image<float,3> >& fib_fa,
-        const std::vector<std::vector<float> >& fib_dir);
-std::pair<float,float> evaluate_fib(std::shared_ptr<fib_data> handle)
-{
-    std::vector<tipl::image<float,3> > fib_fa(handle->dir.num_fiber);
-    std::vector<std::vector<float> > fib_dir(handle->dir.num_fiber);
-    for(unsigned int i = 0;i < fib_fa.size();++i)
-    {
-        fib_fa[i].resize(handle->dim);
-        std::copy(handle->dir.fa[i],handle->dir.fa[i]+handle->dim.size(),fib_fa[i].begin());
-        fib_dir[i].resize(handle->dim.size()*3);
-        for(unsigned int j = 0,index = 0;j < fib_dir[i].size();j += 3,++index)
-        {
-            const float* v = handle->dir.get_dir(index,i);
-            fib_dir[i][j] = v[0];
-            fib_dir[i][j+1] = v[1];
-            fib_dir[i][j+2] = v[2];
-        }
-    }
-    return evaluate_fib(handle->dim,fib_fa,fib_dir);
-}
-
 void tracking_window::on_actionQuality_Assessment_triggered()
 {
-
-    std::pair<float,float> result = evaluate_fib(handle);
+    float threshold = renderWidget->getData("otsu_threshold").toFloat()*
+                tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
+    std::pair<float,float> result = evaluate_fib(handle->dim,threshold,handle->dir.fa,
+                                                 [&](int pos,char fib)
+                                                 {return tipl::vector<3>(handle->dir.get_dir(pos,fib));});
     std::ostringstream out;
     out << "Fiber coherence index: " << result.first << std::endl;
     out << "Fiber discoherent index: " << result.second << std::endl;

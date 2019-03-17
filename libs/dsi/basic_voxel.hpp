@@ -113,7 +113,7 @@ public: // for QSDR associated T1WT2W
 
 public: // for fib evaluation
     tipl::image<float,3> fib_fa;
-    std::vector<float> fib_dir;
+    std::vector<tipl::vector<3> > fib_dir;
 public: // for DDI
     Voxel* compare_voxel = 0;
     std::string study_name;

@@ -160,7 +160,6 @@ int trk_post(std::shared_ptr<fib_data> handle,
              TractModel& tract_model,
              const std::string& file_name);
 std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
-std::pair<float,float> evaluate_fib(std::shared_ptr<fib_data> handle);
 int ana(void)
 {
     std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
@@ -168,7 +167,9 @@ int ana(void)
         return 1;
     if(po.has("info"))
     {
-        auto result = evaluate_fib(handle);
+        float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim))*0.6;
+        auto result = evaluate_fib(handle->dim,otsu,handle->dir.fa,[handle](int pos,char fib)
+                                        {return tipl::vector<3>(handle->dir.get_dir(pos,fib));});
         std::ofstream out(po.get("info"));
         out << "fiber coherence index\t" << result.first << std::endl;
     }
