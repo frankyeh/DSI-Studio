@@ -68,6 +68,7 @@ void nn_connectometry::on_run_clicked()
     nna.seed_search = ui->seed_search->value();
     nna.otsu = ui->otsu->value();
     nna.cv_fold = 10;
+    nna.normalize_value = ui->norm_output->isEnabled() && ui->norm_output->isChecked();
     //nna.t.error_table.resize(nna.nn.get_output_size()*nna.nn.get_output_size());
     if(!nna.run(out,ui->network_text->text().toStdString()))
     {
@@ -238,10 +239,14 @@ void nn_connectometry::on_foi_currentIndexChanged(int index)
 void nn_connectometry::on_regress_all_clicked()
 {
     ui->nn_classification->setEnabled(!ui->regress_all->isChecked());
-    nna.selected_mlabel.clear();
     if(ui->regress_all->isChecked())
     {
         ui->nn_classification->setChecked(false);
         ui->nn_regression->setChecked(true);
     }
+}
+
+void nn_connectometry::on_nn_regression_toggled(bool checked)
+{
+    ui->norm_output->setEnabled(checked);
 }

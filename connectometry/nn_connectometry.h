@@ -50,6 +50,8 @@ private slots:
 
     void on_regress_all_clicked();
 
+    void on_nn_regression_toggled(bool checked);
+
 private:
     Ui::nn_connectometry *ui;
 };

@@ -65,11 +65,12 @@ bool nn_connectometry_analysis::run(std::ostream& out,
     }
 
     // prepare data
-    selected_label.clear();
-    selected_mlabel.clear();
-    subject_index.clear();
+    std::vector<int> new_subject_index;
+    std::vector<float> selected_label;
+    std::vector<std::vector<float> > selected_mlabel;
+
     // extract labels skipping missing data (9999)
-    int selected_label_max = 0;
+
     {
         int feature_count = handle->db.feature_titles.size();
         out_report << " A mulpti-layer perceptrons was used to predict ";
@@ -93,11 +94,10 @@ bool nn_connectometry_analysis::run(std::ostream& out,
                 }
                 if(labels.size() != feature_count)
                     continue;
-                subject_index.push_back(i);
+                new_subject_index.push_back(i);
                 selected_mlabel.push_back(std::move(labels));
             }
-            sl_mean = 0.0f;
-            sl_scale = 1.0f;
+
         }
         else
         {
@@ -107,35 +107,27 @@ bool nn_connectometry_analysis::run(std::ostream& out,
                 float label = X[i*(feature_count+1) + 1 + foi_index];
                 if(label == no_data)
                     continue;
-                subject_index.push_back(i);
+                new_subject_index.push_back(i);
                 selected_label.push_back(label);
             }
-
-            out_report << " The variables to be predicted were shifted and scaled to make mean=0 and variance=1.";
-            sl_mean = tipl::mean(selected_label);
-            float sd = tipl::standard_deviation(selected_label.begin(),selected_label.end(),sl_mean);
-            if(sd == 0.0f)
-            {
-                error_msg = "Invalid prediction data";
-                return false;
-            }
-            sl_scale = 1.0f/sd;
-            tipl::minus_constant(selected_label,sl_mean);
-            tipl::multiply_constant(selected_label,sl_scale);
-            selected_label_max = *std::max_element(selected_label.begin(),selected_label.end());
         }
     }
 
+    subject_index.swap(new_subject_index);
+    stop();
+    nn.reset();
 
     int fp_dimension = 0;
+    int selected_label_max = *std::max_element(selected_label.begin(),selected_label.end());
+
     // extract fp
 
     {
         out_report << " using local connectome fingerprint extracted by " << otsu << " otsu threshold.";
         out << "set otsu=" << otsu << std::endl;
-        fp_threshold = otsu*tipl::segmentation::otsu_threshold(
+        float fp_threshold = otsu*tipl::segmentation::otsu_threshold(
                     tipl::make_image(handle->dir.fa[0],handle->dim));
-        fp_mask.resize(handle->dim);
+        tipl::image<int,3> fp_mask(handle->dim);
         for(int i = 0;i < fp_mask.size();++i)
             if(handle->dir.get_fa(i,0) > fp_threshold)
                 fp_mask[i] = 1;
@@ -151,6 +143,21 @@ bool nn_connectometry_analysis::run(std::ostream& out,
             fp_index.resize(pos.size());
             for(int i = 0;i < pos.size();++i)
                 fp_index[i] = tipl::pixel_index<3>(pos[i],handle->dim);
+        }
+
+        sl_mean = 0.0f;
+        sl_scale = 1.0f;
+        // normalize values
+        if(is_regression && !regress_all && normalize_value)
+        {
+            out_report << " The variables to be predicted were shifted and scaled to make mean=0 and variance=1.";
+            sl_mean = tipl::mean(selected_label);
+            float sd = tipl::standard_deviation(selected_label.begin(),selected_label.end(),sl_mean);
+            if(sd == 0.0f)
+                sd = 1.0f;
+            sl_scale = 1.0f/sd;
+            tipl::minus_constant(selected_label,sl_mean);
+            tipl::multiply_constant(selected_label,sl_scale);
         }
 
         fp_data.clear();
@@ -183,8 +190,6 @@ bool nn_connectometry_analysis::run(std::ostream& out,
     }
 
 
-    stop();
-    nn.reset();
 
 
     std::string net_string;

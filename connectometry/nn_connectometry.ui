@@ -309,7 +309,7 @@
                <double>0.100000000000000</double>
               </property>
               <property name="value">
-               <double>0.600000000000000</double>
+               <double>0.700000000000000</double>
               </property>
              </widget>
             </item>
@@ -353,49 +353,27 @@
             <item>
              <widget class="QDoubleSpinBox" name="learning_rate">
               <property name="decimals">
-               <number>5</number>
+               <number>6</number>
               </property>
               <property name="minimum">
-               <double>0.000100000000000</double>
+               <double>0.000001000000000</double>
               </property>
               <property name="maximum">
                <double>10.000000000000000</double>
               </property>
               <property name="value">
-               <double>0.001000000000000</double>
+               <double>0.000500000000000</double>
               </property>
              </widget>
             </item>
            </layout>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <layout class="QHBoxLayout" name="horizontalLayout_17">
             <property name="spacing">
              <number>0</number>
             </property>
-            <property name="leftMargin">
-             <number>0</number>
-            </property>
             <property name="topMargin">
-             <number>0</number>
-            </property>
-            <property name="rightMargin">
-             <number>0</number>
-            </property>
-           </layout>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_3">
-            <property name="spacing">
-             <number>0</number>
-            </property>
-            <property name="leftMargin">
-             <number>0</number>
-            </property>
-            <property name="topMargin">
-             <number>0</number>
-            </property>
-            <property name="rightMargin">
              <number>0</number>
             </property>
             <item>
@@ -411,46 +389,17 @@
                <number>128</number>
               </property>
               <property name="value">
-               <number>100</number>
+               <number>0</number>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QLabel" name="label">
+             <widget class="QCheckBox" name="norm_output">
               <property name="text">
-               <string>decay</string>
+               <string>normalize output</string>
               </property>
              </widget>
             </item>
-            <item>
-             <widget class="QDoubleSpinBox" name="decay">
-              <property name="decimals">
-               <number>4</number>
-              </property>
-              <property name="maximum">
-               <double>1.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.000500000000000</double>
-              </property>
-              <property name="value">
-               <double>0.000000000000000</double>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout"/>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_17">
-            <property name="spacing">
-             <number>0</number>
-            </property>
-            <property name="topMargin">
-             <number>0</number>
-            </property>
             <item>
              <spacer name="horizontalSpacer">
               <property name="orientation">
@@ -504,7 +453,7 @@
         <item>
          <widget class="QLineEdit" name="network_text">
           <property name="text">
-           <string>full,relu|1,1,12|full,relu|1,1,12|full</string>
+           <string>full,relu|1,1,32|full,relu|1,1,32|full</string>
           </property>
          </widget>
         </item>

@@ -17,9 +17,6 @@ public:
     tipl::image<float,3> It;
     tipl::color_image Ib;
 public:
-    tipl::image<int,3> fp_mask;
-    std::vector<std::vector<int> > fp_mapping;
-    float fp_threshold = 0.0f;
     std::vector<tipl::pixel_index<3> > fp_index;
     std::vector<std::pair<int,int> > fib_pairs;
 public:
@@ -36,11 +33,10 @@ public:
     std::vector<tipl::ml::network_data_proxy<std::vector<float> > > train_mdata;
     std::vector<tipl::ml::network_data_proxy<std::vector<float> > > test_mdata;
 public:
-    std::vector<int> subject_index;
-    std::vector<float> selected_label;
     float sl_mean,sl_scale;
-    std::vector<std::vector<float> > selected_mlabel;
+
 public:
+    std::vector<int> subject_index;
     std::vector<unsigned int> test_seq;
     std::vector<float> test_result;
     std::vector<std::vector<float> > test_mresult;
@@ -52,6 +48,7 @@ public:
     float otsu = 0.6f;
     float no_data = 9999.0f;
     int cv_fold = 10;
+    bool normalize_value = false;
 public:
     nn_connectometry_analysis(std::shared_ptr<fib_data> handle_);
     bool run(std::ostream& out,const std::string& net_string);
