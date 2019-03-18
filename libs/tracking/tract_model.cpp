@@ -1734,8 +1734,6 @@ void TractModel::save_tdi(const char* file_name,bool sub_voxel,bool endpoint,con
 
 void TractModel::get_quantitative_data(std::vector<float>& data)
 {
-    if(tract_data.empty())
-        return;
     float voxel_volume = vs[0]*vs[1]*vs[2];
 
     data.push_back(tract_data.size());
@@ -1758,9 +1756,17 @@ void TractModel::get_quantitative_data(std::vector<float>& data)
             sum_length += length;
             sum_length2 += length*length;
         }
-        data.push_back(sum_length/((float)tract_data.size()));
-        data.push_back(std::sqrt(sum_length2/(double)tract_data.size()-
+        if(tract_data.empty())
+        {
+            data.push_back(0);
+            data.push_back(0);
+        }
+        else
+        {
+            data.push_back(sum_length/((float)tract_data.size()));
+            data.push_back(std::sqrt(sum_length2/(double)tract_data.size()-
                                  sum_length*sum_length/(double)tract_data.size()/(double)tract_data.size()));
+        }
     }
 
 
@@ -1791,8 +1797,6 @@ void TractModel::get_quantitative_data(std::vector<float>& data)
 
 void TractModel::get_quantitative_info(std::string& result)
 {
-    if(tract_data.empty())
-        return;
     std::ostringstream out;
     std::vector<std::string> titles;
     std::vector<float> data;
@@ -2089,10 +2093,16 @@ void TractModel::get_tracts_data(unsigned int data_index,float& mean, float& sd)
             ++total;
         }
     }
-
-    mean = sum_data/((double)total);
-    sd = std::sqrt(sum_data2/(double)total-sum_data*sum_data/(double)total/(double)total);
-
+    if(total == 0)
+    {
+        mean = 0;
+        sd = 0;
+    }
+    else
+    {
+        mean = sum_data/((double)total);
+        sd = std::sqrt(sum_data2/(double)total-sum_data*sum_data/(double)total/(double)total);
+    }
 }
 
 void TractModel::get_passing_list(const std::vector<std::vector<short> >& region_map,
