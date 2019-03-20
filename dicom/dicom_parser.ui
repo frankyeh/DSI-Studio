@@ -151,7 +151,7 @@
      <x>0</x>
      <y>0</y>
      <width>717</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFiles">
@@ -177,7 +177,6 @@
     <addaction name="actionSwap_bx_bz"/>
     <addaction name="actionSwap_by_bz"/>
     <addaction name="separator"/>
-    <addaction name="actionDetect_Motion"/>
    </widget>
    <addaction name="menuFiles"/>
    <addaction name="menuEdit"/>

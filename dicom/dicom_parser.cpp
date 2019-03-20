@@ -8,7 +8,6 @@
 #include "mainwindow.h"
 #include "prog_interface_static_link.h"
 #include "libs/gzip_interface.hpp"
-#include "motion_dialog.hpp"
 
 
 
@@ -1017,21 +1016,4 @@ void dicom_parser::on_actionSwap_by_bz_triggered()
         ui->tableWidget->item(index,4)->setText(ui->tableWidget->item(index,3)->text());
         ui->tableWidget->item(index,3)->setText(temp);
     }
-}
-
-void dicom_parser::on_actionDetect_Motion_triggered()
-{
-    unsigned int b0_count = 0;
-    for(unsigned int index = 0;index < dwi_files.size();++index)
-        if(dwi_files[index]->get_bvalue() < 100)
-            ++b0_count;
-    if(b0_count <= 1)
-    {
-        QMessageBox::information(this,"Error","This function requires multiple b0 images.");
-        return;
-    }
-
-    motion_dialog* md = new motion_dialog(this,dwi_files);
-    md->setAttribute(Qt::WA_DeleteOnClose);
-    md->show();
 }

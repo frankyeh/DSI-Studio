@@ -90,7 +90,6 @@ HEADERS += mainwindow.h \
     tracking/color_bar_dialog.hpp \
     tracking/connectivity_matrix_dialog.h \
     tracking/atlasdialog.h \
-    dicom/motion_dialog.hpp \
     filebrowser.h \
     program_option.hpp \
     qcompletelineedit.h \
@@ -117,7 +116,6 @@ FORMS += mainwindow.ui \
     tracking/color_bar_dialog.ui \
     tracking/connectivity_matrix_dialog.ui \
     tracking/atlasdialog.ui \
-    dicom/motion_dialog.ui \
     filebrowser.ui \
     connectometry/createdbdialog.ui \
     connectometry/individual_connectometry.ui \
@@ -165,7 +163,6 @@ SOURCES += main.cpp \
     libs/dsi/tessellated_icosahedron.cpp \
     cmd/atl.cpp \
     tracking/atlasdialog.cpp \
-    dicom/motion_dialog.cpp \
     cmd/cnt.cpp \
     cmd/vis.cpp \
     filebrowser.cpp \

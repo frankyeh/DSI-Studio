@@ -47,7 +47,6 @@ private slots:
     void on_actionSwap_bx_by_triggered();
     void on_actionSwap_bx_bz_triggered();
     void on_actionSwap_by_bz_triggered();
-    void on_actionDetect_Motion_triggered();
 };
 
 #endif // DICOM_PARSER_H
