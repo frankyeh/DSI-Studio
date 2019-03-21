@@ -1482,10 +1482,6 @@ QString tracking_window::get_save_file_name(QString title,QString file_name,QStr
     return QFileDialog::getSaveFileName(this,title,file_name,file_type);
 }
 
-
-
-
-
 void tracking_window::on_rendering_efficiency_currentIndexChanged(int index)
 {
     if(!renderWidget)
