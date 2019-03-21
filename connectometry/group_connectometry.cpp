@@ -178,9 +178,6 @@ void group_connectometry::show_fdr_report()
     fdr_chart->axes(Qt::Horizontal).back()->setGridLineVisible(false);
     fdr_chart->axes(Qt::Vertical).back()->setGridLineVisible(false);
     fdr_chart->axes(Qt::Vertical).back()->setRange(0,1);
-
-
-
     fdr_chart->setTitle("FDR versus Track Length");
 
 }

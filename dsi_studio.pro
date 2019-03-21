@@ -1,7 +1,6 @@
 QT += core \
     gui \
     opengl \
-    printsupport \
     charts
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 CONFIG += c++11
@@ -82,7 +81,6 @@ HEADERS += mainwindow.h \
     libs/prog_interface_static_link.h \
     simulation.h \
     libs/mapping/atlas.hpp \
-    plot/qcustomplot.h \
     view_image.h \
     libs/gzip_interface.hpp \
     libs/dsi/racian_noise.hpp \
@@ -155,7 +153,6 @@ SOURCES += main.cpp \
     simulation.cpp \
     cmd/src.cpp \
     libs/mapping/atlas.cpp \
-    plot/qcustomplot.cpp \
     cmd/ana.cpp \
     view_image.cpp \
     manual_alignment.cpp \
