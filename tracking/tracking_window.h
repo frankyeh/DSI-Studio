@@ -153,7 +153,6 @@ private slots:
     void on_action3D_Screen_3_Views_Horizontal_triggered();
     void on_action3D_Screen_3_Views_Vertical_triggered();
     void on_actionROI_triggered();
-    void on_actionTrack_Report_triggered();
     void on_rendering_efficiency_currentIndexChanged(int index);
     void on_actionCut_X_triggered();
     void on_actionCut_X_2_triggered();

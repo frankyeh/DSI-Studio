@@ -1477,11 +1477,6 @@ void tracking_window::on_actionROI_triggered()
     scene.copyClipBoard();
 }
 
-void tracking_window::on_actionTrack_Report_triggered()
-{
-    if(tact_report_imp.get())
-                tact_report_imp->copyToClipboard();
-}
 QString tracking_window::get_save_file_name(QString title,QString file_name,QString file_type)
 {
     return QFileDialog::getSaveFileName(this,title,file_name,file_type);
