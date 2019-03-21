@@ -25,8 +25,8 @@ private:
 private:
     int color_gen = 10;
 public:
-    std::vector<ThreadData*> thread_data;
-    std::vector<TractModel*> tract_models;
+    std::vector<std::shared_ptr<ThreadData> > thread_data;
+    std::vector<std::shared_ptr<TractModel> > tract_models;
     enum {none = 0,select = 1,del = 2,cut = 3,paint = 4}edit_option;
     void addNewTracts(QString tract_name,bool checked = true);
     void addConnectometryResults(std::vector<std::vector<std::vector<float> > >& greater,

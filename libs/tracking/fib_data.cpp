@@ -180,7 +180,7 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
         }
     }
 
-    for (unsigned int index = 0;check_prog(index,mat_reader.size());++index)
+    for (unsigned int index = 0;index < mat_reader.size();++index)
     {
         std::string matrix_name = mat_reader.name(index);
         if (matrix_name == "image")
@@ -593,7 +593,7 @@ bool fib_data::load_from_mat(void)
     view_item.back().name = "color";
 
     unsigned int row,col;
-    for (unsigned int index = 0;check_prog(index,mat_reader.size());++index)
+    for (unsigned int index = 0;index < mat_reader.size();++index)
     {
         std::string matrix_name = mat_reader.name(index);
         if (matrix_name == "voxel_size")

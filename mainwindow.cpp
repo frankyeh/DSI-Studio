@@ -42,17 +42,12 @@ int atl(void);
 int cnt(void);
 int vis(void);
 int ren(void);
-extern std::auto_ptr<QProgressDialog> progressDialog;
 
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
         ui(new Ui::MainWindow)
 {
     setAcceptDrops(true);
-
-
-    progressDialog.reset(new QProgressDialog);
-    progressDialog->hide();
     ui->setupUi(this);
     ui->recentFib->setColumnCount(3);
     ui->recentFib->setColumnWidth(0,300);

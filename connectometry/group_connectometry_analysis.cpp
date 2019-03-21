@@ -556,9 +556,10 @@ void group_connectometry_analysis::generate_report(std::string& output)
         *(new_data.get()) = *(handle);
         tracking_window* new_mdi = new tracking_window(0,new_data);
         new_mdi->setWindowTitle(output_file_name.c_str());
-        new_mdi->showMaximized();
+        new_mdi->show();
+        new_mdi->resize(2000,1000);
         new_mdi->update();
-        new_mdi->command("set_zoom","0.8");
+        new_mdi->command("set_zoom","1.0");
         new_mdi->command("set_param","show_surface","1");
         new_mdi->command("set_param","show_slice","0");
         new_mdi->command("set_param","show_region","0");

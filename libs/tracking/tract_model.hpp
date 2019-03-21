@@ -31,7 +31,7 @@ private:
         // for loading multiple clusters
         std::vector<unsigned int> tract_cluster;
 public:
-        static bool save_all(const char* file_name,const std::vector<TractModel*>& all);
+        static bool save_all(const char* file_name,const std::vector<std::shared_ptr<TractModel> >& all);
         const std::vector<unsigned int>& get_cluster_info(void) const{return tract_cluster;}
         std::vector<unsigned int>& get_cluster_info(void) {return tract_cluster;}
         void select(float select_angle,

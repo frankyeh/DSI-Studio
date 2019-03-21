@@ -50,7 +50,7 @@ public:
     ~tracking_window();
 
     Ui::tracking_window *ui;
-    GLWidget *glWidget;
+    ::GLWidget *glWidget;
     std::auto_ptr<QGLDockWidget> gLdock;
     RegionTableWidget *regionWidget;
     TractTableWidget *tractWidget;

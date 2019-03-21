@@ -60,14 +60,20 @@ GLWidget::GLWidget(bool samplebuffer,
     }
 }
 
-GLWidget::~GLWidget()
+GLWidget::~GLWidget(){}
+
+
+void GLWidget::clean_up(void)
 {
     makeCurrent();
-    for(int i = 0;i < slice_texture.size();++i)
-        deleteTexture(slice_texture[i]);
-    glDeleteLists(tracts, 1);
+    slice_texture.clear();
+    if(tracts)
+        glDeleteLists(tracts, 1);
+    tracts = 0;
+    doneCurrent();
     //std::cout << __FUNCTION__ << " " << __FILE__ << std::endl;
 }
+
 
 int GLWidget::get_param(const char* name)
 {
@@ -807,20 +813,18 @@ void GLWidget::renderLR()
 
             if(dim < 3 && slice_pos[dim] != current_slice->slice_pos[dim])
             {
-                if(slice_texture[dim])
-                    deleteTexture(slice_texture[dim]);
                 tipl::color_image texture;
                 current_slice->get_texture(dim,texture,cur_tracking_window.v2c,
                                            cur_tracking_window.overlay_slice.get(),cur_tracking_window.overlay_v2c);
-                slice_texture[dim] =
-                    bindTexture(QImage((unsigned char*)&*texture.begin(),
-                                       texture.width(),texture.height(),QImage::Format_RGB32));
+                slice_texture[dim] = std::make_shared<QOpenGLTexture>(
+                                        QImage((unsigned char*)&*texture.begin(),
+                                            texture.width(),texture.height(),QImage::Format_RGB32).mirrored());
                 slice_pos[dim] = current_slice->slice_pos[dim];
             }
 
-            if(slice_texture[dim])
+            if(slice_texture[dim].get())
             {
-                glBindTexture(GL_TEXTURE_2D, slice_texture[dim]);
+                slice_texture[dim]->bind();
                 int texparam[] = {GL_NEAREST,
                                    GL_LINEAR};
                 glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,texparam[get_param("slice_mag_filter")]);
@@ -845,12 +849,9 @@ void GLWidget::renderLR()
             if(keep_slice && dim == cur_tracking_window.cur_dim)
             {
                 if(slice_texture.size() > 3)
-                {
-                    deleteTexture(slice_texture[3]);
                     slice_texture.pop_back();
-                }
                 slice_texture.push_back(slice_texture[dim]);
-                slice_texture[dim] = 0;
+                slice_texture[dim].reset();
                 keep_slice_points = points;
                 keep_slice = false;
             }
@@ -1008,8 +1009,7 @@ void GLWidget::renderLR()
             for (unsigned int i = 0;i < cur_tracking_window.tractWidget->rowCount();++i)
             if(cur_tracking_window.tractWidget->item(i,0)->checkState() == Qt::Checked)
             {
-                TractModel* active_tract_model =
-                    cur_tracking_window.tractWidget->tract_models[i];
+                auto active_tract_model = cur_tracking_window.tractWidget->tract_models[i];
                 if (active_tract_model->get_visible_track_count() == 0)
                     continue;
                 const auto& t = active_tract_model->get_tract(0);
@@ -1237,7 +1237,7 @@ void GLWidget::makeTracts(void)
             {
                 if(cur_tracking_window.tractWidget->item(active_tract_index,0)->checkState() != Qt::Checked)
                     continue;
-                TractModel* active_tract_model =
+                auto active_tract_model =
                     cur_tracking_window.tractWidget->tract_models[active_tract_index];
                 if (active_tract_model->get_visible_track_count() == 0)
                     continue;
@@ -1279,7 +1279,7 @@ void GLWidget::makeTracts(void)
         {
             if(cur_tracking_window.tractWidget->item(active_tract_index,0)->checkState() != Qt::Checked)
                 continue;
-            TractModel* active_tract_model =
+            auto active_tract_model =
                 cur_tracking_window.tractWidget->tract_models[active_tract_index];
             if (active_tract_model->get_visible_track_count() == 0)
                 continue;
@@ -1297,7 +1297,7 @@ void GLWidget::makeTracts(void)
         {
             if(cur_tracking_window.tractWidget->item(active_tract_index,0)->checkState() != Qt::Checked)
                 continue;
-            TractModel* active_tract_model =
+            auto active_tract_model =
                 cur_tracking_window.tractWidget->tract_models[active_tract_index];
             if (active_tract_model->get_visible_track_count() == 0)
                 continue;

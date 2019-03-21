@@ -7,6 +7,7 @@
 QStringList search_files(QString dir,QString filter);
 
 
+extern bool has_gui;
 std::string quality_check_src_files(QString dir)
 {
     std::ostringstream out;
@@ -18,13 +19,13 @@ std::string quality_check_src_files(QString dir)
     {
         out << QFileInfo(filenames[i]).baseName().toStdString() << "\t";
         ImageModel handle;
-        unique_prog(true);
+        has_gui = false;
         if (!handle.load_from_file(filenames[i].toStdString().c_str()))
         {
             out << "Cannot load SRC file"  << std::endl;
             continue;
         }
-        unique_prog(false);
+        has_gui = true;
         // output image dimension
         out << tipl::vector<3,int>(handle.voxel.dim.begin()) << "\t";
         // output image resolution

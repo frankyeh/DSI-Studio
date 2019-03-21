@@ -90,7 +90,8 @@ bool connectometry_db::parse_demo(const std::string& filename,float missing_valu
         {
             if(is_csv)
             {
-                std::sregex_token_iterator first{line.begin(), line.end(),std::regex(","), -1},last;
+                std::regex re(",");
+                std::sregex_token_iterator first{line.begin(), line.end(),re, -1},last;
                 std::copy(first,last,std::back_inserter(items));
             }
             else

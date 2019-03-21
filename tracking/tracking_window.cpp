@@ -58,6 +58,8 @@ void show_info_dialog(const std::string& title,const std::string& result)
 void tracking_window::closeEvent(QCloseEvent *event)
 {
     QMainWindow::closeEvent(event);
+    // clean up texture here when makeCurrent is still working
+    glWidget->clean_up();
 }
 
 QVariant tracking_window::operator[](QString name) const
@@ -414,12 +416,13 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
 tracking_window::~tracking_window()
 {
+    tractWidget->stop_tracking();
+    tractWidget->delete_all_tract();
     qApp->removeEventFilter(this);
     QSettings settings;
     settings.setValue("geometry", saveGeometry());
     settings.setValue("state", saveState());
     settings.setValue("rendering_quality",ui->rendering_efficiency->currentIndex());
-    tractWidget->delete_all_tract();
     delete ui;
     //std::cout << __FUNCTION__ << " " << __FILE__ << std::endl;
 }

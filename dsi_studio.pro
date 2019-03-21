@@ -1,13 +1,16 @@
 QT += core \
     gui \
     opengl \
-    printsupport
+    printsupport \
+    charts
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 CONFIG += c++11
 #CONFIG += console
 TARGET = dsi_studio
 TEMPLATE = app
 INCLUDEPATH += ./plot
+
+
 
 win32* {
 # GPU computation
@@ -16,13 +19,13 @@ win32* {
 
 INCLUDEPATH += ../include
 QMAKE_CXXFLAGS += -wd4244 -wd4267 -wd4018
+LIBS += -lOpenGL32 -lGlu32
 RC_FILE = dsi_studio.rc
 }
 
 linux* {
 QMAKE_CXXFLAGS += -fpermissive
-LIBS += -lGLU \
-        -lz
+LIBS += lGLU -lz
 }
 
 mac{

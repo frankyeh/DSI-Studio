@@ -766,7 +766,7 @@ void TractModel::save_vrml(const char* file_name,
 }
 
 //---------------------------------------------------------------------------
-bool TractModel::save_all(const char* file_name_,const std::vector<TractModel*>& all)
+bool TractModel::save_all(const char* file_name_,const std::vector<std::shared_ptr<TractModel> >& all)
 {
     if(all.empty())
         return false;

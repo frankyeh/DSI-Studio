@@ -4,6 +4,7 @@
 #include <QGraphicsScene>
 #include <QItemDelegate>
 #include <QTimer>
+#include <QtCharts/QtCharts>
 #include "tipl/tipl.hpp"
 #include "group_connectometry_analysis.h"
 #include "atlas.hpp"
@@ -36,7 +37,11 @@ class fib_data;
 class group_connectometry : public QDialog
 {
     Q_OBJECT
-
+private:
+    QChart* null_chart;
+    QChart* fdr_chart;
+    QChartView* null_chart_view;
+    QChartView* fdr_chart_view;
 private:
     std::auto_ptr<connectometry_result> result_fib;
     void show_dis_table(void);

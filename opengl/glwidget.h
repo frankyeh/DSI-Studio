@@ -2,6 +2,7 @@
 #define GLWIDGET_H
 #include <QTimer>
 #include <QTime>
+#include <QOpenGLTexture>
 //#include <QOpenGLShaderProgram>
 #define NOMINMAX
 #include <memory>
@@ -38,6 +39,7 @@ Q_OBJECT
               RenderingTableWidget* renderWidget_,
               QWidget *parent = 0);
      ~GLWidget();
+     void clean_up(void);
 public:
      //std::shared_ptr<QOpenGLShaderProgram> shader,shader2;
      //int s_mvp,s_mvp2,s_depthMap;
@@ -146,7 +148,7 @@ public:
      std::vector<tipl::vector<3,float> > keep_slice_points;
 public:
      GLuint tracts = 0;
-     std::vector<GLuint> slice_texture;
+     std::vector<std::shared_ptr<QOpenGLTexture> > slice_texture;
 
      int slice_pos[3];
      QPoint lastPos,last_select_point;

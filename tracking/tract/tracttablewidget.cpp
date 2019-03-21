@@ -62,8 +62,8 @@ void TractTableWidget::check_check_status(int, int col)
 
 void TractTableWidget::addNewTracts(QString tract_name,bool checked)
 {
-    thread_data.push_back(0);
-    tract_models.push_back(new TractModel(cur_tracking_window.handle));
+    thread_data.push_back(std::make_shared<ThreadData>());
+    tract_models.push_back(std::make_shared<TractModel>(cur_tracking_window.handle));
     insertRow(tract_models.size()-1);
     QTableWidgetItem *item0 = new QTableWidgetItem(tract_name);
     item0->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
@@ -109,9 +109,8 @@ void TractTableWidget::start_tracking(void)
         addNewTracts(cur_tracking_window.ui->target->currentText());
     else
         addNewTracts(cur_tracking_window.regionWidget->getROIname());
-    thread_data.back() = new ThreadData();
     cur_tracking_window.set_tracking_param(*thread_data.back());
-    cur_tracking_window.regionWidget->setROIs(thread_data.back());
+    cur_tracking_window.regionWidget->setROIs(thread_data.back().get());
     thread_data.back()->run(tract_models.back()->get_fib(),
                             cur_tracking_window["thread_count"].toInt(),
                             false);
@@ -214,11 +213,11 @@ void TractTableWidget::fetch_tracts(void)
     bool has_tracts = false;
     bool has_thread = false;
     for(unsigned int index = 0;index < thread_data.size();++index)
-        if(thread_data[index])
+        if(thread_data[index].get())
         {
             has_thread = true;
             // 2 for seed number
-            if(thread_data[index]->fetchTracks(tract_models[index]))
+            if(thread_data[index]->fetchTracks(tract_models[index].get()))
             {
                 // 1 for tract number
                 item(index,1)->setText(
@@ -236,8 +235,7 @@ void TractTableWidget::fetch_tracts(void)
                     item(index,1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
                     item(index,2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
                 }
-                delete thread_data[index];
-                thread_data[index] = 0;
+                thread_data[index].reset();
             }
         }
     if(has_tracts)
@@ -250,11 +248,7 @@ void TractTableWidget::stop_tracking(void)
 {
     timer->stop();
     for(unsigned int index = 0;index < thread_data.size();++index)
-    {
-        delete thread_data[index];
-        thread_data[index] = 0;
-    }
-
+        thread_data[index].reset();
 }
 void TractTableWidget::load_tracts(QStringList filenames)
 {
@@ -873,7 +867,7 @@ void TractTableWidget::save_tracts_color_as(void)
     tract_models[currentRow()]->save_tracts_color_to_file(&*sfilename.begin());
 }
 
-void get_track_statistics(const std::vector<TractModel*>& tract_models,
+void get_track_statistics(const std::vector<std::shared_ptr<TractModel> >& tract_models,
                           const std::vector<std::string>& track_name,
                           std::string& result)
 {
@@ -912,7 +906,7 @@ void TractTableWidget::show_tracts_statistics(void)
         return;
     std::string result;
     {
-        std::vector<TractModel*> active_tracks;
+        std::vector<std::shared_ptr<TractModel> > active_tracks;
         std::vector<std::string> track_name;
         for(unsigned int index = 0;index < tract_models.size();++index)
             if(item(index,0)->checkState() == Qt::Checked)
@@ -954,11 +948,6 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
     if(cmd == "delete_all_tract")
     {
         setRowCount(0);
-        for(unsigned int index = 0;index < tract_models.size();++index)
-        {
-            delete thread_data[index];
-            delete tract_models[index];
-        }
         thread_data.clear();
         tract_models.clear();
         emit need_update();
@@ -1027,8 +1016,6 @@ void TractTableWidget::delete_row(int row)
 {
     if(row >= tract_models.size())
         return;
-    delete thread_data[row];
-    delete tract_models[row];
     thread_data.erase(thread_data.begin()+row);
     tract_models.erase(tract_models.begin()+row);
     removeRow(row);

@@ -278,6 +278,7 @@ int run_cmd(int ac, char *av[])
     return 0;
 }
 
+extern bool has_gui;
 int main(int ac, char *av[])
 {
     if(ac > 2)
@@ -287,5 +288,6 @@ int main(int ac, char *av[])
     MainWindow w;
     w.show();
     w.setWindowTitle(QString("DSI Studio ") + __DATE__ + " build");
+    has_gui = true;
     return a.exec();
 }
