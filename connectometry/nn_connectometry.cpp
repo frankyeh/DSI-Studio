@@ -6,10 +6,13 @@
 #include "nn_connectometry.h"
 #include "ui_nn_connectometry.h"
 nn_connectometry::nn_connectometry(QWidget *parent,std::shared_ptr<fib_data> handle,QString db_file_name_,bool gui_) :
-    QDialog(parent),nna(handle),work_dir(QFileInfo(db_file_name_).absoluteDir().absolutePath()),gui(gui_),
+    QDialog(parent),
+    predict_chart(new QChart),predict_chart_view(new QChartView(predict_chart)),
+    nna(handle),work_dir(QFileInfo(db_file_name_).absoluteDir().absolutePath()),gui(gui_),
     ui(new Ui::nn_connectometry)
 {
     ui->setupUi(this);
+    ui->predict_chart_layout->addWidget(predict_chart_view);
     ui->network_view->setScene(&network_scene);
     ui->layer_view->setScene(&layer_scene);
     log_text += nna.handle->report.c_str();
@@ -164,44 +167,29 @@ void nn_connectometry::on_view_tab_currentChanged(int)
                 }
             }
 
-            QVector<double> x(nna.test_result.size());
-            QVector<double> y(nna.test_result.size());
-            double x_min = 100,x_max = -100,y_min = 100,y_max = -100;
-            for(unsigned int row = 0;row < nna.test_result.size();++row)
+            QScatterSeries *series = new QScatterSeries();
+            series->setMarkerSize(3.0);
+            series->setMarkerShape(QScatterSeries::MarkerShapeRectangle);
+            series->setPen(Qt::NoPen);
+            series->setBrush(Qt::black);
+            for(int row = 0;row < nna.test_result.size();++row)
             {
-                x[row] = nna.test_result[row]/nna.sl_scale+nna.sl_mean;
-                y[row] = nna.fp_data.data_label[nna.test_seq[row]]/nna.sl_scale+nna.sl_mean;
-                ui->test_subjects->item(row,1)->setText(QString::number(y[row]));
-                ui->test_subjects->item(row,2)->setText(QString::number(x[row]));
-                x_min = std::min<double>(x_min,x[row]);
-                x_max = std::max<double>(x_max,x[row]);
-                y_min = std::min<double>(y_min,y[row]);
-                y_max = std::max<double>(y_max,y[row]);
+                float x,y;
+                series->append(x = nna.test_result[row]/nna.sl_scale+nna.sl_mean,
+                               y = nna.fp_data.data_label[nna.test_seq[row]]/nna.sl_scale+nna.sl_mean);
+                ui->test_subjects->item(row,1)->setText(QString::number(y));
+                ui->test_subjects->item(row,2)->setText(QString::number(x));
             }
-            double x_margin = (x_max-x_min)*0.05f;
-            double y_margin = (y_max-y_min)*0.05f;
-            ui->prediction_plot->clearGraphs();
-            ui->prediction_plot->addGraph();
-            QPen pen;
-            pen.setColor(Qt::red);
-            ui->prediction_plot->graph()->setLineStyle(QCPGraph::lsNone);
-            ui->prediction_plot->graph()->setScatterStyle(QCP::ScatterStyle::ssDisc);
-            ui->prediction_plot->graph()->setScatterSize(5);
-            ui->prediction_plot->graph()->setPen(pen);
-            ui->prediction_plot->graph()->setData(x, y);
-            ui->prediction_plot->xAxis->setLabel("Prediction");
-            ui->prediction_plot->yAxis->setLabel("Test Values");
-            ui->prediction_plot->xAxis->setRange(x_min-x_margin,x_max+x_margin);
-            ui->prediction_plot->yAxis->setRange(y_min-y_margin,y_max+y_margin);
-            ui->prediction_plot->xAxis->setGrid(false);
-            ui->prediction_plot->yAxis->setGrid(false);
-            ui->prediction_plot->xAxis2->setVisible(true);
-            ui->prediction_plot->xAxis2->setTicks(false);
-            ui->prediction_plot->xAxis2->setTickLabels(false);
-            ui->prediction_plot->yAxis2->setVisible(true);
-            ui->prediction_plot->yAxis2->setTicks(false);
-            ui->prediction_plot->yAxis2->setTickLabels(false);
-            ui->prediction_plot->replot();
+            predict_chart->removeAllSeries();
+            predict_chart->addSeries(series);
+            predict_chart->createDefaultAxes();
+            predict_chart->setDropShadowEnabled(false);
+            predict_chart->axes(Qt::Horizontal).back()->setTitleText("Predicted Value");
+            predict_chart->axes(Qt::Vertical).back()->setTitleText("Value");
+            predict_chart->axes(Qt::Horizontal).back()->setGridLineVisible(false);
+            predict_chart->axes(Qt::Vertical).back()->setGridLineVisible(false);
+            predict_chart->setTitle("Predicted versus True Vlues");
+
         }
     }
 

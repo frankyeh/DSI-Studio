@@ -56,7 +56,10 @@ public:
     }
     bool read(void* buf,size_t buf_size)
     {
-        check_prog(100*cur()/size(),100);
+        if(cur() < size())
+            check_prog(100*cur()/size(),100);
+        else
+            check_prog(99,100);
         if(prog_aborted())
             return false;
         if(handle)

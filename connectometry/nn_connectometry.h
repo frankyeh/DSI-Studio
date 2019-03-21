@@ -3,6 +3,7 @@
 
 #include <QDialog>
 #include <QGraphicsScene>
+#include <QtCharts/QtCharts>
 #include "group_connectometry_analysis.h"
 #include "nn_connectometry_analysis.h"
 #include <tipl/tipl.hpp>
@@ -15,7 +16,9 @@ class nn_connectometry;
 class nn_connectometry : public QDialog
 {
     Q_OBJECT
-
+private:
+    QChart* predict_chart;
+    QChartView* predict_chart_view;
 public:
     bool gui = true;
     QString work_dir;

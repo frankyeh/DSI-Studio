@@ -175,7 +175,12 @@ void group_connectometry::show_fdr_report()
     fdr_chart->createDefaultAxes();
     fdr_chart->axes(Qt::Horizontal).back()->setTitleText("Length (voxel distance)");
     fdr_chart->axes(Qt::Vertical).back()->setTitleText("FDR");
+    fdr_chart->axes(Qt::Horizontal).back()->setGridLineVisible(false);
+    fdr_chart->axes(Qt::Vertical).back()->setGridLineVisible(false);
     fdr_chart->axes(Qt::Vertical).back()->setRange(0,1);
+
+
+
     fdr_chart->setTitle("FDR versus Track Length");
 
 }
@@ -231,6 +236,8 @@ void group_connectometry::show_report()
     null_chart->createDefaultAxes();
     null_chart->axes(Qt::Horizontal).back()->setTitleText("Length (voxel distance)");
     null_chart->axes(Qt::Vertical).back()->setTitleText("Count");
+    null_chart->axes(Qt::Horizontal).back()->setGridLineVisible(false);
+    null_chart->axes(Qt::Vertical).back()->setGridLineVisible(false);
     null_chart->setTitle("Track Count versus Track Length");
 
 }

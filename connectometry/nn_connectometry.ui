@@ -493,25 +493,26 @@
            <enum>Qt::Vertical</enum>
           </property>
           <widget class="QWidget" name="widget_2" native="true">
-           <layout class="QVBoxLayout" name="verticalLayout_9">
-            <item>
-             <widget class="QCustomPlot" name="prediction_plot" native="true">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-             </widget>
-            </item>
-           </layout>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>300</height>
+            </size>
+           </property>
+           <layout class="QVBoxLayout" name="predict_chart_layout"/>
           </widget>
           <widget class="QTableWidget" name="test_subjects">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
            </property>
            <property name="alternatingRowColors">
             <bool>true</bool>
@@ -549,14 +550,6 @@
    </item>
   </layout>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>QCustomPlot</class>
-   <extends>QWidget</extends>
-   <header>plot/qcustomplot.h</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources>
   <include location="../icons.qrc"/>
  </resources>
