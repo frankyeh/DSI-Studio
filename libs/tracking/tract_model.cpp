@@ -1876,7 +1876,7 @@ void TractModel::recognize_report(std::string& report,
     std::ostringstream out;
     for(auto& r : result)
     {
-        if(r.first < 0.05) // only report greater than 5%
+        if(r.first < 0.01) // only report greater than 1%
             break;
         if(n)
             out << (n == result.size()-1 ? (result.size() == 2 ? " and ":", and ") : ", ");

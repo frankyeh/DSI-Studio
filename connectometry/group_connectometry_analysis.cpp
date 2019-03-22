@@ -224,7 +224,8 @@ void group_connectometry_analysis::save_tracks_files(void)
                         break;
                     }
             }
-
+            for(int dis = 1;greater_track->get_visible_track_count() > 10000;++dis)
+                greater_track->delete_repeated(dis);
             std::ostringstream out1;
             out1 << output_file_name << ".greater.trk.gz";
             greater_track->save_tracts_to_file(out1.str().c_str());
@@ -276,6 +277,8 @@ void group_connectometry_analysis::save_tracks_files(void)
                         break;
                     }
             }
+            for(int dis = 1;lesser_track->get_visible_track_count() > 10000;++dis)
+                lesser_track->delete_repeated(dis);
 
             std::ostringstream out1;
             out1 << output_file_name << ".lesser.trk.gz";
@@ -393,24 +396,26 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         else
         {
             output_file_name += ".fdr";
-            output_file_name += std::to_string((int)fdr_threshold*100);
+            output_file_name += std::to_string(fdr_threshold);
         }
         output_file_name += output_roi_suffix;
     }
 
+    size_t max_dimension = *std::max_element(handle->dim.begin(),handle->dim.end());
+
     terminated = false;
     subject_greater_null.clear();
-    subject_greater_null.resize(200);
+    subject_greater_null.resize(max_dimension);
     subject_lesser_null.clear();
-    subject_lesser_null.resize(200);
+    subject_lesser_null.resize(max_dimension);
     subject_greater.clear();
-    subject_greater.resize(200);
+    subject_greater.resize(max_dimension);
     subject_lesser.clear();
-    subject_lesser.resize(200);
+    subject_lesser.resize(max_dimension);
     fdr_greater.clear();
-    fdr_greater.resize(200);
+    fdr_greater.resize(max_dimension);
     fdr_lesser.clear();
-    fdr_lesser.resize(200);
+    fdr_lesser.resize(max_dimension);
 
     seed_greater_null.clear();
     seed_greater_null.resize(permutation_count);
@@ -516,33 +521,43 @@ void group_connectometry_analysis::generate_report(std::string& output)
 
 
     html_report << "<h2>Results</h2>" << std::endl;
+    if(progress == 100)
+    {
+        html_report << "<img src = \""<< QFileInfo(QString(output_file_name.c_str())+".fdr.jpg").fileName().toStdString() << "\" width=\"320\"/>" << std::endl;
+        html_report << "<p><b>Fig.</b> The False discovery rate (FDR) at different track length </p>";
+    }
     if(model->type == 1) // regression
-        html_report << "<h3>Positive Correlation with " << foi_str << "</h3>" << std::endl;
+        html_report << "<h3>Positive correlation with " << foi_str << "</h3>" << std::endl;
     if(model->type == 3)
         html_report << "<h3>Increased connectivity</h3>" << std::endl;
 
     if(progress == 100)
     {
-        html_report << "<img src = \""<< QFileInfo(QString(output_file_name.c_str())+".positive.jpg").fileName().toStdString() << "\" width=\"800\"/>" << std::endl;
+        html_report << "<img src = \""<< QFileInfo(QString(output_file_name.c_str())+".positive.jpg").fileName().toStdString() << "\" width=\"1200\"/>" << std::endl;
         if(model->type == 1) // regression
             html_report << "<p><b>Fig.</b> Tracks positively correlated with "<< foi_str << "</p>";
-        if(model->type ==3)
+        if(model->type == 3)
             html_report << "<p><b>Fig.</b> Tracks with increased connectivity</p>";
+        html_report << "<img src = \""<< QFileInfo(QString(output_file_name.c_str())+".pos_corr.dist.jpg").fileName().toStdString() << "\" width=\"320\"/>" << std::endl;
+        html_report << "<p><b>Fig.</b> Permuted versus non permuted results showing the differences against null distribution in tracks with positive correlation</p>";
+
     }
     html_report << "<p>" << out_greater.str().c_str() << "</p>" << std::endl;
 
     if(model->type == 1) // regression
-        html_report << "<h3>Negatively Correlation with " << foi_str << "</h3>" << std::endl;
+        html_report << "<h3>Negatively correlation with " << foi_str << "</h3>" << std::endl;
     if(model->type == 3) // regression
         html_report << "<h3>Decreased connectivity</h3>" << std::endl;
 
     if(progress == 100)
     {
-        html_report << "<img src = \""<< QFileInfo(QString(output_file_name.c_str())+".negative.jpg").fileName().toStdString() << "\" width=\"800\"/>" << std::endl;
+        html_report << "<img src = \""<< QFileInfo(QString(output_file_name.c_str())+".negative.jpg").fileName().toStdString() << "\" width=\"1200\"/>" << std::endl;
         if(model->type == 1) // regression
             html_report << "<p><b>Fig.</b> Tracks negatively correlated with "<< foi_str << "</p>";
-        if(model->type ==3)
+        if(model->type == 3)
             html_report << "<p><b>Fig.</b> Tracks with decreased connectivity.</p>";
+        html_report << "<img src = \""<< QFileInfo(QString(output_file_name.c_str())+".neg_corr.dist.jpg").fileName().toStdString() << "\" width=\"320\"/>" << std::endl;
+        html_report << "<p><b>Fig.</b> Permuted versus non permuted results showing the differences against null distribution in tracks with negative correlation</p>";
     }
     html_report << "<p>" << out_lesser.str().c_str() << "</p>" << std::endl;
     html_report << "</body></html>" << std::endl;

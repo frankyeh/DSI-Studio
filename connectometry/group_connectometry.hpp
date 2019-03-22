@@ -38,9 +38,11 @@ class group_connectometry : public QDialog
 {
     Q_OBJECT
 private:
-    QChart* null_chart;
+    QChart* null_pos_chart;
+    QChart* null_neg_chart;
+    QChartView* null_pos_chart_view;
+    QChartView* null_neg_chart_view;
     QChart* fdr_chart;
-    QChartView* null_chart_view;
     QChartView* fdr_chart_view;
 private:
     std::auto_ptr<connectometry_result> result_fib;

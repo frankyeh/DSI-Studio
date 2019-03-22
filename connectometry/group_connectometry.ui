@@ -19,24 +19,6 @@
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
-    <widget class="QWidget" name="widget_2" native="true">
-     <layout class="QVBoxLayout" name="verticalLayout_9">
-      <property name="leftMargin">
-       <number>0</number>
-      </property>
-      <property name="topMargin">
-       <number>0</number>
-      </property>
-      <property name="rightMargin">
-       <number>0</number>
-      </property>
-      <property name="bottomMargin">
-       <number>0</number>
-      </property>
-     </layout>
-    </widget>
-   </item>
-   <item>
     <widget class="QWidget" name="widget_3" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -471,10 +453,10 @@
               <number>4</number>
              </property>
              <property name="minimum">
-              <double>0.050000000000000</double>
+              <double>0.001000000000000</double>
              </property>
              <property name="maximum">
-              <double>0.100000000000000</double>
+              <double>0.500000000000000</double>
              </property>
              <property name="singleStep">
               <double>0.005000000000000</double>
@@ -967,6 +949,12 @@
    </item>
    <item>
     <widget class="QTabWidget" name="tabWidget_2">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>2</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="currentIndex">
       <number>0</number>
      </property>
@@ -978,93 +966,12 @@
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_16">
          <item>
-          <widget class="QCheckBox" name="show_null_greater">
-           <property name="text">
-            <string>null greater</string>
-           </property>
-           <property name="checked">
+          <widget class="QPushButton" name="show_result">
+           <property name="enabled">
             <bool>true</bool>
            </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="show_null_lesser">
            <property name="text">
-            <string>null lesser</string>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="show_greater">
-           <property name="text">
-            <string>greater</string>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="show_lesser">
-           <property name="text">
-            <string>lesser</string>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="show_lesser_2">
-           <property name="text">
-            <string>FDR lesser</string>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="show_greater_2">
-           <property name="text">
-            <string>FDR greater</string>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_9">
-         <property name="topMargin">
-          <number>0</number>
-         </property>
-         <item>
-          <widget class="QCheckBox" name="view_legend">
-           <property name="text">
-            <string>legend</string>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label">
-           <property name="text">
-            <string>max x:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QSpinBox" name="span_to">
-           <property name="value">
-            <number>40</number>
+            <string>Step C3e: View Results in 3D</string>
            </property>
           </widget>
          </item>
@@ -1080,16 +987,6 @@
             </size>
            </property>
           </spacer>
-         </item>
-         <item>
-          <widget class="QPushButton" name="show_result">
-           <property name="enabled">
-            <bool>true</bool>
-           </property>
-           <property name="text">
-            <string>Step C3e: View Results in 3D</string>
-           </property>
-          </widget>
          </item>
         </layout>
        </item>

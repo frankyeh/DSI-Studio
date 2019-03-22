@@ -109,7 +109,7 @@ bool connectometry_db::parse_demo(const std::string& filename,float missing_valu
                 if(items.size()-last_item_size != col_count)
                 {
                     std::ostringstream out;
-                    out << "Row number " << row_count << " has " << items.size()-last_item_size <<
+                    out << subject_names[row_count-1] << " at row=" << row_count << " has " << items.size()-last_item_size <<
                             " fields, which is different from the column size " << col_count << ".";
                     error_msg = out.str();
                     return false;

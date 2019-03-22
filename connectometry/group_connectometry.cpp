@@ -60,13 +60,23 @@ void ROIViewDelegate::emitCommitData()
 
 group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_,QString db_file_name_,bool gui_) :
     QDialog(parent),
-    null_chart(new QChart),null_chart_view(new QChartView(null_chart)),
+    null_pos_chart(new QChart),null_pos_chart_view(new QChartView(null_pos_chart)),
+    null_neg_chart(new QChart),null_neg_chart_view(new QChartView(null_neg_chart)),
     fdr_chart(new QChart),fdr_chart_view(new QChartView(fdr_chart)),
     db_file_name(db_file_name_),vbc(vbc_),work_dir(QFileInfo(db_file_name_).absoluteDir().absolutePath()),gui(gui_),
     ui(new Ui::group_connectometry)
 {
 
     ui->setupUi(this);
+    ui->chart_widget_layout->addWidget(null_pos_chart_view);
+    ui->chart_widget_layout->addWidget(null_neg_chart_view);
+    ui->chart_widget_layout->addWidget(fdr_chart_view);
+    null_pos_chart->setMargins(QMargins(0,0,0,0));
+    null_pos_chart->setBackgroundRoundness(0);
+    null_neg_chart->setMargins(QMargins(0,0,0,0));
+    null_neg_chart->setBackgroundRoundness(0);
+    fdr_chart->setMargins(QMargins(0,0,0,0));
+    fdr_chart->setBackgroundRoundness(0);
 
     setMouseTracking(true);
     ui->roi_table->setItemDelegate(new ROIViewDelegate(ui->roi_table));
@@ -91,23 +101,10 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
                                                << "null greater pdf" << "null lesser pdf"
                                                << "greater pdf" << "lesser pdf");
 
-    ui->chart_widget_layout->addWidget(null_chart_view);
-    ui->chart_widget_layout->addWidget(fdr_chart_view);
 
 
 
     // dist report
-    connect(ui->span_to,SIGNAL(valueChanged(int)),this,SLOT(show_report()));
-    connect(ui->span_to,SIGNAL(valueChanged(int)),this,SLOT(show_fdr_report()));
-    connect(ui->view_legend,SIGNAL(toggled(bool)),this,SLOT(show_report()));
-    connect(ui->show_null_greater,SIGNAL(toggled(bool)),this,SLOT(show_report()));
-    connect(ui->show_null_lesser,SIGNAL(toggled(bool)),this,SLOT(show_report()));
-    connect(ui->show_greater,SIGNAL(toggled(bool)),this,SLOT(show_report()));
-    connect(ui->show_lesser,SIGNAL(toggled(bool)),this,SLOT(show_report()));
-
-    connect(ui->show_greater_2,SIGNAL(toggled(bool)),this,SLOT(show_fdr_report()));
-    connect(ui->show_lesser_2,SIGNAL(toggled(bool)),this,SLOT(show_fdr_report()));
-
     ui->foi_widget->hide();
     on_roi_whole_brain_toggled(true);
 
@@ -141,37 +138,26 @@ group_connectometry::~group_connectometry()
     delete ui;
 }
 
+template<typename data_type>
+QLineSeries* get_line_series(const data_type& data, const char* name)
+{
+    QLineSeries* series = new QLineSeries;
+    series->setName(name);
+    int max_size = data.size();
+    while(max_size > 0 && (data[max_size-1] == 0 || data[max_size-1] == 1))
+        --max_size;
+    ++max_size;
+    for(int i = 0;i < max_size;++i)
+        series->append(i,data[i]);
+    return series;
+}
 void group_connectometry::show_fdr_report()
 {
-    fdr_chart->removeAllSeries();
-    std::vector<std::vector<float> > vbc_data;
-    char legends[4][60] = {"greater","lesser"};
-    std::vector<const char*> legend;
-
-    if(ui->show_greater_2->isChecked())
-    {
-        vbc_data.push_back(vbc->fdr_greater);
-        legend.push_back(legends[0]);
-    }
-    if(ui->show_lesser_2->isChecked())
-    {
-        vbc_data.push_back(vbc->fdr_lesser);
-        legend.push_back(legends[1]);
-    }
-    if(vbc_data.empty() || vbc_data[0].empty())
+    if(vbc->fdr_greater.empty())
         return;
-
-    std::vector<QLineSeries*> series(vbc_data.size());
-    for(int i = 0; i < vbc_data.size(); ++i)
-    {
-        series[i] = new QLineSeries;
-        series[i]->setName(legend[i]);
-        for(int j = 0;j <= ui->span_to->value() && j < vbc_data[i].size();++j)
-            series[i]->append(j,vbc_data[i][j]);
-    }
-    for(auto p : series)
-        fdr_chart->addSeries(p);
-
+    fdr_chart->removeAllSeries();
+    fdr_chart->addSeries(get_line_series(vbc->fdr_greater,"positive correlation"));
+    fdr_chart->addSeries(get_line_series(vbc->fdr_lesser,"negative correlation"));
     fdr_chart->createDefaultAxes();
     fdr_chart->axes(Qt::Horizontal).back()->setTitleText("Length (voxel distance)");
     fdr_chart->axes(Qt::Vertical).back()->setTitleText("FDR");
@@ -179,64 +165,39 @@ void group_connectometry::show_fdr_report()
     fdr_chart->axes(Qt::Vertical).back()->setGridLineVisible(false);
     fdr_chart->axes(Qt::Vertical).back()->setRange(0,1);
     fdr_chart->setTitle("FDR versus Track Length");
-
+    ((QValueAxis*)fdr_chart->axes(Qt::Horizontal).back())->setTickType(QValueAxis::TicksDynamic);
+    ((QValueAxis*)fdr_chart->axes(Qt::Horizontal).back())->setTickInterval(10);
 }
+
+
 
 void group_connectometry::show_report()
 {
     if(vbc->subject_greater_null.empty())
         return;
 
-    null_chart->removeAllSeries();
-
-    std::vector<std::vector<unsigned int> > vbc_data;
-    char legends[4][60] = {"permuted greater","permuted lesser","nonpermuted greater","nonpermuted lesser"};
-    std::vector<const char*> legend;
-
-    if(ui->show_null_greater->isChecked())
-    {
-        vbc_data.push_back(vbc->subject_greater_null);
-        legend.push_back(legends[0]);
-    }
-    if(ui->show_null_lesser->isChecked())
-    {
-        vbc_data.push_back(vbc->subject_lesser_null);
-        legend.push_back(legends[1]);
-    }
-    if(ui->show_greater->isChecked())
-    {
-        vbc_data.push_back(vbc->subject_greater);
-        legend.push_back(legends[2]);
-    }
-    if(ui->show_lesser->isChecked())
-    {
-        vbc_data.push_back(vbc->subject_lesser);
-        legend.push_back(legends[3]);
-    }
-
-    if(vbc_data.empty() || vbc_data[0].empty())
-        return;
-
-    std::vector<QLineSeries*> series(vbc_data.size());
-    for(int i = 0; i < vbc_data.size(); ++i)
-    {
-        series[i] = new QLineSeries;
-        series[i]->setName(legend[i]);
-        for(int j = 0;j <= ui->span_to->value() && j < vbc_data[i].size();++j)
-            series[i]->append(j,vbc_data[i][j]);
-    }
-
-    for(auto p : series)
-        null_chart->addSeries(p);
-
-
-    null_chart->createDefaultAxes();
-    null_chart->axes(Qt::Horizontal).back()->setTitleText("Length (voxel distance)");
-    null_chart->axes(Qt::Vertical).back()->setTitleText("Count");
-    null_chart->axes(Qt::Horizontal).back()->setGridLineVisible(false);
-    null_chart->axes(Qt::Vertical).back()->setGridLineVisible(false);
-    null_chart->setTitle("Track Count versus Track Length");
-
+    null_pos_chart->removeAllSeries();
+    null_neg_chart->removeAllSeries();
+    null_pos_chart->addSeries(get_line_series(vbc->subject_greater_null,"permuted positive correlation"));
+    null_pos_chart->addSeries(get_line_series(vbc->subject_greater,"nonpermuted positive correlation"));
+    null_neg_chart->addSeries(get_line_series(vbc->subject_lesser_null,"permuted negative correlation"));
+    null_neg_chart->addSeries(get_line_series(vbc->subject_lesser,"nonpermuted negative correlation"));
+    null_pos_chart->createDefaultAxes();
+    null_pos_chart->axes(Qt::Horizontal).back()->setTitleText("Length (voxel distance)");
+    null_pos_chart->axes(Qt::Vertical).back()->setTitleText("Count");
+    null_pos_chart->axes(Qt::Horizontal).back()->setGridLineVisible(false);
+    null_pos_chart->axes(Qt::Vertical).back()->setGridLineVisible(false);
+    null_pos_chart->setTitle("Track count versus length (positive correlation)");
+    null_neg_chart->createDefaultAxes();
+    null_neg_chart->axes(Qt::Horizontal).back()->setTitleText("Length (voxel distance)");
+    null_neg_chart->axes(Qt::Vertical).back()->setTitleText("Count");
+    null_neg_chart->axes(Qt::Horizontal).back()->setGridLineVisible(false);
+    null_neg_chart->axes(Qt::Vertical).back()->setGridLineVisible(false);
+    null_neg_chart->setTitle("Track count versus length (negative correlation)");
+    ((QValueAxis*)null_pos_chart->axes(Qt::Horizontal).back())->setTickType(QValueAxis::TicksDynamic);
+    ((QValueAxis*)null_pos_chart->axes(Qt::Horizontal).back())->setTickInterval(10);
+    ((QValueAxis*)null_neg_chart->axes(Qt::Horizontal).back())->setTickType(QValueAxis::TicksDynamic);
+    ((QValueAxis*)null_neg_chart->axes(Qt::Horizontal).back())->setTickInterval(10);
 }
 
 void group_connectometry::show_dis_table(void)
@@ -420,41 +381,29 @@ void group_connectometry::calculate_FDR(void)
             }
         }
         // output distribution image
-        {
-
-            ui->show_null_greater->setChecked(true);
-            ui->show_greater->setChecked(true);
-            ui->show_null_lesser->setChecked(false);
-            ui->show_lesser->setChecked(false);
-            null_chart_view->viewport()->update();
-            null_chart_view->grab().save((vbc->output_file_name+".positive_correlated.dist.bmp").c_str());
-
-
-            ui->show_null_greater->setChecked(false);
-            ui->show_greater->setChecked(false);
-            ui->show_null_lesser->setChecked(true);
-            ui->show_lesser->setChecked(true);
-            null_chart_view->viewport()->update();
-            null_chart_view->grab().save((vbc->output_file_name+".negative_correlated.dist.bmp").c_str());
-        }
-
-        // output fdr
-        {
-            ui->show_greater_2->setChecked(true);
-            ui->show_lesser_2->setChecked(false);
-            fdr_chart_view->viewport()->update();
-            fdr_chart_view->grab().save((vbc->output_file_name+".positive_correlated.fdr.bmp").c_str());
-
-            ui->show_greater_2->setChecked(false);
-            ui->show_lesser_2->setChecked(true);
-            fdr_chart_view->viewport()->update();
-            fdr_chart_view->grab().save((vbc->output_file_name+".negative_correlated.fdr.bmp").c_str());
-        }
-
-        // restore all checked status
-        ui->show_null_greater->setChecked(true);
-        ui->show_greater->setChecked(true);
-        ui->show_greater_2->setChecked(true);
+        delete null_pos_chart_view;
+        delete null_neg_chart_view;
+        delete fdr_chart_view;
+        null_pos_chart = new QChart;
+        null_pos_chart_view = new QChartView(null_pos_chart);
+        null_neg_chart = new QChart;
+        null_neg_chart_view = new QChartView(null_neg_chart);
+        fdr_chart = new QChart;
+        fdr_chart_view = new QChartView(fdr_chart);
+        null_pos_chart->setMargins(QMargins(0,0,0,0));
+        null_pos_chart->setBackgroundRoundness(0);
+        null_neg_chart->setMargins(QMargins(0,0,0,0));
+        null_neg_chart->setBackgroundRoundness(0);
+        fdr_chart->setMargins(QMargins(0,0,0,0));
+        fdr_chart->setBackgroundRoundness(0);
+        show_report();
+        show_fdr_report();
+        null_pos_chart_view->grab().save((vbc->output_file_name+".pos_corr.dist.jpg").c_str());
+        null_neg_chart_view->grab().save((vbc->output_file_name+".neg_corr.dist.jpg").c_str());
+        fdr_chart_view->grab().save((vbc->output_file_name+".fdr.jpg").c_str());
+        ui->chart_widget_layout->addWidget(null_pos_chart_view);
+        ui->chart_widget_layout->addWidget(null_neg_chart_view);
+        ui->chart_widget_layout->addWidget(fdr_chart_view);
 
 
         if(gui)
@@ -495,7 +444,6 @@ void group_connectometry::on_run_clicked()
         return;
     }
     ui->run->setText("Stop");
-    ui->span_to->setValue(80);
     vbc->seed_count = ui->seed_count->value();
     vbc->normalize_qa = ui->normalize_qa->isChecked();
     vbc->output_resampling = ui->output_resampling->isChecked();
