@@ -17,13 +17,19 @@ class nn_connectometry : public QDialog
 {
     Q_OBJECT
 private:
-    QChart* predict_chart;
-    QChartView* predict_chart_view;
+    QChart* chart1;
+    QChartView* chart1_view;
+    QChart* chart2;
+    QChartView* chart2_view;
+    QChart* chart3;
+    QChartView* chart3_view;
+    QChart* chart4;
+    QChartView* chart4_view;
+
 public:
     bool gui = true;
     QString work_dir;
     nn_connectometry_analysis nna;
-    std::ostringstream out;
 
 public:
     QTimer* timer = 0;
@@ -50,8 +56,6 @@ private slots:
     void on_reset_clicked();
 
     void on_foi_currentIndexChanged(int index);
-
-    void on_regress_all_clicked();
 
     void on_nn_regression_toggled(bool checked);
 

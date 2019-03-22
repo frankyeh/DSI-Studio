@@ -26,12 +26,8 @@ public:
     tipl::ml::trainer t;
     tipl::ml::network nn;
     tipl::ml::network_data<float> fp_data;
-    tipl::ml::network_data<std::vector<float> > fp_mdata;
-
     std::vector<tipl::ml::network_data_proxy<float> > train_data;
     std::vector<tipl::ml::network_data_proxy<float> > test_data;
-    std::vector<tipl::ml::network_data_proxy<std::vector<float> > > train_mdata;
-    std::vector<tipl::ml::network_data_proxy<std::vector<float> > > test_mdata;
 public:
     float sl_mean,sl_scale;
 
@@ -40,18 +36,38 @@ public:
     std::vector<unsigned int> test_seq;
     std::vector<float> test_result;
     std::vector<std::vector<float> > test_mresult;
+private:
+    std::mutex lock_result;
+    std::vector<float> result_r;
+    std::vector<float> result_mae;
+    std::vector<float> result_test_error;
+    std::vector<float> result_train_error;
+public:
+    void clear_results(void);
+    bool has_results(void){return !result_train_error.empty();}
+    template<typename fun>
+    void get_results(fun f)
+    {
+        std::lock_guard<std::mutex> lock(lock_result);
+        if(is_regression) // regression
+            for(size_t i = 0;i < result_r.size();++i)
+                f(i,result_r[i],result_mae[i],result_train_error[i]);
+        else
+            for(size_t i = 0;i < result_test_error.size();++i)
+                f(i,result_test_error[i],0.0f,result_train_error[i]);
+
+    }
 public:
     int foi_index = 0;
     bool is_regression = true;
-    bool regress_all = false;
     int seed_search = 10;
     float otsu = 0.6f;
     float no_data = 9999.0f;
-    int cv_fold = 10;
+    size_t cv_fold = 10;
     bool normalize_value = false;
 public:
     nn_connectometry_analysis(std::shared_ptr<fib_data> handle_);
-    bool run(std::ostream& out,const std::string& net_string);
+    bool run(const std::string& net_string);
     void stop(void);
     void get_salient_map(tipl::color_image& I);
     void get_layer_map(tipl::color_image& I);

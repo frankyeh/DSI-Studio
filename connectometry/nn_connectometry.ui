@@ -21,7 +21,7 @@
      </property>
      <widget class="QWidget" name="widget" native="true">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
@@ -43,7 +43,7 @@
         <widget class="QGroupBox" name="groupBox_2">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
-           <horstretch>0</horstretch>
+           <horstretch>1</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
@@ -272,85 +272,89 @@
            <number>7</number>
           </property>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_6">
-            <property name="topMargin">
+           <layout class="QFormLayout" name="formLayout">
+            <property name="horizontalSpacing">
              <number>0</number>
             </property>
-            <item>
-             <widget class="QRadioButton" name="nn_regression">
-              <property name="text">
-               <string>Regression</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QRadioButton" name="nn_classification">
-              <property name="text">
-               <string>Classification</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="label_4">
-              <property name="text">
-               <string>fingerprint threshold</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QDoubleSpinBox" name="otsu">
-              <property name="maximum">
-               <double>2.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.100000000000000</double>
-              </property>
-              <property name="value">
-               <double>0.700000000000000</double>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_4">
-            <property name="spacing">
-             <number>0</number>
+            <property name="verticalSpacing">
+             <number>3</number>
             </property>
             <property name="topMargin">
              <number>0</number>
             </property>
-            <item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label">
+              <property name="text">
+               <string>Network</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="network_text">
+              <property name="text">
+               <string>full,relu|1,1,32|full,relu|1,1,32|full</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_5">
+              <property name="text">
+               <string>Type</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <layout class="QHBoxLayout" name="horizontalLayout_2">
+              <item>
+               <widget class="QRadioButton" name="nn_classification">
+                <property name="text">
+                 <string>Classification</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QRadioButton" name="nn_regression">
+                <property name="text">
+                 <string>Regression</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="2" column="0">
              <widget class="QLabel" name="label_7">
               <property name="text">
-               <string>epoch</string>
+               <string>Epoch</string>
               </property>
              </widget>
             </item>
-            <item>
+            <item row="2" column="1">
              <widget class="QSpinBox" name="epoch">
               <property name="minimum">
                <number>1</number>
               </property>
               <property name="maximum">
-               <number>10000</number>
+               <number>5000</number>
+              </property>
+              <property name="singleStep">
+               <number>100</number>
               </property>
               <property name="value">
-               <number>1000</number>
+               <number>500</number>
               </property>
              </widget>
             </item>
-            <item>
+            <item row="3" column="0">
              <widget class="QLabel" name="label_2">
               <property name="text">
                <string>Learning rate</string>
               </property>
              </widget>
             </item>
-            <item>
+            <item row="3" column="1">
              <widget class="QDoubleSpinBox" name="learning_rate">
               <property name="decimals">
                <number>6</number>
@@ -366,6 +370,50 @@
               </property>
              </widget>
             </item>
+            <item row="4" column="0">
+             <widget class="QLabel" name="label_3">
+              <property name="text">
+               <string>Seed search</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="QSpinBox" name="seed_search">
+              <property name="maximum">
+               <number>128</number>
+              </property>
+              <property name="value">
+               <number>0</number>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_4">
+              <property name="text">
+               <string>LCF threshold</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QDoubleSpinBox" name="otsu">
+              <property name="maximum">
+               <double>2.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+              <property name="value">
+               <double>0.700000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="1">
+             <widget class="QCheckBox" name="norm_output">
+              <property name="text">
+               <string>normalize output</string>
+              </property>
+             </widget>
+            </item>
            </layout>
           </item>
           <item>
@@ -376,30 +424,6 @@
             <property name="topMargin">
              <number>0</number>
             </property>
-            <item>
-             <widget class="QLabel" name="label_3">
-              <property name="text">
-               <string>Seed search</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QSpinBox" name="seed_search">
-              <property name="maximum">
-               <number>128</number>
-              </property>
-              <property name="value">
-               <number>0</number>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="norm_output">
-              <property name="text">
-               <string>normalize output</string>
-              </property>
-             </widget>
-            </item>
             <item>
              <spacer name="horizontalSpacer">
               <property name="orientation">
@@ -442,6 +466,12 @@
       </layout>
      </widget>
      <widget class="QTabWidget" name="view_tab">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+        <horstretch>1</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <property name="currentIndex">
        <number>0</number>
       </property>
@@ -451,14 +481,27 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_5">
         <item>
-         <widget class="QLineEdit" name="network_text">
-          <property name="text">
-           <string>full,relu|1,1,32|full,relu|1,1,32|full</string>
+         <widget class="QSplitter" name="splitter_3">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
           </property>
+          <widget class="QWidget" name="widget_3" native="true">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>2</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>200</height>
+            </size>
+           </property>
+           <layout class="QGridLayout" name="report_layout"/>
+          </widget>
+          <widget class="QTextBrowser" name="log"/>
          </widget>
-        </item>
-        <item>
-         <widget class="QTextBrowser" name="log"/>
         </item>
        </layout>
       </widget>
@@ -492,15 +535,6 @@
           <property name="orientation">
            <enum>Qt::Vertical</enum>
           </property>
-          <widget class="QWidget" name="widget_2" native="true">
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>300</height>
-            </size>
-           </property>
-           <layout class="QVBoxLayout" name="predict_chart_layout"/>
-          </widget>
           <widget class="QTableWidget" name="test_subjects">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">

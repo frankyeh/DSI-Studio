@@ -7,12 +7,24 @@
 #include "ui_nn_connectometry.h"
 nn_connectometry::nn_connectometry(QWidget *parent,std::shared_ptr<fib_data> handle,QString db_file_name_,bool gui_) :
     QDialog(parent),
-    predict_chart(new QChart),predict_chart_view(new QChartView(predict_chart)),
+    chart1(new QChart),chart1_view(new QChartView(chart1)),
+    chart2(new QChart),chart2_view(new QChartView(chart2)),
+    chart3(new QChart),chart3_view(new QChartView(chart3)),
+    chart4(new QChart),chart4_view(new QChartView(chart4)),
     nna(handle),work_dir(QFileInfo(db_file_name_).absoluteDir().absolutePath()),gui(gui_),
     ui(new Ui::nn_connectometry)
 {
     ui->setupUi(this);
-    ui->predict_chart_layout->addWidget(predict_chart_view);
+    ui->report_layout->addWidget(chart1_view,0,0);
+    ui->report_layout->addWidget(chart2_view,0,1);
+    ui->report_layout->addWidget(chart3_view,1,0);
+    ui->report_layout->addWidget(chart4_view,1,1);
+    chart1->legend()->setVisible(false);
+    chart2->legend()->setVisible(false);
+    chart3->legend()->setVisible(false);
+    chart4->legend()->setVisible(false);
+
+
     ui->network_view->setScene(&network_scene);
     ui->layer_view->setScene(&layer_scene);
     log_text += nna.handle->report.c_str();
@@ -67,17 +79,20 @@ void nn_connectometry::on_run_clicked()
     nna.t.epoch = ui->epoch->value();
     nna.foi_index = ui->foi->currentIndex();
     nna.is_regression = ui->nn_regression->isChecked();
-    nna.regress_all = ui->regress_all->isChecked();
     nna.seed_search = ui->seed_search->value();
     nna.otsu = ui->otsu->value();
     nna.cv_fold = 10;
     nna.normalize_value = ui->norm_output->isEnabled() && ui->norm_output->isChecked();
     //nna.t.error_table.resize(nna.nn.get_output_size()*nna.nn.get_output_size());
-    if(!nna.run(out,ui->network_text->text().toStdString()))
+    if(!nna.run(ui->network_text->text().toStdString()))
     {
         QMessageBox::information(this,"Error",nna.error_msg.c_str(),0);
         return;
     }
+    log_text = nna.handle->report.c_str();
+    log_text += nna.report.c_str();
+    ui->log->setText(log_text);
+
     ui->test_subjects->setRowCount(0);
     if(timer)
         delete timer;
@@ -103,20 +118,84 @@ void nn_connectometry::update_network(void)
 void show_view(QGraphicsScene& scene,QImage I);
 void nn_connectometry::on_view_tab_currentChanged(int)
 {
-    float scroll_ratio = (float)ui->log->verticalScrollBar()->value()/(float)(ui->log->verticalScrollBar()->maximum()+1);
-    log_text += out.str().c_str();
-
     if(nna.terminated && timer)
-    {
-        log_text += nna.report.c_str();
         timer->stop();
-    }
-    out.str("");
-    out.clear();
-    ui->log->setText(log_text);
-    ui->log->verticalScrollBar()->setValue((ui->log->verticalScrollBar()->maximum()+1)*scroll_ratio);
     if(!nna.nn.initialized)
         return;
+    if(ui->view_tab->currentIndex() == 0) //report view
+    {
+        if(!nna.test_result.empty())
+        {
+            QScatterSeries *series = new QScatterSeries();
+            series->setMarkerSize(3.0);
+            series->setMarkerShape(QScatterSeries::MarkerShapeRectangle);
+            series->setPen(Qt::NoPen);
+            series->setBrush(Qt::black);
+            for(int row = 0;row < nna.test_result.size();++row)
+            {
+                float x,y;
+                series->append(x = nna.test_result[row]/nna.sl_scale+nna.sl_mean,
+                               y = nna.fp_data.data_label[nna.test_seq[row]]/nna.sl_scale+nna.sl_mean);
+            }
+            chart1->removeAllSeries();
+            chart1->addSeries(series);
+            chart1->createDefaultAxes();
+            chart1->setDropShadowEnabled(false);
+            chart1->axes(Qt::Horizontal).back()->setTitleText("Predicted Value");
+            chart1->axes(Qt::Vertical).back()->setTitleText("Value");
+            chart1->axes(Qt::Horizontal).back()->setRange(
+                        ((QValueAxis*)chart1->axes(Qt::Vertical).back())->min(),
+                        ((QValueAxis*)chart1->axes(Qt::Vertical).back())->max());
+
+            chart1->axes(Qt::Horizontal).back()->setGridLineVisible(false);
+            chart1->axes(Qt::Vertical).back()->setGridLineVisible(false);
+
+            chart1->setTitle("Predicted versus True Vlues");
+
+        }
+        if(nna.has_results())
+        {
+            QLineSeries *s1 = new QLineSeries();
+            QLineSeries *s2 = new QLineSeries();
+            QLineSeries *s3 = new QLineSeries();
+            nna.get_results([&](size_t epoch,float r,float mae,float error){
+                s1->append(epoch,static_cast<qreal>(r));
+                s2->append(epoch,static_cast<qreal>(mae));
+                s3->append(epoch,static_cast<qreal>(error));
+            });
+            chart2->removeAllSeries();
+            chart2->addSeries(s1);
+            chart2->createDefaultAxes();
+            chart2->setTitle("correlation coefficient (cross-validated)");
+            chart2->axes(Qt::Horizontal).back()->setTitleText("epoch");
+            chart2->axes(Qt::Vertical).back()->setMin(0);
+
+
+            ((QValueAxis*)chart2->axes(Qt::Horizontal).back())->setTickType(QValueAxis::TicksDynamic);
+            ((QValueAxis*)chart2->axes(Qt::Horizontal).back())->setTickInterval(100);
+
+            chart3->removeAllSeries();
+            chart3->addSeries(s2);
+            chart3->createDefaultAxes();
+            chart3->setTitle("mean absolute error (cross-validated)");
+            chart3->axes(Qt::Horizontal).back()->setTitleText("epoch");
+            chart3->axes(Qt::Vertical).back()->setMin(0);
+
+            ((QValueAxis*)chart3->axes(Qt::Horizontal).back())->setTickType(QValueAxis::TicksDynamic);
+            ((QValueAxis*)chart3->axes(Qt::Horizontal).back())->setTickInterval(100);
+
+
+            chart4->removeAllSeries();
+            chart4->addSeries(s3);
+            chart4->createDefaultAxes();
+            chart4->setTitle("training error");
+            chart4->axes(Qt::Horizontal).back()->setTitleText("epoch");
+            chart4->axes(Qt::Vertical).back()->setMin(0);
+
+            ((QValueAxis*)chart4->axes(Qt::Horizontal).back())->setTickType(QValueAxis::TicksDynamic);
+            ((QValueAxis*)chart4->axes(Qt::Horizontal).back())->setTickInterval(100);
+        }
+    }
 
     if(ui->view_tab->currentIndex() == 1) //network view
     {
@@ -138,17 +217,6 @@ void nn_connectometry::on_view_tab_currentChanged(int)
     }
     if(ui->view_tab->currentIndex() == 3) // predict view
     {
-        if(!nna.test_mresult.empty())
-        {
-            int index = ui->foi->currentIndex();
-            nna.test_result.resize(nna.test_mresult.size());
-            nna.fp_data.data_label.resize(nna.fp_mdata.data_label.size());
-            for(int i = 0;i < nna.test_result.size();++i)
-            {
-                nna.test_result[i] = nna.test_mresult[i][index];
-                nna.fp_data.data_label[nna.test_seq[i]] = nna.fp_mdata.data_label[nna.test_seq[i]][index];
-            }
-        }
         if(!nna.test_result.empty())
         {
             if(ui->test_subjects->rowCount() != nna.test_result.size())
@@ -167,28 +235,13 @@ void nn_connectometry::on_view_tab_currentChanged(int)
                 }
             }
 
-            QScatterSeries *series = new QScatterSeries();
-            series->setMarkerSize(3.0);
-            series->setMarkerShape(QScatterSeries::MarkerShapeRectangle);
-            series->setPen(Qt::NoPen);
-            series->setBrush(Qt::black);
             for(int row = 0;row < nna.test_result.size();++row)
             {
-                float x,y;
-                series->append(x = nna.test_result[row]/nna.sl_scale+nna.sl_mean,
-                               y = nna.fp_data.data_label[nna.test_seq[row]]/nna.sl_scale+nna.sl_mean);
+                float x = nna.test_result[row]/nna.sl_scale+nna.sl_mean;
+                float y = nna.fp_data.data_label[nna.test_seq[row]]/nna.sl_scale+nna.sl_mean;
                 ui->test_subjects->item(row,1)->setText(QString::number(y));
                 ui->test_subjects->item(row,2)->setText(QString::number(x));
             }
-            predict_chart->removeAllSeries();
-            predict_chart->addSeries(series);
-            predict_chart->createDefaultAxes();
-            predict_chart->setDropShadowEnabled(false);
-            predict_chart->axes(Qt::Horizontal).back()->setTitleText("Predicted Value");
-            predict_chart->axes(Qt::Vertical).back()->setTitleText("Value");
-            predict_chart->axes(Qt::Horizontal).back()->setGridLineVisible(false);
-            predict_chart->axes(Qt::Vertical).back()->setGridLineVisible(false);
-            predict_chart->setTitle("Predicted versus True Vlues");
 
         }
     }
@@ -221,16 +274,6 @@ void nn_connectometry::on_foi_currentIndexChanged(int index)
             return;
         }
         num_classes.insert(label);
-    }
-}
-
-void nn_connectometry::on_regress_all_clicked()
-{
-    ui->nn_classification->setEnabled(!ui->regress_all->isChecked());
-    if(ui->regress_all->isChecked())
-    {
-        ui->nn_classification->setChecked(false);
-        ui->nn_regression->setChecked(true);
     }
 }
 
