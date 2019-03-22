@@ -195,4 +195,5 @@ OTHER_FILES += \
 DISTFILES += \
     shader_fragment2.txt \
     shader_vertex2.txt \
+    COPYRIGHT
 
