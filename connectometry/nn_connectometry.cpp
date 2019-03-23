@@ -74,12 +74,12 @@ void nn_connectometry::on_run_clicked()
     on_stop_clicked();
 
     nna.t.learning_rate = ui->learning_rate->value()*0.01f;
-    nna.t.momentum = 0.0f;
+    nna.t.momentum = ui->momentum->value();
     nna.t.batch_size = 64;
     nna.t.epoch = ui->epoch->value();
     nna.foi_index = ui->foi->currentIndex();
     nna.is_regression = ui->nn_regression->isChecked();
-    nna.seed_search = ui->seed_search->value();
+    nna.seed_search = 0;
     nna.otsu = ui->otsu->value();
     nna.cv_fold = 10;
     nna.normalize_value = ui->norm_output->isEnabled() && ui->norm_output->isChecked();
@@ -89,9 +89,7 @@ void nn_connectometry::on_run_clicked()
         QMessageBox::information(this,"Error",nna.error_msg.c_str(),0);
         return;
     }
-    log_text = nna.handle->report.c_str();
-    log_text += nna.report.c_str();
-    ui->log->setText(log_text);
+
 
     ui->test_subjects->setRowCount(0);
     if(timer)
@@ -103,12 +101,14 @@ void nn_connectometry::on_run_clicked()
 }
 void nn_connectometry::on_stop_clicked()
 {
+    ui->progressBar->setValue(0);
     nna.stop();
     if(timer)
     {
         delete timer;
         timer = 0;
     }
+
 }
 
 void nn_connectometry::update_network(void)
@@ -119,12 +119,16 @@ void show_view(QGraphicsScene& scene,QImage I);
 void nn_connectometry::on_view_tab_currentChanged(int)
 {
     if(nna.terminated && timer)
-        timer->stop();
+        on_stop_clicked();
     if(!nna.nn.initialized)
         return;
-    if(ui->view_tab->currentIndex() == 0) //report view
+    log_text = nna.handle->report.c_str();
+    log_text += nna.report.c_str();
+    log_text += nna.all_result.c_str();
+    ui->log->setText(log_text);
+    ui->progressBar->setValue(nna.cur_progress);
+    if(ui->view_tab->currentIndex() == 0 && nna.has_results()) //report view
     {
-        if(!nna.test_result.empty())
         {
             QScatterSeries *series = new QScatterSeries();
             series->setMarkerSize(3.0);
@@ -153,7 +157,7 @@ void nn_connectometry::on_view_tab_currentChanged(int)
             chart1->setTitle("Predicted versus True Vlues");
 
         }
-        if(nna.has_results())
+
         {
             QLineSeries *s1 = new QLineSeries();
             QLineSeries *s2 = new QLineSeries();
@@ -166,7 +170,7 @@ void nn_connectometry::on_view_tab_currentChanged(int)
             chart2->removeAllSeries();
             chart2->addSeries(s1);
             chart2->createDefaultAxes();
-            chart2->setTitle("correlation coefficient (cross-validated)");
+            chart2->setTitle(nna.is_regression ? "correlation coefficient (cross-validated)":"missed count");
             chart2->axes(Qt::Horizontal).back()->setTitleText("epoch");
             chart2->axes(Qt::Vertical).back()->setMin(0);
 
@@ -177,7 +181,7 @@ void nn_connectometry::on_view_tab_currentChanged(int)
             chart3->removeAllSeries();
             chart3->addSeries(s2);
             chart3->createDefaultAxes();
-            chart3->setTitle("mean absolute error (cross-validated)");
+            chart3->setTitle(nna.is_regression ? "mean absolute error (cross-validated)" : "accuracy");
             chart3->axes(Qt::Horizontal).back()->setTitleText("epoch");
             chart3->axes(Qt::Vertical).back()->setMin(0);
 
@@ -217,32 +221,34 @@ void nn_connectometry::on_view_tab_currentChanged(int)
     }
     if(ui->view_tab->currentIndex() == 3) // predict view
     {
-        if(!nna.test_result.empty())
+        if(!nna.all_test_result.empty())
         {
-            if(ui->test_subjects->rowCount() != nna.test_result.size())
+            if(ui->test_subjects->rowCount() != nna.all_test_result.size())
             {
                 ui->test_subjects->setRowCount(0);
                 ui->test_subjects->setColumnCount(3);
                 ui->test_subjects->setHorizontalHeaderLabels(QStringList() << "Subject" << "Label" << "Predicted");
-                ui->test_subjects->setRowCount(nna.test_result.size());
-                for(unsigned int row = 0;row < nna.test_result.size();++row)
+                ui->test_subjects->setRowCount(nna.all_test_result.size());
+                for(int row = 0;row < nna.all_test_result.size();++row)
                 {
-                    int id = nna.subject_index[nna.test_seq[row]];
+                    int id = nna.subject_index[nna.all_test_seq[row]];
                     ui->test_subjects->setItem(row,0,
                                                new QTableWidgetItem(QString(nna.handle->db.subject_names[id].c_str())));
                     ui->test_subjects->setItem(row,1,new QTableWidgetItem(QString()));
                     ui->test_subjects->setItem(row,2,new QTableWidgetItem(QString()));
                 }
-            }
+                std::vector<float> allx,ally;
+                for(int row = 0;row < nna.all_test_result.size();++row)
+                {
+                    float x = nna.all_test_result[row]/nna.sl_scale+nna.sl_mean;
+                    float y = nna.fp_data.data_label[nna.all_test_seq[row]]/nna.sl_scale+nna.sl_mean;
+                    ui->test_subjects->item(row,1)->setText(QString::number(y));
+                    ui->test_subjects->item(row,2)->setText(QString::number(x));
+                    allx.push_back(x);
+                    ally.push_back(y);
+                }
 
-            for(int row = 0;row < nna.test_result.size();++row)
-            {
-                float x = nna.test_result[row]/nna.sl_scale+nna.sl_mean;
-                float y = nna.fp_data.data_label[nna.test_seq[row]]/nna.sl_scale+nna.sl_mean;
-                ui->test_subjects->item(row,1)->setText(QString::number(y));
-                ui->test_subjects->item(row,2)->setText(QString::number(x));
             }
-
         }
     }
 

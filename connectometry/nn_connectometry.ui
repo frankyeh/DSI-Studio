@@ -373,17 +373,7 @@
             <item row="4" column="0">
              <widget class="QLabel" name="label_3">
               <property name="text">
-               <string>Seed search</string>
-              </property>
-             </widget>
-            </item>
-            <item row="4" column="1">
-             <widget class="QSpinBox" name="seed_search">
-              <property name="maximum">
-               <number>128</number>
-              </property>
-              <property name="value">
-               <number>0</number>
+               <string>Momentum</string>
               </property>
              </widget>
             </item>
@@ -411,6 +401,36 @@
              <widget class="QCheckBox" name="norm_output">
               <property name="text">
                <string>normalize output</string>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="1">
+             <widget class="QProgressBar" name="progressBar">
+              <property name="value">
+               <number>0</number>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="0">
+             <widget class="QLabel" name="label_6">
+              <property name="text">
+               <string>Progress</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="QDoubleSpinBox" name="momentum">
+              <property name="decimals">
+               <number>4</number>
+              </property>
+              <property name="maximum">
+               <double>1.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.050000000000000</double>
+              </property>
+              <property name="value">
+               <double>0.050000000000000</double>
               </property>
              </widget>
             </item>

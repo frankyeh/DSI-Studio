@@ -35,11 +35,15 @@ public:
     std::vector<int> subject_index;
     std::vector<unsigned int> test_seq;
     std::vector<float> test_result;
-    std::vector<std::vector<float> > test_mresult;
+public:
+    std::vector<unsigned int> all_test_seq;
+    std::vector<float> all_test_result;
+    std::string all_result;
 private:
     std::mutex lock_result;
     std::vector<float> result_r;
     std::vector<float> result_mae;
+    std::vector<float> result_test_miss;
     std::vector<float> result_test_error;
     std::vector<float> result_train_error;
 public:
@@ -54,7 +58,7 @@ public:
                 f(i,result_r[i],result_mae[i],result_train_error[i]);
         else
             for(size_t i = 0;i < result_test_error.size();++i)
-                f(i,result_test_error[i],0.0f,result_train_error[i]);
+                f(i,result_test_miss[i],result_test_error[i],result_train_error[i]);
 
     }
 public:
@@ -66,6 +70,7 @@ public:
     size_t cv_fold = 10;
     bool normalize_value = false;
 public:
+    int cur_progress = 0;
     nn_connectometry_analysis(std::shared_ptr<fib_data> handle_);
     bool run(const std::string& net_string);
     void stop(void);

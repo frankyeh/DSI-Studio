@@ -57,6 +57,7 @@ void nn_connectometry_analysis::clear_results(void)
     std::lock_guard<std::mutex> lock(lock_result);
     result_r.clear();
     result_mae.clear();
+    result_test_miss.clear();
     result_test_error.clear();
     result_train_error.clear();
 }
@@ -194,11 +195,15 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
     out_report << " The neural network was trained using learning rate=" << t.learning_rate <<
                   ", match size=" << t.batch_size << ", epoch=" << t.epoch << ".";
     report = out_report.str();
+
+    all_result.clear();
+    all_test_result.clear();
+    all_test_seq.clear();
+    cur_progress = 0;
     terminated = false;
+
     future = std::async(std::launch::async, [this,net_string]
     {
-        std::vector<unsigned int> all_test_seq;
-        std::vector<float> all_test_result;
         for(size_t fold = 0;fold < cv_fold && !terminated;++fold)
         {
             clear_results();
@@ -222,7 +227,6 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
 
             int round = 0;
             test_result.clear();
-            test_mresult.clear();
             std::cout << "start training..." << std::endl;
             t.train(nn,train_data[fold],terminated, [&]()
             {
@@ -231,6 +235,7 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
 
                 // fiber convolution
                 {
+                    const double rr = 0.001;
                     float* w = &(nn.layers[0]->weight[0]);
                     for(int i = 0;i < nn.layers[0]->output_size;++i,w += nn.layers[0]->input_size)
                     {
@@ -238,17 +243,15 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
                         {
                             float& a = w[fib_pairs[j].first];
                             float& b = w[fib_pairs[j].second];
-                            float m = (a+b)* 0.01f;
-                            a *= 0.98f;
-                            b *= 0.98f;
-                            a += m;
-                            b += m;
+                            double m = (double)(a+b)* rr * 0.5;
+                            a = (double)a*(1.0-rr) + m;
+                            b = (double)b*(1.0-rr) + m;
                         }
                     }
                 }
 
                 std::cout << "[" << round << "]";
-
+                cur_progress = (fold*t.epoch + round)*100/(cv_fold*t.epoch);
                 test_result.resize(test_data[0].size());
                 nn.predict(test_data[fold],test_result);
 
@@ -263,9 +266,10 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
                     }
                     else
                     {
-                        result_train_error.push_back(static_cast<float>(test_data[fold].calculate_miss(test_result))/
-                                                     static_cast<float>(test_data[fold].size()));
-                        std::cout << " test error=" << std::setprecision(3) <<  result_train_error.back() ;
+                        result_test_miss.push_back(test_data[fold].calculate_miss(test_result));
+                        result_test_error.push_back(1.0f-(float)result_test_miss.back()/(float)test_data[fold].size());
+                        std::cout << " miss=" << result_test_miss.back() << "/" << test_data[fold].size();
+                        std::cout << " accuracy=" << std::setprecision(3) <<  result_test_error.back() ;
                     }
                     result_train_error.push_back(t.get_training_error_value());
                 }
@@ -279,8 +283,21 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
 
             all_test_seq.insert(all_test_seq.end(),test_seq.begin(),test_seq.end());
             all_test_result.insert(all_test_result.end(),test_result.begin(),test_result.end());
+            std::vector<float> y(all_test_result.size());
+            float all_mae = 0.0f,all_accuracy = 0.0f;
+            for(int i = 0;i < y.size();++i)
+            {
+                y[i] = fp_data.data_label[all_test_seq[i]];
+                all_mae += std::fabs(y[i]-all_test_result[i]);
+                all_accuracy += (std::round(y[i]) == std::round(all_test_result[i]) ? 1.0f:0.0f);
+            }
 
-
+            std::ostringstream out;
+            out << " " << cv_fold << " fold cross validation results shows that"
+                << " r=" << tipl::correlation(y.begin(),y.end(),all_test_result.begin())
+                << ", mae=" << all_mae/(float)y.size()
+                << ", accuracy = " << (int)all_accuracy << "/" << y.size() << " = " << 100.0f*(float)all_accuracy/(float)y.size() << "%.";
+            all_result = out.str();
         }
         terminated = true;
     });
