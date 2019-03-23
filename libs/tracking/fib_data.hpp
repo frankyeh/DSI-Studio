@@ -215,7 +215,8 @@ void evaluate_connection(
         float otsu,
         const fib_fa_type& fib_fa,
         fun1 dir,
-        fun2 f)
+        fun2 f,
+        bool check_trajectory = true)
 {
     unsigned char num_fib = fib_fa.size();
     char dx[13] = {1,0,0,1,1,0, 1, 1, 0, 1,-1, 1, 1};
@@ -244,12 +245,23 @@ void evaluate_connection(
                 if(!dim.is_valid(pos))
                     continue;
                 tipl::pixel_index<3> other_index(pos[0],pos[1],pos[2],dim);
-                if(std::abs(dir(index.index(),fib1)*dis[i]) <= 0.8665)
-                    continue;
-                for(unsigned char fib2 = 0;fib2 < num_fib;++fib2)
-                    if(fib_fa[fib2][other_index.index()] > otsu &&
-                            std::abs(dir(other_index.index(),fib2)*dis[i]) > 0.8665)
-                        f(index.index(),fib1,other_index.index(),fib2);
+                if(check_trajectory)
+                {
+                    if(std::abs(dir(index.index(),fib1)*dis[i]) <= 0.8665)
+                        continue;
+                    for(unsigned char fib2 = 0;fib2 < num_fib;++fib2)
+                        if(fib_fa[fib2][other_index.index()] > otsu &&
+                                std::abs(dir(other_index.index(),fib2)*dis[i]) > 0.8665)
+                            f(index.index(),fib1,other_index.index(),fib2);
+                }
+                else
+                {
+                    for(unsigned char fib2 = 0;fib2 < num_fib;++fib2)
+                        if(fib_fa[fib2][other_index.index()] > otsu &&
+                                std::abs(dir(other_index.index(),fib2)*dir(index.index(),fib1)) > 0.8665)
+                            f(index.index(),fib1,other_index.index(),fib2);
+                }
+
             }
         }
     }
@@ -261,7 +273,8 @@ std::pair<float,float> evaluate_fib(
         const tipl::geometry<3>& dim,
         float otsu,
         const fib_fa_type& fib_fa,
-        fun dir)
+        fun dir,
+        bool check_trajectory = true)
 {
     float connection_count = 0;
     std::vector<std::vector<unsigned char> > connected(fib_fa.size());
@@ -274,7 +287,7 @@ std::pair<float,float> evaluate_fib(
         connected[fib2][pos2] = 1;
         connection_count += fib_fa[fib2][pos2];
         // no need to add fib1 because it will be counted if fib2 becomes fib1
-    });
+    },check_trajectory);
 
     unsigned char num_fib = fib_fa.size();
     float no_connection_count = 0;

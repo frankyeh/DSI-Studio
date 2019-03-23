@@ -382,7 +382,7 @@ void connectometry_db::get_subject_vector_pairs(std::vector<std::pair<int,int> >
                             if(fp_index[fib1][pos1] && fp_index[fib2][pos2])
                                 pairs.push_back(std::make_pair(fp_index[fib1][pos1],fp_index[fib2][pos2]));
 
-                        });
+                        },false);
 
 
 }
