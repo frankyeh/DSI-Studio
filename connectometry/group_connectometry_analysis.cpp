@@ -498,7 +498,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
         << (fdr_lesser[length_threshold]>0.5 || !has_lesser_result ? "no track": lesser_tracks_result.c_str())
         << " with decreased connectivity";
         if(model->type == 1) // regression
-            out_lesser << "related to " << foi_str;
+            out_lesser << " related to " << foi_str;
         out_lesser << " (FDR=" << fdr_lesser[length_threshold] << ").";
     }
     else
