@@ -26,6 +26,11 @@ private:
     QChart* chart4;
     QChartView* chart4_view;
 
+    int cur_fold = 0;
+    QLineSeries *s2 = 0;
+    QLineSeries *s3 = 0;
+    QLineSeries *s4 = 0;
+
 public:
     bool gui = true;
     QString work_dir;

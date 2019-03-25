@@ -200,12 +200,14 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
     all_test_result.clear();
     all_test_seq.clear();
     cur_progress = 0;
+    cur_fold = 0;
     terminated = false;
 
     future = std::async(std::launch::async, [this,net_string]
     {
         for(size_t fold = 0;fold < cv_fold && !terminated;++fold)
         {
+            cur_fold = fold;
             clear_results();
             std::cout << "running cross validation at fold=" << fold << std::endl;
             test_seq = test_data[fold].pos;
@@ -235,7 +237,7 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
 
                 // fiber convolution
                 {
-                    const double rr = 0.001;
+                    const double rr = 0.0001;
                     float* w = &(nn.layers[0]->weight[0]);
                     for(int i = 0;i < nn.layers[0]->output_size;++i,w += nn.layers[0]->input_size)
                     {

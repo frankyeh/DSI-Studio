@@ -71,6 +71,7 @@ public:
     bool normalize_value = false;
 public:
     int cur_progress = 0;
+    int cur_fold = 0;
     nn_connectometry_analysis(std::shared_ptr<fib_data> handle_);
     bool run(const std::string& net_string);
     void stop(void);

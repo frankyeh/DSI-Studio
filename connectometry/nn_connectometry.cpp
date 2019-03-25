@@ -15,6 +15,7 @@ nn_connectometry::nn_connectometry(QWidget *parent,std::shared_ptr<fib_data> han
     ui(new Ui::nn_connectometry)
 {
     ui->setupUi(this);
+    setWindowTitle(db_file_name_);
     ui->report_layout->addWidget(chart1_view,0,0);
     ui->report_layout->addWidget(chart2_view,0,1);
     ui->report_layout->addWidget(chart3_view,1,0);
@@ -81,7 +82,7 @@ void nn_connectometry::on_run_clicked()
     nna.is_regression = ui->nn_regression->isChecked();
     nna.seed_search = 0;
     nna.otsu = ui->otsu->value();
-    nna.cv_fold = 10;
+    nna.cv_fold = ui->cv->value();
     nna.normalize_value = ui->norm_output->isEnabled() && ui->norm_output->isChecked();
     //nna.t.error_table.resize(nna.nn.get_output_size()*nna.nn.get_output_size());
     if(!nna.run(ui->network_text->text().toStdString()))
@@ -92,6 +93,12 @@ void nn_connectometry::on_run_clicked()
 
 
     ui->test_subjects->setRowCount(0);
+    cur_fold = 0;
+    s2 = s3 = s4 = 0;
+    chart1->removeAllSeries();
+    chart2->removeAllSeries();
+    chart3->removeAllSeries();
+    chart4->removeAllSeries();
     if(timer)
         delete timer;
     timer = new QTimer(this);
@@ -129,6 +136,7 @@ void nn_connectometry::on_view_tab_currentChanged(int)
     ui->progressBar->setValue(nna.cur_progress);
     if(ui->view_tab->currentIndex() == 0 && nna.has_results()) //report view
     {
+
         {
             QScatterSeries *series = new QScatterSeries();
             series->setMarkerSize(3.0);
@@ -157,18 +165,23 @@ void nn_connectometry::on_view_tab_currentChanged(int)
             chart1->setTitle("Predicted versus True Vlues");
 
         }
-
+        if(cur_fold == nna.cur_fold && s2 && s3 && s4)
         {
-            QLineSeries *s1 = new QLineSeries();
-            QLineSeries *s2 = new QLineSeries();
-            QLineSeries *s3 = new QLineSeries();
+            chart2->removeSeries(s2);
+            chart3->removeSeries(s3);
+            chart4->removeSeries(s4);
+            cur_fold = nna.cur_fold;
+        }
+        s2 = new QLineSeries();
+        s3 = new QLineSeries();
+        s4 = new QLineSeries();
+        {
             nna.get_results([&](size_t epoch,float r,float mae,float error){
-                s1->append(epoch,static_cast<qreal>(r));
-                s2->append(epoch,static_cast<qreal>(mae));
-                s3->append(epoch,static_cast<qreal>(error));
+                s2->append(epoch,static_cast<qreal>(r));
+                s3->append(epoch,static_cast<qreal>(mae));
+                s4->append(epoch,static_cast<qreal>(error));
             });
-            chart2->removeAllSeries();
-            chart2->addSeries(s1);
+            chart2->addSeries(s2);
             chart2->createDefaultAxes();
             chart2->setTitle(nna.is_regression ? "correlation coefficient (cross-validated)":"missed count");
             chart2->axes(Qt::Horizontal).back()->setTitleText("epoch");
@@ -176,28 +189,38 @@ void nn_connectometry::on_view_tab_currentChanged(int)
 
 
             ((QValueAxis*)chart2->axes(Qt::Horizontal).back())->setTickType(QValueAxis::TicksDynamic);
-            ((QValueAxis*)chart2->axes(Qt::Horizontal).back())->setTickInterval(100);
+            ((QValueAxis*)chart2->axes(Qt::Horizontal).back())->setTickInterval(20);
 
-            chart3->removeAllSeries();
-            chart3->addSeries(s2);
+            chart3->addSeries(s3);
             chart3->createDefaultAxes();
             chart3->setTitle(nna.is_regression ? "mean absolute error (cross-validated)" : "accuracy");
             chart3->axes(Qt::Horizontal).back()->setTitleText("epoch");
+            if(!nna.is_regression)
+                chart3->axes(Qt::Vertical).back()->setMax(1.0f);
             chart3->axes(Qt::Vertical).back()->setMin(0);
 
             ((QValueAxis*)chart3->axes(Qt::Horizontal).back())->setTickType(QValueAxis::TicksDynamic);
-            ((QValueAxis*)chart3->axes(Qt::Horizontal).back())->setTickInterval(100);
+            ((QValueAxis*)chart3->axes(Qt::Horizontal).back())->setTickInterval(20);
 
 
-            chart4->removeAllSeries();
-            chart4->addSeries(s3);
+            chart4->addSeries(s4);
             chart4->createDefaultAxes();
             chart4->setTitle("training error");
             chart4->axes(Qt::Horizontal).back()->setTitleText("epoch");
             chart4->axes(Qt::Vertical).back()->setMin(0);
 
             ((QValueAxis*)chart4->axes(Qt::Horizontal).back())->setTickType(QValueAxis::TicksDynamic);
-            ((QValueAxis*)chart4->axes(Qt::Horizontal).back())->setTickInterval(100);
+            ((QValueAxis*)chart4->axes(Qt::Horizontal).back())->setTickInterval(20);
+
+            QPen p2(s2->pen());
+            p2.setWidth(1);
+            s2->setPen(p2);
+            QPen p3(s3->pen());
+            p3.setWidth(1);
+            s3->setPen(p3);
+            QPen p4(s4->pen());
+            p4.setWidth(1);
+            s4->setPen(p4);
         }
     }
 
