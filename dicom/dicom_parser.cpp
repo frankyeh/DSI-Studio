@@ -246,21 +246,21 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         {
             load_bval(bval_name.toLocal8Bit().begin(),bvals);
             load_bvec(bvec_name.toLocal8Bit().begin(),bvecs);
-        }
-        if(analyze_header.dim(4) != bvals.size())
-        {
-            bvals.clear();
-            bvecs.clear();
-            std::cout << "The b-table " << bval_name.toStdString() << " does not match the DWI: there are "
-                      << analyze_header.dim(4)
-                      << " DWI in the nifti file, but the b-table has "
-                      << bvals.size() << " entries." << std::endl;
-        }
-        if(bvals.size()*3 != bvecs.size())
-        {
-            bvals.clear();
-            bvecs.clear();
-            std::cout << "The b-table " << bval_name.toStdString() << " and " << bvec_name.toStdString() << " do not match each other" << std::endl;
+            if(!bval_name.isEmpty() && analyze_header.dim(4) != bvals.size())
+            {
+                bvals.clear();
+                bvecs.clear();
+                std::cout << "The b-table " << bval_name.toStdString() << " does not match the DWI: there are "
+                          << analyze_header.dim(4)
+                          << " DWI in the nifti file, but the b-table has "
+                          << bvals.size() << " entries." << std::endl;
+            }
+            if(bvals.size()*3 != bvecs.size())
+            {
+                bvals.clear();
+                bvecs.clear();
+                std::cout << "The b-table " << bval_name.toStdString() << " and " << bvec_name.toStdString() << " do not match each other" << std::endl;
+            }
         }
     }
     tipl::image<float,4> grad_dev;
