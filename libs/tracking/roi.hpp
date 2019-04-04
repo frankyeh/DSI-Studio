@@ -142,14 +142,32 @@ public:
     {
         atlas = atlas_;
         track_id = track_id_;
-        if(track_id && track_id < tractography_name_list.size())
-        {
-            report += " The anatomy prior of a tractography atlas (Yeh NeuroImage 178, 57-68, 2018) was used to track ";
-            report += tractography_name_list[track_id];
-            report += ".";
-        }
+        report += " The anatomy prior of a tractography atlas (Yeh et al., Neuroimage 178, 57-68, 2018) was used to track ";
+        report += tractography_name_list[track_id];
+        report += ".";
     }
 
+    void setWholeBrainSeed(std::shared_ptr<fib_data> handle,float threashold)
+    {
+        if(!seeds.empty())
+            return;
+        std::vector<tipl::vector<3,short> > seed;
+        std::string name = "whole brain";
+        // if auto track
+        if(atlas.get() && handle->has_atlas())
+        {
+            float r = 1.0f;
+            handle->get_atlas_roi(handle->atlas_list[0],track_id,seed,r);
+            name = tractography_name_list[track_id];
+        }
+        else {
+            const float *fa0 = handle->dir.fa[0];
+            for(tipl::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
+                if(fa0[index.index()] > threashold)
+                    seed.push_back(tipl::vector<3,short>(index.x(),index.y(),index.z()));
+        }
+        setRegions(handle->dim,seed,1.0,3/*seed i*/,name.c_str(),tipl::vector<3>());
+    }
     void setRegions(tipl::geometry<3> geo,
                     const std::vector<tipl::vector<3,short> >& points,
                     float r,

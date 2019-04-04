@@ -992,29 +992,6 @@ void RegionTableWidget::delete_all_region(void)
     emit need_update();
 }
 
-void RegionTableWidget::whole_brain_points(std::vector<tipl::vector<3,short> >& points)
-{
-    tipl::geometry<3> geo = cur_tracking_window.handle->dim;
-    float threshold = cur_tracking_window["fa_threshold"].toFloat();
-    if(threshold == 0)
-        threshold = cur_tracking_window["otsu_threshold"].toFloat()
-                        *tipl::segmentation::otsu_threshold(tipl::make_image(cur_tracking_window.handle->dir.fa[0],cur_tracking_window.handle->dim));
-    for (tipl::pixel_index<3>index(geo); index < geo.size();++index)
-    {
-        tipl::vector<3,short> pos(index);
-        if(cur_tracking_window.handle->dir.fa[0][index.index()] > threshold)
-            points.push_back(pos);
-    }
-}
-
-void RegionTableWidget::whole_brain(void)
-{
-    std::vector<tipl::vector<3,short> > points;
-    whole_brain_points(points);
-    add_region("whole brain",seed_id);
-    add_points(points,false,1.0);
-    emit need_update();
-}
 
 void get_regions_statistics(std::shared_ptr<fib_data> handle,
                             const std::vector<std::shared_ptr<ROIRegion> >& regions,
@@ -1086,35 +1063,29 @@ void RegionTableWidget::show_statistics(void)
 }
 
 
-bool RegionTableWidget::has_seeding(void)
+void RegionTableWidget::whole_brain_points(std::vector<tipl::vector<3,short> >& points)
 {
-    for (unsigned int index = 0;index < regions.size();++index)
-        if (!regions[index]->empty() &&
-                item(index,0)->checkState() == Qt::Checked &&
-                regions[index]->regions_feature == seed_id) // either roi roa end or seed
-            return true;
-    return false;
+    tipl::geometry<3> geo = cur_tracking_window.handle->dim;
+    float threshold = cur_tracking_window.get_fa_threshold();
+    for (tipl::pixel_index<3>index(geo); index < geo.size();++index)
+    {
+        tipl::vector<3,short> pos(index);
+        if(cur_tracking_window.handle->dir.fa[0][index.index()] > threshold)
+            points.push_back(pos);
+    }
 }
-void RegionTableWidget::set_whole_brain(ThreadData* data)
+
+void RegionTableWidget::whole_brain(void)
 {
     std::vector<tipl::vector<3,short> > points;
-    std::string place = "whole brain";
-    if(cur_tracking_window.ui->target->currentIndex() > 0 && cur_tracking_window.can_map_to_mni() && cur_tracking_window.handle->has_atlas())
-    {
-        float r = 1.0f;
-        cur_tracking_window.handle->get_atlas_roi(cur_tracking_window.handle->atlas_list[0],cur_tracking_window.ui->target->currentIndex()-1,points,r);
-        place = cur_tracking_window.ui->target->currentText().toStdString();
-    }
-    else
-        whole_brain_points(points);
-    data->roi_mgr->setRegions(cur_tracking_window.handle->dim,points,1.0,seed_id,place.c_str(),tipl::vector<3>());
+    whole_brain_points(points);
+    add_region("whole brain",seed_id);
+    add_points(points,false,1.0);
+    emit need_update();
 }
 
 void RegionTableWidget::setROIs(ThreadData* data)
 {
-    // check if there is seeds
-    if(!has_seeding())
-        set_whole_brain(data);
     int roi_count = 0;
     for (unsigned int index = 0;index < regions.size();++index)
         if (!regions[index]->empty() && item(index,0)->checkState() == Qt::Checked
@@ -1127,11 +1098,12 @@ void RegionTableWidget::setROIs(ThreadData* data)
                                      regions[index]->resolution_ratio,
                              regions[index]->regions_feature,item(index,0)->text().toLocal8Bit().begin(),
                                      cur_tracking_window.handle->vs);
-
-    // has assigned a target
+    // auto track
     if(cur_tracking_window.ui->target->currentIndex() > 0 &&
        cur_tracking_window.tractography_atlas.get())
         data->roi_mgr->setAtlas(cur_tracking_window.tractography_atlas,cur_tracking_window.ui->target->currentIndex()-1);
+
+    data->roi_mgr->setWholeBrainSeed(cur_tracking_window.handle,cur_tracking_window.get_fa_threshold());
 }
 
 QString RegionTableWidget::getROIname(void)

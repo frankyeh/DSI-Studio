@@ -433,12 +433,17 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
         roi_mgr->setRegions(handle->dim,roi.get_region_voxels_raw(),roi.resolution_ratio,type[index],po.get(roi_names[index]).c_str(),handle->vs);
         std::cout << roi_names[index] << "=" << po.get(roi_names[index]) << std::endl;
     }
-    if(po.has("track_id") && po.get("track_id",0))
+    if(po.has("track_id"))
     {
         std::shared_ptr<TractModel> tractography_atlas(new TractModel(handle));
-        if(tractography_atlas->load_from_file(tractography_atlas_file_name.c_str()))
+        if(handle->can_map_to_mni() && tractography_atlas->load_from_file(tractography_atlas_file_name.c_str()))
         {
-            std::cout << "Setting target track=" << tractography_name_list[po.get("track_id",0)-1] << std::endl;
+            if(po.get("track_id",0) >= tractography_name_list.size())
+            {
+                std::cout << "Invalid track_id value" << std::endl;
+                return false;
+            }
+            std::cout << "Setting target track=" << tractography_name_list[po.get("track_id",0)] << std::endl;
             roi_mgr->setAtlas(tractography_atlas,po.get("track_id",0));
         }
     }
@@ -532,8 +537,6 @@ int trk(std::shared_ptr<fib_data> handle)
     }
 
 
-    if(!load_roi(handle,tracking_thread.roi_mgr))
-        return 1;
 
     QStringList cnt_file_name;
     QString cnt_type;
@@ -580,17 +583,15 @@ int trk(std::shared_ptr<fib_data> handle)
         std::cout << "thread_count=" << po.get("thread_count",int(std::thread::hardware_concurrency())) << std::endl;
     }
 
+    if(!load_roi(handle,tracking_thread.roi_mgr))
+        return 1;
+
     if (!po.has("seed"))
     {
         float seed_threshold = tracking_thread.param.threshold;
-        if(seed_threshold == 0)
+        if(seed_threshold == 0.0f)
             seed_threshold = otsu*tracking_thread.param.default_otsu;
-        std::vector<tipl::vector<3,short> > seed;
-        std::cout << "no seeding area assigned. use whole brain seeding" << std::endl;
-        for(tipl::pixel_index<3> index(geometry);index < geometry.size();++index)
-            if(fa0[index.index()] > seed_threshold)
-                seed.push_back(tipl::vector<3,short>(index.x(),index.y(),index.z()));
-        tracking_thread.roi_mgr->setRegions(geometry,seed,1.0,3,"whole brain",tipl::vector<3>());
+        tracking_thread.roi_mgr->setWholeBrainSeed(handle,seed_threshold);
     }
 
     if(!cnt_file_name.empty())
