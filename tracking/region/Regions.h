@@ -26,6 +26,7 @@ public:
 public:
         bool super_resolution = false;
         float resolution_ratio = 1.0;
+        float opacity = -1.0f;
 public: // rendering options
         RegionModel show_region;
         unsigned char regions_feature;

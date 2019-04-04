@@ -142,6 +142,7 @@ public slots:
     void action_A_B(void){do_action("A-B");}
     void action_B_A(void){do_action("B-A");}
     void action_AB(void){do_action("A*B");}
+    void action_set_opa(void){do_action("set_opacity");}
 };
 
 #endif // REGIONTABLEWIDGET_H

@@ -1177,6 +1177,15 @@ void RegionTableWidget::do_action(QString action)
                 }
             }
         }
+        if(action == "set_opacity")
+        {
+            bool ok;
+            double threshold = QInputDialog::getDouble(this,
+                "DSI Studio","Set opacity (between 0 and 1)",0.1,0.0,1.0,1,&ok);
+            if(!ok)
+                return;
+            cur_region.opacity = float(threshold);
+        }
         if(action == "threshold")
         {
             tipl::image<unsigned char, 3>mask;

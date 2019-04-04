@@ -227,6 +227,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionA_B,SIGNAL(triggered()),regionWidget,SLOT(action_A_B()));
         connect(ui->actionB_A,SIGNAL(triggered()),regionWidget,SLOT(action_B_A()));
         connect(ui->actionAB,SIGNAL(triggered()),regionWidget,SLOT(action_AB()));
+        connect(ui->actionSet_Opacity,SIGNAL(triggered()),regionWidget,SLOT(action_set_opa()));
 
         connect(ui->actionMerge_All_2,SIGNAL(triggered()),regionWidget,SLOT(merge_all()));
 

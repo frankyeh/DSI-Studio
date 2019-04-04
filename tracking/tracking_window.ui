@@ -701,6 +701,7 @@
      <addaction name="actionA_B"/>
      <addaction name="actionB_A"/>
      <addaction name="actionAB"/>
+     <addaction name="actionSet_Opacity"/>
     </widget>
     <widget class="QMenu" name="menuMove_Region">
      <property name="title">
@@ -3320,6 +3321,11 @@ Tracking</string>
   <action name="actionPPV_analysis">
    <property name="text">
     <string>PPV analysis...</string>
+   </property>
+  </action>
+  <action name="actionSet_Opacity">
+   <property name="text">
+    <string>Set Opacity</string>
    </property>
   </action>
  </widget>

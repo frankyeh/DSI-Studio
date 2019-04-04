@@ -939,24 +939,26 @@ void GLWidget::renderLR()
         else
         {
             float alpha = get_param_float("region_alpha");
-            unsigned char cur_view = (alpha == 1.0 ? 0 : getCurView(transformation_matrix));
+            unsigned char cur_view = (alpha == 1.0f ? 0 : getCurView(transformation_matrix));
 
             std::vector<unsigned int> region_need_update;
             for(unsigned int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
-                if(cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked &&
+                if(cur_tracking_window.regionWidget->item(int(index),0)->checkState() == Qt::Checked &&
                         cur_tracking_window.regionWidget->regions[index]->modified)
                     region_need_update.push_back(index);
 
-            int smoothed = get_param("region_mesh_smoothed");
+            unsigned char smoothed = get_param("region_mesh_smoothed");
             tipl::par_for(region_need_update.size(),[&](unsigned int index){
                 cur_tracking_window.regionWidget->regions[region_need_update[index]]->makeMeshes(smoothed);
             });
 
             for(unsigned int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
-                if(cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked)
+                if(cur_tracking_window.regionWidget->item(int(index),0)->checkState() == Qt::Checked)
                 {
                     drawRegion(cur_tracking_window.regionWidget->regions[index]->show_region,
-                               cur_view,alpha,get_param("region_bend1"),get_param("region_bend2"));
+                               cur_view,
+                               cur_tracking_window.regionWidget->regions[index]->opacity == -1.0f ? alpha : cur_tracking_window.regionWidget->regions[index]->opacity,
+                               get_param("region_bend1"),get_param("region_bend2"));
                 }
         }
         glDisable(GL_BLEND);
