@@ -233,7 +233,7 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
             t.train(nn,train_data[fold],terminated, [&]()
             {
                 nn.set_test_mode(true);
-                nn.sort_fully_layer();
+                //nn.sort_fully_layer();
 
                 // fiber convolution
                 {
