@@ -165,7 +165,7 @@ void RegionTableWidget::end_update(void)
     cur_tracking_window.connect(cur_tracking_window.regionWidget,SIGNAL(cellChanged(int,int)),cur_tracking_window.glWidget,SLOT(updateGL()));
 }
 
-void RegionTableWidget::add_region(QString name,unsigned char feature,int color)
+void RegionTableWidget::add_region(QString name,unsigned char feature,unsigned int color)
 {
     if(color == 0x00FFFFFF || !color)
     {
@@ -1088,44 +1088,49 @@ void RegionTableWidget::setROIs(ThreadData* data)
 {
     int roi_count = 0;
     for (unsigned int index = 0;index < regions.size();++index)
-        if (!regions[index]->empty() && item(index,0)->checkState() == Qt::Checked
+        if (!regions[index]->empty() && item(int(index),0)->checkState() == Qt::Checked
                 && regions[index]->regions_feature == 0 /*ROI*/)
             ++roi_count;
     for (unsigned int index = 0;index < regions.size();++index)
-        if (!regions[index]->empty() && item(index,0)->checkState() == Qt::Checked
+        if (!regions[index]->empty() && item(int(index),0)->checkState() == Qt::Checked
                 && !(regions[index]->regions_feature == 0 && roi_count > 5))
             data->roi_mgr->setRegions(cur_tracking_window.handle->dim,regions[index]->get_region_voxels_raw(),
                                      regions[index]->resolution_ratio,
-                             regions[index]->regions_feature,item(index,0)->text().toLocal8Bit().begin(),
+                             regions[index]->regions_feature,item(int(index),0)->text().toLocal8Bit().begin(),
                                      cur_tracking_window.handle->vs);
     // auto track
     if(cur_tracking_window.ui->target->currentIndex() > 0 &&
        cur_tracking_window.tractography_atlas.get())
-        data->roi_mgr->setAtlas(cur_tracking_window.tractography_atlas,cur_tracking_window.ui->target->currentIndex()-1);
+        data->roi_mgr->setAtlas(cur_tracking_window.tractography_atlas,
+                                cur_tracking_window.ui->target->currentIndex()-1);
 
     data->roi_mgr->setWholeBrainSeed(cur_tracking_window.handle,cur_tracking_window.get_fa_threshold());
 }
 
 QString RegionTableWidget::getROIname(void)
 {
-    for (unsigned int index = 0;index < regions.size();++index)
-        if (!regions[index]->empty() && item(index,0)->checkState() == Qt::Checked &&
+    for (size_t index = 0;index < regions.size();++index)
+        if (!regions[index]->empty() && item(int(index),0)->checkState() == Qt::Checked &&
              regions[index]->regions_feature == roi_id)
-                return item(index,0)->text();
-    for (unsigned int index = 0;index < regions.size();++index)
-        if (!regions[index]->empty() && item(index,0)->checkState() == Qt::Checked &&
+                return item(int(index),0)->text();
+    for (size_t index = 0;index < regions.size();++index)
+        if (!regions[index]->empty() && item(int(index),0)->checkState() == Qt::Checked &&
              regions[index]->regions_feature == seed_id)
-                return item(index,0)->text();
+                return item(int(index),0)->text();
     return "whole_brain";
 }
 void RegionTableWidget::undo(void)
 {
-    regions[currentRow()]->undo();
+    if(currentRow() < 0)
+        return;
+    regions[size_t(currentRow())]->undo();
     emit need_update();
 }
 void RegionTableWidget::redo(void)
 {
-    regions[currentRow()]->redo();
+    if(currentRow() < 0)
+        return;
+    regions[size_t(currentRow())]->redo();
     emit need_update();
 }
 
@@ -1133,12 +1138,14 @@ void RegionTableWidget::do_action(QString action)
 {
     if(regions.empty())
         return;
-    unsigned int k = currentRow();
+    int k = currentRow();
+    if(k < 0)
+        return;
     if (item(k,0)->checkState() != Qt::Checked)
         item(k,0)->setCheckState(Qt::Checked);
 
     {
-        ROIRegion& cur_region = *regions[k];
+        ROIRegion& cur_region = *regions[size_t(k)];
         if(cur_tracking_window.ui->all_edit->isChecked())
             for_each_checked_region([&](std::shared_ptr<ROIRegion> region){region->perform(action.toStdString());});
         else
@@ -1152,26 +1159,26 @@ void RegionTableWidget::do_action(QString action)
                 return;
             tipl::image<unsigned char, 3> A,B;
             checked_regions[0]->SaveToBuffer(A, 1);
-            for(int r = 1;r < checked_regions.size();++r)
+            for(size_t r = 1;r < checked_regions.size();++r)
             {
                 checked_regions[r]->SaveToBuffer(B, 1);
                 if(action == "A-B")
                 {
-                    for(int i = 0;i < A.size();++i)
+                    for(size_t i = 0;i < A.size();++i)
                         if(B[i])
                             A[i] = 0;
                     checked_regions[0]->LoadFromBuffer(A);
                 }
                 if(action == "B-A")
                 {
-                    for(int i = 0;i < A.size();++i)
+                    for(size_t i = 0;i < A.size();++i)
                         if(A[i])
                             B[i] = 0;
                     checked_regions[r]->LoadFromBuffer(B);
                 }
                 if(action == "A*B")
                 {
-                    for(int i = 0;i < A.size();++i)
+                    for(size_t i = 0;i < A.size();++i)
                         B[i] = (A[i] & B[i]);
                     checked_regions[r]->LoadFromBuffer(B);
                 }
@@ -1181,7 +1188,10 @@ void RegionTableWidget::do_action(QString action)
         {
             bool ok;
             double threshold = QInputDialog::getDouble(this,
-                "DSI Studio","Set opacity (between 0 and 1)",0.1,0.0,1.0,1,&ok);
+                "DSI Studio","Set opacity (between 0 and 1)",
+                    double(cur_region.opacity < 0.0f ?
+                    cur_tracking_window["region_alpha"].toFloat() : cur_region.opacity),
+                    0.0,1.0,1,&ok,Qt::WindowFlags(),0.1);
             if(!ok)
                 return;
             cur_region.opacity = float(threshold);
@@ -1195,11 +1205,12 @@ void RegionTableWidget::do_action(QString action)
             mask.resize(I.geometry());
             auto m = std::minmax_element(I.begin(),I.end());
             bool ok;
-            float threshold = QInputDialog::getDouble(this,
-                "DSI Studio","Threshold:", tipl::segmentation::otsu_threshold(I),
-                *m.first,
-                *m.second,
-                4, &ok);
+            float threshold = float(QInputDialog::getDouble(this,
+                "DSI Studio","Threshold:",
+                double(tipl::segmentation::otsu_threshold(I)),
+                double(*m.first),
+                double(*m.second),
+                4, &ok));
             if(!ok)
                 return;
 

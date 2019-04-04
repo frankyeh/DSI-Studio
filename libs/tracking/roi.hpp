@@ -86,7 +86,7 @@ public:
     std::vector<std::shared_ptr<Roi> > terminate;
 public:
     std::shared_ptr<TractModel> atlas;
-    unsigned char track_id = 0;
+    int track_id = 0;
 public:
     bool is_excluded_point(const tipl::vector<3,float>& point) const
     {
@@ -138,12 +138,12 @@ public:
             return atlas->find_nearest(track,buffer_size) == track_id;
         return true;
     }
-    void setAtlas(std::shared_ptr<TractModel> atlas_,unsigned int track_id_)
+    void setAtlas(std::shared_ptr<TractModel> atlas_,int track_id_)
     {
         atlas = atlas_;
         track_id = track_id_;
         report += " The anatomy prior of a tractography atlas (Yeh et al., Neuroimage 178, 57-68, 2018) was used to track ";
-        report += tractography_name_list[track_id];
+        report += tractography_name_list[size_t(track_id)];
         report += ".";
     }
 
@@ -158,13 +158,13 @@ public:
         {
             float r = 1.0f;
             handle->get_atlas_roi(handle->atlas_list[0],track_id,seed,r);
-            name = tractography_name_list[track_id];
+            name = tractography_name_list[size_t(track_id)];
         }
         else {
             const float *fa0 = handle->dir.fa[0];
             for(tipl::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
                 if(fa0[index.index()] > threashold)
-                    seed.push_back(tipl::vector<3,short>(index.x(),index.y(),index.z()));
+                    seed.push_back(tipl::vector<3,short>(short(index.x()),short(index.y()),short(index.z())));
         }
         setRegions(handle->dim,seed,1.0,3/*seed i*/,name.c_str(),tipl::vector<3>());
     }
