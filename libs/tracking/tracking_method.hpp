@@ -38,7 +38,7 @@ struct TrackingParam
     float smooth_fraction;
     float min_length;
     float max_length;
-    unsigned int termination_count = 10000;
+    unsigned int termination_count = 100000;
     unsigned int max_seed_count = 0;
     unsigned char stop_by_tract = 1;
     unsigned char center_seed = 0;
@@ -139,7 +139,7 @@ struct TrackingParam
         report << " Tracks with length shorter than " << min_length << " or longer than " << max_length  << " mm were discarded.";
         report << " A total of " << termination_count << (stop_by_tract ? " tracts were calculated.":" seeds were placed.");
         if(tip_iteration)
-            report << " Topology-informed pruning (Yeh et al. Neurotherapeutics 2018) was applied to the tractography with " << (int)tip_iteration <<
+            report << " Topology-informed pruning (Yeh et al. Neurotherapeutics, 16(1), 52-58, 2019) was applied to the tractography with " << (int)tip_iteration <<
                       " iteration(s) to remove false connections.";
         report << " parameter_id=" << get_code() << " ";
         return report.str();

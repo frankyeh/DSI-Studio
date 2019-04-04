@@ -54,7 +54,6 @@ public:
     unsigned int num_fiber;
     unsigned int half_odf_size;
     std::string error_msg;
-
 public:
     void check_index(unsigned int index);
     bool add_data(gz_mat_read& mat_reader);

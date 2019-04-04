@@ -352,7 +352,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         if(normalize_qa)
             out << " The SDF was normalized.";
         if(track_trimming)
-            out << " Topology-informed pruning (Yeh et al. Neurotherapeutics 2018) was conducted with " << track_trimming << " iterations to remove false connections.";
+            out << " Topology-informed pruning (Yeh et al. Neurotherapeutics, 16(1), 52-58, 2019) was conducted with " << track_trimming << " iterations to remove false connections.";
 
         if(output_resampling)
             out << " All tracks generated from bootstrap resampling were included.";
