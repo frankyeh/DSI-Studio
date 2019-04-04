@@ -83,6 +83,7 @@ public:
     std::shared_ptr<SliceModel> current_slice;
     bool addSlices(QStringList filenames,QString name,bool correct_intensity,bool cmd);
     void updateSlicesMenu(void);
+    float get_fa_threshold(void);
     bool no_update = false;
 public:
     bool eventFilter(QObject *obj, QEvent *event);

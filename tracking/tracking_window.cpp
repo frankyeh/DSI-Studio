@@ -2042,3 +2042,12 @@ void tracking_window::on_enable_auto_track_clicked()
         QMessageBox::information(this,"DSI Studio",QString("Fail to find the HCP842 tractography atlas at %1").arg(tractography_atlas_file_name.c_str()),0);
 
 }
+
+float tracking_window::get_fa_threshold(void)
+{
+    float threshold = renderWidget->getData("fa_threshold").toFloat();
+    if(threshold == 0.0f)
+        threshold = renderWidget->getData("otsu_threshold").toFloat()
+                        *tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
+    return threshold;
+}
