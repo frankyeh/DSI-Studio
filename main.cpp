@@ -65,29 +65,6 @@ std::string find_full_path(QString name)
 }
 
 extern std::vector<std::shared_ptr<atlas> > atlas_buffer;
-void load_atlas(void)
-{
-    QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
-    if(!dir.exists())
-        dir = QDir::currentPath()+ "/atlas";
-    QStringList name_list = dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
-    name_list << dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
-    if(name_list.empty())
-        return;
-    for(int i = 1;i < name_list.size();++i)
-        if(name_list[i].contains("tractography"))
-        {
-            auto str = name_list[i];
-            name_list.removeAt(i);
-            name_list.insert(0,str);
-        }
-    for(int index = 0;index < name_list.size();++index)
-    {
-        atlas_buffer.push_back(std::make_shared<atlas>());
-        atlas_buffer.back()->name = QFileInfo(name_list[index]).baseName().toLocal8Bit().begin();
-        atlas_buffer.back()->filename = (dir.absolutePath() + "/" + name_list[index]).toStdString();
-    }
-}
 
 void load_file_name(void)
 {
@@ -149,6 +126,27 @@ void load_file_name(void)
                 iso_template_list.push_back(std::string());
         }
     }
+
+    QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
+    if(!dir.exists())
+        dir = QDir::currentPath()+ "/atlas";
+    QStringList name_list = dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
+    name_list << dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
+    if(name_list.empty())
+        return;
+    for(int i = 1;i < name_list.size();++i)
+        if(name_list[i].contains("tractography"))
+        {
+            auto str = name_list[i];
+            name_list.removeAt(i);
+            name_list.insert(0,str);
+        }
+    for(int index = 0;index < name_list.size();++index)
+    {
+        atlas_buffer.push_back(std::make_shared<atlas>());
+        atlas_buffer.back()->name = QFileInfo(name_list[index]).baseName().toLocal8Bit().begin();
+        atlas_buffer.back()->filename = (dir.absolutePath() + "/" + name_list[index]).toStdString();
+    }
 }
 
 void init_application(void)
@@ -162,10 +160,8 @@ void init_application(void)
     QApplication::setFont(font);
     QApplication::setStyle(QStyleFactory::create("Fusion"));
     #endif
-
     try{
     load_file_name();
-    load_atlas();
     }
     catch(std::string msg)
     {
