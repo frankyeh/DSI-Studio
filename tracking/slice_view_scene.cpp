@@ -6,7 +6,6 @@
 #include <QFileDialog>
 #include <QClipboard>
 #include <QMessageBox>
-#include <QBuffer>
 #include "tracking_window.h"
 #include "ui_tracking_window.h"
 #include "region/regiontablewidget.h"
@@ -16,13 +15,12 @@ void show_view(QGraphicsScene& scene,QImage I)
 {
     scene.setSceneRect(0, 0, I.width(),I.height());
     scene.clear();
-#ifndef WIN32
-    QByteArray byteArray;
-    QBuffer buffer(&byteArray);
-    I.save(&buffer,"bmp");
-    I.loadFromData(byteArray,"bmp");
-#endif
-    scene.addPixmap(QPixmap::fromImage(I));
+    #ifdef WIN32
+        scene.addPixmap(QPixmap::fromImage(I));
+    #elif
+        //For Mac, the endian system is BGRA and all QImage needs to be converted.
+        scene.addPixmap(QPixmap::fromImage(I.convertToFormat(QImage::Format_ARGB32)));
+    #endif
 }
 
 void slice_view_scene::show_ruler(QPainter& paint)
