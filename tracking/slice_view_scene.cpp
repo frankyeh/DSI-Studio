@@ -6,6 +6,7 @@
 #include <QFileDialog>
 #include <QClipboard>
 #include <QMessageBox>
+#include <QBuffer>
 #include "tracking_window.h"
 #include "ui_tracking_window.h"
 #include "region/regiontablewidget.h"
@@ -15,6 +16,12 @@ void show_view(QGraphicsScene& scene,QImage I)
 {
     scene.setSceneRect(0, 0, I.width(),I.height());
     scene.clear();
+#ifndef WIN32
+    QByteArray byteArray;
+    QBuffer buffer(&byteArray);
+    I.save(&buffer,"bmp");
+    I.loadFromData(byteArray,"bmp");
+#endif
     scene.addPixmap(QPixmap::fromImage(I));
 }
 
