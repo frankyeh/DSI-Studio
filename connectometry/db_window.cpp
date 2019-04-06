@@ -390,8 +390,7 @@ void db_window::on_fp_zoom_valueChanged(double)
     fp_dif_image = qimage.scaled(fp_dif_map.width()*ui->fp_zoom->value(),fp_dif_map.height()*ui->fp_zoom->value());
     fp_dif_scene.setSceneRect(0, 0, fp_dif_image.width()+80,fp_dif_image.height()+10);
     fp_dif_scene.clear();
-    fp_dif_scene.setItemIndexMethod(QGraphicsScene::NoIndex);
-    fp_dif_scene.addRect(0, 0, fp_dif_image.width(),fp_dif_image.height(),QPen(),fp_dif_image);
+    fp_dif_scene.addPixmap(QPixmap::fromImage(fp_dif_image));
 
     QImage qbar((unsigned char*)&*color_bar.begin(),color_bar.width(),color_bar.height(),QImage::Format_RGB32);
     qbar = qbar.scaledToHeight(fp_dif_image.height());

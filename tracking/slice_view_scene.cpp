@@ -15,8 +15,7 @@ void show_view(QGraphicsScene& scene,QImage I)
 {
     scene.setSceneRect(0, 0, I.width(),I.height());
     scene.clear();
-    scene.setItemIndexMethod(QGraphicsScene::NoIndex);
-    scene.addRect(0, 0, I.width(),I.height(),QPen(),I);
+    scene.addPixmap(QPixmap::fromImage(I));
 }
 
 void slice_view_scene::show_ruler(QPainter& paint)
@@ -732,10 +731,10 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
                         (cur_tracking_window.cur_dim != 0 ? 0:geo[0]*display_ratio):
                         (cur_tracking_window.cur_dim == 0 ? 0:geo[1]*display_ratio),
                         cur_tracking_window.cur_dim != 2 ? 0:geo[2]*display_ratio,annotated_image);
-        addRect(0, 0, temp.width(),temp.height(),QPen(),temp);
+        addPixmap(QPixmap::fromImage(temp));
     }
     else
-        addRect(0, 0, annotated_image.width(),annotated_image.height(),QPen(),annotated_image);
+        addPixmap(QPixmap::fromImage(annotated_image));
 
 }
 
@@ -876,11 +875,11 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
                                 (cur_tracking_window.cur_dim != 0 ? 0:geo[0]*display_ratio) :
                                 (cur_tracking_window.cur_dim == 0 ? 0:geo[1]*display_ratio),
                             cur_tracking_window.cur_dim != 2 ? 0:geo[2]*display_ratio,annotated_image);
-            addRect(0, 0, temp.width(),temp.height(),QPen(),temp);
+
+            addPixmap(QPixmap::fromImage(temp));
         }
         else
-            addRect(0, 0, annotated_image.width(),annotated_image.height(),QPen(),annotated_image);
-
+            addPixmap(QPixmap::fromImage(annotated_image));
         return;
     }
     case 6:
