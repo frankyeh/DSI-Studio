@@ -392,12 +392,17 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                     in.read((char*)&*buf.begin(),total_size-offset-16);// 16 skip the final inf
                     for(unsigned int index = 0;index < buf.size();)
                     {
-                        unsigned int end = std::find(buf.begin()+index,buf.end(),2143289344)-buf.begin(); // NaN
-                        loaded_tract_data.push_back(std::move(std::vector<float>(end-index)));
-                        std::copy((const float*)&*buf.begin() + index,
-                                  (const float*)&*buf.begin() + end,
-                                  loaded_tract_data.back().begin());
-                        tipl::divide_constant(loaded_tract_data.back().begin(),loaded_tract_data.back().end(),handle->vs[0]);
+
+                        unsigned int end = std::find(buf.begin()+index,buf.end(),0x7FC00000)-buf.begin(); // NaN
+                        if(end-index > 3)
+                        {
+                            std::vector<float> track(end-index);
+                            std::copy((const float*)&*buf.begin() + index,
+                                      (const float*)&*buf.begin() + end,
+                                      track.begin());
+                            loaded_tract_data.push_back(std::move(track));
+                            tipl::divide_constant(loaded_tract_data.back().begin(),loaded_tract_data.back().end(),handle->vs[0]);
+                        }
                         index = end+3;
                     }
 
@@ -446,7 +451,6 @@ bool TractModel::save_data_to_file(const char* file_name,const std::string& inde
             file_name_s += ".gz";
         return TrackVis::save_to_file(file_name_s.c_str(),geometry,vs,tract_data,data);
     }
-
     if (ext == std::string(".txt"))
     {
         std::ofstream out(file_name,std::ios::binary);
@@ -512,6 +516,36 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         std::vector<std::vector<float> > empty_scalar;
         return TrackVis::save_to_file(file_name.c_str(),geometry,vs,tract_data,empty_scalar);
     }
+    if(ext == std::string(".tck"))
+    {
+        char header[100] = {0};
+        {
+            std::ostringstream out;
+            out << "mrtrix tracks\ndatatype: Float32LE\nfile: . 100\ncount: " << tract_data.size() << "\nEND\n";
+            std::string t = out.str();
+            if(t.length() > 100)
+                return false;
+            std::copy(t.begin(),t.end(),header);
+        }
+        std::ofstream out(file_name.c_str(),std::ios::binary);
+        out.write(header,sizeof(header));
+        unsigned int NaN = 0x7FC00000;
+        for(size_t i = 0;i < tract_data.size();++i)
+        {
+            std::vector<float> buf(tract_data[i]);
+            tipl::multiply_constant(buf,handle->vs[0]);
+            out.write((char*)&buf[0],buf.size()*sizeof(float));
+            out.write((char*)&NaN,sizeof(NaN));
+            out.write((char*)&NaN,sizeof(NaN));
+            out.write((char*)&NaN,sizeof(NaN));
+        }
+        unsigned int INF = 0x7FB00000;
+        out.write((char*)&INF,sizeof(INF));
+        out.write((char*)&INF,sizeof(INF));
+        out.write((char*)&INF,sizeof(INF));
+        return true;
+    }
+
     if (ext == std::string(".txt"))
     {
         std::ofstream out(file_name_,std::ios::binary);

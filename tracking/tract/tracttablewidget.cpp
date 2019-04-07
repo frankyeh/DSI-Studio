@@ -487,7 +487,7 @@ void TractTableWidget::save_tracts_as(void)
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,"Save tracts as",item(currentRow(),0)->text().replace(':','_') + output_format(),
-                 "Tract files (*.trk *trk.gz);;Text File (*.txt);;MAT files (*.mat);;ROI files (*.nii *nii.gz);;All files (*)");
+                 "Tract files (*.trk *trk.gz);;Text File (*.txt);;MAT files (*.mat);;TCK file (*.tck);;ROI files (*.nii *nii.gz);;All files (*)");
     if(filename.isEmpty())
         return;
     std::string sfilename = filename.toLocal8Bit().begin();
