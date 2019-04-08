@@ -129,8 +129,13 @@ void export_track_info(const std::string& file_name,
         if(cmd == "stat")
         {
             file_name_stat += ".txt";
-            std::cout << "export statistics..." << std::endl;
+            std::cout << "export statistics to " << file_name_stat << std::endl;
             std::ofstream out_stat(file_name_stat.c_str());
+            if(!out_stat)
+            {
+                std::cout << "Output statistics to file_name_stat failed. Please check write permission" << std::endl;
+                return;
+            }
             std::string result;
             tract_model.get_quantitative_info(result);
             out_stat << result;
