@@ -271,5 +271,6 @@ int ana(void)
         std::cout << "No tracks remained after ROI selection." << std::endl;
         return 1;
     }
+    // --output will save tracks into a file
     return trk_post(handle,tract_model,po.has("output") ? po.get("output") : po.get("tract"),po.has("output"));
 }
