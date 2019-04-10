@@ -331,7 +331,8 @@ bool load_region(std::shared_ptr<fib_data> handle,
 
 int trk_post(std::shared_ptr<fib_data> handle,
              TractModel& tract_model,
-             const std::string& file_name)
+             const std::string& file_name,
+             bool save_track)
 {
     if (po.has("delete_repeat"))
     {
@@ -347,7 +348,7 @@ int trk_post(std::shared_ptr<fib_data> handle,
         for(int i = 0;i < trim;++i)
             tract_model.trim();
     }
-    if(!file_name.empty())
+    if(save_track)
     {
         std::string file_list = file_name;
         std::replace(file_list.begin(),file_list.end(),',',' ');
@@ -682,5 +683,5 @@ int trk(std::shared_ptr<fib_data> handle)
         fout << po.get("source") << ".trk.gz";
         file_name = fout.str();
     }
-    return trk_post(handle,tract_model,file_name);
+    return trk_post(handle,tract_model,file_name,true/*save track*/);
 }

@@ -163,7 +163,8 @@ bool load_region(std::shared_ptr<fib_data> handle,
 
 int trk_post(std::shared_ptr<fib_data> handle,
              TractModel& tract_model,
-             const std::string& file_name);
+             const std::string& file_name,
+             bool save_track);
 std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
 int ana(void)
 {
@@ -270,5 +271,5 @@ int ana(void)
         std::cout << "No tracks remained after ROI selection." << std::endl;
         return 1;
     }
-    return trk_post(handle,tract_model,po.get("output"));
+    return trk_post(handle,tract_model,po.has("output") ? po.get("output") : po.get("tract"),po.has("output"));
 }
