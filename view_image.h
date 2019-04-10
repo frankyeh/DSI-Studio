@@ -1,7 +1,7 @@
 #ifndef VIEW_IMAGE_H
 #define VIEW_IMAGE_H
 
-#include <QDialog>
+#include <QMainWindow>
 #include <QGraphicsScene>
 #include <tipl/tipl.hpp>
 
@@ -9,7 +9,7 @@ namespace Ui {
 class view_image;
 }
 
-class view_image : public QDialog
+class view_image : public QMainWindow
 {
     Q_OBJECT
     
@@ -20,12 +20,19 @@ public:
     bool eventFilter(QObject *obj, QEvent *event);
 private slots:
     void update_image(void);
+    void init_image(void);
     void on_zoom_in_clicked();
     void on_zoom_out_clicked();
+
+    void on_actionResample_triggered();
+
+    void on_action_Save_as_triggered();
 
 private:
     Ui::view_image *ui;
     tipl::image<float,3> data;
+    tipl::vector<3,float> vs;
+    tipl::matrix<4,4,float> T;
 private:
     QGraphicsScene source;
     tipl::color_image buffer;

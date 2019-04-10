@@ -1,5 +1,7 @@
 #include <map>
 #include <QTextStream>
+#include <QInputDialog>
+#include <QFileDialog>
 #include "view_image.h"
 #include "ui_view_image.h"
 #include "libs/gzip_interface.hpp"
@@ -55,7 +57,7 @@ bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl:
 }
 
 view_image::view_image(QWidget *parent) :
-    QDialog(parent),
+    QMainWindow(parent),
     ui(new Ui::view_image)
 {
     ui->setupUi(this);
@@ -121,7 +123,8 @@ bool view_image::open(QStringList file_names)
     tipl::io::bruker_2dseq seq;
     gz_mat_read mat;
     data.clear();
-    tipl::vector<3,float> vs;
+    T.identity();
+
     QString info;
     QString file_name = file_names[0];
     setWindowTitle(QFileInfo(file_name).fileName());
@@ -148,6 +151,7 @@ bool view_image::open(QStringList file_names)
     {
         nifti >> data;
         nifti.get_voxel_size(vs);
+        nifti.get_image_transformation(T.begin());
         info = QString("sizeof_hdr=%1\ndim_info=%2\n").
                 arg(nifti.nif_header2.sizeof_hdr).
                 arg((int)nifti.nif_header2.dim_info);
@@ -244,7 +248,7 @@ bool view_image::open(QStringList file_names)
             while(std::getline(in,line))
             {
 
-                for(int pos = 0;(pos = line.find('(',pos)) != std::string::npos;++pos)
+                for(size_t pos = 0;(pos = line.find('(',pos)) != std::string::npos;++pos)
                 {
                     std::string tag = line.substr(pos,11);
                     if(tag.length() != 11)
@@ -288,7 +292,7 @@ bool view_image::open(QStringList file_names)
     QStringList list = info.split("\n");
     ui->info->clear();
     ui->info->setRowCount(list.size());
-    for(unsigned int row = 0;row < list.size();++row)
+    for(int row = 0;row < list.size();++row)
     {
         QString line = list[row];
         QStringList value_list = line.split("=");
@@ -300,36 +304,40 @@ bool view_image::open(QStringList file_names)
 
     if(!data.empty())
     {
-        ui->slice_pos->setRange(0,data.depth()-1);
-        ui->slice_pos->setValue(data.depth() >> 1);
-        ui->image_info->setText(QString("width:%1 height:%2 depth:%3 resolution:%4 x %5 x %6").
-                                arg(data.width()).
-                                arg(data.height()).
-                                arg(data.depth()).
-                                arg(vs[0]).
-                                arg(vs[1]).
-                                arg(vs[2]));
+        init_image();
         update_image();
     }
     return !data.empty() || !info.isEmpty();
+}
+
+void view_image::init_image(void)
+{
+    ui->slice_pos->setRange(0,data.depth()-1);
+    ui->slice_pos->setValue(data.depth() >> 1);
+    ui->image_info->setText(QString("dim=(%1,%2,%3) vs=(%4,%5,%6) T=(%7,%8,%9,%10;%11,%12,%13,%14;%15,%16,%17,%18)").
+            arg(data.width()).arg(data.height()).arg(data.depth()).
+            arg(double(vs[0])).arg(double(vs[1])).arg(double(vs[2])).
+            arg(double(T[0])).arg(double(T[1])).arg(double(T[2])).arg(double(T[3])).
+            arg(double(T[4])).arg(double(T[5])).arg(double(T[6])).arg(double(T[7])).
+            arg(double(T[8])).arg(double(T[9])).arg(double(T[10])).arg(double(T[11])));
 }
 void view_image::update_image(void)
 {
     if(data.empty())
         return;
     tipl::image<float,2> tmp(tipl::geometry<2>(data.width(),data.height()));
-    unsigned int offset = ui->slice_pos->value()*tmp.size();
+    size_t offset = size_t(ui->slice_pos->value())*tmp.size();
 
     std::copy(data.begin() + offset,
               data.begin() + offset + tmp.size(),tmp.begin());
     max_source_value = std::max<float>(max_source_value,*std::max_element(tmp.begin(),tmp.end()));
-    if(max_source_value + 1.0 != 1.0)
-        tipl::divide_constant(tmp.begin(),tmp.end(),max_source_value/255.0);
+    if(max_source_value + 1.0f != 1.0f)
+        tipl::divide_constant(tmp.begin(),tmp.end(),max_source_value/255.0f);
 
     float mean_value = tipl::mean(tmp.begin(),tmp.end());
     tipl::minus_constant(tmp.begin(),tmp.end(),mean_value);
     tipl::multiply_constant(tmp.begin(),tmp.end(),ui->contrast->value());
-    tipl::add_constant(tmp.begin(),tmp.end(),mean_value+ui->brightness->value()*25.5);
+    tipl::add_constant(tmp.begin(),tmp.end(),mean_value+ui->brightness->value()*25.5f);
 
     tipl::upper_lower_threshold(tmp.begin(),tmp.end(),tmp.begin(),0.0f,255.0f);
 
@@ -353,4 +361,46 @@ void view_image::on_zoom_out_clicked()
 {
     source_ratio *= 0.9f;
     update_image();
+}
+
+void view_image::on_actionResample_triggered()
+{
+    bool ok;
+    float nv = float(QInputDialog::getDouble(this,
+        "DSI Studio","Assign output resolution in (mm):", double(vs[0]),0.0,3.0,4, &ok));
+    if (!ok || nv == 0.0f)
+        return;
+    tipl::vector<3,float> new_vs(nv,nv,nv);
+    tipl::image<float,3> J(tipl::geometry<3>(
+            int(std::ceil(float(data.width())*vs[0]/new_vs[0])),
+            int(std::ceil(float(data.height())*vs[1]/new_vs[1])),
+            int(std::ceil(float(data.depth())*vs[2]/new_vs[2]))));
+    if(J.empty())
+        return;
+    tipl::transformation_matrix<float> T1;
+    tipl::matrix<4,4,float> nT;
+    nT.identity();
+    nT[0] = T1.sr[0] = new_vs[0]/vs[0];
+    nT[5] = T1.sr[4] = new_vs[1]/vs[1];
+    nT[10] = T1.sr[8] = new_vs[2]/vs[2];
+    tipl::resample_mt(data,J,T1,tipl::cubic);
+    data.swap(J);
+    vs = new_vs;
+    T = T*nT;
+
+    init_image();
+    update_image();
+}
+
+void view_image::on_action_Save_as_triggered()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                           this,"Save image",windowTitle(),"NIFTI file(*nii.gz *.nii)" );
+    if (filename.isEmpty())
+        return;
+    gz_nifti nii;
+    nii.set_image_transformation(T.begin());
+    nii.set_voxel_size(vs);
+    nii << data;
+    nii.save_to_file(filename.toStdString().c_str());
 }
