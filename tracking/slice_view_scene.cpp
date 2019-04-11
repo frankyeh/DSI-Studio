@@ -17,7 +17,7 @@ void show_view(QGraphicsScene& scene,QImage I)
     scene.clear();
     #ifdef WIN32
         scene.addPixmap(QPixmap::fromImage(I));
-    #elif
+    #else
         //For Mac, the endian system is BGRA and all QImage needs to be converted.
         scene.addPixmap(QPixmap::fromImage(I.convertToFormat(QImage::Format_ARGB32)));
     #endif
