@@ -1720,6 +1720,16 @@ void tracking_window::updateSlicesMenu(void)
         connect(Item, SIGNAL(triggered()),&scene, SLOT(save_slice_as()));
         ui->menuE_xport->addAction(Item);
     }
+
+    // export fiber directions
+    {
+        QAction* Item = new QAction(this);
+        Item->setText(QString("Save fiber directions..."));
+        Item->setData(QString("fiber"));
+        Item->setVisible(true);
+        connect(Item, SIGNAL(triggered()),&scene, SLOT(save_slice_as()));
+        ui->menuE_xport->addAction(Item);
+    }
 }
 
 bool tracking_window::addSlices(QStringList filenames,QString name,bool correct_intensity,bool cmd)
