@@ -11,7 +11,7 @@ std::shared_ptr<QProgressDialog> progressDialog;
 QTime t_total,t_last;
 bool lock_dialog = false;
 bool prog_aborted_ = false;
-std::chrono::steady_clock::time_point start_time = std::chrono::high_resolution_clock::now();
+auto start_time = std::chrono::high_resolution_clock::now();
 std::string current_title;
 
 void check_create(void)
