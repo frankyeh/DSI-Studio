@@ -223,8 +223,8 @@ bool load_region(std::shared_ptr<fib_data> handle,
     // --roi=file_name:value
     if(file_name.find(':') != std::string::npos)
     {
-        file_name = file_name.substr(0,file_name.find(':'));
         region_name = file_name.substr(file_name.find(':')+1);
+        file_name = file_name.substr(0,file_name.find(':'));
     }
 
     if(!QFileInfo(file_name.c_str()).exists())
@@ -241,6 +241,11 @@ bool load_region(std::shared_ptr<fib_data> handle,
         if(!handle->can_map_to_mni())
         {
             std::cout << "Cannot output connectivity: no mni mapping." << std::endl;
+            return false;
+        }
+        if(region_name.empty())
+        {
+            std::cout << "Please assign region name of an atlas." << std::endl;
             return false;
         }
         const tipl::image<tipl::vector<3,float>,3 >& mapping = handle->get_mni_mapping();
