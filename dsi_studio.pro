@@ -24,7 +24,7 @@ RC_FILE = dsi_studio.rc
 
 linux* {
 QMAKE_CXXFLAGS += -fpermissive
-LIBS += lGLU -lz
+LIBS += -lGLU -lz
 }
 
 mac{
