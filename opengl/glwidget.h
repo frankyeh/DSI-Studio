@@ -138,6 +138,7 @@ protected:
      unsigned char tract_tube_detail;
      unsigned char tract_variant_size;
      unsigned char tract_variant_color;
+     unsigned char tract_shader;
      unsigned char end_point_shift;
      unsigned char odf_position;
      unsigned char odf_skip;

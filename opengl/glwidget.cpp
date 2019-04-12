@@ -666,6 +666,7 @@ void GLWidget::renderLR()
            check_change("tract_tube_detail",tract_tube_detail) ||
            check_change("tract_variant_size",tract_variant_size) ||
            check_change("tract_variant_color",tract_variant_color) ||
+           check_change("tract_shader",tract_shader) ||
            check_change("end_point_shift",end_point_shift);
         if(changed)
             makeTracts();
@@ -682,110 +683,12 @@ void GLWidget::renderLR()
             glDisable(GL_BLEND);
             glDepthMask(true);
         }
-
-
-        if(get_param("tract_shader"))
-        {
-            /*
-            if(!shader.get())
-            {
-                QFile source1(":/data/shader_fragment.txt"),source2(":/data/shader_vertex.txt"),
-                      source3(":/data/shader_fragment2.txt"),source4(":/data/shader_vertex2.txt");
-                if (source1.open(QIODevice::ReadOnly | QIODevice::Text) &&
-                    source2.open(QIODevice::ReadOnly | QIODevice::Text) &&
-                    source3.open(QIODevice::ReadOnly | QIODevice::Text) &&
-                    source4.open(QIODevice::ReadOnly | QIODevice::Text))
-                {
-                    QTextStream in1(&source1),in2(&source2),in3(&source3),in4(&source4);
-                    shader = std::make_shared<QOpenGLShaderProgram>(this);
-                    shader2 = std::make_shared<QOpenGLShaderProgram>(this);
-                    if(!shader->addShaderFromSourceCode(QOpenGLShader::Fragment, in1.readAll().toStdString().c_str()))
-                        std::cout << "Add shader fragment failed:" << shader->log().toStdString() << std::endl;
-                    if(!shader->addShaderFromSourceCode(QOpenGLShader::Vertex, in2.readAll().toStdString().c_str()))
-                        std::cout << "Add shader vertex failed:" << shader->log().toStdString() << std::endl;
-                    if(!shader2->addShaderFromSourceCode(QOpenGLShader::Fragment, in3.readAll().toStdString().c_str()))
-                        std::cout << "Add shader2 fragment failed:" << shader->log().toStdString() << std::endl;
-                    if(!shader2->addShaderFromSourceCode(QOpenGLShader::Vertex, in4.readAll().toStdString().c_str()))
-                        std::cout << "Add shader2 vertex failed:" << shader->log().toStdString() << std::endl;
-                    if(!shader->link())
-                        std::cout << "Shader failed to link:" << shader->log().toStdString() << std::endl;
-                    if(!shader2->link())
-                        std::cout << "Shader failed to link:" << shader->log().toStdString() << std::endl;
-
-                    s_mvp = shader->uniformLocation( "mvp" );
-                    s_mvp2 = shader2->uniformLocation( "mvp2" );
-                    s_depthMap = shader2->uniformLocation( "depthMap" );
-
-                }
-                else
-                    std::cout << "Failed to load shader." << std::endl;
-            }
-            */
-        }
-        //if(shader.get() && get_param("tract_shader"))
-        {
-            /*
-            if(!shader->bind())
-                std::cout << "Shader failed to bind:" << shader->log().toStdString() << std::endl;
-
-            QMatrix4x4 model,projection,mvp;
-            glGetFloatv(GL_MODELVIEW_MATRIX, model.data());
-            glGetFloatv(GL_PROJECTION_MATRIX, projection.data());
-            mvp = projection*model;
-
-            shader->setUniformValue( s_mvp,mvp);
-            //shader2->setUniformValue( s_mvp2, mvp);
-            QOpenGLFunctions *glFuncs = QOpenGLContext::currentContext()->functions();
-
-            GLuint FramebufferName = 0;
-            glFuncs->glGenFramebuffers(1, &FramebufferName);
-            glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-
-            // create a framebuffer object for rendering the depth map:
-            unsigned int depthMapFBO;
-            glFuncs->glGenFramebuffers(1, &depthMapFBO);
-            // create a 2D texture that we'll use as the framebuffer's depth buffer:
-            const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
-
-            unsigned int depthMap;
-            glGenTextures(1, &depthMap);
-            glBindTexture(GL_TEXTURE_2D, depthMap);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-                         SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-            // attach it as the framebuffer's depth buffer:
-            glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-            glFuncs->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
-            glDrawBuffer(GL_NONE);
-            glReadBuffer(GL_NONE);
-            glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            // 1. first render to depth map
-            glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-            glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-            glClear(GL_DEPTH_BUFFER_BIT);
-            //glCallList(tracts);
-            //shader->release();
-            // back to original viewport and frame
-            glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            glViewport(0, 0, cur_width, cur_height);
-            glBindTexture(GL_TEXTURE_2D, depthMap);
-            //shader2->setUniformValue( s_depthMap, depthMap);
-            //if(!shader2->bind())
-            //    std::cout << "Shader failed to bind:" << shader->log().toStdString() << std::endl;
-            */
-        }
         glCallList(tracts);
         glPopMatrix();
         glDisable(GL_COLOR_MATERIAL);
         glDisable(GL_BLEND);
         glDisable(GL_TEXTURE_2D);
         glDepthMask(true);
-        //if(shader.get() && get_param("tract_shader"))
-        //    shader->release();
         check_error("show_tract");
     }
 
@@ -1211,6 +1114,23 @@ void myglColor(const tipl::vector<3,float>& color,float alpha)
         glColor4f(color[0],color[1],color[2],alpha);
 }
 
+template<typename fun_type>
+void for_each_track(TractTableWidget* trackWidget,fun_type fun)
+{
+    for (int i = 0;i < trackWidget->rowCount();++i)
+    {
+        if(trackWidget->item(i,0)->checkState() != Qt::Checked)
+            continue;
+        auto active_tract_model = trackWidget->tract_models[size_t(i)];
+        if (active_tract_model->get_visible_track_count() == 0)
+            continue;
+        unsigned int tracks_count = active_tract_model->get_visible_track_count();
+        for (unsigned int data_index = 0; data_index < tracks_count; ++data_index)
+            fun(active_tract_model,data_index);
+    }
+
+}
+
 void GLWidget::makeTracts(void)
 {
     if(!tracts)
@@ -1224,46 +1144,78 @@ void GLWidget::makeTracts(void)
     const float variant_prob_option[] = {0.1f,0.2f,0.4f,0.95f,2.0f};
     float variant_prob = variant_prob_option[tract_tube_detail];
     float tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0f;
-    float skip_rate = 1.0;
+    float tract_shaderf = 0.02f*float(tract_shader);
     std::vector<float> mean_fa;
     unsigned int mean_fa_index = 0;
     unsigned int track_num_index = cur_tracking_window.handle->get_name_index(cur_tracking_window.color_bar->get_tract_color_name().toStdString());
     // show tract by index value
+    auto trackWidget = cur_tracking_window.tractWidget;
+
+    float skip_rate = 1.0;
+    {
+        unsigned int total_tracts = 0;
+        for (int i = 0;i < trackWidget->rowCount();++i)
+            if(trackWidget->item(i,0)->checkState() == Qt::Checked &&
+               trackWidget->tract_models[size_t(i)]->get_visible_track_count())
+                    total_tracts += trackWidget->tract_models[size_t(i)]->get_visible_track_count();
+        if(total_tracts != 0)
+            skip_rate = float(get_param("tract_visible_tract"))/float(total_tracts);
+    }
+
+
     if (tract_color_style > 1)
     {
         if(tract_color_style == 3 || tract_color_style == 5)// mean value
         {
-            for (unsigned int active_tract_index = 0;
-                    active_tract_index < cur_tracking_window.tractWidget->rowCount();
-                    ++active_tract_index)
+            for_each_track(trackWidget,[&](std::shared_ptr<TractModel>& active_tract_model,unsigned int data_index)
             {
-                if(cur_tracking_window.tractWidget->item(active_tract_index,0)->checkState() != Qt::Checked)
-                    continue;
-                auto active_tract_model =
-                    cur_tracking_window.tractWidget->tract_models[active_tract_index];
-                if (active_tract_model->get_visible_track_count() == 0)
-                    continue;
-                unsigned int tracks_count = active_tract_model->get_visible_track_count();
-                for (unsigned int data_index = 0; data_index < tracks_count; ++data_index)
+                unsigned int vertex_count = active_tract_model->get_tract_length(data_index)/3;
+                if (vertex_count <= 1)
+                    return;
+                std::vector<float> fa_values;
+                active_tract_model->get_tract_data(data_index,track_num_index,fa_values);
+                if(tract_color_style == 3)
                 {
-                    unsigned int vertex_count =
-                            active_tract_model->get_tract_length(data_index)/3;
-                    if (vertex_count <= 1)
-                        continue;
+                    float sum = std::accumulate(fa_values.begin(),fa_values.end(),0.0f);
+                    sum /= (float)fa_values.size();
+                    mean_fa.push_back(sum);
+                }
+                if(tract_color_style == 5)
+                    mean_fa.push_back(*std::max_element(fa_values.begin(),fa_values.end()));
+            });
 
-                    std::vector<float> fa_values;
-                    active_tract_model->get_tract_data(data_index,track_num_index,fa_values);
-                    if(tract_color_style == 3)
-                    {
-                        float sum = std::accumulate(fa_values.begin(),fa_values.end(),0.0f);
-                        sum /= (float)fa_values.size();
-                        mean_fa.push_back(sum);
-                    }
-                    if(tract_color_style == 5)
-                        mean_fa.push_back(*std::max_element(fa_values.begin(),fa_values.end()));
+        }
+    }
+
+    tipl::image<float,2> depth_map;
+
+    if(tract_shader)
+    {
+        depth_map.resize(tipl::geometry<2>(cur_tracking_window.handle->dim.width() * 4,cur_tracking_window.handle->dim.height() * 4));
+        tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
+        for_each_track(trackWidget,[&](std::shared_ptr<TractModel>& active_tract_model,unsigned int data_index)
+        {
+            if(skip_rate < 1.0f && uniform_gen() > skip_rate)
+                return;
+            unsigned int vertex_count =
+                    active_tract_model->get_tract_length(data_index)/3;
+            if (vertex_count <= 1)
+                return;
+            const float* data_iter = &*(active_tract_model->get_tract(data_index).begin());
+            for (unsigned int j = 0, index = 0; index < vertex_count;j += 3, data_iter += 3, ++index)
+            {
+                int x = int(data_iter[0]*4);
+                int y = int(data_iter[1]*4);
+                if(depth_map.geometry().is_valid(x,y))
+                {
+                    size_t pos = size_t(x + y*depth_map.width());
+                    depth_map[pos] = std::max<float>(depth_map[pos],data_iter[2]);
                 }
             }
-        }
+        });
+        tipl::filter::gaussian(depth_map);
+        tipl::filter::gaussian(depth_map);
+        tipl::filter::gaussian(depth_map);
     }
 
     std::vector<tipl::vector<3,float> > points(8),previous_points(8),
@@ -1272,272 +1224,254 @@ void GLWidget::makeTracts(void)
     tipl::vector<3,float> paint_color_f;
     std::vector<float> color;
 
-    unsigned int visible_tracts = get_param("tract_visible_tract");
-    {
-        unsigned int total_tracts = 0;
-        for (unsigned int active_tract_index = 0;
-                active_tract_index < cur_tracking_window.tractWidget->rowCount();
-                ++active_tract_index)
-        {
-            if(cur_tracking_window.tractWidget->item(active_tract_index,0)->checkState() != Qt::Checked)
-                continue;
-            auto active_tract_model =
-                cur_tracking_window.tractWidget->tract_models[active_tract_index];
-            if (active_tract_model->get_visible_track_count() == 0)
-                continue;
 
-            total_tracts += active_tract_model->get_visible_track_count();
-        }
-        if(total_tracts != 0)
-            skip_rate = (float)visible_tracts/(float)total_tracts;
-    }
+
+
+
+
     tipl::uniform_dist<float> uniform_gen(0.0f,1.0f),random_size(-0.5f,0.5f),random_color(-0.05f,0.05f);
+    for_each_track(trackWidget,[&](std::shared_ptr<TractModel>& active_tract_model,unsigned int data_index)
     {
-        for (unsigned int active_tract_index = 0;
-                active_tract_index < cur_tracking_window.tractWidget->rowCount();
-                ++active_tract_index)
+        if(skip_rate < 1.0f && uniform_gen() > skip_rate)
         {
-            if(cur_tracking_window.tractWidget->item(active_tract_index,0)->checkState() != Qt::Checked)
-                continue;
-            auto active_tract_model =
-                cur_tracking_window.tractWidget->tract_models[active_tract_index];
-            if (active_tract_model->get_visible_track_count() == 0)
-                continue;
+            mean_fa_index++;
+            return;
+        }
+        unsigned int vertex_count =
+                active_tract_model->get_tract_length(data_index)/3;
+        if (vertex_count <= 1)
+            return;
 
-            unsigned int tracks_count = active_tract_model->get_visible_track_count();
-            for (unsigned int data_index = 0; data_index < tracks_count; ++data_index)
+        const float* data_iter = &*(active_tract_model->get_tract(data_index).begin());
+
+        switch(tract_color_style)
+        {
+        case 1:
+            paint_color = active_tract_model->get_tract_color(data_index);
+            paint_color_f = tipl::vector<3,float>(paint_color.r,paint_color.g,paint_color.b);
+            paint_color_f /= 255.0;
+            break;
+        case 2:// local
+            active_tract_model->get_tract_data(data_index,track_num_index,color);
+            break;
+        case 3:// mean
+        case 5:// max
+            paint_color_f = cur_tracking_window.color_bar->get_color(mean_fa[mean_fa_index++]);
+            break;
+        }
+        tipl::vector<3,float> last_pos(data_iter),pos,
+            vec_a(1,0,0),vec_b(0,1,0),
+            vec_n,prev_vec_n,vec_ab,vec_ba,cur_color,previous_color;
+
+        glBegin((tract_style) ? GL_TRIANGLE_STRIP : GL_LINE_STRIP);
+        for (unsigned int j = 0, index = 0; index < vertex_count;j += 3, data_iter += 3, ++index)
+        {
+            pos[0] = data_iter[0];
+            pos[1] = data_iter[1];
+            pos[2] = data_iter[2];
+            if (index + 1 < vertex_count)
             {
-                unsigned int vertex_count =
-                        active_tract_model->get_tract_length(data_index)/3;
-                if (vertex_count <= 1)
-                    continue;
+                vec_n[0] = data_iter[3] - data_iter[0];
+                vec_n[1] = data_iter[4] - data_iter[1];
+                vec_n[2] = data_iter[5] - data_iter[2];
+                vec_n.normalize();
+            }
 
-                if(skip_rate < 1.0 && uniform_gen() > skip_rate)
+            switch(tract_color_style)
+            {
+            case 0://directional
+                cur_color[0] = std::fabs(vec_n[0]);
+                cur_color[1] = std::fabs(vec_n[1]);
+                cur_color[2] = std::fabs(vec_n[2]);
+                break;
+            case 1://manual assigned
+            case 3://mean anisotropy
+            case 4://mean directional
+            case 5://max anisotropy
+                cur_color = paint_color_f;
+                break;
+            case 2://local anisotropy
+                if(index < color.size())
+                    cur_color = cur_tracking_window.color_bar->get_color(color[index]);
+                break;
+            }
+
+            if(tract_shader)
+            {
+                int x = int(data_iter[0]*4);
+                int y = int(data_iter[1]*4);
+                if(depth_map.geometry().is_valid(x,y))
                 {
-                    mean_fa_index++;
-                    continue;
+                    size_t pos = size_t(x + y*depth_map.width());
+                    float d = 1.0f-std::max<float>(0.0f,std::min<float>(5.0f,depth_map[pos]-data_iter[2]))*tract_shaderf;
+                    cur_color *= d;
                 }
+            }
 
-                const float* data_iter = &*(active_tract_model->get_tract(data_index).begin());
+            if(tract_variant_color)
+            {
+                cur_color[0] += random_color();
+                cur_color[1] += random_color();
+                cur_color[2] += random_color();
+            }
 
-                switch(tract_color_style)
-                {
-                case 1:
-                    paint_color = active_tract_model->get_tract_color(data_index);
-                    paint_color_f = tipl::vector<3,float>(paint_color.r,paint_color.g,paint_color.b);
-                    paint_color_f /= 255.0;
-                    break;
-                case 2:// local
-                    active_tract_model->get_tract_data(data_index,track_num_index,color);
-                    break;
-                case 3:// mean
-                case 5:// max
-                    paint_color_f = cur_tracking_window.color_bar->get_color(mean_fa[mean_fa_index++]);
-                    break;
-                }
-                tipl::vector<3,float> last_pos(data_iter),pos,
-                    vec_a(1,0,0),vec_b(0,1,0),
-                    vec_n,prev_vec_n,vec_ab,vec_ba,cur_color,previous_color;
-
-                glBegin((tract_style) ? GL_TRIANGLE_STRIP : GL_LINE_STRIP);
-                for (unsigned int j = 0, index = 0; index < vertex_count;j += 3, data_iter += 3, ++index)
-                {
-                    pos[0] = data_iter[0];
-                    pos[1] = data_iter[1];
-                    pos[2] = data_iter[2];
-                    if (index + 1 < vertex_count)
-                    {
-                        vec_n[0] = data_iter[3] - data_iter[0];
-                        vec_n[1] = data_iter[4] - data_iter[1];
-                        vec_n[2] = data_iter[5] - data_iter[2];
-                        vec_n.normalize();
-                    }
-
-                    switch(tract_color_style)
-                    {
-                    case 0://directional
-                        cur_color[0] = std::fabs(vec_n[0]);
-                        cur_color[1] = std::fabs(vec_n[1]);
-                        cur_color[2] = std::fabs(vec_n[2]);
-                        break;
-                    case 1://manual assigned
-                    case 3://mean anisotropy
-                    case 4://mean directional
-                    case 5://max anisotropy
-                        cur_color = paint_color_f;
-                        break;
-                    case 2://local anisotropy
-                        if(index < color.size())
-                            cur_color = cur_tracking_window.color_bar->get_color(color[index]);
-                        break;
-                    }
-
-                    if(tract_variant_color)
-                    {
-                        cur_color[0] += random_color();
-                        cur_color[1] += random_color();
-                        cur_color[2] += random_color();
-                    }
-
-                    // skip straight line!
-                    if(tract_style)
-                    {
-                    if (index != 0 && index+1 != vertex_count)
-                    {
-                        tipl::vector<3,float> displacement(data_iter+3);
-                        displacement -= last_pos;
-                        displacement -= prev_vec_n*(prev_vec_n*displacement);
-                        if (displacement.length() < tube_detail)
-                            continue;
-                    }
+            // skip straight line!
+            if(tract_style)
+            {
+            if (index != 0 && index+1 != vertex_count)
+            {
+                tipl::vector<3,float> displacement(data_iter+3);
+                displacement -= last_pos;
+                displacement -= prev_vec_n*(prev_vec_n*displacement);
+                if (displacement.length() < tube_detail)
+                    continue;
+            }
 \
-                    if (index == 0 && std::fabs(vec_a*vec_n) > 0.5)
-                        std::swap(vec_a,vec_b);
+            if (index == 0 && std::fabs(vec_a*vec_n) > 0.5)
+                std::swap(vec_a,vec_b);
 
-                    vec_b = vec_a.cross_product(vec_n);
-                    vec_a = vec_n.cross_product(vec_b);
-                    vec_a.normalize();
-                    vec_b.normalize();
-                    vec_ba = vec_ab = vec_a;
-                    vec_ab += vec_b;
-                    vec_ba -= vec_b;
-                    vec_ab.normalize();
-                    vec_ba.normalize();
-                    // get normals
-                    {
-                        normals[0] = vec_a;
-                        normals[1] = vec_ab;
-                        normals[2] = vec_b;
-                        normals[3] = -vec_ba;
-                        normals[4] = -vec_a;
-                        normals[5] = -vec_ab;
-                        normals[6] = -vec_b;
-                        normals[7] = vec_ba;
-                    }
-                    if(tract_variant_size && uniform_gen() > variant_prob)
-                    {
-                        vec_ab += random_size();
-                        vec_ba += random_size();
-                        vec_a += random_size();
-                        vec_b += random_size();
-                    }
-                    vec_ab *= tube_diameter;
-                    vec_ba *= tube_diameter;
-                    vec_a *= tube_diameter;
-                    vec_b *= tube_diameter;
+            vec_b = vec_a.cross_product(vec_n);
+            vec_a = vec_n.cross_product(vec_b);
+            vec_a.normalize();
+            vec_b.normalize();
+            vec_ba = vec_ab = vec_a;
+            vec_ab += vec_b;
+            vec_ba -= vec_b;
+            vec_ab.normalize();
+            vec_ba.normalize();
+            // get normals
+            {
+                normals[0] = vec_a;
+                normals[1] = vec_ab;
+                normals[2] = vec_b;
+                normals[3] = -vec_ba;
+                normals[4] = -vec_a;
+                normals[5] = -vec_ab;
+                normals[6] = -vec_b;
+                normals[7] = vec_ba;
+            }
+            if(tract_variant_size && uniform_gen() > variant_prob)
+            {
+                vec_ab += random_size();
+                vec_ba += random_size();
+                vec_a += random_size();
+                vec_b += random_size();
+            }
+            vec_ab *= tube_diameter;
+            vec_ba *= tube_diameter;
+            vec_a *= tube_diameter;
+            vec_b *= tube_diameter;
 
-                    // add point
+            // add point
+            {
+                std::fill(points.begin(),points.end(),pos);
+                points[0] += vec_a;
+                points[1] += vec_ab;
+                points[2] += vec_b;
+                points[3] -= vec_ba;
+                points[4] -= vec_a;
+                points[5] -= vec_ab;
+                points[6] -= vec_b;
+                points[7] += vec_ba;
+            }
+            // add end
+            static const unsigned char end_sequence[8] = {4,3,5,2,6,1,7,0};
+            if (index == 0)
+            {
+                /*
+                glColor3fv(cur_color.begin());
+                glNormal3f(-vec_n[0],-vec_n[1],-vec_n[2]);
+                for (unsigned int k = 0;k < 8;++k)
+                    glVertex3fv(points[end_sequence[k]].begin());
+                if(show_end_points)
+                    glEnd();*/
+                if(show_end_points)
+                {
+                    myglColor(cur_color,alpha);
+                    glNormal3f(-vec_n[0],-vec_n[1],-vec_n[2]);
+                    tipl::vector<3,float> shift(vec_n);
+                    shift *= -(int)end_point_shift;
+                    for (unsigned int k = 0;k < 8;++k)
                     {
-                        std::fill(points.begin(),points.end(),pos);
-                        points[0] += vec_a;
-                        points[1] += vec_ab;
-                        points[2] += vec_b;
-                        points[3] -= vec_ba;
-                        points[4] -= vec_a;
-                        points[5] -= vec_ab;
-                        points[6] -= vec_b;
-                        points[7] += vec_ba;
+                        tipl::vector<3,float> cur_point = points[end_sequence[k]];
+                        cur_point += shift;
+                        glVertex3fv(cur_point.begin());
                     }
-                    // add end
-                    static const unsigned char end_sequence[8] = {4,3,5,2,6,1,7,0};
-                    if (index == 0)
+                    glEnd();
+                }
+                else
+                {
+                    myglColor(cur_color,alpha);
+                    glNormal3f(-vec_n[0],-vec_n[1],-vec_n[2]);
+                    for (unsigned int k = 0;k < 8;++k)
+                        glVertex3fv(points[end_sequence[k]].begin());
+                }
+            }
+            else
+            // add tube
+            {
+
+                if(!show_end_points)
+                {
+                    myglColor(cur_color,alpha);
+                    glNormal3fv(normals[0].begin());
+                    glVertex3fv(points[0].begin());
+                    for (unsigned int k = 1;k < 8;++k)
                     {
-                        /*
-                        glColor3fv(cur_color.begin());
-                        glNormal3f(-vec_n[0],-vec_n[1],-vec_n[2]);
-                        for (unsigned int k = 0;k < 8;++k)
-                            glVertex3fv(points[end_sequence[k]].begin());
-                        if(show_end_points)
-                            glEnd();*/
-                        if(show_end_points)
+                       myglColor(previous_color,alpha);
+                       glNormal3fv(previous_normals[k].begin());
+                       glVertex3fv(previous_points[k].begin());
+
+                       myglColor(cur_color,alpha);
+                       glNormal3fv(normals[k].begin());
+                       glVertex3fv(points[k].begin());
+                    }
+                    myglColor(cur_color,alpha);
+                    glNormal3fv(normals[0].begin());
+                    glVertex3fv(points[0].begin());
+                }
+                if(index +1 == vertex_count)
+                {
+                    if(show_end_points)
+                    {
+                        glBegin((tract_style) ? GL_TRIANGLE_STRIP : GL_LINE_STRIP);
+                        myglColor(cur_color,alpha);
+                        glNormal3fv(vec_n.begin());
+                        tipl::vector<3,float> shift(vec_n);
+                        shift *= (int)end_point_shift;
+                        for (int k = 7;k >= 0;--k)
                         {
-                            myglColor(cur_color,alpha);
-                            glNormal3f(-vec_n[0],-vec_n[1],-vec_n[2]);
-                            tipl::vector<3,float> shift(vec_n);
-                            shift *= -(int)end_point_shift;
-                            for (unsigned int k = 0;k < 8;++k)
-                            {
-                                tipl::vector<3,float> cur_point = points[end_sequence[k]];
-                                cur_point += shift;
-                                glVertex3fv(cur_point.begin());
-                            }
-                            glEnd();
+                            tipl::vector<3,float> cur_point = points[end_sequence[k]];
+                            cur_point += shift;
+                            glVertex3fv(cur_point.begin());
                         }
-                        else
-                        {
-                            myglColor(cur_color,alpha);
-                            glNormal3f(-vec_n[0],-vec_n[1],-vec_n[2]);
-                            for (unsigned int k = 0;k < 8;++k)
-                                glVertex3fv(points[end_sequence[k]].begin());
-                        }
-                    }
-                    else
-                    // add tube
-                    {
-
-                        if(!show_end_points)
-                        {
-                            myglColor(cur_color,alpha);
-                            glNormal3fv(normals[0].begin());
-                            glVertex3fv(points[0].begin());
-                            for (unsigned int k = 1;k < 8;++k)
-                            {
-                               myglColor(previous_color,alpha);
-                               glNormal3fv(previous_normals[k].begin());
-                               glVertex3fv(previous_points[k].begin());
-
-                               myglColor(cur_color,alpha);
-                               glNormal3fv(normals[k].begin());
-                               glVertex3fv(points[k].begin());
-                            }
-                            myglColor(cur_color,alpha);
-                            glNormal3fv(normals[0].begin());
-                            glVertex3fv(points[0].begin());
-                        }
-                        if(index +1 == vertex_count)
-                        {
-                            if(show_end_points)
-                            {
-                                glBegin((tract_style) ? GL_TRIANGLE_STRIP : GL_LINE_STRIP);
-                                myglColor(cur_color,alpha);
-                                glNormal3fv(vec_n.begin());
-                                tipl::vector<3,float> shift(vec_n);
-                                shift *= (int)end_point_shift;
-                                for (int k = 7;k >= 0;--k)
-                                {
-                                    tipl::vector<3,float> cur_point = points[end_sequence[k]];
-                                    cur_point += shift;
-                                    glVertex3fv(cur_point.begin());
-                                }
-                            }
-                            else
-                            {
-                                myglColor(cur_color,alpha);
-                                glNormal3fv(vec_n.begin());
-                                for (int k = 7;k >= 0;--k)
-                                    glVertex3fv(points[end_sequence[k]].begin());
-                            }
-                        }
-
-                    }
-
-                    previous_points.swap(points);
-                    previous_normals.swap(normals);
-                    previous_color = cur_color;
-                    prev_vec_n = vec_n;
-                    last_pos = pos;
                     }
                     else
                     {
                         myglColor(cur_color,alpha);
-                        glVertex3fv(pos.begin());
+                        glNormal3fv(vec_n.begin());
+                        for (int k = 7;k >= 0;--k)
+                            glVertex3fv(points[end_sequence[k]].begin());
                     }
                 }
-                glEnd();
+
+            }
+
+            previous_points.swap(points);
+            previous_normals.swap(normals);
+            previous_color = cur_color;
+            prev_vec_n = vec_n;
+            last_pos = pos;
+            }
+            else
+            {
+                myglColor(cur_color,alpha);
+                glVertex3fv(pos.begin());
             }
         }
+        glEnd();
     }
-
+    );
 
     glEndList();
 
