@@ -631,6 +631,7 @@ void GLWidget::renderLR()
 
     if (tracts && get_param("show_tract"))
     {
+        glLineWidth (1.0F);
         glEnable(GL_COLOR_MATERIAL);
         if(get_param("tract_style") != 1)// 1 = tube
             glDisable(GL_LIGHTING);
@@ -638,8 +639,7 @@ void GLWidget::renderLR()
             setupLight((float)(get_param("tract_light_ambient"))/10.0,
                    (float)(get_param("tract_light_diffuse"))/10.0,
                    (float)(get_param("tract_light_specular"))/10.0,
-                   (float)(get_param("tract_light_dir"))*3.1415926*2.0/10.0,
-                   (float)(get_param("tract_light_shading"))*3.1415926/20.0,
+                   0.0f,0.0f,
                    get_param("tract_light_option"));
 
         glPushMatrix();
@@ -647,6 +647,21 @@ void GLWidget::renderLR()
         setupMaterial((float)(get_param("tract_emission"))/10.0,
                       (float)(get_param("tract_specular"))/10.0,
                       get_param("tract_shininess")*10);
+
+        if(get_param("tract_shader") && get_param("tract_light_option"))
+        {
+            glEnable(GL_LIGHT2);
+            GLfloat light[4];
+            std::fill(light,light+3, (float)(get_param("tract_light_diffuse"))/10.0);
+            light[3] = 1.0f;
+            glLightfv(GL_LIGHT2, GL_DIFFUSE, light);
+            std::fill(light,light+3,0.0f);
+            glLightfv(GL_LIGHT2, GL_AMBIENT, light);
+            std::fill(light,light+3,0.0f);
+            glLightfv(GL_LIGHT2, GL_SPECULAR, light);
+            GLfloat lightDir[4] = { 0.0f, 0.0f, 1.0f, 0.0f};
+            glLightfv(GL_LIGHT2, GL_POSITION, lightDir);
+        }
 
         if(get_param("tract_color_style") != tract_color_style)
         {

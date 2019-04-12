@@ -62,15 +62,13 @@ Tract/Shade/tract_shader/int:0:10:1/5
 Tract/Tube Detail/tract_tube_detail/Coarse:Fine:Finer:Finest/1
 Tract/Tube Diameter (voxel)/tube_diameter/float:0.01:1:0.1:2/0.2
 Tract/Endpoint Shift (voxel)/end_point_shift/int:0:10:1/0
-Tract/Light/tract_light_option/One source:Two sources:Three sources/0
-Tract/Light Direction/tract_light_dir/int/2
-Tract/Light Shading/tract_light_shading/int/4
-Tract/Light Diffuse/tract_light_diffuse/int/10
+Tract/Light/tract_light_option/One source:Two sources:Three sources/1
+Tract/Light Diffuse/tract_light_diffuse/int/5
 Tract/Light Ambient/tract_light_ambient/int/0
-Tract/Light Specular/tract_light_specular/int/5
-Tract/Material Specular/tract_specular/int/5
+Tract/Light Specular/tract_light_specular/int/0
+Tract/Material Specular/tract_specular/int/0
 Tract/Material Emission/tract_emission/int/0
-Tract/Material Shininess/tract_shininess/int/1
+Tract/Material Shininess/tract_shininess/int/0
 Tract/Tract Selection Angle/tract_sel_angle/int:0:90:5/45
 Tract/Blend Func1/tract_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
 Tract/Blend Func2/tract_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
