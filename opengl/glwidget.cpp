@@ -639,7 +639,8 @@ void GLWidget::renderLR()
             setupLight((float)(get_param("tract_light_ambient"))/10.0,
                    (float)(get_param("tract_light_diffuse"))/10.0,
                    (float)(get_param("tract_light_specular"))/10.0,
-                   0.0f,0.0f,
+                   (float)(get_param("tract_light_dir"))*3.1415926*2.0/10.0,
+                   (float)(get_param("tract_light_shading"))*3.1415926/20.0,
                    get_param("tract_light_option"));
 
         glPushMatrix();
