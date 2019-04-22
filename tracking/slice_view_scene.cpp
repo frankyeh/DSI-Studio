@@ -443,10 +443,30 @@ void slice_view_scene::show_slice(void)
     {
         unsigned int skip = cur_tracking_window["roi_layout"].toInt()-1;
         mosaic_size = std::max((int)1,(int)std::ceil(std::sqrt((float)(cur_tracking_window.current_slice->geometry[2] / skip))));
-        cur_tracking_window.current_slice->get_mosaic(mosaic_image,mosaic_size,cur_tracking_window.v2c,skip,
-                                                      cur_tracking_window.overlay_slice.get(),cur_tracking_window.overlay_v2c);
+
+
+        {
+            auto geometry = cur_tracking_window.current_slice->geometry;
+            unsigned slice_num = geometry[2] / skip;
+            mosaic_image = std::move(tipl::color_image(tipl::geometry<2>(geometry[0]*mosaic_size,
+                                                  geometry[1]*(std::ceil((float)slice_num/(float)mosaic_size)))));
+            int old_z = cur_tracking_window.current_slice->slice_pos[2];
+            for(unsigned int z = 0;z < slice_num;++z)
+            {
+                cur_tracking_window.current_slice->slice_pos[2] = z*skip;
+                tipl::color_image slice_image;
+                cur_tracking_window.current_slice->get_slice(slice_image,2,
+                        cur_tracking_window.v2c,cur_tracking_window.overlay_slice.get(),cur_tracking_window.overlay_v2c);
+
+                cur_tracking_window.regionWidget->draw_region(slice_image);
+                tipl::vector<2,int> pos(geometry[0]*(z%mosaic_size),
+                                         geometry[1]*(z/mosaic_size));
+                tipl::draw(slice_image,mosaic_image,pos);
+            }
+            cur_tracking_window.current_slice->slice_pos[2] = old_z;
+        }
+
         QImage qimage((unsigned char*)&*mosaic_image.begin(),mosaic_image.width(),mosaic_image.height(),QImage::Format_RGB32);
-        cur_tracking_window.regionWidget->draw_mosaic_region(qimage,mosaic_size,skip);
         view_image = qimage.scaled(mosaic_image.width()*display_ratio/(float)mosaic_size,mosaic_image.height()*display_ratio/(float)mosaic_size);
         if(cur_tracking_window["orientation_convention"].toInt())
         {

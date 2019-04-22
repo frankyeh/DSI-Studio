@@ -23,28 +23,6 @@ SliceModel::SliceModel(std::shared_ptr<fib_data> handle_,int view_id_):handle(ha
     slice_pos[2] = geometry.depth() >> 1;
 }
 // ---------------------------------------------------------------------------
-void SliceModel::get_mosaic(tipl::color_image& show_image,
-                               unsigned int mosaic_size,
-                               const tipl::value_to_color<float>& v2c,
-                               unsigned int skip,
-                               const SliceModel* overlay,
-                               const tipl::value_to_color<float>& overlay_v2c)
-{
-    unsigned slice_num = geometry[2] / skip;
-    show_image = std::move(tipl::color_image(tipl::geometry<2>(geometry[0]*mosaic_size,
-                                          geometry[1]*(std::ceil((float)slice_num/(float)mosaic_size)))));
-    int old_z = slice_pos[2];
-    for(unsigned int z = 0;z < slice_num;++z)
-    {
-        slice_pos[2] = z*skip;
-        tipl::color_image slice_image;
-        get_slice(slice_image,2,v2c,overlay,overlay_v2c);
-        tipl::vector<2,int> pos(geometry[0]*(z%mosaic_size),
-                                 geometry[1]*(z/mosaic_size));
-        tipl::draw(slice_image,show_image,pos);
-    }
-    slice_pos[2] = old_z;
-}
 void SliceModel::apply_overlay(tipl::color_image& show_image,
                     unsigned char cur_dim,
                     const SliceModel* other_slice,

@@ -98,7 +98,6 @@ public:
 public slots:
     void draw_region(tipl::color_image& I);
     void draw_edge(QImage& image,QImage& scaledimage);
-    void draw_mosaic_region(QImage& image,unsigned int mosaic_size,unsigned int skip);
     void updateRegions(QTableWidgetItem* item);
     void new_region(void);
     void new_high_resolution_region(void);

@@ -124,12 +124,6 @@ public:
         for(unsigned int index = 0;index < points.size();++index)
             points[index].to(T);
     }
-    void get_mosaic(tipl::color_image& image,
-                    unsigned int mosaic_size,
-                    const tipl::value_to_color<float>& v2c,
-                    unsigned int skip,
-                    const SliceModel* overlay,
-                    const tipl::value_to_color<float>& overlay_v2c);
     void apply_overlay(tipl::color_image& show_image,
                        unsigned char dim,
                        const SliceModel* other_slice,

@@ -394,34 +394,6 @@ void RegionTableWidget::draw_edge(QImage&,QImage&)
     }*/
 }
 
-void RegionTableWidget::draw_mosaic_region(QImage& qimage,unsigned int mosaic_size,unsigned int skip)
-{
-    tipl::geometry<3> geo = cur_tracking_window.handle->dim;
-    unsigned int slice_number = geo[2] / skip;
-    std::vector<int> shift_x(slice_number),shift_y(slice_number);
-    for(unsigned int z = 0;z < slice_number;++z)
-    {
-        shift_x[z] = geo[0]*(z%mosaic_size);
-        shift_y[z] = geo[1]*(z/mosaic_size);
-    }
-
-    for_each_checked_region([&](std::shared_ptr<ROIRegion> region)
-    {
-        unsigned int cur_color = region->show_region.color;
-        for (unsigned int index = 0;index < region->size();++index)
-        {
-            tipl::vector<3,short> p = region->get_region_voxel(index);
-            if(p[2] != ((p[2] / skip) * skip))
-                continue;
-            p[0] += shift_x[p[2] / skip];
-            p[1] += shift_y[p[2] / skip];
-            if(p[0] < 0 || p[1] < 0 || p[0] >= qimage.width() || p[1] >= qimage.height())
-                continue;
-            qimage.setPixel(p[0],p[1],(unsigned int)qimage.pixel(p[0],p[1]) | cur_color);
-        }
-    });
-}
-
 void RegionTableWidget::new_region(void)
 {
     add_region("New Region",roi_id);
