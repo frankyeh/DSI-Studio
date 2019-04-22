@@ -608,6 +608,7 @@ float tracking_window::get_scene_zoom(void)
     float display_ratio = (*this)["roi_zoom"].toInt();
     if(!current_slice->is_diffusion_space)
         display_ratio *= current_slice->voxel_size[0]/handle->vs[0];
+    display_ratio = std::min<float>(display_ratio,4096.0/handle->dim[0]);
     return display_ratio;
 }
 
