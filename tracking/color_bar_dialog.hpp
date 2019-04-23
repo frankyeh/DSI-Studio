@@ -37,6 +37,7 @@ public:
     void set_value(float min_value,float max_value);
 public slots:
     void update_color_map(void);
+    void update_slice_indices(void);
     void on_tract_color_index_currentIndexChanged(int index);
 };
 

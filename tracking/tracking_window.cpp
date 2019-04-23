@@ -1731,6 +1731,9 @@ void tracking_window::updateSlicesMenu(void)
         connect(Item, SIGNAL(triggered()),&scene, SLOT(save_slice_as()));
         ui->menuE_xport->addAction(Item);
     }
+
+    // update along track color dialog
+    color_bar->update_slice_indices();
 }
 
 bool tracking_window::addSlices(QStringList filenames,QString name,bool correct_intensity,bool cmd)

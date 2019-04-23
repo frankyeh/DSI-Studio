@@ -12,13 +12,9 @@ color_bar_dialog::color_bar_dialog(QWidget *parent) :
     ui(new Ui::color_bar_dialog)
 {
     ui->setupUi(this);
-    std::vector<std::string> index_list;
 
     if(cur_tracking_window)
     {
-        cur_tracking_window->handle->get_index_list(index_list);
-        for (unsigned int index = 0; index < index_list.size(); ++index)
-            ui->tract_color_index->addItem(index_list[index].c_str());
         connect(ui->update_rendering,SIGNAL(clicked()),cur_tracking_window->glWidget,SLOT(makeTracts()));
         connect(ui->update_rendering,SIGNAL(clicked()),cur_tracking_window->glWidget,SLOT(updateGL()));
     }
@@ -43,12 +39,25 @@ color_bar_dialog::color_bar_dialog(QWidget *parent) :
     ui->color_to->setColor(settings.value("color_to",0x00FFFF10).toInt());
 }
 
+
 color_bar_dialog::~color_bar_dialog()
 {
     QSettings settings;
     settings.setValue("color_from",ui->color_from->color().rgb());
     settings.setValue("color_to",ui->color_to->color().rgb());
     delete ui;
+}
+
+void color_bar_dialog::update_slice_indices(void)
+{
+    if(cur_tracking_window)
+    {
+        std::vector<std::string> index_list;
+        ui->tract_color_index->clear();
+        cur_tracking_window->handle->get_index_list(index_list);
+        for (unsigned int index = 0; index < index_list.size(); ++index)
+            ui->tract_color_index->addItem(index_list[index].c_str());
+    }
 }
 
 void color_bar_dialog::set_value(float min_value,float max_value)
@@ -74,11 +83,14 @@ void color_bar_dialog::set_value(float min_value,float max_value)
     update_color_map();
 }
 
-void color_bar_dialog::on_tract_color_index_currentIndexChanged(int)
+void color_bar_dialog::on_tract_color_index_currentIndexChanged(int index)
 {
-    if(!cur_tracking_window)
+    if(!cur_tracking_window || index < 0)
         return;
-    unsigned int item_index = cur_tracking_window->handle->get_name_index(ui->tract_color_index->currentText().toStdString());
+    std::string index_name = ui->tract_color_index->currentText().toStdString();
+    if(index_name.empty())
+        return;
+    unsigned int item_index = cur_tracking_window->handle->get_name_index(index_name);
     float max_value = cur_tracking_window->handle->view_item[item_index].max_value;
     float min_value = cur_tracking_window->handle->view_item[item_index].min_value;
     set_value(min_value,max_value);
