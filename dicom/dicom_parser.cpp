@@ -363,24 +363,31 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
         {
             QMessageBox::information(0,"error",QString("Cannot find method file at ") + method_name,0);
             return false;
-        }
-
-        if(!method_file.has_field("PVM_DwEffBval"))
+        }        
+        if(!method_file.read("PVM_DwEffBval",bvalues))
         {
-            QMessageBox::information(0,"error",QString("Cannot find bvalue in method file at ") + method_name,0);
+            QMessageBox::information(0,"error",QString("Cannot find PVM_DwEffBval in method file at ") + method_name,0);
             return false;
         }
+        std::vector<float> bvec_temp;
+        if(!method_file.read("PVM_DwGradVec",bvec_temp))
         {
-            std::istringstream bvalue(method_file["PVM_DwEffBval"]);
-            std::copy(std::istream_iterator<float>(bvalue),std::istream_iterator<float>(),std::back_inserter(bvalues));
+            QMessageBox::information(0,"error",QString("Cannot find PVM_DwGradVec in method file at ") + method_name,0);
+            return false;
         }
-        std::istringstream bvec(method_file["PVM_DwGradVec"]);
+
         bvecs.resize(bvalues.size());
-        for (unsigned int index = 0;index < bvalues.size();++index)
+        for (unsigned int index = 0,pos = 0;index < bvalues.size();++index,pos += 3)
         {
-            bvec >> bvecs[index][0] >> bvecs[index][1] >> bvecs[index][2];
+            bvecs[index][0] = bvec_temp[pos];
+            bvecs[index][1] = bvec_temp[pos+1];
+            bvecs[index][2] = bvec_temp[pos+2];
             bvecs[index].normalize();
         }
+        float slice_thickness;
+        std::istringstream(method_file["PVM_SliceThick"]) >> slice_thickness;
+        if(slice_thickness != 0.0f)
+            vs[2] = slice_thickness;
         get_report_from_bruker(method_file,report);
     }
     else

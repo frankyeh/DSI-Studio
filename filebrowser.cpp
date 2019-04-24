@@ -153,17 +153,13 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int , int p
                 item_list << acq["ACQ_flip_angle"].c_str(); //FA
 
                 std::vector<float> b_value,b_vec;
-                std::istringstream in1(method["PVM_DwEffBval"]),in2(method["PVM_DwGradVec"]);
-                std::copy(std::istream_iterator<float>(in1),std::istream_iterator<float>(),std::back_inserter(b_value));
-                std::copy(std::istream_iterator<float>(in2),std::istream_iterator<float>(),std::back_inserter(b_vec));
+                method.read("PVM_DwEffBval",b_value);
+                method.read("PVM_DwGradVec",b_vec);
                 b_vec.resize(b_value.size()*3);
                 b_value_list.push_back(b_value);
                 b_vec_list.push_back(b_vec);
-
                 for(int col = 0;col < item_list.count();++col)
                     ui->tableWidget->setItem(row, col, new QTableWidgetItem(item_list[col]));
-
-
                 image_list << cur_file_name;
             }
         }
