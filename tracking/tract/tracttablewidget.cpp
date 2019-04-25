@@ -960,8 +960,18 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "load_track_color")
     {
+        int index = currentRow();
+        if(!param2.isEmpty())
+        {
+            index = param2.toInt();
+            if(index < 0 || index >= tract_models.size())
+            {
+                std::cout << "Invalid track index:" << param2.toStdString() << std::endl;
+                return false;
+            }
+        }
         std::string sfilename = param.toStdString().c_str();
-        if(!tract_models[currentRow()]->load_tracts_color_from_file(&*sfilename.begin()))
+        if(!tract_models[index]->load_tracts_color_from_file(&*sfilename.begin()))
         {
             std::cout << "Cannot find or open " << sfilename << std::endl;
             return false;
