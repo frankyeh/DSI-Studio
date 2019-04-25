@@ -460,8 +460,9 @@ bool fib_data::load_from_file(const char* file_name)
     tipl::image<float,3> I;
     tipl::vector<3,float> vs_;
     fib_file_name = file_name;
-    if(QFileInfo(file_name).completeSuffix() == "nii" ||
-       QFileInfo(file_name).completeSuffix() == "nii.gz")
+    if(!QFileInfo(file_name).completeSuffix().contains("fib.gz") &&
+       (QFileInfo(file_name).completeSuffix().contains("nii") ||
+        QFileInfo(file_name).completeSuffix().contains("nii.gz")))
     {
         gz_nifti header;
         if(!header.load_from_file(file_name))
