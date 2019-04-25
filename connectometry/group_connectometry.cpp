@@ -153,11 +153,11 @@ QLineSeries* get_line_series(const data_type& data, const char* name)
 }
 void group_connectometry::show_fdr_report()
 {
-    if(vbc->fdr_greater.empty())
+    if(vbc->fdr_pos_corr.empty())
         return;
     fdr_chart->removeAllSeries();
-    fdr_chart->addSeries(get_line_series(vbc->fdr_greater,"positive correlation"));
-    fdr_chart->addSeries(get_line_series(vbc->fdr_lesser,"negative correlation"));
+    fdr_chart->addSeries(get_line_series(vbc->fdr_pos_corr,"positive correlation"));
+    fdr_chart->addSeries(get_line_series(vbc->fdr_neg_corr,"negative correlation"));
     fdr_chart->createDefaultAxes();
     fdr_chart->axes(Qt::Horizontal).back()->setTitleText("Length (voxel distance)");
     fdr_chart->axes(Qt::Vertical).back()->setTitleText("FDR");
@@ -173,15 +173,15 @@ void group_connectometry::show_fdr_report()
 
 void group_connectometry::show_report()
 {
-    if(vbc->subject_greater_null.empty())
+    if(vbc->subject_pos_corr_null.empty())
         return;
 
     null_pos_chart->removeAllSeries();
     null_neg_chart->removeAllSeries();
-    null_pos_chart->addSeries(get_line_series(vbc->subject_greater_null,"permuted positive correlation"));
-    null_pos_chart->addSeries(get_line_series(vbc->subject_greater,"nonpermuted positive correlation"));
-    null_neg_chart->addSeries(get_line_series(vbc->subject_lesser_null,"permuted negative correlation"));
-    null_neg_chart->addSeries(get_line_series(vbc->subject_lesser,"nonpermuted negative correlation"));
+    null_pos_chart->addSeries(get_line_series(vbc->subject_pos_corr_null,"permuted positive correlation"));
+    null_pos_chart->addSeries(get_line_series(vbc->subject_pos_corr,"nonpermuted positive correlation"));
+    null_neg_chart->addSeries(get_line_series(vbc->subject_neg_corr_null,"permuted negative correlation"));
+    null_neg_chart->addSeries(get_line_series(vbc->subject_neg_corr,"nonpermuted negative correlation"));
     null_pos_chart->createDefaultAxes();
     null_pos_chart->axes(Qt::Horizontal).back()->setTitleText("Length (voxel distance)");
     null_pos_chart->axes(Qt::Vertical).back()->setTitleText("Count");
@@ -203,15 +203,15 @@ void group_connectometry::show_report()
 void group_connectometry::show_dis_table(void)
 {
     ui->dist_table->setRowCount(100);
-    for(unsigned int index = 0;index < vbc->fdr_greater.size()-1;++index)
+    for(unsigned int index = 0;index < vbc->fdr_pos_corr.size()-1;++index)
     {
         ui->dist_table->setItem(index,0, new QTableWidgetItem(QString::number(index + 1)));
-        ui->dist_table->setItem(index,1, new QTableWidgetItem(QString::number(vbc->fdr_greater[index+1])));
-        ui->dist_table->setItem(index,2, new QTableWidgetItem(QString::number(vbc->fdr_lesser[index+1])));
-        ui->dist_table->setItem(index,3, new QTableWidgetItem(QString::number(vbc->subject_greater_null[index+1])));
-        ui->dist_table->setItem(index,4, new QTableWidgetItem(QString::number(vbc->subject_lesser_null[index+1])));
-        ui->dist_table->setItem(index,5, new QTableWidgetItem(QString::number(vbc->subject_greater[index+1])));
-        ui->dist_table->setItem(index,6, new QTableWidgetItem(QString::number(vbc->subject_lesser[index+1])));
+        ui->dist_table->setItem(index,1, new QTableWidgetItem(QString::number(vbc->fdr_pos_corr[index+1])));
+        ui->dist_table->setItem(index,2, new QTableWidgetItem(QString::number(vbc->fdr_neg_corr[index+1])));
+        ui->dist_table->setItem(index,3, new QTableWidgetItem(QString::number(vbc->subject_pos_corr_null[index+1])));
+        ui->dist_table->setItem(index,4, new QTableWidgetItem(QString::number(vbc->subject_neg_corr_null[index+1])));
+        ui->dist_table->setItem(index,5, new QTableWidgetItem(QString::number(vbc->subject_pos_corr[index+1])));
+        ui->dist_table->setItem(index,6, new QTableWidgetItem(QString::number(vbc->subject_neg_corr[index+1])));
     }
     ui->dist_table->selectRow(0);
 }
@@ -369,15 +369,15 @@ void group_connectometry::calculate_FDR(void)
         {
             std::ofstream out((vbc->output_file_name+".fdr_dist.values.txt").c_str());
             out << "voxel_dis\tfdr_pos_cor\tfdr_neg_corr\t#track_pos_corr_null\t#track_neg_corr_null\t#track_pos_corr\t#track_neg_corr" << std::endl;
-            for(unsigned int index = 1;index < vbc->fdr_greater.size()-1;++index)
+            for(unsigned int index = 1;index < vbc->fdr_pos_corr.size()-1;++index)
             {
                 out << index
-                    << "\t" << vbc->fdr_greater[index]
-                    << "\t" << vbc->fdr_lesser[index]
-                    << "\t" << vbc->subject_greater_null[index]
-                    << "\t" << vbc->subject_lesser_null[index]
-                    << "\t" << vbc->subject_greater[index]
-                    << "\t" << vbc->subject_lesser[index] << std::endl;
+                    << "\t" << vbc->fdr_pos_corr[index]
+                    << "\t" << vbc->fdr_neg_corr[index]
+                    << "\t" << vbc->subject_pos_corr_null[index]
+                    << "\t" << vbc->subject_neg_corr_null[index]
+                    << "\t" << vbc->subject_pos_corr[index]
+                    << "\t" << vbc->subject_neg_corr[index] << std::endl;
             }
         }
         // output distribution image
@@ -408,14 +408,14 @@ void group_connectometry::calculate_FDR(void)
 
         if(gui)
         {
-            if(vbc->has_greater_result || vbc->has_lesser_result)
+            if(vbc->has_pos_corr_result || vbc->has_neg_corr_result)
                 QMessageBox::information(this,"Finished","Trk files saved.",0);
             else
                 QMessageBox::information(this,"Finished","No significant finding.",0);
         }
         else
         {
-            if(vbc->has_greater_result || vbc->has_lesser_result)
+            if(vbc->has_pos_corr_result || vbc->has_neg_corr_result)
                 std::cout << "trk files saved" << std::endl;
             else
                 std::cout << "no significant finding" << std::endl;
@@ -560,23 +560,20 @@ void group_connectometry::on_show_result_clicked()
     }
 
     {
-        char threshold_type[5][11] = {"percentage","t","beta","percentile","mean_dif"};
         result_fib.reset(new connectometry_result);
         stat_model info;
         info.resample(cur_model,false,false);
         vbc->calculate_spm(*result_fib.get(),info,vbc->normalize_qa);
         new_data->view_item.push_back(item());
-        new_data->view_item.back().name = threshold_type[cur_model.threshold_type];
-        new_data->view_item.back().name += "-";
-        new_data->view_item.back().image_data = tipl::make_image(result_fib->lesser_ptr[0],new_data->dim);
-        new_data->view_item.back().set_scale(result_fib->lesser_ptr[0],
-                                             result_fib->lesser_ptr[0]+new_data->dim.size());
+        new_data->view_item.back().name = "dec_t";
+        new_data->view_item.back().image_data = tipl::make_image(result_fib->neg_corr_ptr[0],new_data->dim);
+        new_data->view_item.back().set_scale(result_fib->neg_corr_ptr[0],
+                                             result_fib->neg_corr_ptr[0]+new_data->dim.size());
         new_data->view_item.push_back(item());
-        new_data->view_item.back().name = threshold_type[cur_model.threshold_type];
-        new_data->view_item.back().name += "+";
-        new_data->view_item.back().image_data = tipl::make_image(result_fib->greater_ptr[0],new_data->dim);
-        new_data->view_item.back().set_scale(result_fib->greater_ptr[0],
-                                             result_fib->greater_ptr[0]+new_data->dim.size());
+        new_data->view_item.back().name = "inc_t";
+        new_data->view_item.back().image_data = tipl::make_image(result_fib->pos_corr_ptr[0],new_data->dim);
+        new_data->view_item.back().set_scale(result_fib->pos_corr_ptr[0],
+                                             result_fib->pos_corr_ptr[0]+new_data->dim.size());
 
     }
     tracking_window* current_tracking_window = new tracking_window(this,new_data);
@@ -587,8 +584,8 @@ void group_connectometry::on_show_result_clicked()
     current_tracking_window->tractWidget->addNewTracts("Positive Correlation");
     current_tracking_window->tractWidget->addNewTracts("Negative Correlation");
 
-    current_tracking_window->tractWidget->tract_models[0]->add(*(vbc->greater_track.get()));
-    current_tracking_window->tractWidget->tract_models[1]->add(*(vbc->lesser_track.get()));
+    current_tracking_window->tractWidget->tract_models[0]->add(*(vbc->pos_corr_track.get()));
+    current_tracking_window->tractWidget->tract_models[1]->add(*(vbc->neg_corr_track.get()));
 
     current_tracking_window->command("set_zoom","0.8");
     current_tracking_window->command("set_param","show_surface","1");

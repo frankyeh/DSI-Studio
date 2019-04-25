@@ -916,12 +916,12 @@ void connectometry_result::initialize(std::shared_ptr<fib_data> handle)
         greater[fib].resize(handle->dim.size());
         lesser[fib].resize(handle->dim.size());
     }
-    greater_ptr.resize(num_fiber);
-    lesser_ptr.resize(num_fiber);
+    pos_corr_ptr.resize(num_fiber);
+    neg_corr_ptr.resize(num_fiber);
     for(unsigned char fib = 0;fib < num_fiber;++fib)
     {
-        greater_ptr[fib] = &greater[fib][0];
-        lesser_ptr[fib] = &lesser[fib][0];
+        pos_corr_ptr[fib] = &greater[fib][0];
+        neg_corr_ptr[fib] = &lesser[fib][0];
     }
     for(unsigned char fib = 0;fib < num_fiber;++fib)
     {
@@ -946,10 +946,10 @@ void connectometry_result::add_mapping_for_tracking(std::shared_ptr<fib_data> ha
     remove_old_index(handle);
     handle->dir.dt_index_name.push_back(t1);
     handle->dir.dt_index_data.push_back(std::vector<const float*>());
-    handle->dir.dt_index_data.back() = greater_ptr;
+    handle->dir.dt_index_data.back() = pos_corr_ptr;
     handle->dir.dt_index_name.push_back(t2);
     handle->dir.dt_index_data.push_back(std::vector<const float*>());
-    handle->dir.dt_index_data.back() = lesser_ptr;
+    handle->dir.dt_index_data.back() = neg_corr_ptr;
 }
 
 bool connectometry_result::individual_vs_db(std::shared_ptr<fib_data> handle,const char* file_name)

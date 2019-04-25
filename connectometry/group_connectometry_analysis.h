@@ -42,16 +42,16 @@ private: // single subject analysis result
                   int seed_count,unsigned int thread_count = 1);
 public:// for FDR analysis
     std::vector<std::shared_ptr<std::future<void> > > threads;
-    std::vector<unsigned int> subject_greater_null;
-    std::vector<unsigned int> subject_lesser_null;
-    std::vector<unsigned int> subject_greater;
-    std::vector<unsigned int> subject_lesser;
-    std::vector<float> fdr_greater,fdr_lesser;
+    std::vector<unsigned int> subject_pos_corr_null;
+    std::vector<unsigned int> subject_neg_corr_null;
+    std::vector<unsigned int> subject_pos_corr;
+    std::vector<unsigned int> subject_neg_corr;
+    std::vector<float> fdr_pos_corr,fdr_neg_corr;
 
-    std::vector<unsigned int> seed_greater_null;
-    std::vector<unsigned int> seed_lesser_null;
-    std::vector<unsigned int> seed_greater;
-    std::vector<unsigned int> seed_lesser;
+    std::vector<unsigned int> seed_pos_corr_null;
+    std::vector<unsigned int> seed_neg_corr_null;
+    std::vector<unsigned int> seed_pos_corr;
+    std::vector<unsigned int> seed_neg_corr;
     unsigned int progress;// 0~100
     bool terminated = false;
 public:
@@ -60,14 +60,14 @@ public:
     std::string output_roi_suffix;
 public:
     std::string output_file_name;
-    bool has_greater_result,has_lesser_result;
+    bool has_pos_corr_result,has_neg_corr_result;
     int seed_count;
-    std::mutex  lock_resampling,lock_greater_tracks,lock_lesser_tracks;
+    std::mutex  lock_resampling,lock_pos_corr_tracks,lock_neg_corr_tracks;
     std::shared_ptr<TractModel> tractography_atlas;
-    std::shared_ptr<TractModel> greater_track;
-    std::shared_ptr<TractModel> lesser_track;
+    std::shared_ptr<TractModel> pos_corr_track;
+    std::shared_ptr<TractModel> neg_corr_track;
     std::shared_ptr<connectometry_result> spm_map;
-    std::string greater_tracks_result,lesser_tracks_result;
+    std::string pos_corr_tracks_result,neg_corr_tracks_result;
     void save_tracks_files(void);
 public:// Multiple regression
     std::shared_ptr<stat_model> model;
