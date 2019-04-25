@@ -517,7 +517,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
 
     if(progress == 100)
     {
-        html_report << "<img src = \""<< QFileInfo(QString(output_file_name.c_str())+".positive.jpg").fileName().toStdString() << "\" width=\"1200\"/>" << std::endl;
+        html_report << "<img src = \""<< QFileInfo(QString(output_file_name.c_str())+".pos_corr.jpg").fileName().toStdString() << "\" width=\"1200\"/>" << std::endl;
         if(model->type == 1) // regression
             html_report << "<p><b>Fig.</b> Tracks positively correlated with "<< foi_str << "</p>";
         if(model->type == 3)
@@ -535,7 +535,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
 
     if(progress == 100)
     {
-        html_report << "<img src = \""<< QFileInfo(QString(output_file_name.c_str())+".negative.jpg").fileName().toStdString() << "\" width=\"1200\"/>" << std::endl;
+        html_report << "<img src = \""<< QFileInfo(QString(output_file_name.c_str())+".neg_corr.jpg").fileName().toStdString() << "\" width=\"1200\"/>" << std::endl;
         if(model->type == 1) // regression
             html_report << "<p><b>Fig.</b> Tracks negatively correlated with "<< foi_str << "</p>";
         if(model->type == 3)
@@ -569,14 +569,14 @@ void group_connectometry_analysis::generate_report(std::string& output)
         new_mdi->tractWidget->addNewTracts("greater");
         new_mdi->tractWidget->tract_models[0]->add(*pos_corr_track.get());
         new_mdi->command("update_track");
-        new_mdi->command("save_h3view_image",(output_file_name+".positive.jpg").c_str());
+        new_mdi->command("save_h3view_image",(output_file_name+".pos_corr.jpg").c_str());
         // do it twice to eliminate 3D artifact
-        new_mdi->command("save_h3view_image",(output_file_name+".positive.jpg").c_str());
+        new_mdi->command("save_h3view_image",(output_file_name+".pos_corr.jpg").c_str());
         new_mdi->command("delete_all_tract");
         new_mdi->tractWidget->addNewTracts("lesser");
         new_mdi->tractWidget->tract_models[0]->add(*neg_corr_track.get());
         new_mdi->command("update_track");
-        new_mdi->command("save_h3view_image",(output_file_name+".negative.jpg").c_str());
+        new_mdi->command("save_h3view_image",(output_file_name+".neg_corr.jpg").c_str());
         new_mdi->close();
     }
 }
