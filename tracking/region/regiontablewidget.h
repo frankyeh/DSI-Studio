@@ -97,7 +97,7 @@ public:
     QString output_format(void);
 public slots:
     void draw_region(tipl::color_image& I);
-    void draw_edge(QImage& image,QImage& scaledimage);
+    void draw_edge(QImage& image,QImage& scaledimage,bool draw_all);
     void updateRegions(QTableWidgetItem* item);
     void new_region(void);
     void new_high_resolution_region(void);
@@ -141,6 +141,11 @@ public slots:
     void action_A_B(void){do_action("A-B");}
     void action_B_A(void){do_action("B-A");}
     void action_AB(void){do_action("A*B");}
+    void action_sort_name(void){do_action("sort_name");}
+    void action_sort_size(void){do_action("sort_size");}
+    void action_sort_x(void){do_action("sort_x");}
+    void action_sort_y(void){do_action("sort_y");}
+    void action_sort_z(void){do_action("sort_z");}
     void action_set_opa(void){do_action("set_opacity");}
 };
 

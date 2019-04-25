@@ -717,6 +717,16 @@
      <addaction name="actionFlip_Y"/>
      <addaction name="actionFlip_Z"/>
     </widget>
+    <widget class="QMenu" name="menuSort">
+     <property name="title">
+      <string>Sort</string>
+     </property>
+     <addaction name="actionBy_Name"/>
+     <addaction name="actionBy_Size"/>
+     <addaction name="actionBy_X"/>
+     <addaction name="actionBy_Y"/>
+     <addaction name="actionBy_Z"/>
+    </widget>
     <addaction name="actionNewRegion"/>
     <addaction name="actionOpenRegion"/>
     <addaction name="actionOpen_MNI_Region"/>
@@ -739,6 +749,7 @@
     <addaction name="separator"/>
     <addaction name="menuMove_Region"/>
     <addaction name="menuModify"/>
+    <addaction name="menuSort"/>
     <addaction name="separator"/>
     <addaction name="actionWhole_brain_seeding"/>
     <addaction name="actionNew_Super_Resolution_Region"/>
@@ -2246,6 +2257,9 @@ Tracking</string>
      <family>Arial</family>
     </font>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+X</string>
+   </property>
   </action>
   <action name="actionOpenTract">
    <property name="icon">
@@ -2301,6 +2315,9 @@ Tracking</string>
     <font>
      <family>Arial</family>
     </font>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+X</string>
    </property>
   </action>
   <action name="actionDeleteTractAll">
@@ -3050,10 +3067,16 @@ Tracking</string>
    <property name="text">
     <string>Undo</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+Z</string>
+   </property>
   </action>
   <action name="actionRedo_Edit">
    <property name="text">
     <string>Redo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+Y</string>
    </property>
   </action>
   <action name="actionStrip_skull_for_T1w_image">
@@ -3326,6 +3349,31 @@ Tracking</string>
   <action name="actionSet_Opacity">
    <property name="text">
     <string>Set Opacity</string>
+   </property>
+  </action>
+  <action name="actionBy_Size">
+   <property name="text">
+    <string>By Size</string>
+   </property>
+  </action>
+  <action name="actionBy_X">
+   <property name="text">
+    <string>By X</string>
+   </property>
+  </action>
+  <action name="actionBy_Y">
+   <property name="text">
+    <string>By Y</string>
+   </property>
+  </action>
+  <action name="actionBy_Z">
+   <property name="text">
+    <string>By Z</string>
+   </property>
+  </action>
+  <action name="actionBy_Name">
+   <property name="text">
+    <string>By Name</string>
    </property>
   </action>
  </widget>

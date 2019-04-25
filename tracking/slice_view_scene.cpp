@@ -165,13 +165,15 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
                                                  cur_tracking_window.overlay_slice.get(),cur_tracking_window.overlay_v2c);
     // draw region colors on the image
     tipl::color_image slice_image_with_region(slice_image);
-    cur_tracking_window.regionWidget->draw_region(slice_image_with_region);
+    if(!cur_tracking_window["roi_edge"].toInt())
+        cur_tracking_window.regionWidget->draw_region(slice_image_with_region);
     QImage qimage((unsigned char*)&*slice_image_with_region.begin(),slice_image_with_region.width(),slice_image_with_region.height(),QImage::Format_RGB32);
     // make sure that qimage get a hard copy
     qimage.setPixel(0,0,qimage.pixel(0,0));
     QImage scaled_image = qimage.scaled(slice_image.width()*display_ratio,slice_image.height()*display_ratio);
-    if(cur_tracking_window["roi_outline"].toInt())
-        cur_tracking_window.regionWidget->draw_edge(qimage,scaled_image);
+
+    cur_tracking_window.regionWidget->draw_edge(qimage,scaled_image,
+                            cur_tracking_window["roi_edge"].toInt());
 
     QPainter painter(&scaled_image);
     if(cur_tracking_window["roi_fiber"].toInt())

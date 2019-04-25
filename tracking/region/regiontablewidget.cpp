@@ -348,50 +348,85 @@ void RegionTableWidget::draw_region(tipl::color_image& I)
     }
 }
 
-void RegionTableWidget::draw_edge(QImage&,QImage&)
+void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image,bool draw_all)
 {
-    if(!cur_tracking_window.current_slice->is_diffusion_space)
+    auto current_slice = cur_tracking_window.current_slice;
+    if(!current_slice->is_diffusion_space || regions.empty())
         return;
-    if(rowCount() == 0 || currentRow() == -1 || currentRow() >= regions.size() ||
-       item(currentRow(),0)->checkState() != Qt::Checked)
-        return;
-    /*
-    int X, Y, Z;
-    tipl::image<unsigned char,2> cur_image_mask;
-    cur_image_mask.resize(tipl::geometry<2>(qimage.width(),qimage.height()));
-    for (unsigned int index = 0;index < regions[currentRow()]->size();++index)
+    std::vector<std::shared_ptr<ROIRegion> > checked_regions;
+    int cur_roi_index = -1;
+    if(draw_all)
     {
-        regions[currentRow()]->getSlicePosition(cur_tracking_window.cur_dim, index, X, Y, Z);
-        if (cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim] != Z ||
-                X < 0 || Y < 0 || X >= qimage.width() || Y >= qimage.height())
-            continue;
-        cur_image_mask.at(X,Y) = 1;
+        checked_regions = get_checked_regions();
+        if(currentRow() >= 0)
+        for(int i = 0;i < checked_regions.size();++i)
+            if(checked_regions[i] == regions[currentRow()])
+            {
+                cur_roi_index = i;
+                break;
+            }
+    }
+    else
+    if(currentRow() >= 0)
+    {
+        if(item(currentRow(),0)->checkState() != Qt::Checked)
+            return;
+        checked_regions.push_back(regions[currentRow()]);
+        cur_roi_index = 0;
+    }
+    if(checked_regions.empty())
+        return;
+    float display_ratio = (float)scaled_image.width()/(float)qimage.width();
+    int slice_pos = current_slice->slice_pos[cur_tracking_window.cur_dim];
+
+    if(display_ratio > 1.0f)
+    for (int roi_index = 0;roi_index < checked_regions.size();++roi_index)
+    {
+        int X, Y, Z;
+        tipl::image<unsigned char,2> cur_image_mask;
+        cur_image_mask.resize(tipl::geometry<2>(qimage.width(),qimage.height()));
+
+        float r = checked_regions[roi_index]->resolution_ratio;
+        tipl::par_for(checked_regions[roi_index]->size(),[&](unsigned int index)
+        {
+            tipl::vector<3,float> p(checked_regions[roi_index]->region[index]);
+            if(r != 1.0)
+                p /= r;
+            p.round();
+            int X, Y, Z;
+            tipl::space2slice(cur_tracking_window.cur_dim,p[0],p[1],p[2],X,Y,Z);
+            if (slice_pos != Z || X < 0 || Y < 0 || X >= cur_image_mask.width() || Y >= cur_image_mask.height())
+                return;
+            cur_image_mask.at(X,Y) = 1;
+        });
+
+        unsigned int cur_color = draw_all ? checked_regions[roi_index]->show_region.color: 0xFFFFFFFF;
+
+        QPainter paint(&scaled_image);
+        paint.setBrush(Qt::NoBrush);
+        QPen pen(QColor(cur_color), cur_roi_index == roi_index ? display_ratio : display_ratio*0.5f, Qt::DashDotLine, Qt::RoundCap, Qt::RoundJoin);
+        paint.setPen(pen);
+        for(int y = 1,cur_index = qimage.width();y < qimage.height()-1;++y)
+        for(int x = 0;x < qimage.width();++x,++cur_index)
+        {
+            if(x == 0 || x+1 >= qimage.width() || !cur_image_mask[cur_index])
+                continue;
+            float xd = x*display_ratio;
+            float xd_1 = xd+display_ratio;
+            float yd = y*display_ratio;
+            float yd_1 = yd+display_ratio;
+            if(!(cur_image_mask[cur_index-qimage.width()]))
+                paint.drawLine(xd,yd,xd_1,yd);
+            if(!(cur_image_mask[cur_index+qimage.width()]))
+                paint.drawLine(xd,yd_1,xd_1,yd_1);
+            if(!(cur_image_mask[cur_index-1]))
+                paint.drawLine(xd,yd,xd,yd_1);
+            if(!(cur_image_mask[cur_index+1]))
+                paint.drawLine(xd_1,yd,xd_1,yd_1);
+        }
     }
 
-    float display_ratio = (float)scaled_image.width()/(float)qimage.width();
-    unsigned int cur_color = ((unsigned int)regions[currentRow()]->show_region.color) ^ 0x00FFFFFF;
-    QPainter paint(&scaled_image);
-    paint.setBrush(Qt::NoBrush);
-    QPen pen(QColor(cur_color), 3, Qt::DashDotLine, Qt::RoundCap, Qt::RoundJoin);
-    paint.setPen(pen);
-    for(int y = 1,cur_index = qimage.width();y < qimage.height()-1;++y)
-    for(int x = 0;x < qimage.width();++x,++cur_index)
-    {
-        if(x == 0 || x+1 >= qimage.width() || !cur_image_mask[cur_index])
-            continue;
-        float xd = x*display_ratio;
-        float xd_1 = xd+display_ratio;
-        float yd = y*display_ratio;
-        float yd_1 = yd+display_ratio;
-        if(!(cur_image_mask[cur_index-qimage.width()]))
-            paint.drawLine(xd,yd,xd_1,yd);
-        if(!(cur_image_mask[cur_index+qimage.width()]))
-            paint.drawLine(xd,yd_1,xd_1,yd_1);
-        if(!(cur_image_mask[cur_index-1]))
-            paint.drawLine(xd,yd,xd,yd_1);
-        if(!(cur_image_mask[cur_index+1]))
-            paint.drawLine(xd_1,yd,xd_1,yd_1);
-    }*/
+
 }
 
 void RegionTableWidget::new_region(void)
@@ -1208,7 +1243,7 @@ void RegionTableWidget::do_action(QString action)
             std::vector<std::vector<unsigned int> > r;
             tipl::morphology::connected_component_labeling(mask,labels,r);
 
-            for(unsigned int j = 0,total_count = 0;j < r.size() && total_count < 10;++j)
+            for(unsigned int j = 0,total_count = 0;j < r.size() && total_count < 256;++j)
                 if(!r[j].empty())
                 {
                     std::fill(mask.begin(),mask.end(),0);
@@ -1221,6 +1256,73 @@ void RegionTableWidget::do_action(QString action)
                     regions.back()->assign(region.get_region_voxels_raw(),region.resolution_ratio);
                     ++total_count;
                 }
+        }
+        if(action.contains("sort_"))
+        {
+            // reverse when repeated
+            bool negate = false;
+            {
+                static QString last_action;
+                if(action == last_action)
+                {
+                    last_action  = "";
+                    negate = true;
+                }
+            else
+                last_action = action;
+            }
+            std::vector<unsigned int> arg;
+            if(action == "sort_name")
+            {
+                arg = tipl::arg_sort(regions.size(),[&]
+                (size_t lhs,size_t rhs)
+                {
+                    return negate ^ (item(lhs,0)->text() < item(rhs,0)->text());
+                });
+            }
+            else
+            {
+                std::vector<std::vector<float> > data(regions.size());
+                tipl::par_for(regions.size(),[&](unsigned int index){
+                    std::vector<std::string> dummy;
+                    regions[index]->get_quantitative_data(cur_tracking_window.handle,dummy,data[index]);
+                });
+                size_t comp_index = 0; // sort_size
+                if(action == "sort_x")
+                    comp_index = 2;
+                if(action == "sort_y")
+                    comp_index = 3;
+                if(action == "sort_z")
+                    comp_index = 4;
+
+                arg = tipl::arg_sort(data,[negate,comp_index]
+                    (const std::vector<float>& lhs,const std::vector<float>& rhs)
+                    {
+                        return negate ^ (lhs[comp_index] < rhs[comp_index]);
+                    });
+            }
+
+            std::vector<std::shared_ptr<ROIRegion> > new_region(arg.size());
+            std::vector<int> new_region_checked(arg.size());
+            std::vector<std::string> new_region_names(arg.size());
+            for(size_t i = 0;i < arg.size();++i)
+            {
+                new_region[i] = regions[arg[i]];
+                new_region_checked[i] = item(arg[i],0)->checkState() == Qt::Checked ? 1:0;
+                new_region_names[i] = item(arg[i],0)->text().toStdString();
+            }
+            regions.swap(new_region);
+            for(size_t i = 0;i < arg.size();++i)
+            {
+                item(i,0)->setCheckState(new_region_checked[i] ? Qt::Checked : Qt::Unchecked);
+                item(i,0)->setText(new_region_names[i].c_str());
+                closePersistentEditor(item(i,1));
+                closePersistentEditor(item(i,2));
+                item(i,1)->setData(Qt::DisplayRole,regions[i]->regions_feature);
+                item(i,2)->setData(Qt::UserRole,regions[i]->show_region.color.color);
+                openPersistentEditor(item(i,1));
+                openPersistentEditor(item(i,2));
+            }
         }
         }
     emit need_update();

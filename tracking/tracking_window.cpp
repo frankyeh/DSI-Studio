@@ -227,6 +227,14 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionA_B,SIGNAL(triggered()),regionWidget,SLOT(action_A_B()));
         connect(ui->actionB_A,SIGNAL(triggered()),regionWidget,SLOT(action_B_A()));
         connect(ui->actionAB,SIGNAL(triggered()),regionWidget,SLOT(action_AB()));
+        connect(ui->actionBy_Name,SIGNAL(triggered()),regionWidget,SLOT(action_sort_name()));
+        connect(ui->actionBy_Size,SIGNAL(triggered()),regionWidget,SLOT(action_sort_size()));
+        connect(ui->actionBy_X,SIGNAL(triggered()),regionWidget,SLOT(action_sort_x()));
+        connect(ui->actionBy_Y,SIGNAL(triggered()),regionWidget,SLOT(action_sort_y()));
+        connect(ui->actionBy_Z,SIGNAL(triggered()),regionWidget,SLOT(action_sort_z()));
+
+
+
         connect(ui->actionSet_Opacity,SIGNAL(triggered()),regionWidget,SLOT(action_set_opa()));
 
         connect(ui->actionMerge_All_2,SIGNAL(triggered()),regionWidget,SLOT(merge_all()));
