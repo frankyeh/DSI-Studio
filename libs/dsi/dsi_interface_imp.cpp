@@ -332,17 +332,12 @@ const char* ImageModel::reconstruction(void)
             break;
         case 7:
 
-
-
             voxel.recon_report
             << " The diffusion data were reconstructed in the MNI space using q-space diffeomorphic reconstruction (Yeh et al., Neuroimage, 58(1):91-9, 2011) to obtain the spin distribution function (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010). "
             << " A diffusion sampling length ratio of "
             << (float)voxel.param[0] << " was used";
             // run gqi to get the spin quantity
 
-            if(voxel.output_rdi)
-                voxel.recon_report <<
-                    " The restricted diffusion was quantified using restricted diffusion imaging (Yeh et al., MRM, 77:603–612 (2017)).";
 
             {
                 std::vector<tipl::pointer_image<float,3> > tmp;
@@ -362,6 +357,13 @@ const char* ImageModel::reconstruction(void)
                 out << ".map";
             if (!reconstruct<qsdr_process>())
                 return "reconstruction canceled";
+
+            voxel.recon_report
+            << " The output resolution of is " << voxel.vs[0] << " mm isotorpic.";
+            if(voxel.output_rdi)
+                voxel.recon_report <<
+                    " The restricted diffusion was quantified using restricted diffusion imaging (Yeh et al., MRM, 77:603–612 (2017)).";
+
             out << ".R" << (int)std::floor(voxel.R2*100.0) << ".fib.gz";
             break;
         default:
