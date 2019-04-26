@@ -404,3 +404,70 @@ void view_image::on_action_Save_as_triggered()
     nii << data;
     nii.save_to_file(filename.toStdString().c_str());
 }
+
+void view_image::on_actionMasking_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(
+                           this,"Open mask",QFileInfo(windowTitle()).absolutePath(),"NIFTI file(*nii.gz *.nii)" );
+    if (filename.isEmpty())
+        return;
+    gz_nifti nii;
+    if(!nii.load_from_file(filename.toStdString().c_str()))
+    {
+        QMessageBox::information(this,"Error","Cannot open file",0);
+        return;
+    }
+    tipl::image<float,3> mask;
+    nii >> mask;
+    if(mask.geometry() != data.geometry())
+    {
+        QMessageBox::information(this,"Error","Invalid mask file. Dimension does not match",0);
+        return;
+    }
+    tipl::filter::gaussian(mask);
+    tipl::filter::gaussian(mask);
+    tipl::normalize(mask,1.0f);
+    data *= mask;
+    update_image();
+}
+
+void view_image::on_actionResize_triggered()
+{
+    std::ostringstream out;
+    out << data.width() << " " << data.height() << " " << data.depth();
+    bool ok;
+    QString result = QInputDialog::getText(this,"DSI Studio","Assign image dimension (width height depth)",QLineEdit::Normal,
+                                           out.str().c_str(),&ok);
+
+    if(!ok)
+        return;
+    std::istringstream in(result.toStdString());
+    int w,h,d;
+    in >> w >> h >> d;
+    tipl::image<float,3> new_data(tipl::geometry<3>(w,h,d));
+    tipl::draw(data,new_data,tipl::vector<3>());
+    data.swap(new_data);
+    init_image();
+    update_image();
+}
+
+void view_image::on_actionTranslocate_triggered()
+{
+    bool ok;
+    QString result = QInputDialog::getText(this,"DSI Studio","Assign image translocation (x y z)",QLineEdit::Normal,
+                                           "0 0 0",&ok);
+
+    if(!ok)
+        return;
+    std::istringstream in(result.toStdString());
+    int dx,dy,dz;
+    in >> dx >> dy >> dz;
+    tipl::image<float,3> new_data(data.geometry());
+    tipl::draw(data,new_data,tipl::vector<3>(dx,dy,dz));
+    data.swap(new_data);
+    T[3] -= T[0]*dx;
+    T[7] -= T[5]*dx;
+    T[11] -= T[10]*dx;
+    init_image();
+    update_image();
+}

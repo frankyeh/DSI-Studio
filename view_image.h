@@ -28,6 +28,12 @@ private slots:
 
     void on_action_Save_as_triggered();
 
+    void on_actionMasking_triggered();
+
+    void on_actionResize_triggered();
+
+    void on_actionTranslocate_triggered();
+
 private:
     Ui::view_image *ui;
     tipl::image<float,3> data;
