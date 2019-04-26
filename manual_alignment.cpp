@@ -294,10 +294,8 @@ void manual_alignment::on_rerun_clicked()
         }
         else
         {
-            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mt_correlation<tipl::image<float,3>,
-                           tipl::transformation_matrix<double> >(0),thread.terminated,0.01,reg_bound2);
-            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mt_correlation<tipl::image<float,3>,
-                           tipl::transformation_matrix<double> >(0),thread.terminated,0.001,reg_bound2);
+            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::correlation(),thread.terminated,0.01,reg_bound2);
+            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::correlation(),thread.terminated,0.001,reg_bound2);
         }
 
     });
