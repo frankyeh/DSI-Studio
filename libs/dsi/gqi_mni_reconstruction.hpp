@@ -64,21 +64,19 @@ public:
             }
         }
 
-        // check if the template has similar size as the data
-        {
-            float vG = VGvs[0]*VGvs[0]*VGvs[0]*tipl::segmentation::otsu_count(VG);
-            float vF = voxel.vs[0]*voxel.vs[1]*voxel.vs[2]*tipl::segmentation::otsu_count(VF);
-            float ratio = vF/(vG+1.0f);
-            if(ratio < 0.25 || ratio > 4.0)
-                throw std::runtime_error("Template/Subject FOV mismatch: Please check if the template is valid.");
-        }
-
         resolution_ratio = std::round((voxel.vs[0]+voxel.vs[1]+voxel.vs[2])/3.0f/VGvs[0]);
         if(resolution_ratio < 1.0f)
             resolution_ratio = 1.0f;
         if(resolution_ratio > 2.0f)
+        {
+            while(resolution_ratio > 4.0f)
+            {
+                tipl::downsampling(VG);
+                VGvs *= 2.0f;
+                resolution_ratio *= 0.5f;
+            }
             resolution_ratio = 2.0f;
-
+        }
         // setup output bounding box
         {
             des_geo[0] = std::ceil((VG.width()-1)/resolution_ratio+1);
