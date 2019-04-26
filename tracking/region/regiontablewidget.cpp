@@ -400,7 +400,9 @@ void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image,bool draw_
             cur_image_mask.at(X,Y) = 1;
         });
 
-        unsigned int cur_color = draw_all ? checked_regions[roi_index]->show_region.color: 0xFFFFFFFF;
+        unsigned int cur_color = 0xFFFFFFFF;
+        if(draw_all)
+            cur_color = checked_regions[roi_index]->show_region.color;
 
         QPainter paint(&scaled_image);
         paint.setBrush(Qt::NoBrush);
