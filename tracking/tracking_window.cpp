@@ -217,6 +217,9 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionThreshold,SIGNAL(triggered()),regionWidget,SLOT(action_threshold()));
 
 
+        connect(ui->actionSmooth_All,SIGNAL(triggered()),regionWidget,SLOT(action_smoothing_all()));
+        connect(ui->actionDefragment_All,SIGNAL(triggered()),regionWidget,SLOT(action_defragment_all()));
+        connect(ui->actionDilate_All,SIGNAL(triggered()),regionWidget,SLOT(action_dilate_all()));
 
         connect(ui->actionSmoothing,SIGNAL(triggered()),regionWidget,SLOT(action_smoothing()));
         connect(ui->actionErosion,SIGNAL(triggered()),regionWidget,SLOT(action_erosion()));

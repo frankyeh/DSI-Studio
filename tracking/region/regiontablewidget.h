@@ -37,6 +37,7 @@ protected:
 private:
     tracking_window& cur_tracking_window;
     void do_action(QString action);
+    void do_action(QString action,size_t roi_index);
     void whole_brain_points(std::vector<tipl::vector<3,short> >& points);
     bool load_multiple_roi_nii(QString file_name);
 private:
@@ -122,6 +123,9 @@ public slots:
     void undo(void);
     void redo(void);
     // actions
+    void action_smoothing_all(void){do_action("smoothing_all");}
+    void action_defragment_all(void){do_action("defragment_all");}
+    void action_dilate_all(void){do_action("dilation_all");}
     void action_smoothing(void){do_action("smoothing");}
     void action_erosion(void){do_action("erosion");}
     void action_dilation(void){do_action("dilation");}

@@ -1145,14 +1145,33 @@ void RegionTableWidget::do_action(QString action)
 {
     if(regions.empty())
         return;
-    int k = currentRow();
-    if(k < 0)
+    if(action.contains("_all"))
+    {
+        action.chop(4);
+        auto checked_regions = get_checked_regions();
+        tipl::par_for2(checked_regions.size(),[&](int i,int id){
+            if(id == 0)
+                check_prog(i,checked_regions.size());
+            if(prog_aborted())
+                return;
+            checked_regions[i]->perform(action.toStdString());
+        });
+        check_prog(0,0);
+        emit need_update();
         return;
-    if (item(k,0)->checkState() != Qt::Checked)
-        item(k,0)->setCheckState(Qt::Checked);
+    }
+    if(currentRow() < 0)
+        return;
+    do_action(action,currentRow());
+    emit need_update();
+}
+void RegionTableWidget::do_action(QString action,size_t roi_index)
+{
+    if(regions.empty())
+        return;
 
     {
-        ROIRegion& cur_region = *regions[size_t(k)];
+        ROIRegion& cur_region = *regions[size_t(roi_index)];
         if(cur_tracking_window.ui->all_edit->isChecked())
             for_each_checked_region([&](std::shared_ptr<ROIRegion> region){region->perform(action.toStdString());});
         else
@@ -1238,7 +1257,7 @@ void RegionTableWidget::do_action(QString action)
         {
             tipl::image<unsigned char, 3>mask;
             cur_region.SaveToBuffer(mask, 1);
-            QString name = item(currentRow(),0)->text();
+            QString name = item(roi_index,0)->text();
             tipl::image<unsigned int,3> labels;
             std::vector<std::vector<unsigned int> > r;
             tipl::morphology::connected_component_labeling(mask,labels,r);
@@ -1325,5 +1344,4 @@ void RegionTableWidget::do_action(QString action)
             }
         }
         }
-    emit need_update();
 }

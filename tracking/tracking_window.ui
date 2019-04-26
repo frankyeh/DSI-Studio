@@ -727,6 +727,14 @@
      <addaction name="actionBy_Y"/>
      <addaction name="actionBy_Z"/>
     </widget>
+    <widget class="QMenu" name="menuModify_Checked_Regions">
+     <property name="title">
+      <string>Modify Checked Regions</string>
+     </property>
+     <addaction name="actionSmooth_All"/>
+     <addaction name="actionDefragment_All"/>
+     <addaction name="actionDilate_All"/>
+    </widget>
     <addaction name="actionNewRegion"/>
     <addaction name="actionOpenRegion"/>
     <addaction name="actionOpen_MNI_Region"/>
@@ -749,6 +757,7 @@
     <addaction name="separator"/>
     <addaction name="menuMove_Region"/>
     <addaction name="menuModify"/>
+    <addaction name="menuModify_Checked_Regions"/>
     <addaction name="menuSort"/>
     <addaction name="separator"/>
     <addaction name="actionWhole_brain_seeding"/>
@@ -3374,6 +3383,21 @@ Tracking</string>
   <action name="actionBy_Name">
    <property name="text">
     <string>By Name</string>
+   </property>
+  </action>
+  <action name="actionSmooth_All">
+   <property name="text">
+    <string>Smooth All</string>
+   </property>
+  </action>
+  <action name="actionDefragment_All">
+   <property name="text">
+    <string>Defragment All</string>
+   </property>
+  </action>
+  <action name="actionDilate_All">
+   <property name="text">
+    <string>Dilate All</string>
    </property>
   </action>
  </widget>
