@@ -55,7 +55,10 @@ void RegionModel::sortIndices(void)
 bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, double resolution_ratio,unsigned char smooth)
 {
     if(seeds.empty())
+    {
+        object.reset(0);
         return false;
+    }
     tipl::vector<3,short> max_value(seeds[0]), min_value(seeds[0]);
     tipl::bounding_box_mt(seeds,max_value,min_value);
 
@@ -99,7 +102,7 @@ bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, double 
     if (object->point_list.empty())
     {
         object.reset(0);
-        return 0;
+        return false;
     }
     tipl::vector<3,float>shift(min_value);
     if (resolution_ratio != 1.0)
