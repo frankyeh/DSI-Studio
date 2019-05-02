@@ -524,7 +524,7 @@ void MainWindow::on_averagefib_clicked()
 bool load_all_files(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec);
 bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
-QString get_src_name(QString file_name);
+QString get_dicom_output_name(QString file_name,QString file_extension);
 
 void MainWindow::on_batch_src_clicked()
 {
@@ -602,7 +602,7 @@ void MainWindow::on_batch_src_clicked()
                 continue;
             for (unsigned int index = 0;index < dicom_file_list.size();++index)
                 dicom_file_list[index] = dir_list[i] + "/" + dicom_file_list[index];
-            QString output = dir_list[i] + "/" + QFileInfo(get_src_name(dicom_file_list[0])).baseName()+".src.gz";
+            QString output = get_dicom_output_name(dicom_file_list[0],".src.gz");
             if(QFileInfo(output).exists())
             {
                 if(!all)
@@ -654,22 +654,21 @@ void MainWindow::on_batch_src_clicked()
                 nii_out.set_voxel_size(vs);
 
 
-                std::string manu,make,seq,report;
+                std::string manu,make,seq,report,sequence;
+                header.get_sequence_id(sequence);
                 header.get_text(0x0008,0x0070,manu);//Manufacturer
                 header.get_text(0x0008,0x1090,make);
-                header.get_text(0x0018,0x1030,seq);
                 std::replace(manu.begin(),manu.end(),' ',(char)0);
                 make.erase(std::remove(make.begin(),make.end(),' '),make.end());
                 std::ostringstream out;
-                out << manu.c_str() << " " << make.c_str() << " " << seq
+                out << manu.c_str() << " " << make.c_str() << " " << sequence
                     << ".TE=" << header.get_float(0x0018,0x0081) << ".TR=" << header.get_float(0x0018,0x0080)  << ".";
                 report = out.str();
                 if(report.size() < 80)
                     report.resize(80);
                 nii_out.set_descrip(report.c_str());
-                QString output_name = QFileInfo(get_src_name(dicom_file_list[0])).absolutePath() + "/" +
-                                      QFileInfo(get_src_name(dicom_file_list[0])).baseName()+ "."+seq.c_str() + ".nii.gz";
-                nii_out.save_to_file(output_name.toLocal8Bit().begin());
+                QString output = get_dicom_output_name(dicom_file_list[0],"")+"_"+sequence.c_str() + ".nii.gz";
+                nii_out.save_to_file(output.toStdString().c_str());
             }
             else
             {

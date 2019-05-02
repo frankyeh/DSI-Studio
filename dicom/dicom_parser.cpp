@@ -15,15 +15,18 @@ void get_report_from_dicom(const tipl::io::dicom& header,std::string& report_);
 void get_report_from_bruker(const tipl::io::bruker_info& header,std::string& report_);
 void get_report_from_bruker2(const tipl::io::bruker_info& header,std::string& report_);
 
-QString get_src_name(QString file_name)
+QString get_dicom_output_name(QString file_name,QString file_extension)
 {
     tipl::io::dicom header;
     if (header.load_from_file(file_name.toLocal8Bit().begin()))
     {
         std::string Person;
         header.get_patient(Person);
-        return QFileInfo(file_name).absolutePath() + "/" + &*Person.begin() + ".src.gz";
-
+        std::string seq_num;
+        header.get_sequence_num(seq_num);
+        QDir dir = QFileInfo(file_name).absoluteDir();
+        dir.cdUp();
+        return dir.absolutePath() + "/" + Person.c_str() + "_s" + seq_num.c_str() + file_extension;
     }
     else
         return file_name+".src.gz";
@@ -41,7 +44,7 @@ dicom_parser::dicom_parser(QStringList file_list,QWidget *parent) :
 
     if (!dwi_files.empty())
     {
-        ui->SrcName->setText(get_src_name(file_list[0]));
+        ui->SrcName->setText(get_dicom_output_name(file_list[0],".src.gz"));
         tipl::io::dicom header;
         if (header.load_from_file(file_list[0].toLocal8Bit().begin()))
         {

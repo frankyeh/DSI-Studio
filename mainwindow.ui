@@ -54,7 +54,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -467,7 +467,7 @@
         <item>
          <widget class="QCommandLinkButton" name="batch_src">
           <property name="text">
-           <string>Step B2: Create SRC files </string>
+           <string>Step B2: Create SRC/Nifti files </string>
           </property>
           <property name="description">
            <string>Select a root directory that contains multiple subdirectory and generate an SRC file for each of them.</string>

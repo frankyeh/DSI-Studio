@@ -382,7 +382,6 @@ void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image,bool draw_
     if(display_ratio > 1.0f)
     for (int roi_index = 0;roi_index < checked_regions.size();++roi_index)
     {
-        int X, Y, Z;
         tipl::image<unsigned char,2> cur_image_mask;
         cur_image_mask.resize(tipl::geometry<2>(qimage.width(),qimage.height()));
 
