@@ -95,6 +95,7 @@ public:
     void float3dwindow(int w,int h);
     void initialize_tracking_index(int index);
     void report(QString string);
+    void move_slice_to(tipl::vector<3,float> pos);
     bool can_map_to_mni(void);
     bool command(QString cmd,QString param = "",QString param2 = "");
 public slots:

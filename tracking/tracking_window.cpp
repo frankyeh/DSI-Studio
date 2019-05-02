@@ -235,6 +235,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionBy_X,SIGNAL(triggered()),regionWidget,SLOT(action_sort_x()));
         connect(ui->actionBy_Y,SIGNAL(triggered()),regionWidget,SLOT(action_sort_y()));
         connect(ui->actionBy_Z,SIGNAL(triggered()),regionWidget,SLOT(action_sort_z()));
+        connect(ui->actionMove_Slices_To_Current_Region,SIGNAL(triggered()),regionWidget,SLOT(move_slice_to_current_region()));
 
 
 
@@ -756,6 +757,32 @@ void tracking_window::on_glAxiView_clicked()
 
 }
 
+void tracking_window::move_slice_to(tipl::vector<3,float> slice_position)
+{
+    slice_position.round();
+    for(int i = 0;i < 3; ++i)
+    {
+        if(slice_position[i] < 0)
+            slice_position[i] = 0;
+        if(slice_position[i] >= current_slice->geometry[i]-1)
+            slice_position[i] = 0;
+    }
+    current_slice->slice_pos = slice_position;
+
+    ui->glSagSlider->setValue(slice_position[0]);
+    ui->glCorSlider->setValue(slice_position[1]);
+    ui->glAxiSlider->setValue(slice_position[2]);
+    ui->glSagBox->setValue(slice_position[0]);
+    ui->glCorBox->setValue(slice_position[1]);
+    ui->glAxiBox->setValue(slice_position[2]);
+
+    ui->SlicePos->setRange(0,current_slice->geometry[cur_dim]-1);
+    ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
+
+    glWidget->slice_pos[0] = glWidget->slice_pos[1] = glWidget->slice_pos[2] = -1;
+    glWidget->updateGL();
+    scene.show_slice();
+}
 void tracking_window::on_SliceModality_currentIndexChanged(int index)
 {
     if(index == -1 || !current_slice.get())
@@ -767,32 +794,12 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
 
     current_slice = slices[index];
     ui->is_overlay->setChecked(current_slice == overlay_slice);
-
-    if(!current_slice->is_diffusion_space)
-        slice_position.to(current_slice->invT);
-    slice_position.round();
-    for(int i = 0;i < 3; ++i)
-    {
-        if(slice_position[i] < 0)
-            slice_position[i] = 0;
-        if(slice_position[i] >= current_slice->geometry[i]-1)
-            slice_position[i] = 0;
-    }
-    current_slice->slice_pos = slice_position;
     ui->glSagSlider->setRange(0,current_slice->geometry[0]-1);
     ui->glCorSlider->setRange(0,current_slice->geometry[1]-1);
     ui->glAxiSlider->setRange(0,current_slice->geometry[2]-1);
     ui->glSagBox->setRange(0,current_slice->geometry[0]-1);
     ui->glCorBox->setRange(0,current_slice->geometry[1]-1);
     ui->glAxiBox->setRange(0,current_slice->geometry[2]-1);
-    ui->glSagSlider->setValue(slice_position[0]);
-    ui->glCorSlider->setValue(slice_position[1]);
-    ui->glAxiSlider->setValue(slice_position[2]);
-    ui->glSagBox->setValue(slice_position[0]);
-    ui->glCorBox->setValue(slice_position[1]);
-    ui->glAxiBox->setValue(slice_position[2]);
-    ui->SlicePos->setRange(0,current_slice->geometry[cur_dim]-1);
-    ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
 
 
     std::pair<float,float> range = current_slice->get_value_range();
@@ -818,9 +825,11 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
 
     v2c.set_range(ui->min_value_gl->value(),ui->max_value_gl->value());
     v2c.two_color(ui->min_color_gl->color().rgb(),ui->max_color_gl->color().rgb());
-    glWidget->slice_pos[0] = glWidget->slice_pos[1] = glWidget->slice_pos[2] = -1;
-    glWidget->updateGL();
-    scene.show_slice();
+
+    if(!current_slice->is_diffusion_space)
+        slice_position.to(current_slice->invT);
+
+    move_slice_to(slice_position);
     no_update = false;
 
 }
@@ -1062,6 +1071,7 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
                 << ui->glAxiSlider->value() << " ";
             std::copy(glWidget->transformation_matrix.begin(),glWidget->transformation_matrix.end(),std::ostream_iterator<float>(out," "));
             settings.setValue(key_str,QString(out.str().c_str()));
+            QMessageBox::information(this,"DSI Studio","View position and slice location memorized",0);
         }
         else
         {
@@ -1078,6 +1088,7 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
             ui->glSagSlider->setValue(sag);
             ui->glCorSlider->setValue(cor);
             ui->glAxiSlider->setValue(axi);
+            glWidget->updateGL();
         }
     }
     if(event->isAccepted())

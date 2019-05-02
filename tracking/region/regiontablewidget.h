@@ -122,6 +122,7 @@ public slots:
     void move_down(void);
     void undo(void);
     void redo(void);
+    void move_slice_to_current_region(void);
     // actions
     void action_smoothing_all(void){do_action("smoothing_all");}
     void action_defragment_all(void){do_action("defragment_all");}

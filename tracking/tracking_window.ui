@@ -759,6 +759,7 @@
     <addaction name="menuModify"/>
     <addaction name="menuModify_Checked_Regions"/>
     <addaction name="menuSort"/>
+    <addaction name="actionMove_Slices_To_Current_Region"/>
     <addaction name="separator"/>
     <addaction name="actionWhole_brain_seeding"/>
     <addaction name="actionNew_Super_Resolution_Region"/>
@@ -3339,15 +3340,24 @@ Tracking</string>
    <property name="text">
     <string>First Excludes All</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+1</string>
+   </property>
   </action>
   <action name="actionB_A">
    <property name="text">
     <string>All Excludes First</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+2</string>
+   </property>
   </action>
   <action name="actionAB">
    <property name="text">
     <string>All Intersects First</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+3</string>
    </property>
   </action>
   <action name="actionPPV_analysis">
@@ -3398,6 +3408,14 @@ Tracking</string>
   <action name="actionDilate_All">
    <property name="text">
     <string>Dilate All</string>
+   </property>
+  </action>
+  <action name="actionMove_Slices_To_Current_Region">
+   <property name="text">
+    <string>Move Slices To Current Region</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+M</string>
    </property>
   </action>
  </widget>

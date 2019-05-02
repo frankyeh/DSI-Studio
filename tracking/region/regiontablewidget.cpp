@@ -225,6 +225,24 @@ void RegionTableWidget::check_check_status(int row, int col)
     }
 }
 
+void RegionTableWidget::move_slice_to_current_region(void)
+{
+    if(currentRow() == -1)
+        return;
+    auto current_slice = cur_tracking_window.current_slice;
+    auto current_region = regions[currentRow()];
+    if(current_region->region.empty())
+        return;
+
+    float r = current_region->resolution_ratio;
+    tipl::vector<3,float> p(current_region->region[current_region->region.size()/2]);
+    if(r != 1.0)
+        p /= r;
+    if(!current_slice->is_diffusion_space)
+        p.to(current_slice->T);
+    cur_tracking_window.move_slice_to(p);
+}
+
 void RegionTableWidget::draw_region(tipl::color_image& I)
 {
     auto current_slice = cur_tracking_window.current_slice;
@@ -379,7 +397,7 @@ void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image,bool draw_
     float display_ratio = (float)scaled_image.width()/(float)qimage.width();
     int slice_pos = current_slice->slice_pos[cur_tracking_window.cur_dim];
 
-    if(display_ratio > 1.0f)
+    //if(display_ratio >= 1.0f)
     for (int roi_index = 0;roi_index < checked_regions.size();++roi_index)
     {
         tipl::image<unsigned char,2> cur_image_mask;
