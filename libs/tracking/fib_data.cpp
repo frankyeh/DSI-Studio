@@ -459,17 +459,12 @@ bool fib_data::load_from_file(const char* file_name)
 {
     tipl::image<float,3> I;
     tipl::vector<3,float> vs_;
+    gz_nifti header;
     fib_file_name = file_name;
-    if(!QFileInfo(file_name).completeSuffix().contains("fib.gz") &&
-       (QFileInfo(file_name).completeSuffix().contains("nii") ||
-        QFileInfo(file_name).completeSuffix().contains("nii.gz")))
+    if((QFileInfo(file_name).fileName().endsWith(".nii") ||
+        QFileInfo(file_name).fileName().endsWith(".nii.gz")) &&
+        header.load_from_file(file_name))
     {
-        gz_nifti header;
-        if(!header.load_from_file(file_name))
-        {
-            error_msg = "Invalid NIFTI format";
-            return false;
-        }
         if(header.dim(4) == 3)
         {
             tipl::image<float,3> x,y,z;

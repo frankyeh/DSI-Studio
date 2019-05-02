@@ -1308,7 +1308,7 @@ void TractTableWidget::export_tract_density(tipl::geometry<3>& dim,
             tract_models[index]->get_density_map(tdi,transformation,end_point);
         }
         tipl::image<tipl::rgb,2> mosaic;
-        if(QFileInfo(filename).completeSuffix().contains("nii"))
+        if(QFileInfo(filename).fileName().endsWith(".nii") || QFileInfo(filename).fileName().endsWith(".nii.gz"))
         {
             gz_nifti nii;
             tipl::flip_xy(tdi);
