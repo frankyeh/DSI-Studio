@@ -648,6 +648,25 @@ void MainWindow::on_batch_src_clicked()
                 tipl::vector<3> vs;
                 v >> I;
                 v.get_voxel_size(vs);
+                //non isotropic
+                if((vs[0] != vs[1] || vs[0] != vs[2] || vs[1] != vs[2]) &&
+                   (*std::min_element(vs.begin(),vs.end()))/(*std::max_element(vs.begin(),vs.end())) > 0.5f)
+                {
+                    float reso = *std::min_element(vs.begin(),vs.end());
+                    tipl::vector<3,float> new_vs(reso,reso,reso);
+                    tipl::image<float,3> J(tipl::geometry<3>(
+                            int(std::ceil(float(I.width())*vs[0]/new_vs[0])),
+                            int(std::ceil(float(I.height())*vs[1]/new_vs[1])),
+                            int(std::ceil(float(I.depth())*vs[2]/new_vs[2]))));
+
+                    tipl::transformation_matrix<float> T1;
+                    T1.sr[0] = new_vs[0]/vs[0];
+                    T1.sr[4] = new_vs[1]/vs[1];
+                    T1.sr[8] = new_vs[2]/vs[2];
+                    tipl::resample_mt(I,J,T1,tipl::cubic);
+                    vs = new_vs;
+                    I.swap(J);
+                }
                 gz_nifti nii_out;
                 tipl::flip_xy(I);
                 nii_out << I;
