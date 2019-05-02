@@ -369,7 +369,7 @@ void RegionTableWidget::draw_region(tipl::color_image& I)
 void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image,bool draw_all)
 {
     auto current_slice = cur_tracking_window.current_slice;
-    if(!current_slice->is_diffusion_space || regions.empty())
+    if(regions.empty())
         return;
     std::vector<std::shared_ptr<ROIRegion> > checked_regions;
     int cur_roi_index = -1;
@@ -404,11 +404,16 @@ void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image,bool draw_
         cur_image_mask.resize(tipl::geometry<2>(qimage.width(),qimage.height()));
 
         float r = checked_regions[roi_index]->resolution_ratio;
+        auto iT = current_slice->T;
+        iT.inv();
+
         tipl::par_for(checked_regions[roi_index]->size(),[&](unsigned int index)
         {
             tipl::vector<3,float> p(checked_regions[roi_index]->region[index]);
             if(r != 1.0)
                 p /= r;
+            if(!current_slice->is_diffusion_space)
+                p.to(iT);
             p.round();
             int X, Y, Z;
             tipl::space2slice(cur_tracking_window.cur_dim,p[0],p[1],p[2],X,Y,Z);
